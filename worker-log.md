@@ -584,3 +584,22 @@ Deviations and limits:
   (`?p patient condition=?c`) used to block the backward step; now the variable is
   settled by a later pattern, a calc, or the slot's domain. The existing abduction
   tests pass unchanged.
+
+## G8 — compatibility suite — in progress (1 of 3 worlds)
+
+`node compat/psys2/run.mjs kids.shop --failures`: 147 of 147 cases pass (100.0%), 145
+answers compared; matrix 69 lines, no `fns.mjs`, against 159 lines of `ops.mjs` (148
+without blank lines and comments). `npm test`: 159 pass, 0 fail on sources and built
+file (the runner is now a test, `compat/psys2/run.test.mjs`, with the 95% and half-the-
+lines thresholds as assertions). `git grep -i psys2 src/ | wc -l`: 0.
+
+The shop needed four general additions to the library (each with a neutral test in
+`test/kernel.test.mjs` and a paragraph in SPEC), none of which names the consumer:
+- `core.on=$pattern` on a template: add keys to the wire a pattern matched (3.3);
+- a stratification check that knows which keys such a template adds, so "sum the lines
+  of a basket, then write the total on the basket" is not taken for a cycle;
+- a bookkeeping key that no slot declares does not conflict when a wire is told again;
+- the sequence key may be declared after wires arrived, and a wire told again moves
+  the sequence on.
+
+The full entry (three worlds, demonstrations, failures) follows when G8 is done.

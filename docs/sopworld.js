@@ -1309,14 +1309,23 @@ const __matrix = (() => {
     };
     // stratification: a rule may not negate a type that its own consequences can produce.
     // A produced wire also feeds the rules whose patterns name one of its ancestor types.
-    const produces = new Map();
-    for (const r of c.rules) for (const p of [...r.when, ...r.not]) for (const t of r.then) {
-      (produces.get(p.type) || produces.set(p.type, new Set()).get(p.type)).add(t.type);
-    }
+    // A template that adds keys to a matched wire (core.on=) can only wake a pattern that
+    // names one of those keys; a template that makes a wire can wake any pattern of its type.
+    const made = (r) => r.then.map((t) => ({ type: t.type, keys: t.on ? Object.keys(t.attrs) : null }));
+    const wakes = (item, p) => c.isA(item.type, p.type) && (!item.keys || item.keys.some((k) => p.attrs[k]));
+    const reads = (r) => [...r.when, ...r.not, ...r.calc.flatMap((x) => x.over || [])];
     for (const r of c.negRules) {
-      const reach = new Set(r.then.map((t) => t.type));
-      for (const t of reach) for (const a of c.lineage(t)) for (const u of produces.get(a) || []) reach.add(u);
-      const bad = [...r.not, ...r.calc.flatMap((x) => x.over || [])].find((n) => [...reach].some((t) => c.isA(t, n.type)));
+      if (r.kind !== 'rule') continue;
+      const reach = made(r);
+      const seen = new Set([r]);
+      for (let i = 0; i < reach.length; i++) { // bounded: each rule adds its templates once
+        for (const r2 of c.rules) {
+          if (seen.has(r2) || !reads(r2).some((p) => wakes(reach[i], p))) continue;
+          seen.add(r2);
+          reach.push(...made(r2));
+        }
+      }
+      const bad = [...r.not, ...r.calc.flatMap((x) => x.over || [])].find((n) => reach.some((item) => wakes(item, n)));
       if (bad) c.errors.push(`${r.id}: not stratified, its consequences can produce "${bad.type}", which it negates or aggregates`);
     }
     return c;
@@ -1338,6 +1347,8 @@ const __matrix = (() => {
       }
       const l = localize(s, locals);
       if (l.attrs['core.select']) { l.select = l.attrs['core.select'][0]; delete l.attrs['core.select']; }
+      // a template with core.on=$pattern adds its keys to the wire that pattern matched
+      if (k === 'then' && l.attrs['core.on']) { l.on = l.attrs['core.on'][0].replace(/^\$/, ''); delete l.attrs['core.on']; }
       for (const key of Object.keys(l.attrs)) { // full key names and short ones are the same key
         const short = c.shortKey(l.type, key);
         if (short !== key) { l.attrs[short] = [...(l.attrs[short] || []), ...l.attrs[key]]; delete l.attrs[key]; }
@@ -1359,6 +1370,12 @@ const __matrix = (() => {
     };
     if (!rule.when.length) { c.errors.push(`${w.id}: needs at least one when=`); return; }
     if (rule.kind === 'rule' && !rule.then.length) { c.errors.push(`${w.id}: core.rule needs then=`); return; }
+    for (const t of rule.then) {
+      if (!t.on) continue;
+      const p = rule.when.find((x) => '?' + x.id === t.on);
+      if (!p) { c.errors.push(`${w.id}: ${t.id} has core.on=, which must name one of the rule's when= patterns`); continue; }
+      t.type = p.type; // the keys go on the matched wire, whatever type the template was written with
+    }
     for (const x of rule.calc) if (!x.out || !isVar(x.out)) c.errors.push(`${w.id}: core.calc needs out=?var`);
 
     const vars = new Set();
@@ -2239,19 +2256,37 @@ const __time = (() => {
   const K = (type, key, value) => `${type}\u0001${key}\u0001${value}`;
 
   const timing = {
-    /** Give a new wire its place in the sequence. */
-    _stamp(w) {
+    /** The sequence moves on to the place a wire declares. Returns that place, or NaN when it declares none. */
+    _advance(w) {
       const key = this._compiled().seqKey;
       const declared = key && w.attrs[key] ? Number(w.attrs[key][0]) : NaN;
-      if (Number.isFinite(declared)) {
-        w.meta.order = declared;
-        if (declared > (this._lastOrder ?? -Infinity)) {
-          const prev = this._lastOrder;
-          this._lastOrder = declared;
-          this._do(() => { this._lastOrder = prev; });
-        }
-      } else {
-        w.meta.order = key ? this._lastOrder ?? 0 : w.meta.seq;
+      if (Number.isFinite(declared) && declared > (this._lastOrder ?? -Infinity)) {
+        const prev = this._lastOrder;
+        this._lastOrder = declared;
+        this._do(() => { this._lastOrder = prev; });
+      }
+      return declared;
+    },
+
+    /** Give a new wire its place in the sequence. */
+    _stamp(w) {
+      const declared = this._advance(w);
+      w.meta.order = Number.isFinite(declared) ? declared : this._compiled().seqKey ? this._lastOrder ?? 0 : w.meta.seq;
+    },
+
+    /** The key that carries the sequence changed: give every wire its place again, in order of arrival. */
+    _restamp() {
+      const before = [...this.wires.values()].map((w) => [w, w.meta.order]);
+      const last = this._lastOrder;
+      this._lastOrder = undefined;
+      this._do(() => { this._lastOrder = last; });
+      for (const [w, old] of before.sort((x, y) => x[0].meta.seq - y[0].meta.seq)) { // bounded: one pass over the wires
+        this._stamp(w);
+        const order = w.meta.order;
+        // what the wire stated about its fluents when it arrived moves with it
+        const moved = Object.values(w.meta.stated || {}).flat().filter((e) => e.seq === w.meta.seq && e.order === old);
+        for (const e of moved) e.order = order;
+        this._do(() => { w.meta.order = old; for (const e of moved) e.order = old; });
       }
     },
 
@@ -3376,6 +3411,7 @@ const __world = (() => {
           }
         }
         if (!prev || prev.hierarchy !== c.hierarchy || prev.numbers !== c.numbers) this._reindex();
+        if ((prev ? prev.seqKey : undefined) !== c.seqKey) this._restamp();
         if (c.fluents.size || c.seqKey) for (const w of this.wires.values()) { if (w.meta.told) this._fluentNote(w, res); }
         res._agenda = [...this.wires.keys()];
         for (const id of res._agenda) res._touched.add(id);
@@ -3404,6 +3440,7 @@ const __world = (() => {
         facts.push(w.id);
         const same = this._findByIdentity(w.type, w.attrs);
         if (same) {
+          this._advance(w); // a statement about a wire that is already there happens at the place it declares
           this._merge(same, w.attrs, { via: 'core.tell', from: [] }, res);
           this.alias.set(w.id, same.id);
           this._do(() => this.alias.delete(w.id));
@@ -3686,7 +3723,8 @@ const __world = (() => {
           const vals = t.attrs[k].map((v) => walk(v, s)).filter((v) => !hasVar(v)).flatMap((v) => (v[0] === LIST ? v.slice(1).split(LIST) : [v]));
           if (vals.length) attrs[k] = vals; // a value left unbound is an open key
         }
-        let target = this._findByIdentity(t.type, attrs) || this._findSubsuming(t.type, attrs, c);
+        let target = t.on ? this.wires.get(this.resolve(walk(t.on, s))) : this._findByIdentity(t.type, attrs) || this._findSubsuming(t.type, attrs, c);
+        if (t.on && !target) continue;
         if (target) {
           rec.hits.push(target.id);
           this._merge(target, attrs, prov, res);
@@ -3738,7 +3776,10 @@ const __world = (() => {
           const have = w.attrs[k];
           if (have && (have.includes(v) || have.some((x) => this._same(w.type, k, x, v)))) continue;
           if (!prov.rec && this._fluentState(w, k, v, res)) continue; // a new statement about a state, not a conflict
-          if (have && !c.slotOf(w.type, k)?.many) {
+          const slot = c.slotOf(w.type, k);
+          // a bookkeeping key that no slot declares takes every value it is given: a wire told
+          // again keeps the source, the place and so on of each statement
+          if (have && !slot?.many && !(!slot && c.isOpenKey(k))) {
             res.violations.push({ kind: 'conflict', id: w.id, key: k, have: have[0], want: v, via: prov.via, wires: [w.id, ...prov.from] });
             continue;
           }

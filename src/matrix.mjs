@@ -320,14 +320,23 @@ export function compileMatrix(world) {
   };
   // stratification: a rule may not negate a type that its own consequences can produce.
   // A produced wire also feeds the rules whose patterns name one of its ancestor types.
-  const produces = new Map();
-  for (const r of c.rules) for (const p of [...r.when, ...r.not]) for (const t of r.then) {
-    (produces.get(p.type) || produces.set(p.type, new Set()).get(p.type)).add(t.type);
-  }
+  // A template that adds keys to a matched wire (core.on=) can only wake a pattern that
+  // names one of those keys; a template that makes a wire can wake any pattern of its type.
+  const made = (r) => r.then.map((t) => ({ type: t.type, keys: t.on ? Object.keys(t.attrs) : null }));
+  const wakes = (item, p) => c.isA(item.type, p.type) && (!item.keys || item.keys.some((k) => p.attrs[k]));
+  const reads = (r) => [...r.when, ...r.not, ...r.calc.flatMap((x) => x.over || [])];
   for (const r of c.negRules) {
-    const reach = new Set(r.then.map((t) => t.type));
-    for (const t of reach) for (const a of c.lineage(t)) for (const u of produces.get(a) || []) reach.add(u);
-    const bad = [...r.not, ...r.calc.flatMap((x) => x.over || [])].find((n) => [...reach].some((t) => c.isA(t, n.type)));
+    if (r.kind !== 'rule') continue;
+    const reach = made(r);
+    const seen = new Set([r]);
+    for (let i = 0; i < reach.length; i++) { // bounded: each rule adds its templates once
+      for (const r2 of c.rules) {
+        if (seen.has(r2) || !reads(r2).some((p) => wakes(reach[i], p))) continue;
+        seen.add(r2);
+        reach.push(...made(r2));
+      }
+    }
+    const bad = [...r.not, ...r.calc.flatMap((x) => x.over || [])].find((n) => reach.some((item) => wakes(item, n)));
     if (bad) c.errors.push(`${r.id}: not stratified, its consequences can produce "${bad.type}", which it negates or aggregates`);
   }
   return c;
@@ -349,6 +358,8 @@ function buildRule(world, w, c) {
     }
     const l = localize(s, locals);
     if (l.attrs['core.select']) { l.select = l.attrs['core.select'][0]; delete l.attrs['core.select']; }
+    // a template with core.on=$pattern adds its keys to the wire that pattern matched
+    if (k === 'then' && l.attrs['core.on']) { l.on = l.attrs['core.on'][0].replace(/^\$/, ''); delete l.attrs['core.on']; }
     for (const key of Object.keys(l.attrs)) { // full key names and short ones are the same key
       const short = c.shortKey(l.type, key);
       if (short !== key) { l.attrs[short] = [...(l.attrs[short] || []), ...l.attrs[key]]; delete l.attrs[key]; }
@@ -370,6 +381,12 @@ function buildRule(world, w, c) {
   };
   if (!rule.when.length) { c.errors.push(`${w.id}: needs at least one when=`); return; }
   if (rule.kind === 'rule' && !rule.then.length) { c.errors.push(`${w.id}: core.rule needs then=`); return; }
+  for (const t of rule.then) {
+    if (!t.on) continue;
+    const p = rule.when.find((x) => '?' + x.id === t.on);
+    if (!p) { c.errors.push(`${w.id}: ${t.id} has core.on=, which must name one of the rule's when= patterns`); continue; }
+    t.type = p.type; // the keys go on the matched wire, whatever type the template was written with
+  }
   for (const x of rule.calc) if (!x.out || !isVar(x.out)) c.errors.push(`${w.id}: core.calc needs out=?var`);
 
   const vars = new Set();

@@ -110,13 +110,19 @@ foreign schema wires a `core.schema.map` declares. Everything else is a fact.
   function returns nothing the match is dropped.
 - `if=` `core.check` wires: `fn=name args=...`, all must be true.
 - `not=` pattern wires that must have no match (negation as failure). The matrix must be
-  stratified: a rule may not negate a type that its own consequences can produce,
-  directly or through other rules. A matrix that is not is refused. Negation is
+  stratified: a rule may not negate (or aggregate over) a type that its own consequences
+  can produce, directly or through other rules. A matrix that is not is refused. A
+  template with `core.on=` (below) adds keys to a wire that is already there, so it
+  counts only against patterns that name one of those keys. Negation is
   maintained: when a wire arrives that matches the negated pattern of an earlier firing,
   that firing and what it produced are withdrawn.
 - `then=` template wires. A template that is already satisfied changes nothing; otherwise
   an existing wire is completed or a new wire is created (section 4.3). A template value
   whose variable is unbound is left out: the new wire has an open key.
+- A template with `core.on=$<pattern>` does not describe a wire of its own: its keys are
+  added to the wire that `when=` pattern matched (`@f line core.on=$l total=?t`). Use it
+  for "compute a key of the thing itself"; two wires that look alike each get their own
+  value, and no search for a similar wire is made.
 
 Variables are local to a rule. Inside a rule, `$b` means "the wire matched by pattern
 `?b`" or "the wire produced by template `@b`".
@@ -260,7 +266,10 @@ patterns and queries.
 
 **Open namespaces.** Keys under `core.` are always allowed, also on closed types, and are
 not validated unless a slot declares them. `@n core.namespace prefix=audit. open=true`
-declares another such prefix (for bookkeeping keys such as provenance or sequence).
+declares another such prefix (for bookkeeping keys such as provenance or sequence). A
+key of an open namespace that no slot declares has no cardinality: when a wire is told
+again (same identity keys), the bookkeeping of each statement is kept side by side
+instead of being a conflict.
 
 **A schema in another notation.** A system that already has schema wires loads them
 unchanged by telling the world how to read them. `core.schema.map` is data, not code:
@@ -309,7 +318,9 @@ is a deny over the two wires.
 **Sequence.** Every wire also has a place in a sequence. By default it is the order of
 arrival. `@s core.sequence key=<key>` declares a key that carries the place: a wire that
 has it is ordered by that number whatever the order it was told in; a wire that does not
-takes the place of the last one that had. Ties are broken by arrival.
+takes the place of the last one that had. Ties are broken by arrival. A wire told again
+(same identity) moves the sequence on to the place it declares. If the key is declared
+after wires have arrived, they are given their places again, in order of arrival.
 
 - `world.seqOf(id)` and `world.compare(a, b)` read it.
 - The checks `before` and `after` compare two wires: `core.check fn=after args=$b args=$a`.
@@ -792,6 +803,10 @@ Since 0.4.0 (the version first published in this repository):
 - New: aggregates (3.6.2), `abs`, `round`, `mod`, `idiv`, `time_add`, `time_diff`,
   `weekday`, checked time kinds (3.6.1).
 - Rules with negation or a selector are re-evaluated only when a type they read changed.
+- New: `core.on=` templates (3.3); the stratification check knows which keys a template
+  adds, so a rule may aggregate over a type and fill a key on a wire of that type.
+- A bookkeeping key (open namespace, no slot) no longer conflicts when a wire is told
+  again; the sequence key may be declared after wires arrived (3.9, 3.10).
 - Abduction goes through calcs (4.6): arithmetic is inverted, other functions are
   tried over the slot's domain.
 - New: budgets on every call, `world.stats()`, and a `fork()` that shares the state

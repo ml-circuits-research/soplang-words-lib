@@ -638,6 +638,7 @@ export class World {
         }
       }
       if (!prev || prev.hierarchy !== c.hierarchy || prev.numbers !== c.numbers) this._reindex();
+      if ((prev ? prev.seqKey : undefined) !== c.seqKey) this._restamp();
       if (c.fluents.size || c.seqKey) for (const w of this.wires.values()) { if (w.meta.told) this._fluentNote(w, res); }
       res._agenda = [...this.wires.keys()];
       for (const id of res._agenda) res._touched.add(id);
@@ -666,6 +667,7 @@ export class World {
       facts.push(w.id);
       const same = this._findByIdentity(w.type, w.attrs);
       if (same) {
+        this._advance(w); // a statement about a wire that is already there happens at the place it declares
         this._merge(same, w.attrs, { via: 'core.tell', from: [] }, res);
         this.alias.set(w.id, same.id);
         this._do(() => this.alias.delete(w.id));
@@ -948,7 +950,8 @@ export class World {
         const vals = t.attrs[k].map((v) => walk(v, s)).filter((v) => !hasVar(v)).flatMap((v) => (v[0] === LIST ? v.slice(1).split(LIST) : [v]));
         if (vals.length) attrs[k] = vals; // a value left unbound is an open key
       }
-      let target = this._findByIdentity(t.type, attrs) || this._findSubsuming(t.type, attrs, c);
+      let target = t.on ? this.wires.get(this.resolve(walk(t.on, s))) : this._findByIdentity(t.type, attrs) || this._findSubsuming(t.type, attrs, c);
+      if (t.on && !target) continue;
       if (target) {
         rec.hits.push(target.id);
         this._merge(target, attrs, prov, res);
@@ -1000,7 +1003,10 @@ export class World {
         const have = w.attrs[k];
         if (have && (have.includes(v) || have.some((x) => this._same(w.type, k, x, v)))) continue;
         if (!prov.rec && this._fluentState(w, k, v, res)) continue; // a new statement about a state, not a conflict
-        if (have && !c.slotOf(w.type, k)?.many) {
+        const slot = c.slotOf(w.type, k);
+        // a bookkeeping key that no slot declares takes every value it is given: a wire told
+        // again keeps the source, the place and so on of each statement
+        if (have && !slot?.many && !(!slot && c.isOpenKey(k))) {
           res.violations.push({ kind: 'conflict', id: w.id, key: k, have: have[0], want: v, via: prov.via, wires: [w.id, ...prov.from] });
           continue;
         }

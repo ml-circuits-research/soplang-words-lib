@@ -267,3 +267,67 @@ test('cli: check, run and ask', () => {
   assert.equal(JSON.parse(cli('ask', matrix, facts, '--query', '?a acceleration magnitude=?v', '--json')).matches[0].v, '5');
   assert.throws(() => cli('check', matrix, bad), (e) => e.status === 1 && /mass must be positive/.test(e.stdout));
 });
+
+test('rules: a template with core.on= adds its keys to the wire a pattern matched', () => {
+  const w = new World();
+  w.load(`
+    ?l line qty=?q price=?p
+    @c core.calc out=?t fn=mul args=?q args=?p
+    @f line core.on=$l total=?t
+    @r core.rule when=$l with=$c then=$f
+  `);
+  // two wires that look the same each get their own value; no third wire is made
+  w.load('@a line qty=2 price=5  @b line qty=2 price=5  @c1 line qty=3 price=1');
+  assert.deepEqual(['a', 'b', 'c1'].map((id) => w.get(id).attrs.total[0]), ['10', '10', '3']);
+  assert.equal(w.ofType('line').length, 3);
+  assert.equal(w.explain('a').fills[0].via, 'r');
+  // the value follows the wire it was computed from
+  w.replace('a', '@a line qty=4 price=5');
+  assert.equal(w.get('a').attrs.total[0], '20');
+  // core.on must name a when= pattern
+  assert.throws(() => new World().load('?x item\n@t item core.on=$nope v=1\n@bad core.rule when=$x then=$t'), /nope|core\.on/);
+});
+
+test('rules: a rule may aggregate over a type and add a key to a wire of that type', () => {
+  // not a cycle: adding `share` wakes no pattern that reads `amount`
+  const w = new World();
+  w.load(`
+    ?g group
+    ?m part of=$g amount=?a
+    @c_sum core.calc out=?sum fn=sum over=$m args=?a
+    @tot group core.on=$g total=?sum
+    @r_tot core.rule when=$g with=$c_sum then=$tot
+    ?g2 group total=?t
+    ?m2 part of=$g2 amount=?a2
+    @c_share core.calc out=?s fn=div args=?a2 args=?t
+    @sh part core.on=$m2 share=?s
+    @r_share core.rule when=$g2 when=$m2 with=$c_share then=$sh
+  `);
+  w.load('@g1 group  @p1 part of=$g1 amount=30  @p2 part of=$g1 amount=10');
+  assert.deepEqual([w.get('g1').attrs.total[0], w.get('p1').attrs.share[0], w.get('p2').attrs.share[0]], ['40', '0.75', '0.25']);
+  // a template that could make a new wire of the aggregated type is still refused
+  const bad = new World().tell(`
+    ?g group
+    ?m part of=$g amount=?a
+    @c core.calc out=?n fn=count over=$m
+    @extra part of=$g amount=?n
+    @r core.rule when=$g with=$c then=$extra
+  `);
+  assert.match(bad.violations[0].why, /not stratified/);
+});
+
+test('bookkeeping: a wire told again keeps the bookkeeping of each statement; the sequence key may be declared late', () => {
+  const w = new World();
+  w.load('@k core.slot of=price key=item id=true\n@f core.fluent of=price key=cost');
+  w.load('@list1 price item=kite cost=10 core.source="list"');
+  w.load('@s core.sequence key=core.seq'); // declared after the first wire arrived
+  const r = w.tell('@said price item=kite cost=4 core.source="dialog" core.seq=7');
+  assert.deepEqual([r.ok, r.merged], [true, [{ id: 'said', into: 'list1' }]]);
+  assert.deepEqual(w.get('list1').attrs['core.source'], ['"list"', '"dialog"'], 'no conflict on a key that no slot declares');
+  assert.equal(w.get('list1').attrs.cost[0], '4', 'the later statement holds');
+  assert.equal(w.tell('@x thing a=1  @y thing a=2').ok, true);
+  // a declared key still conflicts
+  w.load('@k2 core.slot of=price key=core.owner');
+  w.load('@p2 price item=ball cost=1 core.owner=ana');
+  assert.equal(w.tell('@p3 price item=ball core.owner=bob').violations[0].kind, 'conflict');
+});

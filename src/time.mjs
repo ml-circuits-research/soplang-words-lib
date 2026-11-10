@@ -18,19 +18,37 @@ import { quantity } from './builtins.mjs';
 const K = (type, key, value) => `${type}\u0001${key}\u0001${value}`;
 
 export const timing = {
-  /** Give a new wire its place in the sequence. */
-  _stamp(w) {
+  /** The sequence moves on to the place a wire declares. Returns that place, or NaN when it declares none. */
+  _advance(w) {
     const key = this._compiled().seqKey;
     const declared = key && w.attrs[key] ? Number(w.attrs[key][0]) : NaN;
-    if (Number.isFinite(declared)) {
-      w.meta.order = declared;
-      if (declared > (this._lastOrder ?? -Infinity)) {
-        const prev = this._lastOrder;
-        this._lastOrder = declared;
-        this._do(() => { this._lastOrder = prev; });
-      }
-    } else {
-      w.meta.order = key ? this._lastOrder ?? 0 : w.meta.seq;
+    if (Number.isFinite(declared) && declared > (this._lastOrder ?? -Infinity)) {
+      const prev = this._lastOrder;
+      this._lastOrder = declared;
+      this._do(() => { this._lastOrder = prev; });
+    }
+    return declared;
+  },
+
+  /** Give a new wire its place in the sequence. */
+  _stamp(w) {
+    const declared = this._advance(w);
+    w.meta.order = Number.isFinite(declared) ? declared : this._compiled().seqKey ? this._lastOrder ?? 0 : w.meta.seq;
+  },
+
+  /** The key that carries the sequence changed: give every wire its place again, in order of arrival. */
+  _restamp() {
+    const before = [...this.wires.values()].map((w) => [w, w.meta.order]);
+    const last = this._lastOrder;
+    this._lastOrder = undefined;
+    this._do(() => { this._lastOrder = last; });
+    for (const [w, old] of before.sort((x, y) => x[0].meta.seq - y[0].meta.seq)) { // bounded: one pass over the wires
+      this._stamp(w);
+      const order = w.meta.order;
+      // what the wire stated about its fluents when it arrived moves with it
+      const moved = Object.values(w.meta.stated || {}).flat().filter((e) => e.seq === w.meta.seq && e.order === old);
+      for (const e of moved) e.order = order;
+      this._do(() => { w.meta.order = old; for (const e of moved) e.order = old; });
     }
   },
 

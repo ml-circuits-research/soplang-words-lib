@@ -1245,3 +1245,31 @@ wc -l`: 0. `npm run examples`: exit 0. `npm run test:browser`: all passed.
 
 W1–W8 are done. Next: D1, then 0.6.0 (version bump and rebuild; no tags, by the user's
 decision of 20:20, see above).
+
+## D1 (2 of 4) — docs/reference.md, checked against the library — done
+
+`npm test`: 198 pass, 0 fail on sources and built file (28 documented examples run, 22
+of them in the reference). `git grep -i psys2 src/ | wc -l`: 0.
+
+- `docs/reference.md`: one entry per matrix wire type (18, the keys of `GRAMMAR`), the
+  three modifiers, `core.question`/`core.answer`/`core.request`, `core.issue`, and every
+  built-in function (24) and aggregate (7). Each type entry has Syntax (attribute
+  table), Meaning, When it is evaluated, Interactions, Violations, Example, Limits.
+  Every example was run first; the outputs in the file are what
+  `node tools/doc-examples.mjs --write` printed.
+- Writing it corrected five things I would have stated from memory: the violation for an
+  undeclared key on a closed type is `unknown-key` (not `closed`); a range domain is
+  capped at 2,000 values (`RANGE_CAP`), not 10,000; a second `core.sequence` is not
+  refused (the one compiled last holds); the recorded `core.answer` carries `status`
+  and `value` (not `core.status`); `abduce` wants a goal with an `@id`.
+- Three tests in `test/docs.test.mjs`: every type of `SCHEMA_TYPES`/`GRAMMAR` has an
+  entry with all seven parts, and every `core.*` heading is a type the library knows;
+  the attribute table of each type equals `GRAMMAR[type]` in both directions
+  (`core.schema.map` excepted: its fields are the host's); the function tables equal
+  the keys of `builtins` and `aggregates` in both directions. Checked that they bite:
+  with the `delta` row and the `weekday` row removed, two tests fail naming them.
+- `tools/lib-under-test.mjs` now also exports `GRAMMAR`, `MODIFIERS`, `SCHEMA_TYPES`,
+  `aggregates`, so these tests run on the built file as well.
+
+Left of D1: semantics.md (numbered statements, each naming its test), api.md (checked
+against index.d.ts), SPEC as overview with the HTML generated from the markdown.

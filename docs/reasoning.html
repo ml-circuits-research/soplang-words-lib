@@ -62,6 +62,10 @@ w.abduce(&#x27;?g slippery place=lawn&#x27;).map(e =&gt; e.text)
 c.abduce(&#x27;?a symptom of=$ion kind=cough  ?b symptom of=$ion kind=fever&#x27;).map(e =&gt; e.text)
 // [&#x27;ion.condition=flu&#x27;]
 adopt(c, explanation)      // commit it; the other symptoms of flu are then derived</code></pre></figure>
+<p>Abduction goes through calculations. With a rule "change = paid &minus; total", a payment whose total is 15 and <code>paid</code> declared abducible, the value is computed, not guessed:</p>
+<figure class="code"><pre><code>w.abduce(&#x27;?x change amount=5&#x27;).map(e =&gt; e.text)
+// [&#x27;p1.paid=20&#x27;]</code></pre></figure>
+<p><code>add</code>, <code>sub</code>, <code>mul</code> and <code>div</code> are solved for one missing argument, along a chain of rules if need be. For any other function the values of the slot's <code>enum</code> or range are tried.</p>
 <p>Explanations come back minimal and cheapest first. <code>cost=</code> on the abducible sets how reluctant the world is to assume it.</p>
 <h2 id="induction">Induction</h2>
 <p>From example circuits to a rule. What is equal in all examples stays constant; what differs becomes a variable; the same pair of differing values becomes the same variable, which recovers co-reference. Wire order in the examples does not matter.</p>

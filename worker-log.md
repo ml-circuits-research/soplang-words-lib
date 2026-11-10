@@ -531,3 +531,56 @@ Deviations and limits:
   texts for matching and equal for the checks. Say if quantities should follow.
 - Along the way: `apply()` returned working fields (`_fluents`, `_types`, ...) in its
   result; fixed.
+
+## G5 — abduction through calculations — done
+
+| Command | Result |
+| --- | --- |
+| `npm test` | sources: 155 pass, 0 fail, 0 skipped; built file: 155 pass, 0 fail, 0 skipped |
+| `npm run examples` | exit 0 |
+| `npm run test:browser` | all browser checks passed |
+| `node docs/selftest.mjs` | 14 passed, 0 failed |
+| `node tools/scan-loops.mjs src` | clean |
+| `git grep -i psys2 src/ \| wc -l` | 0 |
+| `node tools/build.mjs` | `docs/sopworld.mjs` 187.8 kB, gzip 53.4 kB |
+
+New tests: 5 in `test/abduce.test.mjs`. Run against the code before this task
+(`git stash; node --test test/abduce.test.mjs`) all 5 fail; now all 5 pass.
+
+What changed (`src/abduce.mjs` only): the calcs of every rule the backward search goes
+through are kept as equations over the renamed variables. When a search branch is
+through, they are solved to a fixpoint: forwards when all arguments are known (and the
+branch is dropped if the result contradicts a value already known), backwards for
+`add`, `sub`, `mul`, `div` when exactly one argument is unknown, in any place and for
+any number of arguments. A value of an abducible key may now stay a variable during
+the search; if no equation settles it, the slot's `enum` or range is tried, one branch
+per value. The keys of an assumed wire are settled the same way. Verification forwards
+is unchanged.
+
+The task's cases:
+1. One step: "change = paid − total", total 15, goal `change amount=5` gives
+   `p1.paid=20`; plus each place of each of the four functions (7 assertions).
+2. Chain: two rules, and two calcs in one rule: `(qty × 4 + 5) × 1.2 = 30` gives
+   `l1.qty=5`; a non-integer result (`qty=4.5`).
+3. An abducible numeric key without an enum: the two cases above have none.
+4. A function without an inverse (a host function `square`, and `abs`) with an `enum`
+   and with a `min`/`max`/`step` range: `area v=9` gives `side=3`; `distance v=2` gives
+   both `offset=-2` and `offset=2`.
+5. No solution: a goal the equations can meet only by breaking a deny returns `[]`, with
+   `stats().exhausted === false` and under 1,000 steps; a goal no rule produces and a
+   key that is not abducible return `[]`; with a budget of 3 steps the call returns an
+   empty list with a `budget` property.
+6. Extra: an assumed wire (`core.abducible of=discount`) gets its computed `amount=20`.
+
+Deviations and limits:
+
+- One unknown per calc. Two unknowns in one equation are not solved, unless one of them
+  has a domain to try.
+- Aggregates are not inverted.
+- A built-in name that the host replaced with its own function is not inverted (tested).
+- Results keep 12 significant digits, so a division that does not come out even can
+  fail the forward check (`x / 3 = 3.33333333333` is not 10 when multiplied back).
+- A side effect worth knowing: a rule pattern with a variable on an abducible key
+  (`?p patient condition=?c`) used to block the backward step; now the variable is
+  settled by a later pattern, a calc, or the slot's domain. The existing abduction
+  tests pass unchanged.

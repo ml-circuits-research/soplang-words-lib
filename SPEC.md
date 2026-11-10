@@ -457,9 +457,19 @@ are never revised this way.
    abducible); or by a new assumed wire (its type must be abducible); or it is reduced to
    the `when` patterns of a rule that has a template of the same shape (up to `maxDepth`
    rule steps). An assumption made for one goal is reused by the next.
+   The calcs of each rule gone through are kept as equations. When the search is
+   through they are solved for what is still unknown: forwards when every argument is
+   known, backwards for `add`, `sub`, `mul` and `div` when exactly one argument is
+   missing (in any place, over any number of arguments, along a chain of rules). So an
+   abducible key needs no `enum` when a chain of calcs determines its value: with
+   "change = paid − total", a total of 15 and the goal `change amount=5`, the answer is
+   `paid=20`. A value that nothing determines is tried from its slot's `enum` or
+   `min`/`max`/`step` range, which is also how a function without an inverse is
+   handled. The same holds for the keys of an assumed wire; a key still unknown at the
+   end is left out of it.
 2. Each candidate is verified forwards in a scratch transaction: it must be accepted by
-   the world and make the goal hold. This applies calcs, tests and denies, which the
-   backward step ignores.
+   the world and make the goal hold. This applies checks and denies, which the
+   backward step ignores, and the calcs once more, forwards.
 3. Only minimal candidates are returned, cheapest first:
    `[{ assume: [wires], fills: [{ id, key, value }], text, cost }]`. Both lists empty
    means the goal already holds. `adopt(world, explanation)` commits one.
@@ -675,6 +685,9 @@ write, unless the fork has written (and so left) before.
 - Search covers keys with a closed domain. Free keys become questions.
 - With negation, completion is incomplete in the sense of section 4.9.
 - Ranking is symbolic: usage counts, declared costs, or the caller's `rank` function.
+- Abduction inverts `add`, `sub`, `mul`, `div` only, one unknown per calc, not through
+  aggregates, and not a built-in name that the host has replaced. A division that does
+  not come out even (12 significant digits are kept) may fail the forward check.
 - Induction is exact generalisation: it skips examples of a different shape and uses
   negative examples to add comparisons, but does not handle noise or learn negation.
 - There is no built-in notion of context: a wire holds in the whole world. `asOf` costs
@@ -779,6 +792,8 @@ Since 0.4.0 (the version first published in this repository):
 - New: aggregates (3.6.2), `abs`, `round`, `mod`, `idiv`, `time_add`, `time_diff`,
   `weekday`, checked time kinds (3.6.1).
 - Rules with negation or a selector are re-evaluated only when a type they read changed.
+- Abduction goes through calcs (4.6): arithmetic is inverted, other functions are
+  tried over the slot's domain.
 - New: budgets on every call, `world.stats()`, and a `fork()` that shares the state
   instead of replaying the log (4.11). `ask`, `holds`, `retract`, `replace`, `next`,
   `complete`, `suggest`, `abduce`, `apply`, `act`, `asOf` and `trial` take

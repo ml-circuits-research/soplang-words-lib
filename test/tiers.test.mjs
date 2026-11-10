@@ -225,3 +225,53 @@ test('told(): the facts as stated; telling them again changes nothing, telling t
   const content = (x) => [...x.wires.values()].map((v) => `${v.id} ${v.type} ${Object.keys(v.attrs).sort().map((k) => `${k}=${v.attrs[k].join(',')}`).join(' ')}`).sort();
   assert.deepEqual(content(fresh), content(w));
 });
+
+test('undo, mark and rewind: taking statements back, and returning to an exact earlier world', () => {
+  const w = new World();
+  w.load(`
+    @k core.slot of=line key=qty kind=number max=10 soft=true
+    @l line qty=?q price=?p
+    @c core.calc out=?t fn=mul args=?q args=?p
+    @f line core.on=$l total=?t
+    @r core.rule when=$l with=$c then=$f
+  `);
+  assert.equal(w.undo().ok, true, 'the matrix was a statement too');
+  assert.equal(w.matrix.size, 0);
+  assert.deepEqual(w.undo().violations[0].kind, 'nothing-to-undo');
+  w.load(`
+    @k core.slot of=line key=qty kind=number max=10 soft=true
+    @l line qty=?q price=?p
+    @c core.calc out=?t fn=mul args=?q args=?p
+    @f line core.on=$l total=?t
+    @r core.rule when=$l with=$c then=$f
+  `);
+  w.tell('@l1 line qty=2 price=5');
+  const start = w.mark();
+  const snapshot = w.toSOP();
+  // a soft tell says what it put on record
+  const soft = w.tell('@l2 line qty=50 price=1');
+  assert.deepEqual([soft.ok, soft.issues.map((i) => [i.about, i.key, i.why])], [true, [[['l2'], 'qty', 'qty must be at most 10']]]);
+  w.revise('l1', 'qty', 4);
+  w.fill('l1', 'note', 'rush');
+  assert.equal(w.get('l1').attrs.total[0], '20');
+  // undo the fill; then the revision: the total follows
+  const u1 = w.undo();
+  assert.deepEqual([u1.ok, u1.undone, w.get('l1').attrs.note], [true, [{ op: 'fill', id: 'l1', key: 'note', value: 'rush' }], undefined]);
+  const u2 = w.undo();
+  assert.deepEqual([u2.undone[0].op, w.get('l1').attrs.qty, w.get('l1').attrs.total], ['set', ['2'], ['10']]);
+  assert.deepEqual(u2.changed.map((c) => `${c.key}:${c.from}->${c.to}`).sort(), ['qty:4->2', 'total:20->10']);
+  // undo two at once: the soft wire and its issue go, and the first line
+  const u3 = w.undo(2);
+  assert.deepEqual([u3.undone.map((e) => e.ids?.[0]), w.has('l1'), w.has('l2'), w.ofType('core.issue').length], [['l2', 'l1'], false, false, 0]);
+  // rewind: exactly the marked world, as often as needed, whatever was done in between
+  assert.equal(w.rewind(start).ok, true);
+  assert.equal(w.toSOP(), snapshot);
+  w.tell('@l3 line qty=1 price=1');
+  w.retract('l1');
+  const back = w.rewind(start);
+  assert.deepEqual([back.added, back.removed, w.toSOP()], [['l1'], ['l3'], snapshot]);
+  assert.ok(w.tell('@l4 line qty=3 price=3').ok, 'the world goes on from there');
+  assert.equal(w.get('l4').attrs.total[0], '9');
+  assert.equal(w.history().at(-2).op === 'rewind' || w.history().some((e) => e.op === 'rewind'), true);
+  assert.throws(() => w.rewind({}), /needs a mark/);
+});

@@ -1221,3 +1221,27 @@ the same rule set; a `missing` answer shows an empty `set`; a lookup has no `sup
   with `howto` 17; as an abduction `supported 17`, tier `guessed`; on an existing wire
   the explanation names it; plain `missing` when there is nothing to aim at or the key
   may not be assumed.
+
+## W8 — undo, mark and rewind; a soft change returns its issue — done
+
+`npm test`: 194 pass, 0 fail on sources and built file. Pilot unchanged (147/147,
+212/217, 231/232). `node tools/scan-loops.mjs src`: clean. `git grep -i psys2 src/ |
+wc -l`: 0. `npm run examples`: exit 0. `npm run test:browser`: all passed.
+
+- `world.undo(n = 1)`: takes back the last n statements (tell, fill, revise, an action's
+  patch; a patch is one), by rebuilding the world from the statements that remain.
+  Returns `{ ok, undone, removed, added, changed }`. Cost grows with the history.
+- `world.mark()` / `world.rewind(mark)`: a mark is a copy-on-write fork of the world;
+  rewind adopts it, so it is exact (also across retractions, which undo does not take
+  back), constant time, and reusable. This is the pair for a host that keeps its own
+  snapshots.
+- A change that records a soft violation returns it: `issues: [{ id, rule, about, key,
+  why }]` on the result of `tell`, `fill`, `applyPatch`, `revise` (this is the part of
+  G11 that round 4 added).
+- Test in `test/tiers.test.mjs`: undo of a fill, of a revision (the derived total
+  follows), of two statements at once (a soft wire and its issue go), of the matrix
+  itself, nothing left to undo; rewind to a mark twice, once after a retraction; the
+  world works on after a rewind.
+
+W1–W8 are done. Next: D1, then 0.6.0 (version bump and rebuild; no tags, by the user's
+decision of 20:20, see above).

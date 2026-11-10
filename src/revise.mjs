@@ -106,15 +106,73 @@ export const revision = {
       return gone.has(this.resolve(e.id)) || !this.has(e.id) ? null : e;
     });
     if (refused) return { ok: false, removed: [], violations: refused.violations };
+    const removed = this._adopt(next, 'retract');
+    return { ok: true, removed, violations: [] };
+  },
+
+  /** Take over the state of a world that was rebuilt from (part of) this one's log. Returns the wire ids that are gone. */
+  _adopt(next, op) {
     const before = new Set(this.wires.keys());
+    if (this._shared) this._shared.holders--;
     for (const k of ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'seq', '_c', '_logOf', '_fills', '_lastOrder']) this[k] = next[k];
-    this._shared = null;
+    this._shared = next._shared || null;
+    this._pc = null;
     this.stamp = ++this._clock;
     const removed = [...before].filter((x) => !this.wires.has(x));
-    this.events = [...this.events, { seq: this.seq, op: 'retract', ids: removed }];
+    this.events = [...this.events, { seq: this.seq, op, ids: removed }];
     this._emitted = this.events.length;
     for (const l of this.listeners) l([{ ...this.events.at(-1) }], this);
-    return { ok: true, removed, violations: [] };
+    return removed;
+  },
+
+  /**
+   * Take back the last statement, or the last n: what was told, filled, revised or done
+   * by an action, most recent first. A patch counts as one. The world is rebuilt from
+   * the statements that remain, so everything that followed from the undone ones goes
+   * too. Returns { ok, undone, removed, added, changed }: the statements taken back and
+   * what that did to the world. (A retraction is not a statement and is not undone by
+   * this; for an exact earlier state use mark and rewind.)
+   */
+  undo(n = 1, opts = {}) {
+    return this._guard(opts, () => {
+      const steps = [];
+      for (let i = this.log.length - 1; i >= 0 && steps.length < n;) { // bounded: the log, from the end
+        let j = i;
+        while (this.log[i].group !== undefined && j > 0 && this.log[j - 1].group === this.log[i].group) j--; // bounded: one patch
+        steps.push({ from: j, to: i });
+        i = j - 1;
+      }
+      if (!steps.length) return { ok: false, undone: [], removed: [], added: [], changed: [], violations: [{ kind: 'nothing-to-undo', why: 'nothing has been told' }] };
+      const keep = steps.at(-1).from;
+      const next = new this.constructor(this.options);
+      const refused = next._replay(this.log.slice(0, keep));
+      if (refused) return { ok: false, undone: [], removed: [], added: [], changed: [], violations: refused.violations };
+      const was = this.fork();
+      const undone = this.log.slice(keep).reverse().map((e) => (e.op === 'tell' ? { op: 'tell', ids: e.wires.map((w) => w.id) } : { op: e.op, id: e.id, key: e.key, value: e.value }));
+      this._adopt(next, 'undo');
+      const d = was.diff(this);
+      return { ok: true, undone, removed: d.removed.map((x) => x.id), added: d.added.map((x) => x.id), changed: d.changed, violations: [] };
+    }, (v) => ({ ok: false, undone: [], removed: [], added: [], changed: [], violations: [v] }));
+  },
+
+  /**
+   * A point to come back to. The mark holds the world as it is now (it shares the state,
+   * so it costs nothing until the world changes). world.rewind(mark) makes the world
+   * exactly that again, whatever happened in between, and may be used more than once.
+   */
+  mark() { return { world: this.fork(), seq: this.seq }; },
+
+  rewind(mark) {
+    if (!mark || !mark.world || typeof mark.world.fork !== 'function') throw new Error('sopworld: rewind needs a mark from world.mark()');
+    if (this._tx) throw new Error('sopworld: rewind inside a transaction');
+    const was = this.fork();
+    const copy = mark.world.fork();
+    const events = this.events;
+    this._adopt(copy, 'rewind');
+    this.events = [...events, { seq: this.seq, op: 'rewind', to: mark.seq }];
+    this._emitted = this.events.length;
+    const d = was.diff(this);
+    return { ok: true, removed: d.removed.map((x) => x.id), added: d.added.map((x) => x.id), changed: d.changed };
   },
 
   /**

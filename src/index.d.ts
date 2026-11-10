@@ -186,6 +186,12 @@ export class World {
   /** replace a told value (or several: revise(id, { key: value })) with everything that follows; lists what gave way */
   revise(id: string, key: string, value: string | number, options?: Budgeted): Result & { revised?: Cell[] };
   revise(id: string, values: Record<string, string | number>, options?: Budgeted): Result & { revised?: Cell[] };
+  /** take back the last n statements (a patch counts as one); the world is rebuilt from the rest */
+  undo(n?: number, options?: Budgeted): { ok: boolean; undone: object[]; removed: string[]; added: string[]; changed: Difference['changed']; violations: Violation[] };
+  /** a point to come back to; costs nothing until the world changes */
+  mark(): { world: World; seq: number };
+  /** make the world exactly what it was at the mark */
+  rewind(mark: { world: World; seq: number }): { ok: boolean; removed: string[]; added: string[]; changed: Difference['changed'] };
   /** the facts as they were stated, without what rules, defaults or searches added */
   told(): Wire[];
   /** how solid a value is: told, derived, forced, default, guessed, or a tier the matrix declares */

@@ -999,6 +999,23 @@ from it, the new one comes with everything that follows, and the result lists wh
 gave way under `revised` (`{ id, key, value, tier }`). If the new state is not allowed
 the revision is refused and nothing changes. A patch can carry the same as `sets`.
 
+**Taking a statement back.** `world.undo(n = 1)` withdraws the last statement, or the
+last n: something told, filled, revised or done by an action, most recent first; a
+patch counts as one. The world is rebuilt from the statements that remain, so what
+followed from the undone ones goes too. It returns `{ ok, undone, removed, added,
+changed }`: the statements taken back and what that did to the world. Its cost grows
+with the history (it replays it). A retraction is not a statement and is not undone.
+
+**An exact earlier world.** `const m = world.mark()` holds the world as it is (it
+shares the state: nothing is copied until the world changes). `world.rewind(m)` makes
+the world exactly that again, whatever happened in between (statements, retractions,
+actions), in constant time, and a mark can be used again. A host that keeps its own
+snapshots takes a mark with each, so its undo and the world's cannot drift apart.
+
+**A soft change says what it recorded.** The result of `tell`, `fill`, `applyPatch`
+and `revise` has `issues` when the change put a standing issue on record (3.4):
+`[{ id, rule, about, key, why }]`, so a host can say "noted, but ..." in the same turn.
+
 **The facts as stated.** `world.told()` returns each told wire with the values it was
 told with and the values told for it later, and nothing that a rule, a default or a
 search added (those are in `get(id)`, with their tier). Telling the result to a world
@@ -1175,6 +1192,8 @@ Since 0.4.0 (the version first published in this repository):
 - New: `core.on=` templates (3.3); the stratification check knows which keys a template
   adds, so a rule may aggregate over a type and fill a key on a wire of that type.
 - New: `core.absent=` in patterns (3.10).
+- New (0.6): `world.undo(n)`, `world.mark()` / `world.rewind(mark)`; `issues` in the result
+  of a change that recorded a soft violation (4.12).
 - New (0.6): abduction through `query` (`howto` on a `missing` answer, `mode: 'abduce'`);
   abduction goes through `core.on=` templates (4.10).
 - New (0.6): `world.revise()`; `world.told()`; a wire stated again with nothing new is

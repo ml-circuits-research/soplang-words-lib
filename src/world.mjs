@@ -551,7 +551,11 @@ export class World {
 
   /** What the caller gets of a result: the same lists without the working fields. */
   _bare(res) {
-    return { ok: res.ok, added: res.added, derived: res.derived, filled: res.filled, merged: res.merged, removed: res.removed, violations: res.violations };
+    const out = { ok: res.ok, added: res.added, derived: res.derived, filled: res.filled, merged: res.merged, removed: res.removed, violations: res.violations };
+    // a change that was accepted with something wrong on record (a soft constraint) says so
+    const issues = res.derived.map((id) => this.wires.get(id)).filter((w) => w && w.type === 'core.issue');
+    if (issues.length) out.issues = issues.map((i) => this._issueOf(i));
+    return out;
   }
 
   _finish(mark, res, dry, entry) {
@@ -1387,6 +1391,11 @@ export class World {
       return bindings[n] === undefined ? m : str(bindings[n]) + name.slice(n.length);
     });
     return { text, bindings };
+  }
+
+  /** A standing issue as plain data. */
+  _issueOf(i) {
+    return { id: i.id, rule: (i.attrs.rule || [])[0]?.slice(1), about: (i.attrs.about || []).map((v) => v.slice(1)), ...(i.attrs.key ? { key: i.attrs.key[0] } : {}), why: i.attrs.why ? str(i.attrs.why[0]) : undefined };
   }
 
   _validate(res) {

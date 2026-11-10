@@ -90,7 +90,7 @@ export class World {
     if (!decl && !slots) return null;
     const one = (attrs) => Object.fromEntries(Object.entries(attrs).map(([k, v]) => [k, v.length === 1 ? v[0] : [...v]]));
     const keys = {};
-    for (const [k, s] of slots || []) keys[k] = { ...one(s.attrs), of: s.of, key: k, required: s.required, many: s.many, inherited: s.of !== type };
+    for (const [k, s] of slots || []) keys[k] = { ...one(s.attrs), of: s.of, key: k, required: s.required, many: s.many, inherited: s.of !== type, ...(s.combined ? { combined: s.combined } : {}) };
     // kinds the library does not check accept any literal; listing them lets a host see a typo
     const unknownKinds = [...(slots || [])].flatMap(([k, s]) => s.kinds.filter((kind) => !knownKind(kind)).map((kind) => ({ key: k, kind })));
     return { ...(decl ? one(decl.attrs) : {}), type, extends: c.parent.get(type) || null, lineage: [...c.lineage(type)], closed: c.closed.has(type), keys, unknownKinds };

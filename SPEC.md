@@ -89,6 +89,22 @@ foreign schema wires a `core.schema.map` declares. Everything else is a fact.
      ask="Which room?"    # the natural-language question of this key
 ```
 
+**One key, declared twice.** Two matrices may both declare the same key of the same
+type (two modules, a schema and a refinement of it). Equal declarations are one
+declaration. Different ones are refused with a `schema` violation that names both
+wires, unless one of them says how they combine:
+
+- `combine=intersect`: what both allow. Enums, kinds and reference types intersect, the
+  tighter `min` and `max` hold, `required` and `id` hold if either says so, `many` only
+  if both do. A combination that allows no value is itself refused.
+- `combine=override`: that declaration replaces the other.
+
+`world.schema(type).keys[key].combined` records `{ how, from: [wire ids] }`. A subtype
+that declares an inherited key again is not a conflict: the nearest declaration holds
+(3.8). The same rule covers a type declared twice with different parents, two
+`core.schema.map` wires for one wire type, and a module named twice with different
+imports.
+
 ### 3.2 `core.type`
 
 `@t core.type of=meeting closed=true`: keys without a slot are refused (keys in the
@@ -839,6 +855,9 @@ Since 0.4.0 (the version first published in this repository):
 - New: `core.on=` templates (3.3); the stratification check knows which keys a template
   adds, so a rule may aggregate over a type and fill a key on a wire of that type.
 - New: `core.absent=` in patterns (3.10).
+- **Changed:** a second, different declaration of the same key of the same type used
+  to replace the first silently. It is now refused unless one of the two carries
+  `combine=intersect` or `combine=override` (3.1).
 - **Fixed:** a completion that is only valid as a whole was reported `unsat`, its keys
   dead (values were tried one at a time). New: `world.check(patch)`,
   `world.applyPatch(patch)` (4.9.1); `apply()` is now atomic; `unsat` is reported only

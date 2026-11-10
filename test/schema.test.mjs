@@ -274,3 +274,38 @@ test('numbers: declaring the kind later re-indexes what is there; subtypes', () 
   f.load('@t4 tank level=010');
   assert.deepEqual([f.ask('?x tank level=10').length, w.ask('?x tank level=10').length], [3, 2]);
 });
+
+test('composition: two different declarations of one key are a conflict unless one says how they combine', () => {
+  const a = '@k1 core.slot of=t key=color enum=red enum=blue';
+  const refused = new World().tell(`${a}\n@k2 core.slot of=t key=color enum=blue enum=green`);
+  assert.equal(refused.ok, false);
+  assert.match(refused.violations[0].why, /k2: t\.color is already declared by k1 with different content/);
+  // the same declaration twice is one declaration
+  const same = new World();
+  same.load(`${a}\n@k1b core.slot of=t key=color enum=red enum=blue`);
+  assert.deepEqual([same.tell('@x t color=red').ok, same.tell('@y t color=green').ok], [true, false]);
+  // intersect: what both allow
+  const both = new World();
+  both.load(`${a}\n@k2 core.slot of=t key=color enum=blue enum=green combine=intersect\n@n1 core.slot of=t key=size kind=number min=0 max=10\n@n2 core.slot of=t key=size kind=number min=5 max=20 combine=intersect`);
+  assert.deepEqual(['red', 'blue', 'green'].map((v) => both.tell(`@c_${v} t color=${v}`).ok), [false, true, false]);
+  assert.deepEqual([3, 7, 12].map((v) => both.tell(`@s_${v} t size=${v}`).ok), [false, true, false]);
+  assert.deepEqual(both.schema('t').keys.color.combined, { how: 'intersect', from: ['k1', 'k2'] });
+  // an empty intersection is itself refused
+  assert.match(new World().tell(`${a}\n@k2 core.slot of=t key=color enum=green combine=intersect`).violations[0].why, /allows no value/);
+  // override: an explicit replacement, recorded
+  const over = new World();
+  over.load(`${a}\n@k2 core.slot of=t key=color enum=green combine=override`);
+  assert.deepEqual([over.tell('@x t color=red').ok, over.tell('@y t color=green').ok], [false, true]);
+  assert.deepEqual(over.schema('t').keys.color.combined, { how: 'override', from: ['k1', 'k2'] });
+  // a subtype that declares an inherited key again is the nearest declaration, as before
+  const sub = new World();
+  sub.load(`${a}\n@ty core.type of=u extends=t\n@k3 core.slot of=u key=color enum=green`);
+  assert.deepEqual([sub.tell('@x u color=green').ok, sub.tell('@y t color=green').ok], [true, false]);
+  // loaded as two modules, the same rule applies
+  const lib = new World({ library: { one: a, two: '@k2 core.slot of=t key=color enum=green' } });
+  assert.ok(lib.use('one').ok);
+  assert.equal(lib.use('two').ok, false);
+  // types and schema maps
+  assert.match(new World().tell('@a core.type of=car extends=vehicle\n@b core.type of=car extends=toy').violations[0].why, /already declared by a with another parent/);
+  assert.match(new World().tell('@m1 core.schema.map from=field key=name\n@m2 core.schema.map from=field key=label').violations[0].why, /already mapped differently by m1/);
+});

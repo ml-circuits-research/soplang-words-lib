@@ -1113,14 +1113,62 @@ const __matrix = (() => {
       if (w.type === 'core.schema.map') {
         const m = readMap(w);
         if (!m.from || !['slot', 'type', 'module'].includes(m.as)) c.errors.push(`${w.id}: core.schema.map needs from= and as=slot|type|module`);
-        else c.maps.set(m.from, m);
+        else {
+          const old = c.maps.get(m.from);
+          if (old && JSON.stringify([old.as, old.fields]) !== JSON.stringify([m.as, m.fields])) c.errors.push(`${w.id}: wires of type ${m.from} are already mapped differently by ${old.id}`);
+          else c.maps.set(m.from, { ...m, id: w.id });
+        }
       } else if (w.type === 'core.namespace') {
         const prefix = first(w, 'prefix');
         if (prefix && flag(w, 'open') && !c.openPrefixes.includes(prefix)) c.openPrefixes.push(prefix);
       }
     }
     const own = new Map(); // type -> Map(key -> slot) declared on that type itself
-    const declare = (of, key, s) => (own.get(of) || own.set(of, new Map()).get(of)).set(key, s);
+    // Two declarations of the same key of the same type: equal ones are one declaration;
+    // different ones are a conflict unless one says how they combine (combine=intersect|override).
+    const content = (s) => JSON.stringify([s.required, s.many, s.identity, s.prefix, s.refs, s.kinds, s.enum, s.default, s.ask, s.min, s.max, s.step]);
+    const both = (a, b) => (a && b ? a.filter((x) => b.includes(x)) : a || b);
+    const declare = (of, key, s) => {
+      const mine = own.get(of) || own.set(of, new Map()).get(of);
+      const old = mine.get(key);
+      if (!old || content(old) === content(s)) { if (!old) mine.set(key, s); return; }
+      const how = s.combine || old.combine;
+      const from = [...(old.combined?.from || [old.id]), s.id];
+      if (how === 'override') {
+        const winner = s.combine === 'override' ? s : old;
+        mine.set(key, { ...winner, combined: { how, from } });
+      } else if (how === 'intersect') {
+        const m = { ...old, id: s.id, attrs: { ...old.attrs, ...s.attrs }, combined: { how, from } };
+        m.enum = both(old.enum, s.enum);
+        m.kinds = old.kinds.length && s.kinds.length ? old.kinds.filter((x) => s.kinds.includes(x)) : [...old.kinds, ...s.kinds];
+        m.refs = old.refs.length && s.refs.length ? old.refs.filter((x) => s.refs.includes(x)) : [...old.refs, ...s.refs];
+        m.type = m.refs[0];
+        m.min = old.min && s.min ? (old.min.n >= s.min.n ? old.min : s.min) : old.min || s.min;
+        m.max = old.max && s.max ? (old.max.n <= s.max.n ? old.max : s.max) : old.max || s.max;
+        m.step = old.step || s.step;
+        m.required = old.required || s.required;
+        m.identity = old.identity || s.identity;
+        m.many = old.many && s.many;
+        m.default = old.default ?? s.default;
+        m.ask = old.ask ?? s.ask;
+        const empty = (m.enum && !m.enum.length) || (m.min && m.max && m.min.n > m.max.n)
+          || (old.kinds.length && s.kinds.length && !m.kinds.length) || (old.refs.length && s.refs.length && !m.refs.length);
+        if (empty) c.errors.push(`${s.id}: ${of}.${key} combined with ${old.id} allows no value`);
+        else if (m.default !== undefined && m.enum && !m.enum.includes(m.default)) c.errors.push(`${s.id}: the default of ${of}.${key} is not among the values left after combining with ${old.id}`);
+        range(m);
+        mine.set(key, m);
+      } else {
+        c.errors.push(`${s.id}: ${of}.${key} is already declared by ${old.id} with different content (say combine=intersect or combine=override on one of them)`);
+      }
+    };
+    // min, max and step together make the key enumerable
+    const range = (s) => {
+      s.range = null;
+      if (s.min && s.max && s.step && s.step.n > 0 && s.min.unit === s.max.unit) {
+        const n = Math.floor((s.max.n - s.min.n) / s.step.n + 1e-9) + 1;
+        if (n > 0 && n <= RANGE_CAP) s.range = Array.from({ length: n }, (_, i) => String(Number((s.min.n + i * s.step.n).toPrecision(12))) + s.min.unit);
+      }
+    };
     for (const w of world.matrix.values()) {
       const of = first(w, 'of');
       const map = c.maps.get(w.type);
@@ -1143,15 +1191,11 @@ const __matrix = (() => {
           type: refs[0], refs, kinds, enum: en.length ? en : null, default: get('default'), ask: get('ask'),
           min: quantity(get('min') ?? ''), max: quantity(get('max') ?? ''), step: quantity(get('step') ?? ''), range: null,
           attrs: w.attrs, // everything the wire says, used or not
+          combine: get('combine'),
         };
+        if (s.combine && !['intersect', 'override'].includes(s.combine)) c.errors.push(`${w.id}: combine must be intersect or override`);
         for (const k of ['min', 'max', 'step']) if (get(k) !== undefined && !s[k]) c.errors.push(`${w.id}: ${k} must be a number`);
-        // min, max and step together make the key enumerable
-        if (s.min && s.max && s.step && s.step.n > 0 && s.min.unit === s.max.unit) {
-          const n = Math.floor((s.max.n - s.min.n) / s.step.n + 1e-9) + 1;
-          if (n > 0 && n <= RANGE_CAP) {
-            s.range = Array.from({ length: n }, (_, i) => String(Number((s.min.n + i * s.step.n).toPrecision(12))) + s.min.unit);
-          }
-        }
+        range(s);
         declare(type, key, s);
       } else if (w.type === 'core.type' || map?.as === 'type') {
         // core.type of=T names its type with of=; without of= the wire id is the type name
@@ -1161,6 +1205,11 @@ const __matrix = (() => {
         const ext = (f ? field(f.extends, w) : first(w, 'extends')) || (f && f.root && f.root !== name ? f.root : undefined);
         const closed = f ? field(f.closed, w) === 'true' : flag(w, 'closed');
         if (!name) { c.errors.push(`${w.id}: the type has no name`); continue; }
+        const before = c.types.get(name);
+        if (before && before !== w && c.parent.get(name) !== (ext && ext !== name ? ext : undefined)) {
+          c.errors.push(`${w.id}: type ${name} is already declared by ${before.id} with another parent`);
+          continue;
+        }
         c.types.set(name, w);
         if (closed) c.closed.add(name);
         if (f ? field(f.complete, w) === 'true' : flag(w, 'complete')) c.complete.add(name);
@@ -1168,7 +1217,11 @@ const __matrix = (() => {
       } else if (map?.as === 'module') {
         const name = field(map.fields.name || 'id', w);
         if (!name) c.errors.push(`${w.id}: the module has no name`);
-        else c.modules.set(name, { wire: w, imports: field(map.fields.imports, w, true) });
+        else {
+          const imports = field(map.fields.imports, w, true), old = c.modules.get(name);
+          if (old && old.wire !== w && JSON.stringify(old.imports) !== JSON.stringify(imports)) c.errors.push(`${w.id}: module ${name} is already declared by ${old.wire.id} with other imports`);
+          else c.modules.set(name, { wire: w, imports });
+        }
       } else if (w.type === 'core.sequence') {
         c.seqKey = first(w, 'key') || null;
       } else if (w.type === 'core.fluent') {
@@ -2891,7 +2944,7 @@ const __world = (() => {
       if (!decl && !slots) return null;
       const one = (attrs) => Object.fromEntries(Object.entries(attrs).map(([k, v]) => [k, v.length === 1 ? v[0] : [...v]]));
       const keys = {};
-      for (const [k, s] of slots || []) keys[k] = { ...one(s.attrs), of: s.of, key: k, required: s.required, many: s.many, inherited: s.of !== type };
+      for (const [k, s] of slots || []) keys[k] = { ...one(s.attrs), of: s.of, key: k, required: s.required, many: s.many, inherited: s.of !== type, ...(s.combined ? { combined: s.combined } : {}) };
       // kinds the library does not check accept any literal; listing them lets a host see a typo
       const unknownKinds = [...(slots || [])].flatMap(([k, s]) => s.kinds.filter((kind) => !knownKind(kind)).map((kind) => ({ key: k, kind })));
       return { ...(decl ? one(decl.attrs) : {}), type, extends: c.parent.get(type) || null, lineage: [...c.lineage(type)], closed: c.closed.has(type), keys, unknownKinds };

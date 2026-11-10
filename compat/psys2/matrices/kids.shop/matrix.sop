@@ -4,7 +4,7 @@
 @shop.seq core.sequence key=core.seq
 
 # ---- prices: one wire per item; a price stated in the dialog is a new statement about it
-@shop.k.item core.slot of=kids.shop.price key=item kind=atom id=true
+@shop.k.item core.slot of=kids.shop.price key=item kind=atom id=true combine=intersect
 @shop.f.cost core.fluent of=kids.shop.price key=cost
 
 # ---- a basket is a wire that names an item and a count (a question about a state, or a
@@ -60,7 +60,7 @@
 @shop.e.out core.effect on=kids.shop.expense fluent=$shop.f.money op=sub amount=count where.core.in=core.in
 @shop.e.buy core.effect on=shop.spend fluent=$shop.f.money op=sub amount=amount where.core.in=core.in
 # an item bought without a count counts once (a default: a later statement replaces it)
-@shop.k.count core.slot of=kids.shop.purchase key=count kind=number required=true default=1
+@shop.k.count core.slot of=kids.shop.purchase key=count kind=number required=true default=1 combine=intersect
 # what was paid may be assumed, to ask "what must I pay to get this change?"
 @shop.ab.paid core.abducible of=kids.shop.change key=paid
 # a purchase spends what its basket costs, at the place in the sequence where it was made

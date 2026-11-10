@@ -738,3 +738,30 @@ the matrix turns them off for every key), not per key as the task words it. Per 
 would need to follow what each rule can reach; the global test is the safe side and
 costs pruning only in matrices that mix negation with large search problems. The
 scheduling benchmark (no negation) is unchanged: cdcl 18 ms, 1 oracle call.
+
+## H2 — two declarations of one slot are a composition conflict — done
+
+| Command | Result |
+| --- | --- |
+| `npm test` | sources: 167 pass, 0 fail; built file: 167 pass, 0 fail |
+| `node compat/psys2/run.mjs` | kids.shop 147/147, kids.arith 207/217, kids.tasks 231/232 |
+| `npm run examples`, `node docs/selftest.mjs` | exit 0; 14 passed, 0 failed |
+| `git grep -i psys2 src/ \| wc -l` | 0 |
+
+The repro (`color` declared as red/blue and as blue/green) is now refused: "k2: t.color
+is already declared by k1 with different content (say combine=intersect or
+combine=override on one of them)". Rules as in the task (SPEC 3.1): equal declarations
+are shared; `combine=intersect` (enums, kinds, reference types, numeric bounds; an empty
+result is refused); `combine=override` (recorded); a subtype redeclaring an inherited
+key is unchanged. Also refused: one type with two parents, two different
+`core.schema.map` wires for one wire type, one module name with different imports.
+`world.schema(type).keys[key].combined` shows `{ how, from }`. One test with 14
+assertions in `test/schema.test.mjs`, including the same conflict through two library
+modules.
+
+Findings in `compat/psys2`: the legends have no duplicate declarations among themselves
+(the schema test still loads them with 0 violations). The duplicates were mine: the
+three pilot matrices declare eight keys that the legends already declare, to add
+`id=true`, `min=0`, an enum and a default. Before this task they replaced the legend's
+declaration silently; they now say `combine=intersect`, which is what they are
+(refinements), and the pilot numbers are unchanged.

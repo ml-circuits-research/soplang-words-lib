@@ -3,9 +3,9 @@
 # which requests exist and what each one needs.
 
 @tasks.seq core.sequence key=core.seq
-@tasks.k.list core.slot of=kids.tasks.entry key=list kind=string id=true
-@tasks.k.text core.slot of=kids.tasks.entry key=text kind=string id=true
-@tasks.k.progress core.slot of=kids.tasks.entry key=progress kind=atom enum=todo enum=done default=todo
+@tasks.k.list core.slot of=kids.tasks.entry key=list kind=string id=true combine=intersect
+@tasks.k.text core.slot of=kids.tasks.entry key=text kind=string id=true combine=intersect
+@tasks.k.progress core.slot of=kids.tasks.entry key=progress kind=atom enum=todo enum=done default=todo combine=intersect
 # progress is a state: saying it again is a new statement, not a contradiction
 @tasks.f.progress core.fluent of=kids.tasks.entry key=progress
 

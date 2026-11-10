@@ -510,7 +510,7 @@ What I did fix on the way, each measured with `--cpu-prof`:
 - a budget is created without object spreads; firing records keep ids, not closures;
   the log has an index by wire id, so `replace` no longer scans the log.
 
-So: in the reviewer's harness the cold figure for replace is now 16–21 ms (it runs after
+So: in the benchmark as it now stands the cold figure for replace is 16–21 ms (it runs after
 ten warm repetitions of the tells), under 30; in the old harness it is 43 ms median
 against 32 for S0, which is not "at or under". I have put this as Q11 rather than keep
 tuning a cold-start number without knowing whether that is what matters to a host.

@@ -666,3 +666,29 @@ Demonstrations (`node compat/psys2/demo.mjs`, output copied):
 4. Explain: the cost of a purchase is traced through `shop.r.cost` and `shop.r.part3`
    down to the told purchase wire.
 5. Abduction: "I got 5 lei back for a book. What did I pay?" gives `c.paid=17`.
+
+## G9 — documentation — done
+
+| Command | Result |
+| --- | --- |
+| `npm test` | sources: 162 pass, 0 fail; built file: 162 pass, 0 fail |
+| `npm run docs` | pages rebuilt, `docs/matrix.html` added |
+| `npm run test:browser` | all browser checks passed (the new page is in the list) |
+| `git grep -i psys2 src/ \| wc -l` | 0 |
+
+- SPEC was updated with each task (3.8–3.12, 4.6, 4.10, 4.11, 9 Changes); nothing left
+  to add there for G1–G8.
+- New page `docs/matrix.html` ("More of the matrix"): type hierarchy and kinds, state
+  over time and as-of, aggregates, `core.on=` and `core.absent=`, queries with a status
+  and actions, budgets and forks. Neutral examples (vehicles, an account, orders, a
+  warehouse). Every snippet and every quoted result was run first (a throwaway script;
+  the same worlds are in `examples/ledger.mjs`, `orders.mjs`, `warehouse.mjs`).
+- New `docs/integration.md`: the recipe in seven steps (schema, facts, questions,
+  operations, sessions, limits, a runner over one's own tests), then `compat/psys2/` as
+  the worked example with its results. Its two code samples (the schema map and the
+  `quote` rule) were run: the map loads `class`/`field` wires with `ok: true`; the quote
+  answers 9, `missing` for an unknown item, and leaves 0 `quote` wires behind.
+- README links both.
+
+Not done: the older HTML pages (Concepts, API, roadmap) still say "seven matrix wire
+types" and "version 0.4" limits in places; the new page and SPEC are the current word.

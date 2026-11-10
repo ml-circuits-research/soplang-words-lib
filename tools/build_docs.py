@@ -2,7 +2,7 @@
 # Only needed when the text of the pages changes; the library build is tools/build.mjs.
 import html, pathlib, textwrap
 OUT = pathlib.Path(__file__).resolve().parent.parent / 'docs'
-PAGES = [('index.html', 'Overview'), ('concepts.html', 'Concepts'), ('reasoning.html', 'Reasoning'),
+PAGES = [('index.html', 'Overview'), ('concepts.html', 'Concepts'), ('matrix.html', 'More of the matrix'), ('reasoning.html', 'Reasoning'),
          ('usecases.html', 'Use cases'), ('solvers.html', 'Solvers'), ('api.html', 'API'),
          ('playground.html', 'Playground'), ('roadmap.html', 'Analysis and roadmap')]
 VERSION = '0.4'
@@ -227,6 +227,8 @@ w.tell('@a9 acceleration of=$b1 magnitude=7').ok     // false: conflicts with th
 <h2>Where to go next</h2>
 <div class="cards">
  <a class="card" href="concepts.html"><strong>Concepts</strong><span>Wires, the seven matrix wire types, what a transaction does.</span></a>
+ <a class="card" href="matrix.html"><strong>More of the matrix</strong><span>Type hierarchy, kinds, state over time, sums over groups, questions with a status, actions, budgets.</span></a>
+ <a class="card" href="integration.md"><strong>Integration recipe</strong><span>How a system with its own schema, questions and operations sits on the library.</span></a>
  <a class="card" href="reasoning.html"><strong>Reasoning</strong><span>Deduction, completion, abduction, induction, revision, each on a small world.</span></a>
  <a class="card" href="usecases.html"><strong>Use cases</strong><span>Chat completion, digital twin, procedures, diagnosis, composing knowledge.</span></a>
  <a class="card" href="solvers.html"><strong>Solvers</strong><span>The search strategy is pluggable: two built in, clingo and SAT from outside.</span></a>
@@ -337,6 +339,126 @@ violation: { kind, why, rule, wires, support }     support = the told wires the 
 <p>Every derived wire and every filled value records the rule (<code>via</code>) and the wires it came from (<code>from</code>). The engine also records each rule firing with what it read and what it wrote. That record is what makes retraction and revision incremental.</p>
 <h3>Termination</h3>
 <p>A derived wire has a depth: one more than the deepest wire it came from. A change that would exceed <code>maxDepth</code> (12 by default) is refused, which stops rules that feed themselves.</p>
+''')
+
+# ----------------------------------------------------------------------------- more of the matrix
+P['matrix.html'] = ('More of the matrix', 'Types that inherit, values with a kind, state that changes over time, sums over groups, questions with a status, actions, and limits on work. Each example ran as shown.', f'''
+<h2 id="types">Types and kinds</h2>
+<p>A type may extend another. A pattern, a slot, a deny or a query written for the parent applies to every descendant. A slot can say what kind of literal it holds; under a key declared <code>integer</code> or <code>number</code>, <code>2</code> and <code>2.0</code> are one value.</p>
+{code("""
+@t1 core.type of=vehicle
+@t2 core.type of=truck extends=vehicle
+@k  core.slot of=vehicle key=seats kind=number
+?v vehicle seats=?n
+@c core.check fn=gt args=?n args=8
+@d core.deny when=$v if=$c why="too many seats"
+""")}
+{code("""
+w.load('@a truck seats=2.0');
+w.ask('?x vehicle').map(r => r.x)        // ['a']       a truck is a vehicle
+w.ask('?x vehicle seats=2').length       // 1           2 and 2.0 are the same number
+w.tell('@b truck seats=12').violations[0].why     // 'too many seats'
+w.tell('@c truck seats=many').violations[0].kind  // 'domain'
+""")}
+<p>Kinds: <code>integer</code>, <code>number</code>, <code>boolean</code>, <code>string</code>, <code>atom</code>, <code>quantity.&lt;name&gt;</code>, <code>time.&lt;name&gt;</code>, <code>any</code>. <code>type=</code> on a slot names the type a reference must point to. A system that already has schema wires in its own notation loads them unchanged through a <code>core.schema.map</code> wire; see the <a href="integration.md">integration recipe</a>.</p>
+
+<h2 id="state">State over time</h2>
+<p>A key can be declared a state (<code>core.fluent</code>) that events change (<code>core.effect</code>). The wire always shows the current value: the last statement, then the effects of later events, in sequence order.</p>
+{code("""
+@k2 core.slot of=account key=balance kind=number min=0
+@f_balance core.fluent of=account key=balance
+@e_in  core.effect on=deposit    fluent=$f_balance op=add amount=amount where.name=account
+@e_out core.effect on=withdrawal fluent=$f_balance op=sub amount=amount where.name=account
+""")}
+{code("""
+w.load('@acc account name=ana balance=100');
+w.tell('@d1 deposit account=ana amount=50');
+w.tell('@w1 withdrawal account=ana amount=120');
+w.get('acc').attrs.balance                                   // ['30']
+w.tell('@w2 withdrawal account=ana amount=40').violations[0].why
+// 'w2 would take balance of acc below 0 (from 30 to -10)'
+w.asOf(w.seqOf('d1'), x => x.get('acc').attrs.balance[0])   // '150'  the world as it was then
+w.retract('w1');  w.get('acc').attrs.balance                // ['150'] undo recomputes the state
+""")}
+<p><code>core.sequence key=&lt;key&gt;</code> names a key that carries the place of a wire in the sequence; without it the order of arrival is used. The checks <code>before</code> and <code>after</code> compare two wires, and a pattern with <code>core.select=latest</code> matches only the latest wire that fits.</p>
+
+<h2 id="aggregates">Sums over a group</h2>
+<p>A calc with <code>over=</code> ranges over every match of a pattern: <code>count</code>, <code>sum</code>, <code>min</code>, <code>max</code>, <code>avg</code>, <code>argmax</code>, <code>argmin</code>, <code>collect</code>. The result is kept up to date as wires come and go, one group at a time.</p>
+{code("""
+?o order customer=?c
+?l line of=$o item=?item amount=?a
+@c_n     core.calc out=?n     fn=count  over=$l
+@c_total core.calc out=?total fn=sum    over=$l args=?a
+@c_which core.calc out=?which fn=argmax over=$l args=?a pick=?item
+@s summary of=$o lines=?n total=?total largest_item=?which
+@summarise core.rule when=$o with=$c_n with=$c_total with=$c_which then=$s
+""")}
+{code("""
+w.load('@o1 order customer=ana  @l1 line of=$o1 item=pen amount=3  @l2 line of=$o1 item=book amount=12');
+// summary: lines=2 total=15 largest_item=book
+w.retract('l2');     // summary: total=3
+""")}
+
+<h2 id="shape">Two helpers for patterns and templates</h2>
+<p>A template with <code>core.on=$pattern</code> adds its keys to the wire that pattern matched, instead of describing a wire of its own. A pattern with <code>core.absent=&lt;key&gt;</code> matches only a wire without that key; what was concluded from it is withdrawn when the key is filled.</p>
+{code("""
+?l line qty=?q price=?p
+@c core.calc out=?t fn=mul args=?q args=?p
+@f line core.on=$l total=?t                 # the total goes on the line itself
+@r core.rule when=$l with=$c then=$f
+
+?t task core.absent=owner
+@fl flag for=$t kind=unassigned
+@r2 core.rule when=$t then=$fl
+""")}
+{code("""
+w.load('@a line qty=2 price=5  @t1 task title=x');
+w.get('a').attrs.total        // ['10']
+w.ofType('flag').length       // 1
+w.fill('t1', 'owner', 'bob');
+w.ofType('flag').length       // 0
+""")}
+
+<h2 id="queries">Questions with a status, and actions</h2>
+<p><code>world.query</code> answers "what is the value of this key of the thing that meets these constraints" and says how sure it is. It changes nothing.</p>
+{code("""
+w.query({{ type: 'item', seek: 'stock', where: {{ name: 'bolt' }} }})
+// {{ status: 'supported', value: '40', from: ['i1'], ... }}
+w.query({{ type: 'item', seek: 'stock', where: {{ name: 'gear' }} }}).missing
+// [{{ id: 'i3', type: 'item', key: 'stock', ask: 'How many are in stock?' }}]
+""")}
+{table(['Status', 'Meaning'], [
+ ['<code>supported</code>', 'One value (or a list, a count, a yes), with the wires and rules it came from'],
+ ['<code>conflicting</code>', 'Several different values, listed as alternatives'],
+ ['<code>missing</code>', 'No value; the open key and the question to ask for it'],
+ ['<code>refused</code>', 'The thing asked about cannot exist; the violations say why'],
+ ['<code>no</code> / <code>unknown</code>', 'For <code>mode=exists</code>: <code>no</code> when the type is declared complete, else <code>unknown</code>'],
+ ['<code>budget</code>', 'The call ran out of steps'],
+])}
+<p>When no wire matches, the world supposes one with the given keys, lets the rules run, reads the value and undoes everything. That is how a rule answers "what would 3 of these cost?" without anything being recorded. A <code>core.producer</code> names a host function that can compute a key; a <code>core.action</code> names one that changes the world inside one transaction, with its required arguments and the question to ask for each.</p>
+{code("""
+@a_take core.action name=take fn=take required=item required=count ask.count="How many do you take?"
+""")}
+{code("""
+w.act({{ action: 'take', args: {{ item: 'bolt', count: 10 }} }}).value     // '30'
+w.act({{ action: 'take', args: {{ item: 'bolt' }} }}).missing
+// [{{ action: 'take', key: 'count', ask: 'How many do you take?' }}]
+w.act({{ action: 'take', args: {{ item: 'bolt', count: 50 }} }}).status   // 'refused', nothing changed
+""")}
+
+<h2 id="budget">Limits on work, and cheap copies</h2>
+<p>Every call runs under a budget of steps. A call that runs out stops, undoes what it did and says so. A fork shares the state of the original until one of the two changes, so it costs the same for any size of world.</p>
+{code("""
+// 200 wires, a three-way join: 8,000,000 candidates
+const rows = w.ask('?a node\\n?b node\\n?c node', {{ budget: {{ steps: 20000 }} }});
+rows.length    // 0
+rows.budget    // {{ kind: 'budget', site: 'match', steps: 20001, why: 'the budget of 20000 steps ran out in match' }}
+w.stats().sites.match   // 20001
+
+const f = w.fork();           // nothing is copied here
+f.tell('@extra node v=x');    // the fork copies what it needs at its first change
+w.has('extra')                // false
+""")}
 ''')
 
 # ----------------------------------------------------------------------------- reasoning

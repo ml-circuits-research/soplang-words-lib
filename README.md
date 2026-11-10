@@ -10,6 +10,9 @@ what it cannot decide, and refuses what is not allowed.
   revisable defaults, incremental retraction, composition of matrices, persistence, events.
 - Documentation, playground and browser self-test: [docs/index.html](./docs/index.html).
   Specification: [SPEC.md](./SPEC.md).
+- Type hierarchy, kinds, state over time, aggregates, questions with a status, actions,
+  step budgets and copy-on-write forks: [docs/matrix.html](./docs/matrix.html).
+- Putting an existing system on the library: [docs/integration.md](./docs/integration.md).
 
 ## Use
 

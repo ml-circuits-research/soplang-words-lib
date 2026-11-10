@@ -92,7 +92,7 @@ try {
   }
   // 3. every page loads, and every local link resolves
   {
-    const pages = ['index.html', 'concepts.html', 'reasoning.html', 'usecases.html', 'solvers.html', 'api.html', 'playground.html', 'roadmap.html', 'selftest.html'];
+    const pages = ['index.html', 'concepts.html', 'matrix.html', 'reasoning.html', 'usecases.html', 'solvers.html', 'api.html', 'playground.html', 'roadmap.html', 'selftest.html'];
     const links = new Set();
     for (const p of pages) {
       const { page, errors } = await open(p);

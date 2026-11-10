@@ -51,7 +51,7 @@ test('query: a derived value names its rule; a producer computes what no wire ha
   const w = world();
   w.load(`
     ?i item stock=?n
-    @t core.test fn=lt args=?n args=20
+    @t core.check fn=lt args=?n args=20
     @low reorder of=$i
     @reorder core.rule when=$i if=$t then=$low
   `);

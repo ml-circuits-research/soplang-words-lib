@@ -56,7 +56,7 @@ w.load(`
   @newton2 core.rule when=$b when=$f with=$c then=$a
 
   ?b0 body mass=?m0
-  @t core.test fn=lte args=?m0 args=0
+  @t core.check fn=lte args=?m0 args=0
   @positive core.deny when=$b0 if=$t why=&quot;mass must be positive&quot;
 `);
 

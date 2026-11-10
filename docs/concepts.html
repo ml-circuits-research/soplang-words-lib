@@ -29,7 +29,7 @@
  <li>Facts and matrix wires have separate id spaces: a pattern <code>?m1</code> does not clash with a fact <code>@m1</code>.</li>
 </ul>
 <h2>The matrix: seven wire types</h2>
-<div class="table"><table><thead><tr><th>Type</th><th>Says</th><th>Main keys</th></tr></thead><tbody><tr><td><code>core.slot</code></td><td>One key of one type: is it required, what may it hold</td><td><code>of key required many id type enum default ask</code></td></tr><tr><td><code>core.type</code></td><td>A type accepts only its declared keys</td><td><code>of closed</code></td></tr><tr><td><code>core.rule</code></td><td>If the <code>when</code> circuit exists, the <code>then</code> circuit must exist</td><td><code>when with if not then</code></td></tr><tr><td><code>core.deny</code></td><td>This circuit may never exist</td><td><code>when with if not why</code></td></tr><tr><td><code>core.calc</code></td><td>A value computed by a named function</td><td><code>out fn args</code></td></tr><tr><td><code>core.test</code></td><td>A condition checked by a named function</td><td><code>fn args</code></td></tr><tr><td><code>core.abducible</code></td><td>A type, or a key of a type, that may be assumed</td><td><code>of key cost</code></td></tr></tbody></table></div>
+<div class="table"><table><thead><tr><th>Type</th><th>Says</th><th>Main keys</th></tr></thead><tbody><tr><td><code>core.slot</code></td><td>One key of one type: is it required, what may it hold</td><td><code>of key required many id type enum default ask</code></td></tr><tr><td><code>core.type</code></td><td>A type accepts only its declared keys</td><td><code>of closed</code></td></tr><tr><td><code>core.rule</code></td><td>If the <code>when</code> circuit exists, the <code>then</code> circuit must exist</td><td><code>when with if not then</code></td></tr><tr><td><code>core.deny</code></td><td>This circuit may never exist</td><td><code>when with if not why</code></td></tr><tr><td><code>core.calc</code></td><td>A value computed by a named function</td><td><code>out fn args</code></td></tr><tr><td><code>core.check</code></td><td>A condition checked by a named function</td><td><code>fn args</code></td></tr><tr><td><code>core.abducible</code></td><td>A type, or a key of a type, that may be assumed</td><td><code>of key cost</code></td></tr></tbody></table></div>
 <p>An eighth type, <code>core.use</code>, loads another matrix from a library (see <a href="usecases.html#compose">composition</a>).</p>
 <h3>Slots</h3>
 <figure class="code"><pre><code>@k1 core.slot of=meeting key=room required=true type=room ask=&quot;Which room?&quot;
@@ -47,7 +47,7 @@
 <h3>Rules and denies</h3>
 <figure class="code"><pre><code>?ma meeting room=?r time=?t
 ?mb meeting room=?r time=?t
-@t_other core.test fn=neq args=?ma args=?mb
+@t_other core.check fn=neq args=?ma args=?mb
 @no_double_booking core.deny when=$ma when=$mb if=$t_other why=&quot;room already booked&quot;</code></pre></figure>
 <ul>
  <li>Variables are local to one rule. Inside a rule, <code>$b</code> means the wire matched by pattern <code>?b</code> or produced by template <code>@b</code>.</li>

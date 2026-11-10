@@ -161,7 +161,7 @@ const __unify = (() => {
 // ---- src/builtins.mjs
 const __builtins = (() => {
   // Functions named by core.calc (return a value, or undefined when not applicable)
-  // and core.test (return a boolean). Signature: (args: string[], world) => result.
+  // and core.check (return a boolean). Signature: (args: string[], world) => result.
   // Arguments arrive as SOP Lang values (atoms, "strings", $refs).
   //
   // Numbers may carry a unit suffix: 10N, 2kg, 9.81m/s2, 30min, 95%.
@@ -868,7 +868,7 @@ const __matrix = (() => {
   const RANGE_CAP = 2000;
 
   const SCHEMA_TYPES = new Set([
-    'core.slot', 'core.type', 'core.abducible', 'core.rule', 'core.deny', 'core.calc', 'core.test', 'core.use',
+    'core.slot', 'core.type', 'core.abducible', 'core.rule', 'core.deny', 'core.calc', 'core.check', 'core.use',
     'core.schema.map', 'core.namespace', 'core.producer', 'core.action',
   ]);
 
@@ -908,6 +908,10 @@ const __matrix = (() => {
     atom: (v) => v[0] !== '$' && v[0] !== '"',
     any: () => true, // any literal or reference
   };
+  /** Is the kind one the library checks? */
+  function knownKind(kind) {
+    return kind in KINDS || kind.startsWith('quantity.') || kind.startsWith('time.');
+  }
   /** Does the value fit the literal kind? Unknown kinds accept any value that is not a reference. */
   function fitsKind(kind, v) {
     if (KINDS[kind]) return KINDS[kind](v);
@@ -1194,7 +1198,7 @@ const __matrix = (() => {
     rule.then = order;
     (rule.kind === 'rule' ? c.rules : c.denies).push(rule);
   }
-  return { SCHEMA_TYPES, readMap, fitsKind, LINKS, localize, prefixModule, compileMatrix };
+  return { SCHEMA_TYPES, readMap, knownKind, fitsKind, LINKS, localize, prefixModule, compileMatrix };
 })();
 
 // ---- src/complete.mjs
@@ -2069,7 +2073,7 @@ const __world = (() => {
   const { EMPTY, walk, unify, hasVar, isVar, bound } = __unify;
   const { builtins, quantity } = __builtins;
   const { cdcl } = __solve;
-  const { compileMatrix, localize, prefixModule, fitsKind, readMap, SCHEMA_TYPES, LINKS } = __matrix;
+  const { compileMatrix, localize, prefixModule, fitsKind, knownKind, readMap, SCHEMA_TYPES, LINKS } = __matrix;
   const { completion } = __complete;
   const { revision } = __revise;
   const { querying } = __query;
@@ -2146,7 +2150,9 @@ const __world = (() => {
       const one = (attrs) => Object.fromEntries(Object.entries(attrs).map(([k, v]) => [k, v.length === 1 ? v[0] : [...v]]));
       const keys = {};
       for (const [k, s] of slots || []) keys[k] = { ...one(s.attrs), of: s.of, key: k, required: s.required, many: s.many, inherited: s.of !== type };
-      return { ...(decl ? one(decl.attrs) : {}), type, extends: c.parent.get(type) || null, lineage: [...c.lineage(type)], closed: c.closed.has(type), keys };
+      // kinds the library does not check accept any literal; listing them lets a host see a typo
+      const unknownKinds = [...(slots || [])].flatMap(([k, s]) => s.kinds.filter((kind) => !knownKind(kind)).map((kind) => ({ key: k, kind })));
+      return { ...(decl ? one(decl.attrs) : {}), type, extends: c.parent.get(type) || null, lineage: [...c.lineage(type)], closed: c.closed.has(type), keys, unknownKinds };
     }
 
     /** Query with pattern wires. Returns one object of bindings per match. */
@@ -3141,7 +3147,7 @@ const __induce = (() => {
       lines.push(format({ ...w, attrs, pattern: i < head.nWhen }));
     });
     for (const c of calcs) lines.push(`@${c.id} core.calc out=${c.out} fn=${c.fn} args=${c.args[0]} args=${c.args[1]}`);
-    for (const t of tests) lines.push(`@${t.id} core.test fn=${t.fn} args=${t.args[0]} args=${t.args[1]}`);
+    for (const t of tests) lines.push(`@${t.id} core.check fn=${t.fn} args=${t.args[0]} args=${t.args[1]}`);
     const links = [
       ...gen.map((w, i) => `${i < head.nWhen ? 'when' : 'then'}=$${w.id}`),
       ...calcs.map((c) => `with=$${c.id}`),

@@ -203,7 +203,7 @@ w.load(`
   @newton2 core.rule when=$b when=$f with=$c then=$a
 
   ?b0 body mass=?m0
-  @t core.test fn=lte args=?m0 args=0
+  @t core.check fn=lte args=?m0 args=0
   @positive core.deny when=$b0 if=$t why="mass must be positive"
 `);
 
@@ -286,7 +286,7 @@ P['concepts.html'] = ('Concepts', 'The data model in the order you meet it: a wi
  ['<code>core.rule</code>', 'If the <code>when</code> circuit exists, the <code>then</code> circuit must exist', '<code>when with if not then</code>'],
  ['<code>core.deny</code>', 'This circuit may never exist', '<code>when with if not why</code>'],
  ['<code>core.calc</code>', 'A value computed by a named function', '<code>out fn args</code>'],
- ['<code>core.test</code>', 'A condition checked by a named function', '<code>fn args</code>'],
+ ['<code>core.check</code>', 'A condition checked by a named function', '<code>fn args</code>'],
  ['<code>core.abducible</code>', 'A type, or a key of a type, that may be assumed', '<code>of key cost</code>'],
 ])}
 <p>An eighth type, <code>core.use</code>, loads another matrix from a library (see <a href="usecases.html#compose">composition</a>).</p>
@@ -309,7 +309,7 @@ P['concepts.html'] = ('Concepts', 'The data model in the order you meet it: a wi
 {code("""
 ?ma meeting room=?r time=?t
 ?mb meeting room=?r time=?t
-@t_other core.test fn=neq args=?ma args=?mb
+@t_other core.check fn=neq args=?ma args=?mb
 @no_double_booking core.deny when=$ma when=$mb if=$t_other why="room already booked"
 """)}
 <ul>
@@ -560,7 +560,7 @@ new World({ fns, library, solver = solvers.nogood(), maxDepth = 12, maxSteps = 5
             lookahead = true, strict = false, searchBudget, rank })
 """)}
 {table(['Option', 'Meaning'], [
- ['<code>fns</code>', 'Functions for <code>core.calc</code> and <code>core.test</code>: <code>(args, world) =&gt; value</code>'],
+ ['<code>fns</code>', 'Functions for <code>core.calc</code> and <code>core.check</code>: <code>(args, world) =&gt; value</code>'],
  ['<code>library</code>', 'Matrix texts by name, loaded with <code>core.use</code>'],
  ['<code>maxDepth</code>', 'Longest chain of derivations'],
  ['<code>lookahead</code>', 'Suggestions must leave a full completion possible'],
@@ -709,7 +709,7 @@ P['roadmap.html'] = ('Analysis and roadmap', 'Where the library stands against t
  ['Text to wires', '<code>tell</code> accepts wire objects; refusals come back as data, with the told wires they rest on'],
  ['Wires to text', '<code>core.question</code> wires carry <code>ask</code>, options and the wire they are about'],
  ['Which of several consistent options is likely', '<code>rank</code> option, <code>cost</code> on abducibles'],
- ['Fuzzy equality of atoms', 'A custom <code>core.test</code> function'],
+ ['Fuzzy equality of atoms', 'A custom <code>core.check</code> function'],
 ])}
 <h2>Recommended order of work</h2>
 <ol>

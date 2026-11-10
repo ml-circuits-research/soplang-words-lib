@@ -8,7 +8,7 @@ import { parse, format, cloneWire } from './parser.mjs';
 import { EMPTY, walk, unify, hasVar, isVar, bound } from './unify.mjs';
 import { builtins, quantity } from './builtins.mjs';
 import { cdcl } from './solve.mjs';
-import { compileMatrix, localize, prefixModule, fitsKind, readMap, SCHEMA_TYPES, LINKS } from './matrix.mjs';
+import { compileMatrix, localize, prefixModule, fitsKind, knownKind, readMap, SCHEMA_TYPES, LINKS } from './matrix.mjs';
 import { completion } from './complete.mjs';
 import { revision } from './revise.mjs';
 import { querying } from './query.mjs';
@@ -79,7 +79,9 @@ export class World {
     const one = (attrs) => Object.fromEntries(Object.entries(attrs).map(([k, v]) => [k, v.length === 1 ? v[0] : [...v]]));
     const keys = {};
     for (const [k, s] of slots || []) keys[k] = { ...one(s.attrs), of: s.of, key: k, required: s.required, many: s.many, inherited: s.of !== type };
-    return { ...(decl ? one(decl.attrs) : {}), type, extends: c.parent.get(type) || null, lineage: [...c.lineage(type)], closed: c.closed.has(type), keys };
+    // kinds the library does not check accept any literal; listing them lets a host see a typo
+    const unknownKinds = [...(slots || [])].flatMap(([k, s]) => s.kinds.filter((kind) => !knownKind(kind)).map((kind) => ({ key: k, kind })));
+    return { ...(decl ? one(decl.attrs) : {}), type, extends: c.parent.get(type) || null, lineage: [...c.lineage(type)], closed: c.closed.has(type), keys, unknownKinds };
   }
 
   /** Query with pattern wires. Returns one object of bindings per match. */

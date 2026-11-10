@@ -8,7 +8,7 @@ import { quantity } from './builtins.mjs';
 const RANGE_CAP = 2000;
 
 export const SCHEMA_TYPES = new Set([
-  'core.slot', 'core.type', 'core.abducible', 'core.rule', 'core.deny', 'core.calc', 'core.test', 'core.use',
+  'core.slot', 'core.type', 'core.abducible', 'core.rule', 'core.deny', 'core.calc', 'core.check', 'core.use',
   'core.schema.map', 'core.namespace', 'core.producer', 'core.action',
 ]);
 
@@ -48,6 +48,10 @@ const KINDS = {
   atom: (v) => v[0] !== '$' && v[0] !== '"',
   any: () => true, // any literal or reference
 };
+/** Is the kind one the library checks? */
+export function knownKind(kind) {
+  return kind in KINDS || kind.startsWith('quantity.') || kind.startsWith('time.');
+}
 /** Does the value fit the literal kind? Unknown kinds accept any value that is not a reference. */
 export function fitsKind(kind, v) {
   if (KINDS[kind]) return KINDS[kind](v);

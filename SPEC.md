@@ -108,7 +108,7 @@ foreign schema wires a `core.schema.map` declares. Everything else is a fact.
   between the patterns).
 - `with=` `core.calc` wires, applied in order: `out=?var fn=name args=...`. If the
   function returns nothing the match is dropped.
-- `if=` `core.test` wires: `fn=name args=...`, all must be true.
+- `if=` `core.check` wires: `fn=name args=...`, all must be true.
 - `not=` pattern wires that must have no match (negation as failure). The matrix must be
   stratified: a rule may not negate a type that its own consequences can produce,
   directly or through other rules. A matrix that is not is refused. Negation is
@@ -126,7 +126,7 @@ Variables are local to a rule. Inside a rule, `$b` means "the wire matched by pa
 ```
 ?ma meeting room=?r time=?t
 ?mb meeting room=?r time=?t
-@t_other core.test fn=neq args=?ma args=?mb
+@t_other core.check fn=neq args=?ma args=?mb
 @no_double_booking core.deny when=$ma when=$mb if=$t_other why="room already booked"
 ```
 
@@ -571,3 +571,22 @@ w.abduce(goalText, { maxDepth, max, maxAssumptions })
 w.explain(id)  w.history()  w.on(listener)
 w.toSOP({ schema, derived, provenance })   w.toJSON()   World.fromJSON(data, options)
 ```
+
+## 9. Changes
+
+Since 0.4.0 (the version first published in this repository):
+
+- **`core.test` is now `core.check`** (the wire that states a condition of a rule or a
+  deny). A wire of type `core.test` still works as a condition when a rule or deny links
+  it with `if=`, for one more version. A `core.test` wire that nothing links is an
+  ordinary fact, so a host may use that type for its own wires.
+- **`world.schema` is now `world.matrix`** (the Map of matrix wires).
+  `world.schema(type)` is a method that describes a type; it lists the kinds the library
+  does not check in `unknownKinds`.
+- Matrix wires of one `tell` are read before its facts, whatever their order in the text.
+- `core.type` without `of=` takes its wire id as the type name.
+- A reference under a key of an open namespace that no slot declares is no longer
+  checked and no longer ties a wire to the one it mentions.
+- New: type hierarchy (3.8), kinds, qualified keys, open namespaces and schema maps
+  (3.9), queries, answer wires, producers, actions and prefix slots (4.10).
+

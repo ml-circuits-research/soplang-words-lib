@@ -208,7 +208,7 @@ export function induce(examples, { name = 'induced', kind = 'rule', why, toleran
     lines.push(format({ ...w, attrs, pattern: i < head.nWhen }));
   });
   for (const c of calcs) lines.push(`@${c.id} core.calc out=${c.out} fn=${c.fn} args=${c.args[0]} args=${c.args[1]}`);
-  for (const t of tests) lines.push(`@${t.id} core.test fn=${t.fn} args=${t.args[0]} args=${t.args[1]}`);
+  for (const t of tests) lines.push(`@${t.id} core.check fn=${t.fn} args=${t.args[0]} args=${t.args[1]}`);
   const links = [
     ...gen.map((w, i) => `${i < head.nWhen ? 'when' : 'then'}=$${w.id}`),
     ...calcs.map((c) => `with=$${c.id}`),

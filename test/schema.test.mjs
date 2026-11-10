@@ -25,12 +25,12 @@ test('types: extends gives a hierarchy; ofType and patterns include descendants'
 test('types: rules and denies written for a type apply to the types that extend it', () => {
   const w = world(`
     ?v fleet.vehicle seats=?n
-    @t core.test fn=gt args=?n args=7
+    @t core.check fn=gt args=?n args=7
     @bus licence.needed for=$v class=D
     @big core.rule when=$v if=$t then=$bus
 
     ?x fleet.vehicle seats=?m
-    @t0 core.test fn=lt args=?m args=1
+    @t0 core.check fn=lt args=?m args=1
     @no_seats core.deny when=$x if=$t0 why="a vehicle has at least one seat"
   `);
   w.load('@t1 fleet.truck plate="B-02" seats=9');
@@ -122,12 +122,15 @@ test('schema: attributes the engine does not use are kept and readable; inherite
   assert.equal(truck.keys.plate.inherited, true);
   assert.equal(truck.keys.axles.inherited, false);
   assert.equal(w.schema('no.such.type'), null);
+  assert.deepEqual(s.unknownKinds, []);
+  w.load('@fleet.vehicle.colour field is=colour is=integr');
+  assert.deepEqual(w.schema('fleet.car').unknownKinds, [{ key: 'colour', kind: 'colour' }, { key: 'colour', kind: 'integr' }], 'a typo in a kind is visible');
 });
 
 test('keys: short and qualified names are one key, in facts, fills, patterns and queries', () => {
   const w = world(`
     ?v fleet.vehicle fleet.vehicle.seats=?n
-    @t core.test fn=gt args=?n args=60
+    @t core.check fn=gt args=?n args=60
     @too_many core.deny when=$v if=$t why="no vehicle has that many seats"
   `);
   w.load('@d1 base.driver base.person.name="Ana"');

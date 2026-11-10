@@ -170,7 +170,7 @@ test('custom functions and ordering test', () => {
 
     ?pay payment for=$ord
     ?ord order item=?i
-    @t core.test fn=before args=$pay args=$ord
+    @t core.check fn=before args=$pay args=$ord
     @d core.deny when=$pay when=$ord if=$t why="payment before order"
   `);
   w.tell('@p1 person name=ana');
@@ -222,4 +222,22 @@ test('the log keeps what was told, not what the wires grew into', () => {
   assert.equal(w.get('a1').attrs.magnitude, undefined, 'the derived value went with its cause');
   assert.ok(w.tell('@f2 force on=$b1 magnitude=4').ok);
   assert.equal(w.get('a1').attrs.magnitude[0], '2');
+});
+
+test('core.check is the condition wire; core.test still works when a rule links it, and is a fact otherwise', () => {
+  const w = new World();
+  w.load(`
+    ?b box size=?n
+    @big core.check fn=gt args=?n args=10
+    @old core.test fn=lt args=?n args=100
+    @l large of=$b
+    @r core.rule when=$b if=$big if=$old then=$l
+  `);
+  w.load('@b1 box size=50  @b2 box size=5  @b3 box size=500');
+  assert.deepEqual(w.ask('?l large of=?b').map((x) => x.b), ['$b1'], 'both conditions apply');
+  // a host's own wires of type core.test (test cases, say) are ordinary facts
+  const r = w.tell('@case1 core.test input="hello" expect="world"');
+  assert.ok(r.ok);
+  assert.equal(w.get('case1').type, 'core.test');
+  assert.equal(w.matrix.has('case1'), false);
 });

@@ -57,7 +57,7 @@ const grandparentExamples = [
 test('induction: co-reference is recovered and wire order does not matter', () => {
   const rule = induceRule(grandparentExamples, { name: 'gp' });
   const [p0, p1, t0, x, r] = parse(rule);
-  assert.equal(x.type, 'core.test', 'the two parent patterns must match different wires');
+  assert.equal(x.type, 'core.check', 'the two parent patterns must match different wires');
   assert.equal(p0.attrs.child[0], p1.attrs.of[0], 'the middle person is one variable');
   assert.equal(t0.attrs.of[0], p0.attrs.of[0]);
   assert.equal(t0.attrs.child[0], p1.attrs.child[0]);

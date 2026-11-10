@@ -1,5 +1,5 @@
 // Functions named by core.calc (return a value, or undefined when not applicable)
-// and core.test (return a boolean). Signature: (args: string[], world) => result.
+// and core.check (return a boolean). Signature: (args: string[], world) => result.
 // Arguments arrive as SOP Lang values (atoms, "strings", $refs).
 //
 // Numbers may carry a unit suffix: 10N, 2kg, 9.81m/s2, 30min, 95%.

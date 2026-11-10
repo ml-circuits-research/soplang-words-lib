@@ -5,17 +5,17 @@ export const scheduling = `
 
 ?m meeting room=$r people=?n
 ?r room capacity=?cap
-@t_fit core.test fn=gt args=?n args=?cap
+@t_fit core.check fn=gt args=?n args=?cap
 @room_fits core.deny when=$m when=$r if=$t_fit why="room too small"
 
 ?ma meeting room=?rr time=?t
 ?mb meeting room=?rr time=?t
-@t_other core.test fn=neq args=?ma args=?mb
+@t_other core.check fn=neq args=?ma args=?mb
 @no_double_booking core.deny when=$ma when=$mb if=$t_other why="room already booked"
 
 ?pa meeting time=?pt with=?who
 ?pb meeting time=?pt with=?who
-@t_other2 core.test fn=neq args=?pa args=?pb
+@t_other2 core.check fn=neq args=?pa args=?pb
 @one_place_at_a_time core.deny when=$pa when=$pb if=$t_other2 why="a person cannot attend two meetings at once"
 `;
 

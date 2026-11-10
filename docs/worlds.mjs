@@ -11,7 +11,7 @@ export const mechanics = `
 @newton2 core.rule when=$b when=$f with=$c_div then=$a
 
 ?b0 body mass=?m0
-@t_mass core.test fn=lte args=?m0 args=0
+@t_mass core.check fn=lte args=?m0 args=0
 @positive_mass core.deny when=$b0 if=$t_mass why="mass must be positive"
 `;
 
@@ -63,12 +63,12 @@ export const meetings = `
 
 ?m meeting room=$r people=?n
 ?r room capacity=?cap
-@t_fit core.test fn=gt args=?n args=?cap
+@t_fit core.check fn=gt args=?n args=?cap
 @room_fits core.deny when=$m when=$r if=$t_fit why="room too small"
 
 ?ma meeting room=?rr time=?t
 ?mb meeting room=?rr time=?t
-@t_other core.test fn=neq args=?ma args=?mb
+@t_other core.check fn=neq args=?ma args=?mb
 @no_double_booking core.deny when=$ma when=$mb if=$t_other why="room already booked at that time"
 
 # a fully specified meeting produces a confirmation wire
@@ -106,13 +106,13 @@ export const plant = `
 ?r reading of=$t level=?l
 ?t tank capacity=?c
 @c_pct core.calc out=?pct fn=div args=?l args=?c
-@t_high core.test fn=gte args=?pct args=0.9
+@t_high core.check fn=gte args=?pct args=0.9
 @al alarm of=$t kind=high_level
 @high_level core.rule when=$r when=$t with=$c_pct if=$t_high then=$al
 
 ?r2 reading of=$t2 level=?l2
 ?t2 tank capacity=?c2
-@t_over core.test fn=gt args=?l2 args=?c2
+@t_over core.check fn=gt args=?l2 args=?c2
 @impossible_level core.deny when=$r2 when=$t2 if=$t_over why="level above capacity: sensor fault"
 
 ?pu pump of=?t3 state=on

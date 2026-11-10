@@ -19,7 +19,7 @@ export const warehouse = `
 @c_total core.calc out=?t fn=mul args=?q args=?p
 @l_total line item=?name qty=?q total=?t
 @line_total core.rule when=$l when=$it with=$c_total then=$l_total
-@t_short core.test fn=gt args=?q args=?have
+@t_short core.check fn=gt args=?q args=?have
 @enough_stock core.deny when=$l when=$it if=$t_short why="not enough in stock"
 
 # taking items out is an action: it runs in one transaction

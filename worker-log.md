@@ -223,3 +223,36 @@ Deviations:
 - `next()` still produces questions with `about=` and `seek=` only; `query` accepts them.
 - Not measured: the cost of supposition on a large world (one scratch `tell` per query).
 
+## After the answers to Q3–Q7 — done
+
+Commit: `git log --grep '^core.test -> core.check'`. It comes after G6 and not before
+it as asked: G6 was already pushed when I read the answers.
+
+- **Q3**: the condition wire is `core.check`. A `core.test` wire that a rule or deny
+  links with `if=` still works as a condition (one more version); a `core.test` wire
+  that nothing links is an ordinary fact. Sources, examples, tests, SPEC and the
+  documentation pages use `core.check`; `induce` writes `core.check`. One test covers
+  the alias and the fact case.
+- **Q4**: SPEC has a "Changes" section (9) that lists `world.matrix` / `world.schema(type)`
+  and the other changes since 0.4.0.
+- **Q5**: `world.schema(type).unknownKinds` lists `{ key, kind }` for kinds the library
+  does not check.
+- Q3 to Q7 removed from `questions.md` (one line each under "Closed"). Open: Q8, Q9, Q10.
+
+```
+python3 tools/build_docs.py && node tools/build.mjs
+npm test
+npm run examples
+npm run test:browser
+```
+
+| Command | Result |
+| --- | --- |
+| `npm test`, sources | 114 tests: 114 pass, 0 fail, 0 skipped |
+| `npm test`, built file | 114 tests: 114 pass, 0 fail, 0 skipped |
+| `npm run examples` | exit 0 |
+| `npm run test:browser` | all browser checks passed |
+
+On the `replace` benchmark (30 ms in 0.4, 47 to 81 ms at the reviewer, 50 to 59 ms here):
+noted, to be found and fixed in G7 as asked.
+

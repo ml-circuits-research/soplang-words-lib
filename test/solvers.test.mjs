@@ -195,11 +195,11 @@ test('numeric domains: min, max and step make a key searchable', () => {
     @k2 core.slot of=order key=weight min=0 max=100
     ?o order boxes=?b items=?i
     @c core.calc out=?cap fn=mul args=?b args=10
-    @t core.test fn=lt args=?cap args=?i
+    @t core.check fn=lt args=?cap args=?i
     @enough core.deny when=$o with=$c if=$t why="not enough boxes"
     ?o2 order boxes=?b2 budget=?bu
     @c2 core.calc out=?cost fn=mul args=?b2 args=5
-    @t2 core.test fn=gt args=?cost args=?bu
+    @t2 core.check fn=gt args=?cost args=?bu
     @afford core.deny when=$o2 with=$c2 if=$t2 why="over budget"
   `);
   w.load('@o1 order items=35 budget=22');

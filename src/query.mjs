@@ -18,7 +18,7 @@
 // The wire types and key names used for questions, answers and requests are a vocabulary
 // that the host can change: new World({ vocabulary: { status: 'core.status', ... } }).
 
-import { parse } from './parser.mjs';
+import { parse, str } from './parser.mjs';
 import { EMPTY, walk } from './unify.mjs';
 
 const VOCABULARY = {
@@ -109,6 +109,14 @@ export const querying = {
       // every value some wire has, with where it came from; then what a producer computes
       const found = new Map(); // value -> { from, via }
       const lacking = [];
+      // standing issues (soft constraints) about the wires an answer rests on
+      const issues = new Map();
+      const flagged = (ids) => {
+        for (const x of ids) for (const r of this.refs.get(x) || []) { // bounded: the wires that refer to one wire
+          const i = this.wires.get(r);
+          if (i && i.type === 'core.issue' && (i.attrs.about || []).includes('$' + x)) issues.set(i.id, i);
+        }
+      };
       const note = (value, from, via, ties) => {
         const e = found.get(value) || found.set(value, { from: [], via: [] }).get(value);
         if (ties) e.ties = ties;
@@ -121,6 +129,7 @@ export const querying = {
         for (const value of vals) {
           const fill = (w.meta.fills || []).find((f) => f.key === key && f.value === value);
           note(value, [w.id, ...(fill?.from || [])], fill ? fill.via : w.meta.via, fill ? fill.ties : w.meta.ties?.[key]);
+          flagged([w.id, ...(fill?.from || [])]);
         }
       }
       // nothing matches: suppose a wire of that type with the given keys and let the rules work
@@ -138,6 +147,7 @@ export const querying = {
             for (const value of w.attrs[key] || []) {
               const fill = (w.meta.fills || []).find((f) => f.key === key && f.value === value);
               const from = fill ? fill.from || [] : w.meta.from || [];
+              flagged([w.id, ...from]);
               note(value, from.filter((x) => x !== id && this.wires.get(x)?.meta.told), fill ? fill.via : w.meta.via, fill ? fill.ties : w.meta.ties?.[key]);
             }
           }
@@ -158,7 +168,11 @@ export const querying = {
       const values = [...found.keys()];
       const from = (list) => [...new Set(list.flatMap((value) => found.get(value).from))];
       const via = (list) => [...new Set(list.flatMap((value) => found.get(value).via))];
-      if (refused) {
+      if (!refused && issues.size && values.length) {
+        // the value rests on something that is recorded as wrong: report it, do not vouch for it
+        const list = [...issues.values()];
+        r = { status: 'conflicting', reason: str(list[0].attrs.why?.[0] || ''), issues: list.map((i) => i.id), alternatives: values.map((value) => ({ value, from: found.get(value).from })), from: from(values), via: via(values) };
+      } else if (refused) {
         r = { status: 'refused', violations: refused, from: [...new Set(refused.flatMap((x) => x.support || []))] };
       } else if (mode === 'list' && values.length) {
         r = { status: 'supported', values, from: from(values), via: via(values) };

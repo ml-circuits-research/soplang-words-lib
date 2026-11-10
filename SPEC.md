@@ -155,6 +155,19 @@ Variables are local to a rule. Inside a rule, `$b` means "the wire matched by pa
 Same body as a rule (`when`, `with`, `if`, `not`), no `then`. Any match makes the pending
 change invalid.
 
+**Soft constraints.** A deny, or a slot with `min` / `max`, may say `soft=true`. Then
+nothing is refused: the change is accepted and the problem is kept as a standing wire,
+
+```
+@issue... core.issue rule=$<the deny or slot> about=$<each wire involved> why="..."
+```
+
+which is there exactly as long as the problem is (it is a derived wire: retract the
+cause and it goes). A query whose answer rests on a wire that an issue is about answers
+`conflicting`, with `reason`, `issues` and the value under `alternatives` (4.10). Rules
+may read issue wires like any others. Use it where what was said must be kept even
+when it cannot be right (a dialogue, a sensor log); strict is the default.
+
 ### 3.5 `core.abducible`
 
 - `@ab core.abducible of=rain cost=2`: a whole wire of this type may be assumed.
@@ -862,6 +875,8 @@ Since 0.4.0 (the version first published in this repository):
 - New: `core.on=` templates (3.3); the stratification check knows which keys a template
   adds, so a rule may aggregate over a type and fill a key on a wire of that type.
 - New: `core.absent=` in patterns (3.10).
+- New: soft constraints (`soft=true` on a deny or a bounded slot) and `core.issue`
+  wires (3.4); a query over a flagged wire answers `conflicting` with the reason.
 - New: a tie for `argmax` / `argmin` makes the query `ambiguous` with the alternatives
   (3.6.2); `ties=first` keeps the old behaviour.
 - **Changed:** a second, different declaration of the same key of the same type used

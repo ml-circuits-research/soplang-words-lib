@@ -32,7 +32,8 @@ export interface QueryResult {
   /** 'budget': the call ran out of budget; `site`, `steps` and `why` say where */
   status: 'supported' | 'conflicting' | 'ambiguous' | 'missing' | 'refused' | 'no' | 'unknown' | 'budget' | 'unsupported';
   reason?: string;
-  site?: string; steps?: number; why?: string;
+  /** ids of the standing core.issue wires the answer rests on */
+  issues?: string[];: string; steps?: number; why?: string;
   value?: string; values?: string[];
   alternatives?: { value: string; from: string[] }[];
   missing?: { id?: string; type?: string; key: string; ask?: string }[];

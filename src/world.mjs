@@ -4,7 +4,7 @@
 // the chase, validation and the withdrawal of wires, values and rule firings.
 // Completion lives in complete.mjs, retraction and assumption revision in revise.mjs.
 
-import { parse, format, cloneWire } from './parser.mjs';
+import { parse, format, cloneWire, quote } from './parser.mjs';
 import { EMPTY, walk, unify, hasVar, isVar, bound } from './unify.mjs';
 import { builtins, quantity, aggregates, canonical } from './builtins.mjs';
 import { cdcl } from './solve.mjs';
@@ -344,6 +344,8 @@ export class World {
   _settle(res, strict) {
     if (!res.violations.length) this._chase(res);
     if (!res.violations.length) this._validate(res);
+    // validation may have written or removed issue wires (soft bounds): let the rules see them
+    while (!res.violations.length && res._agenda.length) { this._chase(res); if (!res.violations.length) this._validate(res); } // bounded: issues change only when the wires they are about do
     if (!res.violations.length && strict && this.solveReport().status === 'unsat') {
       res.violations.push({ kind: 'dead-end', why: 'no consistent completion of the open keys exists' });
     }
@@ -1148,6 +1150,20 @@ export class World {
 
   // ---------------------------------------------------------------- validation
 
+  /** Keep the standing issue of a soft bound: there while the value is out of bounds, gone when it is not. */
+  _issue(w, key, bad, slot, res) {
+    const id = `issue.${w.id}.${key}`;
+    const have = this.wires.get(id);
+    const why = bad ? quote(`${key} ${bad}`) : null;
+    if (have && have.attrs.why[0] === why) return;
+    if (have) this._unsay(res, [id], []);
+    if (!bad) return;
+    const wire = { id, type: 'core.issue', attrs: { rule: ['$' + slot.id], about: ['$' + w.id], key: [key], why: [why] }, pattern: false };
+    const seq = this._event({ op: 'derive', id, wire: format(wire), via: slot.id, from: [w.id] });
+    this._addWire(wire, { seq, via: slot.id, from: [w.id], depth: 1 }, res);
+    res.derived.push(id);
+  }
+
   _validate(res) {
     const c = this._compiled();
     for (const id of res._touched) {
@@ -1164,7 +1180,8 @@ export class World {
             if (s.min || s.max) {
               const q = quantity(v);
               const bad = !q ? 'must be a number' : s.min && q.n < s.min.n ? `must be at least ${s.min.n}` : s.max && q.n > s.max.n ? `must be at most ${s.max.n}` : null;
-              if (bad) res.violations.push({ kind: 'domain', id, key: k, value: v, why: bad });
+              if (s.soft) this._issue(w, k, bad, s, res);
+              else if (bad) res.violations.push({ kind: 'domain', id, key: k, value: v, why: bad });
             }
             if (s.enum && !s.enum.includes(v) && !s.enum.some((e) => this._same(w.type, k, e, v))) res.violations.push({ kind: 'domain', id, key: k, value: v, allowed: s.enum });
             if (s.type && !s.kinds.length) {

@@ -3,10 +3,11 @@
 @arith.seq core.sequence key=core.seq
 
 # ---- who has how many: one wire per owner and item; the count is a state that
-#      statements set and events change. Nobody can have fewer than none.
+#      statements set and events change. Nobody can have fewer than none: an event that
+#      says otherwise is kept (somebody said it) and stands as an issue.
 @arith.k.owner core.slot of=kids.arith.holding key=owner type=core.agent id=true combine=intersect
 @arith.k.item core.slot of=kids.arith.holding key=item kind=atom id=true combine=intersect
-@arith.k.count core.slot of=kids.arith.holding key=count kind=number min=0 combine=intersect
+@arith.k.count core.slot of=kids.arith.holding key=count kind=number min=0 soft=true combine=intersect
 @arith.f core.fluent of=kids.arith.holding key=count
 @arith.e.give core.effect on=kids.arith.give fluent=$arith.f op=sub amount=count where.owner=who where.item=item
 @arith.e.given core.effect on=kids.arith.give fluent=$arith.f op=add amount=count where.owner=to where.item=item

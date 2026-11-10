@@ -777,3 +777,25 @@ rules that read the key keep working), the tied picks are kept with the value, a
 firing concluded, so it follows the facts: a third wire joining the tie, a tie that
 appears after a single winner, and a tie broken by a replace are all in the test
 (`test/aggregate.test.mjs`). `ties=first` on the calc is the old behaviour.
+
+## G11 — soft constraints — done
+
+`npm test`: 169 pass, 0 fail on sources and built file. `node compat/psys2/run.mjs`:
+kids.shop 147/147, kids.arith 210/217, kids.tasks 231/232. `node tools/scan-loops.mjs
+src`: clean. `git grep -i psys2 src/ | wc -l`: 0.
+
+- A deny with `soft=true` is compiled as a rule whose conclusion is a `core.issue` wire
+  (`rule`, `about` each matched wire, `why`), so it is maintained by the same machinery
+  as any derived wire (negation, selectors, retraction).
+- A slot with `min`/`max` and `soft=true` accepts the value and keeps an issue wire per
+  wire and key, written and removed in validation; a fluent effect no longer refuses on
+  such a slot.
+- `query`: when a wire the answer rests on is the `about` of an issue, the status is
+  `conflicting` with `reason`, `issues` and the value under `alternatives`.
+- Test in `test/kernel.test.mjs`: a soft bound through an event (accepted, issue stands,
+  query conflicting, gone after retract), a soft deny over three wires, strict default.
+
+Pilot: the count in kids.arith is now `min=0 soft=true`. t.arith.n17 and n19 pass (the
+impossible event is kept, the question about that person is `conflicting`). n18 does
+not: it asks about the *receiver* of an impossible gift, whose own count is unknown, so
+the answer is `missing`; PSys2 marks both people as in conflict.

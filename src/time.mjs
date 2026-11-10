@@ -145,7 +145,7 @@ export const timing = {
     if (next === undefined || next === null) return undefined;
     next = String(next);
     const q = quantity(next);
-    const broken = q && slot ? (slot.min && q.n < slot.min.n ? `below ${slot.min.n}` : slot.max && q.n > slot.max.n ? `above ${slot.max.n}` : null) : null;
+    const broken = q && slot && !slot.soft ? (slot.min && q.n < slot.min.n ? `below ${slot.min.n}` : slot.max && q.n > slot.max.n ? `above ${slot.max.n}` : null) : null;
     if (broken) {
       res.violations.push({ kind: 'conflict', id: h.id, key: f.key, value: next, event: ev.id, wires: [h.id, ev.id], why: `${ev.id} would take ${f.key} of ${h.id} ${broken} (from ${value} to ${next})` });
       return null;

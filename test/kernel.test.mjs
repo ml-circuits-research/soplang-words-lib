@@ -350,3 +350,42 @@ test('patterns: core.absent= matches only a wire without that key, and is kept u
   const bad = new World().tell('?t task core.absent=owner\n@d task core.on=$t owner=nobody\n@r core.rule when=$t then=$d');
   assert.match(bad.violations[0].why, /requires to be absent/);
 });
+
+test('soft constraints: the change is accepted, the problem stays on record, answers that rest on it say so', () => {
+  const w = new World();
+  w.load(`
+    @k1 core.slot of=tank key=name id=true
+    @k2 core.slot of=tank key=level kind=number min=0 max=100 soft=true
+    @f core.fluent of=tank key=level
+    @e core.effect on=drain fluent=$f op=sub amount=amount where.name=tank
+    ?a pump feeds=$t
+    ?b pump feeds=$t
+    ?t tank
+    @c core.check fn=neq args=$a args=$b
+    @two core.deny when=$a when=$b when=$t if=$c soft=true why="two pumps on one tank"
+  `);
+  w.load('@t1 tank name=north level=30');
+  // a soft bound: the event is accepted, the value is what it is, and an issue stands
+  const r = w.tell('@d1 drain tank=north amount=50');
+  assert.equal(r.ok, true);
+  assert.equal(w.get('t1').attrs.level[0], '-20');
+  const issue = w.ofType('core.issue')[0];
+  assert.deepEqual([issue.attrs.about, issue.attrs.key, issue.attrs.why], [['$t1'], ['level'], ['"level must be at least 0"']]);
+  const q = w.query({ type: 'tank', seek: 'level', where: { name: 'north' } });
+  assert.deepEqual([q.status, q.reason, q.issues, q.alternatives[0].value], ['conflicting', 'level must be at least 0', [issue.id], '-20']);
+  // it goes when the cause goes
+  assert.ok(w.retract('d1').ok);
+  assert.deepEqual([w.ofType('core.issue').length, w.query({ about: 't1', seek: 'level' }).status], [0, 'supported']);
+  // a soft deny: both pumps are accepted; the issue names the wires
+  assert.equal(w.tell('@p1 pump feeds=$t1  @p2 pump feeds=$t1').ok, true);
+  const two = w.ofType('core.issue');
+  assert.ok(two.length >= 1);
+  assert.deepEqual([two[0].attrs.rule, two[0].attrs.why, [...two[0].attrs.about].sort()], [['$two'], ['"two pumps on one tank"'], ['$p1', '$p2', '$t1']]);
+  assert.equal(w.query({ about: 't1', seek: 'level' }).status, 'conflicting', 'the tank is one of the wires the issue is about');
+  assert.ok(w.retract('p2').ok);
+  assert.deepEqual([w.ofType('core.issue').length, w.query({ about: 't1', seek: 'level' }).status], [0, 'supported']);
+  // strict is the default: the same bound without soft=true refuses
+  const strict = new World();
+  strict.load('@k core.slot of=tank key=level kind=number min=0');
+  assert.equal(strict.tell('@t tank level=-1').ok, false);
+});

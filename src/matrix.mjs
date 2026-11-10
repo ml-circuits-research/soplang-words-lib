@@ -125,7 +125,7 @@ export function compileMatrix(world) {
   const own = new Map(); // type -> Map(key -> slot) declared on that type itself
   // Two declarations of the same key of the same type: equal ones are one declaration;
   // different ones are a conflict unless one says how they combine (combine=intersect|override).
-  const content = (s) => JSON.stringify([s.required, s.many, s.identity, s.prefix, s.refs, s.kinds, s.enum, s.default, s.ask, s.min, s.max, s.step]);
+  const content = (s) => JSON.stringify([s.required, s.many, s.identity, s.prefix, s.refs, s.kinds, s.enum, s.default, s.ask, s.min, s.max, s.step, s.soft]);
   const both = (a, b) => (a && b ? a.filter((x) => b.includes(x)) : a || b);
   const declare = (of, key, s) => {
     const mine = own.get(of) || own.set(of, new Map()).get(of);
@@ -148,6 +148,7 @@ export function compileMatrix(world) {
       m.required = old.required || s.required;
       m.identity = old.identity || s.identity;
       m.many = old.many && s.many;
+      m.soft = old.soft || s.soft;
       m.default = old.default ?? s.default;
       m.ask = old.ask ?? s.ask;
       const empty = (m.enum && !m.enum.length) || (m.min && m.max && m.min.n > m.max.n)
@@ -191,6 +192,7 @@ export function compileMatrix(world) {
         min: quantity(get('min') ?? ''), max: quantity(get('max') ?? ''), step: quantity(get('step') ?? ''), range: null,
         attrs: w.attrs, // everything the wire says, used or not
         combine: get('combine'),
+        soft: get('soft') === 'true', // a value outside min/max is accepted and kept as an issue
       };
       if (s.combine && !['intersect', 'override'].includes(s.combine)) c.errors.push(`${w.id}: combine must be intersect or override`);
       for (const k of ['min', 'max', 'step']) if (get(k) !== undefined && !s[k]) c.errors.push(`${w.id}: ${k} must be a number`);
@@ -438,6 +440,15 @@ function buildRule(world, w, c) {
     why: first(w, 'why') ? str(first(w, 'why')) : undefined,
   };
   if (!rule.when.length) { c.errors.push(`${w.id}: needs at least one when=`); return; }
+  // A soft deny refuses nothing: it is a rule whose conclusion is a standing core.issue
+  // wire about the wires it matched, kept up to date like any derived wire.
+  if (rule.kind === 'deny' && flag(w, 'soft')) {
+    rule.kind = 'rule';
+    rule.soft = true;
+    const attrs = { rule: ['$' + w.id], about: rule.when.map((p) => '$?' + p.id) };
+    if (w.attrs.why) attrs.why = [w.attrs.why[0]];
+    rule.then = [{ id: `${w.id}.issue`, type: 'core.issue', attrs, pattern: false }];
+  }
   if (rule.kind === 'rule' && !rule.then.length) { c.errors.push(`${w.id}: core.rule needs then=`); return; }
   for (const t of rule.then) {
     if (!t.on) continue;

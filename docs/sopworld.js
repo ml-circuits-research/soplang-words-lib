@@ -1126,7 +1126,7 @@ const __matrix = (() => {
     const own = new Map(); // type -> Map(key -> slot) declared on that type itself
     // Two declarations of the same key of the same type: equal ones are one declaration;
     // different ones are a conflict unless one says how they combine (combine=intersect|override).
-    const content = (s) => JSON.stringify([s.required, s.many, s.identity, s.prefix, s.refs, s.kinds, s.enum, s.default, s.ask, s.min, s.max, s.step]);
+    const content = (s) => JSON.stringify([s.required, s.many, s.identity, s.prefix, s.refs, s.kinds, s.enum, s.default, s.ask, s.min, s.max, s.step, s.soft]);
     const both = (a, b) => (a && b ? a.filter((x) => b.includes(x)) : a || b);
     const declare = (of, key, s) => {
       const mine = own.get(of) || own.set(of, new Map()).get(of);
@@ -1149,6 +1149,7 @@ const __matrix = (() => {
         m.required = old.required || s.required;
         m.identity = old.identity || s.identity;
         m.many = old.many && s.many;
+        m.soft = old.soft || s.soft;
         m.default = old.default ?? s.default;
         m.ask = old.ask ?? s.ask;
         const empty = (m.enum && !m.enum.length) || (m.min && m.max && m.min.n > m.max.n)
@@ -1192,6 +1193,7 @@ const __matrix = (() => {
           min: quantity(get('min') ?? ''), max: quantity(get('max') ?? ''), step: quantity(get('step') ?? ''), range: null,
           attrs: w.attrs, // everything the wire says, used or not
           combine: get('combine'),
+          soft: get('soft') === 'true', // a value outside min/max is accepted and kept as an issue
         };
         if (s.combine && !['intersect', 'override'].includes(s.combine)) c.errors.push(`${w.id}: combine must be intersect or override`);
         for (const k of ['min', 'max', 'step']) if (get(k) !== undefined && !s[k]) c.errors.push(`${w.id}: ${k} must be a number`);
@@ -1439,6 +1441,15 @@ const __matrix = (() => {
       why: first(w, 'why') ? str(first(w, 'why')) : undefined,
     };
     if (!rule.when.length) { c.errors.push(`${w.id}: needs at least one when=`); return; }
+    // A soft deny refuses nothing: it is a rule whose conclusion is a standing core.issue
+    // wire about the wires it matched, kept up to date like any derived wire.
+    if (rule.kind === 'deny' && flag(w, 'soft')) {
+      rule.kind = 'rule';
+      rule.soft = true;
+      const attrs = { rule: ['$' + w.id], about: rule.when.map((p) => '$?' + p.id) };
+      if (w.attrs.why) attrs.why = [w.attrs.why[0]];
+      rule.then = [{ id: `${w.id}.issue`, type: 'core.issue', attrs, pattern: false }];
+    }
     if (rule.kind === 'rule' && !rule.then.length) { c.errors.push(`${w.id}: core.rule needs then=`); return; }
     for (const t of rule.then) {
       if (!t.on) continue;
@@ -2048,7 +2059,7 @@ const __revise = (() => {
 
 // ---- src/query.mjs
 const __query = (() => {
-  const { parse } = __parser;
+  const { parse, str } = __parser;
   const { EMPTY, walk } = __unify;
   // Queries with a status, answers as wires, producers and actions. Mixed into World.prototype.
   //
@@ -2159,6 +2170,14 @@ const __query = (() => {
         // every value some wire has, with where it came from; then what a producer computes
         const found = new Map(); // value -> { from, via }
         const lacking = [];
+        // standing issues (soft constraints) about the wires an answer rests on
+        const issues = new Map();
+        const flagged = (ids) => {
+          for (const x of ids) for (const r of this.refs.get(x) || []) { // bounded: the wires that refer to one wire
+            const i = this.wires.get(r);
+            if (i && i.type === 'core.issue' && (i.attrs.about || []).includes('$' + x)) issues.set(i.id, i);
+          }
+        };
         const note = (value, from, via, ties) => {
           const e = found.get(value) || found.set(value, { from: [], via: [] }).get(value);
           if (ties) e.ties = ties;
@@ -2171,6 +2190,7 @@ const __query = (() => {
           for (const value of vals) {
             const fill = (w.meta.fills || []).find((f) => f.key === key && f.value === value);
             note(value, [w.id, ...(fill?.from || [])], fill ? fill.via : w.meta.via, fill ? fill.ties : w.meta.ties?.[key]);
+            flagged([w.id, ...(fill?.from || [])]);
           }
         }
         // nothing matches: suppose a wire of that type with the given keys and let the rules work
@@ -2188,6 +2208,7 @@ const __query = (() => {
               for (const value of w.attrs[key] || []) {
                 const fill = (w.meta.fills || []).find((f) => f.key === key && f.value === value);
                 const from = fill ? fill.from || [] : w.meta.from || [];
+                flagged([w.id, ...from]);
                 note(value, from.filter((x) => x !== id && this.wires.get(x)?.meta.told), fill ? fill.via : w.meta.via, fill ? fill.ties : w.meta.ties?.[key]);
               }
             }
@@ -2208,7 +2229,11 @@ const __query = (() => {
         const values = [...found.keys()];
         const from = (list) => [...new Set(list.flatMap((value) => found.get(value).from))];
         const via = (list) => [...new Set(list.flatMap((value) => found.get(value).via))];
-        if (refused) {
+        if (!refused && issues.size && values.length) {
+          // the value rests on something that is recorded as wrong: report it, do not vouch for it
+          const list = [...issues.values()];
+          r = { status: 'conflicting', reason: str(list[0].attrs.why?.[0] || ''), issues: list.map((i) => i.id), alternatives: values.map((value) => ({ value, from: found.get(value).from })), from: from(values), via: via(values) };
+        } else if (refused) {
           r = { status: 'refused', violations: refused, from: [...new Set(refused.flatMap((x) => x.support || []))] };
         } else if (mode === 'list' && values.length) {
           r = { status: 'supported', values, from: from(values), via: via(values) };
@@ -2470,7 +2495,7 @@ const __time = (() => {
       if (next === undefined || next === null) return undefined;
       next = String(next);
       const q = quantity(next);
-      const broken = q && slot ? (slot.min && q.n < slot.min.n ? `below ${slot.min.n}` : slot.max && q.n > slot.max.n ? `above ${slot.max.n}` : null) : null;
+      const broken = q && slot && !slot.soft ? (slot.min && q.n < slot.min.n ? `below ${slot.min.n}` : slot.max && q.n > slot.max.n ? `above ${slot.max.n}` : null) : null;
       if (broken) {
         res.violations.push({ kind: 'conflict', id: h.id, key: f.key, value: next, event: ev.id, wires: [h.id, ev.id], why: `${ev.id} would take ${f.key} of ${h.id} ${broken} (from ${value} to ${next})` });
         return null;
@@ -2858,7 +2883,7 @@ const __abduce = (() => {
 
 // ---- src/world.mjs
 const __world = (() => {
-  const { parse, format, cloneWire } = __parser;
+  const { parse, format, cloneWire, quote } = __parser;
   const { EMPTY, walk, unify, hasVar, isVar, bound } = __unify;
   const { builtins, quantity, aggregates, canonical } = __builtins;
   const { cdcl } = __solve;
@@ -3204,6 +3229,8 @@ const __world = (() => {
     _settle(res, strict) {
       if (!res.violations.length) this._chase(res);
       if (!res.violations.length) this._validate(res);
+      // validation may have written or removed issue wires (soft bounds): let the rules see them
+      while (!res.violations.length && res._agenda.length) { this._chase(res); if (!res.violations.length) this._validate(res); } // bounded: issues change only when the wires they are about do
       if (!res.violations.length && strict && this.solveReport().status === 'unsat') {
         res.violations.push({ kind: 'dead-end', why: 'no consistent completion of the open keys exists' });
       }
@@ -4008,6 +4035,20 @@ const __world = (() => {
 
     // ---------------------------------------------------------------- validation
 
+    /** Keep the standing issue of a soft bound: there while the value is out of bounds, gone when it is not. */
+    _issue(w, key, bad, slot, res) {
+      const id = `issue.${w.id}.${key}`;
+      const have = this.wires.get(id);
+      const why = bad ? quote(`${key} ${bad}`) : null;
+      if (have && have.attrs.why[0] === why) return;
+      if (have) this._unsay(res, [id], []);
+      if (!bad) return;
+      const wire = { id, type: 'core.issue', attrs: { rule: ['$' + slot.id], about: ['$' + w.id], key: [key], why: [why] }, pattern: false };
+      const seq = this._event({ op: 'derive', id, wire: format(wire), via: slot.id, from: [w.id] });
+      this._addWire(wire, { seq, via: slot.id, from: [w.id], depth: 1 }, res);
+      res.derived.push(id);
+    }
+
     _validate(res) {
       const c = this._compiled();
       for (const id of res._touched) {
@@ -4024,7 +4065,8 @@ const __world = (() => {
               if (s.min || s.max) {
                 const q = quantity(v);
                 const bad = !q ? 'must be a number' : s.min && q.n < s.min.n ? `must be at least ${s.min.n}` : s.max && q.n > s.max.n ? `must be at most ${s.max.n}` : null;
-                if (bad) res.violations.push({ kind: 'domain', id, key: k, value: v, why: bad });
+                if (s.soft) this._issue(w, k, bad, s, res);
+                else if (bad) res.violations.push({ kind: 'domain', id, key: k, value: v, why: bad });
               }
               if (s.enum && !s.enum.includes(v) && !s.enum.some((e) => this._same(w.type, k, e, v))) res.violations.push({ kind: 'domain', id, key: k, value: v, allowed: s.enum });
               if (s.type && !s.kinds.length) {

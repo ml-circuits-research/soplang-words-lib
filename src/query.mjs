@@ -149,7 +149,7 @@ export const querying = {
     const key = seek && type ? c.shortKey(type, seek) : seek;
     const slot = key && type ? c.slotOf(type, key) : undefined;
     const ask = slot?.ask ? slot.ask.replace(/^"|"$/g, '') : undefined;
-    let r;
+    let r, suppositionOf = null;
 
     if (mode === 'count') {
       r = { status: 'supported', value: String(key ? wires.filter((w) => w.attrs[key]).length : wires.length), from: wires.map((w) => w.id) };
@@ -196,7 +196,7 @@ export const querying = {
         }
       }
       // nothing matches: suppose a wire of that type with the given keys and let the rules work
-      let refused = null;
+      let refused = null, supposed = null;
       const ground = Object.values(question.where).every((x) => !String(x).startsWith('?'));
       if (suppose && !wires.length && type && !question.about && ground) {
         this._cannot = []; // functions say here why they have no result
@@ -206,6 +206,19 @@ export const querying = {
           const id = this._freshId('suppose');
           const res = this._tell([{ id, type, attrs, pattern: false }], { strict: false });
           if (!res.ok) { refused = res.violations.map((x) => ({ ...x, wires: (x.wires || []).filter((y) => y !== id), support: (x.support || []).filter((y) => y !== id) })); return; }
+          // the supposed wire as the rules left it: everything they set on it, not only the key asked for
+          const sw = this.get(id);
+          if (sw) {
+            const told = new Set(Object.keys(attrs));
+            const set = {};
+            for (const k of Object.keys(sw.attrs)) if (!told.has(k)) set[k] = sw.attrs[k].length === 1 ? sw.attrs[k][0] : [...sw.attrs[k]];
+            supposed = {
+              type: sw.type,
+              attrs: Object.fromEntries(Object.entries(sw.attrs).map(([k, v]) => [k, [...v]])),
+              set,
+              fills: (sw.meta.fills || []).map((f) => ({ key: f.key, value: f.value, via: f.via, from: (f.from || []).filter((x) => x !== id), tier: this.tier(sw.id, f.key) })),
+            };
+          }
           // the value may be filled on the supposed wire or sit on a wire a rule derived from it
           for (const w of this._matching(question)) {
             for (const value of w.attrs[key] || []) {
@@ -219,6 +232,7 @@ export const querying = {
         });
       }
       const reasons = this._cannot || [];
+      if (supposed) suppositionOf = supposed;
       this._cannot = null;
       const producers = type ? c.lineage(type).flatMap((t) => c.producers.get(`${t}.${key}`) || []) : [];
       if (!refused && !found.size && producers.length && (lacking.length || !wires.length)) {
@@ -262,6 +276,7 @@ export const querying = {
         if (rests.size) r.rests = [...rests.values()].sort((x, y) => this._rank(y.tier) - this._rank(x.tier));
       }
     }
+    if (suppositionOf) r.supposed = suppositionOf;
     r.wires = wires.map((w) => w.id);
     if (record) r.answer = this._record(q, question, r);
     return r;

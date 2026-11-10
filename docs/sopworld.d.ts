@@ -32,6 +32,8 @@ export interface QueryResult {
   /** 'budget': the call ran out of budget; `site`, `steps` and `why` say where */
   status: 'supported' | 'conflicting' | 'ambiguous' | 'missing' | 'refused' | 'no' | 'unknown' | 'budget' | 'unsupported';
   reason?: string;
+  /** when the answer came from supposing a wire: that wire as the rules left it, and what they set */
+  supposed?: { type: string; attrs: Record<string, string[]>; set: Record<string, string | string[]>; fills: { key: string; value: string; via: string; from: string[]; tier: string }[] };
   /** the weakest tier under the answer, and the assumptions it rests on */
   tier?: string; rests?: Cell[];
   /** ids of the standing core.issue wires the answer rests on */

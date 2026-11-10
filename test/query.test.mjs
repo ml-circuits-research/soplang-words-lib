@@ -264,3 +264,29 @@ test('functions: three registries; a host name never replaces a built-in by acci
   assert.deepEqual([old.act({ action: 'greet' }).value, old.warnings.map((x) => [x.kind, x.id])], ['hello', [['deprecated', 'greet']]]);
   assert.match(new World().tell('@a core.action name=x fn=nothing').violations[0].why, /unknown action function/);
 });
+
+test('query: an answer found by supposing carries the supposed wire as the rules left it', () => {
+  const w = new World();
+  w.load(`
+    @q quote item=?i count=?n
+    @p price item=?i each=?e
+    @c1 core.calc out=?t fn=mul args=?n args=?e
+    @c2 core.calc out=?tax fn=mul args=?t args=0.2
+    @a quote core.on=$q total=?t tax=?tax unit=lei
+    @r core.rule when=$q when=$p with=$c1 with=$c2 then=$a
+  `);
+  w.load('@p1 price item=pen each=3');
+  const r = w.query({ type: 'quote', seek: 'total', where: { item: 'pen', count: 4 } });
+  assert.deepEqual([r.status, r.value], ['supported', '12']);
+  // one query is enough to word the reply: total, tax and unit are all there
+  assert.deepEqual(r.supposed.set, { total: '12', tax: '2.4', unit: 'lei' });
+  assert.deepEqual(r.supposed.attrs, { item: ['pen'], count: ['4'], total: ['12'], tax: ['2.4'], unit: ['lei'] });
+  assert.deepEqual(r.supposed.fills.map((f) => [f.key, f.via, f.from, f.tier]), [['total', 'r', ['p1'], 'derived'], ['tax', 'r', ['p1'], 'derived'], ['unit', 'r', ['p1'], 'derived']]);
+  assert.equal(w.ofType('quote').length, 0, 'and nothing stays in the world');
+  // when no rule answers, the supposed wire shows what was known
+  const m = w.query({ type: 'quote', seek: 'total', where: { item: 'ink', count: 1 } });
+  assert.deepEqual([m.status, m.supposed.set], ['missing', {}]);
+  // an answer read from a wire that exists is not a supposition
+  w.tell('@q9 quote item=pen count=2');
+  assert.equal(w.query({ type: 'quote', seek: 'total', where: { item: 'pen', count: 2 } }).supposed, undefined);
+});

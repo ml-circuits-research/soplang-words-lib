@@ -840,6 +840,13 @@ function is needed. A `core.action` without `fn=` is declared in full:
 A patch can carry the same writes directly: `{ wires, fills, sets: [{ id, key, value }],
 retract: [ids] }`. A `set` replaces what the key held; a `fill` adds to it.
 
+**What a supposition found.** When the answer came from supposing a wire, the result
+carries it as `supposed`: `{ type, attrs, set, fills }`. `attrs` is the supposed wire as
+the rules left it, `set` only what they added (`{ total: '12', tax: '2.4', unit:
+'lei' }`), and `fills` each added value with `via`, `from` and `tier`. A host can word
+its whole reply from one query. An answer read from a wire that exists has no
+`supposed`.
+
 **Vocabulary.** The wire types and key names used here are defaults that a host can
 replace: `new World({ vocabulary: { question, answer, request, type, seek, about, mode,
 where, action, arg, to, value, status, via, from } })`.
@@ -1111,6 +1118,7 @@ Since 0.4.0 (the version first published in this repository):
 - New: `core.on=` templates (3.3); the stratification check knows which keys a template
   adds, so a rule may aggregate over a type and fill a key on a wire of that type.
 - New: `core.absent=` in patterns (3.10).
+- New (0.6): a query answered by supposition returns the supposed wire (`supposed`, 4.10).
 - **Changed (0.6):** actions and producers have registries of their own (`actions`,
   `producers`, `world.register`); a function may not take the name of a built-in
   without `override` (3.6).

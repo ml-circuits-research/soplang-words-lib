@@ -1140,3 +1140,11 @@ Two things a host should know (both in SPEC 2.1):
   `count`, ...): `fns.mjs` now exports `actions`, and the runner passes whatever of
   `fns`, `actions`, `producers` a world exports. The warehouse example is split the same
   way.
+
+## W2 — a query returns what it derived — done
+
+`npm test`: 187 pass, 0 fail on sources and built file. A result obtained by supposing
+a wire carries `supposed: { type, attrs, set, fills }`: the supposed wire after the
+rules ran, the keys they added, and each added value with `via`, `from`, `tier`
+(SPEC 4.10). Test: one query for the total of a quote also gives the tax and the unit
+the same rule set; a `missing` answer shows an empty `set`; a lookup has no `supposed`.

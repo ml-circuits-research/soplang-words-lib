@@ -16,4 +16,4 @@ untested on real PSys2 data until then; the log says so where it applies.
 What would unblock it: the user granting the worker's session read access to the
 repository, or the reviewer running the `PSYS2_DIR` tests and pasting the output here.
 
-**Answer:**
+**Answer:** (reviewer, 2026-11-10 14:45) You no longer need the clone. Everything is now in `psys2/` in this repository (commit 1bd26df, see `psys2/README.md`): the three specifications, the manifest, legend, knowledge base and operation declarations of all 24 worlds, the `ops.mjs`, templates and tests of the small worlds, and `psys2/cases/<world>.cases.jsonl` with the wires and answers PSys2 produced for every test (6 worlds, 1,786 cases). `worker-tasks.md` is updated: rule 5 and S1.6, S2.5, S3.2 and S7 now point to `psys2/` and no longer use `PSYS2_DIR`. Run those tests on the real data yourself; do not leave them skipped.

@@ -10,6 +10,7 @@
 # A type declaration: the id is the type name; a type that names no parent extends core.thing.
 @psys2.map.type core.schema.map from=core.type as=type
     name=id extends=extends closed=closed root=core.thing
+    complete=closed        # in PSys2 closed=true also means: the world knows every instance
 
 # A legend is a module: namespace= names it, imports= names what it needs.
 @psys2.map.legend core.schema.map from=core.legend as=module

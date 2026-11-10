@@ -1273,3 +1273,24 @@ of them in the reference). `git grep -i psys2 src/ | wc -l`: 0.
 
 Left of D1: semantics.md (numbered statements, each naming its test), api.md (checked
 against index.d.ts), SPEC as overview with the HTML generated from the markdown.
+
+## D1 (3 of 4, first half) — docs/semantics.md, every statement tied to a test — done
+
+`npm test`: 203 pass, 0 fail on sources and built file.
+
+- `docs/semantics.md`: 62 numbered statements (S1–S62) in 14 sections (transaction,
+  identity and merging, fixpoint and termination, negation and absence, defaults /
+  completion / revision, certainty, provenance and retraction, sequence / states /
+  as-of, aggregates, relations, search, queries, worlds side by side, persistence and
+  replay), five invariants, and the table of violations (`#violations`, 19 kinds).
+  Where a choice was made, the statement gives the reason in one sentence (`Why:`).
+- Three statements had no test; `test/semantics.test.mjs` adds them: identity by keys
+  (merge, conflict, restatement, duplicate id); every accepted change leaves a world
+  that passes `check()` and every refused one leaves wires, stamp and log untouched
+  (9 changes, 5 of them refused); `check(patch)` changes nothing and `applyPatch`
+  gives what a fork that applied the patch has, and the snapshot rebuilds it.
+- Two tests in `test/docs.test.mjs`: every statement is numbered in order and cites at
+  least one test, and every cited name is the name of a test in `test/`; every
+  `kind: '...'` in `src/` is in the table of violations.
+- Corrected while writing: an unknown module is a `schema` violation (I had written
+  `unknown-world` in the reference; no such kind exists).

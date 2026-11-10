@@ -255,8 +255,7 @@ loaded once per world. `world.use(name)` is the same as telling this wire.
 **Interactions.** A module may contain `core.use` wires. The composition rules for
 slots and types apply across modules.
 
-**Violations.** `unknown-world` (no such module); whatever the module's own wires
-raise.
+**Violations.** `schema` (no such module); whatever the module's own wires raise.
 
 **Example**
 

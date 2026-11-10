@@ -71,3 +71,39 @@ test('docs: every built-in function and aggregate is in the reference, and the r
   for (const f of have) assert.ok(listed.has(f), `function ${f} is not in docs/reference.md`);
   for (const f of listed) assert.ok(have.has(f), `the reference lists ${f}, which is not a function`);
 });
+
+// ---- the semantics cite tests that exist ---------------------------------------------------
+import { readdirSync } from 'node:fs';
+
+test('docs: every test that docs/semantics.md cites exists, and every statement cites one', () => {
+  const dir = new URL('../test/', import.meta.url);
+  const names = new Set();
+  for (const f of readdirSync(dir)) {
+    if (!f.endsWith('.test.mjs')) continue;
+    for (const m of readFileSync(new URL(f, dir), 'utf8').matchAll(/^test\((['"`])(.*)\1, /gm)) names.add(m[2].replace(/\\(.)/g, '$1'));
+  }
+  const text = readFileSync(new URL('../docs/semantics.md', import.meta.url), 'utf8');
+  const statements = text.split(/\n(?=\*\*S\d+\.\*\*)/).slice(1);
+  assert.ok(statements.length >= 60, `${statements.length} statements`);
+  statements.forEach((s, i) => {
+    const id = s.match(/^\*\*(S\d+)\.\*\*/)[1];
+    assert.equal(id, `S${i + 1}`, 'statements are numbered in order');
+    const cited = [...s.split(/\n## /)[0].matchAll(/\*Tests?:\*((?:\s*`[^`]+`;?)+)/g)].flatMap((m) => [...m[1].matchAll(/`([^`]+)`/g)].map((x) => x[1]));
+    assert.ok(cited.length > 0, `${id} names no test`);
+    for (const name of cited) assert.ok(names.has(name), `${id} cites a test that does not exist: ${name}`);
+  });
+});
+
+test('docs: every kind of violation the library raises is in the table of docs/semantics.md', () => {
+  const text = readFileSync(new URL('../docs/semantics.md', import.meta.url), 'utf8');
+  const table = text.slice(text.indexOf('\n## Violations'));
+  const listed = new Set([...table.matchAll(/`([a-z-]+)`/g)].map((m) => m[1]));
+  const src = new URL('../src/', import.meta.url);
+  const notViolations = new Set(['chosen', 'default', 'forced', 'explanation', 'value']); // kinds of suggestions and rankings
+  for (const f of readdirSync(src)) {
+    if (!f.endsWith('.mjs')) continue;
+    for (const m of readFileSync(new URL(f, src), 'utf8').matchAll(/kind: '([a-z-]+)'/g)) {
+      if (!notViolations.has(m[1])) assert.ok(listed.has(m[1]), `${m[1]} (${f}) is not in the table of violations`);
+    }
+  }
+});

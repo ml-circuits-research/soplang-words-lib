@@ -1375,3 +1375,49 @@ browser checks passed. Pilot: kids.shop 147/147, kids.arith 212/217, kids.tasks
   the docs test fails if they are not).
 
 Rounds 1–4 are complete. Nothing is open in `questions.md`.
+
+## Language v1.1: the reviewer's seven notes on docs/language.md; 0.6.1 — done
+
+I read the notes of 21:10 only after 0.6.0 (c1aca9f) was pushed, so they are a version
+of their own: **0.6.1**, because a stricter parser can need a change in a host and two
+different builds should not both be called 0.6.0.
+
+`npm test`: 208 pass, 0 fail on sources and built file (83 documented examples run).
+`npm run test:browser`: all browser checks passed. Pilot: 147/147, 212/217, 231/232
+(unchanged; the whole PSys2 corpus in `compat/psys2` is read by the strict parser).
+`node tools/scan-loops.mjs src`: clean. `git grep -i psys2 src/ | wc -l`: 0.
+`npm run examples`: exit 0. `tsc --noEmit --strict src/index.d.ts`: no errors.
+`docs/version.md`: 0.6.1, build c034e3804d4e.
+
+1. **Strings.** JSON escapes exactly; a bad escape is an error. `parse` stores each
+   string in the spelling `JSON.stringify` gives its text, so `"café"` and
+   `"café"` are one value. `str()` decodes, `quote()` writes that spelling. Stated
+   difference from v1: a line end may also stand in a string as it is (stored as `\n`).
+2. **Identifiers.** Segments joined by single dots, ASCII only; `a..b` and `a.` are
+   errors. One stated difference from v1: a segment after the first may start with a
+   digit, because the PSys2 corpus itself has `$pat.kids.shop.price.q.2` and
+   `@t.arith.2` (with v1's rule 2 compat tests fail on PSys2's own wires).
+3. **Errors.** 13 named errors (the 8 of v1, split by cause, plus three about quotes
+   and backslashes), each with offset, line and column; one `SopError` carries all of
+   a text's errors in `errors`. Nothing is repaired. `parse(text, { lenient: true })`
+   keeps the old reading; `world.tell(text)` is always strict. No test, example or
+   matrix in the repository needed the lenient mode.
+4. **Atoms.** Decided: an atom may contain anything except white space, `"` and `\`,
+   and may not start with `$`, `?`, `@`, `#`. So `a=b`, `ann@example.org`, `#fff` after
+   `=` stay text (v1 forbids `@`, `$`, `=` anywhere; v1.1 is the superset). The rule
+   for `@`: a declaration starts only with a token whose first character is `@`.
+5. **Canonical serialization.** `format(wire, { canonical: true })` and the new
+   `serialize(wires, { canonical })`: as in v1 (sorted by key, repeats in order, JSON
+   spelling, `\n`, a line end after each wire).
+6. **Keys and values as data.** language.md section 3 gives the in-memory wire and the
+   `{ kind, v }` form; new `readValue` / `writeValue` convert. Short and qualified keys
+   are section 6; the parser never resolves them.
+7. **"From SOP Lang v1 to v1.1"**: section 11, a table of the differences with the
+   reason for each; a v1 file needs no change.
+
+Tests: `parser: every syntax error is named, with its place, all in one error; nothing
+is repaired` and `parser: identifiers, atoms, JSON escapes, one spelling per string,
+the canonical form, values as data` in `test/core.test.mjs`. api.md, index.d.ts and
+CHANGELOG follow (the docs tests enforce the first two).
+
+Changed for a host: `str('"a\\nb"')` now gives a line end where it gave `n`.

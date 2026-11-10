@@ -256,7 +256,8 @@ export class World {
   toSOP(options?: { schema?: boolean; derived?: boolean; provenance?: boolean }): string;
 }
 /** Thrown for text that is not SOP Lang; says where. */
-export class SopError extends Error { line?: number; column?: number; offset?: number }
+export interface SyntaxProblem { message: string; offset: number; line: number; column: number }
+export class SopError extends Error { line?: number; column?: number; offset?: number; /** every error of the text, in order */ errors: SyntaxProblem[] }
 export type Bindings = object;
 /** match two values (atom, ?variable, $reference); the bindings, or null */
 export function unify(a: string, b: string, bindings?: Bindings): Bindings | null;
@@ -271,9 +272,18 @@ export const SCHEMA_TYPES: Set<string>;
 /** the aggregate functions of core.calc ... over= */
 export const aggregates: Record<string, Function>;
 /** `anonymous`: a declaration may leave out its `@id` (queries) */
-export function parse(text: string, options?: { anonymous?: boolean }): Wire[];
-export function format(wire: Wire, options?: { multiline?: boolean }): string;
-export function tokenize(text: string): { t: string; line: number }[];
+/** `lenient`: read what versions before 0.6.1 read (an id twice in one text, non-JSON escapes, a quote or backslash in an atom) */
+export function parse(text: string, options?: { anonymous?: boolean; lenient?: boolean }): Wire[];
+/** `canonical`: entries on their own lines, sorted by key, strings in one spelling */
+export function format(wire: Wire, options?: { multiline?: boolean; canonical?: boolean }): string;
+/** wires as a text, each followed by a line end */
+export function serialize(wires: Wire[], options?: { multiline?: boolean; canonical?: boolean }): string;
+export interface Value { kind: 'atom' | 'string' | 'ref' | 'var'; v: string }
+/** a value token as data */
+export function readValue(token: string): Value;
+/** the token of a value given as data */
+export function writeValue(value: Value): string;
+export function tokenize(text: string, options?: { lenient?: boolean }): { t: string; line: number; column: number; offset: number }[];
 export function str(value: string): string;
 export function quote(text: string): string;
 export function induce(examples: { when: string | Wire[]; then?: string | Wire[] }[], options?: { name?: string; kind?: 'rule' | 'deny'; why?: string; tolerant?: boolean; distinct?: boolean; negatives?: { when: string | Wire[] }[]; budget?: Budget }): { text: string | null; budget?: BudgetViolation; skipped: { index: number; why: string }[]; calcs: object[]; tests: object[]; coversNegative: number[]; variables: number; examples: number };

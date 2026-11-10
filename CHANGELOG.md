@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.6.1
+
+The language as defined in `docs/language.md` is SOP Lang v1.1: a superset of v1 (every
+v1 text reads the same), with the parser as strict as v1's.
+
+### New
+- **Strings** use the escapes of JSON (`\n`, `\t`, `\uXXXX`, ...) and no others. `parse`
+  stores every string in one canonical spelling (that of `JSON.stringify`), so one text
+  is one value whatever escapes were written. `str()` decodes them; `quote()` writes
+  the canonical spelling.
+- **Every syntax error is named**, and one `SopError` lists all errors of a text in
+  `errors` (`{ message, offset, line, column }`): text before the first declaration, a
+  declaration without id or type, an invalid identifier (id, type, key, reference,
+  variable), a token that is not `key=value`, an empty value, an unterminated string, a
+  bad escape, text after a closing quote, a quote or a backslash inside an atom, an id
+  declared twice in one text.
+- **Canonical form**: `format(wire, { canonical: true })` and `serialize(wires,
+  { canonical: true })`: entries sorted by key, repeats in order, strings in one
+  spelling, one line end after each wire.
+- **Values as data**: `readValue(token)` gives `{ kind: 'atom' | 'string' | 'ref' |
+  'var', v }`, `writeValue` the token; for a host that parses with its own parser.
+- `docs/language.md`: the grammar with identifiers by segments, the exact rule for `@`
+  and atoms, the in-memory form of a wire, the list of errors, and a section "From SOP
+  Lang v1 to v1.1".
+
+### Changed (may need a change in a host)
+- The parser refuses what it used to let through: an identifier with an empty segment
+  (`a..b`, `a.`), a reference or variable that is not an identifier (`$`, `?`), an
+  unknown escape in a string (`"\q"`), text after a closing quote (`k="a"b`), a quote or
+  a backslash inside an atom, and the same id declared twice in one text.
+  `parse(text, { lenient: true })` reads such texts as before.
+- `str('"a\\nb"')` is now `a`, a line end, `b` (it was `anb`): escapes are JSON's.
+- A string that was written with a line end inside it is stored with `\n`.
+
 ## 0.6.0
 
 ### New

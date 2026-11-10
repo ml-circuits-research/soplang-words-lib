@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="484226ef59d9">
+<meta name="source-hash" content="339342500d21">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.6.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.6.1</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -347,15 +347,34 @@ const r = w.tell(&#x27;@pen item name=pen price=2&#x27;, { budget: { steps: 1 } 
 print(r.violations[0].kind, w.stats().exhausted, w.has(&#x27;pen&#x27;));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>budget true false</code></pre></figure>
 <h2 id="functions">Functions</h2>
-<h3 id="parsetext-options-formatwire-options-tokenizetext-strvalue-quotetext">parse(text, options?), format(wire, options?), tokenize(text), str(value), quote(text)</h3>
-<p><code>parse</code> returns the wires of a text: <code>[{ id, type, attrs, pattern }]</code>; with <code>{ anonymous: true }</code> a declaration may leave out its <code>@id</code>. It throws <code>SopError</code>. <code>format</code> writes a wire back (<code>{ multiline: true }</code> puts each entry on its own line). <code>tokenize</code> returns the tokens with their lines. <code>str</code> removes the quotes of a string value; <code>quote</code> adds them.</p>
-<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const [w] = parse(&#x27;@a item name=&quot;red pen&quot; price=2&#x27;);
-print(w.attrs, format(w), str(w.attrs.name[0]), quote(&#x27;a b&#x27;));</code></pre></figure>
-<figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;name&quot;:[&quot;\&quot;red pen\&quot;&quot;],&quot;price&quot;:[&quot;2&quot;]} @a item name=&quot;red pen&quot; price=2 red pen &quot;a b&quot;</code></pre></figure>
+<h3 id="parsetext-options-tokenizetext-options">parse(text, options?), tokenize(text, options?)</h3>
+<p><code>parse</code> returns the wires of a text: <code>[{ id, type, attrs, pattern }]</code>, <code>attrs</code> mapping each key to the array of its value tokens. Options: <code>anonymous</code> (a declaration may leave out its <code>@id</code>, for queries), <code>lenient</code> (read what versions before 0.6.1 read: an id twice in one text, escapes JSON does not have, a quote or backslash in an atom). It throws <code>SopError</code> listing every error of the text (<a href="language.html#9-errors">the list</a>). <code>tokenize</code> returns the tokens: <code>[{ t, line, column, offset }]</code>. Cost: linear in the text.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const [w] = parse(&#x27;@a item name=&quot;red pen&quot; price=2 tag=x tag=y&#x27;);
+print(w);
+print(parse(&#x27;item price=?p&#x27;, { anonymous: true })[0].id, tokenize(&#x27;@a t k=v&#x27;).map((x) =&gt; x.t));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;id&quot;:&quot;a&quot;,&quot;type&quot;:&quot;item&quot;,&quot;attrs&quot;:{&quot;name&quot;:[&quot;\&quot;red pen\&quot;&quot;],&quot;price&quot;:[&quot;2&quot;],&quot;tag&quot;:[&quot;x&quot;,&quot;y&quot;]},&quot;pattern&quot;:false}
+_1 [&quot;@a&quot;,&quot;t&quot;,&quot;k=v&quot;]</code></pre></figure>
+<h3 id="formatwire-options-and-serializewires-options">format(wire, options?) and serialize(wires, options?)</h3>
+<p><code>format</code> writes one wire: on one line; with <code>{ multiline: true }</code> one entry per line; with <code>{ canonical: true }</code> in the <a href="language.html#8-writing-wires-and-the-canonical-form">canonical form</a> (entries sorted by key, strings in one spelling). <code>serialize</code> writes several wires, each followed by a line end, with the same options; <code>serialize(wires, { canonical: true })</code> gives the same bytes for the same wires.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const ws = parse(&#x27;@a item price=2 name=&quot;red pen&quot;  @b item&#x27;);
+print(format(ws[0]));
+print(serialize(ws, { canonical: true }));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>@a item price=2 name=&quot;red pen&quot;
+@a item
+    name=&quot;red pen&quot;
+    price=2
+@b item
+</code></pre></figure>
+<h3 id="strvalue-quotetext-readvaluetoken-writevaluevalue">str(value), quote(text), readValue(token), writeValue(value)</h3>
+<p><code>str</code> gives the text of a string token (escapes decoded) and returns any other value unchanged; <code>quote</code> gives the string token of a text, in the canonical spelling (the escapes of JSON). <code>readValue</code> gives a token as data, <code>{ kind, v }</code> with kind <code>atom</code>, <code>string</code>, <code>ref</code> or <code>var</code>; <code>writeValue</code> is its inverse (and throws for another kind). They are what a host with its own parser needs to hand over wires.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>print(str(&#x27;&quot;a \\&quot;b\\&quot;\\n&quot;&#x27;) === &#x27;a &quot;b&quot;\n&#x27;, quote(&#x27;a &quot;b&quot;\n&#x27;), str(&#x27;5kg&#x27;));
+print(readValue(&#x27;&quot;red pen&quot;&#x27;), readValue(&#x27;$a&#x27;), writeValue({ kind: &#x27;var&#x27;, v: &#x27;x&#x27; }));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true &quot;a \&quot;b\&quot;\n&quot; 5kg
+{&quot;kind&quot;:&quot;string&quot;,&quot;v&quot;:&quot;red pen&quot;} {&quot;kind&quot;:&quot;ref&quot;,&quot;v&quot;:&quot;a&quot;} ?x</code></pre></figure>
 <h3 id="soperror">SopError</h3>
-<p>What <code>parse</code>, <code>tell</code> and the other methods throw for text that is not SOP Lang. It has <code>message</code>, <code>line</code>, <code>column</code>, <code>offset</code>.</p>
-<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>try { parse(&#x27;@a item\n  name=&#x27;); } catch (e) { print(e instanceof SopError, e.line, e.column); }</code></pre></figure>
-<figure class="code"><figcaption>prints</figcaption><pre><code>true 2 3</code></pre></figure>
+<p>What <code>parse</code>, <code>tell</code> and the other methods throw for text that is not SOP Lang. It has <code>message</code>, <code>line</code>, <code>column</code> and <code>offset</code> of the first error, and <code>errors</code>: every error of the text as <code>{ message, offset, line, column }</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>try { parse(&#x27;@a item\n  name=\n  price&#x27;); } catch (e) { print(e instanceof SopError, e.line, e.column, e.errors.length); }</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true 2 3 2</code></pre></figure>
 <h3 id="unifya-b-bindings-and-walkterm-bindings">unify(a, b, bindings?) and walk(term, bindings)</h3>
 <p><code>unify</code> matches two values (an atom, a <code>?variable</code>, a <code>$reference</code>, also <code>$?variable</code>) and returns the bindings, extended from those given, or <code>null</code> when they cannot be the same. <code>walk</code> returns what a value stands for under bindings.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const s = unify(&#x27;$?w&#x27;, &#x27;$pen&#x27;, unify(&#x27;?n&#x27;, &#x27;pen&#x27;));
@@ -401,7 +420,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.6.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.6.1 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

@@ -99,7 +99,7 @@ test('docs: every kind of violation the library raises is in the table of docs/s
   const table = text.slice(text.indexOf('\n## Violations'));
   const listed = new Set([...table.matchAll(/`([a-z-]+)`/g)].map((m) => m[1]));
   const src = new URL('../src/', import.meta.url);
-  const notViolations = new Set(['chosen', 'default', 'forced', 'explanation', 'value']); // kinds of suggestions and rankings
+  const notViolations = new Set(['chosen', 'default', 'forced', 'explanation', 'value', 'atom', 'string', 'ref', 'var']); // kinds of suggestions, rankings and values
   for (const f of readdirSync(src)) {
     if (!f.endsWith('.mjs')) continue;
     for (const m of readFileSync(new URL(f, src), 'utf8').matchAll(/kind: '([a-z-]+)'/g)) {

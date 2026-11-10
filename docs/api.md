@@ -806,34 +806,80 @@ budget true false
 
 ## Functions
 
-### parse(text, options?), format(wire, options?), tokenize(text), str(value), quote(text)
+### parse(text, options?), tokenize(text, options?)
 
-`parse` returns the wires of a text: `[{ id, type, attrs, pattern }]`; with
-`{ anonymous: true }` a declaration may leave out its `@id`. It throws `SopError`.
-`format` writes a wire back (`{ multiline: true }` puts each entry on its own line).
-`tokenize` returns the tokens with their lines. `str` removes the quotes of a string
-value; `quote` adds them.
+`parse` returns the wires of a text: `[{ id, type, attrs, pattern }]`, `attrs` mapping
+each key to the array of its value tokens. Options: `anonymous` (a declaration may
+leave out its `@id`, for queries), `lenient` (read what versions before 0.6.1 read: an
+id twice in one text, escapes JSON does not have, a quote or backslash in an atom). It
+throws `SopError` listing every error of the text ([the list](language.md#9-errors)).
+`tokenize` returns the tokens: `[{ t, line, column, offset }]`. Cost: linear in the
+text.
 
 ```js run
-const [w] = parse('@a item name="red pen" price=2');
-print(w.attrs, format(w), str(w.attrs.name[0]), quote('a b'));
+const [w] = parse('@a item name="red pen" price=2 tag=x tag=y');
+print(w);
+print(parse('item price=?p', { anonymous: true })[0].id, tokenize('@a t k=v').map((x) => x.t));
 ```
 
 ```output
-{"name":["\"red pen\""],"price":["2"]} @a item name="red pen" price=2 red pen "a b"
+{"id":"a","type":"item","attrs":{"name":["\"red pen\""],"price":["2"],"tag":["x","y"]},"pattern":false}
+_1 ["@a","t","k=v"]
+```
+
+### format(wire, options?) and serialize(wires, options?)
+
+`format` writes one wire: on one line; with `{ multiline: true }` one entry per line;
+with `{ canonical: true }` in the [canonical form](language.md#8-writing-wires-and-the-canonical-form)
+(entries sorted by key, strings in one spelling). `serialize` writes several wires,
+each followed by a line end, with the same options; `serialize(wires, { canonical:
+true })` gives the same bytes for the same wires.
+
+```js run
+const ws = parse('@a item price=2 name="red pen"  @b item');
+print(format(ws[0]));
+print(serialize(ws, { canonical: true }));
+```
+
+```output
+@a item price=2 name="red pen"
+@a item
+    name="red pen"
+    price=2
+@b item
+
+```
+
+### str(value), quote(text), readValue(token), writeValue(value)
+
+`str` gives the text of a string token (escapes decoded) and returns any other value
+unchanged; `quote` gives the string token of a text, in the canonical spelling (the
+escapes of JSON). `readValue` gives a token as data, `{ kind, v }` with kind `atom`,
+`string`, `ref` or `var`; `writeValue` is its inverse (and throws for another kind).
+They are what a host with its own parser needs to hand over wires.
+
+```js run
+print(str('"a \\"b\\"\\n"') === 'a "b"\n', quote('a "b"\n'), str('5kg'));
+print(readValue('"red pen"'), readValue('$a'), writeValue({ kind: 'var', v: 'x' }));
+```
+
+```output
+true "a \"b\"\n" 5kg
+{"kind":"string","v":"red pen"} {"kind":"ref","v":"a"} ?x
 ```
 
 ### SopError
 
 What `parse`, `tell` and the other methods throw for text that is not SOP Lang. It has
-`message`, `line`, `column`, `offset`.
+`message`, `line`, `column` and `offset` of the first error, and `errors`: every error
+of the text as `{ message, offset, line, column }`.
 
 ```js run
-try { parse('@a item\n  name='); } catch (e) { print(e instanceof SopError, e.line, e.column); }
+try { parse('@a item\n  name=\n  price'); } catch (e) { print(e instanceof SopError, e.line, e.column, e.errors.length); }
 ```
 
 ```output
-true 2 3
+true 2 3 2
 ```
 
 ### unify(a, b, bindings?) and walk(term, bindings)

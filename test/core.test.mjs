@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { World, parse, format, str, quote, SopError, unify, walk } from '../tools/lib-under-test.mjs';
+import { World, parse, format, serialize, readValue, writeValue, str, quote, SopError, unify, walk } from '../tools/lib-under-test.mjs';
 import { mechanics, family } from '../examples/worlds.mjs';
 
 test('parser: wires, multi-line, repeated keys, strings, comments', () => {
@@ -31,6 +31,62 @@ test('parser: round trip and errors', () => {
   assert.throws(() => parse('k=v'), SopError);
   assert.throws(() => parse('@a t novalue'), SopError);
   assert.throws(() => parse('@a t s="open'), SopError);
+});
+
+test('parser: every syntax error is named, with its place, all in one error; nothing is repaired', () => {
+  const errors = (text, options) => { try { parse(text, options); return []; } catch (e) { assert.ok(e instanceof SopError); return e.errors.map((x) => [x.line, x.column, x.offset, x.message]); } };
+  const one = (text) => { const e = errors(text); assert.equal(e.length, 1, text); return e[0][3]; };
+  assert.match(one('stray @a t k=v'), /^text before the first declaration/);
+  assert.equal(one('@ t k=v'), 'a declaration without an id');
+  assert.equal(one('@a'), 'wire @a has no type');
+  assert.equal(one('@a k=v'), 'wire @a has no type');
+  assert.match(one('@a t novalue'), /^expected key=value/);
+  assert.equal(one('@a t k='), 'the key "k" has an empty value');
+  assert.equal(one('@a t s="open'), 'unterminated string');
+  assert.match(one('@a t s="bad \\q escape"'), /^a bad escape/);
+  assert.match(one('@a t s="\\u12"'), /^a bad escape/);
+  assert.equal(one('@a t s="x"y'), 'text after the closing quote of a string');
+  assert.match(one('@a t k=a"b"'), /^a quote inside an atom/);
+  assert.equal(one('@a t k=a\\b'), 'a backslash outside a string');
+  for (const bad of ['@a..b t', '@a. t', '@1a t', '@é t', '@a t.', '@a 1t', '@a t 1k=v', '@a t k.=v']) assert.match(one(bad), /^invalid identifier|has no type/, bad);
+  for (const bad of ['@a t r=$', '@a t r=$a..b', '@a t r=$1', '@a t v=?', '@a t v=?1x']) assert.match(one(bad), /^invalid identifier in the (reference|variable)/, bad);
+  assert.equal(one('@a t k=1  @a t k=2'), 'the id "a" is declared twice in this text');
+  // all errors of a text, in order, each at the start of its token
+  assert.deepEqual(errors('@a t k=v\n@b t "s"\n@c t k=\n@c t x=1'), [
+    [2, 6, 14, 'expected key=value, got ""s""'], [3, 6, 23, 'the key "k" has an empty value'], [4, 1, 26, 'the id "c" is declared twice in this text']]);
+  // the world is as strict as parse; lenient reads what older versions read
+  assert.throws(() => new World().tell('@a t k=1  @a t k=2'), SopError);
+  const old = parse('@a t k=1 s="a\\qb"  @a t k=2', { lenient: true });
+  assert.deepEqual([old.length, old[0].attrs.s], [2, ['"aqb"']]);
+});
+
+test('parser: identifiers, atoms, JSON escapes, one spelling per string, the canonical form, values as data', () => {
+  // identifiers: segments joined by single dots; a later segment may start with a digit
+  assert.deepEqual(parse('@pat.kids.shop.price.q.2 a-b._c x_1.y-2=v ref=$t.arith.2 any=$?w')[0],
+    { id: 'pat.kids.shop.price.q.2', type: 'a-b._c', attrs: { 'x_1.y-2': ['v'], ref: ['$t.arith.2'], any: ['$?w'] }, pattern: false });
+  // atoms: anything but white space, a quote and a backslash; "@", "=", "$", "#", "?" are text after the first character
+  assert.deepEqual(parse('@a t k=x@y k=a=b k=#fff k=a$b k=2*?x k=-4 k=10N/kg k=é # comment @not a=wire')[0].attrs.k, ['x@y', 'a=b', '#fff', 'a$b', '2*?x', '-4', '10N/kg', 'é']);
+  assert.equal(parse('@a t s="@b u k=v $x ?y # all text"').length, 1);
+  // strings: the escapes of JSON; a line end may stand as it is; one spelling in memory
+  const [w] = parse('@a t u="caf\\u00e9 \\"q\\" \\\\ \\/ \\b\\f\\n\\r\\t" raw="two\nlines\there" same="café"');
+  assert.equal(str(w.attrs.u[0]), 'café "q" \\ / \b\f\n\r\t');
+  assert.equal(w.attrs.raw[0], '"two\\nlines\\there"');
+  assert.equal(parse('@x t same="caf\\u00e9"')[0].attrs.same[0], w.attrs.same[0]);
+  for (const text of ['', 'plain', 'say "hi"', 'a\\b', 'line\nend\ttab', 'é ✓ \u0001']) {
+    assert.equal(str(quote(text)), text);
+    assert.equal(parse(`@a t s=${quote(text)}`)[0].attrs.s[0], quote(text), 'quote() writes the spelling parse() stores');
+  }
+  // the canonical form: sorted keys, repeats in order, one wire after the other, a line end at the end
+  const ws = parse('@a t z=1 b=2 s="x\ty" b=1 a=$x\n@b t');
+  assert.equal(format(ws[0], { canonical: true }), '@a t\n    a=$x\n    b=2\n    b=1\n    s="x\\ty"\n    z=1');
+  const canon = serialize(ws, { canonical: true });
+  assert.equal(canon, '@a t\n    a=$x\n    b=2\n    b=1\n    s="x\\ty"\n    z=1\n@b t\n');
+  assert.equal(serialize(parse(canon), { canonical: true }), canon, 'canonical text is a fixed point');
+  assert.equal(serialize(parse('@a   t a=$x s="x\\u0009y" b=2 b=1\n  z=1 @b t'), { canonical: true }), canon, 'the same wires, written differently, give the same bytes');
+  // values as data, for a host with its own parser
+  assert.deepEqual(['2kg', '"a\\nb"', '$b1', '?x'].map(readValue), [{ kind: 'atom', v: '2kg' }, { kind: 'string', v: 'a\nb' }, { kind: 'ref', v: 'b1' }, { kind: 'var', v: 'x' }]);
+  for (const token of ['2kg', '"a\\nb"', '$b1', '?x', '$?w']) assert.equal(writeValue(readValue(token)), token);
+  assert.throws(() => writeValue({ kind: 'list', v: [] }));
 });
 
 test('unify: variables, wire references, failure', () => {

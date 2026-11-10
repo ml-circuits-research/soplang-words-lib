@@ -34,6 +34,19 @@ The reviewer's first two commits to this repository were a false start; ignore t
 
 **Validated at 20:50:** W1 (3191b63), W2 (b9d5d4f), W3 (b6a5fec), W4 (07d3074), W5 + W6 (9aa0f3e), W7 (305e9fb). Reviewer rerun: `npm test` 192 pass, 0 fail, 1 skipped; pilot unchanged; no PSys2 name in `src/`. Reviewer probe: `revise` of a told quantity recomputes the cost and lists `revised`; `told()` returns the facts as stated and re-telling them is idempotent; a deny's reason quotes the value ("63 lei is too much") with the bindings; `check()` of the whole world; a host function named `add` is refused. **Remaining: W8 (undo / mark / rewind), G11 (soft constraints — asked three times now; the host needs it, please do it next), D1, tag 0.6.0.**
 
+**Validated at 21:10, with a correction.** G11 (ddfcec5) and W8 (280aec2) are in: the reviewer wrongly listed G11 as missing three times; it was done before L1. Sorry. `npm test` 202 pass, 0 fail, 1 skipped. D1 parts 1–3 read (language, reference, semantics): the right shape, executed examples, statements tied to tests.
+
+**Notes on `docs/language.md`, since PSys2 will adopt it as SOP Lang v1.1** (compare with `compat/psys2/specs/01-soplang.md`, which is v1; v1.1 must be a superset where v1 is stricter, or the difference must be stated):
+1. **Strings:** v1 uses JSON string escapes (`\n`, `\t`, `\uXXXX`, …) and rejects a bad escape. The grammar here lists only `\"` and `\\`. Adopt JSON escapes exactly, and say what `str()` and `quote()` do.
+2. **Identifiers:** v1 is "one or more segments `[A-Za-z_][A-Za-z0-9_-]*` joined by `.`". The grammar here (`name = (letter | "_") { letter | digit | "_" | "." | "-" }`) also accepts `a..b` and a trailing dot. Use the segment form; say whether non-ASCII letters are allowed (v1: no).
+3. **Errors:** v1 names every syntax error (text before the first `@`, a declaration without id or type, a token that is not `key=value`, an empty value `key=`, an unterminated string, a bad escape, an invalid identifier, a duplicate id in one parse unit) with offset, line and column, and repairs nothing silently. State the same list and the error shape; where the library is more lenient today, make it strict (an option `lenient` may keep the old behaviour).
+4. **Atoms:** v1 excludes `"`, `@`, `$`, `=` and `\` from atoms; here `colour=#fff` and a value containing `=` are allowed. Decide and state it; `@` inside an atom must not be read as a new declaration (give the exact rule: a declaration starts with `@` only at the start of a token).
+5. **Canonical serialization** (v1 has it: entries sorted by key keeping the order of repeats, JSON re-escaping, `\n` line ends): include it, `format(wire, { canonical: true })`.
+6. **Short and full keys**, and the **value kinds as data** (`{ kind: 'atom' | 'string' | 'ref' | 'var', v }`): describe the in-memory form a host parser must hand over, since PSys2 will parse with its own parser and pass wires.
+7. A short **"v1 to v1.1" section**: what is new (variables, comments), what changed, what a v1 file needs (nothing).
+
+Then finish D1 (API reference checked against `index.d.ts`, the generated HTML pages, the test that fails on an undocumented wire type or method) and tag **0.6.0**.
+
 **The first real host has reported.** PSys2 integrated the library (at a7a8e16) behind a switch for three worlds and measured both strategies. On its per-turn consistency audit, turns that leave the world in violation fell from 2.8% (its own code) to 0.3% (matrix); undo, revision and abduction cases started passing; turn time rose 9%. It also sent ten workarounds it needed. They are general API gaps; fix them as W1–W8 below.
 
 **Order from here, one commit each: G11, L1, W1–W8, D1, then tag 0.6.0** (L1 changes the syntax, so it is a minor version).
@@ -273,3 +286,4 @@ G1, G2, G6, G3, G4, G7, G5, G8, G9. G8 for the shop world can start as soon as G
 - H5 (ff4846c), H6 (71f58a0), optional-key defaults (97d8a7a), 0.5.0 (93a5c5d): reviewer rerun 182 pass / 0 fail / 1 skipped; pilot unchanged.
 - L1 (8b6a219) + build identity (533d75a, 59941ab): reviewer rerun 184 pass / 0 fail / 1 skipped; pilot unchanged; new-syntax probe passes.
 - W1–W7 (3191b63 … 305e9fb): reviewer rerun 192 pass / 0 fail / 1 skipped; probes pass.
+- G11 (ddfcec5), W8 (280aec2), D1 parts 1–3 (1221361, 599e6de, e81f470): reviewer rerun 202 pass / 0 fail / 1 skipped. Notes on the language reference for v1.1 given.

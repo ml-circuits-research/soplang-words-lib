@@ -28,7 +28,7 @@ export class Problem {
     this.variables = [];
     const c = world._compiled();
     // with negation a violation may depend on what is absent, so no small cause can be named
-    this.monotone = !c.negRules.length && !c.denies.some((d) => d.not.length);
+    this.monotone = !c.negRules.length && !c.fluents.size && !c.denies.some((d) => d.not.length || d.selective);
     for (const o of world.open()) {
       const slot = c.slots.get(o.type).get(o.key);
       if (!world._closedDomain(slot)) continue;
@@ -151,7 +151,7 @@ function ground(problem) {
       done.add(v.id);
       const wire = w.wires.get(v.id);
       for (const { rule: d, idx } of c.forType(c.denyByType, wire.type)) {
-        if (d.not.length) continue;
+        if (d.not.length || d.selective) continue;
         for (const s0 of w._matchWire(d.when[idx], wire, EMPTY)) {
           for (const s of w._bodies(d, s0, idx)) {
             const lits = new Map();

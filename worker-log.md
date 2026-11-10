@@ -256,3 +256,82 @@ npm run test:browser
 On the `replace` benchmark (30 ms in 0.4, 47 to 81 ms at the reviewer, 50 to 59 ms here):
 noted, to be found and fixed in G7 as asked.
 
+## G3 — order and state over time — done
+
+Commit: `git log --grep '^G3:'`. New file `src/time.mjs`; SPEC 3.10, 3.11, 3.12.
+Neutral example: an account with deposits, withdrawals and audits (`examples/ledger.mjs`,
+`examples/time.mjs`).
+
+1. **Sequence.** `core.sequence key=<key>` declares the key that carries a wire's place;
+   without it, or for a wire that lacks the key, arrival order (a wire without the key
+   takes the place of the last wire that had one). `world.seqOf`, `world.compare`,
+   checks `before` and `after`, and the pattern selector `core.select=latest|first`.
+   A rule or deny with a selector is re-evaluated in full when the rest is quiet, and a
+   firing whose selected wire was overtaken is withdrawn.
+2. **Fluents and effects.** `core.fluent of= key=` and
+   `core.effect on= fluent= op=add|sub|set|<fn> amount=<event key> | value=<literal>`,
+   with the holder named by `for=<event key>` (a reference) or by
+   `where.<holder key>=<event key>`. The value on the wire is the last statement plus
+   the later effects in sequence order; an unknown start stays unknown; a told value for
+   a fluent key of an existing wire is a new statement, not a conflict; an effect that
+   breaks `min` / `max` is a `conflict` naming the event. Retract and replace recompute.
+3. **As-of.** `world.asOf(at, fn)`, `ask(pattern, { at })`, `query(q, { at })`.
+
+Commands and numbers:
+
+```
+node tools/build.mjs
+npm test
+node tools/bench-time.mjs
+node tools/bench.mjs
+npm run examples
+npm run test:browser
+git grep -i psys2 src/ | wc -l
+```
+
+| Command | Result |
+| --- | --- |
+| `npm test`, sources | 124 tests: 124 pass, 0 fail, 0 skipped |
+| `npm test`, built file | 124 tests: 124 pass, 0 fail, 0 skipped |
+| `npm run examples` | exit 0 (nine examples now, `examples/time.mjs` added) |
+| `npm run test:browser` | all browser checks passed |
+| `git grep -i psys2 src/ \| wc -l` | 0 |
+
+New tests: 10 in `test/time.test.mjs`.
+
+Cost (`node tools/bench-time.mjs`, one run):
+
+| Workload | Time |
+| --- | --- |
+| 200 events on one account, told one by one | 11 ms |
+| 1000 events on one account | 64 ms |
+| 2000 events on one account | 100 ms |
+| retract one event among 2000 | 5 ms |
+| query as of the middle of 2000 events | 14 ms |
+| 1000 accounts with 2 events each (3000 wires) | 77 ms |
+
+The first version replayed the whole line of a holder for every event: 2000 events
+took 2619 ms. A new event that comes last in sequence is now applied to the current
+value directly. The last test of `test/time.test.mjs` compares the two paths on 300
+generated events over two accounts (same state and same provenance, also after retracting
+three events and after a JSON round trip). Writing it showed that the two paths listed
+different events under `from` when an event changed nothing; the rule is now one for
+both: `from` holds the events that changed the value since it was last set.
+
+The existing benchmarks after G3 (`node tools/bench.mjs`, one run, ms): join 148,
+recursion 275, 2000 tells 52, 1000 replaces 47, six completion turns 133.
+
+Deviations and limits:
+
+- `at` for as-of is a number of the declared sequence key, or an arrival number from
+  `seqOf`. There is no separate clock.
+- As-of sets aside every told wire after the point and re-derives; its cost grows with
+  what came later, not with the size of the world.
+- Selectors group by the patterns written before them in the rule: put the pattern that
+  names the group first (`?s sensor`, then `?r reading of=$s core.select=latest`).
+  A selector as the first pattern picks one wire of the whole type.
+- Stratification is not checked for selectors as it is for negation.
+- A matrix with fluents is treated as non-monotone by the solvers (a refusal is
+  attributed to all assigned values, not to a small cause).
+- Not yet checked against the PSys2 `kids.arith` dialogues: that is G8.
+

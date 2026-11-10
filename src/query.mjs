@@ -80,7 +80,8 @@ export const querying = {
    * Answer a question. Changes nothing unless { record: true }, which writes an answer
    * wire (and the question wire, if it was not one already) with status and provenance.
    */
-  query(q, { record = false, suppose = true } = {}) {
+  query(q, { record = false, suppose = true, at } = {}) {
+    if (at !== undefined) return this.asOf(at, () => this.query(q, { suppose }));
     const question = this._question(q);
     const c = this._compiled();
     const { seek, mode } = question;

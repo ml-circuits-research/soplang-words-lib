@@ -12,6 +12,7 @@ import { compileMatrix, localize, prefixModule, fitsKind, knownKind, readMap, SC
 import { completion } from './complete.mjs';
 import { revision } from './revise.mjs';
 import { querying } from './query.mjs';
+import { timing } from './time.mjs';
 import { abduce } from './abduce.mjs';
 
 const first = (w, k) => w.attrs[k]?.[0];
@@ -85,7 +86,8 @@ export class World {
   }
 
   /** Query with pattern wires. Returns one object of bindings per match. */
-  ask(query) {
+  ask(query, { at } = {}) {
+    if (at !== undefined) return this.asOf(at, () => this.ask(query));
     const pats = this._patterns(query);
     const out = [];
     for (const s of this._matchAll(pats, 0, EMPTY)) {
@@ -233,7 +235,7 @@ export class World {
   // ---------------------------------------------------------------- transactions
 
   _result() {
-    return { ok: true, added: [], derived: [], filled: [], merged: [], removed: [], violations: [], _touched: new Set(), _agenda: [] };
+    return { ok: true, added: [], derived: [], filled: [], merged: [], removed: [], violations: [], _touched: new Set(), _agenda: [], _fluents: new Map() };
   }
   _begin() { this._tx++; return this._journal.length; }
   _do(undo) {
@@ -257,7 +259,7 @@ export class World {
 
   _finish(mark, res, dry, entry) {
     res.ok = !res.violations.length;
-    delete res._touched; delete res._agenda;
+    delete res._touched; delete res._agenda; delete res._fluents;
     if (!res.ok) for (const v of res.violations) this._support(v); // before the evidence is rolled back
     if (!res.ok || dry) {
       this._rollback(mark);
@@ -353,8 +355,10 @@ export class World {
 
   _addWire(w, meta, res) {
     w.meta = meta;
+    this._stamp(w);
     this._put(w);
     this._do(() => this._drop(w));
+    this._fluentNote(w, res);
     res._touched.add(w.id);
     res._agenda.push(w.id);
   }
@@ -371,6 +375,7 @@ export class World {
     this._link(w, key, value);
     this._do(() => this._takeValue(w, key, value, fill));
     if (prov.rec) prov.rec.fills.push({ id: w.id, key, value });
+    this._fluentTouch(w, res);
     this._event({ op: 'fill', id: w.id, key, value, via: prov.via, from: prov.from });
     res.filled.push({ id: w.id, key, value, via: prov.via });
     res._touched.add(w.id);
@@ -488,6 +493,7 @@ export class World {
         }
       }
       if (!prev || prev.hierarchy !== c.hierarchy) this._reindex();
+      if (c.fluents.size || c.seqKey) for (const w of this.wires.values()) { if (w.meta.told) this._fluentNote(w, res); }
       res._agenda = [...this.wires.keys()];
       for (const id of res._agenda) res._touched.add(id);
     }
@@ -532,6 +538,7 @@ export class World {
     const c = this._compiled();
     return ws.map((w) => {
       const p = localize(w, locals);
+      if (p.attrs['core.select']) { p.select = p.attrs['core.select'][0]; delete p.attrs['core.select']; }
       for (const key of Object.keys(p.attrs)) { // full key names and short ones are the same key
         const short = c.shortKey(p.type, key);
         if (short !== key) { p.attrs[short] = [...(p.attrs[short] || []), ...p.attrs[key]]; delete p.attrs[key]; }
@@ -575,6 +582,17 @@ export class World {
   }
 
   *_candidates(p, s) {
+    if (p.select && !p._plain) { // one wire: the latest (or first) in sequence among those that match
+      const plain = Object.create(p, { select: { value: undefined }, _plain: { value: true } });
+      let best = null, bestWire = null;
+      for (const t of this._candidates(plain, s)) {
+        const w = this.wires.get(walk('?' + p.id, t));
+        const d = bestWire ? this.compare(w.id, bestWire.id) : 0;
+        if (!bestWire || (p.select === 'latest' ? d > 0 : d < 0)) { best = t; bestWire = w; }
+      }
+      if (best) yield best;
+      return;
+    }
     const idv = walk('?' + p.id, s);
     if (!isVar(idv)) {
       const w = this.wires.get(this.resolve(idv));
@@ -644,7 +662,8 @@ export class World {
       }
     };
     for (;;) {
-      while (res._agenda.length && !res.violations.length) {
+      while ((res._agenda.length || res._fluents.size) && !res.violations.length) {
+        if (res._fluents.size) { this._fluentRun(res, c); continue; } // states first: rules read their values
         const w = this.wires.get(res._agenda.shift());
         if (!w) continue;
         // a new or changed wire can end the absence that a rule with not= relied on
@@ -659,14 +678,24 @@ export class World {
         }
       }
       if (res.violations.length) return;
-      // rules with negation are re-evaluated in full once everything else is quiet
-      for (const rule of c.negRules) fireAll(rule, [...this._bodies(rule, EMPTY, -1)]);
-      if (!res._agenda.length || res.violations.length) return;
+      // rules with negation or a selector are re-evaluated in full once everything else is quiet
+      for (const rule of c.negRules) {
+        const bodies = [...this._bodies(rule, EMPTY, -1)];
+        if (rule.selective) { // what a selector picked may have changed: drop the firings that no longer hold
+          const now = new Set(bodies.map((s) => this._sig(rule, s)));
+          const stale = [...(this.byRule.get(rule.id) || [])].filter((sig) => !now.has(sig));
+          if (stale.length) this._unsay(res, [], [], stale);
+        }
+        fireAll(rule, bodies);
+      }
+      if ((!res._agenda.length && !res._fluents.size) || res.violations.length) return;
     }
   }
 
+  _sig(rule, s) { return rule.id + '|' + rule.vars.map((v) => walk(v, s)).join('|'); }
+
   _fire(rule, s, c, res) {
-    const sig = rule.id + '|' + rule.vars.map((v) => walk(v, s)).join('|');
+    const sig = this._sig(rule, s);
     if (this.firings.has(sig)) return;
     const from = rule.when.map((p) => walk('?' + p.id, s));
     const depth = 1 + Math.max(0, ...from.map((id) => this.wires.get(id)?.meta.depth || 0));
@@ -675,7 +704,7 @@ export class World {
       return;
     }
     const rec = { rule: rule.id, from, made: [], fills: [], hits: [] };
-    if (rule.not.length) rec.s = s;
+    if (rule.not.length || rule.selective) rec.s = s;
     const prov = { via: rule.id, from, rec };
     for (const t of rule.then) {
       const attrs = {};
@@ -734,6 +763,7 @@ export class World {
       for (const v of attrs[k]) {
         const have = w.attrs[k];
         if (have && have.includes(v)) continue;
+        if (!prov.rec && this._fluentState(w, k, v, res)) continue; // a new statement about a state, not a conflict
         if (have && !c.slotOf(w.type, k)?.many) {
           res.violations.push({ kind: 'conflict', id: w.id, key: k, have: have[0], want: v, via: prov.via, wires: [w.id, ...prov.from] });
           continue;
@@ -758,6 +788,7 @@ export class World {
     const kill = (id) => {
       const w = this.wires.get(id);
       if (!w) return;
+      this._fluentTouch(w, res);
       this._removeWire(w);
       this._event({ op: 'remove', id });
       gone.add(id);
@@ -767,6 +798,7 @@ export class World {
       const w = this.wires.get(id);
       if (!w || !w.attrs[key]?.includes(value)) return;
       this._removeValue(w, key, value);
+      this._fluentTouch(w, res);
       this._event({ op: 'unfill', id, key, value });
       queue.push(id);
       requeue(id);
@@ -847,17 +879,17 @@ export class World {
       const w = this.wires.get(id);
       if (!w) continue;
       for (const { rule: d, idx } of c.forType(c.denyByType, w.type)) {
-        if (d.not.length || reported.has(d)) continue;
+        if (d.not.length || d.selective || reported.has(d)) continue;
         seeded: for (const s0 of this._matchWire(d.when[idx], w, EMPTY)) {
           for (const s of this._bodies(d, s0, idx)) { report(d, s); break seeded; }
         }
       }
     }
     for (const d of c.denies) {
-      if (!d.not.length) continue;
+      if (!d.not.length && !d.selective) continue;
       for (const s of this._bodies(d, EMPTY, -1)) { report(d, s); break; }
     }
   }
 }
 
-Object.assign(World.prototype, completion, revision, querying);
+Object.assign(World.prototype, completion, revision, querying, timing);

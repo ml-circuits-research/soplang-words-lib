@@ -37,8 +37,6 @@ const cmp = (f) => ([a, b]) => {
   // a bare number is a threshold for any unit: 0kg <= 0
   return x && y && (x.unit === y.unit || !x.unit || !y.unit) ? f(x.n, y.n) : f(a, b);
 };
-const seqOf = (world, ref) => world.get(ref.slice(1))?.meta.seq;
-
 export const builtins = {
   add: sameUnit((a, b) => a + b),
   sub: sameUnit((a, b) => a - b),
@@ -54,9 +52,7 @@ export const builtins = {
   lte: cmp((a, b) => a <= b),
   gt: cmp((a, b) => a > b),
   gte: cmp((a, b) => a >= b),
-  // before($a, $b): wire a entered the world before wire b
-  before: ([a, b], world) => {
-    const x = seqOf(world, a), y = seqOf(world, b);
-    return x !== undefined && y !== undefined && x < y;
-  },
+  // before($a, $b), after($a, $b): the place of two wires in the sequence
+  before: ([a, b], world) => world.has(a.slice(1)) && world.has(b.slice(1)) && world.compare(a.slice(1), b.slice(1)) < 0,
+  after: ([a, b], world) => world.has(a.slice(1)) && world.has(b.slice(1)) && world.compare(a.slice(1), b.slice(1)) > 0,
 };

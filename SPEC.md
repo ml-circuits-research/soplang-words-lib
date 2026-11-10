@@ -236,9 +236,60 @@ unchanged by telling the world how to read them. `core.schema.map` is data, not 
 
 ### 3.10 Order, sequence and parallelism
 
-Wires with no `$` path between them are independent (parallel). Sequence comes from
-references (a wire cannot refer to one that does not exist yet) or from a deny using
-`before`. Mutual exclusion is a deny over the two wires.
+Wires with no `$` path between them are independent (parallel). A wire cannot refer to
+one that does not exist, so references give an order of construction. Mutual exclusion
+is a deny over the two wires.
+
+**Sequence.** Every wire also has a place in a sequence. By default it is the order of
+arrival. `@s core.sequence key=<key>` declares a key that carries the place: a wire that
+has it is ordered by that number whatever the order it was told in; a wire that does not
+takes the place of the last one that had. Ties are broken by arrival.
+
+- `world.seqOf(id)` and `world.compare(a, b)` read it.
+- The checks `before` and `after` compare two wires: `core.check fn=after args=$b args=$a`.
+- A pattern with `core.select=latest` (or `first`) matches one wire: the latest (first)
+  in sequence among those that fit the bindings made by the patterns before it. A rule or
+  deny that uses a selector is re-evaluated in full when the rest is quiet, and a firing
+  whose selected wire has been overtaken is withdrawn.
+
+### 3.11 State over time: fluents and effects
+
+```
+@f_balance core.fluent of=account key=balance
+@e_in    core.effect on=deposit    fluent=$f_balance op=add amount=amount where.name=account
+@e_out   core.effect on=withdrawal fluent=$f_balance op=sub amount=amount where.name=account
+@e_audit core.effect on=audit      fluent=$f_balance op=set amount=found  where.name=account
+```
+
+- `core.fluent of=<type> key=<key>` declares the key as a state that events change.
+- `core.effect on=<event type> fluent=$<fluent> op=<op> ...` says how. `op` is `add`,
+  `sub`, `set`, or a registered function called with `[current, amount]`. The amount is
+  read from the event's key named by `amount=`, or is the literal given by `value=`.
+  The wire whose state changes is the one the event's key refers to (`for=<event key>`),
+  or the one whose keys equal the event's (`where.<holder key>=<event key>`, one or more).
+- The value on the wire is always the current one: the last explicit statement, then
+  the effects of the later events, in sequence order. Events before the last statement
+  are behind it. Without any statement the value stays unknown, whatever the events.
+- A statement is a value told with the wire, or told later with `fill` (or by telling
+  the same entity again): for a fluent key that is a new statement at the current point,
+  not a conflict.
+- An effect that would take the value outside the slot's `min` or `max` is a `conflict`
+  that names the event (`event`, `wires`, `why`); the change is refused.
+- The computed value is an ordinary filled value with `via` the fluent and `from` the
+  events that changed it since it was last set (an event that changes nothing is not
+  listed), so rules, denies, queries and `explain` use it like any other key. When it
+  changes, what was derived from the old value is withdrawn and derived again.
+- Retracting or replacing an event recomputes the states it touched. A new event that
+  comes last in sequence is applied to the current value directly; anything else replays
+  the line of that one wire. Both paths give the same value and provenance (tested).
+
+### 3.12 As-of
+
+`world.asOf(at, fn)` runs `fn(world)` against the world as it was at a point of the
+sequence: wires told after it, statements made after it and everything that rested on
+them are set aside inside a scratch transaction, then restored. `ask(pattern, { at })`
+and `query(question, { at })` are shorthands. `at` is a number of the declared sequence
+key, or an arrival number as returned by `seqOf`.
 
 ## 4. Semantics
 
@@ -500,7 +551,8 @@ where, action, arg, to, value, status, via, from } })`.
 - Ranking is symbolic: usage counts, declared costs, or the caller's `rank` function.
 - Induction is exact generalisation: it skips examples of a different shape and uses
   negative examples to add comparisons, but does not handle noise or learn negation.
-- There is no built-in notion of time or context.
+- There is no built-in notion of context: a wire holds in the whole world. `asOf` costs
+  a withdrawal of everything later than the point asked about.
 - `fork` and `fromJSON` replay the log.
 - The build does not minify (about 110 kB, 31 kB gzipped).
 
@@ -514,6 +566,7 @@ where, action, arg, to, value, status, via, from } })`.
 | `world.mjs` | Kernel: store and indexes, transactions, ingest, matching, chase, validation, withdrawal |
 | `complete.mjs` | Open keys, suggestions, questions, `step` and `answer` |
 | `query.mjs` | Queries with a status, answer wires, producers, actions, the vocabulary |
+| `time.mjs` | Sequence, fluents and effects, as-of |
 | `solve.mjs` | The completion problem in neutral form, the SAT solver, the solver strategies |
 | `revise.mjs` | `retract`, `replace`, revision of default assumptions |
 | `abduce.mjs`, `induce.mjs` | Abduction and induction, built on the public kernel operations |
@@ -566,7 +619,8 @@ w.ask(patternText)   w.holds(patternText)
 w.open(id?)  w.suggest(id, key, { deep })  w.next()  w.complete({ defaults, choose })
 w.solve()  w.solveReport({ solver, budget })  await w.solveAsync({ solver })
 w.satisfiable()  w.apply(assignment)
-w.query(question, { record, suppose })   w.act(request)   w.schema(type)
+w.query(question, { record, suppose, at })   w.act(request)   w.schema(type)
+w.asOf(at, fn)   w.seqOf(id)   w.compare(idA, idB)
 w.abduce(goalText, { maxDepth, max, maxAssumptions })
 w.explain(id)  w.history()  w.on(listener)
 w.toSOP({ schema, derived, provenance })   w.toJSON()   World.fromJSON(data, options)
@@ -588,5 +642,7 @@ Since 0.4.0 (the version first published in this repository):
 - A reference under a key of an open namespace that no slot declares is no longer
   checked and no longer ties a wire to the one it mentions.
 - New: type hierarchy (3.8), kinds, qualified keys, open namespaces and schema maps
-  (3.9), queries, answer wires, producers, actions and prefix slots (4.10).
+  (3.9), sequence and selectors (3.10), fluents and effects (3.11), as-of (3.12),
+  queries, answer wires, producers, actions and prefix slots (4.10).
+- A value told for a fluent key of an existing wire is a new statement, not a conflict.
 

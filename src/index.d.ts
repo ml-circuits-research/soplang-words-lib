@@ -131,7 +131,7 @@ export class World {
   has(id: string): boolean;
   resolve(id: string): string;
   ofType(type: string): Wire[];
-  ask(query: string | Wire[]): Record<string, string>[];
+  ask(query: string | Wire[], options?: { at?: number }): Record<string, string>[];
   holds(query: string | Wire[]): boolean;
   open(id?: string): OpenKey[];
   suggest(id: string, key: string, options?: { deep?: boolean }): Candidate[];
@@ -142,7 +142,11 @@ export class World {
   solveAsync(options?: { solver?: Solver; budget?: number }): Promise<SolveReport>;
   satisfiable(options?: { solver?: Solver; budget?: number }): boolean;
   apply(assignment: Assignment[], options?: { via?: string }): Result;
-  query(question: Question | Wire | string, options?: { record?: boolean; suppose?: boolean }): QueryResult;
+  query(question: Question | Wire | string, options?: { record?: boolean; suppose?: boolean; at?: number }): QueryResult;
+  /** run fn against the world as it was at a point of the sequence */
+  asOf<T>(at: number, fn: (world: World) => T): T;
+  seqOf(id: string): number | undefined;
+  compare(idA: string, idB: string): number;
   act(request: { action: string; args?: Record<string, string | number | string[]> } | Wire | string): ActResult;
   trial<T>(fn: (world: World) => T): T;
   stamp: number;

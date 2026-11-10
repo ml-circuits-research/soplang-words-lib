@@ -199,8 +199,6 @@ const __builtins = (() => {
     // a bare number is a threshold for any unit: 0kg <= 0
     return x && y && (x.unit === y.unit || !x.unit || !y.unit) ? f(x.n, y.n) : f(a, b);
   };
-  const seqOf = (world, ref) => world.get(ref.slice(1))?.meta.seq;
-
   const builtins = {
     add: sameUnit((a, b) => a + b),
     sub: sameUnit((a, b) => a - b),
@@ -216,11 +214,9 @@ const __builtins = (() => {
     lte: cmp((a, b) => a <= b),
     gt: cmp((a, b) => a > b),
     gte: cmp((a, b) => a >= b),
-    // before($a, $b): wire a entered the world before wire b
-    before: ([a, b], world) => {
-      const x = seqOf(world, a), y = seqOf(world, b);
-      return x !== undefined && y !== undefined && x < y;
-    },
+    // before($a, $b), after($a, $b): the place of two wires in the sequence
+    before: ([a, b], world) => world.has(a.slice(1)) && world.has(b.slice(1)) && world.compare(a.slice(1), b.slice(1)) < 0,
+    after: ([a, b], world) => world.has(a.slice(1)) && world.has(b.slice(1)) && world.compare(a.slice(1), b.slice(1)) > 0,
   };
   return { quantity, builtins };
 })();
@@ -257,7 +253,7 @@ const __solve = (() => {
       this.variables = [];
       const c = world._compiled();
       // with negation a violation may depend on what is absent, so no small cause can be named
-      this.monotone = !c.negRules.length && !c.denies.some((d) => d.not.length);
+      this.monotone = !c.negRules.length && !c.fluents.size && !c.denies.some((d) => d.not.length || d.selective);
       for (const o of world.open()) {
         const slot = c.slots.get(o.type).get(o.key);
         if (!world._closedDomain(slot)) continue;
@@ -380,7 +376,7 @@ const __solve = (() => {
         done.add(v.id);
         const wire = w.wires.get(v.id);
         for (const { rule: d, idx } of c.forType(c.denyByType, wire.type)) {
-          if (d.not.length) continue;
+          if (d.not.length || d.selective) continue;
           for (const s0 of w._matchWire(d.when[idx], wire, EMPTY)) {
             for (const s of w._bodies(d, s0, idx)) {
               const lits = new Map();
@@ -870,6 +866,7 @@ const __matrix = (() => {
   const SCHEMA_TYPES = new Set([
     'core.slot', 'core.type', 'core.abducible', 'core.rule', 'core.deny', 'core.calc', 'core.check', 'core.use',
     'core.schema.map', 'core.namespace', 'core.producer', 'core.action',
+    'core.sequence', 'core.fluent', 'core.effect',
   ]);
 
   /**
@@ -958,6 +955,10 @@ const __matrix = (() => {
       complete: new Set(),  // types whose instances are all known (closed world for existence)
       producers: new Map(), // <type>.<key> -> functions that can compute the key when no wire has it
       actions: new Map(),   // action name -> the function that carries it out
+      seqKey: null,         // the key that carries a wire's place in the sequence, when one is declared
+      fluents: new Map(),   // fluent id -> { id, of, key, by, effects }
+      fluentsByType: new Map(), // holder type -> fluents
+      effectsByEvent: new Map(), // event type -> effects
     };
     for (const w of world.matrix.values()) {
       if (w.type === 'core.schema.map') {
@@ -1019,6 +1020,14 @@ const __matrix = (() => {
         const name = field(map.fields.name || 'id', w);
         if (!name) c.errors.push(`${w.id}: the module has no name`);
         else c.modules.set(name, { wire: w, imports: field(map.fields.imports, w, true) });
+      } else if (w.type === 'core.sequence') {
+        c.seqKey = first(w, 'key') || null;
+      } else if (w.type === 'core.fluent') {
+        const key = first(w, 'key');
+        if (!of || !key) { c.errors.push(`${w.id}: core.fluent needs of= and key=`); continue; }
+        const f = { id: w.id, of, key, by: w.attrs.by || [], effects: [] };
+        c.fluents.set(w.id, f);
+        push(c.fluentsByType, of, f);
       } else if (w.type === 'core.producer') {
         const key = first(w, 'key'), fn = first(w, 'fn');
         if (!of || !key || !fn) { c.errors.push(`${w.id}: core.producer needs of=, key= and fn=`); continue; }
@@ -1036,6 +1045,22 @@ const __matrix = (() => {
         if (key) c.abducibleKeys.set(`${of}.${key}`, cost);
         else c.abducible.set(of, cost);
       }
+    }
+
+    // effects: how an event type changes a fluent
+    for (const w of world.matrix.values()) {
+      if (w.type !== 'core.effect') continue;
+      const on = first(w, 'on'), fluent = c.fluents.get((first(w, 'fluent') || '').replace(/^\$/, ''));
+      const op = first(w, 'op') || 'set';
+      if (!on || !fluent) { c.errors.push(`${w.id}: core.effect needs on=<event type> and fluent=$<a core.fluent>`); continue; }
+      if (!['add', 'sub', 'set'].includes(op) && !world.fns[op]) c.errors.push(`${w.id}: unknown function "${op}"`);
+      const where = [];
+      for (const k of Object.keys(w.attrs)) if (k.startsWith('where.')) where.push([k.slice(6), w.attrs[k][0]]);
+      const e = { id: w.id, on, fluent, op, amount: first(w, 'amount'), value: first(w, 'value'), target: first(w, 'for'), where };
+      if (!e.target && !where.length) c.errors.push(`${w.id}: core.effect needs for=<event key that refers to the holder> or where.<holder key>=<event key>`);
+      if (e.amount === undefined && e.value === undefined) c.errors.push(`${w.id}: core.effect needs amount=<event key> or value=<literal>`);
+      fluent.effects.push(e);
+      push(c.effectsByEvent, on, e);
     }
 
     // ---- type hierarchy: a type, then what it extends, up to the root
@@ -1103,11 +1128,14 @@ const __matrix = (() => {
     for (const w of world.matrix.values()) {
       if (w.type === 'core.rule' || w.type === 'core.deny') buildRule(world, w, c);
     }
+    c.selRules = [];
     for (const r of c.rules) {
       if (r.not.length) {
         c.negRules.push(r);
         for (const n of r.not) push(c.negByType, n.type, r);
       }
+      // a selective rule is not driven by single wires: it is re-evaluated in full when things are quiet
+      if (r.selective) { c.selRules.push(r); if (!r.not.length) c.negRules.push(r); continue; }
       r.when.forEach((p, idx) => push(c.ruleByType, p.type, { rule: r, idx }));
     }
     for (const d of c.denies) d.when.forEach((p, idx) => push(c.denyByType, p.type, { rule: d, idx }));
@@ -1152,6 +1180,7 @@ const __matrix = (() => {
         }
       }
       const l = localize(s, locals);
+      if (l.attrs['core.select']) { l.select = l.attrs['core.select'][0]; delete l.attrs['core.select']; }
       for (const key of Object.keys(l.attrs)) { // full key names and short ones are the same key
         const short = c.shortKey(l.type, key);
         if (short !== key) { l.attrs[short] = [...(l.attrs[short] || []), ...l.attrs[key]]; delete l.attrs[key]; }
@@ -1180,6 +1209,9 @@ const __matrix = (() => {
     }
     for (const x of rule.calc) if (x.out) vars.add(x.out);
     rule.vars = [...vars].sort();
+    // a pattern with core.select=latest|first picks one wire by sequence: what it picks can change
+    rule.selective = rule.when.some((p) => p.select) || rule.not.some((p) => p.select);
+    for (const p of [...rule.when, ...rule.not]) if (p.select && !['latest', 'first'].includes(p.select)) c.errors.push(`${w.id}: core.select must be latest or first`);
 
     // templates in dependency order, so a template is created before the ones that refer to it
     const byId = new Map(rule.then.map((t) => [t.id, t]));
@@ -1740,7 +1772,8 @@ const __query = (() => {
      * Answer a question. Changes nothing unless { record: true }, which writes an answer
      * wire (and the question wire, if it was not one already) with status and provenance.
      */
-    query(q, { record = false, suppose = true } = {}) {
+    query(q, { record = false, suppose = true, at } = {}) {
+      if (at !== undefined) return this.asOf(at, () => this.query(q, { suppose }));
       const question = this._question(q);
       const c = this._compiled();
       const { seek, mode } = question;
@@ -1916,6 +1949,236 @@ const __query = (() => {
   return { querying };
 })();
 
+// ---- src/time.mjs
+const __time = (() => {
+  const { quantity } = __builtins;
+  // Order and state over time. Mixed into World.prototype.
+  //
+  // Sequence. Every wire has a place in a sequence: the number under the key declared with
+  // `core.sequence key=<key>` when the wire carries it, else the place the last such wire
+  // had; ties are broken by arrival. world.compare(a, b), the tests `before` and `after`,
+  // and the pattern selector `core.select=latest|first` read it.
+  //
+  // Fluents. `core.fluent of=<type> key=<key>` declares a key as a state that events
+  // change, and `core.effect on=<event type> fluent=$f op=add|sub|set|<fn> amount=<event key>`
+  // says how. The value on the wire is always the current one: the last explicit statement,
+  // then the effects of the later events in sequence order. An unknown start stays unknown.
+  //
+  // As-of. world.asOf(at, fn), ask(pattern, { at }) and query(q, { at }) see the world as it
+  // was at that point of the sequence.
+
+
+  const K = (type, key, value) => `${type}\u0001${key}\u0001${value}`;
+
+  const timing = {
+    /** Give a new wire its place in the sequence. */
+    _stamp(w) {
+      const key = this._compiled().seqKey;
+      const declared = key && w.attrs[key] ? Number(w.attrs[key][0]) : NaN;
+      if (Number.isFinite(declared)) {
+        w.meta.order = declared;
+        if (declared > (this._lastOrder ?? -Infinity)) {
+          const prev = this._lastOrder;
+          this._lastOrder = declared;
+          this._do(() => { this._lastOrder = prev; });
+        }
+      } else {
+        w.meta.order = key ? this._lastOrder ?? 0 : w.meta.seq;
+      }
+    },
+
+    /** The place of a wire in the sequence (the declared number, or its arrival number). */
+    seqOf(id) { return this.get(id)?.meta.order; },
+
+    /** Negative when wire a comes before wire b in the sequence, positive when after. */
+    compare(a, b) {
+      const x = this.get(a).meta, y = this.get(b).meta;
+      return x.order - y.order || x.seq - y.seq;
+    },
+
+    // ---------------------------------------------------------------- fluents
+
+    /** A wire arrived: remember what it states about a fluent, and mark what it may change. */
+    _fluentNote(w, res) {
+      const c = this._compiled();
+      if (!c.fluents.size) return;
+      for (const f of c.forType(c.fluentsByType, w.type)) {
+        if (w.attrs[f.key] && !w.meta.stated?.[f.key]) this._state(w, f.key, w.attrs[f.key][0], w.meta.order, w.meta.seq);
+      }
+      this._fluentTouch(w, res, true);
+    },
+
+    _state(w, key, value, order, seq) {
+      const list = ((w.meta.stated ||= {})[key] ||= []);
+      const entry = { order, seq, value };
+      list.push(entry);
+      this._do(() => list.splice(list.indexOf(entry), 1));
+    },
+
+    /** A told value for a fluent key of an existing wire is a new statement at the current point. */
+    _fluentState(w, key, value, res) {
+      const c = this._compiled();
+      if (!c.fluents.size) return false;
+      const f = c.forType(c.fluentsByType, w.type).find((x) => x.key === key);
+      if (!f) return false;
+      const seq = this._event({ op: 'state', id: w.id, key, value });
+      this._state(w, key, value, this._c.seqKey ? this._lastOrder ?? 0 : seq, seq);
+      res._fluents.set(`${w.id}\u0001${f.id}`, 'full');
+      res._touched.add(w.id);
+      return true;
+    },
+
+    /**
+     * Mark the fluents that a change to this wire can affect: its own, and those of the
+     * holders it is an event for. `arrived` says the wire is a new event: if it turns out
+     * to be the last in sequence, its effect is applied to the current value directly.
+     */
+    _fluentTouch(w, res, arrived = false) {
+      const c = this._c;
+      if (!c || !c.fluents.size) return;
+      for (const f of c.forType(c.fluentsByType, w.type)) res._fluents.set(`${w.id}\u0001${f.id}`, 'full');
+      for (const e of c.forType(c.effectsByEvent, w.type)) {
+        for (const h of this._holders(e, w)) {
+          const k = `${h}\u0001${e.fluent.id}`;
+          res._fluents.set(k, arrived && !res._fluents.has(k) ? w.id : 'full');
+        }
+      }
+    },
+
+    /** The wires whose fluent an event changes. */
+    _holders(e, ev) {
+      if (e.target) return (ev.attrs[e.target] || []).filter((v) => v[0] === '$').map((v) => this.resolve(v.slice(1)));
+      const [key, from] = e.where[0];
+      const value = ev.attrs[from]?.[0];
+      if (value === undefined) return [];
+      return [...(this.index.get(K(e.fluent.of, key, value)) || [])].filter((id) => {
+        const h = this.wires.get(id);
+        return e.where.every(([k, f]) => h.attrs[k]?.[0] !== undefined && h.attrs[k][0] === ev.attrs[f]?.[0]);
+      });
+    },
+
+    /** The events that change the fluent of one holder through one effect. */
+    _events(e, h) {
+      if (e.target) return [...(this.index.get(K(e.on, e.target, '$' + h.id)) || [])];
+      const [key, from] = e.where[0];
+      const value = h.attrs[key]?.[0];
+      if (value === undefined) return [];
+      return [...(this.index.get(K(e.on, from, value)) || [])].filter((id) => {
+        const ev = this.wires.get(id);
+        return e.where.every(([k, f]) => h.attrs[k]?.[0] !== undefined && h.attrs[k][0] === ev.attrs[f]?.[0]);
+      });
+    },
+
+    /** One effect applied to a value: the new value, undefined when it does not apply, or a conflict. */
+    _effect(e, ev, value, h, f, slot, res) {
+      const amount = e.value !== undefined ? e.value : ev.attrs[e.amount]?.[0];
+      if (amount === undefined) return undefined;
+      let next;
+      if (e.op === 'set') next = amount;
+      else if (value === undefined) return undefined; // an unknown start stays unknown
+      else next = this.fns[e.op]([value, amount], this);
+      if (next === undefined || next === null) return undefined;
+      next = String(next);
+      const q = quantity(next);
+      const broken = q && slot ? (slot.min && q.n < slot.min.n ? `below ${slot.min.n}` : slot.max && q.n > slot.max.n ? `above ${slot.max.n}` : null) : null;
+      if (broken) {
+        res.violations.push({ kind: 'conflict', id: h.id, key: f.key, value: next, event: ev.id, wires: [h.id, ev.id], why: `${ev.id} would take ${f.key} of ${h.id} ${broken} (from ${value} to ${next})` });
+        return null;
+      }
+      return next;
+    },
+
+    _fluentSet(h, f, value, from, last, res) {
+      const current = h.attrs[f.key]?.[0];
+      // where the line ended: lets the next event that comes after it be applied on its own
+      const tails = (h.meta.tails ||= {});
+      tails[f.key] = last;
+      if (value === current) return;
+      if (current !== undefined) this._unsay(res, [], [{ id: h.id, key: f.key, value: current }]);
+      if (value !== undefined) this._addValue(h, f.key, value, { via: f.id, from }, res);
+      res._fluents.delete(`${h.id}\u0001${f.id}`); // writing the value marked it again: it is up to date
+    },
+
+    /** Recompute one marked fluent: the last statement, then the effects after it, in sequence order. */
+    _fluentRun(res, c) {
+      const [mark, cause] = res._fluents.entries().next().value;
+      res._fluents.delete(mark);
+      const [hid, fid] = mark.split('\u0001');
+      const h = this.wires.get(hid), f = c.fluents.get(fid);
+      if (!h || !f) return;
+      const slot = c.slotOf(h.type, f.key);
+
+      // one new event that comes after everything applied so far: apply it to the current value
+      const tail = h.meta.tails?.[f.key];
+      const ev0 = cause !== 'full' ? this.wires.get(cause) : null;
+      if (ev0 && tail && (ev0.meta.order - tail.order || ev0.meta.seq - tail.seq) > 0) {
+        const effects = f.effects.filter((e) => c.isA(ev0.type, e.on) && this._holders(e, ev0).includes(h.id));
+        if (effects.length === 1) {
+          const current = h.attrs[f.key]?.[0];
+          const next = this._effect(effects[0], ev0, current, h, f, slot, res);
+          if (next === null) return;
+          const last = { order: ev0.meta.order, seq: ev0.meta.seq };
+          if (next === undefined) { (h.meta.tails ||= {})[f.key] = last; return; }
+          // provenance: the events that changed the value since it was last set
+          const fill = (h.meta.fills || []).find((x) => x.key === f.key && x.value === current && x.via === f.id);
+          this._fluentSet(h, f, next, effects[0].op === 'set' ? [ev0.id] : [...(fill?.from || []), ev0.id], last, res);
+          return;
+        }
+      }
+
+      const line = (h.meta.stated?.[f.key] || []).map((s) => ({ order: s.order, seq: s.seq, set: s.value }));
+      for (const e of f.effects) {
+        for (const id of this._events(e, h)) { // bounded: the events of one holder
+          const ev = this.wires.get(id);
+          line.push({ order: ev.meta.order, seq: ev.meta.seq, e, ev });
+        }
+      }
+      line.sort((a, b) => a.order - b.order || a.seq - b.seq);
+      let value, from = [];
+      for (const step of line) { // bounded: one pass over the line
+        if (step.set !== undefined) { value = step.set; from = []; continue; }
+        const next = this._effect(step.e, step.ev, value, h, f, slot, res);
+        if (next === null) return;
+        if (next === undefined || next === value) continue; // an event that changes nothing is not a source
+        value = next;
+        if (step.e.op === 'set') from = [step.ev.id]; else from.push(step.ev.id);
+      }
+      const end = line[line.length - 1];
+      this._fluentSet(h, f, value, from, end ? { order: end.order, seq: end.seq } : null, res);
+    },
+
+    // ---------------------------------------------------------------- as-of
+
+    /**
+     * Run fn against the world as it was at a point of the sequence: wires told after it,
+     * statements made after it, and everything that rested on them are set aside, then
+     * restored. `at` is a number of the declared sequence key, or an arrival number (seqOf).
+     */
+    asOf(at, fn) {
+      return this._trial(() => {
+        const res = this._result();
+        const later = [];
+        for (const w of this.wires.values()) { // bounded: one pass over the wires
+          if (w.meta.told && w.meta.order > at) later.push(w.id);
+          else if (w.meta.stated) {
+            for (const key of Object.keys(w.meta.stated)) {
+              const list = w.meta.stated[key];
+              const gone = list.filter((s) => s.order > at);
+              if (!gone.length) continue;
+              for (const s of gone) { list.splice(list.indexOf(s), 1); this._do(() => list.push(s)); }
+              this._fluentTouch(w, res);
+            }
+          }
+        }
+        this._withdraw(res, later, []);
+        if (res._fluents.size) this._chase(res);
+        return fn(this);
+      });
+    },
+  };
+  return { timing };
+})();
+
 // ---- src/abduce.mjs
 const __abduce = (() => {
   const { parse, format, cloneWire } = __parser;
@@ -2077,6 +2340,7 @@ const __world = (() => {
   const { completion } = __complete;
   const { revision } = __revise;
   const { querying } = __query;
+  const { timing } = __time;
   const { abduce } = __abduce;
   // World: fact wires kept consistent with a consistency matrix.
   //
@@ -2156,7 +2420,8 @@ const __world = (() => {
     }
 
     /** Query with pattern wires. Returns one object of bindings per match. */
-    ask(query) {
+    ask(query, { at } = {}) {
+      if (at !== undefined) return this.asOf(at, () => this.ask(query));
       const pats = this._patterns(query);
       const out = [];
       for (const s of this._matchAll(pats, 0, EMPTY)) {
@@ -2304,7 +2569,7 @@ const __world = (() => {
     // ---------------------------------------------------------------- transactions
 
     _result() {
-      return { ok: true, added: [], derived: [], filled: [], merged: [], removed: [], violations: [], _touched: new Set(), _agenda: [] };
+      return { ok: true, added: [], derived: [], filled: [], merged: [], removed: [], violations: [], _touched: new Set(), _agenda: [], _fluents: new Map() };
     }
     _begin() { this._tx++; return this._journal.length; }
     _do(undo) {
@@ -2328,7 +2593,7 @@ const __world = (() => {
 
     _finish(mark, res, dry, entry) {
       res.ok = !res.violations.length;
-      delete res._touched; delete res._agenda;
+      delete res._touched; delete res._agenda; delete res._fluents;
       if (!res.ok) for (const v of res.violations) this._support(v); // before the evidence is rolled back
       if (!res.ok || dry) {
         this._rollback(mark);
@@ -2424,8 +2689,10 @@ const __world = (() => {
 
     _addWire(w, meta, res) {
       w.meta = meta;
+      this._stamp(w);
       this._put(w);
       this._do(() => this._drop(w));
+      this._fluentNote(w, res);
       res._touched.add(w.id);
       res._agenda.push(w.id);
     }
@@ -2442,6 +2709,7 @@ const __world = (() => {
       this._link(w, key, value);
       this._do(() => this._takeValue(w, key, value, fill));
       if (prov.rec) prov.rec.fills.push({ id: w.id, key, value });
+      this._fluentTouch(w, res);
       this._event({ op: 'fill', id: w.id, key, value, via: prov.via, from: prov.from });
       res.filled.push({ id: w.id, key, value, via: prov.via });
       res._touched.add(w.id);
@@ -2559,6 +2827,7 @@ const __world = (() => {
           }
         }
         if (!prev || prev.hierarchy !== c.hierarchy) this._reindex();
+        if (c.fluents.size || c.seqKey) for (const w of this.wires.values()) { if (w.meta.told) this._fluentNote(w, res); }
         res._agenda = [...this.wires.keys()];
         for (const id of res._agenda) res._touched.add(id);
       }
@@ -2603,6 +2872,7 @@ const __world = (() => {
       const c = this._compiled();
       return ws.map((w) => {
         const p = localize(w, locals);
+        if (p.attrs['core.select']) { p.select = p.attrs['core.select'][0]; delete p.attrs['core.select']; }
         for (const key of Object.keys(p.attrs)) { // full key names and short ones are the same key
           const short = c.shortKey(p.type, key);
           if (short !== key) { p.attrs[short] = [...(p.attrs[short] || []), ...p.attrs[key]]; delete p.attrs[key]; }
@@ -2646,6 +2916,17 @@ const __world = (() => {
     }
 
     *_candidates(p, s) {
+      if (p.select && !p._plain) { // one wire: the latest (or first) in sequence among those that match
+        const plain = Object.create(p, { select: { value: undefined }, _plain: { value: true } });
+        let best = null, bestWire = null;
+        for (const t of this._candidates(plain, s)) {
+          const w = this.wires.get(walk('?' + p.id, t));
+          const d = bestWire ? this.compare(w.id, bestWire.id) : 0;
+          if (!bestWire || (p.select === 'latest' ? d > 0 : d < 0)) { best = t; bestWire = w; }
+        }
+        if (best) yield best;
+        return;
+      }
       const idv = walk('?' + p.id, s);
       if (!isVar(idv)) {
         const w = this.wires.get(this.resolve(idv));
@@ -2715,7 +2996,8 @@ const __world = (() => {
         }
       };
       for (;;) {
-        while (res._agenda.length && !res.violations.length) {
+        while ((res._agenda.length || res._fluents.size) && !res.violations.length) {
+          if (res._fluents.size) { this._fluentRun(res, c); continue; } // states first: rules read their values
           const w = this.wires.get(res._agenda.shift());
           if (!w) continue;
           // a new or changed wire can end the absence that a rule with not= relied on
@@ -2730,14 +3012,24 @@ const __world = (() => {
           }
         }
         if (res.violations.length) return;
-        // rules with negation are re-evaluated in full once everything else is quiet
-        for (const rule of c.negRules) fireAll(rule, [...this._bodies(rule, EMPTY, -1)]);
-        if (!res._agenda.length || res.violations.length) return;
+        // rules with negation or a selector are re-evaluated in full once everything else is quiet
+        for (const rule of c.negRules) {
+          const bodies = [...this._bodies(rule, EMPTY, -1)];
+          if (rule.selective) { // what a selector picked may have changed: drop the firings that no longer hold
+            const now = new Set(bodies.map((s) => this._sig(rule, s)));
+            const stale = [...(this.byRule.get(rule.id) || [])].filter((sig) => !now.has(sig));
+            if (stale.length) this._unsay(res, [], [], stale);
+          }
+          fireAll(rule, bodies);
+        }
+        if ((!res._agenda.length && !res._fluents.size) || res.violations.length) return;
       }
     }
 
+    _sig(rule, s) { return rule.id + '|' + rule.vars.map((v) => walk(v, s)).join('|'); }
+
     _fire(rule, s, c, res) {
-      const sig = rule.id + '|' + rule.vars.map((v) => walk(v, s)).join('|');
+      const sig = this._sig(rule, s);
       if (this.firings.has(sig)) return;
       const from = rule.when.map((p) => walk('?' + p.id, s));
       const depth = 1 + Math.max(0, ...from.map((id) => this.wires.get(id)?.meta.depth || 0));
@@ -2746,7 +3038,7 @@ const __world = (() => {
         return;
       }
       const rec = { rule: rule.id, from, made: [], fills: [], hits: [] };
-      if (rule.not.length) rec.s = s;
+      if (rule.not.length || rule.selective) rec.s = s;
       const prov = { via: rule.id, from, rec };
       for (const t of rule.then) {
         const attrs = {};
@@ -2805,6 +3097,7 @@ const __world = (() => {
         for (const v of attrs[k]) {
           const have = w.attrs[k];
           if (have && have.includes(v)) continue;
+          if (!prov.rec && this._fluentState(w, k, v, res)) continue; // a new statement about a state, not a conflict
           if (have && !c.slotOf(w.type, k)?.many) {
             res.violations.push({ kind: 'conflict', id: w.id, key: k, have: have[0], want: v, via: prov.via, wires: [w.id, ...prov.from] });
             continue;
@@ -2829,6 +3122,7 @@ const __world = (() => {
       const kill = (id) => {
         const w = this.wires.get(id);
         if (!w) return;
+        this._fluentTouch(w, res);
         this._removeWire(w);
         this._event({ op: 'remove', id });
         gone.add(id);
@@ -2838,6 +3132,7 @@ const __world = (() => {
         const w = this.wires.get(id);
         if (!w || !w.attrs[key]?.includes(value)) return;
         this._removeValue(w, key, value);
+        this._fluentTouch(w, res);
         this._event({ op: 'unfill', id, key, value });
         queue.push(id);
         requeue(id);
@@ -2918,20 +3213,20 @@ const __world = (() => {
         const w = this.wires.get(id);
         if (!w) continue;
         for (const { rule: d, idx } of c.forType(c.denyByType, w.type)) {
-          if (d.not.length || reported.has(d)) continue;
+          if (d.not.length || d.selective || reported.has(d)) continue;
           seeded: for (const s0 of this._matchWire(d.when[idx], w, EMPTY)) {
             for (const s of this._bodies(d, s0, idx)) { report(d, s); break seeded; }
           }
         }
       }
       for (const d of c.denies) {
-        if (!d.not.length) continue;
+        if (!d.not.length && !d.selective) continue;
         for (const s of this._bodies(d, EMPTY, -1)) { report(d, s); break; }
       }
     }
   }
 
-  Object.assign(World.prototype, completion, revision, querying);
+  Object.assign(World.prototype, completion, revision, querying, timing);
   return { World };
 })();
 

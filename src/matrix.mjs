@@ -10,6 +10,7 @@ const RANGE_CAP = 2000;
 export const SCHEMA_TYPES = new Set([
   'core.slot', 'core.type', 'core.abducible', 'core.rule', 'core.deny', 'core.calc', 'core.check', 'core.use',
   'core.schema.map', 'core.namespace', 'core.producer', 'core.action',
+  'core.sequence', 'core.fluent', 'core.effect',
 ]);
 
 /**
@@ -98,6 +99,10 @@ export function compileMatrix(world) {
     complete: new Set(),  // types whose instances are all known (closed world for existence)
     producers: new Map(), // <type>.<key> -> functions that can compute the key when no wire has it
     actions: new Map(),   // action name -> the function that carries it out
+    seqKey: null,         // the key that carries a wire's place in the sequence, when one is declared
+    fluents: new Map(),   // fluent id -> { id, of, key, by, effects }
+    fluentsByType: new Map(), // holder type -> fluents
+    effectsByEvent: new Map(), // event type -> effects
   };
   for (const w of world.matrix.values()) {
     if (w.type === 'core.schema.map') {
@@ -159,6 +164,14 @@ export function compileMatrix(world) {
       const name = field(map.fields.name || 'id', w);
       if (!name) c.errors.push(`${w.id}: the module has no name`);
       else c.modules.set(name, { wire: w, imports: field(map.fields.imports, w, true) });
+    } else if (w.type === 'core.sequence') {
+      c.seqKey = first(w, 'key') || null;
+    } else if (w.type === 'core.fluent') {
+      const key = first(w, 'key');
+      if (!of || !key) { c.errors.push(`${w.id}: core.fluent needs of= and key=`); continue; }
+      const f = { id: w.id, of, key, by: w.attrs.by || [], effects: [] };
+      c.fluents.set(w.id, f);
+      push(c.fluentsByType, of, f);
     } else if (w.type === 'core.producer') {
       const key = first(w, 'key'), fn = first(w, 'fn');
       if (!of || !key || !fn) { c.errors.push(`${w.id}: core.producer needs of=, key= and fn=`); continue; }
@@ -176,6 +189,22 @@ export function compileMatrix(world) {
       if (key) c.abducibleKeys.set(`${of}.${key}`, cost);
       else c.abducible.set(of, cost);
     }
+  }
+
+  // effects: how an event type changes a fluent
+  for (const w of world.matrix.values()) {
+    if (w.type !== 'core.effect') continue;
+    const on = first(w, 'on'), fluent = c.fluents.get((first(w, 'fluent') || '').replace(/^\$/, ''));
+    const op = first(w, 'op') || 'set';
+    if (!on || !fluent) { c.errors.push(`${w.id}: core.effect needs on=<event type> and fluent=$<a core.fluent>`); continue; }
+    if (!['add', 'sub', 'set'].includes(op) && !world.fns[op]) c.errors.push(`${w.id}: unknown function "${op}"`);
+    const where = [];
+    for (const k of Object.keys(w.attrs)) if (k.startsWith('where.')) where.push([k.slice(6), w.attrs[k][0]]);
+    const e = { id: w.id, on, fluent, op, amount: first(w, 'amount'), value: first(w, 'value'), target: first(w, 'for'), where };
+    if (!e.target && !where.length) c.errors.push(`${w.id}: core.effect needs for=<event key that refers to the holder> or where.<holder key>=<event key>`);
+    if (e.amount === undefined && e.value === undefined) c.errors.push(`${w.id}: core.effect needs amount=<event key> or value=<literal>`);
+    fluent.effects.push(e);
+    push(c.effectsByEvent, on, e);
   }
 
   // ---- type hierarchy: a type, then what it extends, up to the root
@@ -243,11 +272,14 @@ export function compileMatrix(world) {
   for (const w of world.matrix.values()) {
     if (w.type === 'core.rule' || w.type === 'core.deny') buildRule(world, w, c);
   }
+  c.selRules = [];
   for (const r of c.rules) {
     if (r.not.length) {
       c.negRules.push(r);
       for (const n of r.not) push(c.negByType, n.type, r);
     }
+    // a selective rule is not driven by single wires: it is re-evaluated in full when things are quiet
+    if (r.selective) { c.selRules.push(r); if (!r.not.length) c.negRules.push(r); continue; }
     r.when.forEach((p, idx) => push(c.ruleByType, p.type, { rule: r, idx }));
   }
   for (const d of c.denies) d.when.forEach((p, idx) => push(c.denyByType, p.type, { rule: d, idx }));
@@ -292,6 +324,7 @@ function buildRule(world, w, c) {
       }
     }
     const l = localize(s, locals);
+    if (l.attrs['core.select']) { l.select = l.attrs['core.select'][0]; delete l.attrs['core.select']; }
     for (const key of Object.keys(l.attrs)) { // full key names and short ones are the same key
       const short = c.shortKey(l.type, key);
       if (short !== key) { l.attrs[short] = [...(l.attrs[short] || []), ...l.attrs[key]]; delete l.attrs[key]; }
@@ -320,6 +353,9 @@ function buildRule(world, w, c) {
   }
   for (const x of rule.calc) if (x.out) vars.add(x.out);
   rule.vars = [...vars].sort();
+  // a pattern with core.select=latest|first picks one wire by sequence: what it picks can change
+  rule.selective = rule.when.some((p) => p.select) || rule.not.some((p) => p.select);
+  for (const p of [...rule.when, ...rule.not]) if (p.select && !['latest', 'first'].includes(p.select)) c.errors.push(`${w.id}: core.select must be latest or first`);
 
   // templates in dependency order, so a template is created before the ones that refer to it
   const byId = new Map(rule.then.map((t) => [t.id, t]));

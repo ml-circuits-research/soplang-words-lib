@@ -30,6 +30,8 @@ The reviewer's first two commits to this repository were a false start; ignore t
 
 **Validated now:** H5 relations (ff4846c), H6 declarative actions (71f58a0), defaults on optional keys (97d8a7a), 0.5.0 (93a5c5d). Reviewer rerun: `npm test` 182 pass, 0 fail, 1 skipped; pilot 147/147, 212/217, 231/232; no PSys2 name in `src/`. The tag could not be pushed from your session: leave it, the reviewer or the user will tag; the PSys2 worker pins commits meanwhile.
 
+**Validated at 20:35:** L1 one language (8b6a219) and the build identity (533d75a, 59941ab). Reviewer rerun: `npm test` 184 pass, 0 fail, 1 skipped; pilot unchanged (147/147, 212/217, 231/232); no `?id` declaration left in the matrices, examples and tests. Reviewer probe in the new syntax: multi-line `@p purchase … qty=?q` pattern, a fact with the same id `p` does not clash, the rule derives the cost, a fact with a variable is refused, and the old-syntax probe still runs. This is the form the user asked for. **G11 is still missing** (it was first in the order): do it now, then W1–W8, D1, 0.6.0.
+
 **The first real host has reported.** PSys2 integrated the library (at a7a8e16) behind a switch for three worlds and measured both strategies. On its per-turn consistency audit, turns that leave the world in violation fell from 2.8% (its own code) to 0.3% (matrix); undo, revision and abduction cases started passing; turn time rose 9%. It also sent ten workarounds it needed. They are general API gaps; fix them as W1–W8 below.
 
 **Order from here, one commit each: G11, L1, W1–W8, D1, then tag 0.6.0** (L1 changes the syntax, so it is a minor version).
@@ -267,3 +269,4 @@ G1, G2, G6, G3, G4, G7, G5, G8, G9. G8 for the shop world can start as soon as G
 - H1 (d762dc8), H2 (90116e1), G10 (d23b20f): reviewer rerun 167 pass / 0 fail / 1 skipped; repros fixed; pilot arith 208/217.
 - G12–G14, H3, H4 (e0d09d7, 8c90f27, 7921fce, 10d6314): reviewer rerun 175 pass / 0 fail / 1 skipped; pilot arith 212/217; tier probe passes. Q12 closed. Open: G11, default on an optional key.
 - H5 (ff4846c), H6 (71f58a0), optional-key defaults (97d8a7a), 0.5.0 (93a5c5d): reviewer rerun 182 pass / 0 fail / 1 skipped; pilot unchanged.
+- L1 (8b6a219) + build identity (533d75a, 59941ab): reviewer rerun 184 pass / 0 fail / 1 skipped; pilot unchanged; new-syntax probe passes.

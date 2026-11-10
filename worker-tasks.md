@@ -22,15 +22,65 @@ The reviewer's first two commits to this repository were a false start; ignore t
 - **Q10** (references to entities outside the session): accepted. The library keeps refusing a reference to a wire that does not exist. In PSys2 `e.user` is a built-in agent that every session has from the start, so the runner telling an `e.user` wire first is correct. The one `$e.tom` case: check whether the agent wire is created by an earlier turn of the same session in the cases file (PSys2 creates an agent wire on first mention, in the same turn); if the wire really is absent from `wires`, list the case as a failure with that reason and I will look at the dump.
 
 **Do next, in this order, one commit each:**
-The PSys2 worker will now start integrating the library (first the three pilot worlds). Until it reports back, do this round of **general** follow-ups that the pilot's ten failures point at, one commit each:
+**Round 3 (reviewer, 17:45).** The user sent an outside design review of the library (made at commit e9a6551, before G7 and G5) and asked the reviewer to judge it and organise the work. The reviewer checked each claim on the current code. The result is the order below, one commit each. Finish what you have in hand of G10–G14 first if a commit is nearly done; otherwise follow this order.
 
-1. **G10 — ties and ambiguity.** `argmax` / `argmin` with several best wires: the query status is `ambiguous` with the alternatives (as `conflicting` does for values), instead of silently taking the first. A selector option chooses the old behaviour.
-2. **G11 — soft constraints.** A slot bound or a deny can be declared `soft=true`: the wire is accepted and recorded, the violation is kept as a standing `core.issue` wire (with support), and queries that depend on it answer `conflicting` with the reason. Hosts that must not refuse what a user said (a dialogue) need this; strict stays the default.
-3. **G12 — calc failures have a reason.** A calc that is not applicable (division by zero, unit mismatch) leaves a reason the query can report (`unsupported` with `reason`), instead of a plain `missing`.
-4. **G13 — number formatting is the host's.** A world option for the precision of derived numbers (`round` at a declared number of decimals, default as now).
-5. **G14 — partial knowledge of a fluent.** "Received 2, start unknown": a fluent with an unknown start can still expose the known change since the last statement (`delta`), queryable as its own key, so a host can answer "at least / received 2" while `count` stays unknown.
-6. Then rerun `compat/psys2/run.mjs` and report which of the ten arith failures these close (expected: n17–n19 with G11, n37 with G10, n31 with G12, n34 with G13, the four "received" cases with G14).
-7. **Housekeeping:** the older HTML pages that still say "seven matrix wire types" and "version 0.4" limits; bump the version (0.5.0) and tag it, so the PSys2 worker can pin a release.
+**A. Two defects the review found, reproduced by the reviewer on a7a8e16. Do these first.**
+
+1. **H1 — a whole assignment is checked atomically; search must not reject on invalid prefixes.**
+   - Repro:
+     ```
+     @s1 core.slot of=box key=a required=true enum=1
+     @s2 core.slot of=box key=b required=true enum=1
+     ?x box a=?v core.absent=b
+     @d1 core.deny when=$x why="a without b"
+     ?y box b=?v2 core.absent=a
+     @d2 core.deny when=$y why="b without a"
+     ```
+     then `tell('@b1 box')`. `tell('@t box a=1 b=1', {dry:true})` is accepted, but `solveReport()` says **`unsat`** and `next()` reports both keys **dead**. The domains are filtered by trying each value alone, and a solution is verified by applying values one after another, so an intermediate state that a deny (with absence or negation) refuses kills a valid joint completion.
+   - Fix:
+     - a public `world.check(patch)` (a list of fills and wires applied together in one scratch transaction; returns ok, violations, support; always rolled back) and `world.applyPatch(patch)`;
+     - the solvers' oracle verifies whole assignments with it;
+     - single-value filtering is used only where it is sound (no deny or rule with negation / absence / selector reads the key), otherwise the value stays in the domain and the search decides;
+     - `unsat` is reported only with a complete justification in the declared finite fragment; anything else is `unknown`;
+     - `next()` and `suggest()` must not call a key dead on single-value trials in that situation.
+   - Tests: the repro; a three-key variant; a random comparison against brute-force enumeration with `check` on small problems with absence-based denies.
+2. **H2 — two declarations of one slot are a composition conflict, not "last one wins".**
+   - Repro: `@k1 core.slot of=t key=color enum=red enum=blue` and `@k2 core.slot of=t key=color enum=blue enum=green` in one matrix are accepted, and then `red` is refused and `green` accepted: the second silently replaced the first.
+   - Rule:
+     - identical declarations are shared;
+     - different declarations of the same type and key are refused with a `schema` violation naming both, unless one says how to combine: `combine=intersect` (enums and numeric bounds intersect; an empty result is itself a violation) or `combine=override` (explicit replacement, recorded).
+     - A subtype redeclaring an inherited key is the existing "nearest wins" and stays.
+     - The same for `core.schema.map` mappings and module loads.
+     - Check that the PSys2 legends in `compat/psys2` still load (they should have no duplicates; if they do, list them in the log: they are real findings).
+
+**B. The general follow-ups from the pilot (already given): G10 ties → `ambiguous`; G11 soft constraints; G12 calc failure reasons; G13 precision option; G14 fluent delta.** Then rerun the pilot and say which of the ten arith failures closed.
+
+**C. What the user asked for next, and what the review rightly proposes.**
+
+3. **H3 — certainty tiers and value-level provenance.** The user wants the world to know which of its data is solid and which is only guessed, because that is where attention must go.
+   - Every value (wire, key, value) carries a **tier**: `told` > `derived` (from told only) > `forced` (the only value a closed domain left) > `default` > `guessed` (chosen by `complete({choose})`, a solver, or adopted abduction). A derived value takes the weakest tier among its inputs (propagated through rules, calcs, aggregates, fluents). Tiers are an ordered set a host may extend (declared as wires), with an optional numeric `cost`; they are ranks, not probabilities.
+   - Provenance at value level: the justification of a value names the cells it came from (wire and key), the rule / calc / relation, and the tier; alternative justifications are kept (it already works for wires: keep that behaviour, extend it to values). Changing one input cell invalidates only what depends on that cell.
+   - API: `world.tier(id, key)`, `world.assumptions()` (everything below `derived`, weakest first, with what depends on each), `query` results carry the tier and the weakest inputs, `explain` shows tiers, `next()` orders its questions by "weakest value with the most dependants first".
+   - A told value always replaces a weaker one for the same key (the existing default revision, generalised to every tier below `told`), with the `revised` list.
+4. **H4 — `world.describe()`.** A structured summary a host can turn into text, as plain data (no prose): per type the count and the instances; per instance the keys with value and tier; what is open; what is assumed; standing issues (soft violations); the last N changes with their cause. Options: `{ about: id | type, depth, since: seq }`. And `world.diff(a, b)` between two states or forks ("what changes if we choose B").
+5. **H5 — relations that solve in more than one direction** (the review's first extension; G5 already inverts calcs inside abduction, this makes it a first-class, forward mechanism).
+   - `core.relation` wires over cells of matched wires, linear in the first version: `sum` / `sub` with constant coefficients, written as wires (your syntax; it must be data), with exact rational arithmetic and unit checks.
+   - Semantics (the review's table): after substituting known cells — no unknown and true: satisfied; no unknown and false: conflict naming the cells; **one** unknown with non-zero coefficient: the value is derived (tier = weakest input) if it fits the cell's kind and domain (an integer cell does not take 3/2: conflict); several unknowns: the relation is kept, nothing invented.
+   - Propagation by a queue over the relations that use a changed cell, to a fixpoint or a conflict, inside the transaction and under the budget. Finite-domain relations may prune domains by support (table constraint); **this is local propagation, not a complete solver**: the search of H1 still decides (test: the x≠y, y≠z, z≠x triangle over {0,1} must come out `unsat` from search, not from propagation, and not `sat`).
+   - A `core.calc` with an invertible function may be declared `relation=true` to get the same behaviour without rewriting matrices. `abduce` uses relations.
+   - Tests from the review's prototype: paid − total − change = 0 solved for each of the three (198 cases), the chain x+y=10, y+z=8, z=3 → x=5, y=5; undetermined and conflict cases.
+6. **H6 — declarative actions** (the concrete half of the review's second extension). An action declared as wires: parameters, a guard (conditions over cells and parameters), and **simultaneous writes** (every expression reads the state before the action), executed as one patch through `check` / `applyPatch`. It replaces registered JavaScript functions where the logic is "check and update values"; functions stay for everything else. A refused guard returns `refused` with the failing condition. Use it in the pilot where it fits (the shop purchase) and report the lines of `fns.mjs` or matrix it removes.
+
+**D. Postponed, with the reviewer's reasons (do not start):**
+- **Symbolic execution of actions and invariant proofs** (conservation and so on): coherent and feasible on top of H5 + H6, but no user of the library needs proofs over families of inputs yet. Revisit after H6 with one concrete use.
+- **Bounded planning** (breadth-first over declared actions): after H6, when a host asks for it.
+- **A persistent structure of contexts / scenarios:** `fork()` is structural since G7 (0.007 ms at 2,000 wires); scenarios are forks plus a list of assumptions (H3 gives that list).
+- **E-graphs, general abstract interpretation, a probabilistic or causal engine, epistemic or deontic logic, general induction, holographic algorithms, VSA retrieval:** agreed with the review, not now; each lacks a concrete problem here.
+- The review's point about abduction missing `paid=15` is **already fixed** by G5 (reviewer rerun: `p1.paid=15`), and its recursion worry (p→q, q→p after retracting the last outside premise) **already behaves correctly** (both gone).
+
+**E. Housekeeping at the end of this round:** old HTML pages; version **0.5.0** and a tag, with a short changelog. The PSys2 worker pins that tag.
+
+**Order:** H1, H2, G10–G14 (those not yet done), H3, H4, H5, H6, housekeeping + tag. Report the pilot numbers again after G10–G14 and after H6.
 
 Working rules for commits: pull with rebase before each commit; the reviewer only ever changes `worker-tasks.md` (tasks and answers) and, when you ask for more material, files under `compat/psys2/` — never `src/`, tests, docs, `questions.md` or your log. If a reviewer commit lands while you work, rebase onto it; it will not touch your files.
 

@@ -125,6 +125,20 @@ export interface BudgetViolation { kind: 'budget'; site: Site; steps: number; wh
 export interface Stats { steps: number; limit: number; exhausted: boolean; site: Site | null; sites: Record<Site, number>; ms: number }
 export interface Budgeted { budget?: Budget }
 export interface ChangeOptions extends Budgeted { dry?: boolean; strict?: boolean; /** how sure this statement is (default: told) */ tier?: string }
+export interface Description {
+  types: Record<string, { count: number; instances: string[] }>;
+  wires: Record<string, { type: string; tier: string; via?: string; keys: Record<string, { value: string | string[]; tier: string }> }>;
+  open: OpenKey[];
+  assumed: { id: string; key: string | null; value?: string; tier: string; dependants: number }[];
+  issues: { id: string; rule?: string; about: string[]; key?: string; why?: string }[];
+  changes: WorldEvent[];
+}
+export interface Difference {
+  same: boolean;
+  added: { id: string; type: string; tier: string }[];
+  removed: { id: string; type: string; tier: string }[];
+  changed: { id: string; key: string; from?: string | string[]; fromTier?: string; to?: string | string[]; toTier?: string }[];
+}
 export interface Cell { id: string; key: string | null; value?: string; tier: string }
 export interface Assumption extends Cell { cost?: number; dependants: { id: string; key: string | null }[] }
 
@@ -148,6 +162,11 @@ export class World {
   fork(): World;
   /** for functions: say why no result can be given, before returning nothing */
   cannot(reason: string): void;
+  /** a summary of the world as plain data */
+  describe(options?: { about?: string; depth?: number; since?: number; last?: number }): Description;
+  /** what is different in another world (a fork on which something was tried) */
+  diff(other: World): Difference;
+  static diff(a: World, b: World): Difference;
   /** how solid a value is: told, derived, forced, default, guessed, or a tier the matrix declares */
   tier(id: string, key?: string): string | undefined;
   /** everything weaker than derived, weakest first, with the cells that rest on each */

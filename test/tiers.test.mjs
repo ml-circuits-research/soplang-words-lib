@@ -99,3 +99,43 @@ test('tiers: a host states its own tier, declares its own, and an adopted explan
   assert.deepEqual([w.tier(rain), w.tier(wet, 'place'), w.query({ type: 'wet', seek: 'place' }).tier], ['guessed', 'guessed', 'guessed']);
   assert.deepEqual(w.query({ type: 'wet', seek: 'place' }).rests.map((c) => c.id), [rain]);
 });
+
+test('describe: a summary as plain data; diff: what another world changes', () => {
+  const w = new World();
+  w.load(trip + '@kd core.slot of=trip key=days kind=number max=30 soft=true\n');
+  w.tell('@t1 trip days=3  @n1 note about=$t1 text=hello');
+  w.complete({ defaults: true });
+  const d = w.describe();
+  const b = w.ofType('budget')[0].id;
+  assert.deepEqual(Object.keys(d), ['types', 'wires', 'open', 'assumed', 'issues', 'changes']);
+  assert.deepEqual(d.types, { trip: { count: 1, instances: ['t1'] }, note: { count: 1, instances: ['n1'] }, budget: { count: 1, instances: [b] } });
+  assert.deepEqual(d.wires.t1, { type: 'trip', tier: 'told', keys: { days: { value: '3', tier: 'told' }, transport: { value: 'car', tier: 'default' }, seat: { value: 'window', tier: 'forced' } } });
+  assert.deepEqual([d.wires[b].tier, d.wires[b].via, d.wires[b].keys.amount], ['default', 'r', { value: '120', tier: 'default' }]);
+  assert.deepEqual(d.open.map((o) => `${o.id}.${o.key}`), ['t1.class']);
+  assert.deepEqual(d.assumed, [{ id: 't1', key: 'transport', value: 'car', tier: 'default', dependants: 4 }, { id: 't1', key: 'seat', value: 'window', tier: 'forced', dependants: 0 }]);
+  assert.deepEqual([d.issues, d.changes.some((e) => e.op === 'fill' && e.via === 'core.default'), d.changes.at(-1).op], [[], true, 'derive']);
+  // about a wire, with its neighbours; about a type; only what changed since
+  assert.deepEqual(Object.keys(w.describe({ about: 'n1', depth: 0 }).wires), ['n1']);
+  assert.deepEqual(Object.keys(w.describe({ about: 'n1' }).wires).sort(), ['n1', 't1']);
+  assert.deepEqual(Object.keys(w.describe({ about: 'n1', depth: 2 }).wires).sort(), [b, 'n1', 't1'].sort());
+  assert.deepEqual(Object.keys(w.describe({ about: 'budget', depth: 0 }).wires), [b]);
+  const seq = w.seq;
+  w.tell('@t2 trip days=40 transport=train seat=window class=first');   // over the soft bound: an issue
+  const after = w.describe({ since: seq });
+  assert.deepEqual(after.issues.map((i) => [i.about, i.key, i.why]), [[['t2'], 'days', 'days must be at most 30']]);
+  assert.ok(after.changes.length > 0 && after.changes.every((e) => e.seq > seq));
+  assert.deepEqual(Object.keys(after.types).sort(), ['budget', 'note', 'trip'], 'issue wires are listed under issues, not as instances');
+  // what changes if we go by train: try it on a fork and compare
+  const f = w.fork();
+  f.fill('t1', 'transport', 'train');
+  f.tell('@n2 note about=$t1 text=booked');
+  f.retract('n1');
+  const x = w.diff(f);
+  assert.equal(x.same, false);
+  const notes = (list) => list.filter((e) => e.type === 'note');
+  assert.deepEqual([notes(x.added), notes(x.removed)], [[{ id: 'n2', type: 'note', tier: 'told' }], [{ id: 'n1', type: 'note', tier: 'told' }]]);
+  // the budget by car is gone and a budget by train is there, no longer resting on a default
+  assert.deepEqual([x.removed.filter((e) => e.type === 'budget').map((e) => e.tier), x.added.filter((e) => e.type === 'budget').map((e) => e.tier)], [['default'], ['derived']]);
+  assert.deepEqual(x.changed.filter((c) => c.id === 't1'), [{ id: 't1', key: 'transport', from: 'car', fromTier: 'default', to: 'train', toTier: 'told' }]);
+  assert.equal(World.diff(w, w.fork()).same, true);
+});

@@ -15,6 +15,7 @@ import { querying } from './query.mjs';
 import { timing } from './time.mjs';
 import { Budget } from './budget.mjs';
 import { tiering } from './tiers.mjs';
+import { describing } from './describe.mjs';
 import { abduce } from './abduce.mjs';
 
 const first = (w, k) => w.attrs[k]?.[0];
@@ -1274,4 +1275,6 @@ export class World {
   }
 }
 
-Object.assign(World.prototype, completion, revision, querying, timing, tiering);
+Object.assign(World.prototype, completion, revision, querying, timing, tiering, describing);
+/** The difference between two worlds (see world.diff). */
+World.diff = (a, b) => a.diff(b);

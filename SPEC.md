@@ -803,6 +803,31 @@ stronger than `derived`: a total computed from a told quantity and a default pri
   is not enough, every assumption on the wires involved gives way. Told against told
   stays a conflict. Stating again a value that was assumed confirms it: it is `told`.
 
+### 4.13 Describing a world, and comparing two
+
+`world.describe({ about, depth, since, last })` returns a summary as plain data, for a
+host to turn into text or a screen. No prose is made by the library.
+
+```
+{ types:   { <type>: { count, instances: [ids] } },
+  wires:   { <id>: { type, tier, via?, keys: { <key>: { value, tier } } } },
+  open:    [{ id, type, key, ask }],                      required keys without a value
+  assumed: [{ id, key, value, tier, dependants }],        weakest first (4.12)
+  issues:  [{ id, rule, about: [ids], key?, why }],        standing soft violations (3.4)
+  changes: [{ seq, op, id, ... }] }                        the last events, with their cause (via, from)
+```
+
+`about` is a wire id (that wire and what it refers to or is referred to by, up to
+`depth` steps, default 1) or a type (its wires). `since` keeps only the changes after
+that event number; `last` caps them (default 20).
+
+`world.diff(other)`, or `World.diff(a, b)`, compares two worlds, typically a world and
+a fork on which something was tried: `{ same, added, removed, changed }`, where
+`added` and `removed` are `{ id, type, tier }` and `changed` is
+`{ id, key, from, fromTier, to, toTier }`. A value that keeps its text but changes
+tier (an assumption that was confirmed) is a change. Derived wires whose content
+changed appear as one removed and one added.
+
 ## 5. Composition of worlds
 
 - A micro-world is a matrix, usually with a type prefix (`phys.mech.*`), stored in a library.
@@ -900,7 +925,7 @@ w.query(question, { record, suppose, at })   w.act(request)   w.schema(type)
 w.asOf(at, fn)   w.seqOf(id)   w.compare(idA, idB)
 w.abduce(goalText, { maxDepth, max, maxAssumptions })
 w.explain(id)  w.history()  w.on(listener)   w.stats()
-w.tier(id, key)   w.assumptions()
+w.tier(id, key)   w.assumptions()   w.describe({ about, depth, since, last })   w.diff(other)
 // every call above also takes { budget: { steps, ms } }
 w.toSOP({ schema, derived, provenance })   w.toJSON()   World.fromJSON(data, options)
 ```
@@ -932,6 +957,7 @@ Since 0.4.0 (the version first published in this repository):
 - New: `core.on=` templates (3.3); the stratification check knows which keys a template
   adds, so a rule may aggregate over a type and fill a key on a wire of that type.
 - New: `core.absent=` in patterns (3.10).
+- New: `world.describe()` and `world.diff()` (4.13).
 - New: tiers of certainty and `cells` (4.12): `world.tier`, `world.assumptions`, `tier`
   and `rests` in query results, `review` in `next()`, `{ tier }` on statements.
 - **Changed:** a told value now replaces a forced or chosen value for the same key, as

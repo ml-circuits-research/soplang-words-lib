@@ -903,3 +903,19 @@ Not done as the task words it:
   is there to make the precise version possible.
 - `next()` does not reorder its questions (they are about keys that have no value, so
   they have no tier); it adds the `review` list instead.
+
+## H4 — world.describe() and world.diff() — done
+
+`npm test`: 176 pass, 0 fail on sources and built file. `node tools/scan-loops.mjs src`:
+clean. `git grep -i psys2 src/ | wc -l`: 0.
+
+`src/describe.mjs`, SPEC 4.13. `describe()` returns `{ types, wires, open, assumed,
+issues, changes }` as plain data: per type the count and instances; per wire its tier
+and each key with value and tier; open keys; assumptions weakest first; standing issues
+(soft violations); the last events. Options `about` (a wire with its neighbours up to
+`depth`, or a type), `since`, `last`. `world.diff(other)` / `World.diff(a, b)` gives
+`{ same, added, removed, changed }` with tiers. One test in `test/tiers.test.mjs`
+(scopes, an issue from a soft bound, "what changes if we go by train" on a fork).
+
+Note: a derived wire's id depends on what it was derived from, so when its inputs
+change, `diff` shows the old wire removed and a new one added, not a changed value.

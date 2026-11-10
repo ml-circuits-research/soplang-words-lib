@@ -46,7 +46,7 @@ export interface QueryResult {
 export interface ActResult { ok: boolean; status: 'done' | 'missing' | 'refused' | 'error' | 'unsupported' | 'budget'; value?: string; result?: unknown; missing?: { action: string; key: string; ask?: string }[]; violations?: Violation[] }
 export interface Assignment { id: string; key: string; value: string }
 /** Changes judged as a whole: wires to tell and values to fill, or just the fills. */
-export type Patch = Assignment[] | { wires?: string | Wire[]; fills?: Assignment[] };
+export type Patch = Assignment[] | { wires?: string | Wire[]; fills?: Assignment[]; /** replace what the key holds */ sets?: Assignment[]; /** wire ids to retract */ retract?: string[] };
 export interface SolveReport { reason?: string; status: 'sat' | 'unsat' | 'unknown'; assignment?: Assignment[]; stats: { [name: string]: number | BudgetViolation | undefined; budget?: BudgetViolation }; solver?: string }
 export interface SolveOptions { preset?: Map<number, string>; budget?: number }
 export interface Solver {

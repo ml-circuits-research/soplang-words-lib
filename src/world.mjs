@@ -285,7 +285,7 @@ export class World {
 
   _patch(patch, { dry = false, strict = this.options.strict, via = 'core.tell', tier } = {}) {
     this._knownTier(tier);
-    const { wires = [], fills = [] } = Array.isArray(patch) ? { fills: patch } : patch || {};
+    const { wires = [], fills = [], sets = [], retract = [] } = Array.isArray(patch) ? { fills: patch } : patch || {};
     const ws = (typeof wires === 'string' ? parse(wires) : wires).map(cloneWire);
     const told = ws.map(cloneWire);
     const res = this._result();
@@ -299,16 +299,37 @@ export class World {
         if (!w) { res.violations.push({ kind: 'unknown-wire', id: f.id }); continue; }
         this._merge(w, { [this._compiled().shortKey(w.type, f.key)]: [this._norm(String(f.value))] }, { via, from: [], tier }, res);
       }
+      // a set replaces whatever the key held; a fill adds to it (and conflicts on a single-valued key)
+      for (const f of sets) { // bounded: the sets of one patch
+        const w = this.get(f.id);
+        if (!w) { res.violations.push({ kind: 'unknown-wire', id: f.id }); continue; }
+        const key = this._compiled().shortKey(w.type, f.key), value = this._norm(String(f.value));
+        const old = (w.attrs[key] || []).filter((v) => v !== value);
+        if (old.length) this._unsay(res, [], old.map((v) => ({ id: w.id, key, value: v })));
+        this._merge(w, { [key]: [value] }, { via, from: [], tier }, res);
+      }
+      let removed = [];
+      if (retract.length && !res.violations.length) {
+        const ids = retract.map((id) => this.resolve(id));
+        for (const id of ids) if (!this.wires.has(id)) res.violations.push({ kind: 'unknown-wire', id });
+        if (!res.violations.length) {
+          removed = [...this._withdraw(res, ids, [])].filter((x) => !this.wires.has(x));
+          this._logRemove(new Set(removed));
+          this._event({ op: 'retract', ids: removed });
+        }
+      }
       this._settle(res, strict);
+      if (removed.length) res.removed.push(...removed);
     } catch (e) {
       this._rollback(mark);
       throw e;
     }
     // in the log the parts of a patch carry the same group, so that a replay applies them together
-    const group = fills.length + (ws.length ? 1 : 0) > 1 ? `g${this.seq}` : undefined;
+    const group = fills.length + sets.length + (ws.length ? 1 : 0) > 1 ? `g${this.seq}` : undefined;
     const entries = [
       ...(ws.length ? [{ op: 'tell', wires: told, facts, ...(group ? { group } : {}), ...(tier ? { tier } : {}) }] : []),
       ...fills.map((f) => ({ op: 'fill', id: f.id, key: f.key, value: String(f.value), via, ...(group ? { group } : {}), ...(tier ? { tier } : {}) })),
+      ...sets.map((f) => ({ op: 'set', id: f.id, key: f.key, value: String(f.value), via, ...(group ? { group } : {}), ...(tier ? { tier } : {}) })),
     ];
     return this._finish(mark, res, dry, entries);
   }
@@ -321,8 +342,8 @@ export class World {
       const kept = part.map(keep).filter(Boolean);
       if (!kept.length) continue;
       const tell = kept.find((e) => e.op === 'tell');
-      const fills = kept.filter((e) => e.op === 'fill');
-      const r = this._patch({ wires: tell ? tell.wires : [], fills }, { strict: false, via: fills[0]?.via, tier: (tell || fills[0]).tier });
+      const fills = kept.filter((e) => e.op === 'fill'), sets = kept.filter((e) => e.op === 'set');
+      const r = this._patch({ wires: tell ? tell.wires : [], fills, sets }, { strict: false, via: (fills[0] || sets[0])?.via, tier: (tell || fills[0] || sets[0]).tier });
       if (!r.ok) return r;
     }
     return null;
@@ -668,6 +689,8 @@ export class World {
     const linked = new Set();
     const noteLinks = (ws) => {
       for (const w of ws) {
+        // the templates of an action written as wires belong to the matrix, like those of a rule
+        if (w.type === 'core.action') for (const k of ['when', 'with', 'if', 'set', 'add', 'remove']) for (const v of w.attrs[k] || []) if (v[0] === '$') linked.add(v.slice(1));
         if (w.type !== 'core.rule' && w.type !== 'core.deny') continue;
         for (const k of LINKS) for (const v of w.attrs[k] || []) if (v[0] === '$') linked.add(v.slice(1));
       }

@@ -982,3 +982,44 @@ Deviations and limits:
   carried into the backward direction.
 - A variable that names the same cell in two patterns (a join variable) is read, never
   solved for.
+
+## H6 — declarative actions — done; pilot numbers
+
+| Command | Result |
+| --- | --- |
+| `npm test` | sources: 183 pass, 0 fail; built file: 183 pass, 0 fail |
+| `node compat/psys2/run.mjs` | kids.shop 147/147 (71 lines), kids.arith 212/217 (115 lines), kids.tasks 231/232 (18 + 86 lines) |
+| `node compat/psys2/demo.mjs` | six demonstrations; the sixth is an action written as wires |
+| `node tools/scan-loops.mjs src`, `git grep -i psys2 src/ \| wc -l`, `npm run examples` | clean; 0; exit 0 |
+
+A `core.action` without `fn=` is written as wires (SPEC 4.10): `param=` (variables bound
+from the request), `when=` patterns, `with=` calcs, `if=` checks as the guard, `set=`
+templates with `core.on=` (replace a key of a matched wire), `add=` templates (new
+wires), `remove=` (retract a matched wire), `returns=`, `all=true` to act on every
+match. It is compiled like a rule and run on request: everything is evaluated on the
+state before the action, then applied as one patch. For that the patch got two more
+parts, public as well: `sets` (replace what a key holds) and `retract`. A set is kept in
+the log, so a restored world is the same (tested). A failed guard returns `refused` with
+`{ kind: 'guard', check, why }`.
+
+Test in `test/query.test.mjs`: `take` (guard, a set and a new wire that records the stock
+*before*), a transfer between two accounts (two sets from the old balances), `tidy`
+(`remove` on every match), a missing parameter, a request wire, restore from JSON, and
+the public `sets` against `fills`.
+
+**In the pilot it removes no lines, and I have not forced it in.**
+- In the shop dialogues a purchase is not a request: PSys2 writes a `kids.shop.purchase`
+  event wire and the matrix already turns that into a debit with a rule and an effect
+  (no function to replace). What a declarative "buy" adds is the guard *before* the
+  purchase is recorded; that is demonstration 6 in `compat/psys2/demo.mjs` (6 lines of
+  wires: buy a book with 20 lei, done; buy another, refused "there is not enough money
+  for it", money left 8).
+- In kids.tasks every action starts by normalising text (list names, "milk, eggs and
+  bread", matching by words), which stays code; the only body that is pure "check and
+  update" is `notDone`, one line.
+- The comparison I can give is the neutral one: the warehouse `take` function in
+  `examples/warehouse.mjs` is 8 lines of JavaScript (`sed -n '/^  take: /,/^  },/p'
+  examples/warehouse.mjs | wc -l`); the same action in the test is 6 lines of wires and
+  also states its guard as data.
+
+Limits: no aggregates in an action's calcs; `set` writes one value per key.

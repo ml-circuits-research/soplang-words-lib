@@ -124,6 +124,7 @@ export function compileMatrix(world) {
     }
   }
   const extra = []; // core.tier wires: the host's own tiers of certainty
+  const actionWires = []; // core.action wires without fn=: actions written as wires
   const own = new Map(); // type -> Map(key -> slot) declared on that type itself
   // Two declarations of the same key of the same type: equal ones are one declaration;
   // different ones are a conflict unless one says how they combine (combine=intersect|override).
@@ -246,7 +247,8 @@ export function compileMatrix(world) {
       push(c.producers, `${of}.${key}`, { id: w.id, fn });
     } else if (w.type === 'core.action') {
       const name = first(w, 'name'), fn = first(w, 'fn');
-      if (!name || !fn) { c.errors.push(`${w.id}: core.action needs name= and fn=`); continue; }
+      if (!name) { c.errors.push(`${w.id}: core.action needs name=`); continue; }
+      if (!fn) { actionWires.push(w); continue; } // written as wires: compiled below, with the rules
       if (!world.fns[fn]) c.errors.push(`${w.id}: unknown function "${fn}"`);
       c.actions.set(name, { id: w.id, fn, required: w.attrs.required || [], inputs: w.attrs.input || [], ask: w.attrs });
     } else if (w.type === 'core.abducible') {
@@ -366,6 +368,19 @@ export function compileMatrix(world) {
     if (w.type === 'core.rule' || w.type === 'core.deny') buildRule(world, w, c);
   }
   buildRelations(world, c);
+  // An action written as wires: parameters, patterns that read the state, a guard, and
+  // writes that all read the state before the action. It is a rule that fires on request.
+  for (const w of actionWires) {
+    const body = { id: w.id, type: 'core.rule', attrs: { when: w.attrs.when || [], with: w.attrs.with || [], if: w.attrs.if || [], then: [...(w.attrs.set || []), ...(w.attrs.add || [])] }, pattern: false };
+    const rule = buildRule(world, body, c, null, false);
+    if (!rule) continue;
+    const sets = new Set((w.attrs.set || []).map((v) => v.slice(1)));
+    for (const t of rule.then) if (sets.has(t.id) && !t.on) c.errors.push(`${w.id}: set=$${t.id} needs core.on=$<pattern>, the wire to change`);
+    const remove = (w.attrs.remove || []).map((v) => v.slice(1));
+    for (const id of remove) if (!rule.when.some((p) => p.id === id)) c.errors.push(`${w.id}: remove=$${id} must name one of its when= patterns`);
+    const params = w.attrs.param || [];
+    c.actions.set(first(w, 'name'), { id: w.id, rule, params, required: params, remove, returns: first(w, 'returns'), all: flag(w, 'all'), inputs: [], ask: w.attrs });
+  }
   c.selRules = [];
   for (const r of c.rules) {
     if (r.not.length) {
@@ -486,7 +501,7 @@ function buildRelations(world, c) {
   }
 }
 
-function buildRule(world, w, c, extra) {
+function buildRule(world, w, c, extra, register = true) {
   const find = (id) => extra?.get(id) || world.matrix.get(id);
   const locals = new Set();
   for (const k of LINKS) for (const v of w.attrs[k] || []) if (v[0] === '$') locals.add(v.slice(1));
@@ -518,7 +533,7 @@ function buildRule(world, w, c, extra) {
     // with over= the calc is an aggregate over every match of those patterns
     const over = x.attrs.over ? get('over', find(x.id) || x) : null;
     if (over ? !aggregates[name] : !world.fns[name]) c.errors.push(`${w.id}: unknown ${over ? 'aggregate' : kind} function "${name}"`);
-    return { fn: name, out: first(x, 'out'), args: x.attrs.args || [], over, pick: first(x, 'pick'), ties: first(x, 'ties') };
+    return { id: x.id, why: first(x, 'why'), fn: name, out: first(x, 'out'), args: x.attrs.args || [], over, pick: first(x, 'pick'), ties: first(x, 'ties') };
   };
   const rule = {
     id: w.id, kind: w.type === 'core.rule' ? 'rule' : 'deny',
@@ -536,7 +551,7 @@ function buildRule(world, w, c, extra) {
     if (w.attrs.why) attrs.why = [w.attrs.why[0]];
     rule.then = [{ id: `${w.id}.issue`, type: 'core.issue', attrs, pattern: false }];
   }
-  if (rule.kind === 'rule' && !rule.then.length) { c.errors.push(`${w.id}: core.rule needs then=`); return; }
+  if (rule.kind === 'rule' && !rule.then.length && register) { c.errors.push(`${w.id}: core.rule needs then=`); return; }
   for (const t of rule.then) {
     if (!t.on) continue;
     const p = rule.when.find((x) => '?' + x.id === t.on);
@@ -585,5 +600,6 @@ function buildRule(world, w, c, extra) {
   };
   rule.then.forEach(visit);
   rule.then = order;
+  if (!register) return rule; // an action: built like a rule, run on request
   (rule.kind === 'rule' ? c.rules : c.denies).push(rule);
 }

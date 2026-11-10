@@ -740,6 +740,35 @@ arguments that were not given and their questions; `refused` with the violations
 change is refused or the function returns `{ ok: false, why }`; `error` when it throws;
 `unsupported` for an unknown action. In every case but `done` the world is unchanged.
 
+**Actions written as wires.** Where an operation is "check, then update values", no
+function is needed. A `core.action` without `fn=` is declared in full:
+
+```
+?it item name=?item stock=?have
+@enough core.check fn=gte args=?have args=?count why="not enough in stock"
+@left   core.calc  out=?rest fn=sub args=?have args=?count
+@w1 item core.on=$it stock=?rest                    # set: the key of the matched wire gets this value
+@w2 withdrawal of=$it count=?count before=?have     # add: a new wire
+@take core.action name=take param=item param=count
+      when=$it with=$left if=$enough set=$w1 add=$w2 returns=?rest ask.count="How many?"
+```
+
+- `param=` names the parameters; each is a variable (`?count`) bound from the request.
+  All are required; a call without one returns `missing` with the `ask.<param>` text.
+- `when=` patterns read the state; `with=` calcs compute; `if=` checks are the guard.
+- `set=` templates (with `core.on=`) replace the value of a key of a matched wire;
+  `add=` templates make new wires; `remove=$pattern` retracts the matched wire.
+- Every expression is evaluated on the state **before** the action, then all writes are
+  applied as one patch (4.9.1): a transfer debits and credits from the balances as they
+  were, and either both happen or neither.
+- A guard that does not hold returns `refused` with `{ kind: 'guard', check, why }`
+  (the `why=` of the check). No match of the patterns is refused too; several matches
+  are refused unless the action says `all=true`, which acts on each.
+- `returns=?var` is the `value` of the result.
+
+A patch can carry the same writes directly: `{ wires, fills, sets: [{ id, key, value }],
+retract: [ids] }`. A `set` replaces what the key held; a `fill` adds to it.
+
 **Vocabulary.** The wire types and key names used here are defaults that a host can
 replace: `new World({ vocabulary: { question, answer, request, type, seek, about, mode,
 where, action, arg, to, value, status, via, from } })`.
@@ -1000,6 +1029,7 @@ Since 0.4.0 (the version first published in this repository):
 - New: `core.absent=` in patterns (3.10).
 - **Changed:** `complete({ defaults: true })` and `step()` now apply a slot's default to
   an optional key too (it was applied only when the key was `required`).
+- New: actions written as wires (4.10); `sets` and `retract` in a patch (4.9.1).
 - New: `core.relation` and `relation=true` on a calc (3.6.3); the function `linsolve`.
 - New: `world.describe()` and `world.diff()` (4.13).
 - New: tiers of certainty and `cells` (4.12): `world.tier`, `world.assumptions`, `tier`

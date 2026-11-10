@@ -1302,6 +1302,7 @@ const __matrix = (() => {
       }
     }
     const extra = []; // core.tier wires: the host's own tiers of certainty
+    const actionWires = []; // core.action wires without fn=: actions written as wires
     const own = new Map(); // type -> Map(key -> slot) declared on that type itself
     // Two declarations of the same key of the same type: equal ones are one declaration;
     // different ones are a conflict unless one says how they combine (combine=intersect|override).
@@ -1424,7 +1425,8 @@ const __matrix = (() => {
         push(c.producers, `${of}.${key}`, { id: w.id, fn });
       } else if (w.type === 'core.action') {
         const name = first(w, 'name'), fn = first(w, 'fn');
-        if (!name || !fn) { c.errors.push(`${w.id}: core.action needs name= and fn=`); continue; }
+        if (!name) { c.errors.push(`${w.id}: core.action needs name=`); continue; }
+        if (!fn) { actionWires.push(w); continue; } // written as wires: compiled below, with the rules
         if (!world.fns[fn]) c.errors.push(`${w.id}: unknown function "${fn}"`);
         c.actions.set(name, { id: w.id, fn, required: w.attrs.required || [], inputs: w.attrs.input || [], ask: w.attrs });
       } else if (w.type === 'core.abducible') {
@@ -1544,6 +1546,19 @@ const __matrix = (() => {
       if (w.type === 'core.rule' || w.type === 'core.deny') buildRule(world, w, c);
     }
     buildRelations(world, c);
+    // An action written as wires: parameters, patterns that read the state, a guard, and
+    // writes that all read the state before the action. It is a rule that fires on request.
+    for (const w of actionWires) {
+      const body = { id: w.id, type: 'core.rule', attrs: { when: w.attrs.when || [], with: w.attrs.with || [], if: w.attrs.if || [], then: [...(w.attrs.set || []), ...(w.attrs.add || [])] }, pattern: false };
+      const rule = buildRule(world, body, c, null, false);
+      if (!rule) continue;
+      const sets = new Set((w.attrs.set || []).map((v) => v.slice(1)));
+      for (const t of rule.then) if (sets.has(t.id) && !t.on) c.errors.push(`${w.id}: set=$${t.id} needs core.on=$<pattern>, the wire to change`);
+      const remove = (w.attrs.remove || []).map((v) => v.slice(1));
+      for (const id of remove) if (!rule.when.some((p) => p.id === id)) c.errors.push(`${w.id}: remove=$${id} must name one of its when= patterns`);
+      const params = w.attrs.param || [];
+      c.actions.set(first(w, 'name'), { id: w.id, rule, params, required: params, remove, returns: first(w, 'returns'), all: flag(w, 'all'), inputs: [], ask: w.attrs });
+    }
     c.selRules = [];
     for (const r of c.rules) {
       if (r.not.length) {
@@ -1664,7 +1679,7 @@ const __matrix = (() => {
     }
   }
 
-  function buildRule(world, w, c, extra) {
+  function buildRule(world, w, c, extra, register = true) {
     const find = (id) => extra?.get(id) || world.matrix.get(id);
     const locals = new Set();
     for (const k of LINKS) for (const v of w.attrs[k] || []) if (v[0] === '$') locals.add(v.slice(1));
@@ -1696,7 +1711,7 @@ const __matrix = (() => {
       // with over= the calc is an aggregate over every match of those patterns
       const over = x.attrs.over ? get('over', find(x.id) || x) : null;
       if (over ? !aggregates[name] : !world.fns[name]) c.errors.push(`${w.id}: unknown ${over ? 'aggregate' : kind} function "${name}"`);
-      return { fn: name, out: first(x, 'out'), args: x.attrs.args || [], over, pick: first(x, 'pick'), ties: first(x, 'ties') };
+      return { id: x.id, why: first(x, 'why'), fn: name, out: first(x, 'out'), args: x.attrs.args || [], over, pick: first(x, 'pick'), ties: first(x, 'ties') };
     };
     const rule = {
       id: w.id, kind: w.type === 'core.rule' ? 'rule' : 'deny',
@@ -1714,7 +1729,7 @@ const __matrix = (() => {
       if (w.attrs.why) attrs.why = [w.attrs.why[0]];
       rule.then = [{ id: `${w.id}.issue`, type: 'core.issue', attrs, pattern: false }];
     }
-    if (rule.kind === 'rule' && !rule.then.length) { c.errors.push(`${w.id}: core.rule needs then=`); return; }
+    if (rule.kind === 'rule' && !rule.then.length && register) { c.errors.push(`${w.id}: core.rule needs then=`); return; }
     for (const t of rule.then) {
       if (!t.on) continue;
       const p = rule.when.find((x) => '?' + x.id === t.on);
@@ -1763,6 +1778,7 @@ const __matrix = (() => {
     };
     rule.then.forEach(visit);
     rule.then = order;
+    if (!register) return rule; // an action: built like a rule, run on request
     (rule.kind === 'rule' ? c.rules : c.denies).push(rule);
   }
   return { SCHEMA_TYPES, readMap, knownKind, fitsKind, LINKS, localize, prefixModule, compileMatrix };
@@ -2355,7 +2371,7 @@ const __revise = (() => {
 // ---- src/query.mjs
 const __query = (() => {
   const { parse, str } = __parser;
-  const { EMPTY, walk } = __unify;
+  const { EMPTY, walk, unify, hasVar } = __unify;
   // Queries with a status, answers as wires, producers and actions. Mixed into World.prototype.
   //
   //   world.query({ type, seek, where, about, mode })   or a question wire of the same shape
@@ -2405,6 +2421,60 @@ const __query = (() => {
     },
 
     /** What a registered function sees of the world. */
+    /**
+     * An action written as wires. The parameters are variables; the patterns read the
+     * state; calcs compute; every check must hold (the guard); then all writes are applied
+     * as one patch. Every expression was evaluated on the state before the action.
+     */
+    _actDeclared(action, name, args) {
+      const rule = action.rule;
+      const refuse = (v) => ({ ok: false, status: 'refused', violations: [v] });
+      let s0 = EMPTY;
+      for (const p of action.params) s0 = unify('?' + p, this._norm(String(args[p])), s0);
+      const matches = [...this._matchAll(rule.when, 0, s0)];
+      if (!matches.length) return refuse({ kind: 'guard', action: name, why: 'nothing in the world matches what the action needs' });
+      if (matches.length > 1 && !action.all) return refuse({ kind: 'guard', action: name, why: `${matches.length} things match; the action is for one (say all=true to act on each)` });
+      const patch = { wires: [], sets: [], retract: [] };
+      let value;
+      for (let s of matches) { // bounded: the matches of the action's patterns
+        this._b.tick('match');
+        for (const q of rule.calc) {
+          const xs = q.args.map((a) => walk(a, s));
+          this._cannot = [];
+          const out = xs.some(hasVar) ? undefined : this.fns[q.fn](xs, this);
+          const why = this._cannot[0];
+          this._cannot = null;
+          if (out === undefined || out === null) return refuse({ kind: 'guard', action: name, calc: q.id, why: why || `${q.fn} has no result here` });
+          s = unify(q.out, this._round(String(out)), s);
+          if (!s) return refuse({ kind: 'guard', action: name, calc: q.id, why: 'the result contradicts a value already known' });
+        }
+        for (const t of rule.test) {
+          const xs = t.args.map((a) => walk(a, s));
+          if (xs.some(hasVar) || !this.fns[t.fn](xs, this)) return refuse({ kind: 'guard', action: name, check: t.id, why: t.why ? str(t.why) : `${t.fn}(${xs.join(', ')}) does not hold` });
+        }
+        for (const t of rule.then) {
+          const attrs = {};
+          for (const k of Object.keys(t.attrs)) {
+            const vals = t.attrs[k].map((v) => walk(v, s)).filter((v) => !hasVar(v));
+            if (vals.length) attrs[k] = vals;
+          }
+          if (t.on) {
+            const id = walk(t.on, s);
+            for (const k of Object.keys(attrs)) patch.sets.push({ id, key: k, value: attrs[k][0] });
+          } else {
+            const id = this._freshId(`${t.id.replace(/[^A-Za-z0-9_.]/g, '_')}_`) + (patch.wires.length ? `_${patch.wires.length}` : '');
+            patch.wires.push({ id, type: t.type, attrs, pattern: false });
+            s = unify('?' + t.id, id, s);
+          }
+        }
+        for (const id of action.remove) patch.retract.push(walk('?' + id, s));
+        if (action.returns) value = walk(action.returns, s);
+      }
+      const r = this._patch(patch, { strict: false });
+      if (!r.ok) return { ok: false, status: 'refused', violations: r.violations };
+      return { ok: true, status: 'done', value: value === undefined || hasVar(value) ? undefined : value, result: r };
+    },
+
     _context(extra = {}) {
       const world = this;
       return {
@@ -2632,6 +2702,7 @@ const __query = (() => {
       if (lacking.length) {
         return { ok: false, status: 'missing', missing: lacking.map((k) => ({ action: name, key: k, ask: (first({ attrs: action.ask }, `ask.${k}`) || '').replace(/^"|"$/g, '') || undefined })), violations: [] };
       }
+      if (action.rule) return this._actDeclared(action, name, args);
       const mark = this._begin(true);
       const violations = [];
       const guard = (r) => { if (r && r.ok === false) { violations.push(...(r.violations || [])); throw REFUSED; } return r; };
@@ -3576,7 +3647,7 @@ const __world = (() => {
 
     _patch(patch, { dry = false, strict = this.options.strict, via = 'core.tell', tier } = {}) {
       this._knownTier(tier);
-      const { wires = [], fills = [] } = Array.isArray(patch) ? { fills: patch } : patch || {};
+      const { wires = [], fills = [], sets = [], retract = [] } = Array.isArray(patch) ? { fills: patch } : patch || {};
       const ws = (typeof wires === 'string' ? parse(wires) : wires).map(cloneWire);
       const told = ws.map(cloneWire);
       const res = this._result();
@@ -3590,16 +3661,37 @@ const __world = (() => {
           if (!w) { res.violations.push({ kind: 'unknown-wire', id: f.id }); continue; }
           this._merge(w, { [this._compiled().shortKey(w.type, f.key)]: [this._norm(String(f.value))] }, { via, from: [], tier }, res);
         }
+        // a set replaces whatever the key held; a fill adds to it (and conflicts on a single-valued key)
+        for (const f of sets) { // bounded: the sets of one patch
+          const w = this.get(f.id);
+          if (!w) { res.violations.push({ kind: 'unknown-wire', id: f.id }); continue; }
+          const key = this._compiled().shortKey(w.type, f.key), value = this._norm(String(f.value));
+          const old = (w.attrs[key] || []).filter((v) => v !== value);
+          if (old.length) this._unsay(res, [], old.map((v) => ({ id: w.id, key, value: v })));
+          this._merge(w, { [key]: [value] }, { via, from: [], tier }, res);
+        }
+        let removed = [];
+        if (retract.length && !res.violations.length) {
+          const ids = retract.map((id) => this.resolve(id));
+          for (const id of ids) if (!this.wires.has(id)) res.violations.push({ kind: 'unknown-wire', id });
+          if (!res.violations.length) {
+            removed = [...this._withdraw(res, ids, [])].filter((x) => !this.wires.has(x));
+            this._logRemove(new Set(removed));
+            this._event({ op: 'retract', ids: removed });
+          }
+        }
         this._settle(res, strict);
+        if (removed.length) res.removed.push(...removed);
       } catch (e) {
         this._rollback(mark);
         throw e;
       }
       // in the log the parts of a patch carry the same group, so that a replay applies them together
-      const group = fills.length + (ws.length ? 1 : 0) > 1 ? `g${this.seq}` : undefined;
+      const group = fills.length + sets.length + (ws.length ? 1 : 0) > 1 ? `g${this.seq}` : undefined;
       const entries = [
         ...(ws.length ? [{ op: 'tell', wires: told, facts, ...(group ? { group } : {}), ...(tier ? { tier } : {}) }] : []),
         ...fills.map((f) => ({ op: 'fill', id: f.id, key: f.key, value: String(f.value), via, ...(group ? { group } : {}), ...(tier ? { tier } : {}) })),
+        ...sets.map((f) => ({ op: 'set', id: f.id, key: f.key, value: String(f.value), via, ...(group ? { group } : {}), ...(tier ? { tier } : {}) })),
       ];
       return this._finish(mark, res, dry, entries);
     }
@@ -3612,8 +3704,8 @@ const __world = (() => {
         const kept = part.map(keep).filter(Boolean);
         if (!kept.length) continue;
         const tell = kept.find((e) => e.op === 'tell');
-        const fills = kept.filter((e) => e.op === 'fill');
-        const r = this._patch({ wires: tell ? tell.wires : [], fills }, { strict: false, via: fills[0]?.via, tier: (tell || fills[0]).tier });
+        const fills = kept.filter((e) => e.op === 'fill'), sets = kept.filter((e) => e.op === 'set');
+        const r = this._patch({ wires: tell ? tell.wires : [], fills, sets }, { strict: false, via: (fills[0] || sets[0])?.via, tier: (tell || fills[0] || sets[0]).tier });
         if (!r.ok) return r;
       }
       return null;
@@ -3959,6 +4051,8 @@ const __world = (() => {
       const linked = new Set();
       const noteLinks = (ws) => {
         for (const w of ws) {
+          // the templates of an action written as wires belong to the matrix, like those of a rule
+          if (w.type === 'core.action') for (const k of ['when', 'with', 'if', 'set', 'add', 'remove']) for (const v of w.attrs[k] || []) if (v[0] === '$') linked.add(v.slice(1));
           if (w.type !== 'core.rule' && w.type !== 'core.deny') continue;
           for (const k of LINKS) for (const v of w.attrs[k] || []) if (v[0] === '$') linked.add(v.slice(1));
         }

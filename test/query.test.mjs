@@ -175,3 +175,57 @@ test('query: a calculation that cannot be done is unsupported, with the reason; 
   wired.load(matrix + '@p core.precision decimals=1');
   assert.equal(ask(wired, 10, 3).value, '3.3');
 });
+
+test('act: an action written as wires: parameters, a guard, writes that read the state before', () => {
+  const matrix = `
+    @k1 core.slot of=item key=name id=true
+    @k2 core.slot of=item key=stock kind=integer min=0
+    ?it item name=?item stock=?have
+    @enough core.check fn=gte args=?have args=?count why="not enough in stock"
+    @left core.calc out=?rest fn=sub args=?have args=?count
+    @w1 item core.on=$it stock=?rest
+    @w2 withdrawal of=$it count=?count before=?have
+    @a_take core.action name=take param=item param=count when=$it if=$enough with=$left set=$w1 add=$w2 returns=?rest ask.count="How many do you take?"
+
+    ?x account name=?from balance=?fb
+    ?y account name=?to balance=?tb
+    @c1 core.calc out=?fb2 fn=sub args=?fb args=?amount
+    @c2 core.calc out=?tb2 fn=add args=?tb args=?amount
+    @covered core.check fn=gte args=?fb args=?amount why="the account does not hold that much"
+    @s1 account core.on=$x balance=?fb2
+    @s2 account core.on=$y balance=?tb2
+    @a_move core.action name=transfer param=from param=to param=amount when=$x when=$y with=$c1 with=$c2 if=$covered set=$s1 set=$s2
+
+    ?old note done=true
+    @a_tidy core.action name=tidy when=$old remove=$old all=true
+  `;
+  const w = new World();
+  w.load(matrix);
+  w.load('@i1 item name=bolt stock=40  @a1 account name=ana balance=50  @a2 account name=bob balance=5');
+  const r = w.act({ action: 'take', args: { item: 'bolt', count: 10 } });
+  assert.deepEqual([r.ok, r.status, r.value, w.get('i1').attrs.stock], [true, 'done', '30', ['30']]);
+  const out = w.ofType('withdrawal')[0];
+  assert.deepEqual([out.attrs.of, out.attrs.count, out.attrs.before], [['$i1'], ['10'], ['40']], 'the new wire reads the state before the action');
+  // a guard that does not hold: refused with its reason, nothing changed
+  const before = w.toSOP();
+  const no = w.act({ action: 'take', args: { item: 'bolt', count: 99 } });
+  assert.deepEqual([no.status, no.violations[0].kind, no.violations[0].check, no.violations[0].why, w.toSOP()], ['refused', 'guard', 'enough', 'not enough in stock', before]);
+  assert.match(w.act({ action: 'take', args: { item: 'spring', count: 1 } }).violations[0].why, /nothing in the world matches/);
+  assert.deepEqual(w.act({ action: 'take', args: { item: 'bolt' } }).missing, [{ action: 'take', key: 'count', ask: 'How many do you take?' }]);
+  assert.equal(w.act('@r1 core.request action=take arg.item=bolt arg.count=5').value, '25', 'a request wire works the same');
+  // two writes at once: both read the balances as they were
+  assert.ok(w.act({ action: 'transfer', args: { from: 'ana', to: 'bob', amount: 20 } }).ok);
+  assert.deepEqual([w.get('a1').attrs.balance, w.get('a2').attrs.balance], [['30'], ['25']]);
+  assert.equal(w.act({ action: 'transfer', args: { from: 'bob', to: 'ana', amount: 26 } }).violations[0].why, 'the account does not hold that much');
+  // the changes are in the history: a restored world is the same
+  const again = World.fromJSON(JSON.parse(JSON.stringify(w.toJSON())));
+  assert.deepEqual([again.get('i1').attrs.stock, again.get('a2').attrs.balance, again.ofType('withdrawal').length], [['25'], ['25'], 2]);
+  // remove, on every match
+  w.load('@n1 note done=true  @n2 note done=true  @n3 note done=false');
+  assert.ok(w.act({ action: 'tidy' }).ok);
+  assert.deepEqual(w.ofType('note').map((n) => n.id), ['n3']);
+  // the patch behind it is public too: sets replace, fills add
+  assert.equal(w.check({ sets: [{ id: 'i1', key: 'stock', value: 7 }] }).ok, true);
+  assert.equal(w.check({ sets: [{ id: 'i1', key: 'stock', value: -1 }] }).violations[0].kind, 'domain');
+  assert.equal(w.check({ fills: [{ id: 'i1', key: 'stock', value: 7 }] }).violations[0].kind, 'conflict');
+});

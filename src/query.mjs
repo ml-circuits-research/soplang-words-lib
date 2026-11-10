@@ -19,7 +19,7 @@
 // that the host can change: new World({ vocabulary: { status: 'core.status', ... } }).
 
 import { parse, str } from './parser.mjs';
-import { EMPTY, walk } from './unify.mjs';
+import { EMPTY, walk, unify, hasVar } from './unify.mjs';
 
 const VOCABULARY = {
   question: 'core.question', // wire type of a question
@@ -49,6 +49,60 @@ export const querying = {
   },
 
   /** What a registered function sees of the world. */
+  /**
+   * An action written as wires. The parameters are variables; the patterns read the
+   * state; calcs compute; every check must hold (the guard); then all writes are applied
+   * as one patch. Every expression was evaluated on the state before the action.
+   */
+  _actDeclared(action, name, args) {
+    const rule = action.rule;
+    const refuse = (v) => ({ ok: false, status: 'refused', violations: [v] });
+    let s0 = EMPTY;
+    for (const p of action.params) s0 = unify('?' + p, this._norm(String(args[p])), s0);
+    const matches = [...this._matchAll(rule.when, 0, s0)];
+    if (!matches.length) return refuse({ kind: 'guard', action: name, why: 'nothing in the world matches what the action needs' });
+    if (matches.length > 1 && !action.all) return refuse({ kind: 'guard', action: name, why: `${matches.length} things match; the action is for one (say all=true to act on each)` });
+    const patch = { wires: [], sets: [], retract: [] };
+    let value;
+    for (let s of matches) { // bounded: the matches of the action's patterns
+      this._b.tick('match');
+      for (const q of rule.calc) {
+        const xs = q.args.map((a) => walk(a, s));
+        this._cannot = [];
+        const out = xs.some(hasVar) ? undefined : this.fns[q.fn](xs, this);
+        const why = this._cannot[0];
+        this._cannot = null;
+        if (out === undefined || out === null) return refuse({ kind: 'guard', action: name, calc: q.id, why: why || `${q.fn} has no result here` });
+        s = unify(q.out, this._round(String(out)), s);
+        if (!s) return refuse({ kind: 'guard', action: name, calc: q.id, why: 'the result contradicts a value already known' });
+      }
+      for (const t of rule.test) {
+        const xs = t.args.map((a) => walk(a, s));
+        if (xs.some(hasVar) || !this.fns[t.fn](xs, this)) return refuse({ kind: 'guard', action: name, check: t.id, why: t.why ? str(t.why) : `${t.fn}(${xs.join(', ')}) does not hold` });
+      }
+      for (const t of rule.then) {
+        const attrs = {};
+        for (const k of Object.keys(t.attrs)) {
+          const vals = t.attrs[k].map((v) => walk(v, s)).filter((v) => !hasVar(v));
+          if (vals.length) attrs[k] = vals;
+        }
+        if (t.on) {
+          const id = walk(t.on, s);
+          for (const k of Object.keys(attrs)) patch.sets.push({ id, key: k, value: attrs[k][0] });
+        } else {
+          const id = this._freshId(`${t.id.replace(/[^A-Za-z0-9_.]/g, '_')}_`) + (patch.wires.length ? `_${patch.wires.length}` : '');
+          patch.wires.push({ id, type: t.type, attrs, pattern: false });
+          s = unify('?' + t.id, id, s);
+        }
+      }
+      for (const id of action.remove) patch.retract.push(walk('?' + id, s));
+      if (action.returns) value = walk(action.returns, s);
+    }
+    const r = this._patch(patch, { strict: false });
+    if (!r.ok) return { ok: false, status: 'refused', violations: r.violations };
+    return { ok: true, status: 'done', value: value === undefined || hasVar(value) ? undefined : value, result: r };
+  },
+
   _context(extra = {}) {
     const world = this;
     return {
@@ -276,6 +330,7 @@ export const querying = {
     if (lacking.length) {
       return { ok: false, status: 'missing', missing: lacking.map((k) => ({ action: name, key: k, ask: (first({ attrs: action.ask }, `ask.${k}`) || '').replace(/^"|"$/g, '') || undefined })), violations: [] };
     }
+    if (action.rule) return this._actDeclared(action, name, args);
     const mark = this._begin(true);
     const violations = [];
     const guard = (r) => { if (r && r.ok === false) { violations.push(...(r.violations || [])); throw REFUSED; } return r; };

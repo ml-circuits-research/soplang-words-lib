@@ -37,3 +37,20 @@ show('4. Explain', `2 kites and 3 pencils cost ${a4.value} (${a4.status}, via ${
 shop.tell(`@c kids.shop.change item=book count=1 ${at(5)}`);
 const e5 = shop.abduce('?x kids.shop.change amount=5');
 show('5. Abduction', `"I got 5 lei back for a book. What did I pay?" -> ${e5.map((e) => e.text).join(' | ')}`);
+
+// 6. an operation written as wires: buying is a guard and a write, no function
+const shop2 = (await build('kids.shop'))();
+shop2.load(`
+?buy.w shop.wallet amount=?money core.in=?in
+?buy.p kids.shop.price item=?item cost=?each
+@buy.c core.calc out=?due fn=mul args=?each args=?count
+@buy.ok core.check fn=gte args=?money args=?due why="there is not enough money for it"
+@buy.new kids.shop.purchase item=?item count=?count core.in=?in core.seq=?at
+@buy core.action name=shop.buy param=item param=count param=at when=$buy.w when=$buy.p with=$buy.c if=$buy.ok add=$buy.new returns=?due
+`);
+shop2.tell(`@m kids.shop.money count=20 unit=leu ${at(1)}`);
+const b1 = shop2.act({ action: 'shop.buy', args: { item: 'book', count: 1, at: 2 } });
+const b2 = shop2.act({ action: 'shop.buy', args: { item: 'book', count: 1, at: 3 } });
+show('6. An action written as wires',
+  `buy a book with 20 lei -> ${b1.status}, cost ${b1.value}; money left ${balance(shop2)}`,
+  `buy another -> ${b2.status}: ${b2.violations[0].why}; money left ${balance(shop2)}`);

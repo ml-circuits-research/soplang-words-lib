@@ -401,6 +401,11 @@ after wires have arrived, they are given their places again, in order of arrival
 - A statement is a value told with the wire, or told later with `fill` (or by telling
   the same entity again): for a fluent key that is a new statement at the current point,
   not a conflict.
+- `delta=<key>` on the fluent names a second key that holds the known change since the
+  last statement: what the `add` and `sub` effects since then amount to. It is there
+  even when the start is unknown and the state itself therefore is too ("5 came in, 2
+  went out: the stock is unknown, the change is 3"), and it starts again at each
+  statement. It is a filled value like any other, with the events as `from`.
 - An effect that would take the value outside the slot's `min` or `max` is a `conflict`
   that names the event (`event`, `wires`, `why`); the change is refused.
 - The computed value is an ordinary filled value with `via` the fluent and `from` the
@@ -888,6 +893,7 @@ Since 0.4.0 (the version first published in this repository):
 - New: `core.on=` templates (3.3); the stratification check knows which keys a template
   adds, so a rule may aggregate over a type and fill a key on a wire of that type.
 - New: `core.absent=` in patterns (3.10).
+- New: `delta=` on a fluent (3.11).
 - New: `world.cannot(reason)` and the `unsupported` status; the `decimals` option and
   `core.precision` (3.6.1).
 - New: soft constraints (`soft=true` on a deny or a bounded slot) and `core.issue`

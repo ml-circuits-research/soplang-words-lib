@@ -823,3 +823,30 @@ Pilot: kids.arith declares `core.precision decimals=2`. t.arith.n31 (5 divided b
 `unsupported`) and n34 (10 divided by 3: 3.33) now pass. PSys2's rule is narrower
 (two decimals only when the division does not terminate); no case in the pilot has a
 terminating result with more than two decimals, so the difference does not show.
+
+## G14 — the known change of a state with an unknown start — done; pilot rerun
+
+`npm test`: 171 pass, 0 fail on sources and built file. `node tools/scan-loops.mjs src`:
+clean. `git grep -i psys2 src/ | wc -l`: 0.
+
+`core.fluent ... delta=<key>`: the holder gets a second key with the sum of the `add` and
+`sub` effects since the last statement, present also when the state itself is unknown,
+reset by a statement, recomputed on retract (test in `test/time.test.mjs`, including a
+holder that exists only as the supposed wire of a question). A fluent with `delta=` is
+always recomputed in full (no single-event fast path).
+
+Pilot after G10–G14 (`node compat/psys2/run.mjs --failures`):
+
+| World | Before | Now |
+| --- | --- | --- |
+| kids.shop | 147 of 147 | 147 of 147 |
+| kids.arith | 207 of 217 | 212 of 217 |
+| kids.tasks | 231 of 232 | 231 of 232 |
+
+Of the ten arith failures: closed n37 (G10, tie → `ambiguous`), n17 and n19 (G11, soft
+bound → `conflicting`), n31 (G12, `unsupported`), n34 (G13, two decimals). Still open:
+- n18: the question is about the receiver of an impossible gift; his own count is
+  unknown, so `missing`; PSys2 marks both people `conflicting`.
+- ell2, n24, d02, dm102: the matrix now knows `received=2` (G14), but the question asks
+  for `count`, which is `missing`. Whether the runner should count that as PSys2's
+  "supported, 2 received" is Q12 in `questions.md`.

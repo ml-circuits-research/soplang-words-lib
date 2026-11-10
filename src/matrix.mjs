@@ -232,7 +232,7 @@ export function compileMatrix(world) {
     } else if (w.type === 'core.fluent') {
       const key = first(w, 'key');
       if (!of || !key) { c.errors.push(`${w.id}: core.fluent needs of= and key=`); continue; }
-      const f = { id: w.id, of, key, by: w.attrs.by || [], effects: [] };
+      const f = { id: w.id, of, key, by: w.attrs.by || [], effects: [], delta: first(w, 'delta') };
       c.fluents.set(w.id, f);
       push(c.fluentsByType, of, f);
     } else if (w.type === 'core.producer') {

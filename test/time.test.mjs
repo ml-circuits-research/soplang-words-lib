@@ -199,3 +199,30 @@ test('fluent: events applied one by one give the same state and provenance as a 
   assert.equal(canon(step), canon(batch));
   assert.equal(canon(World.fromJSON(JSON.parse(JSON.stringify(step)))), canon(step));
 });
+
+test('fluents: delta= exposes the known change since the last statement, also when the start is unknown', () => {
+  const w = new World();
+  w.load(`
+    @k1 core.slot of=shelf key=item id=true
+    @f core.fluent of=shelf key=stock delta=change
+    @e1 core.effect on=delivery fluent=$f op=add amount=n where.item=item
+    @e2 core.effect on=sale fluent=$f op=sub amount=n where.item=item
+  `);
+  w.load('@s1 shelf item=tea');                       // nobody said how many there are
+  w.tell('@d1 delivery item=tea n=5');
+  w.tell('@x1 sale item=tea n=2');
+  assert.deepEqual([w.get('s1').attrs.stock, w.get('s1').attrs.change], [undefined, ['3']], 'the stock is unknown, the change is known');
+  assert.equal(w.query({ type: 'shelf', seek: 'stock', where: { item: 'tea' } }).status, 'missing');
+  const q = w.query({ type: 'shelf', seek: 'change', where: { item: 'tea' } });
+  assert.deepEqual([q.status, q.value, q.from], ['supported', '3', ['s1', 'd1', 'x1']]);
+  // a statement starts the count again
+  w.fill('s1', 'stock', 10);
+  assert.deepEqual([w.get('s1').attrs.stock, w.get('s1').attrs.change], [['10'], undefined]);
+  w.tell('@d2 delivery item=tea n=4');
+  assert.deepEqual([w.get('s1').attrs.stock, w.get('s1').attrs.change], [['14'], ['4']]);
+  assert.ok(w.retract('d2').ok);
+  assert.deepEqual([w.get('s1').attrs.stock, w.get('s1').attrs.change], [['10'], undefined]);
+  // a shelf nobody has mentioned: the question itself is enough to know what came in
+  w.tell('@d3 delivery item=salt n=7');
+  assert.deepEqual([w.query({ type: 'shelf', seek: 'change', where: { item: 'salt' } }).value, w.query({ type: 'shelf', seek: 'stock', where: { item: 'salt' } }).status], ['7', 'missing']);
+});

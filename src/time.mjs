@@ -176,7 +176,7 @@ export const timing = {
     // one new event that comes after everything applied so far: apply it to the current value
     const tail = h.meta.tails?.[f.key];
     const ev0 = cause !== 'full' ? this.wires.get(cause) : null;
-    if (ev0 && tail && (ev0.meta.order - tail.order || ev0.meta.seq - tail.seq) > 0) {
+    if (ev0 && tail && !f.delta && (ev0.meta.order - tail.order || ev0.meta.seq - tail.seq) > 0) {
       const effects = f.effects.filter((e) => c.isA(ev0.type, e.on) && this._holders(e, ev0).includes(h.id));
       if (effects.length === 1) {
         const current = h.attrs[f.key]?.[0];
@@ -200,9 +200,20 @@ export const timing = {
     }
     line.sort((a, b) => a.order - b.order || a.seq - b.seq);
     let value, from = [];
+    // the known change since the last statement: what add and sub effects amount to, even when the start is unknown
+    let delta, deltaFrom = [];
     for (const step of line) {
       this._b.tick('fluent');
-      if (step.set !== undefined) { value = step.set; from = []; continue; }
+      if (step.set !== undefined) { value = step.set; from = []; delta = undefined; deltaFrom = []; continue; }
+      if (f.delta) {
+        const amount = step.e.value !== undefined ? step.e.value : step.ev.attrs[step.e.amount]?.[0];
+        if (step.e.op === 'set') { delta = undefined; deltaFrom = []; }
+        else if (amount !== undefined && (step.e.op === 'add' || step.e.op === 'sub')) {
+          const signed = step.e.op === 'add' ? amount : this.fns.mul([amount, '-1'], this);
+          delta = delta === undefined ? signed : this.fns.add([delta, signed], this);
+          deltaFrom.push(step.ev.id);
+        }
+      }
       const next = this._effect(step.e, step.ev, value, h, f, slot, res);
       if (next === null) return;
       if (next === undefined || next === value) continue; // an event that changes nothing is not a source
@@ -210,7 +221,9 @@ export const timing = {
       if (step.e.op === 'set') from = [step.ev.id]; else from.push(step.ev.id);
     }
     const end = line[line.length - 1];
-    this._fluentSet(h, f, value, from, end ? { order: end.order, seq: end.seq } : null, res);
+    const last = end ? { order: end.order, seq: end.seq } : null;
+    if (f.delta) this._fluentSet(h, { id: f.id, key: f.delta }, delta === undefined ? undefined : this._round(String(delta)), deltaFrom, last, res);
+    this._fluentSet(h, f, value, from, last, res);
   },
 
   // ---------------------------------------------------------------- as-of

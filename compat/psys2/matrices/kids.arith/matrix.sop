@@ -10,7 +10,7 @@
 @arith.k.owner core.slot of=kids.arith.holding key=owner type=core.agent id=true combine=intersect
 @arith.k.item core.slot of=kids.arith.holding key=item kind=atom id=true combine=intersect
 @arith.k.count core.slot of=kids.arith.holding key=count kind=number min=0 soft=true combine=intersect
-@arith.f core.fluent of=kids.arith.holding key=count
+@arith.f core.fluent of=kids.arith.holding key=count delta=received
 @arith.e.give core.effect on=kids.arith.give fluent=$arith.f op=sub amount=count where.owner=who where.item=item
 @arith.e.given core.effect on=kids.arith.give fluent=$arith.f op=add amount=count where.owner=to where.item=item
 @arith.e.receive core.effect on=kids.arith.receive fluent=$arith.f op=add amount=count where.owner=who where.item=item

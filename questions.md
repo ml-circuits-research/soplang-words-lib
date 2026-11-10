@@ -6,7 +6,19 @@ written with each question and in `worker-log.md`. A question is deleted from th
 once the worker is satisfied with the answer; closed ones are listed at the end in one
 line each so the history is not lost.
 
-No open questions.
+## Q12. The four "received" cases: should the runner count them as passed?
+
+G14 is in: `delta=received` on the count gives `received=2` for someone whose starting
+count is unknown, and `query(seek=received)` answers `supported 2`. The four cases
+(t.arith.ell2, n24, t.kids.arith.d02, dm102) ask for `count`, and PSys2 answers
+`supported` with value 2 and unit "received". The matrix answers `missing` for `count`,
+which I think is the true answer: 2 is not the count.
+
+**Chosen for now:** the cases stay listed as failures (212 of 217). To pass them the
+runner would need a rule such as "a `missing` count whose wire has a `received` value
+equals PSys2's `supported` with that value", which is knowledge about one consumer's
+reply convention inside a runner that has no per-world logic today. Say if you want
+that rule, or the host to ask for `received` itself when `count` is missing.
 
 ## Closed
 

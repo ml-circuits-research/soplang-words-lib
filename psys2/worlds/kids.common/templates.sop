@@ -1,0 +1,35 @@
+@tpl.kids.common.greet core.template
+    for=action.chat.greet
+    text="{value}! What would you like to talk about?"
+
+@tpl.kids.common.name core.template
+    for=action.chat.name
+    text="My name is {value}."
+
+@tpl.kids.common.meet core.template
+    for=action.chat.meet
+    text="{value}"
+
+@tpl.kids.common.myname core.template
+    for=action.chat.myname
+    text="{value}"
+
+@tpl.kids.common.who core.template
+    for=action.chat.who
+    text="I am {value}, a neurosymbolic assistant that runs in your browser. Small neural models help me read what you tell me; symbolic worlds with formal rules decide what happens, and I answer only from what they know."
+
+@tpl.kids.common.thanks core.template
+    for=action.chat.thanks
+    text="{value}."
+
+@tpl.kids.common.bye core.template
+    for=action.chat.bye
+    text="{value}!"
+
+@tpl.kids.common.howru core.template
+    for=action.chat.howru
+    text="{value}"
+
+@tpl.kids.common.listen core.template
+    for=action.chat.listen
+    text="{value}"

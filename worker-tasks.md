@@ -15,8 +15,7 @@ Rules:
 2. Work in the order given. Commit after each task (`Sn: <summary>`), keep `npm test` green on the sources and on the built file, and rebuild `docs/`.
 3. Every number in the log comes from a command written in the log.
 4. Zero dependencies, one built file, browser and Node: these stay.
-5. Do not copy PSys2 files into this repository. PSys2 is AGPL-3.0-only and this library is MIT. Read PSys2 from a clone next to this one (`https://github.com/ml-circuits-research/psys2`, branch `main`); tests that need it take its path from `PSYS2_DIR` and are skipped when it is not set. Small examples you write yourself in the PSys2 format are fine.
-6. If you cannot read the PSys2 repository, write that in `questions.md` and do S1–S5 from the excerpts in section 2; S6–S7 need the clone.
+5. **Everything you need from PSys2 is in `psys2/`** (see `psys2/README.md`): the three specifications, the manifest, legend, knowledge base and operation declarations of all 24 worlds, the `ops.mjs`, templates and tests of the small worlds, and `psys2/cases/<world>.cases.jsonl` — for every test, the wires PSys2 produced and the answer it gave. The owner allows copying (both repositories are his). `psys2/` is reference and test material only: it is not in the npm package, and the library does not import from it at run time. If you need something else from PSys2, ask in `questions.md` and the reviewer adds it.
 
 ## 1. Why
 
@@ -32,7 +31,7 @@ What does not fit yet is the list of tasks below.
 
 ## 2. The PSys2 formats the library must speak natively
 
-Read `specs/01-soplang.md`, `specs/02-legends-and-worlds.md` and `specs/04-interpreter.md` in PSys2. The essentials:
+Read `psys2/specs/01-soplang.md`, `02-legends-and-worlds.md` and `04-interpreter.md`. The essentials:
 
 **Legend** (`worlds/<ns>/legend.sop`): three wire types.
 ```
@@ -91,7 +90,7 @@ The world accepts PSys2 legend wires directly as matrix wires:
 3. `core.legend` with `namespace` and `imports`: a legend is a module. `imports` loads the imported legends from the library (like `core.use`, but **without** prefixing ids — legend ids are already fully qualified).
 4. Short and full keys: a fact may use `count=` or `kids.arith.holding.count=`; both are the same key. `core.*` keys are always allowed and are ignored by validation unless a slot declares them.
 5. `core.slot` stays as the native form; both forms may be mixed.
-6. **Test:** with `PSYS2_DIR` set, load every `worlds/*/legend.sop` of PSys2 in dependency order into one world: 0 violations. Then load every `kb.sop`: report violations per world (they may reveal real PSys2 data errors — list them in the log, do not hide them).
+6. **Test:** load every `psys2/worlds/*/legend.sop` in dependency order into one world: 0 violations. Then load every `kb.sop`: report violations per world (they may reveal real PSys2 data errors — list them in the log, do not hide them).
 
 ### S2 — order, events and state over time
 PSys2 worlds are event-driven: "Tom has 5 apples. Ana gives him 3. He eats 2. How many?" is answered by replaying the events in dialogue order. Version 0.4 has no notion of time (SPEC section 6).
@@ -105,11 +104,11 @@ PSys2 worlds are event-driven: "Tom has 5 apples. Ana gives him 3. He eats 2. Ho
    (the syntax is yours to design; keep it wires). The current value of a fluent is derived by applying the effects in sequence order from the last explicit statement. An unknown start stays unknown (open world). An effect that would break a slot bound (`min=0`) is a `conflict` that names the event.
 3. Retracting or replacing an event recomputes the fluent incrementally (your withdrawal machinery).
 4. `world.at(seq)` or `ask(..., { at })`: the value as of an earlier point ("how many did he have before that?").
-5. **Test:** the PSys2 `kids.arith` cases from `worlds/kids.arith/tests.sop` that are pure state replay, written as wires by you (give, get, eat, lose, buy, break; unknown start; impossible event).
+5. **Test:** the `kids.arith` cases of `psys2/cases/kids.arith.cases.jsonl` that are pure state replay (give, get, eat, lose, buy, break; unknown start; impossible event), using the wires given there.
 
 ### S3 — aggregates, arithmetic and literal kinds
 1. Aggregates as `core.calc` over a pattern: `count`, `sum`, `min`, `max`, `argmax`, `argmin`, `collect` (list), with grouping by bound variables. Maintained incrementally, stratified like negation.
-2. Functions: `mod`, `abs`, `round`, integer division; date and clock arithmetic for `time.*` (add minutes to a clock time, days between dates, weekday of a date, season after n) — look at what `worlds/kids.time/ops.mjs` in PSys2 computes and cover it.
+2. Functions: `mod`, `abs`, `round`, integer division; date and clock arithmetic for `time.*` (add minutes to a clock time, days between dates, weekday of a date, season after n) — look at what `psys2/worlds/kids.time/ops.mjs` computes and cover it (`psys2/cases/kids.time.cases.jsonl` has 217 cases).
 3. Comparison and equality on typed literals (`5` equals `5.0`; `10:00` before `14:30`).
 
 ### S4 — abduction through calculations (the reviewer's failed probe)
@@ -133,12 +132,12 @@ PSys2 had browser freezes; the user's rule is that no loop may run unbounded.
 4. A test per site with a matrix built to explode (recursive rule, cross-product join, hard search): each returns within its budget. A static test that every `while` / `for(;;)` / recursion in `src/` ticks the budget or carries a `// bounded:` comment.
 5. `fork()` and `trial()`: `trial` is the cheap what-if; make `fork()` structural (copy-on-write or snapshot) instead of replaying the log — PSys2 does a dry run on a fork for many candidate readings per message. Target: fork of a 2,000-wire world < 1 ms.
 
-### S7 — pilot worlds (proof of value) — needs the PSys2 clone
-Rebuild three small PSys2 worlds **as matrices** in `examples/psys2/<world>/` (your own files): `kids.shop`, `kids.arith`, `kids.tasks`.
-- Input: the PSys2 legend of the world (read from `PSYS2_DIR`) plus a `matrix.sop` you write (rules, fluents, denies, defaults) and, only where really needed, a small `fns.mjs`.
-- A runner (`tools/psys2-pilot.mjs`) takes the **wires** PSys2 produces for each case of the world's `tests.sop` and checks the answer value and status against the test's expectation. To get the wires, run PSys2's own formalizer from the clone (`node src/cli.mjs` — see `specs/README.md` there; or import `src/` as a library) and feed its wires to the `World`; replies are text in PSys2, so compare the value, the status and, where the test has `expectState`, the state.
-- Report per world: cases passed / total (the PSys2 numbers are 147 for kids.shop, 217 for kids.arith, 232 for kids.tasks `core.test` wires), lines of `matrix.sop` + `fns.mjs` against the lines of the PSys2 `ops.mjs` it replaces (159, 237, 231), and ms per case.
-- Also show what the matrix gives that the JavaScript did not: a missing argument asked as a question, a default withdrawn by a later statement, `retract` as undo, `explain` for an answer, one abduction ("what must I pay to get 5 lei back?").
+### S7 — pilot worlds (proof of value)
+Rebuild three small PSys2 worlds **as matrices** in `examples/psys2/<world>/`: `kids.shop`, `kids.arith`, `kids.tasks`. If time allows, also `kids.time`, `kids.animals` and `kids.shapes`: their cases are there too.
+- **Input:** the world's legend, knowledge base and operation declarations from `psys2/worlds/<world>/`, plus a `matrix.sop` you write (rules, fluents, aggregates, denies, defaults) and, only where really needed, a small `fns.mjs`. The existing `ops.mjs` is there to read what must be computed; the goal is to replace its logic, not to call it.
+- **Runner** (`tools/psys2-pilot.mjs`): for each line of `psys2/cases/<world>.cases.jsonl`, in order (same `session` = same World), tell the non-answer wires of `wires` to the World, run `query` / the request for each question or request wire, and compare the status and the value (or values) with `psys2.answers`. Reply wording is not compared (that stays in PSys2 templates), except where the value is only in the note: then compare the facts the note states.
+- **Report per world:** cases passed / total (147, 217, 232), lines of `matrix.sop` + `fns.mjs` against the lines of the `ops.mjs` it replaces (159, 237, 231), and ms per case.
+- **Also show what the matrix gives that the JavaScript did not:** a missing argument asked as a question, a default withdrawn by a later statement, `retract` as undo, `explain` for an answer, one abduction ("what must I pay to get 5 lei back?").
 - **Done when** each world passes ≥ 95% of its cases with the matrix at most half the size of the `ops.mjs` logic it replaces (reply wording excluded), and every failure is listed with its reason.
 
 ### S8 — documentation for the integrators

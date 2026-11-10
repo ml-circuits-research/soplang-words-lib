@@ -107,7 +107,7 @@ test('abduction through a function that has no inverse: the values of the slot a
   assert.deepEqual(w.abduce('@a area v=10').map((e) => e.text), [], 'no side has that area');
   assert.deepEqual(w.abduce('@d distance v=2').map((e) => e.text).sort(), ['t1.offset=-2', 't1.offset=2'], 'a range is a domain too');
   // a host function named like a built-in is not inverted
-  const x = new World({ fns: { add: ([a, b]) => String(Number(a) + Number(b) + 1) } });
+  const x = new World({ fns: { add: ([a, b]) => String(Number(a) + Number(b) + 1) }, override: true });
   x.load('@ab core.abducible of=n key=v\n?n n v=?v\n@c core.calc out=?o fn=add args=?v args=1\n@s succ of=$n v=?o\n@r core.rule when=$n with=$c then=$s');
   x.load('@n1 n');
   assert.deepEqual(x.abduce('@s succ v=5'), []);

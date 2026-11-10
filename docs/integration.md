@@ -83,8 +83,9 @@ preference:
 4. **An aggregate** (`over=`) for totals, counts, the largest of a group.
 5. **`core.absent=<key>`** for "when this was not given".
 6. **A producer** (`core.producer`) for a value that only a function can compute.
-7. **An action** (`core.action`) for an operation that changes the world: a registered
-   function that runs in one transaction with `find`, `val`, `tell`, `fill`, `replace`,
+7. **An action** (`core.action`) for an operation that changes the world: written as
+   wires where it is "check, then update", else a function registered under `actions`
+   (its own registry: an action named `add` does not replace the arithmetic) that runs in one transaction with `find`, `val`, `tell`, `fill`, `replace`,
    `retract`. Declare its required arguments and the question for each; a call without
    them returns `missing` with those questions.
 

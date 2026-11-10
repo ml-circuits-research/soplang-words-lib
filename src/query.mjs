@@ -224,7 +224,7 @@ export const querying = {
       if (!refused && !found.size && producers.length && (lacking.length || !wires.length)) {
         for (const w of lacking.length ? lacking : [undefined]) {
           for (const p of producers) {
-            const out = this.fns[p.fn](this._context({ wire: w, type, key, where: question.where }));
+            const out = this._host('producer', p.fn)(this._context({ wire: w, type, key, where: question.where }));
             if (out === undefined || out === null) continue;
             for (const value of Array.isArray(out) ? out : [out]) note(String(value), w ? [w.id] : [], p.id);
             if (w) lacking.splice(lacking.indexOf(w), 1);
@@ -343,7 +343,7 @@ export const querying = {
     });
     let out;
     try {
-      out = this.fns[action.fn](ctx, args);
+      out = this._host('action', action.fn)(ctx, args);
       if (out && out.ok === false) { violations.push({ kind: 'refused', why: out.why || out.reason, reason: out.reason }); throw REFUSED; }
     } catch (e) {
       this._rollback(mark);

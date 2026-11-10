@@ -22,7 +22,8 @@ const heads = (text) => parse(text).find((x) => x.type === 'core.legend');
 /** A fresh world for one session: mapping, the legends in import order, the knowledge base, the matrix. */
 export async function build(name) {
   const dir = join(here, 'matrices', name);
-  const fns = existsSync(join(dir, 'fns.mjs')) ? (await import(pathToFileURL(join(dir, 'fns.mjs')).href)).fns : {};
+  // a world's functions, if it has any: { fns, actions, producers }, each optional
+  const host = existsSync(join(dir, 'fns.mjs')) ? await import(pathToFileURL(join(dir, 'fns.mjs')).href) : {};
   const order = [];
   const visit = (ns) => { // bounded: each legend once
     if (order.includes(ns) || !existsSync(join(here, 'worlds', ns, 'legend.sop'))) return;
@@ -38,7 +39,7 @@ export async function build(name) {
   texts.push('@e.user core.agent');
   texts.push(read('matrices', name, 'matrix.sop'));
   return () => {
-    const w = new World({ fns, vocabulary: { status: 'core.status' } });
+    const w = new World({ fns: host.fns || {}, actions: host.actions || {}, producers: host.producers || {}, vocabulary: { status: 'core.status' } });
     for (const t of texts) w.load(t);
     return w;
   };

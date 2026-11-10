@@ -44,9 +44,9 @@ export class World {
   constructor(options = {}) {
     const {
       fns = {}, library = {}, maxDepth = 12, maxSteps = 50000,
-      lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {}, budget = {}, decimals,
+      lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {}, budget = {}, decimals, actions = {}, producers = {}, override = false,
     } = options;
-    this.options = { fns, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget, decimals };
+    this.options = { fns, actions, producers, override, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget, decimals };
     this._cannot = null;          // reasons given by functions during a query (see cannot)
     this.warnings = [];           // things that still work and will not: { kind, id, why }
     this._reads = new WeakMap();  // bindings of a rule body -> the aggregated cells it read
@@ -55,7 +55,15 @@ export class World {
     this._shared = null;          // set while this world shares its state with a fork
     this._logOf = new Map();      // fact id -> the log entry that told it
     this._fills = 0;              // number of fill entries in the log
-    this.fns = { ...builtins, ...fns };
+    // Three kinds of host function, three registries: what a calc or a check calls (fns),
+    // what an action runs (actions), what computes a key on demand (producers). A host
+    // name never replaces a built-in by accident.
+    this.fns = { ...builtins };
+    this.actions = {};
+    this.producers = {};
+    for (const [name, fn] of Object.entries(fns)) this.register('function', name, fn, { override });
+    for (const [name, fn] of Object.entries(actions)) this.register('action', name, fn);
+    for (const [name, fn] of Object.entries(producers)) this.register('producer', name, fn);
     this.wires = new Map();    // id -> fact wire
     this.byType = new Map();   // type -> Set<id>
     this.index = new Map();    // type|key|value -> Set<id>
@@ -143,6 +151,36 @@ export class World {
     const q = quantity(out);
     if (!q || Number.isInteger(q.n)) return out;
     return String(Number(q.n.toFixed(d))) + q.unit;
+  }
+
+  /**
+   * Register a host function. kind 'function': called by calcs, checks and effects with
+   * (args, world). kind 'action': run by a core.action with (context, args). kind
+   * 'producer': called by a core.producer with (context). A function with the name of a
+   * built-in is refused unless { override: true } (or a list of names) says it is meant.
+   */
+  register(kind, name, fn, { override = false } = {}) {
+    if (typeof fn !== 'function') throw new Error(`sopworld: ${kind} "${name}" is not a function`);
+    if (kind === 'function') {
+      const meant = override === true || (Array.isArray(override) && override.includes(name));
+      if ((Object.hasOwn(builtins, name) || Object.hasOwn(aggregates, name)) && !meant) throw new Error(`sopworld: the function "${name}" would replace the built-in of that name; rename it, or register it with { override: true }`);
+      this.fns[name] = fn;
+    } else if (kind === 'action') this.actions[name] = fn;
+    else if (kind === 'producer') this.producers[name] = fn;
+    else throw new Error(`sopworld: unknown kind of function "${kind}"`);
+    this._c = null; // a matrix that names it compiles now
+    return this;
+  }
+
+  /** The function an action or producer names. One registered as a plain function still works, with a note. */
+  _host(kind, name) {
+    const own = (kind === 'action' ? this.actions : this.producers)[name];
+    if (own) return own;
+    const old = Object.hasOwn(builtins, name) ? undefined : this.fns[name];
+    if (old && !this.warnings.some((x) => x.kind === 'deprecated' && x.id === name)) {
+      this.warnings.push({ kind: 'deprecated', id: name, why: `"${name}" is used as ${kind === 'action' ? 'an action' : 'a producer'} but was registered among the functions: pass it as ${kind}s: { ${name} }` });
+    }
+    return old;
   }
 
   /** Steps counted by the last call, per site, and whether its budget ran out. */

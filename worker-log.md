@@ -1122,3 +1122,21 @@ Two things a host should know (both in SPEC 2.1):
   told later on its own is a fact.
 - The migration tool works on text: it also rewrites a `?name word` that stands in a
   comment. It found one such line in `src/unify.mjs` ("?x  variable"), left as it is.
+
+## W1 — functions do not share one registry — done
+
+`npm test`: 186 pass, 0 fail on sources and built file. Pilot unchanged (147/147,
+212/217, 231/232). `npm run examples`: exit 0. `git grep -i psys2 src/ | wc -l`: 0.
+
+- Three registries: `fns` (calcs, checks, effect ops), `actions`, `producers`; options
+  of the same names and `world.register(kind, name, fn, { override })` (SPEC 3.6).
+- A function with the name of a built-in function **or aggregate** is refused at
+  registration unless `override` is true or lists the name.
+- An action or producer found only in `fns` still runs, with a `deprecated` note in
+  `world.warnings` (one version, like the old pattern form).
+- Test (`test/query.test.mjs`): a world with actions named `add` and `count` and a
+  producer, whose rule still adds with the built-in; the refusals; `override`; the note.
+- The pilot's kids.tasks was hit by exactly this (its actions are called `add`,
+  `count`, ...): `fns.mjs` now exports `actions`, and the runner passes whatever of
+  `fns`, `actions`, `producers` a world exports. The warehouse example is split the same
+  way.

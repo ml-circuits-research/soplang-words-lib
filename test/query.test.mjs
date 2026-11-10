@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { World, format } from '../tools/lib-under-test.mjs';
-import { warehouse, fns } from '../examples/warehouse.mjs';
+import { warehouse, actions, producers } from '../examples/warehouse.mjs';
 
 const world = (options = {}) => {
-  const w = new World({ fns, ...options });
+  const w = new World({ actions, producers, ...options });
   w.load(warehouse);
   w.load('@i1 item name=bolt shelf=$s1 stock=40 price=0.5  @i2 item name=nut shelf=$s1 stock=15  @i3 item name=gear');
   return w;
@@ -123,7 +123,7 @@ test('act: a refusal leaves the world unchanged and says why', () => {
   const missing = w.act({ action: 'take', args: { item: 'bolt' } });
   assert.deepEqual([missing.status, missing.missing], ['missing', [{ action: 'take', key: 'count', ask: 'How many do you take?' }]]);
   assert.equal(w.act({ action: 'fly' }).status, 'unsupported');
-  w.fns.take = () => { throw new Error('boom'); };
+  w.register('action', 'take', () => { throw new Error('boom'); });
   assert.deepEqual([w.act({ action: 'take', args: { item: 'bolt', count: 1 } }).status, w.toSOP()], ['error', before]);
 });
 
@@ -228,4 +228,39 @@ test('act: an action written as wires: parameters, a guard, writes that read the
   assert.equal(w.check({ sets: [{ id: 'i1', key: 'stock', value: 7 }] }).ok, true);
   assert.equal(w.check({ sets: [{ id: 'i1', key: 'stock', value: -1 }] }).violations[0].kind, 'domain');
   assert.equal(w.check({ fills: [{ id: 'i1', key: 'stock', value: 7 }] }).violations[0].kind, 'conflict');
+});
+
+test('functions: three registries; a host name never replaces a built-in by accident', () => {
+  // an action called add, as a dialogue host would have: it does not touch the arithmetic
+  const w = new World({
+    actions: { add: (ctx, { item }) => { ctx.tell(`@n_${ctx.world.seq} note text=${item}`); return 'added'; }, count: (ctx) => ctx.find('note').length },
+    producers: { size: ({ wire, val }) => String(val(wire, 'text')).length },
+  });
+  w.load(`
+    @a1 core.action name=notes.add fn=add required=item
+    @a2 core.action name=notes.count fn=count
+    @p1 core.producer of=note key=size fn=size
+    @x pair a=?a b=?b
+    @c core.calc out=?s fn=add args=?a args=?b
+    @t pair core.on=$x sum=?s
+    @r core.rule when=$x with=$c then=$t
+  `);
+  assert.equal(w.act({ action: 'notes.add', args: { item: 'milk' } }).value, 'added');
+  assert.equal(w.act({ action: 'notes.count' }).value, '1');
+  assert.equal(w.query({ type: 'note', seek: 'size', where: { text: 'milk' } }).value, '4');
+  w.tell('@p pair a=2 b=3');
+  assert.equal(w.get('p').attrs.sum[0], '5', 'add in a calc is still the built-in');
+  assert.deepEqual(w.warnings, []);
+  // a function with the name of a built-in is refused, unless it is meant
+  assert.throws(() => new World({ fns: { add: () => '0' } }), /would replace the built-in/);
+  assert.throws(() => w.register('function', 'count', () => 0), /would replace the built-in/);
+  const meant = new World({ fns: { add: ([a, b]) => `${a}+${b}` }, override: ['add'] });
+  assert.equal(meant.fns.add(['1', '2']), '1+2');
+  w.register('function', 'twice', ([x]) => String(2 * Number(x)));
+  assert.ok(w.tell('@y item n=?n\n@c2 core.calc out=?d fn=twice args=?n\n@t2 item core.on=$y double=?d\n@r2 core.rule when=$y with=$c2 then=$t2').ok);
+  // the old place for an action still works, with a note
+  const old = new World({ fns: { greet: () => 'hello' } });
+  old.load('@a core.action name=greet fn=greet');
+  assert.deepEqual([old.act({ action: 'greet' }).value, old.warnings.map((x) => [x.kind, x.id])], ['hello', [['deprecated', 'greet']]]);
+  assert.match(new World().tell('@a core.action name=x fn=nothing').violations[0].why, /unknown action function/);
 });

@@ -243,13 +243,13 @@ export function compileMatrix(world) {
     } else if (w.type === 'core.producer') {
       const key = first(w, 'key'), fn = first(w, 'fn');
       if (!of || !key || !fn) { c.errors.push(`${w.id}: core.producer needs of=, key= and fn=`); continue; }
-      if (!world.fns[fn]) c.errors.push(`${w.id}: unknown function "${fn}"`);
+      if (!world._host('producer', fn)) c.errors.push(`${w.id}: unknown producer "${fn}"`);
       push(c.producers, `${of}.${key}`, { id: w.id, fn });
     } else if (w.type === 'core.action') {
       const name = first(w, 'name'), fn = first(w, 'fn');
       if (!name) { c.errors.push(`${w.id}: core.action needs name=`); continue; }
       if (!fn) { actionWires.push(w); continue; } // written as wires: compiled below, with the rules
-      if (!world.fns[fn]) c.errors.push(`${w.id}: unknown function "${fn}"`);
+      if (!world._host('action', fn)) c.errors.push(`${w.id}: unknown action function "${fn}"`);
       c.actions.set(name, { id: w.id, fn, required: w.attrs.required || [], inputs: w.attrs.input || [], ask: w.attrs });
     } else if (w.type === 'core.abducible') {
       if (!of) { c.errors.push(`${w.id}: core.abducible needs of=`); continue; }

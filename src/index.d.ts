@@ -113,6 +113,12 @@ export interface WorldOptions {
   solver?: Solver;
   /** wire types and key names used for questions, answers and requests */
   vocabulary?: Partial<Record<'question' | 'answer' | 'request' | 'type' | 'seek' | 'about' | 'mode' | 'where' | 'action' | 'arg' | 'to' | 'value' | 'status' | 'via' | 'from', string>>;
+  /** functions an action runs: (context, args) => value */
+  actions?: Record<string, (context: any, args: Record<string, string>) => unknown>;
+  /** functions that compute a key on demand: (context) => value */
+  producers?: Record<string, (context: any) => unknown>;
+  /** allow `fns` to replace built-ins: true, or the names */
+  override?: boolean | string[];
   /** decimals kept in derived numbers (default: 12 significant digits) */
   decimals?: number;
   /** the budget of every call that does not give its own */
@@ -162,6 +168,10 @@ export class World {
   answer(question: Wire, value: string | number): Result;
   /** shares the state until one of the two worlds changes; copies nothing */
   fork(): World;
+  /** add a host function; a 'function' with a built-in's name needs { override: true } */
+  register(kind: 'function' | 'action' | 'producer', name: string, fn: Function, options?: { override?: boolean | string[] }): this;
+  actions: Record<string, Function>;
+  producers: Record<string, Function>;
   /** for functions: say why no result can be given, before returning nothing */
   cannot(reason: string): void;
   /** a summary of the world as plain data */

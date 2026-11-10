@@ -246,6 +246,21 @@ Built in: `add sub mul div min max concat` (calc) and `eq neq lt lte gt gte befo
 passed to `new World({ fns })`. Because rules stay declarative, a matrix can be
 translated to Datalog, ASP or SMT for independent checking.
 
+**Three kinds of host function, three registries.**
+
+| Kind | Registered as | Named by | Called with |
+| --- | --- | --- | --- |
+| function | `new World({ fns })` | `core.calc`, `core.check`, an effect's `op=` | `(args, world)` |
+| action | `new World({ actions })` | `core.action fn=` | `(context, args)` |
+| producer | `new World({ producers })` | `core.producer fn=` | `(context)` |
+
+`world.register(kind, name, fn, { override })` adds one later. The registries are
+separate, so an action named `add` or `count` does not touch the arithmetic that calcs
+and effects use. A *function* with the name of a built-in function or aggregate is
+refused when it is registered, unless `{ override: true }` (or `override: ['add']`)
+says the replacement is meant. An action or producer found only among the functions
+(where they used to go) still runs, with a note in `world.warnings`.
+
 ### 3.6.1 More functions, and comparison by value
 
 | Function | Meaning |
@@ -1050,7 +1065,7 @@ from `src/`, `hash` and `date` are null.
 import { World, solvers, parse, format, str, quote, induce, induceSlots, adopt,
          Problem, Sat, toDimacs, toASP, quantity, version } from './docs/sopworld.mjs';
 
-const w = new World({ fns, library, solver, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, budget });
+const w = new World({ fns, actions, producers, override, library, solver, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, budget, decimals });
 w.tell(textOrWires, { dry, strict })   w.load(textOrWires)   w.use(name)
 w.fill(id, key, value, { dry, strict })
 w.retract(id)   w.replace(id, textOrWires)   w.fork()   w.trial(fn)
@@ -1096,6 +1111,9 @@ Since 0.4.0 (the version first published in this repository):
 - New: `core.on=` templates (3.3); the stratification check knows which keys a template
   adds, so a rule may aggregate over a type and fill a key on a wire of that type.
 - New: `core.absent=` in patterns (3.10).
+- **Changed (0.6):** actions and producers have registries of their own (`actions`,
+  `producers`, `world.register`); a function may not take the name of a built-in
+  without `override` (3.6).
 - **Changed (0.6): one language.** `?` is only a variable. A pattern is declared with
   `@`, like every wire, and is a pattern because a rule, deny, calc, relation, action
   or query names it (2.1). `?id type ...` is still read, with a warning in

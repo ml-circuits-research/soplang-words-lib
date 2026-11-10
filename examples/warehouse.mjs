@@ -29,11 +29,15 @@ export const warehouse = `
 @s2 shelf row=B
 `;
 
-export const fns = {
+// What the matrix names: a producer computes a key when asked, an action changes the world.
+export const producers = {
   stockValue: ({ wire, val }) => {
     const stock = val(wire, 'stock'), price = val(wire, 'price');
     return stock === undefined || price === undefined ? undefined : Number(stock) * Number(price);
   },
+};
+
+export const actions = {
   take: (ctx, { item, count }) => {
     const [w] = ctx.find('item', { name: item });
     if (!w) return { ok: false, why: `there is no item named ${item}` };

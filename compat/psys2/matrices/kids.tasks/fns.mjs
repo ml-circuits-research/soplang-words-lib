@@ -31,7 +31,7 @@ function addTo(ctx, list, item) {
   return split(item).length ? { value: list, ...(added.length ? { values: added } : {}) } : missing(list);
 }
 
-export const fns = {
+export const actions = {
   add: (ctx, { item, list }) => addTo(ctx, listName(list), item),
   remind: (ctx, { item }) => addTo(ctx, 'reminders', item),
   remove(ctx, { item, list }) {
@@ -68,7 +68,7 @@ export const fns = {
     const [hit] = named(entries(ctx, listName(list)), clean(item));
     return hit ? { value: hit.list, values: [hit.text] } : missing(listName(list));
   },
-  show: (ctx, { list }) => fns.pending(ctx, { list }),
+  show: (ctx, { list }) => actions.pending(ctx, { list }),
   pending(ctx, { list }) {
     const items = entries(ctx, listName(list)), todo = items.filter((e) => !e.done).map((e) => e.text);
     return items.length ? { value: listName(list), ...(todo.length ? { values: todo } : {}) } : missing(listName(list));

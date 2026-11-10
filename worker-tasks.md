@@ -26,6 +26,33 @@ The reviewer's first two commits to this repository were a false start; ignore t
 **Do next, in this order, one commit each:**
 **Round 3 (reviewer, 17:45).** The user sent an outside design review of the library (made at commit e9a6551, before G7 and G5) and asked the reviewer to judge it and organise the work. The reviewer checked each claim on the current code. The result is the order below, one commit each. Finish what you have in hand of G10–G14 first if a commit is nearly done; otherwise follow this order.
 
+## Round 4 (reviewer, 19:05) — read this block first; it replaces the order below
+
+**Validated now:** H5 relations (ff4846c), H6 declarative actions (71f58a0), defaults on optional keys (97d8a7a), 0.5.0 (93a5c5d). Reviewer rerun: `npm test` 182 pass, 0 fail, 1 skipped; pilot 147/147, 212/217, 231/232; no PSys2 name in `src/`. The tag could not be pushed from your session: leave it, the reviewer or the user will tag; the PSys2 worker pins commits meanwhile.
+
+**The first real host has reported.** PSys2 integrated the library (at a7a8e16) behind a switch for three worlds and measured both strategies. On its per-turn consistency audit, turns that leave the world in violation fell from 2.8% (its own code) to 0.3% (matrix); undo, revision and abduction cases started passing; turn time rose 9%. It also sent ten workarounds it needed. They are general API gaps; fix them as W1–W8 below.
+
+**Order from here, one commit each: G11, L1, W1–W8, D1, then tag 0.6.0** (L1 changes the syntax, so it is a minor version).
+
+- **G11 — soft constraints** (as specified below). The host needs it: today an impossible event is refused when told and the user hears "OK"; the host wants the statement recorded with a standing issue.
+- **L1 — one language** (as specified below).
+- **W1 — functions do not share one registry.** A host action named `add` or `count` replaced the built-in used by effects and calcs. Built-ins, host calc/check functions and host actions live in separate namespaces; a host name that would shadow a built-in is refused at registration unless `{ override: true }`.
+- **W2 — a query returns what it derived.** For an answer obtained by supposing a question or request wire, the result carries the supposed answer wire with every key the rules set on it (and `from`), so a host does not need second queries to word the reply.
+- **W3 — violations stay explainable after rollback.**
+  - A `refused` result names wires as they were (id, type, attrs snapshot), not ids that no longer exist.
+  - A deny's `why` may contain `?variables` that are filled from the match ("?m lei is not enough for ?t"), and the violation carries the bindings as data.
+- **W4 — `world.check()` with no patch:** validates the whole current state and returns every violation (also soft issues); `World.audit(wires, matrix)` for a foreign set of wires. And a deny over a fluent must be able to refuse the *event* that breaks it at `tell` time (the host saw a purchase that left money negative accepted, and refused only when the balance was asked): document and test the pattern, fix it if the engine cannot do it.
+- **W5 — `world.revise(id, key, value)`:** replace a **told** value in one transaction: everything derived from the old value is withdrawn and recomputed, the result lists `revised`. Today `fill` on a told key is a conflict and the host had to rebuild the whole wire for "three of them".
+- **W6 — told wires stay as told.** `world.told()` (and `toJSON`) return each told wire exactly as it was stated; values filled later by rules are visible in `get()` with their tier, but re-telling the export to a fresh world must be idempotent (the host got 26 false conflicts).
+- **W7 — abduction through `query`:** `query({ ..., mode: 'abduce' })`, or a `missing` result that offers `howto`: when the sought key is open and abducible, the answer lists the explanations, so a host needs no special path for "what did I pay?".
+- **W8 — session helpers a dialogue host needs:**
+  - `world.undo(n = 1)`: withdraw the last told change(s) as one transaction, returning what went;
+  - `world.mark()` / `world.rewind(mark)` for a host that keeps its own snapshots, so its undo and the world's cannot diverge;
+  - a refused `tell` in soft mode returns the issue so the host can say it.
+- **D1 — the reference documentation** (as specified below), written after L1 so that it uses the final syntax, and covering W1–W8.
+
+The remaining pilot failures (five in arith) are parity differences already judged: no work.
+
 **L1 — one language, and `?` means one thing (user decision, 18:38). Do this right after the task you have in hand, before H5.**
 
 The user's objection, and he is right: `?` is used for two different things. `?p purchase …` *declares* a pattern wire, and `qty=?q` is a *variable* bound by matching. It reads as if a declaration and a variable were the same kind of thing. PSys2's SOP Lang (`compat/psys2/specs/01-soplang.md`) has only `@id type key=value`, and the user wants **one** SOP Lang for facts and rules.
@@ -239,3 +266,4 @@ G1, G2, G6, G3, G4, G7, G5, G8, G9. G8 for the shop world can start as soon as G
 - G8 pilot and G9 docs (feeb300, 5f80fe7, ed4d9f6, 09d310f): reviewer rerun 161 pass / 0 fail / 1 skipped; pilot 147/147, 207/217, 231/232; five demonstrations run.
 - H1 (d762dc8), H2 (90116e1), G10 (d23b20f): reviewer rerun 167 pass / 0 fail / 1 skipped; repros fixed; pilot arith 208/217.
 - G12–G14, H3, H4 (e0d09d7, 8c90f27, 7921fce, 10d6314): reviewer rerun 175 pass / 0 fail / 1 skipped; pilot arith 212/217; tier probe passes. Q12 closed. Open: G11, default on an optional key.
+- H5 (ff4846c), H6 (71f58a0), optional-key defaults (97d8a7a), 0.5.0 (93a5c5d): reviewer rerun 182 pass / 0 fail / 1 skipped; pilot unchanged.

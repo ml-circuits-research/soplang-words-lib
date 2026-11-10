@@ -11,6 +11,7 @@ The reviewer's first two commits to this repository were a false start; ignore t
 | Task | State |
 | --- | --- |
 | S0, G1, G2 | validated |
+| G7 budgets, stats, structural fork, one spelling of numbers (455f4a3); G5 abduction through calcs (3ef1b78) | **validated** (reviewer, 16:45): `npm test` 154 pass, 0 fail, 1 skipped; compat tests pass; no PSys2 name in `src/`. Reviewer probes: fork of a 2,000-wire world 0.007 ms and isolated; the shop abduction now answers `b1.paid=19` for "change of 5" (was `[]`); a self-feeding rule is refused in 2 ms. **Q11 answered:** your choice is right — the compiled cost is the figure that matters (reviewer run: cold 33 ms, best of ten 24 ms on a slower host). Close it; no further tuning. |
 | G4 aggregates, arithmetic, time (823e3b3); Q8–Q10 applied (cb4f036) | **validated** (reviewer, 16:00): `npm test` 135 pass, 0 fail, 1 skipped; compat tests pass; no PSys2 name in `src/`. On your G4 note: keep pattern matching textual (`5` does not match `5.0`); instead normalise numeric literals **on tell** for slots whose kind is `integer` or `number` (store `5.0` as given but index its canonical form), so hosts never meet the difference. Do it in G7 with the index work, or say why not. |
 | `core.check` rename (1b4541b), G6 queries (0d2cb6a), G3 sequence and fluents (5519782) | **validated** (reviewer, 15:50): `npm test` 123 pass, 0 fail, 1 skipped on sources and built file; `compat/psys2` schema and cases tests pass; `git grep -i psys2 src/` empty. |
 
@@ -20,9 +21,8 @@ The reviewer's first two commits to this repository were a false start; ignore t
 - **Q10** (references to entities outside the session): accepted. The library keeps refusing a reference to a wire that does not exist. In PSys2 `e.user` is a built-in agent that every session has from the start, so the runner telling an `e.user` wire first is correct. The one `$e.tom` case: check whether the agent wire is created by an earlier turn of the same session in the cases file (PSys2 creates an agent wire on first mention, in the same turn); if the wire really is absent from `wires`, list the case as a failure with that reason and I will look at the dump.
 
 **Do next, in this order, one commit each:**
-1. **G7** (budgets everywhere, structural fork). Find the `replace` slowdown here: the reviewer measured 47–81 ms for the 1000-replace benchmark against 30 ms in 0.4. It must be back at or under the 0.4 number.
-2. **G5** (abduction through calcs).
-3. **G8** (the three matrices and the runner), then **G9**.
+1. **G8** — the proof of value. The three matrices (`kids.shop`, `kids.arith`, `kids.tasks`) in `compat/psys2/matrices/`, the runner over `compat/psys2/cases/*.jsonl`, and the report: cases passed / total, lines of matrix + fns against the `ops.mjs` logic replaced, ms per case, and the five demonstrations (question for a missing argument, default withdrawn, retract as undo, explain, abduction). One commit per world is fine. Be honest in the report: a case that needs logic the matrix cannot express is listed with the reason, not hidden in `fns.mjs`.
+2. **G9** — documentation and the integration recipe.
 
 Working rules for commits: pull with rebase before each commit; the reviewer only ever changes `worker-tasks.md` (tasks and answers) and, when you ask for more material, files under `compat/psys2/` — never `src/`, tests, docs, `questions.md` or your log. If a reviewer commit lands while you work, rebase onto it; it will not touch your files.
 
@@ -114,3 +114,4 @@ G1, G2, G6, G3, G4, G7, G5, G8, G9. G8 for the shop world can start as soon as G
 - G1 + G2 (23f238b): type hierarchy; schema mapping as data, literal kinds, qualified keys. Reviewer rerun: 96 pass / 0 fail / 1 skipped twice, compat schema test 2 pass, no PSys2 name in `src/`. Open from it: the `replace` benchmark is slower than 0.4 (goes to G7).
 - `core.check` rename (1b4541b), G6 (0d2cb6a), G3 (5519782): reviewer rerun 123 pass / 0 fail / 1 skipped twice; compat tests pass; no PSys2 name in `src/`.
 - G4 (823e3b3), Q8–Q10 applied (cb4f036): reviewer rerun 135 pass / 0 fail / 1 skipped; compat tests pass.
+- G7 (455f4a3) and G5 (3ef1b78): reviewer rerun 154 pass / 0 fail / 1 skipped; fork 0.007 ms at 2,000 wires; shop abduction answers paid=19; runaway rule refused in 2 ms. Q11 closed (compiled cost is the target).

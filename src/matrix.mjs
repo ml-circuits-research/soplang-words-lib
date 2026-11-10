@@ -9,7 +9,7 @@ const RANGE_CAP = 2000;
 
 export const SCHEMA_TYPES = new Set([
   'core.slot', 'core.type', 'core.abducible', 'core.rule', 'core.deny', 'core.calc', 'core.test', 'core.use',
-  'core.schema.map', 'core.namespace',
+  'core.schema.map', 'core.namespace', 'core.producer', 'core.action',
 ]);
 
 /**
@@ -46,6 +46,7 @@ const KINDS = {
   boolean: (v) => v === 'true' || v === 'false',
   string: (v) => v[0] !== '$',
   atom: (v) => v[0] !== '$' && v[0] !== '"',
+  any: () => true, // any literal or reference
 };
 /** Does the value fit the literal kind? Unknown kinds accept any value that is not a reference. */
 export function fitsKind(kind, v) {
@@ -90,6 +91,9 @@ export function compileMatrix(world) {
     maps: new Map(),     // foreign wire type -> how it declares a slot, a type or a module
     modules: new Map(),  // module name -> { wire, imports } for modules that declare themselves
     openPrefixes: ['core.'], // keys with these prefixes are always allowed and never shortened
+    complete: new Set(),  // types whose instances are all known (closed world for existence)
+    producers: new Map(), // <type>.<key> -> functions that can compute the key when no wire has it
+    actions: new Map(),   // action name -> the function that carries it out
   };
   for (const w of world.matrix.values()) {
     if (w.type === 'core.schema.map') {
@@ -121,6 +125,7 @@ export function compileMatrix(world) {
       const en = list('enum');
       const s = {
         id: w.id, of: type, key, required: get('required') === 'true', many: get('many') === 'true', identity: get('id') === 'true',
+        prefix: get('prefix') === 'true', // the key is a prefix: any key that starts with it is this slot
         type: refs[0], refs, kinds, enum: en.length ? en : null, default: get('default'), ask: get('ask'),
         min: quantity(get('min') ?? ''), max: quantity(get('max') ?? ''), step: quantity(get('step') ?? ''), range: null,
         attrs: w.attrs, // everything the wire says, used or not
@@ -144,11 +149,22 @@ export function compileMatrix(world) {
       if (!name) { c.errors.push(`${w.id}: the type has no name`); continue; }
       c.types.set(name, w);
       if (closed) c.closed.add(name);
+      if (f ? field(f.complete, w) === 'true' : flag(w, 'complete')) c.complete.add(name);
       if (ext && ext !== name) c.parent.set(name, ext);
     } else if (map?.as === 'module') {
       const name = field(map.fields.name || 'id', w);
       if (!name) c.errors.push(`${w.id}: the module has no name`);
       else c.modules.set(name, { wire: w, imports: field(map.fields.imports, w, true) });
+    } else if (w.type === 'core.producer') {
+      const key = first(w, 'key'), fn = first(w, 'fn');
+      if (!of || !key || !fn) { c.errors.push(`${w.id}: core.producer needs of=, key= and fn=`); continue; }
+      if (!world.fns[fn]) c.errors.push(`${w.id}: unknown function "${fn}"`);
+      push(c.producers, `${of}.${key}`, { id: w.id, fn });
+    } else if (w.type === 'core.action') {
+      const name = first(w, 'name'), fn = first(w, 'fn');
+      if (!name || !fn) { c.errors.push(`${w.id}: core.action needs name= and fn=`); continue; }
+      if (!world.fns[fn]) c.errors.push(`${w.id}: unknown function "${fn}"`);
+      c.actions.set(name, { id: w.id, fn, required: w.attrs.required || [], inputs: w.attrs.input || [], ask: w.attrs });
     } else if (w.type === 'core.abducible') {
       if (!of) { c.errors.push(`${w.id}: core.abducible needs of=`); continue; }
       const cost = Math.max(Number(first(w, 'cost')) || 1, 0.001);
@@ -192,6 +208,15 @@ export function compileMatrix(world) {
       effective.set(type, merged);
       return merged;
     },
+  };
+  /** The slot of a key: declared under that name, or a prefix slot the key starts with. */
+  c.slotOf = (type, key) => {
+    const slots = c.slots.get(type);
+    if (!slots) return undefined;
+    const exact = slots.get(key);
+    if (exact) return exact;
+    for (const s of slots.values()) if (s.prefix && key.startsWith(s.key.endsWith('.') ? s.key : s.key + '.')) return s;
+    return undefined;
   };
   const identity = new Map();
   c.idKeys = {

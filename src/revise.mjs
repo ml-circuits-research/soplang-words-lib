@@ -65,13 +65,20 @@ export const revision = {
         if (this.wires.has(x)) continue;
         for (const r of this.refs.get(x) || []) {
           const w = this.wires.get(r);
-          if (!w) continue;
+          if (!w || !this._dependsOn(w, x)) continue;
           if (w.meta.told) next.add(r); else res._touched.add(r);
         }
       }
       targets = [...next];
     }
     return gone;
+  },
+
+  /** Does the wire refer to id through a key that is checked (not a bookkeeping key of an open namespace)? */
+  _dependsOn(w, id) {
+    const c = this._compiled();
+    const ref = '$' + id;
+    return Object.keys(w.attrs).some((k) => w.attrs[k].includes(ref) && (c.slotOf(w.type, k) || !c.isOpenKey(k)));
   },
 
   /** Reference implementation of retract: rebuild the world from the log without the wire. */
@@ -82,7 +89,9 @@ export const revision = {
       grew = false;
       for (const w of told) {
         if (gone.has(w.id)) continue;
-        const refs = Object.values(w.attrs).flat().filter((v) => v[0] === '$').map((v) => v.slice(1));
+        const c = this._compiled();
+        const refs = Object.keys(w.attrs).filter((k) => !c.isOpenKey(k) || c.slotOf(w.type, c.shortKey(w.type, k)))
+          .flatMap((k) => w.attrs[k]).filter((v) => v[0] === '$').map((v) => v.slice(1));
         if (refs.some((r) => gone.has(r))) { gone.add(w.id); grew = true; }
       }
     }
@@ -183,7 +192,7 @@ revision.replace = function replace(id, input) {
         if (this.wires.has(x)) continue;
         for (const r of this.refs.get(x) || []) {
           const w = this.wires.get(r);
-          if (!w) continue;
+          if (!w || !this._dependsOn(w, x)) continue;
           if (w.meta.told) orphans.push(r); else res._touched.add(r);
         }
       }

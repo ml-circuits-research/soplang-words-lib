@@ -183,7 +183,8 @@ its type extends:
 **Literal kinds.** A slot may say what kind of literal its values are, with one or more
 `kind=` (alternatives): `integer`, `number` (no unit), `boolean`, `string`, `atom` (not
 quoted), `quantity.<name>` (a number with an optional unit), `time.<name>` (any literal
-in this version); a kind the library does not know accepts any literal. `type=` names
+in this version), `any` (any literal or reference); a kind the library does not know
+accepts any literal. `type=` names
 the type a reference must point to (descendants included); several are alternatives. A
 slot with both accepts either. Kinds are checked on every `tell` and `fill`.
 
@@ -222,6 +223,9 @@ unchanged by telling the world how to read them. `core.schema.map` is data, not 
 - `as=module` fields: `name`, `imports`. Such a wire makes its text a module that names
   what it needs; each import found in the library is loaded once, **without** prefixing
   ids. An import that is neither loaded nor in the library is a `schema` violation.
+- A reference under a key of an open namespace that no slot declares may point outside
+  the world (a source, a pattern): it is not checked and does not tie the wire to the
+  one it mentions when that one is retracted.
 - Attributes of schema wires that the engine does not use are kept and never refused.
   `world.schema(type)` returns the parent, the lineage, `closed`, the type wire's
   attributes, and the keys (own and inherited, marked) with every attribute of their wires.
@@ -423,6 +427,59 @@ A solver is `{ name, solve(problem, { preset, budget }) }` returning
 - With negation in the matrix, a partial completion that is refused is abandoned even if
   a later value would have repaired it.
 
+### 4.10 Queries with a status, answers as wires, producers and actions
+
+`world.query(question, { record, suppose })` answers "what is the value of key K of the
+thing that meets these constraints". The question is an object
+`{ type, seek, where: { key: value }, about, mode }`, a question wire of the same shape
+(`@q core.question type=item seek=stock where.name=bolt`, or the `about=` / `seek=` wires
+that `next()` produces), the id of such a wire, or its text. It changes nothing.
+
+| Status | When | Carries |
+| --- | --- | --- |
+| `supported` | exactly one value (or `mode=list`, `count`, a positive `exists`) | `value` or `values`, `from`, `via` |
+| `conflicting` | several distinct values | `alternatives: [{ value, from }]` |
+| `missing` | no value | `missing: [{ id?, type, key, ask }]`: the open key and its question |
+| `refused` | the thing asked about cannot exist | `violations`, as from `tell` |
+| `no` / `unknown` | `mode=exists` finds nothing: `no` if the type is declared `complete=true`, else `unknown` | |
+
+How a value is found, in this order:
+
+1. **Lookup.** The wire named by `about`, or the wires of `type` (descendants included)
+   that meet `where`. `from` lists the wires holding the value and, for a value a rule
+   filled, the wires it was derived from; `via` names the rule.
+2. **Supposition.** If no wire matches and the constraints are all values, a wire of
+   that type with those keys is told in a scratch transaction; the rules run; the value
+   is read from it or from a wire derived from it; everything is undone. A violation
+   gives `refused`. `{ suppose: false }` turns this off.
+3. **Producers.** `@p core.producer of=<type> key=<key> fn=<name>` declares a registered
+   function that can compute the key: `fn({ world, wire, type, key, where, find, val, vals })`
+   returns a value, a list, or nothing. Tried for wires that lack the key, and when
+   nothing matched.
+4. Otherwise `missing`.
+
+`mode`: `value` (default), `list` (all distinct values), `count` (matching wires, or
+those that have `seek`), `exists`.
+
+`{ record: true }` writes the answer as a wire, and the question too when it was not one
+already: `@a12 core.answer to=$q1 status=supported value=40 core.from=$i1 core.via=$rule`.
+
+**Actions.** `@a core.action name=<name> fn=<fn> required=<arg> ask.<arg>="..."` declares
+a registered function as an action. `world.act({ action, args })`, or a request wire
+(`@r core.request action=take arg.item=bolt arg.count=5`), runs it inside one
+transaction with a context that offers `find`, `val`, `tell`, `fill`, `replace`,
+`retract`. Results: `{ ok: true, status: 'done', value }`; `missing` with the required
+arguments that were not given and their questions; `refused` with the violations when a
+change is refused or the function returns `{ ok: false, why }`; `error` when it throws;
+`unsupported` for an unknown action. In every case but `done` the world is unchanged.
+
+**Vocabulary.** The wire types and key names used here are defaults that a host can
+replace: `new World({ vocabulary: { question, answer, request, type, seek, about, mode,
+where, action, arg, to, value, status, via, from } })`.
+
+**Prefix slots.** `core.slot of=<type> key=where prefix=true` declares every key
+`where.<anything>` at once, so that question and request wires can belong to a closed type.
+
 ## 5. Composition of worlds
 
 - A micro-world is a matrix, usually with a type prefix (`phys.mech.*`), stored in a library.
@@ -456,6 +513,7 @@ A solver is `{ name, solve(problem, { preset, budget }) }` returning
 | `matrix.mjs` | Compiles matrix wires into slots, rules and denies; checks stratification; prefixes modules |
 | `world.mjs` | Kernel: store and indexes, transactions, ingest, matching, chase, validation, withdrawal |
 | `complete.mjs` | Open keys, suggestions, questions, `step` and `answer` |
+| `query.mjs` | Queries with a status, answer wires, producers, actions, the vocabulary |
 | `solve.mjs` | The completion problem in neutral form, the SAT solver, the solver strategies |
 | `revise.mjs` | `retract`, `replace`, revision of default assumptions |
 | `abduce.mjs`, `induce.mjs` | Abduction and induction, built on the public kernel operations |
@@ -508,6 +566,7 @@ w.ask(patternText)   w.holds(patternText)
 w.open(id?)  w.suggest(id, key, { deep })  w.next()  w.complete({ defaults, choose })
 w.solve()  w.solveReport({ solver, budget })  await w.solveAsync({ solver })
 w.satisfiable()  w.apply(assignment)
+w.query(question, { record, suppose })   w.act(request)   w.schema(type)
 w.abduce(goalText, { maxDepth, max, maxAssumptions })
 w.explain(id)  w.history()  w.on(listener)
 w.toSOP({ schema, derived, provenance })   w.toJSON()   World.fromJSON(data, options)

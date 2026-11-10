@@ -15,7 +15,7 @@ export const completion = {
     const ws = id ? [this.get(id)].filter(Boolean) : this.wires.values();
     for (const w of ws) {
       for (const s of c.slots.get(w.type)?.values() || []) {
-        if (s.required && !w.attrs[s.key]) {
+        if (s.required && !s.prefix && !w.attrs[s.key]) {
           out.push({ id: w.id, type: w.type, key: s.key, ask: s.ask ? str(s.ask) : undefined });
         }
       }

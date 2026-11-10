@@ -27,6 +27,17 @@ export interface Result {
 }
 export interface OpenKey { id: string; type: string; key: string; ask?: string }
 export interface Candidate { value: string; source: 'default' | 'enum' | 'wire' | 'range'; count: number }
+export interface Question { type?: string; seek?: string; where?: Record<string, string | number>; about?: string; mode?: 'value' | 'list' | 'count' | 'exists' }
+export interface QueryResult {
+  status: 'supported' | 'conflicting' | 'missing' | 'refused' | 'no' | 'unknown';
+  value?: string; values?: string[];
+  alternatives?: { value: string; from: string[] }[];
+  missing?: { id?: string; type?: string; key: string; ask?: string }[];
+  violations?: Violation[];
+  from: string[]; via?: string[]; wires: string[];
+  answer?: { ok: boolean; id?: string; question?: string; violations?: Violation[] };
+}
+export interface ActResult { ok: boolean; status: 'done' | 'missing' | 'refused' | 'error' | 'unsupported'; value?: string; result?: unknown; missing?: { action: string; key: string; ask?: string }[]; violations?: Violation[] }
 export interface Assignment { id: string; key: string; value: string }
 export interface SolveReport { status: 'sat' | 'unsat' | 'unknown'; assignment?: Assignment[]; stats: Record<string, number>; solver?: string }
 export interface SolveOptions { preset?: Map<number, string>; budget?: number }
@@ -90,6 +101,8 @@ export interface WorldOptions {
   lookahead?: boolean; strict?: boolean; searchBudget?: number;
   library?: Record<string, string>;
   solver?: Solver;
+  /** wire types and key names used for questions, answers and requests */
+  vocabulary?: Partial<Record<'question' | 'answer' | 'request' | 'type' | 'seek' | 'about' | 'mode' | 'where' | 'action' | 'arg' | 'to' | 'value' | 'status' | 'via' | 'from', string>>;
   rank?: <T>(items: T[], context: { kind: 'value' | 'explanation'; world: World; id?: string; key?: string }) => T[] | void;
 }
 export interface ChangeOptions { dry?: boolean; strict?: boolean }
@@ -129,6 +142,8 @@ export class World {
   solveAsync(options?: { solver?: Solver; budget?: number }): Promise<SolveReport>;
   satisfiable(options?: { solver?: Solver; budget?: number }): boolean;
   apply(assignment: Assignment[], options?: { via?: string }): Result;
+  query(question: Question | Wire | string, options?: { record?: boolean; suppose?: boolean }): QueryResult;
+  act(request: { action: string; args?: Record<string, string | number | string[]> } | Wire | string): ActResult;
   trial<T>(fn: (world: World) => T): T;
   stamp: number;
   abduce(goal: string | Wire[], options?: { maxDepth?: number; max?: number; maxAssumptions?: number }): Explanation[];

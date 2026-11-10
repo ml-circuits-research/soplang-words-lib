@@ -11,6 +11,7 @@ import { cdcl } from './solve.mjs';
 import { compileMatrix, localize, prefixModule, fitsKind, readMap, SCHEMA_TYPES, LINKS } from './matrix.mjs';
 import { completion } from './complete.mjs';
 import { revision } from './revise.mjs';
+import { querying } from './query.mjs';
 import { abduce } from './abduce.mjs';
 
 const first = (w, k) => w.attrs[k]?.[0];
@@ -32,9 +33,9 @@ export class World {
   constructor(options = {}) {
     const {
       fns = {}, library = {}, maxDepth = 12, maxSteps = 50000,
-      lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(),
+      lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {},
     } = options;
-    this.options = { fns, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver };
+    this.options = { fns, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary };
     this.fns = { ...builtins, ...fns };
     this.wires = new Map();    // id -> fact wire
     this.byType = new Map();   // type -> Set<id>
@@ -726,12 +727,12 @@ export class World {
 
   /** Add key/values to an existing wire; a different value on a single-valued key is a conflict. */
   _merge(w, attrs, prov, res) {
-    const slots = this._compiled().slots.get(w.type);
+    const c = this._compiled();
     for (const k of Object.keys(attrs)) {
       for (const v of attrs[k]) {
         const have = w.attrs[k];
         if (have && have.includes(v)) continue;
-        if (have && !slots?.get(k)?.many) {
+        if (have && !c.slotOf(w.type, k)?.many) {
           res.violations.push({ kind: 'conflict', id: w.id, key: k, have: have[0], want: v, via: prov.via, wires: [w.id, ...prov.from] });
           continue;
         }
@@ -798,9 +799,8 @@ export class World {
     for (const id of res._touched) {
       const w = this.wires.get(id);
       if (!w) continue;
-      const slots = c.slots.get(w.type);
       for (const k of Object.keys(w.attrs)) {
-        const s = slots?.get(k);
+        const s = c.slotOf(w.type, k);
         if (!s) {
           if (c.closed.has(w.type) && !c.isOpenKey(k)) res.violations.push({ kind: 'unknown-key', id, key: k });
         } else {
@@ -825,6 +825,8 @@ export class World {
             }
           }
         }
+        // bookkeeping keys of an open namespace may point outside the world (a source, a pattern)
+        if (!s && c.isOpenKey(k)) continue;
         for (const v of w.attrs[k]) {
           if (v[0] === '$' && !this.wires.has(v.slice(1)) && !this.matrix.has(v.slice(1))) {
             res.violations.push({ kind: 'dangling-ref', id, key: k, value: v });
@@ -856,4 +858,4 @@ export class World {
   }
 }
 
-Object.assign(World.prototype, completion, revision);
+Object.assign(World.prototype, completion, revision, querying);

@@ -148,6 +148,12 @@ test('keys: an open namespace is always allowed and not validated unless a slot 
   const r = w.tell('@c1 fleet.car plate="B-01" seats=5 core.seq=1 core.source="import" audit.by=ana');
   assert.ok(r.ok, 'the type is closed; core.* and audit.* keys still pass');
   assert.equal(w.get('c1').attrs['audit.by'][0], 'ana');
+  assert.ok(w.tell('@c9 fleet.car plate="B-09" seats=5 core.source=$import.batch7 audit.by=$staff.ana').ok,
+    'bookkeeping keys may point outside the world');
+  assert.equal(w.tell('@c8 fleet.car plate="B-08" seats=5 driver=$staff.ana').violations[0].kind, 'domain', 'ordinary keys may not');
+  w.load('@note1 remark core.source=$c9');
+  w.retract('c9');
+  assert.ok(w.has('note1'), 'a bookkeeping reference does not tie a wire to the one it mentions');
   assert.equal(w.tell('@c2 fleet.car plate="B-02" seats=5 other.by=ana').violations[0].kind, 'unknown-key');
   w.load('@k core.slot of=fleet.vehicle key=core.seq min=1');
   assert.equal(w.tell('@c3 fleet.car plate="B-03" seats=5 core.seq=0').violations[0].why, 'must be at least 1');

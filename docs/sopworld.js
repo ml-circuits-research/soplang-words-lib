@@ -871,7 +871,7 @@ const __matrix = (() => {
 
   const SCHEMA_TYPES = new Set([
     'core.slot', 'core.type', 'core.abducible', 'core.rule', 'core.deny', 'core.calc', 'core.test', 'core.use',
-    'core.schema.map', 'core.namespace',
+    'core.schema.map', 'core.namespace', 'core.producer', 'core.action',
   ]);
 
   /**
@@ -908,6 +908,7 @@ const __matrix = (() => {
     boolean: (v) => v === 'true' || v === 'false',
     string: (v) => v[0] !== '$',
     atom: (v) => v[0] !== '$' && v[0] !== '"',
+    any: () => true, // any literal or reference
   };
   /** Does the value fit the literal kind? Unknown kinds accept any value that is not a reference. */
   function fitsKind(kind, v) {
@@ -952,6 +953,9 @@ const __matrix = (() => {
       maps: new Map(),     // foreign wire type -> how it declares a slot, a type or a module
       modules: new Map(),  // module name -> { wire, imports } for modules that declare themselves
       openPrefixes: ['core.'], // keys with these prefixes are always allowed and never shortened
+      complete: new Set(),  // types whose instances are all known (closed world for existence)
+      producers: new Map(), // <type>.<key> -> functions that can compute the key when no wire has it
+      actions: new Map(),   // action name -> the function that carries it out
     };
     for (const w of world.matrix.values()) {
       if (w.type === 'core.schema.map') {
@@ -983,6 +987,7 @@ const __matrix = (() => {
         const en = list('enum');
         const s = {
           id: w.id, of: type, key, required: get('required') === 'true', many: get('many') === 'true', identity: get('id') === 'true',
+          prefix: get('prefix') === 'true', // the key is a prefix: any key that starts with it is this slot
           type: refs[0], refs, kinds, enum: en.length ? en : null, default: get('default'), ask: get('ask'),
           min: quantity(get('min') ?? ''), max: quantity(get('max') ?? ''), step: quantity(get('step') ?? ''), range: null,
           attrs: w.attrs, // everything the wire says, used or not
@@ -1006,11 +1011,22 @@ const __matrix = (() => {
         if (!name) { c.errors.push(`${w.id}: the type has no name`); continue; }
         c.types.set(name, w);
         if (closed) c.closed.add(name);
+        if (f ? field(f.complete, w) === 'true' : flag(w, 'complete')) c.complete.add(name);
         if (ext && ext !== name) c.parent.set(name, ext);
       } else if (map?.as === 'module') {
         const name = field(map.fields.name || 'id', w);
         if (!name) c.errors.push(`${w.id}: the module has no name`);
         else c.modules.set(name, { wire: w, imports: field(map.fields.imports, w, true) });
+      } else if (w.type === 'core.producer') {
+        const key = first(w, 'key'), fn = first(w, 'fn');
+        if (!of || !key || !fn) { c.errors.push(`${w.id}: core.producer needs of=, key= and fn=`); continue; }
+        if (!world.fns[fn]) c.errors.push(`${w.id}: unknown function "${fn}"`);
+        push(c.producers, `${of}.${key}`, { id: w.id, fn });
+      } else if (w.type === 'core.action') {
+        const name = first(w, 'name'), fn = first(w, 'fn');
+        if (!name || !fn) { c.errors.push(`${w.id}: core.action needs name= and fn=`); continue; }
+        if (!world.fns[fn]) c.errors.push(`${w.id}: unknown function "${fn}"`);
+        c.actions.set(name, { id: w.id, fn, required: w.attrs.required || [], inputs: w.attrs.input || [], ask: w.attrs });
       } else if (w.type === 'core.abducible') {
         if (!of) { c.errors.push(`${w.id}: core.abducible needs of=`); continue; }
         const cost = Math.max(Number(first(w, 'cost')) || 1, 0.001);
@@ -1054,6 +1070,15 @@ const __matrix = (() => {
         effective.set(type, merged);
         return merged;
       },
+    };
+    /** The slot of a key: declared under that name, or a prefix slot the key starts with. */
+    c.slotOf = (type, key) => {
+      const slots = c.slots.get(type);
+      if (!slots) return undefined;
+      const exact = slots.get(key);
+      if (exact) return exact;
+      for (const s of slots.values()) if (s.prefix && key.startsWith(s.key.endsWith('.') ? s.key : s.key + '.')) return s;
+      return undefined;
     };
     const identity = new Map();
     c.idKeys = {
@@ -1193,7 +1218,7 @@ const __complete = (() => {
       const ws = id ? [this.get(id)].filter(Boolean) : this.wires.values();
       for (const w of ws) {
         for (const s of c.slots.get(w.type)?.values() || []) {
-          if (s.required && !w.attrs[s.key]) {
+          if (s.required && !s.prefix && !w.attrs[s.key]) {
             out.push({ id: w.id, type: w.type, key: s.key, ask: s.ask ? str(s.ask) : undefined });
           }
         }
@@ -1462,13 +1487,20 @@ const __revise = (() => {
           if (this.wires.has(x)) continue;
           for (const r of this.refs.get(x) || []) {
             const w = this.wires.get(r);
-            if (!w) continue;
+            if (!w || !this._dependsOn(w, x)) continue;
             if (w.meta.told) next.add(r); else res._touched.add(r);
           }
         }
         targets = [...next];
       }
       return gone;
+    },
+
+    /** Does the wire refer to id through a key that is checked (not a bookkeeping key of an open namespace)? */
+    _dependsOn(w, id) {
+      const c = this._compiled();
+      const ref = '$' + id;
+      return Object.keys(w.attrs).some((k) => w.attrs[k].includes(ref) && (c.slotOf(w.type, k) || !c.isOpenKey(k)));
     },
 
     /** Reference implementation of retract: rebuild the world from the log without the wire. */
@@ -1479,7 +1511,9 @@ const __revise = (() => {
         grew = false;
         for (const w of told) {
           if (gone.has(w.id)) continue;
-          const refs = Object.values(w.attrs).flat().filter((v) => v[0] === '$').map((v) => v.slice(1));
+          const c = this._compiled();
+          const refs = Object.keys(w.attrs).filter((k) => !c.isOpenKey(k) || c.slotOf(w.type, c.shortKey(w.type, k)))
+            .flatMap((k) => w.attrs[k]).filter((v) => v[0] === '$').map((v) => v.slice(1));
           if (refs.some((r) => gone.has(r))) { gone.add(w.id); grew = true; }
         }
       }
@@ -1580,7 +1614,7 @@ const __revise = (() => {
           if (this.wires.has(x)) continue;
           for (const r of this.refs.get(x) || []) {
             const w = this.wires.get(r);
-            if (!w) continue;
+            if (!w || !this._dependsOn(w, x)) continue;
             if (w.meta.told) orphans.push(r); else res._touched.add(r);
           }
         }
@@ -1618,6 +1652,266 @@ const __revise = (() => {
     return out;
   };
   return { revision };
+})();
+
+// ---- src/query.mjs
+const __query = (() => {
+  const { parse } = __parser;
+  const { EMPTY, walk } = __unify;
+  // Queries with a status, answers as wires, producers and actions. Mixed into World.prototype.
+  //
+  //   world.query({ type, seek, where, about, mode })   or a question wire of the same shape
+  //     -> { status, value | values, from, via, missing, alternatives, wires }
+  //   statuses: supported (one value), conflicting (several, listed), missing (none; names
+  //   the open key and its question), refused (the thing asked about cannot exist; the
+  //   violations say why), no / unknown (existence, for a complete / an open type)
+  //
+  // When no wire matches a question whose constraints are all values, the world supposes
+  // one: a wire of that type with those keys is told in a scratch transaction, the rules
+  // run, the answer is read, and everything is undone. So "what is the change from 20 for
+  // a ball?" is answered by the same rules that would complete a told purchase.
+  //
+  // A function registered with the world can be declared as a producer of a key
+  // (core.producer), tried when no wire has the value, or as an action (core.action), run
+  // inside one transaction by world.act().
+  //
+  // The wire types and key names used for questions, answers and requests are a vocabulary
+  // that the host can change: new World({ vocabulary: { status: 'core.status', ... } }).
+
+
+  const VOCABULARY = {
+    question: 'core.question', // wire type of a question
+    answer: 'core.answer',     // wire type of a recorded answer
+    request: 'core.request',   // wire type of a request for an action
+    type: 'type', seek: 'seek', about: 'about', mode: 'mode',
+    where: 'where.',           // prefix of the constraint keys of a question
+    action: 'action', arg: 'arg.', // the action name and the prefix of its arguments
+    to: 'to', value: 'value', status: 'status', via: 'core.via', from: 'core.from',
+  };
+  const first = (w, k) => w.attrs[k]?.[0];
+
+  const querying = {
+    _vocab() { return this._v || (this._v = { ...VOCABULARY, ...this.options.vocabulary }); },
+
+    /** A question as plain data, from an object, a wire, the id of a told wire, or SOP Lang text. */
+    _question(q) {
+      const v = this._vocab();
+      let w = q;
+      if (typeof q === 'string') w = this.get(q) || parse(q)[0];
+      if (!w || typeof w !== 'object') throw new Error('query: expected a question');
+      if (!w.attrs) return { mode: 'value', where: {}, ...w, about: w.about ? String(w.about).replace(/^\$/, '') : undefined };
+      const where = {};
+      for (const k of Object.keys(w.attrs)) if (k.startsWith(v.where)) where[k.slice(v.where.length)] = w.attrs[k][0];
+      const about = first(w, v.about);
+      return { id: this.has(w.id) ? this.resolve(w.id) : undefined, type: first(w, v.type), seek: first(w, v.seek), where, about: about ? about.replace(/^\$/, '') : undefined, mode: first(w, v.mode) || 'value' };
+    },
+
+    /** What a registered function sees of the world. */
+    _context(extra = {}) {
+      const world = this;
+      return {
+        world,
+        find: (type, where = {}) => world._matching({ type, where }),
+        val: (wire, key) => (typeof wire === 'string' ? world.get(wire.replace(/^\$/, '')) : wire)?.attrs[key]?.[0],
+        vals: (wire, key) => (typeof wire === 'string' ? world.get(wire.replace(/^\$/, '')) : wire)?.attrs[key] || [],
+        ...extra,
+      };
+    },
+
+    /** The wires a question is about: the one it names, or those of its type that meet the constraints. */
+    _matching({ type, where = {}, about }) {
+      if (about) { const w = this.get(about); return w ? [w] : []; }
+      if (!type) return [];
+      const c = this._compiled();
+      const attrs = {};
+      for (const k of Object.keys(where)) attrs[c.shortKey(type, k)] = [this._norm(String(where[k]))];
+      const seen = new Set();
+      const out = [];
+      for (const s of this._matchAll([{ id: 'q', type, attrs, pattern: true }], 0, EMPTY)) {
+        const id = walk('?q', s);
+        if (!seen.has(id)) { seen.add(id); out.push(this.wires.get(id)); }
+      }
+      return out;
+    },
+
+    /**
+     * Answer a question. Changes nothing unless { record: true }, which writes an answer
+     * wire (and the question wire, if it was not one already) with status and provenance.
+     */
+    query(q, { record = false, suppose = true } = {}) {
+      const question = this._question(q);
+      const c = this._compiled();
+      const { seek, mode } = question;
+      const wires = this._matching(question);
+      const type = question.type || wires[0]?.type;
+      const key = seek && type ? c.shortKey(type, seek) : seek;
+      const slot = key && type ? c.slotOf(type, key) : undefined;
+      const ask = slot?.ask ? slot.ask.replace(/^"|"$/g, '') : undefined;
+      let r;
+
+      if (mode === 'count') {
+        r = { status: 'supported', value: String(key ? wires.filter((w) => w.attrs[key]).length : wires.length), from: wires.map((w) => w.id) };
+      } else if (mode === 'exists') {
+        const hits = key ? wires.filter((w) => w.attrs[key]) : wires;
+        if (hits.length) r = { status: 'supported', value: 'yes', from: hits.map((w) => w.id) };
+        else r = { status: type && c.lineage(type).some((t) => c.complete.has(t)) ? 'no' : 'unknown', from: [] };
+      } else if (!key) {
+        throw new Error('query: a question needs seek= unless its mode is exists or count');
+      } else {
+        // every value some wire has, with where it came from; then what a producer computes
+        const found = new Map(); // value -> { from, via }
+        const lacking = [];
+        const note = (value, from, via) => {
+          const e = found.get(value) || found.set(value, { from: [], via: [] }).get(value);
+          for (const x of from) if (!e.from.includes(x)) e.from.push(x);
+          if (via && !e.via.includes(via)) e.via.push(via);
+        };
+        for (const w of wires) {
+          const vals = w.attrs[key];
+          if (!vals) { lacking.push(w); continue; }
+          for (const value of vals) {
+            const fill = (w.meta.fills || []).find((f) => f.key === key && f.value === value);
+            note(value, [w.id, ...(fill?.from || [])], fill ? fill.via : w.meta.via);
+          }
+        }
+        // nothing matches: suppose a wire of that type with the given keys and let the rules work
+        let refused = null;
+        const ground = Object.values(question.where).every((x) => !String(x).startsWith('?'));
+        if (suppose && !wires.length && type && !question.about && ground) {
+          this._trial(() => {
+            const attrs = {};
+            for (const k of Object.keys(question.where)) attrs[c.shortKey(type, k)] = [String(question.where[k])];
+            const id = this._freshId('suppose');
+            const res = this._tell([{ id, type, attrs, pattern: false }], { strict: false });
+            if (!res.ok) { refused = res.violations.map((x) => ({ ...x, wires: (x.wires || []).filter((y) => y !== id), support: (x.support || []).filter((y) => y !== id) })); return; }
+            // the value may be filled on the supposed wire or sit on a wire a rule derived from it
+            for (const w of this._matching(question)) {
+              for (const value of w.attrs[key] || []) {
+                const fill = (w.meta.fills || []).find((f) => f.key === key && f.value === value);
+                const from = fill ? fill.from || [] : w.meta.from || [];
+                note(value, from.filter((x) => x !== id && this.wires.get(x)?.meta.told), fill ? fill.via : w.meta.via);
+              }
+            }
+          });
+        }
+        const producers = type ? c.lineage(type).flatMap((t) => c.producers.get(`${t}.${key}`) || []) : [];
+        if (!refused && !found.size && producers.length && (lacking.length || !wires.length)) {
+          for (const w of lacking.length ? lacking : [undefined]) {
+            for (const p of producers) {
+              const out = this.fns[p.fn](this._context({ wire: w, type, key, where: question.where }));
+              if (out === undefined || out === null) continue;
+              for (const value of Array.isArray(out) ? out : [out]) note(String(value), w ? [w.id] : [], p.id);
+              if (w) lacking.splice(lacking.indexOf(w), 1);
+              break;
+            }
+          }
+        }
+        const values = [...found.keys()];
+        const from = (list) => [...new Set(list.flatMap((value) => found.get(value).from))];
+        const via = (list) => [...new Set(list.flatMap((value) => found.get(value).via))];
+        if (refused) {
+          r = { status: 'refused', violations: refused, from: [...new Set(refused.flatMap((x) => x.support || []))] };
+        } else if (mode === 'list' && values.length) {
+          r = { status: 'supported', values, from: from(values), via: via(values) };
+        } else if (values.length === 1) {
+          r = { status: 'supported', value: values[0], from: from(values), via: via(values) };
+        } else if (values.length > 1) {
+          r = { status: 'conflicting', alternatives: values.map((value) => ({ value, from: found.get(value).from })), from: from(values), via: via(values) };
+        } else {
+          const missing = lacking.length ? lacking.slice(0, 20).map((w) => ({ id: w.id, type: w.type, key, ask })) : [{ type, key, ask }];
+          r = { status: 'missing', missing, from: [] };
+        }
+      }
+      r.wires = wires.map((w) => w.id);
+      if (record) r.answer = this._record(q, question, r);
+      return r;
+    },
+
+    /** Write the answer (and the question, when it is not yet a wire of the world) as wires. */
+    _record(q, question, r) {
+      const v = this._vocab();
+      const mark = this._begin();
+      const told = [];
+      let qid = question.id;
+      if (!qid) {
+        qid = this._freshId('q');
+        const attrs = {};
+        if (question.type) attrs[v.type] = [question.type];
+        if (question.seek) attrs[v.seek] = [question.seek];
+        if (question.about) attrs[v.about] = ['$' + question.about];
+        if (question.mode && question.mode !== 'value') attrs[v.mode] = [question.mode];
+        for (const k of Object.keys(question.where || {})) attrs[v.where + k] = [String(question.where[k])];
+        told.push({ id: qid, type: v.question, attrs, pattern: false });
+      }
+      const attrs = { [v.to]: ['$' + qid], [v.status]: [r.status] };
+      const values = r.value !== undefined ? [r.value] : r.values || (r.alternatives || []).map((a) => a.value);
+      if (values.length) attrs[v.value] = values;
+      const via = (r.via || []).filter((x) => this.matrix.has(x));
+      if (via.length) attrs[v.via] = via.map((x) => '$' + x);
+      const from = (r.from || []).filter((x) => this.has(x));
+      if (from.length) attrs[v.from] = from.map((x) => '$' + x);
+      const aid = this._freshId('a');
+      told.push({ id: aid, type: v.answer, attrs, pattern: false });
+      const res = this._tell(told, { strict: false });
+      if (!res.ok) { this._rollback(mark); return { ok: false, violations: res.violations }; }
+      this._commit();
+      return { ok: true, id: aid, question: qid };
+    },
+
+    _freshId(prefix) {
+      let n = this.seq + 1;
+      while (this.wires.has(`${prefix}${n}`) || this.alias.has(`${prefix}${n}`)) n++;
+      return `${prefix}${n}`;
+    },
+
+    /**
+     * Carry out an action: { action, args } or a request wire (action=<name> arg.<k>=<v>).
+     * The registered function runs inside one transaction with a context that can tell, fill,
+     * replace and retract. If it throws, returns { ok: false }, or any change is refused, the
+     * world is left as it was. A required argument that is missing is reported, not guessed.
+     */
+    act(request) {
+      const v = this._vocab();
+      let name, args = {}, id;
+      let w = request;
+      if (typeof request === 'string') w = this.get(request) || parse(request)[0];
+      if (w?.attrs) {
+        name = first(w, v.action);
+        id = this.has(w.id) ? this.resolve(w.id) : undefined;
+        for (const k of Object.keys(w.attrs)) if (k.startsWith(v.arg)) args[k.slice(v.arg.length)] = w.attrs[k].length === 1 ? w.attrs[k][0] : [...w.attrs[k]];
+      } else ({ action: name, args = {} } = request || {});
+      const action = this._compiled().actions.get(name);
+      if (!action) return { ok: false, status: 'unsupported', violations: [{ kind: 'unknown-action', why: `no action named "${name}"` }] };
+      const lacking = action.required.filter((k) => args[k] === undefined);
+      if (lacking.length) {
+        return { ok: false, status: 'missing', missing: lacking.map((k) => ({ action: name, key: k, ask: (first({ attrs: action.ask }, `ask.${k}`) || '').replace(/^"|"$/g, '') || undefined })), violations: [] };
+      }
+      const mark = this._begin();
+      const violations = [];
+      const guard = (r) => { if (r && r.ok === false) { violations.push(...(r.violations || [])); throw REFUSED; } return r; };
+      const ctx = this._context({
+        args, request: id,
+        tell: (input) => guard(this.tell(input)),
+        fill: (wid, key, value) => guard(this.fill(wid, key, value)),
+        replace: (wid, input) => guard(this.replace(wid, input)),
+        retract: (wid) => guard(this.retract(wid)),
+      });
+      let out;
+      try {
+        out = this.fns[action.fn](ctx, args);
+        if (out && out.ok === false) { violations.push({ kind: 'refused', why: out.why || out.reason, reason: out.reason }); throw REFUSED; }
+      } catch (e) {
+        this._rollback(mark);
+        if (e !== REFUSED) violations.push({ kind: 'error', why: e.message });
+        return { ok: false, status: e === REFUSED ? 'refused' : 'error', violations };
+      }
+      this._commit();
+      return { ok: true, status: 'done', value: out === undefined || typeof out === 'object' ? undefined : String(out), result: out };
+    },
+  };
+
+  const REFUSED = {};
+  return { querying };
 })();
 
 // ---- src/abduce.mjs
@@ -1780,6 +2074,7 @@ const __world = (() => {
   const { compileMatrix, localize, prefixModule, fitsKind, readMap, SCHEMA_TYPES, LINKS } = __matrix;
   const { completion } = __complete;
   const { revision } = __revise;
+  const { querying } = __query;
   const { abduce } = __abduce;
   // World: fact wires kept consistent with a consistency matrix.
   //
@@ -1807,9 +2102,9 @@ const __world = (() => {
     constructor(options = {}) {
       const {
         fns = {}, library = {}, maxDepth = 12, maxSteps = 50000,
-        lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(),
+        lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {},
       } = options;
-      this.options = { fns, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver };
+      this.options = { fns, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary };
       this.fns = { ...builtins, ...fns };
       this.wires = new Map();    // id -> fact wire
       this.byType = new Map();   // type -> Set<id>
@@ -2501,12 +2796,12 @@ const __world = (() => {
 
     /** Add key/values to an existing wire; a different value on a single-valued key is a conflict. */
     _merge(w, attrs, prov, res) {
-      const slots = this._compiled().slots.get(w.type);
+      const c = this._compiled();
       for (const k of Object.keys(attrs)) {
         for (const v of attrs[k]) {
           const have = w.attrs[k];
           if (have && have.includes(v)) continue;
-          if (have && !slots?.get(k)?.many) {
+          if (have && !c.slotOf(w.type, k)?.many) {
             res.violations.push({ kind: 'conflict', id: w.id, key: k, have: have[0], want: v, via: prov.via, wires: [w.id, ...prov.from] });
             continue;
           }
@@ -2573,9 +2868,8 @@ const __world = (() => {
       for (const id of res._touched) {
         const w = this.wires.get(id);
         if (!w) continue;
-        const slots = c.slots.get(w.type);
         for (const k of Object.keys(w.attrs)) {
-          const s = slots?.get(k);
+          const s = c.slotOf(w.type, k);
           if (!s) {
             if (c.closed.has(w.type) && !c.isOpenKey(k)) res.violations.push({ kind: 'unknown-key', id, key: k });
           } else {
@@ -2600,6 +2894,8 @@ const __world = (() => {
               }
             }
           }
+          // bookkeeping keys of an open namespace may point outside the world (a source, a pattern)
+          if (!s && c.isOpenKey(k)) continue;
           for (const v of w.attrs[k]) {
             if (v[0] === '$' && !this.wires.has(v.slice(1)) && !this.matrix.has(v.slice(1))) {
               res.violations.push({ kind: 'dangling-ref', id, key: k, value: v });
@@ -2631,7 +2927,7 @@ const __world = (() => {
     }
   }
 
-  Object.assign(World.prototype, completion, revision);
+  Object.assign(World.prototype, completion, revision, querying);
   return { World };
 })();
 

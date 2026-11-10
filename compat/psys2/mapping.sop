@@ -5,6 +5,7 @@
 @psys2.map.key core.schema.map from=core.key
     owner=id.prefix key=id.suffix
     value=value many=card:many required=required ask=ask default=default
+    prefix=dynamic          # dynamic=true: any key <key>.<anything> (where.owner, arg.count)
 
 # A type declaration: the id is the type name; a type that names no parent extends core.thing.
 @psys2.map.type core.schema.map from=core.type as=type

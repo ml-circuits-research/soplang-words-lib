@@ -145,3 +145,81 @@ Deviations:
   (prefixes such as `where.<key>` and `arg.<key>`). The general form will be a slot
   whose key is a prefix.
 - Open questions: Q3 (`core.test` name clash), Q4, Q5, Q6, Q7.
+
+## G6 — queries with a status, answers as wires — done
+
+Commit: `git log --grep '^G6:'`. New file `src/query.mjs`; SPEC 4.10.
+
+- **`world.query(question, { record, suppose })`**. The question is an object
+  `{ type, seek, where, about, mode }`, a question wire of that shape, the `about=` /
+  `seek=` wires `next()` produces, a wire id, or SOP Lang text. Returns
+  `{ status, value | values, from, via, missing, alternatives, violations, wires }`.
+  Statuses: `supported`, `conflicting` (alternatives listed with their sources),
+  `missing` (names the open key and its `ask`), `no` / `unknown` for existence,
+  `refused` (Q8). Modes: `value`, `list`, `count`, `exists`. `budget` comes with G7.
+- **Resolution order**: lookup, supposition, producers, missing.
+  - *Supposition* (not in the task text, added because the real questions need it): when
+    no wire matches and the constraints are all values, a wire of that type with those
+    keys is told in a scratch transaction, the rules run, the value is read, everything
+    is undone. A question such as `type=line seek=total where.item=bolt where.qty=8` is
+    then answered by the matrix rules, with no function. This is the shape of most
+    questions in the PSys2 cases (`type=kids.shop.change seek=amount where.paid=10 ...`).
+  - *Producers*: `core.producer of= key= fn=` declares a registered function that
+    computes a key when no wire has it.
+- **`{ record: true }`** writes the answer as a wire (and the question, if it was not
+  one), with status, value, `core.via` and `core.from`.
+- **Actions**: `core.action name= fn= required= ask.<arg>=`; `world.act({ action, args })`
+  or a request wire runs the function inside one transaction. Outcomes `done`,
+  `missing` (required arguments, with their questions), `refused`, `error`,
+  `unsupported`; the world is unchanged in all but `done`.
+- **Vocabulary** option: the wire types and key names for questions, answers and
+  requests are defaults a host can replace.
+- **Prefix slots** (`prefix=true`): one slot for every key `<key>.<anything>`.
+- `complete=true` on a type (Q9); the kind `any`.
+- Found with the PSys2 cases and fixed as a general rule: a reference under a
+  bookkeeping key of an open namespace (`core.via=$pattern`, `core.in=$world`) may
+  point outside the world; it is neither checked nor a dependency for `retract`.
+  Before this, 0 of the 588 PSys2 turns were accepted.
+
+Commands and numbers:
+
+```
+node tools/build.mjs
+npm test
+node compat/psys2/cases.test.mjs     # prints the per-world lines
+git grep -i psys2 src/ | wc -l
+npm run examples
+npm run test:browser
+```
+
+| Command | Result |
+| --- | --- |
+| `npm test`, sources | 113 tests: 113 pass, 0 fail, 0 skipped |
+| `npm test`, built file | 113 tests: 113 pass, 0 fail, 0 skipped |
+| `git grep -i psys2 src/ \| wc -l` | 0 |
+| `npm run examples` | exit 0 |
+| `npm run test:browser` | all browser checks passed |
+
+New tests: 11 in `test/query.test.mjs` (a warehouse, `examples/warehouse.mjs`), 3 in
+`compat/psys2/cases.test.mjs`, 1 assertion block added to `test/schema.test.mjs`.
+
+Compatibility (`node compat/psys2/cases.test.mjs`): the non-answer wires of every PSys2
+turn, told to a world that holds the legends (one world per session):
+
+| World | Turns accepted |
+| --- | --- |
+| kids.shop | 146 of 146 |
+| kids.tasks | 227 of 227 |
+| kids.arith | 211 of 215 |
+
+The four refused turns (`t.arith.n15`, `n40`, `n41`, `n42`) refer to an entity that is
+not a wire of the session: `$e.user` in three, `$e.tom` asked about before being
+mentioned in one (Q10). This checks that the wires are accepted, not yet that the
+answers are right: that is G8.
+
+Deviations:
+
+- A sixth status, `refused` (Q8). `complete=true` instead of `closed=true` for `no` (Q9).
+- `next()` still produces questions with `about=` and `seek=` only; `query` accepts them.
+- Not measured: the cost of supposition on a large world (one scratch `tell` per query).
+

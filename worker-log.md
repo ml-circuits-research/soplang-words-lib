@@ -1034,7 +1034,10 @@ Limits: no aggregates in an action's calcs; `set` writes one value per key.
 | `node compat/psys2/run.mjs` | kids.shop 147/147, kids.arith 212/217, kids.tasks 231/232 |
 | `git grep -i psys2 src/ \| wc -l` | 0 |
 
-- Version 0.5.0 in `package.json`, `src/index.mjs`, the pages and SPEC; tag `v0.5.0`.
+- Version 0.5.0 in `package.json`, `src/index.mjs`, the pages and SPEC. The tag `v0.5.0` exists
+  locally on commit 93a5c5d but could not be pushed from this session (`git push origin
+  v0.5.0`: HTTP 403; branch pushes work, tag pushes are not permitted here). It has to
+  be created by someone with that right: `git tag v0.5.0 93a5c5d && git push origin v0.5.0`.
 - `CHANGELOG.md`: new, changed (what a host may have to adapt), fixed.
 - Old pages: "seven wire types" is now "the core wire types" with a pointer to the page
   for the rest; the API page lists the calls added since 0.4; the roadmap page has a

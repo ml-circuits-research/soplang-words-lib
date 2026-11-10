@@ -77,6 +77,8 @@ export async function run(name) {
     const why = [];
     for (const wire of parse(c.wires)) {
       if (wire.type === 'core.answer') continue;
+      // a wire without a source is not from the dialogue: PSys2's own operation wrote it. Here the action must.
+      if (!wire.attrs['core.source']) continue;
       const asked = wire.type === 'core.question' || wire.type === 'core.request';
       let got;
       try {
@@ -86,6 +88,8 @@ export async function run(name) {
           continue;
         }
         got = wire.type === 'core.question' ? w.query(wire) : w.act(wire);
+        // an action answers with an object: { status?, value?, values? }; no status means it was done
+        if (got.status === 'done' && got.result && typeof got.result === 'object') got = { status: 'supported', ...got.result };
       } catch (e) {
         why.push(`${wire.id}: ${e.message}`);
         continue;

@@ -585,7 +585,7 @@ Deviations and limits:
   settled by a later pattern, a calc, or the slot's domain. The existing abduction
   tests pass unchanged.
 
-## G8 — compatibility suite — in progress (1 of 3 worlds)
+## G8 — compatibility suite — done
 
 `node compat/psys2/run.mjs kids.shop --failures`: 147 of 147 cases pass (100.0%), 145
 answers compared; matrix 69 lines, no `fns.mjs`, against 159 lines of `ops.mjs` (148
@@ -620,4 +620,49 @@ operator". The ten failures, none hidden:
   decimals (3.33); the library keeps 12 digits (3.33333333333).
 - t.arith.n37: a tie for "who has the most". PSys2 `ambiguous`; `argmax` picks the first.
 
-The full entry (third world, demonstrations) follows when G8 is done.
+Third world and summary. Commands: `npm test` (162 pass, 0 fail on sources and on the
+built file), `node compat/psys2/run.mjs --json`, `SOPWORLD_BUNDLE=1 node
+compat/psys2/run.mjs` (same pass counts on the built file), `node compat/psys2/demo.mjs`,
+`git grep -i psys2 src/ | wc -l` (0), `node tools/scan-loops.mjs src` (clean),
+`npm run examples` (exit 0), `npm run test:browser` (all passed).
+
+| World | Cases passed | Answers compared | Matrix + fns lines | `ops.mjs` lines (without blanks and comments) | ms per case |
+| --- | --- | --- | --- | --- | --- |
+| kids.shop | 147 of 147 (100.0%) | 145 | 71 + 0 = 71 | 159 (148) | 5.4 |
+| kids.arith | 207 of 217 (95.4%) | 211 | 114 + 0 = 114 | 237 (217) | 3.6 |
+| kids.tasks | 231 of 232 (99.6%) | 449 | 18 + 86 = 104 | 231 (192) | 1.7 |
+
+My line counts leave out blank lines and comments. Against the task's figures (159, 237,
+231, which are whole files) all three are at most half. Counted the same way on both
+sides, the shop is (71 against 148); arith (114 against 217) and tasks (104 against
+192) are a little over half.
+
+What the tasks world is, said plainly: its logic is text handling (list names, "milk,
+eggs and bread", matching "the cat" to "feed the cat"), which rules do not express, so
+it is 86 lines of actions in `fns.mjs` and 18 lines of matrix. What the library takes
+over there: the entries are wires and the only state (PSys2 keeps a second copy in
+`ctx.state` and mirrors it), every action is one transaction, removing is `retract`,
+`progress` is a declared state, a missing argument comes back as a question. The one
+failure, t.tasks.n50 ("Hello"), is an operation of another world (`chat.greet` from
+kids.common), not rebuilt.
+
+Conventions of the runner, all in `compat/psys2/run.mjs`: a wire without `core.source`
+is PSys2's own output for the turn and is not told (the action must produce it);
+`refused` counts as PSys2's `conflicting`; a reference is `$id` in a wire and `id` in
+PSys2's envelope; an action answers with an object `{ status?, value?, values? }`;
+`@e.user core.agent` is told first. The `$e.tom` case (t.arith.n41) passes: the answer
+is `missing` on both sides.
+
+Known difference that no case tests: PSys2 prices a purchase at the price in force when
+it was made; the matrix prices it at the current price of the item.
+
+Demonstrations (`node compat/psys2/demo.mjs`, output copied):
+1. Missing argument: `act tasks.add` without an item gives `missing` with
+   `{"action":"tasks.add","key":"item","ask":"What shall I put on the list?"}`.
+2. Default withdrawn: "I buy a ball" assumes `count=1`, money left 15 of 20; "three of
+   them" (`fill`) replaces the assumption, money left 5.
+3. Retract as undo: retracting the purchase removes 5 wires (the purchase, its part,
+   line, cost and spending); money left 20 again.
+4. Explain: the cost of a purchase is traced through `shop.r.cost` and `shop.r.part3`
+   down to the told purchase wire.
+5. Abduction: "I got 5 lei back for a book. What did I pay?" gives `c.paid=17`.

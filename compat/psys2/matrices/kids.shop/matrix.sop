@@ -59,6 +59,10 @@
 @shop.e.in core.effect on=kids.shop.income fluent=$shop.f.money op=add amount=count where.core.in=core.in
 @shop.e.out core.effect on=kids.shop.expense fluent=$shop.f.money op=sub amount=count where.core.in=core.in
 @shop.e.buy core.effect on=shop.spend fluent=$shop.f.money op=sub amount=amount where.core.in=core.in
+# an item bought without a count counts once (a default: a later statement replaces it)
+@shop.k.count core.slot of=kids.shop.purchase key=count kind=number required=true default=1
+# what was paid may be assumed, to ask "what must I pay to get this change?"
+@shop.ab.paid core.abducible of=kids.shop.change key=paid
 # a purchase spends what its basket costs, at the place in the sequence where it was made
 ?shop.buy kids.shop.purchase core.in=?in core.seq=?at
 ?shop.buy.c shop.cost of=$shop.buy total=?s

@@ -25,8 +25,8 @@ export function dimacsProcess({ command, args = [], name = command, lib = solver
   return lib.dimacs({ name, exec: (cnf) => run(command, args, cnf) });
 }
 
-/** True when the command can be started. */
+/** True when the command starts and exits with status 0 (a missing program or module gives false). */
 export function available(command, args = ['--version']) {
   const r = spawnSync(command, args, { encoding: 'utf8' });
-  return !r.error && r.status !== null;
+  return !r.error && r.status === 0;
 }

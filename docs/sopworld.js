@@ -202,6 +202,55 @@ const __builtins = (() => {
     return sign + int + (frac ? '.' + frac : '') + (m[4] || '');
   }
 
+  // ---- exact arithmetic for relations: a number is a fraction of two BigInts
+  const RAT = /^(-?)(\d*)(?:\.(\d*))?(?:e([-+]?\d+))?([A-Za-zµ°%][A-Za-z0-9µ°%/*^.]*)?$/;
+  const gcd = (a, b) => { while (b) [a, b] = [b, a % b]; return a < 0n ? -a : a; }; // bounded: Euclid
+  const reduce = (n, d) => { const g = gcd(n, d) || 1n; return d < 0n ? { n: -n / g, d: -d / g } : { n: n / g, d: d / g }; };
+  /** { n, d, unit } for a decimal with an optional unit, or null. */
+  function rational(v) {
+    const m = RAT.exec(String(v));
+    if (!m || (!m[2] && !m[3])) return null;
+    const frac = m[3] || '';
+    let n = BigInt((m[2] || '0') + frac), d = 10n ** BigInt(frac.length);
+    const e = Number(m[4] || 0);
+    if (e > 0) n *= 10n ** BigInt(e); else if (e < 0) d *= 10n ** BigInt(-e);
+    if (m[1]) n = -n;
+    return { ...reduce(n, d), unit: m[5] || '' };
+  }
+  /** A fraction as text: exact when the decimal ends, else 12 significant digits. */
+  function showRational({ n, d }, unit) {
+    let rest = d;
+    while (rest % 2n === 0n) rest /= 2n; // bounded: the factors of the denominator
+    while (rest % 5n === 0n) rest /= 5n; // bounded: the factors of the denominator
+    if (rest !== 1n) return String(Number((Number(n) / Number(d)).toPrecision(12))) + unit;
+    const neg = n < 0n, a = neg ? -n : n;
+    let digits = 0, scaled = a;
+    while (scaled % d !== 0n) { scaled *= 10n; digits++; } // bounded: the decimal ends
+    const whole = String(scaled / d).padStart(digits + 1, '0');
+    const text = digits ? `${whole.slice(0, -digits)}.${whole.slice(-digits)}` : whole;
+    return (neg ? '-' : '') + text + unit;
+  }
+  /**
+   * One unknown of a linear relation: linsolve(k, c, c1, x1, c2, x2, ...) is the x with
+   * c*x + c1*x1 + c2*x2 + ... = k. Exact; the values must have one unit.
+   */
+  function linsolve(args, world) {
+    const k = rational(args[0]), c = rational(args[1]);
+    if (!k || !c || c.n === 0n) return undefined;
+    let n = k.n, d = k.d, unit = k.unit;
+    for (let i = 2; i + 1 < args.length; i += 2) { // bounded: the terms of one relation
+      const cj = rational(args[i]), xj = rational(args[i + 1]);
+      if (!cj || !xj) return undefined;
+      if (xj.unit && unit && xj.unit !== unit) { world?.cannot?.(`the units differ (${unit}, ${xj.unit})`); return undefined; }
+      unit = unit || xj.unit;
+      // n/d - cj*xj
+      const tn = cj.n * xj.n, td = cj.d * xj.d;
+      n = n * td - tn * d;
+      d *= td;
+    }
+    return showRational(reduce(n * c.d, d * c.n), unit);
+  }
+
   const show = (n, unit) => (Number.isFinite(n) ? String(Number(n.toPrecision(12))) + unit : undefined);
 
   // A function that cannot give a result returns nothing, and may tell the world why
@@ -339,6 +388,8 @@ const __builtins = (() => {
     return best < 0 ? undefined : { value: key, pick: picks[best] };
   };
   /** name -> (values, picks, matches) => result, or undefined when there is nothing to say. */
+  builtins.linsolve = linsolve;
+
   const aggregates = {
     count: (values, picks, n) => String(n),
     sum: (values) => { if (!values.length) return '0'; const qs = numbers(values); return qs ? show(qs.reduce((t, q) => t + q.n, 0), qs[0].unit) : undefined; },
@@ -348,7 +399,7 @@ const __builtins = (() => {
     argmax: (values, picks) => extreme(values, picks, (a, b) => a > b)?.pick,
     collect: (values) => (values.length ? [...new Set(values)] : undefined),
   };
-  return { quantity, canonical, clock, date, builtins, aggregates };
+  return { quantity, canonical, rational, clock, date, builtins, aggregates };
 })();
 
 // ---- src/solve.mjs
@@ -1140,7 +1191,7 @@ const __matrix = (() => {
   const SCHEMA_TYPES = new Set([
     'core.slot', 'core.type', 'core.abducible', 'core.precision', 'core.tier', 'core.rule', 'core.deny', 'core.calc', 'core.check', 'core.use',
     'core.schema.map', 'core.namespace', 'core.producer', 'core.action',
-    'core.sequence', 'core.fluent', 'core.effect',
+    'core.sequence', 'core.fluent', 'core.effect', 'core.relation',
   ]);
 
   /**
@@ -1494,6 +1545,7 @@ const __matrix = (() => {
     for (const w of world.matrix.values()) {
       if (w.type === 'core.rule' || w.type === 'core.deny') buildRule(world, w, c);
     }
+    buildRelations(world, c);
     c.selRules = [];
     for (const r of c.rules) {
       if (r.not.length) {
@@ -1548,17 +1600,84 @@ const __matrix = (() => {
     return c;
   }
 
-  function buildRule(world, w, c) {
+  /**
+   * Relations that solve in more than one direction. A linear relation over cells,
+   *
+   *   ?p payment paid=?paid total=?total change=?chg
+   *   @r core.relation when=$p sum=?paid sub=?total sub=?chg equals=0
+   *
+   * becomes one rule per cell: when the others are known, this one is computed and put on
+   * its wire (core.on). A cell that already has another value is a conflict; several
+   * unknown cells leave the relation waiting. Everything else (provenance, tiers,
+   * withdrawal, budgets) is what rules already have. A core.calc with fn=add or fn=sub
+   * and relation=true is read as the same kind of relation over the cells of its rule.
+   */
+  function buildRelations(world, c) {
+    const isVar1 = (v) => typeof v === 'string' && v[0] === '?';
+    const term = (v, sign) => { // "?x", "2*?x", "0.5*?x", or a constant
+      const m = /^(-?[\d.]+)\*(\?.+)$/.exec(v);
+      const coef = m ? m[1] : '1';
+      return { c: sign < 0 ? (coef[0] === '-' ? coef.slice(1) : '-' + coef) : coef, v: m ? m[2] : v };
+    };
+    const make = (rid, patternIds, terms, k, skip) => {
+      const pats = patternIds.map((id) => world.matrix.get(id)).filter(Boolean);
+      if (pats.length !== patternIds.length) { c.errors.push(`${rid}: when= must name wires of the matrix`); return; }
+      terms.forEach((t, i) => {
+        if (!isVar1(t.v) || t.v === skip) return;
+        const cells = pats.flatMap((p) => Object.keys(p.attrs).filter((key) => p.attrs[key].includes(t.v)).map((key) => ({ p, key })));
+        if (!cells.length) { c.errors.push(`${rid}: ${t.v} is not the value of a key in its patterns`); return; }
+        if (cells.length > 1) return; // the variable joins two wires: it is read, not solved for
+        const { p: home, key } = cells[0];
+        const name = (id) => `${rid}.${i}.${id}`;
+        const extra = new Map();
+        for (const p of pats) {
+          const attrs = {};
+          for (const k2 of Object.keys(p.attrs)) {
+            const vals = p.attrs[k2].filter((v) => !(p === home && k2 === key && v === t.v)).map((v) => (v[0] === '$' && patternIds.includes(v.slice(1)) ? '$' + name(v.slice(1)) : v));
+            if (vals.length) attrs[k2] = vals;
+          }
+          extra.set(name(p.id), { id: name(p.id), type: p.type, attrs, pattern: true });
+        }
+        const others = terms.filter((_, j) => j !== i).flatMap((o) => [o.c, o.v]);
+        extra.set(name('calc'), { id: name('calc'), type: 'core.calc', attrs: { out: [t.v], fn: ['linsolve'], args: [k, t.c, ...others] }, pattern: false });
+        extra.set(name('fill'), { id: name('fill'), type: home.type, attrs: { 'core.on': ['$' + name(home.id)], [key]: [t.v] }, pattern: false });
+        const rule = { id: `${rid}.${i}`, type: 'core.rule', attrs: { when: pats.map((p) => '$' + name(p.id)), with: ['$' + name('calc')], then: ['$' + name('fill')] }, pattern: false };
+        const before = c.rules.length;
+        buildRule(world, rule, c, extra);
+        if (c.rules.length > before) c.rules[c.rules.length - 1].relation = rid; // what it concludes is recorded as coming from the relation
+      });
+    };
+    for (const w of world.matrix.values()) {
+      if (w.type === 'core.relation') {
+        const terms = [...(w.attrs.sum || []).map((v) => term(v, 1)), ...(w.attrs.sub || []).map((v) => term(v, -1))];
+        if (!terms.length || !(w.attrs.when || []).length) { c.errors.push(`${w.id}: core.relation needs when= and sum= or sub= terms`); continue; }
+        make(w.id, w.attrs.when.map((v) => v.slice(1)), terms, first(w, 'equals') ?? '0', null);
+      } else if (w.type === 'core.rule') {
+        for (const ref of w.attrs.with || []) {
+          const calc = world.matrix.get(ref.slice(1));
+          if (!calc || !flag(calc, 'relation')) continue;
+          const fn = first(calc, 'fn'), out = first(calc, 'out'), args = calc.attrs.args || [];
+          if ((fn !== 'add' && fn !== 'sub') || !out) { c.errors.push(`${calc.id}: relation=true needs fn=add or fn=sub`); continue; }
+          // out = a0 (+|-) a1 (+|-) ...   <=>   a0 (+|-) a1 ... - out = 0
+          const terms = [...args.map((a, j) => term(a, j === 0 || fn === 'add' ? 1 : -1)), term(out, -1)];
+          make(calc.id, [...(w.attrs.when || []), ...(w.attrs.then || [])].map((v) => v.slice(1)), terms, '0', out);
+        }
+      }
+    }
+  }
+
+  function buildRule(world, w, c, extra) {
+    const find = (id) => extra?.get(id) || world.matrix.get(id);
     const locals = new Set();
     for (const k of LINKS) for (const v of w.attrs[k] || []) if (v[0] === '$') locals.add(v.slice(1));
     // the patterns an aggregate ranges over belong to the rule too
-    for (const v of w.attrs.with || []) for (const o of world.matrix.get(v.slice(1))?.attrs.over || []) if (o[0] === '$') locals.add(o.slice(1));
+    for (const v of w.attrs.with || []) for (const o of find(v.slice(1))?.attrs.over || []) if (o[0] === '$') locals.add(o.slice(1));
     const get = (k, from = w) => (from.attrs[k] || []).map((v) => {
-      const s = world.matrix.get(v.slice(1));
+      const s = find(v.slice(1));
       if (!s) { c.errors.push(`${w.id}: ${k}=${v} is not a wire of the matrix`); return null; }
       for (const x of Object.values(s.attrs).flat()) {
         const id = x.slice(1);
-        if (x[0] === '$' && x[1] !== '?' && !locals.has(id) && !world.wires.has(id) && !world.matrix.has(id)) {
+        if (x[0] === '$' && x[1] !== '?' && !locals.has(id) && !world.wires.has(id) && !world.matrix.has(id) && !extra?.has(id)) {
           c.errors.push(`${w.id}: ${s.id} refers to unknown wire ${x} (write ?${id} for a variable)`);
         }
       }
@@ -1577,7 +1696,7 @@ const __matrix = (() => {
     const fn = (x, kind) => {
       const name = first(x, 'fn');
       // with over= the calc is an aggregate over every match of those patterns
-      const over = x.attrs.over ? get('over', world.matrix.get(x.id) || x) : null;
+      const over = x.attrs.over ? get('over', find(x.id) || x) : null;
       if (over ? !aggregates[name] : !world.fns[name]) c.errors.push(`${w.id}: unknown ${over ? 'aggregate' : kind} function "${name}"`);
       return { fn: name, out: first(x, 'out'), args: x.attrs.args || [], over, pick: first(x, 'pick'), ties: first(x, 'ties') };
     };
@@ -4227,7 +4346,7 @@ const __world = (() => {
       const cells = [];
       rule.when.forEach((p, i) => { const ks = Object.keys(p.attrs); if (ks.length) for (const k of ks) cells.push([from[i], k]); else cells.push([from[i], null]); });
       for (const x of this._reads.get(s) || []) cells.push(x);
-      const prov = { via: rule.id, from, rec, cells };
+      const prov = { via: rule.relation || rule.id, from, rec, cells, relation: !!rule.relation };
       for (const t of rule.then) {
         const attrs = {};
         prov.ties = undefined;
@@ -4290,7 +4409,8 @@ const __world = (() => {
       for (const k of Object.keys(attrs)) {
         for (const v of attrs[k]) {
           const have = w.attrs[k];
-          if (have && (have.includes(v) || have.some((x) => this._same(w.type, k, x, v)))) continue;
+          // a relation states numbers: 5 and 5.0 agree, whatever the key is declared as
+          if (have && (have.includes(v) || have.some((x) => this._same(w.type, k, x, v)) || (prov.relation && have.some((x) => this.fns.eq([x, v], this))))) continue;
           if (!prov.rec && this._fluentState(w, k, v, res)) continue; // a new statement about a state, not a conflict
           const slot = c.slotOf(w.type, k);
           // a bookkeeping key that no slot declares takes every value it is given: a wire told

@@ -936,3 +936,49 @@ change, `diff` shows the old wire removed and a new one added, not a changed val
   `test/tiers.test.mjs` (the total of a line with an assumed quantity is `default`;
   telling the quantity replaces it and the total becomes `derived`).
 - Q12 closed.
+
+## H5 — relations that solve in more than one direction — done
+
+| Command | Result |
+| --- | --- |
+| `npm test` | sources: 182 pass, 0 fail; built file: 182 pass, 0 fail |
+| `node --test test/relation.test.mjs` | 5 pass |
+| `node compat/psys2/run.mjs` | 147/147, 212/217, 231/232 (unchanged) |
+| `node tools/scan-loops.mjs src`, `git grep -i psys2 src/ \| wc -l` | clean; 0 |
+
+How it is built: a `core.relation` wire (`when=` patterns, `sum=` / `sub=` terms with
+optional coefficients, `equals=`) is compiled into one rule per cell. Each rule matches
+the patterns without that cell, computes it from the others with the new exact function
+`linsolve` (fractions of BigInts), and puts it on the matched wire with `core.on`. So
+the semantics of the task's table come from what rules already do:
+- one unknown: derived, with `via` the relation, `cells`, and the weakest tier of the
+  inputs (tested with a guessed input);
+- none and false: the rule's value meets a different one on the wire: `conflict`;
+- none and true: the value is already there: nothing;
+- several unknown: no rule can fire;
+- propagation to a fixpoint is the chase, inside the transaction, under the budget;
+- withdrawal when an input goes is the ordinary withdrawal of a firing (tested);
+- a value that does not fit the slot is refused by validation (an integer cell asked to
+  take 4.5: `domain`).
+
+Tests (`test/relation.test.mjs`): paid − total − change = 0 for each of the three
+missing, 198 cases; satisfied / conflict / waiting; exact decimals (20 − 0.1 = 19.9);
+a coefficient both ways; the chain x + y = 10, y + z = 8, z = 3 giving x = 5, y = 5, and
+nothing invented before z is known; units (2kg + 3kg = 5kg; kg and m do not add);
+`relation=true` on a calc (gross = net + tax backwards) and abduction through it; the
+triangle x ≠ y, y ≠ z, z ≠ x over {0, 1}: `unsat` from both solvers, `sat` once one edge
+is removed.
+
+Deviations and limits:
+- No separate propagation queue and no domain pruning by support: the chase is the
+  queue, and finite domains are left wholly to the search (which is what the triangle
+  test asks for). Say if table-constraint pruning is wanted as a speed-up later.
+- A conflict names the wire, the key, the value it has and the value wanted, with the
+  wires involved; it does not list every cell of the relation in the violation (the
+  `cells` are on the derived value when there is one).
+- A result whose decimal does not end (1/3) is written with 12 significant digits; in
+  an `integer` cell it is refused, in a `number` cell it is accepted as that decimal.
+- `relation=true` covers `add` and `sub` (linear). The rule's `if=` and `not=` are not
+  carried into the backward direction.
+- A variable that names the same cell in two patterns (a join variable) is read, never
+  solved for.

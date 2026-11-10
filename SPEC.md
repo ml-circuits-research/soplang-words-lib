@@ -264,6 +264,42 @@ that key answers `ambiguous` with all of them as alternatives (4.10), and stops 
 so when the tie is broken. `ties=first` on the calc turns this off: the first is simply
 the answer.
 
+### 3.6.3 Relations: one statement, every direction
+
+A calc computes its result from its arguments. A **relation** states what holds among
+several cells and lets whichever one is missing be computed:
+
+```
+?p payment paid=?paid total=?total change=?chg
+@r core.relation when=$p sum=?paid sub=?total sub=?chg equals=0      # paid - total - change = 0
+```
+
+- `when=` patterns bind cells (a key of a matched wire) to variables. `sum=` and `sub=`
+  list the terms, each `?var` or `<coefficient>*?var` (`sub=2*?rows`); `equals=` is the
+  constant (default 0). The relation is linear. Arithmetic is exact (fractions of
+  integers); a result whose decimal does not end is written with 12 significant digits.
+  Values must have one unit, which the result takes.
+- After the known cells are put in:
+
+  | Unknown cells | What happens |
+  | --- | --- |
+  | none, and it holds | nothing |
+  | none, and it does not | the change is refused: `conflict`, naming the wire, the key, the value it has and the value the relation wants |
+  | one | its value is derived and put on its wire: tier the weakest of its inputs (4.12), `via` the relation, `cells` the cells it was read from. It must fit the cell's slot: an `integer` cell does not take 3/2 (`domain`) |
+  | several | the relation waits; nothing is invented |
+
+- Relations feed each other within the same change, to a fixpoint or a conflict, under
+  the budget: with x + y = 10, y + z = 8 and z told as 3, y becomes 5 and x becomes 5.
+  A derived value goes when what it rested on goes.
+- This is local propagation, not a solver: it concludes only what one relation forces.
+  What needs trying values against each other (three cells that must all differ over
+  two values) is decided by the search (4.9), which answers `unsat` there.
+- `relation=true` on a `core.calc` with `fn=add` or `fn=sub` makes the calc of a rule
+  such a relation over the cells of the rule's patterns and templates, so an existing
+  rule also works backwards: with "gross = net + tax", an invoice wire with the gross
+  and an order with the tax give the net. Abduction goes through relations as through
+  rules.
+
 ### 3.7 `core.use`: load another matrix
 
 `@u core.use world=garden` loads the matrix registered under that name in
@@ -964,6 +1000,7 @@ Since 0.4.0 (the version first published in this repository):
 - New: `core.absent=` in patterns (3.10).
 - **Changed:** `complete({ defaults: true })` and `step()` now apply a slot's default to
   an optional key too (it was applied only when the key was `required`).
+- New: `core.relation` and `relation=true` on a calc (3.6.3); the function `linsolve`.
 - New: `world.describe()` and `world.diff()` (4.13).
 - New: tiers of certainty and `cells` (4.12): `world.tier`, `world.assumptions`, `tier`
   and `rests` in query results, `review` in `next()`, `{ tier }` on statements.

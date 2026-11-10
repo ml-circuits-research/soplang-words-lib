@@ -1053,7 +1053,7 @@ export class World {
     const cells = [];
     rule.when.forEach((p, i) => { const ks = Object.keys(p.attrs); if (ks.length) for (const k of ks) cells.push([from[i], k]); else cells.push([from[i], null]); });
     for (const x of this._reads.get(s) || []) cells.push(x);
-    const prov = { via: rule.id, from, rec, cells };
+    const prov = { via: rule.relation || rule.id, from, rec, cells, relation: !!rule.relation };
     for (const t of rule.then) {
       const attrs = {};
       prov.ties = undefined;
@@ -1116,7 +1116,8 @@ export class World {
     for (const k of Object.keys(attrs)) {
       for (const v of attrs[k]) {
         const have = w.attrs[k];
-        if (have && (have.includes(v) || have.some((x) => this._same(w.type, k, x, v)))) continue;
+        // a relation states numbers: 5 and 5.0 agree, whatever the key is declared as
+        if (have && (have.includes(v) || have.some((x) => this._same(w.type, k, x, v)) || (prov.relation && have.some((x) => this.fns.eq([x, v], this))))) continue;
         if (!prov.rec && this._fluentState(w, k, v, res)) continue; // a new statement about a state, not a conflict
         const slot = c.slotOf(w.type, k);
         // a bookkeeping key that no slot declares takes every value it is given: a wire told

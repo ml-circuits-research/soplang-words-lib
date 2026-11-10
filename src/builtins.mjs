@@ -36,6 +36,55 @@ export function canonical(v) {
   return sign + int + (frac ? '.' + frac : '') + (m[4] || '');
 }
 
+// ---- exact arithmetic for relations: a number is a fraction of two BigInts
+const RAT = /^(-?)(\d*)(?:\.(\d*))?(?:e([-+]?\d+))?([A-Za-zµ°%][A-Za-z0-9µ°%/*^.]*)?$/;
+const gcd = (a, b) => { while (b) [a, b] = [b, a % b]; return a < 0n ? -a : a; }; // bounded: Euclid
+const reduce = (n, d) => { const g = gcd(n, d) || 1n; return d < 0n ? { n: -n / g, d: -d / g } : { n: n / g, d: d / g }; };
+/** { n, d, unit } for a decimal with an optional unit, or null. */
+export function rational(v) {
+  const m = RAT.exec(String(v));
+  if (!m || (!m[2] && !m[3])) return null;
+  const frac = m[3] || '';
+  let n = BigInt((m[2] || '0') + frac), d = 10n ** BigInt(frac.length);
+  const e = Number(m[4] || 0);
+  if (e > 0) n *= 10n ** BigInt(e); else if (e < 0) d *= 10n ** BigInt(-e);
+  if (m[1]) n = -n;
+  return { ...reduce(n, d), unit: m[5] || '' };
+}
+/** A fraction as text: exact when the decimal ends, else 12 significant digits. */
+function showRational({ n, d }, unit) {
+  let rest = d;
+  while (rest % 2n === 0n) rest /= 2n; // bounded: the factors of the denominator
+  while (rest % 5n === 0n) rest /= 5n; // bounded: the factors of the denominator
+  if (rest !== 1n) return String(Number((Number(n) / Number(d)).toPrecision(12))) + unit;
+  const neg = n < 0n, a = neg ? -n : n;
+  let digits = 0, scaled = a;
+  while (scaled % d !== 0n) { scaled *= 10n; digits++; } // bounded: the decimal ends
+  const whole = String(scaled / d).padStart(digits + 1, '0');
+  const text = digits ? `${whole.slice(0, -digits)}.${whole.slice(-digits)}` : whole;
+  return (neg ? '-' : '') + text + unit;
+}
+/**
+ * One unknown of a linear relation: linsolve(k, c, c1, x1, c2, x2, ...) is the x with
+ * c*x + c1*x1 + c2*x2 + ... = k. Exact; the values must have one unit.
+ */
+function linsolve(args, world) {
+  const k = rational(args[0]), c = rational(args[1]);
+  if (!k || !c || c.n === 0n) return undefined;
+  let n = k.n, d = k.d, unit = k.unit;
+  for (let i = 2; i + 1 < args.length; i += 2) { // bounded: the terms of one relation
+    const cj = rational(args[i]), xj = rational(args[i + 1]);
+    if (!cj || !xj) return undefined;
+    if (xj.unit && unit && xj.unit !== unit) { world?.cannot?.(`the units differ (${unit}, ${xj.unit})`); return undefined; }
+    unit = unit || xj.unit;
+    // n/d - cj*xj
+    const tn = cj.n * xj.n, td = cj.d * xj.d;
+    n = n * td - tn * d;
+    d *= td;
+  }
+  return showRational(reduce(n * c.d, d * c.n), unit);
+}
+
 const show = (n, unit) => (Number.isFinite(n) ? String(Number(n.toPrecision(12))) + unit : undefined);
 
 // A function that cannot give a result returns nothing, and may tell the world why
@@ -173,6 +222,8 @@ const extreme = (values, picks, better) => {
   return best < 0 ? undefined : { value: key, pick: picks[best] };
 };
 /** name -> (values, picks, matches) => result, or undefined when there is nothing to say. */
+builtins.linsolve = linsolve;
+
 export const aggregates = {
   count: (values, picks, n) => String(n),
   sum: (values) => { if (!values.length) return '0'; const qs = numbers(values); return qs ? show(qs.reduce((t, q) => t + q.n, 0), qs[0].unit) : undefined; },

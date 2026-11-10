@@ -81,7 +81,7 @@ export class Problem {
     this._assigned.pop();
   }
 
-  reset() { while (this._marks.length) this.pop(); }
+  reset() { while (this._marks.length) this.pop(); } // bounded: one pop per pushed value
 
   /** Check a whole assignment (values by variable index; undefined = leave open). Changes nothing. */
   verify(values) {
@@ -154,6 +154,7 @@ function ground(problem) {
         if (d.not.length || d.selective) continue;
         for (const s0 of w._matchWire(d.when[idx], wire, EMPTY)) {
           for (const s of w._bodies(d, s0, idx)) {
+            w._b.tick('ground');
             const lits = new Map();
             let consistent = true;
             for (const p of d.when) {
@@ -207,7 +208,8 @@ export function backtrack() {
         if (r.ok) problem.pop();
         return r.ok;
       });
-      const search = () => {
+      const search = () => { // each call ticks the budget
+        problem.world._b.tick('solve');
         let best = -1, cands = null;
         for (let i = 0; i < n; i++) {
           if (values[i] !== undefined) continue;
@@ -299,7 +301,8 @@ export class Sat {
   }
 
   _propagate() {
-    while (this.qhead < this.trail.length) {
+    while (this.qhead < this.trail.length) { // bounded: each literal of the trail is visited once
+      if (this.tick) this.tick();
       const f = -this.trail[this.qhead++]; // this literal has just become false
       const ws = this.watches[this._w(f)];
       let j = 0;
@@ -343,7 +346,7 @@ export class Sat {
   _cancel(level) {
     if (this.lim.length <= level) return;
     const to = this.lim[level];
-    while (this.trail.length > to) {
+    while (this.trail.length > to) { // bounded: the trail above that level
       const lit = this.trail.pop();
       const v = lit > 0 ? lit : -lit;
       this.phase[v] = this.val[v];
@@ -359,7 +362,7 @@ export class Sat {
     const learnt = [0];
     const current = this.lim.length;
     let open = 0, p = 0, index = this.trail.length - 1, c = conflict;
-    do {
+    do { // bounded: walks the trail of the current level once
       for (const q of c) {
         if (q === p) continue;
         const v = q > 0 ? q : -q;
@@ -368,12 +371,12 @@ export class Sat {
         this._bump(v);
         if (this.level[v] >= current) open++; else learnt.push(q);
       }
-      while (!this.seen[Math.abs(this.trail[index])]) index--;
+      while (!this.seen[Math.abs(this.trail[index])]) index--; // bounded: by the trail
       p = this.trail[index--];
       c = this.reason[Math.abs(p)];
       this.seen[Math.abs(p)] = 0;
       open--;
-    } while (open > 0);
+    } while (open > 0); // bounded: see the head of the loop
     learnt[0] = -p;
     // minimise: a literal is redundant when every other literal of its reason is already in the clause
     let size = 1;
@@ -405,13 +408,14 @@ export class Sat {
     this._cancel(0);
     const luby = (i) => { // 1 1 2 1 1 2 4 ...
       let size = 1, seq = 0;
-      while (size < i + 1) { seq++; size = 2 * size + 1; }
-      while (size - 1 !== i) { size = (size - 1) >> 1; seq--; i %= size; }
+      while (size < i + 1) { seq++; size = 2 * size + 1; } // bounded: logarithmic in i
+      while (size - 1 !== i) { size = (size - 1) >> 1; seq--; i %= size; } // bounded: logarithmic in i
       return 2 ** seq;
     };
     let restarts = 0, since = 0, limit = 100;
     const stop = this.conflicts + budget;
     for (;;) {
+      if (this.tick) this.tick();
       const conflict = this._propagate();
       if (conflict) {
         this.conflicts++;
@@ -474,6 +478,7 @@ export function cdcl() {
       const aux = [];
       for (const v of vars) aux[v.index] = v.domain.length > 8 ? v.domain.slice(1).map(() => ++n) : null;
       const sat = new Sat(n);
+      sat.tick = () => problem.world._b.tick('solve');
       for (const v of vars) {
         const x = lit[v.index], s = aux[v.index];
         sat.addClause(x); // at least one value
@@ -497,6 +502,7 @@ export function cdcl() {
       const stats = () => ({ conflicts: sat.conflicts, decisions: sat.decisions, nogoods: problem.nogoods.length, learned: sat.learned, booleans: n });
       let left = budget;
       for (;;) {
+        problem.world._b.tick('solve');
         const before = sat.conflicts;
         const r = sat.solve(left);
         left -= sat.conflicts - before;
@@ -541,6 +547,7 @@ export function external({ name = 'external', run, maxRounds = 1000 }) {
     solve(problem, { preset = new Map() } = {}) {
       const extra = [];
       for (let round = 0; round < maxRounds; round++) {
+        problem.world._b.tick('solve');
         const values = run(encode(problem, preset, extra));
         if (values && typeof values.then === 'function') throw new Error(`${name}: this solver is asynchronous, call world.solveAsync()`);
         const done = judge(problem, values, extra);

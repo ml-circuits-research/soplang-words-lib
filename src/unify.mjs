@@ -19,6 +19,7 @@ function lookup(s, k) {
   return undefined;
 }
 
+// bounded: follows a chain of bindings, which has no cycle
 export function walk(t, s) {
   if (t[0] === '?') {
     const b = lookup(s, t);
@@ -32,6 +33,7 @@ export function walk(t, s) {
 }
 
 /** Returns an extended substitution, or null when the terms cannot be made equal. */
+// bounded: recurses once, to compare what two references point at
 export function unify(a, b, s = EMPTY) {
   a = walk(a, s);
   b = walk(b, s);

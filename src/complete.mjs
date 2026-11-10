@@ -41,7 +41,10 @@ export const completion = {
   _shallow(w, key) {
     const s = this._compiled().slots.get(w.type)?.get(key);
     if (!s) return [];
-    return this._domain(s).filter((c) => this._fill(w.id, key, c.value, { dry: true, strict: false, via: 'core.search' }).ok);
+    return this._domain(s).filter((c) => {
+      this._b.tick('complete');
+      return this._fill(w.id, key, c.value, { dry: true, strict: false, via: 'core.search' }).ok;
+    });
   },
 
   /** The completion problem of the current state, built once per state. */
@@ -67,7 +70,11 @@ export const completion = {
    * a closed domain can still be completed together with it. Ordered: default first,
    * then most used; the `rank` option of the world can reorder them.
    */
-  suggest(id, key, { deep = this.options.lookahead } = {}) {
+  suggest(id, key, opts = {}) {
+    return this._guard(opts, () => this._suggest(id, key, opts), (budget) => Object.assign([], { budget }));
+  },
+
+  _suggest(id, key, { deep = this.options.lookahead } = {}) {
     const w = this.get(id);
     if (!w) return [];
     let cands = this._shallow(w, key);
@@ -77,6 +84,7 @@ export const completion = {
       // a value that appears in a solution already found needs no search of its own
       const supported = problem.supported || (problem.supported = new Set());
       cands = cands.filter((c) => {
+        this._b.tick('complete');
         if (index >= 0) {
           if (supported.has(`${index}\u0001${c.value}`)) return true;
           const r = this._run(problem, { preset: new Map([[index, c.value]]) });
@@ -100,7 +108,10 @@ export const completion = {
    * Returns { status: 'sat' | 'unsat' | 'unknown', assignment, stats, solver }.
    * 'unknown' means the solver's budget ran out. Changes nothing.
    */
-  solveReport({ solver, budget } = {}) { return this._run(this._problem(), { solver, budget }); },
+  solveReport(opts = {}) {
+    return this._guard(opts.limit ? { budget: opts.limit } : null, () => this._run(this._problem(), { solver: opts.solver, budget: opts.budget }),
+      (v) => ({ status: 'unknown', stats: { budget: v }, solver: (opts.solver || this.options.solver).name }));
+  },
 
   /** The assignment, or null when there is none. An exhausted budget returns an empty assignment. */
   solve(options) {
@@ -113,26 +124,34 @@ export const completion = {
 
   /** solveReport() for solvers that answer asynchronously (a WebAssembly or remote solver). */
   async solveAsync({ solver = this.options.solver, budget = this.options.searchBudget } = {}) {
-    const problem = new Problem(this);
-    if (!solver.solveAsync) return this._run(problem, { solver, budget });
+    // each synchronous part runs under a budget of its own; the waiting in between does not count
+    const unknown = (v) => ({ status: 'unknown', stats: { budget: v }, solver: solver.name });
+    const problem = this._guard(null, () => new Problem(this), () => null);
+    if (!problem) return unknown(this._b.violation());
+    if (!solver.solveAsync) return this._guard(null, () => this._run(problem, { solver, budget }), unknown);
+    const verify = problem.verify.bind(problem);
+    problem.verify = (values) => this._guard(null, () => verify(values), () => ({ ok: false, culprits: [], budget: true }));
     const r = await solver.solveAsync(problem, budget === undefined ? {} : { budget });
     r.solver = solver.name;
     return r;
   },
 
   /** Commit an assignment from solve(): all fills in one transaction. */
-  apply(assignment, { via = 'core.complete' } = {}) {
+  apply(assignment, opts = {}) {
+    return this._guard(opts, () => this._apply(assignment, opts), (v) => this._refusal(v));
+  },
+
+  _apply(assignment, { via = 'core.complete' } = {}) {
     const res = this._result();
-    const mark = this._begin();
+    const mark = this._begin(true);
     for (const f of assignment || []) {
       const r = this._fill(f.id, f.key, f.value, { via, strict: false });
-      if (!r.ok) { this._rollback(mark); return { ...res, ok: false, violations: r.violations }; }
+      if (!r.ok) { this._rollback(mark); return { ...this._bare(res), ok: false, filled: [], derived: [], violations: r.violations }; }
       res.filled.push(...r.filled);
       res.derived.push(...r.derived);
     }
     this._commit();
-    delete res._touched; delete res._agenda;
-    return res;
+    return this._bare(res);
   },
 
   /**
@@ -141,12 +160,16 @@ export const completion = {
    *   questions  core.question wires for keys that need an outside answer
    *   dead       keys for which no consistent value exists
    */
-  next() {
+  next(opts = {}) {
+    return this._guard(opts, () => this._next(), (budget) => ({ fills: [], questions: [], dead: [], budget }));
+  },
+
+  _next() {
     const c = this._compiled();
     const out = { fills: [], questions: [], dead: [] };
     for (const o of this.open()) {
       const s = c.slots.get(o.type).get(o.key);
-      const cands = this.suggest(o.id, o.key);
+      const cands = this._suggest(o.id, o.key);
       const closedDomain = this._closedDomain(s);
       if (cands.length === 1 && closedDomain) {
         out.fills.push({ ...o, value: cands[0].value, kind: 'forced' });
@@ -170,15 +193,32 @@ export const completion = {
    * { choose: true } goes further and commits one full solution for the keys that are
    * still open with a closed domain, recorded as assumptions too.
    */
-  complete({ defaults = false, choose = false } = {}) {
+  complete(opts = {}) {
+    return this._guard(opts, () => this._complete(opts), (budget) => ({ filled: [], questions: [], dead: [], pending: [], budget }));
+  },
+
+  _complete({ defaults = false, choose = false } = {}) {
     const filled = [];
+    const mark = this._begin(true); // one transaction: out of budget, nothing of it stays
+    try {
+      const out = this._completing(filled, defaults, choose);
+      this._commit();
+      return out;
+    } catch (e) {
+      this._rollback(mark);
+      throw e;
+    }
+  },
+
+  _completing(filled, defaults, choose) {
     for (;;) {
-      const n = this.next();
+      this._b.tick('complete');
+      const n = this._next();
       const f = n.fills.find((x) => x.kind === 'forced') || (defaults && n.fills.find((x) => x.kind === 'default'));
       if (!f) {
         if (choose && n.questions.length) {
           const picked = this.solve() || [];
-          const r = picked.length ? this.apply(picked, { via: 'core.default' }) : { ok: false };
+          const r = picked.length ? this._apply(picked, { via: 'core.default' }) : { ok: false };
           if (r.ok) {
             filled.push(...picked.map((p) => ({ ...p, kind: 'chosen' })));
             choose = false;
@@ -205,10 +245,13 @@ export const completion = {
    * One turn of a dialogue or one event from the environment: tell, then complete.
    * Returns the tell result extended with what was completed and what must be asked.
    */
-  step(input, { defaults = true, choose = false, strict } = {}) {
-    const r = this.tell(input, strict === undefined ? {} : { strict });
-    if (!r.ok) return { ...r, questions: [], dead: [], pending: [] };
-    const c = this.complete({ defaults, choose });
-    return { ...r, filled: [...r.filled, ...c.filled], questions: c.questions, dead: c.dead, pending: c.pending };
+  step(input, opts = {}) {
+    const { defaults = true, choose = false, strict } = opts;
+    return this._guard(opts, () => {
+      const r = this.tell(input, strict === undefined ? {} : { strict });
+      if (!r.ok) return { ...r, questions: [], dead: [], pending: [] };
+      const c = this._complete({ defaults, choose });
+      return { ...r, filled: [...r.filled, ...c.filled], questions: c.questions, dead: c.dead, pending: c.pending };
+    }, (v) => ({ ...this._refusal(v), questions: [], dead: [], pending: [] }));
   },
 };

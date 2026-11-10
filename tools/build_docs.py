@@ -592,8 +592,11 @@ new World({ fns, library, solver = solvers.nogood(), maxDepth = 12, maxSteps = 5
  ['<code>on(listener)</code>', 'Unsubscribe function; the listener gets committed events'],
  ['<code>toSOP({ schema, derived, provenance })</code>', 'SOP Lang text, in order of arrival'],
  ['<code>toJSON()</code>, <code>World.fromJSON(data, options)</code>', 'Snapshot and restore'],
- ['<code>fork()</code>', 'Independent copy'],
+ ['<code>fork()</code>', 'Independent copy. Shares the state until one of the two changes, so it costs the same for any size of world'],
+ ['<code>stats()</code>', '<code>{ steps, limit, exhausted, site, sites, ms }</code> of the last call'],
 ])}
+<h3>Budgets</h3>
+<p>Every call runs under a budget of steps, <code>{{ steps: 5000000 }}</code> by default. Set it for a world with <code>new World({{ budget: {{ steps, ms }} }})</code> or for one call with the <code>budget</code> option (<code>limit</code> for <code>solveReport</code>, where <code>budget</code> is the solver's own). A call that runs out stops, undoes what it did and says so in its normal result: a <code>budget</code> violation with the <code>site</code> where it stopped (<code>match</code>, <code>chase</code>, <code>negation</code>, <code>aggregate</code>, <code>fluent</code>, <code>withdraw</code>, <code>validate</code>, <code>complete</code>, <code>ground</code>, <code>solve</code>, <code>abduce</code>, <code>induce</code>), an empty list with a <code>budget</code> property, or <code>unknown</code> from a solver. It never hangs and never throws. Steps are counted, not timed, so the same call stops at the same place on any machine.</p>
 <h3>Completion and abduction</h3>
 {table(['Method', 'Returns'], [
  ['<code>open(id?)</code>', '<code>[{ id, type, key, ask }]</code>'],
@@ -629,7 +632,8 @@ new World({ fns, library, solver = solvers.nogood(), maxDepth = 12, maxSteps = 5
  ['<code>dangling-ref</code>', 'Reference to a wire that does not exist'],
  ['<code>dead-end</code>', 'Strict mode: no completion possible'],
  ['<code>duplicate-id</code>, <code>syntax</code>, <code>schema</code>', 'The input itself is wrong'],
- ['<code>depth</code>, <code>budget</code>', 'A derivation ran away'],
+ ['<code>depth</code>', 'A derivation ran away'],
+ ['<code>budget</code>', 'The call ran out of steps (or of <code>ms</code>); <code>site</code> says where'],
  ['<code>unknown-wire</code>, <code>unsupported</code>', 'The wire cannot be filled or retracted'],
 ])}
 <h2>Command line</h2>

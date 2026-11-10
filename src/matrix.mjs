@@ -255,6 +255,21 @@ export function compileMatrix(world) {
     for (const s of slots.values()) if (s.prefix && key.startsWith(s.key.endsWith('.') ? s.key : s.key + '.')) return s;
     return undefined;
   };
+  // ---- keys that hold numbers by declaration (every kind of the slot is integer or number):
+  // their values are indexed and compared in one canonical spelling, so 5 and 5.0 are one value
+  const numeric = new Map();
+  const isNumber = (s) => !!s && !s.prefix && s.kinds.length > 0 && s.kinds.every((k) => k === 'integer' || k === 'number');
+  c.numKeys = new Set();
+  const declared = [];
+  for (const [type, mine] of own) for (const [k, s] of mine) if (isNumber(s)) { c.numKeys.add(k); declared.push(`${type}.${k}`); }
+  c.numbers = declared.sort().join(' ');
+  c.numeric = (type, key) => {
+    if (!c.numKeys.has(key)) return false;
+    const id = type + '\u0001' + key;
+    let n = numeric.get(id);
+    if (n === undefined) numeric.set(id, (n = isNumber(c.slotOf(type, key))));
+    return n;
+  };
   const identity = new Map();
   c.idKeys = {
     get(type) {
@@ -382,7 +397,7 @@ function buildRule(world, w, c) {
   // templates in dependency order, so a template is created before the ones that refer to it
   const byId = new Map(rule.then.map((t) => [t.id, t]));
   const order = [], state = new Map();
-  const visit = (t) => {
+  const visit = (t) => { // bounded: each template is visited once (state)
     if (state.get(t.id) === 2) return;
     if (state.get(t.id) === 1) { c.errors.push(`${w.id}: templates refer to each other in a cycle`); return; }
     state.set(t.id, 1);

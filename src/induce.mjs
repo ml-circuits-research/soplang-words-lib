@@ -13,9 +13,11 @@
 import { parse, format, cloneWire, quote } from './parser.mjs';
 import { builtins, quantity } from './builtins.mjs';
 import { World } from './world.mjs';
+import { Budget } from './budget.mjs';
 
 const toWires = (x) => (typeof x === 'string' ? parse(x) : x || []).map(cloneWire);
 
+// bounded: only called for groups whose number of orders is under the alignment cap
 function permutations(xs) {
   if (xs.length <= 1) return [xs];
   const out = [];
@@ -36,9 +38,11 @@ function alignments(gen, ex, cap = 5000) {
   }
   if (groups.size !== slots.size) throw new Error('examples differ in wire types');
   let all = [new Array(gen.length)];
+  const factorial = (n) => { let f = 1; for (let i = 2; i <= n && f <= cap; i++) f *= i; return f; };
   for (const [type, idx] of slots) {
-    const perms = permutations(groups.get(type));
-    if (all.length * perms.length > cap) { // too many: keep the given order for this type
+    // too many orders to try: keep the given order for this type (decided before any is built)
+    const perms = all.length * factorial(idx.length) > cap ? null : permutations(groups.get(type));
+    if (!perms) {
       all = all.map((a) => { const b = [...a]; idx.forEach((g, j) => (b[g] = groups.get(type)[j])); return b; });
       continue;
     }
@@ -155,9 +159,21 @@ function findTests(gen, nWhen, vals, tests, negatives, name) {
  *           tolerant  skip examples whose shape differs from the first instead of throwing
  *           distinct  patterns of the same type must match different wires (default true)
  *           negatives [{ when }] circuits that the rule must not match
+ *           budget    { steps } alignments of examples to try (default 200000); when it runs
+ *                     out the result has text: null and a `budget` field
  * Returns { text, skipped, calcs, tests, coversNegative, variables, examples }.
  */
-export function induce(examples, { name = 'induced', kind = 'rule', why, tolerant = false, distinct = true, negatives = [] } = {}) {
+export function induce(examples, options = {}) {
+  const budget = new Budget(options.budget?.steps ?? 200000, options.budget?.ms);
+  try {
+    return inducing(examples, options, budget);
+  } catch (e) {
+    if (e !== budget.signal) throw e;
+    return { text: null, skipped: [], calcs: [], tests: [], coversNegative: [], variables: 0, examples: 0, budget: budget.violation() };
+  }
+}
+
+function inducing(examples, { name = 'induced', kind = 'rule', why, tolerant = false, distinct = true, negatives = [] }, budget) {
   if (!examples.length) throw new Error('induce: no examples');
   const prep = examples.map((e, index) => {
     const when = toWires(e.when), then = kind === 'deny' ? [] : toWires(e.then);
@@ -183,11 +199,13 @@ export function induce(examples, { name = 'induced', kind = 'rule', why, toleran
       const thenAligns = alignments(gen.slice(ex.nWhen), ex.all.slice(ex.nWhen)).map((a) => a.map((i) => i + ex.nWhen));
       let best = null;
       for (const wa of whenAligns) for (const ta of thenAligns) {
+        budget.tick('induce');
         const r = generalise(gen, ex.all, [...wa, ...ta], n, vals, folded);
         if (!best || r.vars < best.vars) best = r;
       }
       gen = best.out; n = best.k; vals = best.vals; folded++;
     } catch (e) {
+      if (e === budget.signal) throw e;
       if (!tolerant) throw new Error(`induce: ${e.message}`);
       skipped.push({ index: ex.index, why: e.message });
     }

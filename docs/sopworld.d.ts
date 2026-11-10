@@ -29,7 +29,9 @@ export interface OpenKey { id: string; type: string; key: string; ask?: string }
 export interface Candidate { value: string; source: 'default' | 'enum' | 'wire' | 'range'; count: number }
 export interface Question { type?: string; seek?: string; where?: Record<string, string | number>; about?: string; mode?: 'value' | 'list' | 'count' | 'exists' }
 export interface QueryResult {
-  status: 'supported' | 'conflicting' | 'missing' | 'refused' | 'no' | 'unknown';
+  /** 'budget': the call ran out of budget; `site`, `steps` and `why` say where */
+  status: 'supported' | 'conflicting' | 'missing' | 'refused' | 'no' | 'unknown' | 'budget';
+  site?: string; steps?: number; why?: string;
   value?: string; values?: string[];
   alternatives?: { value: string; from: string[] }[];
   missing?: { id?: string; type?: string; key: string; ask?: string }[];
@@ -37,9 +39,9 @@ export interface QueryResult {
   from: string[]; via?: string[]; wires: string[];
   answer?: { ok: boolean; id?: string; question?: string; violations?: Violation[] };
 }
-export interface ActResult { ok: boolean; status: 'done' | 'missing' | 'refused' | 'error' | 'unsupported'; value?: string; result?: unknown; missing?: { action: string; key: string; ask?: string }[]; violations?: Violation[] }
+export interface ActResult { ok: boolean; status: 'done' | 'missing' | 'refused' | 'error' | 'unsupported' | 'budget'; value?: string; result?: unknown; missing?: { action: string; key: string; ask?: string }[]; violations?: Violation[] }
 export interface Assignment { id: string; key: string; value: string }
-export interface SolveReport { status: 'sat' | 'unsat' | 'unknown'; assignment?: Assignment[]; stats: Record<string, number>; solver?: string }
+export interface SolveReport { status: 'sat' | 'unsat' | 'unknown'; assignment?: Assignment[]; stats: { [name: string]: number | BudgetViolation | undefined; budget?: BudgetViolation }; solver?: string }
 export interface SolveOptions { preset?: Map<number, string>; budget?: number }
 export interface Solver {
   name: string;
@@ -103,9 +105,18 @@ export interface WorldOptions {
   solver?: Solver;
   /** wire types and key names used for questions, answers and requests */
   vocabulary?: Partial<Record<'question' | 'answer' | 'request' | 'type' | 'seek' | 'about' | 'mode' | 'where' | 'action' | 'arg' | 'to' | 'value' | 'status' | 'via' | 'from', string>>;
+  /** the budget of every call that does not give its own */
+  budget?: Budget;
   rank?: <T>(items: T[], context: { kind: 'value' | 'explanation'; world: World; id?: string; key?: string }) => T[] | void;
 }
-export interface ChangeOptions { dry?: boolean; strict?: boolean }
+/** Steps one call may take (default 5,000,000) and an optional wall-clock limit. */
+export interface Budget { steps?: number; ms?: number }
+export type Site = 'match' | 'chase' | 'negation' | 'aggregate' | 'fluent' | 'withdraw' | 'validate' | 'complete' | 'ground' | 'solve' | 'abduce' | 'induce';
+/** How a call that ran out of budget says so. */
+export interface BudgetViolation { kind: 'budget'; site: Site; steps: number; why: string }
+export interface Stats { steps: number; limit: number; exhausted: boolean; site: Site | null; sites: Record<Site, number>; ms: number }
+export interface Budgeted { budget?: Budget }
+export interface ChangeOptions extends Budgeted { dry?: boolean; strict?: boolean }
 
 export class World {
   constructor(options?: WorldOptions);
@@ -119,11 +130,14 @@ export class World {
   fill(id: string, key: string, value: string | number, options?: ChangeOptions): Result;
   load(input: string | Wire[]): Result;
   use(name: string): Result;
-  retract(id: string): Result;
-  replace(id: string, input: string | Wire[]): Result;
-  step(input: string | Wire[], options?: { defaults?: boolean; choose?: boolean; strict?: boolean }): StepResult;
+  retract(id: string, options?: Budgeted): Result;
+  replace(id: string, input: string | Wire[], options?: Budgeted): Result;
+  step(input: string | Wire[], options?: Budgeted & { defaults?: boolean; choose?: boolean; strict?: boolean }): StepResult;
   answer(question: Wire, value: string | number): Result;
+  /** shares the state until one of the two worlds changes; copies nothing */
   fork(): World;
+  /** steps of the last call, per site, and whether its budget ran out */
+  stats(): Stats;
   on(listener: (events: WorldEvent[], world: World) => void): () => void;
   toJSON(): Snapshot;
   static fromJSON(data: Snapshot, options?: WorldOptions): World;
@@ -131,26 +145,27 @@ export class World {
   has(id: string): boolean;
   resolve(id: string): string;
   ofType(type: string): Wire[];
-  ask(query: string | Wire[], options?: { at?: number }): Record<string, string>[];
-  holds(query: string | Wire[]): boolean;
+  ask(query: string | Wire[], options?: Budgeted & { at?: number }): Record<string, string>[] & { budget?: BudgetViolation };
+  holds(query: string | Wire[], options?: Budgeted): boolean;
   open(id?: string): OpenKey[];
-  suggest(id: string, key: string, options?: { deep?: boolean }): Candidate[];
-  next(): NextStep;
-  complete(options?: { defaults?: boolean; choose?: boolean }): { filled: object[]; questions: Wire[]; dead: OpenKey[]; pending: object[] };
-  solve(options?: { solver?: Solver; budget?: number }): Assignment[] | null;
-  solveReport(options?: { solver?: Solver; budget?: number }): SolveReport;
+  suggest(id: string, key: string, options?: Budgeted & { deep?: boolean }): Candidate[] & { budget?: BudgetViolation };
+  next(options?: Budgeted): NextStep & { budget?: BudgetViolation };
+  complete(options?: Budgeted & { defaults?: boolean; choose?: boolean }): { filled: object[]; questions: Wire[]; dead: OpenKey[]; pending: object[]; budget?: BudgetViolation };
+  /** `budget` is the solver's own search budget; `limit` is the step budget of the call */
+  solve(options?: { solver?: Solver; budget?: number; limit?: Budget }): Assignment[] | null;
+  solveReport(options?: { solver?: Solver; budget?: number; limit?: Budget }): SolveReport;
   solveAsync(options?: { solver?: Solver; budget?: number }): Promise<SolveReport>;
-  satisfiable(options?: { solver?: Solver; budget?: number }): boolean;
-  apply(assignment: Assignment[], options?: { via?: string }): Result;
-  query(question: Question | Wire | string, options?: { record?: boolean; suppose?: boolean; at?: number }): QueryResult;
+  satisfiable(options?: { solver?: Solver; budget?: number; limit?: Budget }): boolean;
+  apply(assignment: Assignment[], options?: Budgeted & { via?: string }): Result;
+  query(question: Question | Wire | string, options?: Budgeted & { record?: boolean; suppose?: boolean; at?: number }): QueryResult;
   /** run fn against the world as it was at a point of the sequence */
-  asOf<T>(at: number, fn: (world: World) => T): T;
+  asOf<T>(at: number, fn: (world: World) => T, options?: Budgeted): T | undefined;
   seqOf(id: string): number | undefined;
   compare(idA: string, idB: string): number;
-  act(request: { action: string; args?: Record<string, string | number | string[]> } | Wire | string): ActResult;
-  trial<T>(fn: (world: World) => T): T;
+  act(request: { action: string; args?: Record<string, string | number | string[]> } | Wire | string, options?: Budgeted): ActResult;
+  trial<T>(fn: (world: World) => T, options?: Budgeted): T | undefined;
   stamp: number;
-  abduce(goal: string | Wire[], options?: { maxDepth?: number; max?: number; maxAssumptions?: number }): Explanation[];
+  abduce(goal: string | Wire[], options?: Budgeted & { maxDepth?: number; max?: number; maxAssumptions?: number }): Explanation[] & { budget?: BudgetViolation };
   explain(id: string): object | null;
   history(): WorldEvent[];
   toSOP(options?: { schema?: boolean; derived?: boolean; provenance?: boolean }): string;
@@ -161,7 +176,7 @@ export function format(wire: Wire, options?: { multiline?: boolean }): string;
 export function tokenize(text: string): { t: string; line: number }[];
 export function str(value: string): string;
 export function quote(text: string): string;
-export function induce(examples: { when: string | Wire[]; then?: string | Wire[] }[], options?: { name?: string; kind?: 'rule' | 'deny'; why?: string; tolerant?: boolean; distinct?: boolean; negatives?: { when: string | Wire[] }[] }): { text: string; skipped: { index: number; why: string }[]; calcs: object[]; tests: object[]; coversNegative: number[]; variables: number; examples: number };
+export function induce(examples: { when: string | Wire[]; then?: string | Wire[] }[], options?: { name?: string; kind?: 'rule' | 'deny'; why?: string; tolerant?: boolean; distinct?: boolean; negatives?: { when: string | Wire[] }[]; budget?: Budget }): { text: string | null; budget?: BudgetViolation; skipped: { index: number; why: string }[]; calcs: object[]; tests: object[]; coversNegative: number[]; variables: number; examples: number };
 export function adopt(world: World, explanation: Explanation): { ok: boolean; results: Result[] };
 export function induceRule(examples: { when: string | Wire[]; then: string | Wire[] }[], options?: { name?: string }): string;
 export function induceSlots(wires: string | Wire[], options?: { enumMax?: number; prefix?: string }): string;

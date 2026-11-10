@@ -6,13 +6,14 @@
 
 import { parse, format, cloneWire } from './parser.mjs';
 import { EMPTY, walk, unify, hasVar, isVar, bound } from './unify.mjs';
-import { builtins, quantity, aggregates } from './builtins.mjs';
+import { builtins, quantity, aggregates, canonical } from './builtins.mjs';
 import { cdcl } from './solve.mjs';
 import { compileMatrix, localize, prefixModule, fitsKind, knownKind, readMap, SCHEMA_TYPES, LINKS } from './matrix.mjs';
 import { completion } from './complete.mjs';
 import { revision } from './revise.mjs';
 import { querying } from './query.mjs';
 import { timing } from './time.mjs';
+import { Budget } from './budget.mjs';
 import { abduce } from './abduce.mjs';
 
 const first = (w, k) => w.attrs[k]?.[0];
@@ -35,9 +36,14 @@ export class World {
   constructor(options = {}) {
     const {
       fns = {}, library = {}, maxDepth = 12, maxSteps = 50000,
-      lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {},
+      lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {}, budget = {},
     } = options;
-    this.options = { fns, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary };
+    this.options = { fns, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget };
+    this._b = new Budget(budget && budget.steps, budget && budget.ms); // the budget of the call in progress (or of the last one)
+    this._api = 0;                // depth of public calls: the outermost one owns the budget
+    this._shared = null;          // set while this world shares its state with a fork
+    this._logOf = new Map();      // fact id -> the log entry that told it
+    this._fills = 0;              // number of fill entries in the log
     this.fns = { ...builtins, ...fns };
     this.wires = new Map();    // id -> fact wire
     this.byType = new Map();   // type -> Set<id>
@@ -65,7 +71,11 @@ export class World {
 
   get(id) { return this.wires.get(this.resolve(id)); }
   has(id) { return this.wires.has(this.resolve(id)); }
-  resolve(id) { let x = id; while (this.alias.has(x)) x = this.alias.get(x); return x; }
+  resolve(id) {
+    let x = id;
+    while (this.alias.has(x)) x = this.alias.get(x); // bounded: a merged wire points at an older one, so chains end
+    return x;
+  }
   /** Wires of a type, including wires of the types that extend it. */
   ofType(type) { return [...(this.byType.get(type) || [])].map((id) => this.wires.get(id)); }
 
@@ -87,25 +97,64 @@ export class World {
   }
 
   /** Query with pattern wires. Returns one object of bindings per match. */
-  ask(query, { at } = {}) {
-    if (at !== undefined) return this.asOf(at, () => this.ask(query));
-    const pats = this._patterns(query);
-    const out = [];
-    for (const s of this._matchAll(pats, 0, EMPTY)) {
-      const row = {};
-      for (const p of pats) row[p.id] = walk('?' + p.id, s);
-      for (const k of bound(s)) row[k.slice(1)] = walk(k, s);
-      out.push(row);
-    }
-    return out;
+  ask(query, opts = {}) {
+    return this._guard(opts, () => {
+      if (opts.at !== undefined) return this.asOf(opts.at, () => this.ask(query));
+      const pats = this._patterns(query);
+      const out = [];
+      for (const s of this._matchAll(pats, 0, EMPTY)) {
+        const row = {};
+        for (const p of pats) row[p.id] = walk('?' + p.id, s);
+        for (const k of bound(s)) row[k.slice(1)] = walk(k, s);
+        out.push(row);
+      }
+      return out;
+    }, (budget) => Object.assign([], { budget }));
   }
 
-  holds(query) {
-    for (const _ of this._matchAll(this._patterns(query), 0, EMPTY)) return true;
-    return false;
+  holds(query, opts = {}) {
+    return this._guard(opts, () => {
+      for (const _ of this._matchAll(this._patterns(query), 0, EMPTY)) return true;
+      return false;
+    }, () => false);
+  }
+
+  /** Steps counted by the last call, per site, and whether its budget ran out. */
+  stats() { return this._b.report(); }
+
+  /**
+   * Run a public call under a budget. The outermost call owns it; calls made from inside
+   * share it. If it runs out, everything the call did is undone and `onBudget` builds what
+   * the caller gets: a `budget` violation in the shape of that call's normal result.
+   */
+  _guard(opts, fn, onBudget) {
+    const top = this._api === 0;
+    if (top) {
+      // no spread: this runs on every call
+      const own = opts && opts.budget, def = this.options.budget;
+      this._b = new Budget(own && own.steps !== undefined ? own.steps : def && def.steps, own && own.ms !== undefined ? own.ms : def && def.ms);
+    }
+    const mark = this._journal.length, tx = this._tx;
+    this._api++;
+    try {
+      return fn();
+    } catch (e) {
+      if (!top || !e || e !== this._b.signal) throw e;
+      while (this._journal.length > mark) { this.stamp = this._journal.pop(); this._journal.pop()(); } // bounded: the journal of this call
+      this._tx = tx;
+      if (!tx) { this._journal.length = 0; this._emitted = this.events.length; }
+      return onBudget(this._b.violation());
+    } finally {
+      this._api--;
+    }
+  }
+
+  _refusal(v) {
+    return { ok: false, added: [], derived: [], filled: [], merged: [], removed: [], violations: [v] };
   }
 
   /** Justification tree of a wire: who told it, or which rule derived it from what. */
+  // bounded: each wire is expanded once (seen)
   explain(id, seen = new Set()) {
     const w = this.get(id);
     if (!w) return null;
@@ -144,7 +193,10 @@ export class World {
   /** Everything needed to rebuild the world: what it was told, in order. */
   toJSON() { return { format: 'sopworld', version: 1, log: this.log.map((e) => ({ ...e })) }; }
 
-  /** Rebuild a world from toJSON() output. Functions and the library are passed again. */
+  /**
+   * Rebuild a world from toJSON() output. Functions and the library are passed again.
+   * Each entry of the log is replayed as its own call, under its own budget.
+   */
   static fromJSON(data, options = {}) {
     if (data?.format !== 'sopworld') throw new Error('World.fromJSON: not a sopworld snapshot');
     const w = new World(options);
@@ -164,14 +216,18 @@ export class World {
    * { strict: true } also refuses a change that leaves no possible completion.
    */
   tell(input, opts = {}) {
-    const r = this._tell(input, opts);
-    return r.ok ? r : this._retryWithoutDefaults(r, (o) => this._tell(input, o), opts);
+    return this._guard(opts, () => {
+      const r = this._tell(input, opts);
+      return r.ok ? r : this._retryWithoutDefaults(r, (o) => this._tell(input, o), opts);
+    }, (v) => this._refusal(v));
   }
 
   /** Answer an open key of an existing wire. Same contract as tell(). */
   fill(id, key, value, opts = {}) {
-    const r = this._fill(id, key, value, opts);
-    return r.ok ? r : this._retryWithoutDefaults(r, (o) => this._fill(id, key, value, o), opts);
+    return this._guard(opts, () => {
+      const r = this._fill(id, key, value, opts);
+      return r.ok ? r : this._retryWithoutDefaults(r, (o) => this._fill(id, key, value, o), opts);
+    }, (v) => this._refusal(v));
   }
 
   /** tell() for set-up code: throws when the world refuses, so a broken matrix cannot go unnoticed. */
@@ -188,13 +244,13 @@ export class World {
   use(name) { return this.tell([{ id: `use.${name}`, type: 'core.use', attrs: { world: [name] }, pattern: false }]); }
 
   /** Hypotheses that would make the goal pattern true. See abduce.mjs. */
-  abduce(goal, opts) { return abduce(this, goal, opts); }
+  abduce(goal, opts = {}) { return this._guard(opts, () => abduce(this, goal, opts), (budget) => Object.assign([], { budget })); }
 
   _tell(input, { dry = false, strict = this.options.strict } = {}) {
     const wires = (typeof input === 'string' ? parse(input) : input).map(cloneWire);
     const told = wires.map(cloneWire); // the log keeps what was said, not what it grew into
     const res = this._result();
-    const mark = this._begin();
+    const mark = this._begin(!dry);
     let facts;
     try {
       facts = this._ingest(wires, res);
@@ -208,7 +264,7 @@ export class World {
 
   _fill(id, key, value, { dry = false, via = 'core.tell', strict = this.options.strict } = {}) {
     const res = this._result();
-    const mark = this._begin();
+    const mark = this._begin(!dry);
     try {
       const w = this.get(id);
       if (!w) res.violations.push({ kind: 'unknown-wire', id });
@@ -238,13 +294,18 @@ export class World {
   _result() {
     return { ok: true, added: [], derived: [], filled: [], merged: [], removed: [], violations: [], _touched: new Set(), _agenda: [], _fluents: new Map(), _types: new Set(), _seeds: new Map(), _full: false };
   }
-  _begin() { this._tx++; return this._journal.length; }
+  /** Open a transaction. `commit` says the caller intends to keep the changes: a state shared with a fork is copied first. */
+  _begin(commit = false) {
+    if (commit && this._shared && this._tx === 0) this._detach();
+    this._tx++;
+    return this._journal.length;
+  }
   _do(undo) {
     this._journal.push(undo, this.stamp);
     this.stamp = ++this._clock;
   }
   _rollback(mark) {
-    while (this._journal.length > mark) {
+    while (this._journal.length > mark) { // bounded: the journal
       this.stamp = this._journal.pop();
       this._journal.pop()();
     }
@@ -252,24 +313,84 @@ export class World {
   }
   _commit() {
     if (--this._tx !== 0) return;
+    if (this._shared) throw new Error('sopworld: internal error, a change was committed to a state shared with a fork');
     this._journal.length = 0;
     const fresh = this.events.slice(this._emitted);
     this._emitted = this.events.length;
     if (fresh.length) for (const l of this.listeners) l(fresh.map((e) => ({ ...e })), this);
   }
 
+  /** What the caller gets of a result: the same lists without the working fields. */
+  _bare(res) {
+    return { ok: res.ok, added: res.added, derived: res.derived, filled: res.filled, merged: res.merged, removed: res.removed, violations: res.violations };
+  }
+
   _finish(mark, res, dry, entry) {
-    res.ok = !res.violations.length;
-    delete res._touched; delete res._agenda; delete res._fluents; delete res._types; delete res._seeds; delete res._full;
-    if (!res.ok) for (const v of res.violations) this._support(v); // before the evidence is rolled back
-    if (!res.ok || dry) {
+    const ok = !res.violations.length;
+    if (!ok) for (const v of res.violations) this._support(v); // before the evidence is rolled back
+    if (!ok || dry) {
       this._rollback(mark);
-      if (!res.ok) { res.added = []; res.derived = []; res.filled = []; res.merged = []; res.removed = []; }
+      if (!ok) return { ok, added: [], derived: [], filled: [], merged: [], removed: [], violations: res.violations };
     } else {
-      if (entry) { this.log.push(entry); this._do(() => this.log.pop()); }
+      if (entry) this._logPush(entry);
       this._commit();
     }
-    return res;
+    res.ok = ok;
+    return this._bare(res);
+  }
+
+  _logPush(entry) {
+    this.log.push(entry);
+    if (entry.op === 'tell') for (const id of entry.facts) this._logOf.set(id, entry); // bounded: the facts of one tell
+    else this._fills++;
+    this._do(() => {
+      this.log.pop();
+      if (entry.op === 'tell') for (const id of entry.facts) this._logOf.delete(id);
+      else this._fills--;
+    });
+  }
+
+  /**
+   * Take told facts out of the log (they were retracted), or put a successor in the place
+   * of one. Only the entries that told those facts are touched.
+   */
+  _logRemove(dead, successor = null, replaced = null) {
+    const old = this.log, oldFills = this._fills;
+    let log = null;
+    const undo = [];
+    const point = (id, entry) => {
+      const prev = this._logOf.get(id);
+      undo.push(() => (prev ? this._logOf.set(id, prev) : this._logOf.delete(id)));
+      if (entry) this._logOf.set(id, entry); else this._logOf.delete(id);
+    };
+    const entries = new Set();
+    for (const id of dead) { const e = this._logOf.get(id); if (e) entries.add(e); }
+    if (successor) { const e = this._logOf.get(successor.id); if (e) entries.add(e); }
+    for (const e of entries) {
+      log = log || old.slice();
+      const i = log.indexOf(e);
+      if (i < 0) continue;
+      const wires = [];
+      for (const w of e.wires) { // bounded: the wires of one tell
+        const fact = e.facts.includes(w.id);
+        if (fact && dead.has(w.id)) continue;
+        wires.push(fact && successor && w.id === successor.id ? successor : w);
+      }
+      const facts = e.facts.filter((x) => !dead.has(x));
+      for (const id of e.facts) if (dead.has(id)) point(id, null);
+      if (wires.length) {
+        const next = { ...e, wires, facts };
+        log[i] = next;
+        for (const id of facts) point(id, next);
+      } else log.splice(i, 1);
+    }
+    if (this._fills) {
+      const kept = (log || old).filter((e) => e.op !== 'fill' || !(dead.has(e.id) || e.id === replaced));
+      if (kept.length !== (log || old).length) { this._fills -= (log || old).length - kept.length; log = kept; }
+    }
+    if (!log) return;
+    this.log = log;
+    this._do(() => { this.log = old; this._fills = oldFills; for (let i = undo.length - 1; i >= 0; i--) undo[i](); });
   }
 
   /**
@@ -281,7 +402,7 @@ export class World {
     const roots = [...(v.wires || []), ...(v.id ? [v.id] : [])];
     if (!roots.length) return;
     const seen = new Set(), told = [];
-    while (roots.length) {
+    while (roots.length) { // bounded: each wire is visited once
       const id = this.resolve(roots.pop());
       if (seen.has(id)) continue;
       seen.add(id);
@@ -296,7 +417,7 @@ export class World {
   }
 
   /** Run fn against a scratch state; everything it does is undone. What-if questions go here. */
-  trial(fn) { return this._trial(() => fn(this)); }
+  trial(fn, opts = {}) { return this._guard(opts, () => this._trial(() => fn(this)), () => undefined); }
 
   _trial(fn) {
     const mark = this._begin();
@@ -317,13 +438,28 @@ export class World {
   // ancestor type finds them without looking at the hierarchy again.
   _lineage(type) { return this._compiled().lineage(type); }
 
+  /** The spelling a value is indexed under: canonical for a key that holds numbers, as given otherwise. */
+  _iv(type, key, value) {
+    const c = this._compiled();
+    return c.numKeys.size && c.numeric(type, key) ? canonical(value) : value;
+  }
+
+  /** Are two values of a key the same value? */
+  _same(type, key, a, b) {
+    if (a === b) return true;
+    const c = this._compiled();
+    return c.numKeys.size > 0 && c.numeric(type, key) && canonical(a) === canonical(b);
+  }
+
   _link(w, key, value) {
-    for (const t of this._lineage(w.type)) setOf(this.index, K(t, key, value)).add(w.id);
+    const iv = this._iv(w.type, key, value);
+    for (const t of this._lineage(w.type)) setOf(this.index, K(t, key, iv)).add(w.id);
     if (value[0] === '$') setOf(this.refs, value.slice(1)).add(w.id);
   }
 
   _unlink(w, key, value, whole) {
-    for (const t of this._lineage(w.type)) this.index.get(K(t, key, value))?.delete(w.id);
+    const iv = this._iv(w.type, key, value);
+    for (const t of this._lineage(w.type)) this.index.get(K(t, key, iv))?.delete(w.id);
     if (value[0] !== '$') return;
     if (whole || !Object.values(w.attrs).some((vs) => vs.includes(value))) this.refs.get(value.slice(1))?.delete(w.id);
   }
@@ -334,7 +470,7 @@ export class World {
     for (const k of Object.keys(w.attrs)) for (const v of w.attrs[k]) this._link(w, k, v);
   }
 
-  /** Rebuild the type indexes after the hierarchy changed. */
+  /** Rebuild the type indexes after the hierarchy, or the set of keys that hold numbers, changed. */
   _reindex() {
     const old = [this.byType, this.index];
     this.byType = new Map();
@@ -342,7 +478,7 @@ export class World {
     for (const w of this.wires.values()) {
       for (const t of this._lineage(w.type)) {
         setOf(this.byType, t).add(w.id);
-        for (const k of Object.keys(w.attrs)) for (const v of w.attrs[k]) setOf(this.index, K(t, k, v)).add(w.id);
+        for (const k of Object.keys(w.attrs)) for (const v of w.attrs[k]) setOf(this.index, K(t, k, this._iv(w.type, k, v))).add(w.id);
       }
     }
     this._do(() => { [this.byType, this.index] = old; });
@@ -402,28 +538,29 @@ export class World {
     });
   }
 
+  _indexFiring(sig, rec) {
+    this.firings.set(sig, rec);
+    for (const id of rec.ids) setOf(this.byWire, id).add(sig);
+    if (rec.s) setOf(this.byRule, rec.rule).add(sig);
+  }
+
+  _unindexFiring(sig, rec) {
+    this.firings.delete(sig);
+    for (const id of rec.ids) this.byWire.get(id)?.delete(sig);
+    if (rec.s) this.byRule.get(rec.rule)?.delete(sig);
+  }
+
   _recordFiring(sig, rec) {
-    const ids = new Set([...rec.from, ...rec.made, ...rec.hits, ...rec.fills.map((f) => f.id)]);
-    const add = () => {
-      this.firings.set(sig, rec);
-      for (const id of ids) setOf(this.byWire, id).add(sig);
-      if (rec.s) setOf(this.byRule, rec.rule).add(sig);
-    };
-    const del = () => {
-      this.firings.delete(sig);
-      for (const id of ids) this.byWire.get(id)?.delete(sig);
-      if (rec.s) this.byRule.get(rec.rule)?.delete(sig);
-    };
-    rec._add = add; rec._del = del;
-    add();
-    this._do(del);
+    rec.ids = [...new Set([...rec.from, ...rec.made, ...rec.hits, ...rec.fills.map((f) => f.id)])];
+    this._indexFiring(sig, rec);
+    this._do(() => this._unindexFiring(sig, rec));
   }
 
   _forgetFiring(sig) {
     const rec = this.firings.get(sig);
     if (!rec) return null;
-    rec._del();
-    this._do(rec._add);
+    this._unindexFiring(sig, rec);
+    this._do(() => this._indexFiring(sig, rec));
     return rec;
   }
 
@@ -446,10 +583,17 @@ export class World {
       }
     };
     // wire types that a core.schema.map declares as schema, known before or told in this batch
-    const maps = new Map(this._compiled().maps);
+    let maps = this._compiled().maps;
+    let own = false;
     const note = (ws) => {
       noteLinks(ws);
-      for (const w of ws) if (w.type === 'core.schema.map') { const m = readMap(w); if (m.from) maps.set(m.from, m); }
+      for (const w of ws) {
+        if (w.type !== 'core.schema.map') continue;
+        const m = readMap(w);
+        if (!m.from) continue;
+        if (!own) { maps = new Map(maps); own = true; }
+        maps.set(m.from, m);
+      }
     };
     note(wires);
     // facts and matrix wires have separate id spaces: a pattern ?m1 does not clash with a fact @m1
@@ -493,7 +637,7 @@ export class World {
           if (!c.modules.has(dep)) res.violations.push({ kind: 'schema', why: `module ${name} imports ${dep}, which is neither loaded nor in the library` });
         }
       }
-      if (!prev || prev.hierarchy !== c.hierarchy) this._reindex();
+      if (!prev || prev.hierarchy !== c.hierarchy || prev.numbers !== c.numbers) this._reindex();
       if (c.fluents.size || c.seqKey) for (const w of this.wires.values()) { if (w.meta.told) this._fluentNote(w, res); }
       res._agenda = [...this.wires.keys()];
       for (const id of res._agenda) res._touched.add(id);
@@ -503,14 +647,20 @@ export class World {
     for (const w of wires) {
       if (isSchema(w)) continue;
       if (this.wires.has(w.id) || this.alias.has(w.id)) { res.violations.push({ kind: 'duplicate-id', id: w.id }); continue; }
-      if (Object.values(w.attrs).flat().some(hasVar)) {
+      const attrs = {};
+      let vars = false;
+      for (const k of Object.keys(w.attrs)) { // short and full key names are one key
+        const short = k.indexOf('.') < 0 ? k : c.shortKey(w.type, k);
+        const into = attrs[short] || (attrs[short] = []);
+        for (const raw of w.attrs[k]) {
+          if (hasVar(raw)) vars = true;
+          const v = raw[0] === '$' ? this._norm(raw) : raw;
+          if (!into.includes(v)) into.push(v);
+        }
+      }
+      if (vars) {
         res.violations.push({ kind: 'syntax', id: w.id, why: 'a fact cannot contain variables; templates must be told together with their rule' });
         continue;
-      }
-      const attrs = {};
-      for (const k of Object.keys(w.attrs)) { // short and full key names are one key
-        const short = c.shortKey(w.type, k);
-        attrs[short] = [...new Set([...(attrs[short] || []), ...w.attrs[k].map((v) => this._norm(v))])];
       }
       w.attrs = attrs;
       facts.push(w.id);
@@ -567,18 +717,29 @@ export class World {
       const have = w.attrs[pairs[i]];
       if (!have) return;
       if (have.length !== 1) { yield* this._matchPairs(pairs, i, w, s); return; }
-      s = unify(pairs[i + 1], have[0], s);
+      s = this._unifyValue(w.type, pairs[i], pairs[i + 1], have[0], s);
       if (!s) return;
     }
     yield s;
   }
 
+  /** Unify a pattern value with a wire value; under a key that holds numbers, 5 and 5.0 are equal. */
+  _unifyValue(type, key, pv, have, s) {
+    const t = unify(pv, have, s);
+    if (t) return t;
+    const c = this._c;
+    if (!c || !c.numKeys.size || !c.numeric(type, key)) return null;
+    const want = walk(pv, s);
+    return !hasVar(want) && canonical(want) === canonical(have) ? s : null;
+  }
+
+  // bounded: one level per value of the pattern
   *_matchPairs(pairs, i, w, s) {
     if (i === pairs.length) { yield s; return; }
     const have = w.attrs[pairs[i]];
     if (!have) return;
     for (const fv of have) {
-      const t = unify(pairs[i + 1], fv, s);
+      const t = this._unifyValue(w.type, pairs[i], pairs[i + 1], fv, s);
       if (t) yield* this._matchPairs(pairs, i + 2, w, t);
     }
   }
@@ -604,18 +765,29 @@ export class World {
     // start from the smallest set: all wires of the type, or those having a value the pattern fixes
     let best = this.byType.get(p.type);
     if (!best) return;
+    const c = this._c, numbers = !!c && c.numKeys.size > 0;
     for (const k of Object.keys(p.attrs)) {
       for (const v of p.attrs[k]) {
         const t = walk(v, s);
         if (hasVar(t)) continue;
-        const set = this.index.get(K(p.type, k, t));
+        let set = this.index.get(K(p.type, k, t));
+        if (numbers && c.numKeys.has(k)) {
+          // a key that holds numbers in this type or in a subtype: those wires are under the canonical spelling
+          const ct = canonical(t);
+          if (ct !== t) {
+            const other = this.index.get(K(p.type, k, ct));
+            if (set && set.size && other && other.size) continue; // both spellings in use: this value does not narrow
+            if (other && other.size) set = other;
+          }
+        }
         if (!set || !set.size) return;
         if (set.size < best.size) best = set;
       }
     }
-    for (const id of best) yield* this._matchWire(p, this.wires.get(id), s);
+    for (const id of best) { this._b.tick('match'); yield* this._matchWire(p, this.wires.get(id), s); }
   }
 
+  // bounded: one level per pattern; the candidates tried at each level tick the budget
   *_matchAll(pats, i, s) {
     if (i === pats.length) { yield s; return; }
     for (const t of this._candidates(pats[i], s)) yield* this._matchAll(pats, i + 1, t);
@@ -638,6 +810,7 @@ export class World {
           const matches = [...this._matchAll(c.over, 0, s)].map((t) => [walk('?' + c.over[0].id, t), t]).sort((x, y) => this.compare(x[0], y[0]));
           const n = matches.length;
           for (const [, t] of matches) {
+            this._b.tick('aggregate');
             if (!c.args.length) break;
             const a = walk(c.args[0], t);
             if (hasVar(a)) continue;
@@ -673,8 +846,9 @@ export class World {
     const fireAll = (rule, matches) => {
       for (const s of matches) {
         if (res.violations.length) return;
+        this._b.tick('chase');
         if (++steps > this.options.maxSteps) {
-          res.violations.push({ kind: 'budget', why: `more than ${this.options.maxSteps} rule firings` });
+          res.violations.push({ kind: 'budget', site: 'chase', steps, why: `more than ${this.options.maxSteps} rule firings` });
           return;
         }
         this._fire(rule, s, c, res);
@@ -682,15 +856,18 @@ export class World {
     };
     for (;;) {
       while ((res._agenda.length || res._fluents.size) && !res.violations.length) {
+        this._b.tick('chase');
         if (res._fluents.size) { this._fluentRun(res, c); continue; } // states first: rules read their values
         const w = this.wires.get(res._agenda.shift());
         if (!w) continue;
-        for (const t of c.lineage(w.type)) res._types.add(t);
-        this._seed(w, res);
-        // a new or changed wire can end the absence that a rule with not= relied on
-        for (const rule of c.forType(c.negByType, w.type)) {
-          const stale = [...(this.byRule.get(rule.id) || [])].filter((sig) => this._negated(rule, this.firings.get(sig).s));
-          if (stale.length) this._unsay(res, [], [], stale);
+        if (c.negRules.length) { // only rules with negation, a selector or an aggregate need to know what changed
+          for (const t of c.lineage(w.type)) res._types.add(t);
+          this._seed(w, res);
+          // a new or changed wire can end the absence that a rule with not= relied on
+          for (const rule of c.forType(c.negByType, w.type)) {
+            const stale = [...(this.byRule.get(rule.id) || [])].filter((sig) => this._negated(rule, this.firings.get(sig).s));
+            if (stale.length) this._unsay(res, [], [], stale);
+          }
         }
         for (const { rule, idx } of c.forType(c.ruleByType, w.type)) {
           const matches = [];
@@ -700,9 +877,11 @@ export class World {
       }
       if (res.violations.length) return;
       // rules with negation or a selector are re-evaluated in full once everything else is quiet
+      if (!c.negRules.length) { res._full = false; if (!res._agenda.length && !res._fluents.size) return; continue; }
       const changed = res._types;
       res._types = new Set();
       for (const rule of c.negRules) {
+        this._b.tick('negation');
         if (rule.aggregate && !rule.hasSelect && !rule.not.length && !res._full) {
           // only the groups whose aggregated wires changed are looked at again
           const seeds = res._seeds.get(rule);
@@ -789,9 +968,9 @@ export class World {
   _findByIdentity(type, attrs) {
     const keys = this._compiled().idKeys.get(type);
     if (!keys || !keys.every((k) => attrs[k])) return null;
-    for (const id of this.index.get(K(type, keys[0], attrs[keys[0]][0])) || []) {
+    for (const id of this.index.get(K(type, keys[0], this._iv(type, keys[0], attrs[keys[0]][0]))) || []) {
       const w = this.wires.get(id);
-      if (keys.every((k) => w.attrs[k] && w.attrs[k][0] === attrs[k][0])) return w;
+      if (keys.every((k) => w.attrs[k] && this._same(type, k, w.attrs[k][0], attrs[k][0]))) return w;
     }
     return null;
   }
@@ -802,13 +981,13 @@ export class World {
     let best = this.byType.get(type);
     if (!best) return null;
     for (const k of keys) for (const v of attrs[k]) {
-      const set = this.index.get(K(type, k, v));
+      const set = this.index.get(K(type, k, this._iv(type, k, v)));
       if (!set || !set.size) return null;
       if (set.size < best.size) best = set;
     }
     for (const id of best) {
       const w = this.wires.get(id);
-      if (keys.every((k) => w.attrs[k] && attrs[k].every((v) => w.attrs[k].includes(v)))) return w;
+      if (keys.every((k) => w.attrs[k] && attrs[k].every((v) => w.attrs[k].some((x) => this._same(type, k, x, v))))) return w;
     }
     return null;
   }
@@ -819,7 +998,7 @@ export class World {
     for (const k of Object.keys(attrs)) {
       for (const v of attrs[k]) {
         const have = w.attrs[k];
-        if (have && have.includes(v)) continue;
+        if (have && (have.includes(v) || have.some((x) => this._same(w.type, k, x, v)))) continue;
         if (!prov.rec && this._fluentState(w, k, v, res)) continue; // a new statement about a state, not a conflict
         if (have && !c.slotOf(w.type, k)?.many) {
           res.violations.push({ kind: 'conflict', id: w.id, key: k, have: have[0], want: v, via: prov.via, wires: [w.id, ...prov.from] });
@@ -874,6 +1053,7 @@ export class World {
     values.forEach(unfill);
     sigs.forEach(invalidate);
     while (queue.length) {
+      this._b.tick('withdraw');
       const id = queue.shift();
       for (const sig of [...(this.byWire.get(id) || [])]) {
         const rec = this.firings.get(sig);
@@ -893,6 +1073,7 @@ export class World {
     for (const id of res._touched) {
       const w = this.wires.get(id);
       if (!w) continue;
+      this._b.tick('validate');
       for (const k of Object.keys(w.attrs)) {
         const s = c.slotOf(w.type, k);
         if (!s) {
@@ -905,7 +1086,7 @@ export class World {
               const bad = !q ? 'must be a number' : s.min && q.n < s.min.n ? `must be at least ${s.min.n}` : s.max && q.n > s.max.n ? `must be at most ${s.max.n}` : null;
               if (bad) res.violations.push({ kind: 'domain', id, key: k, value: v, why: bad });
             }
-            if (s.enum && !s.enum.includes(v)) res.violations.push({ kind: 'domain', id, key: k, value: v, allowed: s.enum });
+            if (s.enum && !s.enum.includes(v) && !s.enum.some((e) => this._same(w.type, k, e, v))) res.violations.push({ kind: 'domain', id, key: k, value: v, allowed: s.enum });
             if (s.type && !s.kinds.length) {
               const target = v[0] === '$' ? this.wires.get(v.slice(1)) : null;
               const types = s.refs.length ? s.refs : [s.type];

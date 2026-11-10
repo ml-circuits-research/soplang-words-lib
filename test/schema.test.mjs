@@ -212,3 +212,65 @@ test('modules: core.use prefix=false loads a module whose ids are already qualif
   assert.equal(w.open().length, 0);
   assert.equal(w.schema('base.driver').keys.name.inherited, true);
 });
+
+test('numbers: under a key declared integer or number, 5 and 5.0 are one value', () => {
+  const w = new World();
+  w.load(`
+    @k1 core.slot of=item key=sku id=true kind=integer
+    @k2 core.slot of=item key=price kind=number
+    @k3 core.slot of=item key=size kind=number many=true
+    @k4 core.slot of=item key=label
+    @k5 core.slot of=item key=grade kind=integer enum=1 enum=2 enum=3
+    ?i item price=5
+    @c cheap of=$i
+    @r core.rule when=$i then=$c
+    ?a item price=?p
+    ?b offer price=?p
+    @m match item=$a offer=$b
+    @j core.rule when=$a when=$b then=$m
+  `);
+  w.load('@a item sku=7 price=5.0 label=1.0 size=2.50 grade=02  @b item sku=8 price=5  @c1 item sku=9 price=6');
+  assert.equal(w.get('a').attrs.price[0], '5.0', 'the value stays as it was told');
+  // a pattern with a constant, either spelling
+  assert.deepEqual(w.ask('?x item price=5').map((r) => r.x).sort(), ['a', 'b']);
+  assert.deepEqual(w.ask('?x item price=5.00').map((r) => r.x).sort(), ['a', 'b']);
+  assert.deepEqual(w.ask('?x item price=05').map((r) => r.x).sort(), ['a', 'b']);
+  assert.deepEqual(w.ask('?x item price=6.0').map((r) => r.x), ['c1']);
+  assert.deepEqual(w.ask('?x item size=2.5').map((r) => r.x), ['a'], 'a key with many values');
+  assert.equal(w.ask('?x item sku=7 price=?p')[0].p, '5.0', 'a variable gets the value as told');
+  // rules: a constant in the pattern, and a join through a variable
+  assert.deepEqual(w.ofType('cheap').map((x) => x.attrs.of[0]).sort(), ['$a', '$b']);
+  w.load('@o1 offer price=5.000  @o2 offer price=6');
+  assert.deepEqual(w.ofType('match').map((x) => `${x.attrs.item[0]} ${x.attrs.offer[0]}`).sort(), ['$a $o1', '$b $o1', '$c1 $o2']);
+  // identity, repetition and conflict go by the value
+  assert.deepEqual(w.tell('@again item sku=7.0 label=1.0').merged, [{ id: 'again', into: 'a' }], 'the same identity');
+  assert.equal(w.tell('@again2 item sku=07 price=5').ok, true, 'the same price is not a conflict');
+  assert.equal(w.get('a').attrs.price.length, 1);
+  assert.equal(w.tell('@again3 item sku=7 price=5.5').violations[0].kind, 'conflict');
+  assert.equal(w.tell('@again4 item sku=7 size=2.5').ok, true);
+  assert.deepEqual(w.get('a').attrs.size, ['2.50'], 'no second spelling of a value it has');
+  // a key that is not declared as a number stays text
+  assert.deepEqual(w.ask('?x item label=1').length, 0);
+  assert.deepEqual(w.ask('?x item label=1.0').map((r) => r.x), ['a']);
+  // retraction takes the wire out of the index under the same spelling
+  assert.ok(w.retract('b').ok);
+  assert.deepEqual(w.ask('?x item price=5.0').map((r) => r.x), ['a']);
+});
+
+test('numbers: declaring the kind later re-indexes what is there; subtypes', () => {
+  const w = new World();
+  w.load('@t1 tank level=10.0  @t2 tank level=10  @p1 pressure_tank level=10.50');
+  assert.deepEqual(w.ask('?x tank level=10').map((r) => r.x), ['t2'], 'no declaration: text');
+  w.load('@pt core.type of=pressure_tank extends=tank  @k core.slot of=tank key=level kind=number');
+  assert.deepEqual(w.ask('?x tank level=10').map((r) => r.x).sort(), ['t1', 't2']);
+  assert.deepEqual(w.ask('?x tank level=10.5').map((r) => r.x), ['p1'], 'an inherited slot');
+  assert.deepEqual(w.ask('?x pressure_tank level=10.500').map((r) => r.x), ['p1']);
+  // a refused change that would have declared another key leaves the index as it was
+  const before = JSON.stringify(w.toJSON());
+  assert.equal(w.tell('@k9 core.slot of=tank key=name kind=number  @t3 tank name=x level=10').ok, false);
+  assert.equal(JSON.stringify(w.toJSON()), before);
+  assert.deepEqual(w.ask('?x tank level=10.0').map((r) => r.x).sort(), ['t1', 't2']);
+  const f = w.fork();
+  f.load('@t4 tank level=010');
+  assert.deepEqual([f.ask('?x tank level=10').length, w.ask('?x tank level=10').length], [3, 2]);
+});

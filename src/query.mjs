@@ -80,8 +80,13 @@ export const querying = {
    * Answer a question. Changes nothing unless { record: true }, which writes an answer
    * wire (and the question wire, if it was not one already) with status and provenance.
    */
-  query(q, { record = false, suppose = true, at } = {}) {
-    if (at !== undefined) return this.asOf(at, () => this.query(q, { suppose }));
+  query(q, opts = {}) {
+    return this._guard(opts, () => this._query(q, opts), (v) => ({ status: 'budget', ...v, from: [], wires: [] }));
+  },
+
+  // bounded: calls itself once, without `at`
+  _query(q, { record = false, suppose = true, at } = {}) {
+    if (at !== undefined) return this.asOf(at, () => this._query(q, { suppose }));
     const question = this._question(q);
     const c = this._compiled();
     const { seek, mode } = question;
@@ -173,7 +178,7 @@ export const querying = {
   /** Write the answer (and the question, when it is not yet a wire of the world) as wires. */
   _record(q, question, r) {
     const v = this._vocab();
-    const mark = this._begin();
+    const mark = this._begin(true);
     const told = [];
     let qid = question.id;
     if (!qid) {
@@ -203,7 +208,7 @@ export const querying = {
 
   _freshId(prefix) {
     let n = this.seq + 1;
-    while (this.wires.has(`${prefix}${n}`) || this.alias.has(`${prefix}${n}`)) n++;
+    while (this.wires.has(`${prefix}${n}`) || this.alias.has(`${prefix}${n}`)) n++; // bounded: by the ids in use
     return `${prefix}${n}`;
   },
 
@@ -213,7 +218,11 @@ export const querying = {
    * replace and retract. If it throws, returns { ok: false }, or any change is refused, the
    * world is left as it was. A required argument that is missing is reported, not guessed.
    */
-  act(request) {
+  act(request, opts = {}) {
+    return this._guard(opts, () => this._act(request), (v) => ({ ok: false, status: 'budget', violations: [v] }));
+  },
+
+  _act(request) {
     const v = this._vocab();
     let name, args = {}, id;
     let w = request;
@@ -229,7 +238,7 @@ export const querying = {
     if (lacking.length) {
       return { ok: false, status: 'missing', missing: lacking.map((k) => ({ action: name, key: k, ask: (first({ attrs: action.ask }, `ask.${k}`) || '').replace(/^"|"$/g, '') || undefined })), violations: [] };
     }
-    const mark = this._begin();
+    const mark = this._begin(true);
     const violations = [];
     const guard = (r) => { if (r && r.ok === false) { violations.push(...(r.violations || [])); throw REFUSED; } return r; };
     const ctx = this._context({
@@ -245,6 +254,7 @@ export const querying = {
       if (out && out.ok === false) { violations.push({ kind: 'refused', why: out.why || out.reason, reason: out.reason }); throw REFUSED; }
     } catch (e) {
       this._rollback(mark);
+      if (e === this._b.signal) throw e; // out of budget: the outermost call reports it
       if (e !== REFUSED) violations.push({ kind: 'error', why: e.message });
       return { ok: false, status: e === REFUSED ? 'refused' : 'error', violations };
     }

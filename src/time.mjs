@@ -182,7 +182,8 @@ export const timing = {
     }
     line.sort((a, b) => a.order - b.order || a.seq - b.seq);
     let value, from = [];
-    for (const step of line) { // bounded: one pass over the line
+    for (const step of line) {
+      this._b.tick('fluent');
       if (step.set !== undefined) { value = step.set; from = []; continue; }
       const next = this._effect(step.e, step.ev, value, h, f, slot, res);
       if (next === null) return;
@@ -201,7 +202,11 @@ export const timing = {
    * statements made after it, and everything that rested on them are set aside, then
    * restored. `at` is a number of the declared sequence key, or an arrival number (seqOf).
    */
-  asOf(at, fn) {
+  asOf(at, fn, opts = {}) {
+    return this._guard(opts, () => this._asOf(at, fn), () => undefined);
+  },
+
+  _asOf(at, fn) {
     return this._trial(() => {
       const res = this._result();
       const later = [];

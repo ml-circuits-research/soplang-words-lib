@@ -409,3 +409,125 @@ Deviations and limits:
 - `collect` is ordered by the sequence of the matched wires, so a replaced wire moves to
   the end.
 
+
+## G7 — budgets everywhere, structural fork, numbers in one spelling — done
+
+| Command | Result |
+| --- | --- |
+| `npm test` | sources: 150 pass, 0 fail, 0 skipped; built file: 150 pass, 0 fail, 0 skipped |
+| `node --test compat/psys2/*.test.mjs` | 7 pass, 0 fail |
+| `npm run examples` | exit 0 |
+| `npm run test:browser` | all browser checks passed |
+| `node docs/selftest.mjs` | 14 passed, 0 failed |
+| `node tools/scan-loops.mjs src` | clean |
+| `git grep -i psys2 src/ \| wc -l` | 0 |
+| `node tools/build.mjs` | `docs/sopworld.mjs` 184.1 kB, gzip 52.3 kB |
+
+New tests: 12 in `test/budget.test.mjs`, 2 in `test/schema.test.mjs` (numbers).
+
+**Budgets.** `src/budget.mjs`: one `Budget` (`steps`, default 5,000,000; optional `ms`)
+per public call, owned by the outermost call (`World._guard`) and ticked at 12 sites
+(`grep -c "tick(" src/*.mjs` sums to 23 tick lines): match, chase, negation, aggregate,
+fluent, withdraw, validate, complete, ground, solve, abduce, induce. Out of budget, the
+call undoes what it did and returns its normal shape with a `budget` violation (table
+in SPEC 4.11); solvers answer `unknown`. `world.stats()` gives the steps per site of the
+last call.
+
+How it is tested: for each call, `sweep()` runs it on a fresh world under **every**
+budget from 1 step up to what the whole call needs (sampled for the three largest) and
+checks, each time, that the budget is reported as exhausted at exactly `n + 1` steps,
+that the result has the refusal shape, and that `JSON.stringify(world.toJSON())` is what
+it was before. The test then requires that some run stopped in each site the call goes
+through. Sites reached that way: all twelve (`tell` on a matrix with an aggregate rule
+and a `not=` rule covers match, chase, negation, aggregate, validate; the ledger covers
+fluent; `retract`/`replace` cover withdraw; `suggest`/`next`/`complete`/`solveReport`
+with both built-in solvers cover complete, ground, solve; `abduce`; `induce`). Separate
+checks: a 200×200×200 join is cut at 20,000 steps, a rule that would derive 40,000 wires
+is refused with the world unchanged, `ms: 20` stops a four-way join.
+
+The static test (`tools/scan-loops.mjs`, run by the test suite) reads `src/` and reports
+every `while`, `for (;;)` and function that calls itself unless its block ticks or a
+`// bounded: <reason>` comment is on it (`grep -c "bounded:" src/*.mjs` sums to 32).
+The test also feeds the scan a file with two unmarked cases and checks it reports both;
+it caught a real slip while I worked (a method inserted between a comment and its
+function).
+
+**Fork.** `fork()` now shares the state (a token with a holder count) and copies nothing;
+whichever world first commits a change copies the indexes for itself (no replay, no rule
+fires again). `node tools/bench-fork.mjs`, world of 2,100 wires (100 orders × 20 wires,
+aggregate rules): fork median 0.0045 ms (max 0.041 ms over 101 forks); first write after
+a fork median 0.72 ms; second write 0.032 ms; for comparison a replay (`fromJSON`) of the
+same world 31 ms. The test asserts fork < 1 ms (best of 200) and independence in both
+directions, including forks of forks. Cost to know: after a fork the original also
+copies once at its next write, unless the fork wrote first (a world cannot tell that a
+fork was thrown away).
+
+**Numbers in one spelling** (the reviewer's note on G4). Done as asked: under a key
+whose every kind is `integer` or `number` the wire keeps its text and the indexes hold
+the canonical spelling; pattern constants, joins through variables, identity keys,
+repetition, conflict and `enum` go by the value (SPEC 3.9). Keys without such a kind
+stay text. When no slot declares such a kind the cost is one `Set.size` test per match.
+
+**The replace benchmark.** Not fully met as the task states it; the numbers:
+
+The benchmark is one cold run inside a harness that has just run other benchmarks. Its
+figure varies by ±10 ms between runs on this machine, so I took 11 runs of each and
+report min / median / max. Old harness (`/tmp/wt_823e3b3/tools/bench.mjs <library>`,
+worktrees made with `git worktree add /tmp/wt_<sha> <sha>`):
+
+| Library | join | 2000 tells | 1000 replaces |
+| --- | --- | --- | --- |
+| S0 `c583bfa` (0.4 as published here) | 106 / 130 / 148 | 36 / 52 / 63 | 20 / 32 / 51 |
+| G4 `823e3b3` | 136 / 148 / 194 | 40 / 62 / 95 | 26 / 45 / 59 |
+| now (before the numbers work) | 130 / 148 / 164 | 41 / 60 / 83 | 26 / 43 / 54 |
+
+Per commit (9 runs each, medians, join / tells / replace): S0 130 / 48 / 32, G1+G2
+146 / 63 / 38, G6 137 / 58 / 35, G3 150 / 60 / 44, G4 154 / 72 / 45. So the slowdown came
+in steps with G1–G4, not from one change, and G7's budgets added nothing measurable.
+
+Why: once the engine has compiled the code the two versions cost the same. I added a
+"best of 10 more" column to `tools/bench.mjs` (the first figure is still the single
+cold run) and ran the new harness on both libraries, 11 runs, medians:
+
+| Library (`node tools/bench.mjs [path]`) | 2000 tells cold / warm | 1000 replaces cold / warm |
+| --- | --- | --- |
+| S0 `c583bfa` | 47 / 14 ms | 17 / 10 ms |
+| now | 62 / 16 ms | 17 / 11 ms |
+
+Warm, 1000 replaces cost 11 ms against 10 ms (30,000 replaces in one loop: 19.1 ms per
+1000 before this work, measured the same way 16.3 ms for 0.4; after it the two are
+within 1 ms). Cold, the new code is slower because there is more of it on the path of
+every change (lineage indexes, sequence stamps, fluent and aggregate hooks, the log
+index), and the first thousand calls run before the engine has optimised it. The cold
+profile (`node --cpu-prof`) shows no single hot function, only garbage collection
+(about 23 ms of 100) and many functions at 1–3 ms.
+
+What I did fix on the way, each measured with `--cpu-prof`:
+- the result object no longer has six working fields removed with `delete` (27 ms of
+  913 ms in the tell loop); the caller gets a fresh object;
+- the chase skips "what changed" bookkeeping when the matrix has no rule with negation,
+  a selector or an aggregate;
+- a budget is created without object spreads; firing records keep ids, not closures;
+  the log has an index by wire id, so `replace` no longer scans the log.
+
+So: in the reviewer's harness the cold figure for replace is now 16–21 ms (it runs after
+ten warm repetitions of the tells), under 30; in the old harness it is 43 ms median
+against 32 for S0, which is not "at or under". I have put this as Q11 rather than keep
+tuning a cold-start number without knowing whether that is what matters to a host.
+
+Deviations and limits:
+
+- `load()` throws on a budget refusal, as it does on any refusal.
+- `solveReport`, `solve` and `satisfiable` take the step budget as `limit`, because
+  `budget` was already the solver's search budget there.
+- A host function in `fns` or an outside solver that loops by itself is not bounded by
+  the budget, and `ms` cannot interrupt it.
+- The depth limit (`maxDepth`, default 12) still stops a self-feeding rule before the
+  step budget does; the violation kind is `depth` there, as before.
+- Induction with more alignments than its cap keeps the wires in the order given
+  instead of trying them all (it was so before; now decided before any list is built).
+- Numbers: a number with an exponent (`1e3`) is not rewritten; `quantity.*` kinds are
+  not canonicalised (only `integer` and `number`), so `5.0kg` and `5kg` stay different
+  texts for matching and equal for the checks. Say if quantities should follow.
+- Along the way: `apply()` returned working fields (`_fluents`, `_types`, ...) in its
+  result; fixed.

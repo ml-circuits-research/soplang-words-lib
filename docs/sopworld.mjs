@@ -25,14 +25,14 @@ const __parser = (() => {
     const out = [];
     const n = text.length;
     let i = 0, line = 1;
-    while (i < n) {
+    while (i < n) { // bounded: every pass consumes input
       const c = text[i];
       if (c === '\n') { line++; i++; continue; }
       if (c === ' ' || c === '\t' || c === '\r') { i++; continue; }
-      if (c === '#') { while (i < n && text[i] !== '\n') i++; continue; }
+      if (c === '#') { while (i < n && text[i] !== '\n') i++; continue; } // bounded: to the end of the line
       const start = i, startLine = line;
       let inQ = false;
-      while (i < n) {
+      while (i < n) { // bounded: every pass consumes input
         const d = text[i];
         if (inQ) {
           if (d === '\\') { i += 2; continue; }
@@ -124,6 +124,7 @@ const __unify = (() => {
     return undefined;
   }
 
+  // bounded: follows a chain of bindings, which has no cycle
   function walk(t, s) {
     if (t[0] === '?') {
       const b = lookup(s, t);
@@ -137,6 +138,7 @@ const __unify = (() => {
   }
 
   /** Returns an extended substitution, or null when the terms cannot be made equal. */
+  // bounded: recurses once, to compare what two references point at
   function unify(a, b, s = EMPTY) {
     a = walk(a, s);
     b = walk(b, s);
@@ -179,6 +181,23 @@ const __builtins = (() => {
     if (!m) return null;
     const n = Number(m[1]);
     return Number.isFinite(n) ? { n, unit: m[2] || '' } : null;
+  }
+
+  const PLAIN = /^(-?)0*(\d*)(?:\.(\d*?)0*)?([A-Za-zµ°%][A-Za-z0-9µ°%/*^.]*)?$/;
+
+  /**
+   * One spelling for a plain number (with an optional unit): `5.0`, `05` and `5.` become `5`,
+   * `.50` becomes `0.5`. Text that is not such a number comes back as it is. Exact: the
+   * digits are kept, nothing is rounded.
+   */
+  function canonical(v) {
+    const c = v.charCodeAt(0);
+    if (c > 48 && c < 58 && v.indexOf('.') < 0) return v; // the usual case: 12, 7kg
+    const m = PLAIN.exec(v);
+    if (!m || (!m[2] && !m[3] && !/\d/.test(v))) return v;
+    const int = m[2] || '0', frac = m[3] || '';
+    const sign = m[1] && (int !== '0' || frac) ? '-' : '';
+    return sign + int + (frac ? '.' + frac : '') + (m[4] || '');
   }
 
   const show = (n, unit) => (Number.isFinite(n) ? String(Number(n.toPrecision(12))) + unit : undefined);
@@ -323,7 +342,7 @@ const __builtins = (() => {
     argmax: (values, picks) => extreme(values, picks, (a, b) => a > b)?.pick,
     collect: (values) => (values.length ? [...new Set(values)] : undefined),
   };
-  return { quantity, clock, date, builtins, aggregates };
+  return { quantity, canonical, clock, date, builtins, aggregates };
 })();
 
 // ---- src/solve.mjs
@@ -411,7 +430,7 @@ const __solve = (() => {
       this._assigned.pop();
     }
 
-    reset() { while (this._marks.length) this.pop(); }
+    reset() { while (this._marks.length) this.pop(); } // bounded: one pop per pushed value
 
     /** Check a whole assignment (values by variable index; undefined = leave open). Changes nothing. */
     verify(values) {
@@ -484,6 +503,7 @@ const __solve = (() => {
           if (d.not.length || d.selective) continue;
           for (const s0 of w._matchWire(d.when[idx], wire, EMPTY)) {
             for (const s of w._bodies(d, s0, idx)) {
+              w._b.tick('ground');
               const lits = new Map();
               let consistent = true;
               for (const p of d.when) {
@@ -537,7 +557,8 @@ const __solve = (() => {
           if (r.ok) problem.pop();
           return r.ok;
         });
-        const search = () => {
+        const search = () => { // each call ticks the budget
+          problem.world._b.tick('solve');
           let best = -1, cands = null;
           for (let i = 0; i < n; i++) {
             if (values[i] !== undefined) continue;
@@ -629,7 +650,8 @@ const __solve = (() => {
     }
 
     _propagate() {
-      while (this.qhead < this.trail.length) {
+      while (this.qhead < this.trail.length) { // bounded: each literal of the trail is visited once
+        if (this.tick) this.tick();
         const f = -this.trail[this.qhead++]; // this literal has just become false
         const ws = this.watches[this._w(f)];
         let j = 0;
@@ -673,7 +695,7 @@ const __solve = (() => {
     _cancel(level) {
       if (this.lim.length <= level) return;
       const to = this.lim[level];
-      while (this.trail.length > to) {
+      while (this.trail.length > to) { // bounded: the trail above that level
         const lit = this.trail.pop();
         const v = lit > 0 ? lit : -lit;
         this.phase[v] = this.val[v];
@@ -689,7 +711,7 @@ const __solve = (() => {
       const learnt = [0];
       const current = this.lim.length;
       let open = 0, p = 0, index = this.trail.length - 1, c = conflict;
-      do {
+      do { // bounded: walks the trail of the current level once
         for (const q of c) {
           if (q === p) continue;
           const v = q > 0 ? q : -q;
@@ -698,12 +720,12 @@ const __solve = (() => {
           this._bump(v);
           if (this.level[v] >= current) open++; else learnt.push(q);
         }
-        while (!this.seen[Math.abs(this.trail[index])]) index--;
+        while (!this.seen[Math.abs(this.trail[index])]) index--; // bounded: by the trail
         p = this.trail[index--];
         c = this.reason[Math.abs(p)];
         this.seen[Math.abs(p)] = 0;
         open--;
-      } while (open > 0);
+      } while (open > 0); // bounded: see the head of the loop
       learnt[0] = -p;
       // minimise: a literal is redundant when every other literal of its reason is already in the clause
       let size = 1;
@@ -735,13 +757,14 @@ const __solve = (() => {
       this._cancel(0);
       const luby = (i) => { // 1 1 2 1 1 2 4 ...
         let size = 1, seq = 0;
-        while (size < i + 1) { seq++; size = 2 * size + 1; }
-        while (size - 1 !== i) { size = (size - 1) >> 1; seq--; i %= size; }
+        while (size < i + 1) { seq++; size = 2 * size + 1; } // bounded: logarithmic in i
+        while (size - 1 !== i) { size = (size - 1) >> 1; seq--; i %= size; } // bounded: logarithmic in i
         return 2 ** seq;
       };
       let restarts = 0, since = 0, limit = 100;
       const stop = this.conflicts + budget;
       for (;;) {
+        if (this.tick) this.tick();
         const conflict = this._propagate();
         if (conflict) {
           this.conflicts++;
@@ -804,6 +827,7 @@ const __solve = (() => {
         const aux = [];
         for (const v of vars) aux[v.index] = v.domain.length > 8 ? v.domain.slice(1).map(() => ++n) : null;
         const sat = new Sat(n);
+        sat.tick = () => problem.world._b.tick('solve');
         for (const v of vars) {
           const x = lit[v.index], s = aux[v.index];
           sat.addClause(x); // at least one value
@@ -827,6 +851,7 @@ const __solve = (() => {
         const stats = () => ({ conflicts: sat.conflicts, decisions: sat.decisions, nogoods: problem.nogoods.length, learned: sat.learned, booleans: n });
         let left = budget;
         for (;;) {
+          problem.world._b.tick('solve');
           const before = sat.conflicts;
           const r = sat.solve(left);
           left -= sat.conflicts - before;
@@ -871,6 +896,7 @@ const __solve = (() => {
       solve(problem, { preset = new Map() } = {}) {
         const extra = [];
         for (let round = 0; round < maxRounds; round++) {
+          problem.world._b.tick('solve');
           const values = run(encode(problem, preset, extra));
           if (values && typeof values.then === 'function') throw new Error(`${name}: this solver is asynchronous, call world.solveAsync()`);
           const done = judge(problem, values, extra);
@@ -1216,6 +1242,21 @@ const __matrix = (() => {
       for (const s of slots.values()) if (s.prefix && key.startsWith(s.key.endsWith('.') ? s.key : s.key + '.')) return s;
       return undefined;
     };
+    // ---- keys that hold numbers by declaration (every kind of the slot is integer or number):
+    // their values are indexed and compared in one canonical spelling, so 5 and 5.0 are one value
+    const numeric = new Map();
+    const isNumber = (s) => !!s && !s.prefix && s.kinds.length > 0 && s.kinds.every((k) => k === 'integer' || k === 'number');
+    c.numKeys = new Set();
+    const declared = [];
+    for (const [type, mine] of own) for (const [k, s] of mine) if (isNumber(s)) { c.numKeys.add(k); declared.push(`${type}.${k}`); }
+    c.numbers = declared.sort().join(' ');
+    c.numeric = (type, key) => {
+      if (!c.numKeys.has(key)) return false;
+      const id = type + '\u0001' + key;
+      let n = numeric.get(id);
+      if (n === undefined) numeric.set(id, (n = isNumber(c.slotOf(type, key))));
+      return n;
+    };
     const identity = new Map();
     c.idKeys = {
       get(type) {
@@ -1343,7 +1384,7 @@ const __matrix = (() => {
     // templates in dependency order, so a template is created before the ones that refer to it
     const byId = new Map(rule.then.map((t) => [t.id, t]));
     const order = [], state = new Map();
-    const visit = (t) => {
+    const visit = (t) => { // bounded: each template is visited once (state)
       if (state.get(t.id) === 2) return;
       if (state.get(t.id) === 1) { c.errors.push(`${w.id}: templates refer to each other in a cycle`); return; }
       state.set(t.id, 1);
@@ -1405,7 +1446,10 @@ const __complete = (() => {
     _shallow(w, key) {
       const s = this._compiled().slots.get(w.type)?.get(key);
       if (!s) return [];
-      return this._domain(s).filter((c) => this._fill(w.id, key, c.value, { dry: true, strict: false, via: 'core.search' }).ok);
+      return this._domain(s).filter((c) => {
+        this._b.tick('complete');
+        return this._fill(w.id, key, c.value, { dry: true, strict: false, via: 'core.search' }).ok;
+      });
     },
 
     /** The completion problem of the current state, built once per state. */
@@ -1431,7 +1475,11 @@ const __complete = (() => {
      * a closed domain can still be completed together with it. Ordered: default first,
      * then most used; the `rank` option of the world can reorder them.
      */
-    suggest(id, key, { deep = this.options.lookahead } = {}) {
+    suggest(id, key, opts = {}) {
+      return this._guard(opts, () => this._suggest(id, key, opts), (budget) => Object.assign([], { budget }));
+    },
+
+    _suggest(id, key, { deep = this.options.lookahead } = {}) {
       const w = this.get(id);
       if (!w) return [];
       let cands = this._shallow(w, key);
@@ -1441,6 +1489,7 @@ const __complete = (() => {
         // a value that appears in a solution already found needs no search of its own
         const supported = problem.supported || (problem.supported = new Set());
         cands = cands.filter((c) => {
+          this._b.tick('complete');
           if (index >= 0) {
             if (supported.has(`${index}\u0001${c.value}`)) return true;
             const r = this._run(problem, { preset: new Map([[index, c.value]]) });
@@ -1464,7 +1513,10 @@ const __complete = (() => {
      * Returns { status: 'sat' | 'unsat' | 'unknown', assignment, stats, solver }.
      * 'unknown' means the solver's budget ran out. Changes nothing.
      */
-    solveReport({ solver, budget } = {}) { return this._run(this._problem(), { solver, budget }); },
+    solveReport(opts = {}) {
+      return this._guard(opts.limit ? { budget: opts.limit } : null, () => this._run(this._problem(), { solver: opts.solver, budget: opts.budget }),
+        (v) => ({ status: 'unknown', stats: { budget: v }, solver: (opts.solver || this.options.solver).name }));
+    },
 
     /** The assignment, or null when there is none. An exhausted budget returns an empty assignment. */
     solve(options) {
@@ -1477,26 +1529,34 @@ const __complete = (() => {
 
     /** solveReport() for solvers that answer asynchronously (a WebAssembly or remote solver). */
     async solveAsync({ solver = this.options.solver, budget = this.options.searchBudget } = {}) {
-      const problem = new Problem(this);
-      if (!solver.solveAsync) return this._run(problem, { solver, budget });
+      // each synchronous part runs under a budget of its own; the waiting in between does not count
+      const unknown = (v) => ({ status: 'unknown', stats: { budget: v }, solver: solver.name });
+      const problem = this._guard(null, () => new Problem(this), () => null);
+      if (!problem) return unknown(this._b.violation());
+      if (!solver.solveAsync) return this._guard(null, () => this._run(problem, { solver, budget }), unknown);
+      const verify = problem.verify.bind(problem);
+      problem.verify = (values) => this._guard(null, () => verify(values), () => ({ ok: false, culprits: [], budget: true }));
       const r = await solver.solveAsync(problem, budget === undefined ? {} : { budget });
       r.solver = solver.name;
       return r;
     },
 
     /** Commit an assignment from solve(): all fills in one transaction. */
-    apply(assignment, { via = 'core.complete' } = {}) {
+    apply(assignment, opts = {}) {
+      return this._guard(opts, () => this._apply(assignment, opts), (v) => this._refusal(v));
+    },
+
+    _apply(assignment, { via = 'core.complete' } = {}) {
       const res = this._result();
-      const mark = this._begin();
+      const mark = this._begin(true);
       for (const f of assignment || []) {
         const r = this._fill(f.id, f.key, f.value, { via, strict: false });
-        if (!r.ok) { this._rollback(mark); return { ...res, ok: false, violations: r.violations }; }
+        if (!r.ok) { this._rollback(mark); return { ...this._bare(res), ok: false, filled: [], derived: [], violations: r.violations }; }
         res.filled.push(...r.filled);
         res.derived.push(...r.derived);
       }
       this._commit();
-      delete res._touched; delete res._agenda;
-      return res;
+      return this._bare(res);
     },
 
     /**
@@ -1505,12 +1565,16 @@ const __complete = (() => {
      *   questions  core.question wires for keys that need an outside answer
      *   dead       keys for which no consistent value exists
      */
-    next() {
+    next(opts = {}) {
+      return this._guard(opts, () => this._next(), (budget) => ({ fills: [], questions: [], dead: [], budget }));
+    },
+
+    _next() {
       const c = this._compiled();
       const out = { fills: [], questions: [], dead: [] };
       for (const o of this.open()) {
         const s = c.slots.get(o.type).get(o.key);
-        const cands = this.suggest(o.id, o.key);
+        const cands = this._suggest(o.id, o.key);
         const closedDomain = this._closedDomain(s);
         if (cands.length === 1 && closedDomain) {
           out.fills.push({ ...o, value: cands[0].value, kind: 'forced' });
@@ -1534,15 +1598,32 @@ const __complete = (() => {
      * { choose: true } goes further and commits one full solution for the keys that are
      * still open with a closed domain, recorded as assumptions too.
      */
-    complete({ defaults = false, choose = false } = {}) {
+    complete(opts = {}) {
+      return this._guard(opts, () => this._complete(opts), (budget) => ({ filled: [], questions: [], dead: [], pending: [], budget }));
+    },
+
+    _complete({ defaults = false, choose = false } = {}) {
       const filled = [];
+      const mark = this._begin(true); // one transaction: out of budget, nothing of it stays
+      try {
+        const out = this._completing(filled, defaults, choose);
+        this._commit();
+        return out;
+      } catch (e) {
+        this._rollback(mark);
+        throw e;
+      }
+    },
+
+    _completing(filled, defaults, choose) {
       for (;;) {
-        const n = this.next();
+        this._b.tick('complete');
+        const n = this._next();
         const f = n.fills.find((x) => x.kind === 'forced') || (defaults && n.fills.find((x) => x.kind === 'default'));
         if (!f) {
           if (choose && n.questions.length) {
             const picked = this.solve() || [];
-            const r = picked.length ? this.apply(picked, { via: 'core.default' }) : { ok: false };
+            const r = picked.length ? this._apply(picked, { via: 'core.default' }) : { ok: false };
             if (r.ok) {
               filled.push(...picked.map((p) => ({ ...p, kind: 'chosen' })));
               choose = false;
@@ -1569,11 +1650,14 @@ const __complete = (() => {
      * One turn of a dialogue or one event from the environment: tell, then complete.
      * Returns the tell result extended with what was completed and what must be asked.
      */
-    step(input, { defaults = true, choose = false, strict } = {}) {
-      const r = this.tell(input, strict === undefined ? {} : { strict });
-      if (!r.ok) return { ...r, questions: [], dead: [], pending: [] };
-      const c = this.complete({ defaults, choose });
-      return { ...r, filled: [...r.filled, ...c.filled], questions: c.questions, dead: c.dead, pending: c.pending };
+    step(input, opts = {}) {
+      const { defaults = true, choose = false, strict } = opts;
+      return this._guard(opts, () => {
+        const r = this.tell(input, strict === undefined ? {} : { strict });
+        if (!r.ok) return { ...r, questions: [], dead: [], pending: [] };
+        const c = this._complete({ defaults, choose });
+        return { ...r, filled: [...r.filled, ...c.filled], questions: c.questions, dead: c.dead, pending: c.pending };
+      }, (v) => ({ ...this._refusal(v), questions: [], dead: [], pending: [] }));
     },
   };
   return { completion };
@@ -1588,13 +1672,20 @@ const __revise = (() => {
   // (World._unsay), the chase re-derives what still holds, and the result is validated.
   // Everything happens in one transaction, so a refused retraction changes nothing.
 
+  // what two worlds share after fork(), until one of them changes
+  const STATE = ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'events', 'seq', 'stamp', '_clock', '_lastOrder', '_c', '_logOf', '_fills'];
+
 
   const revision = {
     /**
      * Remove a told wire, every told wire that refers to it, and everything that was
      * derived from them. What has other support is derived again.
      */
-    retract(id) {
+    retract(id, opts = {}) {
+      return this._guard(opts, () => this._retract(id), (v) => this._refusal(v));
+    },
+
+    _retract(id) {
       const target = this.wires.get(id);
       const nested = this._tx > 0;
       const unsupported = { ok: false, removed: [], violations: [{ kind: 'unsupported', id, why: 'a merged wire cannot be retracted inside a transaction' }] };
@@ -1603,13 +1694,13 @@ const __revise = (() => {
         return { ok: false, removed: [], violations: [{ kind: 'unknown-wire', id, why: 'only told wires can be retracted' }] };
       }
       const res = this._result();
-      const mark = this._begin();
+      const mark = this._begin(true);
       let gone, fallback = false;
       try {
         gone = this._withdraw(res, [id], []);
         if (!res.violations.length) this._validate(res);
         // a derived wire that absorbed a told one would take the told statements with it
-        fallback = [...this.alias.values()].some((t) => !this.wires.has(t));
+        if (this.alias.size) fallback = [...this.alias.values()].some((t) => !this.wires.has(t));
       } catch (e) {
         this._rollback(mark);
         throw e;
@@ -1618,13 +1709,7 @@ const __revise = (() => {
       if (res.violations.length) return this._finish(mark, res, false, null);
 
       const removed = [...gone].filter((x) => !this.wires.has(x));
-      const dead = new Set(removed);
-      const old = this.log;
-      this.log = old
-        .filter((e) => e.op !== 'fill' || !dead.has(e.id))
-        .map((e) => (e.op !== 'tell' ? e : { ...e, wires: e.wires.filter((w) => !(e.facts.includes(w.id) && dead.has(w.id))), facts: e.facts.filter((x) => !dead.has(x)) }))
-        .filter((e) => e.op !== 'tell' || e.wires.length);
-      this._do(() => { this.log = old; });
+      this._logRemove(new Set(removed));
       this._event({ op: 'retract', ids: removed });
       const out = this._finish(mark, res, false, null);
       out.removed = removed;
@@ -1639,6 +1724,7 @@ const __revise = (() => {
       const gone = new Set();
       let targets = ids;
       for (let round = 0; (targets.length || values.length) && round < 1000; round++) {
+        this._b.tick('withdraw');
         for (const x of this._unsay(res, targets, values)) gone.add(x);
         values = [];
         this._chase(res);
@@ -1668,7 +1754,7 @@ const __revise = (() => {
     _retractByReplay(id) {
       const gone = new Set([id]);
       const told = this.log.filter((e) => e.op === 'tell').flatMap((e) => e.wires.filter((w) => e.facts.includes(w.id)));
-      for (let grew = true; grew;) {
+      for (let grew = true; grew;) { // bounded: each pass adds at least one told wire
         grew = false;
         for (const w of told) {
           if (gone.has(w.id)) continue;
@@ -1690,7 +1776,8 @@ const __revise = (() => {
         if (!r.ok) return { ok: false, removed: [], violations: r.violations };
       }
       const before = new Set(this.wires.keys());
-      for (const k of ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'seq', '_c']) this[k] = next[k];
+      for (const k of ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'seq', '_c', '_logOf', '_fills', '_lastOrder']) this[k] = next[k];
+      this._shared = null;
       this.stamp = ++this._clock;
       const removed = [...before].filter((x) => !this.wires.has(x));
       this.events = [...this.events, { seq: this.seq, op: 'retract', ids: removed }];
@@ -1699,8 +1786,52 @@ const __revise = (() => {
       return { ok: true, removed, violations: [] };
     },
 
-    /** Independent copy (replays the log). */
-    fork() { return this.constructor.fromJSON(this.toJSON(), this.options); },
+    /**
+     * An independent copy that costs nothing until one of the two worlds changes: both keep
+     * using the same state, and the first one to commit a change copies it for itself.
+     * Listeners are not carried over.
+     */
+    fork() {
+      const copy = new this.constructor(this.options);
+      const share = this._shared || (this._shared = { holders: 1 });
+      share.holders++;
+      for (const k of STATE) copy[k] = this[k];
+      copy._shared = share;
+      copy._emitted = copy.events.length;
+      return copy;
+    },
+
+    /** Stop sharing: take a private copy of the state (unless the other holders are gone already). */
+    _detach() {
+      const share = this._shared;
+      this._shared = null;
+      if (--share.holders === 0) return; // the last holder owns the state
+      const wires = new Map();
+      for (const [id, w] of this.wires) { // bounded: one pass over the wires
+        const attrs = {};
+        for (const k of Object.keys(w.attrs)) attrs[k] = [...w.attrs[k]];
+        const meta = { ...w.meta };
+        if (meta.fills) meta.fills = [...meta.fills];
+        if (meta.stated) meta.stated = Object.fromEntries(Object.entries(meta.stated).map(([k, v]) => [k, [...v]]));
+        if (meta.tails) meta.tails = { ...meta.tails };
+        wires.set(id, { id: w.id, type: w.type, attrs, pattern: w.pattern, meta });
+      }
+      const sets = (m) => new Map([...m].map(([k, v]) => [k, new Set(v)]));
+      this.wires = wires;
+      this.byType = sets(this.byType);
+      this.index = sets(this.index);
+      this.refs = sets(this.refs);
+      this.byWire = sets(this.byWire);
+      this.byRule = sets(this.byRule);
+      this.matrix = new Map(this.matrix);
+      this.alias = new Map(this.alias);
+      this.used = new Set(this.used);
+      this.firings = new Map(this.firings);
+      this._logOf = new Map(this._logOf);
+      this.log = [...this.log];
+      this.events = [...this.events];
+      this._pc = null;
+    },
 
     /**
      * Defaults are assumptions. When a change is refused and default fills are involved in
@@ -1709,7 +1840,7 @@ const __revise = (() => {
     _retryWithoutDefaults(r, redo, opts) {
       if (this._tx) return r;
       const involved = new Set();
-      const visit = (id) => {
+      const visit = (id) => { // bounded: each wire is visited once
         id = this.resolve(id);
         if (involved.has(id)) return;
         involved.add(id);
@@ -1728,15 +1859,18 @@ const __revise = (() => {
       if (!drop.length) return r;
 
       const res = this._result();
-      const mark = this._begin();
+      const mark = this._begin(!opts.dry);
       let r2;
       try {
         this._withdraw(res, [], drop);
         if (!res.violations.length) this._validate(res);
         if (res.violations.length) { this._rollback(mark); return r; }
-        const old = this.log;
-        this.log = old.filter((e) => !(e.op === 'fill' && e.via === 'core.default' && drop.some((d) => d.id === this.resolve(e.id) && d.key === e.key)));
-        this._do(() => { this.log = old; });
+        if (this._fills) {
+          const old = this.log, fills = this._fills;
+          this.log = old.filter((e) => !(e.op === 'fill' && e.via === 'core.default' && drop.some((d) => d.id === this.resolve(e.id) && d.key === e.key)));
+          this._fills -= old.length - this.log.length;
+          this._do(() => { this.log = old; this._fills = fills; });
+        }
         this._event({ op: 'revise', dropped: drop });
         r2 = redo({ ...opts, dry: false });
       } catch (e) {
@@ -1755,7 +1889,11 @@ const __revise = (() => {
    * changes. Told wires that refer to the old wire stay when a new wire takes its id;
    * otherwise they go with it. This is how state changes over time.
    */
-  revision.replace = function replace(id, input) {
+  revision.replace = function replace(id, input, opts = {}) {
+    return this._guard(opts, () => this._replace(id, input), (v) => this._refusal(v));
+  };
+
+  revision._replace = function _replace(id, input) {
     const target = this.wires.get(id);
     if (this.alias.has(id) || !target || !target.meta.told) {
       return { ...this._result(), ok: false, violations: [{ kind: 'unknown-wire', id, why: 'only told wires that were not merged can be replaced' }] };
@@ -1763,7 +1901,7 @@ const __revise = (() => {
     const wires = (typeof input === 'string' ? parse(input) : input).map(cloneWire);
     const told = wires.map(cloneWire);
     const res = this._result();
-    const mark = this._begin();
+    const mark = this._begin(true);
     let gone, facts, fallback = false;
     try {
       gone = this._unsay(res, [id], []);            // no cascade yet: the new wire may take the id
@@ -1782,7 +1920,7 @@ const __revise = (() => {
         if (!res.violations.length && orphans.length) for (const x of this._withdraw(res, orphans, [])) gone.add(x);
       }
       this._settle(res, this.options.strict);
-      fallback = [...this.alias.values()].some((t) => !this.wires.has(t));
+      if (this.alias.size) fallback = [...this.alias.values()].some((t) => !this.wires.has(t));
     } catch (e) {
       this._rollback(mark);
       throw e;
@@ -1795,16 +1933,7 @@ const __revise = (() => {
     const successor = facts.includes(id) ? told.find((w) => w.id === id) : null;
     const dead = new Set(removed);
     if (!successor) dead.add(id);
-    const old = this.log;
-    this.log = old
-      .filter((e) => e.op !== 'fill' || !(dead.has(e.id) || e.id === id))
-      .map((e) => (e.op !== 'tell' ? e : {
-        ...e,
-        wires: e.wires.filter((w) => !(e.facts.includes(w.id) && dead.has(w.id))).map((w) => (successor && e.facts.includes(w.id) && w.id === id ? successor : w)),
-        facts: e.facts.filter((x) => !dead.has(x)),
-      }))
-      .filter((e) => e.op !== 'tell' || e.wires.length);
-    this._do(() => { this.log = old; });
+    this._logRemove(dead, successor, id);
     this._event({ op: 'replace', id, removed });
     const rest = told.filter((w) => w !== successor);
     const entry = rest.length ? { op: 'tell', wires: rest, facts: facts.filter((x) => !successor || x !== id) } : null;
@@ -1899,8 +2028,13 @@ const __query = (() => {
      * Answer a question. Changes nothing unless { record: true }, which writes an answer
      * wire (and the question wire, if it was not one already) with status and provenance.
      */
-    query(q, { record = false, suppose = true, at } = {}) {
-      if (at !== undefined) return this.asOf(at, () => this.query(q, { suppose }));
+    query(q, opts = {}) {
+      return this._guard(opts, () => this._query(q, opts), (v) => ({ status: 'budget', ...v, from: [], wires: [] }));
+    },
+
+    // bounded: calls itself once, without `at`
+    _query(q, { record = false, suppose = true, at } = {}) {
+      if (at !== undefined) return this.asOf(at, () => this._query(q, { suppose }));
       const question = this._question(q);
       const c = this._compiled();
       const { seek, mode } = question;
@@ -1992,7 +2126,7 @@ const __query = (() => {
     /** Write the answer (and the question, when it is not yet a wire of the world) as wires. */
     _record(q, question, r) {
       const v = this._vocab();
-      const mark = this._begin();
+      const mark = this._begin(true);
       const told = [];
       let qid = question.id;
       if (!qid) {
@@ -2022,7 +2156,7 @@ const __query = (() => {
 
     _freshId(prefix) {
       let n = this.seq + 1;
-      while (this.wires.has(`${prefix}${n}`) || this.alias.has(`${prefix}${n}`)) n++;
+      while (this.wires.has(`${prefix}${n}`) || this.alias.has(`${prefix}${n}`)) n++; // bounded: by the ids in use
       return `${prefix}${n}`;
     },
 
@@ -2032,7 +2166,11 @@ const __query = (() => {
      * replace and retract. If it throws, returns { ok: false }, or any change is refused, the
      * world is left as it was. A required argument that is missing is reported, not guessed.
      */
-    act(request) {
+    act(request, opts = {}) {
+      return this._guard(opts, () => this._act(request), (v) => ({ ok: false, status: 'budget', violations: [v] }));
+    },
+
+    _act(request) {
       const v = this._vocab();
       let name, args = {}, id;
       let w = request;
@@ -2048,7 +2186,7 @@ const __query = (() => {
       if (lacking.length) {
         return { ok: false, status: 'missing', missing: lacking.map((k) => ({ action: name, key: k, ask: (first({ attrs: action.ask }, `ask.${k}`) || '').replace(/^"|"$/g, '') || undefined })), violations: [] };
       }
-      const mark = this._begin();
+      const mark = this._begin(true);
       const violations = [];
       const guard = (r) => { if (r && r.ok === false) { violations.push(...(r.violations || [])); throw REFUSED; } return r; };
       const ctx = this._context({
@@ -2064,6 +2202,7 @@ const __query = (() => {
         if (out && out.ok === false) { violations.push({ kind: 'refused', why: out.why || out.reason, reason: out.reason }); throw REFUSED; }
       } catch (e) {
         this._rollback(mark);
+        if (e === this._b.signal) throw e; // out of budget: the outermost call reports it
         if (e !== REFUSED) violations.push({ kind: 'error', why: e.message });
         return { ok: false, status: e === REFUSED ? 'refused' : 'error', violations };
       }
@@ -2262,7 +2401,8 @@ const __time = (() => {
       }
       line.sort((a, b) => a.order - b.order || a.seq - b.seq);
       let value, from = [];
-      for (const step of line) { // bounded: one pass over the line
+      for (const step of line) {
+        this._b.tick('fluent');
         if (step.set !== undefined) { value = step.set; from = []; continue; }
         const next = this._effect(step.e, step.ev, value, h, f, slot, res);
         if (next === null) return;
@@ -2281,7 +2421,11 @@ const __time = (() => {
      * statements made after it, and everything that rested on them are set aside, then
      * restored. `at` is a number of the declared sequence key, or an arrival number (seqOf).
      */
-    asOf(at, fn) {
+    asOf(at, fn, opts = {}) {
+      return this._guard(opts, () => this._asOf(at, fn), () => undefined);
+    },
+
+    _asOf(at, fn) {
       return this._trial(() => {
         const res = this._result();
         const later = [];
@@ -2304,6 +2448,63 @@ const __time = (() => {
     },
   };
   return { timing };
+})();
+
+// ---- src/budget.mjs
+const __budget = (() => {
+  // A budget bounds the work of one call. Every loop of the library whose length depends on
+  // the data ticks it; when it runs out the call stops, the world is put back as it was,
+  // and the caller gets a `budget` violation instead of a hang.
+  //
+  // Steps are counted, not timed, so the same call on the same world always stops at the
+  // same place. `ms` adds an optional wall-clock limit, checked every 1024 steps.
+
+  const SITES = [
+    'match',      // candidates tried while matching patterns (joins)
+    'chase',      // wires taken from the agenda and rule firings applied
+    'negation',   // rules with negation, a selector or an aggregate evaluated again
+    'aggregate',  // matches fed to an aggregate
+    'fluent',     // events applied to a state
+    'withdraw',   // wires, values and firings taken back
+    'validate',   // wires checked against slots and denies
+    'complete',   // candidate values tried by suggest, next and complete
+    'ground',     // deny matches turned into nogoods for the solvers
+    'solve',      // search steps of the solvers
+    'abduce',     // goals expanded and explanations verified
+    'induce',     // alignments of examples tried
+  ];
+
+  class Budget {
+    constructor(steps = 5000000, ms = 0) {
+      this.limit = steps;
+      this.steps = 0;
+      // a literal, not built from SITES: a budget is made for every call and this keeps it cheap
+      this.sites = { match: 0, chase: 0, negation: 0, aggregate: 0, fluent: 0, withdraw: 0, validate: 0, complete: 0, ground: 0, solve: 0, abduce: 0, induce: 0 };
+      this.started = Date.now();
+      this.deadline = ms ? this.started + ms : 0;
+      this.site = null;                 // where it ran out
+      this.signal = { budget: this };   // thrown inside the library, never seen outside it
+    }
+
+    tick(site) {
+      this.sites[site]++;
+      if (++this.steps > this.limit || (this.deadline && (this.steps & 1023) === 0 && Date.now() > this.deadline)) {
+        this.site = site;
+        throw this.signal;
+      }
+    }
+
+    get exhausted() { return this.site !== null; }
+
+    violation() {
+      return { kind: 'budget', site: this.site, steps: this.steps, why: `the budget of ${this.deadline && this.steps <= this.limit ? `${this.deadline - this.started} ms` : `${this.limit} steps`} ran out in ${this.site}` };
+    }
+
+    report() {
+      return { steps: this.steps, limit: this.limit, exhausted: this.exhausted, site: this.site, sites: { ...this.sites }, ms: Date.now() - this.started };
+    }
+  }
+  return { SITES, Budget };
 })();
 
 // ---- src/abduce.mjs
@@ -2337,7 +2538,8 @@ const __abduce = (() => {
     let n = 0;
     const size = (h) => h.wires.length + h.fills.length;
 
-    function* solve(todo, s, hyp, depth) {
+    function* solve(todo, s, hyp, depth) { // each call ticks the budget
+      world._b.tick('abduce');
       if (!todo.length) { yield hyp; return; }
       const [g, ...rest] = todo;
 
@@ -2426,6 +2628,7 @@ const __abduce = (() => {
 
     let out = [];
     for (const cand of cands) {
+      world._b.tick('abduce');
       if (out.length >= max) break;
       if (out.some((o) => [...o.parts].every((p) => cand.parts.has(p)))) continue; // a smaller explanation exists
       const ok = world._trial(() => {
@@ -2461,13 +2664,14 @@ const __abduce = (() => {
 const __world = (() => {
   const { parse, format, cloneWire } = __parser;
   const { EMPTY, walk, unify, hasVar, isVar, bound } = __unify;
-  const { builtins, quantity, aggregates } = __builtins;
+  const { builtins, quantity, aggregates, canonical } = __builtins;
   const { cdcl } = __solve;
   const { compileMatrix, localize, prefixModule, fitsKind, knownKind, readMap, SCHEMA_TYPES, LINKS } = __matrix;
   const { completion } = __complete;
   const { revision } = __revise;
   const { querying } = __query;
   const { timing } = __time;
+  const { Budget } = __budget;
   const { abduce } = __abduce;
   // World: fact wires kept consistent with a consistency matrix.
   //
@@ -2496,9 +2700,14 @@ const __world = (() => {
     constructor(options = {}) {
       const {
         fns = {}, library = {}, maxDepth = 12, maxSteps = 50000,
-        lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {},
+        lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {}, budget = {},
       } = options;
-      this.options = { fns, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary };
+      this.options = { fns, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget };
+      this._b = new Budget(budget && budget.steps, budget && budget.ms); // the budget of the call in progress (or of the last one)
+      this._api = 0;                // depth of public calls: the outermost one owns the budget
+      this._shared = null;          // set while this world shares its state with a fork
+      this._logOf = new Map();      // fact id -> the log entry that told it
+      this._fills = 0;              // number of fill entries in the log
       this.fns = { ...builtins, ...fns };
       this.wires = new Map();    // id -> fact wire
       this.byType = new Map();   // type -> Set<id>
@@ -2526,7 +2735,11 @@ const __world = (() => {
 
     get(id) { return this.wires.get(this.resolve(id)); }
     has(id) { return this.wires.has(this.resolve(id)); }
-    resolve(id) { let x = id; while (this.alias.has(x)) x = this.alias.get(x); return x; }
+    resolve(id) {
+      let x = id;
+      while (this.alias.has(x)) x = this.alias.get(x); // bounded: a merged wire points at an older one, so chains end
+      return x;
+    }
     /** Wires of a type, including wires of the types that extend it. */
     ofType(type) { return [...(this.byType.get(type) || [])].map((id) => this.wires.get(id)); }
 
@@ -2548,25 +2761,64 @@ const __world = (() => {
     }
 
     /** Query with pattern wires. Returns one object of bindings per match. */
-    ask(query, { at } = {}) {
-      if (at !== undefined) return this.asOf(at, () => this.ask(query));
-      const pats = this._patterns(query);
-      const out = [];
-      for (const s of this._matchAll(pats, 0, EMPTY)) {
-        const row = {};
-        for (const p of pats) row[p.id] = walk('?' + p.id, s);
-        for (const k of bound(s)) row[k.slice(1)] = walk(k, s);
-        out.push(row);
-      }
-      return out;
+    ask(query, opts = {}) {
+      return this._guard(opts, () => {
+        if (opts.at !== undefined) return this.asOf(opts.at, () => this.ask(query));
+        const pats = this._patterns(query);
+        const out = [];
+        for (const s of this._matchAll(pats, 0, EMPTY)) {
+          const row = {};
+          for (const p of pats) row[p.id] = walk('?' + p.id, s);
+          for (const k of bound(s)) row[k.slice(1)] = walk(k, s);
+          out.push(row);
+        }
+        return out;
+      }, (budget) => Object.assign([], { budget }));
     }
 
-    holds(query) {
-      for (const _ of this._matchAll(this._patterns(query), 0, EMPTY)) return true;
-      return false;
+    holds(query, opts = {}) {
+      return this._guard(opts, () => {
+        for (const _ of this._matchAll(this._patterns(query), 0, EMPTY)) return true;
+        return false;
+      }, () => false);
+    }
+
+    /** Steps counted by the last call, per site, and whether its budget ran out. */
+    stats() { return this._b.report(); }
+
+    /**
+     * Run a public call under a budget. The outermost call owns it; calls made from inside
+     * share it. If it runs out, everything the call did is undone and `onBudget` builds what
+     * the caller gets: a `budget` violation in the shape of that call's normal result.
+     */
+    _guard(opts, fn, onBudget) {
+      const top = this._api === 0;
+      if (top) {
+        // no spread: this runs on every call
+        const own = opts && opts.budget, def = this.options.budget;
+        this._b = new Budget(own && own.steps !== undefined ? own.steps : def && def.steps, own && own.ms !== undefined ? own.ms : def && def.ms);
+      }
+      const mark = this._journal.length, tx = this._tx;
+      this._api++;
+      try {
+        return fn();
+      } catch (e) {
+        if (!top || !e || e !== this._b.signal) throw e;
+        while (this._journal.length > mark) { this.stamp = this._journal.pop(); this._journal.pop()(); } // bounded: the journal of this call
+        this._tx = tx;
+        if (!tx) { this._journal.length = 0; this._emitted = this.events.length; }
+        return onBudget(this._b.violation());
+      } finally {
+        this._api--;
+      }
+    }
+
+    _refusal(v) {
+      return { ok: false, added: [], derived: [], filled: [], merged: [], removed: [], violations: [v] };
     }
 
     /** Justification tree of a wire: who told it, or which rule derived it from what. */
+    // bounded: each wire is expanded once (seen)
     explain(id, seen = new Set()) {
       const w = this.get(id);
       if (!w) return null;
@@ -2605,7 +2857,10 @@ const __world = (() => {
     /** Everything needed to rebuild the world: what it was told, in order. */
     toJSON() { return { format: 'sopworld', version: 1, log: this.log.map((e) => ({ ...e })) }; }
 
-    /** Rebuild a world from toJSON() output. Functions and the library are passed again. */
+    /**
+     * Rebuild a world from toJSON() output. Functions and the library are passed again.
+     * Each entry of the log is replayed as its own call, under its own budget.
+     */
     static fromJSON(data, options = {}) {
       if (data?.format !== 'sopworld') throw new Error('World.fromJSON: not a sopworld snapshot');
       const w = new World(options);
@@ -2625,14 +2880,18 @@ const __world = (() => {
      * { strict: true } also refuses a change that leaves no possible completion.
      */
     tell(input, opts = {}) {
-      const r = this._tell(input, opts);
-      return r.ok ? r : this._retryWithoutDefaults(r, (o) => this._tell(input, o), opts);
+      return this._guard(opts, () => {
+        const r = this._tell(input, opts);
+        return r.ok ? r : this._retryWithoutDefaults(r, (o) => this._tell(input, o), opts);
+      }, (v) => this._refusal(v));
     }
 
     /** Answer an open key of an existing wire. Same contract as tell(). */
     fill(id, key, value, opts = {}) {
-      const r = this._fill(id, key, value, opts);
-      return r.ok ? r : this._retryWithoutDefaults(r, (o) => this._fill(id, key, value, o), opts);
+      return this._guard(opts, () => {
+        const r = this._fill(id, key, value, opts);
+        return r.ok ? r : this._retryWithoutDefaults(r, (o) => this._fill(id, key, value, o), opts);
+      }, (v) => this._refusal(v));
     }
 
     /** tell() for set-up code: throws when the world refuses, so a broken matrix cannot go unnoticed. */
@@ -2649,13 +2908,13 @@ const __world = (() => {
     use(name) { return this.tell([{ id: `use.${name}`, type: 'core.use', attrs: { world: [name] }, pattern: false }]); }
 
     /** Hypotheses that would make the goal pattern true. See abduce.mjs. */
-    abduce(goal, opts) { return abduce(this, goal, opts); }
+    abduce(goal, opts = {}) { return this._guard(opts, () => abduce(this, goal, opts), (budget) => Object.assign([], { budget })); }
 
     _tell(input, { dry = false, strict = this.options.strict } = {}) {
       const wires = (typeof input === 'string' ? parse(input) : input).map(cloneWire);
       const told = wires.map(cloneWire); // the log keeps what was said, not what it grew into
       const res = this._result();
-      const mark = this._begin();
+      const mark = this._begin(!dry);
       let facts;
       try {
         facts = this._ingest(wires, res);
@@ -2669,7 +2928,7 @@ const __world = (() => {
 
     _fill(id, key, value, { dry = false, via = 'core.tell', strict = this.options.strict } = {}) {
       const res = this._result();
-      const mark = this._begin();
+      const mark = this._begin(!dry);
       try {
         const w = this.get(id);
         if (!w) res.violations.push({ kind: 'unknown-wire', id });
@@ -2699,13 +2958,18 @@ const __world = (() => {
     _result() {
       return { ok: true, added: [], derived: [], filled: [], merged: [], removed: [], violations: [], _touched: new Set(), _agenda: [], _fluents: new Map(), _types: new Set(), _seeds: new Map(), _full: false };
     }
-    _begin() { this._tx++; return this._journal.length; }
+    /** Open a transaction. `commit` says the caller intends to keep the changes: a state shared with a fork is copied first. */
+    _begin(commit = false) {
+      if (commit && this._shared && this._tx === 0) this._detach();
+      this._tx++;
+      return this._journal.length;
+    }
     _do(undo) {
       this._journal.push(undo, this.stamp);
       this.stamp = ++this._clock;
     }
     _rollback(mark) {
-      while (this._journal.length > mark) {
+      while (this._journal.length > mark) { // bounded: the journal
         this.stamp = this._journal.pop();
         this._journal.pop()();
       }
@@ -2713,24 +2977,84 @@ const __world = (() => {
     }
     _commit() {
       if (--this._tx !== 0) return;
+      if (this._shared) throw new Error('sopworld: internal error, a change was committed to a state shared with a fork');
       this._journal.length = 0;
       const fresh = this.events.slice(this._emitted);
       this._emitted = this.events.length;
       if (fresh.length) for (const l of this.listeners) l(fresh.map((e) => ({ ...e })), this);
     }
 
+    /** What the caller gets of a result: the same lists without the working fields. */
+    _bare(res) {
+      return { ok: res.ok, added: res.added, derived: res.derived, filled: res.filled, merged: res.merged, removed: res.removed, violations: res.violations };
+    }
+
     _finish(mark, res, dry, entry) {
-      res.ok = !res.violations.length;
-      delete res._touched; delete res._agenda; delete res._fluents; delete res._types; delete res._seeds; delete res._full;
-      if (!res.ok) for (const v of res.violations) this._support(v); // before the evidence is rolled back
-      if (!res.ok || dry) {
+      const ok = !res.violations.length;
+      if (!ok) for (const v of res.violations) this._support(v); // before the evidence is rolled back
+      if (!ok || dry) {
         this._rollback(mark);
-        if (!res.ok) { res.added = []; res.derived = []; res.filled = []; res.merged = []; res.removed = []; }
+        if (!ok) return { ok, added: [], derived: [], filled: [], merged: [], removed: [], violations: res.violations };
       } else {
-        if (entry) { this.log.push(entry); this._do(() => this.log.pop()); }
+        if (entry) this._logPush(entry);
         this._commit();
       }
-      return res;
+      res.ok = ok;
+      return this._bare(res);
+    }
+
+    _logPush(entry) {
+      this.log.push(entry);
+      if (entry.op === 'tell') for (const id of entry.facts) this._logOf.set(id, entry); // bounded: the facts of one tell
+      else this._fills++;
+      this._do(() => {
+        this.log.pop();
+        if (entry.op === 'tell') for (const id of entry.facts) this._logOf.delete(id);
+        else this._fills--;
+      });
+    }
+
+    /**
+     * Take told facts out of the log (they were retracted), or put a successor in the place
+     * of one. Only the entries that told those facts are touched.
+     */
+    _logRemove(dead, successor = null, replaced = null) {
+      const old = this.log, oldFills = this._fills;
+      let log = null;
+      const undo = [];
+      const point = (id, entry) => {
+        const prev = this._logOf.get(id);
+        undo.push(() => (prev ? this._logOf.set(id, prev) : this._logOf.delete(id)));
+        if (entry) this._logOf.set(id, entry); else this._logOf.delete(id);
+      };
+      const entries = new Set();
+      for (const id of dead) { const e = this._logOf.get(id); if (e) entries.add(e); }
+      if (successor) { const e = this._logOf.get(successor.id); if (e) entries.add(e); }
+      for (const e of entries) {
+        log = log || old.slice();
+        const i = log.indexOf(e);
+        if (i < 0) continue;
+        const wires = [];
+        for (const w of e.wires) { // bounded: the wires of one tell
+          const fact = e.facts.includes(w.id);
+          if (fact && dead.has(w.id)) continue;
+          wires.push(fact && successor && w.id === successor.id ? successor : w);
+        }
+        const facts = e.facts.filter((x) => !dead.has(x));
+        for (const id of e.facts) if (dead.has(id)) point(id, null);
+        if (wires.length) {
+          const next = { ...e, wires, facts };
+          log[i] = next;
+          for (const id of facts) point(id, next);
+        } else log.splice(i, 1);
+      }
+      if (this._fills) {
+        const kept = (log || old).filter((e) => e.op !== 'fill' || !(dead.has(e.id) || e.id === replaced));
+        if (kept.length !== (log || old).length) { this._fills -= (log || old).length - kept.length; log = kept; }
+      }
+      if (!log) return;
+      this.log = log;
+      this._do(() => { this.log = old; this._fills = oldFills; for (let i = undo.length - 1; i >= 0; i--) undo[i](); });
     }
 
     /**
@@ -2742,7 +3066,7 @@ const __world = (() => {
       const roots = [...(v.wires || []), ...(v.id ? [v.id] : [])];
       if (!roots.length) return;
       const seen = new Set(), told = [];
-      while (roots.length) {
+      while (roots.length) { // bounded: each wire is visited once
         const id = this.resolve(roots.pop());
         if (seen.has(id)) continue;
         seen.add(id);
@@ -2757,7 +3081,7 @@ const __world = (() => {
     }
 
     /** Run fn against a scratch state; everything it does is undone. What-if questions go here. */
-    trial(fn) { return this._trial(() => fn(this)); }
+    trial(fn, opts = {}) { return this._guard(opts, () => this._trial(() => fn(this)), () => undefined); }
 
     _trial(fn) {
       const mark = this._begin();
@@ -2778,13 +3102,28 @@ const __world = (() => {
     // ancestor type finds them without looking at the hierarchy again.
     _lineage(type) { return this._compiled().lineage(type); }
 
+    /** The spelling a value is indexed under: canonical for a key that holds numbers, as given otherwise. */
+    _iv(type, key, value) {
+      const c = this._compiled();
+      return c.numKeys.size && c.numeric(type, key) ? canonical(value) : value;
+    }
+
+    /** Are two values of a key the same value? */
+    _same(type, key, a, b) {
+      if (a === b) return true;
+      const c = this._compiled();
+      return c.numKeys.size > 0 && c.numeric(type, key) && canonical(a) === canonical(b);
+    }
+
     _link(w, key, value) {
-      for (const t of this._lineage(w.type)) setOf(this.index, K(t, key, value)).add(w.id);
+      const iv = this._iv(w.type, key, value);
+      for (const t of this._lineage(w.type)) setOf(this.index, K(t, key, iv)).add(w.id);
       if (value[0] === '$') setOf(this.refs, value.slice(1)).add(w.id);
     }
 
     _unlink(w, key, value, whole) {
-      for (const t of this._lineage(w.type)) this.index.get(K(t, key, value))?.delete(w.id);
+      const iv = this._iv(w.type, key, value);
+      for (const t of this._lineage(w.type)) this.index.get(K(t, key, iv))?.delete(w.id);
       if (value[0] !== '$') return;
       if (whole || !Object.values(w.attrs).some((vs) => vs.includes(value))) this.refs.get(value.slice(1))?.delete(w.id);
     }
@@ -2795,7 +3134,7 @@ const __world = (() => {
       for (const k of Object.keys(w.attrs)) for (const v of w.attrs[k]) this._link(w, k, v);
     }
 
-    /** Rebuild the type indexes after the hierarchy changed. */
+    /** Rebuild the type indexes after the hierarchy, or the set of keys that hold numbers, changed. */
     _reindex() {
       const old = [this.byType, this.index];
       this.byType = new Map();
@@ -2803,7 +3142,7 @@ const __world = (() => {
       for (const w of this.wires.values()) {
         for (const t of this._lineage(w.type)) {
           setOf(this.byType, t).add(w.id);
-          for (const k of Object.keys(w.attrs)) for (const v of w.attrs[k]) setOf(this.index, K(t, k, v)).add(w.id);
+          for (const k of Object.keys(w.attrs)) for (const v of w.attrs[k]) setOf(this.index, K(t, k, this._iv(w.type, k, v))).add(w.id);
         }
       }
       this._do(() => { [this.byType, this.index] = old; });
@@ -2863,28 +3202,29 @@ const __world = (() => {
       });
     }
 
+    _indexFiring(sig, rec) {
+      this.firings.set(sig, rec);
+      for (const id of rec.ids) setOf(this.byWire, id).add(sig);
+      if (rec.s) setOf(this.byRule, rec.rule).add(sig);
+    }
+
+    _unindexFiring(sig, rec) {
+      this.firings.delete(sig);
+      for (const id of rec.ids) this.byWire.get(id)?.delete(sig);
+      if (rec.s) this.byRule.get(rec.rule)?.delete(sig);
+    }
+
     _recordFiring(sig, rec) {
-      const ids = new Set([...rec.from, ...rec.made, ...rec.hits, ...rec.fills.map((f) => f.id)]);
-      const add = () => {
-        this.firings.set(sig, rec);
-        for (const id of ids) setOf(this.byWire, id).add(sig);
-        if (rec.s) setOf(this.byRule, rec.rule).add(sig);
-      };
-      const del = () => {
-        this.firings.delete(sig);
-        for (const id of ids) this.byWire.get(id)?.delete(sig);
-        if (rec.s) this.byRule.get(rec.rule)?.delete(sig);
-      };
-      rec._add = add; rec._del = del;
-      add();
-      this._do(del);
+      rec.ids = [...new Set([...rec.from, ...rec.made, ...rec.hits, ...rec.fills.map((f) => f.id)])];
+      this._indexFiring(sig, rec);
+      this._do(() => this._unindexFiring(sig, rec));
     }
 
     _forgetFiring(sig) {
       const rec = this.firings.get(sig);
       if (!rec) return null;
-      rec._del();
-      this._do(rec._add);
+      this._unindexFiring(sig, rec);
+      this._do(() => this._indexFiring(sig, rec));
       return rec;
     }
 
@@ -2907,10 +3247,17 @@ const __world = (() => {
         }
       };
       // wire types that a core.schema.map declares as schema, known before or told in this batch
-      const maps = new Map(this._compiled().maps);
+      let maps = this._compiled().maps;
+      let own = false;
       const note = (ws) => {
         noteLinks(ws);
-        for (const w of ws) if (w.type === 'core.schema.map') { const m = readMap(w); if (m.from) maps.set(m.from, m); }
+        for (const w of ws) {
+          if (w.type !== 'core.schema.map') continue;
+          const m = readMap(w);
+          if (!m.from) continue;
+          if (!own) { maps = new Map(maps); own = true; }
+          maps.set(m.from, m);
+        }
       };
       note(wires);
       // facts and matrix wires have separate id spaces: a pattern ?m1 does not clash with a fact @m1
@@ -2954,7 +3301,7 @@ const __world = (() => {
             if (!c.modules.has(dep)) res.violations.push({ kind: 'schema', why: `module ${name} imports ${dep}, which is neither loaded nor in the library` });
           }
         }
-        if (!prev || prev.hierarchy !== c.hierarchy) this._reindex();
+        if (!prev || prev.hierarchy !== c.hierarchy || prev.numbers !== c.numbers) this._reindex();
         if (c.fluents.size || c.seqKey) for (const w of this.wires.values()) { if (w.meta.told) this._fluentNote(w, res); }
         res._agenda = [...this.wires.keys()];
         for (const id of res._agenda) res._touched.add(id);
@@ -2964,14 +3311,20 @@ const __world = (() => {
       for (const w of wires) {
         if (isSchema(w)) continue;
         if (this.wires.has(w.id) || this.alias.has(w.id)) { res.violations.push({ kind: 'duplicate-id', id: w.id }); continue; }
-        if (Object.values(w.attrs).flat().some(hasVar)) {
+        const attrs = {};
+        let vars = false;
+        for (const k of Object.keys(w.attrs)) { // short and full key names are one key
+          const short = k.indexOf('.') < 0 ? k : c.shortKey(w.type, k);
+          const into = attrs[short] || (attrs[short] = []);
+          for (const raw of w.attrs[k]) {
+            if (hasVar(raw)) vars = true;
+            const v = raw[0] === '$' ? this._norm(raw) : raw;
+            if (!into.includes(v)) into.push(v);
+          }
+        }
+        if (vars) {
           res.violations.push({ kind: 'syntax', id: w.id, why: 'a fact cannot contain variables; templates must be told together with their rule' });
           continue;
-        }
-        const attrs = {};
-        for (const k of Object.keys(w.attrs)) { // short and full key names are one key
-          const short = c.shortKey(w.type, k);
-          attrs[short] = [...new Set([...(attrs[short] || []), ...w.attrs[k].map((v) => this._norm(v))])];
         }
         w.attrs = attrs;
         facts.push(w.id);
@@ -3028,18 +3381,29 @@ const __world = (() => {
         const have = w.attrs[pairs[i]];
         if (!have) return;
         if (have.length !== 1) { yield* this._matchPairs(pairs, i, w, s); return; }
-        s = unify(pairs[i + 1], have[0], s);
+        s = this._unifyValue(w.type, pairs[i], pairs[i + 1], have[0], s);
         if (!s) return;
       }
       yield s;
     }
 
+    /** Unify a pattern value with a wire value; under a key that holds numbers, 5 and 5.0 are equal. */
+    _unifyValue(type, key, pv, have, s) {
+      const t = unify(pv, have, s);
+      if (t) return t;
+      const c = this._c;
+      if (!c || !c.numKeys.size || !c.numeric(type, key)) return null;
+      const want = walk(pv, s);
+      return !hasVar(want) && canonical(want) === canonical(have) ? s : null;
+    }
+
+    // bounded: one level per value of the pattern
     *_matchPairs(pairs, i, w, s) {
       if (i === pairs.length) { yield s; return; }
       const have = w.attrs[pairs[i]];
       if (!have) return;
       for (const fv of have) {
-        const t = unify(pairs[i + 1], fv, s);
+        const t = this._unifyValue(w.type, pairs[i], pairs[i + 1], fv, s);
         if (t) yield* this._matchPairs(pairs, i + 2, w, t);
       }
     }
@@ -3065,18 +3429,29 @@ const __world = (() => {
       // start from the smallest set: all wires of the type, or those having a value the pattern fixes
       let best = this.byType.get(p.type);
       if (!best) return;
+      const c = this._c, numbers = !!c && c.numKeys.size > 0;
       for (const k of Object.keys(p.attrs)) {
         for (const v of p.attrs[k]) {
           const t = walk(v, s);
           if (hasVar(t)) continue;
-          const set = this.index.get(K(p.type, k, t));
+          let set = this.index.get(K(p.type, k, t));
+          if (numbers && c.numKeys.has(k)) {
+            // a key that holds numbers in this type or in a subtype: those wires are under the canonical spelling
+            const ct = canonical(t);
+            if (ct !== t) {
+              const other = this.index.get(K(p.type, k, ct));
+              if (set && set.size && other && other.size) continue; // both spellings in use: this value does not narrow
+              if (other && other.size) set = other;
+            }
+          }
           if (!set || !set.size) return;
           if (set.size < best.size) best = set;
         }
       }
-      for (const id of best) yield* this._matchWire(p, this.wires.get(id), s);
+      for (const id of best) { this._b.tick('match'); yield* this._matchWire(p, this.wires.get(id), s); }
     }
 
+    // bounded: one level per pattern; the candidates tried at each level tick the budget
     *_matchAll(pats, i, s) {
       if (i === pats.length) { yield s; return; }
       for (const t of this._candidates(pats[i], s)) yield* this._matchAll(pats, i + 1, t);
@@ -3099,6 +3474,7 @@ const __world = (() => {
             const matches = [...this._matchAll(c.over, 0, s)].map((t) => [walk('?' + c.over[0].id, t), t]).sort((x, y) => this.compare(x[0], y[0]));
             const n = matches.length;
             for (const [, t] of matches) {
+              this._b.tick('aggregate');
               if (!c.args.length) break;
               const a = walk(c.args[0], t);
               if (hasVar(a)) continue;
@@ -3134,8 +3510,9 @@ const __world = (() => {
       const fireAll = (rule, matches) => {
         for (const s of matches) {
           if (res.violations.length) return;
+          this._b.tick('chase');
           if (++steps > this.options.maxSteps) {
-            res.violations.push({ kind: 'budget', why: `more than ${this.options.maxSteps} rule firings` });
+            res.violations.push({ kind: 'budget', site: 'chase', steps, why: `more than ${this.options.maxSteps} rule firings` });
             return;
           }
           this._fire(rule, s, c, res);
@@ -3143,15 +3520,18 @@ const __world = (() => {
       };
       for (;;) {
         while ((res._agenda.length || res._fluents.size) && !res.violations.length) {
+          this._b.tick('chase');
           if (res._fluents.size) { this._fluentRun(res, c); continue; } // states first: rules read their values
           const w = this.wires.get(res._agenda.shift());
           if (!w) continue;
-          for (const t of c.lineage(w.type)) res._types.add(t);
-          this._seed(w, res);
-          // a new or changed wire can end the absence that a rule with not= relied on
-          for (const rule of c.forType(c.negByType, w.type)) {
-            const stale = [...(this.byRule.get(rule.id) || [])].filter((sig) => this._negated(rule, this.firings.get(sig).s));
-            if (stale.length) this._unsay(res, [], [], stale);
+          if (c.negRules.length) { // only rules with negation, a selector or an aggregate need to know what changed
+            for (const t of c.lineage(w.type)) res._types.add(t);
+            this._seed(w, res);
+            // a new or changed wire can end the absence that a rule with not= relied on
+            for (const rule of c.forType(c.negByType, w.type)) {
+              const stale = [...(this.byRule.get(rule.id) || [])].filter((sig) => this._negated(rule, this.firings.get(sig).s));
+              if (stale.length) this._unsay(res, [], [], stale);
+            }
           }
           for (const { rule, idx } of c.forType(c.ruleByType, w.type)) {
             const matches = [];
@@ -3161,9 +3541,11 @@ const __world = (() => {
         }
         if (res.violations.length) return;
         // rules with negation or a selector are re-evaluated in full once everything else is quiet
+        if (!c.negRules.length) { res._full = false; if (!res._agenda.length && !res._fluents.size) return; continue; }
         const changed = res._types;
         res._types = new Set();
         for (const rule of c.negRules) {
+          this._b.tick('negation');
           if (rule.aggregate && !rule.hasSelect && !rule.not.length && !res._full) {
             // only the groups whose aggregated wires changed are looked at again
             const seeds = res._seeds.get(rule);
@@ -3250,9 +3632,9 @@ const __world = (() => {
     _findByIdentity(type, attrs) {
       const keys = this._compiled().idKeys.get(type);
       if (!keys || !keys.every((k) => attrs[k])) return null;
-      for (const id of this.index.get(K(type, keys[0], attrs[keys[0]][0])) || []) {
+      for (const id of this.index.get(K(type, keys[0], this._iv(type, keys[0], attrs[keys[0]][0]))) || []) {
         const w = this.wires.get(id);
-        if (keys.every((k) => w.attrs[k] && w.attrs[k][0] === attrs[k][0])) return w;
+        if (keys.every((k) => w.attrs[k] && this._same(type, k, w.attrs[k][0], attrs[k][0]))) return w;
       }
       return null;
     }
@@ -3263,13 +3645,13 @@ const __world = (() => {
       let best = this.byType.get(type);
       if (!best) return null;
       for (const k of keys) for (const v of attrs[k]) {
-        const set = this.index.get(K(type, k, v));
+        const set = this.index.get(K(type, k, this._iv(type, k, v)));
         if (!set || !set.size) return null;
         if (set.size < best.size) best = set;
       }
       for (const id of best) {
         const w = this.wires.get(id);
-        if (keys.every((k) => w.attrs[k] && attrs[k].every((v) => w.attrs[k].includes(v)))) return w;
+        if (keys.every((k) => w.attrs[k] && attrs[k].every((v) => w.attrs[k].some((x) => this._same(type, k, x, v))))) return w;
       }
       return null;
     }
@@ -3280,7 +3662,7 @@ const __world = (() => {
       for (const k of Object.keys(attrs)) {
         for (const v of attrs[k]) {
           const have = w.attrs[k];
-          if (have && have.includes(v)) continue;
+          if (have && (have.includes(v) || have.some((x) => this._same(w.type, k, x, v)))) continue;
           if (!prov.rec && this._fluentState(w, k, v, res)) continue; // a new statement about a state, not a conflict
           if (have && !c.slotOf(w.type, k)?.many) {
             res.violations.push({ kind: 'conflict', id: w.id, key: k, have: have[0], want: v, via: prov.via, wires: [w.id, ...prov.from] });
@@ -3335,6 +3717,7 @@ const __world = (() => {
       values.forEach(unfill);
       sigs.forEach(invalidate);
       while (queue.length) {
+        this._b.tick('withdraw');
         const id = queue.shift();
         for (const sig of [...(this.byWire.get(id) || [])]) {
           const rec = this.firings.get(sig);
@@ -3354,6 +3737,7 @@ const __world = (() => {
       for (const id of res._touched) {
         const w = this.wires.get(id);
         if (!w) continue;
+        this._b.tick('validate');
         for (const k of Object.keys(w.attrs)) {
           const s = c.slotOf(w.type, k);
           if (!s) {
@@ -3366,7 +3750,7 @@ const __world = (() => {
                 const bad = !q ? 'must be a number' : s.min && q.n < s.min.n ? `must be at least ${s.min.n}` : s.max && q.n > s.max.n ? `must be at most ${s.max.n}` : null;
                 if (bad) res.violations.push({ kind: 'domain', id, key: k, value: v, why: bad });
               }
-              if (s.enum && !s.enum.includes(v)) res.violations.push({ kind: 'domain', id, key: k, value: v, allowed: s.enum });
+              if (s.enum && !s.enum.includes(v) && !s.enum.some((e) => this._same(w.type, k, e, v))) res.violations.push({ kind: 'domain', id, key: k, value: v, allowed: s.enum });
               if (s.type && !s.kinds.length) {
                 const target = v[0] === '$' ? this.wires.get(v.slice(1)) : null;
                 const types = s.refs.length ? s.refs : [s.type];
@@ -3428,6 +3812,7 @@ const __induce = (() => {
   const { parse, format, cloneWire, quote } = __parser;
   const { builtins, quantity } = __builtins;
   const { World } = __world;
+  const { Budget } = __budget;
   // Induction: generalise examples into matrix wires.
   //
   // induce / induceRule - least general generalisation (anti-unification) of example circuits:
@@ -3443,6 +3828,7 @@ const __induce = (() => {
 
   const toWires = (x) => (typeof x === 'string' ? parse(x) : x || []).map(cloneWire);
 
+  // bounded: only called for groups whose number of orders is under the alignment cap
   function permutations(xs) {
     if (xs.length <= 1) return [xs];
     const out = [];
@@ -3463,9 +3849,11 @@ const __induce = (() => {
     }
     if (groups.size !== slots.size) throw new Error('examples differ in wire types');
     let all = [new Array(gen.length)];
+    const factorial = (n) => { let f = 1; for (let i = 2; i <= n && f <= cap; i++) f *= i; return f; };
     for (const [type, idx] of slots) {
-      const perms = permutations(groups.get(type));
-      if (all.length * perms.length > cap) { // too many: keep the given order for this type
+      // too many orders to try: keep the given order for this type (decided before any is built)
+      const perms = all.length * factorial(idx.length) > cap ? null : permutations(groups.get(type));
+      if (!perms) {
         all = all.map((a) => { const b = [...a]; idx.forEach((g, j) => (b[g] = groups.get(type)[j])); return b; });
         continue;
       }
@@ -3582,9 +3970,21 @@ const __induce = (() => {
    *           tolerant  skip examples whose shape differs from the first instead of throwing
    *           distinct  patterns of the same type must match different wires (default true)
    *           negatives [{ when }] circuits that the rule must not match
+   *           budget    { steps } alignments of examples to try (default 200000); when it runs
+   *                     out the result has text: null and a `budget` field
    * Returns { text, skipped, calcs, tests, coversNegative, variables, examples }.
    */
-  function induce(examples, { name = 'induced', kind = 'rule', why, tolerant = false, distinct = true, negatives = [] } = {}) {
+  function induce(examples, options = {}) {
+    const budget = new Budget(options.budget?.steps ?? 200000, options.budget?.ms);
+    try {
+      return inducing(examples, options, budget);
+    } catch (e) {
+      if (e !== budget.signal) throw e;
+      return { text: null, skipped: [], calcs: [], tests: [], coversNegative: [], variables: 0, examples: 0, budget: budget.violation() };
+    }
+  }
+
+  function inducing(examples, { name = 'induced', kind = 'rule', why, tolerant = false, distinct = true, negatives = [] }, budget) {
     if (!examples.length) throw new Error('induce: no examples');
     const prep = examples.map((e, index) => {
       const when = toWires(e.when), then = kind === 'deny' ? [] : toWires(e.then);
@@ -3610,11 +4010,13 @@ const __induce = (() => {
         const thenAligns = alignments(gen.slice(ex.nWhen), ex.all.slice(ex.nWhen)).map((a) => a.map((i) => i + ex.nWhen));
         let best = null;
         for (const wa of whenAligns) for (const ta of thenAligns) {
+          budget.tick('induce');
           const r = generalise(gen, ex.all, [...wa, ...ta], n, vals, folded);
           if (!best || r.vars < best.vars) best = r;
         }
         gen = best.out; n = best.k; vals = best.vals; folded++;
       } catch (e) {
+        if (e === budget.signal) throw e;
         if (!tolerant) throw new Error(`induce: ${e.message}`);
         skipped.push({ index: ex.index, why: e.message });
       }

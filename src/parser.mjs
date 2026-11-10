@@ -19,14 +19,14 @@ export function tokenize(text) {
   const out = [];
   const n = text.length;
   let i = 0, line = 1;
-  while (i < n) {
+  while (i < n) { // bounded: every pass consumes input
     const c = text[i];
     if (c === '\n') { line++; i++; continue; }
     if (c === ' ' || c === '\t' || c === '\r') { i++; continue; }
-    if (c === '#') { while (i < n && text[i] !== '\n') i++; continue; }
+    if (c === '#') { while (i < n && text[i] !== '\n') i++; continue; } // bounded: to the end of the line
     const start = i, startLine = line;
     let inQ = false;
-    while (i < n) {
+    while (i < n) { // bounded: every pass consumes input
       const d = text[i];
       if (inQ) {
         if (d === '\\') { i += 2; continue; }

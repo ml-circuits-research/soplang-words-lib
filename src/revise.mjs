@@ -4,6 +4,9 @@
 // (World._unsay), the chase re-derives what still holds, and the result is validated.
 // Everything happens in one transaction, so a refused retraction changes nothing.
 
+// what two worlds share after fork(), until one of them changes
+const STATE = ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'events', 'seq', 'stamp', '_clock', '_lastOrder', '_c', '_logOf', '_fills'];
+
 import { parse, cloneWire } from './parser.mjs';
 
 export const revision = {
@@ -11,7 +14,11 @@ export const revision = {
    * Remove a told wire, every told wire that refers to it, and everything that was
    * derived from them. What has other support is derived again.
    */
-  retract(id) {
+  retract(id, opts = {}) {
+    return this._guard(opts, () => this._retract(id), (v) => this._refusal(v));
+  },
+
+  _retract(id) {
     const target = this.wires.get(id);
     const nested = this._tx > 0;
     const unsupported = { ok: false, removed: [], violations: [{ kind: 'unsupported', id, why: 'a merged wire cannot be retracted inside a transaction' }] };
@@ -20,13 +27,13 @@ export const revision = {
       return { ok: false, removed: [], violations: [{ kind: 'unknown-wire', id, why: 'only told wires can be retracted' }] };
     }
     const res = this._result();
-    const mark = this._begin();
+    const mark = this._begin(true);
     let gone, fallback = false;
     try {
       gone = this._withdraw(res, [id], []);
       if (!res.violations.length) this._validate(res);
       // a derived wire that absorbed a told one would take the told statements with it
-      fallback = [...this.alias.values()].some((t) => !this.wires.has(t));
+      if (this.alias.size) fallback = [...this.alias.values()].some((t) => !this.wires.has(t));
     } catch (e) {
       this._rollback(mark);
       throw e;
@@ -35,13 +42,7 @@ export const revision = {
     if (res.violations.length) return this._finish(mark, res, false, null);
 
     const removed = [...gone].filter((x) => !this.wires.has(x));
-    const dead = new Set(removed);
-    const old = this.log;
-    this.log = old
-      .filter((e) => e.op !== 'fill' || !dead.has(e.id))
-      .map((e) => (e.op !== 'tell' ? e : { ...e, wires: e.wires.filter((w) => !(e.facts.includes(w.id) && dead.has(w.id))), facts: e.facts.filter((x) => !dead.has(x)) }))
-      .filter((e) => e.op !== 'tell' || e.wires.length);
-    this._do(() => { this.log = old; });
+    this._logRemove(new Set(removed));
     this._event({ op: 'retract', ids: removed });
     const out = this._finish(mark, res, false, null);
     out.removed = removed;
@@ -56,6 +57,7 @@ export const revision = {
     const gone = new Set();
     let targets = ids;
     for (let round = 0; (targets.length || values.length) && round < 1000; round++) {
+      this._b.tick('withdraw');
       for (const x of this._unsay(res, targets, values)) gone.add(x);
       values = [];
       this._chase(res);
@@ -85,7 +87,7 @@ export const revision = {
   _retractByReplay(id) {
     const gone = new Set([id]);
     const told = this.log.filter((e) => e.op === 'tell').flatMap((e) => e.wires.filter((w) => e.facts.includes(w.id)));
-    for (let grew = true; grew;) {
+    for (let grew = true; grew;) { // bounded: each pass adds at least one told wire
       grew = false;
       for (const w of told) {
         if (gone.has(w.id)) continue;
@@ -107,7 +109,8 @@ export const revision = {
       if (!r.ok) return { ok: false, removed: [], violations: r.violations };
     }
     const before = new Set(this.wires.keys());
-    for (const k of ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'seq', '_c']) this[k] = next[k];
+    for (const k of ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'seq', '_c', '_logOf', '_fills', '_lastOrder']) this[k] = next[k];
+    this._shared = null;
     this.stamp = ++this._clock;
     const removed = [...before].filter((x) => !this.wires.has(x));
     this.events = [...this.events, { seq: this.seq, op: 'retract', ids: removed }];
@@ -116,8 +119,52 @@ export const revision = {
     return { ok: true, removed, violations: [] };
   },
 
-  /** Independent copy (replays the log). */
-  fork() { return this.constructor.fromJSON(this.toJSON(), this.options); },
+  /**
+   * An independent copy that costs nothing until one of the two worlds changes: both keep
+   * using the same state, and the first one to commit a change copies it for itself.
+   * Listeners are not carried over.
+   */
+  fork() {
+    const copy = new this.constructor(this.options);
+    const share = this._shared || (this._shared = { holders: 1 });
+    share.holders++;
+    for (const k of STATE) copy[k] = this[k];
+    copy._shared = share;
+    copy._emitted = copy.events.length;
+    return copy;
+  },
+
+  /** Stop sharing: take a private copy of the state (unless the other holders are gone already). */
+  _detach() {
+    const share = this._shared;
+    this._shared = null;
+    if (--share.holders === 0) return; // the last holder owns the state
+    const wires = new Map();
+    for (const [id, w] of this.wires) { // bounded: one pass over the wires
+      const attrs = {};
+      for (const k of Object.keys(w.attrs)) attrs[k] = [...w.attrs[k]];
+      const meta = { ...w.meta };
+      if (meta.fills) meta.fills = [...meta.fills];
+      if (meta.stated) meta.stated = Object.fromEntries(Object.entries(meta.stated).map(([k, v]) => [k, [...v]]));
+      if (meta.tails) meta.tails = { ...meta.tails };
+      wires.set(id, { id: w.id, type: w.type, attrs, pattern: w.pattern, meta });
+    }
+    const sets = (m) => new Map([...m].map(([k, v]) => [k, new Set(v)]));
+    this.wires = wires;
+    this.byType = sets(this.byType);
+    this.index = sets(this.index);
+    this.refs = sets(this.refs);
+    this.byWire = sets(this.byWire);
+    this.byRule = sets(this.byRule);
+    this.matrix = new Map(this.matrix);
+    this.alias = new Map(this.alias);
+    this.used = new Set(this.used);
+    this.firings = new Map(this.firings);
+    this._logOf = new Map(this._logOf);
+    this.log = [...this.log];
+    this.events = [...this.events];
+    this._pc = null;
+  },
 
   /**
    * Defaults are assumptions. When a change is refused and default fills are involved in
@@ -126,7 +173,7 @@ export const revision = {
   _retryWithoutDefaults(r, redo, opts) {
     if (this._tx) return r;
     const involved = new Set();
-    const visit = (id) => {
+    const visit = (id) => { // bounded: each wire is visited once
       id = this.resolve(id);
       if (involved.has(id)) return;
       involved.add(id);
@@ -145,15 +192,18 @@ export const revision = {
     if (!drop.length) return r;
 
     const res = this._result();
-    const mark = this._begin();
+    const mark = this._begin(!opts.dry);
     let r2;
     try {
       this._withdraw(res, [], drop);
       if (!res.violations.length) this._validate(res);
       if (res.violations.length) { this._rollback(mark); return r; }
-      const old = this.log;
-      this.log = old.filter((e) => !(e.op === 'fill' && e.via === 'core.default' && drop.some((d) => d.id === this.resolve(e.id) && d.key === e.key)));
-      this._do(() => { this.log = old; });
+      if (this._fills) {
+        const old = this.log, fills = this._fills;
+        this.log = old.filter((e) => !(e.op === 'fill' && e.via === 'core.default' && drop.some((d) => d.id === this.resolve(e.id) && d.key === e.key)));
+        this._fills -= old.length - this.log.length;
+        this._do(() => { this.log = old; this._fills = fills; });
+      }
       this._event({ op: 'revise', dropped: drop });
       r2 = redo({ ...opts, dry: false });
     } catch (e) {
@@ -172,7 +222,11 @@ export const revision = {
  * changes. Told wires that refer to the old wire stay when a new wire takes its id;
  * otherwise they go with it. This is how state changes over time.
  */
-revision.replace = function replace(id, input) {
+revision.replace = function replace(id, input, opts = {}) {
+  return this._guard(opts, () => this._replace(id, input), (v) => this._refusal(v));
+};
+
+revision._replace = function _replace(id, input) {
   const target = this.wires.get(id);
   if (this.alias.has(id) || !target || !target.meta.told) {
     return { ...this._result(), ok: false, violations: [{ kind: 'unknown-wire', id, why: 'only told wires that were not merged can be replaced' }] };
@@ -180,7 +234,7 @@ revision.replace = function replace(id, input) {
   const wires = (typeof input === 'string' ? parse(input) : input).map(cloneWire);
   const told = wires.map(cloneWire);
   const res = this._result();
-  const mark = this._begin();
+  const mark = this._begin(true);
   let gone, facts, fallback = false;
   try {
     gone = this._unsay(res, [id], []);            // no cascade yet: the new wire may take the id
@@ -199,7 +253,7 @@ revision.replace = function replace(id, input) {
       if (!res.violations.length && orphans.length) for (const x of this._withdraw(res, orphans, [])) gone.add(x);
     }
     this._settle(res, this.options.strict);
-    fallback = [...this.alias.values()].some((t) => !this.wires.has(t));
+    if (this.alias.size) fallback = [...this.alias.values()].some((t) => !this.wires.has(t));
   } catch (e) {
     this._rollback(mark);
     throw e;
@@ -212,16 +266,7 @@ revision.replace = function replace(id, input) {
   const successor = facts.includes(id) ? told.find((w) => w.id === id) : null;
   const dead = new Set(removed);
   if (!successor) dead.add(id);
-  const old = this.log;
-  this.log = old
-    .filter((e) => e.op !== 'fill' || !(dead.has(e.id) || e.id === id))
-    .map((e) => (e.op !== 'tell' ? e : {
-      ...e,
-      wires: e.wires.filter((w) => !(e.facts.includes(w.id) && dead.has(w.id))).map((w) => (successor && e.facts.includes(w.id) && w.id === id ? successor : w)),
-      facts: e.facts.filter((x) => !dead.has(x)),
-    }))
-    .filter((e) => e.op !== 'tell' || e.wires.length);
-  this._do(() => { this.log = old; });
+  this._logRemove(dead, successor, id);
   this._event({ op: 'replace', id, removed });
   const rest = told.filter((w) => w !== successor);
   const entry = rest.length ? { op: 'tell', wires: rest, facts: facts.filter((x) => !successor || x !== id) } : null;

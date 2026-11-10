@@ -19,6 +19,23 @@ export function quantity(v) {
   return Number.isFinite(n) ? { n, unit: m[2] || '' } : null;
 }
 
+const PLAIN = /^(-?)0*(\d*)(?:\.(\d*?)0*)?([A-Za-zµ°%][A-Za-z0-9µ°%/*^.]*)?$/;
+
+/**
+ * One spelling for a plain number (with an optional unit): `5.0`, `05` and `5.` become `5`,
+ * `.50` becomes `0.5`. Text that is not such a number comes back as it is. Exact: the
+ * digits are kept, nothing is rounded.
+ */
+export function canonical(v) {
+  const c = v.charCodeAt(0);
+  if (c > 48 && c < 58 && v.indexOf('.') < 0) return v; // the usual case: 12, 7kg
+  const m = PLAIN.exec(v);
+  if (!m || (!m[2] && !m[3] && !/\d/.test(v))) return v;
+  const int = m[2] || '0', frac = m[3] || '';
+  const sign = m[1] && (int !== '0' || frac) ? '-' : '';
+  return sign + int + (frac ? '.' + frac : '') + (m[4] || '');
+}
+
 const show = (n, unit) => (Number.isFinite(n) ? String(Number(n.toPrecision(12))) + unit : undefined);
 
 const sameUnit = (f) => (args) => {

@@ -4,10 +4,15 @@ const { World, solvers } = lib;
 const { family, meetings, plant } = await import('../examples/worlds.mjs');
 const { scheduling, instance } = await import('../examples/scheduling.mjs');
 
-const time = (label, fn, note = () => '') => {
+// The first figure is one cold run, as before. With `again`, the run is repeated and the
+// best time is printed too: what the call costs once the engine has compiled it.
+const time = (label, fn, note = () => '', again = 0) => {
   const t = performance.now();
   const out = fn();
-  console.log(`${label.padEnd(46)} ${(performance.now() - t).toFixed(0).padStart(6)} ms  ${note(out)}`);
+  const cold = performance.now() - t;
+  let best = Infinity;
+  for (let i = 0; i < again; i++) { const t1 = performance.now(); fn(); best = Math.min(best, performance.now() - t1); }
+  console.log(`${label.padEnd(46)} ${cold.toFixed(0).padStart(6)} ms  ${note(out)}${again ? `  (best of ${again} more: ${best.toFixed(0)} ms)` : ''}`);
   return out;
 };
 
@@ -39,7 +44,7 @@ time('2000 separate tells, three denies checked', () => {
     w.tell(`@r${i} reading of=$t${i} level=${i % 100}`);
   }
   return w;
-}, (w) => `${w.wires.size} wires`);
+}, (w) => `${w.wires.size} wires`, 10);
 
 time('1000 state changes with replace', () => {
   const w = new World();
@@ -47,7 +52,7 @@ time('1000 state changes with replace', () => {
   w.load('@t1 tank capacity=100  @r1 reading of=$t1 level=10');
   for (let i = 0; i < 1000; i++) w.replace('r1', `@r1 reading of=$t1 level=${i % 100}`);
   return w;
-}, (w) => `${w.wires.size} wires`);
+}, (w) => `${w.wires.size} wires`, 10);
 
 time('chat: 6 meetings, step() each', () => {
   const w = new World();

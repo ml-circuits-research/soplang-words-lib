@@ -27,7 +27,8 @@ export function abduce(world, goal, { maxDepth = 3, max = 10, maxAssumptions = 4
   let n = 0;
   const size = (h) => h.wires.length + h.fills.length;
 
-  function* solve(todo, s, hyp, depth) {
+  function* solve(todo, s, hyp, depth) { // each call ticks the budget
+    world._b.tick('abduce');
     if (!todo.length) { yield hyp; return; }
     const [g, ...rest] = todo;
 
@@ -116,6 +117,7 @@ export function abduce(world, goal, { maxDepth = 3, max = 10, maxAssumptions = 4
 
   let out = [];
   for (const cand of cands) {
+    world._b.tick('abduce');
     if (out.length >= max) break;
     if (out.some((o) => [...o.parts].every((p) => cand.parts.has(p)))) continue; // a smaller explanation exists
     const ok = world._trial(() => {

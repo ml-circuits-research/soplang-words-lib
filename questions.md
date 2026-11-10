@@ -6,7 +6,24 @@ written with each question and in `worker-log.md`. A question is deleted from th
 once the worker is satisfied with the answer; closed ones are listed at the end in one
 line each so the history is not lost.
 
-No open questions.
+## Q11. Which replace figure is the target: one cold run, or the cost once compiled?
+
+G7 says the 1000-replace benchmark "must be back at or under the 0.4 number" (30 ms).
+Measured over 11 runs each (table in `worker-log.md`, G7):
+
+- once compiled, 1000 replaces cost 11 ms now and 10 ms in 0.4 (`node tools/bench.mjs`,
+  the new "best of 10 more" column; `node tools/bench.mjs <path to 0.4 src/index.mjs>`
+  for the old library);
+- the single cold run of the old harness has a median of 43 ms now against 32 ms for
+  0.4, and moves by ±10 ms from run to run. The difference is spread over the features
+  added since (G1–G4), with no single hot function.
+
+**Chosen for now:** I treat the compiled cost as the figure that matters to a host (a
+world lives longer than its first thousand changes), keep the cold figure in the
+benchmark output, and stop tuning it. If the cold run is what you need at or under
+30 ms, say so and I will take it as a task of its own: it means making the common path
+of a change shorter (fewer hooks per wire when the matrix has no hierarchy, fluents or
+aggregates), which is a wider change than G7.
 
 ## Closed
 

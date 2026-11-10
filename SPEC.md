@@ -244,6 +244,16 @@ accepts any literal. `type=` names
 the type a reference must point to (descendants included); several are alternatives. A
 slot with both accepts either. Kinds are checked on every `tell` and `fill`.
 
+**One value, several spellings.** Under a key whose every kind is `integer` or `number`,
+`5`, `5.0` and `05` are the same value. The wire keeps the text it was told; the indexes
+hold one canonical spelling (no sign on zero, no leading zeros, no trailing zeros after
+the point; the digits are kept, nothing is rounded). So a pattern `price=5` finds a wire
+with `price=5.0` and the other way round, a join through a variable pairs them, an
+identity key recognises them as one wire, and telling the other spelling is neither a
+second value nor a conflict. A variable is bound to the text of the wire it was read
+from. Keys without such a kind are text: `label=1.0` is not `label=1`. Declaring the
+kind later re-indexes the wires that are already there.
+
 **Key names.** A key may be written short (`seats=`) or qualified with the wire's type or
 one of its ancestors (`fleet.vehicle.seats=`): both are the same key, in facts, `fill`,
 patterns and queries.
@@ -386,7 +396,8 @@ Violation kinds: `deny`, `conflict`, `domain`, `cardinality`, `unknown-key`,
 
 A rule that creates wires can feed itself. Each derived wire has a depth (1 + the
 deepest wire it came from); beyond `maxDepth` (default 12) the change is refused. A
-`maxSteps` budget bounds the number of firings.
+`maxSteps` budget bounds the number of firings of one change, and every call runs under
+a step budget (4.11), so no matrix can make a call hang.
 
 ### 4.3 Same wire or new wire
 
@@ -587,6 +598,65 @@ where, action, arg, to, value, status, via, from } })`.
 **Prefix slots.** `core.slot of=<type> key=where prefix=true` declares every key
 `where.<anything>` at once, so that question and request wires can belong to a closed type.
 
+### 4.11 Budgets, and forks that cost nothing
+
+**Budget.** Every public call runs under a budget of steps: `{ steps, ms }`, by default
+`{ steps: 5000000 }`, set for a world with `new World({ budget })` and for one call with
+the `budget` option (`solveReport`, `solve` and `satisfiable` call it `limit`, because
+`budget` there is the solver's own search budget). A step is one turn of a loop whose
+length depends on the data. Each loop belongs to a site:
+
+| site | one step is |
+|---|---|
+| `match` | a candidate wire tried against a pattern |
+| `chase` | a wire taken from the agenda, or a rule firing applied |
+| `negation` | a rule with `not=`, a selector or an aggregate evaluated again |
+| `aggregate` | a match fed to an aggregate |
+| `fluent` | an event applied to a state |
+| `withdraw` | a wire, value or firing taken back |
+| `validate` | a wire checked against its slots and the denies |
+| `complete` | a candidate value tried by `suggest`, `next` or `complete` |
+| `ground` | a deny match turned into a nogood for the solvers |
+| `solve` | a search step of a solver |
+| `abduce` | a goal expanded, or an explanation verified |
+| `induce` | an alignment of two examples tried |
+
+The outermost call owns the budget; what it calls inside shares it. When the budget runs
+out the call stops, everything it did is undone, and the caller gets the normal shape of
+that call's result saying so. It never throws and never leaves a half-applied change:
+
+| call | out of budget |
+|---|---|
+| `tell`, `fill`, `retract`, `replace`, `apply`, `step`, `use`, `answer` | `{ ok: false, violations: [{ kind: 'budget', site, steps, why }] }` |
+| `load` | throws, as for any refused load |
+| `ask`, `suggest`, `abduce` | an empty array with a `budget` property |
+| `holds` | `false` |
+| `next`, `complete` | empty lists and a `budget` property |
+| `solveReport`, `solveAsync` | `{ status: 'unknown', stats: { budget } }` (`solve` returns `[]`, `satisfiable` returns `true`) |
+| `query` | `{ status: 'budget', site, steps, why }` |
+| `act` | `{ ok: false, status: 'budget', violations: [...] }` |
+| `trial`, `asOf` | `undefined` |
+| `induce` (a function, with its own budget of 200,000 alignments) | `{ text: null, budget }` |
+
+Steps are counted, not timed: the same call on the same world stops at the same place
+on any machine. `ms` adds a wall-clock limit for hosts that need one; it is looked at
+every 1,024 steps. `world.stats()` returns the count of the last call:
+`{ steps, limit, exhausted, site, sites: { match, chase, ... }, ms }`.
+
+Loops whose length does not depend on the data in a way that can grow (the keys of one
+wire, the journal of the call being undone, the trail of the SAT solver) do not tick;
+each carries a `// bounded: <reason>` comment, and a test reads `src/` and fails on a
+`while`, a `for (;;)` or a recursive function that has neither a tick nor that comment.
+
+**Fork.** `fork()` returns a world that shares the whole state of the original and
+copies nothing. The copy is made by whichever of the two changes first, at its first
+change that is meant to stay (a `dry` tell, a `trial`, `suggest` and the searches do not
+count). A fork therefore costs the same for a world of ten wires or ten thousand; the
+first write pays for one copy of the indexes (not a replay of the log: no rule fires
+again), and later writes cost what they always do. A world cannot know that a fork
+of it was thrown away, so after a fork the original also pays for one copy at its next
+write, unless the fork has written (and so left) before.
+
 ## 5. Composition of worlds
 
 - A micro-world is a matrix, usually with a type prefix (`phys.mech.*`), stored in a library.
@@ -609,7 +679,9 @@ where, action, arg, to, value, status, via, from } })`.
   negative examples to add comparisons, but does not handle noise or learn negation.
 - There is no built-in notion of context: a wire holds in the whole world. `asOf` costs
   a withdrawal of everything later than the point asked about.
-- `fork` and `fromJSON` replay the log.
+- `fromJSON` replays the log. `fork` does not (4.11).
+- The budget counts steps of the library's own loops. A host function (`fns`) or a
+  solver strategy that loops by itself is outside it; `ms` does not interrupt them either.
 - The build does not minify (about 110 kB, 31 kB gzipped).
 
 ## 7. Architecture
@@ -665,7 +737,7 @@ Invariants the tests rely on:
 import { World, solvers, parse, format, str, quote, induce, induceSlots, adopt,
          Problem, Sat, toDimacs, toASP, quantity, version } from './docs/sopworld.mjs';
 
-const w = new World({ fns, library, solver, maxDepth, maxSteps, lookahead, strict, searchBudget, rank });
+const w = new World({ fns, library, solver, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, budget });
 w.tell(textOrWires, { dry, strict })   w.load(textOrWires)   w.use(name)
 w.fill(id, key, value, { dry, strict })
 w.retract(id)   w.replace(id, textOrWires)   w.fork()   w.trial(fn)
@@ -673,12 +745,13 @@ w.step(textOrWires, { defaults, choose, strict })   w.answer(questionWire, value
 w.get(id)  w.has(id)  w.ofType(type)
 w.ask(patternText)   w.holds(patternText)
 w.open(id?)  w.suggest(id, key, { deep })  w.next()  w.complete({ defaults, choose })
-w.solve()  w.solveReport({ solver, budget })  await w.solveAsync({ solver })
+w.solve()  w.solveReport({ solver, budget, limit })  await w.solveAsync({ solver })
 w.satisfiable()  w.apply(assignment)
 w.query(question, { record, suppose, at })   w.act(request)   w.schema(type)
 w.asOf(at, fn)   w.seqOf(id)   w.compare(idA, idB)
 w.abduce(goalText, { maxDepth, max, maxAssumptions })
-w.explain(id)  w.history()  w.on(listener)
+w.explain(id)  w.history()  w.on(listener)   w.stats()
+// every call above also takes { budget: { steps, ms } }
 w.toSOP({ schema, derived, provenance })   w.toJSON()   World.fromJSON(data, options)
 ```
 
@@ -706,4 +779,11 @@ Since 0.4.0 (the version first published in this repository):
 - New: aggregates (3.6.2), `abs`, `round`, `mod`, `idiv`, `time_add`, `time_diff`,
   `weekday`, checked time kinds (3.6.1).
 - Rules with negation or a selector are re-evaluated only when a type they read changed.
+- New: budgets on every call, `world.stats()`, and a `fork()` that shares the state
+  instead of replaying the log (4.11). `ask`, `holds`, `retract`, `replace`, `next`,
+  `complete`, `suggest`, `abduce`, `apply`, `act`, `asOf` and `trial` take
+  `{ budget }`; `solveReport({ limit })`.
+- Under a key declared `integer` or `number`, values are compared by their canonical
+  spelling: `5` and `5.0` match each other (3.9). Before, they were different texts.
+- `apply()` no longer returns working fields in its result.
 

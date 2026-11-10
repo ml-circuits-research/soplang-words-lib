@@ -233,6 +233,12 @@ bindings of the rule's own patterns. Those shared bindings are the group.
 - Stratified like negation: a rule may not aggregate over a type its own consequences
   can produce; such a matrix is refused.
 
+**Ties.** When several wires share the best value, `argmax` and `argmin` still put one
+pick on the wire (the first in sequence order), and remember the others: a query for
+that key answers `ambiguous` with all of them as alternatives (4.10), and stops doing
+so when the tie is broken. `ties=first` on the calc turns this off: the first is simply
+the answer.
+
 ### 3.7 `core.use`: load another matrix
 
 `@u core.use world=garden` loads the matrix registered under that name in
@@ -627,6 +633,7 @@ that `next()` produces), the id of such a wire, or its text. It changes nothing.
 | --- | --- | --- |
 | `supported` | exactly one value (or `mode=list`, `count`, a positive `exists`) | `value` or `values`, `from`, `via` |
 | `conflicting` | several distinct values | `alternatives: [{ value, from }]` |
+| `ambiguous` | the value was picked by `argmax` or `argmin` among several equally good | `alternatives: [{ value }]` |
 | `missing` | no value | `missing: [{ id?, type, key, ask }]`: the open key and its question |
 | `refused` | the thing asked about cannot exist | `violations`, as from `tell` |
 | `no` / `unknown` | `mode=exists` finds nothing: `no` if the type is declared `complete=true`, else `unknown` | |
@@ -855,6 +862,8 @@ Since 0.4.0 (the version first published in this repository):
 - New: `core.on=` templates (3.3); the stratification check knows which keys a template
   adds, so a rule may aggregate over a type and fill a key on a wire of that type.
 - New: `core.absent=` in patterns (3.10).
+- New: a tie for `argmax` / `argmin` makes the query `ambiguous` with the alternatives
+  (3.6.2); `ties=first` keeps the old behaviour.
 - **Changed:** a second, different declaration of the same key of the same type used
   to replace the first silently. It is now refused unless one of the two carries
   `combine=intersect` or `combine=override` (3.1).

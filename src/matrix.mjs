@@ -429,7 +429,7 @@ function buildRule(world, w, c) {
     // with over= the calc is an aggregate over every match of those patterns
     const over = x.attrs.over ? get('over', world.matrix.get(x.id) || x) : null;
     if (over ? !aggregates[name] : !world.fns[name]) c.errors.push(`${w.id}: unknown ${over ? 'aggregate' : kind} function "${name}"`);
-    return { fn: name, out: first(x, 'out'), args: x.attrs.args || [], over, pick: first(x, 'pick') };
+    return { fn: name, out: first(x, 'out'), args: x.attrs.args || [], over, pick: first(x, 'pick'), ties: first(x, 'ties') };
   };
   const rule = {
     id: w.id, kind: w.type === 'core.rule' ? 'rule' : 'deny',
@@ -453,6 +453,8 @@ function buildRule(world, w, c) {
     for (const v of Object.values(p.attrs).flat()) if (hasVar(v)) vars.add(v[0] === '$' ? v.slice(1) : v);
   }
   for (const x of rule.calc) if (x.out) vars.add(x.out);
+  // the tied picks of an argmax or argmin are part of what a firing concluded (see TIES in world.mjs)
+  for (const x of rule.calc) if (x.out && (x.fn === 'argmax' || x.fn === 'argmin')) vars.add(x.out + '\u0003ties');
   rule.vars = [...vars].sort();
   // a pattern with core.select=latest|first picks one wire by sequence: what it picks can change
   // a pattern with core.absent= relies on something not being there: what it matched can stop matching

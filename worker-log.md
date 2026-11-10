@@ -765,3 +765,15 @@ three pilot matrices declare eight keys that the legends already declare, to add
 `id=true`, `min=0`, an enum and a default. Before this task they replaced the legend's
 declaration silently; they now say `combine=intersect`, which is what they are
 (refinements), and the pilot numbers are unchanged.
+
+## G10 — ties and ambiguity — done
+
+`npm test`: 168 pass, 0 fail on sources and built file. `node compat/psys2/run.mjs`:
+kids.shop 147/147, kids.arith 208/217, kids.tasks 231/232 (t.arith.n37 now passes).
+
+`argmax` / `argmin` with several best wires: the wire still gets the first pick (so
+rules that read the key keep working), the tied picks are kept with the value, and
+`query` answers `ambiguous` with them as alternatives. The tied set is part of what a
+firing concluded, so it follows the facts: a third wire joining the tie, a tie that
+appears after a single winner, and a tie broken by a replace are all in the test
+(`test/aggregate.test.mjs`). `ties=first` on the calc is the old behaviour.

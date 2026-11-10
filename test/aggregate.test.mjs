@@ -189,3 +189,36 @@ test('aggregates: a deny over a group is also checked when a wire leaves the gro
   w.load('@m4 member of=red');
   assert.ok(w.retract('m1').ok, 'three members: one may leave');
 });
+
+test('aggregates: a tie for argmax or argmin is ambiguous, with the alternatives; ties=first picks one', () => {
+  const matrix = (ties) => `
+    ?r race
+    ?e entry of=$r who=?w score=?s
+    @c core.calc out=?best fn=argmax over=$e args=?s pick=?w${ties}
+    @win race core.on=$r winner=?best
+    @rule core.rule when=$r with=$c then=$win
+  `;
+  const w = new World();
+  w.load(matrix(''));
+  w.load('@r1 race  @e1 entry of=$r1 who=ana score=3  @e2 entry of=$r1 who=bob score=3  @e3 entry of=$r1 who=cy score=1');
+  const tie = w.query({ about: 'r1', seek: 'winner' });
+  assert.deepEqual([tie.status, tie.alternatives.map((a) => a.value)], ['ambiguous', ['ana', 'bob']]);
+  assert.equal(w.get('r1').attrs.winner[0], 'ana', 'the wire holds the first, in sequence order');
+  w.load('@e5 entry of=$r1 who=dan score=3');           // a third one joins the tie
+  assert.deepEqual(w.query({ about: 'r1', seek: 'winner' }).alternatives.map((a) => a.value), ['ana', 'bob', 'dan']);
+  w.retract('e5');
+  w.load('@e4 entry of=$r1 who=bob score=1');           // not a new best
+  assert.equal(w.query({ about: 'r1', seek: 'winner' }).status, 'ambiguous');
+  w.replace('e2', '@e2 entry of=$r1 who=bob score=5');   // the tie is broken
+  assert.deepEqual([w.query({ about: 'r1', seek: 'winner' }).status, w.query({ about: 'r1', seek: 'winner' }).value], ['supported', 'bob']);
+  const late = new World();
+  late.load(matrix(''));
+  late.load('@r1 race  @e1 entry of=$r1 who=ana score=3');
+  assert.equal(late.query({ about: 'r1', seek: 'winner' }).status, 'supported');
+  late.load('@e2 entry of=$r1 who=bob score=3');         // the pick stays ana, but it is a tie now
+  assert.equal(late.query({ about: 'r1', seek: 'winner' }).status, 'ambiguous');
+  const first = new World();
+  first.load(matrix(' ties=first'));
+  first.load('@r1 race  @e1 entry of=$r1 who=ana score=3  @e2 entry of=$r1 who=bob score=3');
+  assert.deepEqual([first.query({ about: 'r1', seek: 'winner' }).status, first.query({ about: 'r1', seek: 'winner' }).value], ['supported', 'ana']);
+});

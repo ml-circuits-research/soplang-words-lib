@@ -30,7 +30,8 @@ export interface Candidate { value: string; source: 'default' | 'enum' | 'wire' 
 export interface Question { type?: string; seek?: string; where?: Record<string, string | number>; about?: string; mode?: 'value' | 'list' | 'count' | 'exists' }
 export interface QueryResult {
   /** 'budget': the call ran out of budget; `site`, `steps` and `why` say where */
-  status: 'supported' | 'conflicting' | 'missing' | 'refused' | 'no' | 'unknown' | 'budget';
+  status: 'supported' | 'conflicting' | 'ambiguous' | 'missing' | 'refused' | 'no' | 'unknown' | 'budget' | 'unsupported';
+  reason?: string;
   site?: string; steps?: number; why?: string;
   value?: string; values?: string[];
   alternatives?: { value: string; from: string[] }[];

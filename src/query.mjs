@@ -109,8 +109,9 @@ export const querying = {
       // every value some wire has, with where it came from; then what a producer computes
       const found = new Map(); // value -> { from, via }
       const lacking = [];
-      const note = (value, from, via) => {
+      const note = (value, from, via, ties) => {
         const e = found.get(value) || found.set(value, { from: [], via: [] }).get(value);
+        if (ties) e.ties = ties;
         for (const x of from) if (!e.from.includes(x)) e.from.push(x);
         if (via && !e.via.includes(via)) e.via.push(via);
       };
@@ -119,7 +120,7 @@ export const querying = {
         if (!vals) { lacking.push(w); continue; }
         for (const value of vals) {
           const fill = (w.meta.fills || []).find((f) => f.key === key && f.value === value);
-          note(value, [w.id, ...(fill?.from || [])], fill ? fill.via : w.meta.via);
+          note(value, [w.id, ...(fill?.from || [])], fill ? fill.via : w.meta.via, fill ? fill.ties : w.meta.ties?.[key]);
         }
       }
       // nothing matches: suppose a wire of that type with the given keys and let the rules work
@@ -137,7 +138,7 @@ export const querying = {
             for (const value of w.attrs[key] || []) {
               const fill = (w.meta.fills || []).find((f) => f.key === key && f.value === value);
               const from = fill ? fill.from || [] : w.meta.from || [];
-              note(value, from.filter((x) => x !== id && this.wires.get(x)?.meta.told), fill ? fill.via : w.meta.via);
+              note(value, from.filter((x) => x !== id && this.wires.get(x)?.meta.told), fill ? fill.via : w.meta.via, fill ? fill.ties : w.meta.ties?.[key]);
             }
           }
         });
@@ -161,6 +162,9 @@ export const querying = {
         r = { status: 'refused', violations: refused, from: [...new Set(refused.flatMap((x) => x.support || []))] };
       } else if (mode === 'list' && values.length) {
         r = { status: 'supported', values, from: from(values), via: via(values) };
+      } else if (values.length === 1 && found.get(values[0]).ties) {
+        // the value was picked among several equally good ones: say so instead of choosing
+        r = { status: 'ambiguous', alternatives: found.get(values[0]).ties.map((value) => ({ value })), from: from(values), via: via(values) };
       } else if (values.length === 1) {
         r = { status: 'supported', value: values[0], from: from(values), via: via(values) };
       } else if (values.length > 1) {

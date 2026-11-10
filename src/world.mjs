@@ -19,6 +19,7 @@ import { abduce } from './abduce.mjs';
 const first = (w, k) => w.attrs[k]?.[0];
 const K = (type, key, value) => `${type}\u0001${key}\u0001${value}`;
 const LIST = '\u0002'; // marks a list of values bound to one variable (the result of collect)
+const TIES = '\u0003ties'; // suffix of the hidden variable that holds the tied picks of an argmax or argmin
 const setOf = (map, k) => map.get(k) || map.set(k, new Set()).get(k);
 
 function readModule(map, w) {
@@ -566,6 +567,7 @@ export class World {
 
   _addValue(w, key, value, prov, res) {
     const fill = { key, value, via: prov.via, from: prov.from };
+    if (prov.ties?.[key]) fill.ties = prov.ties[key];
     (w.attrs[key] ||= []).push(value);
     (w.meta.fills ||= []).push(fill);
     this._link(w, key, value);
@@ -882,6 +884,12 @@ export class World {
           }
           out = aggregates[c.fn](values, picks, n);
           if (Array.isArray(out)) out = LIST + out.join(LIST); // several values for one key
+          // several wires share the best value: the pick is the first, the others are remembered
+          if ((c.fn === 'argmax' || c.fn === 'argmin') && out !== undefined && c.ties !== 'first') {
+            const best = aggregates[c.fn === 'argmax' ? 'max' : 'min'](values, picks, n);
+            const tied = [...new Set(picks.filter((_, i) => values[i] === best || this.fns.eq([values[i], best], this)))];
+            if (tied.length > 1) s = unify(c.out + TIES, LIST + tied.join(LIST), s);
+          }
         } else {
           const args = c.args.map((a) => walk(a, s));
           if (args.some(hasVar)) continue next;
@@ -1007,7 +1015,12 @@ export class World {
     const prov = { via: rule.id, from, rec };
     for (const t of rule.then) {
       const attrs = {};
+      prov.ties = undefined;
       for (const k of Object.keys(t.attrs)) {
+        for (const v of t.attrs[k]) { // bounded: the values of one template key
+          const tied = isVar(v) ? walk(v + TIES, s) : v;
+          if (tied[0] === LIST) (prov.ties ||= {})[k] = tied.slice(1).split(LIST);
+        }
         const vals = t.attrs[k].map((v) => walk(v, s)).filter((v) => !hasVar(v)).flatMap((v) => (v[0] === LIST ? v.slice(1).split(LIST) : [v]));
         if (vals.length) attrs[k] = vals; // a value left unbound is an open key
       }
@@ -1020,7 +1033,7 @@ export class World {
         target = { id: `_${t.id}_${hash(sig)}`, type: t.type, attrs, pattern: false };
         if (this.wires.has(target.id)) target.id += '_' + this.seq;
         const seq = this._event({ op: 'derive', id: target.id, wire: format(target), via: rule.id, from });
-        this._addWire(target, { seq, via: rule.id, from, depth }, res);
+        this._addWire(target, { seq, via: rule.id, from, depth, ...(prov.ties ? { ties: prov.ties } : {}) }, res);
         rec.made.push(target.id);
         res.derived.push(target.id);
       }

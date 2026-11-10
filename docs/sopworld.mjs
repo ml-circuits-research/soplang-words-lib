@@ -1428,7 +1428,7 @@ const __matrix = (() => {
       // with over= the calc is an aggregate over every match of those patterns
       const over = x.attrs.over ? get('over', world.matrix.get(x.id) || x) : null;
       if (over ? !aggregates[name] : !world.fns[name]) c.errors.push(`${w.id}: unknown ${over ? 'aggregate' : kind} function "${name}"`);
-      return { fn: name, out: first(x, 'out'), args: x.attrs.args || [], over, pick: first(x, 'pick') };
+      return { fn: name, out: first(x, 'out'), args: x.attrs.args || [], over, pick: first(x, 'pick'), ties: first(x, 'ties') };
     };
     const rule = {
       id: w.id, kind: w.type === 'core.rule' ? 'rule' : 'deny',
@@ -1452,6 +1452,8 @@ const __matrix = (() => {
       for (const v of Object.values(p.attrs).flat()) if (hasVar(v)) vars.add(v[0] === '$' ? v.slice(1) : v);
     }
     for (const x of rule.calc) if (x.out) vars.add(x.out);
+    // the tied picks of an argmax or argmin are part of what a firing concluded (see TIES in world.mjs)
+    for (const x of rule.calc) if (x.out && (x.fn === 'argmax' || x.fn === 'argmin')) vars.add(x.out + '\u0003ties');
     rule.vars = [...vars].sort();
     // a pattern with core.select=latest|first picks one wire by sequence: what it picks can change
     // a pattern with core.absent= relies on something not being there: what it matched can stop matching
@@ -2155,8 +2157,9 @@ const __query = (() => {
         // every value some wire has, with where it came from; then what a producer computes
         const found = new Map(); // value -> { from, via }
         const lacking = [];
-        const note = (value, from, via) => {
+        const note = (value, from, via, ties) => {
           const e = found.get(value) || found.set(value, { from: [], via: [] }).get(value);
+          if (ties) e.ties = ties;
           for (const x of from) if (!e.from.includes(x)) e.from.push(x);
           if (via && !e.via.includes(via)) e.via.push(via);
         };
@@ -2165,7 +2168,7 @@ const __query = (() => {
           if (!vals) { lacking.push(w); continue; }
           for (const value of vals) {
             const fill = (w.meta.fills || []).find((f) => f.key === key && f.value === value);
-            note(value, [w.id, ...(fill?.from || [])], fill ? fill.via : w.meta.via);
+            note(value, [w.id, ...(fill?.from || [])], fill ? fill.via : w.meta.via, fill ? fill.ties : w.meta.ties?.[key]);
           }
         }
         // nothing matches: suppose a wire of that type with the given keys and let the rules work
@@ -2183,7 +2186,7 @@ const __query = (() => {
               for (const value of w.attrs[key] || []) {
                 const fill = (w.meta.fills || []).find((f) => f.key === key && f.value === value);
                 const from = fill ? fill.from || [] : w.meta.from || [];
-                note(value, from.filter((x) => x !== id && this.wires.get(x)?.meta.told), fill ? fill.via : w.meta.via);
+                note(value, from.filter((x) => x !== id && this.wires.get(x)?.meta.told), fill ? fill.via : w.meta.via, fill ? fill.ties : w.meta.ties?.[key]);
               }
             }
           });
@@ -2207,6 +2210,9 @@ const __query = (() => {
           r = { status: 'refused', violations: refused, from: [...new Set(refused.flatMap((x) => x.support || []))] };
         } else if (mode === 'list' && values.length) {
           r = { status: 'supported', values, from: from(values), via: via(values) };
+        } else if (values.length === 1 && found.get(values[0]).ties) {
+          // the value was picked among several equally good ones: say so instead of choosing
+          r = { status: 'ambiguous', alternatives: found.get(values[0]).ties.map((value) => ({ value })), from: from(values), via: via(values) };
         } else if (values.length === 1) {
           r = { status: 'supported', value: values[0], from: from(values), via: via(values) };
         } else if (values.length > 1) {
@@ -2871,6 +2877,7 @@ const __world = (() => {
   const first = (w, k) => w.attrs[k]?.[0];
   const K = (type, key, value) => `${type}\u0001${key}\u0001${value}`;
   const LIST = '\u0002'; // marks a list of values bound to one variable (the result of collect)
+  const TIES = '\u0003ties'; // suffix of the hidden variable that holds the tied picks of an argmax or argmin
   const setOf = (map, k) => map.get(k) || map.set(k, new Set()).get(k);
 
   function readModule(map, w) {
@@ -3418,6 +3425,7 @@ const __world = (() => {
 
     _addValue(w, key, value, prov, res) {
       const fill = { key, value, via: prov.via, from: prov.from };
+      if (prov.ties?.[key]) fill.ties = prov.ties[key];
       (w.attrs[key] ||= []).push(value);
       (w.meta.fills ||= []).push(fill);
       this._link(w, key, value);
@@ -3734,6 +3742,12 @@ const __world = (() => {
             }
             out = aggregates[c.fn](values, picks, n);
             if (Array.isArray(out)) out = LIST + out.join(LIST); // several values for one key
+            // several wires share the best value: the pick is the first, the others are remembered
+            if ((c.fn === 'argmax' || c.fn === 'argmin') && out !== undefined && c.ties !== 'first') {
+              const best = aggregates[c.fn === 'argmax' ? 'max' : 'min'](values, picks, n);
+              const tied = [...new Set(picks.filter((_, i) => values[i] === best || this.fns.eq([values[i], best], this)))];
+              if (tied.length > 1) s = unify(c.out + TIES, LIST + tied.join(LIST), s);
+            }
           } else {
             const args = c.args.map((a) => walk(a, s));
             if (args.some(hasVar)) continue next;
@@ -3859,7 +3873,12 @@ const __world = (() => {
       const prov = { via: rule.id, from, rec };
       for (const t of rule.then) {
         const attrs = {};
+        prov.ties = undefined;
         for (const k of Object.keys(t.attrs)) {
+          for (const v of t.attrs[k]) { // bounded: the values of one template key
+            const tied = isVar(v) ? walk(v + TIES, s) : v;
+            if (tied[0] === LIST) (prov.ties ||= {})[k] = tied.slice(1).split(LIST);
+          }
           const vals = t.attrs[k].map((v) => walk(v, s)).filter((v) => !hasVar(v)).flatMap((v) => (v[0] === LIST ? v.slice(1).split(LIST) : [v]));
           if (vals.length) attrs[k] = vals; // a value left unbound is an open key
         }
@@ -3872,7 +3891,7 @@ const __world = (() => {
           target = { id: `_${t.id}_${hash(sig)}`, type: t.type, attrs, pattern: false };
           if (this.wires.has(target.id)) target.id += '_' + this.seq;
           const seq = this._event({ op: 'derive', id: target.id, wire: format(target), via: rule.id, from });
-          this._addWire(target, { seq, via: rule.id, from, depth }, res);
+          this._addWire(target, { seq, via: rule.id, from, depth, ...(prov.ties ? { ties: prov.ties } : {}) }, res);
           rec.made.push(target.id);
           res.derived.push(target.id);
         }

@@ -11,6 +11,7 @@ The reviewer's first two commits to this repository were a false start; ignore t
 | Task | State |
 | --- | --- |
 | S0, G1, G2 | validated |
+| G4 aggregates, arithmetic, time (823e3b3); Q8–Q10 applied (cb4f036) | **validated** (reviewer, 16:00): `npm test` 135 pass, 0 fail, 1 skipped; compat tests pass; no PSys2 name in `src/`. On your G4 note: keep pattern matching textual (`5` does not match `5.0`); instead normalise numeric literals **on tell** for slots whose kind is `integer` or `number` (store `5.0` as given but index its canonical form), so hosts never meet the difference. Do it in G7 with the index work, or say why not. |
 | `core.check` rename (1b4541b), G6 queries (0d2cb6a), G3 sequence and fluents (5519782) | **validated** (reviewer, 15:50): `npm test` 123 pass, 0 fail, 1 skipped on sources and built file; `compat/psys2` schema and cases tests pass; `git grep -i psys2 src/` empty. |
 
 **Answers to your open questions:**
@@ -19,10 +20,9 @@ The reviewer's first two commits to this repository were a false start; ignore t
 - **Q10** (references to entities outside the session): accepted. The library keeps refusing a reference to a wire that does not exist. In PSys2 `e.user` is a built-in agent that every session has from the start, so the runner telling an `e.user` wire first is correct. The one `$e.tom` case: check whether the agent wire is created by an earlier turn of the same session in the cases file (PSys2 creates an agent wire on first mention, in the same turn); if the wire really is absent from `wires`, list the case as a failure with that reason and I will look at the dump.
 
 **Do next, in this order, one commit each:**
-1. **G4** (aggregates, arithmetic, time kinds).
-2. **G7** (budgets everywhere, structural fork). Find the `replace` slowdown here: the reviewer measured 47–81 ms for the 1000-replace benchmark against 30 ms in 0.4. It must be back at or under the 0.4 number.
-3. **G5** (abduction through calcs).
-4. **G8** (the three matrices and the runner), then **G9**.
+1. **G7** (budgets everywhere, structural fork). Find the `replace` slowdown here: the reviewer measured 47–81 ms for the 1000-replace benchmark against 30 ms in 0.4. It must be back at or under the 0.4 number.
+2. **G5** (abduction through calcs).
+3. **G8** (the three matrices and the runner), then **G9**.
 
 Working rules for commits: pull with rebase before each commit; the reviewer only ever changes `worker-tasks.md` (tasks and answers) and, when you ask for more material, files under `compat/psys2/` — never `src/`, tests, docs, `questions.md` or your log. If a reviewer commit lands while you work, rebase onto it; it will not touch your files.
 
@@ -113,3 +113,4 @@ G1, G2, G6, G3, G4, G7, G5, G8, G9. G8 for the shop world can start as soon as G
 - S0 (c583bfa): tests that need an outside solver are skipped when it is missing; `AGENTS.md` added. Accepted from the log (80 pass, 1 skipped, 0 fail).
 - G1 + G2 (23f238b): type hierarchy; schema mapping as data, literal kinds, qualified keys. Reviewer rerun: 96 pass / 0 fail / 1 skipped twice, compat schema test 2 pass, no PSys2 name in `src/`. Open from it: the `replace` benchmark is slower than 0.4 (goes to G7).
 - `core.check` rename (1b4541b), G6 (0d2cb6a), G3 (5519782): reviewer rerun 123 pass / 0 fail / 1 skipped twice; compat tests pass; no PSys2 name in `src/`.
+- G4 (823e3b3), Q8–Q10 applied (cb4f036): reviewer rerun 135 pass / 0 fail / 1 skipped; compat tests pass.

@@ -118,7 +118,7 @@ test('refusal: dangling reference, duplicate id, variables in facts', () => {
   assert.equal(w.tell('@f1 force on=$nobody').violations[0].kind, 'dangling-ref');
   w.tell('@b1 body mass=1');
   assert.equal(w.tell('@b1 body mass=3').violations[0].kind, 'duplicate-id');
-  assert.equal(w.tell('@x body mass=?m').violations[0].kind, 'syntax');
+  assert.equal(w.tell('@x body mass=?m').violations[0].kind, 'variable');
 });
 
 test('matrix errors are reported, not thrown', () => {

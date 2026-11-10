@@ -15,6 +15,35 @@ export const SCHEMA_TYPES = new Set([
 ]);
 
 /**
+ * The attributes each matrix wire type reads. A name ending in `.` is a prefix
+ * (`where.<key>`). An attribute that is not here is not an error (a wire may carry notes
+ * of its own) but is reported in world.warnings, because it is usually a misspelling.
+ * The reference (docs/reference.md) is checked against this table.
+ */
+export const GRAMMAR = {
+  'core.slot': ['of', 'key', 'required', 'many', 'id', 'prefix', 'kind', 'type', 'enum', 'default', 'ask', 'min', 'max', 'step', 'soft', 'combine'],
+  'core.type': ['of', 'extends', 'closed', 'complete'],
+  'core.namespace': ['prefix', 'open'],
+  'core.schema.map': ['from', 'as'], // and one attribute per field it maps
+  'core.use': ['world', 'prefix'],
+  'core.rule': ['when', 'not', 'with', 'if', 'then'],
+  'core.deny': ['when', 'not', 'with', 'if', 'why', 'soft'],
+  'core.calc': ['out', 'fn', 'args', 'over', 'pick', 'ties', 'relation'],
+  'core.check': ['fn', 'args', 'why'],
+  'core.relation': ['when', 'sum', 'sub', 'equals'],
+  'core.abducible': ['of', 'key', 'cost'],
+  'core.sequence': ['key'],
+  'core.fluent': ['of', 'key', 'by', 'delta'],
+  'core.effect': ['on', 'fluent', 'op', 'amount', 'value', 'for', 'where.'],
+  'core.producer': ['of', 'key', 'fn'],
+  'core.action': ['name', 'fn', 'required', 'input', 'param', 'when', 'with', 'if', 'set', 'add', 'remove', 'returns', 'all', 'ask.'],
+  'core.tier': ['name', 'below', 'cost'],
+  'core.precision': ['decimals'],
+};
+/** Attributes that may stand on a pattern or a template of any type. */
+export const MODIFIERS = { 'core.select': 'pattern', 'core.absent': 'pattern', 'core.on': 'template' };
+
+/**
  * A core.schema.map wire says how wires of another notation declare a schema, so that an
  * existing schema can be loaded unchanged:
  *   @m core.schema.map from=<wire type> as=slot|type|module  <field>=<where to find it> ...
@@ -274,6 +303,17 @@ export function compileMatrix(world) {
     if (e.amount === undefined && e.value === undefined) c.errors.push(`${w.id}: core.effect needs amount=<event key> or value=<literal>`);
     fluent.effects.push(e);
     push(c.effectsByEvent, on, e);
+  }
+
+  // ---- attributes nobody reads: most often a misspelling
+  c.unknown = [];
+  for (const w of world.matrix.values()) {
+    const known = GRAMMAR[w.type === 'core.test' ? 'core.check' : w.type];
+    if (!known || w.type === 'core.schema.map' || c.maps.has(w.type)) continue; // a mapped notation has its own attributes
+    for (const k of Object.keys(w.attrs)) {
+      if (known.includes(k) || known.some((p) => p.endsWith('.') && k.startsWith(p)) || (k.startsWith('core.') && k !== 'core.on')) continue;
+      c.unknown.push({ id: w.id, type: w.type, key: k });
+    }
   }
 
   // ---- tiers of certainty, strongest first; a host's tier goes right below the one it names

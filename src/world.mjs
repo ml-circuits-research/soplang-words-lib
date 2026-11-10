@@ -876,6 +876,10 @@ export class World {
       this._do(() => { this._c = prev; });
       const c = this._compiled();
       for (const e of c.errors) res.violations.push({ kind: 'schema', why: e });
+      for (const u of c.unknown) {
+        if (this.warnings.some((x) => x.kind === 'unknown-attribute' && x.id === u.id && x.key === u.key)) continue;
+        this.warnings.push({ kind: 'unknown-attribute', id: u.id, key: u.key, why: `${u.type} does not read "${u.key}" (on ${u.id})` });
+      }
       for (const [name, mod] of c.modules) {
         for (const dep of mod.imports) {
           if (!c.modules.has(dep)) res.violations.push({ kind: 'schema', why: `module ${name} imports ${dep}, which is neither loaded nor in the library` });
@@ -913,7 +917,7 @@ export class World {
         }
       }
       if (vars) {
-        res.violations.push({ kind: 'syntax', id: w.id, why: 'a fact cannot contain variables; templates must be told together with their rule' });
+        res.violations.push({ kind: 'variable', id: w.id, why: 'a fact cannot contain a variable; a pattern or template is told together with the rule that names it' });
         continue;
       }
       w.attrs = attrs;

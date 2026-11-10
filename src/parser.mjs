@@ -15,7 +15,16 @@
 //   variable  ?x
 // A wire may span any number of lines. `#` starts a comment.
 
-export class SopError extends Error {}
+/** A text that is not SOP Lang. `line` and `column` count from 1, `offset` from 0. */
+export class SopError extends Error {
+  constructor(message, at = {}) {
+    super(at.line ? `line ${at.line}, column ${at.column}: ${message}` : message);
+    this.name = 'SopError';
+    this.line = at.line;
+    this.column = at.column;
+    this.offset = at.offset;
+  }
+}
 
 const HEAD = /^[@?][A-Za-z_][\w.\-]*$/;
 const NAME = /^[A-Za-z_][\w.\-]*$/;
@@ -23,20 +32,20 @@ const NAME = /^[A-Za-z_][\w.\-]*$/;
 export function tokenize(text) {
   const out = [];
   const n = text.length;
-  let i = 0, line = 1;
+  let i = 0, line = 1, lineStart = 0;
   while (i < n) { // bounded: every pass consumes input
     const c = text[i];
-    if (c === '\n') { line++; i++; continue; }
+    if (c === '\n') { line++; i++; lineStart = i; continue; }
     if (c === ' ' || c === '\t' || c === '\r') { i++; continue; }
     if (c === '#') { while (i < n && text[i] !== '\n') i++; continue; } // bounded: to the end of the line
-    const start = i, startLine = line;
+    const start = i, startLine = line, startColumn = i - lineStart + 1;
     let inQ = false;
     while (i < n) { // bounded: every pass consumes input
       const d = text[i];
       if (inQ) {
         if (d === '\\') { i += 2; continue; }
         if (d === '"') inQ = false;
-        if (d === '\n') line++;
+        if (d === '\n') { line++; lineStart = i + 1; }
         i++;
         continue;
       }
@@ -44,8 +53,8 @@ export function tokenize(text) {
       if (d === ' ' || d === '\t' || d === '\r' || d === '\n') break;
       i++;
     }
-    if (inQ) throw new SopError(`line ${startLine}: unterminated string`);
-    out.push({ t: text.slice(start, i), line: startLine });
+    if (inQ) throw new SopError('unterminated string', { line: startLine, column: startColumn, offset: start });
+    out.push({ t: text.slice(start, i), line: startLine, column: startColumn, offset: start });
   }
   return out;
 }
@@ -59,10 +68,11 @@ export function parse(text, { anonymous = false } = {}) {
   const toks = tokenize(text);
   let cur = null;
   for (let i = 0; i < toks.length; i++) {
-    const { t, line } = toks[i];
+    const { t, line, column, offset } = toks[i];
+    const at = { line, column, offset };
     if (HEAD.test(t)) {
       const ty = toks[++i];
-      if (!ty || !NAME.test(ty.t)) throw new SopError(`line ${line}: wire ${t} has no type`);
+      if (!ty || !NAME.test(ty.t)) throw new SopError(`wire ${t} has no type`, at);
       cur = { id: t.slice(1), type: ty.t, attrs: {}, pattern: t[0] === '?' };
       if (t[0] === '?') cur.legacy = true;
       wires.push(cur);
@@ -75,7 +85,7 @@ export function parse(text, { anonymous = false } = {}) {
     }
     const eq = t.indexOf('=');
     if (!cur || eq <= 0 || eq === t.length - 1 || !NAME.test(t.slice(0, eq))) {
-      throw new SopError(`line ${line}: expected key=value, got "${t}"`);
+      throw new SopError(`expected key=value, got "${t}"`, at);
     }
     const key = t.slice(0, eq);
     (cur.attrs[key] ||= []).push(t.slice(eq + 1));

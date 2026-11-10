@@ -34,6 +34,21 @@ The reviewer's first two commits to this repository were a false start; ignore t
 
 **Validated at 20:50:** W1 (3191b63), W2 (b9d5d4f), W3 (b6a5fec), W4 (07d3074), W5 + W6 (9aa0f3e), W7 (305e9fb). Reviewer rerun: `npm test` 192 pass, 0 fail, 1 skipped; pilot unchanged; no PSys2 name in `src/`. Reviewer probe: `revise` of a told quantity recomputes the cost and lists `revised`; `told()` returns the facts as stated and re-telling them is idempotent; a deny's reason quotes the value ("63 lei is too much") with the bindings; `check()` of the whole world; a host function named `add` is refused. **Remaining: W8 (undo / mark / rewind), G11 (soft constraints — asked three times now; the host needs it, please do it next), D1, tag 0.6.0.**
 
+## End of day, 2026-11-10 21:25 (reviewer) — where to resume
+
+**Validated:** everything through **0.6.0** (c1aca9f): S0, G1–G14, H1–H6, L1, W1–W8, D1 parts 1–4. Reviewer rerun at c1aca9f: `npm test` 205 pass, 0 fail, 1 skipped; pilot 147/147, 212/217, 231/232; no PSys2 name in `src/`; `docs/version.md` says 0.6.0, build 7015034cd985.
+
+**The one open item for the next session:** the reviewer's seven notes on `docs/language.md` (in the block "Validated at 21:10" below), which make the language a strict superset of PSys2's SOP Lang v1:
+1. JSON string escapes;
+2. segment identifiers;
+3. the named, strict syntax errors with offset, line and column;
+4. the atom rule and `@` inside a value;
+5. canonical serialization;
+6. the in-memory value kinds for a host parser;
+7. a "v1 to v1.1" section.
+
+Do these as 0.6.1, with tests. After that, wait for the PSys2 host's next report (it is integrating at your `main`).
+
 **No git tags (user, 21:14).** The tag idea was the reviewer's and it only caused a stall: your session cannot push tags and the PSys2 worker was waiting for one. Drop it everywhere. A release is: the `version` in `package.json`, `docs/version.md` (version, build hash, date — you already write it) and the changelog entry, on `main`. Hosts pin a **commit hash** and record the version from `docs/version.md`. Wherever this file says "tag", read "bump the version in `package.json` and `docs/version.md`". Do not wait for anyone before bumping to 0.6.0 when D1 is done.
 
 **Validated at 21:10, with a correction.** G11 (ddfcec5) and W8 (280aec2) are in: the reviewer wrongly listed G11 as missing three times; it was done before L1. Sorry. `npm test` 202 pass, 0 fail, 1 skipped. D1 parts 1–3 read (language, reference, semantics): the right shape, executed examples, statements tied to tests.
@@ -289,3 +304,4 @@ G1, G2, G6, G3, G4, G7, G5, G8, G9. G8 for the shop world can start as soon as G
 - L1 (8b6a219) + build identity (533d75a, 59941ab): reviewer rerun 184 pass / 0 fail / 1 skipped; pilot unchanged; new-syntax probe passes.
 - W1–W7 (3191b63 … 305e9fb): reviewer rerun 192 pass / 0 fail / 1 skipped; probes pass.
 - G11 (ddfcec5), W8 (280aec2), D1 parts 1–3 (1221361, 599e6de, e81f470): reviewer rerun 202 pass / 0 fail / 1 skipped. Notes on the language reference for v1.1 given.
+- D1 parts 3b–4 (e387c51, 6e60fe7) and 0.6.0 (c1aca9f): reviewer rerun 205 pass / 0 fail / 1 skipped; pilot unchanged.

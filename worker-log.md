@@ -692,3 +692,49 @@ Demonstrations (`node compat/psys2/demo.mjs`, output copied):
 
 Not done: the older HTML pages (Concepts, API, roadmap) still say "seven matrix wire
 types" and "version 0.4" limits in places; the new page and SPEC are the current word.
+
+## H1 — a whole assignment is checked atomically — done
+
+| Command | Result |
+| --- | --- |
+| `npm test` | sources: 166 pass, 0 fail; built file: 166 pass, 0 fail |
+| `node --test test/patch.test.mjs` | 4 pass; the random test compares 60 problems |
+| `node compat/psys2/run.mjs` | kids.shop 147/147, kids.arith 207/217, kids.tasks 231/232 (unchanged) |
+| `node tools/scan-loops.mjs src` | clean |
+| `git grep -i psys2 src/ \| wc -l` | 0 |
+
+The repro from the task, before: `solveReport()` `unsat` with both solvers, `next()`
+both keys dead, `suggest` empty. After: `sat` with `a=1 b=1` from both solvers,
+`next()` gives both as forced with nothing dead, `complete()` commits them together.
+
+What changed:
+- `world.check(patch)` and `world.applyPatch(patch)` (SPEC 4.9.1): wires and fills in
+  one transaction, one chase, one validation. In the log the parts of a patch carry a
+  group, and both replays (`fromJSON`, the fallback of `retract`) apply a group as one
+  patch (tested: a world restored from JSON after such a completion is the same).
+- `Problem.verify` checks a whole assignment as one patch (it used to fill value after
+  value). `apply()` is the same patch, so it is atomic too.
+- Single-value trials (`_shallow`, the backtrack solver's `push`) are used only when the
+  matrix reads nothing that is absent: no rule or deny with `not=`, `core.absent=`, a
+  selector or an aggregate, and no fluent. Otherwise domains stay whole, the built-in
+  backtrack solver enumerates whole assignments (pruned by the grounded denies, which
+  stay sound), and cdcl blocks each refused assignment.
+- `unsat` now needs a complete justification: when absence matters and a required key
+  has no closed domain, the answer is `unknown` with a `reason`.
+- `next()`, `suggest()` and `complete()` follow: nothing is dead on a single trial, and
+  forced values that depend on each other are committed as one patch.
+
+Tests (`test/patch.test.mjs`): the repro; a three-key ring (a needs b, b needs c, c needs
+a, a≠b) that is `sat`, then made `unsat` by one more deny, then a variant with a free
+required key that is `unknown`; `check`/`applyPatch` with wires and fills, all or
+nothing; and the random comparison: 60 problems of four binary keys with 6 to 29 denies
+(absence, forbidden pairs, equalities), each compared with brute force over the 16
+whole assignments judged by `check`: status from both solvers, the answer being one of
+the solutions, and `suggest` giving exactly the values that occur in some solution
+(33 satisfiable and 27 unsatisfiable problems; the seed is fixed).
+
+Deviation: the test for soundness of single trials is global (one such rule anywhere in
+the matrix turns them off for every key), not per key as the task words it. Per key
+would need to follow what each rule can reach; the global test is the safe side and
+costs pruning only in matrices that mix negation with large search problems. The
+scheduling benchmark (no negation) is unchanged: cdcl 18 ms, 1 oracle call.

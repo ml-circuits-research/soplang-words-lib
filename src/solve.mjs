@@ -27,11 +27,13 @@ export class Problem {
     this.stats = { oracle: 0 };
     this.variables = [];
     const c = world._compiled();
-    // with negation a violation may depend on what is absent, so no small cause can be named
-    this.monotone = !c.negRules.length && !c.fluents.size && !c.denies.some((d) => d.not.length || d.selective);
+    // With negation, absence, selectors or states a violation may depend on what is not
+    // there: no small cause can be named, and a value refused on its own may be fine with
+    // others. Then nothing is judged before the assignment is whole.
+    this.monotone = world._singles();
     for (const o of world.open()) {
       const slot = c.slots.get(o.type).get(o.key);
-      if (!world._closedDomain(slot)) continue;
+      if (!world._closedDomain(slot)) { this.free = (this.free || 0) + 1; continue; } // a key only an outside answer can fill
       const domain = world._shallow(world.wires.get(o.id), o.key).map((x) => x.value);
       this.variables.push({ index: this.variables.length, id: o.id, key: o.key, type: o.type, domain });
     }
@@ -83,24 +85,13 @@ export class Problem {
 
   reset() { while (this._marks.length) this.pop(); } // bounded: one pop per pushed value
 
-  /** Check a whole assignment (values by variable index; undefined = leave open). Changes nothing. */
+  /** Check a whole assignment (values by variable index; undefined = leave open) as one patch. Changes nothing. */
   verify(values) {
-    const w = this.world;
-    const mark = w._begin();
     const assigned = [];
-    try {
-      for (let i = 0; i < values.length; i++) {
-        if (values[i] === undefined) continue;
-        const v = this.variables[i];
-        this.stats.oracle++;
-        const r = w._fill(v.id, v.key, values[i], { strict: false, via: 'core.search' });
-        if (!r.ok) return { ok: false, culprits: this._culprits(r.violations, [...assigned, i]) };
-        assigned.push(i);
-      }
-      return { ok: true };
-    } finally {
-      w._rollback(mark);
-    }
+    for (let i = 0; i < values.length; i++) if (values[i] !== undefined) assigned.push(i);
+    this.stats.oracle++;
+    const r = this.world._patch(assigned.map((i) => ({ id: this.variables[i].id, key: this.variables[i].key, value: values[i] })), { dry: true, strict: false, via: 'core.search' });
+    return r.ok ? { ok: true } : { ok: false, culprits: this._culprits(r.violations, assigned) };
   }
 
   toAssignment(values) {
@@ -203,6 +194,27 @@ export function backtrack() {
       const n = problem.variables.length;
       const values = new Array(n).fill(undefined);
       let nodes = 0, exhausted = false;
+      if (!problem.monotone) { // no step can be judged alone: enumerate, and let the world judge whole assignments
+        for (const [i, value] of preset) {
+          if (!problem.variables[i].domain.includes(value)) return result(problem, 'unsat', values, { nodes });
+          values[i] = value;
+        }
+        const broken = () => problem.nogoods.some((ng) => ng.every((l) => values[l.v] === l.value));
+        const all = (i) => { // each call ticks the budget
+          problem.world._b.tick('solve');
+          if (i === n) return problem.verify(values).ok;
+          if (values[i] !== undefined) return all(i + 1);
+          for (const value of problem.variables[i].domain) {
+            if (++nodes > budget) { exhausted = true; return true; }
+            values[i] = value;
+            if (!broken() && all(i + 1)) return true;
+            values[i] = undefined;
+          }
+          return false;
+        };
+        const found = !broken() && all(0);
+        return result(problem, exhausted ? 'unknown' : found ? 'sat' : 'unsat', exhausted ? [] : values, { nodes });
+      }
       const live = (i) => problem.variables[i].domain.filter((value) => {
         const r = problem.push(i, value);
         if (r.ok) problem.pop();

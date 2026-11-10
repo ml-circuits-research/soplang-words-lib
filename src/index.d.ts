@@ -41,7 +41,9 @@ export interface QueryResult {
 }
 export interface ActResult { ok: boolean; status: 'done' | 'missing' | 'refused' | 'error' | 'unsupported' | 'budget'; value?: string; result?: unknown; missing?: { action: string; key: string; ask?: string }[]; violations?: Violation[] }
 export interface Assignment { id: string; key: string; value: string }
-export interface SolveReport { status: 'sat' | 'unsat' | 'unknown'; assignment?: Assignment[]; stats: { [name: string]: number | BudgetViolation | undefined; budget?: BudgetViolation }; solver?: string }
+/** Changes judged as a whole: wires to tell and values to fill, or just the fills. */
+export type Patch = Assignment[] | { wires?: string | Wire[]; fills?: Assignment[] };
+export interface SolveReport { reason?: string; status: 'sat' | 'unsat' | 'unknown'; assignment?: Assignment[]; stats: { [name: string]: number | BudgetViolation | undefined; budget?: BudgetViolation }; solver?: string }
 export interface SolveOptions { preset?: Map<number, string>; budget?: number }
 export interface Solver {
   name: string;
@@ -157,6 +159,10 @@ export class World {
   solveAsync(options?: { solver?: Solver; budget?: number }): Promise<SolveReport>;
   satisfiable(options?: { solver?: Solver; budget?: number; limit?: Budget }): boolean;
   apply(assignment: Assignment[], options?: Budgeted & { via?: string }): Result;
+  /** would these changes be accepted together? Applied in one scratch transaction and undone. */
+  check(patch: Patch, options?: Budgeted & { strict?: boolean }): Result;
+  /** apply several changes that must hold together: all or nothing */
+  applyPatch(patch: Patch, options?: Budgeted & { strict?: boolean }): Result;
   query(question: Question | Wire | string, options?: Budgeted & { record?: boolean; suppose?: boolean; at?: number }): QueryResult;
   /** run fn against the world as it was at a point of the sequence */
   asOf<T>(at: number, fn: (world: World) => T, options?: Budgeted): T | undefined;

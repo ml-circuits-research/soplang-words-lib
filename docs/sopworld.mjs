@@ -376,11 +376,13 @@ const __solve = (() => {
       this.stats = { oracle: 0 };
       this.variables = [];
       const c = world._compiled();
-      // with negation a violation may depend on what is absent, so no small cause can be named
-      this.monotone = !c.negRules.length && !c.fluents.size && !c.denies.some((d) => d.not.length || d.selective);
+      // With negation, absence, selectors or states a violation may depend on what is not
+      // there: no small cause can be named, and a value refused on its own may be fine with
+      // others. Then nothing is judged before the assignment is whole.
+      this.monotone = world._singles();
       for (const o of world.open()) {
         const slot = c.slots.get(o.type).get(o.key);
-        if (!world._closedDomain(slot)) continue;
+        if (!world._closedDomain(slot)) { this.free = (this.free || 0) + 1; continue; } // a key only an outside answer can fill
         const domain = world._shallow(world.wires.get(o.id), o.key).map((x) => x.value);
         this.variables.push({ index: this.variables.length, id: o.id, key: o.key, type: o.type, domain });
       }
@@ -432,24 +434,13 @@ const __solve = (() => {
 
     reset() { while (this._marks.length) this.pop(); } // bounded: one pop per pushed value
 
-    /** Check a whole assignment (values by variable index; undefined = leave open). Changes nothing. */
+    /** Check a whole assignment (values by variable index; undefined = leave open) as one patch. Changes nothing. */
     verify(values) {
-      const w = this.world;
-      const mark = w._begin();
       const assigned = [];
-      try {
-        for (let i = 0; i < values.length; i++) {
-          if (values[i] === undefined) continue;
-          const v = this.variables[i];
-          this.stats.oracle++;
-          const r = w._fill(v.id, v.key, values[i], { strict: false, via: 'core.search' });
-          if (!r.ok) return { ok: false, culprits: this._culprits(r.violations, [...assigned, i]) };
-          assigned.push(i);
-        }
-        return { ok: true };
-      } finally {
-        w._rollback(mark);
-      }
+      for (let i = 0; i < values.length; i++) if (values[i] !== undefined) assigned.push(i);
+      this.stats.oracle++;
+      const r = this.world._patch(assigned.map((i) => ({ id: this.variables[i].id, key: this.variables[i].key, value: values[i] })), { dry: true, strict: false, via: 'core.search' });
+      return r.ok ? { ok: true } : { ok: false, culprits: this._culprits(r.violations, assigned) };
     }
 
     toAssignment(values) {
@@ -552,6 +543,27 @@ const __solve = (() => {
         const n = problem.variables.length;
         const values = new Array(n).fill(undefined);
         let nodes = 0, exhausted = false;
+        if (!problem.monotone) { // no step can be judged alone: enumerate, and let the world judge whole assignments
+          for (const [i, value] of preset) {
+            if (!problem.variables[i].domain.includes(value)) return result(problem, 'unsat', values, { nodes });
+            values[i] = value;
+          }
+          const broken = () => problem.nogoods.some((ng) => ng.every((l) => values[l.v] === l.value));
+          const all = (i) => { // each call ticks the budget
+            problem.world._b.tick('solve');
+            if (i === n) return problem.verify(values).ok;
+            if (values[i] !== undefined) return all(i + 1);
+            for (const value of problem.variables[i].domain) {
+              if (++nodes > budget) { exhausted = true; return true; }
+              values[i] = value;
+              if (!broken() && all(i + 1)) return true;
+              values[i] = undefined;
+            }
+            return false;
+          };
+          const found = !broken() && all(0);
+          return result(problem, exhausted ? 'unknown' : found ? 'sat' : 'unsat', exhausted ? [] : values, { nodes });
+        }
         const live = (i) => problem.variables[i].domain.filter((value) => {
           const r = problem.push(i, value);
           if (r.ok) problem.pop();
@@ -1465,10 +1477,21 @@ const __complete = (() => {
       return cands;
     },
 
-    /** Candidates that the world accepts on their own (one step ahead). */
+    /**
+     * Is trying one value on its own a sound test? Not when a rule or a deny reads what is
+     * absent (not=, core.absent=, a selector, an aggregate) or a state: a value refused
+     * alone may be fine together with others.
+     */
+    _singles() {
+      const c = this._compiled();
+      return !c.negRules.length && !c.fluents.size && !c.denies.some((d) => d.not.length || d.selective);
+    },
+
+    /** Candidates that the world accepts on their own (one step ahead), where that test is sound. */
     _shallow(w, key) {
       const s = this._compiled().slots.get(w.type)?.get(key);
       if (!s) return [];
+      if (!this._singles()) return this._domain(s);
       return this._domain(s).filter((c) => {
         this._b.tick('complete');
         return this._fill(w.id, key, c.value, { dry: true, strict: false, via: 'core.search' }).ok;
@@ -1486,6 +1509,9 @@ const __complete = (() => {
       try {
         const r = solver.solve(problem, { preset: preset || new Map(), ...(budget === undefined ? {} : { budget }) });
         r.solver = solver.name;
+        // "no assignment works" is a proof only inside the finite part: where absence matters
+        // and some open key has no list of values, an answer from outside could still save it
+        if (r.status === 'unsat' && !problem.monotone && problem.free) { r.status = 'unknown'; r.reason = 'open keys without a closed domain remain, and the matrix reads what is absent'; }
         return r;
       } finally {
         problem.reset();
@@ -1520,7 +1546,7 @@ const __complete = (() => {
             return r.status !== 'unsat';
           }
           return this._trial(() => { // the key is not part of the search: apply it, then solve the rest
-            if (!this._fill(w.id, key, c.value, { strict: false, via: 'core.search' }).ok) return false;
+            if (!this._fill(w.id, key, c.value, { strict: false, via: 'core.search' }).ok) return !this._singles();
             return this._run(new Problem(this)).status !== 'unsat';
           });
         });
@@ -1570,16 +1596,8 @@ const __complete = (() => {
     },
 
     _apply(assignment, { via = 'core.complete' } = {}) {
-      const res = this._result();
-      const mark = this._begin(true);
-      for (const f of assignment || []) {
-        const r = this._fill(f.id, f.key, f.value, { via, strict: false });
-        if (!r.ok) { this._rollback(mark); return { ...this._bare(res), ok: false, filled: [], derived: [], violations: r.violations }; }
-        res.filled.push(...r.filled);
-        res.derived.push(...r.derived);
-      }
-      this._commit();
-      return this._bare(res);
+      // one patch: the values are judged together, not one after another
+      return this._patch(assignment || [], { via, strict: false });
     },
 
     /**
@@ -1656,9 +1674,15 @@ const __complete = (() => {
           return { filled, questions: n.questions, dead: n.dead, pending: n.fills };
         }
         const via = f.kind === 'forced' ? 'core.complete' : 'core.default';
-        const r = this._fill(f.id, f.key, f.value, { via, strict: false });
-        if (!r.ok) return { filled, questions: n.questions, dead: [...n.dead, f], pending: [] };
-        filled.push({ id: f.id, key: f.key, value: f.value, kind: f.kind }, ...r.filled.filter((x) => x.via !== via));
+        // where one value alone proves nothing, the forced values go in together
+        const group = f.kind === 'forced' && !this._singles() ? n.fills.filter((x) => x.kind === 'forced') : [f];
+        const r = this._patch(group, { via, strict: false });
+        if (!r.ok) {
+          if (!this._singles()) return { filled, questions: n.questions, dead: n.dead, pending: n.fills };
+          return { filled, questions: n.questions, dead: [...n.dead, f], pending: [] };
+        }
+        const own = new Set(group.map((x) => `${x.id}\u0001${x.key}`));
+        filled.push(...group.map((x) => ({ id: x.id, key: x.key, value: x.value, kind: x.kind })), ...r.filled.filter((x) => x.via !== via && !own.has(`${x.id}\u0001${x.key}`)));
       }
     },
 
@@ -1788,16 +1812,14 @@ const __revise = (() => {
         }
       }
       const next = new this.constructor(this.options);
-      for (const e of this.log) {
-        let r = { ok: true };
+      const refused = next._replay(this.log, (e) => {
         if (e.op === 'tell') {
           const ws = e.wires.filter((w) => !(e.facts.includes(w.id) && gone.has(w.id)));
-          if (ws.length) r = next._tell(ws, { strict: false });
-        } else if (next.has(e.id)) {
-          r = next._fill(e.id, e.key, e.value, { via: e.via, strict: false });
+          return ws.length ? { ...e, wires: ws } : null;
         }
-        if (!r.ok) return { ok: false, removed: [], violations: r.violations };
-      }
+        return gone.has(this.resolve(e.id)) || !this.has(e.id) ? null : e;
+      });
+      if (refused) return { ok: false, removed: [], violations: refused.violations };
       const before = new Set(this.wires.keys());
       for (const k of ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'seq', '_c', '_logOf', '_fills', '_lastOrder']) this[k] = next[k];
       this._shared = null;
@@ -2977,10 +2999,8 @@ const __world = (() => {
     static fromJSON(data, options = {}) {
       if (data?.format !== 'sopworld') throw new Error('World.fromJSON: not a sopworld snapshot');
       const w = new World(options);
-      for (const e of data.log) {
-        const r = e.op === 'tell' ? w._tell(e.wires, { strict: false }) : w._fill(e.id, e.key, e.value, { via: e.via, strict: false });
-        if (!r.ok) throw new Error('World.fromJSON: the snapshot is refused by the matrix: ' + JSON.stringify(r.violations[0]));
-      }
+      const r = w._replay(data.log);
+      if (r) throw new Error('World.fromJSON: the snapshot is refused by the matrix: ' + JSON.stringify(r.violations[0]));
       return w;
     }
 
@@ -3022,6 +3042,67 @@ const __world = (() => {
 
     /** Hypotheses that would make the goal pattern true. See abduce.mjs. */
     abduce(goal, opts = {}) { return this._guard(opts, () => abduce(this, goal, opts), (budget) => Object.assign([], { budget })); }
+
+    /**
+     * Would this patch be accepted? A patch is several changes that must hold together:
+     * `{ wires, fills: [{ id, key, value }] }`, or just the list of fills. They are applied
+     * in one scratch transaction, the rules run once, the result is validated once, and
+     * everything is undone. No state in between is judged.
+     */
+    check(patch, opts = {}) {
+      return this._guard(opts, () => this._patch(patch, { ...opts, dry: true }), (v) => this._refusal(v));
+    }
+
+    /** Apply a patch (see check): all of it, or nothing. */
+    applyPatch(patch, opts = {}) {
+      return this._guard(opts, () => {
+        const r = this._patch(patch, opts);
+        return r.ok ? r : this._retryWithoutDefaults(r, (o) => this._patch(patch, { ...opts, ...o }), opts);
+      }, (v) => this._refusal(v));
+    }
+
+    _patch(patch, { dry = false, strict = this.options.strict, via = 'core.tell' } = {}) {
+      const { wires = [], fills = [] } = Array.isArray(patch) ? { fills: patch } : patch || {};
+      const ws = (typeof wires === 'string' ? parse(wires) : wires).map(cloneWire);
+      const told = ws.map(cloneWire);
+      const res = this._result();
+      const mark = this._begin(!dry);
+      let facts = [];
+      try {
+        if (ws.length) facts = this._ingest(ws, res);
+        for (const f of fills) { // bounded: the fills of one patch
+          const w = this.get(f.id);
+          if (!w) { res.violations.push({ kind: 'unknown-wire', id: f.id }); continue; }
+          this._merge(w, { [this._compiled().shortKey(w.type, f.key)]: [this._norm(String(f.value))] }, { via, from: [] }, res);
+        }
+        this._settle(res, strict);
+      } catch (e) {
+        this._rollback(mark);
+        throw e;
+      }
+      // in the log the parts of a patch carry the same group, so that a replay applies them together
+      const group = fills.length + (ws.length ? 1 : 0) > 1 ? `g${this.seq}` : undefined;
+      const entries = [
+        ...(ws.length ? [{ op: 'tell', wires: told, facts, ...(group ? { group } : {}) }] : []),
+        ...fills.map((f) => ({ op: 'fill', id: f.id, key: f.key, value: String(f.value), via, ...(group ? { group } : {}) })),
+      ];
+      return this._finish(mark, res, dry, entries);
+    }
+
+    /** Replay log entries on this world; entries of one patch go in together. Returns the first refusal, or null. */
+    _replay(log, keep = (e) => e) {
+      for (let i = 0; i < log.length; i++) { // bounded: the log
+        const part = [log[i]];
+        while (log[i].group !== undefined && log[i + 1]?.group === log[i].group) part.push(log[++i]); // bounded: the log
+        const kept = part.map(keep).filter(Boolean);
+        if (!kept.length) continue;
+        const tell = kept.find((e) => e.op === 'tell');
+        const fills = kept.filter((e) => e.op === 'fill');
+        const r = this._patch({ wires: tell ? tell.wires : [], fills }, { strict: false, via: fills[0]?.via });
+        if (!r.ok) return r;
+      }
+      return null;
+    }
 
     _tell(input, { dry = false, strict = this.options.strict } = {}) {
       const wires = (typeof input === 'string' ? parse(input) : input).map(cloneWire);
@@ -3109,7 +3190,7 @@ const __world = (() => {
         this._rollback(mark);
         if (!ok) return { ok, added: [], derived: [], filled: [], merged: [], removed: [], violations: res.violations };
       } else {
-        if (entry) this._logPush(entry);
+        for (const e of entry ? [].concat(entry) : []) this._logPush(e); // bounded: the entries of one call
         this._commit();
       }
       res.ok = ok;

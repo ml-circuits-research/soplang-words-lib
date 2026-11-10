@@ -570,6 +570,35 @@ A solver is `{ name, solve(problem, { preset, budget }) }` returning
 - With negation in the matrix, a partial completion that is refused is abandoned even if
   a later value would have repaired it.
 
+### 4.9.1 Patches: several changes judged together
+
+Some values are only valid together: with "a needs b" and "b needs a", each alone is
+refused and the pair is fine. A **patch** is a set of changes that is judged as a whole:
+`{ wires, fills: [{ id, key, value }] }`, or just the list of fills (the shape of an
+assignment from `solve()`).
+
+- `world.check(patch)` applies it in one scratch transaction, runs the rules once,
+  validates once, and undoes everything. It returns what `tell` returns (`ok`,
+  `violations` with their `support`). No state in between is judged.
+- `world.applyPatch(patch)` does the same and keeps the result: all of it, or nothing.
+  In the log the parts of a patch stay together, so a restored world applies them
+  together again. `apply(assignment)` is `applyPatch` for a solver's answer.
+
+Search uses it. A whole assignment is verified as one patch. Trying one value on its own
+(to trim a domain, to call a key dead) is a sound test only when nothing in the matrix
+reads what is absent; when a rule or a deny uses `not=`, `core.absent=`, a selector or
+an aggregate, or a key is a state, no value is dropped on its own evidence: the domain
+stays whole and the search decides. Then:
+
+- `sat` means the world accepted that whole assignment;
+- `unsat` means every assignment of the open keys with a closed domain was ruled out
+  (by a grounded deny, or by the world refusing it);
+- if some required key has no closed domain (only an outside answer can fill it) and
+  absence matters, a refusal of every assignment proves nothing: the status is
+  `unknown`, with a `reason`;
+- `next()` and `suggest()` call a key dead, or drop a value, only on that same evidence.
+  Forced values that depend on each other are committed together.
+
 ### 4.10 Queries with a status, answers as wires, producers and actions
 
 `world.query(question, { record, suppose })` answers "what is the value of key K of the
@@ -774,7 +803,7 @@ w.get(id)  w.has(id)  w.ofType(type)
 w.ask(patternText)   w.holds(patternText)
 w.open(id?)  w.suggest(id, key, { deep })  w.next()  w.complete({ defaults, choose })
 w.solve()  w.solveReport({ solver, budget, limit })  await w.solveAsync({ solver })
-w.satisfiable()  w.apply(assignment)
+w.satisfiable()  w.apply(assignment)   w.check(patch)   w.applyPatch(patch)
 w.query(question, { record, suppose, at })   w.act(request)   w.schema(type)
 w.asOf(at, fn)   w.seqOf(id)   w.compare(idA, idB)
 w.abduce(goalText, { maxDepth, max, maxAssumptions })
@@ -810,6 +839,10 @@ Since 0.4.0 (the version first published in this repository):
 - New: `core.on=` templates (3.3); the stratification check knows which keys a template
   adds, so a rule may aggregate over a type and fill a key on a wire of that type.
 - New: `core.absent=` in patterns (3.10).
+- **Fixed:** a completion that is only valid as a whole was reported `unsat`, its keys
+  dead (values were tried one at a time). New: `world.check(patch)`,
+  `world.applyPatch(patch)` (4.9.1); `apply()` is now atomic; `unsat` is reported only
+  with a complete justification, else `unknown` with a `reason`.
 - A bookkeeping key (open namespace, no slot) no longer conflicts when a wire is told
   again; the sequence key may be declared after wires arrived (3.9, 3.10).
 - Abduction goes through calcs (4.6): arithmetic is inverted, other functions are

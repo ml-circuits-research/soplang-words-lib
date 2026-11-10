@@ -200,10 +200,8 @@ export class World {
   static fromJSON(data, options = {}) {
     if (data?.format !== 'sopworld') throw new Error('World.fromJSON: not a sopworld snapshot');
     const w = new World(options);
-    for (const e of data.log) {
-      const r = e.op === 'tell' ? w._tell(e.wires, { strict: false }) : w._fill(e.id, e.key, e.value, { via: e.via, strict: false });
-      if (!r.ok) throw new Error('World.fromJSON: the snapshot is refused by the matrix: ' + JSON.stringify(r.violations[0]));
-    }
+    const r = w._replay(data.log);
+    if (r) throw new Error('World.fromJSON: the snapshot is refused by the matrix: ' + JSON.stringify(r.violations[0]));
     return w;
   }
 
@@ -245,6 +243,67 @@ export class World {
 
   /** Hypotheses that would make the goal pattern true. See abduce.mjs. */
   abduce(goal, opts = {}) { return this._guard(opts, () => abduce(this, goal, opts), (budget) => Object.assign([], { budget })); }
+
+  /**
+   * Would this patch be accepted? A patch is several changes that must hold together:
+   * `{ wires, fills: [{ id, key, value }] }`, or just the list of fills. They are applied
+   * in one scratch transaction, the rules run once, the result is validated once, and
+   * everything is undone. No state in between is judged.
+   */
+  check(patch, opts = {}) {
+    return this._guard(opts, () => this._patch(patch, { ...opts, dry: true }), (v) => this._refusal(v));
+  }
+
+  /** Apply a patch (see check): all of it, or nothing. */
+  applyPatch(patch, opts = {}) {
+    return this._guard(opts, () => {
+      const r = this._patch(patch, opts);
+      return r.ok ? r : this._retryWithoutDefaults(r, (o) => this._patch(patch, { ...opts, ...o }), opts);
+    }, (v) => this._refusal(v));
+  }
+
+  _patch(patch, { dry = false, strict = this.options.strict, via = 'core.tell' } = {}) {
+    const { wires = [], fills = [] } = Array.isArray(patch) ? { fills: patch } : patch || {};
+    const ws = (typeof wires === 'string' ? parse(wires) : wires).map(cloneWire);
+    const told = ws.map(cloneWire);
+    const res = this._result();
+    const mark = this._begin(!dry);
+    let facts = [];
+    try {
+      if (ws.length) facts = this._ingest(ws, res);
+      for (const f of fills) { // bounded: the fills of one patch
+        const w = this.get(f.id);
+        if (!w) { res.violations.push({ kind: 'unknown-wire', id: f.id }); continue; }
+        this._merge(w, { [this._compiled().shortKey(w.type, f.key)]: [this._norm(String(f.value))] }, { via, from: [] }, res);
+      }
+      this._settle(res, strict);
+    } catch (e) {
+      this._rollback(mark);
+      throw e;
+    }
+    // in the log the parts of a patch carry the same group, so that a replay applies them together
+    const group = fills.length + (ws.length ? 1 : 0) > 1 ? `g${this.seq}` : undefined;
+    const entries = [
+      ...(ws.length ? [{ op: 'tell', wires: told, facts, ...(group ? { group } : {}) }] : []),
+      ...fills.map((f) => ({ op: 'fill', id: f.id, key: f.key, value: String(f.value), via, ...(group ? { group } : {}) })),
+    ];
+    return this._finish(mark, res, dry, entries);
+  }
+
+  /** Replay log entries on this world; entries of one patch go in together. Returns the first refusal, or null. */
+  _replay(log, keep = (e) => e) {
+    for (let i = 0; i < log.length; i++) { // bounded: the log
+      const part = [log[i]];
+      while (log[i].group !== undefined && log[i + 1]?.group === log[i].group) part.push(log[++i]); // bounded: the log
+      const kept = part.map(keep).filter(Boolean);
+      if (!kept.length) continue;
+      const tell = kept.find((e) => e.op === 'tell');
+      const fills = kept.filter((e) => e.op === 'fill');
+      const r = this._patch({ wires: tell ? tell.wires : [], fills }, { strict: false, via: fills[0]?.via });
+      if (!r.ok) return r;
+    }
+    return null;
+  }
 
   _tell(input, { dry = false, strict = this.options.strict } = {}) {
     const wires = (typeof input === 'string' ? parse(input) : input).map(cloneWire);
@@ -332,7 +391,7 @@ export class World {
       this._rollback(mark);
       if (!ok) return { ok, added: [], derived: [], filled: [], merged: [], removed: [], violations: res.violations };
     } else {
-      if (entry) this._logPush(entry);
+      for (const e of entry ? [].concat(entry) : []) this._logPush(e); // bounded: the entries of one call
       this._commit();
     }
     res.ok = ok;

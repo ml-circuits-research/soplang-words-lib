@@ -37,10 +37,21 @@ export const completion = {
     return cands;
   },
 
-  /** Candidates that the world accepts on their own (one step ahead). */
+  /**
+   * Is trying one value on its own a sound test? Not when a rule or a deny reads what is
+   * absent (not=, core.absent=, a selector, an aggregate) or a state: a value refused
+   * alone may be fine together with others.
+   */
+  _singles() {
+    const c = this._compiled();
+    return !c.negRules.length && !c.fluents.size && !c.denies.some((d) => d.not.length || d.selective);
+  },
+
+  /** Candidates that the world accepts on their own (one step ahead), where that test is sound. */
   _shallow(w, key) {
     const s = this._compiled().slots.get(w.type)?.get(key);
     if (!s) return [];
+    if (!this._singles()) return this._domain(s);
     return this._domain(s).filter((c) => {
       this._b.tick('complete');
       return this._fill(w.id, key, c.value, { dry: true, strict: false, via: 'core.search' }).ok;
@@ -58,6 +69,9 @@ export const completion = {
     try {
       const r = solver.solve(problem, { preset: preset || new Map(), ...(budget === undefined ? {} : { budget }) });
       r.solver = solver.name;
+      // "no assignment works" is a proof only inside the finite part: where absence matters
+      // and some open key has no list of values, an answer from outside could still save it
+      if (r.status === 'unsat' && !problem.monotone && problem.free) { r.status = 'unknown'; r.reason = 'open keys without a closed domain remain, and the matrix reads what is absent'; }
       return r;
     } finally {
       problem.reset();
@@ -92,7 +106,7 @@ export const completion = {
           return r.status !== 'unsat';
         }
         return this._trial(() => { // the key is not part of the search: apply it, then solve the rest
-          if (!this._fill(w.id, key, c.value, { strict: false, via: 'core.search' }).ok) return false;
+          if (!this._fill(w.id, key, c.value, { strict: false, via: 'core.search' }).ok) return !this._singles();
           return this._run(new Problem(this)).status !== 'unsat';
         });
       });
@@ -142,16 +156,8 @@ export const completion = {
   },
 
   _apply(assignment, { via = 'core.complete' } = {}) {
-    const res = this._result();
-    const mark = this._begin(true);
-    for (const f of assignment || []) {
-      const r = this._fill(f.id, f.key, f.value, { via, strict: false });
-      if (!r.ok) { this._rollback(mark); return { ...this._bare(res), ok: false, filled: [], derived: [], violations: r.violations }; }
-      res.filled.push(...r.filled);
-      res.derived.push(...r.derived);
-    }
-    this._commit();
-    return this._bare(res);
+    // one patch: the values are judged together, not one after another
+    return this._patch(assignment || [], { via, strict: false });
   },
 
   /**
@@ -228,9 +234,15 @@ export const completion = {
         return { filled, questions: n.questions, dead: n.dead, pending: n.fills };
       }
       const via = f.kind === 'forced' ? 'core.complete' : 'core.default';
-      const r = this._fill(f.id, f.key, f.value, { via, strict: false });
-      if (!r.ok) return { filled, questions: n.questions, dead: [...n.dead, f], pending: [] };
-      filled.push({ id: f.id, key: f.key, value: f.value, kind: f.kind }, ...r.filled.filter((x) => x.via !== via));
+      // where one value alone proves nothing, the forced values go in together
+      const group = f.kind === 'forced' && !this._singles() ? n.fills.filter((x) => x.kind === 'forced') : [f];
+      const r = this._patch(group, { via, strict: false });
+      if (!r.ok) {
+        if (!this._singles()) return { filled, questions: n.questions, dead: n.dead, pending: n.fills };
+        return { filled, questions: n.questions, dead: [...n.dead, f], pending: [] };
+      }
+      const own = new Set(group.map((x) => `${x.id}\u0001${x.key}`));
+      filled.push(...group.map((x) => ({ id: x.id, key: x.key, value: x.value, kind: x.kind })), ...r.filled.filter((x) => x.via !== via && !own.has(`${x.id}\u0001${x.key}`)));
     }
   },
 

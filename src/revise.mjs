@@ -98,16 +98,14 @@ export const revision = {
       }
     }
     const next = new this.constructor(this.options);
-    for (const e of this.log) {
-      let r = { ok: true };
+    const refused = next._replay(this.log, (e) => {
       if (e.op === 'tell') {
         const ws = e.wires.filter((w) => !(e.facts.includes(w.id) && gone.has(w.id)));
-        if (ws.length) r = next._tell(ws, { strict: false });
-      } else if (next.has(e.id)) {
-        r = next._fill(e.id, e.key, e.value, { via: e.via, strict: false });
+        return ws.length ? { ...e, wires: ws } : null;
       }
-      if (!r.ok) return { ok: false, removed: [], violations: r.violations };
-    }
+      return gone.has(this.resolve(e.id)) || !this.has(e.id) ? null : e;
+    });
+    if (refused) return { ok: false, removed: [], violations: refused.violations };
     const before = new Set(this.wires.keys());
     for (const k of ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'seq', '_c', '_logOf', '_fills', '_lastOrder']) this[k] = next[k];
     this._shared = null;

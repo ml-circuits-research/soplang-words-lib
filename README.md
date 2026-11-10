@@ -12,6 +12,7 @@ what it cannot decide, and refuses what is not allowed.
   Specification: [SPEC.md](./SPEC.md).
 - Type hierarchy, kinds, state over time, aggregates, questions with a status, actions,
   step budgets and copy-on-write forks: [docs/matrix.html](./docs/matrix.html).
+- What changed since 0.4: [CHANGELOG.md](./CHANGELOG.md).
 - Putting an existing system on the library: [docs/integration.md](./docs/integration.md).
 
 ## Use
@@ -47,7 +48,7 @@ w.explain('a1');               // ... from b1 and f1
 npm run build          # src/*.mjs -> docs/sopworld.mjs, docs/sopworld.js, docs/sopworld.d.ts
 npm test               # build, then the suite on the sources and again on the built file
 npm run test:browser   # self-test and playground in headless Chrome (needs Playwright)
-npm run examples       # eight runnable demonstrations
+npm run examples       # ten runnable demonstrations
 npm run bench          # micro-benchmarks
 ```
 

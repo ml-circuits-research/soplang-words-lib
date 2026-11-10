@@ -11,7 +11,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.4</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.5</small></a>
   <nav aria-label="Documentation"><a href="index.html" aria-current="page">Overview</a><a href="concepts.html">Concepts</a><a href="matrix.html">More of the matrix</a><a href="reasoning.html">Reasoning</a><a href="usecases.html">Use cases</a><a href="solvers.html">Solvers</a><a href="api.html">API</a><a href="playground.html">Playground</a><a href="roadmap.html">Analysis and roadmap</a></nav>
 </header>
 <main>
@@ -70,7 +70,7 @@ w.tell(&#x27;@a9 acceleration of=$b1 magnitude=7&#x27;).ok     // false: conflic
 <div class="table"><table><thead><tr><th>Operation</th><th>Question</th><th>Calls</th></tr></thead><tbody><tr><td>Deduction</td><td>What follows from what is known?</td><td><code>tell</code>, <code>fill</code></td></tr><tr><td>Completion</td><td>What is missing, and which values are still possible?</td><td><code>open</code>, <code>suggest</code>, <code>next</code>, <code>complete</code></td></tr><tr><td>Search</td><td>Is there a way to fill everything that is open?</td><td><code>solve</code>, <code>solveReport</code>, <code>solveAsync</code>, <code>apply</code></td></tr><tr><td>Abduction</td><td>What would have to be true for this to hold?</td><td><code>abduce</code>, <code>adopt</code></td></tr><tr><td>Induction</td><td>Which rule or slot explains these examples?</td><td><code>induce</code>, <code>induceSlots</code></td></tr><tr><td>Revision</td><td>What changes when a fact goes away or is replaced?</td><td><code>retract</code>, <code>replace</code></td></tr><tr><td>Explanation</td><td>Where does this come from?</td><td><code>explain</code>, <code>history</code>, <code>on</code></td></tr></tbody></table></div>
 <h2>Where to go next</h2>
 <div class="cards">
- <a class="card" href="concepts.html"><strong>Concepts</strong><span>Wires, the seven matrix wire types, what a transaction does.</span></a>
+ <a class="card" href="concepts.html"><strong>Concepts</strong><span>Wires, the core matrix wire types, what a transaction does.</span></a>
  <a class="card" href="matrix.html"><strong>More of the matrix</strong><span>Type hierarchy, kinds, state over time, sums over groups, questions with a status, actions, budgets.</span></a>
  <a class="card" href="integration.md"><strong>Integration recipe</strong><span>How a system with its own schema, questions and operations sits on the library.</span></a>
  <a class="card" href="reasoning.html"><strong>Reasoning</strong><span>Deduction, completion, abduction, induction, revision, each on a small world.</span></a>
@@ -99,11 +99,11 @@ const { World } = require(&#x27;./docs/sopworld.js&#x27;);       // CommonJS</co
 <figure class="code"><pre><code>npm run build            # src/*.mjs  -&gt;  docs/sopworld.mjs and docs/sopworld.js
 npm test                 # the test suite on the sources, then again on the built file
 npm run test:browser     # the self-test and the playground in headless Chrome
-npm run examples         # eight runnable demonstrations
+npm run examples         # ten runnable demonstrations
 npx sopworld check matrix.sop facts.sop</code></pre></figure>
 
 </main>
-<footer>sopworld 0.4 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.5 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

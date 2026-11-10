@@ -1,6 +1,6 @@
 # sopworld: consistency matrices for SOP Lang circuits
 
-Specification, version 0.4. Guides with worked use cases, a playground and a browser
+Specification, version 0.5. Guides with worked use cases, a playground and a browser
 self-test are in `docs/` (open `docs/index.html`).
 
 ## 1. Purpose
@@ -908,25 +908,31 @@ changed appear as one removed and one added.
 - An instance of a micro-world is an ordinary wire, so it can be the value of a key in a
   larger world.
 
-## 6. Limits of version 0.4
+## 6. Limits of version 0.5
 
 - Matching is indexed and delta-seeded but does not cache partial matches (no Rete network).
 - Only deny constraints are grounded for the solvers. A conflict that arises through a
   rule is found when the world verifies an answer, one refusal at a time.
 - Search covers keys with a closed domain. Free keys become questions.
-- With negation, completion is incomplete in the sense of section 4.9.
+- Where the matrix reads what is absent (negation, `core.absent=`, selectors,
+  aggregates, states), no value is tried on its own: the search enumerates whole
+  assignments and its cost grows accordingly (4.9.1).
+- Relations are linear and propagate locally (3.6.3); actions written as wires have no
+  aggregates in their calcs.
+- Only the first justification of a value is recorded; invalidation is by wire (4.12).
 - Ranking is symbolic: usage counts, declared costs, or the caller's `rank` function.
 - Abduction inverts `add`, `sub`, `mul`, `div` only, one unknown per calc, not through
   aggregates, and not a built-in name that the host has replaced. A division that does
   not come out even (12 significant digits are kept) may fail the forward check.
 - Induction is exact generalisation: it skips examples of a different shape and uses
   negative examples to add comparisons, but does not handle noise or learn negation.
-- There is no built-in notion of context: a wire holds in the whole world. `asOf` costs
-  a withdrawal of everything later than the point asked about.
+- There is no built-in notion of context: a wire holds in the whole world (a fork is a
+  context of its own). `asOf` costs a withdrawal of everything later than the point
+  asked about.
 - `fromJSON` replays the log. `fork` does not (4.11).
 - The budget counts steps of the library's own loops. A host function (`fns`) or a
   solver strategy that loops by itself is outside it; `ms` does not interrupt them either.
-- The build does not minify (about 110 kB, 31 kB gzipped).
+- The build does not minify (about 236 kB, 67 kB gzipped).
 
 ## 7. Architecture
 

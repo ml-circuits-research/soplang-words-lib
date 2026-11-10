@@ -1023,3 +1023,25 @@ the public `sets` against `fills`.
   also states its guard as data.
 
 Limits: no aggregates in an action's calcs; `set` writes one value per key.
+
+## Housekeeping — version 0.5.0 — done
+
+| Command | Result |
+| --- | --- |
+| `npm test` | sources: 183 pass, 0 fail; built file: 183 pass, 0 fail |
+| `node tools/build.mjs` | `docs/sopworld.mjs` 235.9 kB, gzip 67.3 kB |
+| `npm run test:browser`, `node docs/selftest.mjs` | all browser checks passed; "sopworld 0.5.0: 14 passed, 0 failed" |
+| `node compat/psys2/run.mjs` | kids.shop 147/147, kids.arith 212/217, kids.tasks 231/232 |
+| `git grep -i psys2 src/ \| wc -l` | 0 |
+
+- Version 0.5.0 in `package.json`, `src/index.mjs`, the pages and SPEC; tag `v0.5.0`.
+- `CHANGELOG.md`: new, changed (what a host may have to adapt), fixed.
+- Old pages: "seven wire types" is now "the core wire types" with a pointer to the page
+  for the rest; the API page lists the calls added since 0.4; the roadmap page has a
+  "What 0.5 added" table and its limits are the current ones (three rows that were no
+  longer true are replaced); "More of the matrix" gained relations, patches, tiers, soft
+  constraints and actions written as wires. SPEC section 6 is "Limits of version 0.5".
+
+Pilot at the tag: 590 of 596 cases (147 + 212 + 231). The six that differ: n18 (the
+receiver of an impossible gift), the four "received" answers (kept as failures by the
+reviewer's answer to Q12), and "Hello" (an operation of another world).

@@ -5,7 +5,7 @@ OUT = pathlib.Path(__file__).resolve().parent.parent / 'docs'
 PAGES = [('index.html', 'Overview'), ('concepts.html', 'Concepts'), ('matrix.html', 'More of the matrix'), ('reasoning.html', 'Reasoning'),
          ('usecases.html', 'Use cases'), ('solvers.html', 'Solvers'), ('api.html', 'API'),
          ('playground.html', 'Playground'), ('roadmap.html', 'Analysis and roadmap')]
-VERSION = '0.4'
+VERSION = '0.5'
 
 def code(text, label=None):
     body = html.escape(textwrap.dedent(text).strip('\n'))
@@ -226,7 +226,7 @@ w.tell('@a9 acceleration of=$b1 magnitude=7').ok     // false: conflicts with th
 ])}
 <h2>Where to go next</h2>
 <div class="cards">
- <a class="card" href="concepts.html"><strong>Concepts</strong><span>Wires, the seven matrix wire types, what a transaction does.</span></a>
+ <a class="card" href="concepts.html"><strong>Concepts</strong><span>Wires, the core matrix wire types, what a transaction does.</span></a>
  <a class="card" href="matrix.html"><strong>More of the matrix</strong><span>Type hierarchy, kinds, state over time, sums over groups, questions with a status, actions, budgets.</span></a>
  <a class="card" href="integration.md"><strong>Integration recipe</strong><span>How a system with its own schema, questions and operations sits on the library.</span></a>
  <a class="card" href="reasoning.html"><strong>Reasoning</strong><span>Deduction, completion, abduction, induction, revision, each on a small world.</span></a>
@@ -262,7 +262,7 @@ const { World } = require('./docs/sopworld.js');       // CommonJS
 npm run build            # src/*.mjs  ->  docs/sopworld.mjs and docs/sopworld.js
 npm test                 # the test suite on the sources, then again on the built file
 npm run test:browser     # the self-test and the playground in headless Chrome
-npm run examples         # eight runnable demonstrations
+npm run examples         # ten runnable demonstrations
 npx sopworld check matrix.sop facts.sop
 """)}
 ''')
@@ -281,7 +281,8 @@ P['concepts.html'] = ('Concepts', 'The data model in the order you meet it: a wi
  <li>Wires linked by <code>$id</code> references form a circuit. Wires with no path between them are independent, so parallelism is the default and sequence comes from references.</li>
  <li>Facts and matrix wires have separate id spaces: a pattern <code>?m1</code> does not clash with a fact <code>@m1</code>.</li>
 </ul>
-<h2>The matrix: seven wire types</h2>
+<h2>The matrix: the core wire types</h2>
+<p>These seven carry most matrices. Types that inherit, state over time, aggregates, relations, tiers of certainty, soft constraints, questions and actions are on <a href="matrix.html">More of the matrix</a>.</p>
 {table(['Type', 'Says', 'Main keys'], [
  ['<code>core.slot</code>', 'One key of one type: is it required, what may it hold', '<code>of key required many id type enum default ask</code>'],
  ['<code>core.type</code>', 'A type accepts only its declared keys', '<code>of closed</code>'],
@@ -446,6 +447,28 @@ w.act({{ action: 'take', args: {{ item: 'bolt' }} }}).missing
 w.act({{ action: 'take', args: {{ item: 'bolt', count: 50 }} }}).status   // 'refused', nothing changed
 """)}
 
+<h2 id="relations">Relations, patches, and what is only assumed</h2>
+<p>A relation states what holds among several cells, and whichever one is missing is computed, exactly. Relations feed each other within one change.</p>
+{code("""
+?p payment paid=?paid total=?total change=?chg
+@r core.relation when=$p sum=?paid sub=?total sub=?chg equals=0
+""")}
+{code("""
+w.tell('@a payment paid=20 total=15');       // change = 5
+w.tell('@b payment total=15 change=5');      // paid = 20
+w.tell('@d payment paid=20 total=15 change=4').violations[0].kind   // 'conflict'
+""")}
+<p>Some values are only valid together. A patch is judged as a whole: <code>w.check(patch)</code> tries it and undoes it, <code>w.applyPatch(patch)</code> keeps it, all or nothing. The search verifies whole assignments the same way.</p>
+<p>Every value has a tier: <code>told</code>, <code>derived</code>, <code>forced</code>, <code>default</code>, <code>guessed</code>. What follows from others is as weak as the weakest of them. <code>w.tier(id, key)</code> reads it, <code>w.assumptions()</code> lists what is only assumed with what rests on each, a query says the tier of its answer, and a told value replaces a weaker one. <code>w.describe()</code> gives the whole picture as plain data, <code>w.diff(fork)</code> what a fork changes.</p>
+<p>A deny or a bounded slot with <code>soft=true</code> refuses nothing: the change is kept and a standing <code>core.issue</code> wire says what is wrong for as long as it is. A query that rests on a flagged wire answers <code>conflicting</code> with the reason.</p>
+<p>An action can be written as wires instead of a function: parameters, patterns, a guard, and writes that all read the state before the action.</p>
+{code("""
+?it item name=?item stock=?have
+@enough core.check fn=gte args=?have args=?count why="not enough in stock"
+@left   core.calc  out=?rest fn=sub args=?have args=?count
+@w1 item core.on=$it stock=?rest
+@take core.action name=take param=item param=count when=$it with=$left if=$enough set=$w1 returns=?rest
+""")}
 <h2 id="budget">Limits on work, and cheap copies</h2>
 <p>Every call runs under a budget of steps. A call that runs out stops, undoes what it did and says so. A fork shares the state of the original until one of the two changes, so it costs the same for any size of world.</p>
 {code("""
@@ -722,6 +745,14 @@ new World({ fns, library, solver = solvers.nogood(), maxDepth = 12, maxSteps = 5
  ['<code>toJSON()</code>, <code>World.fromJSON(data, options)</code>', 'Snapshot and restore'],
  ['<code>fork()</code>', 'Independent copy. Shares the state until one of the two changes, so it costs the same for any size of world'],
  ['<code>stats()</code>', '<code>{ steps, limit, exhausted, site, sites, ms }</code> of the last call'],
+ ['<code>check(patch)</code>, <code>applyPatch(patch)</code>', 'Several changes judged together: <code>{ wires, fills, sets, retract }</code>; all or nothing'],
+ ['<code>query(question, { record, suppose, at })</code>', '<code>{ status, value, from, via, tier, rests, ... }</code>'],
+ ['<code>act(request)</code>', '<code>{ ok, status, value }</code>; the action is a function or is written as wires'],
+ ['<code>asOf(at, fn)</code>, <code>seqOf(id)</code>, <code>compare(a, b)</code>', 'The world as it was; places in the sequence'],
+ ['<code>tier(id, key)</code>, <code>assumptions()</code>', 'How solid a value is; everything that is only assumed, weakest first'],
+ ['<code>describe({ about, depth, since, last })</code>, <code>diff(other)</code>', 'A summary as plain data; what another world changes'],
+ ['<code>schema(type)</code>', 'What the matrix says about a type'],
+ ['<code>cannot(reason)</code>', 'For functions: say why there is no result'],
 ])}
 <h3>Budgets</h3>
 <p>Every call runs under a budget of steps, <code>{{ steps: 5000000 }}</code> by default. Set it for a world with <code>new World({{ budget: {{ steps, ms }} }})</code> or for one call with the <code>budget</code> option (<code>limit</code> for <code>solveReport</code>, where <code>budget</code> is the solver's own). A call that runs out stops, undoes what it did and says so in its normal result: a <code>budget</code> violation with the <code>site</code> where it stopped (<code>match</code>, <code>chase</code>, <code>negation</code>, <code>aggregate</code>, <code>fluent</code>, <code>withdraw</code>, <code>validate</code>, <code>complete</code>, <code>ground</code>, <code>solve</code>, <code>abduce</code>, <code>induce</code>), an empty list with a <code>budget</code> property, or <code>unknown</code> from a solver. It never hangs and never throws. Steps are counted, not timed, so the same call stops at the same place on any machine.</p>
@@ -801,7 +832,21 @@ P['roadmap.html'] = ('Analysis and roadmap', 'Where the library stands against t
  <li><strong>The world is the judge.</strong> Search is a strategy. Whatever a solver proposes, built in or outside, is accepted only after the world has verified it.</li>
  <li><strong>One file.</strong> The sources are small modules; the product is one file that runs unchanged in Node and in a browser.</li>
 </ul>
-<h2>What this iteration added</h2>
+<h2>What 0.5 added</h2>
+{table(['Earlier limit', 'Now'], [
+ ['No inheritance; one notation for the schema', 'Types extend types; literal kinds; an existing schema in another notation is read through <code>core.schema.map</code>'],
+ ['No order and no state', 'A sequence, states changed by events (<code>core.fluent</code>, <code>core.effect</code>), the world as it was (<code>asOf</code>)'],
+ ['No sums over a group', 'Aggregates over patterns, kept up to date group by group'],
+ ['Abduction stopped at a calculation', 'Arithmetic is inverted; relations (<code>core.relation</code>) solve for whichever cell is missing, exactly'],
+ ['A lookup or nothing', '<code>query</code> with a status (supported, conflicting, ambiguous, missing, refused, unsupported), answers as wires, actions as functions or as wires'],
+ ['A runaway matrix could hang a call', 'Every call runs under a step budget and is undone when it runs out; <code>stats()</code> says where the steps went'],
+ ['<code>fork()</code> replayed the log', 'A fork shares the state and copies on the first write'],
+ ['Values that are only valid together were called impossible', 'Patches: <code>check</code> and <code>applyPatch</code> judge several changes as a whole; the search verifies whole assignments'],
+ ['A second declaration of a key silently replaced the first', 'A conflict, unless one says <code>combine=intersect</code> or <code>combine=override</code>'],
+ ['Everything in the world looked equally certain', 'Tiers: told, derived, forced, default, guessed; <code>assumptions()</code>, <code>describe()</code>, <code>diff()</code>'],
+ ['A constraint could only refuse', '<code>soft=true</code> keeps the change and records a standing issue'],
+])}
+<h2>What 0.4 added</h2>
 {table(['Earlier limit', 'Now'], [
  ['Several modules, Node only in practice', 'A dependency-free build makes <code>sopworld.mjs</code> and <code>sopworld.js</code>; the whole test suite runs on the built file, and a self-test runs in the browser'],
  ['Completion search was one built-in backtracker', 'The solver is a strategy: a minimal backtracker, a clause-learning SAT solver in plain JavaScript (the default), and adapters for clingo and any DIMACS SAT solver'],
@@ -828,12 +873,14 @@ P['roadmap.html'] = ('Analysis and roadmap', 'Where the library stands against t
  ['Matching does not cache partial matches', 'Each change re-joins from the changed wire. Fine for tens of thousands of wires, slow for rules with many patterns over large types', 'A Rete or TREAT network behind the same matching interface'],
  ['Only denies are grounded for the solver', 'A conflict that arises through a rule is found when the world verifies an answer, one refusal at a time', 'Ground rule consequences too (labels of assumptions, as in an ATMS)'],
  ['Grounding grows with the number of deny matches', 'Capped at 200,000 nogoods; beyond that the world verifies the rest', 'Hand the deny itself to an outside solver instead of its ground instances'],
- ['With negation a partial completion may be refused although a later value would repair it', 'Such completions are not found', 'Check only complete assignments for matrices with negation'],
+ ['Where the matrix reads what is absent, values are not tried one at a time', 'The search enumerates whole assignments there; it is sound, and slower on large problems', 'A per-key test of which values may still be tried alone'],
  ['Free keys cannot be enumerated', 'They always become questions', 'Interval propagation for numbers'],
  ['Ranking is counts and declared costs', 'The world knows possible, not probable', 'A learned scorer through the <code>rank</code> hook'],
  ['Induction is exact', 'One wrong example changes the rule; no learned negation', 'Scoring rule candidates against the examples'],
- ['No notion of time or context', 'Time is a value you manage; a wire holds everywhere', '<code>core.in</code> contexts and validity intervals'],
- ['The build does not minify', '110 kB, 31 kB gzipped', 'An optional minifier outside the repository'],
+ ['No notion of context', 'A wire holds in the whole world; a scenario is a fork', 'Contexts as wires, with validity intervals'],
+ ['Relations are linear and local', 'What needs trying values against each other is left to the search', 'Interval and table propagation'],
+ ['One justification per value', '<code>explain</code> shows the first rule that gave a value', 'A record per value and firing'],
+ ['The build does not minify', 'About 236 kB, 67 kB gzipped', 'An optional minifier outside the repository'],
 ])}
 <h2>Is a neural part needed</h2>
 <p>Not for validity. Matching, completion, search, abduction, induction and revision are symbolic and exact. A statistical part earns its place at four edges, and the library has a seam for each:</p>

@@ -6,4 +6,4 @@ export { induce, induceRule, induceSlots } from './induce.mjs';
 export { builtins, quantity } from './builtins.mjs';
 export { solvers, Problem, Sat, toDimacs, toASP } from './solve.mjs';
 
-export const version = '0.4.0';
+export const version = '0.5.0';

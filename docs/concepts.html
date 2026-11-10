@@ -11,7 +11,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.4</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.5</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="concepts.html" aria-current="page">Concepts</a><a href="matrix.html">More of the matrix</a><a href="reasoning.html">Reasoning</a><a href="usecases.html">Use cases</a><a href="solvers.html">Solvers</a><a href="api.html">API</a><a href="playground.html">Playground</a><a href="roadmap.html">Analysis and roadmap</a></nav>
 </header>
 <main>
@@ -28,7 +28,8 @@
  <li>Wires linked by <code>$id</code> references form a circuit. Wires with no path between them are independent, so parallelism is the default and sequence comes from references.</li>
  <li>Facts and matrix wires have separate id spaces: a pattern <code>?m1</code> does not clash with a fact <code>@m1</code>.</li>
 </ul>
-<h2>The matrix: seven wire types</h2>
+<h2>The matrix: the core wire types</h2>
+<p>These seven carry most matrices. Types that inherit, state over time, aggregates, relations, tiers of certainty, soft constraints, questions and actions are on <a href="matrix.html">More of the matrix</a>.</p>
 <div class="table"><table><thead><tr><th>Type</th><th>Says</th><th>Main keys</th></tr></thead><tbody><tr><td><code>core.slot</code></td><td>One key of one type: is it required, what may it hold</td><td><code>of key required many id type enum default ask</code></td></tr><tr><td><code>core.type</code></td><td>A type accepts only its declared keys</td><td><code>of closed</code></td></tr><tr><td><code>core.rule</code></td><td>If the <code>when</code> circuit exists, the <code>then</code> circuit must exist</td><td><code>when with if not then</code></td></tr><tr><td><code>core.deny</code></td><td>This circuit may never exist</td><td><code>when with if not why</code></td></tr><tr><td><code>core.calc</code></td><td>A value computed by a named function</td><td><code>out fn args</code></td></tr><tr><td><code>core.check</code></td><td>A condition checked by a named function</td><td><code>fn args</code></td></tr><tr><td><code>core.abducible</code></td><td>A type, or a key of a type, that may be assumed</td><td><code>of key cost</code></td></tr></tbody></table></div>
 <p>An eighth type, <code>core.use</code>, loads another matrix from a library (see <a href="usecases.html#compose">composition</a>).</p>
 <h3>Slots</h3>
@@ -74,7 +75,7 @@ violation: { kind, why, rule, wires, support }     support = the told wires the 
 <p>A derived wire has a depth: one more than the deepest wire it came from. A change that would exceed <code>maxDepth</code> (12 by default) is refused, which stops rules that feed themselves.</p>
 
 </main>
-<footer>sopworld 0.4 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.5 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

@@ -32,6 +32,8 @@ export interface QueryResult {
   /** 'budget': the call ran out of budget; `site`, `steps` and `why` say where */
   status: 'supported' | 'conflicting' | 'ambiguous' | 'missing' | 'refused' | 'no' | 'unknown' | 'budget' | 'unsupported';
   reason?: string;
+  /** the weakest tier under the answer, and the assumptions it rests on */
+  tier?: string; rests?: Cell[];
   /** ids of the standing core.issue wires the answer rests on */
   issues?: string[];: string; steps?: number; why?: string;
   value?: string; values?: string[];
@@ -122,7 +124,9 @@ export type Site = 'match' | 'chase' | 'negation' | 'aggregate' | 'fluent' | 'wi
 export interface BudgetViolation { kind: 'budget'; site: Site; steps: number; why: string }
 export interface Stats { steps: number; limit: number; exhausted: boolean; site: Site | null; sites: Record<Site, number>; ms: number }
 export interface Budgeted { budget?: Budget }
-export interface ChangeOptions extends Budgeted { dry?: boolean; strict?: boolean }
+export interface ChangeOptions extends Budgeted { dry?: boolean; strict?: boolean; /** how sure this statement is (default: told) */ tier?: string }
+export interface Cell { id: string; key: string | null; value?: string; tier: string }
+export interface Assumption extends Cell { cost?: number; dependants: { id: string; key: string | null }[] }
 
 export class World {
   constructor(options?: WorldOptions);
@@ -144,6 +148,10 @@ export class World {
   fork(): World;
   /** for functions: say why no result can be given, before returning nothing */
   cannot(reason: string): void;
+  /** how solid a value is: told, derived, forced, default, guessed, or a tier the matrix declares */
+  tier(id: string, key?: string): string | undefined;
+  /** everything weaker than derived, weakest first, with the cells that rest on each */
+  assumptions(): Assumption[];
   /** steps of the last call, per site, and whether its budget ran out */
   stats(): Stats;
   on(listener: (events: WorldEvent[], world: World) => void): () => void;

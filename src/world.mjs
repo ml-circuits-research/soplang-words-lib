@@ -14,6 +14,7 @@ import { revision } from './revise.mjs';
 import { querying } from './query.mjs';
 import { timing } from './time.mjs';
 import { Budget } from './budget.mjs';
+import { tiering } from './tiers.mjs';
 import { abduce } from './abduce.mjs';
 
 const first = (w, k) => w.attrs[k]?.[0];
@@ -41,6 +42,7 @@ export class World {
     } = options;
     this.options = { fns, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget, decimals };
     this._cannot = null;          // reasons given by functions during a query (see cannot)
+    this._reads = new WeakMap();  // bindings of a rule body -> the aggregated cells it read
     this._b = new Budget(budget && budget.steps, budget && budget.ms); // the budget of the call in progress (or of the last one)
     this._api = 0;                // depth of public calls: the outermost one owns the budget
     this._shared = null;          // set while this world shares its state with a fork
@@ -176,9 +178,9 @@ export class World {
   explain(id, seen = new Set()) {
     const w = this.get(id);
     if (!w) return null;
-    const node = { id: w.id, wire: format(w), told: !!w.meta.told };
+    const node = { id: w.id, wire: format(w), told: !!w.meta.told, tier: this.tier(w.id) };
     if (w.meta.via) node.via = w.meta.via;
-    if (w.meta.fills?.length) node.fills = w.meta.fills.map((f) => ({ ...f }));
+    if (w.meta.fills?.length) node.fills = w.meta.fills.map((f) => ({ ...f, tier: this.tier(w.id, f.key) }));
     if (seen.has(w.id)) return node;
     seen.add(w.id);
     const from = new Set(w.meta.from || []);
@@ -280,11 +282,13 @@ export class World {
     }, (v) => this._refusal(v));
   }
 
-  _patch(patch, { dry = false, strict = this.options.strict, via = 'core.tell' } = {}) {
+  _patch(patch, { dry = false, strict = this.options.strict, via = 'core.tell', tier } = {}) {
+    this._knownTier(tier);
     const { wires = [], fills = [] } = Array.isArray(patch) ? { fills: patch } : patch || {};
     const ws = (typeof wires === 'string' ? parse(wires) : wires).map(cloneWire);
     const told = ws.map(cloneWire);
     const res = this._result();
+    res._tier = tier;
     const mark = this._begin(!dry);
     let facts = [];
     try {
@@ -292,7 +296,7 @@ export class World {
       for (const f of fills) { // bounded: the fills of one patch
         const w = this.get(f.id);
         if (!w) { res.violations.push({ kind: 'unknown-wire', id: f.id }); continue; }
-        this._merge(w, { [this._compiled().shortKey(w.type, f.key)]: [this._norm(String(f.value))] }, { via, from: [] }, res);
+        this._merge(w, { [this._compiled().shortKey(w.type, f.key)]: [this._norm(String(f.value))] }, { via, from: [], tier }, res);
       }
       this._settle(res, strict);
     } catch (e) {
@@ -302,8 +306,8 @@ export class World {
     // in the log the parts of a patch carry the same group, so that a replay applies them together
     const group = fills.length + (ws.length ? 1 : 0) > 1 ? `g${this.seq}` : undefined;
     const entries = [
-      ...(ws.length ? [{ op: 'tell', wires: told, facts, ...(group ? { group } : {}) }] : []),
-      ...fills.map((f) => ({ op: 'fill', id: f.id, key: f.key, value: String(f.value), via, ...(group ? { group } : {}) })),
+      ...(ws.length ? [{ op: 'tell', wires: told, facts, ...(group ? { group } : {}), ...(tier ? { tier } : {}) }] : []),
+      ...fills.map((f) => ({ op: 'fill', id: f.id, key: f.key, value: String(f.value), via, ...(group ? { group } : {}), ...(tier ? { tier } : {}) })),
     ];
     return this._finish(mark, res, dry, entries);
   }
@@ -317,16 +321,18 @@ export class World {
       if (!kept.length) continue;
       const tell = kept.find((e) => e.op === 'tell');
       const fills = kept.filter((e) => e.op === 'fill');
-      const r = this._patch({ wires: tell ? tell.wires : [], fills }, { strict: false, via: fills[0]?.via });
+      const r = this._patch({ wires: tell ? tell.wires : [], fills }, { strict: false, via: fills[0]?.via, tier: (tell || fills[0]).tier });
       if (!r.ok) return r;
     }
     return null;
   }
 
-  _tell(input, { dry = false, strict = this.options.strict } = {}) {
+  _tell(input, { dry = false, strict = this.options.strict, tier } = {}) {
+    this._knownTier(tier);
     const wires = (typeof input === 'string' ? parse(input) : input).map(cloneWire);
     const told = wires.map(cloneWire); // the log keeps what was said, not what it grew into
     const res = this._result();
+    res._tier = tier;
     const mark = this._begin(!dry);
     let facts;
     try {
@@ -336,10 +342,11 @@ export class World {
       this._rollback(mark);
       throw e;
     }
-    return this._finish(mark, res, dry, { op: 'tell', wires: told, facts });
+    return this._finish(mark, res, dry, { op: 'tell', wires: told, facts, ...(tier ? { tier } : {}) });
   }
 
-  _fill(id, key, value, { dry = false, via = 'core.tell', strict = this.options.strict } = {}) {
+  _fill(id, key, value, { dry = false, via = 'core.tell', strict = this.options.strict, tier } = {}) {
+    this._knownTier(tier);
     const res = this._result();
     const mark = this._begin(!dry);
     try {
@@ -347,14 +354,14 @@ export class World {
       if (!w) res.violations.push({ kind: 'unknown-wire', id });
       else {
         key = this._compiled().shortKey(w.type, key);
-        this._merge(w, { [key]: [this._norm(String(value))] }, { via, from: [] }, res);
+        this._merge(w, { [key]: [this._norm(String(value))] }, { via, from: [], tier }, res);
         this._settle(res, strict);
       }
     } catch (e) {
       this._rollback(mark);
       throw e;
     }
-    return this._finish(mark, res, dry, { op: 'fill', id, key, value: String(value), via });
+    return this._finish(mark, res, dry, { op: 'fill', id, key, value: String(value), via, ...(tier ? { tier } : {}) });
   }
 
   /** Chase, validate, and in strict mode require that a completion still exists. */
@@ -587,6 +594,8 @@ export class World {
   _addValue(w, key, value, prov, res) {
     const fill = { key, value, via: prov.via, from: prov.from };
     if (prov.ties?.[key]) fill.ties = prov.ties[key];
+    if (prov.tier) fill.tier = prov.tier;
+    if (prov.cells) fill.cells = prov.cells;
     (w.attrs[key] ||= []).push(value);
     (w.meta.fills ||= []).push(fill);
     this._link(w, key, value);
@@ -748,14 +757,14 @@ export class World {
       const same = this._findByIdentity(w.type, w.attrs);
       if (same) {
         this._advance(w); // a statement about a wire that is already there happens at the place it declares
-        this._merge(same, w.attrs, { via: 'core.tell', from: [] }, res);
+        this._merge(same, w.attrs, { via: 'core.tell', from: [], tier: res._tier }, res);
         this.alias.set(w.id, same.id);
         this._do(() => this.alias.delete(w.id));
         this._event({ op: 'merge', id: w.id, into: same.id });
         res.merged.push({ id: w.id, into: same.id });
       } else {
         const seq = this._event({ op: 'tell', id: w.id, wire: format(w) });
-        this._addWire(w, { seq, told: true, depth: 0 }, res);
+        this._addWire(w, { seq, told: true, depth: 0, ...(res._tier ? { tier: res._tier } : {}) }, res);
         res.added.push(w.id);
       }
     }
@@ -886,6 +895,7 @@ export class World {
   *_bodies(rule, s0, skip) {
     const pats = skip < 0 ? rule.when : rule.when.filter((_, i) => i !== skip);
     next: for (let s of this._matchAll(pats, 0, s0)) {
+      let reads = null;
       for (const c of rule.calc) {
         let out;
         if (c.over) { // an aggregate: every match of the patterns it ranges over, under the bindings so far
@@ -895,6 +905,10 @@ export class World {
           const n = matches.length;
           for (const [, t] of matches) {
             this._b.tick('aggregate');
+            for (const p of c.over) { // bounded: the patterns of one aggregate
+              const ks = Object.keys(p.attrs), id = walk('?' + p.id, t);
+              for (const k of ks.length ? ks : [null]) (reads ||= []).push([id, k]);
+            }
             if (!c.args.length) break;
             const a = walk(c.args[0], t);
             if (hasVar(a)) continue;
@@ -925,6 +939,7 @@ export class World {
         if (args.some(hasVar) || !this.fns[t.fn](args, this)) continue next;
       }
       if (this._negated(rule, s)) continue;
+      if (reads) this._reads.set(s, reads);
       yield s;
     }
   }
@@ -1033,7 +1048,11 @@ export class World {
     }
     const rec = { rule: rule.id, from, made: [], fills: [], hits: [] };
     if (rule.not.length || rule.selective) rec.s = s;
-    const prov = { via: rule.id, from, rec };
+    // the cells this conclusion was read from: for each matched wire the keys its pattern names
+    const cells = [];
+    rule.when.forEach((p, i) => { const ks = Object.keys(p.attrs); if (ks.length) for (const k of ks) cells.push([from[i], k]); else cells.push([from[i], null]); });
+    for (const x of this._reads.get(s) || []) cells.push(x);
+    const prov = { via: rule.id, from, rec, cells };
     for (const t of rule.then) {
       const attrs = {};
       prov.ties = undefined;
@@ -1054,7 +1073,7 @@ export class World {
         target = { id: `_${t.id}_${hash(sig)}`, type: t.type, attrs, pattern: false };
         if (this.wires.has(target.id)) target.id += '_' + this.seq;
         const seq = this._event({ op: 'derive', id: target.id, wire: format(target), via: rule.id, from });
-        this._addWire(target, { seq, via: rule.id, from, depth, ...(prov.ties ? { ties: prov.ties } : {}) }, res);
+        this._addWire(target, { seq, via: rule.id, from, depth, cells, ...(prov.ties ? { ties: prov.ties } : {}) }, res);
         rec.made.push(target.id);
         res.derived.push(target.id);
       }
@@ -1255,4 +1274,4 @@ export class World {
   }
 }
 
-Object.assign(World.prototype, completion, revision, querying, timing);
+Object.assign(World.prototype, completion, revision, querying, timing, tiering);

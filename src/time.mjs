@@ -160,7 +160,8 @@ export const timing = {
     tails[f.key] = last;
     if (value === current) return;
     if (current !== undefined) this._unsay(res, [], [{ id: h.id, key: f.key, value: current }]);
-    if (value !== undefined) this._addValue(h, f.key, value, { via: f.id, from }, res);
+    // it rests on the events that moved it, and on what was last stated
+    if (value !== undefined) this._addValue(h, f.key, value, { via: f.id, from, cells: [...from.map((id) => [id, null]), ...(h.meta.stated?.[f.key]?.length ? [[h.id, null]] : [])] }, res);
     res._fluents.delete(`${h.id}\u0001${f.id}`); // writing the value marked it again: it is up to date
   },
 

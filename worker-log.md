@@ -850,3 +850,56 @@ bound → `conflicting`), n31 (G12, `unsupported`), n34 (G13, two decimals). Sti
 - ell2, n24, d02, dm102: the matrix now knows `received=2` (G14), but the question asks
   for `count`, which is `missing`. Whether the runner should count that as PSys2's
   "supported, 2 received" is Q12 in `questions.md`.
+
+## H3 — certainty tiers and value-level provenance — done
+
+| Command | Result |
+| --- | --- |
+| `npm test` | sources: 175 pass, 0 fail; built file: 175 pass, 0 fail |
+| `node --test test/tiers.test.mjs` | 4 pass |
+| `node docs/selftest.mjs`, `npm run test:browser` | 14 passed, 0 failed; all browser checks passed |
+| `node compat/psys2/run.mjs` | 147/147, 212/217, 231/232 (unchanged) |
+| `node tools/bench.mjs` | join 149 ms; 2000 tells 85 ms cold, 14 ms warm; 1000 replaces 17 ms cold, 11 ms warm |
+| `node tools/scan-loops.mjs src`, `git grep -i psys2 src/ \| wc -l` | clean; 0 |
+
+What is there (`src/tiers.mjs`, SPEC 4.12):
+- Tiers `told > derived > forced > default > guessed`; a host adds its own with
+  `core.tier name= below= cost=` and states one with `{ tier }` on `tell`, `fill`,
+  `applyPatch`. The tier of a statement is kept in the log (a restored world has the
+  same tiers; tested).
+- A derived value takes the weakest tier of what it was read from. The tier is computed
+  on demand from the provenance, not stored: nothing has to be propagated or repaired
+  when an input changes.
+- Value-level provenance: every derived wire and every value a rule or effect filled
+  records `cells`, the `[wire, key]` pairs it was read from (the keys each pattern
+  names; the wires an aggregate ranged over; for a state, its events and the wire that
+  stated it).
+- `world.tier(id, key)`, `world.assumptions()` (weakest first, then by number of
+  dependants, each with the cells that rest on it), `tier` and `rests` in query
+  results, tiers in `explain`, `review` in `next()`.
+- A told value replaces any weaker value for the key (default, forced, guessed, or
+  derived from one), with `revised` carrying the tier. Narrow first (only what the
+  conflicting value rests on), then, if that is not enough, every assumption on the
+  wires involved (the old behaviour for defaults). An adopted explanation is `guessed`
+  and gives way the same way, as a whole wire.
+
+Behaviour that changed, and the tests updated for it:
+- `test/reasoning.test.mjs` "a later statement about the same key is checked against
+  the completed value" expected a `conflict` when a forced value was contradicted. By
+  H3 the told value now replaces it; the test asserts that, and the `revised` entry.
+- `revised` entries have a `tier` field (two tests and `docs/selftest.mjs` updated).
+- `complete({ choose })` records `via: 'core.choose'` instead of `core.default`.
+
+Not done as the task words it:
+- **Alternative justifications of a value are not listed.** When two rules give the
+  same value, the first is recorded; if it is withdrawn the value is derived again by
+  the other (as before), so behaviour is right, but `explain` and `tier` see one
+  justification at a time. For wires this is unchanged (also one recorded). Listing
+  all of them needs a record per (value, firing) with its own withdrawal; I left it
+  out rather than do it half.
+- **Invalidation is by wire, not by cell.** Changing one input withdraws what was
+  derived from that wire and derives again what still holds (the existing mechanism).
+  The result is the same as cell-precise invalidation; the work done is more. `cells`
+  is there to make the precise version possible.
+- `next()` does not reorder its questions (they are about keys that have no value, so
+  they have no tier); it adds the `review` list instead.

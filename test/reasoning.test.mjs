@@ -199,13 +199,16 @@ test('completion: answers that break the world are refused; dead ends are report
   assert.deepEqual(w.next().dead.map((d) => `${d.id}.${d.key}`), ['m3.room']);
 });
 
-test('completion: a later statement about the same key is checked against the completed value', () => {
+test('completion: a later statement about the same key replaces the completed value, and says so', () => {
   const w = office();
   w.tell('@m1 meeting people=9');
   w.complete();
+  const forced = w.get('m1').attrs.time[0];
+  assert.equal(w.tier('m1', 'time'), 'forced');
   const r = w.fill('m1', 'time', '10:00');
-  assert.equal(r.ok, false);
-  assert.equal(r.violations[0].kind, 'conflict');
+  assert.equal(r.ok, true, 'what is told is stronger than what was only forced');
+  assert.ok(r.revised.some((x) => x.key === 'time' && x.value === forced && x.tier === 'forced'));
+  assert.deepEqual([w.get('m1').attrs.time, w.tier('m1', 'time')], [['10:00'], 'told']);
 });
 
 // ------------------------------------------------------------------ second iteration
@@ -261,7 +264,7 @@ test('defaults are assumptions: a later statement replaces them and what followe
 
   const r = w.fill('o1', 'shipping', 'express');
   assert.ok(r.ok);
-  assert.deepEqual(r.revised, [{ id: 'o1', key: 'shipping', value: 'standard' }]);
+  assert.deepEqual(r.revised, [{ id: 'o1', key: 'shipping', value: 'standard', tier: 'default' }]);
   assert.deepEqual(w.get('o1').attrs.shipping, ['express']);
   assert.deepEqual(w.ask('?l label kind=?k').map((x) => x.k), ['express_label'], 'the old consequence is gone');
   assert.ok(w.history().some((e) => e.op === 'revise'));
@@ -282,7 +285,7 @@ test('defaults give way when a deny involves them', () => {
   w.complete({ defaults: true });
   const r = w.tell('@s1 strike on=roads');
   assert.ok(r.ok);
-  assert.deepEqual(r.revised, [{ id: 't1', key: 'transport', value: 'car' }]);
+  assert.deepEqual(r.revised, [{ id: 't1', key: 'transport', value: 'car', tier: 'default' }]);
   assert.deepEqual(w.open('t1').map((o) => o.key), ['transport'], 'the key is an open question again');
   assert.deepEqual(w.next().questions.map((q) => q.attrs.seek[0]), ['transport']);
 });

@@ -1,6 +1,7 @@
 // Compilation of the consistency matrix: schema wires -> slots, rules, deny constraints.
 // Pure with respect to the world: reads world.matrix, world.wires and world.fns only.
 
+import { TIERS } from './tiers.mjs';
 import { cloneWire, str } from './parser.mjs';
 import { hasVar, isVar } from './unify.mjs';
 import { quantity, clock, date, aggregates } from './builtins.mjs';
@@ -8,7 +9,7 @@ import { quantity, clock, date, aggregates } from './builtins.mjs';
 const RANGE_CAP = 2000;
 
 export const SCHEMA_TYPES = new Set([
-  'core.slot', 'core.type', 'core.abducible', 'core.precision', 'core.rule', 'core.deny', 'core.calc', 'core.check', 'core.use',
+  'core.slot', 'core.type', 'core.abducible', 'core.precision', 'core.tier', 'core.rule', 'core.deny', 'core.calc', 'core.check', 'core.use',
   'core.schema.map', 'core.namespace', 'core.producer', 'core.action',
   'core.sequence', 'core.fluent', 'core.effect',
 ]);
@@ -122,6 +123,7 @@ export function compileMatrix(world) {
       if (prefix && flag(w, 'open') && !c.openPrefixes.includes(prefix)) c.openPrefixes.push(prefix);
     }
   }
+  const extra = []; // core.tier wires: the host's own tiers of certainty
   const own = new Map(); // type -> Map(key -> slot) declared on that type itself
   // Two declarations of the same key of the same type: equal ones are one declaration;
   // different ones are a conflict unless one says how they combine (combine=intersect|override).
@@ -223,6 +225,8 @@ export function compileMatrix(world) {
         if (old && old.wire !== w && JSON.stringify(old.imports) !== JSON.stringify(imports)) c.errors.push(`${w.id}: module ${name} is already declared by ${old.wire.id} with other imports`);
         else c.modules.set(name, { wire: w, imports });
       }
+    } else if (w.type === 'core.tier') {
+      extra.push(w);
     } else if (w.type === 'core.precision') {
       const d = Number(first(w, 'decimals'));
       if (!Number.isInteger(d) || d < 0 || d > 12) c.errors.push(`${w.id}: core.precision needs decimals= between 0 and 12`);
@@ -268,6 +272,17 @@ export function compileMatrix(world) {
     if (e.amount === undefined && e.value === undefined) c.errors.push(`${w.id}: core.effect needs amount=<event key> or value=<literal>`);
     fluent.effects.push(e);
     push(c.effectsByEvent, on, e);
+  }
+
+  // ---- tiers of certainty, strongest first; a host's tier goes right below the one it names
+  c.tiers = [...TIERS];
+  c.tierCost = new Map();
+  for (const w of extra) {
+    const name = first(w, 'name') || w.id, below = first(w, 'below') || 'told';
+    if (c.tiers.includes(name)) { if (!TIERS.includes(name)) c.errors.push(`${w.id}: tier ${name} is declared twice`); }
+    else if (!c.tiers.includes(below)) c.errors.push(`${w.id}: below=${below} is not a tier`);
+    else c.tiers.splice(c.tiers.indexOf(below) + 1, 0, name);
+    if (first(w, 'cost') !== undefined) c.tierCost.set(name, Number(first(w, 'cost')));
   }
 
   // ---- type hierarchy: a type, then what it extends, up to the root

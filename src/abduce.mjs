@@ -214,7 +214,8 @@ export function abduce(world, goal, { maxDepth = 3, max = 10, maxAssumptions = 4
 /** Commit an explanation returned by abduce(). */
 export function adopt(world, explanation) {
   const results = [];
-  if (explanation.assume.length) results.push(world.tell(explanation.assume));
-  for (const f of explanation.fills || []) results.push(world.fill(f.id, f.key, f.value));
+  // what is adopted is a guess, and stays marked as one
+  if (explanation.assume.length) results.push(world.tell(explanation.assume, { tier: 'guessed' }));
+  for (const f of explanation.fills || []) results.push(world.fill(f.id, f.key, f.value, { tier: 'guessed' }));
   return { ok: results.every((r) => r.ok), results };
 }

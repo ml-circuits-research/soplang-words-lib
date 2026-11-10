@@ -765,6 +765,44 @@ again), and later writes cost what they always do. A world cannot know that a fo
 of it was thrown away, so after a fork the original also pays for one copy at its next
 write, unless the fork has written (and so left) before.
 
+### 4.12 Certainty: what is solid and what is only assumed
+
+Every value has a **tier** that says how it got into the world. Strongest first:
+
+| Tier | The value |
+| --- | --- |
+| `told` | was stated (`tell`, `fill`, `applyPatch`, an action) |
+| `derived` | follows from stated values, through rules, calcs, aggregates, effects |
+| `forced` | was the only value its closed domain had left (`complete`) |
+| `default` | is the slot's default, taken as an assumption |
+| `guessed` | was chosen by a search (`complete({ choose })`), or is an explanation that was adopted |
+
+A value that follows from others takes the weakest tier among them, and is never
+stronger than `derived`: a total computed from a told quantity and a default price is
+`default`. Tiers are ranks, not probabilities.
+
+- **A host's own tiers.** `@t core.tier name=measured below=told cost=2` puts a tier
+  right below the one it names; `cost` is carried along for the host's use. A statement
+  can say its tier: `tell(text, { tier })`, `fill(id, key, value, { tier })`,
+  `applyPatch(patch, { tier })`. An unknown tier is an error.
+- **`world.tier(id, key)`** is the tier of a value; without a key, of the wire.
+- **`world.assumptions()`** lists everything weaker than `derived`, weakest first and,
+  among equals, the one most rests on first: `[{ id, key, value, tier, cost,
+  dependants: [{ id, key }] }]` (`key` is null for a wire that was assumed as a whole).
+- **Queries** carry `tier` (the weakest tier under the answer) and `rests` (the
+  assumptions it rests on, when there are any). `explain(id)` shows the tier of each
+  wire and filled value. `next()` adds `review`: the assumptions in the order above,
+  with how many values rest on each, which is where a confirmation is worth most.
+- **Provenance per value.** A derived value, or a derived wire, records the cells it
+  was read from as `[wire id, key]` pairs (`cells`, next to `via` and `from`): for each
+  matched wire the keys its pattern names, and the wires an aggregate ranged over.
+- **What is told replaces what was assumed.** A statement that conflicts with a weaker
+  value for the same key (a default, a forced or a guessed value, or something derived
+  from one) takes its place; the result lists what gave way under `revised`, with its
+  tier, and everything that followed from it is derived again. If dropping just that
+  is not enough, every assumption on the wires involved gives way. Told against told
+  stays a conflict. Stating again a value that was assumed confirms it: it is `told`.
+
 ## 5. Composition of worlds
 
 - A micro-world is a matrix, usually with a type prefix (`phys.mech.*`), stored in a library.
@@ -862,6 +900,7 @@ w.query(question, { record, suppose, at })   w.act(request)   w.schema(type)
 w.asOf(at, fn)   w.seqOf(id)   w.compare(idA, idB)
 w.abduce(goalText, { maxDepth, max, maxAssumptions })
 w.explain(id)  w.history()  w.on(listener)   w.stats()
+w.tier(id, key)   w.assumptions()
 // every call above also takes { budget: { steps, ms } }
 w.toSOP({ schema, derived, provenance })   w.toJSON()   World.fromJSON(data, options)
 ```
@@ -893,6 +932,12 @@ Since 0.4.0 (the version first published in this repository):
 - New: `core.on=` templates (3.3); the stratification check knows which keys a template
   adds, so a rule may aggregate over a type and fill a key on a wire of that type.
 - New: `core.absent=` in patterns (3.10).
+- New: tiers of certainty and `cells` (4.12): `world.tier`, `world.assumptions`, `tier`
+  and `rests` in query results, `review` in `next()`, `{ tier }` on statements.
+- **Changed:** a told value now replaces a forced or chosen value for the same key, as
+  it already replaced a default (it used to be a `conflict`). `revised` entries carry
+  the `tier`. Values committed by `complete({ choose })` are recorded with
+  `via: 'core.choose'` (was `core.default`). `adopt()` marks what it adopts as `guessed`.
 - New: `delta=` on a fluent (3.11).
 - New: `world.cannot(reason)` and the `unsupported` status; the `decimals` option and
   `core.precision` (3.6.1).

@@ -999,8 +999,133 @@ const __solve = (() => {
   return { Problem, backtrack, Sat, cdcl, external, toDimacs, dimacs, toASP, clingo, solvers };
 })();
 
+// ---- src/tiers.mjs
+const __tiers = (() => {
+  // Certainty. Every value has a tier that says how it got into the world:
+  //
+  //   told      somebody said it
+  //   derived   it follows from told values
+  //   forced    the only value its domain had left
+  //   default   the slot's default, taken as an assumption
+  //   guessed   chosen by a search, or an explanation that was adopted
+  //
+  // strongest first. A value that follows from others takes the weakest tier among them
+  // (and is never stronger than `derived`). The tiers are ranks, not probabilities. A host
+  // may add its own with `@t core.tier name=<name> below=<tier> cost=<n>` and state a tier
+  // when it tells or fills: tell(text, { tier }). Mixed into World.prototype.
+
+  const TIERS = ['told', 'derived', 'forced', 'default', 'guessed'];
+
+  // how a value was written when nobody stated a tier
+  const VIA = { 'core.tell': 'told', 'core.complete': 'forced', 'core.default': 'default', 'core.choose': 'guessed', 'core.assume': 'guessed', 'core.search': 'guessed' };
+
+  const tiering = {
+    _rank(name) {
+      const i = this._compiled().tiers.indexOf(name);
+      return i < 0 ? this._compiled().tiers.indexOf('guessed') : i;
+    },
+
+    _knownTier(name) {
+      if (name !== undefined && !this._compiled().tiers.includes(name)) throw new Error(`sopworld: unknown tier "${name}" (declare it with core.tier)`);
+      return name;
+    },
+
+    /** The record of how a value was filled, if it was filled after the wire arrived. */
+    _fillOf(w, key) {
+      const value = w.attrs[key]?.[0];
+      return value === undefined ? undefined : (w.meta.fills || []).find((f) => f.key === key && f.value === value);
+    },
+
+    /** Where a cell comes from: a tier of its own, or the cells it was derived from. `key` null is the wire itself. */
+    _origin(w, key) {
+      if (key !== null && key !== undefined) {
+        if (!w.attrs[key]) return null;
+        const fill = this._fillOf(w, key);
+        if (fill) {
+          if (fill.tier) return { tier: fill.tier };
+          if (VIA[fill.via]) return { tier: VIA[fill.via] };
+          return { cells: fill.cells || (fill.from || []).map((id) => [id, null]), via: fill.via };
+        }
+      }
+      // the value came with the wire: it is as solid as the wire
+      if (w.meta.tier) return { tier: w.meta.tier, whole: true };
+      if (w.meta.told) return { tier: 'told', whole: true };
+      return { cells: w.meta.cells || (w.meta.from || []).map((id) => [id, null]), via: w.meta.via };
+    },
+
+    /** Walk a cell down to the values it rests on. Returns { rank, basis: Map("id key" -> cell) }. */
+    // bounded: each cell is computed once (memo)
+    _rests(id, key, memo) {
+      const name = `${id}\u0001${key ?? ''}`;
+      const done = memo.get(name);
+      if (done) return done;
+      const out = { rank: this._rank('derived'), basis: new Map() };
+      memo.set(name, out); // a cycle counts as derived
+      const w = this.get(id);
+      const o = w && this._origin(w, key);
+      if (!o) return out;
+      if (o.tier) {
+        out.rank = this._rank(o.tier);
+        if (o.whole) out.basis.set(`${w.id}\u0001`, { id: w.id, key: null, tier: o.tier });
+        else out.basis.set(name, { id: w.id, key, value: w.attrs[key][0], tier: o.tier });
+        return out;
+      }
+      for (const [cid, ckey] of o.cells) {
+        const s = this._rests(this.resolve(cid), ckey, memo);
+        if (s.rank > out.rank) out.rank = s.rank;
+        for (const [k, v] of s.basis) out.basis.set(k, v);
+      }
+      return out;
+    },
+
+    /** The tier of a value (or of a wire, without a key): how solid it is. */
+    tier(id, key) {
+      const w = this.get(id);
+      if (!w || (key !== undefined && key !== null && !w.attrs[this._compiled().shortKey(w.type, key)])) return undefined;
+      const k = key === undefined || key === null ? null : this._compiled().shortKey(w.type, key);
+      return this._compiled().tiers[this._rests(w.id, k, new Map()).rank];
+    },
+
+    /** What a value rests on that is weaker than derived: the assumptions under it, weakest first. */
+    _weakBasis(id, key, memo = new Map()) {
+      const floor = this._rank('derived');
+      return [...this._rests(id, key, memo).basis.values()].filter((c) => this._rank(c.tier) > floor).sort((a, b) => this._rank(b.tier) - this._rank(a.tier));
+    },
+
+    /**
+     * Everything in the world that is only assumed (weaker than derived), weakest first and,
+     * among equals, the one most depends on first. Each entry lists the cells that rest on it.
+     */
+    assumptions() {
+      const c = this._compiled();
+      const memo = new Map();
+      const found = new Map();
+      const floor = this._rank('derived');
+      for (const w of this.wires.values()) { // bounded: one pass over the cells of the world
+        for (const key of [null, ...Object.keys(w.attrs)]) {
+          const s = this._rests(w.id, key, memo);
+          for (const [name, cell] of s.basis) {
+            if (this._rank(cell.tier) <= floor) continue;
+            const e = found.get(name) || found.set(name, { ...cell, cost: c.tierCost.get(cell.tier), dependants: [] }).get(name);
+            if (cell.id !== w.id || cell.key !== key) e.dependants.push({ id: w.id, key });
+          }
+        }
+      }
+      return [...found.values()].sort((a, b) => this._rank(b.tier) - this._rank(a.tier) || b.dependants.length - a.dependants.length);
+    },
+
+    /** Is this filled value an assumption (something a told value may replace)? */
+    _weakFill(f) {
+      const tier = f.tier || VIA[f.via];
+      return tier !== undefined && this._rank(tier) > this._rank('derived');
+    },
+  };
+  return { TIERS, tiering };
+})();
+
 // ---- src/matrix.mjs
 const __matrix = (() => {
+  const { TIERS } = __tiers;
   const { cloneWire, str } = __parser;
   const { hasVar, isVar } = __unify;
   const { quantity, clock, date, aggregates } = __builtins;
@@ -1011,7 +1136,7 @@ const __matrix = (() => {
   const RANGE_CAP = 2000;
 
   const SCHEMA_TYPES = new Set([
-    'core.slot', 'core.type', 'core.abducible', 'core.precision', 'core.rule', 'core.deny', 'core.calc', 'core.check', 'core.use',
+    'core.slot', 'core.type', 'core.abducible', 'core.precision', 'core.tier', 'core.rule', 'core.deny', 'core.calc', 'core.check', 'core.use',
     'core.schema.map', 'core.namespace', 'core.producer', 'core.action',
     'core.sequence', 'core.fluent', 'core.effect',
   ]);
@@ -1125,6 +1250,7 @@ const __matrix = (() => {
         if (prefix && flag(w, 'open') && !c.openPrefixes.includes(prefix)) c.openPrefixes.push(prefix);
       }
     }
+    const extra = []; // core.tier wires: the host's own tiers of certainty
     const own = new Map(); // type -> Map(key -> slot) declared on that type itself
     // Two declarations of the same key of the same type: equal ones are one declaration;
     // different ones are a conflict unless one says how they combine (combine=intersect|override).
@@ -1226,6 +1352,8 @@ const __matrix = (() => {
           if (old && old.wire !== w && JSON.stringify(old.imports) !== JSON.stringify(imports)) c.errors.push(`${w.id}: module ${name} is already declared by ${old.wire.id} with other imports`);
           else c.modules.set(name, { wire: w, imports });
         }
+      } else if (w.type === 'core.tier') {
+        extra.push(w);
       } else if (w.type === 'core.precision') {
         const d = Number(first(w, 'decimals'));
         if (!Number.isInteger(d) || d < 0 || d > 12) c.errors.push(`${w.id}: core.precision needs decimals= between 0 and 12`);
@@ -1271,6 +1399,17 @@ const __matrix = (() => {
       if (e.amount === undefined && e.value === undefined) c.errors.push(`${w.id}: core.effect needs amount=<event key> or value=<literal>`);
       fluent.effects.push(e);
       push(c.effectsByEvent, on, e);
+    }
+
+    // ---- tiers of certainty, strongest first; a host's tier goes right below the one it names
+    c.tiers = [...TIERS];
+    c.tierCost = new Map();
+    for (const w of extra) {
+      const name = first(w, 'name') || w.id, below = first(w, 'below') || 'told';
+      if (c.tiers.includes(name)) { if (!TIERS.includes(name)) c.errors.push(`${w.id}: tier ${name} is declared twice`); }
+      else if (!c.tiers.includes(below)) c.errors.push(`${w.id}: below=${below} is not a tier`);
+      else c.tiers.splice(c.tiers.indexOf(below) + 1, 0, name);
+      if (first(w, 'cost') !== undefined) c.tierCost.set(name, Number(first(w, 'cost')));
     }
 
     // ---- type hierarchy: a type, then what it extends, up to the root
@@ -1687,6 +1826,9 @@ const __complete = (() => {
     _next() {
       const c = this._compiled();
       const out = { fills: [], questions: [], dead: [] };
+      // what is only assumed, weakest and most relied on first: where a confirmation is worth most
+      const review = this.assumptions().map((a) => ({ id: a.id, key: a.key, value: a.value, tier: a.tier, dependants: a.dependants.length }));
+      if (review.length) out.review = review;
       for (const o of this.open()) {
         const s = c.slots.get(o.type).get(o.key);
         const cands = this._suggest(o.id, o.key);
@@ -1738,7 +1880,7 @@ const __complete = (() => {
         if (!f) {
           if (choose && n.questions.length) {
             const picked = this.solve() || [];
-            const r = picked.length ? this._apply(picked, { via: 'core.default' }) : { ok: false };
+            const r = picked.length ? this._apply(picked, { via: 'core.choose' }) : { ok: false };
             if (r.ok) {
               filled.push(...picked.map((p) => ({ ...p, kind: 'chosen' })));
               choose = false;
@@ -1956,7 +2098,8 @@ const __revise = (() => {
      * Defaults are assumptions. When a change is refused and default fills are involved in
      * the refusal, withdraw those defaults (and what followed from them) and try again.
      */
-    _retryWithoutDefaults(r, redo, opts) {
+    // bounded: calls itself once, with broad = true
+    _retryWithoutDefaults(r, redo, opts, broad = false) {
       if (this._tx) return r;
       const involved = new Set();
       const visit = (id) => { // bounded: each wire is visited once
@@ -1968,35 +2111,50 @@ const __revise = (() => {
         for (const x of w.meta.from || []) visit(x);
         for (const f of w.meta.fills || []) for (const x of f.from || []) visit(x);
       };
-      for (const v of r.violations) { if (v.id) visit(v.id); for (const x of v.wires || []) visit(x); }
-      const drop = [];
+      // A conflict on one key is settled by what that value rests on; any other refusal by
+      // everything assumed on the wires involved. If the narrow way does not do, the broad one is tried.
+      const exact = [];
+      for (const v of r.violations) {
+        if (!broad && v.kind === 'conflict' && v.id && v.key && this.has(v.id) && !v.event) exact.push(...this._weakBasis(this.resolve(v.id), v.key));
+        else { if (v.id) visit(v.id); for (const x of v.wires || []) visit(x); }
+      }
+      const drop = [], wires = [], weak = new Map();
+      for (const cell of exact) {
+        if (cell.key === null) { if (!wires.includes(cell.id)) { wires.push(cell.id); weak.set(cell.id, cell.tier); } }
+        else if (!drop.some((d) => d.id === cell.id && d.key === cell.key)) drop.push({ id: cell.id, key: cell.key, value: cell.value, tier: cell.tier });
+      }
       for (const id of involved) {
+        const w = this.wires.get(id);
+        // a wire that was itself only assumed (an adopted explanation) gives way as a whole
+        if (w?.meta.told && w.meta.tier && this._rank(w.meta.tier) > this._rank('derived')) { wires.push(id); weak.set(id, w.meta.tier); continue; }
         for (const f of this.wires.get(id)?.meta.fills || []) {
-          if (f.via === 'core.default') drop.push({ id, key: f.key, value: f.value });
+          if (this._weakFill(f) && !drop.some((d) => d.id === id && d.key === f.key)) drop.push({ id, key: f.key, value: f.value, tier: f.tier || this.tier(id, f.key) });
         }
       }
-      if (!drop.length) return r;
+      if (!drop.length && !wires.length) return broad ? r : this._retryWithoutDefaults(r, redo, opts, true);
 
       const res = this._result();
       const mark = this._begin(!opts.dry);
       let r2;
       try {
-        this._withdraw(res, [], drop);
+        const gone = this._withdraw(res, wires, drop);
+        if (wires.length) this._logRemove(new Set([...wires, ...(gone || [])].filter((x) => !this.wires.has(x))));
         if (!res.violations.length) this._validate(res);
-        if (res.violations.length) { this._rollback(mark); return r; }
+        if (res.violations.length) { this._rollback(mark); return broad ? r : this._retryWithoutDefaults(r, redo, opts, true); }
         if (this._fills) {
           const old = this.log, fills = this._fills;
-          this.log = old.filter((e) => !(e.op === 'fill' && e.via === 'core.default' && drop.some((d) => d.id === this.resolve(e.id) && d.key === e.key)));
+          this.log = old.filter((e) => !(e.op === 'fill' && this._weakFill(e) && drop.some((d) => d.id === this.resolve(e.id) && d.key === e.key)));
           this._fills -= old.length - this.log.length;
           this._do(() => { this.log = old; this._fills = fills; });
         }
+        for (const id of wires) drop.push({ id, tier: weak.get(id) });
         this._event({ op: 'revise', dropped: drop });
         r2 = redo({ ...opts, dry: false });
       } catch (e) {
         this._rollback(mark);
         throw e;
       }
-      if (!r2.ok) { this._rollback(mark); return r; }
+      if (!r2.ok) { this._rollback(mark); return broad ? r : this._retryWithoutDefaults(r, redo, opts, true); }
       r2.revised = drop;
       if (opts.dry) this._rollback(mark); else this._commit();
       return r2;
@@ -2184,6 +2342,14 @@ const __query = (() => {
             if (i && i.type === 'core.issue' && (i.attrs.about || []).includes('$' + x)) issues.set(i.id, i);
           }
         };
+        // how solid the answer is: the weakest tier among the values it rests on, and the assumptions under it
+        let rank = -1;
+        const rests = new Map(), memo = new Map(), floor = this._rank('derived');
+        const weigh = (id, k, skip) => {
+          const s = this._rests(id, k, memo);
+          if (s.rank > rank) rank = s.rank;
+          for (const [name, cell] of s.basis) if (this._rank(cell.tier) > floor && cell.id !== skip) rests.set(name, cell);
+        };
         const note = (value, from, via, ties) => {
           const e = found.get(value) || found.set(value, { from: [], via: [] }).get(value);
           if (ties) e.ties = ties;
@@ -2197,6 +2363,7 @@ const __query = (() => {
             const fill = (w.meta.fills || []).find((f) => f.key === key && f.value === value);
             note(value, [w.id, ...(fill?.from || [])], fill ? fill.via : w.meta.via, fill ? fill.ties : w.meta.ties?.[key]);
             flagged([w.id, ...(fill?.from || [])]);
+            weigh(w.id, key);
           }
         }
         // nothing matches: suppose a wire of that type with the given keys and let the rules work
@@ -2216,6 +2383,7 @@ const __query = (() => {
                 const fill = (w.meta.fills || []).find((f) => f.key === key && f.value === value);
                 const from = fill ? fill.from || [] : w.meta.from || [];
                 flagged([w.id, ...from]);
+                weigh(w.id, key, id);
                 note(value, from.filter((x) => x !== id && this.wires.get(x)?.meta.told), fill ? fill.via : w.meta.via, fill ? fill.ties : w.meta.ties?.[key]);
               }
             }
@@ -2259,6 +2427,10 @@ const __query = (() => {
         } else {
           const missing = lacking.length ? lacking.slice(0, 20).map((w) => ({ id: w.id, type: w.type, key, ask })) : [{ type, key, ask }];
           r = { status: 'missing', missing, from: [] };
+        }
+        if (rank >= 0 && (r.value !== undefined || r.values || r.alternatives)) {
+          r.tier = c.tiers[rank];
+          if (rests.size) r.rests = [...rests.values()].sort((x, y) => this._rank(y.tier) - this._rank(x.tier));
         }
       }
       r.wires = wires.map((w) => w.id);
@@ -2522,7 +2694,8 @@ const __time = (() => {
       tails[f.key] = last;
       if (value === current) return;
       if (current !== undefined) this._unsay(res, [], [{ id: h.id, key: f.key, value: current }]);
-      if (value !== undefined) this._addValue(h, f.key, value, { via: f.id, from }, res);
+      // it rests on the events that moved it, and on what was last stated
+      if (value !== undefined) this._addValue(h, f.key, value, { via: f.id, from, cells: [...from.map((id) => [id, null]), ...(h.meta.stated?.[f.key]?.length ? [[h.id, null]] : [])] }, res);
       res._fluents.delete(`${h.id}\u0001${f.id}`); // writing the value marked it again: it is up to date
     },
 
@@ -2899,8 +3072,9 @@ const __abduce = (() => {
   /** Commit an explanation returned by abduce(). */
   function adopt(world, explanation) {
     const results = [];
-    if (explanation.assume.length) results.push(world.tell(explanation.assume));
-    for (const f of explanation.fills || []) results.push(world.fill(f.id, f.key, f.value));
+    // what is adopted is a guess, and stays marked as one
+    if (explanation.assume.length) results.push(world.tell(explanation.assume, { tier: 'guessed' }));
+    for (const f of explanation.fills || []) results.push(world.fill(f.id, f.key, f.value, { tier: 'guessed' }));
     return { ok: results.every((r) => r.ok), results };
   }
   return { abduce, adopt };
@@ -2918,6 +3092,7 @@ const __world = (() => {
   const { querying } = __query;
   const { timing } = __time;
   const { Budget } = __budget;
+  const { tiering } = __tiers;
   const { abduce } = __abduce;
   // World: fact wires kept consistent with a consistency matrix.
   //
@@ -2951,6 +3126,7 @@ const __world = (() => {
       } = options;
       this.options = { fns, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget, decimals };
       this._cannot = null;          // reasons given by functions during a query (see cannot)
+      this._reads = new WeakMap();  // bindings of a rule body -> the aggregated cells it read
       this._b = new Budget(budget && budget.steps, budget && budget.ms); // the budget of the call in progress (or of the last one)
       this._api = 0;                // depth of public calls: the outermost one owns the budget
       this._shared = null;          // set while this world shares its state with a fork
@@ -3086,9 +3262,9 @@ const __world = (() => {
     explain(id, seen = new Set()) {
       const w = this.get(id);
       if (!w) return null;
-      const node = { id: w.id, wire: format(w), told: !!w.meta.told };
+      const node = { id: w.id, wire: format(w), told: !!w.meta.told, tier: this.tier(w.id) };
       if (w.meta.via) node.via = w.meta.via;
-      if (w.meta.fills?.length) node.fills = w.meta.fills.map((f) => ({ ...f }));
+      if (w.meta.fills?.length) node.fills = w.meta.fills.map((f) => ({ ...f, tier: this.tier(w.id, f.key) }));
       if (seen.has(w.id)) return node;
       seen.add(w.id);
       const from = new Set(w.meta.from || []);
@@ -3190,11 +3366,13 @@ const __world = (() => {
       }, (v) => this._refusal(v));
     }
 
-    _patch(patch, { dry = false, strict = this.options.strict, via = 'core.tell' } = {}) {
+    _patch(patch, { dry = false, strict = this.options.strict, via = 'core.tell', tier } = {}) {
+      this._knownTier(tier);
       const { wires = [], fills = [] } = Array.isArray(patch) ? { fills: patch } : patch || {};
       const ws = (typeof wires === 'string' ? parse(wires) : wires).map(cloneWire);
       const told = ws.map(cloneWire);
       const res = this._result();
+      res._tier = tier;
       const mark = this._begin(!dry);
       let facts = [];
       try {
@@ -3202,7 +3380,7 @@ const __world = (() => {
         for (const f of fills) { // bounded: the fills of one patch
           const w = this.get(f.id);
           if (!w) { res.violations.push({ kind: 'unknown-wire', id: f.id }); continue; }
-          this._merge(w, { [this._compiled().shortKey(w.type, f.key)]: [this._norm(String(f.value))] }, { via, from: [] }, res);
+          this._merge(w, { [this._compiled().shortKey(w.type, f.key)]: [this._norm(String(f.value))] }, { via, from: [], tier }, res);
         }
         this._settle(res, strict);
       } catch (e) {
@@ -3212,8 +3390,8 @@ const __world = (() => {
       // in the log the parts of a patch carry the same group, so that a replay applies them together
       const group = fills.length + (ws.length ? 1 : 0) > 1 ? `g${this.seq}` : undefined;
       const entries = [
-        ...(ws.length ? [{ op: 'tell', wires: told, facts, ...(group ? { group } : {}) }] : []),
-        ...fills.map((f) => ({ op: 'fill', id: f.id, key: f.key, value: String(f.value), via, ...(group ? { group } : {}) })),
+        ...(ws.length ? [{ op: 'tell', wires: told, facts, ...(group ? { group } : {}), ...(tier ? { tier } : {}) }] : []),
+        ...fills.map((f) => ({ op: 'fill', id: f.id, key: f.key, value: String(f.value), via, ...(group ? { group } : {}), ...(tier ? { tier } : {}) })),
       ];
       return this._finish(mark, res, dry, entries);
     }
@@ -3227,16 +3405,18 @@ const __world = (() => {
         if (!kept.length) continue;
         const tell = kept.find((e) => e.op === 'tell');
         const fills = kept.filter((e) => e.op === 'fill');
-        const r = this._patch({ wires: tell ? tell.wires : [], fills }, { strict: false, via: fills[0]?.via });
+        const r = this._patch({ wires: tell ? tell.wires : [], fills }, { strict: false, via: fills[0]?.via, tier: (tell || fills[0]).tier });
         if (!r.ok) return r;
       }
       return null;
     }
 
-    _tell(input, { dry = false, strict = this.options.strict } = {}) {
+    _tell(input, { dry = false, strict = this.options.strict, tier } = {}) {
+      this._knownTier(tier);
       const wires = (typeof input === 'string' ? parse(input) : input).map(cloneWire);
       const told = wires.map(cloneWire); // the log keeps what was said, not what it grew into
       const res = this._result();
+      res._tier = tier;
       const mark = this._begin(!dry);
       let facts;
       try {
@@ -3246,10 +3426,11 @@ const __world = (() => {
         this._rollback(mark);
         throw e;
       }
-      return this._finish(mark, res, dry, { op: 'tell', wires: told, facts });
+      return this._finish(mark, res, dry, { op: 'tell', wires: told, facts, ...(tier ? { tier } : {}) });
     }
 
-    _fill(id, key, value, { dry = false, via = 'core.tell', strict = this.options.strict } = {}) {
+    _fill(id, key, value, { dry = false, via = 'core.tell', strict = this.options.strict, tier } = {}) {
+      this._knownTier(tier);
       const res = this._result();
       const mark = this._begin(!dry);
       try {
@@ -3257,14 +3438,14 @@ const __world = (() => {
         if (!w) res.violations.push({ kind: 'unknown-wire', id });
         else {
           key = this._compiled().shortKey(w.type, key);
-          this._merge(w, { [key]: [this._norm(String(value))] }, { via, from: [] }, res);
+          this._merge(w, { [key]: [this._norm(String(value))] }, { via, from: [], tier }, res);
           this._settle(res, strict);
         }
       } catch (e) {
         this._rollback(mark);
         throw e;
       }
-      return this._finish(mark, res, dry, { op: 'fill', id, key, value: String(value), via });
+      return this._finish(mark, res, dry, { op: 'fill', id, key, value: String(value), via, ...(tier ? { tier } : {}) });
     }
 
     /** Chase, validate, and in strict mode require that a completion still exists. */
@@ -3497,6 +3678,8 @@ const __world = (() => {
     _addValue(w, key, value, prov, res) {
       const fill = { key, value, via: prov.via, from: prov.from };
       if (prov.ties?.[key]) fill.ties = prov.ties[key];
+      if (prov.tier) fill.tier = prov.tier;
+      if (prov.cells) fill.cells = prov.cells;
       (w.attrs[key] ||= []).push(value);
       (w.meta.fills ||= []).push(fill);
       this._link(w, key, value);
@@ -3658,14 +3841,14 @@ const __world = (() => {
         const same = this._findByIdentity(w.type, w.attrs);
         if (same) {
           this._advance(w); // a statement about a wire that is already there happens at the place it declares
-          this._merge(same, w.attrs, { via: 'core.tell', from: [] }, res);
+          this._merge(same, w.attrs, { via: 'core.tell', from: [], tier: res._tier }, res);
           this.alias.set(w.id, same.id);
           this._do(() => this.alias.delete(w.id));
           this._event({ op: 'merge', id: w.id, into: same.id });
           res.merged.push({ id: w.id, into: same.id });
         } else {
           const seq = this._event({ op: 'tell', id: w.id, wire: format(w) });
-          this._addWire(w, { seq, told: true, depth: 0 }, res);
+          this._addWire(w, { seq, told: true, depth: 0, ...(res._tier ? { tier: res._tier } : {}) }, res);
           res.added.push(w.id);
         }
       }
@@ -3796,6 +3979,7 @@ const __world = (() => {
     *_bodies(rule, s0, skip) {
       const pats = skip < 0 ? rule.when : rule.when.filter((_, i) => i !== skip);
       next: for (let s of this._matchAll(pats, 0, s0)) {
+        let reads = null;
         for (const c of rule.calc) {
           let out;
           if (c.over) { // an aggregate: every match of the patterns it ranges over, under the bindings so far
@@ -3805,6 +3989,10 @@ const __world = (() => {
             const n = matches.length;
             for (const [, t] of matches) {
               this._b.tick('aggregate');
+              for (const p of c.over) { // bounded: the patterns of one aggregate
+                const ks = Object.keys(p.attrs), id = walk('?' + p.id, t);
+                for (const k of ks.length ? ks : [null]) (reads ||= []).push([id, k]);
+              }
               if (!c.args.length) break;
               const a = walk(c.args[0], t);
               if (hasVar(a)) continue;
@@ -3835,6 +4023,7 @@ const __world = (() => {
           if (args.some(hasVar) || !this.fns[t.fn](args, this)) continue next;
         }
         if (this._negated(rule, s)) continue;
+        if (reads) this._reads.set(s, reads);
         yield s;
       }
     }
@@ -3943,7 +4132,11 @@ const __world = (() => {
       }
       const rec = { rule: rule.id, from, made: [], fills: [], hits: [] };
       if (rule.not.length || rule.selective) rec.s = s;
-      const prov = { via: rule.id, from, rec };
+      // the cells this conclusion was read from: for each matched wire the keys its pattern names
+      const cells = [];
+      rule.when.forEach((p, i) => { const ks = Object.keys(p.attrs); if (ks.length) for (const k of ks) cells.push([from[i], k]); else cells.push([from[i], null]); });
+      for (const x of this._reads.get(s) || []) cells.push(x);
+      const prov = { via: rule.id, from, rec, cells };
       for (const t of rule.then) {
         const attrs = {};
         prov.ties = undefined;
@@ -3964,7 +4157,7 @@ const __world = (() => {
           target = { id: `_${t.id}_${hash(sig)}`, type: t.type, attrs, pattern: false };
           if (this.wires.has(target.id)) target.id += '_' + this.seq;
           const seq = this._event({ op: 'derive', id: target.id, wire: format(target), via: rule.id, from });
-          this._addWire(target, { seq, via: rule.id, from, depth, ...(prov.ties ? { ties: prov.ties } : {}) }, res);
+          this._addWire(target, { seq, via: rule.id, from, depth, cells, ...(prov.ties ? { ties: prov.ties } : {}) }, res);
           rec.made.push(target.id);
           res.derived.push(target.id);
         }
@@ -4165,7 +4358,7 @@ const __world = (() => {
     }
   }
 
-  Object.assign(World.prototype, completion, revision, querying, timing);
+  Object.assign(World.prototype, completion, revision, querying, timing, tiering);
   return { World };
 })();
 

@@ -168,7 +168,8 @@ export const revision = {
    * Defaults are assumptions. When a change is refused and default fills are involved in
    * the refusal, withdraw those defaults (and what followed from them) and try again.
    */
-  _retryWithoutDefaults(r, redo, opts) {
+  // bounded: calls itself once, with broad = true
+  _retryWithoutDefaults(r, redo, opts, broad = false) {
     if (this._tx) return r;
     const involved = new Set();
     const visit = (id) => { // bounded: each wire is visited once
@@ -180,35 +181,50 @@ export const revision = {
       for (const x of w.meta.from || []) visit(x);
       for (const f of w.meta.fills || []) for (const x of f.from || []) visit(x);
     };
-    for (const v of r.violations) { if (v.id) visit(v.id); for (const x of v.wires || []) visit(x); }
-    const drop = [];
+    // A conflict on one key is settled by what that value rests on; any other refusal by
+    // everything assumed on the wires involved. If the narrow way does not do, the broad one is tried.
+    const exact = [];
+    for (const v of r.violations) {
+      if (!broad && v.kind === 'conflict' && v.id && v.key && this.has(v.id) && !v.event) exact.push(...this._weakBasis(this.resolve(v.id), v.key));
+      else { if (v.id) visit(v.id); for (const x of v.wires || []) visit(x); }
+    }
+    const drop = [], wires = [], weak = new Map();
+    for (const cell of exact) {
+      if (cell.key === null) { if (!wires.includes(cell.id)) { wires.push(cell.id); weak.set(cell.id, cell.tier); } }
+      else if (!drop.some((d) => d.id === cell.id && d.key === cell.key)) drop.push({ id: cell.id, key: cell.key, value: cell.value, tier: cell.tier });
+    }
     for (const id of involved) {
+      const w = this.wires.get(id);
+      // a wire that was itself only assumed (an adopted explanation) gives way as a whole
+      if (w?.meta.told && w.meta.tier && this._rank(w.meta.tier) > this._rank('derived')) { wires.push(id); weak.set(id, w.meta.tier); continue; }
       for (const f of this.wires.get(id)?.meta.fills || []) {
-        if (f.via === 'core.default') drop.push({ id, key: f.key, value: f.value });
+        if (this._weakFill(f) && !drop.some((d) => d.id === id && d.key === f.key)) drop.push({ id, key: f.key, value: f.value, tier: f.tier || this.tier(id, f.key) });
       }
     }
-    if (!drop.length) return r;
+    if (!drop.length && !wires.length) return broad ? r : this._retryWithoutDefaults(r, redo, opts, true);
 
     const res = this._result();
     const mark = this._begin(!opts.dry);
     let r2;
     try {
-      this._withdraw(res, [], drop);
+      const gone = this._withdraw(res, wires, drop);
+      if (wires.length) this._logRemove(new Set([...wires, ...(gone || [])].filter((x) => !this.wires.has(x))));
       if (!res.violations.length) this._validate(res);
-      if (res.violations.length) { this._rollback(mark); return r; }
+      if (res.violations.length) { this._rollback(mark); return broad ? r : this._retryWithoutDefaults(r, redo, opts, true); }
       if (this._fills) {
         const old = this.log, fills = this._fills;
-        this.log = old.filter((e) => !(e.op === 'fill' && e.via === 'core.default' && drop.some((d) => d.id === this.resolve(e.id) && d.key === e.key)));
+        this.log = old.filter((e) => !(e.op === 'fill' && this._weakFill(e) && drop.some((d) => d.id === this.resolve(e.id) && d.key === e.key)));
         this._fills -= old.length - this.log.length;
         this._do(() => { this.log = old; this._fills = fills; });
       }
+      for (const id of wires) drop.push({ id, tier: weak.get(id) });
       this._event({ op: 'revise', dropped: drop });
       r2 = redo({ ...opts, dry: false });
     } catch (e) {
       this._rollback(mark);
       throw e;
     }
-    if (!r2.ok) { this._rollback(mark); return r; }
+    if (!r2.ok) { this._rollback(mark); return broad ? r : this._retryWithoutDefaults(r, redo, opts, true); }
     r2.revised = drop;
     if (opts.dry) this._rollback(mark); else this._commit();
     return r2;

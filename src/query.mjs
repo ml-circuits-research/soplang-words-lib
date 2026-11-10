@@ -117,6 +117,14 @@ export const querying = {
           if (i && i.type === 'core.issue' && (i.attrs.about || []).includes('$' + x)) issues.set(i.id, i);
         }
       };
+      // how solid the answer is: the weakest tier among the values it rests on, and the assumptions under it
+      let rank = -1;
+      const rests = new Map(), memo = new Map(), floor = this._rank('derived');
+      const weigh = (id, k, skip) => {
+        const s = this._rests(id, k, memo);
+        if (s.rank > rank) rank = s.rank;
+        for (const [name, cell] of s.basis) if (this._rank(cell.tier) > floor && cell.id !== skip) rests.set(name, cell);
+      };
       const note = (value, from, via, ties) => {
         const e = found.get(value) || found.set(value, { from: [], via: [] }).get(value);
         if (ties) e.ties = ties;
@@ -130,6 +138,7 @@ export const querying = {
           const fill = (w.meta.fills || []).find((f) => f.key === key && f.value === value);
           note(value, [w.id, ...(fill?.from || [])], fill ? fill.via : w.meta.via, fill ? fill.ties : w.meta.ties?.[key]);
           flagged([w.id, ...(fill?.from || [])]);
+          weigh(w.id, key);
         }
       }
       // nothing matches: suppose a wire of that type with the given keys and let the rules work
@@ -149,6 +158,7 @@ export const querying = {
               const fill = (w.meta.fills || []).find((f) => f.key === key && f.value === value);
               const from = fill ? fill.from || [] : w.meta.from || [];
               flagged([w.id, ...from]);
+              weigh(w.id, key, id);
               note(value, from.filter((x) => x !== id && this.wires.get(x)?.meta.told), fill ? fill.via : w.meta.via, fill ? fill.ties : w.meta.ties?.[key]);
             }
           }
@@ -192,6 +202,10 @@ export const querying = {
       } else {
         const missing = lacking.length ? lacking.slice(0, 20).map((w) => ({ id: w.id, type: w.type, key, ask })) : [{ type, key, ask }];
         r = { status: 'missing', missing, from: [] };
+      }
+      if (rank >= 0 && (r.value !== undefined || r.values || r.alternatives)) {
+        r.tier = c.tiers[rank];
+        if (rests.size) r.rests = [...rests.values()].sort((x, y) => this._rank(y.tier) - this._rank(x.tier));
       }
     }
     r.wires = wires.map((w) => w.id);

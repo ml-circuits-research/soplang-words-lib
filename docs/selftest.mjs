@@ -31,7 +31,7 @@ export const checks = [
     const w = world(meetings);
     w.load('@m0 meeting room=$big time=10:00 people=8 duration=60  @m1 meeting people=9');
     same(w.complete({ defaults: true }).filled.map((f) => `${f.key}=${f.value}`), ['room=$big', 'time=14:00', 'duration=30'], 'filled');
-    same(w.fill('m1', 'duration', '60').revised, [{ id: 'm1', key: 'duration', value: '30' }], 'revised default');
+    same(w.fill('m1', 'duration', '60').revised, [{ id: 'm1', key: 'duration', value: '30', tier: 'default' }], 'revised default');
   }],
   ['questions carry the options that are still consistent', () => {
     const w = world(meetings);

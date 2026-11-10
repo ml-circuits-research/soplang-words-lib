@@ -173,6 +173,9 @@ export const completion = {
   _next() {
     const c = this._compiled();
     const out = { fills: [], questions: [], dead: [] };
+    // what is only assumed, weakest and most relied on first: where a confirmation is worth most
+    const review = this.assumptions().map((a) => ({ id: a.id, key: a.key, value: a.value, tier: a.tier, dependants: a.dependants.length }));
+    if (review.length) out.review = review;
     for (const o of this.open()) {
       const s = c.slots.get(o.type).get(o.key);
       const cands = this._suggest(o.id, o.key);
@@ -224,7 +227,7 @@ export const completion = {
       if (!f) {
         if (choose && n.questions.length) {
           const picked = this.solve() || [];
-          const r = picked.length ? this._apply(picked, { via: 'core.default' }) : { ok: false };
+          const r = picked.length ? this._apply(picked, { via: 'core.choose' }) : { ok: false };
           if (r.ok) {
             filled.push(...picked.map((p) => ({ ...p, kind: 'chosen' })));
             choose = false;

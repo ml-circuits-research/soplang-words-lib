@@ -1051,7 +1051,9 @@ reviewer's answer to Q12), and "Hello" (an operation of another world).
 
 ## The user's decision on versions (20:20): no tags, a version file and a self-describing build — done
 
-`npm test`: 184 pass, 0 fail on sources and built file. `node docs/selftest.mjs`:
+`npm test`: 184 pass, 0 fail on sources and built file (after a fix: the first push of
+this entry, 533d75a, had the new test failing because the test helper did not export
+`build`; the next commit corrects it). `node docs/selftest.mjs`:
 "sopworld 0.5.0 (build …, 2026-11-10): 14 passed, 0 failed". `npm run test:browser`: all
 passed.
 

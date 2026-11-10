@@ -602,4 +602,22 @@ The shop needed four general additions to the library (each with a neutral test 
 - the sequence key may be declared after wires arrived, and a wire told again moves
   the sequence on.
 
-The full entry (three worlds, demonstrations, failures) follows when G8 is done.
+Second world: `node compat/psys2/run.mjs kids.arith --failures`: 207 of 217 cases pass
+(95.4%), 211 answers compared; matrix 114 lines, no `fns.mjs`, against 237 lines of
+`ops.mjs` (217 without blank lines and comments). One more general addition:
+`core.absent=<key>` in a pattern (SPEC 3.10, test in `test/kernel.test.mjs`), needed to
+say "a question that names nobody is about everybody" and "a sum without a second
+operator". The ten failures, none hidden:
+- t.arith.n17, n18, n19: an impossible event (giving or eating more than one has). The
+  library refuses the event when it is told (`conflict ... below 0`); PSys2 records it
+  and answers `conflicting` when asked later. Same finding, at a different moment.
+- t.arith.ell2, n24, t.kids.arith.d02, dm102: PSys2 answers "received 2" (supported,
+  value 2) for someone whose starting count is unknown. The matrix answers `missing`:
+  writing what was received into `count` would be a rule that fills a key it requires
+  to be absent.
+- t.arith.n31: 5 divided by 0. PSys2 `unsupported`; the calc gives nothing, so `missing`.
+- t.arith.n34: 10 divided by 3. PSys2 rounds a division that does not terminate to two
+  decimals (3.33); the library keeps 12 digits (3.33333333333).
+- t.arith.n37: a tie for "who has the most". PSys2 `ambiguous`; `argmax` picks the first.
+
+The full entry (third world, demonstrations) follows when G8 is done.

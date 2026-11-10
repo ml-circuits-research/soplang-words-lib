@@ -324,6 +324,10 @@ after wires have arrived, they are given their places again, in order of arrival
 
 - `world.seqOf(id)` and `world.compare(a, b)` read it.
 - The checks `before` and `after` compare two wires: `core.check fn=after args=$b args=$a`.
+- A pattern with `core.absent=<key>` matches only a wire that has no value for that key
+  (`?t task core.absent=owner`), in rules, denies and `ask`. What a rule concluded from
+  it is withdrawn when the key is filled. A rule may not fill a key that it requires to
+  be absent; such a matrix is refused.
 - A pattern with `core.select=latest` (or `first`) matches one wire: the latest (first)
   in sequence among those that fit the bindings made by the patterns before it. A rule or
   deny that uses a selector is re-evaluated in full when the rest is quiet, and a firing
@@ -805,6 +809,7 @@ Since 0.4.0 (the version first published in this repository):
 - Rules with negation or a selector are re-evaluated only when a type they read changed.
 - New: `core.on=` templates (3.3); the stratification check knows which keys a template
   adds, so a rule may aggregate over a type and fill a key on a wire of that type.
+- New: `core.absent=` in patterns (3.10).
 - A bookkeeping key (open namespace, no slot) no longer conflicts when a wire is told
   again; the sequence key may be declared after wires arrived (3.9, 3.10).
 - Abduction goes through calcs (4.6): arithmetic is inverted, other functions are

@@ -693,6 +693,7 @@ export class World {
     return ws.map((w) => {
       const p = localize(w, locals);
       if (p.attrs['core.select']) { p.select = p.attrs['core.select'][0]; delete p.attrs['core.select']; }
+      if (p.attrs['core.absent']) { p.absent = p.attrs['core.absent'].map((key) => c.shortKey(p.type, key)); delete p.attrs['core.absent']; }
       for (const key of Object.keys(p.attrs)) { // full key names and short ones are the same key
         const short = c.shortKey(p.type, key);
         if (short !== key) { p.attrs[short] = [...(p.attrs[short] || []), ...p.attrs[key]]; delete p.attrs[key]; }
@@ -707,6 +708,7 @@ export class World {
    */
   *_matchWire(p, w, s) {
     if (p.type !== w.type && !this._compiled().isA(w.type, p.type)) return;
+    if (p.absent) for (const k of p.absent) if (w.attrs[k]) return;
     s = unify('?' + p.id, w.id, s);
     if (!s) return;
     let pairs = p._pairs;

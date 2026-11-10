@@ -323,7 +323,7 @@ export function compileMatrix(world) {
   // A template that adds keys to a matched wire (core.on=) can only wake a pattern that
   // names one of those keys; a template that makes a wire can wake any pattern of its type.
   const made = (r) => r.then.map((t) => ({ type: t.type, keys: t.on ? Object.keys(t.attrs) : null }));
-  const wakes = (item, p) => c.isA(item.type, p.type) && (!item.keys || item.keys.some((k) => p.attrs[k]));
+  const wakes = (item, p) => c.isA(item.type, p.type) && (!item.keys || item.keys.some((k) => p.attrs[k] || p.absent?.includes(k)));
   const reads = (r) => [...r.when, ...r.not, ...r.calc.flatMap((x) => x.over || [])];
   for (const r of c.negRules) {
     if (r.kind !== 'rule') continue;
@@ -338,6 +338,9 @@ export function compileMatrix(world) {
     }
     const bad = [...r.not, ...r.calc.flatMap((x) => x.over || [])].find((n) => reach.some((item) => wakes(item, n)));
     if (bad) c.errors.push(`${r.id}: not stratified, its consequences can produce "${bad.type}", which it negates or aggregates`);
+    // nor may it fill a key that it requires to be absent
+    const filled = r.when.find((p) => p.absent && reach.some((item) => item.keys && c.isA(item.type, p.type) && item.keys.some((k) => p.absent.includes(k))));
+    if (filled) c.errors.push(`${r.id}: not stratified, its consequences can fill a key of "${filled.type}" that it requires to be absent`);
   }
   return c;
 }
@@ -360,6 +363,8 @@ function buildRule(world, w, c) {
     if (l.attrs['core.select']) { l.select = l.attrs['core.select'][0]; delete l.attrs['core.select']; }
     // a template with core.on=$pattern adds its keys to the wire that pattern matched
     if (k === 'then' && l.attrs['core.on']) { l.on = l.attrs['core.on'][0].replace(/^\$/, ''); delete l.attrs['core.on']; }
+    // core.absent=<key>: the pattern matches only a wire that has no value for that key
+    if (l.attrs['core.absent']) { l.absent = l.attrs['core.absent'].map((key) => c.shortKey(l.type, key)); delete l.attrs['core.absent']; }
     for (const key of Object.keys(l.attrs)) { // full key names and short ones are the same key
       const short = c.shortKey(l.type, key);
       if (short !== key) { l.attrs[short] = [...(l.attrs[short] || []), ...l.attrs[key]]; delete l.attrs[key]; }
@@ -397,7 +402,8 @@ function buildRule(world, w, c) {
   for (const x of rule.calc) if (x.out) vars.add(x.out);
   rule.vars = [...vars].sort();
   // a pattern with core.select=latest|first picks one wire by sequence: what it picks can change
-  rule.hasSelect = rule.when.some((p) => p.select) || rule.not.some((p) => p.select) || rule.calc.some((x) => (x.over || []).some((p) => p.select));
+  // a pattern with core.absent= relies on something not being there: what it matched can stop matching
+  rule.hasSelect = rule.when.some((p) => p.select || p.absent) || rule.not.some((p) => p.select) || rule.calc.some((x) => (x.over || []).some((p) => p.select));
   rule.aggregate = rule.calc.some((x) => x.over);
   rule.selective = rule.hasSelect || rule.aggregate;
   // An aggregate depends on a group: the bindings its patterns share with the rule's own

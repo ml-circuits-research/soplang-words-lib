@@ -34,9 +34,9 @@ export async function build(name) {
   visit(name);
   const texts = [read('mapping.sop'), ...order.map(legend)];
   if (existsSync(join(here, 'worlds', name, 'kb.sop'))) texts.push(read('worlds', name, 'kb.sop'));
-  texts.push(read('matrices', name, 'matrix.sop'));
   // PSys2 keeps the user as a built-in agent of every session
   texts.push('@e.user core.agent');
+  texts.push(read('matrices', name, 'matrix.sop'));
   return () => {
     const w = new World({ fns, vocabulary: { status: 'core.status' } });
     for (const t of texts) w.load(t);
@@ -45,7 +45,9 @@ export async function build(name) {
 }
 
 const num = (v) => (v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v)) ? Number(v) : null);
-const same = (a, b) => (num(a) !== null && num(b) !== null ? Math.abs(num(a) - num(b)) < 1e-9 : String(a) === String(b));
+// a reference is written $id in a wire and id in PSys2's envelope
+const bare = (v) => String(v).replace(/^\$/, '');
+const same = (a, b) => (num(a) !== null && num(b) !== null ? Math.abs(num(a) - num(b)) < 1e-9 : bare(a) === bare(b));
 /** PSys2 has five statuses; the library's sixth, `refused` (the thing asked about cannot be), is its `conflicting`. */
 const statusOf = (r) => (r.status === 'refused' ? 'conflicting' : r.status === 'done' ? 'supported' : r.status);
 

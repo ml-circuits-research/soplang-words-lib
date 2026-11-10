@@ -331,3 +331,22 @@ test('bookkeeping: a wire told again keeps the bookkeeping of each statement; th
   w.load('@p2 price item=ball cost=1 core.owner=ana');
   assert.equal(w.tell('@p3 price item=ball core.owner=bob').violations[0].kind, 'conflict');
 });
+
+test('patterns: core.absent= matches only a wire without that key, and is kept up to date', () => {
+  const w = new World();
+  w.load(`
+    ?t task core.absent=owner
+    @f flag for=$t kind=unassigned
+    @r core.rule when=$t then=$f
+  `);
+  w.load('@t1 task title=a  @t2 task title=b owner=ana');
+  assert.deepEqual(w.ofType('flag').map((x) => x.attrs.for[0]), ['$t1']);
+  assert.deepEqual(w.ask('?x task core.absent=owner').map((r) => r.x), ['t1']);
+  assert.ok(w.fill('t1', 'owner', 'bob').ok);
+  assert.equal(w.ofType('flag').length, 0, 'the flag goes when the key is filled');
+  assert.ok(w.replace('t2', '@t2 task title=b').ok);
+  assert.deepEqual(w.ofType('flag').map((x) => x.attrs.for[0]), ['$t2'], 'and comes when it is taken away');
+  // a rule may not fill the key it requires to be absent
+  const bad = new World().tell('?t task core.absent=owner\n@d task core.on=$t owner=nobody\n@r core.rule when=$t then=$d');
+  assert.match(bad.violations[0].why, /requires to be absent/);
+});

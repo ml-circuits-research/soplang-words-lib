@@ -1,8 +1,49 @@
 # Changelog
 
-## 0.5.0
+## 0.6.0
 
-The full list, with section numbers, is in SPEC.md section 9.
+### New
+- **One language (L1).** `?` is only a variable. A pattern or a template is an ordinary
+  `@id` wire that a rule, deny, calc, relation or action names in the same statement.
+  The old declaration `?id type ...` is still read and noted in `world.warnings`;
+  `format()` writes `@`. `tools/migrate-syntax.mjs` rewrites files.
+- **Registries (W1).** `fns`, `actions`, `producers` are three options;
+  `world.register(kind, name, fn, { override })` adds one later.
+- **What a query supposed (W2).** `supposed` on an answer found by supposing a wire:
+  the wire as the rules left it, and what they set.
+- **Refusals that can be explained (W3).** `involved` (the wires as they were) and
+  `bindings` on a violation; a reason may quote the values (`why="?n is too much"`).
+- **The whole world checked (W4).** `world.check()` without a patch: every violation
+  and every standing issue; `World.audit(wires, matrix)` for wires from elsewhere.
+- **Revision (W5, W6).** `world.revise(id, key, value)` replaces a told value with
+  everything that followed; `world.told()` returns the facts as stated.
+- **What would have to be true (W7).** `howto` on a query for a key that may be
+  assumed, `mode: 'abduce'`; abduction through `core.on=` templates.
+- **Taking back (W8).** `world.undo(n)`, `world.mark()`, `world.rewind(mark)`; a change
+  that records a soft violation returns it under `issues`.
+- **Which build (no tags).** `build = { version, hash, date }` in the built file, and
+  `docs/version.md` next to it.
+- **Reference documentation (D1).** `docs/language.md` (grammar), `docs/reference.md`
+  (every wire type and function), `docs/semantics.md` (62 numbered statements, each
+  with its test, and the table of violations), `docs/api.md` (every export and
+  method), `docs/glossary.md`. Every example is executed by the tests; the lists are
+  compared with the library in both directions; the HTML pages are generated from the
+  markdown. `GRAMMAR`, `MODIFIERS`, `SCHEMA_TYPES` and `aggregates` are exported.
+
+### Changed (may need a change in a host)
+- A fact that contains a variable is refused with a violation of kind `variable` (it
+  was `syntax`). `SopError`, thrown for text that does not parse, is the only syntax
+  error, and has `line`, `column`, `offset`.
+- Telling again a fact that adds nothing is accepted (it was `duplicate-id`).
+- Actions and producers are given as `actions` and `producers` (they were in `fns`). A
+  host function with the name of a built-in is refused unless `override` says so.
+- An attribute that a matrix wire type does not read is noted in `world.warnings`
+  (`unknown-attribute`).
+- `docs/concepts.html`, `matrix.html`, `reasoning.html`, `usecases.html`,
+  `solvers.html` and `roadmap.html` are gone; `SPEC.md` is a short overview. The text is
+  in the markdown pages above.
+
+## 0.5.0
 
 ### New
 - **Types and schema.** Type hierarchy (`extends`), literal kinds, short and qualified

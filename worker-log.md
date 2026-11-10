@@ -1358,3 +1358,20 @@ wc -l`: 0. `npm run examples`: exit 0.
 D1 is complete: language.md, glossary.md, reference.md, semantics.md, api.md, one
 source, and tests that fail when a wire type, attribute, function, method or violation
 kind exists on one side only. Next: 0.6.0.
+
+## 0.6.0 — version, changelog, rebuild; no tag — done
+
+`npm test`: 206 pass, 0 fail on sources and built file. `npm run test:browser`: all
+browser checks passed. Pilot: kids.shop 147/147, kids.arith 212/217, kids.tasks
+231/232 (unchanged since 0.5.0). `git grep -i psys2 src/ | wc -l`: 0.
+
+- `package.json` and `src/index.mjs`: 0.6.0. `docs/version.md`: version 0.6.0, build
+  7015034cd985, built 2026-11-10 (258.7 kB, 73.8 kB gzipped). No git tag, by the
+  user's decision; a host pins the commit and reads `build` from the file it loaded.
+- `CHANGELOG.md`: 0.6.0 — new: L1, W1–W8, the build identity, D1; changed: the
+  `variable` violation kind, restatement accepted, the three registries, `SopError`
+  fields, `unknown-attribute` notes, the removed HTML pages.
+- The HTML pages were regenerated (their header reads the version from package.json;
+  the docs test fails if they are not).
+
+Rounds 1–4 are complete. Nothing is open in `questions.md`.

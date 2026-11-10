@@ -38,6 +38,55 @@ The user's objection, and he is right: `?` is used for two different things. `?p
 6. **Migration:** the parser accepts the old `?id type …` declaration for one version with a deprecation note (`world.warnings`); `format()` and every document, example, test matrix, the playground and `compat/psys2/matrices/` are rewritten to the new form; `tools/migrate-syntax.mjs` converts a file. Add a section "The language" to SPEC that is the single grammar (facts, patterns, variables, references, comments), written so that PSys2 can adopt it verbatim as SOP Lang v1.1.
 7. Tests: both forms parse to the same matrix; a `?id` declaration warns; a fact with a variable is still refused; the pilot numbers are unchanged.
 
+**D1 — the reference documentation: syntax and semantics of everything (user, 18:43). After L1, before the 0.5.0 tag; keep it current with every later task.**
+
+The user wants the library well documented, so that its language and behaviour are stated once, precisely, and uniformly. Today the knowledge is spread over SPEC.md, several HTML pages, `docs/integration.md` and the worker log, and parts still describe 0.4.
+
+1. **`docs/language.md` — the language reference** (normative; the source for PSys2's SOP Lang v1.1).
+   - Lexical grammar in EBNF: declaration, identifier, entry, value kinds (atom, string, reference `$id`, variable `?name`), comments, whitespace, multi-line declarations.
+   - What is an error and how it is reported: offset, line, column.
+   - The three signs and their single meanings: `@` declares, `$` refers, `?` is a variable.
+   - Id spaces: facts, matrix, modules.
+   - Qualified and short keys; the bookkeeping namespace; repeated keys.
+   - Canonical serialization.
+2. **`docs/reference.md` — one entry per wire type of the matrix language and per built-in function**, all in the same shape:
+   - **Syntax:** every attribute, with type, default, whether repeatable.
+   - **Meaning:** stated as a rule, not as an example.
+   - **When it is evaluated:** on tell, in the chase, at validation, on query.
+   - **Interactions:** with inheritance, negation, tiers, budgets, soft constraints.
+   - **Violations it can raise.**
+   - **Example:** a three-line neutral one.
+   - **Limits.**
+
+   It covers: `core.type`, `core.slot`, `core.schema.map`, `core.use` / modules, `core.rule`, `core.deny`, `core.calc`, `core.check`, `core.absent`, selectors, aggregates, `core.fluent` / effects / `delta`, `core.relation`, actions, `core.abducible`, `core.question`, `core.answer`, `core.issue`, tiers, and every function (arithmetic, comparison, time, units) with its domain and what happens when it is not applicable.
+3. **`docs/semantics.md` — how a world behaves**, as numbered statements a test can cite:
+   - the transaction (ingest, chase, validate, commit or roll back);
+   - identity and merging;
+   - fixpoint and termination (depth, budget);
+   - stratified negation and what "absent" means (open world; `complete`, `closed`);
+   - defaults and revision;
+   - tiers and their propagation;
+   - provenance and retraction;
+   - sequence, fluents and as-of;
+   - aggregates;
+   - relations and propagation against search (what is complete and what is not);
+   - the statuses of a query and exactly when each is returned;
+   - `sat` / `unsat` / `unknown`;
+   - `fork`, `check`, `applyPatch`, `diff`;
+   - persistence and replay;
+   - the invariants (a refused change leaves the world unchanged; no solver answer unverified; and so on).
+
+   Each statement names the test that checks it (`test/…: "name"`). A statement without a test gets one.
+4. **`docs/api.md` — every public method and option:** signature, parameters, result shape (each field), errors, budget behaviour, complexity note, one example. Generated from, and checked against, `src/index.d.ts` by a test, so the two cannot drift.
+5. **`docs/glossary.md`** — one line per term, used consistently everywhere: wire, fact, pattern, template, variable, reference, matrix, world, state, scenario / fork, slot, kind, tier, assumption, issue, fluent, effect, relation, action, patch, violation, status. Fix the places where the code, SPEC and pages use different words for the same thing (the log already shows "schema" against "matrix", "test" against "check"); list the renames.
+6. **One source.**
+   - SPEC.md becomes a short overview that links to these files, or is replaced by them.
+   - The HTML pages are generated from the same markdown (`tools/build_docs.py`), so nothing says "0.4" or "seven wire types" any more.
+   - A test fails when a wire type, attribute, function or public method exists in `src/` but not in the reference, or the reverse.
+7. **Examples are executed:** every code block in the docs that is marked as runnable is run by a test (`tools/doc-examples.mjs`), and its printed output is the one shown.
+
+Write it for a reader who has never seen the code. Where the behaviour is a choice (for example defaults on optional keys, ties, soft constraints), state the choice and the reason in one sentence.
+
 **A. Two defects the review found, reproduced by the reviewer on a7a8e16. Do these first.**
 
 1. **H1 — a whole assignment is checked atomically; search must not reject on invalid prefixes.**
@@ -94,7 +143,7 @@ The user's objection, and he is right: `?` is used for two different things. `?p
 
 **E. Housekeeping at the end of this round:** old HTML pages; version **0.5.0** and a tag, with a short changelog. The PSys2 worker pins that tag.
 
-**Order:** H1, H2, G10–G14 (those not yet done), H3, H4, **G11, L1**, H5, H6, housekeeping + tag. Report the pilot numbers again after G10–G14 and after H6.
+**Order:** H1, H2, G10–G14 (those not yet done), H3, H4, **G11, L1**, H5, H6, **D1**, housekeeping + tag (D1's files are updated by every task after it). Report the pilot numbers again after G10–G14 and after H6.
 
 Working rules for commits: pull with rebase before each commit; the reviewer only ever changes `worker-tasks.md` (tasks and answers) and, when you ask for more material, files under `compat/psys2/` — never `src/`, tests, docs, `questions.md` or your log. If a reviewer commit lands while you work, rebase onto it; it will not touch your files.
 

@@ -169,7 +169,9 @@ const __builtins = (() => {
   // Numbers may carry a unit suffix: 10N, 2kg, 9.81m/s2, 30min, 95%.
   //   add sub min max   need equal units and keep them        2kg + 3kg = 5kg
   //   mul div           combine units as text                  10N / 2kg = 5N/kg,  6m / 2m = 3
-  //   lt lte gt gte     compare numbers with equal units, or with a bare number; otherwise as text
+  //   lt lte gt gte     compare numbers with equal units, or with a bare number; clock times
+  //                     and dates in their own order; otherwise as text
+  //   eq neq            by value for numbers, clock times and dates (5 = 5.0), else as text
 
   const QUANTITY = /^(-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?)([A-Za-zµ°%][A-Za-z0-9µ°%/*^.]*)?$/;
 
@@ -196,10 +198,63 @@ const __builtins = (() => {
     const r = qs.reduce((x, y) => ({ n: f(x.n, y.n), unit: unitOf(x.unit, y.unit) }));
     return show(r.n, r.unit);
   };
-  const cmp = (f) => ([a, b]) => {
+  // ---- clock times (H:MM, HH:MM, HH:MM:SS) and dates (YYYY-MM-DD)
+
+  const CLOCK = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/;
+  const DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+  const DAY = 86400000;
+  const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const UNIT_SECONDS = { s: 1, sec: 1, min: 60, m: 60, h: 3600, d: 86400, day: 86400, days: 86400, w: 604800, week: 604800, weeks: 604800 };
+
+  /** Seconds since midnight for a clock time, or null. */
+  function clock(v) {
+    const m = CLOCK.exec(String(v));
+    if (!m || Number(m[1]) > 24 || Number(m[2]) > 59 || Number(m[3] || 0) > 59) return null;
+    return { seconds: Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3] || 0), withSeconds: m[3] !== undefined };
+  }
+  /** Milliseconds (UTC midnight) for a calendar date, or null when it is not a real date. */
+  function date(v) {
+    const m = DATE.exec(String(v));
+    if (!m) return null;
+    const t = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    const d = new Date(t);
+    return d.getUTCMonth() === Number(m[2]) - 1 && d.getUTCDate() === Number(m[3]) ? t : null;
+  }
+  const two = (n) => String(n).padStart(2, '0');
+  const showClock = (seconds, withSeconds) => {
+    const t = ((Math.round(seconds) % 86400) + 86400) % 86400; // wraps around midnight
+    return `${two(Math.floor(t / 3600))}:${two(Math.floor((t % 3600) / 60))}${withSeconds ? ':' + two(t % 60) : ''}`;
+  };
+  const showDate = (ms) => new Date(ms).toISOString().slice(0, 10);
+  /** A duration in seconds: a bare number counts in `unit`. */
+  const duration = (v, unit) => {
+    const q = quantity(v);
+    if (!q) return undefined;
+    const k = UNIT_SECONDS[q.unit || unit];
+    return k === undefined ? undefined : q.n * k;
+  };
+  /** A value both sides can be ordered by, when they are of the same sort: number with unit, clock, date. */
+  const ordered = (a, b) => {
     const x = quantity(a), y = quantity(b);
-    // a bare number is a threshold for any unit: 0kg <= 0
-    return x && y && (x.unit === y.unit || !x.unit || !y.unit) ? f(x.n, y.n) : f(a, b);
+    if (x && y && (x.unit === y.unit || !x.unit || !y.unit)) return [x.n, y.n]; // a bare number is a threshold for any unit
+    const ca = clock(a), cb = clock(b);
+    if (ca && cb) return [ca.seconds, cb.seconds];
+    const da = date(a), db = date(b);
+    if (da !== null && db !== null) return [da, db];
+    return null;
+  };
+  const cmp = (f) => ([a, b]) => {
+    const o = ordered(a, b);
+    return o ? f(o[0], o[1]) : f(a, b);
+  };
+  const same = ([a, b]) => {
+    if (a === b) return true;
+    const o = ordered(a, b);
+    return !!o && o[0] === o[1] && !(quantity(a) && quantity(b) && quantity(a).unit !== quantity(b).unit);
+  };
+  const one = (f) => ([a, ...rest]) => {
+    const q = quantity(a);
+    return q ? f(q, rest) : undefined;
   };
   const builtins = {
     add: sameUnit((a, b) => a + b),
@@ -209,9 +264,34 @@ const __builtins = (() => {
     mul: combine((a, b) => a * b, mulUnit),
     div: combine((a, b) => a / b, divUnit),
     concat: (args) => args.join(''),
+    abs: one((q) => show(Math.abs(q.n), q.unit)),
+    // round(x), round(x, digits)
+    round: one((q, [digits]) => { const k = 10 ** (Number(digits) || 0); return show(Math.round(q.n * k) / k, q.unit); }),
+    // mod(a, b) keeps the unit of a; idiv(a, b) is the whole part of a / b
+    mod: ([a, b]) => { const x = quantity(a), y = quantity(b); return x && y && y.n !== 0 ? show(((x.n % y.n) + y.n) % y.n, x.unit) : undefined; },
+    idiv: ([a, b]) => { const x = quantity(a), y = quantity(b); return x && y && y.n !== 0 ? show(Math.floor(x.n / y.n), divUnit(x.unit, y.unit)) : undefined; },
 
-    eq: ([a, b]) => a === b,
-    neq: ([a, b]) => a !== b,
+    // time_add(10:40, 35min) = 11:15, time_add(2026-01-30, 3d) = 2026-02-02; a bare number is minutes or days
+    time_add: ([t, d]) => {
+      const c = clock(t);
+      if (c) { const s = duration(d, 'min'); return s === undefined ? undefined : showClock(c.seconds + s, c.withSeconds); }
+      const day = date(t);
+      if (day === null) return undefined;
+      const s = duration(d, 'd');
+      return s === undefined ? undefined : showDate(day + Math.round(s / 86400) * DAY);
+    },
+    // time_diff(later, earlier): minutes between two clock times, days between two dates
+    time_diff: ([a, b]) => {
+      const x = clock(a), y = clock(b);
+      if (x && y) return show((x.seconds - y.seconds) / 60, 'min');
+      const p = date(a), q = date(b);
+      return p !== null && q !== null ? show(Math.round((p - q) / DAY), 'd') : undefined;
+    },
+    weekday: ([d]) => { const t = date(d); return t === null ? undefined : WEEKDAYS[new Date(t).getUTCDay()]; },
+
+    // equality by value where both sides are numbers, clock times or dates: 5 = 5.0, 9:05 = 09:05
+    eq: same,
+    neq: (args) => !same(args),
     lt: cmp((a, b) => a < b),
     lte: cmp((a, b) => a <= b),
     gt: cmp((a, b) => a > b),
@@ -220,7 +300,32 @@ const __builtins = (() => {
     before: ([a, b], world) => world.has(a.slice(1)) && world.has(b.slice(1)) && world.compare(a.slice(1), b.slice(1)) < 0,
     after: ([a, b], world) => world.has(a.slice(1)) && world.has(b.slice(1)) && world.compare(a.slice(1), b.slice(1)) > 0,
   };
-  return { quantity, builtins };
+
+  // ---- aggregates: functions over all the matches of a pattern (core.calc with over=)
+
+  const numbers = (values) => {
+    const qs = values.map(quantity);
+    return qs.length && qs.every((q) => q && q.unit === qs[0].unit) ? qs : null;
+  };
+  const extreme = (values, picks, better) => {
+    let best = -1, key = null;
+    for (let i = 0; i < values.length; i++) { // bounded: one pass over the matches
+      const o = key === null ? null : ordered(values[i], key);
+      if (key === null || (o ? better(o[0], o[1]) : better(values[i], key))) { best = i; key = values[i]; }
+    }
+    return best < 0 ? undefined : { value: key, pick: picks[best] };
+  };
+  /** name -> (values, picks, matches) => result, or undefined when there is nothing to say. */
+  const aggregates = {
+    count: (values, picks, n) => String(n),
+    sum: (values) => { if (!values.length) return '0'; const qs = numbers(values); return qs ? show(qs.reduce((t, q) => t + q.n, 0), qs[0].unit) : undefined; },
+    min: (values, picks) => extreme(values, picks, (a, b) => a < b)?.value,
+    max: (values, picks) => extreme(values, picks, (a, b) => a > b)?.value,
+    argmin: (values, picks) => extreme(values, picks, (a, b) => a < b)?.pick,
+    argmax: (values, picks) => extreme(values, picks, (a, b) => a > b)?.pick,
+    collect: (values) => (values.length ? [...new Set(values)] : undefined),
+  };
+  return { quantity, clock, date, builtins, aggregates };
 })();
 
 // ---- src/solve.mjs
@@ -858,7 +963,7 @@ const __solve = (() => {
 const __matrix = (() => {
   const { cloneWire, str } = __parser;
   const { hasVar, isVar } = __unify;
-  const { quantity } = __builtins;
+  const { quantity, clock, date, aggregates } = __builtins;
   // Compilation of the consistency matrix: schema wires -> slots, rules, deny constraints.
   // Pure with respect to the world: reads world.matrix, world.wires and world.fns only.
 
@@ -906,6 +1011,10 @@ const __matrix = (() => {
     string: (v) => v[0] !== '$',
     atom: (v) => v[0] !== '$' && v[0] !== '"',
     any: () => true, // any literal or reference
+    'time.clock': (v) => !!clock(v),
+    'time.date': (v) => date(v) !== null,
+    'time.datetime': (v) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?$/.test(v) && !Number.isNaN(Date.parse(v)),
+    'time.duration': (v) => { const q = quantity(v); return !!q && ['s', 'sec', 'min', 'm', 'h', 'd', 'day', 'days', 'w', 'week', 'weeks'].includes(q.unit); },
   };
   /** Is the kind one the library checks? */
   function knownKind(kind) {
@@ -915,7 +1024,7 @@ const __matrix = (() => {
   function fitsKind(kind, v) {
     if (KINDS[kind]) return KINDS[kind](v);
     if (kind.startsWith('quantity.')) return !!quantity(v);
-    return v[0] !== '$'; // time.* and kinds this version does not know: any literal
+    return v[0] !== '$'; // other time.* kinds and kinds this version does not know: any literal
   }
   const LINKS = ['when', 'then', 'not', 'with', 'if'];
 
@@ -1136,10 +1245,13 @@ const __matrix = (() => {
         c.negRules.push(r);
         for (const n of r.not) push(c.negByType, n.type, r);
       }
-      // a selective rule is not driven by single wires: it is re-evaluated in full when things are quiet
-      if (r.selective) { c.selRules.push(r); if (!r.not.length) c.negRules.push(r); continue; }
+      // a rule with a selector is not driven by single wires: it is re-evaluated in full when things are quiet
+      if (r.selective) { c.selRules.push(r); if (!r.not.length) c.negRules.push(r); }
+      if (r.hasSelect) continue;
       r.when.forEach((p, idx) => push(c.ruleByType, p.type, { rule: r, idx }));
     }
+    c.overByType = new Map(); // type of an aggregated pattern -> { rule, pat, group }
+    for (const r of [...c.rules, ...c.denies]) for (const o of r.overs) push(c.overByType, o.pat.type, { rule: r, ...o });
     for (const d of c.denies) d.when.forEach((p, idx) => push(c.denyByType, p.type, { rule: d, idx }));
     // Entries of a by-type index for a wire of the given type: its own and its ancestors'.
     const merged = new Map();
@@ -1163,8 +1275,8 @@ const __matrix = (() => {
     for (const r of c.negRules) {
       const reach = new Set(r.then.map((t) => t.type));
       for (const t of reach) for (const a of c.lineage(t)) for (const u of produces.get(a) || []) reach.add(u);
-      const bad = r.not.find((n) => [...reach].some((t) => c.isA(t, n.type)));
-      if (bad) c.errors.push(`${r.id}: not stratified, its consequences can produce "${bad.type}", which it negates`);
+      const bad = [...r.not, ...r.calc.flatMap((x) => x.over || [])].find((n) => [...reach].some((t) => c.isA(t, n.type)));
+      if (bad) c.errors.push(`${r.id}: not stratified, its consequences can produce "${bad.type}", which it negates or aggregates`);
     }
     return c;
   }
@@ -1172,7 +1284,9 @@ const __matrix = (() => {
   function buildRule(world, w, c) {
     const locals = new Set();
     for (const k of LINKS) for (const v of w.attrs[k] || []) if (v[0] === '$') locals.add(v.slice(1));
-    const get = (k) => (w.attrs[k] || []).map((v) => {
+    // the patterns an aggregate ranges over belong to the rule too
+    for (const v of w.attrs.with || []) for (const o of world.matrix.get(v.slice(1))?.attrs.over || []) if (o[0] === '$') locals.add(o.slice(1));
+    const get = (k, from = w) => (from.attrs[k] || []).map((v) => {
       const s = world.matrix.get(v.slice(1));
       if (!s) { c.errors.push(`${w.id}: ${k}=${v} is not a wire of the matrix`); return null; }
       for (const x of Object.values(s.attrs).flat()) {
@@ -1191,8 +1305,10 @@ const __matrix = (() => {
     }).filter(Boolean);
     const fn = (x, kind) => {
       const name = first(x, 'fn');
-      if (!world.fns[name]) c.errors.push(`${w.id}: unknown ${kind} function "${name}"`);
-      return { fn: name, out: first(x, 'out'), args: x.attrs.args || [] };
+      // with over= the calc is an aggregate over every match of those patterns
+      const over = x.attrs.over ? get('over', world.matrix.get(x.id) || x) : null;
+      if (over ? !aggregates[name] : !world.fns[name]) c.errors.push(`${w.id}: unknown ${over ? 'aggregate' : kind} function "${name}"`);
+      return { fn: name, out: first(x, 'out'), args: x.attrs.args || [], over, pick: first(x, 'pick') };
     };
     const rule = {
       id: w.id, kind: w.type === 'core.rule' ? 'rule' : 'deny',
@@ -1212,7 +1328,18 @@ const __matrix = (() => {
     for (const x of rule.calc) if (x.out) vars.add(x.out);
     rule.vars = [...vars].sort();
     // a pattern with core.select=latest|first picks one wire by sequence: what it picks can change
-    rule.selective = rule.when.some((p) => p.select) || rule.not.some((p) => p.select);
+    rule.hasSelect = rule.when.some((p) => p.select) || rule.not.some((p) => p.select) || rule.calc.some((x) => (x.over || []).some((p) => p.select));
+    rule.aggregate = rule.calc.some((x) => x.over);
+    rule.selective = rule.hasSelect || rule.aggregate;
+    // An aggregate depends on a group: the bindings its patterns share with the rule's own
+    // patterns. When a wire of an aggregated pattern changes, only its group is looked at again.
+    const whenVars = new Set(rule.when.flatMap((p) => ['?' + p.id, ...Object.values(p.attrs).flat().filter(hasVar).map((v) => (v[0] === '$' ? v.slice(1) : v))]));
+    rule.overs = rule.calc.flatMap((x) => (x.over || []).map((p) => ({
+      pat: p,
+      group: [...new Set(Object.values(p.attrs).flat().filter(hasVar).map((v) => (v[0] === '$' ? v.slice(1) : v)))].filter((v) => whenVars.has(v)),
+    })));
+    // the types whose wires can change what the rule concludes
+    rule.types = [...new Set([...rule.when, ...rule.not, ...rule.calc.flatMap((x) => x.over || [])].map((p) => p.type))];
     for (const p of [...rule.when, ...rule.not]) if (p.select && !['latest', 'first'].includes(p.select)) c.errors.push(`${w.id}: core.select must be latest or first`);
 
     // templates in dependency order, so a template is created before the ones that refer to it
@@ -2336,7 +2463,7 @@ const __abduce = (() => {
 const __world = (() => {
   const { parse, format, cloneWire } = __parser;
   const { EMPTY, walk, unify, hasVar, isVar, bound } = __unify;
-  const { builtins, quantity } = __builtins;
+  const { builtins, quantity, aggregates } = __builtins;
   const { cdcl } = __solve;
   const { compileMatrix, localize, prefixModule, fitsKind, knownKind, readMap, SCHEMA_TYPES, LINKS } = __matrix;
   const { completion } = __complete;
@@ -2353,6 +2480,7 @@ const __world = (() => {
 
   const first = (w, k) => w.attrs[k]?.[0];
   const K = (type, key, value) => `${type}\u0001${key}\u0001${value}`;
+  const LIST = '\u0002'; // marks a list of values bound to one variable (the result of collect)
   const setOf = (map, k) => map.get(k) || map.set(k, new Set()).get(k);
 
   function readModule(map, w) {
@@ -2571,7 +2699,7 @@ const __world = (() => {
     // ---------------------------------------------------------------- transactions
 
     _result() {
-      return { ok: true, added: [], derived: [], filled: [], merged: [], removed: [], violations: [], _touched: new Set(), _agenda: [], _fluents: new Map() };
+      return { ok: true, added: [], derived: [], filled: [], merged: [], removed: [], violations: [], _touched: new Set(), _agenda: [], _fluents: new Map(), _types: new Set(), _seeds: new Map(), _full: false };
     }
     _begin() { this._tx++; return this._journal.length; }
     _do(undo) {
@@ -2595,7 +2723,7 @@ const __world = (() => {
 
     _finish(mark, res, dry, entry) {
       res.ok = !res.violations.length;
-      delete res._touched; delete res._agenda; delete res._fluents;
+      delete res._touched; delete res._agenda; delete res._fluents; delete res._types; delete res._seeds; delete res._full;
       if (!res.ok) for (const v of res.violations) this._support(v); // before the evidence is rolled back
       if (!res.ok || dry) {
         this._rollback(mark);
@@ -2832,6 +2960,7 @@ const __world = (() => {
         if (c.fluents.size || c.seqKey) for (const w of this.wires.values()) { if (w.meta.told) this._fluentNote(w, res); }
         res._agenda = [...this.wires.keys()];
         for (const id of res._agenda) res._touched.add(id);
+        res._full = true;
       }
       const c = this._compiled();
       for (const w of wires) {
@@ -2965,9 +3094,26 @@ const __world = (() => {
       const pats = skip < 0 ? rule.when : rule.when.filter((_, i) => i !== skip);
       next: for (let s of this._matchAll(pats, 0, s0)) {
         for (const c of rule.calc) {
-          const args = c.args.map((a) => walk(a, s));
-          if (args.some(hasVar)) continue next;
-          const out = this.fns[c.fn](args, this);
+          let out;
+          if (c.over) { // an aggregate: every match of the patterns it ranges over, under the bindings so far
+            const values = [], picks = [];
+            // in sequence order, so that the result does not depend on how the indexes happen to be laid out
+            const matches = [...this._matchAll(c.over, 0, s)].map((t) => [walk('?' + c.over[0].id, t), t]).sort((x, y) => this.compare(x[0], y[0]));
+            const n = matches.length;
+            for (const [, t] of matches) {
+              if (!c.args.length) break;
+              const a = walk(c.args[0], t);
+              if (hasVar(a)) continue;
+              values.push(a);
+              picks.push(walk(c.pick || '$?' + c.over[0].id, t));
+            }
+            out = aggregates[c.fn](values, picks, n);
+            if (Array.isArray(out)) out = LIST + out.join(LIST); // several values for one key
+          } else {
+            const args = c.args.map((a) => walk(a, s));
+            if (args.some(hasVar)) continue next;
+            out = this.fns[c.fn](args, this);
+          }
           if (out === undefined || out === null) continue next;
           s = unify(c.out, String(out), s);
           if (!s) continue next;
@@ -3002,6 +3148,8 @@ const __world = (() => {
           if (res._fluents.size) { this._fluentRun(res, c); continue; } // states first: rules read their values
           const w = this.wires.get(res._agenda.shift());
           if (!w) continue;
+          for (const t of c.lineage(w.type)) res._types.add(t);
+          this._seed(w, res);
           // a new or changed wire can end the absence that a rule with not= relied on
           for (const rule of c.forType(c.negByType, w.type)) {
             const stale = [...(this.byRule.get(rule.id) || [])].filter((sig) => this._negated(rule, this.firings.get(sig).s));
@@ -3015,7 +3163,28 @@ const __world = (() => {
         }
         if (res.violations.length) return;
         // rules with negation or a selector are re-evaluated in full once everything else is quiet
+        const changed = res._types;
+        res._types = new Set();
         for (const rule of c.negRules) {
+          if (rule.aggregate && !rule.hasSelect && !rule.not.length && !res._full) {
+            // only the groups whose aggregated wires changed are looked at again
+            const seeds = res._seeds.get(rule);
+            res._seeds.delete(rule);
+            for (const s0 of seeds ? seeds.values() : []) {
+              const bodies = [...this._bodies(rule, s0, -1)];
+              const now = new Set(bodies.map((s) => this._sig(rule, s)));
+              const group = bound(s0).map((v) => [v, walk(v, s0)]);
+              const stale = [...(this.byRule.get(rule.id) || [])].filter((sig) => {
+                if (now.has(sig)) return false;
+                const s = this.firings.get(sig).s;
+                return group.every(([v, x]) => walk(v, s) === x);
+              });
+              if (stale.length) this._unsay(res, [], [], stale);
+              fireAll(rule, bodies);
+            }
+            continue;
+          }
+          if (!res._full && !rule.types.some((t) => changed.has(t))) continue; // nothing it reads has changed
           const bodies = [...this._bodies(rule, EMPTY, -1)];
           if (rule.selective) { // what a selector picked may have changed: drop the firings that no longer hold
             const now = new Set(bodies.map((s) => this._sig(rule, s)));
@@ -3024,7 +3193,22 @@ const __world = (() => {
           }
           fireAll(rule, bodies);
         }
+        res._full = false;
         if ((!res._agenda.length && !res._fluents.size) || res.violations.length) return;
+      }
+    }
+
+    /** Note the groups of the aggregates that a wire belongs to, so they are looked at again. Call before the wire changes. */
+    _seed(w, res) {
+      const c = this._c;
+      if (!c || !c.overByType.size) return;
+      for (const { rule, pat, group } of c.forType(c.overByType, w.type)) {
+        for (const s of this._matchWire(pat, w, EMPTY)) {
+          let s0 = EMPTY, key = '';
+          for (const v of group) { const x = walk(v, s); s0 = unify(v, x, s0); key += x + '\u0001'; }
+          const seeds = res._seeds.get(rule) || res._seeds.set(rule, new Map()).get(rule);
+          seeds.set(key, s0);
+        }
       }
     }
 
@@ -3045,7 +3229,7 @@ const __world = (() => {
       for (const t of rule.then) {
         const attrs = {};
         for (const k of Object.keys(t.attrs)) {
-          const vals = t.attrs[k].map((v) => walk(v, s)).filter((v) => !hasVar(v));
+          const vals = t.attrs[k].map((v) => walk(v, s)).filter((v) => !hasVar(v)).flatMap((v) => (v[0] === LIST ? v.slice(1).split(LIST) : [v]));
           if (vals.length) attrs[k] = vals; // a value left unbound is an open key
         }
         let target = this._findByIdentity(t.type, attrs) || this._findSubsuming(t.type, attrs, c);
@@ -3125,6 +3309,8 @@ const __world = (() => {
         const w = this.wires.get(id);
         if (!w) return;
         this._fluentTouch(w, res);
+        this._seed(w, res);
+        for (const t of this._lineage(w.type)) res._types.add(t);
         this._removeWire(w);
         this._event({ op: 'remove', id });
         gone.add(id);
@@ -3133,6 +3319,7 @@ const __world = (() => {
       const unfill = ({ id, key, value }) => {
         const w = this.wires.get(id);
         if (!w || !w.attrs[key]?.includes(value)) return;
+        this._seed(w, res);
         this._removeValue(w, key, value);
         this._fluentTouch(w, res);
         this._event({ op: 'unfill', id, key, value });
@@ -3215,14 +3402,20 @@ const __world = (() => {
         const w = this.wires.get(id);
         if (!w) continue;
         for (const { rule: d, idx } of c.forType(c.denyByType, w.type)) {
-          if (d.not.length || d.selective || reported.has(d)) continue;
+          if (d.not.length || d.hasSelect || reported.has(d)) continue;
           seeded: for (const s0 of this._matchWire(d.when[idx], w, EMPTY)) {
             for (const s of this._bodies(d, s0, idx)) { report(d, s); break seeded; }
           }
         }
       }
+      for (const [d, seeds] of res._seeds) { // a deny over a group: the groups whose wires changed
+        if (d.kind !== 'deny' || d.not.length || d.hasSelect || reported.has(d)) continue;
+        groups: for (const s0 of seeds.values()) {
+          for (const s of this._bodies(d, s0, -1)) { report(d, s); break groups; }
+        }
+      }
       for (const d of c.denies) {
-        if (!d.not.length && !d.selective) continue;
+        if ((!d.not.length && !d.hasSelect) || reported.has(d)) continue;
         for (const s of this._bodies(d, EMPTY, -1)) { report(d, s); break; }
       }
     }

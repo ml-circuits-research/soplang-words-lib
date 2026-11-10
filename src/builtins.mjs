@@ -5,7 +5,9 @@
 // Numbers may carry a unit suffix: 10N, 2kg, 9.81m/s2, 30min, 95%.
 //   add sub min max   need equal units and keep them        2kg + 3kg = 5kg
 //   mul div           combine units as text                  10N / 2kg = 5N/kg,  6m / 2m = 3
-//   lt lte gt gte     compare numbers with equal units, or with a bare number; otherwise as text
+//   lt lte gt gte     compare numbers with equal units, or with a bare number; clock times
+//                     and dates in their own order; otherwise as text
+//   eq neq            by value for numbers, clock times and dates (5 = 5.0), else as text
 
 const QUANTITY = /^(-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?)([A-Za-zµ°%][A-Za-z0-9µ°%/*^.]*)?$/;
 
@@ -32,10 +34,63 @@ const combine = (f, unitOf) => (args) => {
   const r = qs.reduce((x, y) => ({ n: f(x.n, y.n), unit: unitOf(x.unit, y.unit) }));
   return show(r.n, r.unit);
 };
-const cmp = (f) => ([a, b]) => {
+// ---- clock times (H:MM, HH:MM, HH:MM:SS) and dates (YYYY-MM-DD)
+
+const CLOCK = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/;
+const DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+const DAY = 86400000;
+const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const UNIT_SECONDS = { s: 1, sec: 1, min: 60, m: 60, h: 3600, d: 86400, day: 86400, days: 86400, w: 604800, week: 604800, weeks: 604800 };
+
+/** Seconds since midnight for a clock time, or null. */
+export function clock(v) {
+  const m = CLOCK.exec(String(v));
+  if (!m || Number(m[1]) > 24 || Number(m[2]) > 59 || Number(m[3] || 0) > 59) return null;
+  return { seconds: Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3] || 0), withSeconds: m[3] !== undefined };
+}
+/** Milliseconds (UTC midnight) for a calendar date, or null when it is not a real date. */
+export function date(v) {
+  const m = DATE.exec(String(v));
+  if (!m) return null;
+  const t = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  const d = new Date(t);
+  return d.getUTCMonth() === Number(m[2]) - 1 && d.getUTCDate() === Number(m[3]) ? t : null;
+}
+const two = (n) => String(n).padStart(2, '0');
+const showClock = (seconds, withSeconds) => {
+  const t = ((Math.round(seconds) % 86400) + 86400) % 86400; // wraps around midnight
+  return `${two(Math.floor(t / 3600))}:${two(Math.floor((t % 3600) / 60))}${withSeconds ? ':' + two(t % 60) : ''}`;
+};
+const showDate = (ms) => new Date(ms).toISOString().slice(0, 10);
+/** A duration in seconds: a bare number counts in `unit`. */
+const duration = (v, unit) => {
+  const q = quantity(v);
+  if (!q) return undefined;
+  const k = UNIT_SECONDS[q.unit || unit];
+  return k === undefined ? undefined : q.n * k;
+};
+/** A value both sides can be ordered by, when they are of the same sort: number with unit, clock, date. */
+const ordered = (a, b) => {
   const x = quantity(a), y = quantity(b);
-  // a bare number is a threshold for any unit: 0kg <= 0
-  return x && y && (x.unit === y.unit || !x.unit || !y.unit) ? f(x.n, y.n) : f(a, b);
+  if (x && y && (x.unit === y.unit || !x.unit || !y.unit)) return [x.n, y.n]; // a bare number is a threshold for any unit
+  const ca = clock(a), cb = clock(b);
+  if (ca && cb) return [ca.seconds, cb.seconds];
+  const da = date(a), db = date(b);
+  if (da !== null && db !== null) return [da, db];
+  return null;
+};
+const cmp = (f) => ([a, b]) => {
+  const o = ordered(a, b);
+  return o ? f(o[0], o[1]) : f(a, b);
+};
+const same = ([a, b]) => {
+  if (a === b) return true;
+  const o = ordered(a, b);
+  return !!o && o[0] === o[1] && !(quantity(a) && quantity(b) && quantity(a).unit !== quantity(b).unit);
+};
+const one = (f) => ([a, ...rest]) => {
+  const q = quantity(a);
+  return q ? f(q, rest) : undefined;
 };
 export const builtins = {
   add: sameUnit((a, b) => a + b),
@@ -45,9 +100,34 @@ export const builtins = {
   mul: combine((a, b) => a * b, mulUnit),
   div: combine((a, b) => a / b, divUnit),
   concat: (args) => args.join(''),
+  abs: one((q) => show(Math.abs(q.n), q.unit)),
+  // round(x), round(x, digits)
+  round: one((q, [digits]) => { const k = 10 ** (Number(digits) || 0); return show(Math.round(q.n * k) / k, q.unit); }),
+  // mod(a, b) keeps the unit of a; idiv(a, b) is the whole part of a / b
+  mod: ([a, b]) => { const x = quantity(a), y = quantity(b); return x && y && y.n !== 0 ? show(((x.n % y.n) + y.n) % y.n, x.unit) : undefined; },
+  idiv: ([a, b]) => { const x = quantity(a), y = quantity(b); return x && y && y.n !== 0 ? show(Math.floor(x.n / y.n), divUnit(x.unit, y.unit)) : undefined; },
 
-  eq: ([a, b]) => a === b,
-  neq: ([a, b]) => a !== b,
+  // time_add(10:40, 35min) = 11:15, time_add(2026-01-30, 3d) = 2026-02-02; a bare number is minutes or days
+  time_add: ([t, d]) => {
+    const c = clock(t);
+    if (c) { const s = duration(d, 'min'); return s === undefined ? undefined : showClock(c.seconds + s, c.withSeconds); }
+    const day = date(t);
+    if (day === null) return undefined;
+    const s = duration(d, 'd');
+    return s === undefined ? undefined : showDate(day + Math.round(s / 86400) * DAY);
+  },
+  // time_diff(later, earlier): minutes between two clock times, days between two dates
+  time_diff: ([a, b]) => {
+    const x = clock(a), y = clock(b);
+    if (x && y) return show((x.seconds - y.seconds) / 60, 'min');
+    const p = date(a), q = date(b);
+    return p !== null && q !== null ? show(Math.round((p - q) / DAY), 'd') : undefined;
+  },
+  weekday: ([d]) => { const t = date(d); return t === null ? undefined : WEEKDAYS[new Date(t).getUTCDay()]; },
+
+  // equality by value where both sides are numbers, clock times or dates: 5 = 5.0, 9:05 = 09:05
+  eq: same,
+  neq: (args) => !same(args),
   lt: cmp((a, b) => a < b),
   lte: cmp((a, b) => a <= b),
   gt: cmp((a, b) => a > b),
@@ -56,3 +136,29 @@ export const builtins = {
   before: ([a, b], world) => world.has(a.slice(1)) && world.has(b.slice(1)) && world.compare(a.slice(1), b.slice(1)) < 0,
   after: ([a, b], world) => world.has(a.slice(1)) && world.has(b.slice(1)) && world.compare(a.slice(1), b.slice(1)) > 0,
 };
+
+// ---- aggregates: functions over all the matches of a pattern (core.calc with over=)
+
+const numbers = (values) => {
+  const qs = values.map(quantity);
+  return qs.length && qs.every((q) => q && q.unit === qs[0].unit) ? qs : null;
+};
+const extreme = (values, picks, better) => {
+  let best = -1, key = null;
+  for (let i = 0; i < values.length; i++) { // bounded: one pass over the matches
+    const o = key === null ? null : ordered(values[i], key);
+    if (key === null || (o ? better(o[0], o[1]) : better(values[i], key))) { best = i; key = values[i]; }
+  }
+  return best < 0 ? undefined : { value: key, pick: picks[best] };
+};
+/** name -> (values, picks, matches) => result, or undefined when there is nothing to say. */
+export const aggregates = {
+  count: (values, picks, n) => String(n),
+  sum: (values) => { if (!values.length) return '0'; const qs = numbers(values); return qs ? show(qs.reduce((t, q) => t + q.n, 0), qs[0].unit) : undefined; },
+  min: (values, picks) => extreme(values, picks, (a, b) => a < b)?.value,
+  max: (values, picks) => extreme(values, picks, (a, b) => a > b)?.value,
+  argmin: (values, picks) => extreme(values, picks, (a, b) => a < b)?.pick,
+  argmax: (values, picks) => extreme(values, picks, (a, b) => a > b)?.pick,
+  collect: (values) => (values.length ? [...new Set(values)] : undefined),
+};
+

@@ -335,3 +335,77 @@ Deviations and limits:
   attributed to all assigned values, not to a small cause).
 - Not yet checked against the PSys2 `kids.arith` dialogues: that is G8.
 
+## G4 — aggregates and more arithmetic — done
+
+Commit: `git log --grep '^G4:'`. SPEC 3.6.1 and 3.6.2. Neutral example: orders summarised
+from their lines (`examples/orders.mjs`, `examples/aggregates.mjs`).
+
+1. **Aggregates**: a `core.calc` with `over=<patterns>` computes over every match of
+   those patterns under the bindings of the rule's own patterns (the group): `count`,
+   `sum`, `min`, `max`, `argmin`, `argmax` (with `pick=`), `collect` (several values for
+   one key). Allowed in rules and in denies. Kept up to date when a wire of an
+   aggregated pattern arrives, changes or leaves; stratified like negation (a matrix
+   where a rule aggregates over what it can produce is refused).
+2. **Functions**: `abs`, `round`, `mod`, `idiv`, `time_add`, `time_diff`, `weekday`.
+   Clock times `H:MM[:SS]`, dates `YYYY-MM-DD`, durations in `s`, `min`, `h`, `d`, `w`.
+3. **Typed comparison**: `eq` / `neq` by value for numbers, clock times and dates
+   (`5` = `5.0`, `9:05` = `09:05`); `lt` ... `gte` order clock times and dates.
+   Kinds `time.clock`, `time.date`, `time.datetime`, `time.duration` are checked (Q5).
+
+Commands and numbers:
+
+```
+node tools/build.mjs
+npm test
+node tools/bench-aggregate.mjs
+node tools/bench.mjs
+npm run examples
+npm run test:browser
+git grep -i psys2 src/ | wc -l
+```
+
+| Command | Result |
+| --- | --- |
+| `npm test`, sources | 136 tests: 136 pass, 0 fail, 0 skipped |
+| `npm test`, built file | 136 tests: 136 pass, 0 fail, 0 skipped |
+| `npm run examples` | exit 0 (ten examples) |
+| `npm run test:browser` | all browser checks passed |
+| `git grep -i psys2 src/ \| wc -l` | 0 |
+
+New tests: 12 in `test/aggregate.test.mjs`.
+
+"Maintained incrementally" took two attempts (`node tools/bench-aggregate.mjs`, orders
+with 4 lines each, every wire told on its own, two aggregate rules in the matrix):
+
+| Orders | Tells | First version: every group re-evaluated | Now: only the groups that changed |
+| --- | --- | --- | --- |
+| 100 | 500 | 913 ms (1.83 ms per tell) | 94 ms (0.19 ms per tell) |
+| 400 | 2000 | 14,163 ms (7.08 ms per tell) | 225 ms (0.11 ms per tell) |
+| 1000 | 5000 | 94,484 ms (18.90 ms per tell) | 522 ms (0.10 ms per tell) |
+
+How: when a wire of an aggregated pattern is added, changed or removed, the bindings it
+shares with the rule's own patterns name its group; only those groups are evaluated
+again (for rules and for denies). One test compares this with a world where every rule
+is evaluated in full (facts first, matrix afterwards) after 72 tells, 15 retractions and
+10 replacements; another checks that a deny over a group fires when a wire leaves it.
+
+Along the way, a general improvement: a rule with negation or a selector is now
+re-evaluated in full only when a wire of a type it reads was touched in the change,
+not after every change.
+
+The existing benchmarks after G4 (`node tools/bench.mjs`, one run, ms): join 157,
+recursion 324, 2000 tells 70, 1000 replaces 38, six completion turns 126.
+
+Deviations and limits:
+
+- Pattern matching stays textual: a pattern value `5` does not match a wire value `5.0`.
+  Comparison by value is in the checks (`eq`, `lt`, ...). Say if matching should
+  normalise numbers too; it would touch the indexes.
+- Rules that combine an aggregate with `not=` or a selector fall back to full
+  re-evaluation (when a type they read changed).
+- `sum` over values with different units is not applicable (the rule does not fire).
+- "season after n" from the first task list is not a built-in: it is a cyclic lookup that
+  `mod` and a small table of facts express; it will be shown in G8 if a case needs it.
+- `collect` is ordered by the sequence of the matched wires, so a replaced wire moves to
+  the end.
+

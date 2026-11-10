@@ -6,7 +6,7 @@
 
 import { parse, format, cloneWire } from './parser.mjs';
 import { EMPTY, walk, unify, hasVar, isVar, bound } from './unify.mjs';
-import { builtins, quantity } from './builtins.mjs';
+import { builtins, quantity, aggregates } from './builtins.mjs';
 import { cdcl } from './solve.mjs';
 import { compileMatrix, localize, prefixModule, fitsKind, knownKind, readMap, SCHEMA_TYPES, LINKS } from './matrix.mjs';
 import { completion } from './complete.mjs';
@@ -17,6 +17,7 @@ import { abduce } from './abduce.mjs';
 
 const first = (w, k) => w.attrs[k]?.[0];
 const K = (type, key, value) => `${type}\u0001${key}\u0001${value}`;
+const LIST = '\u0002'; // marks a list of values bound to one variable (the result of collect)
 const setOf = (map, k) => map.get(k) || map.set(k, new Set()).get(k);
 
 function readModule(map, w) {
@@ -235,7 +236,7 @@ export class World {
   // ---------------------------------------------------------------- transactions
 
   _result() {
-    return { ok: true, added: [], derived: [], filled: [], merged: [], removed: [], violations: [], _touched: new Set(), _agenda: [], _fluents: new Map() };
+    return { ok: true, added: [], derived: [], filled: [], merged: [], removed: [], violations: [], _touched: new Set(), _agenda: [], _fluents: new Map(), _types: new Set(), _seeds: new Map(), _full: false };
   }
   _begin() { this._tx++; return this._journal.length; }
   _do(undo) {
@@ -259,7 +260,7 @@ export class World {
 
   _finish(mark, res, dry, entry) {
     res.ok = !res.violations.length;
-    delete res._touched; delete res._agenda; delete res._fluents;
+    delete res._touched; delete res._agenda; delete res._fluents; delete res._types; delete res._seeds; delete res._full;
     if (!res.ok) for (const v of res.violations) this._support(v); // before the evidence is rolled back
     if (!res.ok || dry) {
       this._rollback(mark);
@@ -496,6 +497,7 @@ export class World {
       if (c.fluents.size || c.seqKey) for (const w of this.wires.values()) { if (w.meta.told) this._fluentNote(w, res); }
       res._agenda = [...this.wires.keys()];
       for (const id of res._agenda) res._touched.add(id);
+      res._full = true;
     }
     const c = this._compiled();
     for (const w of wires) {
@@ -629,9 +631,26 @@ export class World {
     const pats = skip < 0 ? rule.when : rule.when.filter((_, i) => i !== skip);
     next: for (let s of this._matchAll(pats, 0, s0)) {
       for (const c of rule.calc) {
-        const args = c.args.map((a) => walk(a, s));
-        if (args.some(hasVar)) continue next;
-        const out = this.fns[c.fn](args, this);
+        let out;
+        if (c.over) { // an aggregate: every match of the patterns it ranges over, under the bindings so far
+          const values = [], picks = [];
+          // in sequence order, so that the result does not depend on how the indexes happen to be laid out
+          const matches = [...this._matchAll(c.over, 0, s)].map((t) => [walk('?' + c.over[0].id, t), t]).sort((x, y) => this.compare(x[0], y[0]));
+          const n = matches.length;
+          for (const [, t] of matches) {
+            if (!c.args.length) break;
+            const a = walk(c.args[0], t);
+            if (hasVar(a)) continue;
+            values.push(a);
+            picks.push(walk(c.pick || '$?' + c.over[0].id, t));
+          }
+          out = aggregates[c.fn](values, picks, n);
+          if (Array.isArray(out)) out = LIST + out.join(LIST); // several values for one key
+        } else {
+          const args = c.args.map((a) => walk(a, s));
+          if (args.some(hasVar)) continue next;
+          out = this.fns[c.fn](args, this);
+        }
         if (out === undefined || out === null) continue next;
         s = unify(c.out, String(out), s);
         if (!s) continue next;
@@ -666,6 +685,8 @@ export class World {
         if (res._fluents.size) { this._fluentRun(res, c); continue; } // states first: rules read their values
         const w = this.wires.get(res._agenda.shift());
         if (!w) continue;
+        for (const t of c.lineage(w.type)) res._types.add(t);
+        this._seed(w, res);
         // a new or changed wire can end the absence that a rule with not= relied on
         for (const rule of c.forType(c.negByType, w.type)) {
           const stale = [...(this.byRule.get(rule.id) || [])].filter((sig) => this._negated(rule, this.firings.get(sig).s));
@@ -679,7 +700,28 @@ export class World {
       }
       if (res.violations.length) return;
       // rules with negation or a selector are re-evaluated in full once everything else is quiet
+      const changed = res._types;
+      res._types = new Set();
       for (const rule of c.negRules) {
+        if (rule.aggregate && !rule.hasSelect && !rule.not.length && !res._full) {
+          // only the groups whose aggregated wires changed are looked at again
+          const seeds = res._seeds.get(rule);
+          res._seeds.delete(rule);
+          for (const s0 of seeds ? seeds.values() : []) {
+            const bodies = [...this._bodies(rule, s0, -1)];
+            const now = new Set(bodies.map((s) => this._sig(rule, s)));
+            const group = bound(s0).map((v) => [v, walk(v, s0)]);
+            const stale = [...(this.byRule.get(rule.id) || [])].filter((sig) => {
+              if (now.has(sig)) return false;
+              const s = this.firings.get(sig).s;
+              return group.every(([v, x]) => walk(v, s) === x);
+            });
+            if (stale.length) this._unsay(res, [], [], stale);
+            fireAll(rule, bodies);
+          }
+          continue;
+        }
+        if (!res._full && !rule.types.some((t) => changed.has(t))) continue; // nothing it reads has changed
         const bodies = [...this._bodies(rule, EMPTY, -1)];
         if (rule.selective) { // what a selector picked may have changed: drop the firings that no longer hold
           const now = new Set(bodies.map((s) => this._sig(rule, s)));
@@ -688,7 +730,22 @@ export class World {
         }
         fireAll(rule, bodies);
       }
+      res._full = false;
       if ((!res._agenda.length && !res._fluents.size) || res.violations.length) return;
+    }
+  }
+
+  /** Note the groups of the aggregates that a wire belongs to, so they are looked at again. Call before the wire changes. */
+  _seed(w, res) {
+    const c = this._c;
+    if (!c || !c.overByType.size) return;
+    for (const { rule, pat, group } of c.forType(c.overByType, w.type)) {
+      for (const s of this._matchWire(pat, w, EMPTY)) {
+        let s0 = EMPTY, key = '';
+        for (const v of group) { const x = walk(v, s); s0 = unify(v, x, s0); key += x + '\u0001'; }
+        const seeds = res._seeds.get(rule) || res._seeds.set(rule, new Map()).get(rule);
+        seeds.set(key, s0);
+      }
     }
   }
 
@@ -709,7 +766,7 @@ export class World {
     for (const t of rule.then) {
       const attrs = {};
       for (const k of Object.keys(t.attrs)) {
-        const vals = t.attrs[k].map((v) => walk(v, s)).filter((v) => !hasVar(v));
+        const vals = t.attrs[k].map((v) => walk(v, s)).filter((v) => !hasVar(v)).flatMap((v) => (v[0] === LIST ? v.slice(1).split(LIST) : [v]));
         if (vals.length) attrs[k] = vals; // a value left unbound is an open key
       }
       let target = this._findByIdentity(t.type, attrs) || this._findSubsuming(t.type, attrs, c);
@@ -789,6 +846,8 @@ export class World {
       const w = this.wires.get(id);
       if (!w) return;
       this._fluentTouch(w, res);
+      this._seed(w, res);
+      for (const t of this._lineage(w.type)) res._types.add(t);
       this._removeWire(w);
       this._event({ op: 'remove', id });
       gone.add(id);
@@ -797,6 +856,7 @@ export class World {
     const unfill = ({ id, key, value }) => {
       const w = this.wires.get(id);
       if (!w || !w.attrs[key]?.includes(value)) return;
+      this._seed(w, res);
       this._removeValue(w, key, value);
       this._fluentTouch(w, res);
       this._event({ op: 'unfill', id, key, value });
@@ -879,14 +939,20 @@ export class World {
       const w = this.wires.get(id);
       if (!w) continue;
       for (const { rule: d, idx } of c.forType(c.denyByType, w.type)) {
-        if (d.not.length || d.selective || reported.has(d)) continue;
+        if (d.not.length || d.hasSelect || reported.has(d)) continue;
         seeded: for (const s0 of this._matchWire(d.when[idx], w, EMPTY)) {
           for (const s of this._bodies(d, s0, idx)) { report(d, s); break seeded; }
         }
       }
     }
+    for (const [d, seeds] of res._seeds) { // a deny over a group: the groups whose wires changed
+      if (d.kind !== 'deny' || d.not.length || d.hasSelect || reported.has(d)) continue;
+      groups: for (const s0 of seeds.values()) {
+        for (const s of this._bodies(d, s0, -1)) { report(d, s); break groups; }
+      }
+    }
     for (const d of c.denies) {
-      if (!d.not.length && !d.selective) continue;
+      if ((!d.not.length && !d.hasSelect) || reported.has(d)) continue;
       for (const s of this._bodies(d, EMPTY, -1)) { report(d, s); break; }
     }
   }

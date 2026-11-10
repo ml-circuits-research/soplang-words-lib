@@ -155,6 +155,62 @@ Built in: `add sub mul div min max concat` (calc) and `eq neq lt lte gt gte befo
 passed to `new World({ fns })`. Because rules stay declarative, a matrix can be
 translated to Datalog, ASP or SMT for independent checking.
 
+### 3.6.1 More functions, and comparison by value
+
+| Function | Meaning |
+| --- | --- |
+| `abs(x)`, `round(x)`, `round(x, digits)` | keep the unit |
+| `mod(a, b)` | remainder with the sign of `b`, the unit of `a` |
+| `idiv(a, b)` | the whole part of `a / b` |
+| `time_add(t, d)` | a clock time plus a duration (`10:40 + 35min = 11:15`, wraps at midnight), or a date plus days (`2026-01-30 + 3d = 2026-02-02`). A bare number is minutes for a clock, days for a date |
+| `time_diff(a, b)` | minutes between two clock times, days between two dates |
+| `weekday(date)` | `monday` ... `sunday` |
+
+Durations take the units `s`, `min`, `h`, `d`, `w`. Clock times are `H:MM`, `HH:MM` or
+`HH:MM:SS`; dates are `YYYY-MM-DD` and must be real dates.
+
+`eq`, `neq`, `lt`, `lte`, `gt`, `gte` compare by value when both sides are numbers with
+compatible units, clock times, or dates: `5` equals `5.0`, `9:05` is before `10:00`.
+Otherwise they compare as text. Pattern matching itself stays textual: a pattern value
+`5` does not match a wire value `5.0`.
+
+Kinds for time: `time.clock`, `time.date`, `time.datetime` (ISO 8601) and
+`time.duration` are checked; any other `time.<name>` accepts any literal.
+
+### 3.6.2 Aggregates
+
+A `core.calc` with `over=` computes over every match of one or more patterns, under the
+bindings of the rule's own patterns. Those shared bindings are the group.
+
+```
+?o order customer=?c
+?l line of=$o item=?item amount=?a
+@c_n     core.calc out=?n     fn=count   over=$l
+@c_total core.calc out=?total fn=sum     over=$l args=?a
+@c_which core.calc out=?which fn=argmax  over=$l args=?a pick=?item
+@c_all   core.calc out=?all   fn=collect over=$l args=?item
+@s summary of=$o lines=?n total=?total largest_item=?which items=?all
+@summarise core.rule when=$o with=$c_n with=$c_total with=$c_which with=$c_all then=$s
+```
+
+| `fn` | Result | With no match |
+| --- | --- | --- |
+| `count` | number of matches | `0` |
+| `sum` | sum of `args` (units must agree) | `0` |
+| `min`, `max` | smallest, largest `args` (numbers, clock times, dates, else text) | not applicable |
+| `argmin`, `argmax` | `pick=` at the smallest, largest `args`; without `pick`, a reference to the matched wire | not applicable |
+| `collect` | the distinct values of `args`, in sequence order; a template key bound to it gets them all | not applicable |
+
+"Not applicable" means the rule does not fire for that group.
+
+- Aggregates are kept up to date: when a wire of an aggregated pattern arrives, changes
+  or leaves, the groups it belongs to are evaluated again, the firings whose result
+  changed are withdrawn and the new ones applied. Other groups are not touched.
+- A deny may use aggregates ("the order exceeds the customer's limit"); it is checked
+  for the groups that changed, also when a wire leaves a group.
+- Stratified like negation: a rule may not aggregate over a type its own consequences
+  can produce; such a matrix is refused.
+
 ### 3.7 `core.use`: load another matrix
 
 `@u core.use world=garden` loads the matrix registered under that name in
@@ -645,4 +701,9 @@ Since 0.4.0 (the version first published in this repository):
   (3.9), sequence and selectors (3.10), fluents and effects (3.11), as-of (3.12),
   queries, answer wires, producers, actions and prefix slots (4.10).
 - A value told for a fluent key of an existing wire is a new statement, not a conflict.
+- `eq` and `neq` compare numbers, clock times and dates by value (`5` equals `5.0`);
+  `lt`, `lte`, `gt`, `gte` order clock times and dates (`9:05` before `10:00`).
+- New: aggregates (3.6.2), `abs`, `round`, `mod`, `idiv`, `time_add`, `time_diff`,
+  `weekday`, checked time kinds (3.6.1).
+- Rules with negation or a selector are re-evaluated only when a type they read changed.
 

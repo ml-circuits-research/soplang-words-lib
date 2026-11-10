@@ -3,7 +3,7 @@
 
 import { cloneWire, str } from './parser.mjs';
 import { hasVar, isVar } from './unify.mjs';
-import { quantity } from './builtins.mjs';
+import { quantity, clock, date, aggregates } from './builtins.mjs';
 
 const RANGE_CAP = 2000;
 
@@ -48,6 +48,10 @@ const KINDS = {
   string: (v) => v[0] !== '$',
   atom: (v) => v[0] !== '$' && v[0] !== '"',
   any: () => true, // any literal or reference
+  'time.clock': (v) => !!clock(v),
+  'time.date': (v) => date(v) !== null,
+  'time.datetime': (v) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?$/.test(v) && !Number.isNaN(Date.parse(v)),
+  'time.duration': (v) => { const q = quantity(v); return !!q && ['s', 'sec', 'min', 'm', 'h', 'd', 'day', 'days', 'w', 'week', 'weeks'].includes(q.unit); },
 };
 /** Is the kind one the library checks? */
 export function knownKind(kind) {
@@ -57,7 +61,7 @@ export function knownKind(kind) {
 export function fitsKind(kind, v) {
   if (KINDS[kind]) return KINDS[kind](v);
   if (kind.startsWith('quantity.')) return !!quantity(v);
-  return v[0] !== '$'; // time.* and kinds this version does not know: any literal
+  return v[0] !== '$'; // other time.* kinds and kinds this version does not know: any literal
 }
 export const LINKS = ['when', 'then', 'not', 'with', 'if'];
 
@@ -278,10 +282,13 @@ export function compileMatrix(world) {
       c.negRules.push(r);
       for (const n of r.not) push(c.negByType, n.type, r);
     }
-    // a selective rule is not driven by single wires: it is re-evaluated in full when things are quiet
-    if (r.selective) { c.selRules.push(r); if (!r.not.length) c.negRules.push(r); continue; }
+    // a rule with a selector is not driven by single wires: it is re-evaluated in full when things are quiet
+    if (r.selective) { c.selRules.push(r); if (!r.not.length) c.negRules.push(r); }
+    if (r.hasSelect) continue;
     r.when.forEach((p, idx) => push(c.ruleByType, p.type, { rule: r, idx }));
   }
+  c.overByType = new Map(); // type of an aggregated pattern -> { rule, pat, group }
+  for (const r of [...c.rules, ...c.denies]) for (const o of r.overs) push(c.overByType, o.pat.type, { rule: r, ...o });
   for (const d of c.denies) d.when.forEach((p, idx) => push(c.denyByType, p.type, { rule: d, idx }));
   // Entries of a by-type index for a wire of the given type: its own and its ancestors'.
   const merged = new Map();
@@ -305,8 +312,8 @@ export function compileMatrix(world) {
   for (const r of c.negRules) {
     const reach = new Set(r.then.map((t) => t.type));
     for (const t of reach) for (const a of c.lineage(t)) for (const u of produces.get(a) || []) reach.add(u);
-    const bad = r.not.find((n) => [...reach].some((t) => c.isA(t, n.type)));
-    if (bad) c.errors.push(`${r.id}: not stratified, its consequences can produce "${bad.type}", which it negates`);
+    const bad = [...r.not, ...r.calc.flatMap((x) => x.over || [])].find((n) => [...reach].some((t) => c.isA(t, n.type)));
+    if (bad) c.errors.push(`${r.id}: not stratified, its consequences can produce "${bad.type}", which it negates or aggregates`);
   }
   return c;
 }
@@ -314,7 +321,9 @@ export function compileMatrix(world) {
 function buildRule(world, w, c) {
   const locals = new Set();
   for (const k of LINKS) for (const v of w.attrs[k] || []) if (v[0] === '$') locals.add(v.slice(1));
-  const get = (k) => (w.attrs[k] || []).map((v) => {
+  // the patterns an aggregate ranges over belong to the rule too
+  for (const v of w.attrs.with || []) for (const o of world.matrix.get(v.slice(1))?.attrs.over || []) if (o[0] === '$') locals.add(o.slice(1));
+  const get = (k, from = w) => (from.attrs[k] || []).map((v) => {
     const s = world.matrix.get(v.slice(1));
     if (!s) { c.errors.push(`${w.id}: ${k}=${v} is not a wire of the matrix`); return null; }
     for (const x of Object.values(s.attrs).flat()) {
@@ -333,8 +342,10 @@ function buildRule(world, w, c) {
   }).filter(Boolean);
   const fn = (x, kind) => {
     const name = first(x, 'fn');
-    if (!world.fns[name]) c.errors.push(`${w.id}: unknown ${kind} function "${name}"`);
-    return { fn: name, out: first(x, 'out'), args: x.attrs.args || [] };
+    // with over= the calc is an aggregate over every match of those patterns
+    const over = x.attrs.over ? get('over', world.matrix.get(x.id) || x) : null;
+    if (over ? !aggregates[name] : !world.fns[name]) c.errors.push(`${w.id}: unknown ${over ? 'aggregate' : kind} function "${name}"`);
+    return { fn: name, out: first(x, 'out'), args: x.attrs.args || [], over, pick: first(x, 'pick') };
   };
   const rule = {
     id: w.id, kind: w.type === 'core.rule' ? 'rule' : 'deny',
@@ -354,7 +365,18 @@ function buildRule(world, w, c) {
   for (const x of rule.calc) if (x.out) vars.add(x.out);
   rule.vars = [...vars].sort();
   // a pattern with core.select=latest|first picks one wire by sequence: what it picks can change
-  rule.selective = rule.when.some((p) => p.select) || rule.not.some((p) => p.select);
+  rule.hasSelect = rule.when.some((p) => p.select) || rule.not.some((p) => p.select) || rule.calc.some((x) => (x.over || []).some((p) => p.select));
+  rule.aggregate = rule.calc.some((x) => x.over);
+  rule.selective = rule.hasSelect || rule.aggregate;
+  // An aggregate depends on a group: the bindings its patterns share with the rule's own
+  // patterns. When a wire of an aggregated pattern changes, only its group is looked at again.
+  const whenVars = new Set(rule.when.flatMap((p) => ['?' + p.id, ...Object.values(p.attrs).flat().filter(hasVar).map((v) => (v[0] === '$' ? v.slice(1) : v))]));
+  rule.overs = rule.calc.flatMap((x) => (x.over || []).map((p) => ({
+    pat: p,
+    group: [...new Set(Object.values(p.attrs).flat().filter(hasVar).map((v) => (v[0] === '$' ? v.slice(1) : v)))].filter((v) => whenVars.has(v)),
+  })));
+  // the types whose wires can change what the rule concludes
+  rule.types = [...new Set([...rule.when, ...rule.not, ...rule.calc.flatMap((x) => x.over || [])].map((p) => p.type))];
   for (const p of [...rule.when, ...rule.not]) if (p.select && !['latest', 'first'].includes(p.select)) c.errors.push(`${w.id}: core.select must be latest or first`);
 
   // templates in dependency order, so a template is created before the ones that refer to it

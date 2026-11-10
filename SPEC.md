@@ -212,6 +212,18 @@ Otherwise they compare as text. Pattern matching itself stays textual: a pattern
 Kinds for time: `time.clock`, `time.date`, `time.datetime` (ISO 8601) and
 `time.duration` are checked; any other `time.<name>` accepts any literal.
 
+**When a function cannot answer.** A function that has no result returns nothing and
+the rule does not fire. It may first say why: the built-in arithmetic does for a
+division by zero and for units that differ, and a host function can with
+`world.cannot(reason)` (the world is the second argument of every function). A query
+that finds no value for that reason answers `unsupported` with the `reason`, where
+`missing` would mean "nobody said".
+
+**Precision.** Derived numbers keep 12 significant digits. `new World({ decimals: 2 })`,
+or a wire `@p core.precision decimals=2` in the matrix, rounds every number a calc,
+an aggregate or an effect produces to that many decimals (whole numbers stay whole,
+`2.50` is written `2.5`). Told values are never rewritten.
+
 ### 3.6.2 Aggregates
 
 A `core.calc` with `over=` computes over every match of one or more patterns, under the
@@ -647,6 +659,7 @@ that `next()` produces), the id of such a wire, or its text. It changes nothing.
 | `supported` | exactly one value (or `mode=list`, `count`, a positive `exists`) | `value` or `values`, `from`, `via` |
 | `conflicting` | several distinct values | `alternatives: [{ value, from }]` |
 | `ambiguous` | the value was picked by `argmax` or `argmin` among several equally good | `alternatives: [{ value }]` |
+| `unsupported` | a rule would answer, but one of its calculations cannot be done | `reason` |
 | `missing` | no value | `missing: [{ id?, type, key, ask }]`: the open key and its question |
 | `refused` | the thing asked about cannot exist | `violations`, as from `tell` |
 | `no` / `unknown` | `mode=exists` finds nothing: `no` if the type is declared `complete=true`, else `unknown` | |
@@ -875,6 +888,8 @@ Since 0.4.0 (the version first published in this repository):
 - New: `core.on=` templates (3.3); the stratification check knows which keys a template
   adds, so a rule may aggregate over a type and fill a key on a wire of that type.
 - New: `core.absent=` in patterns (3.10).
+- New: `world.cannot(reason)` and the `unsupported` status; the `decimals` option and
+  `core.precision` (3.6.1).
 - New: soft constraints (`soft=true` on a deny or a bounded slot) and `core.issue`
   wires (3.4); a query over a flagged wire answers `conflicting` with the reason.
 - New: a tie for `argmax` / `argmin` makes the query `ambiguous` with the alternatives

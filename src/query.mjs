@@ -136,6 +136,7 @@ export const querying = {
       let refused = null;
       const ground = Object.values(question.where).every((x) => !String(x).startsWith('?'));
       if (suppose && !wires.length && type && !question.about && ground) {
+        this._cannot = []; // functions say here why they have no result
         this._trial(() => {
           const attrs = {};
           for (const k of Object.keys(question.where)) attrs[c.shortKey(type, k)] = [String(question.where[k])];
@@ -153,6 +154,8 @@ export const querying = {
           }
         });
       }
+      const reasons = this._cannot || [];
+      this._cannot = null;
       const producers = type ? c.lineage(type).flatMap((t) => c.producers.get(`${t}.${key}`) || []) : [];
       if (!refused && !found.size && producers.length && (lacking.length || !wires.length)) {
         for (const w of lacking.length ? lacking : [undefined]) {
@@ -183,6 +186,9 @@ export const querying = {
         r = { status: 'supported', value: values[0], from: from(values), via: via(values) };
       } else if (values.length > 1) {
         r = { status: 'conflicting', alternatives: values.map((value) => ({ value, from: found.get(value).from })), from: from(values), via: via(values) };
+      } else if (reasons.length) {
+        // a rule would have answered, but one of its calculations cannot be done
+        r = { status: 'unsupported', reason: reasons[0], from: [] };
       } else {
         const missing = lacking.length ? lacking.slice(0, 20).map((w) => ({ id: w.id, type: w.type, key, ask })) : [{ type, key, ask }];
         r = { status: 'missing', missing, from: [] };

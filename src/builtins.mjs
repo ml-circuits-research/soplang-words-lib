@@ -38,17 +38,21 @@ export function canonical(v) {
 
 const show = (n, unit) => (Number.isFinite(n) ? String(Number(n.toPrecision(12))) + unit : undefined);
 
-const sameUnit = (f) => (args) => {
+// A function that cannot give a result returns nothing, and may tell the world why
+// (world.cannot): a query can then say "unsupported" with the reason instead of "missing".
+const sameUnit = (f) => (args, world) => {
   const qs = args.map(quantity);
-  if (!qs.length || qs.some((q) => !q || q.unit !== qs[0].unit)) return undefined;
+  if (!qs.length || qs.some((q) => !q)) return undefined;
+  if (qs.some((q) => q.unit !== qs[0].unit)) { world?.cannot?.(`the units differ (${args.join(', ')})`); return undefined; }
   return show(qs.map((q) => q.n).reduce(f), qs[0].unit);
 };
 const mulUnit = (a, b) => (!a ? b : !b ? a : `${a}*${b}`);
 const divUnit = (a, b) => (!b ? a : a === b ? '' : `${a || '1'}/${b}`);
-const combine = (f, unitOf) => (args) => {
+const combine = (f, unitOf) => (args, world) => {
   const qs = args.map(quantity);
   if (!qs.length || qs.some((q) => !q)) return undefined;
   const r = qs.reduce((x, y) => ({ n: f(x.n, y.n), unit: unitOf(x.unit, y.unit) }));
+  if (!Number.isFinite(r.n)) world?.cannot?.(qs.slice(1).some((q) => q.n === 0) ? 'division by zero' : 'the result is not a number');
   return show(r.n, r.unit);
 };
 // ---- clock times (H:MM, HH:MM, HH:MM:SS) and dates (YYYY-MM-DD)
@@ -122,7 +126,7 @@ export const builtins = {
   round: one((q, [digits]) => { const k = 10 ** (Number(digits) || 0); return show(Math.round(q.n * k) / k, q.unit); }),
   // mod(a, b) keeps the unit of a; idiv(a, b) is the whole part of a / b
   mod: ([a, b]) => { const x = quantity(a), y = quantity(b); return x && y && y.n !== 0 ? show(((x.n % y.n) + y.n) % y.n, x.unit) : undefined; },
-  idiv: ([a, b]) => { const x = quantity(a), y = quantity(b); return x && y && y.n !== 0 ? show(Math.floor(x.n / y.n), divUnit(x.unit, y.unit)) : undefined; },
+  idiv: ([a, b], world) => { const x = quantity(a), y = quantity(b); if (x && y && y.n === 0) world?.cannot?.('division by zero'); return x && y && y.n !== 0 ? show(Math.floor(x.n / y.n), divUnit(x.unit, y.unit)) : undefined; },
 
   // time_add(10:40, 35min) = 11:15, time_add(2026-01-30, 3d) = 2026-02-02; a bare number is minutes or days
   time_add: ([t, d]) => {

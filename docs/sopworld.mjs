@@ -202,17 +202,21 @@ const __builtins = (() => {
 
   const show = (n, unit) => (Number.isFinite(n) ? String(Number(n.toPrecision(12))) + unit : undefined);
 
-  const sameUnit = (f) => (args) => {
+  // A function that cannot give a result returns nothing, and may tell the world why
+  // (world.cannot): a query can then say "unsupported" with the reason instead of "missing".
+  const sameUnit = (f) => (args, world) => {
     const qs = args.map(quantity);
-    if (!qs.length || qs.some((q) => !q || q.unit !== qs[0].unit)) return undefined;
+    if (!qs.length || qs.some((q) => !q)) return undefined;
+    if (qs.some((q) => q.unit !== qs[0].unit)) { world?.cannot?.(`the units differ (${args.join(', ')})`); return undefined; }
     return show(qs.map((q) => q.n).reduce(f), qs[0].unit);
   };
   const mulUnit = (a, b) => (!a ? b : !b ? a : `${a}*${b}`);
   const divUnit = (a, b) => (!b ? a : a === b ? '' : `${a || '1'}/${b}`);
-  const combine = (f, unitOf) => (args) => {
+  const combine = (f, unitOf) => (args, world) => {
     const qs = args.map(quantity);
     if (!qs.length || qs.some((q) => !q)) return undefined;
     const r = qs.reduce((x, y) => ({ n: f(x.n, y.n), unit: unitOf(x.unit, y.unit) }));
+    if (!Number.isFinite(r.n)) world?.cannot?.(qs.slice(1).some((q) => q.n === 0) ? 'division by zero' : 'the result is not a number');
     return show(r.n, r.unit);
   };
   // ---- clock times (H:MM, HH:MM, HH:MM:SS) and dates (YYYY-MM-DD)
@@ -286,7 +290,7 @@ const __builtins = (() => {
     round: one((q, [digits]) => { const k = 10 ** (Number(digits) || 0); return show(Math.round(q.n * k) / k, q.unit); }),
     // mod(a, b) keeps the unit of a; idiv(a, b) is the whole part of a / b
     mod: ([a, b]) => { const x = quantity(a), y = quantity(b); return x && y && y.n !== 0 ? show(((x.n % y.n) + y.n) % y.n, x.unit) : undefined; },
-    idiv: ([a, b]) => { const x = quantity(a), y = quantity(b); return x && y && y.n !== 0 ? show(Math.floor(x.n / y.n), divUnit(x.unit, y.unit)) : undefined; },
+    idiv: ([a, b], world) => { const x = quantity(a), y = quantity(b); if (x && y && y.n === 0) world?.cannot?.('division by zero'); return x && y && y.n !== 0 ? show(Math.floor(x.n / y.n), divUnit(x.unit, y.unit)) : undefined; },
 
     // time_add(10:40, 35min) = 11:15, time_add(2026-01-30, 3d) = 2026-02-02; a bare number is minutes or days
     time_add: ([t, d]) => {
@@ -1007,7 +1011,7 @@ const __matrix = (() => {
   const RANGE_CAP = 2000;
 
   const SCHEMA_TYPES = new Set([
-    'core.slot', 'core.type', 'core.abducible', 'core.rule', 'core.deny', 'core.calc', 'core.check', 'core.use',
+    'core.slot', 'core.type', 'core.abducible', 'core.precision', 'core.rule', 'core.deny', 'core.calc', 'core.check', 'core.use',
     'core.schema.map', 'core.namespace', 'core.producer', 'core.action',
     'core.sequence', 'core.fluent', 'core.effect',
   ]);
@@ -1222,6 +1226,10 @@ const __matrix = (() => {
           if (old && old.wire !== w && JSON.stringify(old.imports) !== JSON.stringify(imports)) c.errors.push(`${w.id}: module ${name} is already declared by ${old.wire.id} with other imports`);
           else c.modules.set(name, { wire: w, imports });
         }
+      } else if (w.type === 'core.precision') {
+        const d = Number(first(w, 'decimals'));
+        if (!Number.isInteger(d) || d < 0 || d > 12) c.errors.push(`${w.id}: core.precision needs decimals= between 0 and 12`);
+        else c.decimals = d;
       } else if (w.type === 'core.sequence') {
         c.seqKey = first(w, 'key') || null;
       } else if (w.type === 'core.fluent') {
@@ -2195,6 +2203,7 @@ const __query = (() => {
         let refused = null;
         const ground = Object.values(question.where).every((x) => !String(x).startsWith('?'));
         if (suppose && !wires.length && type && !question.about && ground) {
+          this._cannot = []; // functions say here why they have no result
           this._trial(() => {
             const attrs = {};
             for (const k of Object.keys(question.where)) attrs[c.shortKey(type, k)] = [String(question.where[k])];
@@ -2212,6 +2221,8 @@ const __query = (() => {
             }
           });
         }
+        const reasons = this._cannot || [];
+        this._cannot = null;
         const producers = type ? c.lineage(type).flatMap((t) => c.producers.get(`${t}.${key}`) || []) : [];
         if (!refused && !found.size && producers.length && (lacking.length || !wires.length)) {
           for (const w of lacking.length ? lacking : [undefined]) {
@@ -2242,6 +2253,9 @@ const __query = (() => {
           r = { status: 'supported', value: values[0], from: from(values), via: via(values) };
         } else if (values.length > 1) {
           r = { status: 'conflicting', alternatives: values.map((value) => ({ value, from: found.get(value).from })), from: from(values), via: via(values) };
+        } else if (reasons.length) {
+          // a rule would have answered, but one of its calculations cannot be done
+          r = { status: 'unsupported', reason: reasons[0], from: [] };
         } else {
           const missing = lacking.length ? lacking.slice(0, 20).map((w) => ({ id: w.id, type: w.type, key, ask })) : [{ type, key, ask }];
           r = { status: 'missing', missing, from: [] };
@@ -2491,7 +2505,7 @@ const __time = (() => {
       else if (value === undefined) return undefined; // an unknown start stays unknown
       else next = this.fns[e.op]([value, amount], this);
       if (next === undefined || next === null) return undefined;
-      next = String(next);
+      next = this._round(String(next));
       const q = quantity(next);
       const broken = q && slot && !slot.soft ? (slot.min && q.n < slot.min.n ? `below ${slot.min.n}` : slot.max && q.n > slot.max.n ? `above ${slot.max.n}` : null) : null;
       if (broken) {
@@ -2920,9 +2934,10 @@ const __world = (() => {
     constructor(options = {}) {
       const {
         fns = {}, library = {}, maxDepth = 12, maxSteps = 50000,
-        lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {}, budget = {},
+        lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {}, budget = {}, decimals,
       } = options;
-      this.options = { fns, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget };
+      this.options = { fns, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget, decimals };
+      this._cannot = null;          // reasons given by functions during a query (see cannot)
       this._b = new Budget(budget && budget.steps, budget && budget.ms); // the budget of the call in progress (or of the last one)
       this._api = 0;                // depth of public calls: the outermost one owns the budget
       this._shared = null;          // set while this world shares its state with a fork
@@ -3003,6 +3018,21 @@ const __world = (() => {
       }, () => false);
     }
 
+    /**
+     * For functions (fns): say why no result can be given, before returning nothing. A
+     * query that finds no value because of it answers `unsupported` with this reason.
+     */
+    cannot(reason) { if (this._cannot) this._cannot.push(String(reason)); }
+
+    /** A derived number in the precision the host asked for (option `decimals`, or a core.precision wire). */
+    _round(out) {
+      const d = this._c?.decimals ?? this.options.decimals;
+      if (d === undefined || typeof out !== 'string') return out;
+      const q = quantity(out);
+      if (!q || Number.isInteger(q.n)) return out;
+      return String(Number(q.n.toFixed(d))) + q.unit;
+    }
+
     /** Steps counted by the last call, per site, and whether its budget ran out. */
     stats() { return this._b.report(); }
 
@@ -3030,6 +3060,7 @@ const __world = (() => {
         return onBudget(this._b.violation());
       } finally {
         this._api--;
+        if (top) this._cannot = null;
       }
     }
 
@@ -3780,6 +3811,8 @@ const __world = (() => {
             if (args.some(hasVar)) continue next;
             out = this.fns[c.fn](args, this);
           }
+          if (typeof out === 'number') out = String(out);
+          out = this._round(out);
           if (out === undefined || out === null) continue next;
           s = unify(c.out, String(out), s);
           if (!s) continue next;

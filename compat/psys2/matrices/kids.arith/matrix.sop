@@ -1,6 +1,8 @@
 # kids.arith as a matrix: what worlds/kids.arith/ops.mjs computes, said with rules.
 
 @arith.seq core.sequence key=core.seq
+# numbers that do not come out even are shown with two decimals
+@arith.precision core.precision decimals=2
 
 # ---- who has how many: one wire per owner and item; the count is a state that
 #      statements set and events change. Nobody can have fewer than none: an event that

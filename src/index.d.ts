@@ -109,6 +109,8 @@ export interface WorldOptions {
   solver?: Solver;
   /** wire types and key names used for questions, answers and requests */
   vocabulary?: Partial<Record<'question' | 'answer' | 'request' | 'type' | 'seek' | 'about' | 'mode' | 'where' | 'action' | 'arg' | 'to' | 'value' | 'status' | 'via' | 'from', string>>;
+  /** decimals kept in derived numbers (default: 12 significant digits) */
+  decimals?: number;
   /** the budget of every call that does not give its own */
   budget?: Budget;
   rank?: <T>(items: T[], context: { kind: 'value' | 'explanation'; world: World; id?: string; key?: string }) => T[] | void;
@@ -140,6 +142,8 @@ export class World {
   answer(question: Wire, value: string | number): Result;
   /** shares the state until one of the two worlds changes; copies nothing */
   fork(): World;
+  /** for functions: say why no result can be given, before returning nothing */
+  cannot(reason: string): void;
   /** steps of the last call, per site, and whether its budget ran out */
   stats(): Stats;
   on(listener: (events: WorldEvent[], world: World) => void): () => void;

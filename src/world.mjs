@@ -37,9 +37,10 @@ export class World {
   constructor(options = {}) {
     const {
       fns = {}, library = {}, maxDepth = 12, maxSteps = 50000,
-      lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {}, budget = {},
+      lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {}, budget = {}, decimals,
     } = options;
-    this.options = { fns, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget };
+    this.options = { fns, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget, decimals };
+    this._cannot = null;          // reasons given by functions during a query (see cannot)
     this._b = new Budget(budget && budget.steps, budget && budget.ms); // the budget of the call in progress (or of the last one)
     this._api = 0;                // depth of public calls: the outermost one owns the budget
     this._shared = null;          // set while this world shares its state with a fork
@@ -120,6 +121,21 @@ export class World {
     }, () => false);
   }
 
+  /**
+   * For functions (fns): say why no result can be given, before returning nothing. A
+   * query that finds no value because of it answers `unsupported` with this reason.
+   */
+  cannot(reason) { if (this._cannot) this._cannot.push(String(reason)); }
+
+  /** A derived number in the precision the host asked for (option `decimals`, or a core.precision wire). */
+  _round(out) {
+    const d = this._c?.decimals ?? this.options.decimals;
+    if (d === undefined || typeof out !== 'string') return out;
+    const q = quantity(out);
+    if (!q || Number.isInteger(q.n)) return out;
+    return String(Number(q.n.toFixed(d))) + q.unit;
+  }
+
   /** Steps counted by the last call, per site, and whether its budget ran out. */
   stats() { return this._b.report(); }
 
@@ -147,6 +163,7 @@ export class World {
       return onBudget(this._b.violation());
     } finally {
       this._api--;
+      if (top) this._cannot = null;
     }
   }
 
@@ -897,6 +914,8 @@ export class World {
           if (args.some(hasVar)) continue next;
           out = this.fns[c.fn](args, this);
         }
+        if (typeof out === 'number') out = String(out);
+        out = this._round(out);
         if (out === undefined || out === null) continue next;
         s = unify(c.out, String(out), s);
         if (!s) continue next;

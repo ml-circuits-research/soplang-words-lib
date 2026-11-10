@@ -799,3 +799,27 @@ Pilot: the count in kids.arith is now `min=0 soft=true`. t.arith.n17 and n19 pas
 impossible event is kept, the question about that person is `conflicting`). n18 does
 not: it asks about the *receiver* of an impossible gift, whose own count is unknown, so
 the answer is `missing`; PSys2 marks both people as in conflict.
+
+## G12, G13 — calc failures have a reason; precision is the host's — done (one commit)
+
+`npm test`: 170 pass, 0 fail on sources and built file. `node compat/psys2/run.mjs`:
+kids.shop 147/147, kids.arith 212/217, kids.tasks 231/232. `npm run examples`: exit 0.
+`node tools/scan-loops.mjs src`: clean. `git grep -i psys2 src/ | wc -l`: 0.
+
+One commit for two tasks: both are a few lines in the same functions (`_bodies`,
+`builtins.mjs`, the query), and splitting them by hand would have meant committing a
+state that was never tested on its own.
+
+- G12: `world.cannot(reason)`; the built-in arithmetic uses it for division by zero and
+  for differing units; `query` answers `unsupported` with the `reason` when it finds no
+  value and a function said why. Functions still return nothing, so nothing else changes
+  (rules, effects, abduction).
+- G13: `new World({ decimals })` or a `core.precision decimals=N` wire rounds the numbers
+  that calcs, aggregates and effects produce. Default unchanged.
+- Test in `test/query.test.mjs` (division by zero, units, a host function, `missing`
+  stays `missing` when nothing was tried, three precisions).
+
+Pilot: kids.arith declares `core.precision decimals=2`. t.arith.n31 (5 divided by 0:
+`unsupported`) and n34 (10 divided by 3: 3.33) now pass. PSys2's rule is narrower
+(two decimals only when the division does not terminate); no case in the pilot has a
+terminating result with more than two decimals, so the difference does not show.

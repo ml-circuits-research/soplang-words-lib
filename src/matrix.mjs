@@ -8,7 +8,7 @@ import { quantity, clock, date, aggregates } from './builtins.mjs';
 const RANGE_CAP = 2000;
 
 export const SCHEMA_TYPES = new Set([
-  'core.slot', 'core.type', 'core.abducible', 'core.rule', 'core.deny', 'core.calc', 'core.check', 'core.use',
+  'core.slot', 'core.type', 'core.abducible', 'core.precision', 'core.rule', 'core.deny', 'core.calc', 'core.check', 'core.use',
   'core.schema.map', 'core.namespace', 'core.producer', 'core.action',
   'core.sequence', 'core.fluent', 'core.effect',
 ]);
@@ -223,6 +223,10 @@ export function compileMatrix(world) {
         if (old && old.wire !== w && JSON.stringify(old.imports) !== JSON.stringify(imports)) c.errors.push(`${w.id}: module ${name} is already declared by ${old.wire.id} with other imports`);
         else c.modules.set(name, { wire: w, imports });
       }
+    } else if (w.type === 'core.precision') {
+      const d = Number(first(w, 'decimals'));
+      if (!Number.isInteger(d) || d < 0 || d > 12) c.errors.push(`${w.id}: core.precision needs decimals= between 0 and 12`);
+      else c.decimals = d;
     } else if (w.type === 'core.sequence') {
       c.seqKey = first(w, 'key') || null;
     } else if (w.type === 'core.fluent') {

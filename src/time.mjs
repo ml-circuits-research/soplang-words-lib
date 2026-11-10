@@ -143,7 +143,7 @@ export const timing = {
     else if (value === undefined) return undefined; // an unknown start stays unknown
     else next = this.fns[e.op]([value, amount], this);
     if (next === undefined || next === null) return undefined;
-    next = String(next);
+    next = this._round(String(next));
     const q = quantity(next);
     const broken = q && slot && !slot.soft ? (slot.min && q.n < slot.min.n ? `below ${slot.min.n}` : slot.max && q.n > slot.max.n ? `above ${slot.max.n}` : null) : null;
     if (broken) {

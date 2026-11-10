@@ -141,3 +141,37 @@ test('query: with no matching wire the world supposes one and lets the rules ans
   assert.equal(w.toSOP(), before, 'supposing leaves nothing behind');
   assert.equal(w.ofType('line').length, 0);
 });
+
+test('query: a calculation that cannot be done is unsupported, with the reason; decimals set the precision', () => {
+  const matrix = `
+    ?q share total=?t people=?n
+    @c core.calc out=?each fn=div args=?t args=?n
+    @a share core.on=$q each=?each
+    @r core.rule when=$q with=$c then=$a
+    ?m mix a=?x b=?y
+    @c2 core.calc out=?s fn=add args=?x args=?y
+    @a2 mix core.on=$m sum=?s
+    @r2 core.rule when=$m with=$c2 then=$a2
+  `;
+  const w = new World();
+  w.load(matrix);
+  const ask = (x, total, people) => x.query({ type: 'share', seek: 'each', where: { total, people } });
+  assert.deepEqual([ask(w, 10, 4).status, ask(w, 10, 4).value], ['supported', '2.5']);
+  const zero = ask(w, 10, 0);
+  assert.deepEqual([zero.status, zero.reason], ['unsupported', 'division by zero']);
+  const units = w.query({ type: 'mix', seek: 'sum', where: { a: '2kg', b: '3m' } });
+  assert.deepEqual([units.status, units.reason], ['unsupported', 'the units differ (2kg, 3m)']);
+  assert.equal(w.query({ type: 'share', seek: 'each', where: { total: 10 } }).status, 'missing', 'nothing was tried: still missing');
+  // a host function can say why, too
+  const h = new World({ fns: { root: ([x], world) => (Number(x) < 0 ? world.cannot('no root of a negative number') : String(Math.sqrt(Number(x)))) } });
+  h.load('?q root of=?x\n@c core.calc out=?r fn=root args=?x\n@a root core.on=$q is=?r\n@r core.rule when=$q with=$c then=$a');
+  assert.deepEqual([h.query({ type: 'root', seek: 'is', where: { of: 9 } }).value, h.query({ type: 'root', seek: 'is', where: { of: -9 } }).reason], ['3', 'no root of a negative number']);
+  // precision: 12 significant digits by default; a world option or a matrix wire sets the decimals
+  assert.equal(ask(w, 10, 3).value, '3.33333333333');
+  const two = new World({ decimals: 2 });
+  two.load(matrix);
+  assert.deepEqual([ask(two, 10, 3).value, ask(two, 10, 4).value, ask(two, 10, 5).value], ['3.33', '2.5', '2']);
+  const wired = new World();
+  wired.load(matrix + '@p core.precision decimals=1');
+  assert.equal(ask(wired, 10, 3).value, '3.3');
+});

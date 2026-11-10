@@ -173,6 +173,8 @@ export class World {
   tier(id: string, key?: string): string | undefined;
   /** everything weaker than derived, weakest first, with the cells that rest on each */
   assumptions(): Assumption[];
+  /** things that still work and will not, such as a pattern declared the old way (`?id type ...`) */
+  warnings: { kind: string; id: string; why: string }[];
   /** steps of the last call, per site, and whether its budget ran out */
   stats(): Stats;
   on(listener: (events: WorldEvent[], world: World) => void): () => void;
@@ -212,7 +214,8 @@ export class World {
   toSOP(options?: { schema?: boolean; derived?: boolean; provenance?: boolean }): string;
 }
 export class SopError extends Error {}
-export function parse(text: string): Wire[];
+/** `anonymous`: a declaration may leave out its `@id` (queries) */
+export function parse(text: string, options?: { anonymous?: boolean }): Wire[];
 export function format(wire: Wire, options?: { multiline?: boolean }): string;
 export function tokenize(text: string): { t: string; line: number }[];
 export function str(value: string): string;

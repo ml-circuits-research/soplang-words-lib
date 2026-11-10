@@ -32,8 +32,8 @@ const { World } = require('./docs/sopworld.js');     // Node, CommonJS
 const w = new World();
 w.load(`
   @k core.slot of=acceleration key=of id=true
-  ?b body mass=?m
-  ?f force on=$b magnitude=?F
+  @b body mass=?m
+  @f force on=$b magnitude=?F
   @a acceleration of=$b magnitude=?A
   @c core.calc out=?A fn=div args=?F args=?m
   @newton2 core.rule when=$b when=$f with=$c then=$a

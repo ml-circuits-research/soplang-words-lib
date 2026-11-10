@@ -12,7 +12,7 @@ import { scheduling, instance } from '../examples/scheduling.mjs';
 
 const snap = (w) => JSON.stringify(w.toJSON());
 const lines = (n, f) => Array.from({ length: n }, (_, i) => f(i)).join('\n');
-const unless = `?p person name=?n\n?q banned name=?n\n@ok allowed name=?n\n@r core.rule when=$p not=$q then=$ok`;
+const unless = `@p person name=?n\n?q banned name=?n\n@ok allowed name=?n\n@r core.rule when=$p not=$q then=$ok`;
 
 /**
  * Run `call` on a fresh world under every budget from 1 step up to what the call needs
@@ -54,16 +54,16 @@ test('budget: a matrix that explodes is stopped, not waited for', () => {
   const w = new World();
   w.load(lines(200, (i) => `@n${i} node v=${i}`));
   // 200 x 200 x 200 candidates
-  const rows = w.ask('?a node\n?b node\n?c node', { budget: { steps: 20000 } });
+  const rows = w.ask('@a node\n?b node\n?c node', { budget: { steps: 20000 } });
   assert.deepEqual([rows.length, rows.budget.kind, rows.budget.site, w.stats().steps], [0, 'budget', 'match', 20001]);
   // a rule that pairs every node with every node: 40,000 derived wires
   const before = snap(w);
-  const r = w.tell('?x node v=?i\n?y node v=?j\n@pr pair a=?i b=?j\n@all_pairs core.rule when=$x when=$y then=$pr', { budget: { steps: 30000 } });
+  const r = w.tell('@x node v=?i\n?y node v=?j\n@pr pair a=?i b=?j\n@all_pairs core.rule when=$x when=$y then=$pr', { budget: { steps: 30000 } });
   assert.ok(refusal(r, r.violations[0].site));
   assert.equal(snap(w), before);
-  assert.equal(w.holds('?a node v=3'), true, 'the world still answers');
+  assert.equal(w.holds('@a node v=3'), true, 'the world still answers');
   // a wall-clock limit works the same way
-  const slow = w.ask('?a node\n?b node\n?c node\n?d node', { budget: { steps: 1e12, ms: 20 } });
+  const slow = w.ask('@a node\n?b node\n?c node\n?d node', { budget: { steps: 1e12, ms: 20 } });
   assert.equal(slow.budget.kind, 'budget');
   assert.match(slow.budget.why, /20 ms/);
 });
@@ -103,7 +103,7 @@ test('budget: the solvers answer unknown', () => {
 test('budget: abduction stops in abduce', () => {
   const stopped = sweep(
     () => { const w = new World(); w.load(garden); return w; },
-    (w, budget) => w.abduce('?g slippery place=lawn', { budget }),
+    (w, budget) => w.abduce('@g slippery place=lawn', { budget }),
     (r, site) => Array.isArray(r) && r.length === 0 && r.budget.site === site);
   sitesOf(stopped, 'abduce');
 });
@@ -147,12 +147,12 @@ test('budget: query, act, fill, apply, step, trial and asOf are guarded too', ()
 test('budget: stats() reports the steps of the last call, per site; world options set the default', () => {
   const w = new World({ budget: { steps: 50 } });
   w.load(lines(5, (i) => `@n${i} node v=${i}`));
-  assert.equal(w.ask('?a node\n?b node').length, 25);
+  assert.equal(w.ask('@a node\n?b node').length, 25);
   const s = w.stats();
   assert.deepEqual([s.steps, s.limit, s.exhausted, s.site, s.sites.match], [30, 50, false, null, 30]);
   assert.deepEqual(Object.keys(s.sites), ['match', 'chase', 'negation', 'aggregate', 'fluent', 'withdraw', 'validate', 'complete', 'ground', 'solve', 'abduce', 'induce']);
-  assert.equal(w.ask('?a node\n?b node\n?c node').budget.steps, 51, 'the world default applies');
-  assert.equal(w.ask('?a node\n?b node\n?c node', { budget: { steps: 1000 } }).length, 125, 'a call can raise it');
+  assert.equal(w.ask('@a node\n?b node\n?c node').budget.steps, 51, 'the world default applies');
+  assert.equal(w.ask('@a node\n?b node\n?c node', { budget: { steps: 1000 } }).length, 125, 'a call can raise it');
   // the same call on the same world always costs the same
   const again = () => { const x = meetings(); x.complete({ choose: true }); return x.stats().steps; };
   assert.equal(again(), again());

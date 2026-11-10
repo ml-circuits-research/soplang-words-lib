@@ -86,7 +86,7 @@ const occupancy = `
 @k_time core.slot of=meeting key=time required=true enum=t1 enum=t2
 @k_occ1 core.slot of=occupancy key=room id=true
 @k_occ2 core.slot of=occupancy key=time id=true
-?m meeting room=?r time=?t
+@m meeting room=?r time=?t
 @o occupancy room=?r time=?t by=$m
 @occupy core.rule when=$m then=$o
 @r1 room name=one
@@ -193,11 +193,11 @@ test('numeric domains: min, max and step make a key searchable', () => {
   w.load(`
     @k1 core.slot of=order key=boxes required=true min=1 max=6 step=1
     @k2 core.slot of=order key=weight min=0 max=100
-    ?o order boxes=?b items=?i
+    @o order boxes=?b items=?i
     @c core.calc out=?cap fn=mul args=?b args=10
     @t core.check fn=lt args=?cap args=?i
     @enough core.deny when=$o with=$c if=$t why="not enough boxes"
-    ?o2 order boxes=?b2 budget=?bu
+    @o2 order boxes=?b2 budget=?bu
     @c2 core.calc out=?cost fn=mul args=?b2 args=5
     @t2 core.check fn=gt args=?cost args=?bu
     @afford core.deny when=$o2 with=$c2 if=$t2 why="over budget"
@@ -216,7 +216,7 @@ test('units: quantities keep, combine or refuse their units', () => {
   const w = new World();
   w.load(mechanics);
   w.load('@b1 body mass=2kg  @f1 force on=$b1 magnitude=10N');
-  assert.equal(w.ask('?a acceleration magnitude=?v')[0].v, '5N/kg');
+  assert.equal(w.ask('@a acceleration magnitude=?v')[0].v, '5N/kg');
   const f = w.fns;
   assert.equal(f.add(['2kg', '3kg']), '5kg');
   assert.equal(f.add(['2kg', '3m']), undefined);
@@ -278,7 +278,7 @@ test('induction: negative examples add the comparison that excludes them', () =>
   const w = new World();
   w.load(r.text);
   w.load('@a order qty=4 stock=10  @b order qty=11 stock=10');
-  assert.deepEqual(w.ask('?s shipment for=?o').map((x) => x.o), ['$a']);
+  assert.deepEqual(w.ask('@s shipment for=?o').map((x) => x.o), ['$a']);
 
   const stuck = induce([
     { when: '@o order qty=5 stock=9', then: '@s shipment for=$o' },

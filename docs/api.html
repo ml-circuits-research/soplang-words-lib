@@ -37,7 +37,7 @@
 <h2>Command line</h2>
 <figure class="code"><pre><code>sopworld check &lt;file.sop ...&gt;                  exit 1 when anything is refused
 sopworld run   &lt;file.sop ...&gt; [--defaults] [--provenance]
-sopworld ask   &lt;file.sop ...&gt; --query &quot;?a acceleration magnitude=?v&quot;
+sopworld ask   &lt;file.sop ...&gt; --query &quot;@a acceleration magnitude=?v&quot;
 options: --strict --json</code></pre></figure>
 <h2>Source layout</h2>
 <div class="table"><table><thead><tr><th>File</th><th>Responsibility</th></tr></thead><tbody><tr><td><code>parser.mjs</code></td><td>Text to wires and back</td></tr><tr><td><code>unify.mjs</code></td><td>Terms and unification</td></tr><tr><td><code>matrix.mjs</code></td><td>Compiles matrix wires into slots, rules, denies; module prefixing</td></tr><tr><td><code>world.mjs</code></td><td>Store, indexes, transactions, ingest, matching, chase, validation, withdrawal</td></tr><tr><td><code>complete.mjs</code></td><td>Open keys, suggestions, questions, dialogue helpers</td></tr><tr><td><code>solve.mjs</code></td><td>The completion problem in neutral form and the solver strategies</td></tr><tr><td><code>revise.mjs</code></td><td>Retraction, replacement, revision of assumptions</td></tr><tr><td><code>abduce.mjs</code>, <code>induce.mjs</code></td><td>Abduction and induction</td></tr><tr><td><code>builtins.mjs</code></td><td>Calc and test functions, quantities with units</td></tr><tr><td><code>tools/build.mjs</code></td><td>Bundles <code>src/</code> into <code>docs/sopworld.mjs</code> and <code>docs/sopworld.js</code></td></tr><tr><td><code>node/solvers.mjs</code></td><td>Starts clingo or a SAT solver as a process (Node only)</td></tr></tbody></table></div>

@@ -10,7 +10,7 @@ export const ledger = `
 @e_audit core.effect on=audit      fluent=$f_balance op=set amount=found  where.name=account
 
 # rules read the current value like any other key
-?a account balance=?b
+@a account balance=?b
 @c_low core.check fn=lt args=?b args=20
 @w_low warning for=$a kind=low_balance
 @low core.rule when=$a if=$c_low then=$w_low

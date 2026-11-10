@@ -20,19 +20,19 @@
 
 <h2 id="deduction">Deduction</h2>
 <p>Telling a fact runs the rules. Recursive rules reach a fixpoint; a deny stops impossible conclusions.</p>
-<figure class="code"><figcaption>family matrix</figcaption><pre><code>?p1 parent of=?x child=?y
+<figure class="code"><figcaption>family matrix</figcaption><pre><code>@p1 parent of=?x child=?y
 @anc1 ancestor of=?x desc=?y
 @base core.rule when=$p1 then=$anc1
 
-?p2 parent of=?x child=?y
-?a2 ancestor of=?y desc=?z
+@p2 parent of=?x child=?y
+@a2 ancestor of=?y desc=?z
 @anc2 ancestor of=?x desc=?z
 @step core.rule when=$p2 when=$a2 then=$anc2
 
-?a3 ancestor of=?x desc=?x
+@a3 ancestor of=?x desc=?x
 @no_loops core.deny when=$a3 why=&quot;nobody is their own ancestor&quot;</code></pre></figure>
 <figure class="code"><pre><code>f.tell(&#x27;@e1 parent of=ana child=bogdan  @e2 parent of=bogdan child=carla  @e3 parent of=carla child=dan&#x27;);
-f.ask(&#x27;?a ancestor of=?who desc=dan&#x27;).map(x =&gt; x.who)      // [&#x27;carla&#x27;, &#x27;bogdan&#x27;, &#x27;ana&#x27;]
+f.ask(&#x27;@a ancestor of=?who desc=dan&#x27;).map(x =&gt; x.who)      // [&#x27;carla&#x27;, &#x27;bogdan&#x27;, &#x27;ana&#x27;]
 f.tell(&#x27;@e4 parent of=carla child=ana&#x27;).violations[0].why  // &#x27;nobody is their own ancestor&#x27;</code></pre></figure>
 <h2 id="completion">Completion</h2>
 <p>The logical counterpart of predicting the next token: given the current circuit, produce the values that must follow and questions for the rest.</p>
@@ -51,19 +51,19 @@ w.complete({ defaults: true }).filled
 @ab_spr  core.abducible of=sprinkler
 ... rain -&gt; wet, sprinkler -&gt; wet, wet -&gt; slippery ...
 @no_winter_sprinkler core.deny when=$s0 when=$win why=&quot;sprinklers are off in winter&quot;</code></pre></figure>
-<figure class="code"><pre><code>w.abduce(&#x27;?g slippery place=lawn&#x27;).map(e =&gt; e.text)
+<figure class="code"><pre><code>w.abduce(&#x27;@g slippery place=lawn&#x27;).map(e =&gt; e.text)
 // [&#x27;@hyp3 rain place=lawn&#x27;, &#x27;@hyp5 sprinkler place=lawn&#x27;]
 w.tell(&#x27;@now season name=winter&#x27;);
-w.abduce(&#x27;?g slippery place=lawn&#x27;).map(e =&gt; e.text)
+w.abduce(&#x27;@g slippery place=lawn&#x27;).map(e =&gt; e.text)
 // [&#x27;@hyp3 rain place=lawn&#x27;]</code></pre></figure>
 <p>The assumption can also be the value of an open key of an existing wire, declared with <code>core.abducible of=patient key=condition</code>:</p>
-<figure class="code"><pre><code>c.abduce(&#x27;?s symptom of=$ion kind=cough&#x27;).map(e =&gt; e.text)
+<figure class="code"><pre><code>c.abduce(&#x27;@s symptom of=$ion kind=cough&#x27;).map(e =&gt; e.text)
 // [&#x27;ion.condition=flu&#x27;, &#x27;ion.condition=allergy&#x27;]
-c.abduce(&#x27;?a symptom of=$ion kind=cough  ?b symptom of=$ion kind=fever&#x27;).map(e =&gt; e.text)
+c.abduce(&#x27;@a symptom of=$ion kind=cough  @b symptom of=$ion kind=fever&#x27;).map(e =&gt; e.text)
 // [&#x27;ion.condition=flu&#x27;]
 adopt(c, explanation)      // commit it; the other symptoms of flu are then derived</code></pre></figure>
 <p>Abduction goes through calculations. With a rule "change = paid &minus; total", a payment whose total is 15 and <code>paid</code> declared abducible, the value is computed, not guessed:</p>
-<figure class="code"><pre><code>w.abduce(&#x27;?x change amount=5&#x27;).map(e =&gt; e.text)
+<figure class="code"><pre><code>w.abduce(&#x27;@x change amount=5&#x27;).map(e =&gt; e.text)
 // [&#x27;p1.paid=20&#x27;]</code></pre></figure>
 <p><code>add</code>, <code>sub</code>, <code>mul</code> and <code>div</code> are solved for one missing argument, along a chain of rules if need be. For any other function the values of the slot's <code>enum</code> or range are tried.</p>
 <p>Explanations come back minimal and cheapest first. <code>cost=</code> on the abducible sets how reluctant the world is to assume it.</p>
@@ -74,8 +74,8 @@ adopt(c, explanation)      // commit it; the other symptoms of flu are then deri
   { when: &#x27;@a parent of=eve child=joe  @b parent of=sue child=eve&#x27;, then: &#x27;@c grandparent of=sue child=joe&#x27; },
 ], { name: &#x27;grandparent&#x27; }).text
 
-?grandparent_p0 parent of=?v0 child=?v1
-?grandparent_p1 parent of=?v1 child=?v2
+@grandparent_p0 parent of=?v0 child=?v1
+@grandparent_p1 parent of=?v1 child=?v2
 @grandparent_t0 grandparent of=?v0 child=?v2
 @grandparent core.rule when=$grandparent_p0 when=$grandparent_p1 then=$grandparent_t0</code></pre></figure>
 <p>A value of the conclusion that is computed from the premises (sum, difference, product, ratio) is recognised:</p>
@@ -85,7 +85,7 @@ adopt(c, explanation)      // commit it; the other symptoms of flu are then deri
   { when: &#x27;@l line qty=7 price=3&#x27;,  then: &#x27;@t total of=$l amount=21&#x27; },
 ], { name: &#x27;line_total&#x27; }).text
 
-?line_total_p0 line qty=?v3 price=?v4
+@line_total_p0 line qty=?v3 price=?v4
 @line_total_t0 total of=$line_total_p0 amount=?v5
 @line_total_c0 core.calc out=?v5 fn=mul args=?v3 args=?v4
 @line_total core.rule when=$line_total_p0 then=$line_total_t0 with=$line_total_c0</code></pre></figure>

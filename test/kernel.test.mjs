@@ -105,7 +105,7 @@ test('negation: a conclusion is withdrawn when the absence it relied on ends', (
   const w = new World();
   w.load(procedure);
   w.load('@mix step name=mix first=true  @bake step name=bake after=$mix  @cool step name=cool after=$bake');
-  const ready = () => w.ask('?r ready step=?s').map((x) => x.s);
+  const ready = () => w.ask('@r ready step=?s').map((x) => x.s);
   assert.deepEqual(ready(), ['$mix']);
   w.load('@d1 done step=$mix');
   assert.deepEqual(ready(), ['$bake']);
@@ -123,11 +123,11 @@ test('composition: modules from a library, prefixed ids, a bridge rule between t
   w.load('@u1 core.use world=garden  @u2 core.use world=geo');
   assert.ok(w.matrix.has('garden.rain_wets') && w.matrix.has('geo.rain_over_region'));
   w.load('@pl1 place name=lawn in=north  @pl2 place name=street in=south  @f1 forecast region=north kind=rain');
-  assert.deepEqual(w.ask('?s slippery place=?p').map((x) => x.p), ['lawn']);
+  assert.deepEqual(w.ask('@s slippery place=?p').map((x) => x.p), ['lawn']);
   assert.ok(w.use('garden').ok, 'using a module twice is harmless');
   assert.equal(w.tell('@u9 core.use world=nowhere').violations[0].kind, 'schema');
   // abduction works across modules
-  assert.deepEqual(w.abduce('?s slippery place=street').map((e) => e.assume[0].type).sort(), ['rain', 'sprinkler']);
+  assert.deepEqual(w.abduce('@s slippery place=street').map((e) => e.assume[0].type).sort(), ['rain', 'sprinkler']);
 });
 
 test('persistence: a world is rebuilt from its JSON snapshot', () => {
@@ -137,7 +137,7 @@ test('persistence: a world is rebuilt from its JSON snapshot', () => {
   w.retract('r2');
   const copy = World.fromJSON(JSON.parse(JSON.stringify(w)), { library });
   assert.equal(canon(copy), canon(w));
-  assert.ok(copy.holds('?s slippery place=lawn'));
+  assert.ok(copy.holds('@s slippery place=lawn'));
   assert.throws(() => World.fromJSON({}), /not a sopworld snapshot/);
   const f = w.fork();
   f.load('@r3 rain place=roof');
@@ -161,7 +161,7 @@ test('events: listeners receive committed changes only', () => {
 
 test('load throws on refusal; toSOP is in order of arrival', () => {
   const w = new World();
-  assert.throws(() => w.load('?p a k=$typo\n@t b k=1\n@r core.rule when=$p then=$t'), /unknown wire \$typo/);
+  assert.throws(() => w.load('@p a k=$typo\n@t b k=1\n@r core.rule when=$p then=$t'), /unknown wire \$typo/);
   w.load('@z thing n=1  @a thing n=2');
   assert.equal(w.toSOP(), '@z thing n=1\n@a thing n=2');
 });
@@ -191,7 +191,7 @@ test('rank: the caller can reorder suggestions and explanations', () => {
   assert.deepEqual(w.suggest('m1', 'time').map((c) => c.value), ['10:00', '14:00']);
   const g = new World({ rank });
   g.load(garden);
-  assert.deepEqual(g.abduce('?g wet place=lawn').map((e) => e.assume[0].type), ['sprinkler', 'rain']);
+  assert.deepEqual(g.abduce('@g wet place=lawn').map((e) => e.assume[0].type), ['sprinkler', 'rain']);
 });
 
 // ------------------------------------------------------------------ abduction on open keys
@@ -200,15 +200,15 @@ test('abduction: the value of an open key can be the explanation', () => {
   const w = new World();
   w.load(clinic);
   w.load('@ion patient name=ion');
-  assert.deepEqual(w.abduce('?s symptom of=$ion kind=cough').map((e) => e.text).sort(), ['ion.condition=allergy', 'ion.condition=flu']);
-  const both = w.abduce('?a symptom of=$ion kind=cough  ?b symptom of=$ion kind=fever');
+  assert.deepEqual(w.abduce('@s symptom of=$ion kind=cough').map((e) => e.text).sort(), ['ion.condition=allergy', 'ion.condition=flu']);
+  const both = w.abduce('@a symptom of=$ion kind=cough  @b symptom of=$ion kind=fever');
   assert.deepEqual(both.map((e) => e.fills), [[{ id: 'ion', key: 'condition', value: 'flu' }]]);
   assert.equal(w.get('ion').attrs.condition, undefined);
 
   w.fill('ion', 'season', 'winter');
-  assert.deepEqual(w.abduce('?s symptom of=$ion kind=cough').map((e) => e.text), ['ion.condition=flu']);
-  assert.ok(adopt(w, w.abduce('?s symptom of=$ion kind=cough')[0]).ok);
-  assert.deepEqual(w.ask('?s symptom of=$ion kind=?k').map((x) => x.k).sort(), ['cough', 'fever']);
+  assert.deepEqual(w.abduce('@s symptom of=$ion kind=cough').map((e) => e.text), ['ion.condition=flu']);
+  assert.ok(adopt(w, w.abduce('@s symptom of=$ion kind=cough')[0]).ok);
+  assert.deepEqual(w.ask('@s symptom of=$ion kind=?k').map((x) => x.k).sort(), ['cough', 'fever']);
 });
 
 // ------------------------------------------------------------------ induction extensions
@@ -223,7 +223,7 @@ test('induction: a computed value becomes a core.calc', () => {
   const w = new World();
   w.load(r.text);
   w.load('@l9 line qty=4 price=25');
-  assert.equal(w.ask('?t total amount=?a')[0].a, '100');
+  assert.equal(w.ask('@t total amount=?a')[0].a, '100');
 });
 
 test('induction: difference and ratio are told apart from sum and product', () => {
@@ -264,14 +264,14 @@ test('cli: check, run and ask', () => {
   const cli = (...args) => execFileSync(process.execPath, ['bin/sopworld.mjs', ...args], { encoding: 'utf8' });
   assert.match(cli('check', matrix, facts), /^OK: 3 wires/);
   assert.match(cli('run', matrix, facts, '--provenance'), /acceleration of=\$b1 magnitude=5 core\.via=\$newton2/);
-  assert.equal(JSON.parse(cli('ask', matrix, facts, '--query', '?a acceleration magnitude=?v', '--json')).matches[0].v, '5');
+  assert.equal(JSON.parse(cli('ask', matrix, facts, '--query', '@a acceleration magnitude=?v', '--json')).matches[0].v, '5');
   assert.throws(() => cli('check', matrix, bad), (e) => e.status === 1 && /mass must be positive/.test(e.stdout));
 });
 
 test('rules: a template with core.on= adds its keys to the wire a pattern matched', () => {
   const w = new World();
   w.load(`
-    ?l line qty=?q price=?p
+    @l line qty=?q price=?p
     @c core.calc out=?t fn=mul args=?q args=?p
     @f line core.on=$l total=?t
     @r core.rule when=$l with=$c then=$f
@@ -285,20 +285,20 @@ test('rules: a template with core.on= adds its keys to the wire a pattern matche
   w.replace('a', '@a line qty=4 price=5');
   assert.equal(w.get('a').attrs.total[0], '20');
   // core.on must name a when= pattern
-  assert.throws(() => new World().load('?x item\n@t item core.on=$nope v=1\n@bad core.rule when=$x then=$t'), /nope|core\.on/);
+  assert.throws(() => new World().load('@x item\n@t item core.on=$nope v=1\n@bad core.rule when=$x then=$t'), /nope|core\.on/);
 });
 
 test('rules: a rule may aggregate over a type and add a key to a wire of that type', () => {
   // not a cycle: adding `share` wakes no pattern that reads `amount`
   const w = new World();
   w.load(`
-    ?g group
-    ?m part of=$g amount=?a
+    @g group
+    @m part of=$g amount=?a
     @c_sum core.calc out=?sum fn=sum over=$m args=?a
     @tot group core.on=$g total=?sum
     @r_tot core.rule when=$g with=$c_sum then=$tot
-    ?g2 group total=?t
-    ?m2 part of=$g2 amount=?a2
+    @g2 group total=?t
+    @m2 part of=$g2 amount=?a2
     @c_share core.calc out=?s fn=div args=?a2 args=?t
     @sh part core.on=$m2 share=?s
     @r_share core.rule when=$g2 when=$m2 with=$c_share then=$sh
@@ -307,8 +307,8 @@ test('rules: a rule may aggregate over a type and add a key to a wire of that ty
   assert.deepEqual([w.get('g1').attrs.total[0], w.get('p1').attrs.share[0], w.get('p2').attrs.share[0]], ['40', '0.75', '0.25']);
   // a template that could make a new wire of the aggregated type is still refused
   const bad = new World().tell(`
-    ?g group
-    ?m part of=$g amount=?a
+    @g group
+    @m part of=$g amount=?a
     @c core.calc out=?n fn=count over=$m
     @extra part of=$g amount=?n
     @r core.rule when=$g with=$c then=$extra
@@ -335,19 +335,19 @@ test('bookkeeping: a wire told again keeps the bookkeeping of each statement; th
 test('patterns: core.absent= matches only a wire without that key, and is kept up to date', () => {
   const w = new World();
   w.load(`
-    ?t task core.absent=owner
+    @t task core.absent=owner
     @f flag for=$t kind=unassigned
     @r core.rule when=$t then=$f
   `);
   w.load('@t1 task title=a  @t2 task title=b owner=ana');
   assert.deepEqual(w.ofType('flag').map((x) => x.attrs.for[0]), ['$t1']);
-  assert.deepEqual(w.ask('?x task core.absent=owner').map((r) => r.x), ['t1']);
+  assert.deepEqual(w.ask('@x task core.absent=owner').map((r) => r.x), ['t1']);
   assert.ok(w.fill('t1', 'owner', 'bob').ok);
   assert.equal(w.ofType('flag').length, 0, 'the flag goes when the key is filled');
   assert.ok(w.replace('t2', '@t2 task title=b').ok);
   assert.deepEqual(w.ofType('flag').map((x) => x.attrs.for[0]), ['$t2'], 'and comes when it is taken away');
   // a rule may not fill the key it requires to be absent
-  const bad = new World().tell('?t task core.absent=owner\n@d task core.on=$t owner=nobody\n@r core.rule when=$t then=$d');
+  const bad = new World().tell('@t task core.absent=owner\n@d task core.on=$t owner=nobody\n@r core.rule when=$t then=$d');
   assert.match(bad.violations[0].why, /requires to be absent/);
 });
 
@@ -358,9 +358,9 @@ test('soft constraints: the change is accepted, the problem stays on record, ans
     @k2 core.slot of=tank key=level kind=number min=0 max=100 soft=true
     @f core.fluent of=tank key=level
     @e core.effect on=drain fluent=$f op=sub amount=amount where.name=tank
-    ?a pump feeds=$t
-    ?b pump feeds=$t
-    ?t tank
+    @a pump feeds=$t
+    @b pump feeds=$t
+    @t tank
     @c core.check fn=neq args=$a args=$b
     @two core.deny when=$a when=$b when=$t if=$c soft=true why="two pumps on one tank"
   `);

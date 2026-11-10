@@ -14,8 +14,8 @@ export const warehouse = `
 # an order line: the total follows from the quantity and the item's price
 @k_l1 core.slot of=line key=item kind=atom
 @k_l2 core.slot of=line key=qty kind=integer min=1
-?l line item=?name qty=?q
-?it item name=?name price=?p stock=?have
+@l line item=?name qty=?q
+@it item name=?name price=?p stock=?have
 @c_total core.calc out=?t fn=mul args=?q args=?p
 @l_total line item=?name qty=?q total=?t
 @line_total core.rule when=$l when=$it with=$c_total then=$l_total

@@ -25,7 +25,7 @@ export const checks = [
   ['recursive rules reach a fixpoint', () => {
     const w = world(family);
     w.load('@e1 parent of=ana child=bogdan  @e2 parent of=bogdan child=carla  @e3 parent of=carla child=dan');
-    same(w.ask('?a ancestor of=?who desc=dan').map((x) => x.who).sort(), ['ana', 'bogdan', 'carla'], 'ancestors');
+    same(w.ask('@a ancestor of=?who desc=dan').map((x) => x.who).sort(), ['ana', 'bogdan', 'carla'], 'ancestors');
   }],
   ['completion forces what has one consistent value', () => {
     const w = world(meetings);
@@ -42,14 +42,14 @@ export const checks = [
   }],
   ['abduction finds causes and a deny removes one', () => {
     const w = world(garden);
-    same(w.abduce('?g slippery place=lawn').map((e) => e.assume[0].type).sort(), ['rain', 'sprinkler'], 'two causes');
+    same(w.abduce('@g slippery place=lawn').map((e) => e.assume[0].type).sort(), ['rain', 'sprinkler'], 'two causes');
     w.load('@now season name=winter');
-    same(w.abduce('?g slippery place=lawn').map((e) => e.assume[0].type), ['rain'], 'one cause in winter');
+    same(w.abduce('@g slippery place=lawn').map((e) => e.assume[0].type), ['rain'], 'one cause in winter');
   }],
   ['abduction can assume the value of an open key', () => {
     const w = world(clinic);
     w.load('@ion patient name=ion');
-    const [e] = w.abduce('?a symptom of=$ion kind=cough  ?b symptom of=$ion kind=fever');
+    const [e] = w.abduce('@a symptom of=$ion kind=cough  @b symptom of=$ion kind=fever');
     same(e.fills, [{ id: 'ion', key: 'condition', value: 'flu' }], 'diagnosis');
     check(adopt(w, e).ok, 'adopted');
   }],
@@ -60,7 +60,7 @@ export const checks = [
     ], { name: 'lt' });
     const w = world(r.text);
     w.load('@l9 line qty=4 price=25');
-    same(w.ask('?t total amount=?a')[0].a, '100', 'learned total');
+    same(w.ask('@t total amount=?a')[0].a, '100', 'learned total');
   }],
   ['retraction removes what rested on a fact and keeps what has other support', () => {
     const w = world(garden);
@@ -81,16 +81,16 @@ export const checks = [
   ['negation is maintained', () => {
     const w = world(procedure);
     w.load('@mix step name=mix first=true  @bake step name=bake after=$mix');
-    same(w.ask('?r ready step=?s').map((x) => x.s), ['$mix'], 'first');
+    same(w.ask('@r ready step=?s').map((x) => x.s), ['$mix'], 'first');
     w.load('@d1 done step=$mix');
-    same(w.ask('?r ready step=?s').map((x) => x.s), ['$bake'], 'next');
+    same(w.ask('@r ready step=?s').map((x) => x.s), ['$bake'], 'next');
   }],
   ['matrices compose and a world survives a JSON round trip', () => {
     const w = new World({ library });
     w.load('@u1 core.use world=garden  @u2 core.use world=geo');
     w.load('@pl1 place name=lawn in=north  @f1 forecast region=north kind=rain');
     const copy = World.fromJSON(JSON.parse(JSON.stringify(w)), { library });
-    same(copy.ask('?s slippery place=?p').map((x) => x.p), ['lawn'], 'restored');
+    same(copy.ask('@s slippery place=?p').map((x) => x.p), ['lawn'], 'restored');
   }],
   ['both built-in solvers find a valid schedule', () => {
     for (const solver of [solvers.backtrack(), solvers.cdcl()]) {

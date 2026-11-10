@@ -58,11 +58,11 @@ bake undone, ready: [&#x27;$bake&#x27;]</code></pre></figure>
 <p>The same matrix serves any procedure: the steps are data. This is the shape of an SOP executed by an agent, with the world as the record of what was done and what may be done next.</p>
 <h2 id="diagnosis">4. Diagnosis and explanation</h2>
 <p><strong>Pattern.</strong> Rules run from causes to effects. Mark the causes as abducible, then ask for explanations of what was observed. Each explanation can be adopted, which predicts the other effects, or checked by asking for one more observation.</p>
-<figure class="code"><figcaption>node examples/abduction.mjs</figcaption><pre><code>c.abduce(&#x27;?s symptom of=$ion kind=cough&#x27;)          // flu or allergy
+<figure class="code"><figcaption>node examples/abduction.mjs</figcaption><pre><code>c.abduce(&#x27;@s symptom of=$ion kind=cough&#x27;)          // flu or allergy
 c.fill(&#x27;ion&#x27;, &#x27;season&#x27;, &#x27;winter&#x27;);
-c.abduce(&#x27;?s symptom of=$ion kind=cough&#x27;)          // flu: allergy is denied in winter
+c.abduce(&#x27;@s symptom of=$ion kind=cough&#x27;)          // flu: allergy is denied in winter
 adopt(c, explanation);
-c.ask(&#x27;?s symptom of=$ion kind=?k&#x27;)                // fever and cough are now predicted</code></pre></figure>
+c.ask(&#x27;@s symptom of=$ion kind=?k&#x27;)                // fever and cough are now predicted</code></pre></figure>
 <p><strong>You bring.</strong> Costs or a <code>rank</code> function if some causes are more likely than others. The world says what is possible, not what is probable.</p>
 <h2 id="learn">5. Building a matrix from examples</h2>
 <p><strong>Pattern.</strong> Collect example circuits, induce slots and rules, review the text, tell it to a world. The world is the safety net: a learned rule that contradicts what is already there is refused, with the deny that it hit.</p>
@@ -77,7 +77,7 @@ r.ok || r.violations                // why the world does not accept the rule</c
 <figure class="code"><figcaption>node examples/compose.mjs</figcaption><pre><code>const w = new World({ library: { garden, geo } });
 w.load(&#x27;@u1 core.use world=garden  @u2 core.use world=geo&#x27;);
 w.tell(&#x27;@pl1 place name=lawn in=north  @f1 forecast region=north kind=rain&#x27;);
-w.ask(&#x27;?s slippery place=?p&#x27;)       // lawn
+w.ask(&#x27;@s slippery place=?p&#x27;)       // lawn
 // derivation: garden.wet_slips &lt;- garden.rain_wets &lt;- geo.rain_over_region &lt;- told</code></pre></figure>
 <p>Abduction, completion and retraction work across modules without extra code, because after loading there is one matrix.</p>
 <h2 id="schedule">7. Scheduling and configuration</h2>

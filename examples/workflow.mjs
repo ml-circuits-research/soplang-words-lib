@@ -10,7 +10,7 @@ w.tell(`
 @bake step name=bake after=$mix
 @cool step name=cool after=$bake
 `);
-const ready = () => w.ask('?r ready step=?s').map((x) => x.s);
+const ready = () => w.ask('@r ready step=?s').map((x) => x.s);
 
 console.log('ready:', ready());
 console.log('skip to cool ->', w.tell('@d9 done step=$cool').violations.map((v) => v.why));

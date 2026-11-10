@@ -23,12 +23,12 @@
 <figure class="code"><pre><code>@t1 core.type of=vehicle
 @t2 core.type of=truck extends=vehicle
 @k  core.slot of=vehicle key=seats kind=number
-?v vehicle seats=?n
+@v vehicle seats=?n
 @c core.check fn=gt args=?n args=8
 @d core.deny when=$v if=$c why=&quot;too many seats&quot;</code></pre></figure>
 <figure class="code"><pre><code>w.load(&#x27;@a truck seats=2.0&#x27;);
-w.ask(&#x27;?x vehicle&#x27;).map(r =&gt; r.x)        // [&#x27;a&#x27;]       a truck is a vehicle
-w.ask(&#x27;?x vehicle seats=2&#x27;).length       // 1           2 and 2.0 are the same number
+w.ask(&#x27;@x vehicle&#x27;).map(r =&gt; r.x)        // [&#x27;a&#x27;]       a truck is a vehicle
+w.ask(&#x27;@x vehicle seats=2&#x27;).length       // 1           2 and 2.0 are the same number
 w.tell(&#x27;@b truck seats=12&#x27;).violations[0].why     // &#x27;too many seats&#x27;
 w.tell(&#x27;@c truck seats=many&#x27;).violations[0].kind  // &#x27;domain&#x27;</code></pre></figure>
 <p>Kinds: <code>integer</code>, <code>number</code>, <code>boolean</code>, <code>string</code>, <code>atom</code>, <code>quantity.&lt;name&gt;</code>, <code>time.&lt;name&gt;</code>, <code>any</code>. <code>type=</code> on a slot names the type a reference must point to. A system that already has schema wires in its own notation loads them unchanged through a <code>core.schema.map</code> wire; see the <a href="integration.md">integration recipe</a>.</p>
@@ -51,8 +51,8 @@ w.retract(&#x27;w1&#x27;);  w.get(&#x27;acc&#x27;).attrs.balance                
 
 <h2 id="aggregates">Sums over a group</h2>
 <p>A calc with <code>over=</code> ranges over every match of a pattern: <code>count</code>, <code>sum</code>, <code>min</code>, <code>max</code>, <code>avg</code>, <code>argmax</code>, <code>argmin</code>, <code>collect</code>. The result is kept up to date as wires come and go, one group at a time.</p>
-<figure class="code"><pre><code>?o order customer=?c
-?l line of=$o item=?item amount=?a
+<figure class="code"><pre><code>@o order customer=?c
+@l line of=$o item=?item amount=?a
 @c_n     core.calc out=?n     fn=count  over=$l
 @c_total core.calc out=?total fn=sum    over=$l args=?a
 @c_which core.calc out=?which fn=argmax over=$l args=?a pick=?item
@@ -64,12 +64,12 @@ w.retract(&#x27;l2&#x27;);     // summary: total=3</code></pre></figure>
 
 <h2 id="shape">Two helpers for patterns and templates</h2>
 <p>A template with <code>core.on=$pattern</code> adds its keys to the wire that pattern matched, instead of describing a wire of its own. A pattern with <code>core.absent=&lt;key&gt;</code> matches only a wire without that key; what was concluded from it is withdrawn when the key is filled.</p>
-<figure class="code"><pre><code>?l line qty=?q price=?p
+<figure class="code"><pre><code>@l line qty=?q price=?p
 @c core.calc out=?t fn=mul args=?q args=?p
 @f line core.on=$l total=?t                 # the total goes on the line itself
 @r core.rule when=$l with=$c then=$f
 
-?t task core.absent=owner
+@t task core.absent=owner
 @fl flag for=$t kind=unassigned
 @r2 core.rule when=$t then=$fl</code></pre></figure>
 <figure class="code"><pre><code>w.load(&#x27;@a line qty=2 price=5  @t1 task title=x&#x27;);
@@ -94,7 +94,7 @@ w.act({{ action: &#x27;take&#x27;, args: {{ item: &#x27;bolt&#x27;, count: 50 }}
 
 <h2 id="relations">Relations, patches, and what is only assumed</h2>
 <p>A relation states what holds among several cells, and whichever one is missing is computed, exactly. Relations feed each other within one change.</p>
-<figure class="code"><pre><code>?p payment paid=?paid total=?total change=?chg
+<figure class="code"><pre><code>@p payment paid=?paid total=?total change=?chg
 @r core.relation when=$p sum=?paid sub=?total sub=?chg equals=0</code></pre></figure>
 <figure class="code"><pre><code>w.tell(&#x27;@a payment paid=20 total=15&#x27;);       // change = 5
 w.tell(&#x27;@b payment total=15 change=5&#x27;);      // paid = 20
@@ -103,7 +103,7 @@ w.tell(&#x27;@d payment paid=20 total=15 change=4&#x27;).violations[0].kind   //
 <p>Every value has a tier: <code>told</code>, <code>derived</code>, <code>forced</code>, <code>default</code>, <code>guessed</code>. What follows from others is as weak as the weakest of them. <code>w.tier(id, key)</code> reads it, <code>w.assumptions()</code> lists what is only assumed with what rests on each, a query says the tier of its answer, and a told value replaces a weaker one. <code>w.describe()</code> gives the whole picture as plain data, <code>w.diff(fork)</code> what a fork changes.</p>
 <p>A deny or a bounded slot with <code>soft=true</code> refuses nothing: the change is kept and a standing <code>core.issue</code> wire says what is wrong for as long as it is. A query that rests on a flagged wire answers <code>conflicting</code> with the reason.</p>
 <p>An action can be written as wires instead of a function: parameters, patterns, a guard, and writes that all read the state before the action.</p>
-<figure class="code"><pre><code>?it item name=?item stock=?have
+<figure class="code"><pre><code>@it item name=?item stock=?have
 @enough core.check fn=gte args=?have args=?count why=&quot;not enough in stock&quot;
 @left   core.calc  out=?rest fn=sub args=?have args=?count
 @w1 item core.on=$it stock=?rest
@@ -111,7 +111,7 @@ w.tell(&#x27;@d payment paid=20 total=15 change=4&#x27;).violations[0].kind   //
 <h2 id="budget">Limits on work, and cheap copies</h2>
 <p>Every call runs under a budget of steps. A call that runs out stops, undoes what it did and says so. A fork shares the state of the original until one of the two changes, so it costs the same for any size of world.</p>
 <figure class="code"><pre><code>// 200 wires, a three-way join: 8,000,000 candidates
-const rows = w.ask(&#x27;?a node\n?b node\n?c node&#x27;, {{ budget: {{ steps: 20000 }} }});
+const rows = w.ask(&#x27;@a node\n?b node\n?c node&#x27;, {{ budget: {{ steps: 20000 }} }});
 rows.length    // 0
 rows.budget    // {{ kind: &#x27;budget&#x27;, site: &#x27;match&#x27;, steps: 20001, why: &#x27;the budget of 20000 steps ran out in match&#x27; }}
 w.stats().sites.match   // 20001

@@ -20,13 +20,14 @@
 
 <h2>Wire and circuit</h2>
 <figure class="code"><pre><code>@id type key=value key=value ...      a wire
-?id type key=?x key=$other ...        a pattern wire, matched against facts</code></pre></figure>
+@id type key=?x key=$other ...        the same, with a variable: a pattern, when a rule names it</code></pre></figure>
 <ul>
  <li>Values are atoms (<code>water</code>, <code>10</code>, <code>10:00</code>), strings (<code>"free text"</code>), references (<code>$id</code>) or variables (<code>?x</code>, only in the matrix and in queries).</li>
  <li>A key may repeat. A wire may span lines. <code>#</code> starts a comment.</li>
  <li>A missing key means unknown, not false. A required key without a value is an open question.</li>
  <li>Wires linked by <code>$id</code> references form a circuit. Wires with no path between them are independent, so parallelism is the default and sequence comes from references.</li>
- <li>Facts and matrix wires have separate id spaces: a pattern <code>?m1</code> does not clash with a fact <code>@m1</code>.</li>
+ <li>Facts and matrix wires have separate id spaces: a pattern <code>@m1</code> of the matrix does not clash with a fact <code>@m1</code>.</li>
+ <li>Three signs, one meaning each: <code>@</code> declares a wire, <code>$</code> refers to one, <code>?</code> is a variable. A wire is a pattern or a template because a rule names it, not because of how it is written.</li>
 </ul>
 <h2>The matrix: the core wire types</h2>
 <p>These seven carry most matrices. Types that inherit, state over time, aggregates, relations, tiers of certainty, soft constraints, questions and actions are on <a href="matrix.html">More of the matrix</a>.</p>
@@ -46,12 +47,12 @@
  <li><code>ask</code> is the question of the key in natural language.</li>
 </ul>
 <h3>Rules and denies</h3>
-<figure class="code"><pre><code>?ma meeting room=?r time=?t
-?mb meeting room=?r time=?t
+<figure class="code"><pre><code>@ma meeting room=?r time=?t
+@mb meeting room=?r time=?t
 @t_other core.check fn=neq args=?ma args=?mb
 @no_double_booking core.deny when=$ma when=$mb if=$t_other why=&quot;room already booked&quot;</code></pre></figure>
 <ul>
- <li>Variables are local to one rule. Inside a rule, <code>$b</code> means the wire matched by pattern <code>?b</code> or produced by template <code>@b</code>.</li>
+ <li>Variables are local to one rule. Inside a rule, <code>$b</code> means the wire matched by pattern <code>@b</code> or produced by template <code>@b</code>.</li>
  <li>Code lives only in named functions. Built in: <code>add sub mul div min max concat</code> and <code>eq neq lt lte gt gte before</code>. Pass your own with <code>new World({ fns })</code>.</li>
  <li>Numbers may carry a unit: <code>2kg + 3kg = 5kg</code>, <code>10N / 2kg = 5N/kg</code>, <code>6m / 2m = 3</code>. Adding different units is not applicable, so the rule does not fire.</li>
  <li><code>not=</code> is negation as failure. It is maintained: when a wire arrives that ends the absence, the conclusion is withdrawn. A matrix where a rule negates something its own consequences can produce is refused.</li>

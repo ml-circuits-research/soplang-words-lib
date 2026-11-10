@@ -6,7 +6,7 @@ const trip = `
 @k1 core.slot of=trip key=transport required=true enum=car enum=train default=car
 @k2 core.slot of=trip key=seat required=true enum=window
 @k3 core.slot of=trip key=class required=true enum=first enum=second
-?t trip transport=?m days=?d
+@t trip transport=?m days=?d
 @c core.calc out=?cost fn=mul args=?d args=40
 @b budget of=$t amount=?cost by=?m
 @r core.rule when=$t with=$c then=$b
@@ -74,10 +74,10 @@ test('tiers: a host states its own tier, declares its own, and an adopted explan
     @t_sensor core.tier name=measured below=told cost=2
     @t_rumour core.tier name=rumour below=default cost=9
     @ab core.abducible of=rain
-    ?r rain place=?p
+    @r rain place=?p
     @wet wet place=?p
     @rule core.rule when=$r then=$wet
-    ?g gauge level=?l
+    @g gauge level=?l
     @al alarm for=$g
     @c core.check fn=gt args=?l args=90
     @high core.rule when=$g if=$c then=$al
@@ -93,7 +93,7 @@ test('tiers: a host states its own tier, declares its own, and an adopted explan
   const r = w.tell('@g2b gauge level=10');
   assert.equal(r.ok, true);
   // abduction: what is adopted is marked as a guess, and what follows from it too
-  const [why] = w.abduce('?x wet place=lawn');
+  const [why] = w.abduce('@x wet place=lawn');
   assert.ok(adopt(w, why).ok);
   const rain = w.ofType('rain')[0].id, wet = w.ofType('wet')[0].id;
   assert.deepEqual([w.tier(rain), w.tier(wet, 'place'), w.query({ type: 'wet', seek: 'place' }).tier], ['guessed', 'guessed', 'guessed']);
@@ -144,7 +144,7 @@ test('defaults: a default on an optional key is applied by complete({ defaults }
   const w = new World();
   w.load(`
     @k core.slot of=line key=qty kind=number default=1
-    ?l line price=?p qty=?q
+    @l line price=?p qty=?q
     @c core.calc out=?t fn=mul args=?p args=?q
     @f line core.on=$l total=?t
     @r core.rule when=$l with=$c then=$f

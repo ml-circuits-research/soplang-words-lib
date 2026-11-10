@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { World, solvers, adopt } from '../tools/lib-under-test.mjs';
 
 const till = `
-?p payment paid=?paid total=?total change=?chg
+@p payment paid=?paid total=?total change=?chg
 @r core.relation when=$p sum=?paid sub=?total sub=?chg equals=0
 `;
 
@@ -63,9 +63,9 @@ test('relation: satisfied, conflicting, waiting; exact decimals; a kind the valu
 test('relation: a chain of relations is propagated to a fixpoint; units must agree', () => {
   const w = new World();
   w.load(`
-    ?a cell name=x v=?x
-    ?b cell name=y v=?y
-    ?c cell name=z v=?z
+    @a cell name=x v=?x
+    @b cell name=y v=?y
+    @c cell name=z v=?z
     @xy core.relation when=$a when=$b sum=?x sum=?y equals=10
     @yz core.relation when=$b when=$c sum=?y sum=?z equals=8
   `);
@@ -77,7 +77,7 @@ test('relation: a chain of relations is propagated to a fixpoint; units must agr
   assert.equal(w.fill('x', 'v', 6, { dry: true }).violations[0].kind, 'conflict', 'x is determined: another value is refused');
   assert.ok(w.stats().steps < 500);
   const u = new World();
-  u.load('?m mix a=?a b=?b all=?t\n@sum core.relation when=$m sum=?a sum=?b sub=?t');
+  u.load('@m mix a=?a b=?b all=?t\n@sum core.relation when=$m sum=?a sum=?b sub=?t');
   u.tell('@m1 mix a=2kg b=3kg');
   assert.equal(u.get('m1').attrs.all[0], '5kg');
   u.tell('@m2 mix a=2kg b=3m');
@@ -88,7 +88,7 @@ test('relation: relation=true on a calc of a rule solves the rule backwards too;
   const w = new World();
   w.load(`
     @ab core.abducible of=order key=net
-    ?o order net=?n tax=?t
+    @o order net=?n tax=?t
     @c core.calc out=?g fn=add args=?n args=?t relation=true
     @inv invoice of=$o gross=?g
     @r core.rule when=$o with=$c then=$inv
@@ -99,11 +99,11 @@ test('relation: relation=true on a calc of a rule solves the rule backwards too;
   assert.equal(w.get('o2').attrs.net[0], '219', 'backwards: the net follows from the gross');
   assert.deepEqual([w.get('o2').meta.fills[0].via, w.tier('o2', 'net')], ['c', 'derived']);
   w.tell('@o3 order tax=5');
-  const [why] = w.abduce('?i invoice of=$o3 gross=105');
+  const [why] = w.abduce('@i invoice of=$o3 gross=105');
   assert.equal(why.text, 'o3.net=100');
   assert.ok(adopt(w, why).ok);
   assert.equal(w.tier(w.ofType('invoice').find((i) => i.attrs.of[0] === '$o3').id, 'gross'), 'guessed');
-  assert.match(new World().tell('?o x a=?a\n@c core.calc out=?g fn=mul args=?a args=2 relation=true\n@t y of=$o g=?g\n@r core.rule when=$o with=$c then=$t').violations[0].why, /fn=add or fn=sub/);
+  assert.match(new World().tell('@o x a=?a\n@c core.calc out=?g fn=mul args=?a args=2 relation=true\n@t y of=$o g=?g\n@r core.rule when=$o with=$c then=$t').violations[0].why, /fn=add or fn=sub/);
 });
 
 test('relation: propagation is local; what needs search is left to the search', () => {
@@ -111,10 +111,10 @@ test('relation: propagation is local; what needs search is left to the search', 
   const w = new World();
   w.load(`
     @s core.slot of=node key=v required=true enum=0 enum=1
-    ?a node v=?x
-    ?b node v=?x
+    @a node v=?x
+    @b node v=?x
     @e core.edge a=$a b=$b
-    ?edge link a=$a b=$b
+    @edge link a=$a b=$b
     @d core.deny when=$a when=$b when=$edge why="neighbours must differ"
   `);
   w.tell('@x node  @y node  @z node  @l1 link a=$x b=$y  @l2 link a=$y b=$z  @l3 link a=$z b=$x');

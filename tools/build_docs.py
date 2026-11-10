@@ -196,13 +196,13 @@ const w = new World();
 w.load(`
   @k core.slot of=acceleration key=of id=true      # one acceleration per body
 
-  ?b body mass=?m                                  # if there is a body
-  ?f force on=$b magnitude=?F                      # and a force on it
+  @b body mass=?m                                  # if there is a body
+  @f force on=$b magnitude=?F                      # and a force on it
   @a acceleration of=$b magnitude=?A               # there is an acceleration
   @c core.calc out=?A fn=div args=?F args=?m       # with A = F / m
   @newton2 core.rule when=$b when=$f with=$c then=$a
 
-  ?b0 body mass=?m0
+  @b0 body mass=?m0
   @t core.check fn=lte args=?m0 args=0
   @positive core.deny when=$b0 if=$t why="mass must be positive"
 `);
@@ -272,14 +272,15 @@ P['concepts.html'] = ('Concepts', 'The data model in the order you meet it: a wi
 <h2>Wire and circuit</h2>
 {code("""
 @id type key=value key=value ...      a wire
-?id type key=?x key=$other ...        a pattern wire, matched against facts
+@id type key=?x key=$other ...        the same, with a variable: a pattern, when a rule names it
 """)}
 <ul>
  <li>Values are atoms (<code>water</code>, <code>10</code>, <code>10:00</code>), strings (<code>"free text"</code>), references (<code>$id</code>) or variables (<code>?x</code>, only in the matrix and in queries).</li>
  <li>A key may repeat. A wire may span lines. <code>#</code> starts a comment.</li>
  <li>A missing key means unknown, not false. A required key without a value is an open question.</li>
  <li>Wires linked by <code>$id</code> references form a circuit. Wires with no path between them are independent, so parallelism is the default and sequence comes from references.</li>
- <li>Facts and matrix wires have separate id spaces: a pattern <code>?m1</code> does not clash with a fact <code>@m1</code>.</li>
+ <li>Facts and matrix wires have separate id spaces: a pattern <code>@m1</code> of the matrix does not clash with a fact <code>@m1</code>.</li>
+ <li>Three signs, one meaning each: <code>@</code> declares a wire, <code>$</code> refers to one, <code>?</code> is a variable. A wire is a pattern or a template because a rule names it, not because of how it is written.</li>
 </ul>
 <h2>The matrix: the core wire types</h2>
 <p>These seven carry most matrices. Types that inherit, state over time, aggregates, relations, tiers of certainty, soft constraints, questions and actions are on <a href="matrix.html">More of the matrix</a>.</p>
@@ -310,13 +311,13 @@ P['concepts.html'] = ('Concepts', 'The data model in the order you meet it: a wi
 </ul>
 <h3>Rules and denies</h3>
 {code("""
-?ma meeting room=?r time=?t
-?mb meeting room=?r time=?t
+@ma meeting room=?r time=?t
+@mb meeting room=?r time=?t
 @t_other core.check fn=neq args=?ma args=?mb
 @no_double_booking core.deny when=$ma when=$mb if=$t_other why="room already booked"
 """)}
 <ul>
- <li>Variables are local to one rule. Inside a rule, <code>$b</code> means the wire matched by pattern <code>?b</code> or produced by template <code>@b</code>.</li>
+ <li>Variables are local to one rule. Inside a rule, <code>$b</code> means the wire matched by pattern <code>@b</code> or produced by template <code>@b</code>.</li>
  <li>Code lives only in named functions. Built in: <code>add sub mul div min max concat</code> and <code>eq neq lt lte gt gte before</code>. Pass your own with <code>new World({{ fns }})</code>.</li>
  <li>Numbers may carry a unit: <code>2kg + 3kg = 5kg</code>, <code>10N / 2kg = 5N/kg</code>, <code>6m / 2m = 3</code>. Adding different units is not applicable, so the rule does not fire.</li>
  <li><code>not=</code> is negation as failure. It is maintained: when a wire arrives that ends the absence, the conclusion is withdrawn. A matrix where a rule negates something its own consequences can produce is refused.</li>
@@ -350,14 +351,14 @@ P['matrix.html'] = ('More of the matrix', 'Types that inherit, values with a kin
 @t1 core.type of=vehicle
 @t2 core.type of=truck extends=vehicle
 @k  core.slot of=vehicle key=seats kind=number
-?v vehicle seats=?n
+@v vehicle seats=?n
 @c core.check fn=gt args=?n args=8
 @d core.deny when=$v if=$c why="too many seats"
 """)}
 {code("""
 w.load('@a truck seats=2.0');
-w.ask('?x vehicle').map(r => r.x)        // ['a']       a truck is a vehicle
-w.ask('?x vehicle seats=2').length       // 1           2 and 2.0 are the same number
+w.ask('@x vehicle').map(r => r.x)        // ['a']       a truck is a vehicle
+w.ask('@x vehicle seats=2').length       // 1           2 and 2.0 are the same number
 w.tell('@b truck seats=12').violations[0].why     // 'too many seats'
 w.tell('@c truck seats=many').violations[0].kind  // 'domain'
 """)}
@@ -386,8 +387,8 @@ w.retract('w1');  w.get('acc').attrs.balance                // ['150'] undo reco
 <h2 id="aggregates">Sums over a group</h2>
 <p>A calc with <code>over=</code> ranges over every match of a pattern: <code>count</code>, <code>sum</code>, <code>min</code>, <code>max</code>, <code>avg</code>, <code>argmax</code>, <code>argmin</code>, <code>collect</code>. The result is kept up to date as wires come and go, one group at a time.</p>
 {code("""
-?o order customer=?c
-?l line of=$o item=?item amount=?a
+@o order customer=?c
+@l line of=$o item=?item amount=?a
 @c_n     core.calc out=?n     fn=count  over=$l
 @c_total core.calc out=?total fn=sum    over=$l args=?a
 @c_which core.calc out=?which fn=argmax over=$l args=?a pick=?item
@@ -403,12 +404,12 @@ w.retract('l2');     // summary: total=3
 <h2 id="shape">Two helpers for patterns and templates</h2>
 <p>A template with <code>core.on=$pattern</code> adds its keys to the wire that pattern matched, instead of describing a wire of its own. A pattern with <code>core.absent=&lt;key&gt;</code> matches only a wire without that key; what was concluded from it is withdrawn when the key is filled.</p>
 {code("""
-?l line qty=?q price=?p
+@l line qty=?q price=?p
 @c core.calc out=?t fn=mul args=?q args=?p
 @f line core.on=$l total=?t                 # the total goes on the line itself
 @r core.rule when=$l with=$c then=$f
 
-?t task core.absent=owner
+@t task core.absent=owner
 @fl flag for=$t kind=unassigned
 @r2 core.rule when=$t then=$fl
 """)}
@@ -450,7 +451,7 @@ w.act({{ action: 'take', args: {{ item: 'bolt', count: 50 }} }}).status   // 're
 <h2 id="relations">Relations, patches, and what is only assumed</h2>
 <p>A relation states what holds among several cells, and whichever one is missing is computed, exactly. Relations feed each other within one change.</p>
 {code("""
-?p payment paid=?paid total=?total change=?chg
+@p payment paid=?paid total=?total change=?chg
 @r core.relation when=$p sum=?paid sub=?total sub=?chg equals=0
 """)}
 {code("""
@@ -463,7 +464,7 @@ w.tell('@d payment paid=20 total=15 change=4').violations[0].kind   // 'conflict
 <p>A deny or a bounded slot with <code>soft=true</code> refuses nothing: the change is kept and a standing <code>core.issue</code> wire says what is wrong for as long as it is. A query that rests on a flagged wire answers <code>conflicting</code> with the reason.</p>
 <p>An action can be written as wires instead of a function: parameters, patterns, a guard, and writes that all read the state before the action.</p>
 {code("""
-?it item name=?item stock=?have
+@it item name=?item stock=?have
 @enough core.check fn=gte args=?have args=?count why="not enough in stock"
 @left   core.calc  out=?rest fn=sub args=?have args=?count
 @w1 item core.on=$it stock=?rest
@@ -473,7 +474,7 @@ w.tell('@d payment paid=20 total=15 change=4').violations[0].kind   // 'conflict
 <p>Every call runs under a budget of steps. A call that runs out stops, undoes what it did and says so. A fork shares the state of the original until one of the two changes, so it costs the same for any size of world.</p>
 {code("""
 // 200 wires, a three-way join: 8,000,000 candidates
-const rows = w.ask('?a node\\n?b node\\n?c node', {{ budget: {{ steps: 20000 }} }});
+const rows = w.ask('@a node\\n?b node\\n?c node', {{ budget: {{ steps: 20000 }} }});
 rows.length    // 0
 rows.budget    // {{ kind: 'budget', site: 'match', steps: 20001, why: 'the budget of 20000 steps ran out in match' }}
 w.stats().sites.match   // 20001
@@ -489,21 +490,21 @@ P['reasoning.html'] = ('Reasoning', 'Five ways to use the same matrix. Each sect
 <h2 id="deduction">Deduction</h2>
 <p>Telling a fact runs the rules. Recursive rules reach a fixpoint; a deny stops impossible conclusions.</p>
 {code("""
-?p1 parent of=?x child=?y
+@p1 parent of=?x child=?y
 @anc1 ancestor of=?x desc=?y
 @base core.rule when=$p1 then=$anc1
 
-?p2 parent of=?x child=?y
-?a2 ancestor of=?y desc=?z
+@p2 parent of=?x child=?y
+@a2 ancestor of=?y desc=?z
 @anc2 ancestor of=?x desc=?z
 @step core.rule when=$p2 when=$a2 then=$anc2
 
-?a3 ancestor of=?x desc=?x
+@a3 ancestor of=?x desc=?x
 @no_loops core.deny when=$a3 why="nobody is their own ancestor"
 """, "family matrix")}
 {code("""
 f.tell('@e1 parent of=ana child=bogdan  @e2 parent of=bogdan child=carla  @e3 parent of=carla child=dan');
-f.ask('?a ancestor of=?who desc=dan').map(x => x.who)      // ['carla', 'bogdan', 'ana']
+f.ask('@a ancestor of=?who desc=dan').map(x => x.who)      // ['carla', 'bogdan', 'ana']
 f.tell('@e4 parent of=carla child=ana').violations[0].why  // 'nobody is their own ancestor'
 """)}
 <h2 id="completion">Completion</h2>
@@ -535,23 +536,23 @@ w.complete({ defaults: true }).filled
 @no_winter_sprinkler core.deny when=$s0 when=$win why="sprinklers are off in winter"
 """, "garden matrix")}
 {code("""
-w.abduce('?g slippery place=lawn').map(e => e.text)
+w.abduce('@g slippery place=lawn').map(e => e.text)
 // ['@hyp3 rain place=lawn', '@hyp5 sprinkler place=lawn']
 w.tell('@now season name=winter');
-w.abduce('?g slippery place=lawn').map(e => e.text)
+w.abduce('@g slippery place=lawn').map(e => e.text)
 // ['@hyp3 rain place=lawn']
 """)}
 <p>The assumption can also be the value of an open key of an existing wire, declared with <code>core.abducible of=patient key=condition</code>:</p>
 {code("""
-c.abduce('?s symptom of=$ion kind=cough').map(e => e.text)
+c.abduce('@s symptom of=$ion kind=cough').map(e => e.text)
 // ['ion.condition=flu', 'ion.condition=allergy']
-c.abduce('?a symptom of=$ion kind=cough  ?b symptom of=$ion kind=fever').map(e => e.text)
+c.abduce('@a symptom of=$ion kind=cough  @b symptom of=$ion kind=fever').map(e => e.text)
 // ['ion.condition=flu']
 adopt(c, explanation)      // commit it; the other symptoms of flu are then derived
 """)}
 <p>Abduction goes through calculations. With a rule "change = paid &minus; total", a payment whose total is 15 and <code>paid</code> declared abducible, the value is computed, not guessed:</p>
 {code("""
-w.abduce('?x change amount=5').map(e => e.text)
+w.abduce('@x change amount=5').map(e => e.text)
 // ['p1.paid=20']
 """)}
 <p><code>add</code>, <code>sub</code>, <code>mul</code> and <code>div</code> are solved for one missing argument, along a chain of rules if need be. For any other function the values of the slot's <code>enum</code> or range are tried.</p>
@@ -564,8 +565,8 @@ induce([
   { when: '@a parent of=eve child=joe  @b parent of=sue child=eve', then: '@c grandparent of=sue child=joe' },
 ], { name: 'grandparent' }).text
 
-?grandparent_p0 parent of=?v0 child=?v1
-?grandparent_p1 parent of=?v1 child=?v2
+@grandparent_p0 parent of=?v0 child=?v1
+@grandparent_p1 parent of=?v1 child=?v2
 @grandparent_t0 grandparent of=?v0 child=?v2
 @grandparent core.rule when=$grandparent_p0 when=$grandparent_p1 then=$grandparent_t0
 """)}
@@ -577,7 +578,7 @@ induce([
   { when: '@l line qty=7 price=3',  then: '@t total of=$l amount=21' },
 ], { name: 'line_total' }).text
 
-?line_total_p0 line qty=?v3 price=?v4
+@line_total_p0 line qty=?v3 price=?v4
 @line_total_t0 total of=$line_total_p0 amount=?v5
 @line_total_c0 core.calc out=?v5 fn=mul args=?v3 args=?v4
 @line_total core.rule when=$line_total_p0 then=$line_total_t0 with=$line_total_c0
@@ -654,11 +655,11 @@ bake undone, ready: ['$bake']
 <h2 id="diagnosis">4. Diagnosis and explanation</h2>
 <p><strong>Pattern.</strong> Rules run from causes to effects. Mark the causes as abducible, then ask for explanations of what was observed. Each explanation can be adopted, which predicts the other effects, or checked by asking for one more observation.</p>
 {code("""
-c.abduce('?s symptom of=$ion kind=cough')          // flu or allergy
+c.abduce('@s symptom of=$ion kind=cough')          // flu or allergy
 c.fill('ion', 'season', 'winter');
-c.abduce('?s symptom of=$ion kind=cough')          // flu: allergy is denied in winter
+c.abduce('@s symptom of=$ion kind=cough')          // flu: allergy is denied in winter
 adopt(c, explanation);
-c.ask('?s symptom of=$ion kind=?k')                // fever and cough are now predicted
+c.ask('@s symptom of=$ion kind=?k')                // fever and cough are now predicted
 """, "node examples/abduction.mjs")}
 <p><strong>You bring.</strong> Costs or a <code>rank</code> function if some causes are more likely than others. The world says what is possible, not what is probable.</p>
 <h2 id="learn">5. Building a matrix from examples</h2>
@@ -677,7 +678,7 @@ r.ok || r.violations                // why the world does not accept the rule
 const w = new World({ library: { garden, geo } });
 w.load('@u1 core.use world=garden  @u2 core.use world=geo');
 w.tell('@pl1 place name=lawn in=north  @f1 forecast region=north kind=rain');
-w.ask('?s slippery place=?p')       // lawn
+w.ask('@s slippery place=?p')       // lawn
 // derivation: garden.wet_slips <- garden.rain_wets <- geo.rain_over_region <- told
 """, "node examples/compose.mjs")}
 <p>Abduction, completion and retraction work across modules without extra code, because after loading there is one matrix.</p>
@@ -799,7 +800,7 @@ new World({ fns, library, solver = solvers.nogood(), maxDepth = 12, maxSteps = 5
 {code("""
 sopworld check <file.sop ...>                  exit 1 when anything is refused
 sopworld run   <file.sop ...> [--defaults] [--provenance]
-sopworld ask   <file.sop ...> --query "?a acceleration magnitude=?v"
+sopworld ask   <file.sop ...> --query "@a acceleration magnitude=?v"
 options: --strict --json
 """)}
 <h2>Source layout</h2>

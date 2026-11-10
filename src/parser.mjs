@@ -1,7 +1,12 @@
 // SOP Lang reader and writer.
 //
-//   @id type key=value key=value ...     a wire (fact, template or schema wire)
-//   ?id type key=?x key=$other ...       a pattern wire (to be matched)
+//   @id type key=value key=value ...     a wire
+//
+// The three signs each mean one thing: `@` declares a wire, `$` refers to one, `?` is a
+// variable (in value position only). A wire is a pattern or a template because a rule,
+// deny, relation, action or query names it, not because of how it is written.
+// (`?id type ...` as a declaration is the old way to write a pattern; it is still read,
+// marked `legacy`, and will be removed.)
 //
 // Values are kept as their source token:
 //   atom      water, 10, 9.81, phys.mech.body
@@ -45,7 +50,11 @@ export function tokenize(text) {
   return out;
 }
 
-export function parse(text) {
+/**
+ * Read wires. With `anonymous`, a declaration may leave out its `@id` (a query that
+ * needs no name for what it matches): `item name=?n` is read as a wire with a made-up id.
+ */
+export function parse(text, { anonymous = false } = {}) {
   const wires = [];
   const toks = tokenize(text);
   let cur = null;
@@ -55,6 +64,12 @@ export function parse(text) {
       const ty = toks[++i];
       if (!ty || !NAME.test(ty.t)) throw new SopError(`line ${line}: wire ${t} has no type`);
       cur = { id: t.slice(1), type: ty.t, attrs: {}, pattern: t[0] === '?' };
+      if (t[0] === '?') cur.legacy = true;
+      wires.push(cur);
+      continue;
+    }
+    if (anonymous && NAME.test(t)) { // a type name where a declaration may start: a wire without an id
+      cur = { id: `_${wires.length + 1}`, type: t, attrs: {}, pattern: false, anonymous: true };
       wires.push(cur);
       continue;
     }
@@ -69,7 +84,7 @@ export function parse(text) {
 }
 
 export function format(wire, { multiline = false } = {}) {
-  const head = `${wire.pattern ? '?' : '@'}${wire.id} ${wire.type}`;
+  const head = `@${wire.id} ${wire.type}`;
   const pairs = [];
   for (const k of Object.keys(wire.attrs)) for (const v of wire.attrs[k]) pairs.push(`${k}=${v}`);
   if (!pairs.length) return head;
@@ -79,7 +94,10 @@ export function format(wire, { multiline = false } = {}) {
 export function cloneWire(w) {
   const attrs = {};
   for (const k of Object.keys(w.attrs)) attrs[k] = [...w.attrs[k]];
-  return { id: w.id, type: w.type, attrs, pattern: !!w.pattern };
+  const out = { id: w.id, type: w.type, attrs, pattern: !!w.pattern };
+  if (w.legacy) out.legacy = true;
+  if (w.anonymous) out.anonymous = true;
+  return out;
 }
 
 /** Unquote a string value; atoms are returned unchanged. */

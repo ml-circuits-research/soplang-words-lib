@@ -67,8 +67,8 @@ preference:
    on the supposed wire:
 
    ```
-   ?q quote item=?i count=?n
-   ?p price item=?i cost=?c
+   @q quote item=?i count=?n
+   @p price item=?i cost=?c
    @c core.calc out=?t fn=mul args=?n args=?c
    @a quote core.on=$q total=?t
    @r core.rule when=$q when=$p with=$c then=$a

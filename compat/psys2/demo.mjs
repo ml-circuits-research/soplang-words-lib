@@ -35,14 +35,14 @@ show('4. Explain', `2 kites and 3 pencils cost ${a4.value} (${a4.status}, via ${
 
 // 5. abduction: what would have to be true for this to hold?
 shop.tell(`@c kids.shop.change item=book count=1 ${at(5)}`);
-const e5 = shop.abduce('?x kids.shop.change amount=5');
+const e5 = shop.abduce('@x kids.shop.change amount=5');
 show('5. Abduction', `"I got 5 lei back for a book. What did I pay?" -> ${e5.map((e) => e.text).join(' | ')}`);
 
 // 6. an operation written as wires: buying is a guard and a write, no function
 const shop2 = (await build('kids.shop'))();
 shop2.load(`
-?buy.w shop.wallet amount=?money core.in=?in
-?buy.p kids.shop.price item=?item cost=?each
+@buy.w shop.wallet amount=?money core.in=?in
+@buy.p kids.shop.price item=?item cost=?each
 @buy.c core.calc out=?due fn=mul args=?each args=?count
 @buy.ok core.check fn=gte args=?money args=?due why="there is not enough money for it"
 @buy.new kids.shop.purchase item=?item count=?count core.in=?in core.seq=?at

@@ -70,7 +70,7 @@ test('fluent: retracting or replacing an event recomputes; the log rebuilds the 
 
 test('fluent: rules and denies follow the current value', () => {
   const w = world(`
-    ?x account balance=?v
+    @x account balance=?v
     @c_rich core.check fn=gt args=?v args=1000
     @cap core.deny when=$x if=$c_rich why="accounts are capped at 1000"
   `);
@@ -94,7 +94,7 @@ test('as-of: ask and query see the world at an earlier point of the sequence', (
   assert.equal(w.ofType('warning').length, 1);
   const before = canon(w);
   const at = w.seqOf('d1');
-  assert.deepEqual(w.ask('?a account balance=?b', { at }).map((x) => x.b), ['150']);
+  assert.deepEqual(w.ask('@a account balance=?b', { at }).map((x) => x.b), ['150']);
   assert.equal(w.query({ type: 'account', seek: 'balance', where: { name: 'ana' } }, { at: w.seqOf('acc') }).value, '100');
   assert.deepEqual(w.asOf(at, (x) => [x.has('w1'), x.ofType('warning').length]), [false, 0]);
   assert.equal(canon(w), before, 'looking back changes nothing');
@@ -111,9 +111,9 @@ test('sequence: a declared key orders wires whatever the order they are told in'
   assert.equal(w.get('acc').attrs.balance[0], '60');
   w.load('@d0 deposit account=ana amount=999 core.seq=2');     // before the statement: behind it
   assert.equal(w.get('acc').attrs.balance[0], '60');
-  assert.deepEqual(w.ask('?a account balance=?b', { at: 7 }).map((x) => x.b), ['150']);
-  assert.deepEqual(w.ask('?a account balance=?b', { at: 5 }).map((x) => x.b), ['100']);
-  assert.deepEqual(w.ask('?a account balance=?b', { at: 4 }), [], 'the account was not yet stated');
+  assert.deepEqual(w.ask('@a account balance=?b', { at: 7 }).map((x) => x.b), ['150']);
+  assert.deepEqual(w.ask('@a account balance=?b', { at: 5 }).map((x) => x.b), ['100']);
+  assert.deepEqual(w.ask('@a account balance=?b', { at: 4 }), [], 'the account was not yet stated');
   // the order of telling does not matter: the same wires told in sequence order give the same state
   const v = world('@seq core.sequence key=core.seq');
   v.load('@d0 deposit account=ana amount=999 core.seq=2  @acc account name=ana balance=100 core.seq=5');
@@ -132,14 +132,14 @@ test('sequence: before, after, and the selectors latest and first', () => {
   const w = new World();
   w.load(`
     @seq core.sequence key=at
-    ?s sensor name=?n
-    ?r reading of=$s core.select=latest level=?l
+    @s sensor name=?n
+    @r reading of=$s core.select=latest level=?l
     @now status of=$s level=?l
     @k core.slot of=status key=of id=true
     @current core.rule when=$s when=$r then=$now
 
-    ?a reading of=?x level=?la
-    ?b reading of=?x level=?lb
+    @a reading of=?x level=?la
+    @b reading of=?x level=?lb
     @c_after core.check fn=after args=$b args=$a
     @c_drop core.check fn=lt args=?lb args=?la
     @fall drop from=$a to=$b
@@ -147,20 +147,20 @@ test('sequence: before, after, and the selectors latest and first', () => {
   `);
   w.load('@s1 sensor name=tank');
   w.load('@r2 reading of=$s1 level=70 at=20');
-  assert.deepEqual(w.ask('?n status level=?l').map((x) => x.l), ['70']);
+  assert.deepEqual(w.ask('@n status level=?l').map((x) => x.l), ['70']);
   w.load('@r1 reading of=$s1 level=90 at=10'); // told later, but earlier in the sequence
-  assert.deepEqual(w.ask('?n status level=?l').map((x) => x.l), ['70'], 'r2 is still the latest');
-  assert.deepEqual(w.ask('?d drop from=?a to=?b').map((x) => [x.a, x.b]), [['$r1', '$r2']], 'the level fell from r1 to r2');
+  assert.deepEqual(w.ask('@n status level=?l').map((x) => x.l), ['70'], 'r2 is still the latest');
+  assert.deepEqual(w.ask('@d drop from=?a to=?b').map((x) => [x.a, x.b]), [['$r1', '$r2']], 'the level fell from r1 to r2');
   w.load('@r3 reading of=$s1 level=40 at=30');
   assert.equal(w.ofType('status').length, 1);
-  assert.deepEqual(w.ask('?n status level=?l').map((x) => x.l), ['40'], 'the status follows the latest reading');
-  assert.deepEqual(w.ask('?r reading core.select=first level=?l').map((x) => x.l), ['90']);
-  assert.deepEqual(w.ask('?r reading core.select=latest level=?l').map((x) => x.l), ['40']);
+  assert.deepEqual(w.ask('@n status level=?l').map((x) => x.l), ['40'], 'the status follows the latest reading');
+  assert.deepEqual(w.ask('@r reading core.select=first level=?l').map((x) => x.l), ['90']);
+  assert.deepEqual(w.ask('@r reading core.select=latest level=?l').map((x) => x.l), ['40']);
   assert.ok(w.compare('r1', 'r2') < 0 && w.compare('r3', 'r2') > 0);
   assert.equal(w.seqOf('r2'), 20);
   w.retract('r3');
-  assert.deepEqual(w.ask('?n status level=?l').map((x) => x.l), ['70'], 'and goes back when it is retracted');
-  assert.deepEqual(w.ask('?r reading level=?l', { at: 15 }).map((x) => x.l), ['90']);
+  assert.deepEqual(w.ask('@n status level=?l').map((x) => x.l), ['70'], 'and goes back when it is retracted');
+  assert.deepEqual(w.ask('@r reading level=?l', { at: 15 }).map((x) => x.l), ['90']);
 });
 
 test('fluent: an event can name its holder by reference, and an effect can be a registered function', () => {

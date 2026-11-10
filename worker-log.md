@@ -1071,3 +1071,54 @@ The user asked to leave tags aside. Instead:
 The local tag `v0.5.0` is deleted; "tag 0.6.0" in the task list means: bump the version,
 rebuild, and `docs/version.md` says it. A host can pin either the commit or the build
 hash.
+
+## Round 4 — first, about G11
+
+G11 (soft constraints) has been done and pushed since commit ddfcec5, before H3; its
+entry is above ("G11 — soft constraints — done"). It is what took the arith pilot from
+208 to 210 (n17, n19). The one thing round 4 asks beyond it (a soft tell returns the
+issue so the host can say it) is part of W8 and will be logged there.
+
+## L1 — one language: `?` is only a variable — done
+
+| Command | Result |
+| --- | --- |
+| `npm test` | sources: 185 pass, 0 fail; built file: 185 pass, 0 fail |
+| `node compat/psys2/run.mjs` | kids.shop 147/147, kids.arith 212/217, kids.tasks 231/232 (unchanged) |
+| `node compat/psys2/demo.mjs`, `npm run examples`, `npm run test:browser`, `node docs/selftest.mjs` | six demonstrations; exit 0; all passed; 14 passed, 0 failed |
+| `node tools/migrate-syntax.mjs --check <tracked files>` | nothing left to change except two places that describe the old form on purpose |
+| `node tools/scan-loops.mjs src`, `git grep -i psys2 src/ \| wc -l` | clean; 0 |
+
+What changed:
+1. A pattern is written `@id type ...` like every wire. It is a pattern (or a template)
+   because a rule, deny, calc (`over=`), relation or action told with it names it. The
+   engine already recognised templates that way; the same test now covers patterns, so
+   a pattern without a variable is a pattern too (tested with `core.absent=`).
+2. `?name` is only a variable, in value position.
+3. Id spaces are unchanged: a fact may have the id of a pattern (tested).
+4. Queries: `ask('@c change of=$b1 amount=?a')`, or without an id
+   (`ask('change of=$b1 amount=?a')`, several declarations allowed); bindings come back
+   by variable name, the matched wire under the pattern's id when it has one.
+5. `#` comments stay; a `#` inside a string is text (tested).
+6. Migration: `?id type ...` is still read, marked `legacy`, noted once per id in
+   `world.warnings` (`{ kind: 'deprecated', id, why }`), and written back as `@id` by
+   `format()`. `tools/migrate-syntax.mjs` converts files (also wires inside program
+   strings) and has `--check`. Converted with it: 40 files, 472 declarations (README,
+   SPEC, `docs/integration.md`, the docs generator and the pages it builds, the
+   playground and selftest, all examples, all tests, the benchmark, the two pilot
+   matrices that have rules, the pilot demo).
+7. SPEC 2.1 "The language" is now the single grammar: EBNF, the three signs with one
+   meaning each, what makes a wire a fact or part of the matrix, id spaces, queries,
+   canonical form, errors, and the old form. It is written to be lifted as it stands.
+
+Tests: both forms of the same matrix give the same world and the same matrix ids; the
+old form warns once per id and the new form not at all; a wire with a variable that
+nothing names is refused; a pattern with no variable; a fact with a pattern's id; the
+three query forms; the parser round trip.
+
+Two things a host should know (both in SPEC 2.1):
+- A rule and the wires it names are told together, in one text. That was already true
+  of templates; with `?` gone it is true of patterns too. A wire with a pattern's id
+  told later on its own is a fact.
+- The migration tool works on text: it also rewrites a `?name word` that stands in a
+  comment. It found one such line in `src/unify.mjs` ("?x  variable"), left as it is.

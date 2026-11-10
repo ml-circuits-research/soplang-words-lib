@@ -18,7 +18,7 @@ const time = (label, fn, note = () => '', again = 0) => {
 
 time('join: 3000 parents -> grandparents', () => {
   const w = new World();
-  w.load('?p1 parent of=?x child=?y\n?p2 parent of=?y child=?z\n@g grandparent of=?x child=?z\n@gp core.rule when=$p1 when=$p2 then=$g');
+  w.load('@p1 parent of=?x child=?y\n?p2 parent of=?y child=?z\n@g grandparent of=?x child=?z\n@gp core.rule when=$p1 when=$p2 then=$g');
   let s = '';
   for (let i = 0; i < 3000; i++) s += `@e${i} parent of=n${i} child=n${i + 1}\n`;
   w.load(s);

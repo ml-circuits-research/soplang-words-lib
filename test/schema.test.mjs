@@ -17,24 +17,24 @@ test('types: extends gives a hierarchy; ofType and patterns include descendants'
   w.load('@c1 fleet.car plate="B-01" seats=5  @t1 fleet.truck plate="B-02" seats=2 axles=3  @v1 fleet.vehicle plate="B-03" seats=1');
   assert.deepEqual(w.ofType('fleet.car').map((x) => x.id), ['c1']);
   assert.deepEqual(w.ofType('fleet.vehicle').map((x) => x.id).sort(), ['c1', 't1', 'v1']);
-  assert.deepEqual(w.ask('?v fleet.vehicle plate=?p').map((x) => x.p).sort(), ['"B-01"', '"B-02"', '"B-03"']);
-  assert.deepEqual(w.ask('?v fleet.truck plate=?p').map((x) => x.p), ['"B-02"']);
+  assert.deepEqual(w.ask('@v fleet.vehicle plate=?p').map((x) => x.p).sort(), ['"B-01"', '"B-02"', '"B-03"']);
+  assert.deepEqual(w.ask('@v fleet.truck plate=?p').map((x) => x.p), ['"B-02"']);
   assert.deepEqual(w.schema('fleet.truck').lineage, ['fleet.truck', 'fleet.vehicle']);
 });
 
 test('types: rules and denies written for a type apply to the types that extend it', () => {
   const w = world(`
-    ?v fleet.vehicle seats=?n
+    @v fleet.vehicle seats=?n
     @t core.check fn=gt args=?n args=7
     @bus licence.needed for=$v class=D
     @big core.rule when=$v if=$t then=$bus
 
-    ?x fleet.vehicle seats=?m
+    @x fleet.vehicle seats=?m
     @t0 core.check fn=lt args=?m args=1
     @no_seats core.deny when=$x if=$t0 why="a vehicle has at least one seat"
   `);
   w.load('@t1 fleet.truck plate="B-02" seats=9');
-  assert.ok(w.holds('?l licence.needed for=$t1'), 'the rule for vehicles fired for a truck');
+  assert.ok(w.holds('@l licence.needed for=$t1'), 'the rule for vehicles fired for a truck');
   assert.equal(w.tell('@c9 fleet.car plate="B-09" seats=0').violations[0].why, 'a vehicle has at least one seat');
 });
 
@@ -45,11 +45,11 @@ test('types: a hierarchy told after the facts re-indexes them; a refused change 
   const bad = w.tell('@pet.dog core.type extends=pet.animal\n@pet.cat core.type extends=pet.animal\n@x pet.dog owner=$nobody');
   assert.equal(bad.ok, false);
   assert.equal(w.ofType('pet.animal').length, 0, 'the refused hierarchy left no trace');
-  assert.deepEqual(w.ask('?d pet.dog name=?n').map((x) => x.n), ['rex']);
+  assert.deepEqual(w.ask('@d pet.dog name=?n').map((x) => x.n), ['rex']);
   w.load('@pet.dog core.type extends=pet.animal\n@pet.cat core.type extends=pet.animal');
-  assert.deepEqual(w.ask('?a pet.animal name=?n').map((x) => x.n).sort(), ['rex', 'tom']);
+  assert.deepEqual(w.ask('@a pet.animal name=?n').map((x) => x.n).sort(), ['rex', 'tom']);
   w.retract('p1');
-  assert.deepEqual(w.ask('?a pet.animal name=?n').map((x) => x.n), ['tom']);
+  assert.deepEqual(w.ask('@a pet.animal name=?n').map((x) => x.n), ['tom']);
   assert.equal(new World().tell('@a core.type extends=b\n@b core.type extends=a').violations[0].kind, 'schema');
 });
 
@@ -129,7 +129,7 @@ test('schema: attributes the engine does not use are kept and readable; inherite
 
 test('keys: short and qualified names are one key, in facts, fills, patterns and queries', () => {
   const w = world(`
-    ?v fleet.vehicle fleet.vehicle.seats=?n
+    @v fleet.vehicle fleet.vehicle.seats=?n
     @t core.check fn=gt args=?n args=60
     @too_many core.deny when=$v if=$t why="no vehicle has that many seats"
   `);
@@ -137,8 +137,8 @@ test('keys: short and qualified names are one key, in facts, fills, patterns and
   assert.equal(w.get('d1').attrs.name[0], '"Ana"', 'a key of an ancestor, written in full');
   w.load('@c1 fleet.car plate="B-01" fleet.vehicle.seats=5');
   assert.equal(format(w.get('c1')), '@c1 fleet.car plate="B-01" seats=5');
-  assert.deepEqual(w.ask('?v fleet.car fleet.vehicle.seats=?n').map((x) => x.n), ['5']);
-  assert.deepEqual(w.ask('?v fleet.car seats=?n').map((x) => x.n), ['5']);
+  assert.deepEqual(w.ask('@v fleet.car fleet.vehicle.seats=?n').map((x) => x.n), ['5']);
+  assert.deepEqual(w.ask('@v fleet.car seats=?n').map((x) => x.n), ['5']);
   w.load('@c2 fleet.car plate="B-02"');
   assert.equal(w.fill('c2', 'fleet.vehicle.seats', '99').violations[0].why, 'no vehicle has that many seats');
   assert.ok(w.fill('c2', 'fleet.vehicle.seats', '4').ok);
@@ -221,23 +221,23 @@ test('numbers: under a key declared integer or number, 5 and 5.0 are one value',
     @k3 core.slot of=item key=size kind=number many=true
     @k4 core.slot of=item key=label
     @k5 core.slot of=item key=grade kind=integer enum=1 enum=2 enum=3
-    ?i item price=5
+    @i item price=5
     @c cheap of=$i
     @r core.rule when=$i then=$c
-    ?a item price=?p
-    ?b offer price=?p
+    @a item price=?p
+    @b offer price=?p
     @m match item=$a offer=$b
     @j core.rule when=$a when=$b then=$m
   `);
   w.load('@a item sku=7 price=5.0 label=1.0 size=2.50 grade=02  @b item sku=8 price=5  @c1 item sku=9 price=6');
   assert.equal(w.get('a').attrs.price[0], '5.0', 'the value stays as it was told');
   // a pattern with a constant, either spelling
-  assert.deepEqual(w.ask('?x item price=5').map((r) => r.x).sort(), ['a', 'b']);
-  assert.deepEqual(w.ask('?x item price=5.00').map((r) => r.x).sort(), ['a', 'b']);
-  assert.deepEqual(w.ask('?x item price=05').map((r) => r.x).sort(), ['a', 'b']);
-  assert.deepEqual(w.ask('?x item price=6.0').map((r) => r.x), ['c1']);
-  assert.deepEqual(w.ask('?x item size=2.5').map((r) => r.x), ['a'], 'a key with many values');
-  assert.equal(w.ask('?x item sku=7 price=?p')[0].p, '5.0', 'a variable gets the value as told');
+  assert.deepEqual(w.ask('@x item price=5').map((r) => r.x).sort(), ['a', 'b']);
+  assert.deepEqual(w.ask('@x item price=5.00').map((r) => r.x).sort(), ['a', 'b']);
+  assert.deepEqual(w.ask('@x item price=05').map((r) => r.x).sort(), ['a', 'b']);
+  assert.deepEqual(w.ask('@x item price=6.0').map((r) => r.x), ['c1']);
+  assert.deepEqual(w.ask('@x item size=2.5').map((r) => r.x), ['a'], 'a key with many values');
+  assert.equal(w.ask('@x item sku=7 price=?p')[0].p, '5.0', 'a variable gets the value as told');
   // rules: a constant in the pattern, and a join through a variable
   assert.deepEqual(w.ofType('cheap').map((x) => x.attrs.of[0]).sort(), ['$a', '$b']);
   w.load('@o1 offer price=5.000  @o2 offer price=6');
@@ -250,29 +250,29 @@ test('numbers: under a key declared integer or number, 5 and 5.0 are one value',
   assert.equal(w.tell('@again4 item sku=7 size=2.5').ok, true);
   assert.deepEqual(w.get('a').attrs.size, ['2.50'], 'no second spelling of a value it has');
   // a key that is not declared as a number stays text
-  assert.deepEqual(w.ask('?x item label=1').length, 0);
-  assert.deepEqual(w.ask('?x item label=1.0').map((r) => r.x), ['a']);
+  assert.deepEqual(w.ask('@x item label=1').length, 0);
+  assert.deepEqual(w.ask('@x item label=1.0').map((r) => r.x), ['a']);
   // retraction takes the wire out of the index under the same spelling
   assert.ok(w.retract('b').ok);
-  assert.deepEqual(w.ask('?x item price=5.0').map((r) => r.x), ['a']);
+  assert.deepEqual(w.ask('@x item price=5.0').map((r) => r.x), ['a']);
 });
 
 test('numbers: declaring the kind later re-indexes what is there; subtypes', () => {
   const w = new World();
   w.load('@t1 tank level=10.0  @t2 tank level=10  @p1 pressure_tank level=10.50');
-  assert.deepEqual(w.ask('?x tank level=10').map((r) => r.x), ['t2'], 'no declaration: text');
+  assert.deepEqual(w.ask('@x tank level=10').map((r) => r.x), ['t2'], 'no declaration: text');
   w.load('@pt core.type of=pressure_tank extends=tank  @k core.slot of=tank key=level kind=number');
-  assert.deepEqual(w.ask('?x tank level=10').map((r) => r.x).sort(), ['t1', 't2']);
-  assert.deepEqual(w.ask('?x tank level=10.5').map((r) => r.x), ['p1'], 'an inherited slot');
-  assert.deepEqual(w.ask('?x pressure_tank level=10.500').map((r) => r.x), ['p1']);
+  assert.deepEqual(w.ask('@x tank level=10').map((r) => r.x).sort(), ['t1', 't2']);
+  assert.deepEqual(w.ask('@x tank level=10.5').map((r) => r.x), ['p1'], 'an inherited slot');
+  assert.deepEqual(w.ask('@x pressure_tank level=10.500').map((r) => r.x), ['p1']);
   // a refused change that would have declared another key leaves the index as it was
   const before = JSON.stringify(w.toJSON());
   assert.equal(w.tell('@k9 core.slot of=tank key=name kind=number  @t3 tank name=x level=10').ok, false);
   assert.equal(JSON.stringify(w.toJSON()), before);
-  assert.deepEqual(w.ask('?x tank level=10.0').map((r) => r.x).sort(), ['t1', 't2']);
+  assert.deepEqual(w.ask('@x tank level=10.0').map((r) => r.x).sort(), ['t1', 't2']);
   const f = w.fork();
   f.load('@t4 tank level=010');
-  assert.deepEqual([f.ask('?x tank level=10').length, w.ask('?x tank level=10').length], [3, 2]);
+  assert.deepEqual([f.ask('@x tank level=10').length, w.ask('@x tank level=10').length], [3, 2]);
 });
 
 test('composition: two different declarations of one key are a conflict unless one says how they combine', () => {

@@ -14,7 +14,7 @@ w.tell('@m1 meeting people=9');
 console.log('open keys:', w.open('m1').map((o) => o.key));
 console.log('world completes:', show(w.complete({ defaults: true })));
 console.log('m1 is now:', format(w.get('m1')));
-console.log('derived:', w.ask('?c confirmation for=$m1').map((x) => format(w.get(x.c))));
+console.log('derived:', w.ask('@c confirmation for=$m1').map((x) => format(w.get(x.c))));
 
 console.log('\nUser: "Actually, make it an hour."   (replaces the assumed 30 minutes)');
 const rev = w.fill('m1', 'duration', '60');

@@ -50,7 +50,7 @@ test('query: count and exists; "no" needs a type whose instances are all known',
 test('query: a derived value names its rule; a producer computes what no wire has', () => {
   const w = world();
   w.load(`
-    ?i item stock=?n
+    @i item stock=?n
     @t core.check fn=lt args=?n args=20
     @low reorder of=$i
     @reorder core.rule when=$i if=$t then=$low
@@ -144,11 +144,11 @@ test('query: with no matching wire the world supposes one and lets the rules ans
 
 test('query: a calculation that cannot be done is unsupported, with the reason; decimals set the precision', () => {
   const matrix = `
-    ?q share total=?t people=?n
+    @q share total=?t people=?n
     @c core.calc out=?each fn=div args=?t args=?n
     @a share core.on=$q each=?each
     @r core.rule when=$q with=$c then=$a
-    ?m mix a=?x b=?y
+    @m mix a=?x b=?y
     @c2 core.calc out=?s fn=add args=?x args=?y
     @a2 mix core.on=$m sum=?s
     @r2 core.rule when=$m with=$c2 then=$a2
@@ -164,7 +164,7 @@ test('query: a calculation that cannot be done is unsupported, with the reason; 
   assert.equal(w.query({ type: 'share', seek: 'each', where: { total: 10 } }).status, 'missing', 'nothing was tried: still missing');
   // a host function can say why, too
   const h = new World({ fns: { root: ([x], world) => (Number(x) < 0 ? world.cannot('no root of a negative number') : String(Math.sqrt(Number(x)))) } });
-  h.load('?q root of=?x\n@c core.calc out=?r fn=root args=?x\n@a root core.on=$q is=?r\n@r core.rule when=$q with=$c then=$a');
+  h.load('@q root of=?x\n@c core.calc out=?r fn=root args=?x\n@a root core.on=$q is=?r\n@r core.rule when=$q with=$c then=$a');
   assert.deepEqual([h.query({ type: 'root', seek: 'is', where: { of: 9 } }).value, h.query({ type: 'root', seek: 'is', where: { of: -9 } }).reason], ['3', 'no root of a negative number']);
   // precision: 12 significant digits by default; a world option or a matrix wire sets the decimals
   assert.equal(ask(w, 10, 3).value, '3.33333333333');
@@ -180,15 +180,15 @@ test('act: an action written as wires: parameters, a guard, writes that read the
   const matrix = `
     @k1 core.slot of=item key=name id=true
     @k2 core.slot of=item key=stock kind=integer min=0
-    ?it item name=?item stock=?have
+    @it item name=?item stock=?have
     @enough core.check fn=gte args=?have args=?count why="not enough in stock"
     @left core.calc out=?rest fn=sub args=?have args=?count
     @w1 item core.on=$it stock=?rest
     @w2 withdrawal of=$it count=?count before=?have
     @a_take core.action name=take param=item param=count when=$it if=$enough with=$left set=$w1 add=$w2 returns=?rest ask.count="How many do you take?"
 
-    ?x account name=?from balance=?fb
-    ?y account name=?to balance=?tb
+    @x account name=?from balance=?fb
+    @y account name=?to balance=?tb
     @c1 core.calc out=?fb2 fn=sub args=?fb args=?amount
     @c2 core.calc out=?tb2 fn=add args=?tb args=?amount
     @covered core.check fn=gte args=?fb args=?amount why="the account does not hold that much"
@@ -196,7 +196,7 @@ test('act: an action written as wires: parameters, a guard, writes that read the
     @s2 account core.on=$y balance=?tb2
     @a_move core.action name=transfer param=from param=to param=amount when=$x when=$y with=$c1 with=$c2 if=$covered set=$s1 set=$s2
 
-    ?old note done=true
+    @old note done=true
     @a_tidy core.action name=tidy when=$old remove=$old all=true
   `;
   const w = new World();

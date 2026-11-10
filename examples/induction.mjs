@@ -18,7 +18,7 @@ console.log('\n== The induced rule, used for deduction on new facts ==');
 const w = new World();
 console.log('rule accepted:', w.tell(rule).ok);
 w.tell('@p1 parent of=ion child=maria  @p2 parent of=maria child=vlad');
-console.log(w.ask('?g grandparent of=?who child=?child'));
+console.log(w.ask('@g grandparent of=?who child=?child'));
 
 console.log('\n== Induction: slots from observed wires ==');
 console.log(induceSlots(`
@@ -39,7 +39,7 @@ console.log(learned.text);
 const shop = new World();
 shop.load(learned.text);
 shop.tell('@l9 line qty=4 price=25');
-console.log(shop.ask('?t total amount=?a'));
+console.log(shop.ask('@t total amount=?a'));
 
 console.log('\n== Induction: a constraint from examples of forbidden states ==');
 console.log(induce([

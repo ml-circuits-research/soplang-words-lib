@@ -6,9 +6,9 @@ import { World, solvers } from '../tools/lib-under-test.mjs';
 const pair = `
 @s1 core.slot of=box key=a required=true enum=1
 @s2 core.slot of=box key=b required=true enum=1
-?x box a=?v core.absent=b
+@x box a=?v core.absent=b
 @d1 core.deny when=$x why="a without b"
-?y box b=?v2 core.absent=a
+@y box b=?v2 core.absent=a
 @d2 core.deny when=$y why="b without a"
 `;
 
@@ -54,13 +54,13 @@ test('patch: three keys that need each other; no way out is unsat, a way out fro
     @s1 core.slot of=tri key=a required=true enum=1 enum=2
     @s2 core.slot of=tri key=b required=true enum=1 enum=2
     @s3 core.slot of=tri key=c required=true enum=1 enum=2
-    ?x tri a=?v core.absent=b
+    @x tri a=?v core.absent=b
     @d1 core.deny when=$x why="a needs b"
-    ?y tri b=?v core.absent=c
+    @y tri b=?v core.absent=c
     @d2 core.deny when=$y why="b needs c"
-    ?z tri c=?v core.absent=a
+    @z tri c=?v core.absent=a
     @d3 core.deny when=$z why="c needs a"
-    ?e tri a=?v b=?v
+    @e tri a=?v b=?v
     @d4 core.deny when=$e why="a and b differ"
   `;
   const w = new World();
@@ -76,7 +76,7 @@ test('patch: three keys that need each other; no way out is unsat, a way out fro
   assert.deepEqual(w.suggest('t1', 'a').map((c) => c.value).sort(), ['1', '2']);
   assert.deepEqual(w.next().dead, []);
   // closing the last door: now there really is no assignment
-  w.load('?f tri a=?p c=?q\n@d5 core.deny when=$f why="never both a and c"');
+  w.load('@f tri a=?p c=?q\n@d5 core.deny when=$f why="never both a and c"');
   assert.equal(w.solveReport().status, 'unsat');
   assert.equal(w.solveReport({ solver: solvers.backtrack() }).status, 'unsat');
   assert.deepEqual(w.next().dead.map((o) => o.key), ['a', 'b', 'c']);

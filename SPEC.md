@@ -26,23 +26,79 @@ structure supports:
 
 ## 2. Data model
 
-### 2.1 Wire
+### 2.1 The language
+
+One language for facts, for the matrix and for queries. This section is its whole
+grammar; `docs/language.md` is the same in reference form.
 
 ```
-@id type key=value key=value ...      a wire
-?id type key=?x key=$other ...        a pattern wire (matched against fact wires)
+text         = { declaration | comment } ;
+declaration  = "@" id  type  { entry } ;
+entry        = key "=" value ;
+value        = atom | string | reference | variable ;
+reference    = "$" id ;
+variable     = "?" name ;
+string       = '"' { any character, with \" and \\ escaped } '"' ;
+id, type, key, name  = letter-or-underscore { letter | digit | "_" | "." | "-" } ;
+atom         = any run of characters without white space that is none of the above
+               (water, 10, 9.81, 10:00, 5kg) ;
+comment      = "#" to the end of the line ;
 ```
 
-- A wire may span several lines. `#` starts a comment.
-- A key may repeat (several values).
-- Values: **atom** (`water`, `10`, `10:00`), **string** (`"free text"`), **reference**
-  (`$id`), **variable** (`?x`, only in the matrix and in queries).
-- Facts and matrix wires have separate id spaces: a pattern `?m1` does not clash with a
-  fact `@m1`. Within each space an id is declared once.
+**Three signs, one meaning each.**
+
+| Sign | Meaning | Where |
+| --- | --- | --- |
+| `@` | declares a wire | at the start of a declaration, nowhere else |
+| `$` | refers to a wire by id | in value position |
+| `?` | is a variable | in value position, in the matrix and in queries |
+
+- A declaration is `@id`, a type, and any number of `key=value` entries. It may span
+  several lines; white space (spaces, tabs, line ends) separates tokens and has no other
+  meaning. A key may repeat: the key then has several values, in order.
+- A `#` starts a comment that runs to the end of the line. Inside a string it is text.
+- A string keeps its quotes in memory; `str()` unquotes it, `quote()` quotes free text.
 - A missing key is an open question, not a false statement (open world).
 
-In memory: `{ id, type, attrs: { key: [values] }, pattern, meta }`. Values are kept as their
-source token; `str()` unquotes a string.
+**A wire is a fact, or it belongs to the matrix.**
+
+- It belongs to the matrix when its type is one of the matrix types (`core.slot`,
+  `core.rule`, ... section 3), when a `core.schema.map` says so, or when a rule, deny,
+  calc, relation or action **told with it** names it (`when=`, `not=`, `then=`,
+  `with=`, `if=`, `over=`, `set=`, `add=`, `remove=`). Such a wire is a **pattern**
+  (something to match) or a **template** (something to make) because of where it is
+  named, not because of how it is written: `@p purchase qty=?q` is a pattern when a
+  rule says `when=$p`. A pattern needs no variable (`@t task core.absent=owner`).
+- Every other wire is a fact. A fact may not contain a variable: a wire with a variable
+  that nothing names is refused.
+- Facts and matrix wires have **separate id spaces**: a pattern `@m1` of the matrix
+  does not clash with a fact `@m1`. Within each space an id is declared once. Inside a
+  rule, `$p` means "the wire that pattern `@p` matched", or the wire that template
+  `@p` made.
+- A rule and the wires it names are told together (in one text). A wire with the id of
+  a pattern, told later on its own, is a fact.
+
+**Queries** are patterns: `ask('@c change of=$b1 amount=?a')` returns one object per
+match, with the value of each variable under its name and the id of the matched wire
+under the pattern's id (`{ c: 'ch1', a: '5' }`). Where no name is needed for what is
+matched, the id may be left out: `ask('change of=$b1 amount=?a')` returns `{ a: '5' }`.
+Only queries allow a declaration without an id.
+
+**Canonical form.** `format(wire)` writes `@id type key=value ...` on one line, keys in
+the order they were given, values of a repeated key in order; `{ multiline: true }` puts
+each entry on its own line.
+
+**Errors.** A text that does not follow the grammar throws `SopError` with the line:
+an unterminated string, a declaration without a type, a token that is not `key=value`.
+
+**The old way to declare a pattern.** Until this version a pattern was written
+`?id type ...`. That used `?` for two different things. It is still read, with a
+note in `world.warnings` (`{ kind: 'deprecated', id, why }`), written back as `@id`,
+and will be removed in the next minor version. `node tools/migrate-syntax.mjs <files>`
+rewrites files, including wires inside the strings of a program.
+
+In memory a wire is `{ id, type, attrs: { key: [values] }, meta }`. Values are kept as
+their source token.
 
 ### 2.2 The three layers
 
@@ -113,8 +169,8 @@ imports.
 ### 3.3 `core.rule`: if the `when` circuit is there, the `then` circuit must be there
 
 ```
-?b body mass=?m
-?f force on=$b magnitude=?F
+@b body mass=?m
+@f force on=$b magnitude=?F
 @a acceleration of=$b magnitude=?A
 @c core.calc out=?A fn=div args=?F args=?m
 @newton2 core.rule when=$b when=$f with=$c then=$a
@@ -146,8 +202,8 @@ Variables are local to a rule. Inside a rule, `$b` means "the wire matched by pa
 ### 3.4 `core.deny`: a forbidden circuit
 
 ```
-?ma meeting room=?r time=?t
-?mb meeting room=?r time=?t
+@ma meeting room=?r time=?t
+@mb meeting room=?r time=?t
 @t_other core.check fn=neq args=?ma args=?mb
 @no_double_booking core.deny when=$ma when=$mb if=$t_other why="room already booked"
 ```
@@ -230,8 +286,8 @@ A `core.calc` with `over=` computes over every match of one or more patterns, un
 bindings of the rule's own patterns. Those shared bindings are the group.
 
 ```
-?o order customer=?c
-?l line of=$o item=?item amount=?a
+@o order customer=?c
+@l line of=$o item=?item amount=?a
 @c_n     core.calc out=?n     fn=count   over=$l
 @c_total core.calc out=?total fn=sum     over=$l args=?a
 @c_which core.calc out=?which fn=argmax  over=$l args=?a pick=?item
@@ -270,7 +326,7 @@ A calc computes its result from its arguments. A **relation** states what holds 
 several cells and lets whichever one is missing be computed:
 
 ```
-?p payment paid=?paid total=?total change=?chg
+@p payment paid=?paid total=?total change=?chg
 @r core.relation when=$p sum=?paid sub=?total sub=?chg equals=0      # paid - total - change = 0
 ```
 
@@ -408,7 +464,7 @@ after wires have arrived, they are given their places again, in order of arrival
 - `world.seqOf(id)` and `world.compare(a, b)` read it.
 - The checks `before` and `after` compare two wires: `core.check fn=after args=$b args=$a`.
 - A pattern with `core.absent=<key>` matches only a wire that has no value for that key
-  (`?t task core.absent=owner`), in rules, denies and `ask`. What a rule concluded from
+  (`@t task core.absent=owner`), in rules, denies and `ask`. What a rule concluded from
   it is withdrawn when the key is filled. A rule may not fill a key that it requires to
   be absent; such a matrix is refused.
 - A pattern with `core.select=latest` (or `first`) matches one wire: the latest (first)
@@ -744,7 +800,7 @@ change is refused or the function returns `{ ok: false, why }`; `error` when it 
 function is needed. A `core.action` without `fn=` is declared in full:
 
 ```
-?it item name=?item stock=?have
+@it item name=?item stock=?have
 @enough core.check fn=gte args=?have args=?count why="not enough in stock"
 @left   core.calc  out=?rest fn=sub args=?have args=?count
 @w1 item core.on=$it stock=?rest                    # set: the key of the matched wire gets this value
@@ -1040,6 +1096,11 @@ Since 0.4.0 (the version first published in this repository):
 - New: `core.on=` templates (3.3); the stratification check knows which keys a template
   adds, so a rule may aggregate over a type and fill a key on a wire of that type.
 - New: `core.absent=` in patterns (3.10).
+- **Changed (0.6): one language.** `?` is only a variable. A pattern is declared with
+  `@`, like every wire, and is a pattern because a rule, deny, calc, relation, action
+  or query names it (2.1). `?id type ...` is still read, with a warning in
+  `world.warnings`; `format()` writes `@`. `ask` and `holds` accept a pattern without
+  an id. `tools/migrate-syntax.mjs` converts files.
 - **Changed:** `complete({ defaults: true })` and `step()` now apply a slot's default to
   an optional key too (it was applied only when the key was `required`).
 - New: actions written as wires (4.10); `sets` and `retract` in a patch (4.9.1).

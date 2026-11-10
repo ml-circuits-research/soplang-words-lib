@@ -8,19 +8,25 @@ test('parser: wires, multi-line, repeated keys, strings, comments', () => {
     # a comment
     @b1 phys.mech.body
         mass=2kg  label="a \\"big\\" body"   # trailing comment
-    ?f force on=$b1 on=$b2 magnitude=?F
+    @f force on=$b1 on=$b2 magnitude=?F
   `);
   assert.equal(ws.length, 2);
   assert.deepEqual(ws[0], { id: 'b1', type: 'phys.mech.body', attrs: { mass: ['2kg'], label: ['"a \\"big\\" body"'] }, pattern: false });
   assert.equal(str(ws[0].attrs.label[0]), 'a "big" body');
-  assert.equal(ws[1].pattern, true);
+  assert.deepEqual([ws[1].pattern, ws[1].legacy], [false, undefined], 'a wire with a variable is written like any other');
   assert.deepEqual(ws[1].attrs.on, ['$b1', '$b2']);
+  assert.deepEqual(parse('@n note text="a # is text here" tag=x # and this is a comment')[0].attrs, { text: ['"a # is text here"'], tag: ['x'] });
   assert.equal(quote('say "hi"'), '"say \\"hi\\""');
 });
 
 test('parser: round trip and errors', () => {
-  const text = '@a t k=v s="x y" r=$b\n?p t k=?v';
+  const text = '@a t k=v s="x y" r=$b\n@p t k=?v';
   assert.equal(parse(text).map((w) => format(w)).join('\n'), text);
+  // the old way to declare a pattern is still read, marked, and written back the new way
+  const [old] = parse('?p t k=?v');
+  assert.deepEqual([old.pattern, old.legacy, format(old)], [true, true, '@p t k=?v']);
+  // a declaration without an id is read only where a query allows it
+  assert.deepEqual(parse('t k=?v\nu of=$_1', { anonymous: true }).map((w) => [w.id, w.type, w.anonymous]), [['_1', 't', true], ['_2', 'u', true]]);
   assert.throws(() => parse('@a'), SopError);
   assert.throws(() => parse('k=v'), SopError);
   assert.throws(() => parse('@a t novalue'), SopError);
@@ -67,13 +73,13 @@ test('deduction is incremental and order independent', () => {
   a.tell(mechanics); b.tell(mechanics);
   a.tell('@b1 body mass=2'); a.tell('@f1 force on=$b1 magnitude=10');
   b.tell('@b1 body mass=2  @f1 force on=$b1 magnitude=10');
-  assert.equal(a.ask('?a acceleration magnitude=?v')[0].v, '5');
-  assert.equal(b.ask('?a acceleration magnitude=?v')[0].v, '5');
+  assert.equal(a.ask('@a acceleration magnitude=?v')[0].v, '5');
+  assert.equal(b.ask('@a acceleration magnitude=?v')[0].v, '5');
   // rules told after the facts still apply
   const c = new World();
   c.tell('@b1 body mass=2  @f1 force on=$b1 magnitude=10');
   c.tell(mechanics);
-  assert.equal(c.ask('?a acceleration magnitude=?v')[0].v, '5');
+  assert.equal(c.ask('@a acceleration magnitude=?v')[0].v, '5');
 });
 
 test('refusal: deny constraint, and the world is left untouched', () => {
@@ -117,12 +123,12 @@ test('refusal: dangling reference, duplicate id, variables in facts', () => {
 
 test('matrix errors are reported, not thrown', () => {
   const w = new World();
-  let r = w.tell('?p a k=?x\n@t b k=?x\n@r core.rule when=$p then=$missing');
+  let r = w.tell('@p a k=?x\n@t b k=?x\n@r core.rule when=$p then=$missing');
   assert.equal(r.ok, false);
   assert.ok(r.violations.some((v) => v.kind === 'schema' && /then=\$missing/.test(v.why)));
-  r = w.tell('?p a k=$typo\n@t b k=1\n@r core.rule when=$p then=$t');
+  r = w.tell('@p a k=$typo\n@t b k=1\n@r core.rule when=$p then=$t');
   assert.match(r.violations[0].why, /unknown wire \$typo/);
-  r = w.tell('?p a k=?x\n@c core.calc out=?y fn=nope args=?x\n@t b k=?y\n@r core.rule when=$p with=$c then=$t');
+  r = w.tell('@p a k=?x\n@c core.calc out=?y fn=nope args=?x\n@t b k=?y\n@r core.rule when=$p with=$c then=$t');
   assert.match(r.violations[0].why, /unknown calc function/);
   assert.equal(w.matrix.size, 0);
 });
@@ -131,7 +137,7 @@ test('recursive rules reach a fixpoint; cycles are refused by a deny', () => {
   const w = new World();
   w.tell(family);
   w.tell('@e1 parent of=ana child=bogdan  @e2 parent of=bogdan child=carla  @e3 parent of=carla child=dan');
-  assert.deepEqual(w.ask('?a ancestor of=?who desc=dan').map((x) => x.who).sort(), ['ana', 'bogdan', 'carla']);
+  assert.deepEqual(w.ask('@a ancestor of=?who desc=dan').map((x) => x.who).sort(), ['ana', 'bogdan', 'carla']);
   assert.equal(w.ofType('ancestor').length, 6);
   const r = w.tell('@e4 parent of=dan child=ana');
   assert.equal(r.ok, false);
@@ -141,7 +147,7 @@ test('recursive rules reach a fixpoint; cycles are refused by a deny', () => {
 
 test('runaway derivations are stopped by the depth budget', () => {
   const w = new World({ maxDepth: 5 });
-  w.tell('?n num v=?x\n@c core.calc out=?y fn=add args=?x args=1\n@m num v=?y\n@succ core.rule when=$n with=$c then=$m');
+  w.tell('@n num v=?x\n@c core.calc out=?y fn=add args=?x args=1\n@m num v=?y\n@succ core.rule when=$n with=$c then=$m');
   const r = w.tell('@n0 num v=0');
   assert.equal(r.ok, false);
   assert.equal(r.violations[0].kind, 'depth');
@@ -151,30 +157,30 @@ test('runaway derivations are stopped by the depth budget', () => {
 test('negation: a rule fires only while nothing matches the negated pattern', () => {
   const w = new World();
   w.tell(`
-    ?t task name=?n
-    ?o owner of=$t
+    @t task name=?n
+    @o owner of=$t
     @u unassigned task=$t
     @flag core.rule when=$t not=$o then=$u
   `);
   w.tell('@t1 task name=write  @t2 task name=review  @o1 owner of=$t1 who=ana');
-  assert.deepEqual(w.ask('?u unassigned task=?t').map((x) => x.t), ['$t2']);
+  assert.deepEqual(w.ask('@u unassigned task=?t').map((x) => x.t), ['$t2']);
 });
 
 test('custom functions and ordering test', () => {
   const w = new World({ fns: { upper: ([a]) => a.toUpperCase() } });
   w.tell(`
-    ?p person name=?n
+    @p person name=?n
     @c core.calc out=?N fn=upper args=?n
     @b badge for=$p text=?N
     @mk core.rule when=$p with=$c then=$b
 
-    ?pay payment for=$ord
-    ?ord order item=?i
+    @pay payment for=$ord
+    @ord order item=?i
     @t core.check fn=before args=$pay args=$ord
     @d core.deny when=$pay when=$ord if=$t why="payment before order"
   `);
   w.tell('@p1 person name=ana');
-  assert.equal(w.ask('?b badge text=?t')[0].t, 'ANA');
+  assert.equal(w.ask('@b badge text=?t')[0].t, 'ANA');
   assert.ok(w.tell('@o1 order item=book  @pay1 payment for=$o1').ok);
   // a payment cannot even be stated before its order exists
   assert.equal(w.tell('@pay2 payment for=$o2').ok, false);
@@ -227,14 +233,14 @@ test('the log keeps what was told, not what the wires grew into', () => {
 test('core.check is the condition wire; core.test still works when a rule links it, and is a fact otherwise', () => {
   const w = new World();
   w.load(`
-    ?b box size=?n
+    @b box size=?n
     @big core.check fn=gt args=?n args=10
     @old core.test fn=lt args=?n args=100
     @l large of=$b
     @r core.rule when=$b if=$big if=$old then=$l
   `);
   w.load('@b1 box size=50  @b2 box size=5  @b3 box size=500');
-  assert.deepEqual(w.ask('?l large of=?b').map((x) => x.b), ['$b1'], 'both conditions apply');
+  assert.deepEqual(w.ask('@l large of=?b').map((x) => x.b), ['$b1'], 'both conditions apply');
   // a host's own wires of type core.test (test cases, say) are ordinary facts
   const r = w.tell('@case1 core.test input="hello" expect="world"');
   assert.ok(r.ok);
@@ -257,4 +263,47 @@ test('build: the library says which version and build it is, and docs/version.md
   } else {
     assert.deepEqual([lib.build.hash, lib.build.date], [null, null], 'run from src/: not a build');
   }
+});
+
+test('language: ? is only a variable; a pattern is an ordinary wire that a rule names', () => {
+  const matrix = (sign) => `
+    ${sign}p purchase item=?i qty=?q
+    ${sign}c price item=?i each=?e
+    @calc core.calc out=?t fn=mul args=?q args=?e
+    @line total of=$p amount=?t
+    @r core.rule when=$p when=$c with=$calc then=$line
+    ${sign}big total amount=?a
+    @over core.check fn=gt args=?a args=100
+    @cap core.deny when=$big if=$over why="too much"
+  `;
+  const facts = '@p1 purchase item=pen qty=3  @c1 price item=pen each=4';
+  const now = new World(), old = new World();
+  now.load(matrix('@'));
+  old.load(matrix('?'));
+  now.load(facts);
+  old.load(facts);
+  assert.equal(now.toSOP(), old.toSOP(), 'both ways of writing give the same world');
+  assert.deepEqual([...now.matrix.keys()], [...old.matrix.keys()]);
+  assert.equal(now.ofType('total')[0].attrs.amount[0], '12');
+  assert.deepEqual(now.warnings, []);
+  assert.deepEqual(old.warnings.map((x) => [x.kind, x.id]), [['deprecated', 'p'], ['deprecated', 'c'], ['deprecated', 'big']]);
+  assert.match(old.warnings[0].why, /write @p/);
+  // a pattern with no variable is a pattern because the rule names it
+  const w = new World();
+  w.load('@any task core.absent=owner\n@f flag for=$any\n@r core.rule when=$any then=$f');
+  w.load('@t1 task');
+  assert.deepEqual([w.ofType('flag').length, w.matrix.has('any'), w.has('any')], [1, true, false]);
+  // a wire with a variable that nothing names is not a fact
+  const lone = new World().tell('@x item qty=?q');
+  assert.equal(lone.ok, false);
+  // matrix and facts keep separate ids: a fact may have the id of a pattern
+  assert.ok(now.tell('@p purchase item=ink qty=1').ok);
+  assert.deepEqual([now.has('p'), now.matrix.get('p').attrs.item], [true, ['?i']]);
+  // queries: with an id for what is matched, or without one
+  assert.deepEqual(now.ask('@x purchase item=pen qty=?q'), [{ x: 'p1', q: '3' }]);
+  assert.deepEqual(now.ask('purchase item=pen qty=?q'), [{ q: '3' }]);
+  assert.deepEqual(now.ask('purchase item=?i qty=?q\nprice item=?i each=?e'), [{ i: 'pen', q: '3', e: '4' }]);
+  assert.equal(now.holds('total amount=12'), true);
+  assert.deepEqual(old.ask('?x purchase item=pen'), [{ x: 'p1' }], 'the old form still works in a query');
+  assert.ok(old.warnings.some((x) => x.id === 'x'));
 });

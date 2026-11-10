@@ -10,7 +10,7 @@ const bodies = (es) => es.map((e) => e.assume.map((h) => format({ ...h, id: 'h' 
 test('abduction: two alternative explanations through a two-step chain', () => {
   const w = new World();
   w.tell(garden);
-  assert.deepEqual(bodies(w.abduce('?g slippery place=lawn')), ['@h rain place=lawn', '@h sprinkler place=lawn']);
+  assert.deepEqual(bodies(w.abduce('@g slippery place=lawn')), ['@h rain place=lawn', '@h sprinkler place=lawn']);
   assert.equal(w.wires.size, 0, 'abduction leaves the world untouched');
 });
 
@@ -18,31 +18,31 @@ test('abduction: a deny constraint eliminates an explanation', () => {
   const w = new World();
   w.tell(garden);
   w.tell('@now season name=winter');
-  assert.deepEqual(bodies(w.abduce('?g wet place=lawn')), ['@h rain place=lawn']);
+  assert.deepEqual(bodies(w.abduce('@g wet place=lawn')), ['@h rain place=lawn']);
 });
 
 test('abduction: nothing to assume when the goal already holds; nothing found when impossible', () => {
   const w = new World();
   w.tell(garden);
   w.tell('@r1 rain place=lawn');
-  assert.deepEqual(w.abduce('?g slippery place=lawn').map((e) => e.assume.length), [0]);
-  assert.deepEqual(w.abduce('?g frozen place=lawn'), []);
-  assert.deepEqual(w.abduce('?g slippery place=lawn', { maxDepth: 0 }).length, 1);
-  assert.deepEqual(w.abduce('?g slippery place=street', { maxDepth: 1 }), [], 'two steps needed');
+  assert.deepEqual(w.abduce('@g slippery place=lawn').map((e) => e.assume.length), [0]);
+  assert.deepEqual(w.abduce('@g frozen place=lawn'), []);
+  assert.deepEqual(w.abduce('@g slippery place=lawn', { maxDepth: 0 }).length, 1);
+  assert.deepEqual(w.abduce('@g slippery place=street', { maxDepth: 1 }), [], 'two steps needed');
 });
 
 test('abduction: adopting an explanation makes the observation derivable', () => {
   const w = new World();
   w.tell(garden);
-  const [e] = w.abduce('?g slippery place=street');
+  const [e] = w.abduce('@g slippery place=street');
   assert.ok(w.tell(e.assume).ok);
-  assert.ok(w.holds('?g slippery place=street'));
+  assert.ok(w.holds('@g slippery place=street'));
 });
 
 test('abduction: a conjunction of goals needs a joint explanation', () => {
   const w = new World();
   w.tell(garden);
-  const es = w.abduce('?a wet place=lawn  ?b wet place=street');
+  const es = w.abduce('@a wet place=lawn  @b wet place=street');
   assert.equal(es.length, 4); // rain or sprinkler, independently for each place
   assert.ok(es.every((e) => e.assume.length === 2));
 });
@@ -68,7 +68,7 @@ test('induction then deduction: the learned rule works on unseen facts', () => {
   const w = new World();
   assert.ok(w.tell(induceRule(grandparentExamples, { name: 'gp' })).ok);
   w.tell('@p1 parent of=ion child=maria  @p2 parent of=maria child=vlad  @p3 parent of=vlad child=nicu');
-  const got = w.ask('?g grandparent of=?a child=?b').map((x) => `${x.a}>${x.b}`).sort();
+  const got = w.ask('@g grandparent of=?a child=?b').map((x) => `${x.a}>${x.b}`).sort();
   assert.deepEqual(got, ['ion>vlad', 'maria>nicu']);
 });
 
@@ -77,20 +77,20 @@ test('induction: constants shared by all examples stay constants; references bet
     { when: '@o order item=book status=paid  @c customer of=$o tier=gold', then: '@s shipment for=$o speed=express' },
     { when: '@o order item=lamp status=paid  @c customer of=$o tier=gold', then: '@s shipment for=$o speed=express' },
   ], { name: 'ship' });
-  assert.match(rule, /\?ship_p0 order item=\?v0 status=paid/);
-  assert.match(rule, /\?ship_p1 customer of=\$ship_p0 tier=gold/);
+  assert.match(rule, /@ship_p0 order item=\?v0 status=paid/);
+  assert.match(rule, /@ship_p1 customer of=\$ship_p0 tier=gold/);
   assert.match(rule, /@ship_t0 shipment for=\$ship_p0 speed=express/);
   const w = new World();
   w.tell(rule);
   w.tell('@o9 order item=pen status=paid  @c9 customer of=$o9 tier=gold  @o8 order item=cup status=open  @c8 customer of=$o8 tier=gold');
-  assert.deepEqual(w.ask('?s shipment for=?o').map((x) => x.o), ['$o9']);
+  assert.deepEqual(w.ask('@s shipment for=?o').map((x) => x.o), ['$o9']);
 });
 
 test('induction: a learned rule that contradicts the world is refused by it', () => {
   const w = new World();
   w.tell(`
-    ?s shipment for=?k
-    ?x order status=open ref=?k
+    @s shipment for=?k
+    @x order status=open ref=?k
     @d core.deny when=$s when=$x why="never ship an open order"
   `);
   w.tell('@o1 order status=open ref=$o1x  @o1x tag');
@@ -161,7 +161,7 @@ test('completion: forced values propagate, defaults are assumptions, rules add w
   const step = w.complete();
   assert.deepEqual(step.filled.map((f) => `${f.key}=${f.value}`), ['room=$big', 'time=14:00']);
   assert.deepEqual(step.pending.map((f) => f.key), ['duration']);
-  assert.ok(w.holds('?c confirmation for=$m1'), 'a rule reacted to the completed wire');
+  assert.ok(w.holds('@c confirmation for=$m1'), 'a rule reacted to the completed wire');
   assert.equal(w.explain('m1').fills.find((f) => f.key === 'time').via, 'core.complete');
 
   w.complete({ defaults: true });
@@ -253,20 +253,20 @@ test('defaults are assumptions: a later statement replaces them and what followe
   const w = new World();
   w.tell(`
     @k1 core.slot of=order key=shipping required=true default=standard
-    ?o order shipping=?s
+    @o order shipping=?s
     @c core.calc out=?d fn=concat args=?s args=_label
     @l label for=$o kind=?d
     @mk core.rule when=$o with=$c then=$l
   `);
   w.tell('@o1 order item=book');
   w.complete({ defaults: true });
-  assert.deepEqual(w.ask('?l label kind=?k').map((x) => x.k), ['standard_label']);
+  assert.deepEqual(w.ask('@l label kind=?k').map((x) => x.k), ['standard_label']);
 
   const r = w.fill('o1', 'shipping', 'express');
   assert.ok(r.ok);
   assert.deepEqual(r.revised, [{ id: 'o1', key: 'shipping', value: 'standard', tier: 'default' }]);
   assert.deepEqual(w.get('o1').attrs.shipping, ['express']);
-  assert.deepEqual(w.ask('?l label kind=?k').map((x) => x.k), ['express_label'], 'the old consequence is gone');
+  assert.deepEqual(w.ask('@l label kind=?k').map((x) => x.k), ['express_label'], 'the old consequence is gone');
   assert.ok(w.history().some((e) => e.op === 'revise'));
 
   // a value that was told (not assumed) is still protected
@@ -277,8 +277,8 @@ test('defaults give way when a deny involves them', () => {
   const w = new World();
   w.tell(`
     @k1 core.slot of=trip key=transport required=true default=car
-    ?t trip transport=car
-    ?s strike on=roads
+    @t trip transport=car
+    @s strike on=roads
     @d core.deny when=$t when=$s why="roads are closed"
   `);
   w.tell('@t1 trip to=cluj');
@@ -292,18 +292,18 @@ test('defaults give way when a deny involves them', () => {
 
 test('matrix and facts have separate id spaces', () => {
   const w = new World();
-  w.tell('?m1 meeting room=?r\n@c1 check of=$m1\n@r1 core.rule when=$m1 then=$c1');
+  w.tell('@m1 meeting room=?r\n@c1 check of=$m1\n@r1 core.rule when=$m1 then=$c1');
   const r = w.tell('@m1 meeting room=a  @c1 note text="unrelated"');
   assert.ok(r.ok);
-  assert.ok(w.holds('?c check of=$m1'));
-  assert.equal(w.tell('?m1 meeting room=?r').violations[0].kind, 'duplicate-id');
+  assert.ok(w.holds('@c check of=$m1'));
+  assert.equal(w.tell('@m1 meeting room=?r').violations[0].kind, 'duplicate-id');
 });
 
 test('negation must be stratified', () => {
   const w = new World();
   const r = w.tell(`
-    ?a item name=?n
-    ?b mark of=$a
+    @a item name=?n
+    @b mark of=$a
     @m mark of=$a
     @loop core.rule when=$a not=$b then=$m
   `);
@@ -314,13 +314,13 @@ test('negation must be stratified', () => {
 test('abduction: explanations are ranked by the cost of what they assume', () => {
   const w = new World();
   w.tell(garden.replace('@ab_rain core.abducible of=rain', '@ab_rain core.abducible of=rain cost=5'));
-  const es = w.abduce('?g wet place=lawn');
+  const es = w.abduce('@g wet place=lawn');
   assert.deepEqual(es.map((e) => [e.assume[0].type, e.cost]), [['sprinkler', 1], ['rain', 5]]);
 });
 
 test('index: joins on a fixed value do not scan the whole type', () => {
   const w = new World();
-  w.tell('?p1 parent of=?x child=?y\n?p2 parent of=?y child=?z\n@g grandparent of=?x child=?z\n@gp core.rule when=$p1 when=$p2 then=$g');
+  w.tell('@p1 parent of=?x child=?y\n?p2 parent of=?y child=?z\n@g grandparent of=?x child=?z\n@gp core.rule when=$p1 when=$p2 then=$g');
   let text = '';
   for (let i = 0; i < 2000; i++) text += `@e${i} parent of=n${i} child=n${i + 1}\n`;
   const t = Date.now();

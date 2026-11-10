@@ -20,6 +20,11 @@ import { abduce } from './abduce.mjs';
 
 const first = (w, k) => w.attrs[k]?.[0];
 const K = (type, key, value) => `${type}\u0001${key}\u0001${value}`;
+// the keys through which a matrix wire names its patterns and templates
+const NAMES = {
+  'core.rule': LINKS, 'core.deny': LINKS, 'core.calc': ['over'], 'core.relation': ['when'],
+  'core.action': ['when', 'with', 'if', 'set', 'add', 'remove'],
+};
 const LIST = '\u0002'; // marks a list of values bound to one variable (the result of collect)
 const TIES = '\u0003ties'; // suffix of the hidden variable that holds the tied picks of an argmax or argmin
 const setOf = (map, k) => map.get(k) || map.set(k, new Set()).get(k);
@@ -43,6 +48,7 @@ export class World {
     } = options;
     this.options = { fns, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget, decimals };
     this._cannot = null;          // reasons given by functions during a query (see cannot)
+    this.warnings = [];           // things that still work and will not: { kind, id, why }
     this._reads = new WeakMap();  // bindings of a rule body -> the aggregated cells it read
     this._b = new Budget(budget && budget.steps, budget && budget.ms); // the budget of the call in progress (or of the last one)
     this._api = 0;                // depth of public calls: the outermost one owns the budget
@@ -109,8 +115,8 @@ export class World {
       const out = [];
       for (const s of this._matchAll(pats, 0, EMPTY)) {
         const row = {};
-        for (const p of pats) row[p.id] = walk('?' + p.id, s);
-        for (const k of bound(s)) row[k.slice(1)] = walk(k, s);
+        for (const p of pats) if (!p.anonymous) row[p.id] = walk('?' + p.id, s);
+        for (const k of bound(s)) if (!/^\?_\d+$/.test(k)) row[k.slice(1)] = walk(k, s);
         out.push(row);
       }
       return out;
@@ -686,13 +692,14 @@ export class World {
    */
   _ingest(wires, res) {
     const facts = [];
+    // A wire belongs to the matrix (as a pattern or a template) when a rule, deny, calc,
+    // relation or action told with it names it. A wire of the same id told on its own is
+    // a fact: the two have separate id spaces.
     const linked = new Set();
     const noteLinks = (ws) => {
       for (const w of ws) {
-        // the templates of an action written as wires belong to the matrix, like those of a rule
-        if (w.type === 'core.action') for (const k of ['when', 'with', 'if', 'set', 'add', 'remove']) for (const v of w.attrs[k] || []) if (v[0] === '$') linked.add(v.slice(1));
-        if (w.type !== 'core.rule' && w.type !== 'core.deny') continue;
-        for (const k of LINKS) for (const v of w.attrs[k] || []) if (v[0] === '$') linked.add(v.slice(1));
+        const keys = NAMES[w.type];
+        if (keys) for (const k of keys) for (const v of w.attrs[k] || []) if (v[0] === '$') linked.add(v.slice(1));
       }
     };
     // wire types that a core.schema.map declares as schema, known before or told in this batch
@@ -709,7 +716,8 @@ export class World {
       }
     };
     note(wires);
-    // facts and matrix wires have separate id spaces: a pattern ?m1 does not clash with a fact @m1
+    // facts and matrix wires have separate id spaces: a pattern @m1 of the matrix does not clash with a fact @m1
+    for (const w of wires) if (w.legacy) this._deprecated(w.id);
     const isSchema = (w) => w.pattern || SCHEMA_TYPES.has(w.type) || maps.has(w.type) || linked.has(w.id);
     const load = (name, prefixed) => { // a module of the library, once
       if (this.used.has(name)) return;
@@ -799,12 +807,20 @@ export class World {
 
   // ---------------------------------------------------------------- matching
 
+  /** Note once per id that a pattern was declared the old way. */
+  _deprecated(id) {
+    if (this.warnings.some((x) => x.kind === 'deprecated' && x.id === id)) return;
+    this.warnings.push({ kind: 'deprecated', id, why: `?${id} declares a pattern the old way: write @${id}; ? is for variables only` });
+  }
+
   _patterns(query) {
-    const ws = typeof query === 'string' ? parse(query) : query;
+    const ws = typeof query === 'string' ? parse(query, { anonymous: true }) : query;
     const locals = new Set(ws.map((w) => w.id));
     const c = this._compiled();
     return ws.map((w) => {
+      if (w.legacy) this._deprecated(w.id);
       const p = localize(w, locals);
+      if (w.anonymous) p.anonymous = true;
       if (p.attrs['core.select']) { p.select = p.attrs['core.select'][0]; delete p.attrs['core.select']; }
       if (p.attrs['core.absent']) { p.absent = p.attrs['core.absent'].map((key) => c.shortKey(p.type, key)); delete p.attrs['core.absent']; }
       for (const key of Object.keys(p.attrs)) { // full key names and short ones are the same key

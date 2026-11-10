@@ -438,7 +438,7 @@ export function compileMatrix(world) {
 /**
  * Relations that solve in more than one direction. A linear relation over cells,
  *
- *   ?p payment paid=?paid total=?total change=?chg
+ *   @p payment paid=?paid total=?total change=?chg
  *   @r core.relation when=$p sum=?paid sub=?total sub=?chg equals=0
  *
  * becomes one rule per cell: when the others are known, this one is computed and put on

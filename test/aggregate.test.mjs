@@ -33,8 +33,8 @@ test('aggregates: kept up to date when wires arrive, change or leave', () => {
 test('aggregates: an empty group counts 0 and sums 0; max, argmax and collect have nothing to say', () => {
   const w = new World();
   w.load(`
-    ?o order customer=?c
-    ?l line of=$o amount=?a
+    @o order customer=?c
+    @l line of=$o amount=?a
     @c1 core.calc out=?n fn=count over=$l
     @c2 core.calc out=?t fn=sum over=$l args=?a
     @s1 tally of=$o lines=?n total=?t
@@ -44,11 +44,11 @@ test('aggregates: an empty group counts 0 and sums 0; max, argmax and collect ha
     @r2 core.rule when=$o with=$c3 then=$s2
   `);
   w.load('@o1 order customer=ana');
-  assert.deepEqual(w.ask('?t tally lines=?n total=?x').map((x) => [x.n, x.x]), [['0', '0']]);
+  assert.deepEqual(w.ask('@t tally lines=?n total=?x').map((x) => [x.n, x.x]), [['0', '0']]);
   assert.equal(w.ofType('peak').length, 0);
   w.load('@l1 line of=$o1 amount=2.5kg  @l2 line of=$o1 amount=1.5kg');
-  assert.deepEqual(w.ask('?t tally lines=?n total=?x').map((x) => [x.n, x.x]), [['2', '4kg']], 'units are kept');
-  assert.deepEqual(w.ask('?p peak top=?m').map((x) => x.m), ['2.5kg']);
+  assert.deepEqual(w.ask('@t tally lines=?n total=?x').map((x) => [x.n, x.x]), [['2', '4kg']], 'units are kept');
+  assert.deepEqual(w.ask('@p peak top=?m').map((x) => x.m), ['2.5kg']);
 });
 
 test('aggregates: a deny can speak about a whole group, and names the wires behind it', () => {
@@ -65,29 +65,29 @@ test('aggregates: a deny can speak about a whole group, and names the wires behi
 
 test('aggregates: a rule may not aggregate over what its own consequences produce', () => {
   const r = new World().tell(`
-    ?o order customer=?c
-    ?l line of=$o amount=?a
+    @o order customer=?c
+    @l line of=$o amount=?a
     @c core.calc out=?t fn=sum over=$l args=?a
     @extra line of=$o amount=?t
     @loop core.rule when=$o with=$c then=$extra
   `);
   assert.equal(r.ok, false);
   assert.match(r.violations[0].why, /not stratified.*"line".*aggregates/);
-  assert.match(new World().tell('?o a k=?x\n?l b of=$o\n@c core.calc out=?n fn=median over=$l\n@t c n=?n\n@r core.rule when=$o with=$c then=$t').violations[0].why, /unknown aggregate function "median"/);
+  assert.match(new World().tell('@o a k=?x\n?l b of=$o\n@c core.calc out=?n fn=median over=$l\n@t c n=?n\n@r core.rule when=$o with=$c then=$t').violations[0].why, /unknown aggregate function "median"/);
 });
 
 test('aggregates: argmin with the wire itself as the pick, and min over clock times', () => {
   const w = new World();
   w.load(`
-    ?d day name=?n
-    ?m meeting on=?n starts=?t
+    @d day name=?n
+    @m meeting on=?n starts=?t
     @c1 core.calc out=?first fn=argmin over=$m args=?t
     @c2 core.calc out=?at fn=min over=$m args=?t
     @s opening of=$d meeting=?first at=?at
     @r core.rule when=$d with=$c1 with=$c2 then=$s
   `);
   w.load('@d1 day name=monday  @m1 meeting on=monday starts=14:30  @m2 meeting on=monday starts=9:05  @m3 meeting on=monday starts=10:00');
-  assert.deepEqual(w.ask('?o opening meeting=?m at=?t').map((x) => [x.m, x.t]), [['$m2', '9:05']], '9:05 is before 10:00, not after it as text would say');
+  assert.deepEqual(w.ask('@o opening meeting=?m at=?t').map((x) => [x.m, x.t]), [['$m2', '9:05']], '9:05 is before 10:00, not after it as text would say');
 });
 
 test('functions: abs, round, mod, idiv', () => {
@@ -176,8 +176,8 @@ test('aggregates: looking only at changed groups gives the same world as evaluat
 test('aggregates: a deny over a group is also checked when a wire leaves the group', () => {
   const w = new World();
   w.load(`
-    ?t team name=?n status=active
-    ?m member of=?n
+    @t team name=?n status=active
+    @m member of=?n
     @c core.calc out=?k fn=count over=$m
     @few core.check fn=lt args=?k args=2
     @d core.deny when=$t with=$c if=$few why="an active team needs two members"
@@ -192,8 +192,8 @@ test('aggregates: a deny over a group is also checked when a wire leaves the gro
 
 test('aggregates: a tie for argmax or argmin is ambiguous, with the alternatives; ties=first picks one', () => {
   const matrix = (ties) => `
-    ?r race
-    ?e entry of=$r who=?w score=?s
+    @r race
+    @e entry of=$r who=?w score=?s
     @c core.calc out=?best fn=argmax over=$e args=?s pick=?w${ties}
     @win race core.on=$r winner=?best
     @rule core.rule when=$r with=$c then=$win

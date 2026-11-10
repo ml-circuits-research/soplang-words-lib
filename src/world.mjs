@@ -316,7 +316,43 @@ export class World {
    * everything is undone. No state in between is judged.
    */
   check(patch, opts = {}) {
+    if (patch === undefined || patch === null) return this._guard(opts, () => this._audit(), (v) => ({ ok: false, violations: [v], issues: [] }));
     return this._guard(opts, () => this._patch(patch, { ...opts, dry: true }), (v) => this._refusal(v));
+  }
+
+  /**
+   * Validate the whole world as it stands: every wire against its slots and every deny,
+   * not only what the last change touched. Returns { ok, violations, issues }, where
+   * issues are the standing soft violations (they do not make ok false).
+   */
+  _audit() {
+    const res = this._result();
+    const mark = this._begin(false);
+    try {
+      for (const id of this.wires.keys()) res._touched.add(id);
+      res._full = true;
+      res._all = true;
+      this._validate(res);
+      for (const v of res.violations) this._support(v);
+    } finally {
+      this._rollback(mark);
+    }
+    const issues = this.ofType('core.issue').map((i) => ({ id: i.id, rule: (i.attrs.rule || [])[0]?.slice(1), about: (i.attrs.about || []).map((v) => v.slice(1)), ...(i.attrs.key ? { key: i.attrs.key[0] } : {}), why: i.attrs.why ? str(i.attrs.why[0]) : undefined }));
+    return { ok: !res.violations.length, violations: res.violations, issues };
+  }
+
+  /**
+   * Check wires that come from somewhere else against a matrix: World.audit(wires,
+   * matrix, options) returns { ok, violations, issues, world }. Nothing is kept unless
+   * the caller keeps `world`.
+   */
+  static audit(wires, matrix, options = {}) {
+    const world = new this(options);
+    const m = matrix ? world.tell(matrix) : { ok: true, violations: [] };
+    if (!m.ok) return { ok: false, violations: m.violations, issues: [], world };
+    const r = world.tell(wires, { strict: false });
+    if (!r.ok) return { ok: false, violations: r.violations, issues: [], world };
+    return { ...world.check(), world };
   }
 
   /** Apply a patch (see check): all of it, or nothing. */
@@ -789,6 +825,7 @@ export class World {
       }
     }
     if (schemaChanged) {
+      res._all = true; // a changed matrix is judged against everything, and says everything it finds
       const prev = this._c;
       this._c = null;
       this._do(() => { this._c = prev; });
@@ -1347,10 +1384,18 @@ export class World {
     // A deny without negation can only start to match through a wire that was added or
     // changed, so it is checked from the touched wires. Denies with negation are checked in full.
     const reported = new Set();
+    // One match per deny is enough to refuse a change. A check of the whole world, or of
+    // a changed matrix, lists every match (once per set of wires).
+    const every = !!res._all, seen = new Set();
     const report = (d, s) => {
-      reported.add(d);
+      const wires = d.when.map((p) => walk('?' + p.id, s));
+      if (every) {
+        const name = `${d.id}\u0001${[...wires].sort().join('\u0001')}`;
+        if (seen.has(name)) return;
+        seen.add(name);
+      } else reported.add(d);
       const said = this._say(d.why, d, s);
-      res.violations.push({ kind: 'deny', rule: d.id, why: said.text, ...(said.bindings ? { bindings: said.bindings } : {}), wires: d.when.map((p) => walk('?' + p.id, s)) });
+      res.violations.push({ kind: 'deny', rule: d.id, why: said.text, ...(said.bindings ? { bindings: said.bindings } : {}), wires });
     };
     for (const id of res._touched) {
       const w = this.wires.get(id);
@@ -1358,19 +1403,19 @@ export class World {
       for (const { rule: d, idx } of c.forType(c.denyByType, w.type)) {
         if (d.not.length || d.hasSelect || reported.has(d)) continue;
         seeded: for (const s0 of this._matchWire(d.when[idx], w, EMPTY)) {
-          for (const s of this._bodies(d, s0, idx)) { report(d, s); break seeded; }
+          for (const s of this._bodies(d, s0, idx)) { report(d, s); if (!every) break seeded; }
         }
       }
     }
     for (const [d, seeds] of res._seeds) { // a deny over a group: the groups whose wires changed
       if (d.kind !== 'deny' || d.not.length || d.hasSelect || reported.has(d)) continue;
       groups: for (const s0 of seeds.values()) {
-        for (const s of this._bodies(d, s0, -1)) { report(d, s); break groups; }
+        for (const s of this._bodies(d, s0, -1)) { report(d, s); if (!every) break groups; }
       }
     }
     for (const d of c.denies) {
       if ((!d.not.length && !d.hasSelect) || reported.has(d)) continue;
-      for (const s of this._bodies(d, EMPTY, -1)) { report(d, s); break; }
+      for (const s of this._bodies(d, EMPTY, -1)) { report(d, s); if (!every) break; }
     }
   }
 }

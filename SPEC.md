@@ -759,6 +759,25 @@ assignment from `solve()`).
   In the log the parts of a patch stay together, so a restored world applies them
   together again. `apply(assignment)` is `applyPatch` for a solver's answer.
 
+**The whole world.** `world.check()` without a patch validates the world as it stands:
+every wire against its slots, every deny against everything. It returns `{ ok,
+violations, issues }`: `violations` lists everything that is wrong, each thing once
+(the normal check of a change stops at the first match of each deny); `issues` are the
+standing soft violations, which do not make `ok` false. In a world that was only
+changed through its API this finds nothing; it is the audit a host runs to be sure, and
+what catches a wire object changed behind the world's back. A change to the matrix is
+judged the same way, against everything that is there. `World.audit(wires, matrix,
+options)` does it for wires that come from somewhere else: `{ ok, violations, issues,
+world }`.
+
+**A deny over a state refuses the event.** A deny whose pattern reads a fluent
+(`@wl wallet amount=?m`, "refuse when ?m is below 0") is checked when an event changes
+the state, so the *event* is refused when it is told, with the event among the
+`support` of the violation, and the state stays as it was. A deny written over a
+question wire instead ("when somebody asks for the balance and it is negative") only
+speaks when the question is asked: put the deny on the state when the event is what
+should be refused, and say `soft=true` when it should be kept and flagged (3.4).
+
 Search uses it. A whole assignment is verified as one patch. Trying one value on its own
 (to trim a domain, to call a key dead) is a sound test only when nothing in the matrix
 reads what is absent; when a rule or a deny uses `not=`, `core.absent=`, a selector or
@@ -1129,6 +1148,7 @@ Since 0.4.0 (the version first published in this repository):
 - New: `core.on=` templates (3.3); the stratification check knows which keys a template
   adds, so a rule may aggregate over a type and fill a key on a wire of that type.
 - New: `core.absent=` in patterns (3.10).
+- New (0.6): `world.check()` without a patch and `World.audit(wires, matrix)` (4.9.1).
 - New (0.6): violations carry `involved` (the wires as they were) and, for a deny,
   `bindings`; `why=` may quote variables (3.4).
 - New (0.6): a query answered by supposition returns the supposed wire (`supposed`, 4.10).

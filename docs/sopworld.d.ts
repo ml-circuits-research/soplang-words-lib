@@ -210,6 +210,10 @@ export class World {
   apply(assignment: Assignment[], options?: Budgeted & { via?: string }): Result;
   /** would these changes be accepted together? Applied in one scratch transaction and undone. */
   check(patch: Patch, options?: Budgeted & { strict?: boolean }): Result;
+  /** without a patch: validate the whole world; every violation, and the standing issues */
+  check(): { ok: boolean; violations: Violation[]; issues: { id: string; rule?: string; about: string[]; key?: string; why?: string }[] };
+  /** check wires from somewhere else against a matrix */
+  static audit(wires: string | Wire[], matrix?: string | Wire[], options?: WorldOptions): { ok: boolean; violations: Violation[]; issues: object[]; world: World };
   /** apply several changes that must hold together: all or nothing */
   applyPatch(patch: Patch, options?: Budgeted & { strict?: boolean }): Result;
   query(question: Question | Wire | string, options?: Budgeted & { record?: boolean; suppose?: boolean; at?: number }): QueryResult;

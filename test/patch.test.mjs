@@ -130,3 +130,59 @@ test('patch: the solvers agree with brute force over check, on random problems w
   assert.ok(sat >= 8 && unsat >= 8, `${sat} satisfiable, ${unsat} unsatisfiable`);
   console.log(`# ${sat} satisfiable and ${unsat} unsatisfiable problems compared`);
 });
+
+test('check(): the whole world, every violation and every standing issue; World.audit for foreign wires', () => {
+  const matrix = `
+    @k1 core.slot of=tank key=level kind=number min=0 max=100
+    @k2 core.slot of=tank key=name id=true
+    @k3 core.slot of=tank key=temp kind=number max=80 soft=true
+    @a pump feeds=$t
+    @b pump feeds=$t
+    @t tank
+    @c core.check fn=neq args=$a args=$b
+    @two core.deny when=$a when=$b when=$t if=$c why="two pumps on one tank"
+  `;
+  const w = new World();
+  w.load(matrix);
+  w.load('@t1 tank name=north level=40 temp=95  @p1 pump feeds=$t1');
+  const ok = w.check();
+  assert.deepEqual([ok.ok, ok.violations, ok.issues.map((i) => [i.about, i.key, i.why])], [true, [], [[['t1'], 'temp', 'temp must be at most 80']]]);
+  // tightening the matrix is checked against everything that is there, and refused with all of it
+  w.load('@p2 pump feeds=$t2  @t2 tank name=south level=10');
+  const late = w.tell('@late pump core.absent=power\n@nopower core.deny when=$late why="a pump needs a power rating"');
+  assert.deepEqual([late.ok, late.violations.map((v) => v.wires[0]).sort()], [false, ['p1', 'p2']]);
+  // a wire object changed behind the world's back (a host bug): check() finds what tell never saw
+  w.get('t1').attrs.level = ['140'];
+  w.get('t2').attrs.level = ['-5'];
+  const all = w.check();
+  assert.equal(all.ok, false);
+  assert.deepEqual(all.violations.map((v) => [v.kind, v.id, v.why]).sort(), [['domain', 't1', 'must be at most 100'], ['domain', 't2', 'must be at least 0']]);
+  assert.deepEqual(all.violations.find((v) => v.id === 't2').involved[0].attrs.level, ['-5']);
+  w.get('t1').attrs.level = ['40'];
+  w.get('t2').attrs.level = ['10'];
+  assert.equal(w.check({ wires: '@p3 pump feeds=$t1 power=2kW' }).violations[0].why, 'two pumps on one tank', 'with a patch it is still the patch that is judged');
+  // wires from somewhere else, against a matrix
+  const good = World.audit('@t1 tank name=north level=40', matrix);
+  assert.deepEqual([good.ok, good.violations, good.issues], [true, [], []]);
+  const bad = World.audit('@t1 tank name=north level=140  @p1 pump feeds=$t1  @p2 pump feeds=$t1', matrix);
+  assert.equal(bad.ok, false);
+  assert.deepEqual(bad.violations.map((v) => v.kind).sort(), ['deny', 'domain'], 'everything wrong, each thing once');
+  assert.equal(World.audit('@t1 tank', '@r core.rule when=$nothing then=$nothing').violations[0].kind, 'schema');
+});
+
+test('a deny over a state refuses the event that would break it, when the event is told', () => {
+  const w = new World();
+  w.load(`
+    @k core.slot of=wallet key=owner id=true
+    @f core.fluent of=wallet key=amount
+    @e core.effect on=spend fluent=$f op=sub amount=n where.owner=who
+    @wl wallet amount=?m
+    @neg core.check fn=lt args=?m args=0
+    @d core.deny when=$wl if=$neg why="that would leave ?m"
+  `);
+  w.load('@w1 wallet owner=ana amount=10');
+  assert.ok(w.tell('@s1 spend who=ana n=4').ok);
+  const r = w.tell('@s2 spend who=ana n=40');
+  assert.deepEqual([r.ok, r.violations[0].why, r.violations[0].support, w.has('s2'), w.get('w1').attrs.amount], [false, 'that would leave -34', ['w1', 's2', 's1'], false, ['6']]);
+  assert.equal(w.check().ok, true);
+});

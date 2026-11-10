@@ -1160,3 +1160,27 @@ the same rule set; a `missing` answer shows an empty `set`; a lookup has no `sup
   `bindings` as data. Same for a soft deny (the issue's `why`) and for the guard of an
   action written as wires. A name followed by punctuation ("?t.") is handled; an
   unbound variable stays as written.
+
+## W4 — the whole state can be checked; a deny over a state refuses the event — done
+
+`npm test`: 190 pass, 0 fail on sources and built file. Pilot unchanged.
+`node tools/scan-loops.mjs src`: clean.
+
+- `world.check()` with no argument validates every wire and every deny and returns
+  `{ ok, violations, issues }`. In this mode, and when the matrix itself changes, every
+  match of a deny is listed (once per set of wires); a normal change still stops at the
+  first match per deny.
+- `World.audit(wires, matrix, options)` for wires from elsewhere.
+- **The deny over a fluent: the engine already does it; no fix was needed.** Probe
+  (`/tmp/w4.mjs`, now a test): a wallet with `amount` as a fluent, a `spend` effect and a
+  deny "amount below 0" on the wallet. Telling a spend of 40 against 6 returns
+  `ok: false`, `why: "that would leave -34"`, support `[w1, s2, s1]`; the event is not
+  in the world and the amount is still 6. What the host saw comes from how the pilot's
+  shop matrix is written: its denies are on the *question* wires (balance, left-after),
+  because PSys2's own behaviour is to record the purchase and report the conflict when
+  asked, and the pilot was matching that. SPEC 4.9.1 now states the pattern: put the
+  deny on the state to refuse the event; `soft=true` to keep it and flag it.
+- Tests in `test/patch.test.mjs`: a valid world with one soft issue; a tightened matrix
+  refused with both offending wires; two wire objects changed behind the world's back,
+  both found by `check()`; `World.audit` on good, bad and badly-formed input; the
+  deny-over-state pattern.

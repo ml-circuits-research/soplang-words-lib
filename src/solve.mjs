@@ -150,7 +150,7 @@ function ground(problem) {
       if (done.has(v.id)) continue;
       done.add(v.id);
       const wire = w.wires.get(v.id);
-      for (const { rule: d, idx } of c.denyByType.get(wire.type) || []) {
+      for (const { rule: d, idx } of c.forType(c.denyByType, wire.type)) {
         if (d.not.length) continue;
         for (const s0 of w._matchWire(d.when[idx], wire, EMPTY)) {
           for (const s of w._bodies(d, s0, idx)) {

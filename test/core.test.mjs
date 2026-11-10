@@ -124,7 +124,7 @@ test('matrix errors are reported, not thrown', () => {
   assert.match(r.violations[0].why, /unknown wire \$typo/);
   r = w.tell('?p a k=?x\n@c core.calc out=?y fn=nope args=?x\n@t b k=?y\n@r core.rule when=$p with=$c then=$t');
   assert.match(r.violations[0].why, /unknown calc function/);
-  assert.equal(w.schema.size, 0);
+  assert.equal(w.matrix.size, 0);
 });
 
 test('recursive rules reach a fixpoint; cycles are refused by a deny', () => {

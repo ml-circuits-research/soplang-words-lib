@@ -72,7 +72,8 @@ not scan a whole type.
 
 ## 3. The matrix language
 
-Eight wire types. Everything else is a fact.
+Ten wire types (`core.schema.map` and `core.namespace` are in section 3.9), plus any
+foreign schema wires a `core.schema.map` declares. Everything else is a fact.
 
 ### 3.1 `core.slot`: one key of one type
 
@@ -162,7 +163,74 @@ module name as an id prefix (`garden.rain_wets`), so modules cannot clash. Types
 prefixed: modules meet through shared types or through bridge rules. The `core.use` wire
 is what the log records, so a snapshot stays small and follows the library.
 
-### 3.8 Order, sequence and parallelism
+### 3.8 Type inheritance
+
+`core.type` may carry `extends=<parent>`. A wire of a type is also a wire of every type
+its type extends:
+
+- a pattern of type `T` matches wires of `T` and of its descendants, so rules, denies,
+  queries and abduction goals written for a type apply to the types that extend it;
+- keys (slots) are inherited, the nearest declaration winning; identity keys too;
+- a key that refers to a type (`type=T`, `value=$T`) accepts wires of its descendants;
+- `ofType(T)` includes descendants. Wires are indexed under their type and under each
+  ancestor; when a change alters the hierarchy the indexes are rebuilt inside the same
+  transaction, and restored if the change is refused;
+- `closed=true` applies to the type that declares it; its keys are its own and the
+  inherited ones.
+
+### 3.9 Kinds, key names, and schemas in another notation
+
+**Literal kinds.** A slot may say what kind of literal its values are, with one or more
+`kind=` (alternatives): `integer`, `number` (no unit), `boolean`, `string`, `atom` (not
+quoted), `quantity.<name>` (a number with an optional unit), `time.<name>` (any literal
+in this version); a kind the library does not know accepts any literal. `type=` names
+the type a reference must point to (descendants included); several are alternatives. A
+slot with both accepts either. Kinds are checked on every `tell` and `fill`.
+
+**Key names.** A key may be written short (`seats=`) or qualified with the wire's type or
+one of its ancestors (`fleet.vehicle.seats=`): both are the same key, in facts, `fill`,
+patterns and queries.
+
+**Open namespaces.** Keys under `core.` are always allowed, also on closed types, and are
+not validated unless a slot declares them. `@n core.namespace prefix=audit. open=true`
+declares another such prefix (for bookkeeping keys such as provenance or sequence).
+
+**A schema in another notation.** A system that already has schema wires loads them
+unchanged by telling the world how to read them. `core.schema.map` is data, not code:
+
+```
+@m1 core.schema.map from=field                 # wires of type `field` declare a key
+    owner=id.prefix key=id.suffix              # of the type and key named by their id
+    value=is many=multi:yes required=must ask=prompt default=usually
+@m2 core.schema.map from=class as=type name=id extends=parent closed=sealed:yes root=object
+@m3 core.schema.map from=package as=module name=name imports=needs
+
+@fleet.vehicle.seats field is=integer must=true prompt="How many seats?" audited=true
+```
+
+| Where a field is read from | Meaning |
+| --- | --- |
+| `id`, `id.prefix`, `id.suffix` | the wire id, the part up to its last dot, the part after it |
+| `<attr>` | the attribute of that name (all its values where a list is expected) |
+| `<attr>:<value>` | true when the attribute has that value |
+
+- `as=slot` (default) fields: `owner`, `key`, `required`, `many`, `id`, `ask`, `default`,
+  `enum`, `min`, `max`, `step`, `kind`, `type`, and `value` for an attribute that mixes
+  literal kinds with `$type` references.
+- `as=type` fields: `name`, `extends`, `closed`, and `root` (the parent of a type that
+  names none). A map with `from=core.type` changes how native type wires are read.
+- `as=module` fields: `name`, `imports`. Such a wire makes its text a module that names
+  what it needs; each import found in the library is loaded once, **without** prefixing
+  ids. An import that is neither loaded nor in the library is a `schema` violation.
+- Attributes of schema wires that the engine does not use are kept and never refused.
+  `world.schema(type)` returns the parent, the lineage, `closed`, the type wire's
+  attributes, and the keys (own and inherited, marked) with every attribute of their wires.
+- `core.type` without `of=` takes its wire id as the type name.
+- `core.use world=<name> prefix=false` loads a library module whose ids are already
+  qualified without prefixing them.
+- Matrix wires of one `tell` are read before its facts, whatever their order in the text.
+
+### 3.10 Order, sequence and parallelism
 
 Wires with no `$` path between them are independent (parallel). Sequence comes from
 references (a wire cannot refer to one that does not exist yet) or from a deny using

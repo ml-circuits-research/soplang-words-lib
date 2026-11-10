@@ -36,7 +36,7 @@ export function abduce(world, goal, { maxDepth = 3, max = 10, maxAssumptions = 4
 
     // (b) an existing wire would match if some of its open keys had the right value
     const idv = walk('?' + g.id, s);
-    const pool = isVar(idv) ? world.ofType(g.type) : [world.get(idv)].filter((w) => w && w.type === g.type);
+    const pool = isVar(idv) ? world.ofType(g.type) : [world.get(idv)].filter((w) => w && c.isA(w.type, g.type));
     for (const w of pool) {
       let s2 = unify('?' + g.id, w.id, s);
       const fills = [];
@@ -78,7 +78,7 @@ export function abduce(world, goal, { maxDepth = 3, max = 10, maxAssumptions = 4
     if (depth <= 0) return;
     for (const rule of c.rules) {
       for (const t of rule.then) {
-        if (t.type !== g.type) continue;
+        if (!c.isA(t.type, g.type)) continue; // a rule that produces a subtype also produces the goal
         const k = ++n;
         const tr = rename(t, k);
         let s2 = unify('?' + g.id, `~derived${k}`, s);

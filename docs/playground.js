@@ -109,7 +109,7 @@ function render() {
   }
   for (const d of next.dead) row(`${d.id}.${d.key} has no consistent value`, [], () => {});
   if (!ui.open.children.length) row('nothing is open', [], () => {});
-  ui.status.textContent = `sopworld ${version} · ${world.wires.size} facts · ${world.schema.size} matrix wires · solver ${world.options.solver.name}`;
+  ui.status.textContent = `sopworld ${version} · ${world.wires.size} facts · ${world.matrix.size} matrix wires · solver ${world.options.solver.name}`;
 }
 
 function act(title, fn) {

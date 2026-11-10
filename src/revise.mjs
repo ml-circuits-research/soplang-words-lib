@@ -98,7 +98,7 @@ export const revision = {
       if (!r.ok) return { ok: false, removed: [], violations: r.violations };
     }
     const before = new Set(this.wires.keys());
-    for (const k of ['wires', 'byType', 'index', 'refs', 'schema', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'seq', '_c']) this[k] = next[k];
+    for (const k of ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'seq', '_c']) this[k] = next[k];
     this.stamp = ++this._clock;
     const removed = [...before].filter((x) => !this.wires.has(x));
     this.events = [...this.events, { seq: this.seq, op: 'retract', ids: removed }];

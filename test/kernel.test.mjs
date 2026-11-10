@@ -121,7 +121,7 @@ test('negation: a conclusion is withdrawn when the absence it relied on ends', (
 test('composition: modules from a library, prefixed ids, a bridge rule between them', () => {
   const w = new World({ library });
   w.load('@u1 core.use world=garden  @u2 core.use world=geo');
-  assert.ok(w.schema.has('garden.rain_wets') && w.schema.has('geo.rain_over_region'));
+  assert.ok(w.matrix.has('garden.rain_wets') && w.matrix.has('geo.rain_over_region'));
   w.load('@pl1 place name=lawn in=north  @pl2 place name=street in=south  @f1 forecast region=north kind=rain');
   assert.deepEqual(w.ask('?s slippery place=?p').map((x) => x.p), ['lawn']);
   assert.ok(w.use('garden').ok, 'using a module twice is harmless');

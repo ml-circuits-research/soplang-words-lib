@@ -101,7 +101,7 @@ test('induction: a learned rule that contradicts the world is refused by it', ()
   const r = w.tell(bad);
   assert.equal(r.ok, false);
   assert.equal(r.violations[0].why, 'never ship an open order');
-  assert.equal(w.schema.has('bad'), false);
+  assert.equal(w.matrix.has('bad'), false);
 });
 
 test('induction: slots from observations', () => {

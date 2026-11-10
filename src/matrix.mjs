@@ -1,5 +1,5 @@
 // Compilation of the consistency matrix: schema wires -> slots, rules, deny constraints.
-// Pure with respect to the world: reads world.schema, world.wires and world.fns only.
+// Pure with respect to the world: reads world.matrix, world.wires and world.fns only.
 
 import { cloneWire, str } from './parser.mjs';
 import { hasVar, isVar } from './unify.mjs';
@@ -9,7 +9,50 @@ const RANGE_CAP = 2000;
 
 export const SCHEMA_TYPES = new Set([
   'core.slot', 'core.type', 'core.abducible', 'core.rule', 'core.deny', 'core.calc', 'core.test', 'core.use',
+  'core.schema.map', 'core.namespace',
 ]);
+
+/**
+ * A core.schema.map wire says how wires of another notation declare a schema, so that an
+ * existing schema can be loaded unchanged:
+ *   @m core.schema.map from=<wire type> as=slot|type|module  <field>=<where to find it> ...
+ * A field is read from the foreign wire by: `id` (its id), `id.prefix` (the id up to the
+ * last dot), `id.suffix` (the rest), `<attr>` (an attribute), or `<attr>:<value>` (true
+ * when the attribute has that value).
+ */
+export function readMap(w) {
+  const m = { id: w.id, from: first(w, 'from'), as: first(w, 'as') || 'slot', fields: {} };
+  for (const k of Object.keys(w.attrs)) if (k !== 'from' && k !== 'as') m.fields[k] = w.attrs[k][0];
+  return m;
+}
+function field(spec, w, all = false) {
+  if (spec === undefined) return all ? [] : undefined;
+  const dot = w.id.lastIndexOf('.');
+  let vals;
+  if (spec === 'id') vals = [w.id];
+  else if (spec === 'id.prefix') vals = dot > 0 ? [w.id.slice(0, dot)] : [];
+  else if (spec === 'id.suffix') vals = dot > 0 ? [w.id.slice(dot + 1)] : [w.id];
+  else if (spec.includes(':')) {
+    const [attr, value] = spec.split(':');
+    vals = [(w.attrs[attr] || []).includes(value) ? 'true' : 'false'];
+  } else vals = w.attrs[spec] || [];
+  return all ? vals : vals[0];
+}
+
+// Literal kinds a slot may declare with kind=. A reference is declared with type=.
+const KINDS = {
+  integer: (v) => /^-?\d+$/.test(v),
+  number: (v) => { const q = quantity(v); return !!q && !q.unit; },
+  boolean: (v) => v === 'true' || v === 'false',
+  string: (v) => v[0] !== '$',
+  atom: (v) => v[0] !== '$' && v[0] !== '"',
+};
+/** Does the value fit the literal kind? Unknown kinds accept any value that is not a reference. */
+export function fitsKind(kind, v) {
+  if (KINDS[kind]) return KINDS[kind](v);
+  if (kind.startsWith('quantity.')) return !!quantity(v);
+  return v[0] !== '$'; // time.* and kinds this version does not know: any literal
+}
 export const LINKS = ['when', 'then', 'not', 'with', 'if'];
 
 const first = (w, k) => w.attrs[k]?.[0];
@@ -41,20 +84,48 @@ export function prefixModule(wires, name) {
 export function compileMatrix(world) {
   const c = {
     rules: [], denies: [], negRules: [], ruleByType: new Map(), negByType: new Map(), denyByType: new Map(),
-    slots: new Map(), closed: new Set(), idKeys: new Map(),
-    abducible: new Map(), abducibleKeys: new Map(), errors: [],
+    closed: new Set(), abducible: new Map(), abducibleKeys: new Map(), errors: [],
+    types: new Map(),    // declared type name -> the wire that declares it
+    parent: new Map(),   // type -> the type it extends
+    maps: new Map(),     // foreign wire type -> how it declares a slot, a type or a module
+    modules: new Map(),  // module name -> { wire, imports } for modules that declare themselves
+    openPrefixes: ['core.'], // keys with these prefixes are always allowed and never shortened
   };
-  for (const w of world.schema.values()) {
+  for (const w of world.matrix.values()) {
+    if (w.type === 'core.schema.map') {
+      const m = readMap(w);
+      if (!m.from || !['slot', 'type', 'module'].includes(m.as)) c.errors.push(`${w.id}: core.schema.map needs from= and as=slot|type|module`);
+      else c.maps.set(m.from, m);
+    } else if (w.type === 'core.namespace') {
+      const prefix = first(w, 'prefix');
+      if (prefix && flag(w, 'open') && !c.openPrefixes.includes(prefix)) c.openPrefixes.push(prefix);
+    }
+  }
+  const own = new Map(); // type -> Map(key -> slot) declared on that type itself
+  const declare = (of, key, s) => (own.get(of) || own.set(of, new Map()).get(of)).set(key, s);
+  for (const w of world.matrix.values()) {
     const of = first(w, 'of');
-    if (w.type === 'core.slot') {
-      const key = first(w, 'key');
-      if (!of || !key) { c.errors.push(`${w.id}: core.slot needs of= and key=`); continue; }
+    const map = c.maps.get(w.type);
+    if (w.type === 'core.slot' || map?.as === 'slot') {
+      // native: core.slot of=T key=k ...   foreign: the fields are read through the map
+      const f = map ? map.fields : null;
+      const get = (name, native = name) => (f ? field(f[name], w) : first(w, native));
+      const list = (name, native = name) => (f ? field(f[name], w, true) : w.attrs[native] || []);
+      const type = f ? field(f.owner || 'id.prefix', w) : of;
+      const key = f ? field(f.key || 'id.suffix', w) : first(w, 'key');
+      if (!type || !key) { c.errors.push(`${w.id}: ${w.type} needs a type and a key`); continue; }
+      // value= of a map holds kinds and $type references together; kind= and type= hold one sort each
+      const mixed = list('value', '\u0000none');
+      const kinds = [...list('kind'), ...mixed.filter((v) => v[0] !== '$')];
+      const refs = [...list('type'), ...mixed.filter((v) => v[0] === '$')].map((v) => (v[0] === '$' ? v.slice(1) : v));
+      const en = list('enum');
       const s = {
-        id: w.id, of, key, required: flag(w, 'required'), many: flag(w, 'many'), identity: flag(w, 'id'),
-        type: first(w, 'type'), enum: w.attrs.enum || null, default: first(w, 'default'), ask: first(w, 'ask'),
-        min: quantity(first(w, 'min') ?? ''), max: quantity(first(w, 'max') ?? ''), step: quantity(first(w, 'step') ?? ''), range: null,
+        id: w.id, of: type, key, required: get('required') === 'true', many: get('many') === 'true', identity: get('id') === 'true',
+        type: refs[0], refs, kinds, enum: en.length ? en : null, default: get('default'), ask: get('ask'),
+        min: quantity(get('min') ?? ''), max: quantity(get('max') ?? ''), step: quantity(get('step') ?? ''), range: null,
+        attrs: w.attrs, // everything the wire says, used or not
       };
-      for (const k of ['min', 'max', 'step']) if (first(w, k) !== undefined && !s[k]) c.errors.push(`${w.id}: ${k}= must be a number`);
+      for (const k of ['min', 'max', 'step']) if (get(k) !== undefined && !s[k]) c.errors.push(`${w.id}: ${k} must be a number`);
       // min, max and step together make the key enumerable
       if (s.min && s.max && s.step && s.step.n > 0 && s.min.unit === s.max.unit) {
         const n = Math.floor((s.max.n - s.min.n) / s.step.n + 1e-9) + 1;
@@ -62,20 +133,86 @@ export function compileMatrix(world) {
           s.range = Array.from({ length: n }, (_, i) => String(Number((s.min.n + i * s.step.n).toPrecision(12))) + s.min.unit);
         }
       }
-      if (!c.slots.has(of)) c.slots.set(of, new Map());
-      c.slots.get(of).set(key, s);
-      if (s.identity) push(c.idKeys, of, key);
-    } else if (w.type === 'core.type') {
-      if (of && flag(w, 'closed')) c.closed.add(of);
+      declare(type, key, s);
+    } else if (w.type === 'core.type' || map?.as === 'type') {
+      // core.type of=T names its type with of=; without of= the wire id is the type name
+      const f = map ? map.fields : null;
+      const name = f ? field(f.name || 'id', w) : of || w.id;
+      // root= in a map: the parent of a type that names none
+      const ext = (f ? field(f.extends, w) : first(w, 'extends')) || (f && f.root && f.root !== name ? f.root : undefined);
+      const closed = f ? field(f.closed, w) === 'true' : flag(w, 'closed');
+      if (!name) { c.errors.push(`${w.id}: the type has no name`); continue; }
+      c.types.set(name, w);
+      if (closed) c.closed.add(name);
+      if (ext && ext !== name) c.parent.set(name, ext);
+    } else if (map?.as === 'module') {
+      const name = field(map.fields.name || 'id', w);
+      if (!name) c.errors.push(`${w.id}: the module has no name`);
+      else c.modules.set(name, { wire: w, imports: field(map.fields.imports, w, true) });
     } else if (w.type === 'core.abducible') {
       if (!of) { c.errors.push(`${w.id}: core.abducible needs of=`); continue; }
       const cost = Math.max(Number(first(w, 'cost')) || 1, 0.001);
       const key = first(w, 'key');
       if (key) c.abducibleKeys.set(`${of}.${key}`, cost);
       else c.abducible.set(of, cost);
-    } else if (w.type === 'core.rule' || w.type === 'core.deny') {
-      buildRule(world, w, c);
     }
+  }
+
+  // ---- type hierarchy: a type, then what it extends, up to the root
+  const lineages = new Map();
+  c.lineage = (type) => {
+    let l = lineages.get(type);
+    if (!l) {
+      l = [type];
+      for (let t = c.parent.get(type); t && !l.includes(t); t = c.parent.get(t)) l.push(t);
+      lineages.set(type, l);
+    }
+    return l;
+  };
+  c.isA = (type, ancestor) => type === ancestor || c.lineage(type).includes(ancestor);
+  c.hierarchy = [...c.parent].map(([t, p]) => `${t}<${p}`).sort().join(' ');
+  for (const [t, p] of c.parent) {
+    let x = p;
+    for (let n = 0; x && n < 1000; n++) { if (x === t) { c.errors.push(`${t}: the type extends itself through ${p}`); break; } x = c.parent.get(x); }
+  }
+
+  // ---- slots of a type: its own and the inherited ones, the nearest declaration winning
+  const effective = new Map();
+  c.slots = {
+    get(type) {
+      if (effective.has(type)) return effective.get(type);
+      let merged;
+      const line = c.lineage(type);
+      for (let i = line.length - 1; i >= 0; i--) {
+        const mine = own.get(line[i]);
+        if (!mine) continue;
+        merged = merged || new Map();
+        for (const [k, s] of mine) merged.set(k, s);
+      }
+      effective.set(type, merged);
+      return merged;
+    },
+  };
+  const identity = new Map();
+  c.idKeys = {
+    get(type) {
+      if (!identity.has(type)) {
+        const keys = [...(c.slots.get(type)?.values() || [])].filter((s) => s.identity).map((s) => s.key);
+        identity.set(type, keys.length ? keys : undefined);
+      }
+      return identity.get(type);
+    },
+  };
+  /** A key written in full (<type>.<key>, for the wire's type or an ancestor) and its short form are one key. */
+  c.isOpenKey = (key) => c.openPrefixes.some((p) => key.startsWith(p));
+  c.shortKey = (type, key) => {
+    if (key.indexOf('.') < 0 || c.isOpenKey(key)) return key;
+    for (const t of c.lineage(type)) if (key.startsWith(t + '.') && key.indexOf('.', t.length + 1) < 0) return key.slice(t.length + 1);
+    return key;
+  };
+
+  for (const w of world.matrix.values()) {
+    if (w.type === 'core.rule' || w.type === 'core.deny') buildRule(world, w, c);
   }
   for (const r of c.rules) {
     if (r.not.length) {
@@ -85,15 +222,29 @@ export function compileMatrix(world) {
     r.when.forEach((p, idx) => push(c.ruleByType, p.type, { rule: r, idx }));
   }
   for (const d of c.denies) d.when.forEach((p, idx) => push(c.denyByType, p.type, { rule: d, idx }));
-  // stratification: a rule may not negate a type that its own consequences can produce
+  // Entries of a by-type index for a wire of the given type: its own and its ancestors'.
+  const merged = new Map();
+  c.forType = (index, type) => {
+    let per = merged.get(index);
+    if (!per) merged.set(index, (per = new Map()));
+    let list = per.get(type);
+    if (!list) {
+      list = [];
+      for (const t of c.lineage(type)) for (const x of index.get(t) || []) list.push(x);
+      per.set(type, list);
+    }
+    return list;
+  };
+  // stratification: a rule may not negate a type that its own consequences can produce.
+  // A produced wire also feeds the rules whose patterns name one of its ancestor types.
   const produces = new Map();
   for (const r of c.rules) for (const p of [...r.when, ...r.not]) for (const t of r.then) {
     (produces.get(p.type) || produces.set(p.type, new Set()).get(p.type)).add(t.type);
   }
   for (const r of c.negRules) {
     const reach = new Set(r.then.map((t) => t.type));
-    for (const t of reach) for (const u of produces.get(t) || []) reach.add(u);
-    const bad = r.not.find((n) => reach.has(n.type));
+    for (const t of reach) for (const a of c.lineage(t)) for (const u of produces.get(a) || []) reach.add(u);
+    const bad = r.not.find((n) => [...reach].some((t) => c.isA(t, n.type)));
     if (bad) c.errors.push(`${r.id}: not stratified, its consequences can produce "${bad.type}", which it negates`);
   }
   return c;
@@ -103,15 +254,20 @@ function buildRule(world, w, c) {
   const locals = new Set();
   for (const k of LINKS) for (const v of w.attrs[k] || []) if (v[0] === '$') locals.add(v.slice(1));
   const get = (k) => (w.attrs[k] || []).map((v) => {
-    const s = world.schema.get(v.slice(1));
+    const s = world.matrix.get(v.slice(1));
     if (!s) { c.errors.push(`${w.id}: ${k}=${v} is not a wire of the matrix`); return null; }
     for (const x of Object.values(s.attrs).flat()) {
       const id = x.slice(1);
-      if (x[0] === '$' && x[1] !== '?' && !locals.has(id) && !world.wires.has(id) && !world.schema.has(id)) {
+      if (x[0] === '$' && x[1] !== '?' && !locals.has(id) && !world.wires.has(id) && !world.matrix.has(id)) {
         c.errors.push(`${w.id}: ${s.id} refers to unknown wire ${x} (write ?${id} for a variable)`);
       }
     }
-    return localize(s, locals);
+    const l = localize(s, locals);
+    for (const key of Object.keys(l.attrs)) { // full key names and short ones are the same key
+      const short = c.shortKey(l.type, key);
+      if (short !== key) { l.attrs[short] = [...(l.attrs[short] || []), ...l.attrs[key]]; delete l.attrs[key]; }
+    }
+    return l;
   }).filter(Boolean);
   const fn = (x, kind) => {
     const name = first(x, 'fn');

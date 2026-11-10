@@ -381,7 +381,7 @@ const __solve = (() => {
         if (done.has(v.id)) continue;
         done.add(v.id);
         const wire = w.wires.get(v.id);
-        for (const { rule: d, idx } of c.denyByType.get(wire.type) || []) {
+        for (const { rule: d, idx } of c.forType(c.denyByType, wire.type)) {
           if (d.not.length) continue;
           for (const s0 of w._matchWire(d.when[idx], wire, EMPTY)) {
             for (const s of w._bodies(d, s0, idx)) {
@@ -864,14 +864,57 @@ const __matrix = (() => {
   const { hasVar, isVar } = __unify;
   const { quantity } = __builtins;
   // Compilation of the consistency matrix: schema wires -> slots, rules, deny constraints.
-  // Pure with respect to the world: reads world.schema, world.wires and world.fns only.
+  // Pure with respect to the world: reads world.matrix, world.wires and world.fns only.
 
 
   const RANGE_CAP = 2000;
 
   const SCHEMA_TYPES = new Set([
     'core.slot', 'core.type', 'core.abducible', 'core.rule', 'core.deny', 'core.calc', 'core.test', 'core.use',
+    'core.schema.map', 'core.namespace',
   ]);
+
+  /**
+   * A core.schema.map wire says how wires of another notation declare a schema, so that an
+   * existing schema can be loaded unchanged:
+   *   @m core.schema.map from=<wire type> as=slot|type|module  <field>=<where to find it> ...
+   * A field is read from the foreign wire by: `id` (its id), `id.prefix` (the id up to the
+   * last dot), `id.suffix` (the rest), `<attr>` (an attribute), or `<attr>:<value>` (true
+   * when the attribute has that value).
+   */
+  function readMap(w) {
+    const m = { id: w.id, from: first(w, 'from'), as: first(w, 'as') || 'slot', fields: {} };
+    for (const k of Object.keys(w.attrs)) if (k !== 'from' && k !== 'as') m.fields[k] = w.attrs[k][0];
+    return m;
+  }
+  function field(spec, w, all = false) {
+    if (spec === undefined) return all ? [] : undefined;
+    const dot = w.id.lastIndexOf('.');
+    let vals;
+    if (spec === 'id') vals = [w.id];
+    else if (spec === 'id.prefix') vals = dot > 0 ? [w.id.slice(0, dot)] : [];
+    else if (spec === 'id.suffix') vals = dot > 0 ? [w.id.slice(dot + 1)] : [w.id];
+    else if (spec.includes(':')) {
+      const [attr, value] = spec.split(':');
+      vals = [(w.attrs[attr] || []).includes(value) ? 'true' : 'false'];
+    } else vals = w.attrs[spec] || [];
+    return all ? vals : vals[0];
+  }
+
+  // Literal kinds a slot may declare with kind=. A reference is declared with type=.
+  const KINDS = {
+    integer: (v) => /^-?\d+$/.test(v),
+    number: (v) => { const q = quantity(v); return !!q && !q.unit; },
+    boolean: (v) => v === 'true' || v === 'false',
+    string: (v) => v[0] !== '$',
+    atom: (v) => v[0] !== '$' && v[0] !== '"',
+  };
+  /** Does the value fit the literal kind? Unknown kinds accept any value that is not a reference. */
+  function fitsKind(kind, v) {
+    if (KINDS[kind]) return KINDS[kind](v);
+    if (kind.startsWith('quantity.')) return !!quantity(v);
+    return v[0] !== '$'; // time.* and kinds this version does not know: any literal
+  }
   const LINKS = ['when', 'then', 'not', 'with', 'if'];
 
   const first = (w, k) => w.attrs[k]?.[0];
@@ -903,20 +946,48 @@ const __matrix = (() => {
   function compileMatrix(world) {
     const c = {
       rules: [], denies: [], negRules: [], ruleByType: new Map(), negByType: new Map(), denyByType: new Map(),
-      slots: new Map(), closed: new Set(), idKeys: new Map(),
-      abducible: new Map(), abducibleKeys: new Map(), errors: [],
+      closed: new Set(), abducible: new Map(), abducibleKeys: new Map(), errors: [],
+      types: new Map(),    // declared type name -> the wire that declares it
+      parent: new Map(),   // type -> the type it extends
+      maps: new Map(),     // foreign wire type -> how it declares a slot, a type or a module
+      modules: new Map(),  // module name -> { wire, imports } for modules that declare themselves
+      openPrefixes: ['core.'], // keys with these prefixes are always allowed and never shortened
     };
-    for (const w of world.schema.values()) {
+    for (const w of world.matrix.values()) {
+      if (w.type === 'core.schema.map') {
+        const m = readMap(w);
+        if (!m.from || !['slot', 'type', 'module'].includes(m.as)) c.errors.push(`${w.id}: core.schema.map needs from= and as=slot|type|module`);
+        else c.maps.set(m.from, m);
+      } else if (w.type === 'core.namespace') {
+        const prefix = first(w, 'prefix');
+        if (prefix && flag(w, 'open') && !c.openPrefixes.includes(prefix)) c.openPrefixes.push(prefix);
+      }
+    }
+    const own = new Map(); // type -> Map(key -> slot) declared on that type itself
+    const declare = (of, key, s) => (own.get(of) || own.set(of, new Map()).get(of)).set(key, s);
+    for (const w of world.matrix.values()) {
       const of = first(w, 'of');
-      if (w.type === 'core.slot') {
-        const key = first(w, 'key');
-        if (!of || !key) { c.errors.push(`${w.id}: core.slot needs of= and key=`); continue; }
+      const map = c.maps.get(w.type);
+      if (w.type === 'core.slot' || map?.as === 'slot') {
+        // native: core.slot of=T key=k ...   foreign: the fields are read through the map
+        const f = map ? map.fields : null;
+        const get = (name, native = name) => (f ? field(f[name], w) : first(w, native));
+        const list = (name, native = name) => (f ? field(f[name], w, true) : w.attrs[native] || []);
+        const type = f ? field(f.owner || 'id.prefix', w) : of;
+        const key = f ? field(f.key || 'id.suffix', w) : first(w, 'key');
+        if (!type || !key) { c.errors.push(`${w.id}: ${w.type} needs a type and a key`); continue; }
+        // value= of a map holds kinds and $type references together; kind= and type= hold one sort each
+        const mixed = list('value', '\u0000none');
+        const kinds = [...list('kind'), ...mixed.filter((v) => v[0] !== '$')];
+        const refs = [...list('type'), ...mixed.filter((v) => v[0] === '$')].map((v) => (v[0] === '$' ? v.slice(1) : v));
+        const en = list('enum');
         const s = {
-          id: w.id, of, key, required: flag(w, 'required'), many: flag(w, 'many'), identity: flag(w, 'id'),
-          type: first(w, 'type'), enum: w.attrs.enum || null, default: first(w, 'default'), ask: first(w, 'ask'),
-          min: quantity(first(w, 'min') ?? ''), max: quantity(first(w, 'max') ?? ''), step: quantity(first(w, 'step') ?? ''), range: null,
+          id: w.id, of: type, key, required: get('required') === 'true', many: get('many') === 'true', identity: get('id') === 'true',
+          type: refs[0], refs, kinds, enum: en.length ? en : null, default: get('default'), ask: get('ask'),
+          min: quantity(get('min') ?? ''), max: quantity(get('max') ?? ''), step: quantity(get('step') ?? ''), range: null,
+          attrs: w.attrs, // everything the wire says, used or not
         };
-        for (const k of ['min', 'max', 'step']) if (first(w, k) !== undefined && !s[k]) c.errors.push(`${w.id}: ${k}= must be a number`);
+        for (const k of ['min', 'max', 'step']) if (get(k) !== undefined && !s[k]) c.errors.push(`${w.id}: ${k} must be a number`);
         // min, max and step together make the key enumerable
         if (s.min && s.max && s.step && s.step.n > 0 && s.min.unit === s.max.unit) {
           const n = Math.floor((s.max.n - s.min.n) / s.step.n + 1e-9) + 1;
@@ -924,20 +995,86 @@ const __matrix = (() => {
             s.range = Array.from({ length: n }, (_, i) => String(Number((s.min.n + i * s.step.n).toPrecision(12))) + s.min.unit);
           }
         }
-        if (!c.slots.has(of)) c.slots.set(of, new Map());
-        c.slots.get(of).set(key, s);
-        if (s.identity) push(c.idKeys, of, key);
-      } else if (w.type === 'core.type') {
-        if (of && flag(w, 'closed')) c.closed.add(of);
+        declare(type, key, s);
+      } else if (w.type === 'core.type' || map?.as === 'type') {
+        // core.type of=T names its type with of=; without of= the wire id is the type name
+        const f = map ? map.fields : null;
+        const name = f ? field(f.name || 'id', w) : of || w.id;
+        // root= in a map: the parent of a type that names none
+        const ext = (f ? field(f.extends, w) : first(w, 'extends')) || (f && f.root && f.root !== name ? f.root : undefined);
+        const closed = f ? field(f.closed, w) === 'true' : flag(w, 'closed');
+        if (!name) { c.errors.push(`${w.id}: the type has no name`); continue; }
+        c.types.set(name, w);
+        if (closed) c.closed.add(name);
+        if (ext && ext !== name) c.parent.set(name, ext);
+      } else if (map?.as === 'module') {
+        const name = field(map.fields.name || 'id', w);
+        if (!name) c.errors.push(`${w.id}: the module has no name`);
+        else c.modules.set(name, { wire: w, imports: field(map.fields.imports, w, true) });
       } else if (w.type === 'core.abducible') {
         if (!of) { c.errors.push(`${w.id}: core.abducible needs of=`); continue; }
         const cost = Math.max(Number(first(w, 'cost')) || 1, 0.001);
         const key = first(w, 'key');
         if (key) c.abducibleKeys.set(`${of}.${key}`, cost);
         else c.abducible.set(of, cost);
-      } else if (w.type === 'core.rule' || w.type === 'core.deny') {
-        buildRule(world, w, c);
       }
+    }
+
+    // ---- type hierarchy: a type, then what it extends, up to the root
+    const lineages = new Map();
+    c.lineage = (type) => {
+      let l = lineages.get(type);
+      if (!l) {
+        l = [type];
+        for (let t = c.parent.get(type); t && !l.includes(t); t = c.parent.get(t)) l.push(t);
+        lineages.set(type, l);
+      }
+      return l;
+    };
+    c.isA = (type, ancestor) => type === ancestor || c.lineage(type).includes(ancestor);
+    c.hierarchy = [...c.parent].map(([t, p]) => `${t}<${p}`).sort().join(' ');
+    for (const [t, p] of c.parent) {
+      let x = p;
+      for (let n = 0; x && n < 1000; n++) { if (x === t) { c.errors.push(`${t}: the type extends itself through ${p}`); break; } x = c.parent.get(x); }
+    }
+
+    // ---- slots of a type: its own and the inherited ones, the nearest declaration winning
+    const effective = new Map();
+    c.slots = {
+      get(type) {
+        if (effective.has(type)) return effective.get(type);
+        let merged;
+        const line = c.lineage(type);
+        for (let i = line.length - 1; i >= 0; i--) {
+          const mine = own.get(line[i]);
+          if (!mine) continue;
+          merged = merged || new Map();
+          for (const [k, s] of mine) merged.set(k, s);
+        }
+        effective.set(type, merged);
+        return merged;
+      },
+    };
+    const identity = new Map();
+    c.idKeys = {
+      get(type) {
+        if (!identity.has(type)) {
+          const keys = [...(c.slots.get(type)?.values() || [])].filter((s) => s.identity).map((s) => s.key);
+          identity.set(type, keys.length ? keys : undefined);
+        }
+        return identity.get(type);
+      },
+    };
+    /** A key written in full (<type>.<key>, for the wire's type or an ancestor) and its short form are one key. */
+    c.isOpenKey = (key) => c.openPrefixes.some((p) => key.startsWith(p));
+    c.shortKey = (type, key) => {
+      if (key.indexOf('.') < 0 || c.isOpenKey(key)) return key;
+      for (const t of c.lineage(type)) if (key.startsWith(t + '.') && key.indexOf('.', t.length + 1) < 0) return key.slice(t.length + 1);
+      return key;
+    };
+
+    for (const w of world.matrix.values()) {
+      if (w.type === 'core.rule' || w.type === 'core.deny') buildRule(world, w, c);
     }
     for (const r of c.rules) {
       if (r.not.length) {
@@ -947,15 +1084,29 @@ const __matrix = (() => {
       r.when.forEach((p, idx) => push(c.ruleByType, p.type, { rule: r, idx }));
     }
     for (const d of c.denies) d.when.forEach((p, idx) => push(c.denyByType, p.type, { rule: d, idx }));
-    // stratification: a rule may not negate a type that its own consequences can produce
+    // Entries of a by-type index for a wire of the given type: its own and its ancestors'.
+    const merged = new Map();
+    c.forType = (index, type) => {
+      let per = merged.get(index);
+      if (!per) merged.set(index, (per = new Map()));
+      let list = per.get(type);
+      if (!list) {
+        list = [];
+        for (const t of c.lineage(type)) for (const x of index.get(t) || []) list.push(x);
+        per.set(type, list);
+      }
+      return list;
+    };
+    // stratification: a rule may not negate a type that its own consequences can produce.
+    // A produced wire also feeds the rules whose patterns name one of its ancestor types.
     const produces = new Map();
     for (const r of c.rules) for (const p of [...r.when, ...r.not]) for (const t of r.then) {
       (produces.get(p.type) || produces.set(p.type, new Set()).get(p.type)).add(t.type);
     }
     for (const r of c.negRules) {
       const reach = new Set(r.then.map((t) => t.type));
-      for (const t of reach) for (const u of produces.get(t) || []) reach.add(u);
-      const bad = r.not.find((n) => reach.has(n.type));
+      for (const t of reach) for (const a of c.lineage(t)) for (const u of produces.get(a) || []) reach.add(u);
+      const bad = r.not.find((n) => [...reach].some((t) => c.isA(t, n.type)));
       if (bad) c.errors.push(`${r.id}: not stratified, its consequences can produce "${bad.type}", which it negates`);
     }
     return c;
@@ -965,15 +1116,20 @@ const __matrix = (() => {
     const locals = new Set();
     for (const k of LINKS) for (const v of w.attrs[k] || []) if (v[0] === '$') locals.add(v.slice(1));
     const get = (k) => (w.attrs[k] || []).map((v) => {
-      const s = world.schema.get(v.slice(1));
+      const s = world.matrix.get(v.slice(1));
       if (!s) { c.errors.push(`${w.id}: ${k}=${v} is not a wire of the matrix`); return null; }
       for (const x of Object.values(s.attrs).flat()) {
         const id = x.slice(1);
-        if (x[0] === '$' && x[1] !== '?' && !locals.has(id) && !world.wires.has(id) && !world.schema.has(id)) {
+        if (x[0] === '$' && x[1] !== '?' && !locals.has(id) && !world.wires.has(id) && !world.matrix.has(id)) {
           c.errors.push(`${w.id}: ${s.id} refers to unknown wire ${x} (write ?${id} for a variable)`);
         }
       }
-      return localize(s, locals);
+      const l = localize(s, locals);
+      for (const key of Object.keys(l.attrs)) { // full key names and short ones are the same key
+        const short = c.shortKey(l.type, key);
+        if (short !== key) { l.attrs[short] = [...(l.attrs[short] || []), ...l.attrs[key]]; delete l.attrs[key]; }
+      }
+      return l;
     }).filter(Boolean);
     const fn = (x, kind) => {
       const name = first(x, 'fn');
@@ -1015,7 +1171,7 @@ const __matrix = (() => {
     rule.then = order;
     (rule.kind === 'rule' ? c.rules : c.denies).push(rule);
   }
-  return { SCHEMA_TYPES, LINKS, localize, prefixModule, compileMatrix };
+  return { SCHEMA_TYPES, readMap, fitsKind, LINKS, localize, prefixModule, compileMatrix };
 })();
 
 // ---- src/complete.mjs
@@ -1339,7 +1495,7 @@ const __revise = (() => {
         if (!r.ok) return { ok: false, removed: [], violations: r.violations };
       }
       const before = new Set(this.wires.keys());
-      for (const k of ['wires', 'byType', 'index', 'refs', 'schema', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'seq', '_c']) this[k] = next[k];
+      for (const k of ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'seq', '_c']) this[k] = next[k];
       this.stamp = ++this._clock;
       const removed = [...before].filter((x) => !this.wires.has(x));
       this.events = [...this.events, { seq: this.seq, op: 'retract', ids: removed }];
@@ -1504,7 +1660,7 @@ const __abduce = (() => {
 
       // (b) an existing wire would match if some of its open keys had the right value
       const idv = walk('?' + g.id, s);
-      const pool = isVar(idv) ? world.ofType(g.type) : [world.get(idv)].filter((w) => w && w.type === g.type);
+      const pool = isVar(idv) ? world.ofType(g.type) : [world.get(idv)].filter((w) => w && c.isA(w.type, g.type));
       for (const w of pool) {
         let s2 = unify('?' + g.id, w.id, s);
         const fills = [];
@@ -1546,7 +1702,7 @@ const __abduce = (() => {
       if (depth <= 0) return;
       for (const rule of c.rules) {
         for (const t of rule.then) {
-          if (t.type !== g.type) continue;
+          if (!c.isA(t.type, g.type)) continue; // a rule that produces a subtype also produces the goal
           const k = ++n;
           const tr = rename(t, k);
           let s2 = unify('?' + g.id, `~derived${k}`, s);
@@ -1621,7 +1777,7 @@ const __world = (() => {
   const { EMPTY, walk, unify, hasVar, isVar, bound } = __unify;
   const { builtins, quantity } = __builtins;
   const { cdcl } = __solve;
-  const { compileMatrix, localize, prefixModule, SCHEMA_TYPES, LINKS } = __matrix;
+  const { compileMatrix, localize, prefixModule, fitsKind, readMap, SCHEMA_TYPES, LINKS } = __matrix;
   const { completion } = __complete;
   const { revision } = __revise;
   const { abduce } = __abduce;
@@ -1635,6 +1791,11 @@ const __world = (() => {
   const first = (w, k) => w.attrs[k]?.[0];
   const K = (type, key, value) => `${type}\u0001${key}\u0001${value}`;
   const setOf = (map, k) => map.get(k) || map.set(k, new Set()).get(k);
+
+  function readModule(map, w) {
+    const read = (spec) => (spec === undefined ? [] : spec === 'id' ? [w.id] : w.attrs[spec] || []);
+    return { name: read(map.fields.name || 'id')[0], imports: read(map.fields.imports) };
+  }
 
   function hash(s) {
     let h = 5381;
@@ -1654,7 +1815,7 @@ const __world = (() => {
       this.byType = new Map();   // type -> Set<id>
       this.index = new Map();    // type|key|value -> Set<id>
       this.refs = new Map();     // id -> Set<id of wires that refer to it>
-      this.schema = new Map();   // id -> matrix wire
+      this.matrix = new Map();   // id -> matrix wire
       this.alias = new Map();    // id of a merged wire -> id it was merged into
       this.used = new Set();     // matrix modules already loaded through core.use
       this.firings = new Map();  // signature -> { rule, from, made, fills, hits, s? }
@@ -1677,7 +1838,23 @@ const __world = (() => {
     get(id) { return this.wires.get(this.resolve(id)); }
     has(id) { return this.wires.has(this.resolve(id)); }
     resolve(id) { let x = id; while (this.alias.has(x)) x = this.alias.get(x); return x; }
+    /** Wires of a type, including wires of the types that extend it. */
     ofType(type) { return [...(this.byType.get(type) || [])].map((id) => this.wires.get(id)); }
+
+    /**
+     * What the matrix says about a type: what it extends, whether it is closed, and its keys
+     * (own and inherited) with every attribute their wires carry (doc, ask, observe, ...).
+     */
+    schema(type) {
+      const c = this._compiled();
+      const decl = c.types.get(type);
+      const slots = c.slots.get(type);
+      if (!decl && !slots) return null;
+      const one = (attrs) => Object.fromEntries(Object.entries(attrs).map(([k, v]) => [k, v.length === 1 ? v[0] : [...v]]));
+      const keys = {};
+      for (const [k, s] of slots || []) keys[k] = { ...one(s.attrs), of: s.of, key: k, required: s.required, many: s.many, inherited: s.of !== type };
+      return { ...(decl ? one(decl.attrs) : {}), type, extends: c.parent.get(type) || null, lineage: [...c.lineage(type)], closed: c.closed.has(type), keys };
+    }
 
     /** Query with pattern wires. Returns one object of bindings per match. */
     ask(query) {
@@ -1716,7 +1893,7 @@ const __world = (() => {
     /** Serialise the facts (and optionally the matrix) back to SOP Lang. */
     toSOP({ schema = false, derived = true, provenance = false } = {}) {
       const lines = [];
-      if (schema) for (const w of this.schema.values()) lines.push(format(w));
+      if (schema) for (const w of this.matrix.values()) lines.push(format(w));
       for (const w of [...this.wires.values()].sort((a, b) => a.meta.seq - b.meta.seq)) {
         if (!derived && !w.meta.told) continue;
         let line = format(w);
@@ -1805,6 +1982,7 @@ const __world = (() => {
         const w = this.get(id);
         if (!w) res.violations.push({ kind: 'unknown-wire', id });
         else {
+          key = this._compiled().shortKey(w.type, key);
           this._merge(w, { [key]: [this._norm(String(value))] }, { via, from: [] }, res);
           this._settle(res, strict);
         }
@@ -1904,26 +2082,44 @@ const __world = (() => {
 
     // ---------------------------------------------------------------- store primitives
 
+    // Wires are indexed under their type and under every type it extends, so a pattern of an
+    // ancestor type finds them without looking at the hierarchy again.
+    _lineage(type) { return this._compiled().lineage(type); }
+
     _link(w, key, value) {
-      setOf(this.index, K(w.type, key, value)).add(w.id);
+      for (const t of this._lineage(w.type)) setOf(this.index, K(t, key, value)).add(w.id);
       if (value[0] === '$') setOf(this.refs, value.slice(1)).add(w.id);
     }
 
     _unlink(w, key, value, whole) {
-      this.index.get(K(w.type, key, value))?.delete(w.id);
+      for (const t of this._lineage(w.type)) this.index.get(K(t, key, value))?.delete(w.id);
       if (value[0] !== '$') return;
       if (whole || !Object.values(w.attrs).some((vs) => vs.includes(value))) this.refs.get(value.slice(1))?.delete(w.id);
     }
 
     _put(w) {
       this.wires.set(w.id, w);
-      setOf(this.byType, w.type).add(w.id);
+      for (const t of this._lineage(w.type)) setOf(this.byType, t).add(w.id);
       for (const k of Object.keys(w.attrs)) for (const v of w.attrs[k]) this._link(w, k, v);
+    }
+
+    /** Rebuild the type indexes after the hierarchy changed. */
+    _reindex() {
+      const old = [this.byType, this.index];
+      this.byType = new Map();
+      this.index = new Map();
+      for (const w of this.wires.values()) {
+        for (const t of this._lineage(w.type)) {
+          setOf(this.byType, t).add(w.id);
+          for (const k of Object.keys(w.attrs)) for (const v of w.attrs[k]) setOf(this.index, K(t, k, v)).add(w.id);
+        }
+      }
+      this._do(() => { [this.byType, this.index] = old; });
     }
 
     _drop(w) {
       this.wires.delete(w.id);
-      this.byType.get(w.type)?.delete(w.id);
+      for (const t of this._lineage(w.type)) this.byType.get(t)?.delete(w.id);
       for (const k of Object.keys(w.attrs)) for (const v of w.attrs[k]) this._unlink(w, k, v, true);
     }
 
@@ -2001,7 +2197,11 @@ const __world = (() => {
 
     // ---------------------------------------------------------------- ingest
 
-    /** Classify and store the wires of one tell. Returns the ids that are facts. */
+    /**
+     * Classify and store the wires of one tell. Matrix wires go first, whatever their place
+     * in the input, so that the facts told with them are read against the new matrix.
+     * Returns the ids that are facts.
+     */
     _ingest(wires, res) {
       const facts = [];
       const linked = new Set();
@@ -2011,39 +2211,72 @@ const __world = (() => {
           for (const k of LINKS) for (const v of w.attrs[k] || []) if (v[0] === '$') linked.add(v.slice(1));
         }
       };
-      noteLinks(wires);
+      // wire types that a core.schema.map declares as schema, known before or told in this batch
+      const maps = new Map(this._compiled().maps);
+      const note = (ws) => {
+        noteLinks(ws);
+        for (const w of ws) if (w.type === 'core.schema.map') { const m = readMap(w); if (m.from) maps.set(m.from, m); }
+      };
+      note(wires);
+      // facts and matrix wires have separate id spaces: a pattern ?m1 does not clash with a fact @m1
+      const isSchema = (w) => w.pattern || SCHEMA_TYPES.has(w.type) || maps.has(w.type) || linked.has(w.id);
+      const load = (name, prefixed) => { // a module of the library, once
+        if (this.used.has(name)) return;
+        this.used.add(name);
+        this._do(() => this.used.delete(name));
+        const mod = parse(this.options.library[name]);
+        const ws = prefixed ? prefixModule(mod, name) : mod.map(cloneWire);
+        note(ws);
+        wires.push(...ws);
+      };
       let schemaChanged = false;
       for (let i = 0; i < wires.length; i++) { // the list grows when a module is loaded
         const w = wires[i];
-        // facts and matrix wires have separate id spaces: a pattern ?m1 does not clash with a fact @m1
-        const isSchema = w.pattern || SCHEMA_TYPES.has(w.type) || linked.has(w.id);
-        if (isSchema ? this.schema.has(w.id) : this.wires.has(w.id) || this.alias.has(w.id)) {
-          res.violations.push({ kind: 'duplicate-id', id: w.id });
-          continue;
+        if (!isSchema(w)) continue;
+        if (this.matrix.has(w.id)) { res.violations.push({ kind: 'duplicate-id', id: w.id }); continue; }
+        this.matrix.set(w.id, w);
+        this._do(() => this.matrix.delete(w.id));
+        schemaChanged = true;
+        const map = maps.get(w.type);
+        if (w.type === 'core.use') {
+          const name = first(w, 'world');
+          if (!name || !(name in this.options.library)) res.violations.push({ kind: 'schema', why: `${w.id}: no matrix named "${name}" in the library` });
+          else load(name, first(w, 'prefix') !== 'false'); // prefix=false: the module's ids are already qualified
+        } else if (map?.as === 'module') { // a module that declares itself and what it imports
+          const self = readModule(map, w);
+          if (self.name && !this.used.has(self.name)) { this.used.add(self.name); this._do(() => this.used.delete(self.name)); }
+          for (const name of self.imports) if (name in this.options.library) load(name, false);
         }
-        if (isSchema) {
-          this.schema.set(w.id, w);
-          this._do(() => this.schema.delete(w.id));
-          schemaChanged = true;
-          if (w.type === 'core.use') {
-            const name = first(w, 'world');
-            if (!name || !(name in this.options.library)) {
-              res.violations.push({ kind: 'schema', why: `${w.id}: no matrix named "${name}" in the library` });
-            } else if (!this.used.has(name)) {
-              this.used.add(name);
-              this._do(() => this.used.delete(name));
-              const mod = prefixModule(parse(this.options.library[name]), name);
-              noteLinks(mod);
-              wires.push(...mod);
-            }
+      }
+      if (schemaChanged) {
+        const prev = this._c;
+        this._c = null;
+        this._do(() => { this._c = prev; });
+        const c = this._compiled();
+        for (const e of c.errors) res.violations.push({ kind: 'schema', why: e });
+        for (const [name, mod] of c.modules) {
+          for (const dep of mod.imports) {
+            if (!c.modules.has(dep)) res.violations.push({ kind: 'schema', why: `module ${name} imports ${dep}, which is neither loaded nor in the library` });
           }
-          continue;
         }
+        if (!prev || prev.hierarchy !== c.hierarchy) this._reindex();
+        res._agenda = [...this.wires.keys()];
+        for (const id of res._agenda) res._touched.add(id);
+      }
+      const c = this._compiled();
+      for (const w of wires) {
+        if (isSchema(w)) continue;
+        if (this.wires.has(w.id) || this.alias.has(w.id)) { res.violations.push({ kind: 'duplicate-id', id: w.id }); continue; }
         if (Object.values(w.attrs).flat().some(hasVar)) {
           res.violations.push({ kind: 'syntax', id: w.id, why: 'a fact cannot contain variables; templates must be told together with their rule' });
           continue;
         }
-        for (const k of Object.keys(w.attrs)) w.attrs[k] = [...new Set(w.attrs[k].map((v) => this._norm(v)))];
+        const attrs = {};
+        for (const k of Object.keys(w.attrs)) { // short and full key names are one key
+          const short = c.shortKey(w.type, k);
+          attrs[short] = [...new Set([...(attrs[short] || []), ...w.attrs[k].map((v) => this._norm(v))])];
+        }
+        w.attrs = attrs;
         facts.push(w.id);
         const same = this._findByIdentity(w.type, w.attrs);
         if (same) {
@@ -2058,14 +2291,6 @@ const __world = (() => {
           res.added.push(w.id);
         }
       }
-      if (schemaChanged) {
-        const prev = this._c;
-        this._c = null;
-        this._do(() => { this._c = prev; });
-        for (const e of this._compiled().errors) res.violations.push({ kind: 'schema', why: e });
-        res._agenda = [...this.wires.keys()];
-        for (const id of res._agenda) res._touched.add(id);
-      }
       return facts;
     }
 
@@ -2076,7 +2301,15 @@ const __world = (() => {
     _patterns(query) {
       const ws = typeof query === 'string' ? parse(query) : query;
       const locals = new Set(ws.map((w) => w.id));
-      return ws.map((w) => localize(w, locals));
+      const c = this._compiled();
+      return ws.map((w) => {
+        const p = localize(w, locals);
+        for (const key of Object.keys(p.attrs)) { // full key names and short ones are the same key
+          const short = c.shortKey(p.type, key);
+          if (short !== key) { p.attrs[short] = [...(p.attrs[short] || []), ...p.attrs[key]]; delete p.attrs[key]; }
+        }
+        return p;
+      });
     }
 
     /**
@@ -2084,7 +2317,7 @@ const __world = (() => {
      * unified in a plain loop; only a key with several values needs the branching generator.
      */
     *_matchWire(p, w, s) {
-      if (p.type !== w.type) return;
+      if (p.type !== w.type && !this._compiled().isA(w.type, p.type)) return;
       s = unify('?' + p.id, w.id, s);
       if (!s) return;
       let pairs = p._pairs;
@@ -2187,11 +2420,11 @@ const __world = (() => {
           const w = this.wires.get(res._agenda.shift());
           if (!w) continue;
           // a new or changed wire can end the absence that a rule with not= relied on
-          for (const rule of c.negByType.get(w.type) || []) {
+          for (const rule of c.forType(c.negByType, w.type)) {
             const stale = [...(this.byRule.get(rule.id) || [])].filter((sig) => this._negated(rule, this.firings.get(sig).s));
             if (stale.length) this._unsay(res, [], [], stale);
           }
-          for (const { rule, idx } of c.ruleByType.get(w.type) || []) {
+          for (const { rule, idx } of c.forType(c.ruleByType, w.type)) {
             const matches = [];
             for (const s0 of this._matchWire(rule.when[idx], w, EMPTY)) matches.push(...this._bodies(rule, s0, idx));
             fireAll(rule, matches);
@@ -2344,7 +2577,7 @@ const __world = (() => {
         for (const k of Object.keys(w.attrs)) {
           const s = slots?.get(k);
           if (!s) {
-            if (c.closed.has(w.type) && !k.startsWith('core.')) res.violations.push({ kind: 'unknown-key', id, key: k });
+            if (c.closed.has(w.type) && !c.isOpenKey(k)) res.violations.push({ kind: 'unknown-key', id, key: k });
           } else {
             if (!s.many && w.attrs[k].length > 1) res.violations.push({ kind: 'cardinality', id, key: k });
             for (const v of w.attrs[k]) {
@@ -2354,13 +2587,21 @@ const __world = (() => {
                 if (bad) res.violations.push({ kind: 'domain', id, key: k, value: v, why: bad });
               }
               if (s.enum && !s.enum.includes(v)) res.violations.push({ kind: 'domain', id, key: k, value: v, allowed: s.enum });
-              if (s.type && !(v[0] === '$' && this.wires.get(v.slice(1))?.type === s.type)) {
-                res.violations.push({ kind: 'domain', id, key: k, value: v, why: `must refer to a ${s.type} wire` });
+              if (s.type && !s.kinds.length) {
+                const target = v[0] === '$' ? this.wires.get(v.slice(1)) : null;
+                const types = s.refs.length ? s.refs : [s.type];
+                if (!target || !types.some((t) => c.isA(target.type, t))) {
+                  res.violations.push({ kind: 'domain', id, key: k, value: v, why: `must refer to a ${types.join(' or ')} wire` });
+                }
+              } else if (s.kinds.length) {
+                const target = v[0] === '$' ? this.wires.get(v.slice(1)) : null;
+                const fits = s.kinds.some((kind) => fitsKind(kind, v)) || (target && s.refs.some((t) => c.isA(target.type, t)));
+                if (!fits) res.violations.push({ kind: 'domain', id, key: k, value: v, why: `must be ${[...s.kinds, ...s.refs.map((t) => `a ${t} wire`)].join(' or ')}` });
               }
             }
           }
           for (const v of w.attrs[k]) {
-            if (v[0] === '$' && !this.wires.has(v.slice(1)) && !this.schema.has(v.slice(1))) {
+            if (v[0] === '$' && !this.wires.has(v.slice(1)) && !this.matrix.has(v.slice(1))) {
               res.violations.push({ kind: 'dangling-ref', id, key: k, value: v });
             }
           }
@@ -2376,7 +2617,7 @@ const __world = (() => {
       for (const id of res._touched) {
         const w = this.wires.get(id);
         if (!w) continue;
-        for (const { rule: d, idx } of c.denyByType.get(w.type) || []) {
+        for (const { rule: d, idx } of c.forType(c.denyByType, w.type)) {
           if (d.not.length || reported.has(d)) continue;
           seeded: for (const s0 of this._matchWire(d.when[idx], w, EMPTY)) {
             for (const s of this._bodies(d, s0, idx)) { report(d, s); break seeded; }

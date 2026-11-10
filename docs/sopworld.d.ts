@@ -97,7 +97,10 @@ export interface ChangeOptions { dry?: boolean; strict?: boolean }
 export class World {
   constructor(options?: WorldOptions);
   wires: Map<string, Wire>;
-  schema: Map<string, Wire>;
+  /** the matrix wires by id */
+  matrix: Map<string, Wire>;
+  /** what the matrix says about a type: parent, lineage, closed, keys with all their attributes */
+  schema(type: string): { type: string; extends: string | null; lineage: string[]; closed: boolean; keys: Record<string, Record<string, unknown>>; [attr: string]: unknown } | null;
   log: object[];
   tell(input: string | Wire[], options?: ChangeOptions): Result;
   fill(id: string, key: string, value: string | number, options?: ChangeOptions): Result;

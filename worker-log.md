@@ -919,3 +919,20 @@ and each key with value and tier; open keys; assumptions weakest first; standing
 
 Note: a derived wire's id depends on what it was derived from, so when its inputs
 change, `diff` shows the old wire removed and a new one added, not a changed value.
+
+## After the reviewer's notes of 18:40 — done
+
+`npm test`: 177 pass, 0 fail on sources and built file. Pilot unchanged (147/147,
+212/217, 231/232). `npm run examples`: exit 0. `node docs/selftest.mjs`: 14 passed.
+
+- **G11 is done** (commit ddfcec5, pushed before H3; the entry "G11 — soft constraints"
+  is above in this log). It closed t.arith.n17 and n19: that is the step from 208 to
+  210 of 217 in the pilot.
+- **A default on an optional key.** Chosen: the first of the two options, without a
+  flag. `complete({ defaults: true })` and `step()` apply a slot's default whether the
+  key is required or not, as tier `default` (SPEC 4.5). Reason: "optional with a
+  default" has one sensible reading, and a second attribute (`apply=always`) would only
+  ask the author to say it twice. `open()` still lists required keys only. Test in
+  `test/tiers.test.mjs` (the total of a line with an assumed quantity is `default`;
+  telling the quantity replaces it and the total becomes `derived`).
+- Q12 closed.

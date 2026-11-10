@@ -1831,6 +1831,18 @@ const __complete = (() => {
       // what is only assumed, weakest and most relied on first: where a confirmation is worth most
       const review = this.assumptions().map((a) => ({ id: a.id, key: a.key, value: a.value, tier: a.tier, dependants: a.dependants.length }));
       if (review.length) out.review = review;
+      // a default is an assumption the matrix offers: it applies to an optional key too
+      // (an optional key without a default is nobody's question)
+      const optional = [];
+      for (const w of this.wires.values()) { // bounded: one pass over the wires
+        for (const s of c.slots.get(w.type)?.values() || []) {
+          if (!s.required && !s.prefix && s.default !== undefined && !w.attrs[s.key]) optional.push({ id: w.id, type: w.type, key: s.key });
+        }
+      }
+      for (const o of optional) {
+        this._b.tick('complete');
+        if (this._fill(o.id, o.key, c.slots.get(o.type).get(o.key).default, { dry: true, strict: false, via: 'core.search' }).ok) out.fills.push({ ...o, value: c.slots.get(o.type).get(o.key).default, kind: 'default' });
+      }
       for (const o of this.open()) {
         const s = c.slots.get(o.type).get(o.key);
         const cands = this._suggest(o.id, o.key);

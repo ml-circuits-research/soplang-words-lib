@@ -139,3 +139,21 @@ test('describe: a summary as plain data; diff: what another world changes', () =
   assert.deepEqual(x.changed.filter((c) => c.id === 't1'), [{ id: 't1', key: 'transport', from: 'car', fromTier: 'default', to: 'train', toTier: 'told' }]);
   assert.equal(World.diff(w, w.fork()).same, true);
 });
+
+test('defaults: a default on an optional key is applied by complete({ defaults }) too, as an assumption', () => {
+  const w = new World();
+  w.load(`
+    @k core.slot of=line key=qty kind=number default=1
+    ?l line price=?p qty=?q
+    @c core.calc out=?t fn=mul args=?p args=?q
+    @f line core.on=$l total=?t
+    @r core.rule when=$l with=$c then=$f
+  `);
+  w.tell('@l1 line price=7');
+  assert.deepEqual([w.open(), w.get('l1').attrs.total], [[], undefined], 'optional: not a question, and nothing is assumed by tell alone');
+  assert.deepEqual(w.next().fills.map((f) => `${f.key}=${f.value} ${f.kind}`), ['qty=1 default']);
+  w.complete({ defaults: true });
+  assert.deepEqual([w.get('l1').attrs.total, w.tier('l1', 'qty'), w.tier('l1', 'total')], [['7'], 'default', 'default']);
+  const r = w.fill('l1', 'qty', 3);
+  assert.deepEqual([r.revised.map((x) => x.key), w.get('l1').attrs.total, w.tier('l1', 'total')], [['qty'], ['21'], 'derived']);
+});

@@ -515,6 +515,11 @@ carries `revised: [{ id, key, value }]`, the keys are open again, and a `revise`
 added to the history. If it still fails nothing changes. Values that were told or forced
 are never revised this way.
 
+A default belongs to the slot, whether the key is required or not. `complete({ defaults:
+true })` and `step()` apply it to every wire of the type that has no value for the key:
+a required key would otherwise be a question, an optional one would otherwise stay
+empty and the rules that read it would not fire. `tell` alone never applies a default.
+
 ### 4.6 Abduction
 
 `abduce(goalPatterns, { maxDepth, max, maxAssumptions })`
@@ -957,6 +962,8 @@ Since 0.4.0 (the version first published in this repository):
 - New: `core.on=` templates (3.3); the stratification check knows which keys a template
   adds, so a rule may aggregate over a type and fill a key on a wire of that type.
 - New: `core.absent=` in patterns (3.10).
+- **Changed:** `complete({ defaults: true })` and `step()` now apply a slot's default to
+  an optional key too (it was applied only when the key was `required`).
 - New: `world.describe()` and `world.diff()` (4.13).
 - New: tiers of certainty and `cells` (4.12): `world.tier`, `world.assumptions`, `tier`
   and `rests` in query results, `review` in `next()`, `{ tier }` on statements.

@@ -1148,3 +1148,15 @@ a wire carries `supposed: { type, attrs, set, fills }`: the supposed wire after 
 rules ran, the keys they added, and each added value with `via`, `from`, `tier`
 (SPEC 4.10). Test: one query for the total of a quote also gives the tax and the unit
 the same rule set; a `missing` answer shows an empty `set`; a lookup has no `supposed`.
+
+## W3 — violations stay explainable after rollback — done
+
+`npm test`: 188 pass, 0 fail on sources and built file. Pilot unchanged.
+
+- Every violation has `involved`: the wires it names, as `{ id, type, attrs }` snapshots
+  taken before the rollback (the test tells a payment that is refused: the payment is
+  not in the world afterwards, and is in the violation).
+- `why=` of a deny may contain its variables; the violation has the filled text and
+  `bindings` as data. Same for a soft deny (the issue's `why`) and for the guard of an
+  action written as wires. A name followed by punctuation ("?t.") is handled; an
+  unbound variable stays as written.

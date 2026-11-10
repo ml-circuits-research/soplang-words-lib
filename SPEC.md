@@ -211,6 +211,17 @@ Variables are local to a rule. Inside a rule, `$b` means "the wire matched by pa
 Same body as a rule (`when`, `with`, `if`, `not`), no `then`. Any match makes the pending
 change invalid.
 
+**A reason that quotes the values.** `why=` may contain the variables of the deny:
+`why="?m lei is not enough for ?n, which costs ?t."` becomes "10 lei is not enough for
+book, which costs 12." in the violation, and the violation carries the values as data
+too (`bindings: { m: '10', n: 'book', t: '12', ... }`, with the matched wire ids under
+the pattern ids) for a host that words its own message. The same holds for the `why=`
+of a soft deny (written into its issue) and of a check that guards an action.
+
+**A refusal is explainable after it is undone.** Every violation carries `involved`:
+the wires it is about as they were at that moment, `[{ id, type, attrs }]`. The change
+is rolled back, so some of those ids no longer exist in the world; the snapshot does.
+
 **Soft constraints.** A deny, or a slot with `min` / `max`, may say `soft=true`. Then
 nothing is refused: the change is accepted and the problem is kept as a standing wire,
 
@@ -1118,6 +1129,8 @@ Since 0.4.0 (the version first published in this repository):
 - New: `core.on=` templates (3.3); the stratification check knows which keys a template
   adds, so a rule may aggregate over a type and fill a key on a wire of that type.
 - New: `core.absent=` in patterns (3.10).
+- New (0.6): violations carry `involved` (the wires as they were) and, for a deny,
+  `bindings`; `why=` may quote variables (3.4).
 - New (0.6): a query answered by supposition returns the supposed wire (`supposed`, 4.10).
 - **Changed (0.6):** actions and producers have registries of their own (`actions`,
   `producers`, `world.register`); a function may not take the name of a built-in

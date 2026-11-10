@@ -389,3 +389,37 @@ test('soft constraints: the change is accepted, the problem stays on record, ans
   strict.load('@k core.slot of=tank key=level kind=number min=0');
   assert.equal(strict.tell('@t tank level=-1').ok, false);
 });
+
+test('violations: explainable after the change is undone; a reason may quote the values', () => {
+  const w = new World();
+  w.load(`
+    @pay payment paid=?m for=$it
+    @it item price=?t name=?n
+    @short core.check fn=lt args=?m args=?t
+    @d core.deny when=$pay when=$it if=$short why="?m lei is not enough for ?n, which costs ?t."
+    @big item price=?p name=?n2
+    @dear core.check fn=gt args=?p args=1000
+    @s core.deny when=$big if=$dear soft=true why="?n2 costs ?p: check the price"
+  `);
+  w.tell('@book item price=12 name=book');
+  const r = w.tell('@p1 payment paid=10 for=$book note="in a hurry"');
+  assert.equal(r.ok, false);
+  const v = r.violations[0];
+  assert.equal(v.why, '10 lei is not enough for book, which costs 12.');
+  assert.deepEqual(v.bindings, { pay: 'p1', m: '10', it: 'book', t: '12', n: 'book' });
+  // p1 is gone from the world, and the violation still says what it was
+  assert.equal(w.has('p1'), false);
+  assert.deepEqual(v.involved, [
+    { id: 'p1', type: 'payment', attrs: { paid: ['10'], for: ['$book'], note: ['"in a hurry"'] } },
+    { id: 'book', type: 'item', attrs: { price: ['12'], name: ['book'] } },
+  ]);
+  // other kinds of refusal carry the wire too
+  w.load('@k core.slot of=item key=price kind=number');
+  const bad = w.tell('@pen item price=cheap name=pen').violations[0];
+  assert.deepEqual([bad.kind, bad.involved], ['domain', [{ id: 'pen', type: 'item', attrs: { price: ['cheap'], name: ['pen'] } }]]);
+  // a soft deny writes the filled reason into its issue
+  w.tell('@yacht item price=5000 name=yacht');
+  assert.equal(w.ofType('core.issue')[0].attrs.why[0], '"yacht costs 5000: check the price"');
+  // a variable that is not bound stays as written; text without variables is untouched
+  assert.equal(w._say('ask ?nobody about ?m', { vars: ['?m'] }, null).text.startsWith('ask ?nobody'), true);
+});

@@ -4,7 +4,7 @@
 // the chase, validation and the withdrawal of wires, values and rule firings.
 // Completion lives in complete.mjs, retraction and assumption revision in revise.mjs.
 
-import { parse, format, cloneWire, quote } from './parser.mjs';
+import { parse, format, cloneWire, quote, str } from './parser.mjs';
 import { EMPTY, walk, unify, hasVar, isVar, bound } from './unify.mjs';
 import { builtins, quantity, aggregates, canonical } from './builtins.mjs';
 import { cdcl } from './solve.mjs';
@@ -565,6 +565,9 @@ export class World {
       for (const f of w.meta.fills || []) for (const x of f.from || []) roots.push(x);
     }
     v.support = told;
+    // the wires as they are now: after the change is undone some of them no longer exist
+    v.involved = [...new Set((v.wires || []).concat(v.id ? [v.id] : []).map((x) => this.resolve(x)))].map((x) => this.wires.get(x)).filter(Boolean)
+      .map((w) => ({ id: w.id, type: w.type, attrs: Object.fromEntries(Object.entries(w.attrs).map(([k, vals]) => [k, [...vals]])) }));
     Object.defineProperty(v, 'closure', { value: seen, enumerable: false });
   }
 
@@ -1135,6 +1138,7 @@ export class World {
       const attrs = {};
       prov.ties = undefined;
       for (const k of Object.keys(t.attrs)) {
+        if (rule.soft && k === 'why') { attrs.why = [quote(this._say(str(t.attrs.why[0]), rule, s).text)]; continue; }
         for (const v of t.attrs[k]) { // bounded: the values of one template key
           const tied = isVar(v) ? walk(v + TIES, s) : v;
           if (tied[0] === LIST) (prov.ties ||= {})[k] = tied.slice(1).split(LIST);
@@ -1281,6 +1285,23 @@ export class World {
     res.derived.push(id);
   }
 
+  /**
+   * A reason with its variables filled in: "?m is not enough for ?t" becomes "10 is not
+   * enough for 12". Returns { text, bindings } where bindings are the values of the
+   * variables of the rule (as data, for a host that words the message itself).
+   */
+  _say(why, rule, s) {
+    const bindings = {};
+    for (const v of rule.vars || []) { const x = walk(v, s); if (!hasVar(x) && x[0] !== LIST) bindings[v.slice(1)] = x; }
+    if (typeof why !== 'string' || !why.includes('?')) return { text: why, bindings: Object.keys(bindings).length ? bindings : undefined };
+    const text = why.replace(/\?([A-Za-z_][\w.\-]*)/g, (m, name) => {
+      let n = name;
+      while (n && bindings[n] === undefined && /[.\-]$/.test(n)) n = n.slice(0, -1); // bounded: the punctuation after a name
+      return bindings[n] === undefined ? m : str(bindings[n]) + name.slice(n.length);
+    });
+    return { text, bindings };
+  }
+
   _validate(res) {
     const c = this._compiled();
     for (const id of res._touched) {
@@ -1328,7 +1349,8 @@ export class World {
     const reported = new Set();
     const report = (d, s) => {
       reported.add(d);
-      res.violations.push({ kind: 'deny', rule: d.id, why: d.why, wires: d.when.map((p) => walk('?' + p.id, s)) });
+      const said = this._say(d.why, d, s);
+      res.violations.push({ kind: 'deny', rule: d.id, why: said.text, ...(said.bindings ? { bindings: said.bindings } : {}), wires: d.when.map((p) => walk('?' + p.id, s)) });
     };
     for (const id of res._touched) {
       const w = this.wires.get(id);

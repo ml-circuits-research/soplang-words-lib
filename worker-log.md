@@ -1294,3 +1294,32 @@ against index.d.ts), SPEC as overview with the HTML generated from the markdown.
   `kind: '...'` in `src/` is in the table of violations.
 - Corrected while writing: an unknown module is a `schema` violation (I had written
   `unknown-world` in the reference; no such kind exists).
+
+## D1 (3 of 4, second half) — docs/api.md, checked against index.d.ts and the library — done
+
+`npm test`: 204 pass, 0 fail on sources and built file (79 documented examples run: 51
+in api.md, 22 in reference.md, 6 in language.md). `npx -p typescript tsc --noEmit
+--strict src/index.d.ts`: no output (no errors).
+
+- `docs/api.md`: every export (27) and every public method of a world (50 on the
+  prototype, 3 static), each with what it takes, what it returns, errors, budget
+  behaviour and cost where it computes, and an example. Small readers that belong
+  together share an entry (`get`/`has`/`resolve`/`ofType`, `mark`/`rewind`,
+  `solve`/`solveReport`/`satisfiable`); `solveAsync` has the only example that is not
+  executed (the runner is synchronous).
+- `tools/doc-examples.mjs`: a block fenced ```` ```js setup ```` stands in front of the
+  run blocks that follow it, so the page shows its example world once.
+- Test `docs: api.md, index.d.ts and the library agree on every export and every public
+  method`: both directions for exports and for methods (prototype and static), and
+  every entry has an example.
+- `src/index.d.ts` repaired: a broken line in `QueryResult`; the violation kinds
+  (`variable` in place of `syntax`, plus `guard`, `refused`, `error`, `unknown-action`,
+  `nothing-to-undo`); `involved`, `bindings`, `issues`, `review`; `SopError` fields;
+  the missing exports `unify`, `walk`, `GRAMMAR`, `MODIFIERS`, `SCHEMA_TYPES`,
+  `aggregates`.
+- Behaviour I had wrong and the examples corrected (documented as it is, not changed):
+  `retract` also removes the facts that refer to the retracted one (S30 reworded);
+  `unsupported` is only answered when the world supposed the wire (S54 reworded) — for
+  a wire that exists the status is `missing`; an action's `find` returns an array;
+  `unify` takes values, not wires; a patch is several log entries that `undo` takes
+  back as one.

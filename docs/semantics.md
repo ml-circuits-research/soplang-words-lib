@@ -171,7 +171,8 @@ explained after the change has been undone.
 `refusals name the told wires they rest on`;
 `violations: explainable after the change is undone; a reason may quote the values`
 
-**S30.** Retracting a wire withdraws what was derived from it, and then derives again
+**S30.** Retracting a wire removes the wires that refer to it, withdraws what was
+derived from them, and then derives again
 what still follows from the rest; a conclusion with a second derivation survives.
 *Tests:* `history: retract removes dependants and derived wires; fork is independent`;
 `retract: a wire with a second derivation survives`
@@ -317,7 +318,8 @@ with the violations.
 *Tests:* `query: with no matching wire the world supposes one and lets the rules answer`;
 `query: an answer found by supposing carries the supposed wire as the rules left it`
 
-**S54.** `unsupported`: a function said why it has no result (`reason`).
+**S54.** `unsupported`: the world supposed a wire (S53) and a function said why it has
+no result for it (`reason`).
 *Test:* `query: a calculation that cannot be done is unsupported, with the reason; decimals set the precision`
 
 **S55.** `mode=count` is `supported` with the number; `mode=exists` is `supported`

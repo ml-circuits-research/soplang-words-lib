@@ -6,7 +6,10 @@
 // A block fenced as ```js run is executed with the library's exports in scope and a
 // `print(...)` function. The block that follows it, fenced as ```output, must hold
 // exactly what was printed. With --write the output blocks are (re)written instead.
-// Blocks do not share state. A block that throws fails the check.
+// Blocks do not share state. A block that throws fails the check. A block fenced as
+// ```js setup is not run by itself: its code stands in front of every `js run` block
+// that follows it in the same file (a later setup block replaces it), so a page can show
+// the world its examples use once.
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, resolve } from 'node:path';
@@ -30,10 +33,12 @@ export function runBlock(code) {
 export function checkText(text, { write = false } = {}) {
   const problems = [];
   let blocks = 0;
-  const out = text.replace(BLOCK, (whole, code, shownBlock, shown) => {
+  const setups = [...text.matchAll(/```js setup\n([\s\S]*?)\n```/g)].map((m) => ({ at: m.index, code: m[1] }));
+  const out = text.replace(BLOCK, (whole, code, shownBlock, shown, at) => {
     blocks++;
     let printed;
-    try { printed = runBlock(code); } catch (e) { problems.push(`block ${blocks} throws: ${e.message}`); return whole; }
+    const setup = setups.filter((s) => s.at < at).pop();
+    try { printed = runBlock(setup ? `${setup.code}\n${code}` : code); } catch (e) { problems.push(`block ${blocks} throws: ${e.message}`); return whole; }
     const want = printed ? printed + '\n' : '';
     if (!write && shown !== want) problems.push(`block ${blocks}: shown output differs from what the code prints\n--- shown\n${shown ?? '(none)'}\n--- printed\n${want}`);
     return '```js run\n' + code + '\n```\n\n```output\n' + want + '```';

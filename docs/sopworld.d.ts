@@ -8,11 +8,16 @@ export interface Wire {
 export interface Fill { key: string; value: string; via: string; from?: string[] }
 export interface Violation {
   kind: 'deny' | 'conflict' | 'domain' | 'cardinality' | 'unknown-key' | 'dangling-ref' | 'duplicate-id'
-    | 'syntax' | 'schema' | 'depth' | 'budget' | 'unknown-wire' | 'dead-end' | 'unsupported';
+    | 'variable' | 'schema' | 'depth' | 'budget' | 'unknown-wire' | 'dead-end' | 'unsupported'
+    | 'guard' | 'refused' | 'error' | 'unknown-action' | 'nothing-to-undo';
   why?: string; id?: string; key?: string; value?: string; rule?: string; wires?: string[];
   have?: string; want?: string; via?: string; allowed?: string[];
   /** the told wires this refusal rests on */
   support?: string[];
+  /** those wires as they were when the change was refused */
+  involved?: { id: string; type: string; attrs: Record<string, string[]> }[];
+  /** for a deny: the values of its variables */
+  bindings?: Record<string, string>;
 }
 export interface Result {
   ok: boolean;
@@ -24,7 +29,10 @@ export interface Result {
   violations: Violation[];
   /** default assumptions that were dropped to accept this change */
   revised?: { id: string; key: string; value: string }[];
+  /** soft violations this change recorded as core.issue wires */
+  issues?: Issue[];
 }
+export interface Issue { id: string; rule?: string; about: string[]; key?: string; why?: string }
 export interface OpenKey { id: string; type: string; key: string; ask?: string }
 export interface Candidate { value: string; source: 'default' | 'enum' | 'wire' | 'range'; count: number }
 export interface Question { type?: string; seek?: string; where?: Record<string, string | number>; about?: string; mode?: 'value' | 'list' | 'count' | 'exists' }
@@ -39,7 +47,8 @@ export interface QueryResult {
   /** the weakest tier under the answer, and the assumptions it rests on */
   tier?: string; rests?: Cell[];
   /** ids of the standing core.issue wires the answer rests on */
-  issues?: string[];: string; steps?: number; why?: string;
+  issues?: string[];
+  site?: string; steps?: number; why?: string;
   value?: string; values?: string[];
   alternatives?: { value: string; from: string[] }[];
   missing?: { id?: string; type?: string; key: string; ask?: string }[];
@@ -104,6 +113,8 @@ export interface NextStep {
   fills: (OpenKey & { value: string; kind: 'forced' | 'default' })[];
   questions: Wire[];
   dead: OpenKey[];
+  /** assumptions a host may want confirmed */
+  review?: Cell[];
 }
 export interface Explanation { assume: Wire[]; fills: { id: string; key: string; value: string }[]; text: string; cost: number }
 export interface StepResult extends Result { questions: Wire[]; dead: OpenKey[]; pending: object[] }
@@ -157,6 +168,8 @@ export interface Assumption extends Cell { cost?: number; dependants: { id: stri
 export class World {
   constructor(options?: WorldOptions);
   wires: Map<string, Wire>;
+  options: WorldOptions;
+  fns: Record<string, Fn>;
   /** the matrix wires by id */
   matrix: Map<string, Wire>;
   /** what the matrix says about a type: parent, lineage, closed, keys with all their attributes */
@@ -242,7 +255,21 @@ export class World {
   history(): WorldEvent[];
   toSOP(options?: { schema?: boolean; derived?: boolean; provenance?: boolean }): string;
 }
-export class SopError extends Error {}
+/** Thrown for text that is not SOP Lang; says where. */
+export class SopError extends Error { line?: number; column?: number; offset?: number }
+export type Bindings = object;
+/** match two values (atom, ?variable, $reference); the bindings, or null */
+export function unify(a: string, b: string, bindings?: Bindings): Bindings | null;
+/** what a value stands for under bindings */
+export function walk(term: string, bindings: Bindings): string;
+/** for each matrix wire type, the attributes it reads (a name ending in '.' is a prefix) */
+export const GRAMMAR: Record<string, string[]>;
+/** attributes that may stand on any pattern or template */
+export const MODIFIERS: Record<string, 'pattern' | 'template'>;
+/** the types that make a wire a matrix wire */
+export const SCHEMA_TYPES: Set<string>;
+/** the aggregate functions of core.calc ... over= */
+export const aggregates: Record<string, Function>;
 /** `anonymous`: a declaration may leave out its `@id` (queries) */
 export function parse(text: string, options?: { anonymous?: boolean }): Wire[];
 export function format(wire: Wire, options?: { multiline?: boolean }): string;

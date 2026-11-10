@@ -107,3 +107,46 @@ test('docs: every kind of violation the library raises is in the table of docs/s
     }
   }
 });
+
+// ---- the API page, the type declarations and the library name the same things -------------
+import * as library from '../tools/lib-under-test.mjs';
+
+test('docs: api.md, index.d.ts and the library agree on every export and every public method', async () => {
+  const api = readFileSync(new URL('../docs/api.md', import.meta.url), 'utf8');
+  const dts = readFileSync(new URL('../src/index.d.ts', import.meta.url), 'utf8');
+  const lib = await import(process.env.SOPWORLD_BUNDLE ? '../docs/sopworld.mjs' : '../src/index.mjs');
+  const headings = [...api.matchAll(/^### (.*)$/gm)].map((m) => m[1]).join('\n');
+
+  // exports
+  const exported = Object.keys(lib).filter((n) => n !== 'default');
+  const declared = new Set([...dts.matchAll(/^export (?:declare )?(?:const|function|class) (\w+)/gm)].map((m) => m[1]));
+  for (const name of exported) {
+    assert.ok(new RegExp(`(^|[\\s,(])${name}\\b`).test(headings), `export ${name} has no entry in docs/api.md`);
+    assert.ok(declared.has(name), `export ${name} is not declared in src/index.d.ts`);
+    assert.ok(name in library, `export ${name} is not reachable through tools/lib-under-test.mjs`);
+  }
+  for (const name of declared) assert.ok(exported.includes(name), `src/index.d.ts declares ${name}, which the library does not export`);
+
+  // methods of a world
+  const own = (o) => Object.getOwnPropertyNames(o).filter((n) => !n.startsWith('_') && !['constructor', 'length', 'name', 'prototype'].includes(n));
+  const methods = own(lib.World.prototype), statics = own(lib.World);
+  const body = dts.slice(dts.indexOf('export class World {'));
+  const cls = body.slice(0, body.indexOf('\n}\n'));
+  const typedMethods = new Set([...cls.matchAll(/^  (?:get )?(\w+)(?:<[^>]*>)?\(/gm)].map((m) => m[1]));
+  const typedStatics = new Set([...cls.matchAll(/^  static (\w+)\(/gm)].map((m) => m[1]));
+  for (const m of methods) {
+    assert.ok(headings.includes(`world.${m}(`), `world.${m}() has no entry in docs/api.md`);
+    assert.ok(typedMethods.has(m), `world.${m}() is not declared in src/index.d.ts`);
+  }
+  for (const m of statics) {
+    assert.ok(headings.includes(`World.${m}(`), `World.${m}() has no entry in docs/api.md`);
+    assert.ok(typedStatics.has(m), `World.${m}() is not declared in src/index.d.ts`);
+  }
+  for (const m of headings.matchAll(/\bworld\.(\w+)\(/g)) assert.ok(methods.includes(m[1]), `docs/api.md describes world.${m[1]}(), which does not exist`);
+  for (const m of headings.matchAll(/\bWorld\.(\w+)\(/g)) assert.ok(statics.includes(m[1]), `docs/api.md describes World.${m[1]}(), which does not exist`);
+  for (const m of typedMethods) if (m !== 'constructor') assert.ok(methods.includes(m), `src/index.d.ts declares world.${m}(), which does not exist`);
+  for (const m of typedStatics) assert.ok(statics.includes(m), `src/index.d.ts declares World.${m}(), which does not exist`);
+
+  // every entry has an example
+  for (const section of api.split(/\n(?=### )/).slice(1)) assert.match(section, /```js( run)?\n/, `no example under "${section.split('\n')[0]}"`);
+});

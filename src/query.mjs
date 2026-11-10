@@ -19,6 +19,7 @@
 // that the host can change: new World({ vocabulary: { status: 'core.status', ... } }).
 
 import { parse, str } from './parser.mjs';
+import { abduce } from './abduce.mjs';
 import { EMPTY, walk, unify, hasVar } from './unify.mjs';
 
 const VOCABULARY = {
@@ -101,6 +102,39 @@ export const querying = {
     const r = this._patch(patch, { strict: false });
     if (!r.ok) return { ok: false, status: 'refused', violations: r.violations };
     return { ok: true, status: 'done', value: value === undefined || hasVar(value) ? undefined : value, result: r };
+  },
+
+  /**
+   * Which values of an open, abducible key would make the other keys of the question
+   * hold? The question's keys that rules compute are the goal; the rest describe the
+   * wire. Returns [{ value, cost, fills, assume }], cheapest first. Changes nothing.
+   */
+  _howto(type, key, where) {
+    const c = this._compiled();
+    const computed = new Set();
+    for (const r of c.rules) for (const t of r.then) if (c.isA(type, t.type)) for (const k of Object.keys(t.attrs)) computed.add(k);
+    const given = {};
+    for (const k of Object.keys(where)) given[c.shortKey(type, k)] = this._norm(String(where[k]));
+    const out = [];
+    this._trial(() => {
+      const fits = (w) => !w.attrs[key] && Object.keys(given).every((k) => !w.attrs[k] || w.attrs[k].some((v) => this._same(w.type, k, v, given[k])));
+      let targets = [...(this.byType.get(type) || [])].map((id) => this.wires.get(id)).filter(fits);
+      if (!targets.length) { // nothing to complete: suppose the wire, without the keys that rules compute
+        const attrs = {};
+        for (const k of Object.keys(given)) if (!computed.has(k)) attrs[k] = [given[k]];
+        const id = this._freshId('_howto');
+        if (!this._tell([{ id, type, attrs, pattern: false }], { strict: false }).ok) return;
+        targets = [this.wires.get(id)];
+      }
+      const ids = new Set(targets.map((w) => w.id));
+      const goal = [{ id: '_goal', type, attrs: Object.fromEntries(Object.entries(given).map(([k, v]) => [k, [v]])), pattern: false }];
+      for (const e of abduce(this, goal, {})) {
+        const mine = (e.fills || []).find((f) => ids.has(f.id) && f.key === key);
+        if (!mine) continue;
+        out.push({ value: mine.value, cost: e.cost, fills: (e.fills || []).map((f) => ({ ...(this.wires.get(f.id)?.meta.told && !String(f.id).startsWith('_howto') ? { id: f.id } : {}), key: f.key, value: f.value })), assume: e.assume || [] });
+      }
+    });
+    return out;
   },
 
   _context(extra = {}) {
@@ -277,6 +311,18 @@ export const querying = {
       }
     }
     if (suppositionOf) r.supposed = suppositionOf;
+    // The key is open and may be assumed: say which values would make the rest hold.
+    if (type && key && (mode === 'abduce' || r.status === 'missing') && c.lineage(type).some((t) => c.abducibleKeys.has(`${t}.${key}`))) {
+      const howto = this._howto(type, key, question.where);
+      if (howto.length) r.howto = howto;
+      if (mode === 'abduce' && howto.length) {
+        const distinct = [...new Set(howto.map((h) => h.value))];
+        r = distinct.length === 1
+          ? { ...r, status: 'supported', value: distinct[0], tier: 'guessed', via: ['core.abduce'], howto }
+          : { ...r, status: 'ambiguous', alternatives: howto.map((h) => ({ value: h.value, cost: h.cost })), tier: 'guessed', howto };
+        delete r.missing;
+      }
+    }
     r.wires = wires.map((w) => w.id);
     if (record) r.answer = this._record(q, question, r);
     return r;

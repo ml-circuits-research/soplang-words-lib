@@ -32,6 +32,8 @@ export interface QueryResult {
   /** 'budget': the call ran out of budget; `site`, `steps` and `why` say where */
   status: 'supported' | 'conflicting' | 'ambiguous' | 'missing' | 'refused' | 'no' | 'unknown' | 'budget' | 'unsupported';
   reason?: string;
+  /** for an open key that may be assumed: the values that would make the rest of the question hold, cheapest first */
+  howto?: { value: string; cost: number; fills: { id?: string; key: string; value: string }[]; assume: Wire[] }[];
   /** when the answer came from supposing a wire: that wire as the rules left it, and what they set */
   supposed?: { type: string; attrs: Record<string, string[]>; set: Record<string, string | string[]>; fills: { key: string; value: string; via: string; from: string[]; tier: string }[] };
   /** the weakest tier under the answer, and the assumptions it rests on */

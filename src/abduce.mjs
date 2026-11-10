@@ -152,19 +152,37 @@ export function abduce(world, goal, { maxDepth = 3, max = 10, maxAssumptions = 4
         if (!c.isA(t.type, g.type)) continue; // a rule that produces a subtype also produces the goal
         const k = ++n;
         const tr = rename(t, k);
-        let s2 = unify('?' + g.id, `~derived${k}`, s);
-        s2 = s2 && unify('?' + tr.id, `~derived${k}`, s2);
+        // a template with core.on= adds keys to a matched wire: the goal is that wire, and
+        // what the goal says beyond the template is said about the pattern it matched
+        const home = t.on ? rule.when.find((p) => '?' + p.id === t.on) : null;
+        let s2 = unify('?' + g.id, home ? `?${home.id}~${k}` : `~derived${k}`, s);
+        if (!home) s2 = s2 && unify('?' + tr.id, `~derived${k}`, s2);
+        const beyond = {};
         for (const key of Object.keys(g.attrs)) {
           for (const gv of g.attrs[key]) {
             if (!s2) break;
+            if (home && !tr.attrs[key]) { (beyond[key] ||= []).push(gv); continue; }
             let hit = null;
             for (const tv of tr.attrs[key] || []) if ((hit = unify(gv, tv, s2))) break;
             s2 = hit;
           }
         }
         if (!s2) continue;
+        const when = rule.when.map((p) => rename(p, k));
+        if (home) {
+          const hp = when[rule.when.indexOf(home)];
+          for (const key of Object.keys(beyond)) {
+            if (!hp.attrs[key]) { hp.attrs[key] = beyond[key]; continue; }
+            for (const gv of beyond[key]) { // bounded: the values of one key of the goal
+              let hit = null;
+              for (const pv of hp.attrs[key]) if (s2 && (hit = unify(gv, pv, s2))) break;
+              s2 = hit;
+            }
+          }
+          if (!s2) continue;
+        }
         const calcs = rule.calc.filter((q) => !q.over).map((q) => equation(q, k));
-        yield* solve([...rule.when.map((p) => rename(p, k)), ...rest], s2, calcs.length ? { ...hyp, calcs: [...hyp.calcs, ...calcs] } : hyp, depth - 1);
+        yield* solve([...when, ...rest], s2, calcs.length ? { ...hyp, calcs: [...hyp.calcs, ...calcs] } : hyp, depth - 1);
       }
     }
   }

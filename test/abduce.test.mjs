@@ -133,3 +133,38 @@ test('abduction through a calc: no solution is an empty list, within the budget'
   assert.deepEqual([cut.length, cut.budget.kind, cut.budget.site], [0, 'budget', w.stats().site]);
   assert.equal(w.abduce('@x change amount=5').length, 1);
 });
+
+test('abduction through query: a missing key that may be assumed comes with the values that would do', () => {
+  const w = new World();
+  w.load(`
+    @k1 core.slot of=change key=paid kind=number
+    @ab core.abducible of=change key=paid
+    @q change paid=?p item=?i
+    @pr price item=?i cost=?c
+    @calc core.calc out=?d fn=sub args=?p args=?c
+    @a change core.on=$q amount=?d
+    @r core.rule when=$q when=$pr with=$calc then=$a
+    @k2 core.slot of=door key=state enum=open enum=shut
+    @ab2 core.abducible of=door key=state
+    @dr door state=?s room=?room
+    @al draught in=?room
+    @r2 core.rule when=$dr then=$al
+  `);
+  w.load('@p1 price item=book cost=12');
+  // forwards, as before
+  assert.equal(w.query({ type: 'change', seek: 'amount', where: { item: 'book', paid: 20 } }).value, '8');
+  // "I got 5 back for a book. What did I pay?": paid is open, and may be assumed
+  const q = w.query({ type: 'change', seek: 'paid', where: { item: 'book', amount: 5 } });
+  assert.deepEqual([q.status, q.howto], ['missing', [{ value: '17', cost: 1, fills: [{ key: 'paid', value: '17' }], assume: [] }]]);
+  // asked as an abduction, the explanation is the answer, marked as a guess
+  const a = w.query({ type: 'change', seek: 'paid', where: { item: 'book', amount: 5 }, mode: 'abduce' });
+  assert.deepEqual([a.status, a.value, a.tier, a.missing], ['supported', '17', 'guessed', undefined]);
+  assert.equal(w.ofType('change').length, 0, 'nothing is recorded');
+  // on a wire that exists: the explanation names it
+  w.tell('@c1 change item=book');
+  const e = w.query({ type: 'change', seek: 'paid', where: { item: 'book', amount: 3 }, mode: 'abduce' });
+  assert.deepEqual([e.value, e.howto[0].fills], ['15', [{ id: 'c1', key: 'paid', value: '15' }]]);
+  // nothing to aim at, or a key that may not be assumed: plain missing
+  assert.equal(w.query({ type: 'change', seek: 'paid', where: { item: 'ink', amount: 5 } }).howto, undefined);
+  assert.equal(w.query({ type: 'price', seek: 'cost', where: { item: 'ink' }, mode: 'abduce' }).status, 'missing');
+});

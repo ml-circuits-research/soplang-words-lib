@@ -877,6 +877,17 @@ the rules left it, `set` only what they added (`{ total: '12', tax: '2.4', unit:
 its whole reply from one query. An answer read from a wire that exists has no
 `supposed`.
 
+**Asking what would have to be true.** When the key asked for is open and declared
+abducible (3.5), the other keys of the question can be the goal: "I got 5 back for a
+book: what did I pay?" is `query({ type: 'change', seek: 'paid', where: { item: 'book',
+amount: 5 } })`. The plain answer is `missing`, and it carries `howto`: the values that
+would make the rest hold, cheapest first, `[{ value, cost, fills, assume }]`. With
+`mode: 'abduce'` the explanation is the answer: `supported` with the value when there
+is one, `ambiguous` with the alternatives when there are several, always with
+`tier: 'guessed'`. The keys of the question that rules compute are taken as the goal,
+the others describe the wire; an existing wire that fits is completed, else one is
+supposed. Nothing is recorded. `world.abduce(goal)` stays the general form.
+
 **Vocabulary.** The wire types and key names used here are defaults that a host can
 replace: `new World({ vocabulary: { question, answer, request, type, seek, about, mode,
 where, action, arg, to, value, status, via, from } })`.
@@ -1164,6 +1175,8 @@ Since 0.4.0 (the version first published in this repository):
 - New: `core.on=` templates (3.3); the stratification check knows which keys a template
   adds, so a rule may aggregate over a type and fill a key on a wire of that type.
 - New: `core.absent=` in patterns (3.10).
+- New (0.6): abduction through `query` (`howto` on a `missing` answer, `mode: 'abduce'`);
+  abduction goes through `core.on=` templates (4.10).
 - New (0.6): `world.revise()`; `world.told()`; a wire stated again with nothing new is
   accepted (it was `duplicate-id`) (4.12).
 - New (0.6): `world.check()` without a patch and `World.audit(wires, matrix)` (4.9.1).

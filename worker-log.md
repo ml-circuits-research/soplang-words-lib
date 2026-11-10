@@ -1185,7 +1185,7 @@ the same rule set; a `missing` answer shows an empty `set`; a lookup has no `sup
   both found by `check()`; `World.audit` on good, bad and badly-formed input; the
   deny-over-state pattern.
 
-## W5, W6 — world.revise; told wires stay as told — done (two commits)
+## W5, W6 — world.revise; told wires stay as told — done (one commit, 9aa0f3e: they share the patch code)
 
 `npm test`: 192 pass, 0 fail on sources and built file. Pilot unchanged.
 
@@ -1203,3 +1203,21 @@ the same rule set; a `missing` answer shows an empty `set`; a lookup has no `sup
   same matrix it gives the same wires and values. `toJSON` was already "as told" (it is
   the log). Limit, stated in SPEC: a state stated several times between events needs
   the order of statements, which `toJSON` keeps and a list of wires cannot.
+
+## W7 — abduction through query — done
+
+`npm test`: 193 pass, 0 fail on sources and built file. Pilot unchanged.
+
+- A `missing` answer for a key that is declared abducible carries `howto`: the values
+  that would make the other keys of the question hold (`[{ value, cost, fills,
+  assume }]`). With `mode: 'abduce'` that is the answer: `supported` (one value) or
+  `ambiguous` (several), tier `guessed`. Nothing is recorded (SPEC 4.10).
+- It needed one fix in abduction itself: a goal that names more keys than a `core.on=`
+  template sets found nothing (the extra keys were compared with the template, not
+  with the wire the template fills). Now they are put to the pattern the template
+  writes on. Probe before: `abduce('@g change item=book amount=5')` gave `[]`; after:
+  `c1.paid=17`.
+- Test in `test/abduce.test.mjs`: forwards as before; "5 back for a book" gives `missing`
+  with `howto` 17; as an abduction `supported 17`, tier `guessed`; on an existing wire
+  the explanation names it; plain `missing` when there is nothing to aim at or the key
+  may not be assumed.

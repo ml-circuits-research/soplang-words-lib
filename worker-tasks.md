@@ -26,6 +26,18 @@ The reviewer's first two commits to this repository were a false start; ignore t
 **Do next, in this order, one commit each:**
 **Round 3 (reviewer, 17:45).** The user sent an outside design review of the library (made at commit e9a6551, before G7 and G5) and asked the reviewer to judge it and organise the work. The reviewer checked each claim on the current code. The result is the order below, one commit each. Finish what you have in hand of G10–G14 first if a commit is nearly done; otherwise follow this order.
 
+**L1 — one language, and `?` means one thing (user decision, 18:38). Do this right after the task you have in hand, before H5.**
+
+The user's objection, and he is right: `?` is used for two different things. `?p purchase …` *declares* a pattern wire, and `qty=?q` is a *variable* bound by matching. It reads as if a declaration and a variable were the same kind of thing. PSys2's SOP Lang (`compat/psys2/specs/01-soplang.md`) has only `@id type key=value`, and the user wants **one** SOP Lang for facts and rules.
+
+1. **`?name` is only a variable, in value position.** A declaration always starts with `@`.
+2. **Pattern wires are ordinary `@` wires.** A wire is a pattern because a rule, deny, relation, action or query names it in `when=`, `not=`, `then=` (the way templates already work: `@a acceleration of=$b magnitude=?A` is a template because the rule lists it), not because of its first character. A pattern with no variable (for example one that only says `core.absent=b`) is still a pattern for that reason. A wire with a variable that nothing names is refused, as today.
+3. **Id spaces.** Matrix wires and facts keep separate id spaces as now. Inside a rule, `$p` keeps meaning "the wire that pattern `@p` matched", or the wire that template `@p` produced.
+4. **Queries:** `ask('@c change for=$b1 amount=?a')`, or without an id where none is needed (`ask('change for=$b1 amount=?a')`); the bindings are returned by variable name, and the matched wire id under the pattern's id as now.
+5. **Comments:** PSys2's v1 has none (`doc=` entries instead). Keep `#` comments: they are useful in rule files and the user's spec will adopt them. A `#` inside a quoted string is text.
+6. **Migration:** the parser accepts the old `?id type …` declaration for one version with a deprecation note (`world.warnings`); `format()` and every document, example, test matrix, the playground and `compat/psys2/matrices/` are rewritten to the new form; `tools/migrate-syntax.mjs` converts a file. Add a section "The language" to SPEC that is the single grammar (facts, patterns, variables, references, comments), written so that PSys2 can adopt it verbatim as SOP Lang v1.1.
+7. Tests: both forms parse to the same matrix; a `?id` declaration warns; a fact with a variable is still refused; the pilot numbers are unchanged.
+
 **A. Two defects the review found, reproduced by the reviewer on a7a8e16. Do these first.**
 
 1. **H1 — a whole assignment is checked atomically; search must not reject on invalid prefixes.**
@@ -82,7 +94,7 @@ The reviewer's first two commits to this repository were a false start; ignore t
 
 **E. Housekeeping at the end of this round:** old HTML pages; version **0.5.0** and a tag, with a short changelog. The PSys2 worker pins that tag.
 
-**Order:** H1, H2, G10–G14 (those not yet done), H3, H4, H5, H6, housekeeping + tag. Report the pilot numbers again after G10–G14 and after H6.
+**Order:** H1, H2, G10–G14 (those not yet done), H3, H4, **G11, L1**, H5, H6, housekeeping + tag. Report the pilot numbers again after G10–G14 and after H6.
 
 Working rules for commits: pull with rebase before each commit; the reviewer only ever changes `worker-tasks.md` (tasks and answers) and, when you ask for more material, files under `compat/psys2/` — never `src/`, tests, docs, `questions.md` or your log. If a reviewer commit lands while you work, rebase onto it; it will not touch your files.
 

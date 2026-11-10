@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sopworld Use cases</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.4</small></a>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="concepts.html">Concepts</a><a href="reasoning.html">Reasoning</a><a href="usecases.html" aria-current="page">Use cases</a><a href="solvers.html">Solvers</a><a href="api.html">API</a><a href="playground.html">Playground</a><a href="roadmap.html">Analysis and roadmap</a></nav>
+</header>
+<main>
+<h1>Use cases</h1>
+<p class="lead">Seven ways to put a world to work. Each one names the pattern, shows the calls, and says what you still need around the library.</p>
+
+<h2 id="chat">1. Logical completion in a chat</h2>
+<p><strong>Pattern.</strong> A formaliser turns each user turn into incomplete wires. The world decides what follows, what was only assumed, what must be asked and what is impossible. One call per turn.</p>
+<figure class="code"><pre><code>const s = w.step(&#x27;@m1 meeting people=3&#x27;);     // tell + complete
+s.filled      // what the world decided by itself
+s.questions   // core.question wires: about=, seek=, option=, text=
+s.revised     // assumptions dropped because of this turn
+
+w.answer(s.questions[0], &#x27;$small&#x27;);           // the user picked an option</code></pre></figure>
+<figure class="code"><figcaption>node examples/chat.mjs</figcaption><pre><code>User: &quot;Book a meeting for 9 people.&quot;
+  world completes: room=$big (forced), time=14:00 (forced), duration=30 (default)
+User: &quot;Actually, make it an hour.&quot;
+  accepted, assumption dropped: m1.duration=30
+User: &quot;And another one for 3 people.&quot;
+  world completes: room=$small (forced)
+  world asks: @q_m2_time core.question about=$m2 seek=time option=10:00 option=14:00 text=&quot;What time?&quot;
+User: &quot;A third one, for 10 people at 14:00.&quot;     (strict mode)
+  refused: no consistent completion of the open keys exists</code></pre></figure>
+<p><strong>You bring.</strong> The step from text to wires (an LLM, or a reader such as VSS) and the step from question wires back to text. The world guarantees that whatever is generated is consistent.</p>
+<h2 id="twin">2. Digital twin of a device or process</h2>
+<p><strong>Pattern.</strong> One wire per current reading, identified by what it measures. A new reading replaces the old one in one transaction. Alarms and derived states are rules; impossible states are denies. A listener forwards committed changes.</p>
+<figure class="code"><figcaption>plant matrix</figcaption><pre><code>@k_reading core.slot of=reading key=of id=true type=tank
+... reading + tank, level / capacity &gt;= 0.9  -&gt;  alarm of=$t kind=high_level
+... level &gt; capacity                         -&gt;  deny &quot;level above capacity: sensor fault&quot;
+... pump on + valve closed on the same tank  -&gt;  deny &quot;pump running against a closed valve&quot;</code></pre></figure>
+<figure class="code"><figcaption>node examples/twin.mjs</figcaption><pre><code>w.on(events =&gt; forward(events));
+w.tell(&#x27;@r1 reading of=$t1 level=95&#x27;);                    // alarm derived
+w.replace(&#x27;r1&#x27;, &#x27;@r1 reading of=$t1 level=40&#x27;);           // alarm removed with its cause
+w.replace(&#x27;r1&#x27;, &#x27;@r1 reading of=$t1 level=120&#x27;).ok        // false; the twin still says 40
+World.fromJSON(JSON.parse(saved))                         // restore after a restart</code></pre></figure>
+<p><strong>You bring.</strong> Transport and timing. The world has no clock: time is a value you put on wires.</p>
+<h2 id="procedure">3. Procedures and workflows</h2>
+<p><strong>Pattern.</strong> Steps are facts linked by <code>after=</code>. What is ready next is a rule with negation ("the previous step is done and this one is not"). Doing a step early is a deny. Undoing a step is a retraction.</p>
+<figure class="code"><figcaption>node examples/workflow.mjs</figcaption><pre><code>ready: [&#x27;$mix&#x27;]
+skip to cool -&gt; [&#x27;the previous step is not done&#x27;]
+mix done, ready: [&#x27;$bake&#x27;]
+bake done, ready: [&#x27;$cool&#x27;]
+bake undone, ready: [&#x27;$bake&#x27;]</code></pre></figure>
+<p>The same matrix serves any procedure: the steps are data. This is the shape of an SOP executed by an agent, with the world as the record of what was done and what may be done next.</p>
+<h2 id="diagnosis">4. Diagnosis and explanation</h2>
+<p><strong>Pattern.</strong> Rules run from causes to effects. Mark the causes as abducible, then ask for explanations of what was observed. Each explanation can be adopted, which predicts the other effects, or checked by asking for one more observation.</p>
+<figure class="code"><figcaption>node examples/abduction.mjs</figcaption><pre><code>c.abduce(&#x27;?s symptom of=$ion kind=cough&#x27;)          // flu or allergy
+c.fill(&#x27;ion&#x27;, &#x27;season&#x27;, &#x27;winter&#x27;);
+c.abduce(&#x27;?s symptom of=$ion kind=cough&#x27;)          // flu: allergy is denied in winter
+adopt(c, explanation);
+c.ask(&#x27;?s symptom of=$ion kind=?k&#x27;)                // fever and cough are now predicted</code></pre></figure>
+<p><strong>You bring.</strong> Costs or a <code>rank</code> function if some causes are more likely than others. The world says what is possible, not what is probable.</p>
+<h2 id="learn">5. Building a matrix from examples</h2>
+<p><strong>Pattern.</strong> Collect example circuits, induce slots and rules, review the text, tell it to a world. The world is the safety net: a learned rule that contradicts what is already there is refused, with the deny that it hit.</p>
+<figure class="code"><pre><code>const slots = induceSlots(observedWires);
+const rule  = induce(examples, { name: &#x27;line_total&#x27;, tolerant: true });
+rule.skipped                        // examples that did not fit
+const r = world.tell(rule.text);
+r.ok || r.violations                // why the world does not accept the rule</code></pre></figure>
+<p><strong>You bring.</strong> Clean, grouped examples. Induction here is exact generalisation, without statistics.</p>
+<h2 id="compose">6. Composing knowledge units</h2>
+<p><strong>Pattern.</strong> Each micro-world is a matrix in a library. A world loads the ones it needs with <code>core.use</code>; their wires get the module name as an id prefix. Modules meet through shared types or through bridge rules.</p>
+<figure class="code"><figcaption>node examples/compose.mjs</figcaption><pre><code>const w = new World({ library: { garden, geo } });
+w.load(&#x27;@u1 core.use world=garden  @u2 core.use world=geo&#x27;);
+w.tell(&#x27;@pl1 place name=lawn in=north  @f1 forecast region=north kind=rain&#x27;);
+w.ask(&#x27;?s slippery place=?p&#x27;)       // lawn
+// derivation: garden.wet_slips &lt;- garden.rain_wets &lt;- geo.rain_over_region &lt;- told</code></pre></figure>
+<p>Abduction, completion and retraction work across modules without extra code, because after loading there is one matrix.</p>
+<h2 id="schedule">7. Scheduling and configuration</h2>
+<p><strong>Pattern.</strong> Many open keys with closed domains and constraints between them: rooms and times, parts of a configuration, shifts. Ask for one full solution, or let the world commit one as assumptions that later statements can still replace.</p>
+<figure class="code"><figcaption>node examples/solvers.mjs</figcaption><pre><code>const r = w.solveReport();          // { status: &#x27;sat&#x27;, assignment, stats, solver }
+w.apply(r.assignment);              // all fills in one transaction
+// or
+w.complete({ choose: true });       // forced values first, then one full solution as assumptions</code></pre></figure>
+<p>The search strategy is chosen when the world is created. See <a href="solvers.html">Solvers</a> for the built-in ones and for clingo and SAT solvers from outside.</p>
+<h2>Choosing the calls</h2>
+<div class="table"><table><thead><tr><th>You want</th><th>Use</th></tr></thead><tbody><tr><td>Set-up code that must not fail silently</td><td><code>load()</code>, which throws on refusal</td></tr><tr><td>To try something without committing</td><td><code>{ dry: true }</code></td></tr><tr><td>One call per dialogue turn</td><td><code>step()</code>, then <code>answer()</code></td></tr><tr><td>State that changes over time</td><td><code>id=true</code> slot and <code>replace()</code></td></tr><tr><td>A what-if question</td><td><code>trial(fn)</code></td></tr><tr><td>To fill everything that is open</td><td><code>complete({ choose: true })</code> or <code>solve()</code> and <code>apply()</code></td></tr><tr><td>To keep a session</td><td><code>toJSON()</code> and <code>World.fromJSON()</code></td></tr><tr><td>To check files in CI</td><td><code>sopworld check matrix.sop facts.sop</code></td></tr></tbody></table></div>
+
+</main>
+<footer>sopworld 0.4 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+
+</body>
+</html>

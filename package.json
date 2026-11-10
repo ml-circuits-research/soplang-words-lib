@@ -1,0 +1,48 @@
+{
+  "name": "sopworld",
+  "version": "0.4.0",
+  "description": "Consistency matrices for SOP Lang circuits: self-consistent micro-worlds with deduction, abduction, induction and logical completion. Zero dependencies.",
+  "type": "module",
+  "main": "./src/index.mjs",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.mjs"
+    },
+    "./bundle": {
+      "types": "./docs/sopworld.d.ts",
+      "default": "./docs/sopworld.mjs"
+    },
+    "./node/solvers.mjs": "./node/solvers.mjs"
+  },
+  "files": [
+    "src",
+    "bin",
+    "node",
+    "docs",
+    "tools",
+    "SPEC.md",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "test": "node tools/build.mjs && node --test && SOPWORLD_BUNDLE=1 node --test",
+    "test:src": "node --test",
+    "test:browser": "node tools/browser-check.mjs",
+    "bench": "node tools/bench.mjs",
+    "examples": "node examples/deduction.mjs && node examples/abduction.mjs && node examples/induction.mjs && node examples/chat.mjs && node examples/twin.mjs && node examples/workflow.mjs && node examples/compose.mjs && node examples/solvers.mjs",
+    "docs": "python3 tools/build_docs.py"
+  },
+  "license": "MIT",
+  "types": "./src/index.d.ts",
+  "bin": {
+    "sopworld": "./bin/sopworld.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ml-circuits-research/soplang-words-lib.git"
+  }
+}

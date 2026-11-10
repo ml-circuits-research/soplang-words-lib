@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sopworld</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.4</small></a>
+  <nav aria-label="Documentation"><a href="index.html" aria-current="page">Overview</a><a href="concepts.html">Concepts</a><a href="reasoning.html">Reasoning</a><a href="usecases.html">Use cases</a><a href="solvers.html">Solvers</a><a href="api.html">API</a><a href="playground.html">Playground</a><a href="roadmap.html">Analysis and roadmap</a></nav>
+</header>
+<main>
+<h1>sopworld</h1>
+<p class="lead">A small engine that keeps a set of SOP Lang wires consistent with rules written as wires. It derives what follows, completes what is missing, asks for what it cannot decide, and refuses what is not allowed.</p>
+
+<h2>What it is</h2>
+<p>A <strong>world</strong> holds facts. A <strong>consistency matrix</strong> says which worlds are possible: which keys a wire has, what must exist when something else exists, what may never happen. The matrix is written in the same language as the facts, as pattern circuits with variables.</p>
+<p>Every change goes through one transaction. Either the world accepts it together with all its consequences, or nothing changes and you get the reason.</p>
+<div class="diagram" role="img" aria-label="Wires from outside enter a transaction: ingest, chase, validate. The world then commits or refuses. Completion turns open keys into forced values, assumptions or questions.">
+<svg viewBox="0 0 700 250" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box" x="10" y="20" width="120" height="60" rx="6"/><text x="70" y="46" text-anchor="middle">wires from</text><text x="70" y="64" text-anchor="middle">outside</text>
+  <rect class="box hot" x="170" y="10" width="360" height="80" rx="6"/><text class="small" x="182" y="28">one transaction</text>
+  <rect class="box" x="184" y="38" width="100" height="40" rx="4"/><text x="234" y="63" text-anchor="middle">ingest</text>
+  <rect class="box" x="300" y="38" width="100" height="40" rx="4"/><text x="350" y="63" text-anchor="middle">chase rules</text>
+  <rect class="box" x="416" y="38" width="100" height="40" rx="4"/><text x="466" y="63" text-anchor="middle">validate</text>
+  <rect class="box" x="570" y="10" width="120" height="34" rx="6"/><text x="630" y="32" text-anchor="middle">commit</text>
+  <rect class="box" x="570" y="56" width="120" height="34" rx="6"/><text x="630" y="78" text-anchor="middle">refuse + why</text>
+  <path class="wire" d="M130 50 H170"/><path class="wire" d="M284 58 H300"/><path class="wire" d="M400 58 H416"/>
+  <path class="wire" d="M530 40 H550 V27 H570"/><path class="wire" d="M530 60 H550 V73 H570"/>
+  <rect class="box" x="170" y="130" width="360" height="100" rx="6"/><text class="small" x="182" y="148">the world</text>
+  <text x="190" y="172">facts</text><text class="small" x="190" y="188">told, derived, filled</text>
+  <text x="330" y="172">matrix</text><text class="small" x="330" y="188">slots, rules, denies</text>
+  <text x="440" y="172">log</text><text class="small" x="440" y="188">replayable</text>
+  <text class="small" x="190" y="216">every wire and value knows where it came from</text>
+  <path class="wire" d="M630 44 V110 H350 V130"/><circle class="dot" cx="350" cy="130" r="4"/>
+  <rect class="box" x="10" y="150" width="120" height="60" rx="6"/><text x="70" y="176" text-anchor="middle">forced values,</text><text x="70" y="194" text-anchor="middle">questions</text>
+  <path class="wire" d="M170 180 H130"/><circle class="dot" cx="130" cy="180" r="4"/>
+  <path class="wire" d="M70 150 V80"/><circle class="dot" cx="70" cy="80" r="4"/>
+</svg></div>
+<h2>One minute example</h2>
+<figure class="code"><figcaption>example.mjs</figcaption><pre><code>import { World } from &#x27;sopworld&#x27;;
+
+const w = new World();
+w.load(`
+  @k core.slot of=acceleration key=of id=true      # one acceleration per body
+
+  ?b body mass=?m                                  # if there is a body
+  ?f force on=$b magnitude=?F                      # and a force on it
+  @a acceleration of=$b magnitude=?A               # there is an acceleration
+  @c core.calc out=?A fn=div args=?F args=?m       # with A = F / m
+  @newton2 core.rule when=$b when=$f with=$c then=$a
+
+  ?b0 body mass=?m0
+  @t core.test fn=lte args=?m0 args=0
+  @positive core.deny when=$b0 if=$t why=&quot;mass must be positive&quot;
+`);
+
+w.tell(&#x27;@b1 body mass=2  @f1 force on=$b1 magnitude=10  @a1 acceleration of=$b1&#x27;);
+w.get(&#x27;a1&#x27;).attrs.magnitude        // [&#x27;5&#x27;]   the open key was filled
+w.explain(&#x27;a1&#x27;).fills[0]           // { key: &#x27;magnitude&#x27;, value: &#x27;5&#x27;, via: &#x27;newton2&#x27;, from: [&#x27;b1&#x27;, &#x27;f1&#x27;] }
+
+w.tell(&#x27;@b2 body mass=0&#x27;).violations[0].why          // &#x27;mass must be positive&#x27;
+w.tell(&#x27;@a9 acceleration of=$b1 magnitude=7&#x27;).ok     // false: conflicts with the derived 5</code></pre></figure>
+<h2>What you can do with it</h2>
+<div class="table"><table><thead><tr><th>Operation</th><th>Question</th><th>Calls</th></tr></thead><tbody><tr><td>Deduction</td><td>What follows from what is known?</td><td><code>tell</code>, <code>fill</code></td></tr><tr><td>Completion</td><td>What is missing, and which values are still possible?</td><td><code>open</code>, <code>suggest</code>, <code>next</code>, <code>complete</code></td></tr><tr><td>Search</td><td>Is there a way to fill everything that is open?</td><td><code>solve</code>, <code>solveReport</code>, <code>solveAsync</code>, <code>apply</code></td></tr><tr><td>Abduction</td><td>What would have to be true for this to hold?</td><td><code>abduce</code>, <code>adopt</code></td></tr><tr><td>Induction</td><td>Which rule or slot explains these examples?</td><td><code>induce</code>, <code>induceSlots</code></td></tr><tr><td>Revision</td><td>What changes when a fact goes away or is replaced?</td><td><code>retract</code>, <code>replace</code></td></tr><tr><td>Explanation</td><td>Where does this come from?</td><td><code>explain</code>, <code>history</code>, <code>on</code></td></tr></tbody></table></div>
+<h2>Where to go next</h2>
+<div class="cards">
+ <a class="card" href="concepts.html"><strong>Concepts</strong><span>Wires, the seven matrix wire types, what a transaction does.</span></a>
+ <a class="card" href="reasoning.html"><strong>Reasoning</strong><span>Deduction, completion, abduction, induction, revision, each on a small world.</span></a>
+ <a class="card" href="usecases.html"><strong>Use cases</strong><span>Chat completion, digital twin, procedures, diagnosis, composing knowledge.</span></a>
+ <a class="card" href="solvers.html"><strong>Solvers</strong><span>The search strategy is pluggable: two built in, clingo and SAT from outside.</span></a>
+ <a class="card" href="playground.html"><strong>Playground</strong><span>Edit a matrix, tell facts, answer the questions the world asks.</span></a>
+ <a class="card" href="api.html"><strong>API</strong><span>Every method, option, result field and violation kind.</span></a>
+ <a class="card" href="roadmap.html"><strong>Analysis and roadmap</strong><span>What is solid, what is limited, what to build next.</span></a>
+</div>
+<h2>One file, two places to run</h2>
+<p>The library is built into a single file with no dependencies. The same file runs in Node and in a browser, so a world can live on a server, in a page, or in both with the same matrix.</p>
+<figure class="code"><pre><code>&lt;!-- browser, ES module: this folder is what GitHub Pages serves --&gt;
+&lt;script type=&quot;module&quot;&gt;
+  import { World } from &#x27;./sopworld.mjs&#x27;;
+  const w = new World();
+&lt;/script&gt;
+
+&lt;!-- browser, classic script: the global is `sopworld` --&gt;
+&lt;script src=&quot;sopworld.js&quot;&gt;&lt;/script&gt;
+
+// Node
+import { World } from &#x27;./docs/sopworld.mjs&#x27;;          // ES module
+const { World } = require(&#x27;./docs/sopworld.js&#x27;);       // CommonJS</code></pre></figure>
+<div class="table"><table><thead><tr><th>File</th><th>Use</th></tr></thead><tbody><tr><td><code>sopworld.mjs</code></td><td>ES module for browsers and Node</td></tr><tr><td><code>sopworld.js</code></td><td>Classic script (global <code>sopworld</code>) and CommonJS</td></tr><tr><td><code>sopworld.d.ts</code></td><td>Type declarations</td></tr></tbody></table></div>
+<p>Try it now in the <a href="playground.html">playground</a>, or run the <a href="selftest.html">self-test</a> to see the build pass its checks in this browser.</p>
+<figure class="code"><pre><code>npm run build            # src/*.mjs  -&gt;  docs/sopworld.mjs and docs/sopworld.js
+npm test                 # the test suite on the sources, then again on the built file
+npm run test:browser     # the self-test and the playground in headless Chrome
+npm run examples         # eight runnable demonstrations
+npx sopworld check matrix.sop facts.sop</code></pre></figure>
+
+</main>
+<footer>sopworld 0.4 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+
+</body>
+</html>

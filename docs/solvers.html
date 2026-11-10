@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sopworld Solvers</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.4</small></a>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="concepts.html">Concepts</a><a href="reasoning.html">Reasoning</a><a href="usecases.html">Use cases</a><a href="solvers.html" aria-current="page">Solvers</a><a href="api.html">API</a><a href="playground.html">Playground</a><a href="roadmap.html">Analysis and roadmap</a></nav>
+</header>
+<main>
+<h1>Solvers</h1>
+<p class="lead">Filling many open keys at once is a search problem. The world states the problem in a neutral form and a solver, chosen when the world is created, searches it. The world verifies every answer.</p>
+
+<h2>The problem in neutral form</h2>
+<div class="table"><table><thead><tr><th>Part</th><th>What it is</th></tr></thead><tbody><tr><td>Variables</td><td>One per open key with a closed domain (<code>enum</code>, wires of a <code>type</code>, or a stepped range). The domain holds the values the world accepts one at a time</td></tr><tr><td>Nogoods</td><td>Combinations of values that a deny rules out. All candidate values are put on their wires at once and each deny is matched once; every match names the values it used</td></tr><tr><td>Oracle</td><td>The world itself: <code>push</code> and <code>pop</code> one value, or <code>verify</code> a whole assignment. A refusal names the variables that caused it</td></tr></tbody></table></div>
+<figure class="code"><pre><code>import { World, Problem } from &#x27;./sopworld.mjs&#x27;;
+const p = new Problem(world);
+p.variables      // [{ index, id, key, type, domain }]
+p.nogoods        // [[{ v: 1, value: &#x27;t1&#x27; }, { v: 3, value: &#x27;t1&#x27; }], ...]
+p.toJSON()       // plain data for a solver outside the process</code></pre></figure>
+<h2>Choosing a solver</h2>
+<figure class="code"><pre><code>import { World, solvers } from &#x27;./sopworld.mjs&#x27;;
+
+new World()                                        // solvers.cdcl(), the default
+new World({ solver: solvers.backtrack() })
+world.solveReport({ solver: solvers.backtrack() }) // or per call</code></pre></figure>
+<div class="table"><table><thead><tr><th>Solver</th><th>Runs</th><th>How it works</th><th>Use it when</th></tr></thead><tbody><tr><td><code>solvers.cdcl()</code></td><td>Node and browsers</td><td>Nogoods and "exactly one value per key" become clauses for a built-in clause-learning SAT solver. The world verifies complete answers; a refusal becomes one more clause</td><td>Always, unless you have a reason not to. It is the default</td></tr><tr><td><code>solvers.backtrack()</code></td><td>Node and browsers</td><td>Depth-first, smallest live domain first, every step checked by the world. No grounding, no memory</td><td>Tiny problems, or as a reference when testing another solver</td></tr><tr><td><code>solvers.clingo({ exec })</code></td><td>Wherever clingo runs</td><td>The neutral problem as an answer set program</td><td>You already run clingo, or want its optimisation and enumeration next</td></tr><tr><td><code>solvers.dimacs({ exec })</code></td><td>Wherever a SAT solver runs</td><td>The neutral problem as DIMACS CNF</td><td>You want an industrial SAT solver</td></tr><tr><td><code>solvers.external({ run })</code></td><td>Anywhere</td><td>You receive the neutral problem and return one value per variable</td><td>Any other engine: CP-SAT, MiniZinc, a service</td></tr></tbody></table></div>
+<h2>Outside solvers on Node</h2>
+<p>The encodings and the verification loop are in the library. Starting a process is the only Node-specific part, so it lives in a separate small file.</p>
+<figure class="code"><pre><code>import { World } from &#x27;./docs/sopworld.mjs&#x27;;
+import { clingoProcess, dimacsProcess } from &#x27;./node/solvers.mjs&#x27;;
+
+const world = new World({ solver: clingoProcess() });                    // `clingo` on the PATH
+const other = new World({ solver: dimacsProcess({ command: &#x27;kissat&#x27;, args: [&#x27;-q&#x27;] }) });</code></pre></figure>
+<p>Or wire it yourself in three lines:</p>
+<figure class="code"><pre><code>import { spawnSync } from &#x27;node:child_process&#x27;;
+const solver = solvers.clingo({
+  exec: (program) =&gt; spawnSync(&#x27;clingo&#x27;, [&#x27;--outf=0&#x27;, &#x27;-&#x27;], { input: program, encoding: &#x27;utf8&#x27; }).stdout,
+});</code></pre></figure>
+<h2>Outside solvers in a browser</h2>
+<p>A WebAssembly solver answers with a promise. Return the promise from <code>exec</code> or <code>run</code> and use <code>solveAsync</code>; the rest of the API stays synchronous.</p>
+<figure class="code"><pre><code>const solver = solvers.clingo({ exec: (program) =&gt; runClingoWasm(program) });   // returns a promise
+const r = await world.solveAsync({ solver });
+if (r.status === &#x27;sat&#x27;) world.apply(r.assignment);</code></pre></figure>
+<div class="note">The asynchronous path is tested with a stand-in solver in Node and in Chrome. It has not been run against a real WebAssembly build of clingo.</div>
+<h2>What the world guarantees</h2>
+<ul>
+ <li><strong>No wrong answers.</strong> An assignment is returned only after the world has applied it in a scratch transaction without a violation.</li>
+ <li><strong>Refusals teach.</strong> When the world refuses a proposal, the values that caused it are sent back as a nogood and the solver is asked again. A test feeds the library a solver that ignores the constraints on its first answer and checks that the final answer is right.</li>
+ <li><strong>Three outcomes.</strong> <code>sat</code>, <code>unsat</code>, or <code>unknown</code> when the budget ran out. Completion treats <code>unknown</code> as "still possible".</li>
+ <li><strong>Nothing changes.</strong> Solving leaves the world as it was. <code>apply</code> or <code>complete({ choose: true })</code> commit.</li>
+</ul>
+<h2>Measured</h2>
+<p>Scheduling meetings into rooms and four times, with capacity, double booking and "one person, one place" constraints. One run of <code>node examples/solvers.mjs</code> on the development machine, with clingo 5.8 and CaDiCaL started as processes. Times include building the problem.</p>
+<div class="table"><table><thead><tr><th>Instance</th><th>backtrack</th><th>cdcl</th><th>clingo</th><th>CaDiCaL</th></tr></thead><tbody><tr><td>12 meetings, 4 rooms (24 keys), satisfiable</td><td>416 ms, 22,831 world checks</td><td>22 ms, 24 checks</td><td>80 ms</td><td>59 ms</td></tr><tr><td>16 meetings, 5 rooms (32 keys), satisfiable</td><td>no answer in 2000 steps, 1.3 s</td><td>25 ms</td><td>107 ms</td><td>87 ms</td></tr><tr><td>24 meetings, 8 rooms (48 keys), satisfiable</td><td>not run</td><td>93 ms</td><td>304 ms</td><td>166 ms</td></tr><tr><td>40 meetings, 12 rooms (80 keys), unsatisfiable</td><td>not run</td><td>235 ms</td><td>762 ms</td><td>258 ms</td></tr></tbody></table></div>
+<ul>
+ <li>All four agree on every instance tried, and every answer is accepted by the world. The suite repeats this on 14 small instances for all solvers and on 40 instances for the built-in SAT solver against CaDiCaL.</li>
+ <li>At these sizes most of the time is building the problem, and starting a process costs more than the search. On the instances tried, no outside solver was faster than the built-in one. They are there for problems the built-in solver returns <code>unknown</code> on, and for engines you already depend on.</li>
+</ul>
+<h2>Writing a solver</h2>
+<figure class="code"><pre><code>const mine = {
+  name: &#x27;mine&#x27;,
+  solve(problem, { preset, budget }) {
+    // preset: Map(variable index -&gt; value) that must hold
+    // use problem.variables, problem.nogoods, problem.push / pop / verify
+    return { status: &#x27;sat&#x27;, assignment: problem.toAssignment(values), stats: {} };
+  },
+};</code></pre></figure>
+<p><code>Sat</code>, the clause-learning solver itself, is exported too and can be used on its own: <code>new Sat(n)</code>, <code>addClause([1, -2])</code>, <code>solve(budget)</code>, <code>model()</code>.</p>
+
+</main>
+<footer>sopworld 0.4 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+
+</body>
+</html>

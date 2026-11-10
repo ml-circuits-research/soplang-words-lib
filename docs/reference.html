@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sopworld Reference</title>
+<meta name="source-hash" content="1efc92997cad">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.5.0</small></a>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html" aria-current="page">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="playground.html">Playground</a></nav>
+</header>
+<main>
+<h1>Reference: the wire types of the matrix, and the functions</h1>
+<p class="lead">One entry per wire type that the matrix language knows, all in the same shape, then the functions. The grammar of wires is in <a href="language.html">language.md</a>; how a world behaves as a whole is in <a href="semantics.html">semantics.md</a>; the methods are in <a href="api.html">api.md</a>.</p>
+<p>In the syntax tables, <em>rep.</em> means the attribute may be repeated. A flag is <code>true</code> or absent. An attribute that a type does not read is not an error; it is noted in <code>world.warnings</code> (<code>unknown-attribute</code>), because it is usually a misspelling.</p>
+<p>Every example on this page is run by the test suite; the output shown is what it prints.</p>
+<h2 id="declaring-what-may-exist">Declaring what may exist</h2>
+<h3 id="coreslot">core.slot</h3>
+<p>One key of one type: what it may hold, and whether it must be there.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>of</code></td><td>type</td><td>required</td><td></td><td>the type the key belongs to</td></tr><tr><td><code>key</code></td><td>name</td><td>required</td><td></td><td>the key</td></tr><tr><td><code>required</code></td><td>flag</td><td>false</td><td></td><td>a wire of the type without this key has an open key</td></tr><tr><td><code>many</code></td><td>flag</td><td>false</td><td></td><td>the key may hold several values</td></tr><tr><td><code>id</code></td><td>flag</td><td>false</td><td></td><td>the key is an identity key of the type</td></tr><tr><td><code>prefix</code></td><td>flag</td><td>false</td><td></td><td><code>key</code> is a prefix: every key that starts with it is this slot</td></tr><tr><td><code>kind</code></td><td>kind</td><td>none</td><td>yes</td><td>the sort of literal accepted (below)</td></tr><tr><td><code>type</code></td><td>type</td><td>none</td><td>yes</td><td>the value must be a reference to a wire of this type</td></tr><tr><td><code>enum</code></td><td>value</td><td>none</td><td>yes</td><td>the values accepted; also the key's domain</td></tr><tr><td><code>min</code>, <code>max</code></td><td>number</td><td>none</td><td></td><td>bounds, for values that are numbers or quantities</td></tr><tr><td><code>step</code></td><td>number</td><td>none</td><td></td><td>with <code>min</code> and <code>max</code>: the values <code>min</code>, <code>min+step</code>, ... are the key's domain</td></tr><tr><td><code>default</code></td><td>value</td><td>none</td><td></td><td>the value assumed when nobody gave one</td></tr><tr><td><code>ask</code></td><td>string</td><td>none</td><td></td><td>the question to put for this key when it is open</td></tr><tr><td><code>soft</code></td><td>flag</td><td>false</td><td></td><td>a value outside <code>min</code>/<code>max</code> is accepted and recorded as an issue</td></tr><tr><td><code>combine</code></td><td><code>intersect</code> | <code>override</code></td><td>none</td><td></td><td>how this declaration combines with another of the same type and key</td></tr></tbody></table></div>
+<p>Kinds: <code>integer</code>, <code>number</code> (integer or decimal), <code>boolean</code> (<code>true</code>, <code>false</code>), <code>string</code> (quoted), <code>atom</code> (a name), <code>quantity.&lt;name&gt;</code> (a number with a unit), <code>time.&lt;name&gt;</code> (<code>time.clock</code> 10:40, <code>time.date</code> 2026-01-30, any other name: an atom), <code>any</code>. With several <code>kind</code> and <code>type</code> attributes the value must fit one of them.</p>
+<p><strong>Meaning.</strong> For every fact of type <code>of</code> or of a type that extends it: each value of <code>key</code> fits a kind or type if any is given, is in <code>enum</code> if given, lies within <code>min</code> and <code>max</code> if given; the key has at most one value unless <code>many</code>; if <code>required</code>, the key is open until it has a value. Under a key whose every kind is <code>integer</code> or <code>number</code>, values are compared as numbers (<code>5</code> is <code>5.0</code>). Two facts of the type that agree on all identity keys are the same wire.</p>
+<p><strong>When it is evaluated.</strong> Validation, at the end of every change, for the wires the change touched; for all wires when the matrix changes. Identity is applied when a wire is told. <code>default</code>, <code>enum</code>, <code>min</code>/<code>max</code>/<code>step</code> and <code>ask</code> are read by completion and search.</p>
+<p><strong>Interactions.</strong> <em>Inheritance:</em> a slot holds for subtypes; a subtype may declare the key again, and the nearest declaration holds. <em>Two declarations for the same type and key:</em> equal ones are one; different ones are refused unless one says <code>combine=</code>. <em>Tiers:</em> a default is applied as tier <code>default</code>. <em>Soft:</em> see <a href="#coreissue">core.issue</a>. <em>Closed types:</em> only declared keys (and keys of an open namespace) are accepted.</p>
+<p><strong>Violations.</strong> <code>domain</code> (kind, type, enum, bounds), <code>cardinality</code> (several values without <code>many</code>), <code>unknown-key</code> (undeclared key on a closed type), <code>dangling-ref</code> (a reference to a wire that does not exist), <code>conflict</code> (a second, different value told for a single-valued key), <code>schema</code> (bad or conflicting declaration).</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`
+  @k1 core.slot of=tank key=name id=true
+  @k2 core.slot of=tank key=level kind=number min=0 max=100 required=true ask=&quot;How full is it?&quot;
+`);
+print(w.tell(&#x27;@t1 tank name=north&#x27;).ok, w.open());
+print(w.tell(&#x27;@t2 tank name=south level=140&#x27;).violations[0].why);
+print(w.tell(&#x27;@again tank name=north level=40.0&#x27;).merged, w.ask(&#x27;tank level=40&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true [{&quot;id&quot;:&quot;t1&quot;,&quot;type&quot;:&quot;tank&quot;,&quot;key&quot;:&quot;level&quot;,&quot;ask&quot;:&quot;How full is it?&quot;}]
+must be at most 100
+[{&quot;id&quot;:&quot;again&quot;,&quot;into&quot;:&quot;t1&quot;}] [{}]</code></pre></figure>
+<p><strong>Limits.</strong> Bounds apply to numbers and quantities only. <code>enum</code> compares text, except under a numeric kind. A range (<code>min</code>, <code>max</code>, <code>step</code>) is a domain only up to 2,000 values.</p>
+<h3 id="coretype">core.type</h3>
+<p>A type: what it extends, whether its keys and its instances are all known.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>of</code></td><td>type</td><td>required</td><td></td><td>the type declared</td></tr><tr><td><code>extends</code></td><td>type</td><td>none</td><td></td><td>its parent</td></tr><tr><td><code>closed</code></td><td>flag</td><td>false</td><td></td><td>wires of the type accept only declared keys</td></tr><tr><td><code>complete</code></td><td>flag</td><td>false</td><td></td><td>the world knows every wire of the type</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> A wire of a type is also a wire of every type its type extends: patterns, slots, rules, denies, effects and queries written for an ancestor apply to it. A type need not be declared to be used; declaring it adds the parent and the two flags. <code>complete</code> changes one answer: asking whether a wire of the type exists is <code>no</code> when none matches, where it would be <code>unknown</code>.</p>
+<p><strong>When it is evaluated.</strong> When the matrix is compiled; the hierarchy is then part of every index, so matching by an ancestor type costs the same as by the type itself.</p>
+<p><strong>Interactions.</strong> <em>Slots:</em> inherited, nearest declaration wins. <em>Negation:</em> <code>not=</code> and <code>core.absent=</code> do not need <code>complete</code>; they speak of what the world holds now. <em>Changing the hierarchy</em> re-indexes the facts.</p>
+<p><strong>Violations.</strong> <code>schema</code> (a type that extends itself, directly or not; a type declared twice with different parents), <code>unknown-key</code>.</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`
+  @t1 core.type of=vehicle complete=true
+  @t2 core.type of=truck extends=vehicle closed=true
+  @k  core.slot of=vehicle key=wheels kind=integer
+`);
+w.tell(&#x27;@a truck wheels=6&#x27;);
+print(w.ask(&#x27;@x vehicle wheels=?n&#x27;));
+print(w.tell(&#x27;@b truck colour=red&#x27;).violations[0].kind);
+print(w.query({ type: &#x27;vehicle&#x27;, where: { wheels: 2 }, mode: &#x27;exists&#x27; }).status);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;x&quot;:&quot;a&quot;,&quot;n&quot;:&quot;6&quot;}]
+unknown-key
+no</code></pre></figure>
+<p><strong>Limits.</strong> One parent per type.</p>
+<h3 id="corenamespace">core.namespace</h3>
+<p>A prefix of key names that is open: bookkeeping keys.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>prefix</code></td><td>text ending in <code>.</code></td><td>required</td><td></td><td>keys that start with it belong to the namespace</td></tr><tr><td><code>open</code></td><td>flag</td><td>false</td><td></td><td>the namespace is open</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> A key of an open namespace is accepted on every wire, also of a closed type. Unless a slot declares that key: its values are not validated, a reference under it need not name an existing wire and does not tie the wire to what it names, and the key takes every value given (a wire told again does not conflict on it). <code>core.</code> is always such a namespace.</p>
+<p><strong>When it is evaluated.</strong> Validation and merging.</p>
+<p><strong>Interactions.</strong> A slot for a key of the namespace makes that key an ordinary key.</p>
+<p><strong>Violations.</strong> None of its own.</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(&#x27;@t core.type of=reading closed=true\n@k core.slot of=reading key=value kind=number\n@n core.namespace prefix=audit. open=true&#x27;);
+print(w.tell(&#x27;@r1 reading value=3 audit.by=$sensor7 core.source=&quot;probe&quot;&#x27;).ok);
+print(w.tell(&#x27;@r2 reading value=3 note=x&#x27;).violations[0].kind);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true
+unknown-key</code></pre></figure>
+<p><strong>Limits.</strong> A prefix, not a pattern.</p>
+<h3 id="coreschemamap">core.schema.map</h3>
+<p>How to read slot, type and module declarations that are written in another notation.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>from</code></td><td>type</td><td>required</td><td></td><td>the type of the foreign wires</td></tr><tr><td><code>as</code></td><td><code>slot</code> | <code>type</code> | <code>module</code></td><td><code>slot</code></td><td></td><td>what they declare</td></tr><tr><td>one per field</td><td>where to find it</td><td></td><td></td><td>see below</td></tr></tbody></table></div>
+<p>Fields for <code>as=slot</code>: <code>owner</code> (the type; default <code>id.prefix</code>), <code>key</code> (default <code>id.suffix</code>), <code>value</code> (kinds and <code>$type</code> references together), <code>kind</code>, <code>type</code>, <code>enum</code>, <code>many</code>, <code>required</code>, <code>id</code>, <code>prefix</code>, <code>default</code>, <code>ask</code>, <code>min</code>, <code>max</code>, <code>step</code>. For <code>as=type</code>: <code>name</code>, <code>extends</code>, <code>closed</code>, <code>complete</code>, <code>root</code> (a type that every type without a parent extends). For <code>as=module</code>: <code>name</code>, <code>imports</code>.</p>
+<p>A field is found by: <code>id</code> (the wire's id), <code>id.prefix</code> (its id up to the last dot), <code>id.suffix</code> (the rest), <code>&lt;attr&gt;</code> (that attribute), <code>&lt;attr&gt;:&lt;value&gt;</code> (true when the attribute has that value).</p>
+<p><strong>Meaning.</strong> Every wire of type <code>from</code> is read as the declaration it maps to, exactly as if it had been written as a <code>core.slot</code> or <code>core.type</code> wire, and belongs to the matrix.</p>
+<p><strong>When it is evaluated.</strong> When the matrix is compiled. The mapping must be told before, or with, the wires it maps.</p>
+<p><strong>Interactions.</strong> Mapped wires may carry any other attributes (no <code>unknown-attribute</code> note). Two different maps for one <code>from</code> are refused.</p>
+<p><strong>Violations.</strong> <code>schema</code>.</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`
+  @m1 core.schema.map from=field owner=id.prefix key=id.suffix value=is required=must:yes ask=prompt
+  @m2 core.schema.map from=class as=type name=id extends=parent closed=sealed:yes
+`);
+w.load(&#x27;@book class sealed=yes\n@book.title field is=string must=yes prompt=&quot;Which title?&quot;&#x27;);
+print(w.schema(&#x27;book&#x27;).closed, w.schema(&#x27;book&#x27;).keys.title.required);
+print(w.tell(&#x27;@b1 book&#x27;).ok, w.open().map((o) =&gt; o.ask));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true true
+true [&quot;Which title?&quot;]</code></pre></figure>
+<p><strong>Limits.</strong> One wire per declaration; a notation that spreads a slot over several wires cannot be mapped.</p>
+<h3 id="coreuse">core.use</h3>
+<p>Load a matrix from the library.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>world</code></td><td>module name</td><td>required</td><td>yes</td><td>the module, a key of <code>new World({ library })</code></td></tr><tr><td><code>prefix</code></td><td><code>false</code></td><td>prefixed</td><td></td><td>load the ids as written</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> The text kept in the library under that name is told as part of the same change. Unless <code>prefix=false</code>, every id it declares, and every reference among them, gets the module name and a dot in front, so two modules cannot clash. A module is loaded once per world. <code>world.use(name)</code> is the same as telling this wire.</p>
+<p><strong>When it is evaluated.</strong> When it is told.</p>
+<p><strong>Interactions.</strong> A module may contain <code>core.use</code> wires. The composition rules for slots and types apply across modules.</p>
+<p><strong>Violations.</strong> <code>schema</code> (no such module); whatever the module's own wires raise.</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World({ library: { units: &#x27;@k core.slot of=item key=weight kind=quantity.mass&#x27; } });
+print(w.use(&#x27;units&#x27;).ok, [...w.matrix.keys()]);
+print(w.tell(&#x27;@i item weight=heavy&#x27;).violations[0].why);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true [&quot;use.units&quot;,&quot;units.k&quot;]
+must be quantity.mass</code></pre></figure>
+<p><strong>Limits.</strong> A module cannot be unloaded.</p>
+<h2 id="saying-what-follows-and-what-cannot-be">Saying what follows and what cannot be</h2>
+<h3 id="corerule">core.rule</h3>
+<p>If the patterns match, the templates hold.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>when</code></td><td><code>$pattern</code></td><td>at least one</td><td>yes</td><td>patterns that must all match</td></tr><tr><td><code>not</code></td><td><code>$pattern</code></td><td>none</td><td>yes</td><td>patterns that must have no match</td></tr><tr><td><code>with</code></td><td><code>$calc</code></td><td>none</td><td>yes</td><td>values to compute, in order</td></tr><tr><td><code>if</code></td><td><code>$check</code></td><td>none</td><td>yes</td><td>conditions that must all hold</td></tr><tr><td><code>then</code></td><td><code>$template</code></td><td>at least one</td><td>yes</td><td>what then exists</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> For every way of matching all <code>when</code> patterns at once (a variable has one value throughout; <code>$p</code> in one pattern is the wire another pattern <code>@p</code> matched), such that no <code>not</code> pattern matches under the same bindings, every <code>with</code> calc has a result and every <code>if</code> check holds: each template, with the variables replaced, exists. A template with <code>core.on=$p</code> adds its entries to the wire <code>@p</code> matched. Any other template names a wire: if a fact has the same identity keys, or already has every entry the template gives, it is that fact (and gets any entries it lacks); otherwise a new fact is made. An entry whose variable has no value is left out.</p>
+<p><strong>When it is evaluated.</strong> In the chase, after every change, to a fixpoint: for the wires that were added or changed, and again in full for rules with <code>not=</code>, a selector, <code>core.absent=</code> or an aggregate when a type they read changed. What a rule concluded is withdrawn when one of the wires it read goes or changes.</p>
+<p><strong>Interactions.</strong> <em>Negation</em> must be stratified: a rule may not negate or aggregate what its own conclusions can produce (a <code>core.on=</code> template counts only against patterns that name a key it sets). <em>Depth:</em> a wire derived from derived wires more than <code>maxDepth</code> (12) deep is refused. <em>Tiers:</em> a conclusion is as weak as the weakest value it was read from. <em>Provenance:</em> <code>via</code> is the rule, <code>from</code> the matched wires, <code>cells</code> the values read. <em>Identity:</em> a derived wire has an id made from the rule and the bindings.</p>
+<p><strong>Violations.</strong> <code>schema</code> (names something that is not in the matrix; no <code>when</code> or no <code>then</code>; not stratified; a variable in a template that no pattern binds and no calc computes; an unknown function), <code>depth</code>, <code>conflict</code> (the conclusion contradicts a value that is there).</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`
+  @p parent of=?x child=?y
+  @q parent of=?y child=?z
+  @g grandparent of=?x child=?z
+  @r core.rule when=$p when=$q then=$g
+`);
+w.tell(&#x27;@a parent of=ann child=bob  @b parent of=bob child=cy&#x27;);
+print(w.ask(&#x27;grandparent of=?x child=?z&#x27;));
+w.retract(&#x27;b&#x27;);
+print(w.ask(&#x27;grandparent of=?x child=?z&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;z&quot;:&quot;cy&quot;,&quot;x&quot;:&quot;ann&quot;}]
+[]</code></pre></figure>
+<p><strong>Limits.</strong> No recursion through negation. A rule fires once per distinct set of bindings.</p>
+<h3 id="coredeny">core.deny</h3>
+<p>The patterns must not match.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>when</code>, <code>not</code>, <code>with</code>, <code>if</code></td><td>as in <a href="#corerule">core.rule</a></td><td></td><td>yes</td><td></td></tr><tr><td><code>why</code></td><td>string</td><td>none</td><td></td><td>the reason; may contain the deny's variables</td></tr><tr><td><code>soft</code></td><td>flag</td><td>false</td><td></td><td>record an issue instead of refusing</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> No change may leave the world in a state where the body matches. A change that would is refused as a whole, with <code>why</code> (variables replaced by their values) and the wires that matched. With <code>soft=true</code> nothing is refused: see <a href="#coreissue">core.issue</a>.</p>
+<p><strong>When it is evaluated.</strong> Validation, at the end of every change, after the chase: from the wires the change touched; in full for denies with <code>not=</code>, a selector or <code>core.absent=</code>, and when the matrix changes.</p>
+<p><strong>Interactions.</strong> <em>Search:</em> denies without negation, selectors, aggregates or computed values are turned into ruled-out combinations for the solvers; the others are checked when a whole assignment is verified. <em>States:</em> a deny over a fluent is checked when an event changes it, so the event is what is refused.</p>
+<p><strong>Violations.</strong> <code>deny</code>, with <code>rule</code>, <code>why</code>, <code>bindings</code>, <code>wires</code>, <code>support</code>, <code>involved</code>.</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`
+  @a booking room=?r slot=?s
+  @b booking room=?r slot=?s
+  @differ core.check fn=neq args=$a args=$b
+  @clash core.deny when=$a when=$b if=$differ why=&quot;room ?r is taken at ?s&quot;
+`);
+w.tell(&#x27;@b1 booking room=blue slot=9&#x27;);
+const r = w.tell(&#x27;@b2 booking room=blue slot=9&#x27;);
+print(r.ok, r.violations[0].why, r.violations[0].wires);
+print(w.has(&#x27;b2&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>false room blue is taken at 9 [&quot;b2&quot;,&quot;b1&quot;]
+false</code></pre></figure>
+<p><strong>Limits.</strong> A deny says what must not be; to require that something exists, use a required slot or a rule.</p>
+<h3 id="corecalc">core.calc</h3>
+<p>A value computed by a function, inside a rule, deny or action.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>out</code></td><td><code>?variable</code></td><td>required</td><td></td><td>the variable that gets the result</td></tr><tr><td><code>fn</code></td><td>function name</td><td>required</td><td></td><td>a <a href="#functions">function</a>, or with <code>over=</code> an <a href="#aggregates">aggregate</a></td></tr><tr><td><code>args</code></td><td>value or <code>?variable</code></td><td>none</td><td>yes</td><td>the arguments, in order</td></tr><tr><td><code>over</code></td><td><code>$pattern</code></td><td>none</td><td>yes</td><td>makes it an aggregate over the matches of these patterns</td></tr><tr><td><code>pick</code></td><td><code>?variable</code></td><td>none</td><td></td><td>for <code>argmax</code>/<code>argmin</code>: what to return for the best match</td></tr><tr><td><code>ties</code></td><td><code>first</code></td><td>report ties</td><td></td><td>for <code>argmax</code>/<code>argmin</code>: take the first of equals silently</td></tr><tr><td><code>relation</code></td><td>flag</td><td>false</td><td></td><td>for <code>fn=add</code>/<code>sub</code>: the rule also works backwards (<a href="#corerelation">core.relation</a>)</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> After the patterns matched, <code>out</code> is bound to <code>fn(args)</code>. If a function has no result (an argument without a value, a division by zero, units that differ) the rule does not fire for those bindings. Calcs are computed in the order of the <code>with=</code> attributes; a later one may use the <code>out</code> of an earlier one.</p>
+<p><strong>When it is evaluated.</strong> Each time its rule's body is evaluated.</p>
+<p><strong>Interactions.</strong> <em>Precision:</em> results are rounded as <a href="#coreprecision">core.precision</a> says. <em>Abduction</em> can run <code>add</code>, <code>sub</code>, <code>mul</code>, <code>div</code> backwards. <em>Queries:</em> a function may say why it has no result (<code>world.cannot</code>), and the query answers <code>unsupported</code>.</p>
+<p><strong>Violations.</strong> <code>schema</code> (unknown function, no <code>out</code>).</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`
+  @l line qty=?q price=?p
+  @c1 core.calc out=?net fn=mul args=?q args=?p
+  @c2 core.calc out=?gross fn=mul args=?net args=1.2
+  @t line core.on=$l net=?net gross=?gross
+  @r core.rule when=$l with=$c1 with=$c2 then=$t
+`);
+w.tell(&#x27;@l1 line qty=3 price=2.50&#x27;);
+print(w.get(&#x27;l1&#x27;).attrs.net, w.get(&#x27;l1&#x27;).attrs.gross);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;7.5&quot;] [&quot;9&quot;]</code></pre></figure>
+<p><strong>Limits.</strong> A function sees only its arguments and the world; it must not change the world.</p>
+<h3 id="corecheck">core.check</h3>
+<p>A condition computed by a function, inside a rule, deny or action.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>fn</code></td><td>function name</td><td>required</td><td></td><td>a comparison or any function that returns true or false</td></tr><tr><td><code>args</code></td><td>value, <code>?variable</code> or <code>$pattern</code></td><td>none</td><td>yes</td><td>the arguments</td></tr><tr><td><code>why</code></td><td>string</td><td>none</td><td></td><td>for the guard of an action: the reason when it fails</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> The body holds only if <code>fn(args)</code> is true. A check whose arguments are not all known does not hold.</p>
+<p><strong>When it is evaluated.</strong> With its rule or deny, after the calcs.</p>
+<p><strong>Interactions.</strong> <code>$pattern</code> as an argument is the id of the matched wire, for <code>eq</code>/<code>neq</code> (two different wires) and <code>before</code>/<code>after</code>. The old name <code>core.test</code> is still read.</p>
+<p><strong>Violations.</strong> <code>schema</code> (unknown function).</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`
+  @r reading value=?v limit=?l
+  @high core.check fn=gt args=?v args=?l
+  @al alarm for=$r
+  @rule core.rule when=$r if=$high then=$al
+`);
+w.tell(&#x27;@r1 reading value=7 limit=5  @r2 reading value=3 limit=5&#x27;);
+print(w.ofType(&#x27;alarm&#x27;).map((a) =&gt; a.attrs.for[0]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;$r1&quot;]</code></pre></figure>
+<p><strong>Limits.</strong> None beyond those of the function.</p>
+<h3 id="corerelation">core.relation</h3>
+<p>A linear relation among values, from which whichever one is missing is computed.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>when</code></td><td><code>$pattern</code></td><td>at least one</td><td>yes</td><td>patterns whose entries bind the variables</td></tr><tr><td><code>sum</code></td><td><code>?v</code> or <code>&lt;n&gt;*?v</code></td><td></td><td>yes</td><td>a term added</td></tr><tr><td><code>sub</code></td><td><code>?v</code> or <code>&lt;n&gt;*?v</code></td><td></td><td>yes</td><td>a term subtracted</td></tr><tr><td><code>equals</code></td><td>number</td><td><code>0</code></td><td></td><td>the constant</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> Wherever the patterns match, the sum of the <code>sum</code> terms minus the <code>sub</code> terms equals <code>equals</code>. Each variable stands for one value of a matched wire (a cell). After the known cells are put in: if none is unknown and the relation does not hold, the change is refused; if exactly one is unknown, its value is computed, exactly, and put on its wire; if several are unknown, nothing happens yet.</p>
+<p><strong>When it is evaluated.</strong> In the chase, like a rule: it is compiled into one rule per cell.</p>
+<p><strong>Interactions.</strong> <em>Tiers:</em> a computed value is as weak as its weakest input. <em>Slots:</em> the computed value must fit the cell's slot (an <code>integer</code> cell does not take a half). <em>Units:</em> all values must have one unit, which the result takes. <em>Search:</em> relations conclude only what one relation forces; trying values against each other is left to the search. <em>Abduction</em> goes through relations. <code>relation=true</code> on a <code>core.calc</code> with <code>fn=add</code> or <code>fn=sub</code> makes that calc such a relation over the cells of its rule.</p>
+<p><strong>Violations.</strong> <code>conflict</code> (the relation does not hold), <code>domain</code> (the value does not fit), <code>schema</code> (a variable that is not the value of a key in the patterns).</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`
+  @p payment paid=?paid total=?total change=?chg
+  @r core.relation when=$p sum=?paid sub=?total sub=?chg
+`);
+w.tell(&#x27;@a payment paid=20 total=15  @b payment total=15 change=5  @c payment paid=20&#x27;);
+print(w.get(&#x27;a&#x27;).attrs.change, w.get(&#x27;b&#x27;).attrs.paid, Object.keys(w.get(&#x27;c&#x27;).attrs));
+print(w.tell(&#x27;@d payment paid=20 total=15 change=4&#x27;).violations[0].kind);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;5&quot;] [&quot;20&quot;] [&quot;paid&quot;]
+conflict</code></pre></figure>
+<p><strong>Limits.</strong> Linear only. A result whose decimal does not end is written with 12 significant digits. A variable that names the same cell in two patterns is read, never solved for.</p>
+<h3 id="patterns-and-templates">Patterns and templates</h3>
+<p>Three attributes are read on patterns and templates of any type and are not part of the wire described.</p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>On</th><th>Value</th><th>Meaning</th></tr></thead><tbody><tr><td><code>core.absent</code></td><td>pattern</td><td>key, rep.</td><td>matches only a wire that has no value for that key</td></tr><tr><td><code>core.select</code></td><td>pattern</td><td><code>latest</code> | <code>first</code></td><td>of the wires that fit the bindings made so far, only the latest (first) in the sequence</td></tr><tr><td><code>core.on</code></td><td>template</td><td><code>$pattern</code></td><td>add the template's entries to the wire that pattern matched</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> As in the table. What a rule concluded from an absence or a selection is withdrawn when the key is filled, or a later wire arrives.</p>
+<p><strong>When it is evaluated.</strong> With the rule; rules that use <code>core.absent</code> or <code>core.select</code> are re-evaluated in full when a type they read changes.</p>
+<p><strong>Interactions.</strong> A rule may not fill a key that it requires to be absent (<code>schema</code>). With either of the two pattern attributes in the matrix, the search stops trying values one at a time (<a href="semantics.html#search">semantics</a>).</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`
+  @t task core.absent=owner
+  @f flag for=$t kind=unassigned
+  @r1 core.rule when=$t then=$f
+  @s core.sequence key=at
+  @last reading sensor=?s value=?v core.select=latest
+  @now sensor name=?s
+  @cur sensor core.on=$now current=?v
+  @r2 core.rule when=$now when=$last then=$cur
+`);
+w.tell(&#x27;@t1 task  @s1 sensor name=a  @x reading sensor=a value=3 at=1  @y reading sensor=a value=8 at=2&#x27;);
+print(w.ofType(&#x27;flag&#x27;).length, w.get(&#x27;s1&#x27;).attrs.current);
+w.fill(&#x27;t1&#x27;, &#x27;owner&#x27;, &#x27;bo&#x27;);
+print(w.ofType(&#x27;flag&#x27;).length);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>1 [&quot;8&quot;]
+0</code></pre></figure>
+<p><strong>Limits.</strong> <code>core.select</code> orders by the sequence only.</p>
+<h3 id="coreabducible">core.abducible</h3>
+<p>What may be assumed when the world is asked what would have to be true.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>of</code></td><td>type</td><td>required</td><td></td><td>wires of this type may be assumed</td></tr><tr><td><code>key</code></td><td>name</td><td>none</td><td></td><td>instead: a value for this key of an existing wire may be assumed</td></tr><tr><td><code>cost</code></td><td>number</td><td><code>1</code></td><td></td><td>how reluctant the world is to assume it</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> <code>world.abduce(goal)</code> returns sets of assumptions, each a wire of an abducible type or a value of an abducible key, under which the goal holds and the world stays consistent; smallest and cheapest first.</p>
+<p><strong>When it is evaluated.</strong> Only by <code>abduce</code> and by a query for an open abducible key.</p>
+<p><strong>Interactions.</strong> Explanations are verified forwards, so denies apply. What is adopted (<code>adopt</code>) has tier <code>guessed</code>.</p>
+<p><strong>Violations.</strong> <code>schema</code> (no <code>of</code>).</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`
+  @ab core.abducible of=rain
+  @r rain place=?p
+  @wet wet place=?p
+  @rule core.rule when=$r then=$wet
+`);
+print(w.abduce(&#x27;@goal wet place=lawn&#x27;).map((e) =&gt; e.text.replace(/@\S+/, &#x27;@...&#x27;)));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;@... rain place=lawn&quot;]</code></pre></figure>
+<p><strong>Limits.</strong> At most 4 assumptions per explanation and 3 rule steps deep, unless the call says otherwise.</p>
+<h2 id="time-and-state">Time and state</h2>
+<h3 id="coresequence">core.sequence</h3>
+<p>Which key carries the place of a wire in time.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>key</code></td><td>name</td><td>required</td><td></td><td>a key whose numeric value is the wire's place</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> Wires are ordered by the value of that key; a wire without it takes the place of the last wire that had one; ties are broken by arrival. Without this declaration the order is the order of arrival. The order is what <code>before</code>, <code>after</code>, <code>core.select</code>, fluents and <code>asOf</code> use.</p>
+<p><strong>When it is evaluated.</strong> When a wire is told. If the key is declared later, the wires already there are given their places again.</p>
+<p><strong>Interactions.</strong> A wire told again (same identity) moves the sequence on to the place it declares.</p>
+<p><strong>Violations.</strong> None of its own.</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(&#x27;@s core.sequence key=at&#x27;);
+w.tell(&#x27;@b step at=2  @a step at=1&#x27;);
+print(w.compare(&#x27;a&#x27;, &#x27;b&#x27;) &lt; 0, w.seqOf(&#x27;b&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true 2</code></pre></figure>
+<p><strong>Limits.</strong> One sequence per world; of two declarations the one compiled last holds.</p>
+<h3 id="corefluent">core.fluent</h3>
+<p>A key whose value is a state that events change.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>of</code></td><td>type</td><td>required</td><td></td><td>the type that has the state</td></tr><tr><td><code>key</code></td><td>name</td><td>required</td><td></td><td>the key that holds it</td></tr><tr><td><code>delta</code></td><td>name</td><td>none</td><td></td><td>a second key that holds the known change since the last statement</td></tr><tr><td><code>by</code></td><td>name</td><td>none</td><td>yes</td><td>keys that identify the holder (informative)</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> The value of the key on a wire is: the last value stated for it (told with the wire, or filled later), then every <a href="#coreeffect">effect</a> of the events after that statement, in sequence order. A value told for the key of an existing wire is a new statement, not a conflict. Without any statement the state is unknown, whatever the events; with <code>delta</code>, the sum of the <code>add</code> and <code>sub</code> effects since the last statement is kept under that key even then.</p>
+<p><strong>When it is evaluated.</strong> In the chase, when a holder or an event that affects it is added, changed or removed.</p>
+<p><strong>Interactions.</strong> <em>Slots:</em> the state must stay within the slot's bounds, or the event is refused; <code>soft=true</code> on the slot keeps the event and records an issue. <em>Retraction</em> of an event recomputes the state. <em>As-of</em> gives the state at an earlier place. <em>Tiers:</em> the state is as weak as the weakest of its events and its statement.</p>
+<p><strong>Violations.</strong> <code>conflict</code> (an effect would break the slot's bounds, or cannot be computed), <code>schema</code>.</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`
+  @k core.slot of=account key=name id=true
+  @f core.fluent of=account key=balance delta=moved
+  @in core.effect on=deposit fluent=$f op=add amount=n where.name=to
+  @out core.effect on=withdrawal fluent=$f op=sub amount=n where.name=from
+`);
+w.tell(&#x27;@a account name=ann balance=100&#x27;);
+w.tell(&#x27;@d1 deposit to=ann n=50&#x27;);
+w.tell(&#x27;@w1 withdrawal from=ann n=30&#x27;);
+print(w.get(&#x27;a&#x27;).attrs.balance, w.get(&#x27;a&#x27;).attrs.moved);
+print(w.asOf(w.seqOf(&#x27;d1&#x27;), (x) =&gt; x.get(&#x27;a&#x27;).attrs.balance[0]));
+w.fill(&#x27;a&#x27;, &#x27;balance&#x27;, 10);
+print(w.get(&#x27;a&#x27;).attrs.balance, w.get(&#x27;a&#x27;).attrs.moved);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;120&quot;] [&quot;20&quot;]
+150
+[&quot;10&quot;] undefined</code></pre></figure>
+<p><strong>Limits.</strong> One state per key; a state is a single value.</p>
+<h3 id="coreeffect">core.effect</h3>
+<p>How one type of event changes one fluent.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>on</code></td><td>type</td><td>required</td><td></td><td>the type of the events</td></tr><tr><td><code>fluent</code></td><td><code>$fluent</code></td><td>required</td><td></td><td>the fluent changed</td></tr><tr><td><code>op</code></td><td><code>set</code> | <code>add</code> | <code>sub</code> | function name</td><td>required</td><td></td><td>how: replace, add, subtract, or <code>fn(state, amount)</code></td></tr><tr><td><code>amount</code></td><td>name</td><td></td><td></td><td>the key of the event that holds the amount</td></tr><tr><td><code>value</code></td><td>value</td><td></td><td></td><td>instead of <code>amount</code>: a constant</td></tr><tr><td><code>where.&lt;holder key&gt;</code></td><td>name</td><td></td><td>yes</td><td>the holder is the wire whose <code>&lt;holder key&gt;</code> equals this key of the event</td></tr><tr><td><code>for</code></td><td>name</td><td></td><td></td><td>instead of <code>where.</code>: the key of the event that refers to the holder</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> An event of type <code>on</code> (or a subtype) changes the state of each wire it selects: with <code>where.</code>, every wire of the fluent's type that agrees on all the listed keys; with <code>for</code>, the wire referred to. <code>set</code> works whether or not the state is known; the others need a known state.</p>
+<p><strong>When it is evaluated.</strong> With its fluent.</p>
+<p><strong>Interactions.</strong> An event may have several effects (a transfer debits one holder and credits another). An event that selects no holder changes nothing.</p>
+<p><strong>Violations.</strong> <code>schema</code> (unknown fluent or function; neither <code>where.</code> nor <code>for</code>).</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`
+  @f core.fluent of=lamp key=state
+  @e1 core.effect on=switch_on fluent=$f op=set value=on for=lamp
+  @e2 core.effect on=switch_off fluent=$f op=set value=off for=lamp
+`);
+w.tell(&#x27;@l1 lamp&#x27;);
+w.tell(&#x27;@s1 switch_on lamp=$l1&#x27;);
+print(w.get(&#x27;l1&#x27;).attrs.state);
+w.tell(&#x27;@s2 switch_off lamp=$l1&#x27;);
+print(w.get(&#x27;l1&#x27;).attrs.state, w.explain(&#x27;l1&#x27;).fills[0].via);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;on&quot;]
+[&quot;off&quot;] f</code></pre></figure>
+<p><strong>Limits.</strong> The amount is one value of the event.</p>
+<h2 id="questions-answers-actions">Questions, answers, actions</h2>
+<h3 id="corequestion-coreanswer-corerequest">core.question, core.answer, core.request</h3>
+<p>The wires a host uses to ask and to act, and the wire that records an answer. They are facts, not matrix wires; <code>world.query</code> and <code>world.act</code> read them. The type names and key names can be changed with the <code>vocabulary</code> option.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Wire</th><th>Attribute</th><th>Meaning</th></tr></thead><tbody><tr><td><code>core.question</code></td><td><code>type</code></td><td>the type of wire asked about</td></tr><tr><td></td><td><code>about</code></td><td>instead of <code>type</code>: a wire, by reference</td></tr><tr><td></td><td><code>seek</code></td><td>the key whose value is wanted</td></tr><tr><td></td><td><code>where.&lt;key&gt;</code></td><td>rep.; the wire must have this value for this key</td></tr><tr><td></td><td><code>mode</code></td><td><code>value</code> (default), <code>list</code>, <code>count</code>, <code>exists</code>, <code>abduce</code></td></tr><tr><td><code>core.request</code></td><td><code>action</code></td><td>the name of the action</td></tr><tr><td></td><td><code>arg.&lt;name&gt;</code></td><td>rep.; an argument</td></tr><tr><td><code>core.answer</code></td><td><code>to</code></td><td>the question</td></tr><tr><td></td><td><code>status</code>, <code>value</code></td><td>what was answered</td></tr><tr><td></td><td><code>core.from</code>, <code>core.via</code></td><td>the wires and the rule or producer it came from</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> See <a href="semantics.html#queries">semantics</a> for exactly when each status is returned. A question changes nothing; with <code>{ record: true }</code> the question and a <code>core.answer</code> wire are told.</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(&#x27;@i1 item name=bolt stock=40&#x27;);
+print(w.query(&#x27;@q core.question type=item seek=stock where.name=bolt&#x27;).value);
+const r = w.query({ type: &#x27;item&#x27;, seek: &#x27;stock&#x27;, where: { name: &#x27;bolt&#x27; } }, { record: true });
+print(w.ofType(&#x27;core.answer&#x27;).map((a) =&gt; [a.attrs.value, a.attrs.status]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>40
+[[[&quot;40&quot;],[&quot;supported&quot;]]]</code></pre></figure>
+<h3 id="coreproducer">core.producer</h3>
+<p>A host function that computes a key when it is asked for.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>of</code></td><td>type</td><td>required</td><td></td><td>the type</td></tr><tr><td><code>key</code></td><td>name</td><td>required</td><td></td><td>the key it can compute</td></tr><tr><td><code>fn</code></td><td>producer name</td><td>required</td><td></td><td>registered under <code>producers</code></td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> When a query seeks <code>key</code> on a wire of the type and the wire has no value for it, the function is called with a context (<code>wire</code>, <code>val</code>, <code>find</code>, <code>world</code>); what it returns is the answer, with <code>via</code> the producer. Nothing is stored.</p>
+<p><strong>When it is evaluated.</strong> On query only.</p>
+<p><strong>Interactions.</strong> Rules do not see produced values.</p>
+<p><strong>Violations.</strong> <code>schema</code> (unknown producer).</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World({ producers: { area: ({ wire, val }) =&gt; Number(val(wire, &#x27;w&#x27;)) * Number(val(wire, &#x27;h&#x27;)) } });
+w.load(&#x27;@p core.producer of=room key=area fn=area&#x27;);
+w.tell(&#x27;@r1 room name=hall w=4 h=5&#x27;);
+const q = w.query({ type: &#x27;room&#x27;, seek: &#x27;area&#x27;, where: { name: &#x27;hall&#x27; } });
+print(q.status, q.value, q.via);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>supported 20 [&quot;p&quot;]</code></pre></figure>
+<p><strong>Limits.</strong> Read-only.</p>
+<h3 id="coreaction">core.action</h3>
+<p>An operation that changes the world on request.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>name</code></td><td>name</td><td>required</td><td></td><td>what a request calls it</td></tr><tr><td><code>fn</code></td><td>action name</td><td></td><td></td><td>a function registered under <code>actions</code>; without it the action is written as wires, with the attributes below</td></tr><tr><td><code>required</code></td><td>name</td><td>none</td><td>yes</td><td>with <code>fn</code>: arguments that must be given</td></tr><tr><td><code>input</code></td><td>name</td><td>none</td><td>yes</td><td>with <code>fn</code>: arguments it accepts (informative)</td></tr><tr><td><code>ask.&lt;arg&gt;</code></td><td>string</td><td>none</td><td>yes</td><td>the question to put when that argument is missing</td></tr><tr><td><code>param</code></td><td>name</td><td>none</td><td>yes</td><td>a parameter; <code>?&lt;name&gt;</code> is bound to the argument; all are required</td></tr><tr><td><code>when</code></td><td><code>$pattern</code></td><td></td><td>yes</td><td>what the action reads</td></tr><tr><td><code>with</code></td><td><code>$calc</code></td><td></td><td>yes</td><td>values it computes</td></tr><tr><td><code>if</code></td><td><code>$check</code></td><td></td><td>yes</td><td>the guard: all must hold</td></tr><tr><td><code>set</code></td><td><code>$template</code> with <code>core.on=</code></td><td></td><td>yes</td><td>replace the value of a key of a matched wire</td></tr><tr><td><code>add</code></td><td><code>$template</code></td><td></td><td>yes</td><td>make a new wire</td></tr><tr><td><code>remove</code></td><td><code>$pattern</code></td><td></td><td>yes</td><td>retract the matched wire</td></tr><tr><td><code>returns</code></td><td><code>?variable</code></td><td>none</td><td></td><td>the value of the result</td></tr><tr><td><code>all</code></td><td>flag</td><td>false</td><td></td><td>act on every match (else exactly one is needed)</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> <code>world.act</code> runs the action in one transaction. With <code>fn</code>: the function gets a context (<code>find</code>, <code>val</code>, <code>tell</code>, <code>fill</code>, <code>replace</code>, <code>retract</code>, <code>world</code>) and the arguments; whatever it changed is kept only if the world accepts all of it. Written as wires: the patterns are matched with the parameters bound; the calcs and checks are evaluated; then all writes are applied together. Every expression is evaluated on the state before the action.</p>
+<p><strong>When it is evaluated.</strong> On request.</p>
+<p><strong>Interactions.</strong> A missing argument returns <code>missing</code> with the question to ask. The changes are statements like any other: they are in the history and can be undone.</p>
+<p><strong>Violations.</strong> <code>guard</code> (a check fails, nothing matches, or several match without <code>all</code>), and whatever the writes raise; <code>schema</code>.</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`
+  @it item name=?item stock=?have
+  @enough core.check fn=gte args=?have args=?count why=&quot;only ?have left&quot;
+  @left core.calc out=?rest fn=sub args=?have args=?count
+  @w1 item core.on=$it stock=?rest
+  @take core.action name=take param=item param=count when=$it with=$left if=$enough set=$w1 returns=?rest ask.count=&quot;How many?&quot;
+`);
+w.tell(&#x27;@i1 item name=bolt stock=40&#x27;);
+print(w.act({ action: &#x27;take&#x27;, args: { item: &#x27;bolt&#x27;, count: 10 } }).value);
+print(w.act({ action: &#x27;take&#x27;, args: { item: &#x27;bolt&#x27;, count: 99 } }).violations[0].why);
+print(w.act({ action: &#x27;take&#x27;, args: { item: &#x27;bolt&#x27; } }).missing);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>30
+only 30 left
+[{&quot;action&quot;:&quot;take&quot;,&quot;key&quot;:&quot;count&quot;,&quot;ask&quot;:&quot;How many?&quot;}]</code></pre></figure>
+<p><strong>Limits.</strong> Written as wires: no aggregates in its calcs; a <code>set</code> writes one value per key.</p>
+<h2 id="certainty-and-soft-constraints">Certainty and soft constraints</h2>
+<h3 id="coretier">core.tier</h3>
+<p>A tier of certainty of the host's own.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>name</code></td><td>name</td><td>the wire's id</td><td></td><td>the tier</td></tr><tr><td><code>below</code></td><td>tier</td><td><code>told</code></td><td></td><td>it is placed right below this one</td></tr><tr><td><code>cost</code></td><td>number</td><td>none</td><td></td><td>carried along for the host</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> The built-in tiers are, strongest first, <code>told</code>, <code>derived</code>, <code>forced</code>, <code>default</code>, <code>guessed</code>. A declared tier is inserted in that order. A statement says its tier with <code>{ tier }</code>.</p>
+<p><strong>When it is evaluated.</strong> Tiers are computed when asked for (<code>world.tier</code>, queries, <code>explain</code>, <code>assumptions</code>, <code>describe</code>).</p>
+<p><strong>Interactions.</strong> See <a href="semantics.html#certainty">semantics</a>.</p>
+<p><strong>Violations.</strong> <code>schema</code> (declared twice; <code>below</code> is not a tier). Stating an unknown tier throws.</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(&#x27;@t core.tier name=measured below=told\n@g gauge level=?l\n@a alarm for=$g level=?l\n@r core.rule when=$g then=$a&#x27;);
+w.tell(&#x27;@g1 gauge level=95&#x27;, { tier: &#x27;measured&#x27; });
+print(w.tier(&#x27;g1&#x27;, &#x27;level&#x27;), w.tier(w.ofType(&#x27;alarm&#x27;)[0].id, &#x27;level&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>measured derived</code></pre></figure>
+<p><strong>Limits.</strong> Tiers are an order, not numbers to compute with.</p>
+<h3 id="coreissue">core.issue</h3>
+<p>A violation of a soft constraint, kept in the world while it lasts. It is a fact that the world writes; a matrix does not declare it.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Meaning</th></tr></thead><tbody><tr><td><code>rule</code></td><td>the deny or slot that is violated</td></tr><tr><td><code>about</code></td><td>rep.; each wire involved</td></tr><tr><td><code>key</code></td><td>for a slot: the key</td></tr><tr><td><code>why</code></td><td>the reason</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> A <code>core.deny</code> with <code>soft=true</code>, or a <code>core.slot</code> with <code>min</code>/<code>max</code> and <code>soft=true</code>, refuses nothing. While its condition holds, an issue wire exists; when it no longer holds, the wire is gone. The change that caused it returns it under <code>issues</code>.</p>
+<p><strong>When it is evaluated.</strong> A soft deny in the chase (it is a rule that concludes an issue); a soft bound in validation.</p>
+<p><strong>Interactions.</strong> A query whose answer rests on a wire an issue is about answers <code>conflicting</code>, with <code>reason</code> and <code>issues</code>. Rules may read issue wires. <code>world.check()</code> and <code>world.describe()</code> list them.</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(&#x27;@k core.slot of=tank key=level kind=number max=100 soft=true&#x27;);
+const r = w.tell(&#x27;@t1 tank level=140&#x27;);
+print(r.ok, r.issues.map((i) =&gt; i.why));
+print(w.query({ about: &#x27;t1&#x27;, seek: &#x27;level&#x27; }).status);
+w.revise(&#x27;t1&#x27;, &#x27;level&#x27;, 80);
+print(w.ofType(&#x27;core.issue&#x27;).length);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true [&quot;level must be at most 100&quot;]
+conflicting
+0</code></pre></figure>
+<h3 id="coreprecision">core.precision</h3>
+<p>How many decimals derived numbers keep.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>decimals</code></td><td>0 to 12</td><td>12 significant digits</td><td></td><td>decimals kept</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> Every number that a calc, an aggregate or an effect produces is rounded to that many decimals. Whole numbers stay whole; told values are never rewritten. The <code>decimals</code> option of the world is the same setting; the wire wins.</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(&#x27;@p core.precision decimals=2\n@s share total=?t people=?n\n@c core.calc out=?e fn=div args=?t args=?n\n@a share core.on=$s each=?e\n@r core.rule when=$s with=$c then=$a&#x27;);
+w.tell(&#x27;@s1 share total=10 people=3  @s2 share total=10 people=4&#x27;);
+print(w.get(&#x27;s1&#x27;).attrs.each, w.get(&#x27;s2&#x27;).attrs.each);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;3.33&quot;] [&quot;2.5&quot;]</code></pre></figure>
+<h2 id="functions">Functions</h2>
+<p>A function is called with its arguments as text and returns text (or true/false for a comparison). When it has no result it returns nothing and the rule does not fire. Host functions are added with <code>new World({ fns })</code>; a name from the tables below cannot be taken without <code>override</code>.</p>
+<p>A <strong>number</strong> is an integer or decimal, optionally followed by a unit (<code>5</code>, <code>2.5</code>, <code>3kg</code>, <code>10N/kg</code>). Arithmetic keeps 12 significant digits.</p>
+<h3 id="arithmetic">Arithmetic</h3>
+<div class="table"><table><thead><tr><th>Function</th><th>Arguments</th><th>Result</th><th>No result when</th></tr></thead><tbody><tr><td><code>add</code></td><td>numbers, same unit</td><td>their sum, in that unit</td><td>units differ</td></tr><tr><td><code>sub</code></td><td>numbers, same unit</td><td>the first minus the others</td><td>units differ</td></tr><tr><td><code>mul</code></td><td>numbers</td><td>the product; units are joined (<code>2kg</code> × <code>3m</code> = <code>6kg*m</code>)</td><td></td></tr><tr><td><code>div</code></td><td>numbers</td><td>the first divided by the others; equal units cancel (<code>6m / 2m = 3</code>), others are joined with <code>/</code></td><td>division by zero</td></tr><tr><td><code>min</code>, <code>max</code></td><td>numbers, same unit</td><td>the smallest, the largest</td><td>units differ</td></tr><tr><td><code>abs</code></td><td>number</td><td>its absolute value</td><td></td></tr><tr><td><code>round</code></td><td>number, [decimals]</td><td>rounded; the unit is kept</td><td></td></tr><tr><td><code>mod</code></td><td>a, b</td><td>the remainder of a / b, with the sign of b and the unit of a</td><td>b is 0</td></tr><tr><td><code>idiv</code></td><td>a, b</td><td>the whole part of a / b</td><td>b is 0</td></tr><tr><td><code>linsolve</code></td><td>k, c, c1, x1, c2, x2, ...</td><td>the x with c·x + c1·x1 + ... = k, exactly</td><td>c is 0; units differ</td></tr><tr><td><code>concat</code></td><td>values</td><td>the texts joined</td><td></td></tr></tbody></table></div>
+<h3 id="comparison">Comparison</h3>
+<div class="table"><table><thead><tr><th>Function</th><th>Arguments</th><th>True when</th></tr></thead><tbody><tr><td><code>eq</code>, <code>neq</code></td><td>a, b</td><td>the two are (not) the same: as numbers when both are numbers with the same unit (<code>5</code> = <code>5.0</code>), as times when both are clock times or dates (<code>9:05</code> = <code>09:05</code>), else as text</td></tr><tr><td><code>lt</code>, <code>lte</code>, <code>gt</code>, <code>gte</code></td><td>a, b</td><td>a is less than (at most, more than, at least) b; numbers need the same unit or a bare number on one side; clock times and dates compare as such</td></tr><tr><td><code>before</code>, <code>after</code></td><td><code>$a</code>, <code>$b</code></td><td>wire a comes before (after) wire b in the sequence</td></tr></tbody></table></div>
+<p>A comparison of things that cannot be compared (a number with a name, different units) is false.</p>
+<h3 id="time">Time</h3>
+<div class="table"><table><thead><tr><th>Function</th><th>Arguments</th><th>Result</th></tr></thead><tbody><tr><td><code>time_add</code></td><td>clock time, duration</td><td>the later time (<code>10:40</code> + <code>35min</code> = <code>11:15</code>); a bare number is minutes</td></tr><tr><td></td><td>date, duration</td><td>the later date (<code>2026-01-30</code> + <code>3d</code> = <code>2026-02-02</code>); a bare number is days</td></tr><tr><td><code>time_diff</code></td><td>later, earlier</td><td>minutes between two clock times (<code>35min</code>); days between two dates (<code>3d</code>)</td></tr><tr><td><code>weekday</code></td><td>date</td><td><code>monday</code> ... <code>sunday</code></td></tr></tbody></table></div>
+<p>Durations: <code>s</code>, <code>min</code>, <code>h</code>, <code>d</code>.</p>
+<h3 id="aggregates">Aggregates</h3>
+<p>Used with <code>over=</code> on a <code>core.calc</code>. The calc ranges over every match of the <code>over</code> patterns under the bindings of the rule so far; <code>args</code> gives the value taken from each match.</p>
+<div class="table"><table><thead><tr><th>Function</th><th>Result</th><th>Over no match</th></tr></thead><tbody><tr><td><code>count</code></td><td>the number of matches</td><td><code>0</code></td></tr><tr><td><code>sum</code></td><td>the sum of the values</td><td><code>0</code></td></tr><tr><td><code>min</code>, <code>max</code></td><td>the smallest, the largest value</td><td>no result</td></tr><tr><td><code>argmin</code>, <code>argmax</code></td><td>the <code>pick</code> of the match with the smallest (largest) value; of several equal ones the first in the sequence, and a query for it answers <code>ambiguous</code> unless <code>ties=first</code></td><td>no result</td></tr><tr><td><code>collect</code></td><td>all the values, as several values of the key</td><td>no result</td></tr></tbody></table></div>
+<p>An aggregate is kept up to date: when a wire it ranges over arrives, changes or goes, the groups it belongs to are computed again. A rule may not aggregate over what its own conclusions produce.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`
+  @o order customer=?c
+  @l line of=$o item=?item amount=?a
+  @n core.calc out=?n fn=count over=$l
+  @t core.calc out=?total fn=sum over=$l args=?a
+  @b core.calc out=?best fn=argmax over=$l args=?a pick=?item
+  @s order core.on=$o lines=?n total=?total largest=?best
+  @r core.rule when=$o with=$n with=$t with=$b then=$s
+`);
+w.tell(&#x27;@o1 order customer=ann  @l1 line of=$o1 item=pen amount=3  @l2 line of=$o1 item=book amount=12&#x27;);
+const o = w.get(&#x27;o1&#x27;).attrs;
+print(o.lines, o.total, o.largest);
+print(builtins.time_add([&#x27;10:40&#x27;, &#x27;35min&#x27;]), builtins.div([&#x27;6m&#x27;, &#x27;2m&#x27;]), builtins.eq([&#x27;5&#x27;, &#x27;5.0&#x27;]), builtins.weekday([&#x27;2026-11-10&#x27;]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;2&quot;] [&quot;15&quot;] [&quot;book&quot;]
+11:15 3 true tuesday</code></pre></figure>
+<p class="source">Generated from <code>docs/reference.md</code>.</p>
+</main>
+<footer>sopworld 0.5.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+
+</body>
+</html>

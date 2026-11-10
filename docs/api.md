@@ -578,8 +578,10 @@ print(s.lineage, Object.keys(s.keys), s.keys.qty.default);
 
 ### world.explain(id)
 
-Where a wire comes from: `{ id, type, told | via, from, fills }`, with each wire it was
-derived from explained in turn; `null` for an unknown id.
+Where a wire comes from: `{ id, wire, tier, told, via, from, fills }`: the wire as
+text, whether it was `told`, else the rule (`via`) that derived it, the wires it was derived
+`from` (each explained in turn), and the values that were added to it later (`fills`,
+each with `key`, `value`, `via`, `from`); `null` for an unknown id.
 
 ```js run
 const w = shop();

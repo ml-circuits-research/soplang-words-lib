@@ -1,4 +1,4 @@
-/* sopworld documentation
+/* sopworld documentation (written by tools/build_docs.py)
    layout: one reading column (68ch) under a wrapping top bar; code and tables scroll on their own */
 :root {
   --bg: #f2f4f6;
@@ -107,3 +107,5 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 .results small { color: var(--muted); }
 footer { max-width: calc(68ch + 32px); margin: 0 auto; padding: 1rem 16px 2rem; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--line); }
 @media (max-width: 420px) { h1 { font-size: 1.6rem; } td:first-child { white-space: normal; } }
+.source { margin-top: 3rem; font-size: 0.8rem; color: var(--muted); }
+h2[id], h3[id] { scroll-margin-top: 1rem; }

@@ -8,11 +8,14 @@ what it cannot decide, and refuses what is not allowed.
 - One file, no dependencies, the same in Node 18+ and in browsers.
 - Deduction, abduction, induction, logical completion, search with pluggable solvers,
   revisable defaults, incremental retraction, composition of matrices, persistence, events.
-- Documentation, playground and browser self-test: [docs/index.html](./docs/index.html).
-  Specification: [SPEC.md](./SPEC.md).
-- Type hierarchy, kinds, state over time, aggregates, questions with a status, actions,
-  step budgets and copy-on-write forks: [docs/matrix.html](./docs/matrix.html).
-- What changed since 0.4: [CHANGELOG.md](./CHANGELOG.md). Which version the built file is:
+- Documentation: an overview in [SPEC.md](./SPEC.md); the language in
+  [docs/language.md](./docs/language.md); every wire type and function in
+  [docs/reference.md](./docs/reference.md); the behaviour, statement by statement, in
+  [docs/semantics.md](./docs/semantics.md); every method in [docs/api.md](./docs/api.md);
+  the words in [docs/glossary.md](./docs/glossary.md). Every example in them is run by
+  the tests. The same pages as HTML, with a playground and a browser self-test:
+  [docs/index.html](./docs/index.html).
+- What changed: [CHANGELOG.md](./CHANGELOG.md). Which version the built file is:
   [docs/version.md](./docs/version.md), and `build` in the loaded library.
 - Putting an existing system on the library: [docs/integration.md](./docs/integration.md).
 
@@ -64,7 +67,8 @@ docs/           the built single file, its type declarations, the documentation,
                 the playground and the self-test; self-contained, ready for GitHub Pages
 node/           Node-only wiring for outside solvers
 bin/            command line: sopworld check|run|ask
-tools/          build.mjs, browser-check.mjs, bench.mjs, satsolve.py (test helper)
+tools/          build.mjs, build_docs.py (HTML from the markdown), doc-examples.mjs,
+                browser-check.mjs, bench.mjs, satsolve.py (test helper)
 examples/       runnable demonstrations and the shared demo worlds
 test/           node:test suites
 ```

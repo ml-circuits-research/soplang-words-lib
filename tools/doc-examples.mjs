@@ -46,7 +46,7 @@ export function checkText(text, { write = false } = {}) {
   return { text: write ? out : text, blocks, problems };
 }
 
-export const docFiles = () => readdirSync(join(root, 'docs')).filter((f) => f.endsWith('.md')).map((f) => join(root, 'docs', f));
+export const docFiles = () => [...readdirSync(join(root, 'docs')).filter((f) => f.endsWith('.md')).map((f) => join(root, 'docs', f)), join(root, 'SPEC.md')];
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   const args = process.argv.slice(2);

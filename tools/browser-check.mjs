@@ -92,7 +92,7 @@ try {
   }
   // 3. every page loads, and every local link resolves
   {
-    const pages = ['index.html', 'concepts.html', 'matrix.html', 'reasoning.html', 'usecases.html', 'solvers.html', 'api.html', 'playground.html', 'roadmap.html', 'selftest.html'];
+    const pages = ['index.html', 'language.html', 'reference.html', 'semantics.html', 'api.html', 'glossary.html', 'integration.html', 'playground.html', 'selftest.html'];
     const links = new Set();
     for (const p of pages) {
       const { page, errors } = await open(p);
@@ -108,7 +108,7 @@ try {
   // 4. phone width
   {
     const page = await browser.newPage({ viewport: { width: 390, height: 800 } });
-    for (const p of ['index.html', 'playground.html', 'solvers.html']) {
+    for (const p of ['index.html', 'playground.html', 'reference.html', 'api.html']) {
       await page.goto(`${base}/${p}`, { waitUntil: 'load' });
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
       check(!overflow, `${p} fits a 390 px wide screen`);

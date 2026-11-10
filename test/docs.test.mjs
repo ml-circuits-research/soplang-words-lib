@@ -150,3 +150,39 @@ test('docs: api.md, index.d.ts and the library agree on every export and every p
   // every entry has an example
   for (const section of api.split(/\n(?=### )/).slice(1)) assert.match(section, /```js( run)?\n/, `no example under "${section.split('\n')[0]}"`);
 });
+
+// ---- one source: the HTML pages are the markdown, and nothing stale is left ----------------
+import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
+
+test('docs: every HTML page is generated from the current text of its markdown file', () => {
+  const root = new URL('../', import.meta.url);
+  const sources = { 'index.html': 'SPEC.md', 'language.html': 'docs/language.md', 'reference.html': 'docs/reference.md', 'semantics.html': 'docs/semantics.md', 'api.html': 'docs/api.md', 'glossary.html': 'docs/glossary.md', 'integration.html': 'docs/integration.md' };
+  for (const [page, source] of Object.entries(sources)) {
+    const hash = createHash('sha256').update(readFileSync(new URL(source, root))).digest('hex').slice(0, 12);
+    const html = readFileSync(new URL(`docs/${page}`, root), 'utf8');
+    assert.ok(html.includes(`<meta name="source-hash" content="${hash}">`), `docs/${page} is not built from the current ${source}: run python3 tools/build_docs.py`);
+  }
+  const pages = readdirSync(new URL('docs/', root)).filter((f) => f.endsWith('.html'));
+  for (const p of pages) assert.ok(p in sources || ['playground.html', 'selftest.html'].includes(p), `docs/${p} has no markdown source`);
+  for (const f of readdirSync(new URL('docs/', root)).filter((x) => x.endsWith('.md') && x !== 'version.md')) {
+    assert.ok(Object.values(sources).includes(`docs/${f}`), `docs/${f} has no HTML page`);
+  }
+});
+
+test('docs: nothing in the documentation speaks of an earlier state of the library', async () => {
+  const root = new URL('../', import.meta.url);
+  const { version } = JSON.parse(readFileSync(new URL('package.json', root), 'utf8'));
+  const files = ['SPEC.md', 'README.md', ...readdirSync(new URL('docs/', root)).filter((f) => /\.(md|html)$/.test(f)).map((f) => `docs/${f}`)];
+  for (const f of files) {
+    const text = readFileSync(new URL(f, root), 'utf8').replace(/<style[\s\S]*?<\/style>/g, '');
+    assert.doesNotMatch(text, /seven wire types/i, f);
+    // "before version N" is history and stays true; anything else that names a version must name this one
+    for (const m of text.matchAll(/(?<!before )\b(?:version|sopworld|since|in) (0\.\d+)(?:\.\d+)?\b/gi)) {
+      assert.ok(version.startsWith(m[1]), `${f} mentions ${m[0]}; the version is ${version}`);
+    }
+    // the language page is where the old declaration is shown, once, as something still read
+    if (!/language\.(md|html)$/.test(f)) assert.doesNotMatch(text, /(^|[^@\w$?])\?[a-z]\w* [a-z][\w.]* [a-z][\w.]*=/m, `${f} declares a pattern the old way (?id type ...)`);
+  }
+  assert.ok(existsSync(new URL('docs/version.md', root)));
+});

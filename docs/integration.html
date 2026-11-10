@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sopworld Putting a system on sopworld</title>
+<meta name="source-hash" content="832916a0c665">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.5.0</small></a>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html" aria-current="page">Integration</a><a href="playground.html">Playground</a></nav>
+</header>
+<main>
+<h1>Putting a system on sopworld</h1>
+<p class="lead">How a system that already has its own schema, its own questions and its own operations can sit on the library, without the library knowing anything about it. The steps are general. The worked example at the end is <code>compat/psys2/</code>, a dialogue system whose three sample worlds were rebuilt this way.</p>
+<p>The idea in one sentence: your wires go in unchanged, a small matrix says what they mean, and the answers come from <code>world.query</code> and <code>world.act</code>.</p>
+<h2 id="1-schema-declare-it-or-map-the-one-you-have">1. Schema: declare it, or map the one you have</h2>
+<p>If you start fresh, write <code>core.type</code> and <code>core.slot</code> wires (SPEC 3.1, 3.2, 3.8, 3.9).</p>
+<p>If you already have schema wires in another notation, do not translate them. Tell the world how to read them, once, with <code>core.schema.map</code> wires, then load your schema as it is:</p>
+<figure class="code"><pre><code># wires of type `field` declare a key of the type and key named by their id (book.title)
+@m1 core.schema.map from=field owner=id.prefix key=id.suffix
+    value=is many=multi:yes required=must ask=prompt default=usually
+# wires of type `class` declare a type
+@m2 core.schema.map from=class as=type name=id extends=parent closed=sealed:yes root=object
+# wires of type `package` are modules with imports
+@m3 core.schema.map from=package as=module name=name imports=needs</code></pre></figure>
+<p>Check: every schema file loads with <code>tell(...).ok === true</code>, and <code>world.schema(type)</code> shows the keys you expect.</p>
+<p>Bookkeeping keys (source, sequence number, provenance) belong in an open namespace: <code>core.</code> is one, <code>@n core.namespace prefix=audit. open=true</code> declares another. They are accepted on closed types and are not validated unless a slot declares them.</p>
+<h2 id="2-facts-tell-them-as-they-are">2. Facts: tell them as they are</h2>
+<p><code>world.tell(text)</code> takes your wires with your ids. Three declarations make them behave:</p>
+<div class="table"><table><thead><tr><th>You have</th><th>Declare</th><th>Effect</th></tr></thead><tbody><tr><td>A key that says "this is the same thing"</td><td><code>core.slot ... id=true</code></td><td>Telling it again completes the same wire; the old id becomes an alias</td></tr><tr><td>A key that carries the order of events</td><td><code>core.sequence key=&lt;key&gt;</code></td><td><code>before</code>, <code>after</code>, <code>core.select=latest</code>, <code>asOf</code> and states use it</td></tr><tr><td>A value that changes over time</td><td><code>core.fluent</code>, <code>core.effect</code></td><td>The wire shows the current value; events and later statements move it</td></tr></tbody></table></div>
+<p>A change that the matrix does not allow is refused whole, with the reason and the wires it rests on. Your system decides what to say to its user; the world stays as it was.</p>
+<h2 id="3-questions-worldquery">3. Questions: <code>world.query</code></h2>
+<p>A question is <code>{ type, seek, where }</code> or a wire of the same shape (<code>@q core.question type=item seek=stock where.name=bolt</code>). The answer has a status: <code>supported</code>, <code>conflicting</code>, <code>missing</code>, <code>refused</code>, <code>no</code>, <code>unknown</code>, <code>budget</code> (SPEC 4.10). Map them to what your system calls them; a <code>missing</code> answer carries the question to ask.</p>
+<p>If your wire types or key names differ, pass them: <code>new World({ vocabulary: { question, answer, request, type, seek, where, status, ... } })</code>.</p>
+<h2 id="4-operations-rules-first-functions-last">4. Operations: rules first, functions last</h2>
+<p>Most "operations" compute a value from facts. Write them as rules, in this order of preference:</p>
+<ol><li><strong>A rule that fills a key on the thing asked about.</strong> The question type is a wire type; when no such wire exists the world supposes one with the question's keys, runs the rules, reads the answer and undoes it. Use <code>core.on=$pattern</code> to put the result on the supposed wire:</li></ol>
+<p><code> @q quote item=?i count=?n @p price item=?i cost=?c @c core.calc out=?t fn=mul args=?n args=?c @a quote core.on=$q total=?t @r core.rule when=$q when=$p with=$c then=$a </code></p>
+<p><code>world.query({ type: 'quote', seek: 'total', where: { item: 'pen', count: 3 } })</code> answers with the total, <code>missing</code> when the price is unknown, and nothing is recorded.</p>
+<ol><li><strong>A deny for what cannot be.</strong> "Paid less than the cost" is a <code>core.deny</code> over the supposed wire: the answer is <code>refused</code>, with your <code>why</code>.</li><li><strong>A state</strong> (<code>core.fluent</code>) for anything that is replayed today: balances, counts, progress. Undo is <code>retract</code>; the past is <code>asOf</code>.</li><li><strong>An aggregate</strong> (<code>over=</code>) for totals, counts, the largest of a group.</li><li><strong><code>core.absent=&lt;key&gt;</code></strong> for "when this was not given".</li><li><strong>A producer</strong> (<code>core.producer</code>) for a value that only a function can compute.</li><li><strong>An action</strong> (<code>core.action</code>) for an operation that changes the world: written as wires where it is "check, then update", else a function registered under <code>actions</code> (its own registry: an action named <code>add</code> does not replace the arithmetic) that runs in one transaction with <code>find</code>, <code>val</code>, <code>tell</code>, <code>fill</code>, <code>replace</code>, <code>retract</code>. Declare its required arguments and the question for each; a call without them returns <code>missing</code> with those questions.</li></ol>
+<p>What stays outside the matrix: turning text into wires, wording of replies, string handling (splitting "milk, eggs and bread"). Keep those in your own code or in actions.</p>
+<h2 id="5-sessions-what-if-persistence">5. Sessions, what-if, persistence</h2>
+<ul><li>One <code>World</code> per session or per device. Build one with the schema and matrix loaded, and <code>fork()</code> it for each session: a fork copies nothing until it changes.</li><li><code>world.trial(fn)</code> and <code>{ dry: true }</code> try a change and undo it. <code>world.asOf(at, fn)</code> reads the past.</li><li><code>world.toJSON()</code> and <code>World.fromJSON(data, options)</code> save and restore.</li><li><code>world.on(listener)</code> receives the committed events.</li></ul>
+<h2 id="6-limits">6. Limits</h2>
+<p>Every call takes <code>{ budget: { steps, ms } }</code> (SPEC 4.11). A call that runs out returns a <code>budget</code> result and leaves the world as it was. Set a default for all calls with <code>new World({ budget })</code>. <code>world.stats()</code> says where the steps of the last call went.</p>
+<h2 id="7-prove-it-a-runner-over-your-own-tests">7. Prove it: a runner over your own tests</h2>
+<p>Take the dialogues or transactions your system already tests, dump for each turn the wires it produced and the answers it gave, and write a small runner: tell the wires, <code>query</code> each question, <code>act</code> each request, compare status and value. Keep every failure in the report with its reason. A failure is usually one of three things: a rule still to write, a convention of the old system that is not a fact (worth dropping), or logic that rules do not express (keep it in an action, and say so).</p>
+<h2 id="worked-example-compatpsys2">Worked example: <code>compat/psys2/</code></h2>
+<p>PSys2 is a dialogue system with its own legends (schema), question wires, and operations written in JavaScript. Nothing in <code>src/</code> names it.</p>
+<div class="table"><table><thead><tr><th>Step</th><th>File</th><th>What it shows</th></tr></thead><tbody><tr><td>1</td><td><code>compat/psys2/mapping.sop</code></td><td>Three <code>core.schema.map</code> wires read its legends unchanged (0 violations)</td></tr><tr><td>2, 4</td><td><code>compat/psys2/matrices/kids.shop/matrix.sop</code></td><td>Prices as states with an identity key, baskets summed with aggregates, the wallet as a state changed by events, answers put on supposed question wires with <code>core.on=</code>, denies for "not enough"</td></tr><tr><td>4</td><td><code>compat/psys2/matrices/kids.arith/matrix.sop</code></td><td>Counts per person as states with <code>min=0</code>, "everybody or the two named" with <code>core.absent=</code>, operator precedence as rules over step wires</td></tr><tr><td>4.7</td><td><code>compat/psys2/matrices/kids.tasks/</code></td><td>Lists whose logic is text handling: 18 lines of matrix declare the actions, 86 lines of functions do them on wires</td></tr><tr><td>7</td><td><code>compat/psys2/run.mjs</code></td><td>The runner; <code>refused</code> is mapped to that system's <code>conflicting</code></td></tr><tr><td></td><td><code>compat/psys2/demo.mjs</code></td><td>A question for a missing argument, a default withdrawn, undo, an explanation, an abduction</td></tr></tbody></table></div>
+<p>Result of <code>node compat/psys2/run.mjs</code> (cases passed of total; lines without blanks and comments against the JavaScript replaced):</p>
+<div class="table"><table><thead><tr><th>World</th><th>Cases</th><th>Matrix + functions</th><th>Replaced JavaScript</th></tr></thead><tbody><tr><td>kids.shop</td><td>147 of 147</td><td>71 + 0</td><td>148</td></tr><tr><td>kids.arith</td><td>207 of 217</td><td>114 + 0</td><td>217</td></tr><tr><td>kids.tasks</td><td>231 of 232</td><td>18 + 86</td><td>192</td></tr></tbody></table></div>
+<p>The eleven failures and their reasons are listed in <code>worker-log.md</code> (G8): three are an impossible event that the library refuses when told and the old system reports when asked; four are a reply convention; the rest are a rounding rule, a division by zero, a tie, and an operation of another world.</p>
+<p class="source">Generated from <code>docs/integration.md</code>.</p>
+</main>
+<footer>sopworld 0.5.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+
+</body>
+</html>

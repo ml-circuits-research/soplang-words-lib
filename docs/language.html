@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sopworld The language</title>
+<meta name="source-hash" content="03c22516e46c">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.5.0</small></a>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html" aria-current="page">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="playground.html">Playground</a></nav>
+</header>
+<main>
+<h1>The language</h1>
+<p class="lead">SOP Lang as sopworld reads and writes it. This file is normative: where another document disagrees with it, this one holds. It is written so that it can be adopted as it stands as the definition of the language (for PSys2: SOP Lang v1.1).</p>
+<p>One language serves for facts, for the consistency matrix and for queries. What differs is what a wire is <em>used</em> for, never how it is written.</p>
+<h2 id="1-grammar">1. Grammar</h2>
+<figure class="code"><pre><code>text         = { declaration | comment } ;
+declaration  = &quot;@&quot; id  type  { entry } ;
+entry        = key &quot;=&quot; value ;
+value        = string | reference | variable | atom ;
+string       = &#x27;&quot;&#x27; { character | &#x27;\&quot;&#x27; | &#x27;\\&#x27; } &#x27;&quot;&#x27; ;
+reference    = &quot;$&quot; id ;
+variable     = &quot;?&quot; name ;
+atom         = one or more characters that are not white space, not starting with
+               &#x27;&quot;&#x27;, &quot;$&quot; or &quot;?&quot; ;
+id           = name ;
+type         = name ;
+key          = name ;
+name         = ( letter | &quot;_&quot; ) { letter | digit | &quot;_&quot; | &quot;.&quot; | &quot;-&quot; } ;
+comment      = &quot;#&quot; { any character except a line end } ;
+white space  = space | tab | carriage return | line end ;</code></pre></figure>
+<p>Tokens are separated by white space. A token is a run of characters without white space, except that a string may contain white space, including line ends, between its quotes. The first <code>=</code> of an entry token separates key and value; the value is the rest, and may itself contain <code>=</code>.</p>
+<ol><li>A <strong>declaration</strong> starts with <code>@id</code>, continues with a type, and goes on until the next <code>@id</code> token or the end of the text. It may span any number of lines. Indentation has no meaning.</li><li>An <strong>entry</strong> is <code>key=value</code>. The same key may be given several times: the key then has several values, in the order written.</li><li>A <strong>comment</strong> starts with <code>#</code> where a token could start, and runs to the end of the line. A <code>#</code> inside a string, or inside a token (<code>colour=#fff</code>), is text.</li><li>There is nothing else: no nesting, no lists, no operators, no escapes outside strings.</li></ol>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const [w] = parse(`
+  # a wire may span lines; a key may repeat
+  @b1 body mass=2kg
+      label=&quot;a \\&quot;big\\&quot; one&quot;     # a comment
+      tag=red tag=round
+`);
+print(w.id, w.type);
+print(w.attrs);
+print(str(w.attrs.label[0]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>b1 body
+{&quot;mass&quot;:[&quot;2kg&quot;],&quot;label&quot;:[&quot;\&quot;a \\\&quot;big\\\&quot; one\&quot;&quot;],&quot;tag&quot;:[&quot;red&quot;,&quot;round&quot;]}
+a &quot;big&quot; one</code></pre></figure>
+<h2 id="2-the-three-signs">2. The three signs</h2>
+<div class="table"><table><thead><tr><th>Sign</th><th>Meaning</th><th>Where it may stand</th></tr></thead><tbody><tr><td><code>@</code></td><td>declares a wire</td><td>first character of a declaration; nowhere else</td></tr><tr><td><code>$</code></td><td>refers to a wire, by id</td><td>first character of a value</td></tr><tr><td><code>?</code></td><td>is a variable</td><td>first character of a value, in the matrix and in queries</td></tr></tbody></table></div>
+<p>Each sign has one meaning. In particular <code>?</code> never starts a declaration: <code>@p purchase qty=?q</code> declares a wire named <code>p</code> whose <code>qty</code> is the variable <code>?q</code>.</p>
+<p>Two forms combine them in value position, inside rules only:</p>
+<div class="table"><table><thead><tr><th>Form</th><th>Meaning</th></tr></thead><tbody><tr><td><code>$p</code> where <code>p</code> is a pattern or template of the same rule</td><td>the wire that <code>@p</code> matched, or made</td></tr><tr><td><code>$?x</code></td><td>a reference to the wire whose id the variable <code>?x</code> holds</td></tr></tbody></table></div>
+<h2 id="3-values">3. Values</h2>
+<div class="table"><table><thead><tr><th>Kind</th><th>Written</th><th>In memory</th><th>Notes</th></tr></thead><tbody><tr><td>atom</td><td><code>water</code>, <code>10</code>, <code>9.81</code>, <code>10:00</code>, <code>5kg</code>, <code>phys.mech.body</code></td><td>the token</td><td>numbers, quantities, times and names are all atoms; what an atom <em>means</em> is decided by the slot's kind (<a href="reference.html#coreslot">reference</a>)</td></tr><tr><td>string</td><td><code>"free text"</code></td><td>the token with its quotes</td><td><code>\"</code> and <code>\\</code> are the only escapes; <code>str(v)</code> unquotes, <code>quote(text)</code> quotes</td></tr><tr><td>reference</td><td><code>$id</code></td><td>the token</td><td>to a fact, or inside a rule to a pattern or template</td></tr><tr><td>variable</td><td><code>?name</code></td><td>the token</td><td>bound by matching; only in matrix wires and queries</td></tr></tbody></table></div>
+<p>A value is never interpreted when it is read. <code>5</code> and <code>5.0</code> are different tokens; they are the same <em>value</em> only under a key whose slot is declared <code>integer</code> or <code>number</code>.</p>
+<h2 id="4-what-a-wire-is">4. What a wire is</h2>
+<p>A wire is either a <strong>fact</strong> or part of the <strong>matrix</strong>. The matrix is the set of wires that say what facts may exist and what follows from them.</p>
+<ol><li>A wire is part of the matrix when - its type is a matrix type (<code>core.slot</code>, <code>core.type</code>, <code>core.rule</code>, <code>core.deny</code>, <code>core.calc</code>, <code>core.check</code>, <code>core.relation</code>, <code>core.abducible</code>, <code>core.sequence</code>, <code>core.fluent</code>, <code>core.effect</code>, <code>core.producer</code>, <code>core.action</code>, <code>core.tier</code>, <code>core.precision</code>, <code>core.namespace</code>, <code>core.use</code>, <code>core.schema.map</code>), or - a <code>core.schema.map</code> wire declares its type to be schema, or - a rule, deny, calc, relation or action <strong>in the same text</strong> names it, through <code>when=</code>, <code>not=</code>, <code>then=</code>, <code>with=</code>, <code>if=</code>, <code>over=</code>, <code>set=</code>, <code>add=</code> or <code>remove=</code>.</li><li>A wire named through <code>when=</code>, <code>not=</code>, <code>over=</code> or <code>remove=</code> is a <strong>pattern</strong>: a description of wires to find. A wire named through <code>then=</code>, <code>set=</code> or <code>add=</code> is a <strong>template</strong>: a description of a wire to make or to complete. It is one or the other because of where it is named. A pattern needs no variable.</li><li>Every other wire is a <strong>fact</strong>.</li><li>A fact may not contain a variable. A wire with a variable that nothing names is refused (<code>variable</code>).</li><li>A rule and the wires it names are told together, in one text. A wire that has the id of a pattern and is told later on its own is a fact.</li></ol>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`
+  @p purchase item=?i qty=?q            # a pattern: the rule names it in when=
+  @n note about=$p text=?i              # a template: the rule names it in then=
+  @r core.rule when=$p then=$n
+`);
+w.tell(&#x27;@p1 purchase item=pen qty=3&#x27;);  // a fact
+print([...w.matrix.keys()]);
+print(w.ofType(&#x27;note&#x27;).map((x) =&gt; format(x).replace(/@\S+/, &#x27;@...&#x27;)));
+print(w.tell(&#x27;@x purchase qty=?q&#x27;).violations[0].kind);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;p&quot;,&quot;n&quot;,&quot;r&quot;]
+[&quot;@... note about=$p1 text=pen&quot;]
+variable</code></pre></figure>
+<h2 id="5-ids">5. Ids</h2>
+<ol><li>Facts and matrix wires have <strong>separate id spaces</strong>. A fact <code>@p</code> and a pattern <code>@p</code> do not clash.</li><li>Within each space an id is declared once. Telling a fact whose id exists is refused (<code>duplicate-id</code>), unless the new declaration says nothing that the wire does not already say, in which case it is accepted and changes nothing.</li><li>A reference <code>$id</code> in a fact must name an existing fact (<code>dangling-ref</code>), except under a key of an open namespace that no slot declares (section 6).</li><li>A wire may get a second id: when a fact is told that has the same identity keys as an existing one, it is merged into it and its id becomes an alias (<code>world.resolve(id)</code>).</li><li>A matrix loaded as a module with a prefix has its ids, and the references among them, prefixed with the module name and a dot (<a href="reference.html#coreuse">reference</a>).</li></ol>
+<h2 id="6-keys">6. Keys</h2>
+<ol><li>A key is a name. Dots have no meaning to the parser.</li><li><strong>Short and qualified keys.</strong> A key may be written with the type it belongs to in front: on a wire of type <code>shop.order</code>, <code>shop.order.total</code> and <code>total</code> are the same key, and so is <code>&lt;ancestor type&gt;.total</code>. In memory the short form is kept.</li><li><strong>Open namespaces.</strong> Keys that start with <code>core.</code> are bookkeeping (source, sequence number, provenance). They are accepted on every wire, also of a closed type. Unless a slot declares such a key, its values are not validated, a reference under it need not resolve, and it takes every value it is given. <code>@n core.namespace prefix=audit. open=true</code> declares another such prefix.</li><li><strong>Modifiers.</strong> Three keys of the <code>core.</code> namespace are read on patterns and templates and are not part of the wire described: <code>core.select</code>, <code>core.absent</code> (patterns) and <code>core.on</code> (templates). See the <a href="reference.html#patterns-and-templates">reference</a>.</li></ol>
+<h2 id="7-queries">7. Queries</h2>
+<p>A query is one or more patterns. In a query, and only there, a declaration may leave out its <code>@id</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(&#x27;@b1 box colour=red size=3  @b2 box colour=blue size=3  @l1 lid of=$b1&#x27;);
+print(w.ask(&#x27;@x box colour=?c&#x27;));
+print(w.ask(&#x27;box colour=?c size=3&#x27;));
+print(w.ask(&#x27;@b box colour=?c\n@l lid of=$b&#x27;));
+print(w.holds(&#x27;box colour=green&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;x&quot;:&quot;b1&quot;,&quot;c&quot;:&quot;red&quot;},{&quot;x&quot;:&quot;b2&quot;,&quot;c&quot;:&quot;blue&quot;}]
+[{&quot;c&quot;:&quot;red&quot;},{&quot;c&quot;:&quot;blue&quot;}]
+[{&quot;b&quot;:&quot;b1&quot;,&quot;l&quot;:&quot;l1&quot;,&quot;c&quot;:&quot;red&quot;}]
+false</code></pre></figure>
+<p>Each match gives one object: the value of every variable under its name, and the id of the matched wire under the id of its pattern, when the pattern has one.</p>
+<h2 id="8-canonical-form">8. Canonical form</h2>
+<p><code>format(wire)</code> writes a wire on one line: <code>@id type</code> and then each entry as <code>key=value</code>, keys in the order they were first given, the values of a repeated key in order, single spaces between tokens. <code>format(wire, { multiline: true })</code> puts each entry on its own line, indented by four spaces. <code>parse(format(w))</code> gives <code>w</code> again.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const [w] = parse(&#x27;@a   t  k=v\n   s=&quot;x y&quot;   k=w&#x27;);
+print(format(w));
+print(format(w, { multiline: true }));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>@a t k=v k=w s=&quot;x y&quot;
+@a t
+    k=v
+    k=w
+    s=&quot;x y&quot;</code></pre></figure>
+<h2 id="9-errors">9. Errors</h2>
+<p>A text that does not follow the grammar throws <code>SopError</code>. The error has <code>line</code> and <code>column</code> (counted from 1) and <code>offset</code> (counted from 0) of the token where reading stopped, and its message starts with the line and column.</p>
+<div class="table"><table><thead><tr><th>Message</th><th>Cause</th></tr></thead><tbody><tr><td><code>unterminated string</code></td><td>a <code>"</code> without its closing <code>"</code></td></tr><tr><td><code>wire @x has no type</code></td><td><code>@x</code> at the end of the text, or followed by something that is not a name</td></tr><tr><td><code>expected key=value, got "..."</code></td><td>a token that is not an entry: no <code>=</code>, nothing before or after it, or a key that is not a name; also an entry before any declaration</td></tr></tbody></table></div>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>for (const text of [&#x27;@a t k=v\n  @b&#x27;, &#x27;@a t\n   oops&#x27;, &#x27;@a t s=&quot;open&#x27;]) {
+  try { parse(text); } catch (e) { print(e.message, [e.line, e.column, e.offset]); }
+}</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>line 2, column 3: wire @b has no type [2,3,11]
+line 2, column 4: expected key=value, got &quot;oops&quot; [2,4,8]
+line 1, column 6: unterminated string [1,6,5]</code></pre></figure>
+<p>Everything else that can be wrong with a text (an unknown reference, a value of the wrong kind, a rule that names nothing) is not a syntax error: the text is read, and the world refuses the change with a violation (<a href="semantics.html#violations">semantics</a>).</p>
+<h2 id="10-the-old-way-to-declare-a-pattern">10. The old way to declare a pattern</h2>
+<p>Before version 0.6 a pattern was declared <code>?id type ...</code>. That gave <code>?</code> two meanings. The old form is still read; such a wire is noted once in <code>world.warnings</code> (<code>{ kind: 'deprecated', id, why }</code>) and is written back as <code>@id</code>. It will be removed in the next minor version. <code>node tools/migrate-syntax.mjs &lt;files&gt;</code> rewrites files, including wires inside the strings of a program.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(&#x27;?p item qty=?q\n@f flag for=$p\n@r core.rule when=$p then=$f&#x27;);
+print(w.warnings.map((x) =&gt; [x.kind, x.id]));
+print(format(w.matrix.get(&#x27;p&#x27;)));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;deprecated&quot;,&quot;p&quot;]]
+@p item qty=?q</code></pre></figure>
+<p class="source">Generated from <code>docs/language.md</code>.</p>
+</main>
+<footer>sopworld 0.5.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+
+</body>
+</html>

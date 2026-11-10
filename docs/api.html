@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
+<meta name="source-hash" content="484226ef59d9">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -11,39 +12,396 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.5</small></a>
-  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="concepts.html">Concepts</a><a href="matrix.html">More of the matrix</a><a href="reasoning.html">Reasoning</a><a href="usecases.html">Use cases</a><a href="solvers.html">Solvers</a><a href="api.html" aria-current="page">API</a><a href="playground.html">Playground</a><a href="roadmap.html">Analysis and roadmap</a></nav>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.5.0</small></a>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
-<h1>API</h1>
-<p class="lead">Everything exported by the package. Type declarations are in src/index.d.ts.</p>
-
-<h2>World</h2>
-<figure class="code"><pre><code>new World({ fns, library, solver = solvers.nogood(), maxDepth = 12, maxSteps = 50000,
-            lookahead = true, strict = false, searchBudget, rank })</code></pre></figure>
-<div class="table"><table><thead><tr><th>Option</th><th>Meaning</th></tr></thead><tbody><tr><td><code>fns</code></td><td>Functions for <code>core.calc</code> and <code>core.check</code>: <code>(args, world) =&gt; value</code></td></tr><tr><td><code>library</code></td><td>Matrix texts by name, loaded with <code>core.use</code></td></tr><tr><td><code>maxDepth</code></td><td>Longest chain of derivations</td></tr><tr><td><code>lookahead</code></td><td>Suggestions must leave a full completion possible</td></tr><tr><td><code>strict</code></td><td>Refuse changes that leave no possible completion</td></tr><tr><td><code>solver</code></td><td>Search strategy for completion; see <a href="solvers.html">Solvers</a></td></tr><tr><td><code>searchBudget</code></td><td>Search nodes one solve may visit; each solver has its own default</td></tr><tr><td><code>rank</code></td><td><code>(items, { kind, world }) =&gt; items</code>, reorders suggestions and explanations</td></tr></tbody></table></div>
-<h3>Writing</h3>
-<div class="table"><table><thead><tr><th>Method</th><th>Does</th></tr></thead><tbody><tr><td><code>tell(input, { dry, strict })</code></td><td>Add facts and matrix wires, as text or wire objects</td></tr><tr><td><code>load(input)</code></td><td>Like <code>tell</code>, throws when refused</td></tr><tr><td><code>fill(id, key, value, { dry, strict })</code></td><td>Give a value to an open key</td></tr><tr><td><code>retract(id)</code></td><td>Remove a told wire and what depends on it</td></tr><tr><td><code>replace(id, input)</code></td><td>Swap a told wire for new wires in one transaction</td></tr><tr><td><code>apply(assignment)</code></td><td>Commit an assignment from <code>solve</code> in one transaction</td></tr><tr><td><code>trial(fn)</code></td><td>Run <code>fn(world)</code> and undo everything it did</td></tr><tr><td><code>use(name)</code></td><td>Load a matrix from the library</td></tr><tr><td><code>step(input, { defaults, strict })</code></td><td><code>tell</code> then <code>complete</code></td></tr><tr><td><code>answer(question, value)</code></td><td>Fill the key a <code>core.question</code> wire asks for</td></tr></tbody></table></div>
-<h3>Reading</h3>
-<div class="table"><table><thead><tr><th>Method</th><th>Returns</th></tr></thead><tbody><tr><td><code>get(id)</code>, <code>has(id)</code>, <code>ofType(type)</code></td><td>Wires</td></tr><tr><td><code>ask(patterns)</code></td><td>One object of bindings per match</td></tr><tr><td><code>holds(patterns)</code></td><td>Boolean</td></tr><tr><td><code>explain(id)</code></td><td>Justification tree</td></tr><tr><td><code>history()</code></td><td>All events in order</td></tr><tr><td><code>on(listener)</code></td><td>Unsubscribe function; the listener gets committed events</td></tr><tr><td><code>toSOP({ schema, derived, provenance })</code></td><td>SOP Lang text, in order of arrival</td></tr><tr><td><code>toJSON()</code>, <code>World.fromJSON(data, options)</code></td><td>Snapshot and restore</td></tr><tr><td><code>fork()</code></td><td>Independent copy. Shares the state until one of the two changes, so it costs the same for any size of world</td></tr><tr><td><code>stats()</code></td><td><code>{ steps, limit, exhausted, site, sites, ms }</code> of the last call</td></tr><tr><td><code>check(patch)</code>, <code>applyPatch(patch)</code></td><td>Several changes judged together: <code>{ wires, fills, sets, retract }</code>; all or nothing</td></tr><tr><td><code>query(question, { record, suppose, at })</code></td><td><code>{ status, value, from, via, tier, rests, ... }</code></td></tr><tr><td><code>act(request)</code></td><td><code>{ ok, status, value }</code>; the action is a function or is written as wires</td></tr><tr><td><code>asOf(at, fn)</code>, <code>seqOf(id)</code>, <code>compare(a, b)</code></td><td>The world as it was; places in the sequence</td></tr><tr><td><code>tier(id, key)</code>, <code>assumptions()</code></td><td>How solid a value is; everything that is only assumed, weakest first</td></tr><tr><td><code>describe({ about, depth, since, last })</code>, <code>diff(other)</code></td><td>A summary as plain data; what another world changes</td></tr><tr><td><code>schema(type)</code></td><td>What the matrix says about a type</td></tr><tr><td><code>cannot(reason)</code></td><td>For functions: say why there is no result</td></tr></tbody></table></div>
-<h3>Budgets</h3>
-<p>Every call runs under a budget of steps, <code>{ steps: 5000000 }</code> by default. Set it for a world with <code>new World({ budget: { steps, ms } })</code> or for one call with the <code>budget</code> option (<code>limit</code> for <code>solveReport</code>, where <code>budget</code> is the solver's own). A call that runs out stops, undoes what it did and says so in its normal result: a <code>budget</code> violation with the <code>site</code> where it stopped (<code>match</code>, <code>chase</code>, <code>negation</code>, <code>aggregate</code>, <code>fluent</code>, <code>withdraw</code>, <code>validate</code>, <code>complete</code>, <code>ground</code>, <code>solve</code>, <code>abduce</code>, <code>induce</code>), an empty list with a <code>budget</code> property, or <code>unknown</code> from a solver. It never hangs and never throws. Steps are counted, not timed, so the same call stops at the same place on any machine.</p>
-<h3>Completion and abduction</h3>
-<div class="table"><table><thead><tr><th>Method</th><th>Returns</th></tr></thead><tbody><tr><td><code>open(id?)</code></td><td><code>[{ id, type, key, ask }]</code></td></tr><tr><td><code>suggest(id, key, { deep })</code></td><td><code>[{ value, source, count }]</code></td></tr><tr><td><code>next()</code></td><td><code>{ fills, questions, dead }</code></td></tr><tr><td><code>complete({ defaults })</code></td><td><code>{ filled, questions, dead, pending }</code></td></tr><tr><td><code>complete({ defaults, choose })</code></td><td>As above; <code>choose</code> also commits one full solution</td></tr><tr><td><code>solve()</code>, <code>satisfiable()</code></td><td>A joint assignment or <code>null</code>; boolean</td></tr><tr><td><code>solveReport({ solver, budget })</code></td><td><code>{ status, assignment, stats, solver }</code></td></tr><tr><td><code>solveAsync({ solver })</code></td><td>The same, for solvers that answer with a promise</td></tr><tr><td><code>abduce(goal, { maxDepth, max, maxAssumptions })</code></td><td><code>[{ assume, fills, text, cost }]</code></td></tr></tbody></table></div>
-<h2>Functions</h2>
-<div class="table"><table><thead><tr><th>Function</th><th>Does</th></tr></thead><tbody><tr><td><code>parse(text)</code>, <code>format(wire)</code></td><td>SOP Lang text to wire objects and back</td></tr><tr><td><code>str(value)</code>, <code>quote(text)</code></td><td>Unquote and quote string values</td></tr><tr><td><code>induce(examples, { name, kind, why, tolerant, distinct, negatives })</code></td><td><code>{ text, skipped, calcs, tests, coversNegative, variables, examples }</code></td></tr><tr><td><code>induceRule(examples, options)</code></td><td>The text only</td></tr><tr><td><code>induceSlots(wires, { enumMax, prefix })</code></td><td><code>core.slot</code> text</td></tr><tr><td><code>adopt(world, explanation)</code></td><td>Commit an explanation from <code>abduce</code></td></tr><tr><td><code>solvers.backtrack()</code>, <code>solvers.nogood()</code></td><td>Built-in search strategies</td></tr><tr><td><code>solvers.external({ run })</code>, <code>solvers.clingo({ exec })</code>, <code>solvers.dimacs({ exec })</code></td><td>Strategies that use an outside solver</td></tr><tr><td><code>toASP(data)</code>, <code>toDimacs(data)</code>, <code>new Problem(world)</code></td><td>The neutral problem and its encodings</td></tr><tr><td><code>quantity(value)</code></td><td><code>{ n, unit }</code> for a number with an optional unit</td></tr></tbody></table></div>
-<h2>Violations</h2>
-<div class="table"><table><thead><tr><th>Kind</th><th>Meaning</th></tr></thead><tbody><tr><td><code>deny</code></td><td>A <code>core.deny</code> matched; <code>rule</code>, <code>why</code>, <code>wires</code></td></tr><tr><td><code>conflict</code></td><td>A second value for a single-valued key; <code>have</code>, <code>want</code></td></tr><tr><td><code>domain</code></td><td>Value outside <code>enum</code>, or not a reference to the slot type</td></tr><tr><td><code>cardinality</code></td><td>Several values on a key that is not <code>many</code></td></tr><tr><td><code>unknown-key</code></td><td>Key without a slot on a closed type</td></tr><tr><td><code>dangling-ref</code></td><td>Reference to a wire that does not exist</td></tr><tr><td><code>dead-end</code></td><td>Strict mode: no completion possible</td></tr><tr><td><code>duplicate-id</code>, <code>syntax</code>, <code>schema</code></td><td>The input itself is wrong</td></tr><tr><td><code>depth</code></td><td>A derivation ran away</td></tr><tr><td><code>budget</code></td><td>The call ran out of steps (or of <code>ms</code>); <code>site</code> says where</td></tr><tr><td><code>unknown-wire</code>, <code>unsupported</code></td><td>The wire cannot be filled or retracted</td></tr></tbody></table></div>
-<h2>Command line</h2>
-<figure class="code"><pre><code>sopworld check &lt;file.sop ...&gt;                  exit 1 when anything is refused
-sopworld run   &lt;file.sop ...&gt; [--defaults] [--provenance]
-sopworld ask   &lt;file.sop ...&gt; --query &quot;@a acceleration magnitude=?v&quot;
-options: --strict --json</code></pre></figure>
-<h2>Source layout</h2>
-<div class="table"><table><thead><tr><th>File</th><th>Responsibility</th></tr></thead><tbody><tr><td><code>parser.mjs</code></td><td>Text to wires and back</td></tr><tr><td><code>unify.mjs</code></td><td>Terms and unification</td></tr><tr><td><code>matrix.mjs</code></td><td>Compiles matrix wires into slots, rules, denies; module prefixing</td></tr><tr><td><code>world.mjs</code></td><td>Store, indexes, transactions, ingest, matching, chase, validation, withdrawal</td></tr><tr><td><code>complete.mjs</code></td><td>Open keys, suggestions, questions, dialogue helpers</td></tr><tr><td><code>solve.mjs</code></td><td>The completion problem in neutral form and the solver strategies</td></tr><tr><td><code>revise.mjs</code></td><td>Retraction, replacement, revision of assumptions</td></tr><tr><td><code>abduce.mjs</code>, <code>induce.mjs</code></td><td>Abduction and induction</td></tr><tr><td><code>builtins.mjs</code></td><td>Calc and test functions, quantities with units</td></tr><tr><td><code>tools/build.mjs</code></td><td>Bundles <code>src/</code> into <code>docs/sopworld.mjs</code> and <code>docs/sopworld.js</code></td></tr><tr><td><code>node/solvers.mjs</code></td><td>Starts clingo or a SAT solver as a process (Node only)</td></tr></tbody></table></div>
-
+<h1>API: every public name, with what it takes and returns</h1>
+<p class="lead"><code>import { World, parse, ... } from 'sopworld'</code> (or from the single file <code>docs/sopworld.mjs</code>). This page lists everything the library exports and every public method of a world. Names that start with <code>_</code> are internal and may change. The language is in <a href="language.html">language.md</a>, the wire types in <a href="reference.html">reference.md</a>, the behaviour in <a href="semantics.html">semantics.md</a>.</p>
+<p><strong>Conventions used on this page</strong></p>
+<ul><li><em>input</em> is SOP Lang text or an array of parsed wires.</li><li>A <strong>change result</strong> is <code>{ ok, added, derived, filled, merged, removed, violations }</code>: ids of the facts added, ids of the wires rules derived, values put on existing wires (<code>{ id, key, value, via }</code>), facts merged into others (<code>{ id, into }</code>), ids removed, and the <a href="semantics.html#violations">violations</a> (empty when <code>ok</code>). It may also have <code>revised</code> (assumptions that gave way) and <code>issues</code> (soft violations recorded).</li><li><strong>Errors.</strong> Methods do not throw for anything a matrix or a fact can cause: they return <code>ok: false</code> with violations. They throw <code>SopError</code> for text that does not parse, and <code>Error</code> for a call that is wrong in itself (an unknown tier, a host function that would replace a built-in). <code>load</code> is the exception: it throws on refusal.</li><li><strong>Budget.</strong> Every method that computes takes <code>{ budget: { steps, ms } }</code> (default 5,000,000 steps, no time limit; the world option <code>budget</code> changes the default). When it runs out, a change is refused with a <code>budget</code> violation and the world is unchanged; a reader returns what its entry says. <code>world.stats()</code> reports the last call.</li><li><strong>Cost</strong> is given in: <em>n</em> facts, <em>r</em> rules, <em>m</em> matches of the bodies concerned, <em>h</em> statements in the log.</li></ul>
+<p>The examples on this page use this world:</p>
+<figure class="code"><figcaption>js (used by the examples below)</figcaption><pre><code>const shop = () =&gt; {
+  const w = new World();
+  w.load(`
+    @k1 core.slot of=item key=name id=true
+    @k2 core.slot of=item key=price kind=number min=0 required=true ask=&quot;What does it cost?&quot;
+    @k3 core.slot of=line key=item type=item required=true
+    @k4 core.slot of=line key=qty kind=integer min=1 default=1
+    @it item price=?p
+    @l line item=$it qty=?q
+    @c core.calc out=?cost fn=mul args=?q args=?p
+    @t line core.on=$l cost=?cost
+    @r core.rule when=$l when=$it with=$c then=$t
+  `);
+  return w;
+};</code></pre></figure>
+<h2 id="making-a-world">Making a world</h2>
+<h3 id="new-worldoptions">new World(options?)</h3>
+<p>Options, all optional: <code>fns</code>, <code>actions</code>, <code>producers</code> (host functions by name; see <a href="#worldregisterkind-name-fn-options">register</a>), <code>override</code> (let <code>fns</code> replace built-ins: <code>true</code> or names), <code>library</code> (module name to matrix text, for <code>core.use</code>), <code>maxDepth</code> (12), <code>maxSteps</code> (rule firings per change), <code>budget</code>, <code>decimals</code>, <code>strict</code> (refuse a change that leaves no completion), <code>lookahead</code> (true), <code>solver</code>, <code>searchBudget</code>, <code>rank</code> (reorder suggestions and explanations), <code>vocabulary</code> (names of the question, answer and request wires and their keys).</p>
+<p>Properties: <code>wires</code> (Map of facts by id), <code>matrix</code> (Map of matrix wires by id), <code>log</code> (the statements), <code>warnings</code>, <code>stamp</code> (a number that changes with every committed change), <code>actions</code>, <code>producers</code>, <code>options</code>.</p>
+<p>Throws if <code>fns</code> would replace a built-in without <code>override</code>. Cost: constant.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World({ decimals: 2, fns: { double: ([x]) =&gt; Number(x) * 2 } });
+print(w.wires.size, w.matrix.size, w.stamp, w.options.decimals);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>0 0 0 2</code></pre></figure>
+<h3 id="worldfromjsonsnapshot-options">World.fromJSON(snapshot, options?)</h3>
+<p>Rebuilds a world from what <code>toJSON()</code> returned, by replaying its log. Host functions are not in a snapshot: pass the same options. Returns the world. Cost: that of telling the log again, O(h) changes.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@a item name=pen price=2&#x27;);
+const copy = World.fromJSON(JSON.parse(JSON.stringify(w.toJSON())));
+print(copy.get(&#x27;a&#x27;).attrs.price, w.diff(copy).same);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;2&quot;] true</code></pre></figure>
+<h3 id="worldauditwires-matrix-options">World.audit(wires, matrix?, options?)</h3>
+<p>Checks wires that came from somewhere else against a matrix, without refusing at the first problem. Returns <code>{ ok, violations, issues, world }</code>; <code>world</code> holds the wires that could be loaded. Cost: one validation of everything.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const r = World.audit(&#x27;@a item name=pen price=-2\n@b item name=ink price=3&#x27;, &#x27;@k core.slot of=item key=price kind=number min=0&#x27;);
+print(r.ok, r.violations.map((v) =&gt; [v.id, v.why]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>false [[&quot;a&quot;,&quot;must be at least 0&quot;]]</code></pre></figure>
+<h3 id="worlddiffa-b">World.diff(a, b)</h3>
+<p>The same as <code>a.diff(b)</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const a = shop(), b = a.fork();
+b.tell(&#x27;@x item name=pen price=2&#x27;);
+print(World.diff(a, b).added.map((x) =&gt; x.id));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;x&quot;]</code></pre></figure>
+<h2 id="changing-a-world">Changing a world</h2>
+<h3 id="worldtellinput-options">world.tell(input, options?)</h3>
+<p>States wires: facts, matrix wires, or both. Options: <code>dry</code> (evaluate and undo), <code>strict</code>, <code>tier</code> (default <code>told</code>), <code>budget</code>. Returns a change result. Cost: O(matches the new wires take part in) for the chase, plus validation of the touched wires; telling matrix wires recompiles the matrix and validates everything, O(n·r).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+const r = w.tell(&#x27;@pen item name=pen price=2  @l1 line item=$pen qty=3&#x27;);
+print(r.ok, r.added, r.filled);
+print(w.tell(&#x27;@ink item name=ink price=-3&#x27;).violations[0].why);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true [&quot;pen&quot;,&quot;l1&quot;] [{&quot;id&quot;:&quot;l1&quot;,&quot;key&quot;:&quot;cost&quot;,&quot;value&quot;:&quot;6&quot;,&quot;via&quot;:&quot;r&quot;}]
+must be at least 0</code></pre></figure>
+<h3 id="worldloadinput">world.load(input)</h3>
+<p><code>tell</code> that throws an <code>Error</code> when the change is refused. For matrices and fixtures, where a refusal is a mistake in the program.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+try { w.load(&#x27;@r core.rule when=$nothing then=$nothing&#x27;); } catch (e) { print(e.message); }</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>sopworld: refused (schema) r: when=$nothing is not a wire of the matrix</code></pre></figure>
+<h3 id="worldusename">world.use(name)</h3>
+<p>Loads the module <code>name</code> from the library; the same as telling a <code>core.use</code> wire. Returns a change result.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World({ library: { money: &#x27;@k core.slot of=price key=amount kind=number&#x27; } });
+print(w.use(&#x27;money&#x27;).ok, w.matrix.has(&#x27;money.k&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true true</code></pre></figure>
+<h3 id="worldfillid-key-value-options">world.fill(id, key, value, options?)</h3>
+<p>Gives a value to a key of an existing fact. Options as for <code>tell</code>. A different value for a single-valued key that already has one is a <code>conflict</code> (use <code>revise</code>), except for a fluent, where it is a new statement of the state. Returns a change result.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen&#x27;);
+print(w.fill(&#x27;pen&#x27;, &#x27;price&#x27;, 2).filled);
+print(w.fill(&#x27;pen&#x27;, &#x27;price&#x27;, 3).violations[0].kind);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;id&quot;:&quot;pen&quot;,&quot;key&quot;:&quot;price&quot;,&quot;value&quot;:&quot;2&quot;,&quot;via&quot;:&quot;core.tell&quot;}]
+conflict</code></pre></figure>
+<h3 id="worldreviseid-key-value-options-and-worldreviseid-values-options">world.revise(id, key, value, options?) and world.revise(id, values, options?)</h3>
+<p>Replaces told values, with everything that followed from them, in one transaction. Returns a change result with <code>revised</code>: the cells that were replaced or recomputed.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2  @l1 line item=$pen qty=3&#x27;);
+const r = w.revise(&#x27;pen&#x27;, &#x27;price&#x27;, 5);
+print(r.ok, w.get(&#x27;l1&#x27;).attrs.cost);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true [&quot;15&quot;]</code></pre></figure>
+<h3 id="worldretractid-options">world.retract(id, options?)</h3>
+<p>Removes a told fact, the facts that refer to it, and what was derived from them alone. Refused (<code>unknown-wire</code>) for a wire that was not told, and when the world that remains is not valid. Returns a change result with <code>removed</code>. Cost: O(what depended on the wire).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2  @l1 line item=$pen qty=3&#x27;);
+print(w.retract(&#x27;l1&#x27;).removed, w.retract(&#x27;nobody&#x27;).violations[0].kind);
+w.tell(&#x27;@l2 line item=$pen qty=1&#x27;);
+print(w.retract(&#x27;pen&#x27;).removed);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;l1&quot;] unknown-wire
+[&quot;pen&quot;,&quot;l2&quot;]</code></pre></figure>
+<h3 id="worldreplaceid-input-options">world.replace(id, input, options?)</h3>
+<p>Retracts the fact <code>id</code> and tells <code>input</code> in one transaction; references to the fact stay valid when the new wire has the same id or identity. Returns a change result.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2  @l1 line item=$pen qty=3&#x27;);
+print(w.replace(&#x27;l1&#x27;, &#x27;@l1 line item=$pen qty=4&#x27;).ok, w.get(&#x27;l1&#x27;).attrs.cost);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true [&quot;8&quot;]</code></pre></figure>
+<h3 id="worldapplypatchpatch-options">world.applyPatch(patch, options?)</h3>
+<p>Applies several changes that must hold together, all or nothing. A patch is an array of <code>{ id, key, value }</code> fills, or <code>{ wires, fills, sets, retract }</code>: wires to tell, values to add, values to replace, ids to retract. Options: <code>strict</code>, <code>tier</code>, <code>budget</code>. Returns a change result. <code>undo</code> takes a patch back as one statement.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+const r = w.applyPatch({ wires: &#x27;@pen item name=pen  @l1 line item=$pen&#x27;, fills: [{ id: &#x27;pen&#x27;, key: &#x27;price&#x27;, value: 2 }, { id: &#x27;l1&#x27;, key: &#x27;qty&#x27;, value: 5 }] });
+print(r.ok, w.get(&#x27;l1&#x27;).attrs.cost);
+w.undo();
+print(w.has(&#x27;pen&#x27;), w.has(&#x27;l1&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true [&quot;10&quot;]
+false false</code></pre></figure>
+<h3 id="worldapplyassignment-options">world.apply(assignment, options?)</h3>
+<p>Fills the values of an assignment (<code>[{ id, key, value }]</code>, as <code>solve</code> returns) in one transaction. Option <code>via</code> names where they came from. Returns a change result.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen&#x27;);
+print(w.apply([{ id: &#x27;pen&#x27;, key: &#x27;price&#x27;, value: 2 }]).filled);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;id&quot;:&quot;pen&quot;,&quot;key&quot;:&quot;price&quot;,&quot;value&quot;:&quot;2&quot;,&quot;via&quot;:&quot;core.complete&quot;}]</code></pre></figure>
+<h3 id="worldundon--1-options">world.undo(n = 1, options?)</h3>
+<p>Takes back the last <code>n</code> statements. Returns <code>{ ok, undone, removed, added, changed, violations }</code>; <code>nothing-to-undo</code> when the log is empty. Retractions are not taken back (use a mark). Cost: O(h) changes, since the world is rebuilt from the statements that remain.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2&#x27;);
+w.tell(&#x27;@ink item name=ink price=3&#x27;);
+const r = w.undo();
+print(r.ok, r.removed, w.has(&#x27;ink&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true [&quot;ink&quot;] false</code></pre></figure>
+<h3 id="worldmark-and-worldrewindmark">world.mark() and world.rewind(mark)</h3>
+<p><code>mark()</code> returns a point to come back to (a fork: it costs nothing until the world changes). <code>rewind(mark)</code> makes the world exactly what it was, and returns <code>{ ok, removed, added, changed }</code>. A mark can be used again.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2&#x27;);
+const m = w.mark();
+w.retract(&#x27;pen&#x27;);
+print(w.has(&#x27;pen&#x27;), w.rewind(m).added, w.has(&#x27;pen&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>false [&quot;pen&quot;] true</code></pre></figure>
+<h3 id="worldactrequest-options">world.act(request, options?)</h3>
+<p>Runs an <a href="reference.html#coreaction">action</a>. <code>request</code> is <code>{ action, args }</code>, a <code>core.request</code> wire, or its text. Returns <code>{ ok, status, value, result, missing, violations }</code> with status <code>done</code>, <code>missing</code> (arguments to ask for), <code>refused</code>, <code>error</code> (the host function threw), <code>unsupported</code> (no such action) or <code>budget</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World({ actions: { rename: ({ find, replace }, { from, to }) =&gt; {
+  const [it] = find(&#x27;item&#x27;, { name: from });
+  return it ? replace(it.id, `@${it.id} item name=${to}`).ok : { ok: false, why: `no item named ${from}` };
+} } });
+w.load(&#x27;@a core.action name=rename fn=rename required=from required=to&#x27;);
+w.tell(&#x27;@i1 item name=pen&#x27;);
+print(w.act({ action: &#x27;rename&#x27;, args: { from: &#x27;pen&#x27;, to: &#x27;pencil&#x27; } }).status, w.get(&#x27;i1&#x27;).attrs.name);
+print(w.act({ action: &#x27;rename&#x27;, args: { from: &#x27;pen&#x27; } }).missing);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>done [&quot;pencil&quot;]
+[{&quot;action&quot;:&quot;rename&quot;,&quot;key&quot;:&quot;to&quot;}]</code></pre></figure>
+<h2 id="completing-a-world">Completing a world</h2>
+<h3 id="worldopenid">world.open(id?)</h3>
+<p>The open keys (required, no value) of the world or of one wire: <code>[{ id, type, key, ask }]</code>. Cost: O(n), or O(keys of the wire).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen&#x27;);
+print(w.open());</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;id&quot;:&quot;pen&quot;,&quot;type&quot;:&quot;item&quot;,&quot;key&quot;:&quot;price&quot;,&quot;ask&quot;:&quot;What does it cost?&quot;}]</code></pre></figure>
+<h3 id="worldsuggestid-key-options">world.suggest(id, key, options?)</h3>
+<p>The values that could go in a key, most plausible first: <code>[{ value, source, count }]</code>, <code>source</code> being <code>default</code>, <code>enum</code>, <code>range</code> or <code>wire</code> (a wire of the slot's type). Only values the world accepts are returned; with lookahead, only values that some complete assignment contains. On budget: the array found so far, with a <code>budget</code> property. Cost: one trial per candidate, or one search per candidate with lookahead.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2  @ink item name=ink price=3  @l1 line qty=2&#x27;);
+print(w.suggest(&#x27;l1&#x27;, &#x27;item&#x27;).map((c) =&gt; c.value));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;$pen&quot;,&quot;$ink&quot;]</code></pre></figure>
+<h3 id="worldnextoptions">world.next(options?)</h3>
+<p>What can be done about the open keys without changing anything: <code>{ fills, questions, dead, review }</code>. <code>fills</code> are values that are forced or defaults (<code>kind</code>), <code>questions</code> the keys that need an answer (as question wires with the options), <code>dead</code> the keys with no possible value, <code>review</code> the assumptions a host may want confirmed.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen  @l1 line item=$pen&#x27;);
+const n = w.next();
+print(n.fills.map((f) =&gt; [f.id, f.key, f.value, f.kind]), n.questions.map((q) =&gt; [q.attrs.about[0], q.attrs.seek[0]]), n.dead);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;l1&quot;,&quot;qty&quot;,&quot;1&quot;,&quot;default&quot;]] [[&quot;$pen&quot;,&quot;price&quot;]] []</code></pre></figure>
+<h3 id="worldcompleteoptions">world.complete(options?)</h3>
+<p>Applies what <code>next</code> found: forced values, with <code>{ defaults: true }</code> the defaults, with <code>{ choose: true }</code> one full solution of what is left (tier <code>guessed</code>). Returns <code>{ filled, questions, dead, pending }</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2  @l1 line item=$pen&#x27;);
+const c = w.complete({ defaults: true });
+print(c.filled.map((f) =&gt; [f.id, f.key, f.value]), w.get(&#x27;l1&#x27;).attrs.cost, w.tier(&#x27;l1&#x27;, &#x27;cost&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;l1&quot;,&quot;qty&quot;,&quot;1&quot;],[&quot;l1&quot;,&quot;cost&quot;,&quot;2&quot;]] [&quot;2&quot;] default</code></pre></figure>
+<h3 id="worldstepinput-options">world.step(input, options?)</h3>
+<p>One turn of a dialogue: <code>tell(input)</code>, then <code>complete(options)</code>. Returns the change result with <code>questions</code>, <code>dead</code> and <code>pending</code> added.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+const s = w.step(&#x27;@pen item name=pen&#x27;, { defaults: true });
+print(s.ok, s.questions.map((q) =&gt; str(q.attrs.text[0])));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true [&quot;What does it cost?&quot;]</code></pre></figure>
+<h3 id="worldanswerquestion-value">world.answer(question, value)</h3>
+<p>Fills the key a question wire (from <code>next</code>, <code>complete</code> or <code>step</code>) is about. Returns a change result.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+const q = w.step(&#x27;@pen item name=pen&#x27;).questions[0];
+print(w.answer(q, 2).ok, w.get(&#x27;pen&#x27;).attrs.price, w.open());</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true [&quot;2&quot;] []</code></pre></figure>
+<h3 id="worldsolveoptions-worldsolvereportoptions-worldsatisfiableoptions">world.solve(options?), world.solveReport(options?), world.satisfiable(options?)</h3>
+<p>Search for values of all open keys that the world accepts together. Nothing changes. Options: <code>solver</code>, <code>budget</code> (the solver's own), <code>limit</code> (the step budget of the call). <code>solveReport</code> returns <code>{ status, assignment, reason, stats, solver }</code> with status <code>sat</code>, <code>unsat</code> or <code>unknown</code> (<a href="semantics.html#search">S46</a>); <code>solve</code> returns the assignment or <code>null</code>; <code>satisfiable</code> is false only for <code>unsat</code>. Cost: exponential in the number of open keys in the worst case; the default solver learns from conflicts.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`
+  @k1 core.slot of=seat key=who enum=ann enum=bob required=true
+  @a seat who=?x
+  @b seat who=?x
+  @d core.check fn=neq args=$a args=$b
+  @no core.deny when=$a when=$b if=$d why=&quot;?x sits twice&quot;
+`);
+w.tell(&#x27;@s1 seat  @s2 seat who=bob&#x27;);
+print(w.solve(), w.solveReport().status, w.satisfiable());</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;id&quot;:&quot;s1&quot;,&quot;key&quot;:&quot;who&quot;,&quot;value&quot;:&quot;ann&quot;}] sat true</code></pre></figure>
+<h3 id="worldsolveasyncoptions">world.solveAsync(options?)</h3>
+<p><code>solveReport</code> for a solver that runs outside (<code>solvers.external</code>, <code>dimacs</code>, <code>clingo</code> with an asynchronous <code>exec</code>). Returns a promise of the report.</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>const report = await world.solveAsync({ solver: solvers.dimacs({ exec: runMySatSolver }) });</code></pre></figure>
+<h3 id="worldabducegoal-options">world.abduce(goal, options?)</h3>
+<p>What would have to be assumed for <code>goal</code> (wires, as text with ids) to hold: <code>[{ assume, fills, text, cost }]</code>, cheapest first; empty when nothing is needed or nothing works. Options: <code>max</code> (10), <code>maxDepth</code> (3 rule steps), <code>maxAssumptions</code> (4). On budget: what was found, with a <code>budget</code> property. <code>adopt(world, explanation)</code> applies one.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.load(&#x27;@ab core.abducible of=item key=price&#x27;);
+w.tell(&#x27;@pen item name=pen  @l1 line item=$pen qty=3&#x27;);
+print(w.abduce(&#x27;@g line item=$pen qty=3 cost=12&#x27;).map((e) =&gt; e.fills));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[[{&quot;id&quot;:&quot;pen&quot;,&quot;key&quot;:&quot;price&quot;,&quot;value&quot;:&quot;4&quot;}]]</code></pre></figure>
+<h2 id="asking">Asking</h2>
+<h3 id="worldaskquery-options">world.ask(query, options?)</h3>
+<p>Matches patterns (text; ids may be left out) against the facts and returns the bindings, one object per match: <code>[{ variable: value }]</code>. A pattern's own id binds to the matched wire's id. Option <code>at</code>: as of that place in the sequence. On budget: the matches so far, with a <code>budget</code> property. Cost: O(m), using the indexes for fixed values.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2  @ink item name=ink price=3&#x27;);
+print(w.ask(&#x27;@x item name=?n price=3&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;x&quot;:&quot;ink&quot;,&quot;n&quot;:&quot;ink&quot;}]</code></pre></figure>
+<h3 id="worldholdsquery-options">world.holds(query, options?)</h3>
+<p>True when <code>ask</code> would return at least one match.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2&#x27;);
+print(w.holds(&#x27;item name=pen&#x27;), w.holds(&#x27;item name=ink&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true false</code></pre></figure>
+<h3 id="worldqueryquestion-options">world.query(question, options?)</h3>
+<p>Asks for a value, with a status. <code>question</code> is <code>{ type, where, seek, mode }</code> or <code>{ about, seek }</code>, a <code>core.question</code> wire, or its text. Options: <code>record</code> (tell the question and the answer as wires), <code>suppose</code> (default true: S53), <code>at</code>. Returns <code>{ status, value | values, from, via, tier, rests, wires }</code> and, by status, <code>alternatives</code>, <code>missing</code>, <code>reason</code>, <code>issues</code>, <code>howto</code>, <code>supposed</code>, <code>violations</code>. The statuses are defined in <a href="semantics.html#queries">semantics</a>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2  @l1 line item=$pen qty=3&#x27;);
+const q = w.query({ about: &#x27;l1&#x27;, seek: &#x27;cost&#x27; });
+print(q.status, q.value, q.via, q.tier);
+print(w.query({ type: &#x27;item&#x27;, where: { name: &#x27;ink&#x27; }, seek: &#x27;price&#x27; }).status);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>supported 6 [&quot;r&quot;] derived
+missing</code></pre></figure>
+<h3 id="worldgetid-worldhasid-worldresolveid-worldoftypetype">world.get(id), world.has(id), world.resolve(id), world.ofType(type)</h3>
+<p><code>get</code> returns the fact <code>{ id, type, attrs, meta }</code> or undefined; <code>attrs</code> maps each key to an array of values. <code>has</code> says whether it exists. <code>resolve</code> returns the id of the wire that an id names now (after a merge), or the id itself. <code>ofType</code> returns the facts of a type and of its subtypes. Do not modify what they return. Cost: constant; <code>ofType</code> O(result).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2&#x27;);
+w.tell(&#x27;@again item name=pen&#x27;);
+print(w.get(&#x27;pen&#x27;).attrs, w.has(&#x27;ink&#x27;), w.resolve(&#x27;again&#x27;), w.ofType(&#x27;item&#x27;).length);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;name&quot;:[&quot;pen&quot;],&quot;price&quot;:[&quot;2&quot;]} false pen 1</code></pre></figure>
+<h3 id="worldschematype">world.schema(type)</h3>
+<p>What the matrix says about a type: <code>{ type, extends, lineage, closed, keys }</code>, each key with its slot's attributes and <code>inherited</code>; <code>null</code> for a type the matrix does not mention.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const s = shop().schema(&#x27;line&#x27;);
+print(s.lineage, Object.keys(s.keys), s.keys.qty.default);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;line&quot;] [&quot;item&quot;,&quot;qty&quot;] 1</code></pre></figure>
+<h3 id="worldexplainid">world.explain(id)</h3>
+<p>Where a wire comes from: <code>{ id, wire, tier, told, via, from, fills }</code>: the wire as text, whether it was <code>told</code>, else the rule (<code>via</code>) that derived it, the wires it was derived <code>from</code> (each explained in turn), and the values that were added to it later (<code>fills</code>, each with <code>key</code>, <code>value</code>, <code>via</code>, <code>from</code>); <code>null</code> for an unknown id.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2  @l1 line item=$pen qty=3&#x27;);
+const e = w.explain(&#x27;l1&#x27;);
+print(e.told, e.fills.map((f) =&gt; [f.key, f.value, f.via, f.from]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true [[&quot;cost&quot;,&quot;6&quot;,&quot;r&quot;,[&quot;l1&quot;,&quot;pen&quot;]]]</code></pre></figure>
+<h3 id="worldtierid-key-and-worldassumptions">world.tier(id, key?) and world.assumptions()</h3>
+<p><code>tier</code> is the certainty of a cell, or of a wire as a whole: <code>told</code>, <code>derived</code>, <code>forced</code>, <code>default</code>, <code>guessed</code> or a declared tier; undefined when there is no such cell. <code>assumptions()</code> lists every cell weaker than <code>derived</code>, weakest first: <code>[{ id, key, value, tier, dependants }]</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2  @l1 line item=$pen&#x27;);
+w.complete({ defaults: true });
+print(w.tier(&#x27;pen&#x27;, &#x27;price&#x27;), w.tier(&#x27;l1&#x27;, &#x27;qty&#x27;), w.tier(&#x27;l1&#x27;, &#x27;cost&#x27;));
+print(w.assumptions().map((a) =&gt; [a.id, a.key, a.tier, a.dependants.length]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>told default default
+[[&quot;l1&quot;,&quot;qty&quot;,&quot;default&quot;,1]]</code></pre></figure>
+<h3 id="worldtold">world.told()</h3>
+<p>The facts as they were stated, without what rules, defaults and searches added: an array of wires that can be told to another world.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2  @l1 line item=$pen qty=3&#x27;);
+print(w.told().map((x) =&gt; format(x)));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;@pen item name=pen price=2&quot;,&quot;@l1 line item=$pen qty=3&quot;]</code></pre></figure>
+<h3 id="worlddescribeoptions-and-worlddiffother">world.describe(options?) and world.diff(other)</h3>
+<p><code>describe</code> returns a summary as plain data: <code>{ types, wires, open, assumed, issues, changes }</code>. Options: <code>about</code> (one wire and what is within <code>depth</code> references of it), <code>since</code> (changes after that sequence number), <code>last</code> (20 changes). <code>diff</code> returns what is different in another world: <code>{ same, added, removed, changed }</code>. Cost: O(n).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2&#x27;);
+const f = w.fork();
+f.revise(&#x27;pen&#x27;, &#x27;price&#x27;, 4);
+print(w.describe().types, w.diff(f).changed);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;item&quot;:{&quot;count&quot;:1,&quot;instances&quot;:[&quot;pen&quot;]}} [{&quot;id&quot;:&quot;pen&quot;,&quot;key&quot;:&quot;price&quot;,&quot;from&quot;:&quot;2&quot;,&quot;fromTier&quot;:&quot;told&quot;,&quot;to&quot;:&quot;4&quot;,&quot;toTier&quot;:&quot;told&quot;}]</code></pre></figure>
+<h3 id="worldcheckpatch-options">world.check(patch?, options?)</h3>
+<p>With a patch: what <code>applyPatch(patch)</code> would return, without changing anything. Without one: validates the whole world and returns <code>{ ok, violations, issues }</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2&#x27;);
+print(w.check({ wires: &#x27;@ink item name=ink price=-1&#x27; }).violations[0].why, w.has(&#x27;ink&#x27;));
+print(w.check());</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>must be at least 0 false
+{&quot;ok&quot;:true,&quot;violations&quot;:[],&quot;issues&quot;:[]}</code></pre></figure>
+<h2 id="worlds-time-and-history">Worlds, time and history</h2>
+<h3 id="worldfork">world.fork()</h3>
+<p>An independent world with the same content. Nothing is copied until one of the two changes. Cost: constant.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+const f = w.fork();
+f.tell(&#x27;@pen item name=pen price=2&#x27;);
+print(w.has(&#x27;pen&#x27;), f.has(&#x27;pen&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>false true</code></pre></figure>
+<h3 id="worldtrialfn-options">world.trial(fn, options?)</h3>
+<p>Runs <code>fn(world)</code> and undoes whatever it changed; returns what <code>fn</code> returned, or undefined on budget. For what-if questions without a fork.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2&#x27;);
+print(w.trial((x) =&gt; x.tell(&#x27;@l1 line item=$pen qty=4&#x27;).ok &amp;&amp; x.get(&#x27;l1&#x27;).attrs.cost[0]), w.has(&#x27;l1&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>8 false</code></pre></figure>
+<h3 id="worldasofat-fn-options-worldseqofid-worldcompareida-idb">world.asOf(at, fn, options?), world.seqOf(id), world.compare(idA, idB)</h3>
+<p><code>seqOf</code> is the place of a wire in the sequence. <code>compare</code> is negative when the first wire comes before the second, positive when after. <code>asOf</code> runs <code>fn</code> against the world as it was at place <code>at</code> and returns its result; the world is unchanged. Cost of <code>asOf</code>: O(wires after <code>at</code>).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2&#x27;);
+w.tell(&#x27;@ink item name=ink price=3&#x27;);
+print(w.compare(&#x27;pen&#x27;, &#x27;ink&#x27;) &lt; 0, w.asOf(w.seqOf(&#x27;pen&#x27;), (x) =&gt; x.ofType(&#x27;item&#x27;).length));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true 1</code></pre></figure>
+<h3 id="worldhistory-and-worldonlistener">world.history() and world.on(listener)</h3>
+<p><code>history()</code> returns the committed events, oldest first: <code>[{ seq, op, ... }]</code>. <code>on(listener)</code> calls <code>listener(events, world)</code> after every committed change and returns a function that stops it.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+const seen = [];
+const off = w.on((events) =&gt; seen.push(...events.map((e) =&gt; e.op)));
+w.tell(&#x27;@pen item name=pen price=2&#x27;);
+w.tell(&#x27;@bad item name=ink price=-1&#x27;);
+off();
+print(seen, w.history().length);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;tell&quot;] 1</code></pre></figure>
+<h3 id="worldtosopoptions-and-worldtojson">world.toSOP(options?) and world.toJSON()</h3>
+<p><code>toSOP</code> writes the facts as text, in order of arrival. Options: <code>schema</code> (the matrix too), <code>derived</code> (true; false leaves out derived wires), <code>provenance</code> (add <code>core.via</code> and <code>core.from</code>). <code>toJSON</code> returns <code>{ format: 'sopworld', version, log }</code>, for <code>World.fromJSON</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2&#x27;);
+print(w.toSOP(), Object.keys(w.toJSON()));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>@pen item name=pen price=2 [&quot;format&quot;,&quot;version&quot;,&quot;log&quot;]</code></pre></figure>
+<h3 id="worldregisterkind-name-fn-options">world.register(kind, name, fn, options?)</h3>
+<p>Adds a host function after the world was made. <code>kind</code> is <code>function</code> (<code>(args, world) =&gt; value</code>, for calcs, checks and effects), <code>action</code> (<code>(context, args) =&gt; value</code>) or <code>producer</code> (<code>(context) =&gt; value</code>). A <code>function</code> with the name of a built-in throws unless <code>{ override: true }</code>. Returns the world.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.register(&#x27;function&#x27;, &#x27;half&#x27;, ([x]) =&gt; Number(x) / 2);
+try { w.register(&#x27;function&#x27;, &#x27;add&#x27;, () =&gt; 0); } catch (e) { print(e.message.slice(0, 60)); }
+print(typeof w.fns.half);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>sopworld: the function &quot;add&quot; would replace the built-in of t
+function</code></pre></figure>
+<h3 id="worldcannotreason">world.cannot(reason)</h3>
+<p>For host functions: say why there is no result, before returning nothing. A query that supposed a wire and needed the result answers <code>unsupported</code> with that reason.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World({ fns: { rate: ([c], world) =&gt; (c === &#x27;eur&#x27; ? 5 : world.cannot(`no rate for ${c}`)) } });
+w.load(&#x27;@p price cur=?c\n@c core.calc out=?r fn=rate args=?c\n@t price core.on=$p rate=?r\n@r core.rule when=$p with=$c then=$t&#x27;);
+const q = w.query({ type: &#x27;price&#x27;, where: { cur: &#x27;usd&#x27; }, seek: &#x27;rate&#x27; });
+print(q.status, q.reason, w.query({ type: &#x27;price&#x27;, where: { cur: &#x27;eur&#x27; }, seek: &#x27;rate&#x27; }).value);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>unsupported no rate for usd 5</code></pre></figure>
+<h3 id="worldstats">world.stats()</h3>
+<p>The cost of the last call: <code>{ steps, limit, exhausted, site, sites, ms }</code>, <code>sites</code> giving the steps per place (<code>match</code>, <code>chase</code>, <code>negation</code>, <code>aggregate</code>, <code>fluent</code>, <code>withdraw</code>, <code>validate</code>, <code>complete</code>, <code>ground</code>, <code>solve</code>, <code>abduce</code>, <code>induce</code>).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+const r = w.tell(&#x27;@pen item name=pen price=2&#x27;, { budget: { steps: 1 } });
+print(r.violations[0].kind, w.stats().exhausted, w.has(&#x27;pen&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>budget true false</code></pre></figure>
+<h2 id="functions">Functions</h2>
+<h3 id="parsetext-options-formatwire-options-tokenizetext-strvalue-quotetext">parse(text, options?), format(wire, options?), tokenize(text), str(value), quote(text)</h3>
+<p><code>parse</code> returns the wires of a text: <code>[{ id, type, attrs, pattern }]</code>; with <code>{ anonymous: true }</code> a declaration may leave out its <code>@id</code>. It throws <code>SopError</code>. <code>format</code> writes a wire back (<code>{ multiline: true }</code> puts each entry on its own line). <code>tokenize</code> returns the tokens with their lines. <code>str</code> removes the quotes of a string value; <code>quote</code> adds them.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const [w] = parse(&#x27;@a item name=&quot;red pen&quot; price=2&#x27;);
+print(w.attrs, format(w), str(w.attrs.name[0]), quote(&#x27;a b&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;name&quot;:[&quot;\&quot;red pen\&quot;&quot;],&quot;price&quot;:[&quot;2&quot;]} @a item name=&quot;red pen&quot; price=2 red pen &quot;a b&quot;</code></pre></figure>
+<h3 id="soperror">SopError</h3>
+<p>What <code>parse</code>, <code>tell</code> and the other methods throw for text that is not SOP Lang. It has <code>message</code>, <code>line</code>, <code>column</code>, <code>offset</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>try { parse(&#x27;@a item\n  name=&#x27;); } catch (e) { print(e instanceof SopError, e.line, e.column); }</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true 2 3</code></pre></figure>
+<h3 id="unifya-b-bindings-and-walkterm-bindings">unify(a, b, bindings?) and walk(term, bindings)</h3>
+<p><code>unify</code> matches two values (an atom, a <code>?variable</code>, a <code>$reference</code>, also <code>$?variable</code>) and returns the bindings, extended from those given, or <code>null</code> when they cannot be the same. <code>walk</code> returns what a value stands for under bindings.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const s = unify(&#x27;$?w&#x27;, &#x27;$pen&#x27;, unify(&#x27;?n&#x27;, &#x27;pen&#x27;));
+print(walk(&#x27;?n&#x27;, s), walk(&#x27;?w&#x27;, s), unify(&#x27;?n&#x27;, &#x27;ink&#x27;, s));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>pen pen null</code></pre></figure>
+<h3 id="abduceworld-goal-options-and-adoptworld-explanation">abduce(world, goal, options?) and adopt(world, explanation)</h3>
+<p><code>abduce</code> is <code>world.abduce</code>. <code>adopt</code> tells an explanation's wires and fills (tier <code>guessed</code>) and returns <code>{ ok, results }</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(&#x27;@ab core.abducible of=rain\n@r rain place=?p\n@w wet place=?p\n@rule core.rule when=$r then=$w&#x27;);
+const [e] = abduce(w, &#x27;@g wet place=lawn&#x27;);
+print(adopt(w, e).ok, w.holds(&#x27;wet place=lawn&#x27;), w.tier(w.ofType(&#x27;rain&#x27;)[0].id));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true true guessed</code></pre></figure>
+<h3 id="induceexamples-options-induceruleexamples-options-induceslotswires-options">induce(examples, options?), induceRule(examples, options?), induceSlots(wires, options?)</h3>
+<p><code>induce</code> generalises examples (<code>[{ when, then }]</code>, text or wires) into one rule, or with <code>{ kind: 'deny' }</code> into a deny: <code>{ text, calcs, tests, skipped, coversNegative, variables, examples }</code>. Options: <code>name</code>, <code>why</code>, <code>tolerant</code> (skip examples of another shape), <code>negatives</code>, <code>budget</code>. <code>induceRule</code> returns only the text. <code>induceSlots</code> proposes slots for observed wires. What they return is text to review and tell.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const rule = induceRule([
+  { when: &#x27;@a parent of=ann child=bob&#x27;, then: &#x27;@x child of=bob parent=ann&#x27; },
+  { when: &#x27;@a parent of=cy child=di&#x27;, then: &#x27;@x child of=di parent=cy&#x27; },
+], { name: &#x27;inverse&#x27; });
+const w = new World();
+w.load(rule);
+w.tell(&#x27;@p parent of=eve child=fay&#x27;);
+print(w.ask(&#x27;child of=?c parent=?p&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;p&quot;:&quot;eve&quot;,&quot;c&quot;:&quot;fay&quot;}]</code></pre></figure>
+<h3 id="quantityvalue">quantity(value)</h3>
+<p>Reads a number with an optional unit: <code>{ n, unit }</code>, or <code>null</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>print(quantity(&#x27;2.5kg&#x27;), quantity(&#x27;pen&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;n&quot;:2.5,&quot;unit&quot;:&quot;kg&quot;} null</code></pre></figure>
+<h3 id="solvers-problem-sat-todimacsdata-toaspdata">solvers, Problem, Sat, toDimacs(data), toASP(data)</h3>
+<p><code>solvers.cdcl()</code> (the default) and <code>solvers.backtrack()</code> are built in. <code>solvers.external({ run })</code>, <code>solvers.dimacs({ exec })</code> and <code>solvers.clingo({ exec })</code> hand the problem to a program outside; what it proposes is verified by the world. <code>new Problem(world)</code> is the search problem of a world (<code>variables</code>, <code>nogoods</code>, <code>verify</code>, <code>toJSON</code>); <code>toDimacs</code> and <code>toASP</code> write it for a SAT or an ASP solver. <code>Sat</code> is the built-in SAT solver (<code>addClause</code>, <code>solve</code>, <code>model</code>).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const s = new Sat(2);
+s.addClause([1, 2]); s.addClause([-1]);
+print(s.solve(), s.model().slice(1));
+print(Object.keys(solvers));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true [false,true]
+[&quot;backtrack&quot;,&quot;cdcl&quot;,&quot;external&quot;,&quot;dimacs&quot;,&quot;clingo&quot;]</code></pre></figure>
+<h3 id="builtins-aggregates-grammar-modifiers-schema_types">builtins, aggregates, GRAMMAR, MODIFIERS, SCHEMA_TYPES</h3>
+<p>Tables, for tools: the built-in <a href="reference.html#functions">functions</a> and <a href="reference.html#aggregates">aggregates</a> by name; for each matrix wire type the attributes it reads (<code>GRAMMAR</code>; a name that ends in <code>.</code> is a prefix); the attributes that may stand on any pattern or template (<code>MODIFIERS</code>); the types that make a wire a matrix wire (<code>SCHEMA_TYPES</code>).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>print(GRAMMAR[&#x27;core.deny&#x27;], MODIFIERS, SCHEMA_TYPES.has(&#x27;core.rule&#x27;), typeof builtins.add, Object.keys(aggregates));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;when&quot;,&quot;not&quot;,&quot;with&quot;,&quot;if&quot;,&quot;why&quot;,&quot;soft&quot;] {&quot;core.select&quot;:&quot;pattern&quot;,&quot;core.absent&quot;:&quot;pattern&quot;,&quot;core.on&quot;:&quot;template&quot;} true function [&quot;count&quot;,&quot;sum&quot;,&quot;min&quot;,&quot;max&quot;,&quot;argmin&quot;,&quot;argmax&quot;,&quot;collect&quot;]</code></pre></figure>
+<h3 id="version-and-build">version and build</h3>
+<p><code>version</code> is the version of the library. <code>build</code> is <code>{ version, hash, date }</code>: which build a single file is (<code>hash</code> and <code>date</code> are <code>null</code> when running from the sources); <code>docs/version.md</code> says the same.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>print(typeof version, Object.keys(build));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
+<p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.5 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.5.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

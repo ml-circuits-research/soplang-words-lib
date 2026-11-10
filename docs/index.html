@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld</title>
+<meta name="source-hash" content="883f75e1739f">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -11,99 +12,51 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.5</small></a>
-  <nav aria-label="Documentation"><a href="index.html" aria-current="page">Overview</a><a href="concepts.html">Concepts</a><a href="matrix.html">More of the matrix</a><a href="reasoning.html">Reasoning</a><a href="usecases.html">Use cases</a><a href="solvers.html">Solvers</a><a href="api.html">API</a><a href="playground.html">Playground</a><a href="roadmap.html">Analysis and roadmap</a></nav>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.5.0</small></a>
+  <nav aria-label="Documentation"><a href="index.html" aria-current="page">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
-<h1>sopworld</h1>
-<p class="lead">A small engine that keeps a set of SOP Lang wires consistent with rules written as wires. It derives what follows, completes what is missing, asks for what it cannot decide, and refuses what is not allowed.</p>
-
-<h2>What it is</h2>
-<p>A <strong>world</strong> holds facts. A <strong>consistency matrix</strong> says which worlds are possible: which keys a wire has, what must exist when something else exists, what may never happen. The matrix is written in the same language as the facts, as pattern circuits with variables.</p>
-<p>Every change goes through one transaction. Either the world accepts it together with all its consequences, or nothing changes and you get the reason.</p>
-<div class="diagram" role="img" aria-label="Wires from outside enter a transaction: ingest, chase, validate. The world then commits or refuses. Completion turns open keys into forced values, assumptions or questions.">
-<svg viewBox="0 0 700 250" xmlns="http://www.w3.org/2000/svg">
-  <rect class="box" x="10" y="20" width="120" height="60" rx="6"/><text x="70" y="46" text-anchor="middle">wires from</text><text x="70" y="64" text-anchor="middle">outside</text>
-  <rect class="box hot" x="170" y="10" width="360" height="80" rx="6"/><text class="small" x="182" y="28">one transaction</text>
-  <rect class="box" x="184" y="38" width="100" height="40" rx="4"/><text x="234" y="63" text-anchor="middle">ingest</text>
-  <rect class="box" x="300" y="38" width="100" height="40" rx="4"/><text x="350" y="63" text-anchor="middle">chase rules</text>
-  <rect class="box" x="416" y="38" width="100" height="40" rx="4"/><text x="466" y="63" text-anchor="middle">validate</text>
-  <rect class="box" x="570" y="10" width="120" height="34" rx="6"/><text x="630" y="32" text-anchor="middle">commit</text>
-  <rect class="box" x="570" y="56" width="120" height="34" rx="6"/><text x="630" y="78" text-anchor="middle">refuse + why</text>
-  <path class="wire" d="M130 50 H170"/><path class="wire" d="M284 58 H300"/><path class="wire" d="M400 58 H416"/>
-  <path class="wire" d="M530 40 H550 V27 H570"/><path class="wire" d="M530 60 H550 V73 H570"/>
-  <rect class="box" x="170" y="130" width="360" height="100" rx="6"/><text class="small" x="182" y="148">the world</text>
-  <text x="190" y="172">facts</text><text class="small" x="190" y="188">told, derived, filled</text>
-  <text x="330" y="172">matrix</text><text class="small" x="330" y="188">slots, rules, denies</text>
-  <text x="440" y="172">log</text><text class="small" x="440" y="188">replayable</text>
-  <text class="small" x="190" y="216">every wire and value knows where it came from</text>
-  <path class="wire" d="M630 44 V110 H350 V130"/><circle class="dot" cx="350" cy="130" r="4"/>
-  <rect class="box" x="10" y="150" width="120" height="60" rx="6"/><text x="70" y="176" text-anchor="middle">forced values,</text><text x="70" y="194" text-anchor="middle">questions</text>
-  <path class="wire" d="M170 180 H130"/><circle class="dot" cx="130" cy="180" r="4"/>
-  <path class="wire" d="M70 150 V80"/><circle class="dot" cx="70" cy="80" r="4"/>
-</svg></div>
-<h2>One minute example</h2>
-<figure class="code"><figcaption>example.mjs</figcaption><pre><code>import { World } from &#x27;sopworld&#x27;;
-
-const w = new World();
+<h1>sopworld: consistency matrices for SOP Lang circuits</h1>
+<p class="lead">An overview. The language, the wire types, the behaviour and the API each have one page, and nothing is said twice:</p>
+<div class="table"><table><thead><tr><th>Page</th><th>What it holds</th></tr></thead><tbody><tr><td><a href="language.html">docs/language.md</a></td><td>The grammar of wires, and what a pattern, a template and a variable are</td></tr><tr><td><a href="reference.html">docs/reference.md</a></td><td>Every wire type of the matrix and every built-in function: syntax, meaning, when it is evaluated, interactions, violations, example, limits</td></tr><tr><td><a href="semantics.html">docs/semantics.md</a></td><td>How a world behaves, as numbered statements, each with the test that checks it; the table of violations</td></tr><tr><td><a href="api.html">docs/api.md</a></td><td>Every export and every method: what it takes, what it returns, errors, budget, cost, example</td></tr><tr><td><a href="glossary.html">docs/glossary.md</a></td><td>The words used, one meaning each</td></tr><tr><td><a href="integration.html">docs/integration.md</a></td><td>Putting an existing system on the library</td></tr><tr><td><a href="../CHANGELOG.md">CHANGELOG.md</a></td><td>What changed, version by version</td></tr></tbody></table></div>
+<p>Every example in these pages is executed by the test suite, and the lists in them (wire types, attributes, functions, methods, violations) are compared with the library by tests. The HTML pages in <code>docs/</code> are generated from these files.</p>
+<h2 id="purpose">Purpose</h2>
+<p>A <strong>world</strong> is a set of SOP Lang wires (facts) that stays consistent with a <strong>matrix</strong>: a second set of wires that says which facts are possible, what follows from them, how missing values are decided, and which states are forbidden. The matrix is written in SOP Lang itself.</p>
+<p>The world accepts wires from outside (a user turn, a sensor, another program), extends itself with what follows, and refuses what its matrix does not allow. The library is general: nothing in <code>src/</code> knows a particular application.</p>
+<div class="table"><table><thead><tr><th>Operation</th><th>Question it answers</th><th>Methods</th></tr></thead><tbody><tr><td>Deduction</td><td>What follows from what is known?</td><td><code>tell</code>, <code>fill</code> (automatic)</td></tr><tr><td>Completion</td><td>What is missing, and which values are still possible?</td><td><code>open</code>, <code>suggest</code>, <code>next</code>, <code>complete</code>, <code>step</code></td></tr><tr><td>Search</td><td>Is there a way to fill everything that is open?</td><td><code>solve</code>, <code>solveReport</code>, <code>check</code>, <code>applyPatch</code></td></tr><tr><td>Abduction</td><td>What would have to be true for this to hold?</td><td><code>abduce</code>, <code>adopt</code></td></tr><tr><td>Induction</td><td>Which rule explains these examples?</td><td><code>induce</code>, <code>induceSlots</code></td></tr><tr><td>Revision</td><td>What changes when a fact goes away or is replaced?</td><td><code>retract</code>, <code>replace</code>, <code>revise</code>, <code>undo</code>, <code>rewind</code></td></tr><tr><td>Questions</td><td>What is the value, and how sure is it?</td><td><code>query</code>, <code>tier</code>, <code>assumptions</code></td></tr><tr><td>Explanation</td><td>Where does this wire or value come from?</td><td><code>explain</code>, <code>describe</code>, <code>diff</code>, <code>history</code></td></tr></tbody></table></div>
+<h2 id="a-first-example">A first example</h2>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`
-  @k core.slot of=acceleration key=of id=true      # one acceleration per body
-
-  @b body mass=?m                                  # if there is a body
-  @f force on=$b magnitude=?F                      # and a force on it
-  @a acceleration of=$b magnitude=?A               # there is an acceleration
-  @c core.calc out=?A fn=div args=?F args=?m       # with A = F / m
+  @k core.slot of=acceleration key=of id=true
+  @b body mass=?m
+  @f force on=$b magnitude=?F
+  @a acceleration of=$b magnitude=?A
+  @c core.calc out=?A fn=div args=?F args=?m
   @newton2 core.rule when=$b when=$f with=$c then=$a
-
-  @b0 body mass=?m0
-  @t core.check fn=lte args=?m0 args=0
-  @positive core.deny when=$b0 if=$t why=&quot;mass must be positive&quot;
+  @heavy core.check fn=gt args=?m args=1000kg
+  @limit core.deny when=$b if=$heavy why=&quot;a body of ?m is outside this model&quot;
 `);
-
-w.tell(&#x27;@b1 body mass=2  @f1 force on=$b1 magnitude=10  @a1 acceleration of=$b1&#x27;);
-w.get(&#x27;a1&#x27;).attrs.magnitude        // [&#x27;5&#x27;]   the open key was filled
-w.explain(&#x27;a1&#x27;).fills[0]           // { key: &#x27;magnitude&#x27;, value: &#x27;5&#x27;, via: &#x27;newton2&#x27;, from: [&#x27;b1&#x27;, &#x27;f1&#x27;] }
-
-w.tell(&#x27;@b2 body mass=0&#x27;).violations[0].why          // &#x27;mass must be positive&#x27;
-w.tell(&#x27;@a9 acceleration of=$b1 magnitude=7&#x27;).ok     // false: conflicts with the derived 5</code></pre></figure>
-<h2>What you can do with it</h2>
-<div class="table"><table><thead><tr><th>Operation</th><th>Question</th><th>Calls</th></tr></thead><tbody><tr><td>Deduction</td><td>What follows from what is known?</td><td><code>tell</code>, <code>fill</code></td></tr><tr><td>Completion</td><td>What is missing, and which values are still possible?</td><td><code>open</code>, <code>suggest</code>, <code>next</code>, <code>complete</code></td></tr><tr><td>Search</td><td>Is there a way to fill everything that is open?</td><td><code>solve</code>, <code>solveReport</code>, <code>solveAsync</code>, <code>apply</code></td></tr><tr><td>Abduction</td><td>What would have to be true for this to hold?</td><td><code>abduce</code>, <code>adopt</code></td></tr><tr><td>Induction</td><td>Which rule or slot explains these examples?</td><td><code>induce</code>, <code>induceSlots</code></td></tr><tr><td>Revision</td><td>What changes when a fact goes away or is replaced?</td><td><code>retract</code>, <code>replace</code></td></tr><tr><td>Explanation</td><td>Where does this come from?</td><td><code>explain</code>, <code>history</code>, <code>on</code></td></tr></tbody></table></div>
-<h2>Where to go next</h2>
-<div class="cards">
- <a class="card" href="concepts.html"><strong>Concepts</strong><span>Wires, the core matrix wire types, what a transaction does.</span></a>
- <a class="card" href="matrix.html"><strong>More of the matrix</strong><span>Type hierarchy, kinds, state over time, sums over groups, questions with a status, actions, budgets.</span></a>
- <a class="card" href="integration.md"><strong>Integration recipe</strong><span>How a system with its own schema, questions and operations sits on the library.</span></a>
- <a class="card" href="reasoning.html"><strong>Reasoning</strong><span>Deduction, completion, abduction, induction, revision, each on a small world.</span></a>
- <a class="card" href="usecases.html"><strong>Use cases</strong><span>Chat completion, digital twin, procedures, diagnosis, composing knowledge.</span></a>
- <a class="card" href="solvers.html"><strong>Solvers</strong><span>The search strategy is pluggable: two built in, clingo and SAT from outside.</span></a>
- <a class="card" href="playground.html"><strong>Playground</strong><span>Edit a matrix, tell facts, answer the questions the world asks.</span></a>
- <a class="card" href="api.html"><strong>API</strong><span>Every method, option, result field and violation kind.</span></a>
- <a class="card" href="roadmap.html"><strong>Analysis and roadmap</strong><span>What is solid, what is limited, what to build next.</span></a>
-</div>
-<h2>One file, two places to run</h2>
-<p>The library is built into a single file with no dependencies. The same file runs in Node and in a browser, so a world can live on a server, in a page, or in both with the same matrix.</p>
-<figure class="code"><pre><code>&lt;!-- browser, ES module: this folder is what GitHub Pages serves --&gt;
-&lt;script type=&quot;module&quot;&gt;
-  import { World } from &#x27;./sopworld.mjs&#x27;;
-  const w = new World();
-&lt;/script&gt;
-
-&lt;!-- browser, classic script: the global is `sopworld` --&gt;
-&lt;script src=&quot;sopworld.js&quot;&gt;&lt;/script&gt;
-
-// Node
-import { World } from &#x27;./docs/sopworld.mjs&#x27;;          // ES module
-const { World } = require(&#x27;./docs/sopworld.js&#x27;);       // CommonJS</code></pre></figure>
-<div class="table"><table><thead><tr><th>File</th><th>Use</th></tr></thead><tbody><tr><td><code>sopworld.mjs</code></td><td>ES module for browsers and Node</td></tr><tr><td><code>sopworld.js</code></td><td>Classic script (global <code>sopworld</code>) and CommonJS</td></tr><tr><td><code>sopworld.d.ts</code></td><td>Type declarations</td></tr></tbody></table></div>
-<p>Try it now in the <a href="playground.html">playground</a>, or run the <a href="selftest.html">self-test</a> to see the build pass its checks in this browser.</p>
-<figure class="code"><pre><code>npm run build            # src/*.mjs  -&gt;  docs/sopworld.mjs and docs/sopworld.js
-npm test                 # the test suite on the sources, then again on the built file
-npm run test:browser     # the self-test and the playground in headless Chrome
-npm run examples         # ten runnable demonstrations
-npx sopworld check matrix.sop facts.sop</code></pre></figure>
-
+w.tell(&#x27;@b1 body mass=2kg  @f1 force on=$b1 magnitude=10N&#x27;);
+const a = w.ofType(&#x27;acceleration&#x27;)[0];
+print(a.attrs.magnitude, w.explain(a.id).via, w.explain(a.id).from.map((x) =&gt; x.id));
+print(w.tell(&#x27;@b2 body mass=5000kg&#x27;).violations[0].why);
+print(w.query({ type: &#x27;acceleration&#x27;, seek: &#x27;magnitude&#x27;, where: { of: &#x27;$b1&#x27; } }).status);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;5N/kg&quot;] newton2 [&quot;b1&quot;,&quot;f1&quot;]
+a body of 5000kg is outside this model
+supported</code></pre></figure>
+<p>Wires that start with <code>@</code> and hold a <code>?variable</code> are patterns and templates; a rule names them. The rule <code>newton2</code> derived the acceleration and recorded where it came from; the deny refused a fact, with its reason; the query answered with a status.</p>
+<h2 id="limits">Limits</h2>
+<ul><li>Matching is indexed and starts from what changed, but partial matches are not cached (no Rete network).</li><li>Only deny constraints are turned into ruled-out combinations for the solvers. A conflict that arises through a rule is found when the world verifies an answer.</li><li>Search covers keys with a closed domain (<code>enum</code>, a reference type, a range). Other open keys become questions.</li><li>Where the matrix reads what is absent (negation, <code>core.absent=</code>, selectors), no value is tried on its own: the search enumerates whole assignments, and answers <code>unknown</code> where that proves nothing (<a href="semantics.html#search">S46</a>).</li><li>Relations are linear and conclude one unknown at a time; actions written as wires have no aggregates in their calcs.</li><li>One justification is recorded per value; invalidation is by wire.</li><li>Abduction inverts <code>add</code>, <code>sub</code>, <code>mul</code>, <code>div</code> only, one unknown per calc, not through aggregates.</li><li>Induction is exact generalisation: it does not handle noise or learn negation.</li><li>A wire holds in the whole world; a fork is the only context. <code>asOf</code> costs a withdrawal of everything after the point asked about.</li><li><code>undo</code> and <code>fromJSON</code> replay the log; <code>fork</code>, <code>mark</code> and <code>rewind</code> do not.</li><li>The budget counts steps of the library's own loops. A host function or an outside solver that loops by itself is outside it.</li><li>The limits of each wire type are in its entry in the <a href="reference.html">reference</a>.</li></ul>
+<h2 id="architecture">Architecture</h2>
+<div class="table"><table><thead><tr><th>Module</th><th>Responsibility</th></tr></thead><tbody><tr><td><code>parser.mjs</code></td><td>Text to wires and back</td></tr><tr><td><code>unify.mjs</code></td><td>Values and unification</td></tr><tr><td><code>matrix.mjs</code></td><td>Compiles matrix wires into slots, rules, denies, relations and actions; the table of attributes; stratification; modules</td></tr><tr><td><code>world.mjs</code></td><td>Kernel: store and indexes, transactions, matching, chase, validation, patches</td></tr><tr><td><code>revise.mjs</code></td><td><code>retract</code>, <code>replace</code>, <code>undo</code>, <code>mark</code>, <code>rewind</code>, <code>fork</code>, assumptions that give way</td></tr><tr><td><code>complete.mjs</code></td><td>Open keys, suggestions, questions, <code>step</code> and <code>answer</code></td></tr><tr><td><code>solve.mjs</code></td><td>The completion problem in neutral form, the SAT solver, the solver strategies</td></tr><tr><td><code>query.mjs</code></td><td>Queries with a status, answer wires, producers, actions</td></tr><tr><td><code>time.mjs</code></td><td>Sequence, fluents and effects, as-of</td></tr><tr><td><code>tiers.mjs</code></td><td>Certainty of each value and what rests on it</td></tr><tr><td><code>describe.mjs</code></td><td><code>describe</code> and <code>diff</code></td></tr><tr><td><code>abduce.mjs</code>, <code>induce.mjs</code></td><td>Abduction and induction, built on the public kernel operations</td></tr><tr><td><code>builtins.mjs</code></td><td>Functions, aggregates, quantities with units, exact linear solving</td></tr><tr><td><code>budget.mjs</code></td><td>The step and time budget of a call</td></tr><tr><td><code>bin/sopworld.mjs</code></td><td><code>check</code>, <code>run</code>, <code>ask</code> on <code>.sop</code> files</td></tr><tr><td><code>node/solvers.mjs</code></td><td>Starts outside solvers as processes (Node only)</td></tr></tbody></table></div>
+<p>How the kernel keeps its promises:</p>
+<ul><li>A change keeps a journal of undo steps; a refusal runs it backwards, so the world is exactly what it was.</li><li>Everything speculative (dry run, suggestion, search, abduction, supposing a wire for a query) is the ordinary change inside a transaction that is rolled back.</li><li>The id of a derived wire is a hash of the rule and its bindings, so deriving it again gives the same id.</li><li>The log alone rebuilds the world.</li><li><code>world.stamp</code> identifies the state: it changes with every committed change and is restored by a rollback, so what was computed for a state can be cached.</li><li>No answer of a solver is used before the world has verified it.</li></ul>
+<h2 id="build-and-version">Build and version</h2>
+<p><code>npm run build</code> writes the library as one file with no dependency at build time or at run time: <code>docs/sopworld.mjs</code> (ES module, browsers and Node), <code>docs/sopworld.js</code> (classic script with the global <code>sopworld</code>, and CommonJS), <code>docs/sopworld.d.ts</code>. <code>npm test</code> runs the suite on the sources and again on the built file. <code>python3 tools/build_docs.py</code> writes the HTML pages from the markdown.</p>
+<p>There are no release tags. The version is <code>version</code> in the library and in <code>package.json</code>; a built file also carries <code>build = { version, hash, date }</code>, where <code>hash</code> is a fingerprint of the bundled sources. The same three are in <a href="version.md">docs/version.md</a>, next to the built files.</p>
+<p class="source">Generated from <code>SPEC.md</code>.</p>
 </main>
-<footer>sopworld 0.5 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.5.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

@@ -1323,3 +1323,38 @@ in api.md, 22 in reference.md, 6 in language.md). `npx -p typescript tsc --noEmi
   a wire that exists the status is `missing`; an action's `find` returns an array;
   `unify` takes values, not wires; a patch is several log entries that `undo` takes
   back as one.
+
+## D1 (4 of 4) — one source: SPEC is an overview, the HTML is generated from the markdown — done
+
+`npm test`: 206 pass, 0 fail on sources and built file (80 documented examples run).
+`npm run test:browser`: all browser checks passed (9 pages load, all 11 local links
+resolve, four pages fit a 390 px screen). Pilot: kids.shop 147/147, kids.arith 212/217,
+kids.tasks 231/232. `node tools/scan-loops.mjs src`: clean. `git grep -i psys2 src/ |
+wc -l`: 0. `npm run examples`: exit 0.
+
+- `SPEC.md` went from 1,249 lines to an overview: the table of pages, the purpose, one
+  executed example, the limits, the architecture, build and version. Everything else
+  it held now has exactly one place: language.md, reference.md, semantics.md, api.md.
+  `tools/doc-examples.mjs` runs the example in SPEC.md too.
+- `tools/build_docs.py` no longer contains documentation text. It renders SPEC.md and
+  the six markdown pages to `docs/index.html`, `language.html`, `reference.html`,
+  `semantics.html`, `api.html`, `glossary.html`, `integration.html` (headings with the
+  anchors GitHub gives them, tables, lists, fenced code, links rewritten from `.md` to
+  `.html`), and still writes the playground and the self-test, which are programs. The
+  version in the page header is read from package.json. Each generated page carries
+  the hash of its source.
+- Removed, because they were a second, hand-written telling of the same things:
+  `docs/concepts.html`, `matrix.html`, `reasoning.html`, `usecases.html`,
+  `solvers.html`, `roadmap.html` (the last one said "What 0.4 added"). The use cases
+  remain as the runnable programs in `examples/`.
+- Two tests: every HTML page carries the hash of the current text of its markdown file
+  (so a page cannot go stale unnoticed; no Python needed to check), every markdown
+  page has an HTML page and the reverse; no documentation file says "seven wire types",
+  names a version other than the current one (except "before version N", which is
+  history), or declares a pattern as `?id type ...` (the language page shows the old
+  form once, as something still read).
+- README and `tools/browser-check.mjs` point at the new pages.
+
+D1 is complete: language.md, glossary.md, reference.md, semantics.md, api.md, one
+source, and tests that fail when a wire type, attribute, function, method or violation
+kind exists on one side only. Next: 0.6.0.

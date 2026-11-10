@@ -981,6 +981,22 @@ stronger than `derived`: a total computed from a told quantity and a default pri
   is not enough, every assumption on the wires involved gives way. Told against told
   stays a conflict. Stating again a value that was assumed confirms it: it is `told`.
 
+**Replacing what was told.** `fill` adds a value; on a key that already has a told
+value it is a conflict. `world.revise(id, key, value)` (or `revise(id, { key: value,
+... })`) replaces it in one transaction: the old value goes with everything derived
+from it, the new one comes with everything that follows, and the result lists what
+gave way under `revised` (`{ id, key, value, tier }`). If the new state is not allowed
+the revision is refused and nothing changes. A patch can carry the same as `sets`.
+
+**The facts as stated.** `world.told()` returns each told wire with the values it was
+told with and the values told for it later, and nothing that a rule, a default or a
+search added (those are in `get(id)`, with their tier). Telling the result to a world
+with the same matrix gives the same wires and values, and telling it again to the world
+it came from changes nothing: a wire stated again that says nothing new is accepted
+silently (one that says something different for its id is still `duplicate-id`). For a
+state that was stated several times between events, the order of statements matters:
+`toJSON()` keeps it.
+
 ### 4.13 Describing a world, and comparing two
 
 `world.describe({ about, depth, since, last })` returns a summary as plain data, for a
@@ -1148,6 +1164,8 @@ Since 0.4.0 (the version first published in this repository):
 - New: `core.on=` templates (3.3); the stratification check knows which keys a template
   adds, so a rule may aggregate over a type and fill a key on a wire of that type.
 - New: `core.absent=` in patterns (3.10).
+- New (0.6): `world.revise()`; `world.told()`; a wire stated again with nothing new is
+  accepted (it was `duplicate-id`) (4.12).
 - New (0.6): `world.check()` without a patch and `World.audit(wires, matrix)` (4.9.1).
 - New (0.6): violations carry `involved` (the wires as they were) and, for a deny,
   `bindings`; `why=` may quote variables (3.4).

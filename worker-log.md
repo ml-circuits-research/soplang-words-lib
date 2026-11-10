@@ -1184,3 +1184,22 @@ the same rule set; a `missing` answer shows an empty `set`; a lookup has no `sup
   refused with both offending wires; two wire objects changed behind the world's back,
   both found by `check()`; `World.audit` on good, bad and badly-formed input; the
   deny-over-state pattern.
+
+## W5, W6 — world.revise; told wires stay as told — done (two commits)
+
+`npm test`: 192 pass, 0 fail on sources and built file. Pilot unchanged.
+
+- **W5** `world.revise(id, key, value)` / `revise(id, { key: value })`: one transaction
+  (a patch of `sets`); the result has `revised` with the old values and their tiers; a
+  revision whose result a deny refuses changes nothing; it is in the log and survives a
+  restore. Test in `test/tiers.test.mjs`.
+- **W6** `world.told()`: the told wires with the values they were told with and those
+  told later (fills and revisions), without anything a rule, a default or a search
+  added. For idempotence one behaviour changed: **a wire stated again under its id that
+  says nothing new is accepted** (it used to be `duplicate-id`); saying something
+  different for an existing id is still `duplicate-id`. Test: a world with an identity
+  key, a default, a rule that fills a total, a later fill, a revision and a retraction;
+  `tell(told())` on the same world adds and fills nothing; on a fresh world with the
+  same matrix it gives the same wires and values. `toJSON` was already "as told" (it is
+  the log). Limit, stated in SPEC: a state stated several times between events needs
+  the order of statements, which `toJSON` keeps and a list of wires cannot.

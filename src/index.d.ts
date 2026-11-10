@@ -181,6 +181,11 @@ export class World {
   /** what is different in another world (a fork on which something was tried) */
   diff(other: World): Difference;
   static diff(a: World, b: World): Difference;
+  /** replace a told value (or several: revise(id, { key: value })) with everything that follows; lists what gave way */
+  revise(id: string, key: string, value: string | number, options?: Budgeted): Result & { revised?: Cell[] };
+  revise(id: string, values: Record<string, string | number>, options?: Budgeted): Result & { revised?: Cell[] };
+  /** the facts as they were stated, without what rules, defaults or searches added */
+  told(): Wire[];
   /** how solid a value is: told, derived, forced, default, guessed, or a tier the matrix declares */
   tier(id: string, key?: string): string | undefined;
   /** everything weaker than derived, weakest first, with the cells that rest on each */

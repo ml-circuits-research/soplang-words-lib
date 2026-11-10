@@ -157,3 +157,71 @@ test('defaults: a default on an optional key is applied by complete({ defaults }
   const r = w.fill('l1', 'qty', 3);
   assert.deepEqual([r.revised.map((x) => x.key), w.get('l1').attrs.total, w.tier('l1', 'total')], [['qty'], ['21'], 'derived']);
 });
+
+test('revise: a told value is replaced in one step, with everything that followed from it', () => {
+  const w = new World();
+  w.load(`
+    @l line qty=?q price=?p
+    @c core.calc out=?t fn=mul args=?q args=?p
+    @f line core.on=$l total=?t
+    @r core.rule when=$l with=$c then=$f
+    @big line total=?t2
+    @over core.check fn=gt args=?t2 args=100
+    @cap core.deny when=$big if=$over why="?t2 is over the limit"
+  `);
+  w.tell('@l1 line qty=1 price=7 note=first');
+  assert.equal(w.fill('l1', 'qty', 3).violations[0].kind, 'conflict', 'fill does not replace what was told');
+  const r = w.revise('l1', 'qty', 3);
+  assert.deepEqual([r.ok, r.revised, w.get('l1').attrs.qty, w.get('l1').attrs.total, w.tier('l1', 'qty')], [true, [{ id: 'l1', key: 'qty', value: '1', tier: 'told' }], ['3'], ['21'], 'told']);
+  // several keys at once; refused as a whole when the result is not allowed
+  assert.deepEqual(w.revise('l1', { qty: 2, price: 10 }).revised.map((x) => `${x.key}=${x.value}`), ['qty=3', 'price=7']);
+  assert.equal(w.get('l1').attrs.total[0], '20');
+  const no = w.revise('l1', { qty: 20 });
+  assert.deepEqual([no.ok, no.violations[0].why, w.get('l1').attrs.qty, w.get('l1').attrs.total], [false, '200 is over the limit', ['2'], ['20']]);
+  assert.equal(w.revise('l1', 'qty', 2).revised, undefined, 'the same value revises nothing');
+  assert.equal(w.revise('nobody', 'qty', 1).violations[0].kind, 'unknown-wire');
+  // the revision is part of the history
+  const again = World.fromJSON(JSON.parse(JSON.stringify(w.toJSON())));
+  assert.deepEqual(again.get('l1').attrs, w.get('l1').attrs);
+});
+
+test('told(): the facts as stated; telling them again changes nothing, telling them elsewhere gives the same world', () => {
+  const matrix = `
+    @k1 core.slot of=line key=sku id=true
+    @k2 core.slot of=line key=qty kind=number default=1
+    @l line qty=?q price=?p
+    @c core.calc out=?t fn=mul args=?q args=?p
+    @f line core.on=$l total=?t
+    @r core.rule when=$l with=$c then=$f
+    @x line total=?t2
+    @s summary of=$x amount=?t2
+    @r2 core.rule when=$x then=$s
+  `;
+  const w = new World();
+  w.load(matrix);
+  w.tell('@l1 line sku=a price=7  @l2 line sku=b price=2 qty=5');
+  w.complete({ defaults: true });            // qty=1 on l1, by default
+  w.fill('l2', 'colour', 'red');             // told later
+  w.revise('l2', 'price', 3);                // revised
+  w.tell('@n1 note text="keep"');
+  w.tell('@gone note text="drop"');
+  w.retract('gone');
+  assert.deepEqual(w.told(), [
+    { id: 'l1', type: 'line', attrs: { sku: ['a'], price: ['7'] } },
+    { id: 'l2', type: 'line', attrs: { sku: ['b'], price: ['3'], qty: ['5'], colour: ['red'] } },
+    { id: 'n1', type: 'note', attrs: { text: ['"keep"'] } },
+  ]);
+  assert.deepEqual(w.get('l1').attrs, { sku: ['a'], price: ['7'], qty: ['1'], total: ['7'] }, 'get() shows what the world added');
+  // told again here: nothing changes, nothing conflicts
+  const before = w.toSOP();
+  const r = w.tell(w.told());
+  assert.deepEqual([r.ok, r.added, r.filled, w.toSOP()], [true, [], [], before]);
+  // told to a fresh world with the same matrix: the same world, once the same defaults are taken
+  const fresh = new World();
+  fresh.load(matrix);
+  assert.ok(fresh.tell(w.told()).ok);
+  fresh.complete({ defaults: true });
+  // the same wires with the same values (the order of keys and of wires follows the order of telling)
+  const content = (x) => [...x.wires.values()].map((v) => `${v.id} ${v.type} ${Object.keys(v.attrs).sort().map((k) => `${k}=${v.attrs[k].join(',')}`).join(' ')}`).sort();
+  assert.deepEqual(content(fresh), content(w));
+});

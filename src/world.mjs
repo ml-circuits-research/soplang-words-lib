@@ -255,6 +255,44 @@ export class World {
   /** Subscribe to committed events. Returns the function that unsubscribes. */
   on(listener) { this.listeners.add(listener); return () => this.listeners.delete(listener); }
 
+  /**
+   * The facts as they were stated: each told wire with the values it was told with and
+   * the values told for it later, and nothing a rule, a default or a search added.
+   * Telling the result to a world with the same matrix gives the same world, and telling
+   * it again to this one changes nothing. (For a state that was stated more than once
+   * between events, the order of statements matters: use toJSON for those.)
+   */
+  told() {
+    const out = new Map();
+    const c = this._compiled();
+    for (const e of this.log) { // bounded: the log
+      if (e.op === 'tell') {
+        for (const w of e.wires) {
+          if (!e.facts.includes(w.id) || !this.has(w.id)) continue;
+          out.set(w.id, cloneWire(w));
+        }
+      } else if ((e.op === 'fill' || e.op === 'set') && !this._weakFill(e) && this.has(e.id)) {
+        const w = [...out.values()].find((x) => this.resolve(x.id) === this.resolve(e.id));
+        if (!w) continue;
+        const key = c.shortKey(w.type, e.key);
+        const replace = e.op === 'set' || [...c.fluents.values()].some((f) => f.key === key && c.isA(w.type, f.of));
+        w.attrs[key] = replace ? [this._norm(e.value)] : [...(w.attrs[key] || []), this._norm(e.value)];
+      }
+    }
+    return [...out.values()].map((w) => { const x = cloneWire(w); delete x.pattern; return x; });
+  }
+
+  /**
+   * Replace a value that was told: revise(id, key, value), or revise(id, { key: value }).
+   * One transaction: the old value goes with everything derived from it, the new one
+   * comes with everything that follows. The result lists what gave way under `revised`.
+   */
+  revise(id, key, value, opts = {}) {
+    const pairs = typeof key === 'object' && key !== null ? Object.entries(key) : [[key, value]];
+    if (typeof key === 'object' && key !== null) opts = value || {};
+    return this._guard(opts, () => this._patch({ sets: pairs.map(([k, v]) => ({ id, key: k, value: v })) }, opts), (v) => this._refusal(v));
+  }
+
   /** Everything needed to rebuild the world: what it was told, in order. */
   toJSON() { return { format: 'sopworld', version: 1, log: this.log.map((e) => ({ ...e })) }; }
 
@@ -385,6 +423,7 @@ export class World {
         if (!w) { res.violations.push({ kind: 'unknown-wire', id: f.id }); continue; }
         const key = this._compiled().shortKey(w.type, f.key), value = this._norm(String(f.value));
         const old = (w.attrs[key] || []).filter((v) => v !== value);
+        for (const v of old) (res._revised ||= []).push({ id: w.id, key, value: v, tier: this.tier(w.id, key) });
         if (old.length) this._unsay(res, [], old.map((v) => ({ id: w.id, key, value: v })));
         this._merge(w, { [key]: [value] }, { via, from: [], tier }, res);
       }
@@ -411,7 +450,9 @@ export class World {
       ...fills.map((f) => ({ op: 'fill', id: f.id, key: f.key, value: String(f.value), via, ...(group ? { group } : {}), ...(tier ? { tier } : {}) })),
       ...sets.map((f) => ({ op: 'set', id: f.id, key: f.key, value: String(f.value), via, ...(group ? { group } : {}), ...(tier ? { tier } : {}) })),
     ];
-    return this._finish(mark, res, dry, entries);
+    const done = this._finish(mark, res, dry, entries);
+    if (done.ok && res._revised) done.revised = res._revised;
+    return done;
   }
 
   /** Replay log entries on this world; entries of one patch go in together. Returns the first refusal, or null. */
@@ -846,7 +887,16 @@ export class World {
     const c = this._compiled();
     for (const w of wires) {
       if (isSchema(w)) continue;
-      if (this.wires.has(w.id) || this.alias.has(w.id)) { res.violations.push({ kind: 'duplicate-id', id: w.id }); continue; }
+      if (this.wires.has(w.id) || this.alias.has(w.id)) {
+        // the same wire stated again, saying nothing new, is not an error: an export can be told back
+        const have = this.get(w.id), c0 = this._compiled();
+        const nothingNew = have.type === w.type && Object.keys(w.attrs).every((k) => {
+          const key = c0.shortKey(w.type, k);
+          return w.attrs[k].every((v) => (have.attrs[key] || []).some((x) => this._same(w.type, key, x, this._norm(v))));
+        });
+        if (!nothingNew) res.violations.push({ kind: 'duplicate-id', id: w.id });
+        continue;
+      }
       const attrs = {};
       let vars = false;
       for (const k of Object.keys(w.attrs)) { // short and full key names are one key

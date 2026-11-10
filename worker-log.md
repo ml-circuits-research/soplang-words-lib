@@ -1103,7 +1103,7 @@ What changed:
 6. Migration: `?id type ...` is still read, marked `legacy`, noted once per id in
    `world.warnings` (`{ kind: 'deprecated', id, why }`), and written back as `@id` by
    `format()`. `tools/migrate-syntax.mjs` converts files (also wires inside program
-   strings) and has `--check`. Converted with it: 40 files, 472 declarations (README,
+   strings) and has `--check`. Converted with it: 36 files, 442 declarations (the sum of the `--check` listing; README,
    SPEC, `docs/integration.md`, the docs generator and the pages it builds, the
    playground and selftest, all examples, all tests, the benchmark, the two pilot
    matrices that have rules, the pilot demo).

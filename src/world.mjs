@@ -1,0 +1,774 @@
+// World: fact wires kept consistent with a consistency matrix.
+//
+// This file is the kernel: the store and its indexes, transactions, ingest, matching,
+// the chase, validation and the withdrawal of wires, values and rule firings.
+// Completion lives in complete.mjs, retraction and assumption revision in revise.mjs.
+
+import { parse, format, cloneWire } from './parser.mjs';
+import { EMPTY, walk, unify, hasVar, isVar, bound } from './unify.mjs';
+import { builtins, quantity } from './builtins.mjs';
+import { cdcl } from './solve.mjs';
+import { compileMatrix, localize, prefixModule, SCHEMA_TYPES, LINKS } from './matrix.mjs';
+import { completion } from './complete.mjs';
+import { revision } from './revise.mjs';
+import { abduce } from './abduce.mjs';
+
+const first = (w, k) => w.attrs[k]?.[0];
+const K = (type, key, value) => `${type}\u0001${key}\u0001${value}`;
+const setOf = (map, k) => map.get(k) || map.set(k, new Set()).get(k);
+
+function hash(s) {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
+export class World {
+  constructor(options = {}) {
+    const {
+      fns = {}, library = {}, maxDepth = 12, maxSteps = 50000,
+      lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(),
+    } = options;
+    this.options = { fns, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver };
+    this.fns = { ...builtins, ...fns };
+    this.wires = new Map();    // id -> fact wire
+    this.byType = new Map();   // type -> Set<id>
+    this.index = new Map();    // type|key|value -> Set<id>
+    this.refs = new Map();     // id -> Set<id of wires that refer to it>
+    this.schema = new Map();   // id -> matrix wire
+    this.alias = new Map();    // id of a merged wire -> id it was merged into
+    this.used = new Set();     // matrix modules already loaded through core.use
+    this.firings = new Map();  // signature -> { rule, from, made, fills, hits, s? }
+    this.byWire = new Map();   // id -> Set<signature of firings that read or wrote the wire>
+    this.byRule = new Map();   // rule id -> Set<signature>, for rules with negation
+    this.log = [];             // what was told (replayable)
+    this.events = [];          // history
+    this.listeners = new Set();
+    this.seq = 0;
+    this.stamp = 0;            // identifies the current state; restored when a change is rolled back
+    this._clock = 0;
+    this._emitted = 0;
+    this._journal = [];
+    this._tx = 0;
+    this._c = null;
+  }
+
+  // ---------------------------------------------------------------- reading
+
+  get(id) { return this.wires.get(this.resolve(id)); }
+  has(id) { return this.wires.has(this.resolve(id)); }
+  resolve(id) { let x = id; while (this.alias.has(x)) x = this.alias.get(x); return x; }
+  ofType(type) { return [...(this.byType.get(type) || [])].map((id) => this.wires.get(id)); }
+
+  /** Query with pattern wires. Returns one object of bindings per match. */
+  ask(query) {
+    const pats = this._patterns(query);
+    const out = [];
+    for (const s of this._matchAll(pats, 0, EMPTY)) {
+      const row = {};
+      for (const p of pats) row[p.id] = walk('?' + p.id, s);
+      for (const k of bound(s)) row[k.slice(1)] = walk(k, s);
+      out.push(row);
+    }
+    return out;
+  }
+
+  holds(query) {
+    for (const _ of this._matchAll(this._patterns(query), 0, EMPTY)) return true;
+    return false;
+  }
+
+  /** Justification tree of a wire: who told it, or which rule derived it from what. */
+  explain(id, seen = new Set()) {
+    const w = this.get(id);
+    if (!w) return null;
+    const node = { id: w.id, wire: format(w), told: !!w.meta.told };
+    if (w.meta.via) node.via = w.meta.via;
+    if (w.meta.fills?.length) node.fills = w.meta.fills.map((f) => ({ ...f }));
+    if (seen.has(w.id)) return node;
+    seen.add(w.id);
+    const from = new Set(w.meta.from || []);
+    for (const f of w.meta.fills || []) for (const x of f.from || []) from.add(x);
+    from.delete(w.id);
+    if (from.size) node.from = [...from].map((x) => this.explain(x, seen)).filter(Boolean);
+    return node;
+  }
+
+  /** Serialise the facts (and optionally the matrix) back to SOP Lang. */
+  toSOP({ schema = false, derived = true, provenance = false } = {}) {
+    const lines = [];
+    if (schema) for (const w of this.schema.values()) lines.push(format(w));
+    for (const w of [...this.wires.values()].sort((a, b) => a.meta.seq - b.meta.seq)) {
+      if (!derived && !w.meta.told) continue;
+      let line = format(w);
+      if (provenance && w.meta.via) {
+        line += ` core.via=$${w.meta.via}` + (w.meta.from || []).map((x) => ` core.from=$${x}`).join('');
+      }
+      lines.push(line);
+    }
+    return lines.join('\n');
+  }
+
+  history() { return this.events.map((e) => ({ ...e })); }
+
+  /** Subscribe to committed events. Returns the function that unsubscribes. */
+  on(listener) { this.listeners.add(listener); return () => this.listeners.delete(listener); }
+
+  /** Everything needed to rebuild the world: what it was told, in order. */
+  toJSON() { return { format: 'sopworld', version: 1, log: this.log.map((e) => ({ ...e })) }; }
+
+  /** Rebuild a world from toJSON() output. Functions and the library are passed again. */
+  static fromJSON(data, options = {}) {
+    if (data?.format !== 'sopworld') throw new Error('World.fromJSON: not a sopworld snapshot');
+    const w = new World(options);
+    for (const e of data.log) {
+      const r = e.op === 'tell' ? w._tell(e.wires, { strict: false }) : w._fill(e.id, e.key, e.value, { via: e.via, strict: false });
+      if (!r.ok) throw new Error('World.fromJSON: the snapshot is refused by the matrix: ' + JSON.stringify(r.violations[0]));
+    }
+    return w;
+  }
+
+  // ---------------------------------------------------------------- writing
+
+  /**
+   * Add wires (SOP Lang text or wire objects): facts, matrix wires, or both.
+   * Returns { ok, added, derived, filled, merged, removed, violations, revised? }.
+   * Nothing changes when ok is false. { dry: true } evaluates and always rolls back;
+   * { strict: true } also refuses a change that leaves no possible completion.
+   */
+  tell(input, opts = {}) {
+    const r = this._tell(input, opts);
+    return r.ok ? r : this._retryWithoutDefaults(r, (o) => this._tell(input, o), opts);
+  }
+
+  /** Answer an open key of an existing wire. Same contract as tell(). */
+  fill(id, key, value, opts = {}) {
+    const r = this._fill(id, key, value, opts);
+    return r.ok ? r : this._retryWithoutDefaults(r, (o) => this._fill(id, key, value, o), opts);
+  }
+
+  /** tell() for set-up code: throws when the world refuses, so a broken matrix cannot go unnoticed. */
+  load(input) {
+    const r = this.tell(input);
+    if (!r.ok) {
+      const v = r.violations[0];
+      throw new Error(`sopworld: refused (${v.kind}) ${v.why || JSON.stringify(v)}`);
+    }
+    return r;
+  }
+
+  /** Load a matrix module from the library given to the constructor. */
+  use(name) { return this.tell([{ id: `use.${name}`, type: 'core.use', attrs: { world: [name] }, pattern: false }]); }
+
+  /** Hypotheses that would make the goal pattern true. See abduce.mjs. */
+  abduce(goal, opts) { return abduce(this, goal, opts); }
+
+  _tell(input, { dry = false, strict = this.options.strict } = {}) {
+    const wires = (typeof input === 'string' ? parse(input) : input).map(cloneWire);
+    const told = wires.map(cloneWire); // the log keeps what was said, not what it grew into
+    const res = this._result();
+    const mark = this._begin();
+    let facts;
+    try {
+      facts = this._ingest(wires, res);
+      this._settle(res, strict);
+    } catch (e) {
+      this._rollback(mark);
+      throw e;
+    }
+    return this._finish(mark, res, dry, { op: 'tell', wires: told, facts });
+  }
+
+  _fill(id, key, value, { dry = false, via = 'core.tell', strict = this.options.strict } = {}) {
+    const res = this._result();
+    const mark = this._begin();
+    try {
+      const w = this.get(id);
+      if (!w) res.violations.push({ kind: 'unknown-wire', id });
+      else {
+        this._merge(w, { [key]: [this._norm(String(value))] }, { via, from: [] }, res);
+        this._settle(res, strict);
+      }
+    } catch (e) {
+      this._rollback(mark);
+      throw e;
+    }
+    return this._finish(mark, res, dry, { op: 'fill', id, key, value: String(value), via });
+  }
+
+  /** Chase, validate, and in strict mode require that a completion still exists. */
+  _settle(res, strict) {
+    if (!res.violations.length) this._chase(res);
+    if (!res.violations.length) this._validate(res);
+    if (!res.violations.length && strict && this.solveReport().status === 'unsat') {
+      res.violations.push({ kind: 'dead-end', why: 'no consistent completion of the open keys exists' });
+    }
+  }
+
+  // ---------------------------------------------------------------- transactions
+
+  _result() {
+    return { ok: true, added: [], derived: [], filled: [], merged: [], removed: [], violations: [], _touched: new Set(), _agenda: [] };
+  }
+  _begin() { this._tx++; return this._journal.length; }
+  _do(undo) {
+    this._journal.push(undo, this.stamp);
+    this.stamp = ++this._clock;
+  }
+  _rollback(mark) {
+    while (this._journal.length > mark) {
+      this.stamp = this._journal.pop();
+      this._journal.pop()();
+    }
+    if (--this._tx === 0) { this._journal.length = 0; this._emitted = this.events.length; }
+  }
+  _commit() {
+    if (--this._tx !== 0) return;
+    this._journal.length = 0;
+    const fresh = this.events.slice(this._emitted);
+    this._emitted = this.events.length;
+    if (fresh.length) for (const l of this.listeners) l(fresh.map((e) => ({ ...e })), this);
+  }
+
+  _finish(mark, res, dry, entry) {
+    res.ok = !res.violations.length;
+    delete res._touched; delete res._agenda;
+    if (!res.ok) for (const v of res.violations) this._support(v); // before the evidence is rolled back
+    if (!res.ok || dry) {
+      this._rollback(mark);
+      if (!res.ok) { res.added = []; res.derived = []; res.filled = []; res.merged = []; res.removed = []; }
+    } else {
+      if (entry) { this.log.push(entry); this._do(() => this.log.pop()); }
+      this._commit();
+    }
+    return res;
+  }
+
+  /**
+   * Name what a violation rests on: `support` lists the told wires behind it, so a refusal
+   * can be explained in terms of what was said. `closure` (not enumerable) has every wire
+   * involved and is what the solvers learn from.
+   */
+  _support(v) {
+    const roots = [...(v.wires || []), ...(v.id ? [v.id] : [])];
+    if (!roots.length) return;
+    const seen = new Set(), told = [];
+    while (roots.length) {
+      const id = this.resolve(roots.pop());
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const w = this.wires.get(id);
+      if (!w) continue;
+      if (w.meta.told) told.push(id);
+      for (const x of w.meta.from || []) roots.push(x);
+      for (const f of w.meta.fills || []) for (const x of f.from || []) roots.push(x);
+    }
+    v.support = told;
+    Object.defineProperty(v, 'closure', { value: seen, enumerable: false });
+  }
+
+  /** Run fn against a scratch state; everything it does is undone. What-if questions go here. */
+  trial(fn) { return this._trial(() => fn(this)); }
+
+  _trial(fn) {
+    const mark = this._begin();
+    try { return fn(); } finally { this._rollback(mark); }
+  }
+
+  _event(e) {
+    const prev = this.seq;
+    e.seq = ++this.seq;
+    this.events.push(e);
+    this._do(() => { this.events.pop(); this.seq = prev; });
+    return e.seq;
+  }
+
+  // ---------------------------------------------------------------- store primitives
+
+  _link(w, key, value) {
+    setOf(this.index, K(w.type, key, value)).add(w.id);
+    if (value[0] === '$') setOf(this.refs, value.slice(1)).add(w.id);
+  }
+
+  _unlink(w, key, value, whole) {
+    this.index.get(K(w.type, key, value))?.delete(w.id);
+    if (value[0] !== '$') return;
+    if (whole || !Object.values(w.attrs).some((vs) => vs.includes(value))) this.refs.get(value.slice(1))?.delete(w.id);
+  }
+
+  _put(w) {
+    this.wires.set(w.id, w);
+    setOf(this.byType, w.type).add(w.id);
+    for (const k of Object.keys(w.attrs)) for (const v of w.attrs[k]) this._link(w, k, v);
+  }
+
+  _drop(w) {
+    this.wires.delete(w.id);
+    this.byType.get(w.type)?.delete(w.id);
+    for (const k of Object.keys(w.attrs)) for (const v of w.attrs[k]) this._unlink(w, k, v, true);
+  }
+
+  _addWire(w, meta, res) {
+    w.meta = meta;
+    this._put(w);
+    this._do(() => this._drop(w));
+    res._touched.add(w.id);
+    res._agenda.push(w.id);
+  }
+
+  _removeWire(w) {
+    this._drop(w);
+    this._do(() => this._put(w));
+  }
+
+  _addValue(w, key, value, prov, res) {
+    const fill = { key, value, via: prov.via, from: prov.from };
+    (w.attrs[key] ||= []).push(value);
+    (w.meta.fills ||= []).push(fill);
+    this._link(w, key, value);
+    this._do(() => this._takeValue(w, key, value, fill));
+    if (prov.rec) prov.rec.fills.push({ id: w.id, key, value });
+    this._event({ op: 'fill', id: w.id, key, value, via: prov.via, from: prov.from });
+    res.filled.push({ id: w.id, key, value, via: prov.via });
+    res._touched.add(w.id);
+    res._agenda.push(w.id);
+  }
+
+  _takeValue(w, key, value, fill) {
+    const vs = w.attrs[key];
+    vs.splice(vs.lastIndexOf(value), 1);
+    if (!vs.length) delete w.attrs[key];
+    if (fill) w.meta.fills.splice(w.meta.fills.indexOf(fill), 1);
+    this._unlink(w, key, value, false);
+  }
+
+  _removeValue(w, key, value) {
+    const fill = (w.meta.fills || []).find((f) => f.key === key && f.value === value);
+    const at = fill ? w.meta.fills.indexOf(fill) : -1;
+    this._takeValue(w, key, value, fill);
+    this._do(() => {
+      (w.attrs[key] ||= []).push(value);
+      if (fill) w.meta.fills.splice(at, 0, fill);
+      this._link(w, key, value);
+    });
+  }
+
+  _recordFiring(sig, rec) {
+    const ids = new Set([...rec.from, ...rec.made, ...rec.hits, ...rec.fills.map((f) => f.id)]);
+    const add = () => {
+      this.firings.set(sig, rec);
+      for (const id of ids) setOf(this.byWire, id).add(sig);
+      if (rec.s) setOf(this.byRule, rec.rule).add(sig);
+    };
+    const del = () => {
+      this.firings.delete(sig);
+      for (const id of ids) this.byWire.get(id)?.delete(sig);
+      if (rec.s) this.byRule.get(rec.rule)?.delete(sig);
+    };
+    rec._add = add; rec._del = del;
+    add();
+    this._do(del);
+  }
+
+  _forgetFiring(sig) {
+    const rec = this.firings.get(sig);
+    if (!rec) return null;
+    rec._del();
+    this._do(rec._add);
+    return rec;
+  }
+
+  _norm(v) { return v[0] === '$' && v[1] !== '?' ? '$' + this.resolve(v.slice(1)) : v; }
+
+  // ---------------------------------------------------------------- ingest
+
+  /** Classify and store the wires of one tell. Returns the ids that are facts. */
+  _ingest(wires, res) {
+    const facts = [];
+    const linked = new Set();
+    const noteLinks = (ws) => {
+      for (const w of ws) {
+        if (w.type !== 'core.rule' && w.type !== 'core.deny') continue;
+        for (const k of LINKS) for (const v of w.attrs[k] || []) if (v[0] === '$') linked.add(v.slice(1));
+      }
+    };
+    noteLinks(wires);
+    let schemaChanged = false;
+    for (let i = 0; i < wires.length; i++) { // the list grows when a module is loaded
+      const w = wires[i];
+      // facts and matrix wires have separate id spaces: a pattern ?m1 does not clash with a fact @m1
+      const isSchema = w.pattern || SCHEMA_TYPES.has(w.type) || linked.has(w.id);
+      if (isSchema ? this.schema.has(w.id) : this.wires.has(w.id) || this.alias.has(w.id)) {
+        res.violations.push({ kind: 'duplicate-id', id: w.id });
+        continue;
+      }
+      if (isSchema) {
+        this.schema.set(w.id, w);
+        this._do(() => this.schema.delete(w.id));
+        schemaChanged = true;
+        if (w.type === 'core.use') {
+          const name = first(w, 'world');
+          if (!name || !(name in this.options.library)) {
+            res.violations.push({ kind: 'schema', why: `${w.id}: no matrix named "${name}" in the library` });
+          } else if (!this.used.has(name)) {
+            this.used.add(name);
+            this._do(() => this.used.delete(name));
+            const mod = prefixModule(parse(this.options.library[name]), name);
+            noteLinks(mod);
+            wires.push(...mod);
+          }
+        }
+        continue;
+      }
+      if (Object.values(w.attrs).flat().some(hasVar)) {
+        res.violations.push({ kind: 'syntax', id: w.id, why: 'a fact cannot contain variables; templates must be told together with their rule' });
+        continue;
+      }
+      for (const k of Object.keys(w.attrs)) w.attrs[k] = [...new Set(w.attrs[k].map((v) => this._norm(v)))];
+      facts.push(w.id);
+      const same = this._findByIdentity(w.type, w.attrs);
+      if (same) {
+        this._merge(same, w.attrs, { via: 'core.tell', from: [] }, res);
+        this.alias.set(w.id, same.id);
+        this._do(() => this.alias.delete(w.id));
+        this._event({ op: 'merge', id: w.id, into: same.id });
+        res.merged.push({ id: w.id, into: same.id });
+      } else {
+        const seq = this._event({ op: 'tell', id: w.id, wire: format(w) });
+        this._addWire(w, { seq, told: true, depth: 0 }, res);
+        res.added.push(w.id);
+      }
+    }
+    if (schemaChanged) {
+      const prev = this._c;
+      this._c = null;
+      this._do(() => { this._c = prev; });
+      for (const e of this._compiled().errors) res.violations.push({ kind: 'schema', why: e });
+      res._agenda = [...this.wires.keys()];
+      for (const id of res._agenda) res._touched.add(id);
+    }
+    return facts;
+  }
+
+  _compiled() { return this._c || (this._c = compileMatrix(this)); }
+
+  // ---------------------------------------------------------------- matching
+
+  _patterns(query) {
+    const ws = typeof query === 'string' ? parse(query) : query;
+    const locals = new Set(ws.map((w) => w.id));
+    return ws.map((w) => localize(w, locals));
+  }
+
+  /**
+   * Match one pattern against one wire. Keys with a single value (the usual case) are
+   * unified in a plain loop; only a key with several values needs the branching generator.
+   */
+  *_matchWire(p, w, s) {
+    if (p.type !== w.type) return;
+    s = unify('?' + p.id, w.id, s);
+    if (!s) return;
+    let pairs = p._pairs;
+    if (!pairs) {
+      pairs = [];
+      for (const k of Object.keys(p.attrs)) for (const v of p.attrs[k]) pairs.push(k, v);
+      Object.defineProperty(p, '_pairs', { value: pairs, enumerable: false });
+    }
+    for (let i = 0; i < pairs.length; i += 2) {
+      const have = w.attrs[pairs[i]];
+      if (!have) return;
+      if (have.length !== 1) { yield* this._matchPairs(pairs, i, w, s); return; }
+      s = unify(pairs[i + 1], have[0], s);
+      if (!s) return;
+    }
+    yield s;
+  }
+
+  *_matchPairs(pairs, i, w, s) {
+    if (i === pairs.length) { yield s; return; }
+    const have = w.attrs[pairs[i]];
+    if (!have) return;
+    for (const fv of have) {
+      const t = unify(pairs[i + 1], fv, s);
+      if (t) yield* this._matchPairs(pairs, i + 2, w, t);
+    }
+  }
+
+  *_candidates(p, s) {
+    const idv = walk('?' + p.id, s);
+    if (!isVar(idv)) {
+      const w = this.wires.get(this.resolve(idv));
+      if (w) yield* this._matchWire(p, w, s);
+      return;
+    }
+    // start from the smallest set: all wires of the type, or those having a value the pattern fixes
+    let best = this.byType.get(p.type);
+    if (!best) return;
+    for (const k of Object.keys(p.attrs)) {
+      for (const v of p.attrs[k]) {
+        const t = walk(v, s);
+        if (hasVar(t)) continue;
+        const set = this.index.get(K(p.type, k, t));
+        if (!set || !set.size) return;
+        if (set.size < best.size) best = set;
+      }
+    }
+    for (const id of best) yield* this._matchWire(p, this.wires.get(id), s);
+  }
+
+  *_matchAll(pats, i, s) {
+    if (i === pats.length) { yield s; return; }
+    for (const t of this._candidates(pats[i], s)) yield* this._matchAll(pats, i + 1, t);
+  }
+
+  _negated(rule, s) {
+    for (const n of rule.not) if (!this._candidates(n, s).next().done) return true;
+    return false;
+  }
+
+  /** Complete matches of a rule body: patterns, then calcs, tests and negated patterns. */
+  *_bodies(rule, s0, skip) {
+    const pats = skip < 0 ? rule.when : rule.when.filter((_, i) => i !== skip);
+    next: for (let s of this._matchAll(pats, 0, s0)) {
+      for (const c of rule.calc) {
+        const args = c.args.map((a) => walk(a, s));
+        if (args.some(hasVar)) continue next;
+        const out = this.fns[c.fn](args, this);
+        if (out === undefined || out === null) continue next;
+        s = unify(c.out, String(out), s);
+        if (!s) continue next;
+      }
+      for (const t of rule.test) {
+        const args = t.args.map((a) => walk(a, s));
+        if (args.some(hasVar) || !this.fns[t.fn](args, this)) continue next;
+      }
+      if (this._negated(rule, s)) continue;
+      yield s;
+    }
+  }
+
+  // ---------------------------------------------------------------- chase
+
+  _chase(res) {
+    const c = this._compiled();
+    if (c.errors.length) return;
+    let steps = 0;
+    const fireAll = (rule, matches) => {
+      for (const s of matches) {
+        if (res.violations.length) return;
+        if (++steps > this.options.maxSteps) {
+          res.violations.push({ kind: 'budget', why: `more than ${this.options.maxSteps} rule firings` });
+          return;
+        }
+        this._fire(rule, s, c, res);
+      }
+    };
+    for (;;) {
+      while (res._agenda.length && !res.violations.length) {
+        const w = this.wires.get(res._agenda.shift());
+        if (!w) continue;
+        // a new or changed wire can end the absence that a rule with not= relied on
+        for (const rule of c.negByType.get(w.type) || []) {
+          const stale = [...(this.byRule.get(rule.id) || [])].filter((sig) => this._negated(rule, this.firings.get(sig).s));
+          if (stale.length) this._unsay(res, [], [], stale);
+        }
+        for (const { rule, idx } of c.ruleByType.get(w.type) || []) {
+          const matches = [];
+          for (const s0 of this._matchWire(rule.when[idx], w, EMPTY)) matches.push(...this._bodies(rule, s0, idx));
+          fireAll(rule, matches);
+        }
+      }
+      if (res.violations.length) return;
+      // rules with negation are re-evaluated in full once everything else is quiet
+      for (const rule of c.negRules) fireAll(rule, [...this._bodies(rule, EMPTY, -1)]);
+      if (!res._agenda.length || res.violations.length) return;
+    }
+  }
+
+  _fire(rule, s, c, res) {
+    const sig = rule.id + '|' + rule.vars.map((v) => walk(v, s)).join('|');
+    if (this.firings.has(sig)) return;
+    const from = rule.when.map((p) => walk('?' + p.id, s));
+    const depth = 1 + Math.max(0, ...from.map((id) => this.wires.get(id)?.meta.depth || 0));
+    if (depth > this.options.maxDepth) {
+      res.violations.push({ kind: 'depth', rule: rule.id, why: `derivation deeper than ${this.options.maxDepth}` });
+      return;
+    }
+    const rec = { rule: rule.id, from, made: [], fills: [], hits: [] };
+    if (rule.not.length) rec.s = s;
+    const prov = { via: rule.id, from, rec };
+    for (const t of rule.then) {
+      const attrs = {};
+      for (const k of Object.keys(t.attrs)) {
+        const vals = t.attrs[k].map((v) => walk(v, s)).filter((v) => !hasVar(v));
+        if (vals.length) attrs[k] = vals; // a value left unbound is an open key
+      }
+      let target = this._findByIdentity(t.type, attrs) || this._findSubsuming(t.type, attrs, c);
+      if (target) {
+        rec.hits.push(target.id);
+        this._merge(target, attrs, prov, res);
+      } else {
+        target = { id: `_${t.id}_${hash(sig)}`, type: t.type, attrs, pattern: false };
+        if (this.wires.has(target.id)) target.id += '_' + this.seq;
+        const seq = this._event({ op: 'derive', id: target.id, wire: format(target), via: rule.id, from });
+        this._addWire(target, { seq, via: rule.id, from, depth }, res);
+        rec.made.push(target.id);
+        res.derived.push(target.id);
+      }
+      s = unify('?' + t.id, target.id, s);
+    }
+    this._recordFiring(sig, rec);
+  }
+
+  _findByIdentity(type, attrs) {
+    const keys = this._compiled().idKeys.get(type);
+    if (!keys || !keys.every((k) => attrs[k])) return null;
+    for (const id of this.index.get(K(type, keys[0], attrs[keys[0]][0])) || []) {
+      const w = this.wires.get(id);
+      if (keys.every((k) => w.attrs[k] && w.attrs[k][0] === attrs[k][0])) return w;
+    }
+    return null;
+  }
+
+  _findSubsuming(type, attrs, c) {
+    if (c.idKeys.get(type)?.every((k) => attrs[k])) return null;
+    const keys = Object.keys(attrs);
+    let best = this.byType.get(type);
+    if (!best) return null;
+    for (const k of keys) for (const v of attrs[k]) {
+      const set = this.index.get(K(type, k, v));
+      if (!set || !set.size) return null;
+      if (set.size < best.size) best = set;
+    }
+    for (const id of best) {
+      const w = this.wires.get(id);
+      if (keys.every((k) => w.attrs[k] && attrs[k].every((v) => w.attrs[k].includes(v)))) return w;
+    }
+    return null;
+  }
+
+  /** Add key/values to an existing wire; a different value on a single-valued key is a conflict. */
+  _merge(w, attrs, prov, res) {
+    const slots = this._compiled().slots.get(w.type);
+    for (const k of Object.keys(attrs)) {
+      for (const v of attrs[k]) {
+        const have = w.attrs[k];
+        if (have && have.includes(v)) continue;
+        if (have && !slots?.get(k)?.many) {
+          res.violations.push({ kind: 'conflict', id: w.id, key: k, have: have[0], want: v, via: prov.via, wires: [w.id, ...prov.from] });
+          continue;
+        }
+        this._addValue(w, k, v, prov, res);
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------- withdrawal
+
+  /**
+   * Take back wires, values and rule firings, and everything that rested on them.
+   * Over-deletes on purpose: every firing that read a removed or changed wire is undone and
+   * its inputs are put back on the agenda, so the next chase re-derives what still holds.
+   * Returns the ids removed. Does not chase.
+   */
+  _unsay(res, ids, values, sigs = []) {
+    const gone = new Set();
+    const queue = [];
+    const requeue = (id) => { if (this.wires.has(id)) { res._agenda.push(id); res._touched.add(id); } };
+    const kill = (id) => {
+      const w = this.wires.get(id);
+      if (!w) return;
+      this._removeWire(w);
+      this._event({ op: 'remove', id });
+      gone.add(id);
+      queue.push(id);
+    };
+    const unfill = ({ id, key, value }) => {
+      const w = this.wires.get(id);
+      if (!w || !w.attrs[key]?.includes(value)) return;
+      this._removeValue(w, key, value);
+      this._event({ op: 'unfill', id, key, value });
+      queue.push(id);
+      requeue(id);
+    };
+    const invalidate = (sig) => {
+      const rec = this._forgetFiring(sig);
+      if (!rec) return;
+      rec.made.forEach(kill);
+      rec.fills.forEach(unfill);
+      rec.from.forEach(requeue);
+    };
+    ids.forEach(kill);
+    values.forEach(unfill);
+    sigs.forEach(invalidate);
+    while (queue.length) {
+      const id = queue.shift();
+      for (const sig of [...(this.byWire.get(id) || [])]) {
+        const rec = this.firings.get(sig);
+        if (!rec) continue;
+        if (rec.from.includes(id)) invalidate(sig);
+        else { this._forgetFiring(sig); rec.from.forEach(requeue); } // it only wrote here: let it fire again
+      }
+    }
+    res._agenda = res._agenda.filter((id) => this.wires.has(id));
+    return gone;
+  }
+
+  // ---------------------------------------------------------------- validation
+
+  _validate(res) {
+    const c = this._compiled();
+    for (const id of res._touched) {
+      const w = this.wires.get(id);
+      if (!w) continue;
+      const slots = c.slots.get(w.type);
+      for (const k of Object.keys(w.attrs)) {
+        const s = slots?.get(k);
+        if (!s) {
+          if (c.closed.has(w.type) && !k.startsWith('core.')) res.violations.push({ kind: 'unknown-key', id, key: k });
+        } else {
+          if (!s.many && w.attrs[k].length > 1) res.violations.push({ kind: 'cardinality', id, key: k });
+          for (const v of w.attrs[k]) {
+            if (s.min || s.max) {
+              const q = quantity(v);
+              const bad = !q ? 'must be a number' : s.min && q.n < s.min.n ? `must be at least ${s.min.n}` : s.max && q.n > s.max.n ? `must be at most ${s.max.n}` : null;
+              if (bad) res.violations.push({ kind: 'domain', id, key: k, value: v, why: bad });
+            }
+            if (s.enum && !s.enum.includes(v)) res.violations.push({ kind: 'domain', id, key: k, value: v, allowed: s.enum });
+            if (s.type && !(v[0] === '$' && this.wires.get(v.slice(1))?.type === s.type)) {
+              res.violations.push({ kind: 'domain', id, key: k, value: v, why: `must refer to a ${s.type} wire` });
+            }
+          }
+        }
+        for (const v of w.attrs[k]) {
+          if (v[0] === '$' && !this.wires.has(v.slice(1)) && !this.schema.has(v.slice(1))) {
+            res.violations.push({ kind: 'dangling-ref', id, key: k, value: v });
+          }
+        }
+      }
+    }
+    // A deny without negation can only start to match through a wire that was added or
+    // changed, so it is checked from the touched wires. Denies with negation are checked in full.
+    const reported = new Set();
+    const report = (d, s) => {
+      reported.add(d);
+      res.violations.push({ kind: 'deny', rule: d.id, why: d.why, wires: d.when.map((p) => walk('?' + p.id, s)) });
+    };
+    for (const id of res._touched) {
+      const w = this.wires.get(id);
+      if (!w) continue;
+      for (const { rule: d, idx } of c.denyByType.get(w.type) || []) {
+        if (d.not.length || reported.has(d)) continue;
+        seeded: for (const s0 of this._matchWire(d.when[idx], w, EMPTY)) {
+          for (const s of this._bodies(d, s0, idx)) { report(d, s); break seeded; }
+        }
+      }
+    }
+    for (const d of c.denies) {
+      if (!d.not.length) continue;
+      for (const s of this._bodies(d, EMPTY, -1)) { report(d, s); break; }
+    }
+  }
+}
+
+Object.assign(World.prototype, completion, revision);

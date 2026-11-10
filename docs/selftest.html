@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sopworld Self-test</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.4</small></a>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="concepts.html">Concepts</a><a href="reasoning.html">Reasoning</a><a href="usecases.html">Use cases</a><a href="solvers.html">Solvers</a><a href="api.html">API</a><a href="playground.html">Playground</a><a href="roadmap.html">Analysis and roadmap</a></nav>
+</header>
+<main>
+<h1>Self-test</h1>
+<p class="lead">The built file checking itself in this browser.</p>
+
+<p id="summary">Running the checks...</p>
+<ul class="results" id="results"></ul>
+<h2>What this runs</h2>
+<p>The page imports <code>sopworld.mjs</code> as an ES module and runs <code>selftest.mjs</code>: deduction, refusal, completion, abduction, induction, retraction, replacement, negation, composition, persistence and both built-in solvers. It also loads <code>sopworld.js</code> as a classic script and checks the global. The same file runs in Node with <code>node docs/selftest.mjs</code>.</p>
+
+</main>
+<footer>sopworld 0.4 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<script src="sopworld.js"></script>
+<script type="module">
+import { run } from './selftest.mjs';
+import { version } from './sopworld.mjs';
+const list = document.getElementById('results');
+const add = (ok, text, detail) => {
+  const li = document.createElement('li');
+  if (!ok) li.className = 'bad';
+  li.textContent = text;
+  if (detail) { const s = document.createElement('small'); s.textContent = ' ' + detail; li.append(s); }
+  list.append(li);
+};
+const report = await run();
+for (const r of report.results) add(r.ok, r.name, r.ok ? r.ms + ' ms' : r.error);
+const classic = typeof sopworld === 'object' && sopworld.version === version && typeof sopworld.World === 'function';
+add(classic, 'the classic script exposes the same library as a global', classic ? '' : 'window.sopworld is missing or differs');
+const failed = report.failed + (classic ? 0 : 1);
+const summary = document.getElementById('summary');
+summary.textContent = `sopworld ${version}: ${report.passed + (classic ? 1 : 0)} passed, ${failed} failed`;
+summary.dataset.done = failed ? 'failed' : 'passed';
+</script>
+</body>
+</html>

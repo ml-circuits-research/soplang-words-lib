@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sopworld Analysis and roadmap</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.4</small></a>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="concepts.html">Concepts</a><a href="reasoning.html">Reasoning</a><a href="usecases.html">Use cases</a><a href="solvers.html">Solvers</a><a href="api.html">API</a><a href="playground.html">Playground</a><a href="roadmap.html" aria-current="page">Analysis and roadmap</a></nav>
+</header>
+<main>
+<h1>Analysis and roadmap</h1>
+<p class="lead">Where the library stands against the goal: a self-consistent model of a small world that completes itself logically, explains itself, and can be learned from examples.</p>
+
+<h2>What is settled</h2>
+<p>These decisions held through four iterations and the tests rely on them. Treat them as the architecture.</p>
+<ul>
+ <li><strong>One language.</strong> Facts, schema, rules and constraints are all wires. A matrix can be stored, sent, diffed and learned like data.</li>
+ <li><strong>One operation.</strong> Every change is a transaction of ingest, chase, validate. Dry runs, completion search, abduction checks and what-if trials are the same operation on a state that is rolled back.</li>
+ <li><strong>Declarative rules, named code.</strong> Functions are the only place for code.</li>
+ <li><strong>Open world, explicit questions.</strong> Missing is unknown. Required keys make the unknown visible as questions.</li>
+ <li><strong>Provenance on everything.</strong> Wires, values and rule firings record their sources. Explanation, incremental retraction, revision of assumptions and the conflict analysis of the solvers all read that record.</li>
+ <li><strong>Three strengths of belief.</strong> Told, derived or forced, and assumed. Only assumptions give way.</li>
+ <li><strong>The world is the judge.</strong> Search is a strategy. Whatever a solver proposes, built in or outside, is accepted only after the world has verified it.</li>
+ <li><strong>One file.</strong> The sources are small modules; the product is one file that runs unchanged in Node and in a browser.</li>
+</ul>
+<h2>What this iteration added</h2>
+<div class="table"><table><thead><tr><th>Earlier limit</th><th>Now</th></tr></thead><tbody><tr><td>Several modules, Node only in practice</td><td>A dependency-free build makes <code>sopworld.mjs</code> and <code>sopworld.js</code>; the whole test suite runs on the built file, and a self-test runs in the browser</td></tr><tr><td>Completion search was one built-in backtracker</td><td>The solver is a strategy: a minimal backtracker, a clause-learning SAT solver in plain JavaScript (the default), and adapters for clingo and any DIMACS SAT solver</td></tr><tr><td>Search asked the world at every step</td><td>Deny constraints are grounded once into nogoods; the default solver asks the world only to verify a complete answer</td></tr><tr><td>Every deny was re-checked in full after each change</td><td>A deny without negation is checked only from the wires that changed</td></tr><tr><td>Each binding copied the whole substitution</td><td>Substitutions are shared linked lists; single-valued keys are matched in a plain loop</td></tr><tr><td><code>replace</code> dropped wires that referred to the old wire</td><td>They stay when the new wire keeps the id</td></tr><tr><td>Free numeric keys could not be searched</td><td><code>min</code>, <code>max</code>, <code>step</code> make a numeric key enumerable; <code>min</code> and <code>max</code> are validated</td></tr><tr><td>Atoms were opaque</td><td>Numbers carry units through the built-in functions</td></tr><tr><td>Induction could not use negative examples</td><td>It adds the comparisons that exclude them, and requires same-type patterns to match different wires</td></tr><tr><td>A refusal named derived wires</td><td>Each violation lists the told wires it rests on</td></tr></tbody></table></div>
+<h2>Measured</h2>
+<p>One run on the development machine (Node 22). Treat the numbers as orders of magnitude.</p>
+<div class="table"><table><thead><tr><th>Workload</th><th>Before this iteration</th><th>Now</th></tr></thead><tbody><tr><td>Six dialogue turns of meeting completion</td><td>828 ms</td><td>139 ms</td></tr><tr><td>3000 facts joined into 3000 derived wires</td><td>186 ms</td><td>171 ms</td></tr><tr><td>14,000 wires through a recursive rule</td><td>451 ms</td><td>366 ms</td></tr><tr><td>Retract one fact among 14,000 wires</td><td>6 ms</td><td>4 ms</td></tr><tr><td>Schedule 16 meetings, 5 rooms (32 open keys)</td><td>no answer within 2000 search steps (1.3 s)</td><td>25 ms</td></tr></tbody></table></div>
+<h2>What is still limited</h2>
+<div class="table"><table><thead><tr><th>Limit</th><th>Consequence</th><th>What would fix it</th></tr></thead><tbody><tr><td>Matching does not cache partial matches</td><td>Each change re-joins from the changed wire. Fine for tens of thousands of wires, slow for rules with many patterns over large types</td><td>A Rete or TREAT network behind the same matching interface</td></tr><tr><td>Only denies are grounded for the solver</td><td>A conflict that arises through a rule is found when the world verifies an answer, one refusal at a time</td><td>Ground rule consequences too (labels of assumptions, as in an ATMS)</td></tr><tr><td>Grounding grows with the number of deny matches</td><td>Capped at 200,000 nogoods; beyond that the world verifies the rest</td><td>Hand the deny itself to an outside solver instead of its ground instances</td></tr><tr><td>With negation a partial completion may be refused although a later value would repair it</td><td>Such completions are not found</td><td>Check only complete assignments for matrices with negation</td></tr><tr><td>Free keys cannot be enumerated</td><td>They always become questions</td><td>Interval propagation for numbers</td></tr><tr><td>Ranking is counts and declared costs</td><td>The world knows possible, not probable</td><td>A learned scorer through the <code>rank</code> hook</td></tr><tr><td>Induction is exact</td><td>One wrong example changes the rule; no learned negation</td><td>Scoring rule candidates against the examples</td></tr><tr><td>No notion of time or context</td><td>Time is a value you manage; a wire holds everywhere</td><td><code>core.in</code> contexts and validity intervals</td></tr><tr><td>The build does not minify</td><td>110 kB, 31 kB gzipped</td><td>An optional minifier outside the repository</td></tr></tbody></table></div>
+<h2>Is a neural part needed</h2>
+<p>Not for validity. Matching, completion, search, abduction, induction and revision are symbolic and exact. A statistical part earns its place at four edges, and the library has a seam for each:</p>
+<div class="table"><table><thead><tr><th>Edge</th><th>Seam in the library</th></tr></thead><tbody><tr><td>Text to wires</td><td><code>tell</code> accepts wire objects; refusals come back as data, with the told wires they rest on</td></tr><tr><td>Wires to text</td><td><code>core.question</code> wires carry <code>ask</code>, options and the wire they are about</td></tr><tr><td>Which of several consistent options is likely</td><td><code>rank</code> option, <code>cost</code> on abducibles</td></tr><tr><td>Fuzzy equality of atoms</td><td>A custom <code>core.test</code> function</td></tr></tbody></table></div>
+<h2>Recommended order of work</h2>
+<ol>
+ <li><strong>Formaliser contract.</strong> Fix the loop of propose wires, read violations and their support, repair. It decides how good completion feels in a real chat, and it needs no engine change.</li>
+ <li><strong>Contexts.</strong> <code>core.in=$ctx</code> with rules that hold per context: nested worlds, hypothetical branches, per-speaker beliefs.</li>
+ <li><strong>Grounding of rule consequences.</strong> So that the solver sees conflicts that arise through rules before it proposes an answer.</li>
+ <li><strong>Match network.</strong> Only when a real matrix shows the need; measure first with <code>npm run bench</code>.</li>
+ <li><strong>Induction with scoring.</strong> Noise and learned negation, using the world itself as the judge of candidate rules.</li>
+</ol>
+<h2>How to judge progress</h2>
+<ul>
+ <li>Every new capability lands with a small world in <code>examples/</code> and a test that states the expected wires.</li>
+ <li>Anything incremental is tested against a rebuild from scratch; every solver against a reference solver.</li>
+ <li>The suite must pass on the sources and on the built file, and the self-test in a browser.</li>
+ <li>A matrix written by a person for a new domain should need no change in <code>src/</code>. When it does, that is the next item for this page.</li>
+</ul>
+
+</main>
+<footer>sopworld 0.4 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+
+</body>
+</html>

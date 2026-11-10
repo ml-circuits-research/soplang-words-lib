@@ -1048,3 +1048,24 @@ Limits: no aggregates in an action's calcs; `set` writes one value per key.
 Pilot at the tag: 590 of 596 cases (147 + 212 + 231). The six that differ: n18 (the
 receiver of an impossible gift), the four "received" answers (kept as failures by the
 reviewer's answer to Q12), and "Hello" (an operation of another world).
+
+## The user's decision on versions (20:20): no tags, a version file and a self-describing build — done
+
+`npm test`: 184 pass, 0 fail on sources and built file. `node docs/selftest.mjs`:
+"sopworld 0.5.0 (build …, 2026-11-10): 14 passed, 0 failed". `npm run test:browser`: all
+passed.
+
+The user asked to leave tags aside. Instead:
+- `tools/build.mjs` writes `docs/version.md` next to the built files (version, build
+  fingerprint, date, sizes, how to read it from code);
+- the built library exports `build = { version, hash, date }` besides `version` (in a
+  page: `sopworld.build`); the first line of each built file carries the same;
+- `hash` is the first 12 hex digits of the SHA-256 of the bundled sources, so it changes
+  exactly when the code does; the date is kept while the hash is the same, so building
+  the same sources twice gives identical files (checked with `cmp`);
+- a test compares the loaded build with `docs/version.md` and the banner; from `src/`
+  `hash` and `date` are null.
+
+The local tag `v0.5.0` is deleted; "tag 0.6.0" in the task list means: bump the version,
+rebuild, and `docs/version.md` says it. A host can pin either the commit or the build
+hash.

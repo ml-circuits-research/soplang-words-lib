@@ -241,3 +241,20 @@ test('core.check is the condition wire; core.test still works when a rule links 
   assert.equal(w.get('case1').type, 'core.test');
   assert.equal(w.matrix.has('case1'), false);
 });
+
+test('build: the library says which version and build it is, and docs/version.md says the same', async () => {
+  const lib = await import('../tools/lib-under-test.mjs');
+  const { readFileSync } = await import('node:fs');
+  const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+  assert.equal(lib.version, pkg.version);
+  assert.equal(lib.build.version, pkg.version);
+  if (process.env.SOPWORLD_BUNDLE) {
+    const text = readFileSync(new URL('../docs/version.md', import.meta.url), 'utf8');
+    assert.match(lib.build.hash, /^[0-9a-f]{12}$/);
+    assert.match(lib.build.date, /^\d{4}-\d{2}-\d{2}$/);
+    assert.ok(text.includes(`| Version | ${pkg.version} |`) && text.includes(`| Build | ${lib.build.hash} |`) && text.includes(`| Built | ${lib.build.date} |`));
+    assert.ok(readFileSync(new URL('../docs/sopworld.mjs', import.meta.url), 'utf8').startsWith(`// sopworld ${pkg.version} (build ${lib.build.hash}, ${lib.build.date})`));
+  } else {
+    assert.deepEqual([lib.build.hash, lib.build.date], [null, null], 'run from src/: not a build');
+  }
+});

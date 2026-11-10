@@ -981,6 +981,13 @@ Invariants the tests rely on:
   a rollback, so anything computed for a state (the completion problem) can be cached.
 - No solver answer is used before the world has verified it.
 
+**Which build is this.** There are no release tags. The version is `version` in the
+library and in `package.json`; the build also writes `build = { version, hash, date }`
+into the single file, where `hash` is a fingerprint of the bundled sources (two files
+with the same hash are the same code) and `date` the day it was first built. The same
+three are in `docs/version.md`, next to the built files, and in their first line. Run
+from `src/`, `hash` and `date` are null.
+
 ## 8. API summary
 
 ```js

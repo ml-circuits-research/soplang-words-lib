@@ -94,6 +94,8 @@ export function toDimacs(data: ProblemData): { text: string; lit: number[][] };
 export function toASP(data: ProblemData): string;
 export function quantity(value: string): { n: number; unit: string } | null;
 export const version: string;
+/** which build this is: the version, a fingerprint of the bundled sources and the day it was built (null when run from src/) */
+export const build: { version: string; hash: string | null; date: string | null };
 export interface NextStep {
   fills: (OpenKey & { value: string; kind: 'forced' | 'default' })[];
   questions: Wire[];

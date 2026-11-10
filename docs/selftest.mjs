@@ -1,6 +1,6 @@
 // Self-test of the single-file build. Runs in a browser (selftest.html) and in Node:
 //   node docs/selftest.mjs
-import { World, solvers, induce, adopt, version } from './sopworld.mjs';
+import { World, solvers, induce, adopt, version, build } from './sopworld.mjs';
 import { mechanics, family, garden, meetings, clinic, plant, procedure, library } from './worlds.mjs';
 import { scheduling, instance } from './scheduling.mjs';
 
@@ -136,6 +136,6 @@ export async function run() {
 if (typeof document === 'undefined') {
   const report = await run();
   for (const r of report.results) console.log(`${r.ok ? 'ok  ' : 'FAIL'} ${r.name}${r.ok ? '' : ` - ${r.error}`}`);
-  console.log(`sopworld ${report.version}: ${report.passed} passed, ${report.failed} failed`);
+  console.log(`sopworld ${report.version} (build ${build.hash}, ${build.date}): ${report.passed} passed, ${report.failed} failed`);
   if (report.failed) process.exitCode = 1;
 }

@@ -12,7 +12,8 @@ what it cannot decide, and refuses what is not allowed.
   Specification: [SPEC.md](./SPEC.md).
 - Type hierarchy, kinds, state over time, aggregates, questions with a status, actions,
   step budgets and copy-on-write forks: [docs/matrix.html](./docs/matrix.html).
-- What changed since 0.4: [CHANGELOG.md](./CHANGELOG.md).
+- What changed since 0.4: [CHANGELOG.md](./CHANGELOG.md). Which version the built file is:
+  [docs/version.md](./docs/version.md), and `build` in the loaded library.
 - Putting an existing system on the library: [docs/integration.md](./docs/integration.md).
 
 ## Use

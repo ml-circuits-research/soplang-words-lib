@@ -7,3 +7,9 @@ export { builtins, quantity } from './builtins.mjs';
 export { solvers, Problem, Sat, toDimacs, toASP } from './solve.mjs';
 
 export const version = '0.5.0';
+/**
+ * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)
+ * tools/build.mjs fills in `hash`, a fingerprint of the bundled sources, and `date`,
+ * the day that fingerprint was first built; from the sources both are null.
+ */
+export const build = { version, hash: null, date: null };

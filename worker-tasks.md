@@ -4,13 +4,42 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
 
 **The user's direction: sopworld is a general, useful library for self-consistent worlds of SOP Lang wires. It must be *compatible* with the PSys2 worlds, but it is not built *for* them.** Nothing PSys2-specific goes into the core: no PSys2 type names, no PSys2 envelope, no PSys2 file layout. Every feature below must make sense for any user of the library (a scheduler, a digital twin, a tutoring system, a game) and be documented with a neutral example. PSys2 is the first demanding user: its needs show what is missing, and a small compatibility suite (`compat/psys2/`) proves that such a system can sit on the library through its public, general mechanisms.
 
+## Where things stand (reviewer, 2026-11-10 15:15) — read this first
+
+The reviewer's first two commits to this repository were a false start; ignore them. One list is valid: **G1–G9 below**. The earlier S1–S8 list and the `psys2/` directory no longer exist; only `compat/psys2/` does.
+
+| Task | State |
+| --- | --- |
+| S0 (solver tests skipped, AGENTS.md) | validated |
+| G1 type hierarchy, G2 schema mapping (23f238b) | **validated** — reviewer rerun: `npm test` 96 pass, 0 fail, 1 skipped (sources and built file); `node compat/psys2/schema.test.mjs` 2 pass; `git grep -i psys2 src/` empty. Good work; the mapping as data is exactly what was meant. |
+| Q3–Q7 | answered just below |
+
+**Answers to your questions** (they live here, as your protocol says; delete them from `questions.md` when satisfied):
+- **Q1** (no access to PSys2): not needed. What you need is in `compat/psys2/`; ask for more if something is missing.
+- **Q3** (`core.test` clash): rename now, in its own commit before G6. The matrix wire becomes `core.check`; `core.test` stays as a deprecated alias for one version. A host should be able to hand a whole directory of its wires to a world without a clash on such a common word.
+- **Q4** (`world.schema`): accepted. `world.matrix` is the Map, `world.schema(type)` the method. List it under "Changes" in SPEC.
+- **Q5** (literal kinds): accepted as chosen. `string` does not require quotes. Unknown kinds accept any literal, but report them in `world.schema(type)` (for example `unknownKinds`) so a host sees a typo. `time.<name>` gets its checks in G4.
+- **Q6** (default parent): accepted, the right call: none in the library; `root=` in the type map supplies one.
+- **Q7** (one commit for G1 and G2): fine. One commit per task from here on.
+
+**Do next, in this order, one commit each:**
+1. `core.test` → `core.check` (Q3), alias kept.
+2. **G6** (queries with a status, answers as wires, producers and actions). Include the "slot whose key is a prefix" you noted (`where.<key>`, `arg.<key>`), as a general feature.
+3. **G3** (sequence, fluents, as-of).
+4. **G4** (aggregates, arithmetic, time kinds).
+5. **G7** (budgets everywhere, structural fork). Find the `replace` slowdown here: the reviewer measures 47–81 ms for the 1000-replace benchmark against 30 ms in 0.4. It must be back at or under the 0.4 number.
+6. **G5** (abduction through calcs).
+7. **G8** (the three matrices and the runner), then **G9**.
+
+Working rules for commits: pull with rebase before each commit; the reviewer only ever changes `worker-tasks.md` (tasks and answers) and, when you ask for more material, files under `compat/psys2/` — never `src/`, tests, docs, `questions.md` or your log. If a reviewer commit lands while you work, rebase onto it; it will not touch your files.
+
 ## 0. Protocol
 
 | File | Who writes | What it is |
 | --- | --- | --- |
 | `worker-tasks.md` (this file) | reviewer only | The tasks. `git pull` before each task. Validated tasks move to "Validated" at the end. |
 | `worker-log.md` | worker only | One entry per task: status, commands run, numbers, commit hash, deviations. Push when a task is done. |
-| `questions.md` | worker asks, reviewer answers | Non-blocking questions: take the most reasonable choice, note it, continue. |
+| `questions.md` | worker only | Non-blocking questions: take the most reasonable choice, note it, continue. The reviewer answers in this file, under "Where things stand". |
 
 Rules:
 1. Everything on disk is in English.
@@ -89,3 +118,4 @@ G1, G2, G6, G3, G4, G7, G5, G8, G9. G8 for the shop world can start as soon as G
 ## Validated
 
 - S0 (c583bfa): tests that need an outside solver are skipped when it is missing; `AGENTS.md` added. Accepted from the log (80 pass, 1 skipped, 0 fail).
+- G1 + G2 (23f238b): type hierarchy; schema mapping as data, literal kinds, qualified keys. Reviewer rerun: 96 pass / 0 fail / 1 skipped twice, compat schema test 2 pass, no PSys2 name in `src/`. Open from it: the `replace` benchmark is slower than 0.4 (goes to G7).

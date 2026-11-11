@@ -650,6 +650,11 @@ export class World {
   _finish(mark, res, dry, entry) {
     const ok = !res.violations.length;
     if (!ok) for (const v of res.violations) this._support(v); // before the evidence is rolled back
+    if (!ok && res.violations.some((v) => v.priority !== undefined)) {
+      // the deny with the lowest priority= first: the most specific reason leads
+      const p = (v) => v.priority ?? Infinity;
+      res.violations.sort((a, b) => (p(a) === p(b) ? 0 : p(a) < p(b) ? -1 : 1));
+    }
     if (!ok || dry) {
       this._rollback(mark);
       if (!ok) return { ok, added: [], derived: [], filled: [], merged: [], removed: [], violations: res.violations };
@@ -1685,6 +1690,22 @@ export class World {
     return { text, bindings, vars: some(vars) };
   }
 
+  /**
+   * A slot's own reason for refusing a value: why="?value is not a ?key" with the
+   * variables value, key, id and type (as data, as for a deny) and the same filters.
+   */
+  _slotWhy(s, w, key, value, v) {
+    const data = (x) => (x === undefined ? undefined : x[0] === '"' ? str(x) : /^-?\d+(\.\d+)?$/.test(x) ? Number(x) : x);
+    const vars = { value: data(value), key, id: w.id, type: w.type };
+    const text = str(s.why).replace(SAY, (m, name, filter) => {
+      if (!(name in vars) || vars[name] === undefined) return m;
+      if (!filter) return String(vars[name]);
+      const f = this.filters[filter];
+      return f ? String(f(vars[name], { world: this, name })) : m;
+    });
+    return { ...v, why: text, vars, ...(v.why && v.why !== text ? { detail: v.why } : {}) };
+  }
+
   /** A standing issue as plain data. */
   _issueOf(i) {
     return { id: i.id, rule: (i.attrs.rule || [])[0]?.slice(1), about: (i.attrs.about || []).map((v) => v.slice(1)), ...(i.attrs.key ? { key: i.attrs.key[0] } : {}), why: i.attrs.why ? str(i.attrs.why[0]) : undefined };
@@ -1701,25 +1722,26 @@ export class World {
         if (!s) {
           if (c.closed.has(w.type) && !c.isOpenKey(k)) res.violations.push({ kind: 'unknown-key', id, key: k });
         } else {
-          if (!s.many && w.attrs[k].length > 1) res.violations.push({ kind: 'cardinality', id, key: k });
+          const own = (v, x) => (s.why ? this._slotWhy(s, w, k, x, v) : v); // a reason the slot gives itself
+          if (!s.many && w.attrs[k].length > 1) res.violations.push(own({ kind: 'cardinality', id, key: k }, w.attrs[k][1]));
           for (const v of w.attrs[k]) {
             if (s.min || s.max) {
               const q = quantity(v);
               const bad = !q ? 'must be a number' : s.min && q.n < s.min.n ? `must be at least ${s.min.n}` : s.max && q.n > s.max.n ? `must be at most ${s.max.n}` : null;
               if (s.soft) this._issue(w, k, bad, s, res);
-              else if (bad) res.violations.push({ kind: 'domain', id, key: k, value: v, why: bad });
+              else if (bad) res.violations.push(own({ kind: 'domain', id, key: k, value: v, why: bad }, v));
             }
-            if (s.enum && !s.enum.includes(v) && !s.enum.some((e) => this._same(w.type, k, e, v))) res.violations.push({ kind: 'domain', id, key: k, value: v, allowed: s.enum });
+            if (s.enum && !s.enum.includes(v) && !s.enum.some((e) => this._same(w.type, k, e, v))) res.violations.push(own({ kind: 'domain', id, key: k, value: v, allowed: s.enum }, v));
             if (s.type && !s.kinds.length) {
               const target = v[0] === '$' ? this.wires.get(v.slice(1)) : null;
               const types = s.refs.length ? s.refs : [s.type];
               if (!target || !types.some((t) => c.isA(target.type, t))) {
-                res.violations.push({ kind: 'domain', id, key: k, value: v, why: `must refer to a ${types.join(' or ')} wire` });
+                res.violations.push(own({ kind: 'domain', id, key: k, value: v, why: `must refer to a ${types.join(' or ')} wire` }, v));
               }
             } else if (s.kinds.length) {
               const target = v[0] === '$' ? this.wires.get(v.slice(1)) : null;
               const fits = s.kinds.some((kind) => fitsKind(kind, v)) || (target && s.refs.some((t) => c.isA(target.type, t)));
-              if (!fits) res.violations.push({ kind: 'domain', id, key: k, value: v, why: `must be ${[...s.kinds, ...s.refs.map((t) => `a ${t} wire`)].join(' or ')}` });
+              if (!fits) res.violations.push(own({ kind: 'domain', id, key: k, value: v, why: `must be ${[...s.kinds, ...s.refs.map((t) => `a ${t} wire`)].join(' or ')}` }, v));
             }
           }
         }
@@ -1727,7 +1749,8 @@ export class World {
         if (!s && c.isOpenKey(k)) continue;
         for (const v of w.attrs[k]) {
           if (v[0] === '$' && !this.wires.has(v.slice(1)) && !this.matrix.has(v.slice(1))) {
-            res.violations.push({ kind: 'dangling-ref', id, key: k, value: v });
+            const d = { kind: 'dangling-ref', id, key: k, value: v };
+            res.violations.push(s?.why ? this._slotWhy(s, w, k, v, d) : d);
           }
         }
       }
@@ -1746,7 +1769,7 @@ export class World {
         seen.add(name);
       } else reported.add(d);
       const said = this._say(d.why, d, s);
-      res.violations.push({ kind: 'deny', rule: d.id, why: said.text, ...(said.bindings ? { bindings: said.bindings } : {}), ...(said.vars ? { vars: said.vars } : {}), wires });
+      res.violations.push({ kind: 'deny', rule: d.id, why: said.text, ...(said.bindings ? { bindings: said.bindings } : {}), ...(said.vars ? { vars: said.vars } : {}), ...(d.priority !== undefined ? { priority: d.priority } : {}), wires });
     };
     for (const id of res._touched) {
       const w = this.wires.get(id);

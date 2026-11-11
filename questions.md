@@ -6,7 +6,14 @@ written with each question and in `worker-log.md`. A question is deleted from th
 once the worker is satisfied with the answer; closed ones are listed at the end in one
 line each so the history is not lost.
 
-No open questions.
+## Q15 (R7.2, language): the name of a deny's priority
+
+The task offered `rank=` or `order=`. Both now have another meaning: `core.rank` is a
+wire type, and `order=` is an attribute of `core.rank` (asc or desc). Under the rule
+"one sign, one meaning" I used `priority=` (a number, lower reported first), which has
+no other use. Options: (a) `priority=` (done), (b) `order=` anyway, (c) `rank=` anyway.
+Recommendation: (a). Nothing waits on this.
+
 
 ## Closed
 

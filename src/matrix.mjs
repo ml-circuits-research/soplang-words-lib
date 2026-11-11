@@ -21,14 +21,14 @@ export const SCHEMA_TYPES = new Set([
  * The reference (docs/reference.md) is checked against this table.
  */
 export const GRAMMAR = {
-  'core.slot': ['of', 'key', 'required', 'many', 'id', 'prefix', 'kind', 'type', 'enum', 'default', 'ask', 'min', 'max', 'step', 'soft', 'combine'],
+  'core.slot': ['of', 'key', 'required', 'many', 'id', 'prefix', 'kind', 'type', 'enum', 'default', 'ask', 'min', 'max', 'step', 'soft', 'combine', 'why'],
   'core.type': ['of', 'extends', 'closed', 'complete', 'transient', 'shared'],
   'core.namespace': ['prefix', 'open'],
   'core.schema.map': ['from', 'as'], // and one attribute per field it maps
   'core.use': ['world', 'prefix'],
   'core.module': ['name', 'imports', 'exports'],
   'core.rule': ['when', 'not', 'with', 'if', 'then'],
-  'core.deny': ['when', 'not', 'with', 'if', 'why', 'soft'],
+  'core.deny': ['when', 'not', 'with', 'if', 'why', 'soft', 'priority'],
   'core.calc': ['out', 'fn', 'args', 'over', 'pick', 'ties', 'relation'],
   'core.aggregate': ['over', 'by', 'then', 'default', 'fn', 'out', 'args', 'pick', 'ties', 'count', 'sum', 'min', 'max', 'argmin', 'argmax', 'collect'],
   'core.check': ['fn', 'args', 'why'],
@@ -239,6 +239,7 @@ export function compileMatrix(world) {
         attrs: w.attrs, // everything the wire says, used or not
         combine: get('combine'),
         soft: get('soft') === 'true', // a value outside min/max is accepted and kept as an issue
+        why: get('why'), // the reason to give when a value is refused
       };
       if (s.combine && !['intersect', 'override'].includes(s.combine)) c.errors.push(`${w.id}: combine must be intersect or override`);
       for (const k of ['min', 'max', 'step']) if (get(k) !== undefined && !s[k]) c.errors.push(`${w.id}: ${k} must be a number`);
@@ -765,6 +766,11 @@ function buildRule(world, w, c, extra, register = true, aggregate = null) {
     calc: [], test: [],
     why: first(w, 'why') ? str(first(w, 'why')) : undefined,
   };
+  // priority=n: when one change breaks several denies, the lower number is reported first
+  if (first(w, 'priority') !== undefined) {
+    const p = Number(first(w, 'priority'));
+    if (!Number.isFinite(p)) c.errors.push(`${w.id}: priority= must be a number`); else rule.priority = p;
+  }
   rule.calc = get('with').map((x) => fn(x, 'calc'));
   rule.test = get('if').map((x) => fn(x, 'test'));
   // a reason may write a value through a filter (?n:ordinal): the filter must be registered

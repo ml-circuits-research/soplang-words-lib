@@ -513,3 +513,23 @@ test('marks: labelled, listed, rewound for one unit only, and saved with the tim
   assert.deepEqual([again.has('n4'), again.has('n3'), again.has('n1')], [false, false, true]);
   assert.equal('timeline' in w.toJSON(), false, 'a plain snapshot is as before');
 });
+
+test('violations: denies say which reason leads (priority=), and slots give their own reasons with variables', () => {
+  const w = new World({ filters: { quoted: (v) => `«${v}»` } });
+  w.load(`
+    @k1 core.slot of=move key=to enum=a1 enum=a2 enum=b1 why="?value:quoted is not a square of the board"
+    @k2 core.slot of=move key=piece type=piece why="?id moves ?value, which is not a piece"
+    @m move to=?t
+    @busy core.check fn=eq args=?t args=a1
+    @general core.deny when=$m if=$busy why="the move is not allowed"
+    @specific core.deny when=$m if=$busy why="a1 is occupied" priority=1
+  `);
+  const r = w.tell('@m1 move to=a1');
+  assert.deepEqual(r.violations.map((v) => v.why), ['a1 is occupied', 'the move is not allowed'], 'the lower priority first');
+  const s = w.tell('@m2 move to=z9');
+  assert.deepEqual([s.violations[0].kind, s.violations[0].why, s.violations[0].vars], ['domain', '«z9» is not a square of the board', { value: 'z9', key: 'to', id: 'm2', type: 'move' }]);
+  w.tell('@p1 pawn');
+  const t = w.tell('@m3 move to=a2 piece=$p1');
+  assert.equal(t.violations[0].why, 'm3 moves $p1, which is not a piece');
+  assert.match(new World().tell('@m x\n@d core.deny when=$m why="x" priority=high').violations[0].why, /priority= must be a number/);
+});

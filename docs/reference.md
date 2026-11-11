@@ -36,6 +36,7 @@ One key of one type: what it may hold, and whether it must be there.
 | `ask` | string | none | | the question to put for this key when it is open |
 | `soft` | flag | false | | a value outside `min`/`max` is accepted and recorded as an issue |
 | `combine` | `intersect` \| `override` | none | | how this declaration combines with another of the same type and key |
+| `why` | string | none | | the reason to give when a value is refused; `?value`, `?key`, `?id`, `?type`, and filters as in [core.deny](#coredeny) |
 
 Kinds: `integer`, `number` (integer or decimal), `boolean` (`true`, `false`), `string`
 (quoted), `atom` (a name), `quantity.<name>` (a number with a unit), `time.<name>`
@@ -444,6 +445,7 @@ The patterns must not match.
 | `when`, `not`, `with`, `if` | as in [core.rule](#corerule) | | yes | |
 | `why` | string | none | | the reason; `?v` writes a variable's value, `?v:f` writes it through the registered filter `f` |
 | `soft` | flag | false | | record an issue instead of refusing |
+| `priority` | number | none | | when one change breaks several denies, the lower number is reported first |
 
 **Meaning.** No change may leave the world in a state where the body matches. A change
 that would is refused as a whole, with `why` (variables replaced by their values) and

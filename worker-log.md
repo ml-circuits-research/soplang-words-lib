@@ -2035,3 +2035,19 @@ output identical. `node tools/scan-loops.mjs src`: clean. `tsc`: no errors.
 - Test `marks: labelled, listed, rewound for one unit only, and saved with the
   timeline`. S24, api.md (mark, marks, rewind, timeline), index.d.ts (`Mark`,
   `Snapshot.timeline`).
+
+## R7.2 — refusals that rank and explain — done
+
+`npm test`: 237 pass, 0 fail on sources and built file, 236 in checking mode.
+
+- (a) `core.deny ... priority=1`: when a change breaks several denies, the refusal lists
+  them by `priority` (lower first; denies without one after, in their old order). The
+  violation carries `priority`. Named `priority`, not `rank=` or `order=`, since both now
+  mean something else (`core.rank`, and `order=` on it); Q15 asks the reviewer to
+  confirm, nothing waits on it.
+- (b) `core.slot ... why="?value:quoted is not a square of the board"`: the slot's own
+  reason for every value it refuses (kind, type, enum, bounds, cardinality, and a
+  dangling reference under it), with the variables `value`, `key`, `id`, `type` as data
+  (`vars`) and the filters of R6.5. The library's own text stays under `detail`.
+- Test `violations: denies say which reason leads (priority=), and slots give their own
+  reasons with variables`. Reference: both attributes in their tables.

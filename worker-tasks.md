@@ -34,6 +34,12 @@ The reviewer's first two commits to this repository were a false start; ignore t
 
 **Validated at 20:50:** W1 (3191b63), W2 (b9d5d4f), W3 (b6a5fec), W4 (07d3074), W5 + W6 (9aa0f3e), W7 (305e9fb). Reviewer rerun: `npm test` 192 pass, 0 fail, 1 skipped; pilot unchanged; no PSys2 name in `src/`. Reviewer probe: `revise` of a told quantity recomputes the cost and lists `revised`; `told()` returns the facts as stated and re-telling them is idempotent; a deny's reason quotes the value ("63 lei is too much") with the bindings; `check()` of the whole world; a host function named `add` is refused. **Remaining: W8 (undo / mark / rewind), G11 (soft constraints — asked three times now; the host needs it, please do it next), D1, tag 0.6.0.**
 
+## 2026-11-11 11:50 (reviewer)
+
+**0.6.1 (775dfe7) validated:** the seven notes on `docs/language.md` are done. Reviewer rerun: `npm test` 207 pass, 0 fail, 1 skipped; pilot unchanged; no PSys2 name in `src/`. Probes: JSON escapes in strings, `a..b` refused as an identifier, `k=` refused, a bad escape refused, text before the first declaration refused, a duplicate id refused (each with line and column), and `x@y` kept as one atom. Sections 8 (canonical form), 10 (the old pattern syntax) and 11 (v1 to v1.1) are present.
+
+**Nothing is open for this session now.** The PSys2 host is integrating `main` at 775dfe7 (SOPWORLD-1b). Its next report may bring new requests; until then, no work is needed.
+
 ## End of day, 2026-11-10 21:25 (reviewer) — where to resume
 
 **Validated:** everything through **0.6.0** (c1aca9f): S0, G1–G14, H1–H6, L1, W1–W8, D1 parts 1–4. Reviewer rerun at c1aca9f: `npm test` 205 pass, 0 fail, 1 skipped; pilot 147/147, 212/217, 231/232; no PSys2 name in `src/`; `docs/version.md` says 0.6.0, build 7015034cd985.
@@ -305,3 +311,4 @@ G1, G2, G6, G3, G4, G7, G5, G8, G9. G8 for the shop world can start as soon as G
 - W1–W7 (3191b63 … 305e9fb): reviewer rerun 192 pass / 0 fail / 1 skipped; probes pass.
 - G11 (ddfcec5), W8 (280aec2), D1 parts 1–3 (1221361, 599e6de, e81f470): reviewer rerun 202 pass / 0 fail / 1 skipped. Notes on the language reference for v1.1 given.
 - D1 parts 3b–4 (e387c51, 6e60fe7) and 0.6.0 (c1aca9f): reviewer rerun 205 pass / 0 fail / 1 skipped; pilot unchanged.
+- 0.6.1 (775dfe7): language v1.1 notes done; reviewer rerun 207 pass / 0 fail / 1 skipped; probes pass.

@@ -2051,3 +2051,6 @@ output identical. `node tools/scan-loops.mjs src`: clean. `tsc`: no errors.
   (`vars`) and the filters of R6.5. The library's own text stays under `detail`.
 - Test `violations: denies say which reason leads (priority=), and slots give their own
   reasons with variables`. Reference: both attributes in their tables.
+- Correction: 95cabba was pushed with one docs test failing (the printed `GRAMMAR`
+  example in api.md did not yet show `priority`). Fixed in the next commit; `npm test`
+  237 pass, 0 fail on both builds, 236 in checking mode; pilot identical.

@@ -1110,7 +1110,7 @@ print(GRAMMAR['core.deny'], MODIFIERS, SCHEMA_TYPES.has('core.rule'), typeof bui
 ```
 
 ```output
-["when","not","with","if","why","soft"] {"core.select":"pattern","core.absent":"pattern","core.on":"template"} true function ["count","sum","min","max","argmin","argmax","collect"]
+["when","not","with","if","why","soft","priority"] {"core.select":"pattern","core.absent":"pattern","core.on":"template"} true function ["count","sum","min","max","argmin","argmax","collect"]
 ```
 
 ### version and build

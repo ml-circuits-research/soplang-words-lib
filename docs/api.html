@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="94640a9cb813">
+<meta name="source-hash" content="1c5d4b9fea65">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -443,7 +443,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <h3 id="builtins-aggregates-grammar-modifiers-schema_types">builtins, aggregates, GRAMMAR, MODIFIERS, SCHEMA_TYPES</h3>
 <p>Tables, for tools: the built-in <a href="reference.html#functions">functions</a> and <a href="reference.html#aggregates">aggregates</a> by name; for each matrix wire type the attributes it reads (<code>GRAMMAR</code>; a name that ends in <code>.</code> is a prefix); the attributes that may stand on any pattern or template (<code>MODIFIERS</code>); the types that make a wire a matrix wire (<code>SCHEMA_TYPES</code>).</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>print(GRAMMAR[&#x27;core.deny&#x27;], MODIFIERS, SCHEMA_TYPES.has(&#x27;core.rule&#x27;), typeof builtins.add, Object.keys(aggregates));</code></pre></figure>
-<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;when&quot;,&quot;not&quot;,&quot;with&quot;,&quot;if&quot;,&quot;why&quot;,&quot;soft&quot;] {&quot;core.select&quot;:&quot;pattern&quot;,&quot;core.absent&quot;:&quot;pattern&quot;,&quot;core.on&quot;:&quot;template&quot;} true function [&quot;count&quot;,&quot;sum&quot;,&quot;min&quot;,&quot;max&quot;,&quot;argmin&quot;,&quot;argmax&quot;,&quot;collect&quot;]</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;when&quot;,&quot;not&quot;,&quot;with&quot;,&quot;if&quot;,&quot;why&quot;,&quot;soft&quot;,&quot;priority&quot;] {&quot;core.select&quot;:&quot;pattern&quot;,&quot;core.absent&quot;:&quot;pattern&quot;,&quot;core.on&quot;:&quot;template&quot;} true function [&quot;count&quot;,&quot;sum&quot;,&quot;min&quot;,&quot;max&quot;,&quot;argmin&quot;,&quot;argmax&quot;,&quot;collect&quot;]</code></pre></figure>
 <h3 id="version-and-build">version and build</h3>
 <p><code>version</code> is the version of the library. <code>build</code> is <code>{ version, hash, date }</code>: which build a single file is (<code>hash</code> and <code>date</code> are <code>null</code> when running from the sources); <code>docs/version.md</code> says the same.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>print(typeof version, Object.keys(build));</code></pre></figure>

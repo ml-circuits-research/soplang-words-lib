@@ -283,3 +283,33 @@ test('core.rank: the position of a wire among its peers ordered by a key, kept u
   assert.deepEqual([all.get('c1').attrs.position[0], all.get('c2').attrs.position[0]], ['2', '1']);
   assert.match(new World().tell('@c chapter at=?a\n@r core.rank by=at out=?p\n@t chapter core.on=$c p=?p\n@x core.rule when=$c with=$r then=$t').violations[0].why, /needs of= one of the rule's when= patterns/);
 });
+
+test('text functions: matches with a bounded pattern, contains, starts_with, ends_with, lower', () => {
+  const w = new World();
+  w.load(`
+    @h heading text=?t
+    @m core.calc out=?n fn=matches args=?t args="^Chapter ([0-9]+)$" args=1
+    @c heading core.on=$h chapter=?n
+    @r core.rule when=$h with=$m then=$c
+    @l core.calc out=?low fn=lower args=?t
+    @todo core.check fn=contains args=?low args="todo"
+    @f flag about=$h kind=todo
+    @r2 core.rule when=$h with=$l if=$todo then=$f
+  `);
+  w.tell('@h1 heading text="Chapter 3"  @h2 heading text="Notes (TODO)"  @h3 heading text="Chapter three"');
+  assert.deepEqual(['h1', 'h2', 'h3'].map((id) => w.get(id).attrs.chapter?.[0]), ['3', undefined, undefined], '"Chapter 3" is chapter 3, as a number');
+  assert.deepEqual(w.ofType('flag').map((f) => f.attrs.about[0]), ['$h2']);
+  const b = builtins;
+  assert.deepEqual([b.starts_with(['"README.md"', '"READ"']), b.ends_with(['"README.md"', '".md"']), b.contains(['abc', 'z']), b.lower(['"ÉTÉ"'])], [true, true, false, '"été"']);
+  assert.equal(b.matches(['"abc"', '"b"']), '"b"');
+  // patterns that could take exponential time are refused, in the matrix at once
+  for (const p of ['(a+)+', '(a*)*', '(|a)+', '(a?)+', '\\\\1']) {
+    const r = new World().tell(`@h heading text=?t\n@m core.calc out=?n fn=matches args=?t args="${p}"\n@c heading core.on=$h n=?n\n@r core.rule when=$h with=$m then=$c`);
+    assert.equal(r.ok, false, p);
+  }
+  // ... and at run time, when the pattern comes from a wire, with the reason
+  const v = new World();
+  v.load('@q query text=?t pattern=?p\n@m core.calc out=?n fn=matches args=?t args=?p\n@c query core.on=$q hit=?n\n@r core.rule when=$q with=$m then=$c');
+  const q = v.query({ type: 'query', seek: 'hit', where: { text: 'aaaa', pattern: '"(a+)+$"' } });
+  assert.deepEqual([q.status, /exponential/.test(q.reason)], ['unsupported', true]);
+});

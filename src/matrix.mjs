@@ -4,7 +4,7 @@
 import { TIERS } from './tiers.mjs';
 import { cloneWire, str } from './parser.mjs';
 import { hasVar, isVar } from './unify.mjs';
-import { quantity, clock, date, aggregates } from './builtins.mjs';
+import { quantity, clock, date, aggregates, safeRegex } from './builtins.mjs';
 
 const RANGE_CAP = 2000;
 
@@ -620,6 +620,9 @@ function buildRule(world, w, c, extra, register = true, aggregate = null) {
     // with over= the calc is an aggregate over every match of those patterns
     const over = x.attrs.over ? get('over', find(x.id) || x) : null;
     if (over ? !aggregates[name] : !world.fns[name]) c.errors.push(`${w.id}: unknown ${over ? 'aggregate' : kind} function "${name}"`);
+    // a pattern written in the matrix is checked when the matrix is read, not when it is first used
+    const pat = (x.attrs.args || [])[1];
+    if (name === 'matches' && pat !== undefined && !hasVar(pat)) { const re = safeRegex(str(pat)); if (re.refused) c.errors.push(`${w.id}: ${x.id}: ${re.refused}`); }
     return { id: x.id, why: first(x, 'why'), fn: name, out: first(x, 'out'), args: x.attrs.args || [], over, pick: first(x, 'pick'), ties: first(x, 'ties') };
   };
   // core.rank of=$p by=key: the position of the wire $p matched among its peers, ordered by

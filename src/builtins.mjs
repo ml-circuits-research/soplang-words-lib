@@ -162,7 +162,71 @@ const one = (f) => ([a, ...rest]) => {
   const q = quantity(a);
   return q ? f(q, rest) : undefined;
 };
+// ---- text --------------------------------------------------------------------------------
+// The text of a value: a string's text, an atom as it is. A result is an atom when it is a
+// number (so that it compares as one), else a string.
+const textOf = (v) => (typeof v === 'string' && v[0] === '"' ? JSON.parse(v.replace(/[\u0000-\u001f]/g, (ch) => `\\u${ch.charCodeAt(0).toString(16).padStart(4, '0')}`)) : String(v ?? ''));
+const asValue = (t) => (/^-?\d+(\.\d+)?$/.test(t) ? t : JSON.stringify(t));
+const MAX_TEXT = 100000;
+const regexCache = new Map();
+
+/**
+ * A regular expression that cannot take long: at most 200 characters, no back-references,
+ * and no repeated group that holds a repetition or an empty alternative (`(a+)+`, `(a*)*`,
+ * `(|a)+`): the shapes whose matching can take exponential time. Returns the RegExp, or
+ * the reason it is refused.
+ */
+export function safeRegex(pattern) {
+  if (regexCache.has(pattern)) return regexCache.get(pattern);
+  const refuse = (why) => { const r = { refused: `the pattern ${JSON.stringify(pattern)} ${why}` }; regexCache.set(pattern, r); return r; };
+  if (pattern.length > 200) return refuse('is longer than 200 characters');
+  if (/\\[1-9]|\\k</.test(pattern)) return refuse('uses a back-reference');
+  const stack = [{ rep: false, empty: false }];
+  let inClass = false;
+  for (let i = 0; i < pattern.length; i++) { // bounded: the pattern
+    const ch = pattern[i];
+    if (ch === '\\') { i++; continue; }
+    if (inClass) { if (ch === ']') inClass = false; continue; }
+    if (ch === '[') { inClass = true; continue; }
+    if (ch === '(') { stack.push({ rep: false, empty: pattern[i + 1] === '|' || pattern[i + 1] === ')' }); continue; }
+    if (ch === '|' && (pattern[i + 1] === '|' || pattern[i + 1] === ')')) stack.at(-1).empty = true;
+    const quantifier = ch === '*' || ch === '+' || ch === '?' || ch === '{';
+    if (ch === ')') {
+      const g = stack.length > 1 ? stack.pop() : { rep: false, empty: false };
+      const q = pattern[i + 1];
+      if ((q === '*' || q === '+' || q === '{' || q === '?') && (g.rep || g.empty) && q !== '?') return refuse('repeats a group that can repeat or match nothing, which can take exponential time');
+      if (q === '*' || q === '+' || q === '?' || q === '{' || g.rep) stack.at(-1).rep = true;
+      continue;
+    }
+    if (quantifier) stack.at(-1).rep = true;
+  }
+  let re;
+  try { re = new RegExp(pattern, 'u'); } catch (e) { return refuse(`is not a regular expression (${e.message})`); }
+  regexCache.set(pattern, re);
+  return re;
+}
+
+const text = {
+  // matches(text, pattern): true when the pattern matches somewhere in the text; in a calc
+  // the match, or with a third argument n the n-th group
+  matches: ([t, p, n], world) => {
+    const re = safeRegex(textOf(p));
+    if (re.refused) { world?.cannot?.(re.refused); return undefined; }
+    const s = textOf(t);
+    if (s.length > MAX_TEXT) { world?.cannot?.(`the text is longer than ${MAX_TEXT} characters`); return undefined; }
+    const m = re.exec(s);
+    if (!m) return undefined;
+    const got = m[n === undefined ? 0 : Number(n)];
+    return got === undefined ? undefined : asValue(got);
+  },
+  contains: ([t, part]) => textOf(t).includes(textOf(part)),
+  starts_with: ([t, part]) => textOf(t).startsWith(textOf(part)),
+  ends_with: ([t, part]) => textOf(t).endsWith(textOf(part)),
+  lower: ([t]) => asValue(textOf(t).toLowerCase()),
+};
+
 export const builtins = {
+  ...text,
   add: sameUnit((a, b) => a + b),
   sub: sameUnit((a, b) => a - b),
   min: sameUnit((a, b) => Math.min(a, b)),

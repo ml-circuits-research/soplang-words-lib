@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="de59b49a1583">
+<meta name="source-hash" content="02df0468be01">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -495,6 +495,22 @@ print(w.get(&#x27;s1&#x27;).attrs.each, w.get(&#x27;s2&#x27;).attrs.each);</code
 <h3 id="comparison">Comparison</h3>
 <div class="table"><table><thead><tr><th>Function</th><th>Arguments</th><th>True when</th></tr></thead><tbody><tr><td><code>eq</code>, <code>neq</code></td><td>a, b</td><td>the two are (not) the same: as numbers when both are numbers with the same unit (<code>5</code> = <code>5.0</code>), as times when both are clock times or dates (<code>9:05</code> = <code>09:05</code>), else as text</td></tr><tr><td><code>lt</code>, <code>lte</code>, <code>gt</code>, <code>gte</code></td><td>a, b</td><td>a is less than (at most, more than, at least) b; numbers need the same unit or a bare number on one side; clock times and dates compare as such</td></tr><tr><td><code>before</code>, <code>after</code></td><td><code>$a</code>, <code>$b</code></td><td>wire a comes before (after) wire b in the sequence</td></tr></tbody></table></div>
 <p>A comparison of things that cannot be compared (a number with a name, different units) is false.</p>
+<h3 id="text">Text</h3>
+<p>A string argument is read as its text, an atom as it is. A text result is a number when it is one (so that it compares as one), else a string.</p>
+<div class="table"><table><thead><tr><th>Function</th><th>Arguments</th><th>Result</th><th>No result when</th></tr></thead><tbody><tr><td><code>matches</code></td><td>text, pattern, [n]</td><td>in a check: whether the pattern matches somewhere in the text; in a calc: the match, or its <code>n</code>-th group</td><td>no match; a pattern that is refused (below); a text longer than 100,000 characters</td></tr><tr><td><code>contains</code></td><td>text, part</td><td>whether the text contains the part</td><td></td></tr><tr><td><code>starts_with</code>, <code>ends_with</code></td><td>text, part</td><td>whether the text starts (ends) with the part</td><td></td></tr><tr><td><code>lower</code></td><td>text</td><td>the text in lower case</td><td></td></tr></tbody></table></div>
+<p>A pattern is a JavaScript regular expression (with the <code>u</code> flag) of at most 200 characters, without back-references, and without a repeated group that can itself repeat or match nothing (<code>(a+)+</code>, <code>(a*)*</code>, <code>(a?)+</code>, <code>(|a)+</code>): those are the shapes whose matching can take exponential time. The rule is conservative: <code>(?:x+y)*</code>, which is safe, is refused too; write <code>(?:x+y)(?:x+y)*</code> or rephrase. A pattern written in the matrix is checked when the matrix is read (<code>schema</code>); one that comes from a wire is checked when it is used, and a query that needed it answers <code>unsupported</code> with the reason. The names are written like the other built-ins (<code>time_add</code>), hence <code>starts_with</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`
+  @h heading text=?t
+  @m core.calc out=?n fn=matches args=?t args=&quot;^Chapter ([0-9]+)$&quot; args=1
+  @c heading core.on=$h chapter=?n
+  @r core.rule when=$h with=$m then=$c
+`);
+w.tell(&#x27;@h1 heading text=&quot;Chapter 3&quot;  @h2 heading text=&quot;Notes&quot;&#x27;);
+print(w.get(&#x27;h1&#x27;).attrs.chapter, w.get(&#x27;h2&#x27;).attrs.chapter);
+print(builtins.lower([&#x27;&quot;ÉTÉ&quot;&#x27;]), builtins.ends_with([&#x27;&quot;notes.md&quot;&#x27;, &#x27;&quot;.md&quot;&#x27;]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;3&quot;] undefined
+&quot;été&quot; true</code></pre></figure>
 <h3 id="time">Time</h3>
 <div class="table"><table><thead><tr><th>Function</th><th>Arguments</th><th>Result</th></tr></thead><tbody><tr><td><code>time_add</code></td><td>clock time, duration</td><td>the later time (<code>10:40</code> + <code>35min</code> = <code>11:15</code>); a bare number is minutes</td></tr><tr><td></td><td>date, duration</td><td>the later date (<code>2026-01-30</code> + <code>3d</code> = <code>2026-02-02</code>); a bare number is days</td></tr><tr><td><code>time_diff</code></td><td>later, earlier</td><td>minutes between two clock times (<code>35min</code>); days between two dates (<code>3d</code>)</td></tr><tr><td><code>weekday</code></td><td>date</td><td><code>monday</code> ... <code>sunday</code></td></tr></tbody></table></div>
 <p>Durations: <code>s</code>, <code>min</code>, <code>h</code>, <code>d</code>.</p>

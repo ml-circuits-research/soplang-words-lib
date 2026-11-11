@@ -1758,3 +1758,24 @@ src/index.d.ts`: no errors.
 - Test `patch: replace in place keeps the id and what refers to it, changes and drops
   keys, and undoes as one statement`. S59 (semantics, with the reason), applyPatch in
   api.md, `Patch` in index.d.ts.
+
+## R6.10 — text functions: matches, contains, starts_with, ends_with, lower — done
+
+`npm test`: 222 pass, 0 fail on sources and built file, 221 in checking mode. Pilot
+output identical. `node tools/scan-loops.mjs src`: clean.
+
+- Built-ins for `core.check` and `core.calc`: `matches(text, pattern, [n])` (in a check,
+  whether it matches; in a calc, the match or its n-th group), `contains`,
+  `starts_with`, `ends_with`, `lower`. A string argument is read as its text; a text
+  result is a number token when it is one ("Chapter 3" gives chapter `3`, which compares
+  as a number), else a string. Named like the other built-ins (`time_add`), hence
+  `starts_with`/`ends_with` rather than the task's camelCase.
+- Bounded patterns (`safeRegex`): at most 200 characters, no back-references, and no
+  repeated group that can repeat or match nothing (`(a+)+`, `(a*)*`, `(a?)+`, `(|a)+`);
+  texts up to 100,000 characters. The rule is conservative (it also refuses `(?:x+y)*`,
+  which is safe); the reference says so and how to rephrase. A pattern written in the
+  matrix is checked when the matrix is read (`schema`); one from a wire is checked when
+  used, through `world.cannot`, so a query answers `unsupported` with the reason.
+- Test `text functions: matches with a bounded pattern, contains, starts_with,
+  ends_with, lower`. Reference: a "Text" table with an executed example (the docs test
+  checks the function tables against `builtins` both ways).

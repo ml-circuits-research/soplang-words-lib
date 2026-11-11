@@ -1212,6 +1212,45 @@ A **number** is an integer or decimal, optionally followed by a unit (`5`, `2.5`
 A comparison of things that cannot be compared (a number with a name, different units)
 is false.
 
+### Text
+
+A string argument is read as its text, an atom as it is. A text result is a number when
+it is one (so that it compares as one), else a string.
+
+| Function | Arguments | Result | No result when |
+| --- | --- | --- | --- |
+| `matches` | text, pattern, [n] | in a check: whether the pattern matches somewhere in the text; in a calc: the match, or its `n`-th group | no match; a pattern that is refused (below); a text longer than 100,000 characters |
+| `contains` | text, part | whether the text contains the part | |
+| `starts_with`, `ends_with` | text, part | whether the text starts (ends) with the part | |
+| `lower` | text | the text in lower case | |
+
+A pattern is a JavaScript regular expression (with the `u` flag) of at most 200
+characters, without back-references, and without a repeated group that can itself
+repeat or match nothing (`(a+)+`, `(a*)*`, `(a?)+`, `(|a)+`): those are the shapes whose
+matching can take exponential time. The rule is conservative: `(?:x+y)*`, which is safe,
+is refused too; write `(?:x+y)(?:x+y)*` or rephrase. A pattern written in the matrix is
+checked when the matrix is read (`schema`); one that comes from a wire is checked when
+it is used, and a query that needed it answers `unsupported` with the reason. The names
+are written like the other built-ins (`time_add`), hence `starts_with`.
+
+```js run
+const w = new World();
+w.load(`
+  @h heading text=?t
+  @m core.calc out=?n fn=matches args=?t args="^Chapter ([0-9]+)$" args=1
+  @c heading core.on=$h chapter=?n
+  @r core.rule when=$h with=$m then=$c
+`);
+w.tell('@h1 heading text="Chapter 3"  @h2 heading text="Notes"');
+print(w.get('h1').attrs.chapter, w.get('h2').attrs.chapter);
+print(builtins.lower(['"ÉTÉ"']), builtins.ends_with(['"notes.md"', '".md"']));
+```
+
+```output
+["3"] undefined
+"été" true
+```
+
 ### Time
 
 | Function | Arguments | Result |

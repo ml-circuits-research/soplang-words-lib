@@ -362,11 +362,17 @@ print(r.ok, r.redone, w.has('ink'));
 true [{"op":"tell","ids":["ink"]}] true
 ```
 
-### world.mark() and world.rewind(mark)
+### world.mark(label?), world.marks() and world.rewind(mark, options?)
 
-`mark()` returns a point to come back to (a fork: the world's next change copies only
-what it touches). `rewind(mark)` makes the world exactly what it was, and returns `{ ok,
-removed, added, changed }`. A mark can be used again.
+`mark(label)` returns a point to come back to (a fork: the world's next change copies
+only what it touches); `marks()` lists the open ones, oldest first, as `{ label, seq,
+mark }`. `rewind(mark)` makes the world exactly what it was and returns `{ ok, removed,
+added, changed }`; the marks made after it are closed. A mark can be used again.
+`rewind(mark, { only })` takes back one unit only: the told wires of a type (`only:
+'note'`) or of an id prefix (`only: { prefix: 'ui.' }`) become what they were at the mark,
+in one transaction, and everything else stays. `toJSON({ timeline: true })` also writes
+the open marks and what `redo` would tell again, and `World.fromJSON` restores them, so a
+host that restarts keeps undo, redo and rewind.
 
 ```js run
 const w = shop();

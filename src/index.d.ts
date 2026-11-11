@@ -125,7 +125,7 @@ export interface NextStep {
 export interface Explanation { assume: Wire[]; fills: { id: string; key: string; value: string }[]; text: string; cost: number }
 export interface StepResult extends Result { questions: Wire[]; dead: OpenKey[]; pending: object[] }
 export interface WorldEvent { seq: number; op: string; [key: string]: unknown }
-export interface Snapshot { format: 'sopworld'; version: number; log: object[] }
+export interface Snapshot { format: 'sopworld'; version: number; log: object[]; /** with toJSON({ timeline: true }) */ timeline?: { marks: { label?: string; seq: number; log: object[] }[]; redo: object[][] } }
 export type Fn = (args: string[], world: World) => string | number | boolean | undefined;
 export interface WorldOptions {
   fns?: Record<string, Fn>; maxDepth?: number; maxSteps?: number;
@@ -218,9 +218,12 @@ export class World {
   /** tell again what the last undo (or the last n) took back */
   redo(n?: number, options?: Budgeted): { ok: boolean; redone: object[]; removed: string[]; added: string[]; changed: Difference['changed']; violations: Violation[] };
   /** a point to come back to; costs nothing until the world changes */
-  mark(): { world: World; seq: number };
+  mark(label?: string): Mark;
+  /** the open marks, oldest first */
+  marks(): { label?: string; seq: number; mark: Mark }[];
   /** make the world exactly what it was at the mark */
-  rewind(mark: { world: World; seq: number }): { ok: boolean; removed: string[]; added: string[]; changed: Difference['changed'] };
+  /** only: take back one unit (a type, or { prefix }), keeping everything else */
+  rewind(mark: Mark, options?: { only?: string | { type?: string; prefix?: string } }): { violations?: Violation[]; ok: boolean; removed: string[]; added: string[]; changed: Difference['changed'] };
   /** the facts as they were stated, without what rules, defaults or searches added */
   told(): Wire[];
   /** how solid a value is: told, derived, forced, default, guessed, or a tier the matrix declares */
@@ -232,7 +235,8 @@ export class World {
   /** steps of the last call, per site, and whether its budget ran out */
   stats(): Stats;
   on(listener: (events: WorldEvent[], world: World) => void): () => void;
-  toJSON(): Snapshot;
+  /** timeline: also the open marks and the redo stack */
+  toJSON(options?: { timeline?: boolean }): Snapshot;
   static fromJSON(data: Snapshot, options?: WorldOptions): World;
   get(id: string): Wire | undefined;
   has(id: string): boolean;
@@ -279,6 +283,7 @@ export class World {
 export interface SyntaxProblem { message: string; offset: number; line: number; column: number }
 export class SopError extends Error { line?: number; column?: number; offset?: number; /** every error of the text, in order */ errors: SyntaxProblem[] }
 export type Bindings = object;
+export interface Mark { world: World; seq: number; label?: string }
 /** match two values (atom, ?variable, $reference); the bindings, or null */
 export function unify(a: string, b: string, bindings?: Bindings): Bindings | null;
 /** what a value stands for under bindings */

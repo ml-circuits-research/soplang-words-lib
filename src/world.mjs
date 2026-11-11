@@ -319,7 +319,21 @@ export class World {
   }
 
   /** Everything needed to rebuild the world: what it was told, in order. */
-  toJSON() { return { format: 'sopworld', version: 1, log: this.log.map((e) => ({ ...e })) }; }
+  /**
+   * The world as data: its log. With { timeline: true } also the open marks (each as its
+   * own log, with its label) and what redo would tell again, so a host that restarts keeps
+   * undo, redo and rewind.
+   */
+  toJSON(opts) {
+    const out = { format: 'sopworld', version: 1, log: this.log.map((e) => ({ ...e })) };
+    if (opts && typeof opts === 'object' && opts.timeline) {
+      out.timeline = {
+        marks: (this._marks || []).map((m) => ({ ...(m.label !== undefined ? { label: m.label } : {}), seq: m.seq, log: m.world.log.map((e) => ({ ...e })) })),
+        redo: (this._redo || []).map((group) => group.map((e) => ({ ...e }))),
+      };
+    }
+    return out;
+  }
 
   /**
    * Rebuild a world from toJSON() output. Functions and the library are passed again.
@@ -330,6 +344,10 @@ export class World {
     const w = new World(options);
     const r = w._replay(data.log);
     if (r) throw new Error('World.fromJSON: the snapshot is refused by the matrix: ' + JSON.stringify(r.violations[0]));
+    if (data.timeline) {
+      w._marks = data.timeline.marks.map((m) => ({ world: World.fromJSON({ format: 'sopworld', version: 1, log: m.log }, options), seq: m.seq, ...(m.label !== undefined ? { label: m.label } : {}) }));
+      w._redo = data.timeline.redo.map((g) => g.map((e) => ({ ...e })));
+    }
     return w;
   }
 

@@ -160,8 +160,12 @@ ones that remain. A statement that only told or changed wires of a type declared
 `mark()` and `rewind(mark)` return to an exact earlier world, also across retractions.
 *Why transient:* moving a cursor or a selection is not an edit; undo should take back
 the edit and leave the user where they are.
+Marks may carry a label and are listed by `marks()`; `rewind(mark, { only })` returns one
+type or id prefix to the mark and keeps the rest; `toJSON({ timeline: true })` carries the
+open marks and the redo stack across a restart.
 *Tests:* `undo, mark and rewind: taking statements back, and returning to an exact earlier world`;
-`undo passes over transient state (a cursor, a selection); redo tells again what undo took back`
+`undo passes over transient state (a cursor, a selection); redo tells again what undo took back`;
+`marks: labelled, listed, rewound for one unit only, and saved with the timeline`
 
 ## Certainty
 

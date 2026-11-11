@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="85467ad08ba5">
+<meta name="source-hash" content="94640a9cb813">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -152,8 +152,8 @@ w.undo();
 const r = w.redo();
 print(r.ok, r.redone, w.has(&#x27;ink&#x27;));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true [{&quot;op&quot;:&quot;tell&quot;,&quot;ids&quot;:[&quot;ink&quot;]}] true</code></pre></figure>
-<h3 id="worldmark-and-worldrewindmark">world.mark() and world.rewind(mark)</h3>
-<p><code>mark()</code> returns a point to come back to (a fork: the world's next change copies only what it touches). <code>rewind(mark)</code> makes the world exactly what it was, and returns <code>{ ok, removed, added, changed }</code>. A mark can be used again.</p>
+<h3 id="worldmarklabel-worldmarks-and-worldrewindmark-options">world.mark(label?), world.marks() and world.rewind(mark, options?)</h3>
+<p><code>mark(label)</code> returns a point to come back to (a fork: the world's next change copies only what it touches); <code>marks()</code> lists the open ones, oldest first, as <code>{ label, seq, mark }</code>. <code>rewind(mark)</code> makes the world exactly what it was and returns <code>{ ok, removed, added, changed }</code>; the marks made after it are closed. A mark can be used again. <code>rewind(mark, { only })</code> takes back one unit only: the told wires of a type (<code>only: 'note'</code>) or of an id prefix (<code>only: { prefix: 'ui.' }</code>) become what they were at the mark, in one transaction, and everything else stays. <code>toJSON({ timeline: true })</code> also writes the open marks and what <code>redo</code> would tell again, and <code>World.fromJSON</code> restores them, so a host that restarts keeps undo, redo and rewind.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 w.tell(&#x27;@pen item name=pen price=2&#x27;);
 const m = w.mark();

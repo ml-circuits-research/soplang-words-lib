@@ -482,3 +482,34 @@ test('undo passes over transient state (a cursor, a selection); redo tells again
   w.tell('@l3 line n=3 text="c"');
   assert.equal(w.redo().violations[0].kind, 'nothing-to-redo');
 });
+
+test('marks: labelled, listed, rewound for one unit only, and saved with the timeline', () => {
+  const w = new World();
+  w.load('@k core.slot of=note key=n id=true\n@k2 core.slot of=page key=n id=true');
+  w.tell('@n1 note n=1 text="a"  @p1 page n=1 title="one"');
+  const before = w.mark('before the edit');
+  w.tell('@n2 note n=2 text="b"');
+  w.applyPatch({ replace: { id: 'p1', attrs: { n: 1, title: 'ONE' } } });
+  w.mark('after the edit');
+  assert.deepEqual(w.marks().map((m) => m.label), ['before the edit', 'after the edit']);
+  // rewind the notes only: the page keeps its new title
+  const r = w.rewind(before, { only: 'note' });
+  assert.deepEqual([r.ok, r.removed, w.has('n2'), w.get('p1').attrs.title], [true, ['n2'], false, ['ONE']]);
+  // by id prefix
+  w.tell('@ui.sel cursor at=3');
+  w.rewind(before, { only: { prefix: 'ui.' } });
+  assert.equal(w.has('ui.sel'), false);
+  // a full rewind closes the marks made after it
+  w.rewind(before);
+  assert.deepEqual([w.get('p1').attrs.title, w.marks().map((m) => m.label)], [['"one"'], ['before the edit']]);
+  // the timeline survives a restart: marks, labels, and what redo would tell again
+  w.tell('@n3 note n=3 text="c"');
+  w.undo();
+  const again = World.fromJSON(JSON.parse(JSON.stringify(w.toJSON({ timeline: true }))));
+  assert.deepEqual(again.marks().map((m) => m.label), ['before the edit']);
+  assert.deepEqual(again.redo().redone.map((x) => x.ids), [['n3']]);
+  again.tell('@n4 note n=4');
+  again.rewind(again.marks()[0].mark);
+  assert.deepEqual([again.has('n4'), again.has('n3'), again.has('n1')], [false, false, true]);
+  assert.equal('timeline' in w.toJSON(), false, 'a plain snapshot is as before');
+});

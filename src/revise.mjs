@@ -206,8 +206,9 @@ export const revision = {
       const c = this._compiled();
       const { type, prefix } = typeof collection === 'string' ? { type: collection } : collection || {};
       if (!type && !prefix) throw new Error('sync: name a type, or { prefix }');
-      const ns = opts.ns ?? this.options.ns;
-      const given = this._qualifyFacts((typeof input === 'string' ? parse(input) : input || []).map(cloneWire), ns);
+      const ns = opts.raw ? undefined : opts.ns ?? this.options.ns; // raw: the ids are as given
+      const given = (typeof input === 'string' ? parse(input) : input || []).map(cloneWire);
+      if (!opts.raw) this._qualifyFacts(given, ns);
       const stated = new Map(this.told().map((w) => [w.id, w]));
       // in a namespace, the collection is that namespace's part of it
       const inside = (w) => (type ? c.isA(w.type, type) : w.id.startsWith(prefix)) && (ns === undefined || this._nsOf(w.id) === (ns || ''));
@@ -248,11 +249,29 @@ export const revision = {
    * so it costs nothing until the world changes). world.rewind(mark) makes the world
    * exactly that again, whatever happened in between, and may be used more than once.
    */
-  mark() { return { world: this.fork(), seq: this.seq }; },
+  mark(label) {
+    const m = { world: this.fork(), seq: this.seq, ...(label !== undefined ? { label: String(label) } : {}) };
+    (this._marks ||= []).push(m);
+    return m;
+  },
 
-  rewind(mark) {
+  /** The open marks, oldest first: { label, seq, mark }. A rewind closes the marks made after the one it goes back to. */
+  marks() { return (this._marks || []).map((m) => ({ label: m.label, seq: m.seq, mark: m })); },
+
+  rewind(mark, { only } = {}) {
     if (!mark || !mark.world || typeof mark.world.fork !== 'function') throw new Error('sopworld: rewind needs a mark from world.mark()');
     if (this._tx) throw new Error('sopworld: rewind inside a transaction');
+    if (only) {
+      // one unit only: the told wires of a type (or an id prefix) become what they were at
+      // the mark, everything else stays; one transaction, like sync
+      const coll = typeof only === 'string' ? { type: only } : only;
+      const c = this._compiled();
+      const inside = (w) => (coll.type ? c.isA(w.type, coll.type) : w.id.startsWith(coll.prefix));
+      const r = this.sync(coll, mark.world.told().filter(inside), { raw: true });
+      return { ok: r.ok, removed: r.retracted || [], added: r.told || [], changed: r.replaced || [], violations: r.violations };
+    }
+    const at = (this._marks || []).indexOf(mark);
+    if (at >= 0) this._marks = this._marks.slice(0, at + 1);
     const was = this.fork();
     const copy = mark.world.fork();
     const events = this.events;

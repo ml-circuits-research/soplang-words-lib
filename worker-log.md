@@ -2016,3 +2016,22 @@ two modules declare`; the composition test now also checks ownership.
 
 Limits stated in the docs: a `core.aggregate` with no anchor counts across namespaces;
 anchor it (a rule over a wire of the namespace) to count within one.
+
+## R7.1 — labelled marks, rewind of one unit, a timeline that can be saved — done
+
+`npm test`: 236 pass, 0 fail on sources and built file, 235 in checking mode. Pilot
+output identical. `node tools/scan-loops.mjs src`: clean. `tsc`: no errors.
+
+- `mark(label)`; `world.marks()` lists the open marks, oldest first, as `{ label, seq,
+  mark }`. A full rewind closes the marks made after the one it goes back to.
+- `rewind(mark, { only: 'note' })` or `{ only: { prefix: 'ui.' } }`: the told wires of
+  that type (with subtypes) or id prefix become what they were at the mark, the rest
+  stays; it is a `sync` of that collection to the mark's told wires, so one transaction,
+  replacements in place, and the same delta shape as a rewind.
+- `toJSON({ timeline: true })` adds `timeline: { marks: [{ label, seq, log }], redo }`;
+  `World.fromJSON` rebuilds each mark from its log and restores the redo stack, so after
+  a restart `marks()`, `rewind` and `redo` work as before. A plain `toJSON()` is
+  unchanged.
+- Test `marks: labelled, listed, rewound for one unit only, and saved with the
+  timeline`. S24, api.md (mark, marks, rewind, timeline), index.d.ts (`Mark`,
+  `Snapshot.timeline`).

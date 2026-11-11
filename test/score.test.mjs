@@ -47,3 +47,34 @@ test('score: candidates are judged against the world and ordered; nothing is tol
   assert.deepEqual(r.order, [1, 6, 2, 5, 3, 0, 4]);
   assert.deepEqual([w.toSOP({ derived: true }), w.version, w.log.length], before, 'nothing was told');
 });
+
+test('rank: the default order is a function hosts can call; every place is explained', async () => {
+  const { rank, RANKING } = await import('../tools/lib-under-test.mjs');
+  const w = world();
+  w.tell('@w1 core.word lang=en text=book means=reserve  @w2 core.word lang=en text=book means=order');
+  const r = w.score(w.interpret({ lang: 'en', verb: 'book', args: ['ink', 'blue'] }).candidates);
+  const [act, order] = r.candidates;
+  assert.deepEqual(r.order, [1, 0]);
+  assert.deepEqual([act.place, act.lostTo, act.on, act.why], [1, 1, 'consistent', 'inconsistent: ink is out of stock; #1: consistent with the world']);
+  assert.deepEqual([order.place, order.why], [0, 'consistent with the world; every referent settled; lacks nothing; assumes qty=1; leaves out blue']);
+  // the same order from the function, and a host's own criteria
+  assert.deepEqual(rank(r.candidates).order, [1, 0]);
+  assert.deepEqual(RANKING.map((c) => c.name), ['consistent', 'referents', 'lacks', 'assumes', 'words']);
+  const actionsFirst = [{ name: 'action', measure: (x) => (x.action ? 0 : 1), say: (x) => (x.action ? 'an action' : 'a statement') }, ...RANKING];
+  const mine = w.score(w.interpret({ lang: 'en', verb: 'book', args: ['ink'] }).candidates, { criteria: actionsFirst });
+  assert.deepEqual([mine.order, mine.candidates[1].on, mine.candidates[1].why], [[0, 1], 'action', 'a statement; #0: an action']);
+  // a tie is said to be one
+  const tie = rank([{ index: 0, ok: true }, { index: 1, ok: true }]);
+  assert.equal(tie.ranked[1].why, 'tied with #0 on every criterion; kept in the given order');
+});
+
+test('rank: fewer referents left ambiguous wins, and the loser names who they could be', () => {
+  const w = world();
+  w.tell('@p3 person name=cy');
+  const r = w.score([
+    { wires: '@m meeting with=$who day=tue', refer: { who: { type: 'person' } } },
+    { wires: '@m meeting with=$who day=tue', refer: { who: { type: 'person', where: { name: 'cy' } } } },
+  ]);
+  assert.deepEqual([r.order, r.candidates[0].on], [[1, 0], 'referents']);
+  assert.equal(r.candidates[0].why, 'ambiguous: who could be p1 or p2 or p3; #1: every referent settled');
+});

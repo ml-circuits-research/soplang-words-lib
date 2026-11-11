@@ -703,8 +703,9 @@ each scored candidate has `ok`, `violations`, `referents` (`{ name, ids, unique,
 `fits` are the ids that keep the statement consistent when the description alone is
 ambiguous), `lacks` (referents nothing matches, required keys still open, missing
 arguments), `assumes` (defaults the statement would rest on), `action` (`{ available,
-status, missing }`) and `answer`. `order` is best first: consistent, all referents
-settled, fewer lacks, fewer assumptions, then as given. See
+status, missing }`), `answer`, `words` (for candidates from `interpret`), and its place:
+`place`, `why`, and for a loser `lostTo` and `on`. `order` is best first by `rank` (below);
+option `criteria` replaces the default ones. See
 [design/formalization](design/formalization.md).
 
 ```js run
@@ -719,6 +720,34 @@ print(r.candidates[0].ok, r.candidates[0].referents[0].fits, w.has('m'));
 
 ```output
 true ["p2"] false
+```
+
+### rank(scored, criteria?) and RANKING
+
+Orders scored readings best first and explains every place. `RANKING` is the default
+list of criteria, each `{ name, measure, say }` (lower `measure` is better):
+`consistent`, `referents` (how many are left ambiguous), `lacks`, `assumes`, `words`
+(words of the frame left out); ties keep the given order. Returns `{ order, ranked }`;
+`ranked[i]` is `{ index, place, why, lostTo, on }`: the first says what it satisfies,
+any other names the first criterion on which the winner is better and what each is on
+it, a tie says so. A host may put its own criteria before, after or instead of these.
+
+```js run
+const w = new World();
+w.load(`@k1 core.slot of=item key=name id=true
+  @a core.action name=reserve param=item when=$it if=$left set=$r
+  @it item name=?item stock=?s
+  @left core.check fn=gt args=?s args=0 why="?item is out of stock"
+  @r item core.on=$it reserved=yes`);
+w.tell('@i2 item name=ink stock=0');
+const r = w.score([{ action: 'reserve', args: { item: 'ink' } }, { question: { type: 'item', where: { name: 'ink' }, seek: 'stock' } }]);
+print(r.order, r.candidates[0].on, r.candidates[0].why);
+print(RANKING.map((c) => c.name));
+```
+
+```output
+[1,0] consistent inconsistent: ink is out of stock; #1: consistent with the world
+["consistent","referents","lacks","assumes","words"]
 ```
 
 ### world.get(id), world.has(id), world.resolve(id), world.ofType(type)

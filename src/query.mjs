@@ -20,6 +20,7 @@
 
 import { parse, str, cloneWire } from './parser.mjs';
 import { abduce } from './abduce.mjs';
+import { rank, RANKING } from './rank.mjs';
 import { EMPTY, walk, unify, hasVar } from './unify.mjs';
 
 const VOCABULARY = {
@@ -65,23 +66,27 @@ export const querying = {
    * with it applied), referents with the ids they resolve to and whether that is unique,
    * lacks (required keys or arguments missing), assumes (defaults it would rest on),
    * action ({ available, status, missing }), answer (for a question), and `order`, the
-   * candidates best first: consistent, then all referents settled (unique by their
-   * description, or only one of them fits the world: `fits`), then fewer lacks, then
-   * fewer assumptions, then as given. A referent nothing matches lacks; it is left out
-   * of the statement rather than counted as wrong.
+   * candidates best first by `rank` (src/rank.mjs): consistent, then fewer referents left
+   * ambiguous (a referent is settled when unique by its description, or when only one of
+   * them fits the world: `fits`), then fewer lacks, then fewer assumptions, then fewer
+   * words left out (from interpret's `unused` and `unresolved`), then as given. Each
+   * scored candidate has `place` and `why` (and `lostTo`, `on` when it lost). Options:
+   * `criteria` (default RANKING). A referent nothing matches lacks; it is left out of the
+   * statement rather than counted as wrong.
    */
   score(candidates, opts = {}) {
     return this._guard(opts, () => {
       const list = [].concat(candidates || []);
       const scored = list.map((cand, index) => this._scoreOne(cand, index));
-      const key = (r) => [r.ok ? 0 : 1, r.referents.every((x) => x.unique || x.fits?.length === 1) ? 0 : 1, r.lacks.length, r.assumes.length, r.index];
-      const order = [...scored].sort((a, b) => { const x = key(a), y = key(b); for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] - y[i]; return 0; }).map((r) => r.index);
+      const { order, ranked } = rank(scored, opts.criteria || RANKING);
+      scored.forEach((r, i) => Object.assign(r, { place: ranked[i].place, why: ranked[i].why }, ranked[i].on ? { lostTo: ranked[i].lostTo, on: ranked[i].on } : ranked[i].lostTo !== undefined ? { lostTo: ranked[i].lostTo } : {}));
       return { candidates: scored, order };
     }, (v) => ({ candidates: [], order: [], budget: v }));
   },
 
   _scoreOne(cand, index) {
     const out = { index, ok: true, violations: [], referents: [], lacks: [], assumes: [] };
+    if (cand.unused || cand.unresolved) out.words = { used: cand.used || [], unused: cand.unused || [], unresolved: cand.unresolved || [] };
     const options = {}; // referent -> the ids it may be
     for (const [name, d] of Object.entries(cand.refer || {})) {
       const ids = this._matching({ type: d.type, where: d.where || {}, ns: d.ns }).map((w) => w.id);

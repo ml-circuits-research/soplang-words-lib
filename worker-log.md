@@ -2229,3 +2229,25 @@ clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
   score of its candidates 0.026–0.269 ms; `bundle`: 0.026–0.045 ms and 0.016–0.421 ms.
 - Docs: reference.md `core.word`, api.md `words`/`interpret`, semantics.md warnings,
   index.d.ts, design doc status.
+
+## R9.2 — ranking helpers: rank(scored, criteria), RANKING, an explanation per place — done
+
+`npm test`: 250 pass, 0 fail on sources and built file, 249 in checking mode. Pilot
+output identical. `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`:
+clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
+
+- src/rank.mjs: `RANKING` (consistent, referents left ambiguous, lacks, assumes, words left
+  out), each `{ name, measure, say }`; `rank(scored, criteria)` returns `{ order, ranked }`
+  with `place`, `why`, `lostTo`, `on`. Exported from the library.
+- `score` ranks with it (option `criteria`) and puts `place`, `why`, `lostTo`, `on` on each
+  candidate; candidates from `interpret` carry `words` (used, unused, unresolved) into the
+  score. The referent criterion is now a count (was all-or-nothing); the R8 test order is
+  unchanged.
+- Explanations are against the winner ("why not this one"): e.g. `inconsistent: ink is
+  out of stock; #1: consistent with the world`, `ambiguous: who could be p1 or p2 or p3;
+  #1: every referent settled`; a tie says it is one.
+- Tests (test/score.test.mjs, 2 new): explanations, the function and a host's own
+  criteria (`actionsFirst` puts the action first), a tie; the referent criterion.
+- `node bench/score.mjs`: 0.26 / 1.21 / 6.68 ms at 1 / 10 / 100 candidates (R8: 0.26–0.31
+  / 1.17–1.57 / 5.87–6.50), so ranking adds no measurable cost.
+- Docs: api.md (score fields, `rank` and `RANKING`), index.d.ts, design doc §3.

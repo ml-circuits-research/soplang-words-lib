@@ -79,7 +79,21 @@ export interface Scored {
   assumes: { id: string; key: string; value: string }[];
   action?: { available: boolean; status: string; missing?: { key: string; ask?: string }[] };
   answer?: QueryResult;
+  words?: { used: string[]; unused: string[]; unresolved: string[] };
+  place: number;
+  why: string;
+  lostTo?: number;
+  on?: string;
 }
+export interface Criterion {
+  name: string;
+  /** lower is better */
+  measure: (scored: Scored) => number;
+  say: (scored: Scored) => string;
+}
+/** order scored readings best first, explaining every place */
+export declare function rank(scored: Scored[], criteria?: Criterion[]): { order: number[]; ranked: { index: number; place: number; why: string; lostTo?: number; on?: string }[] };
+export declare const RANKING: Criterion[];
 export interface QueryResult {
   /** 'budget': the call ran out of budget; `site`, `steps` and `why` say where */
   status: 'supported' | 'conflicting' | 'ambiguous' | 'missing' | 'refused' | 'no' | 'unknown' | 'budget' | 'unsupported';
@@ -315,7 +329,7 @@ export class World {
   /** read a language-neutral frame into candidates for score; nothing invented */
   interpret(frame: Frame, options?: { limit?: number; id?: string; ns?: string }): { candidates: (ScoreCandidate & Reading)[]; unresolved: string[]; dropped: number };
   /** judge candidate readings against the world; nothing is told */
-  score(candidates: ScoreCandidate[], options?: Budgeted): { candidates: Scored[]; order: number[] };
+  score(candidates: ScoreCandidate[], options?: Budgeted & { criteria?: Criterion[] }): { candidates: Scored[]; order: number[] };
   /** run fn against the world as it was at a point of the sequence */
   asOf<T>(at: number, fn: (world: World) => T, options?: Budgeted): T | undefined;
   seqOf(id: string): number | undefined;

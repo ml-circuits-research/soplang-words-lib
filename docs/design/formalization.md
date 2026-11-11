@@ -126,13 +126,17 @@ in a transaction that is undone; `version`, the log and the wires are unchanged
 **The documented order** (`order`, best first):
 
 1. consistent before inconsistent;
-2. every referent settled (unique by its description, or exactly one fits) before
-   ambiguous ones;
+2. fewer referents left ambiguous (a referent is settled when unique by its description,
+   or when exactly one fits);
 3. fewer lacks;
 4. fewer assumptions;
-5. as given (the host's own ranking, such as a parser's confidence, breaks ties).
+5. fewer words of the frame left out (unused or unresolved; R9.2);
+6. as given (the host's own ranking, such as a parser's confidence, breaks ties).
 
-A host can apply its own order from the same fields. The order prefers a reading the
+The order is `rank(scored, criteria)` with `RANKING` as the default criteria (R9.2), so
+a host can call it, reorder it or add its own. Every scored candidate says why it has
+its place: the winner what it satisfies, a loser the first criterion on which the winner
+is better (`on`), what each is there (`why`), and the winner (`lostTo`). The order prefers a reading the
 world can take as it is; it never prefers a reading because the world would need to
 invent more.
 

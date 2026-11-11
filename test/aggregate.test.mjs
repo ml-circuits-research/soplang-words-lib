@@ -251,3 +251,35 @@ test('core.aggregate: one result even over nothing, one per group with by=, kept
   assert.match(new World().tell('@t task\n@a core.aggregate over=$t then=$x\n@x total').violations[0].why, /needs one result/);
   assert.match(new World().tell('@t task s=?s\n@a core.aggregate over=$t by=?z count=?c then=$x\n@x total n=?c').violations[0].why, /by=\?z is not a variable of its over= patterns/);
 });
+
+test('core.rank: the position of a wire among its peers ordered by a key, kept up to date', () => {
+  const w = new World();
+  w.load(`
+    @k core.slot of=chapter key=at kind=number
+    @c chapter book=?b at=?a
+    @r core.rank of=$c by=at within=?b out=?pos
+    @t chapter core.on=$c position=?pos
+    @rule core.rule when=$c with=$r then=$t
+    @s score player=?p points=?n
+    @q core.rank of=$s by=points order=desc out=?place
+    @t2 score core.on=$s place=?place
+    @rule2 core.rule when=$s with=$q then=$t2
+  `);
+  w.tell('@c1 chapter book=rain at=30  @c2 chapter book=rain at=10  @c3 chapter book=sun at=5  @c4 chapter book=rain at=20');
+  const pos = () => ['c1', 'c2', 'c3', 'c4'].filter((id) => w.has(id)).map((id) => `${id}:${w.get(id).attrs.position}`);
+  assert.deepEqual(pos(), ['c1:3', 'c2:1', 'c3:1', 'c4:2'], 'within each book (the shared variable), ordered by number');
+  w.tell('@c5 chapter book=rain at=15');
+  assert.deepEqual(pos(), ['c1:4', 'c2:1', 'c3:1', 'c4:3'], 'a new peer moves the ones after it');
+  w.retract('c2');
+  assert.deepEqual(pos(), ['c1:3', 'c3:1', 'c4:2']);
+  assert.equal(w.get('c5').attrs.position[0], '1');
+  // descending, and equal values in the order they came
+  w.tell('@s1 score player=a points=7  @s2 score player=b points=9  @s3 score player=c points=7');
+  assert.deepEqual(['s1', 's2', 's3'].map((id) => w.get(id).attrs.place[0]), ['2', '1', '3']);
+  // without within=, every wire that fits the pattern is a peer
+  const all = new World();
+  all.load('@k core.slot of=chapter key=at kind=number\n@c chapter book=?b at=?a\n@r core.rank of=$c by=at out=?pos\n@t chapter core.on=$c position=?pos\n@rule core.rule when=$c with=$r then=$t');
+  all.tell('@c1 chapter book=rain at=30  @c2 chapter book=sun at=10');
+  assert.deepEqual([all.get('c1').attrs.position[0], all.get('c2').attrs.position[0]], ['2', '1']);
+  assert.match(new World().tell('@c chapter at=?a\n@r core.rank by=at out=?p\n@t chapter core.on=$c p=?p\n@x core.rule when=$c with=$r then=$t').violations[0].why, /needs of= one of the rule's when= patterns/);
+});

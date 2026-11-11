@@ -225,7 +225,8 @@ per value of the `by` variables among the matches. *Why:* a total or a count per
 should not need a wire to hang on, nor one rule per kind.
 *Tests:* `aggregates: count, sum, max, argmax and collect over the matches of a pattern, per group`;
 `aggregates: an empty group counts 0 and sums 0; max, argmax and collect have nothing to say`;
-`core.aggregate: one result even over nothing, one per group with by=, kept up to date, with no anchor wire`
+`core.aggregate: one result even over nothing, one per group with by=, kept up to date, with no anchor wire`;
+`core.rank: the position of a wire among its peers ordered by a key, kept up to date`
 
 **S39.** Aggregates are kept up to date when wires arrive, change or go, and
 recomputing only the groups that changed gives the same world as recomputing all.

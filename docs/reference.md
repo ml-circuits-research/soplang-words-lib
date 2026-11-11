@@ -524,6 +524,62 @@ print(w.ofType('total').map((x) => x.attrs.count[0]), w.ofType('tally').map((x) 
 **Limits.** One aggregate per wire; for several results over the same patterns, write
 several aggregates, or a rule with several calcs.
 
+### core.rank
+
+The position of a wire among its peers, ordered by a key: "the 2nd chapter".
+
+**Syntax**
+
+| Attribute | Value | Default | Rep. | Meaning |
+| --- | --- | --- | --- | --- |
+| `of` | `$pattern` | required | | one of the rule's `when=` patterns: the wire whose position is wanted |
+| `by` | key | required | | the key that orders the peers |
+| `out` | `?variable` | required | | gets the position, from 1 |
+| `order` | `asc` \| `desc` | `asc` | | smallest first, or largest first |
+| `within` | `?variable` | none | yes | peers share the value of these variables of the pattern |
+
+It is named in a rule's `with=`, like a [core.calc](#corecalc).
+
+**Meaning.** The peers of the wire `of` matched are the wires that fit the pattern's
+fixed values (and, with `within`, share the values of those variables); every other
+variable of the pattern is free. They are ordered by the value of `by`, as numbers when
+both values are numbers, else as times or as text; equal values keep the order of the
+sequence. `out` is the position of the wire among them.
+
+**When it is evaluated.** With its rule. It is an aggregate over the peers, so when a
+peer arrives, changes or goes, the positions of its group are computed again.
+
+**Interactions.** As for aggregates: kept up to date, withdrawn and remade when the
+position changes; a rule may not rank what its own conclusions produce.
+
+**Violations.** `schema` (`of` is not a `when=` pattern of the rule, no `by`, an `order`
+other than `asc` or `desc`, a `within` variable the pattern does not have).
+
+**Example**
+
+```js run
+const w = new World();
+w.load(`
+  @k core.slot of=chapter key=at kind=number
+  @c chapter book=?b at=?a
+  @r core.rank of=$c by=at within=?b out=?pos
+  @t chapter core.on=$c position=?pos
+  @rule core.rule when=$c with=$r then=$t
+`);
+w.tell('@c1 chapter book=rain at=30  @c2 chapter book=rain at=10  @c3 chapter book=sun at=5');
+print(['c1', 'c2', 'c3'].map((id) => w.get(id).attrs.position[0]));
+w.tell('@c4 chapter book=rain at=20');
+print(['c1', 'c2', 'c3', 'c4'].map((id) => w.get(id).attrs.position[0]));
+```
+
+```output
+["2","1","1"]
+["3","1","1","2"]
+```
+
+**Limits.** One key orders the peers; to order by two keys, derive a key that combines
+them.
+
 ### core.check
 
 A condition computed by a function, inside a rule, deny or action.

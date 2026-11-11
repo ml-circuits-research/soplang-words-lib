@@ -1696,3 +1696,25 @@ output identical. `node tools/scan-loops.mjs src`: clean.
 - Test `core.aggregate: one result even over nothing, one per group with by=, kept up to
   date, with no anchor wire`. Reference entry (all seven parts, the attribute table
   checked against `GRAMMAR` by the docs tests), S38 in semantics.md.
+
+## R6.7 — core.rank: the position of a wire among its peers — done
+
+`npm test`: 219 pass, 0 fail on sources and built file, 218 in checking mode. Pilot
+output identical. `node tools/scan-loops.mjs src`: clean.
+
+- `@r core.rank of=$c by=at within=?b out=?pos`, named in a rule's `with=`: the position
+  (from 1) of the wire `$c` matched among its peers ordered by `at`, as numbers when
+  both values are numbers, else as times or text, equal values in sequence order;
+  `order=desc` for largest first.
+- One addition to the task's syntax: `within=?v`. Which wires are peers cannot be read
+  from the pattern alone: in `chapter book=?b at=?a` the book is the group, in `score
+  player=?p points=?n` the player is the identity. So peers are the wires that fit the
+  pattern's fixed values, and `within` names the variables they must share; every other
+  variable is free. (My first version took all the pattern's variables as the group and
+  ranked every score 1st.)
+- It compiles to an aggregate over a copy of the pattern, so positions are kept up to
+  date by the aggregate machinery: a new chapter moves the ones after it, a retracted
+  one moves them back.
+- Test `core.rank: the position of a wire among its peers ordered by a key, kept up to
+  date` (grouped by book, a new peer, a retraction, no `within`, descending with ties,
+  the schema error). Reference entry with its example; cited in S38.

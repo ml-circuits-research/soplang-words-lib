@@ -11,7 +11,7 @@ const RANGE_CAP = 2000;
 export const SCHEMA_TYPES = new Set([
   'core.slot', 'core.type', 'core.abducible', 'core.precision', 'core.tier', 'core.rule', 'core.deny', 'core.calc', 'core.check', 'core.use',
   'core.schema.map', 'core.namespace', 'core.producer', 'core.action',
-  'core.sequence', 'core.fluent', 'core.effect', 'core.relation', 'core.aggregate',
+  'core.sequence', 'core.fluent', 'core.effect', 'core.relation', 'core.aggregate', 'core.rank',
 ]);
 
 /**
@@ -31,6 +31,7 @@ export const GRAMMAR = {
   'core.calc': ['out', 'fn', 'args', 'over', 'pick', 'ties', 'relation'],
   'core.aggregate': ['over', 'by', 'then', 'default', 'fn', 'out', 'args', 'pick', 'ties', 'count', 'sum', 'min', 'max', 'argmin', 'argmax', 'collect'],
   'core.check': ['fn', 'args', 'why'],
+  'core.rank': ['of', 'by', 'out', 'order', 'within'],
   'core.relation': ['when', 'sum', 'sub', 'equals'],
   'core.abducible': ['of', 'key', 'cost'],
   'core.sequence': ['key'],
@@ -612,18 +613,43 @@ function buildRule(world, w, c, extra, register = true, aggregate = null) {
     return l;
   }).filter(Boolean);
   const fn = (x, kind) => {
+    if (x.type === 'core.rank') return rankCalc(x);
     const name = first(x, 'fn');
     // with over= the calc is an aggregate over every match of those patterns
     const over = x.attrs.over ? get('over', find(x.id) || x) : null;
     if (over ? !aggregates[name] : !world.fns[name]) c.errors.push(`${w.id}: unknown ${over ? 'aggregate' : kind} function "${name}"`);
     return { id: x.id, why: first(x, 'why'), fn: name, out: first(x, 'out'), args: x.attrs.args || [], over, pick: first(x, 'pick'), ties: first(x, 'ties') };
   };
+  // core.rank of=$p by=key: the position of the wire $p matched among its peers, ordered by
+  // that key. Peers are the wires that fit the pattern's fixed values; with within=?v, only
+  // those that share the value of ?v. An aggregate over a copy of the pattern.
+  const rankCalc = (x) => {
+    const of = first(x, 'of'), key = first(x, 'by'), out = first(x, 'out');
+    const pid = of?.replace(/^\$\??/, '');
+    const p = rule.when.find((q) => q.id === pid);
+    if (!p || !key) { c.errors.push(`${w.id}: ${x.id} needs of= one of the rule's when= patterns, and by=`); return { id: x.id, out, fn: 'rank', args: [], over: [] }; }
+    const short = c.shortKey(p.type, key);
+    const within = new Set(x.attrs.within || []);
+    const attrs = {};
+    let n = 0;
+    for (const [k, vs] of Object.entries(p.attrs)) attrs[k] = vs.map((v) => (hasVar(v) && !within.has(v) ? `?${x.id}\u0004f${n++}` : v));
+    attrs[short] = [`?${x.id}\u0004v`];
+    const peer = { ...p, id: `${p.id}\u0004rank`, attrs };
+    const named = new Set(Object.values(p.attrs).flat());
+    for (const v of within) if (!named.has(v)) c.errors.push(`${w.id}: ${x.id} within=${v} is not a variable of ${p.id}`);
+    const own = p.attrs[short]?.[0];
+    const order = first(x, 'order') || 'asc';
+    if (!['asc', 'desc'].includes(order)) c.errors.push(`${w.id}: ${x.id} order= is asc or desc`);
+    return { id: x.id, out, fn: 'rank', args: [`?${x.id}\u0004v`], over: [peer], rank: { of: '?' + pid, key: short, own, order } };
+  };
   const rule = {
     id: w.id, kind: w.type === 'core.rule' ? 'rule' : 'deny',
     when: get('when'), then: get('then'), not: get('not'),
-    calc: get('with').map((x) => fn(x, 'calc')), test: get('if').map((x) => fn(x, 'test')),
+    calc: [], test: [],
     why: first(w, 'why') ? str(first(w, 'why')) : undefined,
   };
+  rule.calc = get('with').map((x) => fn(x, 'calc'));
+  rule.test = get('if').map((x) => fn(x, 'test'));
   // a reason may write a value through a filter (?n:ordinal): the filter must be registered
   for (const why of [rule.why, ...rule.test.map((t) => t.why && str(t.why))]) {
     for (const m of (why || '').matchAll(/\?[A-Za-z_][\w.\-]*:([A-Za-z_][\w\-]*)/g)) {

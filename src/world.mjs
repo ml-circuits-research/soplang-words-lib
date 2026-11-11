@@ -1136,7 +1136,8 @@ export class World {
             picks.push(walk(c.pick || '$?' + c.over[0].id, t));
           }
           if (!n && rule.by?.length) continue next; // a group with nothing in it has no result
-          out = aggregates[c.fn](values, picks, n);
+          if (c.rank) out = this._rankOf(c.rank, matches, s);
+          else out = aggregates[c.fn](values, picks, n);
           if (out === undefined && c.dflt !== undefined) out = c.dflt;
           if (Array.isArray(out)) out = LIST + out.join(LIST); // several values for one key
           // several wires share the best value: the pick is the first, the others are remembered
@@ -1241,6 +1242,27 @@ export class World {
       res._full = false;
       if ((!res._agenda.length && !res._fluents.size) || res.violations.length) return;
     }
+  }
+
+  /**
+   * core.rank: the position (from 1) of the wire `rank.of` matched among `matches` (the
+   * wires of the same pattern with any value of the key), ordered by that key, as numbers
+   * when both are numbers, else as times or text; equal values in sequence order.
+   */
+  _rankOf(rank, matches, s) {
+    const me = walk(rank.of, s);
+    const valueOf = (id) => this.wires.get(id)?.attrs[rank.key]?.[0];
+    const ids = [...new Set(matches.map(([id]) => id))]; // in sequence order already
+    const cmp = (a, b) => {
+      const x = valueOf(a), y = valueOf(b);
+      if (x === y) return 0;
+      if (this.fns.lt([x, y], this)) return -1;
+      if (this.fns.lt([y, x], this)) return 1;
+      return x < y ? -1 : 1;
+    };
+    const sorted = ids.map((id, i) => [id, i]).sort((a, b) => (rank.order === 'desc' ? cmp(b[0], a[0]) : cmp(a[0], b[0])) || a[1] - b[1]);
+    const at = sorted.findIndex(([id]) => id === me);
+    return at < 0 ? undefined : String(at + 1);
   }
 
   /** Note the groups of the aggregates that a wire belongs to, so they are looked at again. Call before the wire changes. */

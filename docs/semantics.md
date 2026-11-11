@@ -71,6 +71,13 @@ new follows. The world reached does not depend on the order in which the stateme
 were told, nor on whether they came one by one or together.
 *Test:* `deduction is incremental and order independent`
 
+**S11a.** A value given to a key that no rule, deny, relation, aggregate, rank, state
+or effect reads (no pattern names it, it is not an identity key, not the sequence key)
+is validated but not propagated: no conclusion can depend on it. *Why:* editing text
+that no rule looks at should cost what validating it costs (200 such values in a
+1,200-wire world: 6.9 → 1.5 ms, `node bench/unread.mjs`).
+*Test:* `patch: values of keys that nothing reads are validated but not propagated, with the same result`
+
 **S12.** Rules may be recursive; the chase stops because a conclusion that is already
 there adds nothing.
 *Test:* `recursive rules reach a fixpoint; cycles are refused by a deny`

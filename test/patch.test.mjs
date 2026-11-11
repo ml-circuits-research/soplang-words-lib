@@ -238,3 +238,32 @@ test('patch: evaluate without telling: check(patch, { query, ask }) and query/as
   assert.deepEqual([no.status, no.violations[0].why], ['refused', '200 is too much']);
   assert.deepEqual([w.toSOP({ derived: true }), w.stamp, w.log.length], before, 'nothing changed');
 });
+
+test('patch: values of keys that nothing reads are validated but not propagated, with the same result', () => {
+  const make = () => {
+    const w = new World();
+    w.load(`
+      @k1 core.slot of=para key=text kind=string
+      @k2 core.slot of=para key=n kind=integer max=999
+      @pp para doc=?d
+      @cnt core.calc out=?c fn=count over=$pp
+      @dd doc name=?d
+      @tally doc core.on=$dd paras=?c
+      @r core.rule when=$dd with=$cnt then=$tally
+    `);
+    w.tell('@d1 doc name=d1  @p1 para doc=d1  @p2 para doc=d1');
+    return w;
+  };
+  const w = make();
+  w.stats();
+  w.fill('p1', 'text', '"hello"');
+  const quiet = w.stats().sites;
+  assert.equal(quiet.chase || 0, 0, 'no rule reads text: nothing is propagated');
+  assert.equal(w.fill('p2', 'n', 5000).violations[0].kind, 'domain', 'but the value is still validated');
+  w.tell('@p3 para');
+  w.fill('p3', 'doc', 'd1');
+  assert.ok((w.stats().sites.chase || 0) > 0, 'a key a rule reads is propagated');
+  assert.equal(w.get('d1').attrs.paras[0], '3');
+  // the world equals one rebuilt from its log, where every statement is propagated
+  assert.equal(w.diff(World.fromJSON(w.toJSON())).same, true);
+});

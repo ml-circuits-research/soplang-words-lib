@@ -1796,3 +1796,28 @@ output identical. `tsc --noEmit --strict src/index.d.ts`: no errors.
   since `check` already has that meaning and the questions are what is new.
 - Test `patch: evaluate without telling: check(patch, { query, ask }) and query/ask with
   given answer on the world plus the patch`. S59, the check entry of api.md, index.d.ts.
+
+## R6.12 — values of keys that nothing reads are not propagated — done
+
+`npm test`: 224 pass, 0 fail on sources and built file, 223 in checking mode. Pilot
+output identical. `node tools/scan-loops.mjs src`: clean.
+
+`node bench/unread.mjs` (1,200 wires, a count per document and a deny that reads an
+absence; a patch of 200 sets; median of 31 after a warm-up round), before (`git stash
+push src`) → after: a key no rule reads (text) 6.85 → 1.47 ms; a key rules read (doc)
+8.75 → 8.67 ms (unchanged, as it must be).
+
+- The compiled matrix knows, per type, the keys that something reads: every key a
+  pattern of a rule, deny, relation (compiled to rules), aggregate or rank names
+  (`when`, `not`, `over`, `core.absent`), the keys of fluents and of effects on their
+  events, identity keys, and the sequence key. `c.reads(type, key)` (with inheritance,
+  cached). No new syntax.
+- A value added to a key that is not read is validated (it stays in `_touched`) but the
+  wire is not put on the agenda, so no rule is matched for it. A new wire is always
+  propagated (a pattern without keys may match it).
+- Test `patch: values of keys that nothing reads are validated but not propagated, with
+  the same result` (no chase steps for the unread key, a domain violation still caught,
+  a read key propagated, the world equal to its replay). S11a in semantics.md.
+
+The reviewer's two notes for after R6.12 (rewind growing with size, defaults costing
+about 1 ms each) come next.

@@ -844,8 +844,9 @@ export class World {
     this._fluentTouch(w, res);
     this._event({ op: 'fill', id: w.id, key, value, via: prov.via, from: prov.from });
     res.filled.push({ id: w.id, key, value, via: prov.via });
-    res._touched.add(w.id);
-    res._agenda.push(w.id);
+    res._touched.add(w.id); // validated
+    // propagated only if something reads the key: a value no pattern names changes no conclusion
+    if (this._compiled().reads(w.type, key)) res._agenda.push(w.id);
   }
 
   _takeValue(w, key, value, fill) {

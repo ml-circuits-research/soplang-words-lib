@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Semantics</title>
-<meta name="source-hash" content="e3a301815ea5">
+<meta name="source-hash" content="dd4412d695a7">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -33,6 +33,7 @@
 <p><strong>S10.</strong> Keys of an open namespace (always <code>core.</code>) are bookkeeping: they are not validated, and a wire told again keeps the values of each statement. <em>Tests:</em> <code>keys: an open namespace is always allowed and not validated unless a slot declares it</code>; <code>bookkeeping: a wire told again keeps the bookkeeping of each statement; the sequence key may be declared late</code></p>
 <h2 id="fixpoint-and-termination">Fixpoint and termination</h2>
 <p><strong>S11.</strong> After a change, every rule is applied wherever its body matches, until nothing new follows. The world reached does not depend on the order in which the statements were told, nor on whether they came one by one or together. <em>Test:</em> <code>deduction is incremental and order independent</code></p>
+<p><strong>S11a.</strong> A value given to a key that no rule, deny, relation, aggregate, rank, state or effect reads (no pattern names it, it is not an identity key, not the sequence key) is validated but not propagated: no conclusion can depend on it. <em>Why:</em> editing text that no rule looks at should cost what validating it costs (200 such values in a 1,200-wire world: 6.9 → 1.5 ms, <code>node bench/unread.mjs</code>). <em>Test:</em> <code>patch: values of keys that nothing reads are validated but not propagated, with the same result</code></p>
 <p><strong>S12.</strong> Rules may be recursive; the chase stops because a conclusion that is already there adds nothing. <em>Test:</em> <code>recursive rules reach a fixpoint; cycles are refused by a deny</code></p>
 <p><strong>S13.</strong> A matrix whose rules never stop adding wires is stopped: a wire derived through more than <code>maxDepth</code> (12) derived wires is a violation of kind <code>depth</code>, and the chase has the budget of S4. The change is refused; the world stays as it was. <em>Tests:</em> <code>runaway derivations are stopped by the depth budget</code>; <code>budget: a matrix that explodes is stopped, not waited for</code></p>
 <p><strong>S14.</strong> A conclusion that contradicts a value already there is a <code>conflict</code>, and the change that led to it is refused. Rules never overwrite. <em>Test:</em> <code>refusal: conflict with a derived value (identity key)</code></p>

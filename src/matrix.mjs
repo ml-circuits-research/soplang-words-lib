@@ -452,6 +452,36 @@ export function compileMatrix(world) {
     if (r.hasSelect) continue;
     r.when.forEach((p, idx) => push(c.ruleByType, p.type, { rule: r, idx }));
   }
+  // ---- the keys that something reads: a value of any other key changes nothing a rule,
+  // deny, relation, aggregate or state depends on, so filling it needs no propagation
+  const readKeys = new Map(); // type -> Set<key>
+  const read = (type, key) => (readKeys.get(type) || readKeys.set(type, new Set()).get(type)).add(key);
+  for (const r of [...c.rules, ...c.denies]) {
+    for (const p of [...r.when, ...r.not, ...r.calc.flatMap((x) => x.over || [])]) {
+      for (const k of Object.keys(p.attrs)) read(p.type, k);
+      for (const k of p.absent || []) read(p.type, k);
+    }
+  }
+  for (const f of c.fluents.values()) {
+    read(f.of, f.key);
+    if (f.delta) read(f.of, f.delta);
+    for (const k of f.by) read(f.of, k);
+    for (const e of f.effects) {
+      for (const k of [e.amount, e.target, ...e.where.map(([, ev]) => ev)]) if (k) read(e.on, k);
+      for (const [hk] of e.where) read(f.of, hk);
+    }
+  }
+  const readCache = new Map();
+  c.reads = (type, key) => {
+    if (key === c.seqKey) return true;
+    const id = type + '\u0001' + key;
+    let r = readCache.get(id);
+    if (r === undefined) {
+      r = c.lineage(type).some((t) => readKeys.get(t)?.has(key)) || !!c.slotOf(type, key)?.identity;
+      readCache.set(id, r);
+    }
+    return r;
+  };
   c.overByType = new Map(); // type of an aggregated pattern -> { rule, pat, group }
   for (const r of [...c.rules, ...c.denies]) for (const o of r.overs) push(c.overByType, o.pat.type, { rule: r, ...o });
   for (const d of c.denies) d.when.forEach((p, idx) => push(c.denyByType, p.type, { rule: d, idx }));

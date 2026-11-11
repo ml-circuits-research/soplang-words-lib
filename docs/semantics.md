@@ -265,9 +265,11 @@ recomputing only the groups that changed gives the same world as recomputing all
 
 **S41.** When several matches are equally best for `argmax` or `argmin`, the first in
 the sequence is taken and the answer says `ambiguous` with the alternatives, unless
-the calc says `ties=first`. *Why:* a host must not present an arbitrary pick as the
-answer.
-*Test:* `aggregates: a tie for argmax or argmin is ambiguous, with the alternatives; ties=first picks one`
+the calc says `ties=first` (the first, silently) or `ties=all` (every one of them, as
+several values of the key the rule writes, in sequence order). *Why:* a host must not
+present an arbitrary pick as the answer; a rule that wants all the leaders says so.
+*Tests:* `aggregates: a tie for argmax or argmin is ambiguous, with the alternatives; ties=first picks one`;
+`aggregates: ties=all gives a rule every tied pick of argmax or argmin, as several values`
 
 ## Relations
 

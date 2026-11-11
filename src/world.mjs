@@ -1277,7 +1277,8 @@ export class World {
           if ((c.fn === 'argmax' || c.fn === 'argmin') && out !== undefined && c.ties !== 'first') {
             const best = aggregates[c.fn === 'argmax' ? 'max' : 'min'](values, picks, n);
             const tied = [...new Set(picks.filter((_, i) => values[i] === best || this.fns.eq([values[i], best], this)))];
-            if (tied.length > 1) s = unify(c.out + TIES, LIST + tied.join(LIST), s);
+            if (tied.length > 1 && c.ties === 'all') out = LIST + tied.join(LIST); // every best one, as several values
+            else if (tied.length > 1) s = unify(c.out + TIES, LIST + tied.join(LIST), s);
           }
         } else {
           const args = c.args.map((a) => walk(a, s));

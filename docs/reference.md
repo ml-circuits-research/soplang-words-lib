@@ -452,7 +452,7 @@ A value computed by a function, inside a rule, deny or action.
 | `args` | value or `?variable` | none | yes | the arguments, in order |
 | `over` | `$pattern` | none | yes | makes it an aggregate over the matches of these patterns |
 | `pick` | `?variable` | none | | for `argmax`/`argmin`: what to return for the best match |
-| `ties` | `first` | report ties | | for `argmax`/`argmin`: take the first of equals silently |
+| `ties` | `first` \| `all` | report ties | | for `argmax`/`argmin`: `first` takes the first of equals silently; `all` gives every one of them, as several values |
 | `relation` | flag | false | | for `fn=add`/`sub`: the rule also works backwards ([core.relation](#corerelation)) |
 
 **Meaning.** After the patterns matched, `out` is bound to `fn(args)`. If a function
@@ -505,7 +505,7 @@ count per kind, the longest of something.
 | `out` | `?variable` | | | with `fn`: the variable that gets the result |
 | `args` | `?variable` | none | | the value taken from each match (for all but `count`) |
 | `pick` | `?variable` | | | for `argmax`/`argmin`: what to return for the best match |
-| `ties` | `first` | report ties | | as on [core.calc](#corecalc) |
+| `ties` | `first` \| `all` | report ties | | as on [core.calc](#corecalc) |
 | `by` | `?variable` | none | yes | one result per value of these variables among the matches |
 | `default` | value | none | | the result when there is nothing to aggregate |
 | `then` | `$template` | | yes | what holds, with the result (and the `by` variables) |
@@ -1301,7 +1301,7 @@ match.
 | `count` | the number of matches | `0` |
 | `sum` | the sum of the values | `0` |
 | `min`, `max` | the smallest, the largest value | no result |
-| `argmin`, `argmax` | the `pick` of the match with the smallest (largest) value; of several equal ones the first in the sequence, and a query for it answers `ambiguous` unless `ties=first` | no result |
+| `argmin`, `argmax` | the `pick` of the match with the smallest (largest) value; of several equal ones the first in the sequence, and a query for it answers `ambiguous`; with `ties=first` the first silently; with `ties=all` every one of them, as several values | no result |
 | `collect` | all the values, as several values of the key | no result |
 
 An aggregate is kept up to date: when a wire it ranges over arrives, changes or goes,

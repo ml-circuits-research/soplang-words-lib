@@ -1944,3 +1944,22 @@ output identical. `node tools/scan-loops.mjs src`: clean. `tsc`: no errors.
 - Test `tiers: a statement may tell some of its keys as assumptions; assumptions() lists
   them and a told value replaces them`. S28 (semantics, with the reason), tell in
   api.md, `ChangeOptions` in index.d.ts.
+
+## R6.17 — ties in aggregates: ties=all added — done
+
+`npm test`: 230 pass, 0 fail on sources and built file, 229 in checking mode. Pilot
+output identical. `node tools/scan-loops.mjs src`: clean.
+
+- Checked first: inside a rule, `argmax`/`argmin` gave only the first of the tied picks
+  (the others were kept for queries, which answer `ambiguous`); `ties=first` only hid
+  the tie. So a rule could not get every leader.
+- Added `ties=all`: the result is every tied pick, in sequence order, as several values
+  of the key the rule writes (as `collect` does); a query on a `many` key then answers
+  with all of them (R6.1). `ties=` other than `first` or `all` is a `schema` violation.
+- Test `aggregates: ties=all gives a rule every tied pick of argmax or argmin, as several
+  values`. S41 (semantics), core.calc, core.aggregate and the aggregates table in
+  reference.md.
+- A trap found while writing the test, for the reviewer: in `@g game name=?g`, the
+  variable `?g` is the same as the pattern's own binding `?g` (the matched wire's id), so
+  the pattern can never match and nothing says why. Worth a `schema` warning; I have not
+  added one, since it was not asked and a host might rely on `?p` meaning the wire.

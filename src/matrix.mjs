@@ -682,7 +682,9 @@ function buildRule(world, w, c, extra, register = true, aggregate = null) {
     // a pattern written in the matrix is checked when the matrix is read, not when it is first used
     const pat = (x.attrs.args || [])[1];
     if (name === 'matches' && pat !== undefined && !hasVar(pat)) { const re = safeRegex(str(pat)); if (re.refused) c.errors.push(`${w.id}: ${x.id}: ${re.refused}`); }
-    return { id: x.id, why: first(x, 'why'), fn: name, out: first(x, 'out'), args: x.attrs.args || [], over, pick: first(x, 'pick'), ties: first(x, 'ties') };
+    const ties = first(x, 'ties');
+    if (ties !== undefined && !['first', 'all'].includes(ties)) c.errors.push(`${w.id}: ${x.id} ties= is first or all`);
+    return { id: x.id, why: first(x, 'why'), fn: name, out: first(x, 'out'), args: x.attrs.args || [], over, pick: first(x, 'pick'), ties };
   };
   // core.rank of=$p by=key: the position of the wire $p matched among its peers, ordered by
   // that key. Peers are the wires that fit the pattern's fixed values; with within=?v, only

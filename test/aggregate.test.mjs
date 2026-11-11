@@ -313,3 +313,21 @@ test('text functions: matches with a bounded pattern, contains, starts_with, end
   const q = v.query({ type: 'query', seek: 'hit', where: { text: 'aaaa', pattern: '"(a+)+$"' } });
   assert.deepEqual([q.status, /exponential/.test(q.reason)], ['unsupported', true]);
 });
+
+test('aggregates: ties=all gives a rule every tied pick of argmax or argmin, as several values', () => {
+  const w = new World();
+  w.load(`
+    @g game name=?name
+    @s score game=$g player=?p points=?n
+    @best core.calc out=?who fn=argmax over=$s args=?n pick=?p ties=all
+    @win game core.on=$g leaders=?who
+    @r core.rule when=$g with=$best then=$win
+    @k core.slot of=game key=leaders many=true
+  `);
+  w.tell('@g1 game name=chess  @s1 score game=$g1 player=ann points=7  @s2 score game=$g1 player=bob points=9  @s3 score game=$g1 player=cy points=9');
+  assert.deepEqual(w.get('g1').attrs.leaders, ['bob', 'cy'], 'both leaders, in sequence order');
+  assert.deepEqual(w.query({ about: 'g1', seek: 'leaders' }).values, ['bob', 'cy'], 'a question gets them all too');
+  w.retract('s3');
+  assert.deepEqual(w.get('g1').attrs.leaders, ['bob']);
+  assert.match(new World().tell('@s score n=?n p=?p\n@b core.calc out=?w fn=argmax over=$s args=?n pick=?p ties=some\n@g game x=?y\n@t game core.on=$g w=?w\n@r core.rule when=$g with=$b then=$t').violations[0].why, /ties= is first or all/);
+});

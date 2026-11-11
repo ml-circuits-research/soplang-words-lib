@@ -606,7 +606,9 @@ print(w.ofType('total').map((x) => x.attrs.count[0]), w.ofType('tally').map((x) 
 ```
 
 **Limits.** One aggregate per wire; for several results over the same patterns, write
-several aggregates, or a rule with several calcs.
+several aggregates, or a rule with several calcs. With no anchor it ranges over every
+[namespace](language.md#12-scope); to count within one, aggregate in a rule anchored
+on a wire of that namespace.
 
 ### core.rank
 

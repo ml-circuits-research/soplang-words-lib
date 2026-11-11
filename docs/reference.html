@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="f219521cc330">
+<meta name="source-hash" content="327f6f1a6483">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -246,7 +246,7 @@ w.tell(&#x27;@t1 task status=todo  @t2 task status=done  @t3 task status=todo&#x
 print(w.ofType(&#x27;total&#x27;).map((x) =&gt; x.attrs.count[0]), w.ofType(&#x27;tally&#x27;).map((x) =&gt; `${x.attrs.status}:${x.attrs.count}`));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;0&quot;]
 [&quot;3&quot;] [&quot;todo:2&quot;,&quot;done:1&quot;]</code></pre></figure>
-<p><strong>Limits.</strong> One aggregate per wire; for several results over the same patterns, write several aggregates, or a rule with several calcs.</p>
+<p><strong>Limits.</strong> One aggregate per wire; for several results over the same patterns, write several aggregates, or a rule with several calcs. With no anchor it ranges over every <a href="language.html#12-scope">namespace</a>; to count within one, aggregate in a rule anchored on a wire of that namespace.</p>
 <h3 id="corerank">core.rank</h3>
 <p>The position of a wire among its peers, ordered by a key: "the 2nd chapter".</p>
 <p><strong>Syntax</strong></p>

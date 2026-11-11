@@ -282,6 +282,7 @@ test('query: an answer found by supposing carries the supposed wire as the rules
   assert.deepEqual(r.supposed.set, { total: '12', tax: '2.4', unit: 'lei' });
   assert.deepEqual(r.supposed.attrs, { item: ['pen'], count: ['4'], total: ['12'], tax: ['2.4'], unit: ['lei'] });
   assert.deepEqual(r.supposed.fills.map((f) => [f.key, f.via, f.from, f.tier]), [['total', 'r', ['p1'], 'derived'], ['tax', 'r', ['p1'], 'derived'], ['unit', 'r', ['p1'], 'derived']]);
+  assert.deepEqual([r.from, r.via, r.wires], [['p1'], ['r'], []], 'from and via name what the answer rests on; wires (the existing wires asked about) is empty: the wire was supposed');
   assert.equal(w.ofType('quote').length, 0, 'and nothing stays in the world');
   // when no rule answers, the supposed wire shows what was known
   const m = w.query({ type: 'quote', seek: 'total', where: { item: 'ink', count: 1 } });

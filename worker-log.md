@@ -1603,3 +1603,21 @@ output identical. `tsc --noEmit --strict src/index.d.ts`: no errors.
   not, what it is` (whale/fish: `no` with `mammal`, from `w1` via `r`; `yes`; `0.0`
   against `0` under an integer slot; `missing`; the question-wire form; nothing changed).
   S55a in semantics.md (with the reason), the query entry of api.md, index.d.ts.
+
+## R6.3 — checked: both already work; closed with the tests that show it — done
+
+`npm test`: 215 pass, 0 fail on sources and built file, 214 in checking mode.
+
+- (a) A query answered by supposing a wire returns `supposed.set` (every key the rules
+  set, here `total`, `tax`, `unit`), `supposed.attrs`, `supposed.fills` with their
+  `from`, and a non-empty `from` and `via` on the answer (`['p1']`, `['r']`). `wires`
+  is, by definition, the existing wires the question is about, so it stays empty for a
+  supposed wire; the wire itself is `supposed`. Test `query: an answer found by supposing
+  carries the supposed wire as the rules left it` (W2), which now also asserts `from`,
+  `via` and `wires`.
+- (b) A deny's `why` may quote the match: `why="?n is ?b"` gives "ann is -3", and the
+  violation carries `bindings` as data. Test `violations: explainable after the change is
+  undone; a reason may quote the values` (W3, kernel.test.mjs).
+- The older workarounds the reviewer listed are also in place: `register` refuses to
+  replace a built-in without `override` (W1), `revise` (W5), `told()` (W6),
+  `check(patch)` (H1).

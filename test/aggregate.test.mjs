@@ -331,3 +331,11 @@ test('aggregates: ties=all gives a rule every tied pick of argmax or argmin, as 
   assert.deepEqual(w.get('g1').attrs.leaders, ['bob']);
   assert.match(new World().tell('@s score n=?n p=?p\n@b core.calc out=?w fn=argmax over=$s args=?n pick=?p ties=some\n@g game x=?y\n@t game core.on=$g w=?w\n@r core.rule when=$g with=$b then=$t').violations[0].why, /ties= is first or all/);
 });
+
+test('aggregates: a deny over a group is checked when a member arrives, also in a matrix with no rule at all', () => {
+  const w = new World();
+  w.load('@b basket owner=?o\n@i item in=$b\n@many core.calc out=?c fn=count over=$i\n@big core.check fn=gt args=?c args=2\n@d core.deny when=$b with=$many if=$big why="?o has too much"');
+  w.tell('@b1 basket owner=ann  @i1 item in=$b1  @i2 item in=$b1');
+  assert.equal(w.tell('@i3 item in=$b1').violations[0].why, 'ann has too much');
+  assert.equal(w.has('i3'), false);
+});

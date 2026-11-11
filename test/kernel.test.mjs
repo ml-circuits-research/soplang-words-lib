@@ -533,3 +533,20 @@ test('violations: denies say which reason leads (priority=), and slots give thei
   assert.equal(t.violations[0].why, 'm3 moves $p1, which is not a piece');
   assert.match(new World().tell('@m x\n@d core.deny when=$m why="x" priority=high').violations[0].why, /priority= must be a number/);
 });
+
+test('violations: a variable with several values reaches a filter as one list', () => {
+  const and = (xs) => (Array.isArray(xs) ? (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}` : String(xs[0])) : String(xs)); // a host's joiner
+  const w = new World({ filters: { list: and } });
+  w.load(`
+    @b basket owner=?o
+    @i item in=$b name=?n
+    @all core.calc out=?names fn=collect over=$i args=?n
+    @many core.calc out=?c fn=count over=$i
+    @big core.check fn=gt args=?c args=2
+    @d core.deny when=$b with=$all with=$many if=$big why="?o has too much: ?names:list (plain: ?names)"
+  `);
+  w.tell('@b1 basket owner=ann  @i1 item in=$b1 name=pen  @i2 item in=$b1 name=ink');
+  const v = w.tell('@i3 item in=$b1 name=cap').violations[0];
+  assert.equal(v.why, 'ann has too much: pen, ink and cap (plain: pen, ink, cap)');
+  assert.deepEqual(v.vars.names, ['pen', 'ink', 'cap']);
+});

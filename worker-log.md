@@ -2071,3 +2071,26 @@ output identical. `node tools/scan-loops.mjs src`: clean.
   other wire).
 - Test `slots: kind=ref to=<type> and unique= keep integrity without hand-written
   denies`. Reference tables (core.slot, core.type, kinds), the violations table.
+
+## R7.4 — lists in reasons; distinct anchors; and a bug found on the way — done
+
+`npm test`: 240 pass, 0 fail on sources and built file, 239 in checking mode. Pilot
+output identical. `node tools/scan-loops.mjs src`: clean.
+
+- A variable with several values (`collect`, `ties=all`) is now part of a reason: a
+  filter receives it as one list (`?names:list` with a host's joiner gives "pen, ink and
+  cap"), `vars` holds it as a list, and written without a filter its values are joined
+  with ", ". Before, such variables were left out of `bindings` and `vars` and stayed as
+  `?names` in the text.
+- Distinct anchors: `core.aggregate ... by=?g` (R6.6) is already one result per distinct
+  value. `node bench/distinct.mjs` (2,000 members in 50 groups): a count anchored on a
+  member (one rule firing per member) 238 ms to load, 4.7 ms for one more member;
+  `core.aggregate by=` 15 ms and 0.31 ms, the same 50 tallies. So no new construct: the
+  reference now says that `by=` is the way, with these figures.
+- **Bug fixed:** a deny over a group (an aggregate in a deny) was not checked when a
+  member arrived if the matrix had no rule with negation, a selector or an aggregate:
+  the groups were only noted for such rules. Found while testing lists; the refusal only
+  showed up in `check()`. Now the groups are noted whenever an aggregate exists. Test
+  `aggregates: a deny over a group is checked when a member arrives, also in a matrix
+  with no rule at all`; S40 cites it.
+- Test `violations: a variable with several values reaches a filter as one list`.

@@ -470,7 +470,9 @@ as tokens), `vars` (the variables as data: strings as their text, plain numbers 
 numbers, no wire ids), `wires`, `support`, `involved`.
 
 **Filters.** In `why`, `?n:ordinal` writes the value of `?n` through the filter
-`ordinal`, which the host registers (`new World({ filters })` or
+`ordinal`, which the host registers (a variable with several values, from `collect` or
+`ties=all`, reaches the filter as one list, and `vars` holds it as a list; written
+without a filter, its values are joined with ", ") (`new World({ filters })` or
 `world.register('filter', name, fn)`; `fn(value, { world, name })` returns the text). No
 filter is built in, so the core holds no language: a host registers the ones of its
 own. A filter that is not registered is a `schema` violation of the deny. A colon not
@@ -581,7 +583,9 @@ a [rule](#corerule).
 **When it is evaluated.** In the chase, with the other aggregates: when the matrix
 changes, and for the groups whose wires arrive, change or go.
 
-**Interactions.** *Withdrawal:* when the result changes, the old conclusion is withdrawn
+**Interactions.** *Distinct anchors:* `by=` is the way to compute something once per
+distinct value: a rule anchored on a member computes it once per member (2,000 members in
+50 groups: 238 ms against 15 ms, `node bench/distinct.mjs`). *Withdrawal:* when the result changes, the old conclusion is withdrawn
 and the new one made. *Identity:* the templates of two aggregates should differ in type
 or in a key, since a template that has every entry of an existing wire is that wire.
 *Stratification:* an aggregate may not range over what its own templates produce.

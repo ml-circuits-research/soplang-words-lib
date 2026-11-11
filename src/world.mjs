@@ -1394,6 +1394,8 @@ export class World {
         if (res._fluents.size) { this._fluentRun(res, c); continue; } // states first: rules read their values
         const w = this.wires.get(res._agenda.shift());
         if (!w) continue;
+        // a deny over a group needs the groups whose wires changed, even with no such rule
+        if (!c.negRules.length && c.overByType.size) this._seed(w, res);
         if (c.negRules.length) { // only rules with negation, a selector or an aggregate need to know what changed
           for (const t of c.lineage(w.type)) res._types.add(t);
           this._seed(w, res);
@@ -1679,14 +1681,17 @@ export class World {
    */
   _say(why, rule, s) {
     const bindings = {};
-    for (const v of rule.vars || []) { const x = walk(v, s); if (!hasVar(x) && x[0] !== LIST) bindings[v.slice(1)] = x; }
+    for (const v of rule.vars || []) { const x = walk(v, s); if (!hasVar(x)) bindings[v.slice(1)] = x; }
     // the variables as data, for a host that words the message itself: not the ids of
-    // the matched wires, strings as their text, plain numbers as numbers
+    // the matched wires, strings as their text, plain numbers as numbers, several values
+    // (collect, ties=all) as a list
     const pats = new Set((rule.when || []).map((p) => p.id));
+    const one = (x) => (x[0] === '"' ? str(x) : /^-?\d+(\.\d+)?$/.test(x) ? Number(x) : x);
     const vars = {};
     for (const [k, x] of Object.entries(bindings)) {
       if (pats.has(k) || k.includes('\u0003')) continue;
-      vars[k] = x[0] === '"' ? str(x) : /^-?\d+(\.\d+)?$/.test(x) ? Number(x) : x;
+      vars[k] = x[0] === LIST ? x.slice(1).split(LIST).map(one) : one(x);
+      if (x[0] === LIST) bindings[k] = x.slice(1).split(LIST);
     }
     const some = (o) => (Object.keys(o).length ? o : undefined);
     if (typeof why !== 'string' || !why.includes('?')) return { text: why, bindings: some(bindings), vars: some(vars) };
@@ -1695,9 +1700,10 @@ export class World {
       while (n && bindings[n] === undefined && /[.\-]$/.test(n)) n = n.slice(0, -1); // bounded: the punctuation after a name
       if (bindings[n] === undefined) return m;
       const rest = name.slice(n.length);
-      if (!filter || rest) return str(bindings[n]) + rest + (filter && rest ? `:${filter}` : '');
+      const plain = Array.isArray(bindings[n]) ? bindings[n].map(str).join(', ') : str(bindings[n]);
+      if (!filter || rest) return plain + rest + (filter && rest ? `:${filter}` : '');
       const f = this.filters[filter];
-      return f ? String(f(vars[n] ?? str(bindings[n]), { world: this, name: n })) : m;
+      return f ? String(f(vars[n] ?? plain, { world: this, name: n })) : m; // a filter gets a list whole
     });
     return { text, bindings, vars: some(vars) };
   }

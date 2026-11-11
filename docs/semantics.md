@@ -265,7 +265,8 @@ recomputing only the groups that changed gives the same world as recomputing all
 
 **S40.** A deny may speak about a group, and is checked also when a wire leaves it.
 *Tests:* `aggregates: a deny can speak about a whole group, and names the wires behind it`;
-`aggregates: a deny over a group is also checked when a wire leaves the group`
+`aggregates: a deny over a group is also checked when a wire leaves the group`;
+`aggregates: a deny over a group is checked when a member arrives, also in a matrix with no rule at all`
 
 **S41.** When several matches are equally best for `argmax` or `argmin`, the first in
 the sequence is taken and the answer says `ambiguous` with the alternatives, unless

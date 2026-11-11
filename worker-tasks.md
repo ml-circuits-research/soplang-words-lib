@@ -4,6 +4,39 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
 
 **The user's direction: sopworld is a general, useful library for self-consistent worlds of SOP Lang wires. It must be *compatible* with the PSys2 worlds, but it is not built *for* them.** Nothing PSys2-specific goes into the core: no PSys2 type names, no PSys2 envelope, no PSys2 file layout. Every feature below must make sense for any user of the library (a scheduler, a digital twin, a tutoring system, a game) and be documented with a neutral example. PSys2 is the first demanding user: its needs show what is missing, and a small compatibility suite (`compat/psys2/`) proves that such a system can sit on the library through its public, general mechanisms.
 
+## 2026-11-11 23:25 (reviewer): 0.7.1 validated; Round 7
+
+**0.7.1 (93362d7) validated.**
+- `npm test`: 228 pass, 0 fail. Pilot 147/147, 212/217, 231/232. `git grep -i psys2 src/` is empty.
+- `bench/facts.mjs`, a large table as a provider instead of wires: build 1.6 ms against 58 ms, snapshot 1 kB against 113 kB, and the turn is no slower.
+- R6.13–R6.17 accepted. The host is told to re-vendor at 93362d7.
+
+**Round 7.** The host has now moved 18 worlds and grouped its notes into ten proposals. Most of them are already in 0.7.0/0.7.1, which the host has not vendored yet. The items below are what is still missing. The reviewer checked each against 93362d7. Same rules as before: general, neutral examples, one commit each, no host names, a release at the end.
+- **R7.1 Labelled marks and a timeline that can be saved.**
+  - `mark(label)` and `world.marks()`: the labels and order of the open marks.
+  - `rewind(mark, { only: type | prefix })`: undo one unit, for example one note, not the whole step.
+  - `toJSON({ timeline: true })` / `fromJSON`: carry the marks and redo stack, so a host that restarts its worker keeps undo and redo.
+- **R7.2 Refusals that rank and explain.**
+  - (a) A priority on denies (`rank=` or `order=`), so that when one change breaks several denies the first reason is the most specific one. Today hosts rank the reasons with regexes.
+  - (b) `why=` on slot violations (type, domain, dangling reference), with the same vars and filters as R6.5.
+- **R7.3 Integrity as slot kinds.**
+  - `kind=ref to=<type>`: the value must be the id of a wire of that type, refused with a reason otherwise, and checked on retract too.
+  - `unique=true` on a slot, or on a set of keys: no two wires of the type share the value.
+
+  In one host these replace 8 of 17 hand-written denies.
+- **R7.4 Lists in reasons, and distinct anchors.**
+  - A reason can write a many-valued variable as a list through a filter: `?xs:list` with a registered joiner ("A, B and C" in the host's language). Make sure the filter receives the whole list, not one value.
+  - `core.distinct` (or `distinct=` on an aggregate) gives one anchor per distinct value, so a count is not computed once per member. The host measured a count anchored on a member at 433 ms against 11 ms.
+- **R7.5 Lazy rules.** `lazy=true` on a rule: it is derived only when a query, check or deny needs its output, and not propagated on every change. Use case: a structure re-derived every turn (attack lines on a board) that is read only when a move is checked. The answers must be the same as eager.
+- **R7.6 Pure actions.** `core.action pure=true`: an action that reads no cell skips the assumptions pass. Measure the gain; drop the item if it is below noise.
+- **R7.7 Small expressions.** One rule today needs 17 `core.calc` and 9 `core.check` wires to say "strictly between two squares".
+  - Add `between`, `sign` and `clamp` builtins (`abs`, `min`, `lower`, `matches` and `startsWith` exist).
+  - **Propose, in questions.md, before writing any code,** whether an `expr=` attribute (arithmetic and comparison over `?vars` only, no calls except builtins, bounded) belongs in SOP Lang v1.2. It is a language change and the user decides; the user wants one language, without two meanings for one sign.
+- **R7.8 Host API clean-up.**
+  - `assumptions(ids)` filtered to some wires.
+  - A change stamp that does not move when a fork is born or when wires the world already holds are re-told.
+  - Document both.
+
 ## 2026-11-11 23:00 (reviewer): 0.7.0 (72a96dd) validated
 
 - `npm test`: 224 pass, 0 fail. Pilot 147/147, 212/217, 231/232. `git grep -i psys2 src/` is empty.

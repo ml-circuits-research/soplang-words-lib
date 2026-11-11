@@ -193,6 +193,41 @@ export const revision = {
     }, (v) => ({ ok: false, redone: [], removed: [], added: [], changed: [], violations: [v] }));
   },
 
+  /**
+   * Make a collection of told wires equal to a given list, in one transaction: the
+   * collection is the told facts of a type (and its subtypes), or with { prefix } those
+   * whose id starts with it. A given wire whose id is new is told; one whose content
+   * differs from what was told replaces it in place; one that is the same is left; a
+   * wire of the collection that is not in the list is retracted. Returns the change
+   * result with { told, replaced, retracted, same } (ids).
+   */
+  sync(collection, input, opts = {}) {
+    return this._guard(opts, () => {
+      const c = this._compiled();
+      const { type, prefix } = typeof collection === 'string' ? { type: collection } : collection || {};
+      if (!type && !prefix) throw new Error('sync: name a type, or { prefix }');
+      const given = (typeof input === 'string' ? parse(input) : input || []).map(cloneWire);
+      const stated = new Map(this.told().map((w) => [w.id, w]));
+      const inside = (w) => (type ? c.isA(w.type, type) : w.id.startsWith(prefix));
+      const ids = new Set(given.map((w) => w.id));
+      const out = { told: [], replaced: [], retracted: [], same: [] };
+      const patch = { wires: [], replace: [], retract: [] };
+      const sameContent = (a, b) => {
+        const ka = Object.keys(a.attrs), kb = Object.keys(b.attrs);
+        return a.type === b.type && ka.length === kb.length && ka.every((k) => b.attrs[k] && a.attrs[k].length === b.attrs[k].length && a.attrs[k].every((v, i) => v === b.attrs[k][i]));
+      };
+      for (const w of given) { // bounded: the given list
+        const old = stated.get(w.id);
+        if (!old) { patch.wires.push(w); out.told.push(w.id); } else if (sameContent(old, w)) out.same.push(w.id);
+        else { patch.replace.push({ id: w.id, type: w.type, attrs: w.attrs }); out.replaced.push(w.id); }
+      }
+      for (const w of stated.values()) if (inside(w) && !ids.has(w.id)) { patch.retract.push(w.id); out.retracted.push(w.id); } // bounded: the told wires
+      if (!patch.wires.length && !patch.replace.length && !patch.retract.length) return { ok: true, added: [], derived: [], filled: [], merged: [], removed: [], violations: [], ...out };
+      const r = this._patch(patch, { strict: opts.strict, tier: opts.tier });
+      return r.ok ? { ...r, ...out } : r;
+    }, (v) => this._refusal(v));
+  },
+
   /** The log as statements: { from, to, transient } (a patch is one statement). */
   _steps() {
     const transient = (e) => this._transientEntry(e);

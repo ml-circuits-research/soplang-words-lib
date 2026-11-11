@@ -1890,3 +1890,20 @@ grows with the table even as wires; the host's 37 ms was measured before it.)
 - Test `facts: a host provider is matched by rules, denies and questions like wires, and
   never stored, forked or logged` (a rule, a deny, an aggregate over 500 provider facts,
   `ask`, `query` with tier `told`, nothing in the snapshot, a fork, the budget).
+
+## R6.14 — world.sync: make a collection equal to a list — done
+
+`npm test`: 227 pass, 0 fail on sources and built file, 226 in checking mode. Pilot
+output identical. `node tools/scan-loops.mjs src`: clean. `tsc`: no errors.
+
+- `world.sync('row', list)` or `world.sync({ prefix: 'ui.' }, list)`: compares the told
+  facts of the type (with subtypes), or of the id prefix, with the list by id and builds
+  one patch: new ids are told, changed ones are replaced in place (R6.9: the id and the
+  wires that refer to it stay), equal ones are left, missing ones are retracted. All or
+  nothing. Returns the change result plus `told`, `replaced`, `retracted`, `same`.
+- One thing a host should know, in api.md: `undo` takes back what sync told and
+  replaced, but, as for every retraction, not what it retracted (a mark does).
+- Test `sync: a collection is made equal to a list in one transaction, and the delta is
+  returned` (the delta, a referring wire kept, other types untouched, the same list
+  again is a no-op, by prefix, a refused sync changes nothing). api.md (with an executed
+  example), S59, index.d.ts.

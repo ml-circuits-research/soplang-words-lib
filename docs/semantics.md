@@ -401,7 +401,9 @@ costs.
 `applyPatch` applies all of a patch or none of it; `diff` of a world and a fork that
 applied the patch is the patch's effect, and is empty once both applied it.
 `check(patch, { query, ask })`, `query(q, { given: patch })` and `ask(p, { given: patch })`
-answer on the world as it would be with the patch, and change nothing. A patch may
+answer on the world as it would be with the patch, and change nothing. `sync` makes a
+collection equal to a list as one such patch (tells, replacements in place,
+retractions). A patch may
 replace told wires in place: each keeps its id and the wires that refer to it, and gets
 exactly the given keys; the replacement is a statement of its own in the log, so undo,
 redo and replay treat it like the others. *Why:* an editor changes a paragraph without
@@ -409,7 +411,8 @@ renaming it, and the comments on it must stay.
 *Tests:* `patch: check and applyPatch take wires and fills, all or nothing`;
 `semantics: check(patch) changes nothing; applyPatch gives the world a fork that applied it has`;
 `patch: replace in place keeps the id and what refers to it, changes and drops keys, and undoes as one statement`;
-`patch: evaluate without telling: check(patch, { query, ask }) and query/ask with given answer on the world plus the patch`
+`patch: evaluate without telling: check(patch, { query, ask }) and query/ask with given answer on the world plus the patch`;
+`sync: a collection is made equal to a list in one transaction, and the delta is returned`
 
 **S60.** `check()` without a patch validates every wire against the whole matrix and
 returns every violation and every standing issue; `describe()` and `diff()` return

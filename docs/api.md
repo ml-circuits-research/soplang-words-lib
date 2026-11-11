@@ -276,6 +276,29 @@ true ["10"]
 false false
 ```
 
+### world.sync(collection, input, options?)
+
+Makes a collection of told wires equal to a list, in one transaction. `collection` is a
+type (its told facts and those of its subtypes) or `{ prefix }` (the told facts whose id
+starts with it); `input` is SOP text or parsed wires. A wire with a new id is told; one
+whose content differs from what was told is replaced in place (its id, and the wires
+that refer to it, stay); one that is the same is left alone; a wire of the collection
+that is not in the list is retracted. Returns the change result with `told`, `replaced`,
+`retracted` and `same` (ids). All or nothing. `undo` takes back what it told and
+replaced; like any retraction, what it retracted is not undone (use a mark). Options:
+`strict`, `tier`, `budget`. Cost: one pass over the told wires, then the patch.
+
+```js run
+const w = shop();
+w.tell('@pen item name=pen price=2  @ink item name=ink price=3');
+const r = w.sync('item', '@pen item name=pen price=2  @ink item name=ink price=4  @cap item name=cap price=1');
+print(r.told, r.replaced, r.retracted, r.same);
+```
+
+```output
+["cap"] ["ink"] [] ["pen"]
+```
+
 ### world.apply(assignment, options?)
 
 Fills the values of an assignment (`[{ id, key, value }]`, as `solve` returns) in one

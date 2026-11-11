@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="a3093fa55cb0">
+<meta name="source-hash" content="98a7b3c778c7">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -121,6 +121,13 @@ w.undo();
 print(w.has(&#x27;pen&#x27;), w.has(&#x27;l1&#x27;));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true [&quot;10&quot;]
 false false</code></pre></figure>
+<h3 id="worldsynccollection-input-options">world.sync(collection, input, options?)</h3>
+<p>Makes a collection of told wires equal to a list, in one transaction. <code>collection</code> is a type (its told facts and those of its subtypes) or <code>{ prefix }</code> (the told facts whose id starts with it); <code>input</code> is SOP text or parsed wires. A wire with a new id is told; one whose content differs from what was told is replaced in place (its id, and the wires that refer to it, stay); one that is the same is left alone; a wire of the collection that is not in the list is retracted. Returns the change result with <code>told</code>, <code>replaced</code>, <code>retracted</code> and <code>same</code> (ids). All or nothing. <code>undo</code> takes back what it told and replaced; like any retraction, what it retracted is not undone (use a mark). Options: <code>strict</code>, <code>tier</code>, <code>budget</code>. Cost: one pass over the told wires, then the patch.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2  @ink item name=ink price=3&#x27;);
+const r = w.sync(&#x27;item&#x27;, &#x27;@pen item name=pen price=2  @ink item name=ink price=4  @cap item name=cap price=1&#x27;);
+print(r.told, r.replaced, r.retracted, r.same);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;cap&quot;] [&quot;ink&quot;] [] [&quot;pen&quot;]</code></pre></figure>
 <h3 id="worldapplyassignment-options">world.apply(assignment, options?)</h3>
 <p>Fills the values of an assignment (<code>[{ id, key, value }]</code>, as <code>solve</code> returns) in one transaction. Option <code>via</code> names where they came from. Returns a change result.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();

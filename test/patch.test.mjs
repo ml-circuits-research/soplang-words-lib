@@ -267,3 +267,22 @@ test('patch: values of keys that nothing reads are validated but not propagated,
   // the world equals one rebuilt from its log, where every statement is propagated
   assert.equal(w.diff(World.fromJSON(w.toJSON())).same, true);
 });
+
+test('sync: a collection is made equal to a list in one transaction, and the delta is returned', () => {
+  const w = new World();
+  w.load('@k core.slot of=row key=n id=true\n@r row n=?n\n@t row core.on=$r seen=yes\n@x core.rule when=$r then=$t\n@k2 core.slot of=row key=v kind=atom');
+  w.tell('@r1 row n=1 v=a  @r2 row n=2 v=b  @r3 row n=3 v=c  @o other n=1  @c1 cell of=$r2');
+  const s = w.sync('row', '@r1 row n=1 v=a  @r2 row n=2 v=B  @r4 row n=4 v=d');
+  assert.deepEqual([s.ok, s.told, s.replaced, s.retracted, s.same], [true, ['r4'], ['r2'], ['r3'], ['r1']]);
+  assert.deepEqual([w.has('r3'), w.get('r2').attrs.v, w.has('c1'), w.has('o')], [false, ['B'], true, true], 'r2 kept its id, so the cell on it stays; other types are not touched');
+  assert.deepEqual(w.get('r4').attrs.seen, ['yes']);
+  // the same list again changes nothing
+  const again = w.sync('row', '@r1 row n=1 v=a  @r2 row n=2 v=B  @r4 row n=4 v=d');
+  assert.deepEqual([again.told, again.replaced, again.retracted], [[], [], []]);
+  // by id prefix, and all or nothing
+  w.tell('@ui.a widget  @ui.b widget');
+  assert.deepEqual(w.sync({ prefix: 'ui.' }, '@ui.b widget  @ui.c widget').retracted, ['ui.a']);
+  const bad = w.sync('row', '@r1 row n=1 v="not an atom"');
+  assert.equal(bad.ok, false);
+  assert.deepEqual([w.has('r2'), w.has('r4')], [true, true], 'a refused sync changes nothing');
+});

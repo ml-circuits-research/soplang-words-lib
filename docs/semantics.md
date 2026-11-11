@@ -86,6 +86,12 @@ drawn from them is not re-examined. *Why:* a large reference table must not cost
 world its size in memory, snapshots and forks.
 *Test:* `facts: a host provider is matched by rules, denies and questions like wires, and never stored, forked or logged`
 
+**S11c.** A lazy rule (`lazy=true`) is run only for a question (`ask`, `query`), a check
+(`check()`), or a deny that reads what it makes when something that deny or the lazy
+rules read has changed; the answers and refusals are those of the same rule eager, and
+what it makes never stays.
+*Test:* `lazy rules: made only when a question, a check or a deny needs them, with the answers of eager rules`
+
 **S12.** Rules may be recursive; the chase stops because a conclusion that is already
 there adds nothing.
 *Test:* `recursive rules reach a fixpoint; cycles are refused by a deny`

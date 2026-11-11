@@ -27,7 +27,7 @@ export const GRAMMAR = {
   'core.schema.map': ['from', 'as'], // and one attribute per field it maps
   'core.use': ['world', 'prefix'],
   'core.module': ['name', 'imports', 'exports'],
-  'core.rule': ['when', 'not', 'with', 'if', 'then'],
+  'core.rule': ['when', 'not', 'with', 'if', 'then', 'lazy'],
   'core.deny': ['when', 'not', 'with', 'if', 'why', 'soft', 'priority'],
   'core.calc': ['out', 'fn', 'args', 'over', 'pick', 'ties', 'relation'],
   'core.aggregate': ['over', 'by', 'then', 'default', 'fn', 'out', 'args', 'pick', 'ties', 'count', 'sum', 'min', 'max', 'argmin', 'argmax', 'collect'],
@@ -129,7 +129,7 @@ export function prefixModule(wires, name) {
 
 export function compileMatrix(world) {
   const c = {
-    rules: [], denies: [], negRules: [], ruleByType: new Map(), negByType: new Map(), denyByType: new Map(),
+    rules: [], denies: [], negRules: [], lazyRules: [], ruleByType: new Map(), negByType: new Map(), denyByType: new Map(),
     closed: new Set(), abducible: new Map(), abducibleKeys: new Map(), errors: [],
     types: new Map(),    // declared type name -> the wire that declares it
     parent: new Map(),   // type -> the type it extends
@@ -504,6 +504,18 @@ export function compileMatrix(world) {
     const params = w.attrs.param || [];
     c.actions.set(first(w, 'name'), { id: w.id, rule, params, required: params, remove, returns: first(w, 'returns'), all: flag(w, 'all'), inputs: [], ask: w.attrs });
   }
+  // ---- lazy rules: what they make, and who reads it
+  const readsOf = (r) => [...r.when, ...r.not, ...r.calc.flatMap((x) => x.over || [])].map((p) => p.type);
+  c.lazyTypes = new Set(c.lazyRules.flatMap((r) => r.then.map((t) => t.type)));
+  // their inputs too, so that a deny that reads what they make is checked when those change
+  c.lazyInputs = new Set(c.lazyRules.flatMap(readsOf));
+  const readsLazy = (r) => readsOf(r).some((t) => [...c.lazyTypes].some((l) => c.isA(t, l) || c.isA(l, t)));
+  if (c.lazyTypes.size) {
+    for (const r of c.rules) if (readsLazy(r)) c.errors.push(`${r.id}: reads what the lazy rule${c.lazyRules.length > 1 ? 's' : ''} ${c.lazyRules.map((x) => x.id).join(', ')} make${c.lazyRules.length > 1 ? '' : 's'}; a rule that is not lazy cannot (make it lazy too, or read it in a question or a deny)`);
+  }
+  c.lazyDenies = c.lazyTypes.size ? c.denies.filter(readsLazy) : [];
+  for (const d of c.lazyDenies) d.readsLazy = true;
+  c.lazyWatch = new Set([...c.lazyInputs, ...c.lazyDenies.flatMap(readsOf)]); // a change to these makes the lazy denies look again
   c.selRules = [];
   for (const r of c.rules) {
     if (r.not.length) {
@@ -857,5 +869,7 @@ function buildRule(world, w, c, extra, register = true, aggregate = null) {
   rule.then.forEach(visit);
   rule.then = order;
   if (!register) return rule; // an action: built like a rule, run on request
+  // lazy=true: derived only when a question, a check or a deny needs what it makes
+  if (rule.kind === 'rule' && flag(w, 'lazy')) { rule.lazy = true; c.lazyRules.push(rule); return; }
   (rule.kind === 'rule' ? c.rules : c.denies).push(rule);
 }

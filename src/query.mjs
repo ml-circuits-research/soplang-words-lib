@@ -236,6 +236,10 @@ export const querying = {
    * wire (and the question wire, if it was not one already) with status and provenance.
    */
   query(q, opts = {}) {
+    if (this._compiled().lazyRules.length && !this._lazyOn) {
+      // what lazy rules make is made for the question, then taken back
+      return this._guard(opts, () => this._trial(() => { this._materialize(); this._lazyOn = true; try { return this.query(q, { ...opts, budget: undefined }); } finally { this._lazyOn = false; } }), (v) => ({ status: 'budget', ...v, from: [], wires: [] }));
+    }
     if (opts.given) {
       // on the world as it would be with these wires and values; nothing stays
       const r = this.check(opts.given, { query: q });

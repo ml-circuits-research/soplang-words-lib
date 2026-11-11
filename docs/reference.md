@@ -386,6 +386,7 @@ If the patterns match, the templates hold.
 | `with` | `$calc` | none | yes | values to compute, in order |
 | `if` | `$check` | none | yes | conditions that must all hold |
 | `then` | `$template` | at least one | yes | what then exists |
+| `lazy` | flag | false | | made only when a question, a check or a deny needs it (below) |
 
 **Meaning.** For every way of matching all `when` patterns at once (a variable has one
 value throughout; `$p` in one pattern is the wire another pattern `@p` matched), such
@@ -434,6 +435,18 @@ print(w.ask('grandparent of=?x child=?z'));
 [{"z":"cy","x":"ann"}]
 []
 ```
+
+**Lazy rules.** With `lazy=true` a rule is not run when the world changes. `ask`, `query`
+and `check()` run the lazy rules first (to a fixpoint, in a transaction that is then
+undone), so they answer as if the rules were eager; a deny that reads what lazy rules make
+does the same whenever something it or those rules read has changed. What a lazy rule
+makes never stays in the world (`get`, `ofType`, `toSOP` do not see it). A rule that is
+not lazy may not read what a lazy rule makes (`schema`). *Why:* a structure that many
+changes would re-derive but few questions read (lines of attack on a board) should cost
+when it is read. The cost moves to the questions: in `node bench/lazy.mjs` (800 lines
+from 200 pieces) a turn costs 0.01 ms instead of 0.9 ms, and a question 8.8 ms instead of
+0.04 ms, because all lazy rules run for each question; it pays when questions are rarer
+than about one in ten changes, and not when a deny reads the lazy output on every change.
 
 **Limits.** No recursion through negation. A rule fires once per distinct set of
 bindings.

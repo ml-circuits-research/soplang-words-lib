@@ -328,3 +328,37 @@ test('index: joins on a fixed value do not scan the whole type', () => {
   assert.equal(w.ofType('grandparent').length, 1999);
   assert.ok(Date.now() - t < 3000, `took ${Date.now() - t} ms`);
 });
+
+test('lazy rules: made only when a question, a check or a deny needs them, with the answers of eager rules', () => {
+  const M = (lazy) => `
+    @k core.slot of=piece key=at id=true
+    @p piece at=?a color=?c
+    @l line from=?a color=?c
+    @r core.rule when=$p then=$l ${lazy ? 'lazy=true' : ''}
+    @l2 line from=?a color=?c
+    @far reach from=?a color=?c
+    @r2 core.rule when=$l2 then=$far ${lazy ? 'lazy=true' : ''}
+    @m move to=?a color=?c
+    @x reach from=?a color=?o
+    @diff core.check fn=neq args=?c args=?o
+    @no core.deny when=$m when=$x if=$diff why="?a is attacked"
+  `;
+  const eager = new World(), lazy = new World();
+  eager.load(M(false));
+  lazy.load(M(true));
+  let seed = 5;
+  const r = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+  for (let i = 0; i < 60; i++) {
+    const sq = `s${Math.floor(r() * 12)}`, color = r() < 0.5 ? 'white' : 'black';
+    const text = r() < 0.5 ? `@p${i} piece at=${sq} color=${color}` : `@m${i} move to=${sq} color=${color}`;
+    const a = eager.tell(text), b = lazy.tell(text);
+    assert.deepEqual([b.ok, b.violations.map((v) => v.why)], [a.ok, a.violations.map((v) => v.why)], text);
+    assert.deepEqual(lazy.ask('@x reach from=?a color=?c').map((x) => `${x.a} ${x.c}`).sort(), eager.ask('@x reach from=?a color=?c').map((x) => `${x.a} ${x.c}`).sort());
+  }
+  assert.equal(lazy.ofType('line').length + lazy.ofType('reach').length, 0, 'nothing a lazy rule made stays in the world');
+  assert.ok(eager.ofType('reach').length > 0);
+  const q = lazy.query({ type: 'reach', where: { from: 's1' }, seek: 'color', mode: 'list' });
+  assert.deepEqual(q.values?.sort(), eager.query({ type: 'reach', where: { from: 's1' }, seek: 'color', mode: 'list' }).values?.sort());
+  // a rule that is not lazy may not read what a lazy one makes
+  assert.match(new World().tell('@p piece at=?a\n@l line from=?a\n@r core.rule when=$p then=$l lazy=true\n@l2 line from=?a\n@t tag at=?a\n@e core.rule when=$l2 then=$t').violations[0].why, /a rule that is not lazy cannot/);
+});

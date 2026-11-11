@@ -131,6 +131,9 @@ export class World {
 
   /** Query with pattern wires. Returns one object of bindings per match. */
   ask(query, opts = {}) {
+    if (this._compiled().lazyRules.length && !this._lazyOn) {
+      return this._guard(opts, () => this._trial(() => { this._materialize(); this._lazyOn = true; try { return this.ask(query, { ...opts, budget: undefined }); } finally { this._lazyOn = false; } }), () => []);
+    }
     if (opts.given) return this.check(opts.given, { ask: query }).rows || [];
     return this._guard(opts, () => {
       if (opts.at !== undefined) return this.asOf(opts.at, () => this.ask(query, { ns: opts.ns }));
@@ -1812,21 +1815,54 @@ export class World {
       const w = this.wires.get(id);
       if (!w) continue;
       for (const { rule: d, idx } of c.forType(c.denyByType, w.type)) {
-        if (d.not.length || d.hasSelect || reported.has(d)) continue;
+        if (d.not.length || d.hasSelect || d.readsLazy || reported.has(d)) continue;
         seeded: for (const s0 of this._matchWire(d.when[idx], w, EMPTY)) {
           for (const s of this._bodies(d, s0, idx)) { report(d, s); if (!every) break seeded; }
         }
       }
     }
     for (const [d, seeds] of res._seeds) { // a deny over a group: the groups whose wires changed
-      if (d.kind !== 'deny' || d.not.length || d.hasSelect || reported.has(d)) continue;
+      if (d.kind !== 'deny' || d.not.length || d.hasSelect || d.readsLazy || reported.has(d)) continue;
       groups: for (const s0 of seeds.values()) {
         for (const s of this._bodies(d, s0, -1)) { report(d, s); if (!every) break groups; }
       }
     }
     for (const d of c.denies) {
-      if ((!d.not.length && !d.hasSelect) || reported.has(d)) continue;
+      if ((!d.not.length && !d.hasSelect) || d.readsLazy || reported.has(d)) continue;
       for (const s of this._bodies(d, EMPTY, -1)) { report(d, s); if (!every) break; }
+    }
+    // denies that read what lazy rules make: when something they or those rules read has
+    // changed, the lazy rules run (in a transaction that is undone) and the denies look
+    if (c.lazyDenies.length && (every || [...res._touched].some((id) => { const w = this.wires.get(id); return w && c.lineage(w.type).some((t) => c.lazyWatch.has(t)); }))) {
+      const mark = this._begin(false);
+      try {
+        this._materialize();
+        for (const d of c.lazyDenies) {
+          if (reported.has(d)) continue;
+          for (const s of this._bodies(d, EMPTY, -1)) { report(d, s); if (!every) break; }
+        }
+      } finally { this._rollback(mark); }
+    }
+  }
+
+  /**
+   * Run the lazy rules to a fixpoint, as if they were not lazy. The caller undoes it (it
+   * is always inside a transaction that is rolled back): their conclusions never stay.
+   */
+  _materialize() {
+    const c = this._compiled();
+    if (!c.lazyRules.length) return;
+    const res = this._result();
+    for (let fired = true; fired;) { // bounded: each round fires at least one new firing, and the budget ticks
+      fired = false;
+      for (const rule of c.lazyRules) {
+        for (const s of [...this._bodies(rule, EMPTY, -1)]) {
+          this._b.tick('chase');
+          if (this.firings.has(this._sig(rule, s))) continue;
+          this._fire(rule, s, c, res);
+          fired = true;
+        }
+      }
     }
   }
 }

@@ -2094,3 +2094,26 @@ output identical. `node tools/scan-loops.mjs src`: clean.
   `aggregates: a deny over a group is checked when a member arrives, also in a matrix
   with no rule at all`; S40 cites it.
 - Test `violations: a variable with several values reaches a filter as one list`.
+
+## R7.5 — lazy rules — done
+
+`npm test`: 241 pass, 0 fail on sources and built file, 240 in checking mode. Pilot
+output identical. `node tools/scan-loops.mjs src`: clean.
+
+`node bench/lazy.mjs` (200 pieces, a rule making 4 lines per piece; a turn revises one
+piece; second round): eager, a turn 0.86 ms, a question about the lines 0.04 ms; lazy,
+a turn 0.01 ms, a question 8.77 ms.
+
+- `core.rule ... lazy=true`: left out of the chase. `ask`, `query` and `check()` run all
+  lazy rules to a fixpoint inside a transaction that is undone, then answer. A deny that
+  reads what lazy rules make is checked the same way whenever a wire of a type it or the
+  lazy rules read was touched, so refusals are exactly those of eager rules. What a lazy
+  rule makes never stays. An eager rule that reads lazy output is a `schema` error (it
+  would need them on every change).
+- Honest limit, in the reference: a question runs all lazy rules, not only what it
+  needs (no goal-directed evaluation), so the gain is for structures read by questions
+  less often than about one change in ten, not for ones a deny reads on every change.
+- Test `lazy rules: made only when a question, a check or a deny needs them, with the
+  answers of eager rules` (60 random moves and pieces through a chain of two lazy rules
+  and a deny: the same refusals and the same answers as an eager world; nothing stays).
+  S11c, the core.rule entry of reference.md.

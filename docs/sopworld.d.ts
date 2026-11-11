@@ -40,6 +40,25 @@ export interface Issue { id: string; rule?: string; about: string[]; key?: strin
 export interface OpenKey { id: string; type: string; key: string; ask?: string }
 export interface Candidate { value: string; source: 'default' | 'enum' | 'wire' | 'range'; count: number }
 export interface Question { type?: string; seek?: string; where?: Record<string, string | number>; about?: string; mode?: 'value' | 'list' | 'count' | 'exists' | 'check' | 'abduce'; /** for mode=check: the value to check, when it is not in where */ value?: string | number }
+export interface ScoreCandidate {
+  /** a statement; references named in `refer` are resolved against the state */
+  wires?: string | Wire[];
+  refer?: Record<string, { type?: string; where?: Record<string, string>; ns?: string }>;
+  action?: string;
+  args?: Record<string, string>;
+  question?: Question | Wire | string;
+  ns?: string;
+}
+export interface Scored {
+  index: number;
+  ok: boolean;
+  violations: Violation[];
+  referents: { name: string; ids: string[]; unique: boolean; fits?: string[] }[];
+  lacks: { referent?: string; type?: string; id?: string; key?: string; action?: string; ask?: string }[];
+  assumes: { id: string; key: string; value: string }[];
+  action?: { available: boolean; status: string; missing?: { key: string; ask?: string }[] };
+  answer?: QueryResult;
+}
 export interface QueryResult {
   /** 'budget': the call ran out of budget; `site`, `steps` and `why` say where */
   status: 'supported' | 'conflicting' | 'ambiguous' | 'missing' | 'refused' | 'no' | 'unknown' | 'budget' | 'unsupported';
@@ -270,6 +289,8 @@ export class World {
   /** apply several changes that must hold together: all or nothing */
   applyPatch(patch: Patch, options?: Budgeted & { strict?: boolean }): Result;
   query(question: Question | Wire | string, options?: Budgeted & { record?: boolean; suppose?: boolean; at?: number; /** only this namespace */ ns?: string; /** answer on the world as it would be with this patch */ given?: Patch }): QueryResult;
+  /** judge candidate readings against the world; nothing is told */
+  score(candidates: ScoreCandidate[], options?: Budgeted): { candidates: Scored[]; order: number[] };
   /** run fn against the world as it was at a point of the sequence */
   asOf<T>(at: number, fn: (world: World) => T, options?: Budgeted): T | undefined;
   seqOf(id: string): number | undefined;

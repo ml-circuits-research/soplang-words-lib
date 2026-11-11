@@ -56,6 +56,102 @@ export const querying = {
    * as one patch. Every expression was evaluated on the state before the action.
    */
   /**
+   * Score candidate readings against the world, telling nothing. A candidate is
+   *   { wires }      a statement (SOP text or wires), with `$name` for a referent
+   *   { refer }      referents by description: { name: { type, where } }
+   *   { action, args }  a request
+   *   { question }   a question (as for query)
+   * (one candidate may have several). For each it returns: ok and violations (the world
+   * with it applied), referents with the ids they resolve to and whether that is unique,
+   * lacks (required keys or arguments missing), assumes (defaults it would rest on),
+   * action ({ available, status, missing }), answer (for a question), and `order`, the
+   * candidates best first: consistent, then all referents settled (unique by their
+   * description, or only one of them fits the world: `fits`), then fewer lacks, then
+   * fewer assumptions, then as given. A referent nothing matches lacks; it is left out
+   * of the statement rather than counted as wrong.
+   */
+  score(candidates, opts = {}) {
+    return this._guard(opts, () => {
+      const list = [].concat(candidates || []);
+      const scored = list.map((cand, index) => this._scoreOne(cand, index));
+      const key = (r) => [r.ok ? 0 : 1, r.referents.every((x) => x.unique || x.fits?.length === 1) ? 0 : 1, r.lacks.length, r.assumes.length, r.index];
+      const order = [...scored].sort((a, b) => { const x = key(a), y = key(b); for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] - y[i]; return 0; }).map((r) => r.index);
+      return { candidates: scored, order };
+    }, (v) => ({ candidates: [], order: [], budget: v }));
+  },
+
+  _scoreOne(cand, index) {
+    const out = { index, ok: true, violations: [], referents: [], lacks: [], assumes: [] };
+    const options = {}; // referent -> the ids it may be
+    for (const [name, d] of Object.entries(cand.refer || {})) {
+      const ids = this._matching({ type: d.type, where: d.where || {}, ns: d.ns }).map((w) => w.id);
+      out.referents.push({ name, ids, unique: ids.length === 1 });
+      if (!ids.length) out.lacks.push({ referent: name, type: d.type });
+      else options[name] = ids.slice(0, 20);
+    }
+    // every way of choosing the referents that are not unique (at most 50): which fit the world
+    let combos = [{}];
+    for (const [name, ids] of Object.entries(options)) {
+      combos = combos.flatMap((c) => ids.map((id) => ({ ...c, [name]: id }))).slice(0, 50);
+    }
+    const missing = new Set(out.lacks.filter((l) => l.referent).map((l) => '$' + l.referent));
+    let first = null;
+    const fitting = [];
+    for (const bind of combos) { // bounded: at most 50 choices
+      const r = this._scoreWith(cand, bind, missing);
+      if (!first) first = r;
+      if (r.ok) fitting.push({ bind, r });
+    }
+    const best = fitting[0]?.r || first;
+    Object.assign(out, { ok: best.ok, violations: best.violations, lacks: [...out.lacks, ...best.lacks], assumes: best.assumes });
+    if (best.action) out.action = best.action;
+    if (best.answer) out.answer = best.answer;
+    // a referent the description left open may be settled by what fits the world
+    for (const ref of out.referents) {
+      if (ref.unique || !ref.ids.length) continue;
+      ref.fits = [...new Set(fitting.map((f) => f.bind[ref.name]))];
+    }
+    return out;
+  },
+
+  /** One choice of referents, tried in a transaction that is undone. */
+  _scoreWith(cand, bind, missing) {
+    const out = { ok: true, violations: [], lacks: [], assumes: [] };
+    const sub = (v) => (v[0] === '$' && bind[v.slice(1)] ? '$' + bind[v.slice(1)] : v);
+    this._trial(() => {
+      if (cand.wires) {
+        // a referent that nothing matched is left out of the statement: it lacks, it is not wrong
+        const ws = (typeof cand.wires === 'string' ? parse(cand.wires) : cand.wires).map((w) => ({ ...w, attrs: Object.fromEntries(Object.entries(w.attrs).map(([k, vs]) => [k, vs.filter((v) => !missing.has(v)).map(sub)]).filter(([, vs]) => vs.length)) }));
+        const r = this._tell(ws, { strict: false, ns: cand.ns });
+        out.ok = r.ok;
+        out.violations = r.violations;
+        if (r.ok) {
+          const mine = new Set([...r.added, ...r.merged.map((m) => m.into)]);
+          out.lacks.push(...this.open().filter((o) => mine.has(o.id)).map((o) => ({ id: o.id, key: o.key, ask: o.ask })));
+          out.assumes.push(...this._next().fills.filter((f) => mine.has(f.id) && f.kind === 'default').map((f) => ({ id: f.id, key: f.key, value: f.value })));
+        }
+      }
+      if (cand.action) {
+        const args = Object.fromEntries(Object.entries(cand.args || {}).map(([k, v]) => [k, typeof v === 'string' ? sub(v) : v]));
+        if (!this._compiled().actions.get(cand.action)) out.action = { available: false, status: 'unsupported' };
+        else {
+          const r = this.act({ action: cand.action, args });
+          out.action = { available: r.ok, status: r.status, ...(r.missing ? { missing: r.missing } : {}) };
+          if (r.missing) out.lacks.push(...r.missing.map((m) => ({ action: cand.action, key: m.key, ask: m.ask })));
+          if (!r.ok && r.status !== 'missing') { out.ok = false; out.violations.push(...(r.violations || [])); }
+        }
+      }
+      if (cand.question) {
+        const r = this._query(cand.question, { ns: cand.ns });
+        out.answer = r;
+        if (r.status === 'refused') { out.ok = false; out.violations.push(...(r.violations || [])); }
+        if (r.status === 'missing') out.lacks.push(...(r.missing || []));
+      }
+    });
+    return out;
+  },
+
+  /**
    * mode=check: is the value given for the sought key (in `where`, or as `value`) the one
    * the world holds or derives? `supported` with `yes`; `no` with the values it does
    * have (`actual`) and where they come from; `missing` when it has none; any other

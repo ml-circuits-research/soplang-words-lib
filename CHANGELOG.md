@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.8.1
+
+Round 8: a design study on formalization.
+
+### New
+- `world.score(candidates)`: judges candidate readings (statements with described
+  referents, actions, questions) against the world without telling anything; reports
+  consistency, referents (unique, or which fit), lacks, assumptions, action availability
+  and answers, and a documented order.
+- docs/design/formalization.md: tool descriptions, `interpret(frame)` (design),
+  scoring, generated readers, limits. Questions Q17 (`core.word`) and Q18 (roles) for
+  the reviewer; no syntax change.
+
 ## 0.8.0
 
 Round 7: namespaces and what hosts still missed after moving 18 worlds.

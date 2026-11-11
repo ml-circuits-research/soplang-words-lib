@@ -663,6 +663,34 @@ supported 6 ["r"] derived
 missing
 ```
 
+### world.score(candidates, options?)
+
+Judges candidate readings of one utterance against the world and tells nothing. A
+candidate is any of `{ wires, refer }` (a statement; `refer` maps a reference name used
+in `wires` to `{ type, where, ns }`, a description resolved against the state), `{
+action, args }`, or `{ question }` (as for `query`). Returns `{ candidates, order }`;
+each scored candidate has `ok`, `violations`, `referents` (`{ name, ids, unique, fits }`:
+`fits` are the ids that keep the statement consistent when the description alone is
+ambiguous), `lacks` (referents nothing matches, required keys still open, missing
+arguments), `assumes` (defaults the statement would rest on), `action` (`{ available,
+status, missing }`) and `answer`. `order` is best first: consistent, all referents
+settled, fewer lacks, fewer assumptions, then as given. See
+[design/formalization](design/formalization.md).
+
+```js run
+const w = new World();
+w.load(`@k core.slot of=meeting key=with type=person required=true
+  @m meeting with=$busy day=?d  @busy person name=?n off=?d
+  @x core.deny when=$m when=$busy why="?n is off on ?d"`);
+w.tell('@p1 person name=ann off=mon  @p2 person name=bob');
+const r = w.score([{ wires: '@m meeting with=$who day=mon', refer: { who: { type: 'person' } } }]);
+print(r.candidates[0].ok, r.candidates[0].referents[0].fits, w.has('m'));
+```
+
+```output
+true ["p2"] false
+```
+
 ### world.get(id), world.has(id), world.resolve(id), world.ofType(type)
 
 `get` returns the fact `{ id, type, attrs, meta }` or undefined; `attrs` maps each key

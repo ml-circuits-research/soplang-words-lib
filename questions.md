@@ -58,6 +58,30 @@ form that keeps one meaning per sign, and compiling it to wires keeps one semant
 it is a second notation, and the built-ins remove most of the measured case. Nothing
 waits on this answer.
 
+## Q17 — words for language: a `core.word` wire? (Round 8, docs/design/formalization.md §1)
+
+A reader needs to map surface words in one language to names the matrix has (an action,
+a type, a `type.key`, an enum value). Options:
+- (a) A host type, no vocabulary: the host tells `@w word lang=en text=book means=reserve`
+  with its own type; `interpret` would be told the type name.
+- (b) `core.word lang= text= means= of=`, read only by `interpret`; one word wire, one
+  meaning (two meanings are two wires, chosen between by `score`); load warning when
+  `means=` names nothing.
+- (c) `word.en=` keys directly on slots, actions and values.
+
+**Recommendation: (b).** It adds one bookkeeping type and no sign; words stay facts
+(namespaces, sync, snapshots work), and (c) would put many languages on every schema
+wire. Nothing is built until answered; `score` does not need it.
+
+## Q18 — an argument's role: `role=` on `core.slot` and on action params? (§1)
+
+A frame may mark an argument by role (a preposition or case: "on Monday", "with bob")
+rather than by key. Options: (a) no role, the frame names keys through words (`means=
+meeting.day`); (b) `role=` on `core.slot` (and a `role.<param>=` on `core.action`).
+
+**Recommendation: (a) for now.** Words with `means=type.key` already carry what a role
+would, with one construct; add (b) only if a language needs one role word for many keys.
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

@@ -2169,3 +2169,29 @@ A minor version: namespaces change the language (`::` in ids and references) and
 modules that declare outside their prefix are now refused. Pilot 147/147, 212/217,
 231/232, output identical. Next: Round 8, the design study (docs/design/formalization.md
 and `world.score`).
+
+## R8 — design study on formalization; `world.score` prototyped — done
+
+`npm test`: 244 pass, 0 fail on sources and built file, 243 in checking mode. Pilot
+output identical (`node compat/psys2/run.mjs`, timings stripped, diffed against
+/tmp/pilot-before.txt). `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`:
+clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
+
+- `world.score(candidates)` (src/query.mjs): candidates are `{ wires, refer }`,
+  `{ action, args }` or `{ question }`; each is judged in a transaction that is undone
+  (each choice of ambiguous referents too, up to 50). Reports `ok`, `violations`,
+  `referents` (`ids`, `unique`, `fits`), `lacks`, `assumes`, `action`, `answer`, and
+  `order` (consistent, referents settled, fewer lacks, fewer assumptions, as given).
+- Test test/score.test.mjs: seven candidates (a value outside the enum, a referent
+  settled by the world, a default assumed, a referent nothing matches, a refused action,
+  a missing argument, a question); order `[1, 6, 2, 5, 3, 0, 4]`; toSOP, version and log
+  unchanged.
+- `node bench/score.mjs` (300 items, 40 people, four kinds of candidate): 1 candidate
+  0.26–0.31 ms, 10 candidates 1.17–1.57 ms, 100 candidates 5.87–6.50 ms (two runs);
+  `node bench/score.mjs bundle`: 0.31, 0.96, 6.63 ms.
+- docs/design/formalization.md: tool descriptions, `interpret(frame)` (design only),
+  scoring and its order, what the library owns versus the host, limits and the tests
+  that would prove the design. No syntax change; Q17 (`core.word`, recommend a single
+  bookkeeping type) and Q18 (roles, recommend none for now) for the reviewer.
+- api.md and index.d.ts document `score`. Released as 0.8.1 (package.json, src/index.mjs,
+  CHANGELOG, docs/version.md); no tag.

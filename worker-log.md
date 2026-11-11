@@ -2129,3 +2129,18 @@ action never reaches); the cost is the context object and the queue. A `pure=` f
 would save nothing measurable, so, as the task allows, the item is dropped and no
 attribute is added. The bench stays in `bench/pure.mjs` so the host can compare with
 what it measured.
+
+## R7.7 — between, sign, clamp; the expr= proposal (Q16, no code) — done
+
+`npm test`: 242 pass, 0 fail on sources and built file, 241 in checking mode. Pilot
+output identical. `node tools/scan-loops.mjs src`: clean.
+
+- Built-ins: `between(x, a, b)` (strictly between, whichever bound is larger; numbers,
+  clock times, dates), `sign(x)` (-1, 0, 1), `clamp(x, lo, hi)` (with x's unit; no
+  result when units differ). "Strictly between two squares" is now one check. Test
+  `small functions: between, sign, clamp`; reference tables.
+- `expr=`: proposed in questions.md as Q16 before any code, as the task asks: a bounded
+  infix expression inside a string (so the lexer is unchanged), compiled into the same
+  calc and check wires; the cost is a second notation and a second meaning for `=`
+  (avoidable with `==`). Recommendation: no `expr=` for now, built-ins where a pattern
+  recurs; option (b) if hosts keep writing long chains. Nothing waits on it.

@@ -1303,6 +1303,8 @@ A **number** is an integer or decimal, optionally followed by a unit (`5`, `2.5`
 | `div` | numbers | the first divided by the others; equal units cancel (`6m / 2m = 3`), others are joined with `/` | division by zero |
 | `min`, `max` | numbers, same unit | the smallest, the largest | units differ |
 | `abs` | number | its absolute value | |
+| `sign` | number | `-1`, `0` or `1` | |
+| `clamp` | x, lo, hi | x, or the nearer bound when outside them; x's unit | units differ |
 | `round` | number, [decimals] | rounded; the unit is kept | |
 | `mod` | a, b | the remainder of a / b, with the sign of b and the unit of a | b is 0 |
 | `idiv` | a, b | the whole part of a / b | b is 0 |
@@ -1316,6 +1318,7 @@ A **number** is an integer or decimal, optionally followed by a unit (`5`, `2.5`
 | `eq`, `neq` | a, b | the two are (not) the same: as numbers when both are numbers with the same unit (`5` = `5.0`), as times when both are clock times or dates (`9:05` = `09:05`), else as text |
 | `lt`, `lte`, `gt`, `gte` | a, b | a is less than (at most, more than, at least) b; numbers need the same unit or a bare number on one side; clock times and dates compare as such |
 | `before`, `after` | `$a`, `$b` | wire a comes before (after) wire b in the sequence |
+| `between` | x, a, b | x lies strictly between a and b, whichever is larger; numbers, clock times or dates |
 
 A comparison of things that cannot be compared (a number with a name, different units)
 is false.

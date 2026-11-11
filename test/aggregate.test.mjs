@@ -339,3 +339,15 @@ test('aggregates: a deny over a group is checked when a member arrives, also in 
   assert.equal(w.tell('@i3 item in=$b1').violations[0].why, 'ann has too much');
   assert.equal(w.has('i3'), false);
 });
+
+test('small functions: between, sign, clamp', () => {
+  const b = builtins;
+  assert.deepEqual([b.between(['3', '5', '1']), b.between(['5', '5', '1']), b.between(['10:30', '10:00', '11:00']), b.between(['3', 'x', '5'])], [true, false, true, false]);
+  assert.deepEqual([b.sign(['-4kg']), b.sign(['0']), b.sign(['2.5'])], ['-1', '0', '1']);
+  assert.deepEqual([b.clamp(['12', '0', '10']), b.clamp(['-3m', '0m', '5m']), b.clamp(['3kg', '0m', '5m'])], ['10', '0m', undefined]);
+  // "strictly between two squares" in one check
+  const w = new World();
+  w.load('@m move from=?a to=?b over=?c\n@k core.check fn=between args=?c args=?a args=?b\n@j jump of=$m\n@r core.rule when=$m if=$k then=$j');
+  w.tell('@m1 move from=2 to=6 over=4  @m2 move from=2 to=6 over=6');
+  assert.deepEqual(w.ofType('jump').map((x) => x.attrs.of[0]), ['$m1']);
+});

@@ -304,6 +304,21 @@ export const builtins = {
   // equality by value where both sides are numbers, clock times or dates: 5 = 5.0, 9:05 = 09:05
   eq: same,
   neq: (args) => !same(args),
+  // between(x, a, b): x lies strictly between a and b, whichever is larger
+  between: ([x, a, b]) => {
+    const p = ordered(x, a), q = ordered(x, b);
+    if (!p || !q) return false;
+    const [lo, hi] = p[1] <= q[1] ? [p[1], q[1]] : [q[1], p[1]];
+    return lo < p[0] && p[0] < hi;
+  },
+  // sign(x): -1, 0 or 1
+  sign: one((q) => String(Math.sign(q.n) || 0)),
+  // clamp(x, lo, hi): x, or lo when below it, or hi when above it (with x's unit)
+  clamp: ([x, lo, hi]) => {
+    const q = quantity(x), l = quantity(lo), h = quantity(hi);
+    if (!q || !l || !h || [l, h].some((y) => y.unit && q.unit && y.unit !== q.unit)) return undefined;
+    return show(Math.min(Math.max(q.n, Math.min(l.n, h.n)), Math.max(l.n, h.n)), q.unit);
+  },
   lt: cmp((a, b) => a < b),
   lte: cmp((a, b) => a <= b),
   gt: cmp((a, b) => a > b),

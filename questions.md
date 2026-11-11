@@ -15,6 +15,49 @@ no other use. Options: (a) `priority=` (done), (b) `order=` anyway, (c) `rank=` 
 Recommendation: (a). Nothing waits on this.
 
 
+## Q16 (R7.7, language): should SOP Lang v1.2 have `expr=`? Proposal, no code written
+
+**The problem.** "Strictly between two squares" took one host 17 `core.calc` and 9
+`core.check` wires: each operation is a wire of its own. With `between`, `sign` and
+`clamp` (done in R7.7) that rule shrinks to about 6 wires, but any arithmetic of more
+than one step still needs one wire per step.
+
+**The proposal.** An attribute `expr=` on `core.calc` and `core.check`, holding a string:
+```
+@c core.calc out=?d expr="abs(?x2 - ?x1) + abs(?y2 - ?y1)"
+@k core.check expr="?d > 0 and ?d < 8"
+```
+- Inside the string only: numbers, `?variables` of the rule, `+ - * /`, parentheses,
+  `= != < <= > >=`, `and or not`, and calls of built-in functions (no host functions,
+  no references, no strings). A string, so the lexer is unchanged: it is a value like
+  any other, and the grammar of the string is a separate, small one.
+- Bounded: at most 200 characters and 50 nodes; evaluated by the same built-ins (so
+  units, rationals and precision behave as in `core.calc`); a variable without a value
+  makes the calc give nothing, as today. Parsed once when the matrix is compiled; a
+  mistake is a `schema` error with the position in the string.
+- `core.calc` keeps `fn=`/`args=`; `expr=` is the other form, not a replacement.
+
+**Against it (the user's rule: one language, no sign with two meanings).**
+- `?x` keeps its one meaning (a variable), and `=` inside the string would mean
+  equality while outside it separates a key from its value. That is a second meaning of
+  `=`; writing equality as `==` avoids it but adds a sign.
+- It is a second, infix notation inside the language, next to the wire form; hosts that
+  generate rules would have two ways to say the same thing.
+- Abduction, relations and the readers of Round 8 work on wires; an expression would be
+  opaque to them unless it is compiled into calc wires (which is possible: each node
+  becomes a calc, so the wire form stays the one meaning and `expr=` is notation).
+
+**Options.**
+- (a) No `expr=`; keep adding small built-ins where a pattern recurs (what R7.7 did).
+- (b) `expr=` as above, with `==` for equality inside the string, compiled into the
+  same calc and check wires (so everything downstream sees wires).
+- (c) `expr=` with `=` for equality.
+
+**Recommendation: (a) now, (b) if hosts keep writing long chains.** (b) is the only
+form that keeps one meaning per sign, and compiling it to wires keeps one semantics; but
+it is a second notation, and the built-ins remove most of the measured case. Nothing
+waits on this answer.
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

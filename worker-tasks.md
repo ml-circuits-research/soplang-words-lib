@@ -59,13 +59,15 @@ Prototype `world.score(candidates)` behind no flag (it is read-only), with tests
 ### R7.9: namespaces (user decision, 2026-11-11 23:12; do this first in Round 7)
 
 The user asked for namespaces, so that facts from different worlds or different requests are never combined or confused when schemas and facts are joined. Today variables are local to a rule or question, facts and matrix wires have separate id spaces, and `core.use` prefixes module ids. What is missing:
-1. **Fact namespaces.** Add a namespace per instance or per `tell(text, { ns })`. Ids are qualified (`shop:b1`). A reference resolves in its own namespace first; another namespace only when written out (`$shop:b1`). Merging by identity keys happens only inside one namespace, unless a type is declared shared. Snapshots, marks, providers and `sync` respect namespaces.
+1. **Fact namespaces.** Add a namespace per instance or per `tell(text, { ns })`. Ids are qualified with `::` (`shop::b1`; Q14, the user's choice). A reference resolves in its own namespace first; another namespace only when written out (`$shop::b1`). Merging by identity keys happens only inside one namespace, unless a type is declared shared. Snapshots, marks, providers and `sync` respect namespaces.
 2. **Ownership of names.** A module may declare types and slots only under its own prefix; otherwise an error at load naming both.
 3. **Exports.** `exports=` on a module lists the types other modules may read. A module that reads another sees only those. Today one host's `reads=` sees everything.
 4. **Ambiguity check.** After modules are joined, report short keys that now resolve to more than one qualified key, as a load warning with both names.
 5. **A "Scope" chapter in docs/language.md.** State exactly what is local to a rule, a question, a request (one `tell`), a namespace, an instance and a module. Every statement is tied to a test, as in docs/semantics.md.
 
-Spelling: keep one language. Use a separator that has no other meaning in SOP Lang today. Check the lexer: `:` must not already mean something, and if it does, propose another separator in questions.md before coding.
+Spelling: `::`, decided (Q14).
+
+**Language decisions from now on.** The user delegated these to the reviewer, with one rule: do not complicate anything, and never give one sign or construct several meanings. Put a language question in questions.md as before, with options and your recommendation. The reviewer answers in worker-tasks.md and applies that rule; the user can overrule in the morning.
 
 ## 2026-11-11 23:00 (reviewer): 0.7.0 (72a96dd) validated
 

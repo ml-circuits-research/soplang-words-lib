@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.6.2
+
+Performance of forks, marks and completing (Round 5). No output changes: the whole suite
+and the PSys2 pilot give the same results.
+
+### New
+- `world.canComplete(id?)`: cheap; whether some empty slot has a candidate completion
+  could try (a default, or for a required key an enum, a range or a type with wires).
+- `next({ review: true })` returns the assumptions to review; without it they are not
+  computed.
+- In a host action: `ctx.flush()`, `ctx.tell(x, { now: true })`, and `ctx.get`,
+  `ctx.query`, `ctx.ask`. A refusal of queued tells names them under `queued`.
+- `SOPWORLD_COW_CHECK=1`: a checking mode in which any write to state shared between
+  forks throws; `npm test` runs the suite once more in it.
+- Benches in `bench/`: `complete.mjs`, `fork.mjs`, `act.mjs`.
+
+### Faster
+- `complete()` and `next()` look only at types that have a required slot or a default,
+  and `complete()` returns its last answer at once when nothing changed: 0.30 → 0.006 ms
+  with nothing to fill in a 420-wire world.
+- The first change after `fork()` or `mark()` copies only the wires and index entries it
+  touches (copy-on-write layers, `src/cow.mjs`): fork + first tell in a 6,000-wire world
+  7.8 → 0.015 ms, within 1.5× of the same tell without a fork, at any size.
+- The tells of a host action are propagated together where the action reads and at its
+  end: 70 tells 3.2 → 0.9 ms with a matrix that keeps counts and reads absences.
+
+### Changed (may need a change in a host)
+- `next()` no longer includes `review` unless asked for with `{ review: true }`.
+- In a host action, `ctx.tell` returns `{ ok: true, queued: true }` and the statement is
+  checked with the others at the next read or at the end: a middle state that a later
+  tell of the same action repairs is accepted. Use `{ now: true }` for the old check.
+
 ## 0.6.1
 
 The language as defined in `docs/language.md` is SOP Lang v1.1: a superset of v1 (every

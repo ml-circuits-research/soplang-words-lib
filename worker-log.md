@@ -1564,3 +1564,12 @@ tell is in what is evaluated again in full after every change.
   equal those of the same action with `{ now: true }` and of five plain tells). The
   bench shows the one propagation.
 - Q13 closed in questions.md.
+
+## 0.6.2 — Round 5 released (version, changelog, rebuild; no tag) — done
+
+`npm test`: 213 pass, 0 fail on sources, 213 on the built file, 212 in checking mode.
+`npm run test:browser`: all browser checks passed. Pilot 147/147, 212/217, 231/232,
+output identical to before Round 5. `docs/version.md`: 0.6.2, build b1133a1396f7,
+built 2026-11-11.
+
+Next: Round 6 (R6.1–R6.12), in the order worker-tasks.md gives.

@@ -1461,3 +1461,59 @@ empty): 147/147, 212/217, 231/232. `node tools/scan-loops.mjs src`: clean.
   again; `review` only on request.
 - Bench in `bench/complete.mjs` (the new `bench/` directory; the older benches stay in
   `tools/`).
+
+## P2 — the first change after fork() or mark() copies only what it touches — done
+
+`npm test`: 211 pass, 0 fail on sources, 211 on the built file, 210 with
+`SOPWORLD_COW_CHECK=1` (the new third run, below). Pilot output identical to the run
+before Round 5 (`diff` without timings: empty). `node tools/scan-loops.mjs src`:
+clean. `npm run examples`: exit 0. `npm run test:browser`: all browser checks passed.
+`git grep -i psys2 src/ | wc -l`: 0.
+
+`node bench/fork.mjs` (median of 201 runs; a base of n/2 people and n/2 visits, a rule
+that marks each person), the old sources (`git stash push src`) → the new ones:
+
+| wires | tell, nothing shared | fork + first tell | mark + first tell | the same, after a rewind | fork + tell / tell |
+| --- | --- | --- | --- | --- | --- |
+| 60 | 0.016 → 0.019 ms | 0.078 → 0.023 ms | 0.116 → 0.032 ms | 0.099 → 0.067 ms | 4.99 → 1.20 |
+| 600 | 0.012 → 0.012 ms | 0.541 → 0.017 ms | 0.433 → 0.028 ms | 0.424 → 0.064 ms | 46.4 → 1.44 |
+| 6,000 | 0.012 → 0.011 ms | 7.845 → 0.015 ms | 7.961 → 0.017 ms | 5.586 → 0.077 ms | 633 → 1.34 |
+
+The target (fork + first tell within 2× a tell on a world that shares nothing,
+independent of the base size) is met: 1.20, 1.44, 1.34. A mark followed by a tell is
+1.4–2.5× and flat in the size. The column "after a rewind" is a tell that follows a
+`rewind`; it is flat in the size too (0.064–0.077 ms) but slower, because `rewind`
+itself walks both worlds to compute its diff, and the next tell runs after that pass
+(a plain O(n) pass between tells slows the next one in the same way without any fork).
+
+What changed:
+- `src/cow.mjs`: `CowMap`, `CowSet` and `CowList` read through to a base and keep their
+  own changes; iteration gives exactly the order a plain Map, Set or array would give.
+  `WireMap` copies a wire the first time `get()` returns it, so whatever the caller then
+  changes changes only this world; `has()`, `peek()` and iteration do not copy. Chains
+  are kept short: an empty layer is skipped, small maps and sets (32 entries or fewer)
+  are copied instead, and a chain deeper than 8 is merged from the top while the next
+  layer is not much bigger than what was merged (so a change is merged a logarithmic
+  number of times), or flattened when the changes are a quarter of the base.
+- `fork()` shares as before. `_detach()` (at a shared world's first `_begin`, also for
+  dry runs, since it is now constant) puts a layer on the wires, the five index maps,
+  matrix, alias, used, firings, `_logOf` and the history; the log (statements, short)
+  is copied when it is first appended to. Index sets are copied on write, one by one,
+  through `_setOf` / `_setFor`; there is no "last holder owns the state" any more,
+  since the shared state is the base of the other world's layers.
+- Two places wrote wires that came from iteration (as-of, and re-stamping when the
+  sequence key is declared late); they now take the world's own copy with `get()`.
+- **Checking mode.** With `SOPWORLD_COW_CHECK=1`, every committed change forks the
+  world (and drops the fork), and `fork()` deep-freezes the shared wires and makes
+  every write to the shared maps, sets, log and history throw. `npm test` runs the
+  whole suite (and the PSys2 compat tests) once more this way: 210 pass. It found the
+  two places above, and nothing else.
+- Tests: `cow: layered maps, sets and lists behave as plain ones, in order, and never
+  change what they were made over` (120 random rounds of 25 generations each, against
+  plain Map/Set/array, checking every earlier generation at the end, and the depth of
+  chains); `cow: forks of a large world are independent in both directions, after any
+  number of forks and marks` (60 forks of forks of a 1,200-wire world, fills, tells and
+  retractions, each checked against its parent and against a rebuild from its log;
+  five mark/tell/rewind rounds).
+- Docs: S58 in semantics.md (with the reason and the new test), the fork and mark
+  entries of api.md, the architecture in SPEC.

@@ -38,7 +38,7 @@ export const timing = {
 
   /** The key that carries the sequence changed: give every wire its place again, in order of arrival. */
   _restamp() {
-    const before = [...this.wires.values()].map((w) => [w, w.meta.order]);
+    const before = [...this.wires.keys()].map((id) => this.wires.get(id)).map((w) => [w, w.meta.order]); // get(): the world's own copies, to change
     const last = this._lastOrder;
     this._lastOrder = undefined;
     this._do(() => { this._lastOrder = last; });
@@ -242,13 +242,14 @@ export const timing = {
     return this._trial(() => {
       const res = this._result();
       const later = [];
-      for (const w of this.wires.values()) { // bounded: one pass over the wires
-        if (w.meta.told && w.meta.order > at) later.push(w.id);
-        else if (w.meta.stated) {
-          for (const key of Object.keys(w.meta.stated)) {
+      for (const seen of this.wires.values()) { // bounded: one pass over the wires
+        if (seen.meta.told && seen.meta.order > at) later.push(seen.id);
+        else if (seen.meta.stated) {
+          for (const key of Object.keys(seen.meta.stated)) {
+            if (!seen.meta.stated[key].some((s) => s.order > at)) continue;
+            const w = this.wires.get(seen.id); // the world's own copy, to change (iteration may give a shared one)
             const list = w.meta.stated[key];
             const gone = list.filter((s) => s.order > at);
-            if (!gone.length) continue;
             for (const s of gone) { list.splice(list.indexOf(s), 1); this._do(() => list.push(s)); }
             this._fluentTouch(w, res);
           }

@@ -341,9 +341,13 @@ unchanged.
 
 ## Worlds side by side
 
-**S58.** `fork()` gives an independent world with the same content; nothing is copied
-until one of the two changes, and neither sees the other's changes.
-*Test:* `fork: structural, independent in both directions, and cheap`
+**S58.** `fork()` gives an independent world with the same content, and neither sees
+the other's changes. Nothing is copied at the fork; a change copies only the wires and
+index entries it touches, so its cost does not depend on the size of the world. *Why:*
+hosts fork or mark on every request, and a dry run in a fork must cost what the change
+costs.
+*Tests:* `fork: structural, independent in both directions, and cheap`;
+`cow: forks of a large world are independent in both directions, after any number of forks and marks`
 
 **S59.** `check(patch)` says what `applyPatch(patch)` would do and changes nothing;
 `applyPatch` applies all of a patch or none of it; `diff` of a world and a fork that

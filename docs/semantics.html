@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Semantics</title>
-<meta name="source-hash" content="ecdfe275ee98">
+<meta name="source-hash" content="abcbe4f21b82">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -90,7 +90,7 @@
 <p><strong>S56.</strong> A question may be an object, a wire or text, with the same effect; with <code>{ record: true }</code> the question and its answer are told as wires. <em>Test:</em> <code>query: a question wire has the same effect as an object; record writes the answer as a wire</code></p>
 <p><strong>S57.</strong> <code>act</code> runs an action as one transaction (S1): <code>done</code> with the value, <code>missing</code> with the arguments to ask for, <code>refused</code> with the violations and the world unchanged. <em>Tests:</em> <code>act: an action runs in one transaction and returns its result</code>; <code>act: a refusal leaves the world unchanged and says why</code>; <code>act: an action written as wires: parameters, a guard, writes that read the state before</code></p>
 <h2 id="worlds-side-by-side">Worlds side by side</h2>
-<p><strong>S58.</strong> <code>fork()</code> gives an independent world with the same content; nothing is copied until one of the two changes, and neither sees the other's changes. <em>Test:</em> <code>fork: structural, independent in both directions, and cheap</code></p>
+<p><strong>S58.</strong> <code>fork()</code> gives an independent world with the same content, and neither sees the other's changes. Nothing is copied at the fork; a change copies only the wires and index entries it touches, so its cost does not depend on the size of the world. <em>Why:</em> hosts fork or mark on every request, and a dry run in a fork must cost what the change costs. <em>Tests:</em> <code>fork: structural, independent in both directions, and cheap</code>; <code>cow: forks of a large world are independent in both directions, after any number of forks and marks</code></p>
 <p><strong>S59.</strong> <code>check(patch)</code> says what <code>applyPatch(patch)</code> would do and changes nothing; <code>applyPatch</code> applies all of a patch or none of it; <code>diff</code> of a world and a fork that applied the patch is the patch's effect, and is empty once both applied it. <em>Tests:</em> <code>patch: check and applyPatch take wires and fills, all or nothing</code>; <code>semantics: check(patch) changes nothing; applyPatch gives the world a fork that applied it has</code></p>
 <p><strong>S60.</strong> <code>check()</code> without a patch validates every wire against the whole matrix and returns every violation and every standing issue; <code>describe()</code> and <code>diff()</code> return plain data. <em>Tests:</em> <code>check(): the whole world, every violation and every standing issue; World.audit for foreign wires</code>; <code>describe: a summary as plain data; diff: what another world changes</code></p>
 <h2 id="persistence-and-replay">Persistence and replay</h2>

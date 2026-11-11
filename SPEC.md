@@ -113,6 +113,7 @@ from; the deny refused a fact, with its reason; the query answered with a status
 | `abduce.mjs`, `induce.mjs` | Abduction and induction, built on the public kernel operations |
 | `builtins.mjs` | Functions, aggregates, quantities with units, exact linear solving |
 | `budget.mjs` | The step and time budget of a call |
+| `cow.mjs` | Copy-on-write maps, sets and lists, shared between forks |
 | `bin/sopworld.mjs` | `check`, `run`, `ask` on `.sop` files |
 | `node/solvers.mjs` | Starts outside solvers as processes (Node only) |
 
@@ -120,6 +121,9 @@ How the kernel keeps its promises:
 
 - A change keeps a journal of undo steps; a refusal runs it backwards, so the world is
   exactly what it was.
+- Forks share their state; a world that changes after a fork writes on a
+  copy-on-write layer, and the suite is run once more in a mode where any write to
+  shared state throws (`SOPWORLD_COW_CHECK=1`).
 - Everything speculative (dry run, suggestion, search, abduction, supposing a wire for
   a query) is the ordinary change inside a transaction that is rolled back.
 - The id of a derived wire is a hash of the rule and its bindings, so deriving it again

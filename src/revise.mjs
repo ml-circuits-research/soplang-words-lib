@@ -8,6 +8,10 @@
 const STATE = ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'events', 'seq', 'stamp', '_clock', '_lastOrder', '_c', '_logOf', '_fills'];
 
 import { parse, cloneWire } from './parser.mjs';
+import { CowMap, layer, layerList, sealState, CHECK } from './cow.mjs';
+
+// the maps and sets that get a copy-on-write layer when a world that shared them changes
+const LAYERED = ['byType', 'index', 'refs', 'byWire', 'byRule', 'matrix', 'alias', 'used', 'firings', '_logOf'];
 
 export const revision = {
   /**
@@ -177,49 +181,32 @@ export const revision = {
 
   /**
    * An independent copy that costs nothing until one of the two worlds changes: both keep
-   * using the same state, and the first one to commit a change copies it for itself.
-   * Listeners are not carried over.
+   * using the same state, and each one, at its first change, puts a layer on top of it
+   * (src/cow.mjs) and writes there. Only what a change touches is copied. Listeners are
+   * not carried over.
    */
   fork() {
     const copy = new this.constructor(this.options);
     const share = this._shared || (this._shared = { holders: 1 });
     share.holders++;
+    if (this.wires instanceof CowMap) this.wires.frozen = true; // nobody writes it again, not even a read that copies
     for (const k of STATE) copy[k] = this[k];
     copy._shared = share;
     copy._emitted = copy.events.length;
+    if (CHECK) sealState(this);
     return copy;
   },
 
-  /** Stop sharing: take a private copy of the state (unless the other holders are gone already). */
+  /** Stop sharing: put a fresh layer on every structure; the shared state is never written again. */
   _detach() {
     const share = this._shared;
     this._shared = null;
-    if (--share.holders === 0) return; // the last holder owns the state
-    const wires = new Map();
-    for (const [id, w] of this.wires) { // bounded: one pass over the wires
-      const attrs = {};
-      for (const k of Object.keys(w.attrs)) attrs[k] = [...w.attrs[k]];
-      const meta = { ...w.meta };
-      if (meta.fills) meta.fills = [...meta.fills];
-      if (meta.stated) meta.stated = Object.fromEntries(Object.entries(meta.stated).map(([k, v]) => [k, [...v]]));
-      if (meta.tails) meta.tails = { ...meta.tails };
-      wires.set(id, { id: w.id, type: w.type, attrs, pattern: w.pattern, meta });
-    }
-    const sets = (m) => new Map([...m].map(([k, v]) => [k, new Set(v)]));
-    this.wires = wires;
-    this.byType = sets(this.byType);
-    this.index = sets(this.index);
-    this.refs = sets(this.refs);
-    this.byWire = sets(this.byWire);
-    this.byRule = sets(this.byRule);
-    this.matrix = new Map(this.matrix);
-    this.alias = new Map(this.alias);
-    this.used = new Set(this.used);
-    this.firings = new Map(this.firings);
-    this._logOf = new Map(this._logOf);
-    this.log = [...this.log];
-    this.events = [...this.events];
-    this._pc = null;
+    share.holders--;
+    this._mine = new WeakSet(); // the index sets this world made or copied since then, and may change in place
+    this.wires = layer(this.wires, { wires: true });
+    for (const k of LAYERED) this[k] = layer(this[k]);
+    this.events = layerList(this.events);
+    this._pc = null; // the log is copied when it is first appended to (_logPush): it is short
   },
 
   /**

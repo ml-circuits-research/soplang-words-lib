@@ -17,6 +17,7 @@ import { Budget } from './budget.mjs';
 import { tiering } from './tiers.mjs';
 import { describing } from './describe.mjs';
 import { abduce } from './abduce.mjs';
+import { layer, CHECK } from './cow.mjs';
 
 const first = (w, k) => w.attrs[k]?.[0];
 const K = (type, key, value) => `${type}\u0001${key}\u0001${value}`;
@@ -27,7 +28,6 @@ const NAMES = {
 };
 const LIST = '\u0002'; // marks a list of values bound to one variable (the result of collect)
 const TIES = '\u0003ties'; // suffix of the hidden variable that holds the tied picks of an argmax or argmin
-const setOf = (map, k) => map.get(k) || map.set(k, new Set()).get(k);
 
 function readModule(map, w) {
   const read = (spec) => (spec === undefined ? [] : spec === 'id' ? [w.id] : w.attrs[spec] || []);
@@ -251,7 +251,7 @@ export class World {
     return lines.join('\n');
   }
 
-  history() { return this.events.map((e) => ({ ...e })); }
+  history() { return [...this.events].map((e) => ({ ...e })); }
 
   /** Subscribe to committed events. Returns the function that unsubscribes. */
   on(listener) { this.listeners.add(listener); return () => this.listeners.delete(listener); }
@@ -525,8 +525,8 @@ export class World {
     return { ok: true, added: [], derived: [], filled: [], merged: [], removed: [], violations: [], _touched: new Set(), _agenda: [], _fluents: new Map(), _types: new Set(), _seeds: new Map(), _full: false };
   }
   /** Open a transaction. `commit` says the caller intends to keep the changes: a state shared with a fork is copied first. */
-  _begin(commit = false) {
-    if (commit && this._shared && this._tx === 0) this._detach();
+  _begin(commit = false) { // eslint-disable-line no-unused-vars
+    if (this._shared && this._tx === 0) this._detach();
     this._tx++;
     return this._journal.length;
   }
@@ -548,6 +548,7 @@ export class World {
     const fresh = this.events.slice(this._emitted);
     this._emitted = this.events.length;
     if (fresh.length) for (const l of this.listeners) l(fresh.map((e) => ({ ...e })), this);
+    if (CHECK) this.fork(); // checking mode: the next change must not write what this state shares
   }
 
   /** What the caller gets of a result: the same lists without the working fields. */
@@ -574,6 +575,7 @@ export class World {
   }
 
   _logPush(entry) {
+    if (this._mine && !this._mine.has(this.log)) { this.log = [...this.log]; this._mine.add(this.log); } // shared with a fork
     this.log.push(entry);
     if (entry.op === 'tell') for (const id of entry.facts) this._logOf.set(id, entry); // bounded: the facts of one tell
     else this._fills++;
@@ -690,20 +692,34 @@ export class World {
 
   _link(w, key, value) {
     const iv = this._iv(w.type, key, value);
-    for (const t of this._lineage(w.type)) setOf(this.index, K(t, key, iv)).add(w.id);
-    if (value[0] === '$') setOf(this.refs, value.slice(1)).add(w.id);
+    for (const t of this._lineage(w.type)) this._setOf(this.index, K(t, key, iv)).add(w.id);
+    if (value[0] === '$') this._setOf(this.refs, value.slice(1)).add(w.id);
   }
 
   _unlink(w, key, value, whole) {
     const iv = this._iv(w.type, key, value);
-    for (const t of this._lineage(w.type)) this.index.get(K(t, key, iv))?.delete(w.id);
+    for (const t of this._lineage(w.type)) this._setFor(this.index, K(t, key, iv))?.delete(w.id);
     if (value[0] !== '$') return;
-    if (whole || !Object.values(w.attrs).some((vs) => vs.includes(value))) this.refs.get(value.slice(1))?.delete(w.id);
+    if (whole || !Object.values(w.attrs).some((vs) => vs.includes(value))) this._setFor(this.refs, value.slice(1))?.delete(w.id);
   }
+
+  /** The index set of `k`, to add to: made if missing, copied first if this world shares it with a fork. */
+  _setOf(map, k) {
+    const s = map.get(k);
+    if (!s) { const made = new Set(); map.set(k, made); this._mine?.add(made); return made; }
+    if (!this._mine || this._mine.has(s)) return s;
+    const own = layer(s);
+    map.set(k, own);
+    this._mine.add(own);
+    return own;
+  }
+
+  /** The index set of `k`, to delete from, or undefined. */
+  _setFor(map, k) { return map.has(k) ? this._setOf(map, k) : undefined; }
 
   _put(w) {
     this.wires.set(w.id, w);
-    for (const t of this._lineage(w.type)) setOf(this.byType, t).add(w.id);
+    for (const t of this._lineage(w.type)) this._setOf(this.byType, t).add(w.id);
     for (const k of Object.keys(w.attrs)) for (const v of w.attrs[k]) this._link(w, k, v);
   }
 
@@ -714,8 +730,8 @@ export class World {
     this.index = new Map();
     for (const w of this.wires.values()) {
       for (const t of this._lineage(w.type)) {
-        setOf(this.byType, t).add(w.id);
-        for (const k of Object.keys(w.attrs)) for (const v of w.attrs[k]) setOf(this.index, K(t, k, this._iv(w.type, k, v))).add(w.id);
+        this._setOf(this.byType, t).add(w.id);
+        for (const k of Object.keys(w.attrs)) for (const v of w.attrs[k]) this._setOf(this.index, K(t, k, this._iv(w.type, k, v))).add(w.id);
       }
     }
     this._do(() => { [this.byType, this.index] = old; });
@@ -723,7 +739,7 @@ export class World {
 
   _drop(w) {
     this.wires.delete(w.id);
-    for (const t of this._lineage(w.type)) this.byType.get(t)?.delete(w.id);
+    for (const t of this._lineage(w.type)) this._setFor(this.byType, t)?.delete(w.id);
     for (const k of Object.keys(w.attrs)) for (const v of w.attrs[k]) this._unlink(w, k, v, true);
   }
 
@@ -780,14 +796,14 @@ export class World {
 
   _indexFiring(sig, rec) {
     this.firings.set(sig, rec);
-    for (const id of rec.ids) setOf(this.byWire, id).add(sig);
-    if (rec.s) setOf(this.byRule, rec.rule).add(sig);
+    for (const id of rec.ids) this._setOf(this.byWire, id).add(sig);
+    if (rec.s) this._setOf(this.byRule, rec.rule).add(sig);
   }
 
   _unindexFiring(sig, rec) {
     this.firings.delete(sig);
-    for (const id of rec.ids) this.byWire.get(id)?.delete(sig);
-    if (rec.s) this.byRule.get(rec.rule)?.delete(sig);
+    for (const id of rec.ids) this._setFor(this.byWire, id)?.delete(sig);
+    if (rec.s) this._setFor(this.byRule, rec.rule)?.delete(sig);
   }
 
   _recordFiring(sig, rec) {

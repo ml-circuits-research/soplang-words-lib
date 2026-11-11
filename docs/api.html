@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="ec06e417e836">
+<meta name="source-hash" content="1b030b8b3ac1">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -135,7 +135,7 @@ const r = w.undo();
 print(r.ok, r.removed, w.has(&#x27;ink&#x27;));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true [&quot;ink&quot;] false</code></pre></figure>
 <h3 id="worldmark-and-worldrewindmark">world.mark() and world.rewind(mark)</h3>
-<p><code>mark()</code> returns a point to come back to (a fork: it costs nothing until the world changes). <code>rewind(mark)</code> makes the world exactly what it was, and returns <code>{ ok, removed, added, changed }</code>. A mark can be used again.</p>
+<p><code>mark()</code> returns a point to come back to (a fork: the world's next change copies only what it touches). <code>rewind(mark)</code> makes the world exactly what it was, and returns <code>{ ok, removed, added, changed }</code>. A mark can be used again.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 w.tell(&#x27;@pen item name=pen price=2&#x27;);
 const m = w.mark();
@@ -299,7 +299,7 @@ print(w.check());</code></pre></figure>
 {&quot;ok&quot;:true,&quot;violations&quot;:[],&quot;issues&quot;:[]}</code></pre></figure>
 <h2 id="worlds-time-and-history">Worlds, time and history</h2>
 <h3 id="worldfork">world.fork()</h3>
-<p>An independent world with the same content. Nothing is copied until one of the two changes. Cost: constant.</p>
+<p>An independent world with the same content. Nothing is copied: each of the two worlds, at its first change, puts a copy-on-write layer over what they share and writes there, so a change after a fork copies only the wires and index entries it touches. Cost: constant; the first change after it costs about what the same change costs without a fork, whatever the size of the world (<code>node bench/fork.mjs</code>).</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 const f = w.fork();
 f.tell(&#x27;@pen item name=pen price=2&#x27;);

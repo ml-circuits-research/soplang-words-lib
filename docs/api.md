@@ -293,8 +293,8 @@ true ["ink"] false
 
 ### world.mark() and world.rewind(mark)
 
-`mark()` returns a point to come back to (a fork: it costs nothing until the world
-changes). `rewind(mark)` makes the world exactly what it was, and returns `{ ok,
+`mark()` returns a point to come back to (a fork: the world's next change copies only
+what it touches). `rewind(mark)` makes the world exactly what it was, and returns `{ ok,
 removed, added, changed }`. A mark can be used again.
 
 ```js run
@@ -695,8 +695,11 @@ must be at least 0 false
 
 ### world.fork()
 
-An independent world with the same content. Nothing is copied until one of the two
-changes. Cost: constant.
+An independent world with the same content. Nothing is copied: each of the two worlds,
+at its first change, puts a copy-on-write layer over what they share and writes there,
+so a change after a fork copies only the wires and index entries it touches. Cost:
+constant; the first change after it costs about what the same change costs without a
+fork, whatever the size of the world (`node bench/fork.mjs`).
 
 ```js run
 const w = shop();

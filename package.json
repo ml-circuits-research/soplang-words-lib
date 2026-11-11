@@ -30,7 +30,7 @@
   },
   "scripts": {
     "build": "node tools/build.mjs",
-    "test": "node tools/build.mjs && node --test && SOPWORLD_BUNDLE=1 node --test",
+    "test": "node tools/build.mjs && node --test && SOPWORLD_BUNDLE=1 node --test && SOPWORLD_COW_CHECK=1 node --test test/*.test.mjs compat/psys2/*.test.mjs",
     "test:src": "node --test",
     "test:browser": "node tools/browser-check.mjs",
     "bench": "node tools/bench.mjs",

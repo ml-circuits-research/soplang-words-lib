@@ -1925,3 +1925,22 @@ output identical. `node tools/scan-loops.mjs src`: clean.
 - Test `slots: kind=json holds a structured value that patterns read by path, compared
   in one spelling, within limits`. Reference: "Structured values", with an executed
   example.
+
+## R6.16 — a host tells some keys as assumptions — done
+
+`npm test`: 229 pass, 0 fail on sources and built file, 228 in checking mode. Pilot
+output identical. `node tools/scan-loops.mjs src`: clean. `tsc`: no errors.
+
+- Already there (H3): `tell(text, { tier: 'default' })` for a whole statement and
+  `fill(id, key, value, { tier })` for one value; `assumptions()` lists them and a told
+  value replaces them (checked again here).
+- New: a tier per key in one statement: `tell('@c1 chart name=sales kind=bar', { tier:
+  { kind: 'default' } })` tells `name` and assumes `kind`. The wire keeps the per-key
+  tiers (`meta.keyTiers`); for a statement that merges into an existing wire each key's
+  value carries its own tier. When a told value replaces such an assumption (by a later
+  tell, a revise, or a fill), the value and what followed from it are withdrawn as for
+  any assumption, and the logged statement is rewritten without it, so a replay gives
+  the same world (my first version left `kind=bar` in the log and the replay conflicted).
+- Test `tiers: a statement may tell some of its keys as assumptions; assumptions() lists
+  them and a told value replaces them`. S28 (semantics, with the reason), tell in
+  api.md, `ChangeOptions` in index.d.ts.

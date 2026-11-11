@@ -275,3 +275,22 @@ test('undo, mark and rewind: taking statements back, and returning to an exact e
   assert.equal(w.history().at(-2).op === 'rewind' || w.history().some((e) => e.op === 'rewind'), true);
   assert.throws(() => w.rewind({}), /needs a mark/);
 });
+
+test('tiers: a statement may tell some of its keys as assumptions; assumptions() lists them and a told value replaces them', () => {
+  const w = new World();
+  w.load('@k core.slot of=chart key=name id=true\n@c chart kind=?k\n@t chart core.on=$c label=?k\n@r core.rule when=$c then=$t');
+  w.tell('@c1 chart name=sales kind=bar', { tier: { kind: 'default' } }); // "I assumed a bar chart"
+  assert.deepEqual([w.tier('c1', 'kind'), w.tier('c1', 'name'), w.tier('c1', 'label')], ['default', 'told', 'default']);
+  assert.deepEqual(w.assumptions().map((a) => [a.id, a.key, a.value, a.tier, a.dependants.map((d) => d.key)]), [['c1', 'kind', 'bar', 'default', ['label']]]);
+  // the user says what they want: the told value replaces the assumption and what followed from it
+  const r = w.tell('@c2 chart name=sales kind=line');
+  assert.deepEqual([r.ok, r.revised], [true, [{ id: 'c1', key: 'kind', value: 'bar', tier: 'default' }]]);
+  assert.deepEqual([w.get('c1').attrs.kind, w.get('c1').attrs.label, w.tier('c1', 'kind')], [['line'], ['line'], 'told']);
+  assert.deepEqual(w.assumptions(), []);
+  assert.equal(w.diff(World.fromJSON(w.toJSON())).same, true, 'the log tells what holds');
+  // revise replaces it the same way; an unknown tier is refused
+  const v = new World();
+  v.tell('@d chart kind=bar', { tier: { kind: 'guessed' } });
+  assert.equal(v.revise('d', 'kind', 'pie').revised[0].tier, 'guessed');
+  assert.throws(() => v.tell('@e chart kind=x', { tier: { kind: 'maybe' } }), /unknown tier/);
+});

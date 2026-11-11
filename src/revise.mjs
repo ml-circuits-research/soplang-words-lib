@@ -346,6 +346,14 @@ export const revision = {
     const mark = this._begin(!opts.dry);
     let r2;
     try {
+      // values that a statement told with a weaker tier of their own (tell(text, { tier: { key } }))
+      const keyed = drop.filter((d) => d.key && this.wires.get(d.id)?.meta.keyTiers?.[d.key]);
+      for (const d of keyed) {
+        const w = this.wires.get(d.id), kt = w.meta.keyTiers;
+        w.meta.keyTiers = { ...kt };
+        delete w.meta.keyTiers[d.key];
+        this._do(() => { w.meta.keyTiers = kt; });
+      }
       const gone = this._withdraw(res, wires, drop);
       if (wires.length) this._logRemove(new Set([...wires, ...(gone || [])].filter((x) => !this.wires.has(x))));
       if (!res.violations.length) this._validate(res);
@@ -355,6 +363,30 @@ export const revision = {
         this.log = old.filter((e) => !(e.op === 'fill' && this._weakFill(e) && drop.some((d) => d.id === this.resolve(e.id) && d.key === e.key)));
         this._fills -= old.length - this.log.length;
         this._do(() => { this.log = old; this._fills = fills; });
+      }
+      if (keyed.length) {
+        // and out of the statement that told them, so that the log tells what holds
+        const old = this.log, before = new Map();
+        this.log = old.map((e) => {
+          if (e.op !== 'tell') return e;
+          const hits = keyed.filter((d) => e.facts.includes(d.id));
+          if (!hits.length) return e;
+          const wires = e.wires.map((w) => {
+            const mine = hits.filter((d) => d.id === w.id);
+            if (!mine.length) return w;
+            const attrs = { ...w.attrs };
+            for (const d of mine) for (const k of Object.keys(attrs)) {
+              if (this._compiled().shortKey(w.type, k) !== d.key) continue;
+              attrs[k] = attrs[k].filter((v) => v !== d.value);
+              if (!attrs[k].length) delete attrs[k];
+            }
+            return { ...w, attrs };
+          });
+          const next = { ...e, wires };
+          for (const id of e.facts) { before.set(id, this._logOf.get(id)); this._logOf.set(id, next); }
+          return next;
+        });
+        this._do(() => { this.log = old; for (const [id, e] of before) this._logOf.set(id, e); });
       }
       for (const id of wires) drop.push({ id, tier: weak.get(id) });
       this._event({ op: 'revise', dropped: drop });

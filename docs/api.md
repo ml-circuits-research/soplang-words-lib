@@ -139,7 +139,9 @@ print(World.diff(a, b).added.map((x) => x.id));
 ### world.tell(input, options?)
 
 States wires: facts, matrix wires, or both. Options: `dry` (evaluate and undo), `strict`,
-`tier` (default `told`), `budget`. Returns a change result. Cost: O(matches the new
+`tier` (default `told`; a tier name for the whole statement, or `{ key: tier }` for some
+keys, which are then assumptions that `assumptions()` lists and a told value replaces),
+`budget`. Returns a change result. Cost: O(matches the new
 wires take part in) for the chase, plus validation of the touched wires; telling matrix
 wires recompiles the matrix and validates everything, O(n·r).
 

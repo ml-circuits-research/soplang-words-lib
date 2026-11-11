@@ -179,8 +179,14 @@ with the cells that rest on it.
 below `told`).
 *Test:* `tiers: a told value replaces any weaker one, and what followed from it`
 
-**S28.** A statement may carry its own tier; an adopted explanation is `guessed`.
-*Test:* `tiers: a host states its own tier, declares its own, and an adopted explanation stays a guess`
+**S28.** A statement may carry its own tier, for all it says or for some keys
+(`{ tier: { kind: 'default' } }`: those keys are assumed, the rest told); an adopted
+explanation is `guessed`. A told value replaces such an assumption as any other (S27),
+and the statement in the log then no longer says it. *Why per key:* a host that fills in
+what the user did not say ("I assumed a bar chart") must be able to say which part was
+assumed.
+*Tests:* `tiers: a host states its own tier, declares its own, and an adopted explanation stays a guess`;
+`tiers: a statement may tell some of its keys as assumptions; assumptions() lists them and a told value replaces them`
 
 ## Provenance and retraction
 

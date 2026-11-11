@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Semantics</title>
-<meta name="source-hash" content="02ba72e125c6">
+<meta name="source-hash" content="6c58db637f16">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -54,7 +54,7 @@
 <p><strong>S25.</strong> Every cell has a tier: <code>told</code> &gt; <code>derived</code> &gt; <code>forced</code> &gt; <code>default</code> &gt; <code>guessed</code>, and any tier the matrix declares in between. The tier of a derived cell is the weakest tier among the cells it was derived from. <em>Why the weakest:</em> a conclusion is no more certain than its least certain premise. <em>Test:</em> <code>tiers: every value knows how it got there, and a derived value is as weak as its weakest input</code></p>
 <p><strong>S26.</strong> <code>assumptions()</code> lists every cell weaker than <code>derived</code>, weakest first, each with the cells that rest on it. <em>Test:</em> <code>tiers: assumptions() lists what is only assumed, weakest first, with what rests on each</code></p>
 <p><strong>S27.</strong> A told value replaces any weaker value of the same cell (S22 for every tier below <code>told</code>). <em>Test:</em> <code>tiers: a told value replaces any weaker one, and what followed from it</code></p>
-<p><strong>S28.</strong> A statement may carry its own tier; an adopted explanation is <code>guessed</code>. <em>Test:</em> <code>tiers: a host states its own tier, declares its own, and an adopted explanation stays a guess</code></p>
+<p><strong>S28.</strong> A statement may carry its own tier, for all it says or for some keys (<code>{ tier: { kind: 'default' } }</code>: those keys are assumed, the rest told); an adopted explanation is <code>guessed</code>. A told value replaces such an assumption as any other (S27), and the statement in the log then no longer says it. <em>Why per key:</em> a host that fills in what the user did not say ("I assumed a bar chart") must be able to say which part was assumed. <em>Tests:</em> <code>tiers: a host states its own tier, declares its own, and an adopted explanation stays a guess</code>; <code>tiers: a statement may tell some of its keys as assumptions; assumptions() lists them and a told value replaces them</code></p>
 <h2 id="provenance-and-retraction">Provenance and retraction</h2>
 <p><strong>S29.</strong> Every derived wire and every filled value records the rule (<code>via</code>) and the wires (<code>from</code>) it came from. A refusal names the told wires it rests on, and can be explained after the change has been undone. <em>Tests:</em> <code>deduction: a missing wire is created, with provenance</code>; <code>refusals name the told wires they rest on</code>; <code>violations: explainable after the change is undone; a reason may quote the values</code></p>
 <p><strong>S30.</strong> Retracting a wire removes the wires that refer to it, withdraws what was derived from them, and then derives again what still follows from the rest; a conclusion with a second derivation survives. <em>Tests:</em> <code>history: retract removes dependants and derived wires; fork is independent</code>; <code>retract: a wire with a second derivation survives</code></p>

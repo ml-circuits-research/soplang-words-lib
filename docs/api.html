@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="98a7b3c778c7">
+<meta name="source-hash" content="814ff557eef9">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -65,7 +65,7 @@ print(World.diff(a, b).added.map((x) =&gt; x.id));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;x&quot;]</code></pre></figure>
 <h2 id="changing-a-world">Changing a world</h2>
 <h3 id="worldtellinput-options">world.tell(input, options?)</h3>
-<p>States wires: facts, matrix wires, or both. Options: <code>dry</code> (evaluate and undo), <code>strict</code>, <code>tier</code> (default <code>told</code>), <code>budget</code>. Returns a change result. Cost: O(matches the new wires take part in) for the chase, plus validation of the touched wires; telling matrix wires recompiles the matrix and validates everything, O(n·r).</p>
+<p>States wires: facts, matrix wires, or both. Options: <code>dry</code> (evaluate and undo), <code>strict</code>, <code>tier</code> (default <code>told</code>; a tier name for the whole statement, or <code>{ key: tier }</code> for some keys, which are then assumptions that <code>assumptions()</code> lists and a told value replaces), <code>budget</code>. Returns a change result. Cost: O(matches the new wires take part in) for the chase, plus validation of the touched wires; telling matrix wires recompiles the matrix and validates everything, O(n·r).</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 const r = w.tell(&#x27;@pen item name=pen price=2  @l1 line item=$pen qty=3&#x27;);
 print(r.ok, r.added, r.filled);

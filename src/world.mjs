@@ -1026,14 +1026,21 @@ export class World {
       const same = this._findByIdentity(w.type, w.attrs);
       if (same) {
         this._advance(w); // a statement about a wire that is already there happens at the place it declares
-        this._merge(same, w.attrs, { via: 'core.tell', from: [], tier: res._tier }, res);
+        if (res._tier && typeof res._tier === 'object') {
+          for (const k of Object.keys(w.attrs)) this._merge(same, { [k]: w.attrs[k] }, { via: 'core.tell', from: [], tier: res._tier[k] }, res);
+        } else this._merge(same, w.attrs, { via: 'core.tell', from: [], tier: res._tier }, res);
         this.alias.set(w.id, same.id);
         this._do(() => this.alias.delete(w.id));
         this._event({ op: 'merge', id: w.id, into: same.id });
         res.merged.push({ id: w.id, into: same.id });
       } else {
         const seq = this._event({ op: 'tell', id: w.id, wire: format(w) });
-        this._addWire(w, { seq, told: true, depth: 0, ...(res._tier ? { tier: res._tier } : {}) }, res);
+        let tiers = {};
+        if (res._tier && typeof res._tier === 'object') {
+          const own = Object.fromEntries(Object.entries(res._tier).filter(([k]) => w.attrs[this._compiled().shortKey(w.type, k)]).map(([k, t]) => [this._compiled().shortKey(w.type, k), t]));
+          if (Object.keys(own).length) tiers = { keyTiers: own };
+        } else if (res._tier) tiers = { tier: res._tier };
+        this._addWire(w, { seq, told: true, depth: 0, ...tiers }, res);
         res.added.push(w.id);
       }
     }

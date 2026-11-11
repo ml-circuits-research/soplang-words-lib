@@ -22,7 +22,10 @@ export const tiering = {
     return i < 0 ? this._compiled().tiers.indexOf('guessed') : i;
   },
 
+  // bounded: one level, for the tiers of a per-key object
   _knownTier(name) {
+    // a tier for the whole statement, or one per key ({ kind: 'default' }): those keys are assumed, the rest told
+    if (name && typeof name === 'object') { for (const t of Object.values(name)) this._knownTier(t); return name; }
     if (name !== undefined && !this._compiled().tiers.includes(name)) throw new Error(`sopworld: unknown tier "${name}" (declare it with core.tier)`);
     return name;
   },
@@ -44,6 +47,8 @@ export const tiering = {
         return { cells: fill.cells || (fill.from || []).map((id) => [id, null]), via: fill.via };
       }
     }
+    // a key the statement gave its own tier (tell(text, { tier: { key: 'default' } }))
+    if (key !== null && key !== undefined && w.meta.keyTiers?.[key]) return { tier: w.meta.keyTiers[key] };
     // the value came with the wire: it is as solid as the wire
     if (w.meta.tier) return { tier: w.meta.tier, whole: true };
     if (w.meta.told) return { tier: 'told', whole: true };

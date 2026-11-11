@@ -157,7 +157,7 @@ export type Site = 'match' | 'chase' | 'negation' | 'aggregate' | 'fluent' | 'wi
 export interface BudgetViolation { kind: 'budget'; site: Site; steps: number; why: string }
 export interface Stats { steps: number; limit: number; exhausted: boolean; site: Site | null; sites: Record<Site, number>; ms: number }
 export interface Budgeted { budget?: Budget }
-export interface ChangeOptions extends Budgeted { dry?: boolean; strict?: boolean; /** how sure this statement is (default: told) */ tier?: string }
+export interface ChangeOptions extends Budgeted { dry?: boolean; strict?: boolean; /** how sure this statement is (default: told): one tier, or one per key ({ kind: "default" }) */ tier?: string | Record<string, string> }
 export interface Description {
   types: Record<string, { count: number; instances: string[] }>;
   wires: Record<string, { type: string; tier: string; via?: string; keys: Record<string, { value: string | string[]; tier: string }> }>;

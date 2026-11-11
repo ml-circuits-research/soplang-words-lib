@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.7.1
+
+Round 6, R6.13–R6.17.
+
+### New
+- `facts` option: facts a host keeps (a large static table), given per type by a
+  provider and matched by patterns like wires; never stored, forked, logged or
+  snapshotted; one budget step per fact returned.
+- `world.sync(type | { prefix }, list)`: make a collection equal to a list in one
+  transaction (tells, replacements in place, retractions); returns the delta.
+- `kind=json`: structured values, compared and indexed in one canonical spelling, read
+  in patterns by path (`center.lat=?lat`); at most 10 levels and 100,000 characters.
+- `tell(text, { tier: { key: tier } })`: some keys of a statement told as assumptions;
+  a told value replaces them, also in the log.
+- `ties=all` on `argmax`/`argmin`: every tied pick, as several values.
+
+### Changed (may need a change in a host)
+- `ties=` other than `first` or `all` is a `schema` violation.
+
 ## 0.7.0
 
 Round 6, R6.1–R6.12, from hosts moving their worlds onto the library.

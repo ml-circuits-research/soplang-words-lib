@@ -1963,3 +1963,11 @@ output identical. `node tools/scan-loops.mjs src`: clean.
   variable `?g` is the same as the pattern's own binding `?g` (the matched wire's id), so
   the pattern can never match and nothing says why. Worth a `schema` warning; I have not
   added one, since it was not asked and a host might rely on `?p` meaning the wire.
+
+## 0.7.1 — R6.13–R6.17 released (version, changelog, rebuild; no tag) — done
+
+`npm test`: 230 pass, 0 fail on sources and built file, 229 in checking mode.
+`npm run test:browser`: all browser checks passed. Pilot 147/147, 212/217, 231/232,
+output identical. `docs/version.md`: 0.7.1, build 08e2627de8d4, built 2026-11-11.
+
+Round 6 as written so far is done. Nothing is open in `questions.md`.

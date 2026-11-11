@@ -22,7 +22,7 @@ export const SCHEMA_TYPES = new Set([
  */
 export const GRAMMAR = {
   'core.slot': ['of', 'key', 'required', 'many', 'id', 'prefix', 'kind', 'type', 'enum', 'default', 'ask', 'min', 'max', 'step', 'soft', 'combine'],
-  'core.type': ['of', 'extends', 'closed', 'complete'],
+  'core.type': ['of', 'extends', 'closed', 'complete', 'transient'],
   'core.namespace': ['prefix', 'open'],
   'core.schema.map': ['from', 'as'], // and one attribute per field it maps
   'core.use': ['world', 'prefix'],
@@ -134,6 +134,7 @@ export function compileMatrix(world) {
     modules: new Map(),  // module name -> { wire, imports } for modules that declare themselves
     openPrefixes: ['core.'], // keys with these prefixes are always allowed and never shortened
     complete: new Set(),  // types whose instances are all known (closed world for existence)
+    transient: new Set(), // types of state that is looked at, not edited (a selection, a cursor): undo passes over it
     producers: new Map(), // <type>.<key> -> functions that can compute the key when no wire has it
     actions: new Map(),   // action name -> the function that carries it out
     seqKey: null,         // the key that carries a wire's place in the sequence, when one is declared
@@ -249,6 +250,7 @@ export function compileMatrix(world) {
       c.types.set(name, w);
       if (closed) c.closed.add(name);
       if (f ? field(f.complete, w) === 'true' : flag(w, 'complete')) c.complete.add(name);
+      if (!f && flag(w, 'transient')) c.transient.add(name);
       if (ext && ext !== name) c.parent.set(name, ext);
     } else if (map?.as === 'module') {
       const name = field(map.fields.name || 'id', w);

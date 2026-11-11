@@ -110,6 +110,7 @@ A type: what it extends, whether its keys and its instances are all known.
 | `extends` | type | none | | its parent |
 | `closed` | flag | false | | wires of the type accept only declared keys |
 | `complete` | flag | false | | the world knows every wire of the type |
+| `transient` | flag | false | | state that is looked at, not edited (a selection, a cursor): `undo` passes over it |
 
 **Meaning.** A wire of a type is also a wire of every type its type extends: patterns,
 slots, rules, denies, effects and queries written for an ancestor apply to it. A type

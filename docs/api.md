@@ -275,7 +275,8 @@ print(w.apply([{ id: 'pen', key: 'price', value: 2 }]).filled);
 ### world.undo(n = 1, options?)
 
 Takes back the last `n` statements. Returns `{ ok, undone, removed, added, changed,
-violations }`; `nothing-to-undo` when the log is empty. Retractions are not taken back
+violations }`; `nothing-to-undo` when the log is empty. Statements that only touched
+wires of `transient` types are passed over and kept. Retractions are not taken back
 (use a mark). Cost: O(h) changes, since the world is rebuilt from the statements that
 remain.
 
@@ -289,6 +290,27 @@ print(r.ok, r.removed, w.has('ink'));
 
 ```output
 true ["ink"] false
+```
+
+### world.redo(n = 1, options?)
+
+Tells again what the last undo took back (or the last `n` undos), as the statements
+they were. Returns `{ ok, redone, removed, added, changed, violations }`;
+`nothing-to-redo` when nothing was undone since the last statement that is not
+transient. If a statement cannot be told again, nothing is, and the world stays as it
+was. Cost: that of telling the statements again.
+
+```js run
+const w = shop();
+w.tell('@pen item name=pen price=2');
+w.tell('@ink item name=ink price=3');
+w.undo();
+const r = w.redo();
+print(r.ok, r.redone, w.has('ink'));
+```
+
+```output
+true [{"op":"tell","ids":["ink"]}] true
 ```
 
 ### world.mark() and world.rewind(mark)

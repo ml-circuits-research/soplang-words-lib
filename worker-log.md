@@ -1718,3 +1718,22 @@ output identical. `node tools/scan-loops.mjs src`: clean.
 - Test `core.rank: the position of a wire among its peers ordered by a key, kept up to
   date` (grouped by book, a new peer, a retraction, no `within`, descending with ties,
   the schema error). Reference entry with its example; cited in S38.
+
+## R6.8 — transient types; undo passes over them; redo — done
+
+`npm test`: 220 pass, 0 fail on sources and built file, 219 in checking mode. Pilot
+output identical. `node tools/scan-loops.mjs src`: clean.
+
+- `core.type ... transient=true`: state that is looked at, not edited (a selection, a
+  cursor). A statement (a tell, a fill, a patch) that only told or changed wires of such
+  types does not count for `undo(n)` and is not taken back: after the undone statements
+  are gone it is told again, where it still fits (a cursor on a line that is gone is
+  dropped).
+- `world.redo(n = 1)`: tells again, as the statements they were, what the last `n`
+  undos took back. A new statement that is not transient makes the undo final; a
+  transient one does not. If a statement cannot be told again, nothing is
+  (`rewind` to a mark) and the result says why. New violation kind `nothing-to-redo`.
+- Test `undo passes over transient state (a cursor, a selection); redo tells again what
+  undo took back`. S24 (semantics, with the reason), reference (core.type), api.md
+  (`redo`, `undo`), index.d.ts. The task mentions that `rewind` returns a function: it
+  does not here (it returns the diff); `redo` is the first-class operation asked for.

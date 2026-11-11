@@ -139,9 +139,14 @@ transaction, with everything that followed.
 *Test:* `revise: a told value is replaced in one step, with everything that followed from it`
 
 **S24.** `undo(n)` takes back the last n statements by rebuilding the world from the
-ones that remain. `mark()` and `rewind(mark)` return to an exact earlier world, also
-across retractions.
-*Test:* `undo, mark and rewind: taking statements back, and returning to an exact earlier world`
+ones that remain. A statement that only told or changed wires of a type declared
+`transient=true` does not count and is told again afterwards where it still fits.
+`redo(n)` tells again what undo took back, until a new statement that is not transient.
+`mark()` and `rewind(mark)` return to an exact earlier world, also across retractions.
+*Why transient:* moving a cursor or a selection is not an edit; undo should take back
+the edit and leave the user where they are.
+*Tests:* `undo, mark and rewind: taking statements back, and returning to an exact earlier world`;
+`undo passes over transient state (a cursor, a selection); redo tells again what undo took back`
 
 ## Certainty
 
@@ -440,6 +445,7 @@ registers ([reference](reference.md#coredeny)).
 | `refused`, `error` | an action function refused, or threw | `act` |
 | `unknown-action` | no action of that name | `act` |
 | `nothing-to-undo` | no statement left | `undo` |
+| `nothing-to-redo` | nothing undone since the last statement | `redo` |
 | `unsupported` | the change would remove a wire that absorbed a told one | `retract`, `revise` |
 
 Notes that refuse nothing are in `world.warnings`: `deprecated` (a pattern declared the

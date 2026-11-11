@@ -448,3 +448,37 @@ test('violations: a reason writes values through registered filters, and carries
   t.load('@p item n=?n\n@x core.deny when=$p why="count ?n: too many"');
   assert.equal(t.tell('@i item n=4').violations[0].why, 'count 4: too many');
 });
+
+test('undo passes over transient state (a cursor, a selection); redo tells again what undo took back', () => {
+  const w = new World();
+  w.load(`
+    @t core.type of=cursor transient=true
+    @k core.slot of=cursor key=name id=true
+    @k2 core.slot of=line key=n id=true
+  `);
+  w.tell('@l1 line n=1 text="a"');
+  w.tell('@cur cursor name=main at=$l1');        // looking around
+  w.tell('@l2 line n=2 text="b"');
+  w.fill('cur', 'col', 4);                       // moving inside the line: transient
+  const u = w.undo();
+  assert.deepEqual(u.undone.map((x) => x.ids || x.id), [['l2']], 'the cursor moves are not what undo takes back');
+  assert.equal(w.has('l2'), false);
+  assert.deepEqual([w.has('cur'), w.get('cur').attrs.col], [true, ['4']], 'and they are kept');
+  // redo tells it again
+  const r = w.redo();
+  assert.deepEqual([r.ok, r.redone.map((x) => x.ids), w.has('l2')], [true, [['l2']], true]);
+  assert.equal(w.redo().violations[0].kind, 'nothing-to-redo');
+  // undo twice, redo twice
+  w.undo(2);
+  assert.deepEqual([w.has('l1'), w.has('l2')], [false, false]);
+  assert.equal(w.has('cur'), false, 'a transient wire that refers to a line that is gone cannot be told again');
+  w.redo(2);
+  assert.deepEqual([w.has('l1'), w.has('l2')], [true, true]);
+  // a new statement makes the undo final; a transient one does not
+  w.undo();
+  w.tell('@sel cursor name=selection');
+  assert.equal(w.redo().ok, true, 'telling transient state keeps the redo');
+  w.undo();
+  w.tell('@l3 line n=3 text="c"');
+  assert.equal(w.redo().violations[0].kind, 'nothing-to-redo');
+});

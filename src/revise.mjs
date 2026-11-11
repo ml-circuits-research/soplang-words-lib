@@ -131,32 +131,76 @@ export const revision = {
 
   /**
    * Take back the last statement, or the last n: what was told, filled, revised or done
-   * by an action, most recent first. A patch counts as one. The world is rebuilt from
-   * the statements that remain, so everything that followed from the undone ones goes
-   * too. Returns { ok, undone, removed, added, changed }: the statements taken back and
-   * what that did to the world. (A retraction is not a statement and is not undone by
-   * this; for an exact earlier state use mark and rewind.)
+   * by an action, most recent first. A patch counts as one. A statement that only told
+   * or changed wires of transient types (a selection, a cursor) does not count and is
+   * not taken back: it is told again after the others are gone, if it still can be. The
+   * world is rebuilt from the statements that remain, so everything that followed from
+   * the undone ones goes too. Returns { ok, undone, removed, added, changed }. What was
+   * undone can be told again with redo(). (A retraction is not a statement and is not
+   * undone by this; for an exact earlier state use mark and rewind.)
    */
   undo(n = 1, opts = {}) {
     return this._guard(opts, () => {
-      const steps = [];
-      for (let i = this.log.length - 1; i >= 0 && steps.length < n;) { // bounded: the log, from the end
-        let j = i;
-        while (this.log[i].group !== undefined && j > 0 && this.log[j - 1].group === this.log[i].group) j--; // bounded: one patch
-        steps.push({ from: j, to: i });
-        i = j - 1;
-      }
-      if (!steps.length) return { ok: false, undone: [], removed: [], added: [], changed: [], violations: [{ kind: 'nothing-to-undo', why: 'nothing has been told' }] };
-      const keep = steps.at(-1).from;
+      const steps = this._steps();
+      const undoing = [], kept = [];
+      let i = steps.length - 1;
+      for (; i >= 0 && undoing.length < n; i--) (steps[i].transient ? kept : undoing).unshift(steps[i]); // bounded: the steps
+      if (!undoing.length) return { ok: false, undone: [], removed: [], added: [], changed: [], violations: [{ kind: 'nothing-to-undo', why: 'nothing has been told' }] };
+      const keep = undoing[0].from;
       const next = new this.constructor(this.options);
       const refused = next._replay(this.log.slice(0, keep));
       if (refused) return { ok: false, undone: [], removed: [], added: [], changed: [], violations: refused.violations };
+      for (const st of kept) next._replay(this.log.slice(st.from, st.to + 1)); // transient state after them, where it still fits
       const was = this.fork();
-      const undone = this.log.slice(keep).reverse().map((e) => (e.op === 'tell' ? { op: 'tell', ids: e.wires.map((w) => w.id) } : { op: e.op, id: e.id, key: e.key, value: e.value }));
+      const entries = undoing.flatMap((st) => this.log.slice(st.from, st.to + 1));
+      const undone = [...entries].reverse().map((e) => (e.op === 'tell' ? { op: 'tell', ids: e.wires.map((w) => w.id) } : { op: e.op, id: e.id, key: e.key, value: e.value }));
+      const redo = this._redo || [];
       this._adopt(next, 'undo');
+      this._redo = [...redo, entries];
       const d = was.diff(this);
       return { ok: true, undone, removed: d.removed.map((x) => x.id), added: d.added.map((x) => x.id), changed: d.changed, violations: [] };
     }, (v) => ({ ok: false, undone: [], removed: [], added: [], changed: [], violations: [v] }));
+  },
+
+  /**
+   * Tell again what the last undo (or the last n) took back, as the statements they were.
+   * Any new statement that is not transient makes what was undone final. Returns
+   * { ok, redone, removed, added, changed, violations }.
+   */
+  redo(n = 1, opts = {}) {
+    return this._guard(opts, () => {
+      const stack = this._redo || [];
+      if (!stack.length) return { ok: false, redone: [], removed: [], added: [], changed: [], violations: [{ kind: 'nothing-to-redo', why: 'nothing has been undone since the last statement' }] };
+      const groups = stack.slice(-n).reverse();
+      const was = this.fork();
+      const mark = this.mark();
+      this._redoing = true;
+      let refused = null;
+      try {
+        for (const entries of groups) { refused = this._replay(entries); if (refused) break; } // bounded: the undone groups
+      } finally { this._redoing = false; }
+      if (refused) {
+        this.rewind(mark);
+        return { ok: false, redone: [], removed: [], added: [], changed: [], violations: refused.violations };
+      }
+      this._redo = stack.slice(0, stack.length - groups.length);
+      const redone = groups.flat().map((e) => (e.op === 'tell' ? { op: 'tell', ids: e.wires.map((w) => w.id) } : { op: e.op, id: e.id, key: e.key, value: e.value }));
+      const d = was.diff(this);
+      return { ok: true, redone, removed: d.removed.map((x) => x.id), added: d.added.map((x) => x.id), changed: d.changed, violations: [] };
+    }, (v) => ({ ok: false, redone: [], removed: [], added: [], changed: [], violations: [v] }));
+  },
+
+  /** The log as statements: { from, to, transient } (a patch is one statement). */
+  _steps() {
+    const transient = (e) => this._transientEntry(e);
+    const out = [];
+    for (let i = 0; i < this.log.length; i++) { // bounded: the log
+      let j = i;
+      while (this.log[i].group !== undefined && this.log[j + 1]?.group === this.log[i].group) j++; // bounded: one patch
+      out.push({ from: i, to: j, transient: this.log.slice(i, j + 1).every(transient) });
+      i = j;
+    }
+    return out;
   },
 
   /**

@@ -582,7 +582,22 @@ export class World {
     return this._bare(res);
   }
 
+  _transientEntry(e) {
+    const c = this._compiled();
+    if (!c.transient.size) return false;
+    const isT = (type) => c.lineage(type).some((t) => c.transient.has(t));
+    if (e.op === 'tell') return e.facts.length > 0 && e.facts.length === e.wires.length && e.wires.every((w) => isT(w.type));
+    const w = this.wires.get(this.resolve(e.id));
+    return !!w && isT(w.type);
+  }
+
   _logPush(entry) {
+    // a new statement makes what was undone final; looking around (transient state) does not
+    if (this._redo?.length && !this._redoing && !this._transientEntry(entry)) {
+      const redo = this._redo;
+      this._redo = [];
+      this._do(() => { this._redo = redo; });
+    }
     if (this._mine && !this._mine.has(this.log)) { this.log = [...this.log]; this._mine.add(this.log); } // shared with a fork
     this.log.push(entry);
     if (entry.op === 'tell') for (const id of entry.facts) this._logOf.set(id, entry); // bounded: the facts of one tell

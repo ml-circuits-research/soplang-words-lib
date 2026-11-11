@@ -209,6 +209,8 @@ export class World {
   revise(id: string, values: Record<string, string | number>, options?: Budgeted): Result & { revised?: Cell[] };
   /** take back the last n statements (a patch counts as one); the world is rebuilt from the rest */
   undo(n?: number, options?: Budgeted): { ok: boolean; undone: object[]; removed: string[]; added: string[]; changed: Difference['changed']; violations: Violation[] };
+  /** tell again what the last undo (or the last n) took back */
+  redo(n?: number, options?: Budgeted): { ok: boolean; redone: object[]; removed: string[]; added: string[]; changed: Difference['changed']; violations: Violation[] };
   /** a point to come back to; costs nothing until the world changes */
   mark(): { world: World; seq: number };
   /** make the world exactly what it was at the mark */

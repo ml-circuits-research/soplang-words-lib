@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="3d7f61cc1fbb">
+<meta name="source-hash" content="7a43c3d4ce7d">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -127,13 +127,22 @@ w.tell(&#x27;@pen item name=pen&#x27;);
 print(w.apply([{ id: &#x27;pen&#x27;, key: &#x27;price&#x27;, value: 2 }]).filled);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;id&quot;:&quot;pen&quot;,&quot;key&quot;:&quot;price&quot;,&quot;value&quot;:&quot;2&quot;,&quot;via&quot;:&quot;core.complete&quot;}]</code></pre></figure>
 <h3 id="worldundon--1-options">world.undo(n = 1, options?)</h3>
-<p>Takes back the last <code>n</code> statements. Returns <code>{ ok, undone, removed, added, changed, violations }</code>; <code>nothing-to-undo</code> when the log is empty. Retractions are not taken back (use a mark). Cost: O(h) changes, since the world is rebuilt from the statements that remain.</p>
+<p>Takes back the last <code>n</code> statements. Returns <code>{ ok, undone, removed, added, changed, violations }</code>; <code>nothing-to-undo</code> when the log is empty. Statements that only touched wires of <code>transient</code> types are passed over and kept. Retractions are not taken back (use a mark). Cost: O(h) changes, since the world is rebuilt from the statements that remain.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 w.tell(&#x27;@pen item name=pen price=2&#x27;);
 w.tell(&#x27;@ink item name=ink price=3&#x27;);
 const r = w.undo();
 print(r.ok, r.removed, w.has(&#x27;ink&#x27;));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true [&quot;ink&quot;] false</code></pre></figure>
+<h3 id="worldredon--1-options">world.redo(n = 1, options?)</h3>
+<p>Tells again what the last undo took back (or the last <code>n</code> undos), as the statements they were. Returns <code>{ ok, redone, removed, added, changed, violations }</code>; <code>nothing-to-redo</code> when nothing was undone since the last statement that is not transient. If a statement cannot be told again, nothing is, and the world stays as it was. Cost: that of telling the statements again.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2&#x27;);
+w.tell(&#x27;@ink item name=ink price=3&#x27;);
+w.undo();
+const r = w.redo();
+print(r.ok, r.redone, w.has(&#x27;ink&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true [{&quot;op&quot;:&quot;tell&quot;,&quot;ids&quot;:[&quot;ink&quot;]}] true</code></pre></figure>
 <h3 id="worldmark-and-worldrewindmark">world.mark() and world.rewind(mark)</h3>
 <p><code>mark()</code> returns a point to come back to (a fork: the world's next change copies only what it touches). <code>rewind(mark)</code> makes the world exactly what it was, and returns <code>{ ok, removed, added, changed }</code>. A mark can be used again.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();

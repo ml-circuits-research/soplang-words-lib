@@ -4,6 +4,31 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
 
 **The user's direction: sopworld is a general, useful library for self-consistent worlds of SOP Lang wires. It must be *compatible* with the PSys2 worlds, but it is not built *for* them.** Nothing PSys2-specific goes into the core: no PSys2 type names, no PSys2 envelope, no PSys2 file layout. Every feature below must make sense for any user of the library (a scheduler, a digital twin, a tutoring system, a game) and be documented with a neutral example. PSys2 is the first demanding user: its needs show what is missing, and a small compatibility suite (`compat/psys2/`) proves that such a system can sit on the library through its public, general mechanisms.
 
+## 2026-11-12 00:40 (reviewer): 0.8.0/0.8.1 validated; answers to Q15–Q18
+
+**Validated at 23f81b0 (0.8.1).**
+- `npm test`: 242 pass, 0 fail. Pilot 147/147, 212/217, 231/232. `git grep -i psys2 src/` is empty.
+- Benches:
+  - fork + first tell: 0.015–0.03 ms, flat up to 6,000 wires.
+  - `score`: 0.26 ms for one candidate, 5.8 ms for 100 candidates.
+  - lazy rules: a turn 0.01 ms against 1 ms eager, but a question that needs them takes 8–20 ms against 0.05 ms. That is the right trade only for structures that are rarely asked; say so in the docs next to `lazy=true`.
+- Namespaces with `::` and the Scope chapter (section 12) are accepted.
+- R7.1–R7.8 and R8 are accepted.
+
+The host is told to re-vendor at 23f81b0.
+
+**Answers. The user delegated language decisions to the reviewer, with the rule: nothing complicated, never one sign or construct with several meanings.**
+- **Q15: `priority=`, accepted.** It has no other use.
+- **Q16: no `expr=` in v1.2.** Your own analysis decides it: it brings a second notation, and `=` with a second meaning (or a new `==`). `between`, `sign` and `clamp` remove most of the measured case, and readers and abduction work on wires. Revisit only if a host shows a rule that still needs more than about 8 calc/check wires after the built-ins, with the example. Close Q16.
+- **Q17: (b) `core.word lang= text= means=` (and `of=` where needed), accepted.** One wire per meaning. A load warning when `means=` names nothing. Words are facts, so namespaces, sync and snapshots apply. Build it as Round 9 item 1 together with `interpret`.
+- **Q18: (a) no `role=` for now, accepted.** `means=type.key` carries it with one construct.
+
+**Round 9: from design to a usable reader core.** Do these in order, one commit each, with a release at the end.
+1. **`core.word` and `world.interpret(frame)`**, as in docs/design/formalization.md: words to candidate wires through the schema and the state, with nothing invented. Use a neutral example: shop and calendar, EN and RO words.
+2. **`score` ranking helpers.** A documented default order, as a function hosts can call: consistent first, then unique referents, then fewest missing required arguments, then fewest assumptions, then all words used. Each candidate also carries the explanation of its rank. A wrong reading must be explainable as to why it lost.
+3. **Segmentation candidates.** `interpret` of a frame list must be able to score alternative splits of one message into several frames, for "do X and Y" messages. One host found about 30 of 57 errors in English are compound messages split wrongly.
+4. **A generator sketch.** From actions, slots and words, produce example sentences per language (for tests and for a host's pattern generator). Templates come from the host; the library only supplies the slots and words to fill them.
+
 ## 2026-11-11 23:25 (reviewer): 0.7.1 validated; Round 7
 
 **0.7.1 (93362d7) validated.**

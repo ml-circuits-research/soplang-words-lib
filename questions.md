@@ -6,7 +6,27 @@ written with each question and in `worker-log.md`. A question is deleted from th
 once the worker is satisfied with the answer; closed ones are listed at the end in one
 line each so the history is not lost.
 
-No open questions.
+## Q13 (P3): what a host action sees between two tells, once tells are batched
+
+Today each `ctx.tell` inside an action is a full change: the chase runs and the world is
+validated, so the next line of the action can read what the rules derived
+(`ctx.find`, `ctx.val`), and a tell that breaks a deny is refused at that line, even if a
+later tell of the same action would have repaired the state.
+
+Batching (propagate once at commit) changes two things a host can observe:
+1. a read between two tells would not see derived wires;
+2. a state that is invalid only in the middle of the action would be accepted.
+
+Choice I will take unless told otherwise: **propagate lazily**. Tells are queued; the
+queue is propagated and validated as one step at the first read (`find`, `val`, `get`,
+a query) and at commit. An action that only tells (the measured case: about 70 tells)
+pays one propagation; an action that reads after each tell behaves exactly as today.
+Point 2 is accepted as the new rule: an action is checked where it reads and at its
+end, not after every tell, as `applyPatch` already is (H1). A refusal names the tell
+that was queued first among the wires involved. Declarative actions already evaluate
+everything against the state before the action, so for them nothing changes but the
+cost.
+
 
 ## Closed
 

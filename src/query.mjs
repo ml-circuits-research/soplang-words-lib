@@ -324,7 +324,8 @@ export const querying = {
         r = { status: 'conflicting', reason: str(list[0].attrs.why?.[0] || ''), issues: list.map((i) => i.id), alternatives: values.map((value) => ({ value, from: found.get(value).from })), from: from(values), via: via(values) };
       } else if (refused) {
         r = { status: 'refused', violations: refused, from: [...new Set(refused.flatMap((x) => x.support || []))] };
-      } else if (mode === 'list' && values.length) {
+      } else if ((mode === 'list' || (slot?.many && values.length > 1)) && values.length) {
+        // several values of a key that may hold several are one answer, not a conflict
         r = { status: 'supported', values, from: from(values), via: via(values) };
       } else if (values.length === 1 && found.get(values[0]).ties) {
         // the value was picked among several equally good ones: say so instead of choosing

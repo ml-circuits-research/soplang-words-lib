@@ -1573,3 +1573,16 @@ output identical to before Round 5. `docs/version.md`: 0.6.2, build b1133a1396f7
 built 2026-11-11.
 
 Next: Round 6 (R6.1–R6.12), in the order worker-tasks.md gives.
+
+## R6.1 — a multi-valued key answers with all its values in value mode — done
+
+`npm test`: 214 pass, 0 fail on sources and built file, 213 in checking mode. Pilot
+output identical (`diff` without timings: empty). The library spells a multi-valued
+slot `many=true`.
+
+- In value mode, several distinct values of a key whose slot says `many=true` are
+  `supported`, returned as `values` with their `from`, as `mode=list` already did; one
+  value is a plain `value`; a key without `many` keeps `conflicting`.
+- Test `query: a key that may hold several values answers with all of them in value mode;
+  a single-valued key still conflicts` (the habitat repro, one value, several wires, a
+  key without `many`). S50 in semantics.md states the rule and the reason.

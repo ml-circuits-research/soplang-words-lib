@@ -375,3 +375,18 @@ test('act: an action that reads after each tell gives exactly the results of tel
     assert.deepEqual(other.log.slice(-5).map((e) => [e.op, e.facts]), a.log.slice(-5).map((e) => [e.op, e.facts]), 'one log entry per tell, as before');
   }
 });
+
+test('query: a key that may hold several values answers with all of them in value mode; a single-valued key still conflicts', () => {
+  const w = new World();
+  w.load('@k core.slot of=animal key=habitat many=true\n@k2 core.slot of=animal key=name id=true');
+  w.tell('@a1 animal name=dog habitat=home habitat=farm  @a2 animal name=cat habitat=home  @a3 animal name=owl colour=brown colour=white');
+  const r = w.query({ type: 'animal', where: { name: 'dog' }, seek: 'habitat' });
+  assert.deepEqual([r.status, r.values, r.from], ['supported', ['home', 'farm'], ['a1']]);
+  assert.deepEqual(w.query({ about: 'a1', seek: 'habitat' }).values, ['home', 'farm']);
+  // one value of a multi-valued key is a plain value
+  assert.deepEqual(Object.entries(w.query({ about: 'a2', seek: 'habitat' })).filter(([k]) => ['status', 'value'].includes(k)), [['status', 'supported'], ['value', 'home']]);
+  // over several wires: every value, from every wire
+  assert.deepEqual(w.query({ type: 'animal', seek: 'habitat' }).values, ['home', 'farm']);
+  // a key not declared many keeps the old answer: several values are a conflict
+  assert.equal(w.query({ about: 'a3', seek: 'colour' }).status, 'conflicting');
+});

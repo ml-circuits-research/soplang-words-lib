@@ -296,10 +296,14 @@ came `from`, the rule or producer `via`, and the `tier`.
 *Tests:* `query: one value is supported, with the wires it came from`;
 `query: a derived value names its rule; a producer computes what no wire has`
 
-**S50.** `conflicting`: several distinct values (listed under `alternatives`), or one
-value that rests on a wire with a standing issue (`reason`, `issues`). With
-`mode=list` several values are `supported` and returned as `values`.
+**S50.** `conflicting`: several distinct values of a single-valued key (listed under
+`alternatives`), or one value that rests on a wire with a standing issue (`reason`,
+`issues`). Several values of a key declared `many=true`, and several values with
+`mode=list`, are `supported` and returned as `values`. *Why:* a key that may hold
+several values (habitats, tags) is answered by all of them; two values where one is
+expected are a contradiction to report.
 *Tests:* `query: several distinct values are conflicting, with the alternatives; mode=list returns them all`;
+`query: a key that may hold several values answers with all of them in value mode; a single-valued key still conflicts`;
 `soft constraints: the change is accepted, the problem stays on record, answers that rest on it say so`
 
 **S51.** `ambiguous`: one value that is the pick of a tie (S41), or several values that

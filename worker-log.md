@@ -2117,3 +2117,15 @@ a turn 0.01 ms, a question 8.77 ms.
   answers of eager rules` (60 random moves and pieces through a chain of two lazy rules
   and a deny: the same refusals and the same answers as an eager world; nothing stays).
   S11c, the core.rule entry of reference.md.
+
+## R7.6 — pure actions: dropped, below noise — done
+
+`node bench/pure.mjs` (600 wires; an action that reads no cell and tells one wire,
+against the same tell made directly; median of 301, second round, two runs): the
+action 0.0122 ms, the tell 0.0102–0.0103 ms, so the action's own cost is about
+0.002 ms. The library has no assumptions pass in `act` to skip (the only place that
+reads assumptions after a change is the retry of a refused tell, which a successful
+action never reaches); the cost is the context object and the queue. A `pure=` flag
+would save nothing measurable, so, as the task allows, the item is dropped and no
+attribute is added. The bench stays in `bench/pure.mjs` so the host can compare with
+what it measured.

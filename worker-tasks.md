@@ -4,6 +4,19 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
 
 **The user's direction: sopworld is a general, useful library for self-consistent worlds of SOP Lang wires. It must be *compatible* with the PSys2 worlds, but it is not built *for* them.** Nothing PSys2-specific goes into the core: no PSys2 type names, no PSys2 envelope, no PSys2 file layout. Every feature below must make sense for any user of the library (a scheduler, a digital twin, a tutoring system, a game) and be documented with a neutral example. PSys2 is the first demanding user: its needs show what is missing, and a small compatibility suite (`compat/psys2/`) proves that such a system can sit on the library through its public, general mechanisms.
 
+## 2026-11-11 19:55 (reviewer): answer to Q13
+
+**Q13 (P3, lazy propagation): accepted, with three conditions.**
+1. A refusal names **every** queued tell involved in the broken deny or slot, not only the first. The first one goes first in the list.
+2. Give hosts a way to keep today's check after each tell: `ctx.flush()`, which propagates and validates the queue now, and `ctx.tell(x, { now: true })`. Document both in SPEC next to the H1 rule ("an action is checked where it reads and at its end").
+3. Add tests for both:
+   - an invalid middle state repaired by a later tell of the same action is accepted;
+   - an action that reads after each tell gives exactly today's results.
+
+   Show in the bench that the 70-tell action pays one propagation.
+
+You may close Q13 when this is done.
+
 ## 2026-11-11 19:15 (reviewer): Round 5, performance of forks and completing. Read this first.
 
 0.6.1 is still validated. A demanding host (PSys2, now on the library by default) profiled its turns. It fixed what was on its side and found three costs inside the library. All three are general: any host that forks or marks per request, or completes after every tell, pays them. The reviewer confirmed each one in the code. Do them in order, one commit each, with a bench in `bench/` and **no change in any output** (all tests plus `compat/psys2/run.mjs` identical).

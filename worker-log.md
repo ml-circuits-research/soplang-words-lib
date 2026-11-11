@@ -2293,6 +2293,12 @@ clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
   statements with a role word, questions with the host's template `cât {verb} are
   {args}?`); every one reads back through interpret to the reading it expects; a
   function template with `all: true` writes the qty number.
-- `node bench/examples.mjs` (300 items, 40 people, 6 EN words): 8 examples in about
-  0.05 ms; all 8 read back with candidates.
+- `node bench/examples.mjs` (300 items, 40 people, 6 EN words): 8 examples in
+  0.054–0.073 ms (two runs), 0.080 ms with `bundle`; all 8 read back with candidates.
 - Docs: api.md `examples`, index.d.ts (`Template`, `Example`), design doc §4.
+
+## 0.9.0 — Round 9 released (version, changelog, rebuild; no tag)
+
+A minor version: `core.word` is new vocabulary and the default ranking order changed
+(Q19). `npm test` 252 / 252 / 251 (sources, built file, checking mode). Pilot 147/147,
+212/217, 231/232, output identical. Open for the reviewer: Q19.

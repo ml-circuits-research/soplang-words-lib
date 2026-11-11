@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.9.0
+
+Round 9: a reader core, from design to code.
+
+### New
+- `core.word lang= text= means= of=`: words of a language as facts, one meaning each;
+  an `unknown-word` warning when `means=` names nothing.
+- `world.words(lang)` and `world.interpret(frame)`: a language-neutral frame read into
+  candidates for `score` through words, the matrix and the state; nothing invented;
+  unknown words stay `unresolved`.
+- `rank(scored, criteria)` and `RANKING`: the default order as a function; every scored
+  candidate has `place` and `why` (and `lostTo`, `on`).
+- Splits: `interpret` of a list of frames (one split) or of lists (alternative splits);
+  `score` judges `{ parts }` in order as one whole.
+- `world.examples(lang, templates)`: example sentences from tools, slots and words with
+  the host's templates, each with the frame and reading it should give back.
+
+### Changes
+- The default order puts words left out before assumptions (Q19).
+
 ## 0.8.1
 
 Round 8: a design study on formalization.

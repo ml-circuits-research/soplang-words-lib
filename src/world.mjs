@@ -30,7 +30,8 @@ const NAMES = {
 const SAY = /\?([A-Za-z_][\w.\-]*)(?::([A-Za-z_][\w\-]*))?/g;
 const LIST = '\u0002'; // marks a list of values bound to one variable (the result of collect)
 const TIES = '\u0003ties';
-const NS = '?\u0005ns'; // the hidden variable that holds the namespace of a match // suffix of the hidden variable that holds the tied picks of an argmax or argmin
+const NS = '?\u0005ns';
+let VERSIONS = 0; // the last version given to a world of this process // the hidden variable that holds the namespace of a match // suffix of the hidden variable that holds the tied picks of an argmax or argmin
 
 function readModule(map, w) {
   const read = (spec) => (spec === undefined ? [] : spec === 'id' ? [w.id] : w.attrs[spec] || []);
@@ -69,6 +70,7 @@ export class World {
     // whose keys have the given values (it may return more; patterns check every value).
     this.facts = { ...facts };
     this._external = new Map(); // id -> wire, of the facts providers returned (a cache: they are pure)
+    this._version = ++VERSIONS; // see version
     this._nsUsed = false; // some fact is in a namespace: matches and identity stay inside one
     this.filters = {}; // how a reason writes a value: ?n:ordinal calls filters.ordinal(n); none built in, so no language is
     for (const [name, fn] of Object.entries(filters)) this.register('filter', name, fn);
@@ -663,6 +665,8 @@ export class World {
       if (!ok) return { ok, added: [], derived: [], filled: [], merged: [], removed: [], violations: res.violations };
     } else {
       for (const e of entry ? [].concat(entry) : []) this._logPush(e); // bounded: the entries of one call
+      // the version moves only when the world changed: not for a statement that adds nothing
+      if (res.added.length || res.derived.length || res.filled.length || res.removed.length || res.merged.length || res._revised || res._touchedChange) this._changed();
       this._commit();
     }
     res.ok = ok;
@@ -677,6 +681,14 @@ export class World {
     const w = this.wires.get(this.resolve(e.id));
     return !!w && isT(w.type);
   }
+
+  /**
+   * A token for the content of the world: equal in a world and a fork just made from it,
+   * unchanged by a statement that adds nothing, and new (never seen before in this
+   * process) after any change.
+   */
+  get version() { return this._version; }
+  _changed() { const old = this._version; this._version = ++VERSIONS; this._do(() => { this._version = old; }); }
 
   _logPush(entry) {
     // a new statement makes what was undone final; looking around (transient state) does not

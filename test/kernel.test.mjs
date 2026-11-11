@@ -550,3 +550,30 @@ test('violations: a variable with several values reaches a filter as one list', 
   assert.equal(v.why, 'ann has too much: pen, ink and cap (plain: pen, ink, cap)');
   assert.deepEqual(v.vars.names, ['pen', 'ink', 'cap']);
 });
+
+test('version: the same in a world and a fork just made, unchanged by a statement that adds nothing, new after any change', () => {
+  const w = new World();
+  w.load('@k core.slot of=a key=n id=true\n@d core.slot of=a key=v default=0');
+  w.tell('@x a n=1 v=2  @y a n=2');
+  const v = w.version;
+  const f = w.fork();
+  assert.equal(f.version, v, 'a fork is born with the version of its world');
+  w.tell('@x a n=1 v=2');
+  assert.equal(w.version, v, 're-telling what the world holds changes nothing');
+  assert.equal(w.tell('@z a n=3', { dry: true }).ok, true);
+  assert.equal(w.version, v, 'nor does a dry run, nor a refused change');
+  w.tell('@bad a n=1 v=9');
+  assert.equal(w.version, v);
+  const seen = new Set([v]);
+  for (const change of [(x) => x.tell('@z a n=3'), (x) => x.fill('y', 'v', 5), (x) => x.revise('y', 'v', 6), (x) => x.retract('z'), (x) => x.undo()]) {
+    change(w);
+    assert.ok(!seen.has(w.version), 'every change gives a version not seen before');
+    seen.add(w.version);
+  }
+  f.tell('@q a n=9');
+  assert.ok(!seen.has(f.version), 'and a fork that changes gets its own');
+  // assumptions of some wires only
+  w.complete({ defaults: true });
+  assert.deepEqual(w.assumptions(['x']), [], 'x was told its v');
+  assert.deepEqual(w.assumptions(['y', 'x']).map((a) => [a.id, a.key]), w.assumptions().filter((a) => ['x', 'y'].includes(a.id)).map((a) => [a.id, a.key]));
+});

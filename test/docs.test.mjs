@@ -128,7 +128,8 @@ test('docs: api.md, index.d.ts and the library agree on every export and every p
   for (const name of declared) assert.ok(exported.includes(name), `src/index.d.ts declares ${name}, which the library does not export`);
 
   // methods of a world
-  const own = (o) => Object.getOwnPropertyNames(o).filter((n) => !n.startsWith('_') && !['constructor', 'length', 'name', 'prototype'].includes(n));
+  // methods (accessors such as version are properties, documented with the properties)
+  const own = (o) => Object.getOwnPropertyNames(o).filter((n) => !n.startsWith('_') && !['constructor', 'length', 'name', 'prototype'].includes(n) && typeof Object.getOwnPropertyDescriptor(o, n).value === 'function');
   const methods = own(lib.World.prototype), statics = own(lib.World);
   const body = dts.slice(dts.indexOf('export class World {'));
   const cls = body.slice(0, body.indexOf('\n}\n'));

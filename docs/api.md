@@ -60,8 +60,12 @@ built-ins: `true` or names), `library` (module name to matrix text, for `core.us
 the question, answer and request wires and their keys).
 
 Properties: `wires` (Map of facts by id), `matrix` (Map of matrix wires by id), `log`
-(the statements), `warnings`, `stamp` (a number that changes with every committed
-change), `actions`, `producers`, `options`.
+(the statements), `warnings`, `version`, `stamp`, `actions`, `producers`, `options`.
+`version` is the token to cache by: a fork is born with its world's version, a statement
+that adds nothing (re-telling what the world holds), a dry run and a refused change
+leave it, and any change gives a version that no world of the process had before.
+`stamp` is internal (it identifies a state within one world, moves with every step of a
+transaction, and two forks may reuse a number for different states).
 
 Throws if `fns` would replace a built-in without `override`. Cost: constant.
 
@@ -711,12 +715,13 @@ print(e.told, e.fills.map((f) => [f.key, f.value, f.via, f.from]));
 true [["cost","6","r",["l1","pen"]]]
 ```
 
-### world.tier(id, key?) and world.assumptions()
+### world.tier(id, key?) and world.assumptions(ids?)
 
 `tier` is the certainty of a cell, or of a wire as a whole: `told`, `derived`,
 `forced`, `default`, `guessed` or a declared tier; undefined when there is no such
 cell. `assumptions()` lists every cell weaker than `derived`, weakest first:
-`[{ id, key, value, tier, dependants }]`.
+`[{ id, key, value, tier, dependants }]`; `assumptions(ids)` only what those wires rest
+on, with dependants among them, without a pass over the world.
 
 ```js run
 const w = shop();

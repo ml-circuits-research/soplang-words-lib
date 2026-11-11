@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Semantics</title>
-<meta name="source-hash" content="921671aecf3b">
+<meta name="source-hash" content="2e5b47fe5b50">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -99,6 +99,7 @@
 <p><strong>S60.</strong> <code>check()</code> without a patch validates every wire against the whole matrix and returns every violation and every standing issue; <code>describe()</code> and <code>diff()</code> return plain data. <em>Tests:</em> <code>check(): the whole world, every violation and every standing issue; World.audit for foreign wires</code>; <code>describe: a summary as plain data; diff: what another world changes</code></p>
 <h2 id="persistence-and-replay">Persistence and replay</h2>
 <p><strong>S61.</strong> The log holds the statements as they were made, not what the wires grew into. A world rebuilt from its snapshot (<code>toJSON</code> / <code>fromJSON</code>) equals the original. <em>Tests:</em> <code>the log keeps what was told, not what the wires grew into</code>; <code>persistence: a world is rebuilt from its JSON snapshot</code></p>
+<p><strong>S61a.</strong> <code>world.version</code> is the same in a world and a fork just made from it, is left by a statement that adds nothing, a dry run and a refused change, and is new after any change. <em>Why:</em> a host caches by it, and must not recompute for a fork or a repeated statement, nor reuse an answer for another state. <em>Test:</em> <code>version: the same in a world and a fork just made, unchanged by a statement that adds nothing, new after any change</code></p>
 <p><strong>S62.</strong> <code>told()</code> returns the facts as stated. Telling them again changes nothing; telling them to a new world with the same matrix gives the same world. <em>Test:</em> <code>told(): the facts as stated; telling them again changes nothing, telling them elsewhere gives the same world</code></p>
 <h2 id="invariants">Invariants</h2>
 <p>These hold between any two calls.</p>

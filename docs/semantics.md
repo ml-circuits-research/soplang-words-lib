@@ -446,6 +446,12 @@ into. A world rebuilt from its snapshot (`toJSON` / `fromJSON`) equals the origi
 *Tests:* `the log keeps what was told, not what the wires grew into`;
 `persistence: a world is rebuilt from its JSON snapshot`
 
+**S61a.** `world.version` is the same in a world and a fork just made from it, is left by
+a statement that adds nothing, a dry run and a refused change, and is new after any
+change. *Why:* a host caches by it, and must not recompute for a fork or a repeated
+statement, nor reuse an answer for another state.
+*Test:* `version: the same in a world and a fork just made, unchanged by a statement that adds nothing, new after any change`
+
 **S62.** `told()` returns the facts as stated. Telling them again changes nothing;
 telling them to a new world with the same matrix gives the same world.
 *Test:* `told(): the facts as stated; telling them again changes nothing, telling them elsewhere gives the same world`

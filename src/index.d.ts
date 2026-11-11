@@ -180,6 +180,8 @@ export interface Assumption extends Cell { cost?: number; dependants: { id: stri
 export class World {
   constructor(options?: WorldOptions);
   wires: Map<string, Wire>;
+  /** a token for the content: kept by forks being born and by statements that add nothing; new after any change */
+  readonly version: number;
   options: WorldOptions;
   fns: Record<string, Fn>;
   /** the matrix wires by id */
@@ -229,7 +231,8 @@ export class World {
   /** how solid a value is: told, derived, forced, default, guessed, or a tier the matrix declares */
   tier(id: string, key?: string): string | undefined;
   /** everything weaker than derived, weakest first, with the cells that rest on each */
-  assumptions(): Assumption[];
+  /** ids: only what these wires rest on */
+  assumptions(ids?: string | string[]): Assumption[];
   /** things that still work and will not, such as a pattern declared the old way (`?id type ...`) */
   warnings: { kind: string; id: string; why: string }[];
   /** steps of the last call, per site, and whether its budget ran out */

@@ -98,12 +98,14 @@ export const tiering = {
    * Everything in the world that is only assumed (weaker than derived), weakest first and,
    * among equals, the one most depends on first. Each entry lists the cells that rest on it.
    */
-  assumptions() {
+  // ids: only what these wires rest on (and dependants among them), without a pass over the world
+  assumptions(ids) {
     const c = this._compiled();
     const memo = new Map();
     const found = new Map();
     const floor = this._rank('derived');
-    for (const w of this.wires.values()) { // bounded: one pass over the cells of the world
+    const ws = ids ? [].concat(ids).map((id) => this._peek(id)).filter(Boolean) : this.wires.values();
+    for (const w of ws) { // bounded: one pass over the cells of the world, or of the wires given
       for (const key of [null, ...Object.keys(w.attrs)]) {
         const s = this._rests(w.id, key, memo);
         for (const [name, cell] of s.basis) {

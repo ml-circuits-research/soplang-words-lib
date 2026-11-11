@@ -2144,3 +2144,21 @@ output identical. `node tools/scan-loops.mjs src`: clean.
   calc and check wires; the cost is a second notation and a second meaning for `=`
   (avoidable with `==`). Recommendation: no `expr=` for now, built-ins where a pattern
   recurs; option (b) if hosts keep writing long chains. Nothing waits on it.
+
+## R7.8 — host API: assumptions(ids), a version to cache by — done
+
+`npm test`: 243 pass, 0 fail on sources and built file, 242 in checking mode. Pilot
+output identical. `node tools/scan-loops.mjs src`: clean. `tsc`: no errors.
+
+- `assumptions(ids)`: only what the given wires rest on (dependants among them), with no
+  pass over the world.
+- `world.version`: the same in a world and a fork just made from it; unchanged by a
+  statement that adds nothing (re-telling what the world holds), by a dry run and by a
+  refused change; after any change (tell, fill, revise, retract, replace, patch, undo,
+  sync) a number no world of the process had before, so two forks that change never
+  share one; a rewind takes the mark's version. `stamp` stays as it was and is now
+  documented as internal (it moves with every step and two forks may reuse a number).
+- Test `version: the same in a world and a fork just made, unchanged by a statement that
+  adds nothing, new after any change` (also checks `assumptions(ids)`). S61a, api.md
+  (properties; tier and assumptions), index.d.ts. The API docs test now treats getters
+  as properties.

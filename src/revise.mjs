@@ -5,7 +5,7 @@
 // Everything happens in one transaction, so a refused retraction changes nothing.
 
 // what two worlds share after fork(), until one of them changes
-const STATE = ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'events', 'seq', 'stamp', '_clock', '_lastOrder', '_c', '_logOf', '_fills', '_nsUsed'];
+const STATE = ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'events', 'seq', 'stamp', '_clock', '_lastOrder', '_c', '_logOf', '_fills', '_nsUsed', '_version'];
 
 import { parse, cloneWire } from './parser.mjs';
 import { CowMap, layer, layerList, sealState, CHECK } from './cow.mjs';
@@ -48,6 +48,7 @@ export const revision = {
     const removed = [...gone].filter((x) => !this.wires.has(x));
     this._logRemove(new Set(removed));
     this._event({ op: 'retract', ids: removed });
+    res._touchedChange = true;
     const out = this._finish(mark, res, false, null);
     out.removed = removed;
     return out;
@@ -131,6 +132,7 @@ export const revision = {
     this._shared = next._shared || null;
     this._pc = null;
     this.stamp = ++this._clock;
+    this._version = next._version; // a rebuilt world is new content (a rewind takes the mark's)
     const removed = gone ? gone.filter((x) => !this.wires.has(x)) : [...before].filter((x) => !this.wires.has(x));
     // rebuilt: the world was replaced as a whole, so the events before this one do not say
     // what changed (rewind then compares everything)
@@ -483,6 +485,7 @@ revision._replace = function _replace(id, input) {
   if (!successor) dead.add(id);
   this._logRemove(dead, successor, id);
   this._event({ op: 'replace', id, removed });
+  res._touchedChange = true;
   const rest = told.filter((w) => w !== successor);
   const entry = rest.length ? { op: 'tell', wires: rest, facts: facts.filter((x) => !successor || x !== id) } : null;
   const out = this._finish(mark, res, false, entry);

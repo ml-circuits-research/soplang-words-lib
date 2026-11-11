@@ -232,7 +232,7 @@ export class World {
   has(id: string): boolean;
   resolve(id: string): string;
   ofType(type: string): Wire[];
-  ask(query: string | Wire[], options?: Budgeted & { at?: number }): Record<string, string>[] & { budget?: BudgetViolation };
+  ask(query: string | Wire[], options?: Budgeted & { at?: number; /** match on the world as it would be with this patch */ given?: Patch }): Record<string, string>[] & { budget?: BudgetViolation };
   holds(query: string | Wire[], options?: Budgeted): boolean;
   open(id?: string): OpenKey[];
   suggest(id: string, key: string, options?: Budgeted & { deep?: boolean }): Candidate[] & { budget?: BudgetViolation };
@@ -248,14 +248,15 @@ export class World {
   satisfiable(options?: { solver?: Solver; budget?: number; limit?: Budget }): boolean;
   apply(assignment: Assignment[], options?: Budgeted & { via?: string }): Result;
   /** would these changes be accepted together? Applied in one scratch transaction and undone. */
-  check(patch: Patch, options?: Budgeted & { strict?: boolean }): Result;
+  /** with query/ask: also answer on the world with the patch (answer, rows); nothing changes */
+  check(patch: Patch, options?: Budgeted & { strict?: boolean; query?: Question | Wire | string; ask?: string | Wire[] }): Result & { answer?: QueryResult; rows?: Record<string, string>[] };
   /** without a patch: validate the whole world; every violation, and the standing issues */
   check(): { ok: boolean; violations: Violation[]; issues: { id: string; rule?: string; about: string[]; key?: string; why?: string }[] };
   /** check wires from somewhere else against a matrix */
   static audit(wires: string | Wire[], matrix?: string | Wire[], options?: WorldOptions): { ok: boolean; violations: Violation[]; issues: object[]; world: World };
   /** apply several changes that must hold together: all or nothing */
   applyPatch(patch: Patch, options?: Budgeted & { strict?: boolean }): Result;
-  query(question: Question | Wire | string, options?: Budgeted & { record?: boolean; suppose?: boolean; at?: number }): QueryResult;
+  query(question: Question | Wire | string, options?: Budgeted & { record?: boolean; suppose?: boolean; at?: number; /** answer on the world as it would be with this patch */ given?: Patch }): QueryResult;
   /** run fn against the world as it was at a point of the sequence */
   asOf<T>(at: number, fn: (world: World) => T, options?: Budgeted): T | undefined;
   seqOf(id: string): number | undefined;

@@ -1779,3 +1779,20 @@ output identical. `node tools/scan-loops.mjs src`: clean.
 - Test `text functions: matches with a bounded pattern, contains, starts_with,
   ends_with, lower`. Reference: a "Text" table with an executed example (the docs test
   checks the function tables against `builtins` both ways).
+
+## R6.11 — evaluate without telling: questions on the world plus a patch — done
+
+`npm test`: 223 pass, 0 fail on sources and built file, 222 in checking mode. Pilot
+output identical. `tsc --noEmit --strict src/index.d.ts`: no errors.
+
+- `check(patch)` already evaluated rules and denies on the world plus a patch and changed
+  nothing; what was missing was asking questions there. Now `check(patch, { query, ask })`
+  returns the change result plus `answer` (what `query` gives on the world with the
+  patch) and/or `rows` (what `ask` gives), and `query(q, { given: patch })` and
+  `ask(patterns, { given: patch })` answer on that hypothetical world directly. A patch
+  the world refuses gives `refused` with the violations. All of it runs in one
+  transaction that is undone: the wires, the stamp and the log are as before.
+- I used `given` on `query` and `ask` rather than adding `overlay: true` to `check`,
+  since `check` already has that meaning and the questions are what is new.
+- Test `patch: evaluate without telling: check(patch, { query, ask }) and query/ask with
+  given answer on the world plus the patch`. S59, the check entry of api.md, index.d.ts.

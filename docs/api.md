@@ -716,6 +716,13 @@ print(w.describe().types, w.diff(f).changed);
 With a patch: what `applyPatch(patch)` would return, without changing anything. Without
 one: validates the whole world and returns `{ ok, violations, issues }`.
 
+With `{ query }` or `{ ask }` (a question for `query`, patterns for `ask`) the patch is
+applied in a transaction that is then undone, and the result also has `answer` (what
+`query` gives on the world with the patch) or `rows` (what `ask` gives there). The same
+from the other side: `query(q, { given: patch })` and `ask(patterns, { given: patch })`
+answer on the world as it would be with the patch; a patch the world refuses gives the
+status `refused` with the violations. Nothing changes.
+
 ```js run
 const w = shop();
 w.tell('@pen item name=pen price=2');

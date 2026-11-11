@@ -214,3 +214,27 @@ test('patch: replace in place keeps the id and what refers to it, changes and dr
   w.retract('p1');
   assert.equal(w.log.some((e) => e.op === 'replace'), false);
 });
+
+test('patch: evaluate without telling: check(patch, { query, ask }) and query/ask with given answer on the world plus the patch', () => {
+  const w = new World();
+  w.load(`
+    @k core.slot of=item key=name id=true
+    @l line item=$i qty=?q
+    @i item price=?p
+    @c core.calc out=?t fn=mul args=?q args=?p
+    @t line core.on=$l total=?t
+    @r core.rule when=$l when=$i with=$c then=$t
+    @big core.check fn=gt args=?t args=100
+    @no core.deny when=$l when=$i with=$c if=$big why="?t is too much"
+  `);
+  w.tell('@pen item name=pen price=4');
+  const before = [w.toSOP({ derived: true }), w.stamp, w.log.length];
+  const r = w.check({ wires: '@l1 line item=$pen qty=3' }, { query: { about: 'l1', seek: 'total' }, ask: '@x line total=?t' });
+  assert.deepEqual([r.ok, r.answer.status, r.answer.value, r.rows], [true, 'supported', '12', [{ x: 'l1', t: '12' }]]);
+  assert.equal(w.query({ about: 'l1', seek: 'total' }, { given: { wires: '@l1 line item=$pen qty=5' } }).value, '20');
+  assert.deepEqual(w.ask('line total=?t', { given: { wires: '@l1 line item=$pen qty=2' } }), [{ t: '8' }]);
+  // a hypothesis the world refuses says why
+  const no = w.query({ about: 'l1', seek: 'total' }, { given: { wires: '@l1 line item=$pen qty=50' } });
+  assert.deepEqual([no.status, no.violations[0].why], ['refused', '200 is too much']);
+  assert.deepEqual([w.toSOP({ derived: true }), w.stamp, w.log.length], before, 'nothing changed');
+});

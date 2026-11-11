@@ -233,6 +233,11 @@ export const querying = {
    * wire (and the question wire, if it was not one already) with status and provenance.
    */
   query(q, opts = {}) {
+    if (opts.given) {
+      // on the world as it would be with these wires and values; nothing stays
+      const r = this.check(opts.given, { query: q });
+      return r.ok ? r.answer : { status: 'refused', violations: r.violations, from: [...new Set(r.violations.flatMap((x) => x.support || []))], wires: [] };
+    }
     return this._guard(opts, () => this._query(q, opts), (v) => ({ status: 'budget', ...v, from: [], wires: [] }));
   },
 

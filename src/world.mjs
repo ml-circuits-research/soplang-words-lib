@@ -121,6 +121,7 @@ export class World {
 
   /** Query with pattern wires. Returns one object of bindings per match. */
   ask(query, opts = {}) {
+    if (opts.given) return this.check(opts.given, { ask: query }).rows || [];
     return this._guard(opts, () => {
       if (opts.at !== undefined) return this.asOf(opts.at, () => this.ask(query));
       const pats = this._patterns(query);
@@ -363,6 +364,16 @@ export class World {
    */
   check(patch, opts = {}) {
     if (patch === undefined || patch === null) return this._guard(opts, () => this._audit(), (v) => ({ ok: false, violations: [v], issues: [] }));
+    if (opts.query || opts.ask) {
+      // evaluate on the world with the patch, and answer questions there; nothing stays
+      return this._guard(opts, () => this._trial(() => {
+        const r = this._patch(patch, { ...opts, query: undefined, ask: undefined });
+        if (!r.ok) return r;
+        if (opts.query) r.answer = this._query(opts.query, {});
+        if (opts.ask) r.rows = this.ask(opts.ask);
+        return r;
+      }), (v) => this._refusal(v));
+    }
     return this._guard(opts, () => this._patch(patch, { ...opts, dry: true }), (v) => this._refusal(v));
   }
 

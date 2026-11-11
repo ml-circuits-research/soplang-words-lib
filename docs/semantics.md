@@ -471,7 +471,8 @@ registers ([reference](reference.md#coredeny)).
 | `domain` | a value does not fit the kind, type, enum or bounds of its slot | any change |
 | `cardinality` | several values under a key that is not `many` | any change |
 | `unknown-key` | a key that a closed type does not declare | any change |
-| `dangling-ref` | a reference to a wire that does not exist | any change |
+| `dangling-ref` | a reference to a wire that does not exist; a retraction of a wire a `kind=ref` slot refers to | any change, `retract` |
+| `unique` | a value (or a set of values) that another wire of the type already has | any change |
 | `duplicate-id` | an id that another wire has | `tell` |
 | `variable` | a fact contains a variable | `tell` |
 | `schema` | the matrix is wrong: see the *Violations* of each type in the [reference](reference.md); also a module that the library does not have | `tell`, `load`, `use` |

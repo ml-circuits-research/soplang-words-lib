@@ -21,8 +21,8 @@ export const SCHEMA_TYPES = new Set([
  * The reference (docs/reference.md) is checked against this table.
  */
 export const GRAMMAR = {
-  'core.slot': ['of', 'key', 'required', 'many', 'id', 'prefix', 'kind', 'type', 'enum', 'default', 'ask', 'min', 'max', 'step', 'soft', 'combine', 'why'],
-  'core.type': ['of', 'extends', 'closed', 'complete', 'transient', 'shared'],
+  'core.slot': ['of', 'key', 'required', 'many', 'id', 'prefix', 'kind', 'type', 'enum', 'default', 'ask', 'min', 'max', 'step', 'soft', 'combine', 'why', 'to', 'unique'],
+  'core.type': ['of', 'extends', 'closed', 'complete', 'transient', 'shared', 'unique'],
   'core.namespace': ['prefix', 'open'],
   'core.schema.map': ['from', 'as'], // and one attribute per field it maps
   'core.use': ['world', 'prefix'],
@@ -81,6 +81,7 @@ const KINDS = {
   string: (v) => v[0] !== '$',
   atom: (v) => v[0] !== '$' && v[0] !== '"',
   any: () => true, // any literal or reference
+  ref: (v) => v[0] === '$', // a reference to a wire (kind=ref to=<type>)
   blob: (v) => v[0] !== '$' && v[0] !== '?', // opaque: kept as given, never indexed or matched
   json: (v) => jsonValue(v) !== undefined, // a structured value: a string whose text is JSON, within limits
   'time.clock': (v) => !!clock(v),
@@ -136,6 +137,7 @@ export function compileMatrix(world) {
     modules: new Map(),  // module name -> { wire, imports } for modules that declare themselves
     openPrefixes: ['core.'], // keys with these prefixes are always allowed and never shortened
     complete: new Set(),  // types whose instances are all known (closed world for existence)
+    uniqueSets: new Map(), // type -> [[keys]]: sets of keys whose values no two wires share
     shared: new Set(),    // types whose wires belong to every namespace (matched and merged across them)
     transient: new Set(), // types of state that is looked at, not edited (a selection, a cursor): undo passes over it
     producers: new Map(), // <type>.<key> -> functions that can compute the key when no wire has it
@@ -240,8 +242,16 @@ export function compileMatrix(world) {
         combine: get('combine'),
         soft: get('soft') === 'true', // a value outside min/max is accepted and kept as an issue
         why: get('why'), // the reason to give when a value is refused
+        unique: get('unique') === 'true', // no two wires of the type share a value
       };
       if (s.combine && !['intersect', 'override'].includes(s.combine)) c.errors.push(`${w.id}: combine must be intersect or override`);
+      // kind=ref to=T: the value is a reference to a wire of type T, and retracting that wire is refused
+      if (s.kinds.includes('ref')) {
+        s.ref = true;
+        s.kinds = s.kinds.filter((k) => k !== 'ref');
+        const to = get('to');
+        if (to) { s.type = to; s.refs = [to]; }
+      } else if (get('to') !== undefined) c.errors.push(`${w.id}: to= goes with kind=ref`);
       for (const k of ['min', 'max', 'step']) if (get(k) !== undefined && !s[k]) c.errors.push(`${w.id}: ${k} must be a number`);
       range(s);
       owns(w, 'slot of type', type);
@@ -265,6 +275,8 @@ export function compileMatrix(world) {
       if (f ? field(f.complete, w) === 'true' : flag(w, 'complete')) c.complete.add(name);
       if (!f && flag(w, 'transient')) c.transient.add(name);
       if (!f && flag(w, 'shared')) c.shared.add(name);
+      // unique=a unique=b: no two wires of the type share the values of these keys together
+      if (!f && w.attrs.unique) (c.uniqueSets.get(name) || c.uniqueSets.set(name, []).get(name)).push(w.attrs.unique.map((k) => c.shortKey?.(name, k) ?? k));
       if (ext && ext !== name) c.parent.set(name, ext);
     } else if (map?.as === 'module' || w.type === 'core.module') {
       const native = w.type === 'core.module';

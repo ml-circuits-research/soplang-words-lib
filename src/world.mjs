@@ -1533,6 +1533,18 @@ export class World {
     this._recordFiring(sig, rec);
   }
 
+  /** Another wire of the type (in the same namespace) whose keys hold these values, or null. */
+  _sharing(w, type, keys, values) {
+    const c = this._compiled();
+    const apart = this._nsUsed && !c.isShared(type);
+    for (const id of this.index.get(K(type, keys[0], this._iv(type, keys[0], values[0]))) || []) {
+      if (id === w.id || (apart && this._nsOf(id) !== this._nsOf(w.id))) continue;
+      const o = this._peek(id);
+      if (o && keys.every((k, i) => (o.attrs[k] || []).some((x) => this._same(type, k, x, values[i])))) return id;
+    }
+    return null;
+  }
+
   // identity merges only inside one namespace, unless the type is shared
   _findByIdentity(type, attrs, ns = '') {
     const c = this._compiled();
@@ -1745,6 +1757,13 @@ export class World {
             }
           }
         }
+        // unique=true: no other wire of the slot's type has this value (in its namespace)
+        if (s?.unique) {
+          for (const v of w.attrs[k]) {
+            const other = this._sharing(w, s.of, [k], [v]);
+            if (other) res.violations.push(s.why ? this._slotWhy(s, w, k, v, { kind: 'unique', id, key: k, value: v, with: other }) : { kind: 'unique', id, key: k, value: v, with: other, why: `${other} has the same ${k}` });
+          }
+        }
         // bookkeeping keys of an open namespace may point outside the world (a source, a pattern)
         if (!s && c.isOpenKey(k)) continue;
         for (const v of w.attrs[k]) {
@@ -1752,6 +1771,18 @@ export class World {
             const d = { kind: 'dangling-ref', id, key: k, value: v };
             res.violations.push(s?.why ? this._slotWhy(s, w, k, v, d) : d);
           }
+        }
+      }
+    }
+    // unique=a unique=b on a type: no two wires share these values together
+    if (c.uniqueSets.size) {
+      for (const id of res._touched) {
+        const w = this.wires.get(id);
+        if (!w) continue;
+        for (const t of c.lineage(w.type)) for (const keys of c.uniqueSets.get(t) || []) {
+          if (!keys.every((k) => w.attrs[k])) continue;
+          const other = this._sharing(w, t, keys, keys.map((k) => w.attrs[k][0]));
+          if (other) res.violations.push({ kind: 'unique', id, keys, with: other, why: `${other} has the same ${keys.join(' and ')}` });
         }
       }
     }

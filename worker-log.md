@@ -2054,3 +2054,20 @@ output identical. `node tools/scan-loops.mjs src`: clean. `tsc`: no errors.
 - Correction: 95cabba was pushed with one docs test failing (the printed `GRAMMAR`
   example in api.md did not yet show `priority`). Fixed in the next commit; `npm test`
   237 pass, 0 fail on both builds, 236 in checking mode; pilot identical.
+
+## R7.3 — integrity as slot kinds: kind=ref to=, unique= — done
+
+`npm test`: 238 pass, 0 fail on sources and built file, 237 in checking mode. Pilot
+output identical. `node tools/scan-loops.mjs src`: clean.
+
+- `core.slot ... kind=ref to=room`: the value must refer to a wire of type `room` (with
+  subtypes), refused with the slot's `why` if it has one (R7.2). A told wire whose
+  `kind=ref` slot refers to another makes the retraction of that other refused
+  (`dangling-ref`, "s1 still refers to r1") instead of spreading to it, which is what
+  plain references (and `type=`) do. `to=` without `kind=ref` is a `schema` error.
+- `unique=true` on a slot: no other wire of the slot's type (in the same namespace,
+  unless the type is shared) has that value. `core.type ... unique=row unique=col`: no two
+  wires share those values together. New violation kind `unique`, with `with` (the
+  other wire).
+- Test `slots: kind=ref to=<type> and unique= keep integrity without hand-written
+  denies`. Reference tables (core.slot, core.type, kinds), the violations table.

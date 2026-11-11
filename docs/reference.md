@@ -37,10 +37,13 @@ One key of one type: what it may hold, and whether it must be there.
 | `soft` | flag | false | | a value outside `min`/`max` is accepted and recorded as an issue |
 | `combine` | `intersect` \| `override` | none | | how this declaration combines with another of the same type and key |
 | `why` | string | none | | the reason to give when a value is refused; `?value`, `?key`, `?id`, `?type`, and filters as in [core.deny](#coredeny) |
+| `to` | type | none | | with `kind=ref`: the value must refer to a wire of this type |
+| `unique` | flag | false | | no two wires of the type (in one namespace) have the same value |
 
 Kinds: `integer`, `number` (integer or decimal), `boolean` (`true`, `false`), `string`
 (quoted), `atom` (a name), `quantity.<name>` (a number with a unit), `time.<name>`
-(`time.clock` 10:40, `time.date` 2026-01-30, any other name: an atom), `any`, `blob` and `json` (below). With
+(`time.clock` 10:40, `time.date` 2026-01-30, any other name: an atom), `any`, `ref` (a reference; with `to=T`, to a wire of type `T`, and a wire it refers to
+cannot be retracted while it does), `blob` and `json` (below). With
 several `kind` and `type` attributes the value must fit one of them.
 
 **Structured values.** Under a key whose slot says `kind=json` the value is a string whose
@@ -140,6 +143,7 @@ A type: what it extends, whether its keys and its instances are all known.
 | `closed` | flag | false | | wires of the type accept only declared keys |
 | `complete` | flag | false | | the world knows every wire of the type |
 | `transient` | flag | false | | state that is looked at, not edited (a selection, a cursor): `undo` passes over it |
+| `unique` | key | none | yes | no two wires of the type have the same values for these keys together |
 | `shared` | flag | false | | its wires belong to every [namespace](language.md#12-scope): matched and merged across them |
 
 **Meaning.** A wire of a type is also a wire of every type its type extends: patterns,

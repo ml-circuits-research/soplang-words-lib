@@ -378,3 +378,28 @@ test('slots: kind=json holds a structured value that patterns read by path, comp
   w.revise('b', 'center', quote(JSON.stringify({ lat: 46, tags: ['moved'] })));
   assert.deepEqual([w.get('b').attrs.north, w.get('b').attrs.first], [['yes'], ['"moved"']]);
 });
+
+test('slots: kind=ref to=<type> and unique= keep integrity without hand-written denies', () => {
+  const w = new World();
+  w.load(`
+    @k1 core.slot of=seat key=room kind=ref to=room why="?id is in ?value, which is not a room"
+    @k2 core.slot of=room key=name unique=true
+    @k3 core.slot of=seat key=row kind=integer
+    @k4 core.slot of=seat key=col kind=integer
+    @t core.type of=seat unique=row unique=col
+  `);
+  w.tell('@r1 room name=blue  @r2 room name=red  @x lamp');
+  assert.equal(w.tell('@s1 seat room=$r1 row=1 col=1').ok, true);
+  assert.equal(w.tell('@s2 seat room=$x row=1 col=2').violations[0].why, 's2 is in $x, which is not a room');
+  // a referenced wire cannot be retracted while something refers to it
+  const r = w.retract('r1');
+  assert.deepEqual([r.ok, r.violations[0].kind, r.violations[0].why, w.has('s1')], [false, 'dangling-ref', 's1 is in $r1, which is not a room', true]);
+  // unique values, alone and together
+  const u = w.tell('@r3 room name=blue');
+  assert.deepEqual([u.violations[0].kind, u.violations[0].with], ['unique', 'r1']);
+  assert.equal(w.tell('@s3 seat room=$r2 row=1 col=1').violations[0].why, 's1 has the same row and col');
+  assert.equal(w.tell('@s4 seat room=$r2 row=1 col=2').ok, true);
+  // what refers to it goes first, then it can go
+  w.retract('s1');
+  assert.equal(w.retract('r1').ok, true);
+});

@@ -72,9 +72,18 @@ export const revision = {
         for (const r of this.refs.get(x) || []) {
           const w = this.wires.get(r);
           if (!w || !this._dependsOn(w, x)) continue;
+          // a reference held by a kind=ref slot is integrity: the retraction is refused, not spread
+          const c = this._compiled();
+          const held = w.meta.told && Object.keys(w.attrs).find((k) => w.attrs[k].includes('$' + x) && c.slotOf(w.type, k)?.ref);
+          if (held) {
+            const s = c.slotOf(w.type, held), v = { kind: 'dangling-ref', id: r, key: held, value: '$' + x, why: `${r} still refers to ${x}` };
+            res.violations.push(s.why ? this._slotWhy(s, w, held, '$' + x, v) : v);
+            continue;
+          }
           if (w.meta.told) next.add(r); else res._touched.add(r);
         }
       }
+      if (res.violations.length) break;
       targets = [...next];
     }
     return gone;

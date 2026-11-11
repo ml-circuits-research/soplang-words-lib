@@ -302,9 +302,12 @@ test('composition: two different declarations of one key are a conflict unless o
   sub.load(`${a}\n@ty core.type of=u extends=t\n@k3 core.slot of=u key=color enum=green`);
   assert.deepEqual([sub.tell('@x u color=green').ok, sub.tell('@y t color=green').ok], [true, false]);
   // loaded as two modules, the same rule applies
-  const lib = new World({ library: { one: a, two: '@k2 core.slot of=t key=color enum=green' } });
+  const lib = new World({ library: { one: a.replace(/of=t\b/g, 'of=one.t'), two: '@k2 core.slot of=one.t key=color enum=green', three: '@k3 core.slot of=three.x key=color enum=green\n@k4 core.slot of=three.x key=color enum=green' } });
   assert.ok(lib.use('one').ok);
-  assert.equal(lib.use('two').ok, false);
+  const two = lib.use('two');
+  assert.equal(two.ok, false, 'a module may not declare a slot of another module\'s type');
+  assert.match(two.violations.map((v) => v.why).join(' '), /module two declares the slot of type one\.t, which is not under its own prefix two/);
+  assert.ok(lib.use('three').ok, 'equal declarations are one');
   // types and schema maps
   assert.match(new World().tell('@a core.type of=car extends=vehicle\n@b core.type of=car extends=toy').violations[0].why, /already declared by a with another parent/);
   assert.match(new World().tell('@m1 core.schema.map from=field key=name\n@m2 core.schema.map from=field key=label').violations[0].why, /already mapped differently by m1/);

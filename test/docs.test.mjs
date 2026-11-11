@@ -186,3 +186,23 @@ test('docs: nothing in the documentation speaks of an earlier state of the libra
   }
   assert.ok(existsSync(new URL('docs/version.md', root)));
 });
+
+test('docs: every statement of the Scope chapter of docs/language.md cites a test that exists', () => {
+  const dir = new URL('../test/', import.meta.url);
+  const names = new Set();
+  for (const f of readdirSync(dir)) {
+    if (!f.endsWith('.test.mjs')) continue;
+    for (const m of readFileSync(new URL(f, dir), 'utf8').matchAll(/^test\((['"`])(.*)\1, /gm)) names.add(m[2].replace(/\\(.)/g, '$1'));
+  }
+  const text = readFileSync(new URL('../docs/language.md', import.meta.url), 'utf8');
+  const scope = text.slice(text.indexOf('## 12. Scope'));
+  const statements = scope.split(/\n(?=\*\*SC\d+\.)/).slice(1);
+  assert.ok(statements.length >= 7);
+  for (const s of statements) {
+    const cited = [...s.matchAll(/`([^`]+)`/g)].map((m) => m[1]).filter((x) => names.has(x));
+    const claimed = [...s.matchAll(/\*Tests?:\*((?:\s*`[^`]+`;?)+)/g)].flatMap((m) => [...m[1].matchAll(/`([^`]+)`/g)].map((x) => x[1]));
+    assert.ok(claimed.length > 0, `${s.slice(0, 12)} names no test`);
+    for (const c of claimed) assert.ok(names.has(c), `${s.slice(0, 12)} cites a test that does not exist: ${c}`);
+    assert.ok(cited.length >= claimed.length);
+  }
+});

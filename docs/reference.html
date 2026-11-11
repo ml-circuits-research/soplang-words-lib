@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="0b4df027940b">
+<meta name="source-hash" content="f219521cc330">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -59,7 +59,7 @@ must be at most 100
 <h3 id="coretype">core.type</h3>
 <p>A type: what it extends, whether its keys and its instances are all known.</p>
 <p><strong>Syntax</strong></p>
-<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>of</code></td><td>type</td><td>required</td><td></td><td>the type declared</td></tr><tr><td><code>extends</code></td><td>type</td><td>none</td><td></td><td>its parent</td></tr><tr><td><code>closed</code></td><td>flag</td><td>false</td><td></td><td>wires of the type accept only declared keys</td></tr><tr><td><code>complete</code></td><td>flag</td><td>false</td><td></td><td>the world knows every wire of the type</td></tr><tr><td><code>transient</code></td><td>flag</td><td>false</td><td></td><td>state that is looked at, not edited (a selection, a cursor): <code>undo</code> passes over it</td></tr></tbody></table></div>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>of</code></td><td>type</td><td>required</td><td></td><td>the type declared</td></tr><tr><td><code>extends</code></td><td>type</td><td>none</td><td></td><td>its parent</td></tr><tr><td><code>closed</code></td><td>flag</td><td>false</td><td></td><td>wires of the type accept only declared keys</td></tr><tr><td><code>complete</code></td><td>flag</td><td>false</td><td></td><td>the world knows every wire of the type</td></tr><tr><td><code>transient</code></td><td>flag</td><td>false</td><td></td><td>state that is looked at, not edited (a selection, a cursor): <code>undo</code> passes over it</td></tr><tr><td><code>shared</code></td><td>flag</td><td>false</td><td></td><td>its wires belong to every <a href="language.html#12-scope">namespace</a>: matched and merged across them</td></tr></tbody></table></div>
 <p><strong>Meaning.</strong> A wire of a type is also a wire of every type its type extends: patterns, slots, rules, denies, effects and queries written for an ancestor apply to it. A type need not be declared to be used; declaring it adds the parent and the two flags. <code>complete</code> changes one answer: asking whether a wire of the type exists is <code>no</code> when none matches, where it would be <code>unknown</code>.</p>
 <p><strong>When it is evaluated.</strong> When the matrix is compiled; the hierarchy is then part of every index, so matching by an ancestor type costs the same as by the type itself.</p>
 <p><strong>Interactions.</strong> <em>Slots:</em> inherited, nearest declaration wins. <em>Negation:</em> <code>not=</code> and <code>core.absent=</code> do not need <code>complete</code>; they speak of what the world holds now. <em>Changing the hierarchy</em> re-indexes the facts.</p>
@@ -123,15 +123,38 @@ true [&quot;Which title?&quot;]</code></pre></figure>
 <div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>world</code></td><td>module name</td><td>required</td><td>yes</td><td>the module, a key of <code>new World({ library })</code></td></tr><tr><td><code>prefix</code></td><td><code>false</code></td><td>prefixed</td><td></td><td>load the ids as written</td></tr></tbody></table></div>
 <p><strong>Meaning.</strong> The text kept in the library under that name is told as part of the same change. Unless <code>prefix=false</code>, every id it declares, and every reference among them, gets the module name and a dot in front, so two modules cannot clash. A module is loaded once per world. <code>world.use(name)</code> is the same as telling this wire.</p>
 <p><strong>When it is evaluated.</strong> When it is told.</p>
-<p><strong>Interactions.</strong> A module may contain <code>core.use</code> wires. The composition rules for slots and types apply across modules.</p>
+<p><strong>Interactions.</strong> A module may contain <code>core.use</code> wires. The composition rules for slots and types apply across modules. A module declares types and slots only under its own name, and may limit what others read (<a href="#coremodule">core.module</a>).</p>
 <p><strong>Violations.</strong> <code>schema</code> (no such module); whatever the module's own wires raise.</p>
 <p><strong>Example</strong></p>
-<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World({ library: { units: &#x27;@k core.slot of=item key=weight kind=quantity.mass&#x27; } });
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World({ library: { units: &#x27;@k core.slot of=units.item key=weight kind=quantity.mass&#x27; } });
 print(w.use(&#x27;units&#x27;).ok, [...w.matrix.keys()]);
-print(w.tell(&#x27;@i item weight=heavy&#x27;).violations[0].why);</code></pre></figure>
+print(w.tell(&#x27;@i units.item weight=heavy&#x27;).violations[0].why);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true [&quot;use.units&quot;,&quot;units.k&quot;]
 must be quantity.mass</code></pre></figure>
 <p><strong>Limits.</strong> A module cannot be unloaded.</p>
+<h3 id="coremodule">core.module</h3>
+<p>A module that names itself: what it imports and what other modules may read.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>name</code></td><td>name</td><td>the wire's id</td><td></td><td>the module, and the prefix of its types</td></tr><tr><td><code>imports</code></td><td>module name</td><td>none</td><td>yes</td><td>modules of the library loaded with it, ids unchanged</td></tr><tr><td><code>exports</code></td><td>type</td><td>all its types</td><td>yes</td><td>the types other modules may read (<code>item</code> means <code>&lt;name&gt;.item</code>)</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> A module loaded from the library (by <code>core.use</code> or <code>imports</code>) may declare types and slots only under its own prefix: <code>shop</code> declares <code>shop.item</code>, not <code>item</code> and not <code>geo.place</code>. With <code>exports</code>, a rule or deny of another module may read only those types (and their subtypes) of this module. After modules are joined, a short key that two modules declare along one type's lineage is reported in <code>world.warnings</code> (<code>ambiguous-key</code>, with both qualified names). The same can be declared through a <a href="#coreschemamap">core.schema.map</a> with <code>as=module</code> (its <code>exports</code> field).</p>
+<p><strong>When it is evaluated.</strong> When the matrix is compiled.</p>
+<p><strong>Interactions.</strong> <em>Modules without exports:</em> every type is readable, as before. <em>Rules outside any module</em> (the host's own matrix) read everything. <em>Facts</em> are not in modules; they may be in <a href="language.html#12-scope">namespaces</a>.</p>
+<p><strong>Violations.</strong> <code>schema</code> (a type or slot outside the module's prefix, naming the module and the type; a rule that reads a type another module does not export, naming both modules; a module declared twice with other imports).</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const library = {
+  shop: &#x27;@m core.module name=shop exports=item\n@k core.slot of=shop.item key=price kind=number\n@s core.slot of=shop.secret key=code&#x27;,
+  tax: &#x27;@p shop.item price=?p\n@c core.calc out=?t fn=mul args=?p args=0.2\n@t shop.item core.on=$p tax=?t\n@r core.rule when=$p with=$c then=$t&#x27;,
+  spy: &#x27;@p shop.secret code=?c\n@n note code=?c\n@r core.rule when=$p then=$n&#x27;,
+  bad: &#x27;@k core.slot of=shop.item key=colour&#x27;,
+};
+const w = new World({ library });
+print(w.use(&#x27;shop&#x27;).ok, w.use(&#x27;tax&#x27;).ok);
+print(w.use(&#x27;spy&#x27;).violations[0].why);
+print(w.use(&#x27;bad&#x27;).violations[0].why);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true true
+spy.r: module spy reads shop.secret, which module shop does not export (exports=shop.item)
+bad.k: module bad declares the slot of type shop.item, which is not under its own prefix bad. (the prefix of module shop)</code></pre></figure>
+<p><strong>Limits.</strong> Exports name types, not keys.</p>
 <h2 id="saying-what-follows-and-what-cannot-be">Saying what follows and what cannot be</h2>
 <h3 id="corerule">core.rule</h3>
 <p>If the patterns match, the templates hold.</p>

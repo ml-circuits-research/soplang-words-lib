@@ -29,7 +29,8 @@ const NAMES = {
 // a variable in a reason, with an optional filter: ?n, ?n:ordinal
 const SAY = /\?([A-Za-z_][\w.\-]*)(?::([A-Za-z_][\w\-]*))?/g;
 const LIST = '\u0002'; // marks a list of values bound to one variable (the result of collect)
-const TIES = '\u0003ties'; // suffix of the hidden variable that holds the tied picks of an argmax or argmin
+const TIES = '\u0003ties';
+const NS = '?\u0005ns'; // the hidden variable that holds the namespace of a match // suffix of the hidden variable that holds the tied picks of an argmax or argmin
 
 function readModule(map, w) {
   const read = (spec) => (spec === undefined ? [] : spec === 'id' ? [w.id] : w.attrs[spec] || []);
@@ -46,9 +47,9 @@ export class World {
   constructor(options = {}) {
     const {
       fns = {}, library = {}, maxDepth = 12, maxSteps = 50000,
-      lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {}, budget = {}, decimals, actions = {}, producers = {}, filters = {}, facts = {}, override = false,
+      lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {}, budget = {}, decimals, actions = {}, producers = {}, filters = {}, facts = {}, override = false, ns,
     } = options;
-    this.options = { fns, actions, producers, filters, facts, override, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget, decimals };
+    this.options = { fns, actions, producers, filters, facts, override, ns, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget, decimals };
     this._cannot = null;          // reasons given by functions during a query (see cannot)
     this.warnings = [];           // things that still work and will not: { kind, id, why }
     this._reads = new WeakMap();  // bindings of a rule body -> the aggregated cells it read
@@ -68,6 +69,7 @@ export class World {
     // whose keys have the given values (it may return more; patterns check every value).
     this.facts = { ...facts };
     this._external = new Map(); // id -> wire, of the facts providers returned (a cache: they are pure)
+    this._nsUsed = false; // some fact is in a namespace: matches and identity stay inside one
     this.filters = {}; // how a reason writes a value: ?n:ordinal calls filters.ordinal(n); none built in, so no language is
     for (const [name, fn] of Object.entries(filters)) this.register('filter', name, fn);
     for (const [name, fn] of Object.entries(fns)) this.register('function', name, fn, { override });
@@ -131,13 +133,19 @@ export class World {
   ask(query, opts = {}) {
     if (opts.given) return this.check(opts.given, { ask: query }).rows || [];
     return this._guard(opts, () => {
-      if (opts.at !== undefined) return this.asOf(opts.at, () => this.ask(query));
+      if (opts.at !== undefined) return this.asOf(opts.at, () => this.ask(query, { ns: opts.ns }));
       const pats = this._patterns(query);
       const out = [];
-      for (const s of this._matchAll(pats, 0, EMPTY)) {
+      // in a namespace: references without one are in it, and only its wires match
+      if (opts.ns !== undefined) {
+        const q = (id) => (id.includes('::') ? id.replace(/^::/, '') : opts.ns ? `${opts.ns}::${id}` : id);
+        for (const p of pats) for (const k of Object.keys(p.attrs)) p.attrs[k] = p.attrs[k].map((v) => (v[0] === '$' && v[1] !== '?' ? '$' + q(v.slice(1)) : v));
+      }
+      const s0 = opts.ns !== undefined && this._nsUsed ? unify(NS, opts.ns, EMPTY) : EMPTY;
+      for (const s of this._matchAll(pats, 0, s0)) {
         const row = {};
         for (const p of pats) if (!p.anonymous) row[p.id] = walk('?' + p.id, s);
-        for (const k of bound(s)) if (!/^\?_\d+$/.test(k)) row[k.slice(1)] = walk(k, s);
+        for (const k of bound(s)) if (!/^\?_\d+$/.test(k) && !k.includes('\u0005')) row[k.slice(1)] = walk(k, s);
         out.push(row);
       }
       return out;
@@ -428,10 +436,10 @@ export class World {
     }, (v) => this._refusal(v));
   }
 
-  _patch(patch, { dry = false, strict = this.options.strict, via = 'core.tell', tier } = {}) {
+  _patch(patch, { dry = false, strict = this.options.strict, via = 'core.tell', tier, ns = this.options.ns } = {}) {
     this._knownTier(tier);
     const { wires = [], fills = [], sets = [], retract = [], replace = [] } = Array.isArray(patch) ? { fills: patch } : patch || {};
-    const ws = (typeof wires === 'string' ? parse(wires) : wires).map(cloneWire);
+    const ws = this._qualifyFacts((typeof wires === 'string' ? parse(wires) : wires).map(cloneWire), ns);
     const told = ws.map(cloneWire);
     const res = this._result();
     res._tier = tier;
@@ -529,9 +537,9 @@ export class World {
     return null;
   }
 
-  _tell(input, { dry = false, strict = this.options.strict, tier } = {}) {
+  _tell(input, { dry = false, strict = this.options.strict, tier, ns = this.options.ns } = {}) {
     this._knownTier(tier);
-    const wires = (typeof input === 'string' ? parse(input) : input).map(cloneWire);
+    const wires = this._qualifyFacts((typeof input === 'string' ? parse(input) : input).map(cloneWire), ns);
     const told = wires.map(cloneWire); // the log keeps what was said, not what it grew into
     const res = this._result();
     res._tier = tier;
@@ -913,6 +921,33 @@ export class World {
    * in the input, so that the facts told with them are read against the new matrix.
    * Returns the ids that are facts.
    */
+  /**
+   * Put the facts of a statement in a namespace: an id without one gets `ns::`, and so
+   * does a reference without one (a reference resolves in its own namespace; another is
+   * reached only when written out, `$other::x`, or `$::x` for the default one). Matrix
+   * wires are not in namespaces. Changes the wires in place.
+   */
+  _qualifyFacts(wires, ns) {
+    const written = wires.some((w) => w.id.includes('::') || Object.values(w.attrs).some((vs) => vs.some((v) => v[0] === '$' && v.includes('::'))));
+    if (!ns && !written) return wires;
+    const linked = new Set();
+    for (const w of wires) { const keys = NAMES[w.type]; if (keys) for (const k of keys) for (const v of w.attrs[k] || []) if (v[0] === '$') linked.add(v.slice(1)); }
+    const maps = this._compiled().maps;
+    const q = (id) => (id.startsWith('::') ? id.slice(2) : id.includes('::') || !ns ? id : `${ns}::${id}`);
+    let used = false;
+    for (const w of wires) {
+      if (w.pattern || SCHEMA_TYPES.has(w.type) || maps.has(w.type) || w.type === 'core.schema.map' || linked.has(w.id)) continue;
+      w.id = q(w.id);
+      if (w.id.includes('::')) used = true;
+      for (const k of Object.keys(w.attrs)) w.attrs[k] = w.attrs[k].map((v) => (v[0] === '$' && v[1] !== '?' ? '$' + q(v.slice(1)) : v));
+    }
+    if (used && !this._nsUsed) { this._nsUsed = true; this._do(() => { this._nsUsed = false; }); }
+    return wires;
+  }
+
+  /** The namespace of a wire id: what comes before ::, or '' for the default one. */
+  _nsOf(id) { const i = id.indexOf('::'); return i < 0 ? '' : id.slice(0, i); }
+
   _ingest(wires, res) {
     const facts = [];
     // A wire belongs to the matrix (as a pattern or a template) when a rule, deny, calc,
@@ -948,6 +983,7 @@ export class World {
       this._do(() => this.used.delete(name));
       const mod = parse(this.options.library[name]);
       const ws = prefixed ? prefixModule(mod, name) : mod.map(cloneWire);
+      for (const w of ws) Object.defineProperty(w, 'module', { value: name, enumerable: false }); // which module said it
       note(ws);
       wires.push(...ws);
     };
@@ -964,8 +1000,8 @@ export class World {
         const name = first(w, 'world');
         if (!name || !(name in this.options.library)) res.violations.push({ kind: 'schema', why: `${w.id}: no matrix named "${name}" in the library` });
         else load(name, first(w, 'prefix') !== 'false'); // prefix=false: the module's ids are already qualified
-      } else if (map?.as === 'module') { // a module that declares itself and what it imports
-        const self = readModule(map, w);
+      } else if (map?.as === 'module' || w.type === 'core.module') { // a module that declares itself and what it imports
+        const self = w.type === 'core.module' ? { name: first(w, 'name') || w.id, imports: w.attrs.imports || [] } : readModule(map, w);
         if (self.name && !this.used.has(self.name)) { this.used.add(self.name); this._do(() => this.used.delete(self.name)); }
         for (const name of self.imports) if (name in this.options.library) load(name, false);
       }
@@ -977,6 +1013,10 @@ export class World {
       this._do(() => { this._c = prev; });
       const c = this._compiled();
       for (const e of c.errors) res.violations.push({ kind: 'schema', why: e });
+      for (const a of c.ambiguous) {
+        if (this.warnings.some((x) => x.kind === 'ambiguous-key' && x.type === a.type && x.key === a.key)) continue;
+        this.warnings.push({ kind: 'ambiguous-key', type: a.type, key: a.key, names: a.names, why: `on ${a.type}, the key ${a.key} is declared by modules ${a.modules.join(' and ')}: ${a.names.join(' and ')}` });
+      }
       for (const u of c.unknown) {
         if (this.warnings.some((x) => x.kind === 'unknown-attribute' && x.id === u.id && x.key === u.key)) continue;
         this.warnings.push({ kind: 'unknown-attribute', id: u.id, key: u.key, why: `${u.type} does not read "${u.key}" (on ${u.id})` });
@@ -1023,7 +1063,7 @@ export class World {
       }
       w.attrs = attrs;
       facts.push(w.id);
-      const same = this._findByIdentity(w.type, w.attrs);
+      const same = this._findByIdentity(w.type, w.attrs, this._nsOf(w.id));
       if (same) {
         this._advance(w); // a statement about a wire that is already there happens at the place it declares
         if (res._tier && typeof res._tier === 'object') {
@@ -1079,9 +1119,16 @@ export class World {
    * Match one pattern against one wire. Keys with a single value (the usual case) are
    * unified in a plain loop; only a key with several values needs the branching generator.
    */
-  *_matchWire(p, w, s) {
-    if (p.paths) { yield* this._matchPaths(p, w, s); return; }
+  *_matchWire(p, w, s, cross = false) {
+    if (p.paths) { yield* this._matchPaths(p, w, s, cross); return; }
     if (p.type !== w.type && !this._compiled().isA(w.type, p.type)) return;
+    // one match is in one namespace: wires joined by values are of the same namespace
+    // (a wire reached by a written reference may be in another; shared types and a host's
+    // facts are in all)
+    if (this._nsUsed && !cross && !w.meta.external && !this._compiled().isShared(w.type)) {
+      s = unify(NS, this._nsOf(w.id), s);
+      if (!s) return;
+    }
     if (p.absent) for (const k of p.absent) if (w.attrs[k]) return;
     s = unify('?' + p.id, w.id, s);
     if (!s) return;
@@ -1102,10 +1149,10 @@ export class World {
   }
 
   /** A pattern that reads into structured values: the rest of the pattern, then each path. */
-  *_matchPaths(p, w, s) {
+  *_matchPaths(p, w, s, cross) {
     let rest = p._noPaths;
     if (!rest) { rest = Object.create(p, { paths: { value: null } }); Object.defineProperty(p, '_noPaths', { value: rest, enumerable: false }); }
-    next: for (let t of this._matchWire(rest, w, s)) {
+    next: for (let t of this._matchWire(rest, w, s, cross)) {
       for (const [key, path, pv] of p.paths) { // bounded: the paths of one pattern
         const v = jsonAt(w.attrs[key]?.[0], path);
         if (v === undefined) continue next;
@@ -1155,7 +1202,7 @@ export class World {
     if (this.facts[p.type]) { yield* this._externalCandidates(p, s, idv); return; }
     if (!isVar(idv)) {
       const w = this.wires.get(this.resolve(idv));
-      if (w) yield* this._matchWire(p, w, s);
+      if (w) yield* this._matchWire(p, w, s, true);
       return;
     }
     // start from the smallest set: all wires of the type, or those having a value the pattern fixes
@@ -1443,13 +1490,15 @@ export class World {
         const vals = t.attrs[k].map((v) => walk(v, s)).filter((v) => !hasVar(v)).flatMap((v) => (v[0] === LIST ? v.slice(1).split(LIST) : [v]));
         if (vals.length) attrs[k] = vals; // a value left unbound is an open key
       }
-      let target = t.on ? this.wires.get(this.resolve(walk(t.on, s))) : this._findByIdentity(t.type, attrs) || this._findSubsuming(t.type, attrs, c);
+      const ns = this._nsUsed ? walk(NS, s) : '';
+      const home = isVar(ns) ? '' : ns;
+      let target = t.on ? this.wires.get(this.resolve(walk(t.on, s))) : this._findByIdentity(t.type, attrs, home) || this._findSubsuming(t.type, attrs, c, home);
       if (t.on && !target) continue;
       if (target) {
         rec.hits.push(target.id);
         this._merge(target, attrs, prov, res);
       } else {
-        target = { id: `_${t.id}_${hash(sig)}`, type: t.type, attrs, pattern: false };
+        target = { id: `${home && !c.isShared(t.type) ? home + '::' : ''}_${t.id}_${hash(sig)}`, type: t.type, attrs, pattern: false };
         if (this.wires.has(target.id)) target.id += '_' + this.seq;
         const seq = this._event({ op: 'derive', id: target.id, wire: format(target), via: rule.id, from });
         this._addWire(target, { seq, via: rule.id, from, depth, cells, ...(prov.ties ? { ties: prov.ties } : {}) }, res);
@@ -1461,17 +1510,21 @@ export class World {
     this._recordFiring(sig, rec);
   }
 
-  _findByIdentity(type, attrs) {
-    const keys = this._compiled().idKeys.get(type);
+  // identity merges only inside one namespace, unless the type is shared
+  _findByIdentity(type, attrs, ns = '') {
+    const c = this._compiled();
+    const keys = c.idKeys.get(type);
     if (!keys || !keys.every((k) => attrs[k])) return null;
+    const apart = this._nsUsed && !c.isShared(type);
     for (const id of this.index.get(K(type, keys[0], this._iv(type, keys[0], attrs[keys[0]][0]))) || []) {
+      if (apart && this._nsOf(id) !== ns) continue;
       const w = this.wires.get(id);
       if (keys.every((k) => w.attrs[k] && this._same(type, k, w.attrs[k][0], attrs[k][0]))) return w;
     }
     return null;
   }
 
-  _findSubsuming(type, attrs, c) {
+  _findSubsuming(type, attrs, c, ns = '') {
     if (c.idKeys.get(type)?.every((k) => attrs[k])) return null;
     const keys = Object.keys(attrs);
     let best = this.byType.get(type);
@@ -1481,7 +1534,9 @@ export class World {
       if (!set || !set.size) return null;
       if (set.size < best.size) best = set;
     }
+    const apart = this._nsUsed && !c.isShared(type);
     for (const id of best) {
+      if (apart && this._nsOf(id) !== ns) continue;
       const w = this.wires.get(id);
       if (keys.every((k) => w.attrs[k] && attrs[k].every((v) => w.attrs[k].some((x) => this._same(type, k, x, v))))) return w;
     }

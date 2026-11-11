@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="814ff557eef9">
+<meta name="source-hash" content="85467ad08ba5">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -38,7 +38,7 @@
 };</code></pre></figure>
 <h2 id="making-a-world">Making a world</h2>
 <h3 id="new-worldoptions">new World(options?)</h3>
-<p>Options, all optional: <code>facts</code> (below), <code>fns</code>, <code>actions</code>, <code>producers</code>, <code>filters</code> (host functions by name; see <a href="#worldregisterkind-name-fn-options">register</a>), <code>override</code> (let <code>fns</code> replace built-ins: <code>true</code> or names), <code>library</code> (module name to matrix text, for <code>core.use</code>), <code>maxDepth</code> (12), <code>maxSteps</code> (rule firings per change), <code>budget</code>, <code>decimals</code>, <code>strict</code> (refuse a change that leaves no completion), <code>lookahead</code> (true), <code>solver</code>, <code>searchBudget</code>, <code>rank</code> (reorder suggestions and explanations), <code>vocabulary</code> (names of the question, answer and request wires and their keys).</p>
+<p>Options, all optional: <code>ns</code> (the <a href="language.html#12-scope">namespace</a> of every statement of this world), <code>facts</code> (below), <code>fns</code>, <code>actions</code>, <code>producers</code>, <code>filters</code> (host functions by name; see <a href="#worldregisterkind-name-fn-options">register</a>), <code>override</code> (let <code>fns</code> replace built-ins: <code>true</code> or names), <code>library</code> (module name to matrix text, for <code>core.use</code>), <code>maxDepth</code> (12), <code>maxSteps</code> (rule firings per change), <code>budget</code>, <code>decimals</code>, <code>strict</code> (refuse a change that leaves no completion), <code>lookahead</code> (true), <code>solver</code>, <code>searchBudget</code>, <code>rank</code> (reorder suggestions and explanations), <code>vocabulary</code> (names of the question, answer and request wires and their keys).</p>
 <p>Properties: <code>wires</code> (Map of facts by id), <code>matrix</code> (Map of matrix wires by id), <code>log</code> (the statements), <code>warnings</code>, <code>stamp</code> (a number that changes with every committed change), <code>actions</code>, <code>producers</code>, <code>options</code>.</p>
 <p>Throws if <code>fns</code> would replace a built-in without <code>override</code>. Cost: constant.</p>
 <p><strong>Facts the host keeps.</strong> <code>facts: { city: (where, world) =&gt; [...] }</code> gives the facts of a type from the host's own data (a large static table). A pattern of that type asks the provider with the values it fixes (<code>where</code>, keys to values, strings as their text) and matches what comes back like wires: <code>{ id, ...keys }</code> or <code>{ id, attrs }</code>, values as values or arrays. They are read in rules, denies, aggregates, queries and <code>ask</code>, are <code>told</code> for tiers, and are never stored, forked, logged or snapshotted. A provider must be pure and stable (the same answer for the same <code>where</code> for the life of the world: what a rule concluded from it is never re-examined), may return more than asked (every pattern value is checked), and should be bounded: each fact it returns costs one step of the budget, so a pattern that fixes nothing pages through the whole table under the budget. A rule needs a wire of the world to fire: a provider's facts alone start nothing. Returned facts are kept by id while the world lives. Cost: a city table of 1,000 rows takes 0.2 ms to build, against 28 ms as wires, and the snapshot is 1 kB instead of 113 kB (<code>node bench/facts.mjs</code>).</p>
@@ -65,7 +65,7 @@ print(World.diff(a, b).added.map((x) =&gt; x.id));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;x&quot;]</code></pre></figure>
 <h2 id="changing-a-world">Changing a world</h2>
 <h3 id="worldtellinput-options">world.tell(input, options?)</h3>
-<p>States wires: facts, matrix wires, or both. Options: <code>dry</code> (evaluate and undo), <code>strict</code>, <code>tier</code> (default <code>told</code>; a tier name for the whole statement, or <code>{ key: tier }</code> for some keys, which are then assumptions that <code>assumptions()</code> lists and a told value replaces), <code>budget</code>. Returns a change result. Cost: O(matches the new wires take part in) for the chase, plus validation of the touched wires; telling matrix wires recompiles the matrix and validates everything, O(n·r).</p>
+<p>States wires: facts, matrix wires, or both. Options: <code>dry</code> (evaluate and undo), <code>strict</code>, <code>tier</code> (default <code>told</code>; a tier name for the whole statement, or <code>{ key: tier }</code> for some keys, which are then assumptions that <code>assumptions()</code> lists and a told value replaces), <code>ns</code> (the facts go in that <a href="language.html#12-scope">namespace</a>: <code>b1</code> becomes <code>ns::b1</code>, a reference without a namespace points into it), <code>budget</code>. Returns a change result. Cost: O(matches the new wires take part in) for the chase, plus validation of the touched wires; telling matrix wires recompiles the matrix and validates everything, O(n·r).</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 const r = w.tell(&#x27;@pen item name=pen price=2  @l1 line item=$pen qty=3&#x27;);
 print(r.ok, r.added, r.filled);
@@ -78,8 +78,8 @@ must be at least 0</code></pre></figure>
 try { w.load(&#x27;@r core.rule when=$nothing then=$nothing&#x27;); } catch (e) { print(e.message); }</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>sopworld: refused (schema) r: when=$nothing is not a wire of the matrix</code></pre></figure>
 <h3 id="worldusename">world.use(name)</h3>
-<p>Loads the module <code>name</code> from the library; the same as telling a <code>core.use</code> wire. Returns a change result.</p>
-<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World({ library: { money: &#x27;@k core.slot of=price key=amount kind=number&#x27; } });
+<p>Loads the module <code>name</code> from the library; the same as telling a <code>core.use</code> wire. The module declares types and slots under its own name (see <a href="reference.html#coremodule">core.module</a>). Returns a change result.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World({ library: { money: &#x27;@k core.slot of=money.price key=amount kind=number&#x27; } });
 print(w.use(&#x27;money&#x27;).ok, w.matrix.has(&#x27;money.k&#x27;));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true true</code></pre></figure>
 <h3 id="worldfillid-key-value-options">world.fill(id, key, value, options?)</h3>
@@ -123,6 +123,7 @@ print(w.has(&#x27;pen&#x27;), w.has(&#x27;l1&#x27;));</code></pre></figure>
 false false</code></pre></figure>
 <h3 id="worldsynccollection-input-options">world.sync(collection, input, options?)</h3>
 <p>Makes a collection of told wires equal to a list, in one transaction. <code>collection</code> is a type (its told facts and those of its subtypes) or <code>{ prefix }</code> (the told facts whose id starts with it); <code>input</code> is SOP text or parsed wires. A wire with a new id is told; one whose content differs from what was told is replaced in place (its id, and the wires that refer to it, stay); one that is the same is left alone; a wire of the collection that is not in the list is retracted. Returns the change result with <code>told</code>, <code>replaced</code>, <code>retracted</code> and <code>same</code> (ids). All or nothing. <code>undo</code> takes back what it told and replaced; like any retraction, what it retracted is not undone (use a mark). Options: <code>strict</code>, <code>tier</code>, <code>budget</code>. Cost: one pass over the told wires, then the patch.</p>
+<p>With <code>{ ns }</code> the list is told in that namespace and the collection is its part.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 w.tell(&#x27;@pen item name=pen price=2  @ink item name=ink price=3&#x27;);
 const r = w.sync(&#x27;item&#x27;, &#x27;@pen item name=pen price=2  @ink item name=ink price=4  @cap item name=cap price=1&#x27;);
@@ -246,6 +247,7 @@ print(w.abduce(&#x27;@g line item=$pen qty=3 cost=12&#x27;).map((e) =&gt; e.fill
 <h2 id="asking">Asking</h2>
 <h3 id="worldaskquery-options">world.ask(query, options?)</h3>
 <p>Matches patterns (text; ids may be left out) against the facts and returns the bindings, one object per match: <code>[{ variable: value }]</code>. A pattern's own id binds to the matched wire's id. Option <code>at</code>: as of that place in the sequence. On budget: the matches so far, with a <code>budget</code> property. Cost: O(m), using the indexes for fixed values.</p>
+<p>With <code>{ ns }</code> the patterns see only that namespace, and a reference without a namespace points into it. The same option on <code>query</code>.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 w.tell(&#x27;@pen item name=pen price=2  @ink item name=ink price=3&#x27;);
 print(w.ask(&#x27;@x item name=?n price=3&#x27;));</code></pre></figure>

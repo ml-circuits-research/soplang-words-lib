@@ -213,15 +213,18 @@ export const querying = {
   },
 
   /** The wires a question is about: the one it names, or those of its type that meet the constraints. */
-  _matching({ type, where = {}, about }) {
-    if (about) { const w = this.get(about); return w ? [w] : []; }
+  _matching({ type, where = {}, about, ns }) {
+    // in a namespace: an id or a reference without one is in it, and only its wires match
+    const q = (id) => (ns === undefined || id.includes('::') ? id.replace(/^::/, '') : ns ? `${ns}::${id}` : id);
+    if (about) { const w = this.get(q(about)); return w ? [w] : []; }
     if (!type) return [];
     const c = this._compiled();
     const attrs = {};
-    for (const k of Object.keys(where)) attrs[c.shortKey(type, k)] = [this._norm(String(where[k]))];
+    for (const k of Object.keys(where)) { const v = String(where[k]); attrs[c.shortKey(type, k)] = [this._norm(v[0] === '$' && v[1] !== '?' ? '$' + q(v.slice(1)) : v)]; }
     const seen = new Set();
     const out = [];
-    for (const s of this._matchAll([{ id: 'q', type, attrs, pattern: true }], 0, EMPTY)) {
+    const s0 = ns !== undefined && this._nsUsed ? unify('?\u0005ns', ns, EMPTY) : EMPTY;
+    for (const s of this._matchAll([{ id: 'q', type, attrs, pattern: true }], 0, s0)) {
       const id = walk('?q', s);
       if (!seen.has(id)) { seen.add(id); out.push(this.wires.get(id) || this._external.get(id)); }
     }
@@ -242,9 +245,10 @@ export const querying = {
   },
 
   // bounded: calls itself once, without `at`
-  _query(q, { record = false, suppose = true, at } = {}) {
-    if (at !== undefined) return this.asOf(at, () => this._query(q, { suppose }));
+  _query(q, { record = false, suppose = true, at, ns } = {}) {
+    if (at !== undefined) return this.asOf(at, () => this._query(q, { suppose, ns }));
     const question = this._question(q);
+    if (ns !== undefined) question.ns = ns;
     const c = this._compiled();
     const { seek, mode } = question;
     const wires = this._matching(question);
@@ -307,8 +311,9 @@ export const querying = {
         this._trial(() => {
           const attrs = {};
           for (const k of Object.keys(question.where)) attrs[c.shortKey(type, k)] = [String(question.where[k])];
-          const id = this._freshId('suppose');
-          const res = this._tell([{ id, type, attrs, pattern: false }], { strict: false });
+          const space = question.ns ?? this.options.ns;
+          const id = (space ? `${space}::` : '') + this._freshId('suppose');
+          const res = this._tell([{ id, type, attrs, pattern: false }], { strict: false, ns: space });
           if (!res.ok) { refused = res.violations.map((x) => ({ ...x, wires: (x.wires || []).filter((y) => y !== id), support: (x.support || []).filter((y) => y !== id) })); return; }
           // the supposed wire as the rules left it: everything they set on it, not only the key asked for
           const sw = this.get(id);
@@ -488,7 +493,7 @@ export const querying = {
       tell: (input, { now = false } = {}) => {
         const index = told++;
         if (now) { flush(); return guard(this.tell(input)); }
-        const wires = (typeof input === 'string' ? parse(input) : input).map(cloneWire);
+        const wires = this._qualifyFacts((typeof input === 'string' ? parse(input) : input).map(cloneWire), this.options.ns);
         queue.push({ index, wires, told: wires.map(cloneWire) });
         return { ok: true, queued: true, added: [], derived: [], filled: [], merged: [], removed: [], violations: [] };
       },

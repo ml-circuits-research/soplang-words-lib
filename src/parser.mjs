@@ -35,6 +35,8 @@ export class SopError extends Error {
 // An identifier: segments of [A-Za-z0-9_-] joined by single dots; the first segment starts
 // with a letter or "_", a later one with a letter, a digit or "_" (q.2). ASCII only.
 const IDENT = /^[A-Za-z_][A-Za-z0-9_-]*(?:\.[A-Za-z0-9_][A-Za-z0-9_-]*)*$/;
+// The id of a wire, and a reference, may name a namespace: shop::b1; ::b1 is the default one.
+const QID = /^(?:(?:[A-Za-z_][A-Za-z0-9_-]*(?:\.[A-Za-z0-9_][A-Za-z0-9_-]*)*)?::)?[A-Za-z_][A-Za-z0-9_-]*(?:\.[A-Za-z0-9_][A-Za-z0-9_-]*)*$/;
 const QUOTED = /["\\\n]/g;
 const ESCAPES = { '"': '"', '\\': '\\', '/': '/', b: '\b', f: '\f', n: '\n', r: '\r', t: '\t' };
 
@@ -145,7 +147,7 @@ export function parse(text, { anonymous = false, lenient = false } = {}) {
       const id = t.slice(1);
       const ty = toks[i + 1];
       if (!id) fail('a declaration without an id', at);
-      else if (!IDENT.test(id)) fail(`invalid identifier "${id}" as the id of a wire`, at);
+      else if (!QID.test(id)) fail(`invalid identifier "${id}" as the id of a wire`, at);
       else if (seen.has(id) && !lenient) fail(`the id "${id}" is declared twice in this text`, at);
       seen.add(id);
       if (!ty || ty.t[0] === '@' || ty.t.includes('=')) { fail(`wire ${t} has no type`, at); cur = { id, type: '', attrs: {}, pattern: false }; continue; }
@@ -174,7 +176,7 @@ export function parse(text, { anonymous = false, lenient = false } = {}) {
       if (textOf === null) { fail(`a bad escape in the string of "${key}" (the escapes are those of JSON)`, at); continue; }
       value = JSON.stringify(textOf);
     } else if (value[0] === '$') {
-      if (!IDENT.test(value.slice(value[1] === '?' ? 2 : 1))) { fail(`invalid identifier in the reference ${value}`, at); continue; }
+      if (!(value[1] === '?' ? IDENT : QID).test(value.slice(value[1] === '?' ? 2 : 1))) { fail(`invalid identifier in the reference ${value}`, at); continue; }
     } else if (value[0] === '?') {
       if (!IDENT.test(value.slice(1))) { fail(`invalid identifier in the variable ${value}`, at); continue; }
     }

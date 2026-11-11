@@ -1971,3 +1971,48 @@ output identical. `node tools/scan-loops.mjs src`: clean.
 output identical. `docs/version.md`: 0.7.1, build 08e2627de8d4, built 2026-11-11.
 
 Round 6 as written so far is done. Nothing is open in `questions.md`.
+
+## R7.9 — namespaces, ownership of names, exports, ambiguity, the Scope chapter — done
+
+`npm test`: 235 pass, 0 fail on sources and built file, 234 in checking mode. Pilot
+output identical. `node tools/scan-loops.mjs src`: clean. `tsc`: no errors. Benches
+unchanged (`bench/fork.mjs` 6,000 wires: fork + first tell 0.014 ms; the namespace
+check costs nothing until some fact is in a namespace).
+
+Separator: `::`, the user's answer to Q14 (`:` already meant a filter in reasons and was
+part of clock times). The question went through questions.md; the user asked that from
+now on questions go to the reviewer only.
+
+1. **Fact namespaces.** `tell(text, { ns })`, `new World({ ns })`; also `applyPatch`,
+   `sync`, the tells of an action, and the wire a query supposes. Ids become `ns::id`; a
+   reference without a namespace points into the statement's namespace; `$other::x`
+   reaches another, `$::x` the default one. One match of a rule, deny or question is in
+   one namespace: a hidden binding carries the namespace through the match, so wires
+   joined by a value must share it; a wire reached through a written reference may be
+   in another. Identity merges only inside one namespace. `core.type ... shared=true`
+   and facts from a host's provider belong to every namespace. Derived wires are named
+   in the namespace of their match. `query`/`ask` take `{ ns }`. Snapshots, marks, forks
+   and rewind carry it (the log holds the qualified ids). Parser: `::` is allowed once
+   in an id or a reference; types and keys cannot carry it.
+2. **Ownership of names.** A module loaded from the library (by `core.use` or
+   `imports`) may declare types and slots only under its own prefix; otherwise a
+   `schema` violation naming the module and the type (and the module whose prefix it
+   is). Two examples in the docs declared unprefixed types in a module and were updated.
+3. **Exports.** New `core.module name= imports= exports=` (and an `exports` field on a
+   `core.schema.map as=module`). A rule or deny of another module may read only the
+   exported types and their subtypes; the host's own matrix reads everything; a module
+   without `exports` exports all its types, as before.
+4. **Ambiguity.** After compiling, a short key that two modules declare along one type's
+   lineage is a warning `ambiguous-key` with both qualified names.
+5. **Scope.** docs/language.md section 12: seven statements (rule, question, statement,
+   facts vs matrix, namespace, world, module), each citing its test; a docs test checks
+   the citations. Section 11 (v1 → v1.1) gains a line for namespaces.
+
+Tests (test/scope.test.mjs): `scope: a variable is local to its rule or question...`,
+`scope: facts in different namespaces are never joined by value nor merged by identity;
+written references and shared types cross`, `scope: a world given a namespace puts
+every statement in it...`, `modules: ownership of names, exports, and a warning for keys
+two modules declare`; the composition test now also checks ownership.
+
+Limits stated in the docs: a `core.aggregate` with no anchor counts across namespaces;
+anchor it (a rule over a wire of the namespace) to count within one.

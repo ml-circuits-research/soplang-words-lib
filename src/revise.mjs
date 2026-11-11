@@ -5,7 +5,7 @@
 // Everything happens in one transaction, so a refused retraction changes nothing.
 
 // what two worlds share after fork(), until one of them changes
-const STATE = ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'events', 'seq', 'stamp', '_clock', '_lastOrder', '_c', '_logOf', '_fills'];
+const STATE = ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'events', 'seq', 'stamp', '_clock', '_lastOrder', '_c', '_logOf', '_fills', '_nsUsed'];
 
 import { parse, cloneWire } from './parser.mjs';
 import { CowMap, layer, layerList, sealState, CHECK } from './cow.mjs';
@@ -118,7 +118,7 @@ export const revision = {
   _adopt(next, op, gone = null) {
     const before = gone ? null : new Set(this.wires.keys());
     if (this._shared) this._shared.holders--;
-    for (const k of ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'seq', '_c', '_logOf', '_fills', '_lastOrder']) this[k] = next[k];
+    for (const k of ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'seq', '_c', '_logOf', '_fills', '_lastOrder', '_nsUsed']) this[k] = next[k];
     this._shared = next._shared || null;
     this._pc = null;
     this.stamp = ++this._clock;
@@ -206,9 +206,11 @@ export const revision = {
       const c = this._compiled();
       const { type, prefix } = typeof collection === 'string' ? { type: collection } : collection || {};
       if (!type && !prefix) throw new Error('sync: name a type, or { prefix }');
-      const given = (typeof input === 'string' ? parse(input) : input || []).map(cloneWire);
+      const ns = opts.ns ?? this.options.ns;
+      const given = this._qualifyFacts((typeof input === 'string' ? parse(input) : input || []).map(cloneWire), ns);
       const stated = new Map(this.told().map((w) => [w.id, w]));
-      const inside = (w) => (type ? c.isA(w.type, type) : w.id.startsWith(prefix));
+      // in a namespace, the collection is that namespace's part of it
+      const inside = (w) => (type ? c.isA(w.type, type) : w.id.startsWith(prefix)) && (ns === undefined || this._nsOf(w.id) === (ns || ''));
       const ids = new Set(given.map((w) => w.id));
       const out = { told: [], replaced: [], retracted: [], same: [] };
       const patch = { wires: [], replace: [], retract: [] };

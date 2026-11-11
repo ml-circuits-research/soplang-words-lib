@@ -138,6 +138,8 @@ export interface WorldOptions {
   actions?: Record<string, (context: any, args: Record<string, string>) => unknown>;
   /** functions that compute a key on demand: (context) => value */
   producers?: Record<string, (context: any) => unknown>;
+  /** the namespace of every statement of this world */
+  ns?: string;
   /** facts the host keeps itself: facts[type](where) returns wires of that type ({ id, ...keys }); never stored, forked or logged */
   facts?: Record<string, (where: Record<string, string>, world: World) => ({ id: string; attrs?: Record<string, unknown>; [key: string]: unknown })[]>;
   /** how a reason writes a value: ?n:name calls filters[name](value, { world, name }) */
@@ -157,7 +159,7 @@ export type Site = 'match' | 'chase' | 'negation' | 'aggregate' | 'fluent' | 'wi
 export interface BudgetViolation { kind: 'budget'; site: Site; steps: number; why: string }
 export interface Stats { steps: number; limit: number; exhausted: boolean; site: Site | null; sites: Record<Site, number>; ms: number }
 export interface Budgeted { budget?: Budget }
-export interface ChangeOptions extends Budgeted { dry?: boolean; strict?: boolean; /** how sure this statement is (default: told): one tier, or one per key ({ kind: "default" }) */ tier?: string | Record<string, string> }
+export interface ChangeOptions extends Budgeted { dry?: boolean; strict?: boolean; /** the namespace of the facts told */ ns?: string; /** how sure this statement is (default: told): one tier, or one per key ({ kind: "default" }) */ tier?: string | Record<string, string> }
 export interface Description {
   types: Record<string, { count: number; instances: string[] }>;
   wires: Record<string, { type: string; tier: string; via?: string; keys: Record<string, { value: string | string[]; tier: string }> }>;
@@ -212,7 +214,7 @@ export class World {
   /** take back the last n statements (a patch counts as one); the world is rebuilt from the rest */
   undo(n?: number, options?: Budgeted): { ok: boolean; undone: object[]; removed: string[]; added: string[]; changed: Difference['changed']; violations: Violation[] };
   /** make the told facts of a type (or with { prefix }, of an id prefix) equal to a list, in one transaction */
-  sync(collection: string | { type?: string; prefix?: string }, input: string | Wire[], options?: Budgeted & { strict?: boolean; tier?: string }): Result & { told?: string[]; replaced?: string[]; retracted?: string[]; same?: string[] };
+  sync(collection: string | { type?: string; prefix?: string }, input: string | Wire[], options?: Budgeted & { strict?: boolean; tier?: string; ns?: string }): Result & { told?: string[]; replaced?: string[]; retracted?: string[]; same?: string[] };
   /** tell again what the last undo (or the last n) took back */
   redo(n?: number, options?: Budgeted): { ok: boolean; redone: object[]; removed: string[]; added: string[]; changed: Difference['changed']; violations: Violation[] };
   /** a point to come back to; costs nothing until the world changes */
@@ -236,7 +238,7 @@ export class World {
   has(id: string): boolean;
   resolve(id: string): string;
   ofType(type: string): Wire[];
-  ask(query: string | Wire[], options?: Budgeted & { at?: number; /** match on the world as it would be with this patch */ given?: Patch }): Record<string, string>[] & { budget?: BudgetViolation };
+  ask(query: string | Wire[], options?: Budgeted & { at?: number; /** only this namespace */ ns?: string; /** match on the world as it would be with this patch */ given?: Patch }): Record<string, string>[] & { budget?: BudgetViolation };
   holds(query: string | Wire[], options?: Budgeted): boolean;
   open(id?: string): OpenKey[];
   suggest(id: string, key: string, options?: Budgeted & { deep?: boolean }): Candidate[] & { budget?: BudgetViolation };
@@ -260,7 +262,7 @@ export class World {
   static audit(wires: string | Wire[], matrix?: string | Wire[], options?: WorldOptions): { ok: boolean; violations: Violation[]; issues: object[]; world: World };
   /** apply several changes that must hold together: all or nothing */
   applyPatch(patch: Patch, options?: Budgeted & { strict?: boolean }): Result;
-  query(question: Question | Wire | string, options?: Budgeted & { record?: boolean; suppose?: boolean; at?: number; /** answer on the world as it would be with this patch */ given?: Patch }): QueryResult;
+  query(question: Question | Wire | string, options?: Budgeted & { record?: boolean; suppose?: boolean; at?: number; /** only this namespace */ ns?: string; /** answer on the world as it would be with this patch */ given?: Patch }): QueryResult;
   /** run fn against the world as it was at a point of the sequence */
   asOf<T>(at: number, fn: (world: World) => T, options?: Budgeted): T | undefined;
   seqOf(id: string): number | undefined;

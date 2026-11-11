@@ -139,6 +139,7 @@ A type: what it extends, whether its keys and its instances are all known.
 | `closed` | flag | false | | wires of the type accept only declared keys |
 | `complete` | flag | false | | the world knows every wire of the type |
 | `transient` | flag | false | | state that is looked at, not edited (a selection, a cursor): `undo` passes over it |
+| `shared` | flag | false | | its wires belong to every [namespace](language.md#12-scope): matched and merged across them |
 
 **Meaning.** A wire of a type is also a wire of every type its type extends: patterns,
 slots, rules, denies, effects and queries written for an ancestor apply to it. A type
@@ -292,16 +293,17 @@ loaded once per world. `world.use(name)` is the same as telling this wire.
 **When it is evaluated.** When it is told.
 
 **Interactions.** A module may contain `core.use` wires. The composition rules for
-slots and types apply across modules.
+slots and types apply across modules. A module declares types and slots only under its
+own name, and may limit what others read ([core.module](#coremodule)).
 
 **Violations.** `schema` (no such module); whatever the module's own wires raise.
 
 **Example**
 
 ```js run
-const w = new World({ library: { units: '@k core.slot of=item key=weight kind=quantity.mass' } });
+const w = new World({ library: { units: '@k core.slot of=units.item key=weight kind=quantity.mass' } });
 print(w.use('units').ok, [...w.matrix.keys()]);
-print(w.tell('@i item weight=heavy').violations[0].why);
+print(w.tell('@i units.item weight=heavy').violations[0].why);
 ```
 
 ```output
@@ -310,6 +312,59 @@ must be quantity.mass
 ```
 
 **Limits.** A module cannot be unloaded.
+
+### core.module
+
+A module that names itself: what it imports and what other modules may read.
+
+**Syntax**
+
+| Attribute | Value | Default | Rep. | Meaning |
+| --- | --- | --- | --- | --- |
+| `name` | name | the wire's id | | the module, and the prefix of its types |
+| `imports` | module name | none | yes | modules of the library loaded with it, ids unchanged |
+| `exports` | type | all its types | yes | the types other modules may read (`item` means `<name>.item`) |
+
+**Meaning.** A module loaded from the library (by `core.use` or `imports`) may declare
+types and slots only under its own prefix: `shop` declares `shop.item`, not `item` and
+not `geo.place`. With `exports`, a rule or deny of another module may read only those
+types (and their subtypes) of this module. After modules are joined, a short key that
+two modules declare along one type's lineage is reported in `world.warnings`
+(`ambiguous-key`, with both qualified names). The same can be declared through a
+[core.schema.map](#coreschemamap) with `as=module` (its `exports` field).
+
+**When it is evaluated.** When the matrix is compiled.
+
+**Interactions.** *Modules without exports:* every type is readable, as before.
+*Rules outside any module* (the host's own matrix) read everything. *Facts* are not in
+modules; they may be in [namespaces](language.md#12-scope).
+
+**Violations.** `schema` (a type or slot outside the module's prefix, naming the module
+and the type; a rule that reads a type another module does not export, naming both
+modules; a module declared twice with other imports).
+
+**Example**
+
+```js run
+const library = {
+  shop: '@m core.module name=shop exports=item\n@k core.slot of=shop.item key=price kind=number\n@s core.slot of=shop.secret key=code',
+  tax: '@p shop.item price=?p\n@c core.calc out=?t fn=mul args=?p args=0.2\n@t shop.item core.on=$p tax=?t\n@r core.rule when=$p with=$c then=$t',
+  spy: '@p shop.secret code=?c\n@n note code=?c\n@r core.rule when=$p then=$n',
+  bad: '@k core.slot of=shop.item key=colour',
+};
+const w = new World({ library });
+print(w.use('shop').ok, w.use('tax').ok);
+print(w.use('spy').violations[0].why);
+print(w.use('bad').violations[0].why);
+```
+
+```output
+true true
+spy.r: module spy reads shop.secret, which module shop does not export (exports=shop.item)
+bad.k: module bad declares the slot of type shop.item, which is not under its own prefix bad. (the prefix of module shop)
+```
+
+**Limits.** Exports name types, not keys.
 
 ## Saying what follows and what cannot be
 

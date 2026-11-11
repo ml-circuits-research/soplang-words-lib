@@ -11,7 +11,7 @@ const RANGE_CAP = 2000;
 export const SCHEMA_TYPES = new Set([
   'core.slot', 'core.type', 'core.abducible', 'core.precision', 'core.tier', 'core.rule', 'core.deny', 'core.calc', 'core.check', 'core.use',
   'core.schema.map', 'core.namespace', 'core.producer', 'core.action',
-  'core.sequence', 'core.fluent', 'core.effect', 'core.relation', 'core.aggregate', 'core.rank',
+  'core.sequence', 'core.fluent', 'core.effect', 'core.relation', 'core.aggregate', 'core.rank', 'core.module',
 ]);
 
 /**
@@ -22,10 +22,11 @@ export const SCHEMA_TYPES = new Set([
  */
 export const GRAMMAR = {
   'core.slot': ['of', 'key', 'required', 'many', 'id', 'prefix', 'kind', 'type', 'enum', 'default', 'ask', 'min', 'max', 'step', 'soft', 'combine'],
-  'core.type': ['of', 'extends', 'closed', 'complete', 'transient'],
+  'core.type': ['of', 'extends', 'closed', 'complete', 'transient', 'shared'],
   'core.namespace': ['prefix', 'open'],
   'core.schema.map': ['from', 'as'], // and one attribute per field it maps
   'core.use': ['world', 'prefix'],
+  'core.module': ['name', 'imports', 'exports'],
   'core.rule': ['when', 'not', 'with', 'if', 'then'],
   'core.deny': ['when', 'not', 'with', 'if', 'why', 'soft'],
   'core.calc': ['out', 'fn', 'args', 'over', 'pick', 'ties', 'relation'],
@@ -135,6 +136,7 @@ export function compileMatrix(world) {
     modules: new Map(),  // module name -> { wire, imports } for modules that declare themselves
     openPrefixes: ['core.'], // keys with these prefixes are always allowed and never shortened
     complete: new Set(),  // types whose instances are all known (closed world for existence)
+    shared: new Set(),    // types whose wires belong to every namespace (matched and merged across them)
     transient: new Set(), // types of state that is looked at, not edited (a selection, a cursor): undo passes over it
     producers: new Map(), // <type>.<key> -> functions that can compute the key when no wire has it
     actions: new Map(),   // action name -> the function that carries it out
@@ -206,6 +208,13 @@ export function compileMatrix(world) {
       if (n > 0 && n <= RANGE_CAP) s.range = Array.from({ length: n }, (_, i) => String(Number((s.min.n + i * s.step.n).toPrecision(12))) + s.min.unit);
     }
   };
+  // a module declares types and slots only under its own prefix
+  const owns = (w, what, name) => {
+    if (w.module && name && name !== w.module && !name.startsWith(w.module + '.')) {
+      const other = name.includes('.') ? ` (the prefix of module ${name.split('.')[0]})` : '';
+      c.errors.push(`${w.id}: module ${w.module} declares the ${what} ${name}, which is not under its own prefix ${w.module}.${other}`);
+    }
+  };
   for (const w of world.matrix.values()) {
     const of = first(w, 'of');
     const map = c.maps.get(w.type);
@@ -234,6 +243,7 @@ export function compileMatrix(world) {
       if (s.combine && !['intersect', 'override'].includes(s.combine)) c.errors.push(`${w.id}: combine must be intersect or override`);
       for (const k of ['min', 'max', 'step']) if (get(k) !== undefined && !s[k]) c.errors.push(`${w.id}: ${k} must be a number`);
       range(s);
+      owns(w, 'slot of type', type);
       declare(type, key, s);
     } else if (w.type === 'core.type' || map?.as === 'type') {
       // core.type of=T names its type with of=; without of= the wire id is the type name
@@ -243,6 +253,7 @@ export function compileMatrix(world) {
       const ext = (f ? field(f.extends, w) : first(w, 'extends')) || (f && f.root && f.root !== name ? f.root : undefined);
       const closed = f ? field(f.closed, w) === 'true' : flag(w, 'closed');
       if (!name) { c.errors.push(`${w.id}: the type has no name`); continue; }
+      owns(w, 'type', name);
       const before = c.types.get(name);
       if (before && before !== w && c.parent.get(name) !== (ext && ext !== name ? ext : undefined)) {
         c.errors.push(`${w.id}: type ${name} is already declared by ${before.id} with another parent`);
@@ -252,14 +263,19 @@ export function compileMatrix(world) {
       if (closed) c.closed.add(name);
       if (f ? field(f.complete, w) === 'true' : flag(w, 'complete')) c.complete.add(name);
       if (!f && flag(w, 'transient')) c.transient.add(name);
+      if (!f && flag(w, 'shared')) c.shared.add(name);
       if (ext && ext !== name) c.parent.set(name, ext);
-    } else if (map?.as === 'module') {
-      const name = field(map.fields.name || 'id', w);
+    } else if (map?.as === 'module' || w.type === 'core.module') {
+      const native = w.type === 'core.module';
+      const name = native ? first(w, 'name') || w.id : field(map.fields.name || 'id', w);
       if (!name) c.errors.push(`${w.id}: the module has no name`);
       else {
-        const imports = field(map.fields.imports, w, true), old = c.modules.get(name);
+        const imports = native ? w.attrs.imports || [] : field(map.fields.imports, w, true), old = c.modules.get(name);
+        // exports=: the types other modules may read; without it, all of them
+        const ex = native ? w.attrs.exports : map.fields.exports ? field(map.fields.exports, w, true) : undefined;
+        const exports = ex ? ex.map((t) => (t.includes('.') || t === name ? t : `${name}.${t}`)) : null;
         if (old && old.wire !== w && JSON.stringify(old.imports) !== JSON.stringify(imports)) c.errors.push(`${w.id}: module ${name} is already declared by ${old.wire.id} with other imports`);
-        else c.modules.set(name, { wire: w, imports });
+        else c.modules.set(name, { wire: w, imports, exports });
       }
     } else if (w.type === 'core.tier') {
       extra.push(w);
@@ -345,6 +361,13 @@ export function compileMatrix(world) {
     return l;
   };
   c.isA = (type, ancestor) => type === ancestor || c.lineage(type).includes(ancestor);
+  const sharedCache = new Map();
+  c.isShared = (type) => {
+    if (!c.shared.size) return false;
+    let r = sharedCache.get(type);
+    if (r === undefined) sharedCache.set(type, (r = c.lineage(type).some((t) => c.shared.has(t))));
+    return r;
+  };
   c.hierarchy = [...c.parent].map(([t, p]) => `${t}<${p}`).sort().join(' ');
   for (const [t, p] of c.parent) {
     let x = p;
@@ -479,6 +502,34 @@ export function compileMatrix(world) {
     if (r.hasSelect) continue;
     r.when.forEach((p, idx) => push(c.ruleByType, p.type, { rule: r, idx }));
   }
+  // ---- exports: a rule of one module reads another module's types only if it exports them
+  const moduleOfType = (t) => { for (const [name, m] of c.modules) if (m.exports && (t === name || t.startsWith(name + '.'))) return [name, m]; return null; };
+  const moduleOfRule = (r) => world.matrix.get(r.id)?.module || [...c.modules.keys()].find((n) => r.id.startsWith(n + '.'));
+  if ([...c.modules.values()].some((m) => m.exports)) {
+    for (const r of [...c.rules, ...c.denies]) {
+      const mine = moduleOfRule(r);
+      if (!mine) continue;
+      for (const p of [...r.when, ...r.not, ...r.calc.flatMap((x) => x.over || [])]) {
+        const owner = moduleOfType(p.type);
+        if (!owner || owner[0] === mine) continue;
+        if (!owner[1].exports.some((t) => c.isA(p.type, t))) c.errors.push(`${r.id}: module ${mine} reads ${p.type}, which module ${owner[0]} does not export (exports=${owner[1].exports.join(',')})`);
+      }
+    }
+  }
+  // ---- a short key that more than one module declares along one type's lineage
+  c.ambiguous = [];
+  const modOf = (s) => world.matrix.get(s.id)?.module || [...c.modules.keys()].find((n) => s.id.startsWith(n + '.'));
+  for (const type of new Set([...own.keys(), ...c.types.keys()])) {
+    const seen = new Map(); // key -> [{ module, type }]
+    for (const t of c.lineage(type)) for (const [k, s] of own.get(t) || []) {
+      const m = modOf(s);
+      if (!m) continue;
+      const list = seen.get(k) || seen.set(k, []).get(k);
+      if (!list.some((x) => x.module === m)) list.push({ module: m, type: t, id: s.id });
+    }
+    for (const [k, list] of seen) if (list.length > 1) c.ambiguous.push({ type, key: k, names: list.map((x) => `${x.type}.${k}`), modules: list.map((x) => x.module) });
+  }
+
   // ---- the keys that something reads: a value of any other key changes nothing a rule,
   // deny, relation, aggregate or state depends on, so filling it needs no propagation
   const readKeys = new Map(); // type -> Set<key>

@@ -344,6 +344,7 @@ no change.
 | Atoms | no `"`, `@`, `$`, `=`, `\` | no `"`, `\`; not starting with `$`, `?`, `@`, `#` | `a=b`, `ann@example.org` and `10$` are plain text once the first `=` and the first character have decided what the token is |
 | Strings | JSON escapes; a bad escape is an error | the same; a line end may also be written as it is | long texts stay readable; the stored spelling is canonical either way |
 | Errors | all reported, with offset, line and column | the same list, plus the three about quotes and backslashes | |
+| Namespaces | none | an id or a reference may name one: `shop::b1`, `$shop::b1`, `$::b1` | facts from different requests or worlds must never be joined by mistake ([section 12](#12-scope)) |
 | Canonical serialization | entries sorted by key, repeats in order, JSON escapes, `\n` | the same | |
 
 What v1.1 excludes that v1 allows: an atom that starts with `?` (it is a variable now)
@@ -353,3 +354,46 @@ parser.
 
 The parser never resolves keys or references and never looks at types: short and
 qualified keys (section 6), kinds, cardinality and identity are the matrix's business.
+
+## 12. Scope
+
+What a name means depends on where it is written. Each statement below is checked by
+the test it names.
+
+**SC1. A rule, a deny, an action.** Its variables are its own: `?x` in one rule and `?x`
+in another are two variables. Inside it, `$p` names the wire its pattern `@p` matched
+(or its template `@p` made). *Test:* `scope: a variable is local to its rule or question; the same name elsewhere is another variable`
+
+**SC2. A question.** `ask` and `query` have their own variables too; a pattern without
+an id (`item n=?x`) gets one only the question sees. *Test:* `scope: a variable is local to its rule or question; the same name elsewhere is another variable`
+
+**SC3. A statement (one `tell`, one patch).** An id is declared once in it; a statement
+that adds nothing to a wire is accepted. Its wires are judged together: none of it
+stays if any of it is refused. *Tests:* `parser: every syntax error is named, with its place, all in one error; nothing is repaired`;
+`refusal: deny constraint, and the world is left untouched`
+
+**SC4. Facts and the matrix.** They have separate id spaces: a fact `@p` and a pattern
+`@p` do not clash. *Test:* `matrix and facts have separate id spaces`
+
+**SC5. A namespace.** A fact told with `{ ns: 'shop' }` (or by a world made with
+`new World({ ns })`) has the id `shop::<id>`. A reference without a namespace means one
+in the same namespace; another is reached only when written out: `$other::x`, or
+`$::x` for the default namespace (facts told without one). One match of a rule, a deny
+or a question is in one namespace: wires joined by a value are of the same namespace; a
+wire reached by a written reference may be in another. Two facts merge by identity only
+inside one namespace. A type declared `shared=true`, and facts a host provides, belong
+to every namespace. Questions with `{ ns }` see only that namespace; `sync` with
+`{ ns }` works inside it. Matrix wires are in no namespace. The separator `::` has no
+other meaning in the language. *Test:* `scope: facts in different namespaces are never joined by value nor merged by identity; written references and shared types cross`
+
+**SC6. A world.** Two worlds share nothing but what was given to both (a library, a
+host's providers). A fork starts with what its world had and then is its own.
+*Tests:* `scope: a world given a namespace puts every statement in it; one world never sees another`;
+`fork: structural, independent in both directions, and cheap`
+
+**SC7. A module.** A module of the library gets its name as a prefix of its ids, may
+declare types and slots only under that prefix, and with `exports=` lets other modules
+read only the types listed ([core.module](reference.md#coremodule)). A short key that
+two modules declare along one type's lineage is reported as `ambiguous-key`.
+*Tests:* `composition: two different declarations of one key are a conflict unless one says how they combine`;
+`modules: ownership of names, exports, and a warning for keys two modules declare`

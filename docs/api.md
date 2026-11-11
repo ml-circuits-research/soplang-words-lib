@@ -50,7 +50,8 @@ const shop = () => {
 
 ### new World(options?)
 
-Options, all optional: `facts` (below), `fns`, `actions`, `producers`, `filters` (host functions by name; see
+Options, all optional: `ns` (the [namespace](language.md#12-scope) of every
+statement of this world), `facts` (below), `fns`, `actions`, `producers`, `filters` (host functions by name; see
 [register](#worldregisterkind-name-fn-options)), `override` (let `fns` replace
 built-ins: `true` or names), `library` (module name to matrix text, for `core.use`),
 `maxDepth` (12), `maxSteps` (rule firings per change), `budget`, `decimals`, `strict`
@@ -141,7 +142,8 @@ print(World.diff(a, b).added.map((x) => x.id));
 States wires: facts, matrix wires, or both. Options: `dry` (evaluate and undo), `strict`,
 `tier` (default `told`; a tier name for the whole statement, or `{ key: tier }` for some
 keys, which are then assumptions that `assumptions()` lists and a told value replaces),
-`budget`. Returns a change result. Cost: O(matches the new
+`ns` (the facts go in that [namespace](language.md#12-scope): `b1` becomes `ns::b1`, a
+reference without a namespace points into it), `budget`. Returns a change result. Cost: O(matches the new
 wires take part in) for the chase, plus validation of the touched wires; telling matrix
 wires recompiles the matrix and validates everything, O(n·r).
 
@@ -173,11 +175,12 @@ sopworld: refused (schema) r: when=$nothing is not a wire of the matrix
 
 ### world.use(name)
 
-Loads the module `name` from the library; the same as telling a `core.use` wire.
+Loads the module `name` from the library; the same as telling a `core.use` wire. The
+module declares types and slots under its own name (see [core.module](reference.md#coremodule)).
 Returns a change result.
 
 ```js run
-const w = new World({ library: { money: '@k core.slot of=price key=amount kind=number' } });
+const w = new World({ library: { money: '@k core.slot of=money.price key=amount kind=number' } });
 print(w.use('money').ok, w.matrix.has('money.k'));
 ```
 
@@ -289,6 +292,8 @@ that is not in the list is retracted. Returns the change result with `told`, `re
 `retracted` and `same` (ids). All or nothing. `undo` takes back what it told and
 replaced; like any retraction, what it retracted is not undone (use a mark). Options:
 `strict`, `tier`, `budget`. Cost: one pass over the told wires, then the patch.
+
+With `{ ns }` the list is told in that namespace and the collection is its part.
 
 ```js run
 const w = shop();
@@ -596,6 +601,9 @@ bindings, one object per match: `[{ variable: value }]`. A pattern's own id bind
 the matched wire's id. Option `at`: as of that place in the sequence. On budget: the
 matches so far, with a `budget` property. Cost: O(m), using the indexes for fixed
 values.
+
+With `{ ns }` the patterns see only that namespace, and a reference without a namespace
+points into it. The same option on `query`.
 
 ```js run
 const w = shop();

@@ -4,6 +4,21 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
 
 **The user's direction: sopworld is a general, useful library for self-consistent worlds of SOP Lang wires. It must be *compatible* with the PSys2 worlds, but it is not built *for* them.** Nothing PSys2-specific goes into the core: no PSys2 type names, no PSys2 envelope, no PSys2 file layout. Every feature below must make sense for any user of the library (a scheduler, a digital twin, a tutoring system, a game) and be documented with a neutral example. PSys2 is the first demanding user: its needs show what is missing, and a small compatibility suite (`compat/psys2/`) proves that such a system can sit on the library through its public, general mechanisms.
 
+## 2026-11-11 23:00 (reviewer): 0.7.0 (72a96dd) validated
+
+- `npm test`: 224 pass, 0 fail. Pilot 147/147, 212/217, 231/232. `git grep -i psys2 src/` is empty.
+- Benches:
+  - fork + first tell: 0.02 ms, flat from 60 to 6,000 wires.
+  - Rewind: flat at about 0.015 ms. Note (a) is fixed.
+  - `complete({ defaults })` with 150 defaults: 160 → 20 ms. Note (b) is fixed.
+  - `complete()` with nothing changed: 0.002 ms.
+  - 70 action tells: 0.8–1.8 ms.
+  - A 1 MB blob: forks and rewinds at 0.08 ms.
+  - 200 unread values: 2.7 ms, against 13 ms for values that rules read.
+- R6.4–R6.12 accepted.
+
+The host is told to re-vendor at 72a96dd. R6.13–R6.15 (at 1fdbab0) will be checked with R6.16–R6.17 at the end of the round, as 0.7.1.
+
 ## 2026-11-11 22:15 (reviewer): Round 5 (0.6.2) and R6.1–R6.3 validated
 
 - `npm test`: 213 pass, 0 fail, 1 skipped. Pilot: 147/147, 212/217, 231/232 (unchanged). `git grep -i psys2 src/` is empty.

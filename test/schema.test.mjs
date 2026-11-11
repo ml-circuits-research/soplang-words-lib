@@ -346,3 +346,32 @@ test('slots: kind=blob keeps an opaque value as given, out of the indexes and of
   w.fill('a1', 'data', 'abc');
   assert.equal(w.query({ about: 'a1', seek: 'data' }).value, '"abc"');
 });
+
+test('slots: kind=json holds a structured value that patterns read by path, compared in one spelling, within limits', async () => {
+  const { quote } = await import('../tools/lib-under-test.mjs');
+  const w = new World();
+  w.load(`
+    @k core.slot of=place key=center kind=json
+    @k2 core.slot of=place key=name id=true
+    @p place name=?n center.lat=?lat center.tags.0=?first
+    @north core.check fn=gt args=?lat args=45
+    @t place core.on=$p north=yes first=?first
+    @r core.rule when=$p if=$north then=$t
+  `);
+  const milan = { lat: 45.46, lng: 9.19, tags: ['city', 'north'] };
+  w.tell(`@a place name=milan center=${quote(JSON.stringify(milan))}  @b place name=rome center=${quote('{"lng":12.5,"lat":41.9,"tags":["capital"]}')}`);
+  assert.deepEqual([w.get('a').attrs.north, w.get('a').attrs.first, w.get('b').attrs.north], [['yes'], ['"city"'], undefined], 'numbers as numbers, strings as strings, array items by position');
+  assert.deepEqual(w.ask('@x place center.lng=9.19'), [{ x: 'a' }]);
+  assert.deepEqual(w.ask('@x place center.lng=9.190'), [{ x: 'a' }], 'a number in a path compares as a number');
+  assert.deepEqual(w.ask('@x place center.missing=?m'), [], 'a path that is not there does not match');
+  // the same object in another spelling is the same value
+  assert.equal(w.tell(`@a place name=milan center=${quote('{"tags":["city","north"],"lng":9.19,"lat":45.46}')}`).ok, true);
+  // what is not JSON, or too deep, is refused
+  assert.equal(w.tell('@c place name=x center="not json"').violations[0].kind, 'domain');
+  let deep = 1;
+  for (let i = 0; i < 12; i++) deep = { d: deep };
+  assert.equal(w.tell(`@d place name=deep center=${quote(JSON.stringify(deep))}`).violations[0].kind, 'domain');
+  // a rule that reads a path is propagated when the value changes
+  w.revise('b', 'center', quote(JSON.stringify({ lat: 46, tags: ['moved'] })));
+  assert.deepEqual([w.get('b').attrs.north, w.get('b').attrs.first], [['yes'], ['"moved"']]);
+});

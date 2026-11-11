@@ -6,7 +6,7 @@
 
 import { parse, format, cloneWire, quote, str } from './parser.mjs';
 import { EMPTY, walk, unify, hasVar, isVar, bound } from './unify.mjs';
-import { builtins, quantity, aggregates, canonical } from './builtins.mjs';
+import { builtins, quantity, aggregates, canonical, jsonValue, canonicalJson, jsonAt } from './builtins.mjs';
 import { cdcl } from './solve.mjs';
 import { compileMatrix, localize, prefixModule, fitsKind, knownKind, readMap, SCHEMA_TYPES, LINKS } from './matrix.mjs';
 import { completion } from './complete.mjs';
@@ -756,6 +756,7 @@ export class World {
   /** The spelling a value is indexed under: canonical for a key that holds numbers, as given otherwise. */
   _iv(type, key, value) {
     const c = this._compiled();
+    if (c.jsonKeys.size && c.json(type, key)) { const v = jsonValue(value); return v === undefined ? value : canonicalJson(v); }
     return c.numKeys.size && c.numeric(type, key) ? canonical(value) : value;
   }
 
@@ -764,6 +765,7 @@ export class World {
     if (a === b) return true;
     const c = this._compiled();
     if (c.blobKeys.size && c.blob(type, key)) return false; // opaque values are the same only when equal
+    if (c.jsonKeys.size && c.json(type, key)) { const x = jsonValue(a), y = jsonValue(b); return x !== undefined && y !== undefined && canonicalJson(x) === canonicalJson(y); }
     return c.numKeys.size > 0 && c.numeric(type, key) && canonical(a) === canonical(b);
   }
 
@@ -1062,7 +1064,7 @@ export class World {
         const short = c.shortKey(p.type, key);
         if (short !== key) { p.attrs[short] = [...(p.attrs[short] || []), ...p.attrs[key]]; delete p.attrs[key]; }
       }
-      return p;
+      return c.paths(p);
     });
   }
 
@@ -1071,6 +1073,7 @@ export class World {
    * unified in a plain loop; only a key with several values needs the branching generator.
    */
   *_matchWire(p, w, s) {
+    if (p.paths) { yield* this._matchPaths(p, w, s); return; }
     if (p.type !== w.type && !this._compiled().isA(w.type, p.type)) return;
     if (p.absent) for (const k of p.absent) if (w.attrs[k]) return;
     s = unify('?' + p.id, w.id, s);
@@ -1089,6 +1092,23 @@ export class World {
       if (!s) return;
     }
     yield s;
+  }
+
+  /** A pattern that reads into structured values: the rest of the pattern, then each path. */
+  *_matchPaths(p, w, s) {
+    let rest = p._noPaths;
+    if (!rest) { rest = Object.create(p, { paths: { value: null } }); Object.defineProperty(p, '_noPaths', { value: rest, enumerable: false }); }
+    next: for (let t of this._matchWire(rest, w, s)) {
+      for (const [key, path, pv] of p.paths) { // bounded: the paths of one pattern
+        const v = jsonAt(w.attrs[key]?.[0], path);
+        if (v === undefined) continue next;
+        const u = unify(pv, v, t);
+        if (u) { t = u; continue; }
+        const want = walk(pv, t); // numbers compare as numbers
+        if (hasVar(want) || canonical(want) !== canonical(v)) continue next;
+      }
+      yield t;
+    }
   }
 
   /** Unify a pattern value with a wire value; under a key that holds numbers, 5 and 5.0 are equal. */

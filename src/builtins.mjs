@@ -225,6 +225,48 @@ const text = {
   lower: ([t]) => asValue(textOf(t).toLowerCase()),
 };
 
+// ---- structured values (kind=json) ----------------------------------------------------------
+export const JSON_LIMITS = { depth: 10, length: 100000 };
+const jsonCache = new Map();
+/** The value a json token holds (a string whose text is JSON), within the limits; undefined if not. */
+export function jsonValue(token) {
+  if (typeof token !== 'string' || token[0] !== '"') return undefined;
+  if (jsonCache.has(token)) return jsonCache.get(token);
+  let v;
+  try {
+    const text = textOf(token);
+    if (text.length <= JSON_LIMITS.length) {
+      v = JSON.parse(text);
+      const depth = (x, d) => (d > JSON_LIMITS.depth ? Infinity : x && typeof x === 'object' ? 1 + Math.max(0, ...Object.values(x).map((y) => depth(y, d + 1))) : 0); // bounded: the depth limit
+      if (depth(v, 0) > JSON_LIMITS.depth) v = undefined;
+    }
+  } catch { v = undefined; }
+  if (jsonCache.size > 10000) jsonCache.clear();
+  jsonCache.set(token, v);
+  return v;
+}
+/** One spelling for one structured value: keys sorted, no spaces. */
+// bounded: recursion over a value that jsonValue bounded to 10 levels
+export function canonicalJson(v) {
+  if (Array.isArray(v)) return `[${v.map(canonicalJson).join(',')}]`;
+  if (v && typeof v === 'object') return `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${canonicalJson(v[k])}`).join(',')}}`;
+  return JSON.stringify(v);
+}
+/** The token of the value at a path of a json token: numbers and booleans as atoms, the rest as strings. */
+export function jsonAt(token, path) {
+  let v = jsonValue(token);
+  for (const seg of path) { // bounded: the path
+    if (v === null || typeof v !== 'object') return undefined;
+    v = Array.isArray(v) ? v[Number(seg)] : Object.hasOwn(v, seg) ? v[seg] : undefined;
+    if (v === undefined) return undefined;
+  }
+  if (v === null || v === undefined) return undefined;
+  if (typeof v === 'number') return Number.isFinite(v) ? String(v) : undefined;
+  if (typeof v === 'boolean') return String(v);
+  if (typeof v === 'string') return JSON.stringify(v);
+  return JSON.stringify(canonicalJson(v));
+}
+
 export const builtins = {
   ...text,
   add: sameUnit((a, b) => a + b),

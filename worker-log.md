@@ -1907,3 +1907,21 @@ output identical. `node tools/scan-loops.mjs src`: clean. `tsc`: no errors.
   returned` (the delta, a referring wire kept, other types untouched, the same list
   again is a no-op, by prefix, a refused sync changes nothing). api.md (with an executed
   example), S59, index.d.ts.
+
+## R6.15 — kind=json: structured values read by path — done
+
+`npm test`: 228 pass, 0 fail on sources and built file, 227 in checking mode. Pilot
+output identical. `node tools/scan-loops.mjs src`: clean.
+
+- `core.slot ... kind=json`: the value is a string whose text is JSON, at most 10 levels
+  deep and 100,000 characters (else `domain`). It is compared and indexed in one
+  canonical form (keys sorted, no spaces), so the same object in another spelling is the
+  same value (a restatement is accepted, an index lookup finds it).
+- Patterns read into it by path: `center.lat=?lat`, `center.tags.0=?first`. The path
+  entries are taken out of the pattern's keys (so the indexes are not asked for them)
+  and checked after the rest of the pattern matched; a number or boolean is an atom
+  (compared as a number: `9.190` matches `9.19`), a string a string, an object or array
+  its canonical JSON. The base key counts as read for R6.12, so a revision propagates.
+- Test `slots: kind=json holds a structured value that patterns read by path, compared
+  in one spelling, within limits`. Reference: "Structured values", with an executed
+  example.

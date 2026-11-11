@@ -39,8 +39,36 @@ One key of one type: what it may hold, and whether it must be there.
 
 Kinds: `integer`, `number` (integer or decimal), `boolean` (`true`, `false`), `string`
 (quoted), `atom` (a name), `quantity.<name>` (a number with a unit), `time.<name>`
-(`time.clock` 10:40, `time.date` 2026-01-30, any other name: an atom), `any`, `blob` (below). With
+(`time.clock` 10:40, `time.date` 2026-01-30, any other name: an atom), `any`, `blob` and `json` (below). With
 several `kind` and `type` attributes the value must fit one of them.
+
+**Structured values.** Under a key whose slot says `kind=json` the value is a string whose
+text is JSON (an object, an array or a scalar), at most 10 levels deep and 100,000
+characters long. Two values that are the same JSON are the same value, whatever the
+spelling (the order of keys, spaces): they are compared and indexed in one canonical
+form. A pattern reads into it with a path after the key: `center.lat=?lat`,
+`center.tags.0=?first` (array items by position; at most 10 names). A number or a
+boolean at the path is an atom, so `9.190` matches `9.19`; a string is a string; an
+object or array is its canonical JSON as a string; a path that is not there does not
+match. Templates write the whole value. *Why:* a structured value (a point, a range,
+a style) is kept as one value instead of being flattened into keys and a copy as text.
+
+```js run
+const w = new World();
+w.load(`
+  @k core.slot of=place key=center kind=json
+  @p place center.lat=?lat
+  @north core.check fn=gt args=?lat args=45
+  @t place core.on=$p north=yes
+  @r core.rule when=$p if=$north then=$t
+`);
+w.tell(`@a place center=${quote('{"lat":45.46,"lng":9.19}')}  @b place center=${quote('{"lat":41.9}')}`);
+print(w.get('a').attrs.north, w.get('b').attrs.north, w.ask('@x place center.lng=9.190'));
+```
+
+```output
+["yes"] undefined [{"x":"a"}]
+```
 
 **Opaque values.** Under a key whose slot says `kind=blob` the value is kept exactly as
 given (text given to `fill` becomes a string value, whatever it contains), it is not

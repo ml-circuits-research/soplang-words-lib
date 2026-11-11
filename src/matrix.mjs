@@ -4,7 +4,7 @@
 import { TIERS } from './tiers.mjs';
 import { cloneWire, str } from './parser.mjs';
 import { hasVar, isVar } from './unify.mjs';
-import { quantity, clock, date, aggregates, safeRegex } from './builtins.mjs';
+import { quantity, clock, date, aggregates, safeRegex, jsonValue } from './builtins.mjs';
 
 const RANGE_CAP = 2000;
 
@@ -81,6 +81,7 @@ const KINDS = {
   atom: (v) => v[0] !== '$' && v[0] !== '"',
   any: () => true, // any literal or reference
   blob: (v) => v[0] !== '$' && v[0] !== '?', // opaque: kept as given, never indexed or matched
+  json: (v) => jsonValue(v) !== undefined, // a structured value: a string whose text is JSON, within limits
   'time.clock': (v) => !!clock(v),
   'time.date': (v) => date(v) !== null,
   'time.datetime': (v) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?$/.test(v) && !Number.isNaN(Date.parse(v)),
@@ -405,6 +406,32 @@ export function compileMatrix(world) {
     if (b === undefined) blob.set(id, (b = isBlob(c.slotOf(type, key))));
     return b;
   };
+  // ---- keys that hold structured values (kind=json): patterns read them by path
+  const json = new Map();
+  c.jsonKeys = new Set();
+  for (const [, mine] of own) for (const [k, s] of mine) if (s.kinds.includes('json')) c.jsonKeys.add(k);
+  c.json = (type, key) => {
+    if (!c.jsonKeys.has(key)) return false;
+    const id = type + '\u0001' + key;
+    let j = json.get(id);
+    if (j === undefined) json.set(id, (j = !!c.slotOf(type, key)?.kinds.includes('json')));
+    return j;
+  };
+  /** In a pattern, key.path=value under a json key reads into the value: moved to p.paths. */
+  c.paths = (p) => {
+    if (!c.jsonKeys.size) return p;
+    for (const key of Object.keys(p.attrs)) {
+      const dot = key.indexOf('.');
+      if (dot < 0) continue;
+      const base = key.slice(0, dot);
+      if (!c.json(p.type, base)) continue;
+      const path = key.slice(dot + 1).split('.');
+      if (path.length > 10 || path.some((x) => !x)) { c.errors.push(`${p.id}: ${key}: a path is at most 10 names, none empty`); continue; }
+      for (const v of p.attrs[key]) (p.paths ||= []).push([base, path, v]);
+      delete p.attrs[key];
+    }
+    return p;
+  };
   const identity = new Map();
   c.idKeys = {
     get(type) {
@@ -460,6 +487,7 @@ export function compileMatrix(world) {
     for (const p of [...r.when, ...r.not, ...r.calc.flatMap((x) => x.over || [])]) {
       for (const k of Object.keys(p.attrs)) read(p.type, k);
       for (const k of p.absent || []) read(p.type, k);
+      for (const [k] of p.paths || []) read(p.type, k);
     }
   }
   for (const f of c.fluents.values()) {
@@ -640,6 +668,7 @@ function buildRule(world, w, c, extra, register = true, aggregate = null) {
       const short = c.shortKey(l.type, key);
       if (short !== key) { l.attrs[short] = [...(l.attrs[short] || []), ...l.attrs[key]]; delete l.attrs[key]; }
     }
+    if (k !== 'then') c.paths(l);
     // an opaque value is not looked at by rules: a pattern may only ask that it is absent
     if (k !== 'then') for (const key of Object.keys(l.attrs)) if (c.blob(l.type, key)) c.errors.push(`${w.id}: ${s.id} matches ${key}, which holds opaque values (kind=blob): patterns cannot read it (core.absent=${key} can)`);
     return l;

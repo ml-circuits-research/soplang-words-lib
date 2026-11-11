@@ -37,6 +37,25 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
   - A change stamp that does not move when a fork is born or when wires the world already holds are re-told.
   - Document both.
 
+## 2026-11-11 23:40 (reviewer): Round 8, a design study on formalization (after R7.9; proposal only, the user decides)
+
+The user's direction: beyond keeping modelled worlds consistent, find other uses for the library and extend it toward **formalization**, that is reading natural language into wires, and toward **generating the interpreters**. The library knows the schema (types, slots, kinds, enums, ranges, required arguments, actions with their asks) and the current state. That is most of what a reader needs to choose between readings and to guess an intent. What is missing is a formal description of the "tools" (actions and questions) and of their words.
+
+**Write `docs/design/formalization.md`** with a neutral example (a small shop and a calendar, nothing from the host). Prototype only what makes the design concrete. Cover:
+1. **Tool descriptions.** A minimal SOP Lang vocabulary that makes a type, slot or action describable for language:
+   - argument roles;
+   - which slots identify an entity;
+   - words per language as wires (`core.word` or similar), registered by the host, not built in;
+   - examples.
+
+   Reuse what exists (`core.action required= ask.`, slots, enums) and add as little as possible.
+2. **Frames to wires.** `world.interpret(frame)`: from a language-neutral frame (a verb word, argument words, numbers, a question flag), produce candidate wires using the words, the schema and the state. Unknown words stay unresolved; nothing is invented.
+3. **Scoring candidates against the world.** `world.score(candidates)`: for each candidate, return consistency (with violations), the referents it resolves (and whether they are unique), the required arguments it lacks, the assumptions it needs, and whether its action is available. It tells nothing. This is the "guess the intent from the state" primitive. Hosts choose by a documented order.
+4. **Generating readers.** From tool descriptions plus words, how a host could generate patterns or a grammar per language. Say what the library should own (descriptions, interpret, score) and what stays in the host (tokenizing, morphology, a learned model).
+5. **Limits.** What this cannot do (free text, metaphors, long discourse), the cost per candidate, and the tests that would prove it.
+
+Prototype `world.score(candidates)` behind no flag (it is read-only), with tests and a bench at 1, 10 and 100 candidates. Leave the rest as design. **Do not change SOP Lang syntax in this round.** If the design needs syntax, put it in questions.md for the user.
+
 ### R7.9: namespaces (user decision, 2026-11-11 23:12; do this first in Round 7)
 
 The user asked for namespaces, so that facts from different worlds or different requests are never combined or confused when schemas and facts are joined. Today variables are local to a rule or question, facts and matrix wires have separate id spaces, and `core.use` prefixes module ids. What is missing:

@@ -46,9 +46,9 @@ export class World {
   constructor(options = {}) {
     const {
       fns = {}, library = {}, maxDepth = 12, maxSteps = 50000,
-      lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {}, budget = {}, decimals, actions = {}, producers = {}, filters = {}, override = false,
+      lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {}, budget = {}, decimals, actions = {}, producers = {}, filters = {}, facts = {}, override = false,
     } = options;
-    this.options = { fns, actions, producers, filters, override, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget, decimals };
+    this.options = { fns, actions, producers, filters, facts, override, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget, decimals };
     this._cannot = null;          // reasons given by functions during a query (see cannot)
     this.warnings = [];           // things that still work and will not: { kind, id, why }
     this._reads = new WeakMap();  // bindings of a rule body -> the aggregated cells it read
@@ -63,6 +63,11 @@ export class World {
     this.fns = { ...builtins };
     this.actions = {};
     this.producers = {};
+    // Facts the host keeps itself (a large static table): matched by patterns like wires,
+    // never copied, forked or logged. facts[type](where) returns the wires of that type
+    // whose keys have the given values (it may return more; patterns check every value).
+    this.facts = { ...facts };
+    this._external = new Map(); // id -> wire, of the facts providers returned (a cache: they are pure)
     this.filters = {}; // how a reason writes a value: ?n:ordinal calls filters.ordinal(n); none built in, so no language is
     for (const [name, fn] of Object.entries(filters)) this.register('filter', name, fn);
     for (const [name, fn] of Object.entries(fns)) this.register('function', name, fn, { override });
@@ -101,7 +106,7 @@ export class World {
   }
   /** Wires of a type, including wires of the types that extend it. */
   /** A wire to read, not to change: no copy is made of a wire shared with a fork. */
-  _peek(id) { const m = this.wires, rid = this.resolve(id); return m.peek ? m.peek(rid) : m.get(rid); }
+  _peek(id) { const m = this.wires, rid = this.resolve(id); return (m.peek ? m.peek(rid) : m.get(rid)) || this._external.get(rid); }
 
   ofType(type) { return [...(this.byType.get(type) || [])].map((id) => this.wires.get(id)); }
 
@@ -1120,6 +1125,7 @@ export class World {
       return;
     }
     const idv = walk('?' + p.id, s);
+    if (this.facts[p.type]) { yield* this._externalCandidates(p, s, idv); return; }
     if (!isVar(idv)) {
       const w = this.wires.get(this.resolve(idv));
       if (w) yield* this._matchWire(p, w, s);
@@ -1148,6 +1154,42 @@ export class World {
       }
     }
     for (const id of best) { this._b.tick('match'); yield* this._matchWire(p, this.wires.get(id), s); }
+  }
+
+  /** Candidates from a host's provider of facts: asked with the values the pattern fixes. */
+  *_externalCandidates(p, s, idv) {
+    if (!isVar(idv)) {
+      const w = this._external.get(idv);
+      if (w) yield* this._matchWire(p, w, s);
+      return;
+    }
+    const where = {};
+    for (const k of Object.keys(p.attrs)) {
+      const t = walk(p.attrs[k][0], s);
+      if (!hasVar(t)) where[k] = t[0] === '"' ? str(t) : t;
+    }
+    const got = this.facts[p.type](where, this) || [];
+    for (const raw of got) { // bounded: what the provider returned, each ticking the budget
+      this._b.tick('match');
+      const w = this._externalWire(p.type, raw);
+      if (w) yield* this._matchWire(p, w, s);
+    }
+  }
+
+  /** A provider's fact as a wire (read-only, kept in a cache by id). Values become tokens. */
+  _externalWire(type, raw) {
+    if (!raw || raw.id === undefined) return null;
+    const id = String(raw.id);
+    const known = this._external.get(id);
+    if (known && known.type === type) return known;
+    const attrs = {};
+    for (const [k, v] of Object.entries(raw.attrs || raw)) {
+      if (k === 'id' || k === 'attrs') continue;
+      attrs[k] = [].concat(v).map((x) => { x = String(x); return x[0] === '"' || x[0] === '$' || !/[\s"\\]/.test(x) ? x : quote(x); });
+    }
+    const w = Object.freeze({ id, type, attrs, pattern: false, meta: Object.freeze({ external: true, told: true }) });
+    this._external.set(id, w);
+    return w;
   }
 
   // bounded: one level per pattern; the candidates tried at each level tick the budget

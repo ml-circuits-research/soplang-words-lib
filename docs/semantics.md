@@ -78,6 +78,14 @@ that no rule looks at should cost what validating it costs (200 such values in a
 1,200-wire world: 6.9 → 1.5 ms, `node bench/unread.mjs`).
 *Test:* `patch: values of keys that nothing reads are validated but not propagated, with the same result`
 
+**S11b.** Facts of a type that a host provides (`facts` option) are matched by every
+pattern of that type as if they were wires, are `told`, and are never stored, forked,
+logged or rebuilt; the provider is asked with the values the pattern fixes, and each
+fact it returns costs one step of the budget. They are taken to be static: a conclusion
+drawn from them is not re-examined. *Why:* a large reference table must not cost a
+world its size in memory, snapshots and forks.
+*Test:* `facts: a host provider is matched by rules, denies and questions like wires, and never stored, forked or logged`
+
 **S12.** Rules may be recursive; the chase stops because a conclusion that is already
 there adds nothing.
 *Test:* `recursive rules reach a fixpoint; cycles are refused by a deny`

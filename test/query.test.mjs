@@ -416,3 +416,42 @@ test('query: mode=check says whether a held or derived value is the one given, a
   assert.equal(w.query({ type: 'animal', seek: 'is_a', where: { name: 'whale', is_a: 'bird' }, mode: 'check' }).status, 'no');
   assert.equal(w.get('w1').attrs.is_a.length, 1, 'and nothing changed');
 });
+
+test('facts: a host provider is matched by rules, denies and questions like wires, and never stored, forked or logged', () => {
+  const cities = Array.from({ length: 1000 }, (_, i) => ({ id: `city${i}`, name: `c${i}`, country: i % 2 ? 'fr' : 'it', pop: 1000 + i }));
+  const byName = new Map(cities.map((c) => [c.name, c]));
+  const asked = [];
+  const w = new World({ facts: { city: (where) => { asked.push(where); return where.name ? [byName.get(where.name)].filter(Boolean) : cities; } } });
+  w.load(`
+    @d delivery to=?n
+    @c city name=?n country=?k
+    @t delivery core.on=$d country=?k
+    @r core.rule when=$d when=$c then=$t
+    @small city name=?n pop=?p
+    @lt core.check fn=lt args=?p args=1003
+    @no core.deny when=$d when=$small if=$lt why="?n is too small"
+    @fr city country=fr
+    @n core.aggregate over=$fr count=?k then=$tot
+    @tot total of=french count=?k
+  `);
+  assert.equal(w.ofType('total')[0].attrs.count[0], '500', 'an aggregate ranges over the facts of a provider');
+  assert.equal(w.tell('@d1 delivery to=c7').ok, true);
+  assert.deepEqual(w.get('d1').attrs.country, ['fr']);
+  assert.ok(asked.some((x) => x.name === 'c7'), 'the provider is asked with the values the pattern fixes');
+  assert.equal(w.tell('@d2 delivery to=c1').violations[0].why, 'c1 is too small');
+  assert.deepEqual(w.ask('@x city name=c5 country=?k'), [{ x: 'city5', k: 'fr' }]);
+  const q = w.query({ type: 'city', where: { name: 'c9' }, seek: 'pop' });
+  assert.deepEqual([q.status, q.value, q.tier], ['supported', '1009', 'told']);
+  // never stored, forked or logged
+  assert.equal(w.ofType('city').length, 0);
+  assert.equal(JSON.stringify(w.toJSON()).includes('city7'), false);
+  const f = w.fork();
+  f.tell('@d3 delivery to=c11');
+  assert.deepEqual(f.get('d3').attrs.country, ['fr']);
+  // a provider counts against the budget, one step per fact it returns
+  const r = w.tell('@d4 delivery to=c20', { budget: { steps: 200 } });
+  assert.equal(r.ok, true);
+  w.stats();
+  const many = w.ask('city country=it', { budget: { steps: 50 } });
+  assert.ok(many.budget, 'a pattern that fixes nothing pages through the whole table, and the budget stops it');
+});

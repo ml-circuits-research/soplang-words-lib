@@ -138,6 +138,8 @@ export interface WorldOptions {
   actions?: Record<string, (context: any, args: Record<string, string>) => unknown>;
   /** functions that compute a key on demand: (context) => value */
   producers?: Record<string, (context: any) => unknown>;
+  /** facts the host keeps itself: facts[type](where) returns wires of that type ({ id, ...keys }); never stored, forked or logged */
+  facts?: Record<string, (where: Record<string, string>, world: World) => ({ id: string; attrs?: Record<string, unknown>; [key: string]: unknown })[]>;
   /** how a reason writes a value: ?n:name calls filters[name](value, { world, name }) */
   filters?: Record<string, (value: string | number, context: { world: World; name: string }) => string>;
   /** allow `fns` to replace built-ins: true, or the names */

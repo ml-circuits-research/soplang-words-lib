@@ -223,7 +223,7 @@ export const querying = {
     const out = [];
     for (const s of this._matchAll([{ id: 'q', type, attrs, pattern: true }], 0, EMPTY)) {
       const id = walk('?q', s);
-      if (!seen.has(id)) { seen.add(id); out.push(this.wires.get(id)); }
+      if (!seen.has(id)) { seen.add(id); out.push(this.wires.get(id) || this._external.get(id)); }
     }
     return out;
   },

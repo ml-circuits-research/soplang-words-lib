@@ -50,7 +50,7 @@ const shop = () => {
 
 ### new World(options?)
 
-Options, all optional: `fns`, `actions`, `producers`, `filters` (host functions by name; see
+Options, all optional: `facts` (below), `fns`, `actions`, `producers`, `filters` (host functions by name; see
 [register](#worldregisterkind-name-fn-options)), `override` (let `fns` replace
 built-ins: `true` or names), `library` (module name to matrix text, for `core.use`),
 `maxDepth` (12), `maxSteps` (rule firings per change), `budget`, `decimals`, `strict`
@@ -63,6 +63,21 @@ Properties: `wires` (Map of facts by id), `matrix` (Map of matrix wires by id), 
 change), `actions`, `producers`, `options`.
 
 Throws if `fns` would replace a built-in without `override`. Cost: constant.
+
+**Facts the host keeps.** `facts: { city: (where, world) => [...] }` gives the facts of a
+type from the host's own data (a large static table). A pattern of that type asks the
+provider with the values it fixes (`where`, keys to values, strings as their text) and
+matches what comes back like wires: `{ id, ...keys }` or `{ id, attrs }`, values as
+values or arrays. They are read in rules, denies, aggregates, queries and `ask`, are
+`told` for tiers, and are never stored, forked, logged or snapshotted. A provider must be
+pure and stable (the same answer for the same `where` for the life of the world: what a
+rule concluded from it is never re-examined), may return more than asked (every pattern
+value is checked), and should be bounded: each fact it returns costs one step of the
+budget, so a pattern that fixes nothing pages through the whole table under the budget.
+A rule needs a wire of the world to fire: a provider's facts alone start nothing.
+Returned facts are kept by id while the world lives. Cost: a city table of 1,000 rows
+takes 0.2 ms to build, against 28 ms as wires, and the snapshot is 1 kB instead of 113 kB
+(`node bench/facts.mjs`).
 
 ```js run
 const w = new World({ decimals: 2, fns: { double: ([x]) => Number(x) * 2 } });

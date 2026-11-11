@@ -53,11 +53,15 @@ export const timing = {
   },
 
   /** The place of a wire in the sequence (the declared number, or its arrival number). */
-  seqOf(id) { return this.get(id)?.meta.order; },
+  seqOf(id) { return this._peek(id)?.meta.order; },
 
-  /** Negative when wire a comes before wire b in the sequence, positive when after. */
+  /**
+   * Negative when wire a comes before wire b in the sequence, positive when after. Facts of
+   * a host's provider have no place in it: they come before the world's wires, by id.
+   */
   compare(a, b) {
-    const x = this.get(a).meta, y = this.get(b).meta;
+    const x = this._peek(a).meta, y = this._peek(b).meta;
+    if (x.external || y.external) return x.external && y.external ? (a < b ? -1 : a > b ? 1 : 0) : x.external ? -1 : 1;
     return x.order - y.order || x.seq - y.seq;
   },
 

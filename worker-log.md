@@ -1865,3 +1865,28 @@ A minor version: new wire types (`core.aggregate`, `core.rank`), a new slot kind
 two answers that change (`many` keys in value mode; `?x:word` in reasons).
 
 Next: R6.13–R6.17.
+
+## R6.13 — facts a host keeps: providers matched like wires — done
+
+`npm test`: 226 pass, 0 fail on sources and built file, 225 in checking mode. Pilot
+output identical. `node tools/scan-loops.mjs src`: clean. `tsc`: no errors.
+
+`node bench/facts.mjs` (1,000 cities read by a rule and a deny; a turn is fork + one
+delivery; second round): as wires, build 28.1 ms, a turn 0.029 ms, snapshot 113 kB; as
+a provider, build 0.2 ms, a turn 0.026 ms, snapshot 1 kB. (Since P2 a turn no longer
+grows with the table even as wires; the host's 37 ms was measured before it.)
+
+- `new World({ facts: { city: (where, world) => [...] } })`: a pattern of that type asks
+  the provider with the values it fixes and matches the facts it returns (`{ id, ...keys
+  }` or `{ id, attrs }`) like wires, in rules, denies, aggregates, ranks, queries and
+  `ask`. They are `told` for tiers, come before the world's wires in sequence order (by
+  id), and are never stored, forked, logged or snapshotted; returned facts are kept by
+  id for the life of the world.
+- What a provider must guarantee, documented in api.md and S11b: pure and stable (a
+  conclusion drawn from its facts is not re-examined), may return more than asked
+  (patterns check every value), and bounded: each returned fact costs one budget step
+  (site `match`), so a pattern that fixes nothing pages through the table under the
+  budget. A rule needs a wire of the world to fire; provider facts alone start nothing.
+- Test `facts: a host provider is matched by rules, denies and questions like wires, and
+  never stored, forked or logged` (a rule, a deny, an aggregate over 500 provider facts,
+  `ask`, `query` with tier `told`, nothing in the snapshot, a fork, the budget).

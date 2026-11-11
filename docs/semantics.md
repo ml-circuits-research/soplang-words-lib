@@ -501,6 +501,6 @@ registers ([reference](reference.md#coredeny)).
 | `unsupported` | the change would remove a wire that absorbed a told one | `retract`, `revise` |
 
 Notes that refuse nothing are in `world.warnings`: `deprecated` (a pattern declared the
-old way), `unknown-attribute` (an attribute a matrix wire type does not read) and
+old way), `unknown-attribute` (an attribute a matrix wire type does not read),
 `ambiguous-key` (a short key that two modules declare along one type's lineage, with
-both qualified names).
+both qualified names) and `unknown-word` (a `core.word` whose `means=` names nothing).

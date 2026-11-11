@@ -386,7 +386,7 @@ If the patterns match, the templates hold.
 | `with` | `$calc` | none | yes | values to compute, in order |
 | `if` | `$check` | none | yes | conditions that must all hold |
 | `then` | `$template` | at least one | yes | what then exists |
-| `lazy` | flag | false | | made only when a question, a check or a deny needs it (below) |
+| `lazy` | flag | false | | made only when a question, a check or a deny needs it (below); only for structures rarely asked, since each question pays for all lazy rules |
 
 **Meaning.** For every way of matching all `when` patterns at once (a variable has one
 value throughout; `$p` in one pattern is the wire another pattern `@p` matched), such
@@ -1171,6 +1171,45 @@ only 30 left
 
 **Limits.** Written as wires: no aggregates in its calcs; a `set` writes one value per
 key.
+
+### core.word
+
+A word of one language and the one name of the matrix it means: an action, a type, a
+key (`type.key`) or a value of a slot. Words are facts the host tells or loads, not
+matrix wires, so namespaces, `sync`, undo and snapshots apply to them. Only
+`world.interpret` and `world.words` read them.
+
+**Syntax**
+
+| Attribute | Meaning |
+| --- | --- |
+| `lang` | the language (any label: `en`, `ro`) |
+| `text` | the word as the host's front end gives it (compared without case) |
+| `means` | an action name, a type, `type.key`, or a value |
+| `of` | `type.key`: the slot the value belongs to (needed when `means` is not an enum value, or to choose one slot) |
+
+**Meaning.** One wire, one meaning: a text with two meanings is two wires, and
+`world.score` chooses between the readings they give. A word whose `means` names
+nothing is reported in `world.warnings` (`unknown-word`) when it is told or when the
+matrix changes.
+
+**Example**
+
+```js run
+const w = new World();
+w.load('@k core.slot of=meeting key=day enum=mon enum=tue required=true');
+w.tell('@w1 core.word lang=ro text=luni means=mon of=meeting.day  @w2 core.word lang=ro text=întâlnire means=meeting');
+print(w.interpret({ lang: 'ro', verb: 'întâlnire', args: ['luni'] }).candidates[0].wires);
+w.tell('@w3 core.word lang=ro text=vineri means=fri of=meeting.day');
+print(w.warnings[0].kind);
+```
+
+```output
+@new meeting day=mon
+unknown-word
+```
+
+**Limits.** Words are not inflected: lemmas, morphology and tokenizing are the host's.
 
 ## Certainty and soft constraints
 

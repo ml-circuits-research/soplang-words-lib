@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="637ff79d6fe1">
+<meta name="source-hash" content="f63e246f899c">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -267,6 +267,17 @@ print(q.status, q.value, q.via, q.tier);
 print(w.query({ type: &#x27;item&#x27;, where: { name: &#x27;ink&#x27; }, seek: &#x27;price&#x27; }).status);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>supported 6 [&quot;r&quot;] derived
 missing</code></pre></figure>
+<h3 id="worldwordslang-and-worldinterpretframe-options">world.words(lang?) and world.interpret(frame, options?)</h3>
+<p><code>words(lang)</code> maps each text of a language to its <code>core.word</code> entries, with what each means in the matrix (<code>meanings</code>: <code>{ kind: 'action' | 'type' | 'key' | 'value', ... }</code>).</p>
+<p><code>interpret(frame)</code> reads a language-neutral frame into candidates for <code>score</code>. A frame is <code>{ lang, verb, args, numbers, question, mode, ns }</code>; an argument is a word or <code>{ word, role }</code>, where <code>role</code> is a word for a key (<code>with</code>, <code>on</code>). A verb that means an action gives <code>{ action, args }</code>, one that means a type gives <code>{ wires, refer }</code> (a slot that holds a wire gets a described referent), and <code>question: true</code> gives <code>{ question }</code>. An argument with no word wire is read as an entity it names by an identifying key, or an enum value spelled as is. Returns <code>{ candidates, unresolved, dropped }</code>; each candidate also has <code>reading</code> (which word went where), <code>used</code>, <code>unused</code> and <code>unresolved</code>. Nothing is invented: every value comes from a word or a number of the frame. Options: <code>limit</code> (default 50 candidates), <code>id</code> (of the new wire, default <code>new</code>).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@k1 core.slot of=item key=name id=true
+  @k2 core.slot of=order key=item kind=ref to=item required=true
+  @k3 core.slot of=order key=qty kind=integer min=1 default=1`);
+w.tell(&#x27;@i1 item name=pen  @w core.word lang=en text=order means=order&#x27;);
+const r = w.interpret({ lang: &#x27;en&#x27;, verb: &#x27;order&#x27;, args: [&#x27;pen&#x27;, &#x27;spoon&#x27;], numbers: [2] });
+print(r.candidates[0].wires, r.candidates[0].refer, r.unresolved);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>@new order item=$r1 qty=2 {&quot;r1&quot;:{&quot;type&quot;:&quot;item&quot;,&quot;where&quot;:{&quot;name&quot;:&quot;pen&quot;}}} [&quot;spoon&quot;]</code></pre></figure>
 <h3 id="worldscorecandidates-options">world.score(candidates, options?)</h3>
 <p>Judges candidate readings of one utterance against the world and tells nothing. A candidate is any of <code>{ wires, refer }</code> (a statement; <code>refer</code> maps a reference name used in <code>wires</code> to <code>{ type, where, ns }</code>, a description resolved against the state), <code>{ action, args }</code>, or <code>{ question }</code> (as for <code>query</code>). Returns <code>{ candidates, order }</code>; each scored candidate has <code>ok</code>, <code>violations</code>, <code>referents</code> (<code>{ name, ids, unique, fits }</code>: <code>fits</code> are the ids that keep the statement consistent when the description alone is ambiguous), <code>lacks</code> (referents nothing matches, required keys still open, missing arguments), <code>assumes</code> (defaults the statement would rest on), <code>action</code> (<code>{ available, status, missing }</code>) and <code>answer</code>. <code>order</code> is best first: consistent, all referents settled, fewer lacks, fewer assumptions, then as given. See <a href="design/formalization.md">design/formalization</a>.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();

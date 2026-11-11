@@ -40,6 +40,27 @@ export interface Issue { id: string; rule?: string; about: string[]; key?: strin
 export interface OpenKey { id: string; type: string; key: string; ask?: string }
 export interface Candidate { value: string; source: 'default' | 'enum' | 'wire' | 'range'; count: number }
 export interface Question { type?: string; seek?: string; where?: Record<string, string | number>; about?: string; mode?: 'value' | 'list' | 'count' | 'exists' | 'check' | 'abduce'; /** for mode=check: the value to check, when it is not in where */ value?: string | number }
+export type WordMeaning =
+  | { kind: 'action'; name: string }
+  | { kind: 'type'; type: string }
+  | { kind: 'key'; type: string; key: string }
+  | { kind: 'value'; type: string; key: string; value: string };
+export interface Frame {
+  lang?: string;
+  verb?: string;
+  args?: (string | { word: string; role?: string })[];
+  numbers?: (number | string)[];
+  question?: boolean;
+  mode?: string;
+  ns?: string;
+}
+export interface Reading {
+  reading: { word: string; as: string }[];
+  used: string[];
+  unused: string[];
+  unresolved: string[];
+  verb?: string;
+}
 export interface ScoreCandidate {
   /** a statement; references named in `refer` are resolved against the state */
   wires?: string | Wire[];
@@ -289,6 +310,10 @@ export class World {
   /** apply several changes that must hold together: all or nothing */
   applyPatch(patch: Patch, options?: Budgeted & { strict?: boolean }): Result;
   query(question: Question | Wire | string, options?: Budgeted & { record?: boolean; suppose?: boolean; at?: number; /** only this namespace */ ns?: string; /** answer on the world as it would be with this patch */ given?: Patch }): QueryResult;
+  /** the core.word entries of a language, by text */
+  words(lang?: string): Map<string, { id: string; lang: string; means: string; of?: string; meanings: WordMeaning[] }[]>;
+  /** read a language-neutral frame into candidates for score; nothing invented */
+  interpret(frame: Frame, options?: { limit?: number; id?: string; ns?: string }): { candidates: (ScoreCandidate & Reading)[]; unresolved: string[]; dropped: number };
   /** judge candidate readings against the world; nothing is told */
   score(candidates: ScoreCandidate[], options?: Budgeted): { candidates: Scored[]; order: number[] };
   /** run fn against the world as it was at a point of the sequence */

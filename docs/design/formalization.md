@@ -1,8 +1,8 @@
 # Formalization: reading language into wires (design study, Round 8)
 
-Status: proposal. Only `world.score` is built (0.8.1); everything else here is design,
-for the user to accept or change. No SOP Lang syntax is changed by this document; the
-two places where new vocabulary would help are questions for the reviewer (Q17, Q18).
+Status: `world.score` is built (0.8.1); `core.word` (Q17, answered (b)) and
+`world.interpret` are built (Round 9, R9.1); roles stay out (Q18, answered (a)). The rest
+is design.
 
 The library already knows most of what a reader needs to choose between readings of a
 sentence: the types and their slots, kinds, enums and ranges, which keys identify an
@@ -75,7 +75,7 @@ vocabulary of their own.
 Everything else a reader needs is read from the compiled matrix, which already exposes
 it through `schema(type)` and `World.audit`.
 
-## 2. Frames to wires: `world.interpret(frame)` (design only)
+## 2. Frames to wires: `world.interpret(frame)` (built in R9.1)
 
 A frame is language-neutral; producing it (tokenizing, morphology, a parser or a
 learned model) belongs to the host. Proposed shape:

@@ -663,6 +663,36 @@ supported 6 ["r"] derived
 missing
 ```
 
+### world.words(lang?) and world.interpret(frame, options?)
+
+`words(lang)` maps each text of a language to its `core.word` entries, with what each
+means in the matrix (`meanings`: `{ kind: 'action' | 'type' | 'key' | 'value', ... }`).
+
+`interpret(frame)` reads a language-neutral frame into candidates for `score`. A frame
+is `{ lang, verb, args, numbers, question, mode, ns }`; an argument is a word or `{ word,
+role }`, where `role` is a word for a key (`with`, `on`). A verb that means an action
+gives `{ action, args }`, one that means a type gives `{ wires, refer }` (a slot that
+holds a wire gets a described referent), and `question: true` gives `{ question }`. An
+argument with no word wire is read as an entity it names by an identifying key, or an
+enum value spelled as is. Returns `{ candidates, unresolved, dropped }`; each candidate
+also has `reading` (which word went where), `used`, `unused` and `unresolved`. Nothing
+is invented: every value comes from a word or a number of the frame. Options: `limit`
+(default 50 candidates), `id` (of the new wire, default `new`).
+
+```js run
+const w = new World();
+w.load(`@k1 core.slot of=item key=name id=true
+  @k2 core.slot of=order key=item kind=ref to=item required=true
+  @k3 core.slot of=order key=qty kind=integer min=1 default=1`);
+w.tell('@i1 item name=pen  @w core.word lang=en text=order means=order');
+const r = w.interpret({ lang: 'en', verb: 'order', args: ['pen', 'spoon'], numbers: [2] });
+print(r.candidates[0].wires, r.candidates[0].refer, r.unresolved);
+```
+
+```output
+@new order item=$r1 qty=2 {"r1":{"type":"item","where":{"name":"pen"}}} ["spoon"]
+```
+
 ### world.score(candidates, options?)
 
 Judges candidate readings of one utterance against the world and tells nothing. A

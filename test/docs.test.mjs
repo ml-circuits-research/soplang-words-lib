@@ -40,7 +40,7 @@ function documented(text) {
 test('docs: every matrix wire type has an entry in the reference, and every entry is a type', () => {
   const types = new Set([...SCHEMA_TYPES, ...Object.keys(GRAMMAR)]);
   for (const t of types) assert.ok(entry(t), `no entry for ${t} in docs/reference.md`);
-  const fact = new Set(['core.issue', 'core.question', 'core.answer', 'core.request']); // written by the world or the host
+  const fact = new Set(['core.issue', 'core.question', 'core.answer', 'core.request', 'core.word']); // written by the world or the host
   for (const m of reference.matchAll(/^### (core\.[\w., ]+)$/gm)) {
     for (const t of m[1].split(/,\s*/)) assert.ok(types.has(t) || fact.has(t), `the reference describes ${t}, which the library does not know`);
   }
@@ -99,7 +99,7 @@ test('docs: every kind of violation the library raises is in the table of docs/s
   const table = text.slice(text.indexOf('\n## Violations'));
   const listed = new Set([...table.matchAll(/`([a-z-]+)`/g)].map((m) => m[1]));
   const src = new URL('../src/', import.meta.url);
-  const notViolations = new Set(['chosen', 'default', 'forced', 'explanation', 'value', 'atom', 'string', 'ref', 'var']); // kinds of suggestions, rankings and values
+  const notViolations = new Set(['chosen', 'default', 'forced', 'explanation', 'value', 'atom', 'string', 'ref', 'var', 'action', 'type', 'key', 'entity', 'number']); // kinds of suggestions, rankings, values and word meanings
   for (const f of readdirSync(src)) {
     if (!f.endsWith('.mjs')) continue;
     for (const m of readFileSync(new URL(f, src), 'utf8').matchAll(/kind: '([a-z-]+)'/g)) {

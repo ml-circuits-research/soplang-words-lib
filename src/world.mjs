@@ -12,6 +12,7 @@ import { compileMatrix, localize, prefixModule, fitsKind, knownKind, readMap, SC
 import { completion } from './complete.mjs';
 import { revision } from './revise.mjs';
 import { querying } from './query.mjs';
+import { interpreting } from './interpret.mjs';
 import { timing } from './time.mjs';
 import { Budget } from './budget.mjs';
 import { tiering } from './tiers.mjs';
@@ -667,6 +668,7 @@ export class World {
       for (const e of entry ? [].concat(entry) : []) this._logPush(e); // bounded: the entries of one call
       // the version moves only when the world changed: not for a statement that adds nothing
       if (res.added.length || res.derived.length || res.filled.length || res.removed.length || res.merged.length || res._revised || res._touchedChange) this._changed();
+      if (res.added.length && this.byType.get('core.word')?.size) this._checkWords(res.added);
       this._commit();
     }
     res.ok = ok;
@@ -1055,6 +1057,7 @@ export class World {
         if (this.warnings.some((x) => x.kind === 'ambiguous-key' && x.type === a.type && x.key === a.key)) continue;
         this.warnings.push({ kind: 'ambiguous-key', type: a.type, key: a.key, names: a.names, why: `on ${a.type}, the key ${a.key} is declared by modules ${a.modules.join(' and ')}: ${a.names.join(' and ')}` });
       }
+      this._checkWords();
       for (const u of c.unknown) {
         if (this.warnings.some((x) => x.kind === 'unknown-attribute' && x.id === u.id && x.key === u.key)) continue;
         this.warnings.push({ kind: 'unknown-attribute', id: u.id, key: u.key, why: `${u.type} does not read "${u.key}" (on ${u.id})` });
@@ -1879,6 +1882,6 @@ export class World {
   }
 }
 
-Object.assign(World.prototype, completion, revision, querying, timing, tiering, describing);
+Object.assign(World.prototype, completion, revision, querying, timing, tiering, describing, interpreting);
 /** The difference between two worlds (see world.diff). */
 World.diff = (a, b) => a.diff(b);

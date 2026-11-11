@@ -2195,3 +2195,37 @@ clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
   bookkeeping type) and Q18 (roles, recommend none for now) for the reviewer.
 - api.md and index.d.ts document `score`. Released as 0.8.1 (package.json, src/index.mjs,
   CHANGELOG, docs/version.md); no tag.
+
+## Answers to Q15–Q18 applied
+
+Q15 (`priority=`) kept; Q16 closed (no `expr=` in v1.2); Q17 (b) and Q18 (a) taken into
+R9.1. questions.md: the four moved to Closed. The reference table now says next to
+`lazy=true` that it suits only structures rarely asked.
+
+## R9.1 — core.word and world.interpret(frame) — done
+
+`npm test`: 248 pass, 0 fail on sources and built file, 247 in checking mode. Pilot
+output identical. `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`:
+clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
+
+- `core.word lang= text= means= of=` (a fact type, not a matrix wire): one wire, one
+  meaning; `means` is an action, a type (declared, or one the world holds wires of), a
+  `type.key`, or a value (an enum value, or any value with `of=`). A word whose `means`
+  names nothing gives an `unknown-word` warning when told and when the matrix changes.
+- `world.words(lang)` and `world.interpret(frame)` (src/interpret.mjs): a verb meaning an
+  action gives `{ action, args }` (arguments placed by the param's position in the
+  action's pattern), a type gives `{ wires, refer }` (slots that hold a wire get a
+  described referent), `question: true` gives `{ question }`. Arguments without a word
+  wire are read as entities by identifying keys or enum values spelled as is; others stay
+  `unresolved`. A role word (`{ role: 'with', word: 'bob' }`) restricts the key. Each
+  candidate carries `reading`, `used`, `unused`, `unresolved`. Identical readings are
+  given once; at most `limit` (50), the rest counted in `dropped`.
+- Tests test/interpret.test.mjs (4): two meanings of "book" give two candidates and score
+  puts the order first when ink is out of stock (`order [1, 0]`); EN and RO frames give
+  the same candidates; unknown words stay unresolved, and no value of any candidate of
+  three mixed frames comes from outside the frame; unknown-word warnings, and words undone
+  like facts.
+- `node bench/interpret.mjs` (300 items, 40 people): interpret 0.039–0.063 ms a frame,
+  score of its candidates 0.026–0.269 ms; `bundle`: 0.026–0.045 ms and 0.016–0.421 ms.
+- Docs: reference.md `core.word`, api.md `words`/`interpret`, semantics.md warnings,
+  index.d.ts, design doc status.

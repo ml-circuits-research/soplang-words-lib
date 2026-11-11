@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="659e962eab9c">
+<meta name="source-hash" content="12ca9fbfab15">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -159,7 +159,7 @@ bad.k: module bad declares the slot of type shop.item, which is not under its ow
 <h3 id="corerule">core.rule</h3>
 <p>If the patterns match, the templates hold.</p>
 <p><strong>Syntax</strong></p>
-<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>when</code></td><td><code>$pattern</code></td><td>at least one</td><td>yes</td><td>patterns that must all match</td></tr><tr><td><code>not</code></td><td><code>$pattern</code></td><td>none</td><td>yes</td><td>patterns that must have no match</td></tr><tr><td><code>with</code></td><td><code>$calc</code></td><td>none</td><td>yes</td><td>values to compute, in order</td></tr><tr><td><code>if</code></td><td><code>$check</code></td><td>none</td><td>yes</td><td>conditions that must all hold</td></tr><tr><td><code>then</code></td><td><code>$template</code></td><td>at least one</td><td>yes</td><td>what then exists</td></tr><tr><td><code>lazy</code></td><td>flag</td><td>false</td><td></td><td>made only when a question, a check or a deny needs it (below)</td></tr></tbody></table></div>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>when</code></td><td><code>$pattern</code></td><td>at least one</td><td>yes</td><td>patterns that must all match</td></tr><tr><td><code>not</code></td><td><code>$pattern</code></td><td>none</td><td>yes</td><td>patterns that must have no match</td></tr><tr><td><code>with</code></td><td><code>$calc</code></td><td>none</td><td>yes</td><td>values to compute, in order</td></tr><tr><td><code>if</code></td><td><code>$check</code></td><td>none</td><td>yes</td><td>conditions that must all hold</td></tr><tr><td><code>then</code></td><td><code>$template</code></td><td>at least one</td><td>yes</td><td>what then exists</td></tr><tr><td><code>lazy</code></td><td>flag</td><td>false</td><td></td><td>made only when a question, a check or a deny needs it (below); only for structures rarely asked, since each question pays for all lazy rules</td></tr></tbody></table></div>
 <p><strong>Meaning.</strong> For every way of matching all <code>when</code> patterns at once (a variable has one value throughout; <code>$p</code> in one pattern is the wire another pattern <code>@p</code> matched), such that no <code>not</code> pattern matches under the same bindings, every <code>with</code> calc has a result and every <code>if</code> check holds: each template, with the variables replaced, exists. A template with <code>core.on=$p</code> adds its entries to the wire <code>@p</code> matched. Any other template names a wire: if a fact has the same identity keys, or already has every entry the template gives, it is that fact (and gets any entries it lacks); otherwise a new fact is made. An entry whose variable has no value is left out.</p>
 <p><strong>When it is evaluated.</strong> In the chase, after every change, to a fixpoint: for the wires that were added or changed, and again in full for rules with <code>not=</code>, a selector, <code>core.absent=</code> or an aggregate when a type they read changed. What a rule concluded is withdrawn when one of the wires it read goes or changes.</p>
 <p><strong>Interactions.</strong> <em>Negation</em> must be stratified: a rule may not negate or aggregate what its own conclusions can produce (a <code>core.on=</code> template counts only against patterns that name a key it sets). <em>Depth:</em> a wire derived from derived wires more than <code>maxDepth</code> (12) deep is refused. <em>Tiers:</em> a conclusion is as weak as the weakest value it was read from. <em>Provenance:</em> <code>via</code> is the rule, <code>from</code> the matched wires, <code>cells</code> the values read. <em>Identity:</em> a derived wire has an id made from the rule and the bindings.</p>
@@ -478,6 +478,21 @@ print(w.act({ action: &#x27;take&#x27;, args: { item: &#x27;bolt&#x27; } }).miss
 only 30 left
 [{&quot;action&quot;:&quot;take&quot;,&quot;key&quot;:&quot;count&quot;,&quot;ask&quot;:&quot;How many?&quot;}]</code></pre></figure>
 <p><strong>Limits.</strong> Written as wires: no aggregates in its calcs; a <code>set</code> writes one value per key.</p>
+<h3 id="coreword">core.word</h3>
+<p>A word of one language and the one name of the matrix it means: an action, a type, a key (<code>type.key</code>) or a value of a slot. Words are facts the host tells or loads, not matrix wires, so namespaces, <code>sync</code>, undo and snapshots apply to them. Only <code>world.interpret</code> and <code>world.words</code> read them.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Meaning</th></tr></thead><tbody><tr><td><code>lang</code></td><td>the language (any label: <code>en</code>, <code>ro</code>)</td></tr><tr><td><code>text</code></td><td>the word as the host's front end gives it (compared without case)</td></tr><tr><td><code>means</code></td><td>an action name, a type, <code>type.key</code>, or a value</td></tr><tr><td><code>of</code></td><td><code>type.key</code>: the slot the value belongs to (needed when <code>means</code> is not an enum value, or to choose one slot)</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> One wire, one meaning: a text with two meanings is two wires, and <code>world.score</code> chooses between the readings they give. A word whose <code>means</code> names nothing is reported in <code>world.warnings</code> (<code>unknown-word</code>) when it is told or when the matrix changes.</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(&#x27;@k core.slot of=meeting key=day enum=mon enum=tue required=true&#x27;);
+w.tell(&#x27;@w1 core.word lang=ro text=luni means=mon of=meeting.day  @w2 core.word lang=ro text=întâlnire means=meeting&#x27;);
+print(w.interpret({ lang: &#x27;ro&#x27;, verb: &#x27;întâlnire&#x27;, args: [&#x27;luni&#x27;] }).candidates[0].wires);
+w.tell(&#x27;@w3 core.word lang=ro text=vineri means=fri of=meeting.day&#x27;);
+print(w.warnings[0].kind);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>@new meeting day=mon
+unknown-word</code></pre></figure>
+<p><strong>Limits.</strong> Words are not inflected: lemmas, morphology and tokenizing are the host's.</p>
 <h2 id="certainty-and-soft-constraints">Certainty and soft constraints</h2>
 <h3 id="coretier">core.tier</h3>
 <p>A tier of certainty of the host's own.</p>

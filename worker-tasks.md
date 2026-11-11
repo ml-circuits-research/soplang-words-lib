@@ -17,6 +17,19 @@ The user's direction: the host (PSys2) is now moving **every** world to the libr
 - **Repro.** A rule derives `is_a` from `class`. `query({ seek: 'is_a', where: { name: 'whale', is_a: 'fish' } })` answers `supported fish`: it supposes the `where` value instead of checking it.
 - **Expected.** A `mode=check` (name it as you see fit) compares the given value with what the world holds or derives. It answers `yes`, or `no` together with the actual value(s) and their `from`, or `missing`. This is the natural form of "is a whale a fish?" questions.
 
+### R6.4–R6.11: from a document editor and a document reader moved onto the library
+
+The host reports these, and the reviewer checked each against 0.6.1: none of them exists today. The only string builtin is `concat`; there is no `rank`, no blob kind, no transient flag, no `redo`, no upsert and no overlay. Use neutral examples, such as a text editor and a reader.
+- **R6.4 Opaque values.** Add `kind=blob` on a slot. The value is kept as given, compared by length plus hash, never tokenized, and excluded from rule matching, but it is part of marks and rewind. Use case: a large immutable analysis (tens of kB to MB) that must undo with the rest. Show the cost of a tell and of a fork with a 1 MB blob.
+- **R6.5 Bound variables in refusals.** Add `violations[i].vars = { n: 3, c: 2 }` next to `why`, plus simple filters in the template (`?c:words`, `?n:ordinal`), so hosts do not post-process the string. Keep the filters minimal and pluggable per language, with no English hard-coded in the core: register filters like functions.
+- **R6.6 Aggregates that always give one result.** Add `core.aggregate over=… count=?c default=0 then=…`: one result, even over an empty set, and no firing once per match. Today the same count needs one rule copy per kind.
+- **R6.7 Rank.** Add `core.rank of=<pattern> by=<key> out=?r`, the position of a wire among matching wires ordered by a key ("the 2nd chapter").
+- **R6.8 Transient state and redo.** A type flag, `transient=true`, marks state that is looked at but not edited: a selection, a cursor, a focus. `undo` skips steps that changed only transient wires. Add `world.redo()` as a first-class operation; today `rewind` returns a function.
+- **R6.9 Replace in place.** Add `applyPatch({ replace: { id, attrs } })`, which adds or removes keys while keeping the id. Today that takes a retract plus a tell under a new id, and the host maps ids back.
+- **R6.10 String checks.** Add `matches` (a bounded regex, refused if it can match empty and loop), `startsWith`, `endsWith`, `lower` and `contains` as builtins for `core.check` and `core.calc`. Example: "a heading that says Chapter 3 is chapter 3".
+- **R6.11 Evaluate without telling.** Add `check({ wires, overlay: true })` or `world.ask(question)`. It evaluates denies and rules on the world plus a hypothetical set of wires, and changes nothing.
+- **R6.12 Skip the rule pass for values no rule reads.** A patch that only changes slots no rule or deny mentions should not run the propagation. Detect it from the compiled matrix, with no new syntax if possible. Builds on P2 and P3.
+
 ### R6.3: check first, then do only what is still missing
 Several of the host's older workarounds may already be covered: `register` refusing to replace built-ins, `revise`, `told()`, `check(patch)`. Verify these two and fix only what is still missing:
 - (a) `query` on a supposed answer returns the derived answer-wire attributes (the keys set by `core.on`) and a non-empty `from`/`wires`.

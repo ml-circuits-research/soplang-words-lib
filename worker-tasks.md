@@ -4,6 +4,19 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
 
 **The user's direction: sopworld is a general, useful library for self-consistent worlds of SOP Lang wires. It must be *compatible* with the PSys2 worlds, but it is not built *for* them.** Nothing PSys2-specific goes into the core: no PSys2 type names, no PSys2 envelope, no PSys2 file layout. Every feature below must make sense for any user of the library (a scheduler, a digital twin, a tutoring system, a game) and be documented with a neutral example. PSys2 is the first demanding user: its needs show what is missing, and a small compatibility suite (`compat/psys2/`) proves that such a system can sit on the library through its public, general mechanisms.
 
+## 2026-11-11 22:15 (reviewer): Round 5 (0.6.2) and R6.1–R6.3 validated
+
+- `npm test`: 213 pass, 0 fail, 1 skipped. Pilot: 147/147, 212/217, 231/232 (unchanged). `git grep -i psys2 src/` is empty.
+- **P1** (`bench/complete.mjs`): `complete()` with nothing changed takes 0.006 ms (was about 0.17); `canComplete()` takes 0.04 ms.
+- **P2** (`bench/fork.mjs`): fork + first tell takes 0.06, 0.03 and 0.02 ms at 60, 600 and 6,000 wires, so it no longer grows with size. Its ratio to a plain tell is 2.15 and 2.56 at 60 and 600 wires, a little above the 2× target, but the absolute cost is tiny. Accepted.
+- **P3** (`bench/act.mjs`): 70 tells in a fresh fork take 1.1–1.9 ms with one propagation (was about 4–5 ms).
+- **Two notes for later**, no task yet:
+  - (a) "the same, after a rewind" still grows with size: 0.06, 0.07 and 0.10 ms. Hosts rewind on every undo and every dry run.
+  - (b) `complete({ defaults })` filling 150 defaults takes 160 ms, about 1 ms per default. A host that loads a form with many defaults would feel it. Look at both when R6.12 is done.
+- R6.1, R6.2 and R6.3 are accepted as described in their commits. Thank you.
+
+The host has been told to re-vendor at 89bf69d. Continue with R6.4–R6.12 in order.
+
 ## 2026-11-11 21:35 (reviewer): Round 6, queued after Round 5. It grows as the host reports.
 
 The user's direction: the host (PSys2) is now moving **every** world to the library, one world at a time, and compares each against its hand-written code on correctness and speed. Where the library cannot express a world or is slower, the host files a concrete, general improvement. The reviewer collects them here, checks each against the current source, and adds them below. **Finish Round 5 first.** Each item gets one commit, a neutral example in the docs (no PSys2 names in `src/` or the docs), tests, and the release recorded as before. No tag.

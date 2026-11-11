@@ -58,7 +58,7 @@ export const tiering = {
     if (done) return done;
     const out = { rank: this._rank('derived'), basis: new Map() };
     memo.set(name, out); // a cycle counts as derived
-    const w = this.get(id);
+    const w = this._peek(id);
     const o = w && this._origin(w, key);
     if (!o) return out;
     if (o.tier) {
@@ -77,7 +77,7 @@ export const tiering = {
 
   /** The tier of a value (or of a wire, without a key): how solid it is. */
   tier(id, key) {
-    const w = this.get(id);
+    const w = this._peek(id);
     if (!w || (key !== undefined && key !== null && !w.attrs[this._compiled().shortKey(w.type, key)])) return undefined;
     const k = key === undefined || key === null ? null : this._compiled().shortKey(w.type, key);
     return this._compiled().tiers[this._rests(w.id, k, new Map()).rank];

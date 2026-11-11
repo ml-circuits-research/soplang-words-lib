@@ -115,15 +115,18 @@ export const revision = {
   },
 
   /** Take over the state of a world that was rebuilt from (part of) this one's log. Returns the wire ids that are gone. */
-  _adopt(next, op) {
-    const before = new Set(this.wires.keys());
+  _adopt(next, op, gone = null) {
+    const before = gone ? null : new Set(this.wires.keys());
     if (this._shared) this._shared.holders--;
     for (const k of ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'seq', '_c', '_logOf', '_fills', '_lastOrder']) this[k] = next[k];
     this._shared = next._shared || null;
     this._pc = null;
     this.stamp = ++this._clock;
-    const removed = [...before].filter((x) => !this.wires.has(x));
-    this.events = [...this.events, { seq: this.seq, op, ids: removed }];
+    const removed = gone ? gone.filter((x) => !this.wires.has(x)) : [...before].filter((x) => !this.wires.has(x));
+    // rebuilt: the world was replaced as a whole, so the events before this one do not say
+    // what changed (rewind then compares everything)
+    this.events = layerList(this.events); // shared with what came before, not copied
+    this.events.push({ seq: this.seq, op, ids: removed, rebuilt: true });
     this._emitted = this.events.length;
     for (const l of this.listeners) l([{ ...this.events.at(-1) }], this);
     return removed;
@@ -216,10 +219,22 @@ export const revision = {
     const was = this.fork();
     const copy = mark.world.fork();
     const events = this.events;
-    this._adopt(copy, 'rewind');
-    this.events = [...events, { seq: this.seq, op: 'rewind', to: mark.seq }];
+    // what changed since the mark is named by the events since then, unless the world was
+    // rebuilt in between (undo, a retraction by replay): then everything is compared
+    const n0 = mark.world.events.length;
+    let touched = null;
+    if (events.length >= n0) {
+      const since = events.slice(n0);
+      if (!since.some((e) => e.rebuilt)) {
+        touched = new Set();
+        for (const e of since) for (const x of [e.id, e.into, ...(e.ids || [])]) if (x) touched.add(x); // bounded: the events since the mark
+      }
+    }
+    this._adopt(copy, 'rewind', touched ? [...touched] : null);
+    this.events = layerList(events);
+    this.events.push({ seq: this.seq, op: 'rewind', to: mark.seq, ...(touched ? {} : { rebuilt: true }) });
     this._emitted = this.events.length;
-    const d = was.diff(this);
+    const d = touched ? was._diffOf(this, touched) : was.diff(this);
     return { ok: true, removed: d.removed.map((x) => x.id), added: d.added.map((x) => x.id), changed: d.changed };
   },
 

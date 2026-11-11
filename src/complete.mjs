@@ -226,7 +226,8 @@ export const completion = {
     return this._guard(opts, () => this._next(opts), (budget) => ({ fills: [], questions: [], dead: [], budget }));
   },
 
-  _next({ review = false } = {}) {
+  // first: complete() takes the first default only, so the optional defaults are tried until one fits
+  _next({ review = false, first = false } = {}) {
     const c = this._compiled();
     const out = { fills: [], questions: [], dead: [] };
     if (review) {
@@ -246,7 +247,10 @@ export const completion = {
     }
     for (const o of optional) {
       this._b.tick('complete');
-      if (this._fill(o.id, o.key, c.slots.get(o.type).get(o.key).default, { dry: true, strict: false, via: 'core.search' }).ok) out.fills.push({ ...o, value: c.slots.get(o.type).get(o.key).default, kind: 'default' });
+      if (this._fill(o.id, o.key, c.slots.get(o.type).get(o.key).default, { dry: true, strict: false, via: 'core.search' }).ok) {
+        out.fills.push({ ...o, value: c.slots.get(o.type).get(o.key).default, kind: 'default' });
+        if (first) break;
+      }
     }
     for (const o of this.open()) {
       const s = c.slots.get(o.type).get(o.key);
@@ -300,7 +304,7 @@ export const completion = {
   _completing(filled, defaults, choose) {
     for (;;) {
       this._b.tick('complete');
-      const n = this._next();
+      const n = this._next({ first: defaults });
       const f = n.fills.find((x) => x.kind === 'forced') || (defaults && n.fills.find((x) => x.kind === 'default'));
       if (!f) {
         if (choose && n.questions.length) {
@@ -319,6 +323,7 @@ export const completion = {
       const group = f.kind === 'forced' && !this._singles() ? n.fills.filter((x) => x.kind === 'forced') : [f];
       const r = this._patch(group, { via, strict: false });
       if (!r.ok) {
+        if (defaults) n.fills = this._next().fills; // the whole list, for pending
         if (!this._singles()) return { filled, questions: n.questions, dead: n.dead, pending: n.fills };
         return { filled, questions: n.questions, dead: [...n.dead, f], pending: [] };
       }

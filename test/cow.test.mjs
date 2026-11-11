@@ -83,3 +83,37 @@ test('cow: forks of a large world are independent in both directions, after any 
   for (let i = 0; i < 5; i++) { w.tell(`@t${i} person name=t${i}  @vt${i} visit who=$t${i}`); w.rewind(m); }
   assert.equal(w.toSOP({ derived: true }), before);
 });
+
+test('cow: rewind names exactly what a full comparison names, after any mix of changes since the mark', () => {
+  const r = random(11);
+  const w = new World();
+  w.load(`
+    @k1 core.slot of=person key=name id=true
+    @k2 core.slot of=person key=age kind=integer
+    @v visit who=$p
+    @p person name=?n
+    @seen person core.on=$p visited=yes
+    @r core.rule when=$v when=$p then=$seen
+    @c core.aggregate over=$v count=?c then=$t
+    @t total of=visits count=?c
+  `);
+  w.load(Array.from({ length: 40 }, (_, i) => `@p${i} person name=n${i}\n@v${i} visit who=$p${i}`).join('\n'));
+  const sorted = (d) => JSON.stringify([d.added.map((x) => x.id ?? x).sort(), d.removed.map((x) => x.id ?? x).sort(), d.changed.map((x) => `${x.id}.${x.key}`).sort()]);
+  for (let round = 0; round < 40; round++) {
+    const m = w.mark();
+    for (let i = 0, n = 1 + Math.floor(r() * 6); i < n; i++) {
+      const x = Math.floor(r() * 40), op = r();
+      if (op < 0.25) w.tell(`@q${round}_${i} person name=q${round}_${i}  @w${round}_${i} visit who=$q${round}_${i}`);
+      else if (op < 0.45) w.fill(`p${x}`, 'age', String(round));
+      else if (op < 0.6) { if (w.has(`v${x}`)) w.retract(`v${x}`); }
+      else if (op < 0.75) { if (w.get(`p${x}`)?.attrs.age) w.revise(`p${x}`, 'age', String(100 + round)); }
+      else if (op < 0.85) w.applyPatch({ replace: { id: `p${x}`, attrs: { name: `n${x}`, note: `r${round}` } } });
+      else if (op < 0.93) w.undo();
+      else w.tell(`@sel${round}_${i} selection at=${x}`);
+    }
+    const expected = w.fork().diff(m.world);
+    const got = w.rewind(m);
+    assert.equal(sorted({ added: got.added, removed: got.removed, changed: got.changed }), sorted(expected), `round ${round}`);
+    assert.equal(w.diff(m.world).same, true, 'and the world is the marked one');
+  }
+});

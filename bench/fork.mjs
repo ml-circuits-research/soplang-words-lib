@@ -22,12 +22,12 @@ const base = (n) => {
   return w;
 };
 
-console.log('wires | tell, nothing shared | fork + first tell | mark + first tell | the same, after a rewind | second tell in the fork | fork + tell / tell');
+console.log('wires | tell, nothing shared | fork + first tell | mark + first tell | the same, after a rewind | the rewind | second tell in the fork | fork + tell / tell');
 for (const n of [60, 600, 6000]) {
   const w = base(n);
   const R = 201;
   let k = 0;
-  const plain = [], forked = [], marked = [], second = [], rewound = [];
+  const plain = [], forked = [], marked = [], second = [], rewound = [], rewinds = [];
   // a world that shares nothing: tell and take it back each time, so the base stays the same size
   for (let i = 0; i < R; i++) { plain.push(time(() => w.tell(`@a${k} person name=a${k}`))); w.retract(`a${k++}`); }
   for (let i = 0; i < R; i++) {
@@ -47,9 +47,9 @@ for (const n of [60, 600, 6000]) {
   for (let i = 0; i < 51; i++) {
     let m;
     rewound.push(time(() => { m = u.mark(); u.tell(`@e${k} person name=e${k}`); }));
-    u.rewind(m);
+    rewinds.push(time(() => u.rewind(m)));
     k++;
   }
   const p = med(plain), f = med(forked);
-  console.log(`${String(w.wires.size).padStart(5)} | ${p.toFixed(4)} ms | ${f.toFixed(4)} ms | ${med(marked).toFixed(4)} ms | ${med(rewound).toFixed(4)} ms | ${med(second).toFixed(4)} ms | ${(f / p).toFixed(2)}`);
+  console.log(`${String(w.wires.size).padStart(5)} | ${p.toFixed(4)} ms | ${f.toFixed(4)} ms | ${med(marked).toFixed(4)} ms | ${med(rewound).toFixed(4)} ms | ${med(rewinds).toFixed(4)} ms | ${med(second).toFixed(4)} ms | ${(f / p).toFixed(2)}`);
 }

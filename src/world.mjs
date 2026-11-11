@@ -100,6 +100,9 @@ export class World {
     return x;
   }
   /** Wires of a type, including wires of the types that extend it. */
+  /** A wire to read, not to change: no copy is made of a wire shared with a fork. */
+  _peek(id) { const m = this.wires, rid = this.resolve(id); return m.peek ? m.peek(rid) : m.get(rid); }
+
   ofType(type) { return [...(this.byType.get(type) || [])].map((id) => this.wires.get(id)); }
 
   /**

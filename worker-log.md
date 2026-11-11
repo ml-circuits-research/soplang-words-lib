@@ -1821,3 +1821,37 @@ push src`) → after: a key no rule reads (text) 6.85 → 1.47 ms; a key rules r
 
 The reviewer's two notes for after R6.12 (rewind growing with size, defaults costing
 about 1 ms each) come next.
+
+## The reviewer's two notes after R6.12: rewind, and many defaults — done
+
+`npm test`: 225 pass, 0 fail on sources and built file, 224 in checking mode. Pilot
+output identical. `node tools/scan-loops.mjs src`: clean.
+
+(a) Rewind. `node bench/fork.mjs`, before (`git stash push src`) → after, with a new
+column for the rewind itself:
+
+| wires | the same (mark + tell), after a rewind | the rewind |
+| --- | --- | --- |
+| 60 | 0.060 → 0.023 ms | 0.371 → 0.012 ms |
+| 600 | 0.095 → 0.022 ms | 1.364 → 0.012 ms |
+| 6,000 | 0.077 → 0.012 ms | 11.895 → 0.009 ms |
+
+- The rewind compared the two worlds wire by wire (to return what it removed, added and
+  changed), and rebuilt the set of all ids and copied the whole history twice. Now the
+  events since the mark name what may have changed, and only those wires are compared
+  (`_diffOf`). When the world was rebuilt as a whole since the mark (an undo, a
+  retraction by replay: their events are marked `rebuilt`), everything is compared, as
+  before. The history is extended as a copy-on-write list instead of copied.
+- `diff()` and `tier()` read wires without making them a world's own copy (`_peek`);
+  `diff()` used to copy every wire of a forked world into its layer.
+- Test `cow: rewind names exactly what a full comparison names, after any mix of changes
+  since the mark` (40 rounds of tells, fills, retractions, revisions, replacements,
+  undos and transient-looking tells; each rewind's lists equal a full `diff`, and the
+  world equals the mark).
+
+(b) Many defaults. `node bench/complete.mjs`, `complete({ defaults })` filling 150
+defaults: 88.7 → 24.7 ms (before R6.12's commit the figure was 130 ms; the reviewer
+measured 160). Each round of `complete` tried every remaining optional default in a dry
+run, but uses only the first that fits: now it stops at that one (the result is the
+same: forced values still come first, and the list of pending defaults is computed in
+full where it is returned).

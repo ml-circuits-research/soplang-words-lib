@@ -22,7 +22,7 @@ export const describing = {
       for (let d = 0; d < depth && edge.length; d++) { // bounded: depth steps, each wire once
         const next = [];
         for (const id of edge) {
-          const w = this.wires.get(id);
+          const w = this._peek(id);
           const near = [...Object.values(w.attrs).flat().filter((v) => v[0] === '$').map((v) => this.resolve(v.slice(1))), ...(this.refs.get(id) || [])];
           for (const n of near) if (this.wires.has(n) && !chosen.has(n)) { chosen.add(n); next.push(n); }
         }
@@ -56,7 +56,7 @@ export const describing = {
     const added = [], removed = [], changed = [];
     for (const w of other.wires.values()) if (!this.wires.has(w.id)) added.push({ id: w.id, type: w.type, tier: other.tier(w.id) }); // bounded: one pass
     for (const w of this.wires.values()) { // bounded: one pass
-      const o = other.wires.get(w.id);
+      const o = other.wires.peek ? other.wires.peek(w.id) : other.wires.get(w.id);
       if (!o) { removed.push({ id: w.id, type: w.type, tier: this.tier(w.id) }); continue; }
       for (const k of new Set([...Object.keys(w.attrs), ...Object.keys(o.attrs)])) {
         const a = w.attrs[k], b = o.attrs[k];
@@ -64,6 +64,26 @@ export const describing = {
         const ta = a ? this.tier(w.id, k) : undefined, tb = b ? other.tier(w.id, k) : undefined;
         if (same && ta === tb) continue;
         changed.push({ id: w.id, key: k, ...(a ? { from: values(w, k), fromTier: ta } : {}), ...(b ? { to: values(o, k), toTier: tb } : {}) });
+      }
+    }
+    return { same: !added.length && !removed.length && !changed.length, added, removed, changed };
+  },
+
+  /** diff() restricted to some wire ids: what the events since a point say may have changed. */
+  _diffOf(other, ids) {
+    const added = [], removed = [], changed = [];
+    const peek = (w, id) => (w.wires.peek ? w.wires.peek(id) : w.wires.get(id));
+    for (const id of ids) { // bounded: the ids given
+      const w = peek(this, id), o = peek(other, id);
+      if (!w && o) { added.push({ id, type: o.type, tier: other.tier(id) }); continue; }
+      if (w && !o) { removed.push({ id, type: w.type, tier: this.tier(id) }); continue; }
+      if (!w) continue;
+      for (const k of new Set([...Object.keys(w.attrs), ...Object.keys(o.attrs)])) {
+        const a = w.attrs[k], b = o.attrs[k];
+        const same = a && b && a.length === b.length && a.every((v, i) => v === b[i]);
+        const ta = a ? this.tier(id, k) : undefined, tb = b ? other.tier(id, k) : undefined;
+        if (same && ta === tb) continue;
+        changed.push({ id, key: k, ...(a ? { from: values(w, k), fromTier: ta } : {}), ...(b ? { to: values(o, k), toTier: tb } : {}) });
       }
     }
     return { same: !added.length && !removed.length && !changed.length, added, removed, changed };

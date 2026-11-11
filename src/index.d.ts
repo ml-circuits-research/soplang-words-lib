@@ -45,6 +45,14 @@ export type WordMeaning =
   | { kind: 'type'; type: string }
   | { kind: 'key'; type: string; key: string }
   | { kind: 'value'; type: string; key: string; value: string };
+export type Template = string | ((parts: { verb: string; args: { key: string; role?: string; text: string; value: string }[] }) => string);
+export interface Example {
+  lang: string;
+  tool: { kind: 'action'; name: string } | { kind: 'type'; type: string } | { kind: 'question'; type: string; key: string };
+  text: string;
+  frame: Frame;
+  expect: { action: string; args: Record<string, string> } | { type: string; attrs: Record<string, string>; refer: Record<string, { type: string; where: Record<string, string> }> } | { question: Question };
+}
 export interface Frame {
   lang?: string;
   verb?: string;
@@ -333,6 +341,8 @@ export class World {
   words(lang?: string): Map<string, { id: string; lang: string; means: string; of?: string; meanings: WordMeaning[] }[]>;
   /** read a language-neutral frame into candidates for score; nothing invented */
   interpret(frame: Frame | Frame[] | Frame[][], options?: { limit?: number; id?: string; ns?: string }): { candidates: (ScoreCandidate & Reading)[]; unresolved: string[]; dropped: number };
+  /** example sentences from the tools, slots and words, with the host's templates */
+  examples(lang: string, templates?: { action?: Template; statement?: Template; question?: Template }, options?: { per?: number; all?: boolean; sample?: number }): Example[];
   /** judge candidate readings against the world; nothing is told */
   score(candidates: ScoreCandidate[], options?: Budgeted & { criteria?: Criterion[] }): { candidates: Scored[]; order: number[] };
   /** run fn against the world as it was at a point of the sequence */

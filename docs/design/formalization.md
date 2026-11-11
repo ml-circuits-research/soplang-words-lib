@@ -147,6 +147,10 @@ questions mixed): 1 candidate 0.26–0.31 ms, 10 candidates 1.2–1.6 ms, 100 ca
 
 ## 4. Generating readers
 
+Built as a sketch in R9.4: `world.examples(lang, templates)` fills the host's templates
+with the tools, slots and words, and gives with each sentence the frame and the reading
+it should give back, so a lexicon is tested by reading its own examples.
+
 From tool descriptions and words a host can generate a reader per language without
 writing one by hand. What the library would own and what stays in the host:
 

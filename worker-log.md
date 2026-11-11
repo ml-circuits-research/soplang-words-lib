@@ -2276,3 +2276,23 @@ clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
 - `node bench/interpret.mjs`: two splits of "book n17 and meet q3 on monday", 4
   candidates: interpret 0.108 ms, score 0.870 ms, the two-frame reading first.
 - Docs: api.md (splits), index.d.ts (`parts`, `split`), design doc order.
+
+## R9.4 — a generator sketch: world.examples(lang, templates) — done
+
+`npm test`: 252 pass, 0 fail on sources and built file, 251 in checking mode. Pilot
+output identical. `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`:
+clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
+
+- `world.examples(lang, templates, { per, all, sample })`: for each action, type and
+  key that has a word, fills the host's template (a string with `{verb}`, `{args}`,
+  `{<key>}`, or a function) with the slots and words; an argument with a key word is
+  written `role word`. Values only from words and from names the world holds (`sample`
+  per type); a number slot takes its declared `min` (or 1). Each example has `frame`
+  (what a front end should give interpret) and `expect` (the reading it should give).
+- Test `examples: ...`: nine RO sentences from the shop and calendar (actions,
+  statements with a role word, questions with the host's template `cât {verb} are
+  {args}?`); every one reads back through interpret to the reading it expects; a
+  function template with `all: true` writes the qty number.
+- `node bench/examples.mjs` (300 items, 40 people, 6 EN words): 8 examples in about
+  0.05 ms; all 8 read back with candidates.
+- Docs: api.md `examples`, index.d.ts (`Template`, `Example`), design doc §4.

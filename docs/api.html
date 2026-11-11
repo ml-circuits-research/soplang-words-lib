@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="026b54dbaa5f">
+<meta name="source-hash" content="4990266bdd22">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -279,6 +279,17 @@ w.tell(&#x27;@i1 item name=pen  @w core.word lang=en text=order means=order&#x27
 const r = w.interpret({ lang: &#x27;en&#x27;, verb: &#x27;order&#x27;, args: [&#x27;pen&#x27;, &#x27;spoon&#x27;], numbers: [2] });
 print(r.candidates[0].wires, r.candidates[0].refer, r.unresolved);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>@new order item=$r1 qty=2 {&quot;r1&quot;:{&quot;type&quot;:&quot;item&quot;,&quot;where&quot;:{&quot;name&quot;:&quot;pen&quot;}}} [&quot;spoon&quot;]</code></pre></figure>
+<h3 id="worldexampleslang-templates-options">world.examples(lang, templates?, options?)</h3>
+<p>Example sentences of a language, generated from the tools (actions, types and keys that have words), their slots and the words; the host gives the templates, the library what fills them. <code>templates</code> is <code>{ action, statement, question }</code>, each a string with <code>{verb}</code>, <code>{args}</code> and <code>{&lt;key&gt;}</code>, or a function <code>({ verb, args }) =&gt; string</code>; an argument is written <code>role word</code> when its key has a word. Values come only from words and from names the world holds (<code>sample</code> per type, default 2); a number slot takes its <code>min</code> (or 1). Each example is <code>{ lang, tool, text, frame, expect }</code>: the frame a front end should give <code>interpret</code> for <code>text</code>, and the reading it should then give, so a lexicon can be tested by reading its own examples back. Options: <code>per</code> (default 3 a tool), <code>all</code> (every slot with fillers, not only the required ones), <code>sample</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@k6 core.slot of=person key=name id=true
+  @k5 core.slot of=meeting key=with type=person required=true
+  @k4 core.slot of=meeting key=day enum=mon enum=tue required=true`);
+w.tell(`@p1 person name=ann  @w1 core.word lang=ro text=întâlnire means=meeting
+  @w2 core.word lang=ro text=cu means=meeting.with  @w3 core.word lang=ro text=luni means=mon of=meeting.day`);
+const [e] = w.examples(&#x27;ro&#x27;, { statement: &#x27;{verb} {day} {with}&#x27; });
+print(e.text, e.frame.args, e.expect.attrs);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>întâlnire luni cu ann [{&quot;role&quot;:&quot;cu&quot;,&quot;word&quot;:&quot;ann&quot;},&quot;luni&quot;] {&quot;day&quot;:&quot;mon&quot;}</code></pre></figure>
 <h3 id="worldscorecandidates-options">world.score(candidates, options?)</h3>
 <p>Judges candidate readings of one utterance against the world and tells nothing. A candidate is any of <code>{ wires, refer }</code> (a statement; <code>refer</code> maps a reference name used in <code>wires</code> to <code>{ type, where, ns }</code>, a description resolved against the state), <code>{ action, args }</code>, or <code>{ question }</code> (as for <code>query</code>). Returns <code>{ candidates, order }</code>; each scored candidate has <code>ok</code>, <code>violations</code>, <code>referents</code> (<code>{ name, ids, unique, fits }</code>: <code>fits</code> are the ids that keep the statement consistent when the description alone is ambiguous), <code>lacks</code> (referents nothing matches, required keys still open, missing arguments), <code>assumes</code> (defaults the statement would rest on), <code>action</code> (<code>{ available, status, missing }</code>), <code>answer</code>, <code>words</code> (for candidates from <code>interpret</code>), and its place: <code>place</code>, <code>why</code>, and for a loser <code>lostTo</code> and <code>on</code>. <code>order</code> is best first by <code>rank</code> (below); option <code>criteria</code> replaces the default ones. See <a href="design/formalization.md">design/formalization</a>.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();

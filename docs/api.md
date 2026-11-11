@@ -701,6 +701,34 @@ print(r.candidates[0].wires, r.candidates[0].refer, r.unresolved);
 @new order item=$r1 qty=2 {"r1":{"type":"item","where":{"name":"pen"}}} ["spoon"]
 ```
 
+### world.examples(lang, templates?, options?)
+
+Example sentences of a language, generated from the tools (actions, types and keys that
+have words), their slots and the words; the host gives the templates, the library what
+fills them. `templates` is `{ action, statement, question }`, each a string with
+`{verb}`, `{args}` and `{<key>}`, or a function `({ verb, args }) => string`; an argument
+is written `role word` when its key has a word. Values come only from words and from
+names the world holds (`sample` per type, default 2); a number slot takes its `min` (or
+1). Each example is `{ lang, tool, text, frame, expect }`: the frame a front end should
+give `interpret` for `text`, and the reading it should then give, so a lexicon can be
+tested by reading its own examples back. Options: `per` (default 3 a tool), `all` (every
+slot with fillers, not only the required ones), `sample`.
+
+```js run
+const w = new World();
+w.load(`@k6 core.slot of=person key=name id=true
+  @k5 core.slot of=meeting key=with type=person required=true
+  @k4 core.slot of=meeting key=day enum=mon enum=tue required=true`);
+w.tell(`@p1 person name=ann  @w1 core.word lang=ro text=întâlnire means=meeting
+  @w2 core.word lang=ro text=cu means=meeting.with  @w3 core.word lang=ro text=luni means=mon of=meeting.day`);
+const [e] = w.examples('ro', { statement: '{verb} {day} {with}' });
+print(e.text, e.frame.args, e.expect.attrs);
+```
+
+```output
+întâlnire luni cu ann [{"role":"cu","word":"ann"},"luni"] {"day":"mon"}
+```
+
 ### world.score(candidates, options?)
 
 Judges candidate readings of one utterance against the world and tells nothing. A

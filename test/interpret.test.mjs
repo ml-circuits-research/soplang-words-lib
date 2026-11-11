@@ -118,3 +118,30 @@ test('interpret: alternative splits of one message are scored as wholes; later p
   assert.deepEqual([two.candidates[0].ok, two.candidates[0].referents], [true, [{ name: 'it', ids: ['cup'], unique: true, part: 1 }]]);
   assert.deepEqual([w.version, w.log.length, w.has('cup')], [...before, false], 'nothing was told');
 });
+
+test('examples: sentences from the tools, slots and words with the host\'s templates; each reads back to what it expects', () => {
+  const w = shopAndCalendar();
+  w.tell('@ro8 core.word lang=ro text=marți means=tue of=meeting.day');
+  const ex = w.examples('ro', { question: 'cât {verb} are {args}?' });
+  assert.deepEqual(ex.map((e) => e.text), [
+    'rezervă pix', 'rezervă ink',
+    'comandă pix', 'comandă ink',
+    'întâlnire cu ann luni', 'întâlnire cu ann marți', 'întâlnire cu bob luni',
+    'cât stoc are pix?', 'cât stoc are ink?',
+  ]);
+  assert.deepEqual(ex[4].frame, { lang: 'ro', verb: 'întâlnire', args: [{ role: 'cu', word: 'ann' }, 'luni'] });
+  // the round trip: interpret gives the reading each example expects
+  const matches = (c, e) => {
+    if (e.expect.action) return c.action === e.expect.action && JSON.stringify(c.args) === JSON.stringify(e.expect.args);
+    if (e.expect.question) return JSON.stringify(c.question) === JSON.stringify(e.expect.question);
+    const wire = c.wires && c.wires.split(' ');
+    if (!wire || wire[1] !== e.expect.type) return false;
+    const attrs = Object.fromEntries(wire.slice(2).map((kv) => kv.split('=')));
+    return Object.entries(e.expect.attrs).every(([k, v]) => attrs[k] === v)
+      && Object.entries(e.expect.refer).every(([k, d]) => JSON.stringify(c.refer?.[attrs[k]?.slice(1)]) === JSON.stringify(d));
+  };
+  for (const e of ex) assert.ok(w.interpret(e.frame).candidates.some((c) => matches(c, e)), `${e.text} reads back`);
+  // a function template, every slot with fillers, and fewer per tool
+  const en = w.examples('en', { statement: ({ verb, args }) => `please ${verb} ${args.map((a) => a.text).join(' and ')}` }, { all: true, per: 1 });
+  assert.ok(en.some((e) => e.text === 'please order pen and 1' && e.frame.numbers[0] === '1'));
+});

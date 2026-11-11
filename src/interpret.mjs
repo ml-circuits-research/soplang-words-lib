@@ -278,6 +278,113 @@ export const interpreting = {
     return { candidates: out, unresolved: [...unresolved], dropped };
   },
 
+  /**
+   * Example sentences of a language, generated from the tools (actions, types with words,
+   * keys with words), their slots and the words. The host gives the templates; the
+   * library supplies what fills them. `templates` is { action, statement, question }, each
+   * a string with {verb} and {args} (and {<key>} for one argument) or a function
+   * ({ verb, args: [{ key, role, word, text }] }) => string; defaults '{verb} {args}' and
+   * '{verb} {args}?'. An argument is written `role word` when its key has a word.
+   *
+   * Values come only from words (`means=<value> of=<type.key>`, enum values with a word)
+   * and from names the world holds (identifying keys, `sample` wires per type, default 2);
+   * a number slot takes its min (or 1), the one value not from a word. Each example is
+   * { lang, tool, text, frame, expect }: `frame` is what a host's front end should give
+   * interpret for `text`, and `expect` the candidate it should then choose, so examples are
+   * also tests of a lexicon. Options: `per` (examples per tool, default 3), `all` (every
+   * slot with fillers, not only required ones), `sample`.
+   */
+  examples(lang, templates = {}, opts = {}) {
+    const c = this._compiled();
+    const per = opts.per ?? 3, sample = opts.sample ?? 2;
+    const lexicon = this.words(lang);
+    const entries = [...lexicon.entries()].flatMap(([text, es]) => es.flatMap((e) => e.meanings.map((m) => ({ text, ...m }))));
+    const keyWord = (type, key) => entries.find((m) => m.kind === 'key' && m.type === type && m.key === key)?.text;
+    const isA = (t, u) => t === u || c.isA(t, u);
+    // what can fill a slot: [{ text, value, refer? }]
+    const fillers = (type, key, s) => {
+      if (s?.type) { // a wire: named by words for its identifying values, or by names the world holds
+        const out = [];
+        for (const k of c.idKeys.get(s.type) || []) {
+          for (const m of entries) if (m.kind === 'value' && isA(m.type, s.type) && m.key === k) out.push({ text: m.text, value: m.value, refer: { type: s.type, where: { [k]: m.value } } });
+          for (const id of [...(this.byType.get(s.type) || [])].slice(0, sample)) {
+            const v = this._peek(id)?.attrs[k]?.[0];
+            if (v !== undefined && !out.some((o) => o.value === v)) out.push({ text: v, value: v, refer: { type: s.type, where: { [k]: v } } });
+          }
+        }
+        return out;
+      }
+      const words = entries.filter((m) => m.kind === 'value' && isA(type, m.type) && m.key === key).map((m) => ({ text: m.text, value: m.value }));
+      if (words.length) return words;
+      if (s && s.kinds.some((k) => k === 'integer' || k === 'number' || k === 'quantity')) {
+        const v = s.attrs?.min?.[0] ?? '1';
+        return [{ text: v, value: v, number: true }];
+      }
+      return [];
+    };
+    const fill = (tpl, verb, args) => {
+      if (typeof tpl === 'function') return tpl({ verb, args });
+      const one = (a) => (a.role ? `${a.role} ${a.text}` : a.text);
+      return tpl.replace(/\{(\w+)\}/g, (all, name) => {
+        if (name === 'verb') return verb;
+        if (name === 'args') return args.filter((a) => !tpl.includes(`{${a.key}}`)).map(one).join(' ');
+        const a = args.find((x) => x.key === name);
+        return a ? one(a) : '';
+      }).replace(/\s+/g, ' ').replace(/\s+([?.!,])/g, '$1').trim();
+    };
+    const out = [];
+    // every combination of fillers, cut at `per`
+    const combine = (slots, emit) => {
+      let combos = [[]];
+      for (const sl of slots) combos = combos.flatMap((cmb) => sl.fill.map((f) => [...cmb, { ...sl, ...f }])).slice(0, per);
+      combos.forEach(emit);
+    };
+    const toFrame = (verb, args, extra = {}) => ({
+      lang, verb,
+      args: args.filter((a) => !a.number).map((a) => (a.role ? { role: a.role, word: a.text } : a.text)),
+      ...(args.some((a) => a.number) ? { numbers: args.filter((a) => a.number).map((a) => a.text) } : {}),
+      ...extra,
+    });
+    for (const v of entries.filter((m) => m.kind === 'action')) {
+      const a = c.actions.get(v.name);
+      const slots = (a.params || []).map((p) => {
+        for (const q of a.rule?.when || []) for (const [k, vs] of Object.entries(q.attrs)) if (vs.includes('?' + p)) {
+          const s = c.slotOf(q.type, k);
+          const fl = fillers(q.type, k, s?.type ? s : { ...(s || { kinds: [] }), type: c.idKeys.get(q.type)?.includes(k) ? q.type : undefined });
+          return { key: p, role: keyWord(q.type, k), fill: fl.map((f) => ({ ...f, refer: undefined })) };
+        }
+        return { key: p, fill: [] };
+      }).filter((sl) => sl.fill.length);
+      combine(slots, (args) => out.push({
+        lang, tool: { kind: 'action', name: v.name }, text: fill(templates.action || '{verb} {args}', v.text, args),
+        frame: toFrame(v.text, args), expect: { action: v.name, args: Object.fromEntries(args.map((x) => [x.key, x.value])) },
+      }));
+    }
+    for (const v of entries.filter((m) => m.kind === 'type')) {
+      const slots = [...(c.slots.get(v.type)?.values() || [])].filter((s) => !s.prefix && (opts.all || s.required))
+        .map((s) => ({ key: s.key, role: keyWord(v.type, s.key), fill: fillers(v.type, s.key, s) })).filter((sl) => sl.fill.length);
+      combine(slots, (args) => out.push({
+        lang, tool: { kind: 'type', type: v.type }, text: fill(templates.statement || '{verb} {args}', v.text, args),
+        frame: toFrame(v.text, args),
+        expect: { type: v.type, attrs: Object.fromEntries(args.filter((x) => !x.refer).map((x) => [x.key, x.value])), refer: Object.fromEntries(args.filter((x) => x.refer).map((x) => [x.key, x.refer])) },
+      }));
+    }
+    for (const k of entries.filter((m) => m.kind === 'key')) {
+      // a question about a key, of a wire named by an identifying value
+      const ids = c.idKeys.get(k.type) || [];
+      if (ids.includes(k.key) || !ids.length) continue;
+      const about = fillers(k.type, ids[0], { type: k.type, kinds: [] });
+      for (const f of about.slice(0, per)) {
+        const args = [{ key: ids[0], text: f.text, value: f.value }];
+        out.push({
+          lang, tool: { kind: 'question', type: k.type, key: k.key }, text: fill(templates.question || '{verb} {args}?', k.text, args),
+          frame: toFrame(k.text, args, { question: true }), expect: { question: { type: k.type, where: f.refer.where, seek: k.key } },
+        });
+      }
+    }
+    return out;
+  },
+
   _quoteValue(v) {
     return /^[A-Za-z0-9_.+-]+$/.test(v) ? v : quote(v);
   },

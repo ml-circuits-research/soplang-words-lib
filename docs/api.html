@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="339342500d21">
+<meta name="source-hash" content="ec06e417e836">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -168,14 +168,23 @@ w.tell(&#x27;@pen item name=pen price=2  @ink item name=ink price=3  @l1 line qt
 print(w.suggest(&#x27;l1&#x27;, &#x27;item&#x27;).map((c) =&gt; c.value));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;$pen&quot;,&quot;$ink&quot;]</code></pre></figure>
 <h3 id="worldnextoptions">world.next(options?)</h3>
-<p>What can be done about the open keys without changing anything: <code>{ fills, questions, dead, review }</code>. <code>fills</code> are values that are forced or defaults (<code>kind</code>), <code>questions</code> the keys that need an answer (as question wires with the options), <code>dead</code> the keys with no possible value, <code>review</code> the assumptions a host may want confirmed.</p>
+<p>What can be done about the open keys without changing anything: <code>{ fills, questions, dead }</code>. <code>fills</code> are values that are forced or defaults (<code>kind</code>), <code>questions</code> the keys that need an answer (as question wires with the options), <code>dead</code> the keys with no possible value. With <code>{ review: true }</code> also <code>review</code>: the assumptions a host may want confirmed, weakest first; it is a pass over every value, so it is computed only when asked for. Cost: one trial per candidate of each empty slot; nothing at all when the matrix has no required slot and no default.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 w.tell(&#x27;@pen item name=pen  @l1 line item=$pen&#x27;);
 const n = w.next();
 print(n.fills.map((f) =&gt; [f.id, f.key, f.value, f.kind]), n.questions.map((q) =&gt; [q.attrs.about[0], q.attrs.seek[0]]), n.dead);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;l1&quot;,&quot;qty&quot;,&quot;1&quot;,&quot;default&quot;]] [[&quot;$pen&quot;,&quot;price&quot;]] []</code></pre></figure>
+<h3 id="worldcancompleteid">world.canComplete(id?)</h3>
+<p>Cheap: whether some empty slot of the world (or of one wire) has a candidate that completion could try: an optional key with a default, or a required key with a default, an enum, a range, or a type that has wires. It does not try the values, so <code>true</code> does not promise that <code>complete()</code> fills anything. For a host that completes after every change and wants to skip the call when there is nothing to look at. Cost: one pass over the wires whose type has such a slot; constant when the matrix has none.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
+w.tell(&#x27;@pen item name=pen price=2  @l1 line item=$pen qty=2&#x27;);
+print(w.canComplete(), w.canComplete(&#x27;pen&#x27;));
+w.tell(&#x27;@l2 line item=$pen&#x27;);
+print(w.canComplete(), w.canComplete(&#x27;l2&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>false false
+true true</code></pre></figure>
 <h3 id="worldcompleteoptions">world.complete(options?)</h3>
-<p>Applies what <code>next</code> found: forced values, with <code>{ defaults: true }</code> the defaults, with <code>{ choose: true }</code> one full solution of what is left (tier <code>guessed</code>). Returns <code>{ filled, questions, dead, pending }</code>.</p>
+<p>Applies what <code>next</code> found: forced values, with <code>{ defaults: true }</code> the defaults, with <code>{ choose: true }</code> one full solution of what is left (tier <code>guessed</code>). Returns <code>{ filled, questions, dead, pending }</code>. A call on a world that has not changed since a call with the same options that filled nothing returns that answer again at once.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 w.tell(&#x27;@pen item name=pen price=2  @l1 line item=$pen&#x27;);
 const c = w.complete({ defaults: true });

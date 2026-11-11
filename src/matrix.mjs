@@ -348,6 +348,7 @@ export function compileMatrix(world) {
   // ---- slots of a type: its own and the inherited ones, the nearest declaration winning
   const effective = new Map();
   c.slots = {
+    own, // the declarations of each type, before inheritance
     get(type) {
       if (effective.has(type)) return effective.get(type);
       let merged;

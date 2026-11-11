@@ -197,3 +197,43 @@ test('fork: structural, independent in both directions, and cheap', () => {
   const ms = time(() => w.fork());
   assert.ok(ms < 1, `fork() of ${w.wires.size} wires took ${ms} ms`);
 });
+
+test('complete: with nothing to fill it is cheap, and its answer is the one a full run gives', () => {
+  const w = new World();
+  w.load(`
+    @k1 core.slot of=visit key=who type=person required=true ask="Who came?"
+    @k2 core.slot of=visit key=mood enum=calm enum=busy
+    @k3 core.slot of=person key=name id=true
+  `);
+  assert.equal(w.canComplete(), false);
+  w.tell('@p1 person name=ana  @v1 visit');
+  assert.equal(w.canComplete(), true, 'a required reference with a wire of its type');
+  assert.equal(w.canComplete('p1'), false);
+  const first = w.complete();
+  assert.deepEqual(first.filled.map((f) => [f.id, f.key, f.value]), [['v1', 'who', '$p1']]);
+  assert.equal(w.canComplete(), false);
+  // nothing changed: the same answer, without the work, and a copy the caller may change
+  const a = w.complete();
+  w.stats();
+  const b = w.complete();
+  assert.equal(w.stats().steps, 0, 'the second call does no work');
+  assert.deepEqual(a, b);
+  a.questions.push('x');
+  assert.deepEqual(w.complete(), b);
+  // it is the answer a world built from scratch gives
+  const fresh = World.fromJSON(w.toJSON());
+  assert.deepEqual(fresh.complete(), b);
+  // other options, a change, a rollback, a fork, a registered function: each is looked at again
+  w.load('@k4 core.slot of=visit key=day enum=mon enum=tue required=true');
+  assert.equal(w.canComplete(), true);
+  assert.deepEqual(w.complete({ defaults: true }).filled, []);
+  assert.equal(w.complete().pending.length, 0);
+  assert.deepEqual(w.complete({ choose: true }).filled.map((f) => f.key), ['day']);
+  // review only on request
+  assert.equal('review' in w.next(), false);
+  assert.ok(w.next({ review: true }).review.length >= 1);
+  const f = w.fork();
+  f.tell('@v2 visit');
+  assert.deepEqual(f.complete().filled.map((x) => [x.id, x.key]), [['v2', 'who']]);
+  assert.equal(w.has('v2'), false);
+});

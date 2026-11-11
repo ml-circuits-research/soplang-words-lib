@@ -169,6 +169,7 @@ export class World {
     else if (kind === 'producer') this.producers[name] = fn;
     else throw new Error(`sopworld: unknown kind of function "${kind}"`);
     this._c = null; // a matrix that names it compiles now
+    this._completed = null; // and what complete() found may change
     return this;
   }
 

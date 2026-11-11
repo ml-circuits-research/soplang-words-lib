@@ -1421,3 +1421,43 @@ the canonical form, values as data` in `test/core.test.mjs`. api.md, index.d.ts 
 CHANGELOG follow (the docs tests enforce the first two).
 
 Changed for a host: `str('"a\\nb"')` now gives a line end where it gave `n`.
+
+## P1 — complete() / next() with nothing to fill are cheap; canComplete() — done
+
+`npm test`: 209 pass, 0 fail on sources and built file. Pilot output identical to the
+run before the change (`diff` of `node compat/psys2/run.mjs` without the timings:
+empty): 147/147, 212/217, 231/232. `node tools/scan-loops.mjs src`: clean.
+`git grep -i psys2 src/ | wc -l`: 0.
+
+`node bench/complete.mjs` (420 wires, slots that offer nothing to fill), before → after:
+
+| | before | after |
+| --- | --- | --- |
+| `complete()`, nothing changed | 0.304 ms | 0.006 ms |
+| `next()` | 0.276 ms | 0.043 ms |
+| tell + `complete()` | 0.362 ms | 0.030 ms (tell alone 0.013) |
+| `canComplete()` | absent | 0.019 ms |
+| `complete({ defaults })` filling 150 defaults | 220 ms | 130 ms |
+
+- `review` is computed only for `next({ review: true })`; `complete()` never computes
+  it. This changes `next()`'s default result (no `review` key); the one test that read
+  it now asks for it, and api.md, index.d.ts and the changelog say so. I followed the
+  reviewer's wording here rather than keeping the old default, because the point is
+  that a host calling `next()` does not pay for a pass it does not use.
+- The compiled matrix caches a fill plan per type: the required slots and the optional
+  ones with a default. `open()`, `next()` and `canComplete()` look only at those; when
+  the matrix has none, they return at once.
+- `complete()` returns its previous answer (a copy) when the state stamp and the
+  options are those of a previous call that filled nothing. The stamp never repeats
+  within one world (a rollback restores the stamp of the same state; `_adopt` takes a
+  fresh one); the cache is per world and not shared with forks, whose clocks can give
+  equal stamps to different states; `register` clears it.
+- `world.canComplete(id?)`, public and documented: an optional key with a default, or a
+  required key with a default, an enum, a range, or a type that has wires. Hosts need
+  not read `_compiled().slots` any more.
+- Test `complete: with nothing to fill it is cheap, and its answer is the one a full
+  run gives` (budget.test.mjs): the second call does 0 steps, returns an equal copy,
+  equals a world rebuilt from JSON; options, matrix changes and forks are looked at
+  again; `review` only on request.
+- Bench in `bench/complete.mjs` (the new `bench/` directory; the older benches stay in
+  `tools/`).

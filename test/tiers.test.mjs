@@ -44,7 +44,7 @@ test('tiers: assumptions() lists what is only assumed, weakest first, with what 
   assert.deepEqual([q.value, q.tier, q.rests], ['120', 'default', [{ id: 't1', key: 'transport', value: 'car', tier: 'default' }]]);
   assert.deepEqual([w.query({ about: 't1', seek: 'days' }).tier, w.query({ about: 't1', seek: 'days' }).rests], ['told', undefined]);
   // next() points at what a confirmation would be worth most
-  assert.deepEqual(w.next().review.map((x) => `${x.key} ${x.tier} ${x.dependants}`), ['class guessed 0', 'transport default 4', 'seat forced 0']);
+  assert.deepEqual(w.next({ review: true }).review.map((x) => `${x.key} ${x.tier} ${x.dependants}`), ['class guessed 0', 'transport default 4', 'seat forced 0']);
 });
 
 test('tiers: a told value replaces any weaker one, and what followed from it', () => {

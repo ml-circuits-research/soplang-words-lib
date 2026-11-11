@@ -10,17 +10,71 @@ const K = (type, key, value) => `${type}\u0001${key}\u0001${value}`;
 export const completion = {
   /** Required keys that have no value yet: the world's open questions. */
   open(id) {
-    const c = this._compiled();
+    const plan = this._fillPlan();
     const out = [];
+    if (!plan.size) return out;
     const ws = id ? [this.get(id)].filter(Boolean) : this.wires.values();
-    for (const w of ws) {
-      for (const s of c.slots.get(w.type)?.values() || []) {
-        if (s.required && !s.prefix && !w.attrs[s.key]) {
+    for (const w of ws) { // bounded: one pass over the wires
+      for (const s of plan.get(w.type)?.required || []) {
+        if (!w.attrs[s.key]) {
           out.push({ id: w.id, type: w.type, key: s.key, ask: s.ask ? str(s.ask) : undefined });
         }
       }
     }
     return out;
+  },
+
+  /**
+   * For each type, the slots completion has to look at: the required ones (an empty one
+   * is an open key) and the optional ones with a default. Types with neither are absent,
+   * so a world whose matrix offers nothing to fill is passed over at no cost. Cached with
+   * the compiled matrix.
+   */
+  _fillPlan() {
+    const c = this._compiled();
+    if (c.fillPlan) return c.fillPlan;
+    const byType = new Map();
+    let size = 0;
+    for (const slots of c.slots.own.values()) { // bounded: the declared slots
+      for (const s of slots.values()) if (!s.prefix && (s.required || s.default !== undefined)) size++;
+    }
+    return (c.fillPlan = {
+      size, // 0: no type has a slot completion could look at
+      get(type) {
+        if (byType.has(type)) return byType.get(type);
+        const required = [], defaults = [];
+        for (const s of c.slots.get(type)?.values() || []) {
+          if (s.prefix) continue;
+          if (s.required) required.push(s);
+          else if (s.default !== undefined) defaults.push(s);
+        }
+        const p = required.length || defaults.length ? { required, defaults } : undefined;
+        byType.set(type, p);
+        return p;
+      },
+    });
+  },
+
+  /**
+   * Cheap: is there an empty slot that completion could fill? That is an optional key
+   * with a default, or a required key with a default or a closed domain (an enum, a
+   * range, or a type that has wires). Says nothing about whether the value would be
+   * accepted; `next()` tries that.
+   */
+  canComplete(id) {
+    const plan = this._fillPlan();
+    if (!plan.size) return false;
+    const ws = id ? [this.get(id)].filter(Boolean) : this.wires.values();
+    for (const w of ws) { // bounded: one pass over the wires
+      const p = plan.get(w.type);
+      if (!p) continue;
+      for (const s of p.defaults) if (!w.attrs[s.key]) return true;
+      for (const s of p.required) {
+        if (w.attrs[s.key]) continue;
+        if (s.default !== undefined || s.enum?.length || s.range?.length || (s.type && this.byType.get(s.type)?.size)) return true;
+      }
+    }
+    return false;
   },
 
   /** A slot is searchable when its values can be listed: enum, wires of a type, or a stepped range. */
@@ -165,23 +219,29 @@ export const completion = {
    *   fills      values that are forced (only one consistent value) or defaults
    *   questions  core.question wires for keys that need an outside answer
    *   dead       keys for which no consistent value exists
+   *   review     with { review: true }: what is only assumed, weakest first (a pass over
+   *              every value, so it is computed only when asked for)
    */
   next(opts = {}) {
-    return this._guard(opts, () => this._next(), (budget) => ({ fills: [], questions: [], dead: [], budget }));
+    return this._guard(opts, () => this._next(opts), (budget) => ({ fills: [], questions: [], dead: [], budget }));
   },
 
-  _next() {
+  _next({ review = false } = {}) {
     const c = this._compiled();
     const out = { fills: [], questions: [], dead: [] };
-    // what is only assumed, weakest and most relied on first: where a confirmation is worth most
-    const review = this.assumptions().map((a) => ({ id: a.id, key: a.key, value: a.value, tier: a.tier, dependants: a.dependants.length }));
-    if (review.length) out.review = review;
+    if (review) {
+      // what is only assumed, weakest and most relied on first: where a confirmation is worth most
+      const r = this.assumptions().map((a) => ({ id: a.id, key: a.key, value: a.value, tier: a.tier, dependants: a.dependants.length }));
+      if (r.length) out.review = r;
+    }
+    const plan = this._fillPlan();
+    if (!plan.size) return out;
     // a default is an assumption the matrix offers: it applies to an optional key too
     // (an optional key without a default is nobody's question)
     const optional = [];
     for (const w of this.wires.values()) { // bounded: one pass over the wires
-      for (const s of c.slots.get(w.type)?.values() || []) {
-        if (!s.required && !s.prefix && s.default !== undefined && !w.attrs[s.key]) optional.push({ id: w.id, type: w.type, key: s.key });
+      for (const s of plan.get(w.type)?.defaults || []) {
+        if (!w.attrs[s.key]) optional.push({ id: w.id, type: w.type, key: s.key });
       }
     }
     for (const o of optional) {
@@ -219,11 +279,17 @@ export const completion = {
   },
 
   _complete({ defaults = false, choose = false } = {}) {
+    // nothing changed since a call with the same options that filled nothing: the answer
+    // is the same (the stamp identifies the state; it is never reused within one world)
+    const key = `${this.stamp}|${defaults}|${choose}`;
+    const last = this._completed;
+    if (last && last.key === key) return structuredClone(last.out);
     const filled = [];
     const mark = this._begin(true); // one transaction: out of budget, nothing of it stays
     try {
       const out = this._completing(filled, defaults, choose);
       this._commit();
+      this._completed = filled.length ? null : { key: `${this.stamp}|${defaults}|${choose}`, out: structuredClone(out) };
       return out;
     } catch (e) {
       this._rollback(mark);

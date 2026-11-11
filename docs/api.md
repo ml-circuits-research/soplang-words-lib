@@ -370,9 +370,12 @@ print(w.suggest('l1', 'item').map((c) => c.value));
 ### world.next(options?)
 
 What can be done about the open keys without changing anything: `{ fills, questions,
-dead, review }`. `fills` are values that are forced or defaults (`kind`), `questions`
-the keys that need an answer (as question wires with the options), `dead` the keys with
-no possible value, `review` the assumptions a host may want confirmed.
+dead }`. `fills` are values that are forced or defaults (`kind`), `questions` the keys
+that need an answer (as question wires with the options), `dead` the keys with no
+possible value. With `{ review: true }` also `review`: the assumptions a host may want
+confirmed, weakest first; it is a pass over every value, so it is computed only when
+asked for. Cost: one trial per candidate of each empty slot; nothing at all when the
+matrix has no required slot and no default.
 
 ```js run
 const w = shop();
@@ -385,11 +388,34 @@ print(n.fills.map((f) => [f.id, f.key, f.value, f.kind]), n.questions.map((q) =>
 [["l1","qty","1","default"]] [["$pen","price"]] []
 ```
 
+### world.canComplete(id?)
+
+Cheap: whether some empty slot of the world (or of one wire) has a candidate that
+completion could try: an optional key with a default, or a required key with a default,
+an enum, a range, or a type that has wires. It does not try the values, so `true` does
+not promise that `complete()` fills anything. For a host that completes after every
+change and wants to skip the call when there is nothing to look at. Cost: one pass over
+the wires whose type has such a slot; constant when the matrix has none.
+
+```js run
+const w = shop();
+w.tell('@pen item name=pen price=2  @l1 line item=$pen qty=2');
+print(w.canComplete(), w.canComplete('pen'));
+w.tell('@l2 line item=$pen');
+print(w.canComplete(), w.canComplete('l2'));
+```
+
+```output
+false false
+true true
+```
+
 ### world.complete(options?)
 
 Applies what `next` found: forced values, with `{ defaults: true }` the defaults, with
 `{ choose: true }` one full solution of what is left (tier `guessed`). Returns
-`{ filled, questions, dead, pending }`.
+`{ filled, questions, dead, pending }`. A call on a world that has not changed since a call with
+the same options that filled nothing returns that answer again at once.
 
 ```js run
 const w = shop();

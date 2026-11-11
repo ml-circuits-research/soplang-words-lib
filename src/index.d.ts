@@ -226,7 +226,10 @@ export class World {
   holds(query: string | Wire[], options?: Budgeted): boolean;
   open(id?: string): OpenKey[];
   suggest(id: string, key: string, options?: Budgeted & { deep?: boolean }): Candidate[] & { budget?: BudgetViolation };
-  next(options?: Budgeted): NextStep & { budget?: BudgetViolation };
+  /** `review: true` adds the assumptions a host may want confirmed (a pass over every value) */
+  next(options?: Budgeted & { review?: boolean }): NextStep & { budget?: BudgetViolation };
+  /** cheap: is there an empty slot that completion could fill (a default, or a closed domain for a required key)? */
+  canComplete(id?: string): boolean;
   complete(options?: Budgeted & { defaults?: boolean; choose?: boolean }): { filled: object[]; questions: Wire[]; dead: OpenKey[]; pending: object[]; budget?: BudgetViolation };
   /** `budget` is the solver's own search budget; `limit` is the step budget of the call */
   solve(options?: { solver?: Solver; budget?: number; limit?: Budget }): Assignment[] | null;

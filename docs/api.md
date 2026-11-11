@@ -316,6 +316,15 @@ Runs an [action](reference.md#coreaction). `request` is `{ action, args }`, a
 violations }` with status `done`, `missing` (arguments to ask for), `refused`, `error`
 (the host function threw), `unsupported` (no such action) or `budget`.
 
+A host function gets `(ctx, args)`. `ctx.tell(input, { now })` queues a statement and
+returns `{ ok: true, queued: true }`; the queue is propagated and validated together at
+the first read (`ctx.find`, `ctx.val`, `ctx.vals`, `ctx.get`, `ctx.query`, `ctx.ask`,
+any use of `ctx.world`), before `ctx.fill`, `ctx.replace`, `ctx.retract`, and at the
+end ([S57](semantics.md#queries)). `ctx.flush()` does it now and returns the change
+result; `{ now: true }` checks one tell as it is told. A refusal's violations carry
+`queued: [{ index, ids }]`, the queued tells involved. Cost: one propagation for the
+queued tells, against one per tell (`node bench/act.mjs`).
+
 ```js run
 const w = new World({ actions: { rename: ({ find, replace }, { from, to }) => {
   const [it] = find('item', { name: from });

@@ -126,6 +126,10 @@ How the kernel keeps its promises:
   shared state throws (`SOPWORLD_COW_CHECK=1`).
 - Everything speculative (dry run, suggestion, search, abduction, supposing a wire for
   a query) is the ordinary change inside a transaction that is rolled back.
+- A patch, and the tells of an action, are checked where the action reads and at its
+  end, not after each statement ([S57](docs/semantics.md#queries),
+  [S59](docs/semantics.md#worlds-side-by-side)); `ctx.flush()` and
+  `ctx.tell(x, { now: true })` give the check after each tell.
 - The id of a derived wire is a hash of the rule and its bindings, so deriving it again
   gives the same id.
 - The log alone rebuilds the world.

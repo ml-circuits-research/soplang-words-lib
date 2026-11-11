@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="1b030b8b3ac1">
+<meta name="source-hash" content="9f7bf4a910a7">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -144,6 +144,7 @@ print(w.has(&#x27;pen&#x27;), w.rewind(m).added, w.has(&#x27;pen&#x27;));</code>
 <figure class="code"><figcaption>prints</figcaption><pre><code>false [&quot;pen&quot;] true</code></pre></figure>
 <h3 id="worldactrequest-options">world.act(request, options?)</h3>
 <p>Runs an <a href="reference.html#coreaction">action</a>. <code>request</code> is <code>{ action, args }</code>, a <code>core.request</code> wire, or its text. Returns <code>{ ok, status, value, result, missing, violations }</code> with status <code>done</code>, <code>missing</code> (arguments to ask for), <code>refused</code>, <code>error</code> (the host function threw), <code>unsupported</code> (no such action) or <code>budget</code>.</p>
+<p>A host function gets <code>(ctx, args)</code>. <code>ctx.tell(input, { now })</code> queues a statement and returns <code>{ ok: true, queued: true }</code>; the queue is propagated and validated together at the first read (<code>ctx.find</code>, <code>ctx.val</code>, <code>ctx.vals</code>, <code>ctx.get</code>, <code>ctx.query</code>, <code>ctx.ask</code>, any use of <code>ctx.world</code>), before <code>ctx.fill</code>, <code>ctx.replace</code>, <code>ctx.retract</code>, and at the end (<a href="semantics.html#queries">S57</a>). <code>ctx.flush()</code> does it now and returns the change result; <code>{ now: true }</code> checks one tell as it is told. A refusal's violations carry <code>queued: [{ index, ids }]</code>, the queued tells involved. Cost: one propagation for the queued tells, against one per tell (<code>node bench/act.mjs</code>).</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World({ actions: { rename: ({ find, replace }, { from, to }) =&gt; {
   const [it] = find(&#x27;item&#x27;, { name: from });
   return it ? replace(it.id, `@${it.id} item name=${to}`).ok : { ok: false, why: `no item named ${from}` };

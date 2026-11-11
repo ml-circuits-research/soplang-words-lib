@@ -883,8 +883,10 @@ An operation that changes the world on request.
 | `all` | flag | false | | act on every match (else exactly one is needed) |
 
 **Meaning.** `world.act` runs the action in one transaction. With `fn`: the function
-gets a context (`find`, `val`, `tell`, `fill`, `replace`, `retract`, `world`) and the
-arguments; whatever it changed is kept only if the world accepts all of it. Written as
+gets a context (`find`, `val`, `vals`, `get`, `query`, `ask`, `tell`, `flush`, `fill`,
+`replace`, `retract`, `world`) and the arguments; whatever it changed is kept only if
+the world accepts all of it. Its tells are checked together where it reads and at its
+end ([S57](semantics.md#queries)). Written as
 wires: the patterns are matched with the parameters bound; the calcs and checks are
 evaluated; then all writes are applied together. Every expression is evaluated on the
 state before the action.

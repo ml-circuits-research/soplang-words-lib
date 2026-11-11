@@ -334,10 +334,22 @@ with `yes`, else `no` or `unknown` (S19). A query that runs out of budget has st
 
 **S57.** `act` runs an action as one transaction (S1): `done` with the value,
 `missing` with the arguments to ask for, `refused` with the violations and the world
-unchanged.
+unchanged. Inside a host function, an action is checked where it reads and at its end,
+not after every tell, as a patch is (S59): `ctx.tell` queues the statement; the queue is
+taken in (one log entry per statement), propagated and validated as one step at the
+first read through the context (`find`, `val`, `vals`, `get`, `query`, `ask`, any use
+of `ctx.world`), before `fill`, `replace` or `retract`, and at the end. A middle state
+that a later tell of the same action repairs is therefore accepted. `ctx.flush()`
+checks the queue at once, and `ctx.tell(x, { now: true })` checks that one tell as it
+is told, as before. A refusal names, under `queued`, every queued tell involved in it
+(`{ index, ids }`, in the order told). *Why:* propagating once costs what one change
+costs, where propagating after each tell re-evaluates negations and aggregates once per
+tell; an action that reads sees exactly what telling one by one gives.
 *Tests:* `act: an action runs in one transaction and returns its result`;
 `act: a refusal leaves the world unchanged and says why`;
-`act: an action written as wires: parameters, a guard, writes that read the state before`
+`act: an action written as wires: parameters, a guard, writes that read the state before`;
+`act: tells are checked where the action reads and at its end; a middle state a later tell repairs is accepted`;
+`act: an action that reads after each tell gives exactly the results of telling one by one`
 
 ## Worlds side by side
 

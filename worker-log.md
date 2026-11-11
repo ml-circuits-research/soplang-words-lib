@@ -1517,3 +1517,50 @@ What changed:
   five mark/tell/rewind rounds).
 - Docs: S58 in semantics.md (with the reason and the new test), the fork and mark
   entries of api.md, the architecture in SPEC.
+
+## P3 — the tells of an action are propagated together (Q13, with its three conditions) — done
+
+`npm test`: 213 pass, 0 fail on sources, 213 on the built file, 212 in checking mode.
+Pilot output identical to the run before Round 5. `node tools/scan-loops.mjs src`:
+clean. `npm run examples`: exit 0. `git grep -i psys2 src/ | wc -l`: 0.
+
+`node bench/act.mjs` (a host action that tells 70 headings, in a fresh fork of a
+600-wire world whose matrix keeps a heading count per document and has a deny that reads
+an absence; median of 101 after a warm-up round), before P3 (`git stash push
+src/query.mjs`, so with P1 and P2) → after:
+
+| action | before | after |
+| --- | --- | --- |
+| 70 tells, no reads | 3.190 ms, 70 propagations | 0.910 ms, 1 propagation |
+| 70 tells, a read after each | 3.938 ms, 70 propagations | 4.460 ms, 70 propagations |
+
+The second line is the case that must not change: it propagates at each read, as
+before; the difference is within the run-to-run noise of this bench (the same line
+measured 1.5–2.0 ms across runs with a lighter matrix). With a matrix that has no
+aggregate and no negation the batch gains little (0.72 → 0.69 ms), because then each
+tell's propagation only looks at that tell's wires; the cost of propagating after each
+tell is in what is evaluated again in full after every change.
+
+- In a host function, `ctx.tell` parses at once (a syntax error still fails the action
+  where it is) and queues; `_tellQueued` takes the queued statements in one by one (one
+  log entry each, as before), then runs the rules and validates once. The queue is
+  flushed at the first read through the context (`find`, `val`, `vals`, and the new
+  `get`, `query`, `ask`), before `fill`, `replace` and `retract`, at the end, and on any
+  use of `ctx.world` (a proxy): the PSys2 tasks world reads `ctx.world.seq` between two
+  tells to name the next one, and gets the same names as before.
+- Condition 1: a refusal names every queued tell involved, under `queued: [{ index,
+  ids }]`, in the order told: a tell whose wires (or the wire they merged into) appear in
+  the violation's `id`, `wires`, `support` or `involved`, and the tell whose intake
+  raised it.
+- Condition 2: `ctx.flush()` and `ctx.tell(x, { now: true })`, documented in S57
+  (semantics.md), the `act` entry of api.md, the core.action entry of reference.md and
+  the kernel list in SPEC.
+- Condition 3: tests `act: tells are checked where the action reads and at its end; a
+  middle state a later tell repairs is accepted` (a negative balance repaired by a
+  credit told after it is accepted; with `{ now: true }` it is refused as before;
+  `flush()` refuses at the flush and names the one queued tell; a conflict between two
+  tells names both, [0, 1]) and `act: an action that reads after each tell gives exactly
+  the results of telling one by one` (the world with provenance, the log and the value
+  equal those of the same action with `{ now: true }` and of five plain tells). The
+  bench shows the one propagation.
+- Q13 closed in questions.md.

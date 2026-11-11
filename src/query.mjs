@@ -18,7 +18,7 @@
 // The wire types and key names used for questions, answers and requests are a vocabulary
 // that the host can change: new World({ vocabulary: { status: 'core.status', ... } }).
 
-import { parse, str } from './parser.mjs';
+import { parse, str, cloneWire } from './parser.mjs';
 import { abduce } from './abduce.mjs';
 import { EMPTY, walk, unify, hasVar } from './unify.mjs';
 
@@ -55,6 +55,41 @@ export const querying = {
    * state; calcs compute; every check must hold (the guard); then all writes are applied
    * as one patch. Every expression was evaluated on the state before the action.
    */
+/**
+   * Tell several queued statements as one change: each is taken in (and logged) as its
+   * own statement, then the rules run once and the world is validated once. A refusal
+   * names, under `queued`, every queued tell whose wires are involved in it, in the order
+   * they were told: { index, ids }.
+   */
+  _tellQueued(batch) {
+    const res = this._result();
+    const mark = this._begin(true);
+    const entries = [];
+    try {
+      for (const q of batch) { // bounded: the queued statements
+        const from = res.violations.length;
+        const facts = this._ingest(q.wires, res);
+        entries.push({ op: 'tell', wires: q.told, facts });
+        // what this statement became (a wire it merged into) and what its intake raised
+        q.ids = new Set(q.told.flatMap((w) => [w.id, this.resolve(w.id)]));
+        q.raised = new Set(res.violations.slice(from));
+        if (res.violations.length) break;
+      }
+      this._settle(res, this.options.strict);
+    } catch (e) {
+      this._rollback(mark);
+      throw e;
+    }
+    const r = this._finish(mark, res, false, entries);
+    if (!r.ok) {
+      for (const v of r.violations) {
+        const ids = new Set([v.id, v.into, ...(v.wires || []), ...(v.support || []), ...(v.involved || []).map((x) => x.id)].filter(Boolean));
+        v.queued = batch.filter((q) => q.raised?.has(v) || [...(q.ids || [])].some((x) => ids.has(x))).map((q) => ({ index: q.index, ids: q.told.map((w) => w.id) }));
+      }
+    }
+    return r;
+  },
+
   _actDeclared(action, name, args) {
     const rule = action.rule;
     const refuse = (v) => ({ ok: false, status: 'refused', violations: [v] });
@@ -395,17 +430,42 @@ export const querying = {
     const mark = this._begin(true);
     const violations = [];
     const guard = (r) => { if (r && r.ok === false) { violations.push(...(r.violations || [])); throw REFUSED; } return r; };
+    // Tells are queued and propagated together, at the first read and at the end: an
+    // action is checked where it reads and at its end, not after every tell (Q13).
+    const queue = [];
+    let told = 0;
+    const flush = () => {
+      if (!queue.length) return { ok: true, added: [], derived: [], filled: [], merged: [], removed: [], violations: [] };
+      return guard(this._tellQueued(queue.splice(0)));
+    };
+    const world = new Proxy(this, { // a host that uses the world directly sees what it told
+      get: (t, p) => { flush(); const v = t[p]; return typeof v === 'function' ? v.bind(t) : v; },
+    });
+    const reading = (fn) => (...a) => { flush(); return fn(...a); };
+    const base = this._context();
     const ctx = this._context({
-      args, request: id,
-      tell: (input) => guard(this.tell(input)),
-      fill: (wid, key, value) => guard(this.fill(wid, key, value)),
-      replace: (wid, input) => guard(this.replace(wid, input)),
-      retract: (wid) => guard(this.retract(wid)),
+      args, request: id, world,
+      find: reading(base.find), val: reading(base.val), vals: reading(base.vals),
+      get: reading((wid) => this.get(String(wid).replace(/^\$/, ''))),
+      query: reading((q, o) => this.query(q, o)),
+      ask: reading((q, o) => this.ask(q, o)),
+      tell: (input, { now = false } = {}) => {
+        const index = told++;
+        if (now) { flush(); return guard(this.tell(input)); }
+        const wires = (typeof input === 'string' ? parse(input) : input).map(cloneWire);
+        queue.push({ index, wires, told: wires.map(cloneWire) });
+        return { ok: true, queued: true, added: [], derived: [], filled: [], merged: [], removed: [], violations: [] };
+      },
+      flush,
+      fill: (wid, key, value) => { flush(); return guard(this.fill(wid, key, value)); },
+      replace: (wid, input) => { flush(); return guard(this.replace(wid, input)); },
+      retract: (wid) => { flush(); return guard(this.retract(wid)); },
     });
     let out;
     try {
       out = this._host('action', action.fn)(ctx, args);
       if (out && out.ok === false) { violations.push({ kind: 'refused', why: out.why || out.reason, reason: out.reason }); throw REFUSED; }
+      flush();
     } catch (e) {
       this._rollback(mark);
       if (e === this._b.signal) throw e; // out of budget: the outermost call reports it

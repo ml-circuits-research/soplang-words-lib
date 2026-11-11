@@ -290,3 +290,88 @@ test('query: an answer found by supposing carries the supposed wire as the rules
   w.tell('@q9 quote item=pen count=2');
   assert.equal(w.query({ type: 'quote', seek: 'total', where: { item: 'pen', count: 2 } }).supposed, undefined);
 });
+
+// ---- actions: tells are propagated where the action reads and at its end (Q13) -------------
+const LEDGER = `
+  @k1 core.slot of=account key=name id=true
+  @k2 core.slot of=account key=balance kind=integer
+  @a account name=?n balance=?b
+  @neg core.check fn=lt args=?b args=0
+  @d core.deny when=$a if=$neg why="?n would be negative"
+  @e entry account=?n amount=?x
+  @seen account core.on=$a entries=yes
+  @r core.rule when=$a when=$e then=$seen
+`;
+
+test('act: tells are checked where the action reads and at its end; a middle state a later tell repairs is accepted', () => {
+  const run = (now) => {
+    const w = new World({ actions: { open: (ctx, { name }) => {
+      ctx.tell(`@acc_${name} account name=${name} balance=-5`, { now });  // invalid on its own...
+      ctx.tell(`@acc_${name}b account name=${name} balance=10`, { now }); // the same identity, a second value
+      return 'ok';
+    } } });
+    w.load(LEDGER);
+    w.load('@open core.action name=open fn=open required=name');
+    return w.act({ action: 'open', args: { name: 'ann' } });
+  };
+  // the same identity with two balances is a conflict at the end too: refused, and both tells are named
+  const r = run(false);
+  assert.equal(r.status, 'refused');
+  assert.deepEqual(r.violations[0].queued.map((q) => q.index), [0, 1]);
+
+  // an invalid middle state, repaired by a later tell of the same action, is accepted
+  const repair = (opts) => {
+    const w = new World({ actions: { start: (ctx) => {
+      ctx.tell('@acc account name=bo balance=-5', opts);
+      ctx.tell('@cr credit account=bo', opts);                     // the repair
+      return 'ok';
+    } } });
+    w.load(LEDGER.replace('@d core.deny when=$a if=$neg', '@c credit account=?n\n@d core.deny when=$a not=$c if=$neg'));
+    w.load('@start core.action name=start fn=start');
+    return [w.act({ action: 'start' }), w];
+  };
+  const [lazy, lw] = repair({});
+  assert.equal(lazy.status, 'done', 'checked at the end: the account has credit by then');
+  assert.deepEqual([lw.has('acc'), lw.has('cr')], [true, true]);
+  const [eager, ew] = repair({ now: true });
+  assert.equal(eager.status, 'refused', 'with { now: true } each tell is checked as it is told, as before');
+  assert.deepEqual(eager.violations[0].why, 'bo would be negative');
+  assert.equal(ew.has('acc'), false);
+
+  // ctx.flush() checks the queue now
+  const w = new World({ actions: { two: (ctx) => {
+    ctx.tell('@x account name=cy balance=-1');
+    ctx.flush();                         // refused here
+    ctx.tell('@cx credit account=cy');
+    return 'ok';
+  } } });
+  w.load(LEDGER.replace('@d core.deny when=$a if=$neg', '@c credit account=?n\n@d core.deny when=$a not=$c if=$neg'));
+  w.load('@two core.action name=two fn=two');
+  const f = w.act({ action: 'two' });
+  assert.equal(f.status, 'refused');
+  assert.deepEqual(f.violations[0].queued, [{ index: 0, ids: ['x'] }]);
+});
+
+test('act: an action that reads after each tell gives exactly the results of telling one by one', () => {
+  const book = (ctx, { n }) => {
+    for (let i = 0; i < Number(n); i++) {
+      const before = ctx.find('entry').length;                  // a read: what was told so far is propagated
+      ctx.tell(`@e${i} entry account=ann amount=${i + 1}`);
+      if (ctx.find('entry').length !== before + 1) return { ok: false, why: 'lost an entry' };
+      if (i === 0 && ctx.val('acc', 'entries') !== 'yes') return { ok: false, why: 'the rule did not run before the read' };
+    }
+    return ctx.world.wires.size;
+  };
+  const make = (actions) => { const w = new World({ actions }); w.load(LEDGER); if (actions.book) w.load('@book core.action name=book fn=book required=n'); w.tell('@acc account name=ann balance=3'); return w; };
+  const a = make({ book });
+  const r = a.act({ action: 'book', args: { n: 5 } });
+  assert.equal(r.status, 'done');
+  const eager = make({ book: (ctx, args) => book({ ...ctx, tell: (x) => ctx.tell(x, { now: true }) }, args) });
+  assert.equal(eager.act({ action: 'book', args: { n: 5 } }).value, r.value);
+  const plain = make({});
+  for (let i = 0; i < 5; i++) plain.tell(`@e${i} entry account=ann amount=${i + 1}`);
+  for (const other of [eager, plain]) {
+    assert.equal(other.toSOP({ derived: true, provenance: true }), a.toSOP({ derived: true, provenance: true }));
+    assert.deepEqual(other.log.slice(-5).map((e) => [e.op, e.facts]), a.log.slice(-5).map((e) => [e.op, e.facts]), 'one log entry per tell, as before');
+  }
+});

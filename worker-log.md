@@ -2251,3 +2251,28 @@ clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
 - `node bench/score.mjs`: 0.26 / 1.21 / 6.68 ms at 1 / 10 / 100 candidates (R8: 0.26–0.31
   / 1.17–1.57 / 5.87–6.50), so ranking adds no measurable cost.
 - Docs: api.md (score fields, `rank` and `RANKING`), index.d.ts, design doc §3.
+
+## R9.3 — segmentation candidates: splits of one message scored as wholes — done
+
+`npm test`: 251 pass, 0 fail on sources and built file, 250 in checking mode. Pilot
+output identical. `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`:
+clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
+
+- `interpret(frames)`: a list of frames is one split, a list of lists alternative splits;
+  each candidate is `{ parts, split }` (one reading per frame, new wires `new1`, `new2`,
+  ...), with the words of all parts (a frame with no reading leaves its words out).
+- `score` of `{ parts }`: the parts in order in one transaction that is undone, each
+  judged with the parts before it applied (its best choice of referents); consistent when
+  every part is; violations, referents, lacks and assumptions marked `part`; `parts` holds
+  each part's score.
+- RANKING order changed: `words` now before `assumes`. With the given order the wrong
+  split of "reserve the pen and order ink" (one frame, "ink" left out) beat the right
+  one (which assumes the declared default qty=1). Q19 for the reviewer; one line to change
+  back.
+- Test `interpret: alternative splits of one message are scored as wholes; later parts
+  see earlier ones`: the two-frame split wins (`order [0, 1]`, loser `on: words`); a
+  second part's referent is the wire the first part made; version, log and wires
+  unchanged.
+- `node bench/interpret.mjs`: two splits of "book n17 and meet q3 on monday", 4
+  candidates: interpret 0.108 ms, score 0.870 ms, the two-frame reading first.
+- Docs: api.md (splits), index.d.ts (`parts`, `split`), design doc order.

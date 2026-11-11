@@ -6,6 +6,19 @@ written with each question and in `worker-log.md`. A question is deleted from th
 once the worker is satisfied with the answer; closed ones are listed at the end in one
 line each so the history is not lost.
 
+## Q19 — the default order: words left out before assumptions (R9.2, R9.3)
+
+Round 9 item 2 gives the order consistent, referents, lacks, assumptions, words. With
+splits (item 3) that order chooses the wrong split of "reserve the pen and order ink":
+one frame `reserve pen ink` leaves "ink" out but assumes nothing, while the right split
+(`reserve pen` + `order ink`) assumes `qty=1` from a declared default, so it lost.
+- (a) Keep the order as given; hosts that split put `words` first with `criteria`.
+- (b) `words` before `assumes` (taken): ignoring part of what was said is worse than
+  resting on a default the matrix declares.
+
+**Taken: (b)**, in `RANKING`, test `interpret: alternative splits ...`. One line to change
+back if the reviewer prefers (a).
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

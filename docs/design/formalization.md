@@ -129,8 +129,9 @@ in a transaction that is undone; `version`, the log and the wires are unchanged
 2. fewer referents left ambiguous (a referent is settled when unique by its description,
    or when exactly one fits);
 3. fewer lacks;
-4. fewer assumptions;
-5. fewer words of the frame left out (unused or unresolved; R9.2);
+4. fewer words of the frame left out (unused or unresolved; R9.2);
+5. fewer assumptions (after words: a reading that ignores part of what was said is worse
+   than one resting on a declared default; this decides between splits, Q19);
 6. as given (the host's own ranking, such as a parser's confidence, breaks ties).
 
 The order is `rank(scored, criteria)` with `RANKING` as the default criteria (R9.2), so

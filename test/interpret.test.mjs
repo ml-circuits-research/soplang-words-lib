@@ -97,3 +97,24 @@ test('core.word: a word whose means= names nothing is a load warning; words are 
   w.undo();
   assert.equal(w.words('en').get('frob'), undefined, 'undone like any fact');
 });
+
+test('interpret: alternative splits of one message are scored as wholes; later parts see earlier ones', () => {
+  const w = shopAndCalendar();
+  w.tell('@en8 core.word lang=en text=reserve means=reserve  @en9 core.word lang=en text=add means=item');
+  const before = [w.version, w.log.length];
+  // "reserve the pen and order ink": two frames, or one frame with both nouns
+  const r = w.interpret([
+    [{ lang: 'en', verb: 'reserve', args: ['pen'] }, { lang: 'en', verb: 'order', args: ['ink'] }],
+    [{ lang: 'en', verb: 'reserve', args: ['pen', 'ink'] }],
+  ]);
+  assert.deepEqual(r.candidates.map((c) => [c.split, c.parts.length]), [[0, 2], [1, 1]]);
+  assert.equal(r.candidates[0].parts[1].wires, '@new2 order item=$r1');
+  const s = w.score(r.candidates);
+  assert.deepEqual(s.order, [0, 1]);
+  assert.deepEqual([s.candidates[1].on, s.candidates[1].why], ['words', 'leaves out ink; #0: uses every word']);
+  assert.deepEqual(s.candidates[0].assumes, [{ id: 'new2', key: 'qty', value: '1', part: 1 }]);
+  // "add a cup and order it": the second part's referent is the wire the first part makes
+  const two = w.score([{ parts: [{ wires: '@cup item name=cup stock=2' }, { wires: '@o order item=$it', refer: { it: { type: 'item', where: { name: 'cup' } } } }] }]);
+  assert.deepEqual([two.candidates[0].ok, two.candidates[0].referents], [true, [{ name: 'it', ids: ['cup'], unique: true, part: 1 }]]);
+  assert.deepEqual([w.version, w.log.length, w.has('cup')], [...before, false], 'nothing was told');
+});

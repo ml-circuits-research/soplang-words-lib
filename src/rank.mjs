@@ -6,7 +6,9 @@ const settled = (r) => (r.referents || []).filter((x) => !(x.unique || x.fits?.l
 const leftOver = (r) => (r.words ? r.words.unused.length + r.words.unresolved.length : 0);
 
 /**
- * The default criteria, in order. Each has a name, a measure (lower is better) and a way
+ * The default criteria, in order. Words left out come before assumptions: a reading that
+ * ignores part of what was said is worse than one resting on a default the matrix
+ * declares (this decides between splits of one message; Q19). Each has a name, a measure (lower is better) and a way
  * to say what the measure means for one reading.
  */
 export const RANKING = [
@@ -16,10 +18,10 @@ export const RANKING = [
     say: (r) => { const open = settled(r); return open.length ? `ambiguous: ${open.map((x) => `${x.name} could be ${(x.fits?.length ? x.fits : x.ids).join(' or ')}`).join('; ')}` : 'every referent settled'; } },
   { name: 'lacks', measure: (r) => (r.lacks || []).length,
     say: (r) => (r.lacks?.length ? `lacks ${r.lacks.map((l) => l.referent || l.key).join(', ')}` : 'lacks nothing') },
-  { name: 'assumes', measure: (r) => (r.assumes || []).length,
-    say: (r) => (r.assumes?.length ? `assumes ${r.assumes.map((a) => `${a.key}=${a.value}`).join(', ')}` : 'assumes nothing') },
   { name: 'words', measure: leftOver,
     say: (r) => (leftOver(r) ? `leaves out ${[...r.words.unused, ...r.words.unresolved].join(', ')}` : 'uses every word') },
+  { name: 'assumes', measure: (r) => (r.assumes || []).length,
+    say: (r) => (r.assumes?.length ? `assumes ${r.assumes.map((a) => `${a.key}=${a.value}`).join(', ')}` : 'assumes nothing') },
 ];
 
 /**

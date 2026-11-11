@@ -84,7 +84,8 @@ export const querying = {
     }, (v) => ({ candidates: [], order: [], budget: v }));
   },
 
-  _scoreOne(cand, index) {
+  _scoreOne(cand, index, keep = false) {
+    if (cand.parts) return this._scoreParts(cand, index);
     const out = { index, ok: true, violations: [], referents: [], lacks: [], assumes: [] };
     if (cand.unused || cand.unresolved) out.words = { used: cand.used || [], unused: cand.unused || [], unresolved: cand.unresolved || [] };
     const options = {}; // referent -> the ids it may be
@@ -108,6 +109,7 @@ export const querying = {
       if (r.ok) fitting.push({ bind, r });
     }
     const best = fitting[0]?.r || first;
+    if (keep) this._scoreWith(cand, fitting[0]?.bind || combos[0], missing, true); // a part of a message: later parts see it
     Object.assign(out, { ok: best.ok, violations: best.violations, lacks: [...out.lacks, ...best.lacks], assumes: best.assumes });
     if (best.action) out.action = best.action;
     if (best.answer) out.answer = best.answer;
@@ -119,11 +121,36 @@ export const querying = {
     return out;
   },
 
-  /** One choice of referents, tried in a transaction that is undone. */
-  _scoreWith(cand, bind, missing) {
+  /**
+   * A message read as several parts (a split from interpret): the parts in order, each
+   * judged on the world with the parts before it applied (the best choice of each), all
+   * in one transaction that is undone. The whole is consistent when every part is; lacks,
+   * assumptions, referents and violations are those of the parts (each marked `part`).
+   */
+  _scoreParts(cand, index) {
+    const out = { index, ok: true, violations: [], referents: [], lacks: [], assumes: [], parts: [] };
+    if (cand.split !== undefined) out.split = cand.split;
+    if (cand.unused || cand.unresolved) out.words = { used: cand.used || [], unused: cand.unused || [], unresolved: cand.unresolved || [] };
+    this._trial(() => {
+      cand.parts.forEach((p, part) => { // bounded: the parts of one message
+        const r = this._scoreOne(p, part, true);
+        delete r.words;
+        out.parts.push(r);
+        out.ok &&= r.ok;
+        out.violations.push(...r.violations.map((v) => ({ ...v, part })));
+        out.referents.push(...r.referents.map((x) => ({ ...x, part })));
+        out.lacks.push(...r.lacks.map((x) => ({ ...x, part })));
+        out.assumes.push(...r.assumes.map((x) => ({ ...x, part })));
+      });
+    });
+    return out;
+  },
+
+  /** One choice of referents, tried in a transaction that is undone (or kept, inside a message's trial). */
+  _scoreWith(cand, bind, missing, keep = false) {
     const out = { ok: true, violations: [], lacks: [], assumes: [] };
     const sub = (v) => (v[0] === '$' && bind[v.slice(1)] ? '$' + bind[v.slice(1)] : v);
-    this._trial(() => {
+    (keep ? (f) => f() : (f) => this._trial(f))(() => {
       if (cand.wires) {
         // a referent that nothing matched is left out of the statement: it lacks, it is not wrong
         const ws = (typeof cand.wires === 'string' ? parse(cand.wires) : cand.wires).map((w) => ({ ...w, attrs: Object.fromEntries(Object.entries(w.attrs).map(([k, vs]) => [k, vs.filter((v) => !missing.has(v)).map(sub)]).filter(([, vs]) => vs.length)) }));

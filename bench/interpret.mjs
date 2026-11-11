@@ -33,3 +33,12 @@ for (const f of frames) {
   const b = med(Array.from({ length: 21 }, () => time(() => w.score(r.candidates))));
   console.log(`${f.verb.padEnd(6)} ${r.candidates.length} candidates: interpret ${a.toFixed(3)} ms, score ${b.toFixed(3)} ms`);
 }
+// splits: "book n17 and meet q3 on monday", two ways
+const split = [
+  [{ lang: 'en', verb: 'book', args: ['n17'] }, { lang: 'en', verb: 'meet', args: [{ role: 'with', word: 'q3' }, 'monday'] }],
+  [{ lang: 'en', verb: 'book', args: ['n17', 'q3', 'monday'] }],
+];
+const a = med(Array.from({ length: 21 }, () => time(() => w.interpret(split))));
+const rs = w.interpret(split);
+const b = med(Array.from({ length: 21 }, () => time(() => w.score(rs.candidates))));
+console.log(`splits ${rs.candidates.length} candidates: interpret ${a.toFixed(3)} ms, score ${b.toFixed(3)} ms; order ${w.score(rs.candidates).order}`);

@@ -56,10 +56,10 @@ test('rank: the default order is a function hosts can call; every place is expla
   const [act, order] = r.candidates;
   assert.deepEqual(r.order, [1, 0]);
   assert.deepEqual([act.place, act.lostTo, act.on, act.why], [1, 1, 'consistent', 'inconsistent: ink is out of stock; #1: consistent with the world']);
-  assert.deepEqual([order.place, order.why], [0, 'consistent with the world; every referent settled; lacks nothing; assumes qty=1; leaves out blue']);
+  assert.deepEqual([order.place, order.why], [0, 'consistent with the world; every referent settled; lacks nothing; leaves out blue; assumes qty=1']);
   // the same order from the function, and a host's own criteria
   assert.deepEqual(rank(r.candidates).order, [1, 0]);
-  assert.deepEqual(RANKING.map((c) => c.name), ['consistent', 'referents', 'lacks', 'assumes', 'words']);
+  assert.deepEqual(RANKING.map((c) => c.name), ['consistent', 'referents', 'lacks', 'words', 'assumes']);
   const actionsFirst = [{ name: 'action', measure: (x) => (x.action ? 0 : 1), say: (x) => (x.action ? 'an action' : 'a statement') }, ...RANKING];
   const mine = w.score(w.interpret({ lang: 'en', verb: 'book', args: ['ink'] }).candidates, { criteria: actionsFirst });
   assert.deepEqual([mine.order, mine.candidates[1].on, mine.candidates[1].why], [[0, 1], 'action', 'a statement; #0: an action']);

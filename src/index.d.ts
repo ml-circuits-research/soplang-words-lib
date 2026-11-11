@@ -69,6 +69,9 @@ export interface ScoreCandidate {
   args?: Record<string, string>;
   question?: Question | Wire | string;
   ns?: string;
+  /** one message read as several parts, judged in order */
+  parts?: ScoreCandidate[];
+  split?: number;
 }
 export interface Scored {
   index: number;
@@ -80,6 +83,8 @@ export interface Scored {
   action?: { available: boolean; status: string; missing?: { key: string; ask?: string }[] };
   answer?: QueryResult;
   words?: { used: string[]; unused: string[]; unresolved: string[] };
+  parts?: Scored[];
+  split?: number;
   place: number;
   why: string;
   lostTo?: number;
@@ -327,7 +332,7 @@ export class World {
   /** the core.word entries of a language, by text */
   words(lang?: string): Map<string, { id: string; lang: string; means: string; of?: string; meanings: WordMeaning[] }[]>;
   /** read a language-neutral frame into candidates for score; nothing invented */
-  interpret(frame: Frame, options?: { limit?: number; id?: string; ns?: string }): { candidates: (ScoreCandidate & Reading)[]; unresolved: string[]; dropped: number };
+  interpret(frame: Frame | Frame[] | Frame[][], options?: { limit?: number; id?: string; ns?: string }): { candidates: (ScoreCandidate & Reading)[]; unresolved: string[]; dropped: number };
   /** judge candidate readings against the world; nothing is told */
   score(candidates: ScoreCandidate[], options?: Budgeted & { criteria?: Criterion[] }): { candidates: Scored[]; order: number[] };
   /** run fn against the world as it was at a point of the sequence */

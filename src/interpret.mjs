@@ -108,8 +108,14 @@ export const interpreting = {
    * (which word went where), `used`, `unused` (words with a meaning left out of this
    * reading) and `unresolved` (words with no meaning at all), plus wires/refer, action/args
    * or question. At most `limit` candidates (default 50); `dropped` counts the rest.
+   *
+   * One message may be several frames ("book the pen and order ink"). A list of frames is
+   * one split; a list of lists is alternative splits of the same message. Each candidate
+   * is then `{ parts, split }`: one reading per frame (new wires are `new1`, `new2`, ...),
+   * judged by score in order, each part on the world with the parts before it.
    */
   interpret(frame, opts = {}) {
+    if (Array.isArray(frame)) return this._interpretSplits(frame, opts);
     const limit = opts.limit ?? 50;
     const ns = frame.ns ?? opts.ns;
     const lexicon = this.words(frame.lang);
@@ -244,6 +250,32 @@ export const interpreting = {
       }
     }
     return { candidates: out, unresolved, dropped };
+  },
+
+  /** Alternative splits of one message: every reading of every split, as compound candidates. */
+  _interpretSplits(frames, opts) {
+    const limit = opts.limit ?? 50;
+    const splits = frames.length && frames.every(Array.isArray) ? frames : [frames];
+    const out = [], unresolved = new Set();
+    let dropped = 0;
+    splits.forEach((split, s) => { // bounded: the splits the host gives
+      const per = split.map((f, i) => this.interpret(f, { ...opts, limit, id: `${opts.id || 'new'}${i + 1}` }));
+      for (const r of per) { r.unresolved.forEach((u) => unresolved.add(u)); dropped += r.dropped; }
+      let combos = [[]];
+      for (const r of per) combos = combos.flatMap((c) => (r.candidates.length ? r.candidates : [null]).map((x) => [...c, x]));
+      for (const parts of combos) { // bounded: the product is cut at limit below
+        if (out.length >= limit) { dropped++; continue; }
+        const kept = parts.filter(Boolean);
+        const cand = { parts: kept, split: s };
+        cand.reading = kept.flatMap((p, i) => p.reading.map((x) => ({ ...x, part: i })));
+        cand.used = kept.flatMap((p) => p.used);
+        // a frame with no reading at all leaves all its words out
+        cand.unused = parts.flatMap((p, i) => (p ? p.unused : (split[i].args || []).map((a) => (typeof a === 'string' ? a : a.word)).filter((w) => !per[i].unresolved.includes(w))));
+        cand.unresolved = per.flatMap((r) => r.unresolved);
+        out.push(cand);
+      }
+    });
+    return { candidates: out, unresolved: [...unresolved], dropped };
   },
 
   _quoteValue(v) {

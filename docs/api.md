@@ -679,6 +679,14 @@ also has `reading` (which word went where), `used`, `unused` and `unresolved`. N
 is invented: every value comes from a word or a number of the frame. Options: `limit`
 (default 50 candidates), `id` (of the new wire, default `new`).
 
+One message may be several frames ("reserve the pen and order ink"). A list of frames
+is one split of it; a list of lists is alternative splits. Each candidate is then `{
+parts, split }`, one reading per frame (new wires `new1`, `new2`, ...), and `score`
+judges the parts in order, each on the world with the parts before it, as one whole:
+consistent when every part is, with the parts' lacks, assumptions and referents (each
+marked `part`) and `parts`, the score of each. A split that leaves a word out loses on
+`words`.
+
 ```js run
 const w = new World();
 w.load(`@k1 core.slot of=item key=name id=true
@@ -726,8 +734,8 @@ true ["p2"] false
 
 Orders scored readings best first and explains every place. `RANKING` is the default
 list of criteria, each `{ name, measure, say }` (lower `measure` is better):
-`consistent`, `referents` (how many are left ambiguous), `lacks`, `assumes`, `words`
-(words of the frame left out); ties keep the given order. Returns `{ order, ranked }`;
+`consistent`, `referents` (how many are left ambiguous), `lacks`, `words` (words of the
+frame left out), `assumes`; ties keep the given order. Returns `{ order, ranked }`;
 `ranked[i]` is `{ index, place, why, lostTo, on }`: the first says what it satisfies,
 any other names the first criterion on which the winner is better and what each is on
 it, a tie says so. A host may put its own criteria before, after or instead of these.
@@ -747,7 +755,7 @@ print(RANKING.map((c) => c.name));
 
 ```output
 [1,0] consistent inconsistent: ink is out of stock; #1: consistent with the world
-["consistent","referents","lacks","assumes","words"]
+["consistent","referents","lacks","words","assumes"]
 ```
 
 ### world.get(id), world.has(id), world.resolve(id), world.ofType(type)

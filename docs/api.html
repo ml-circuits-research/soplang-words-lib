@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="ab51b3c0e11c">
+<meta name="source-hash" content="026b54dbaa5f">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -270,6 +270,7 @@ missing</code></pre></figure>
 <h3 id="worldwordslang-and-worldinterpretframe-options">world.words(lang?) and world.interpret(frame, options?)</h3>
 <p><code>words(lang)</code> maps each text of a language to its <code>core.word</code> entries, with what each means in the matrix (<code>meanings</code>: <code>{ kind: 'action' | 'type' | 'key' | 'value', ... }</code>).</p>
 <p><code>interpret(frame)</code> reads a language-neutral frame into candidates for <code>score</code>. A frame is <code>{ lang, verb, args, numbers, question, mode, ns }</code>; an argument is a word or <code>{ word, role }</code>, where <code>role</code> is a word for a key (<code>with</code>, <code>on</code>). A verb that means an action gives <code>{ action, args }</code>, one that means a type gives <code>{ wires, refer }</code> (a slot that holds a wire gets a described referent), and <code>question: true</code> gives <code>{ question }</code>. An argument with no word wire is read as an entity it names by an identifying key, or an enum value spelled as is. Returns <code>{ candidates, unresolved, dropped }</code>; each candidate also has <code>reading</code> (which word went where), <code>used</code>, <code>unused</code> and <code>unresolved</code>. Nothing is invented: every value comes from a word or a number of the frame. Options: <code>limit</code> (default 50 candidates), <code>id</code> (of the new wire, default <code>new</code>).</p>
+<p>One message may be several frames ("reserve the pen and order ink"). A list of frames is one split of it; a list of lists is alternative splits. Each candidate is then <code>{ parts, split }</code>, one reading per frame (new wires <code>new1</code>, <code>new2</code>, ...), and <code>score</code> judges the parts in order, each on the world with the parts before it, as one whole: consistent when every part is, with the parts' lacks, assumptions and referents (each marked <code>part</code>) and <code>parts</code>, the score of each. A split that leaves a word out loses on <code>words</code>.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@k1 core.slot of=item key=name id=true
   @k2 core.slot of=order key=item kind=ref to=item required=true
@@ -289,7 +290,7 @@ const r = w.score([{ wires: &#x27;@m meeting with=$who day=mon&#x27;, refer: { w
 print(r.candidates[0].ok, r.candidates[0].referents[0].fits, w.has(&#x27;m&#x27;));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true [&quot;p2&quot;] false</code></pre></figure>
 <h3 id="rankscored-criteria-and-ranking">rank(scored, criteria?) and RANKING</h3>
-<p>Orders scored readings best first and explains every place. <code>RANKING</code> is the default list of criteria, each <code>{ name, measure, say }</code> (lower <code>measure</code> is better): <code>consistent</code>, <code>referents</code> (how many are left ambiguous), <code>lacks</code>, <code>assumes</code>, <code>words</code> (words of the frame left out); ties keep the given order. Returns <code>{ order, ranked }</code>; <code>ranked[i]</code> is <code>{ index, place, why, lostTo, on }</code>: the first says what it satisfies, any other names the first criterion on which the winner is better and what each is on it, a tie says so. A host may put its own criteria before, after or instead of these.</p>
+<p>Orders scored readings best first and explains every place. <code>RANKING</code> is the default list of criteria, each <code>{ name, measure, say }</code> (lower <code>measure</code> is better): <code>consistent</code>, <code>referents</code> (how many are left ambiguous), <code>lacks</code>, <code>words</code> (words of the frame left out), <code>assumes</code>; ties keep the given order. Returns <code>{ order, ranked }</code>; <code>ranked[i]</code> is <code>{ index, place, why, lostTo, on }</code>: the first says what it satisfies, any other names the first criterion on which the winner is better and what each is on it, a tie says so. A host may put its own criteria before, after or instead of these.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@k1 core.slot of=item key=name id=true
   @a core.action name=reserve param=item when=$it if=$left set=$r
@@ -301,7 +302,7 @@ const r = w.score([{ action: &#x27;reserve&#x27;, args: { item: &#x27;ink&#x27; 
 print(r.order, r.candidates[0].on, r.candidates[0].why);
 print(RANKING.map((c) =&gt; c.name));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[1,0] consistent inconsistent: ink is out of stock; #1: consistent with the world
-[&quot;consistent&quot;,&quot;referents&quot;,&quot;lacks&quot;,&quot;assumes&quot;,&quot;words&quot;]</code></pre></figure>
+[&quot;consistent&quot;,&quot;referents&quot;,&quot;lacks&quot;,&quot;words&quot;,&quot;assumes&quot;]</code></pre></figure>
 <h3 id="worldgetid-worldhasid-worldresolveid-worldoftypetype">world.get(id), world.has(id), world.resolve(id), world.ofType(type)</h3>
 <p><code>get</code> returns the fact <code>{ id, type, attrs, meta }</code> or undefined; <code>attrs</code> maps each key to an array of values. <code>has</code> says whether it exists. <code>resolve</code> returns the id of the wire that an id names now (after a merge), or the id itself. <code>ofType</code> returns the facts of a type and of its subtypes. Do not modify what they return. Cost: constant; <code>ofType</code> O(result).</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();

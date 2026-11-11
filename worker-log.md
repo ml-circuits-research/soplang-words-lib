@@ -2162,3 +2162,10 @@ output identical. `node tools/scan-loops.mjs src`: clean. `tsc`: no errors.
   adds nothing, new after any change` (also checks `assumptions(ids)`). S61a, api.md
   (properties; tier and assumptions), index.d.ts. The API docs test now treats getters
   as properties.
+
+## 0.8.0 — Round 7 released (version, changelog, rebuild; no tag)
+
+A minor version: namespaces change the language (`::` in ids and references) and
+modules that declare outside their prefix are now refused. Pilot 147/147, 212/217,
+231/232, output identical. Next: Round 8, the design study (docs/design/formalization.md
+and `world.score`).

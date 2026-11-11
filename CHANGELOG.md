@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.8.0
+
+Round 7: namespaces and what hosts still missed after moving 18 worlds.
+
+### New
+- **Namespaces (R7.9).** `tell(text, { ns })` and `new World({ ns })`: ids become
+  `ns::id`; a reference resolves in its own namespace, `$other::x` and `$::x` reach
+  others; one match of a rule, deny or question is in one namespace; identity merges only
+  inside one; `core.type ... shared=true` belongs to all. `query`, `ask`, `sync` take
+  `{ ns }`. A module declares types and slots only under its own prefix; `core.module
+  name= imports= exports=`; an `ambiguous-key` warning; a "Scope" chapter in
+  docs/language.md.
+- Labelled marks, `marks()`, `rewind(mark, { only })`, `toJSON({ timeline: true })`.
+- `priority=` on denies; `why=` on slots, with variables and filters.
+- `kind=ref to=<type>` (retraction refused while referred to); `unique=` on slots and
+  key sets.
+- Lists in reasons (a filter gets a many-valued variable whole).
+- `lazy=true` rules.
+- `between`, `sign`, `clamp`.
+- `assumptions(ids)`; `world.version`.
+
+### Fixed
+- A deny over a group was not checked when a member arrived in a matrix with no rule
+  that needed groups.
+
+### Changed (may need a change in a host)
+- A module from the library that declares a type or slot outside its own prefix is now
+  refused.
+- `::` is allowed in ids and references (it was an error).
+- New violation kind `unique`.
+
 ## 0.7.1
 
 Round 6, R6.13–R6.17.

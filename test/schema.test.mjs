@@ -309,3 +309,40 @@ test('composition: two different declarations of one key are a conflict unless o
   assert.match(new World().tell('@a core.type of=car extends=vehicle\n@b core.type of=car extends=toy').violations[0].why, /already declared by a with another parent/);
   assert.match(new World().tell('@m1 core.schema.map from=field key=name\n@m2 core.schema.map from=field key=label').violations[0].why, /already mapped differently by m1/);
 });
+
+test('slots: kind=blob keeps an opaque value as given, out of the indexes and of rules, and it undoes with the rest', async () => {
+  const { quote, str } = await import('../tools/lib-under-test.mjs');
+  const w = new World();
+  w.load(`
+    @k1 core.slot of=analysis key=doc id=true
+    @k2 core.slot of=analysis key=data kind=blob
+    @n analysis core.absent=data doc=?d
+    @todo note about=$n text="not analysed yet"
+    @r core.rule when=$n then=$todo
+  `);
+  const big = 'a "quoted" line\nand a tab\t'.repeat(20000);
+  w.tell('@a1 analysis doc=d1');
+  assert.equal(w.ofType('note').length, 1, 'core.absent may look at a blob key');
+  const m = w.mark();
+  assert.equal(w.fill('a1', 'data', big).ok, true, 'text given to fill is kept as a string value');
+  assert.equal(str(w.get('a1').attrs.data[0]), big);
+  assert.equal(w.ofType('note').length, 0);
+  assert.equal([...w.index.keys()].some((k) => k.includes('quoted')), false, 'never indexed');
+  // restating the same value is nothing new; another value is a conflict, revise replaces it
+  assert.equal(w.tell(`@a1 analysis doc=d1 data=${quote(big)}`).ok, true);
+  assert.equal(w.fill('a1', 'data', big + '!').violations[0].kind, 'conflict');
+  assert.equal(w.revise('a1', 'data', quote('short')).ok, true);
+  assert.equal(str(w.get('a1').attrs.data[0]), 'short');
+  // it undoes and rewinds with the rest, and survives a snapshot
+  const again = World.fromJSON(w.toJSON());
+  assert.equal(str(again.get('a1').attrs.data[0]), 'short');
+  w.rewind(m);
+  assert.equal(w.get('a1').attrs.data, undefined);
+  assert.equal(w.ofType('note').length, 1);
+  // a pattern cannot read it
+  const bad = w.tell('@p analysis data=?x\n@t seen of=$p\n@r2 core.rule when=$p then=$t');
+  assert.match(bad.violations[0].why, /opaque values \(kind=blob\): patterns cannot read it/);
+  // a query can still ask for it
+  w.fill('a1', 'data', 'abc');
+  assert.equal(w.query({ about: 'a1', seek: 'data' }).value, '"abc"');
+});

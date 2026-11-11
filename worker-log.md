@@ -1621,3 +1621,34 @@ output identical. `tsc --noEmit --strict src/index.d.ts`: no errors.
 - The older workarounds the reviewer listed are also in place: `register` refuses to
   replace a built-in without `override` (W1), `revise` (W5), `told()` (W6),
   `check(patch)` (H1).
+
+## R6.4 — opaque values: kind=blob — done
+
+`npm test`: 216 pass, 0 fail on sources and built file, 215 in checking mode. Pilot
+output identical. `node tools/scan-loops.mjs src`: clean.
+
+`node bench/blob.mjs` (600-wire world; median of 21 after a warm-up round):
+
+| | fill the value | tell as text | fork + first tell | mark + tell + rewind | toJSON |
+| --- | --- | --- | --- | --- | --- |
+| 6 characters | 0.131 ms | 0.081 ms | 0.053 ms | 1.001 ms | 51 kB |
+| 1 MB blob | 3.639 ms | 5.490 ms | 0.072 ms | 1.182 ms | 1,075 kB |
+
+- `core.slot ... kind=blob`: the value is kept as given; text given to `fill` is quoted
+  into a string value whatever it contains; it is not indexed (`_link`, `_unlink`,
+  `_reindex` skip it); a pattern of a rule or deny that names the key is a `schema`
+  violation, except `core.absent=<key>`; two values are the same only when equal. It
+  is an ordinary value for marks, rewind, undo, forks, snapshots and queries (strings
+  are shared, never copied, between forks).
+- One choice differs from the task's wording: values are compared by length and then
+  exact equality, not by a hash. A hash of a 1 MB string costs a pass over it every time
+  it is computed (a string cannot carry a cached hash in JavaScript), and equality of
+  two strings of equal length is the same pass without the chance of a collision.
+- Telling a 1 MB string as text first cost 77 ms in the parser (a loop per character,
+  and decoding that built the text one character at a time). The scanner now jumps to
+  the next quote, backslash or line end inside a string, and a string without escapes
+  is sliced; one with escapes is read by `JSON.parse` (the escapes are JSON's). Now
+  5.5 ms. Every parser test passes unchanged.
+- Test `slots: kind=blob keeps an opaque value as given, out of the indexes and of
+  rules, and it undoes with the rest`. Documented in the core.slot entry of
+  reference.md, with the reason and the bench figures.

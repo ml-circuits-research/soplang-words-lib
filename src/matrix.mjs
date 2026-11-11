@@ -78,6 +78,7 @@ const KINDS = {
   string: (v) => v[0] !== '$',
   atom: (v) => v[0] !== '$' && v[0] !== '"',
   any: () => true, // any literal or reference
+  blob: (v) => v[0] !== '$' && v[0] !== '?', // opaque: kept as given, never indexed or matched
   'time.clock': (v) => !!clock(v),
   'time.date': (v) => date(v) !== null,
   'time.datetime': (v) => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?$/.test(v) && !Number.isNaN(Date.parse(v)),
@@ -387,6 +388,19 @@ export function compileMatrix(world) {
     if (n === undefined) numeric.set(id, (n = isNumber(c.slotOf(type, key))));
     return n;
   };
+  // ---- keys that hold opaque values (kind=blob): not indexed, not matched by patterns
+  const blob = new Map();
+  const isBlob = (s) => !!s && s.kinds.includes('blob');
+  c.blobKeys = new Set();
+  for (const [, mine] of own) for (const [k, s] of mine) if (isBlob(s)) c.blobKeys.add(k);
+  c.blobs = [...c.blobKeys].sort().join(' ');
+  c.blob = (type, key) => {
+    if (!c.blobKeys.has(key)) return false;
+    const id = type + '\u0001' + key;
+    let b = blob.get(id);
+    if (b === undefined) blob.set(id, (b = isBlob(c.slotOf(type, key))));
+    return b;
+  };
   const identity = new Map();
   c.idKeys = {
     get(type) {
@@ -567,6 +581,8 @@ function buildRule(world, w, c, extra, register = true) {
       const short = c.shortKey(l.type, key);
       if (short !== key) { l.attrs[short] = [...(l.attrs[short] || []), ...l.attrs[key]]; delete l.attrs[key]; }
     }
+    // an opaque value is not looked at by rules: a pattern may only ask that it is absent
+    if (k !== 'then') for (const key of Object.keys(l.attrs)) if (c.blob(l.type, key)) c.errors.push(`${w.id}: ${s.id} matches ${key}, which holds opaque values (kind=blob): patterns cannot read it (core.absent=${key} can)`);
     return l;
   }).filter(Boolean);
   const fn = (x, kind) => {

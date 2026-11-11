@@ -35,6 +35,7 @@ export class SopError extends Error {
 // An identifier: segments of [A-Za-z0-9_-] joined by single dots; the first segment starts
 // with a letter or "_", a later one with a letter, a digit or "_" (q.2). ASCII only.
 const IDENT = /^[A-Za-z_][A-Za-z0-9_-]*(?:\.[A-Za-z0-9_][A-Za-z0-9_-]*)*$/;
+const QUOTED = /["\\\n]/g;
 const ESCAPES = { '"': '"', '\\': '\\', '/': '/', b: '\b', f: '\f', n: '\n', r: '\r', t: '\t' };
 
 /**
@@ -42,6 +43,11 @@ const ESCAPES = { '"': '"', '\\': '\\', '/': '/', b: '\b', f: '\f', n: '\n', r: 
  * JSON's. With `lenient`, an unknown escape stands for the character after the backslash.
  */
 function decode(token, lenient) {
+  if (token.indexOf('\\') < 0) return token.slice(1, -1); // no escapes: the text as it is
+  if (!lenient) {
+    // the escapes are JSON's: let JSON read them (a line end or a tab written as it is is allowed here, not in JSON)
+    try { return JSON.parse(token.replace(/[\u0000-\u001f]/g, (ch) => `\\u${ch.charCodeAt(0).toString(16).padStart(4, '0')}`)); } catch { return null; }
+  }
   let out = '';
   for (let i = 1; i < token.length - 1; i++) { // bounded: the token
     const c = token[i];
@@ -74,9 +80,15 @@ function scan(text, lenient, errors) {
     while (i < n) { // bounded: every pass consumes input
       const d = text[i];
       if (inQ) {
-        if (d === '\\') { i += 2; continue; }
-        if (d === '"') { inQ = false; closed = i; }
-        if (d === '\n') { line++; lineStart = i + 1; }
+        // jump to the next quote, backslash or line end: long strings cost one search, not a loop per character
+        QUOTED.lastIndex = i;
+        const m = QUOTED.exec(text);
+        if (!m) { i = n; continue; }
+        i = m.index;
+        const e = text[i];
+        if (e === '\\') { i += 2; continue; }
+        if (e === '"') { inQ = false; closed = i; }
+        if (e === '\n') { line++; lineStart = i + 1; }
         i++;
         continue;
       }

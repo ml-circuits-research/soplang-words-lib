@@ -498,7 +498,10 @@ export class World {
       if (!w) res.violations.push({ kind: 'unknown-wire', id });
       else {
         key = this._compiled().shortKey(w.type, key);
-        this._merge(w, { [key]: [this._norm(String(value))] }, { via, from: [], tier }, res);
+        value = String(value);
+        // an opaque value given as text is kept as a string value, whatever it contains
+        if (value[0] !== '"' && this._compiled().blob(w.type, key)) value = quote(value);
+        this._merge(w, { [key]: [this._norm(value)] }, { via, from: [], tier }, res);
         this._settle(res, strict);
       }
     } catch (e) {
@@ -687,16 +690,21 @@ export class World {
   _same(type, key, a, b) {
     if (a === b) return true;
     const c = this._compiled();
+    if (c.blobKeys.size && c.blob(type, key)) return false; // opaque values are the same only when equal
     return c.numKeys.size > 0 && c.numeric(type, key) && canonical(a) === canonical(b);
   }
 
   _link(w, key, value) {
+    const c = this._compiled();
+    if (c.blobKeys.size && c.blob(w.type, key)) return; // opaque: not indexed
     const iv = this._iv(w.type, key, value);
     for (const t of this._lineage(w.type)) this._setOf(this.index, K(t, key, iv)).add(w.id);
     if (value[0] === '$') this._setOf(this.refs, value.slice(1)).add(w.id);
   }
 
   _unlink(w, key, value, whole) {
+    const c = this._compiled();
+    if (c.blobKeys.size && c.blob(w.type, key)) return;
     const iv = this._iv(w.type, key, value);
     for (const t of this._lineage(w.type)) this._setFor(this.index, K(t, key, iv))?.delete(w.id);
     if (value[0] !== '$') return;
@@ -731,7 +739,7 @@ export class World {
     for (const w of this.wires.values()) {
       for (const t of this._lineage(w.type)) {
         this._setOf(this.byType, t).add(w.id);
-        for (const k of Object.keys(w.attrs)) for (const v of w.attrs[k]) this._setOf(this.index, K(t, k, this._iv(w.type, k, v))).add(w.id);
+        for (const k of Object.keys(w.attrs)) if (!this._compiled().blob(w.type, k)) for (const v of w.attrs[k]) this._setOf(this.index, K(t, k, this._iv(w.type, k, v))).add(w.id);
       }
     }
     this._do(() => { [this.byType, this.index] = old; });
@@ -902,7 +910,7 @@ export class World {
           if (!c.modules.has(dep)) res.violations.push({ kind: 'schema', why: `module ${name} imports ${dep}, which is neither loaded nor in the library` });
         }
       }
-      if (!prev || prev.hierarchy !== c.hierarchy || prev.numbers !== c.numbers) this._reindex();
+      if (!prev || prev.hierarchy !== c.hierarchy || prev.numbers !== c.numbers || prev.blobs !== c.blobs) this._reindex();
       if ((prev ? prev.seqKey : undefined) !== c.seqKey) this._restamp();
       if (c.fluents.size || c.seqKey) for (const w of this.wires.values()) { if (w.meta.told) this._fluentNote(w, res); }
       res._agenda = [...this.wires.keys()];

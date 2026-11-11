@@ -39,8 +39,18 @@ One key of one type: what it may hold, and whether it must be there.
 
 Kinds: `integer`, `number` (integer or decimal), `boolean` (`true`, `false`), `string`
 (quoted), `atom` (a name), `quantity.<name>` (a number with a unit), `time.<name>`
-(`time.clock` 10:40, `time.date` 2026-01-30, any other name: an atom), `any`. With
+(`time.clock` 10:40, `time.date` 2026-01-30, any other name: an atom), `any`, `blob` (below). With
 several `kind` and `type` attributes the value must fit one of them.
+
+**Opaque values.** Under a key whose slot says `kind=blob` the value is kept exactly as
+given (text given to `fill` becomes a string value, whatever it contains), it is not
+put in any index, and no rule or deny can read it: a pattern that names the key is a
+`schema` violation, except `core.absent=<key>`. Two values are the same only when they
+are equal. It is a value like any other for marks, `rewind`, `undo`, forks, snapshots
+and queries. *Why:* a large immutable result (an analysis of a document, kilobytes to
+megabytes) must undo with the rest of the world without costing anything to the rules;
+in a 600-wire world a 1 MB value costs 3.6 ms to fill, 5.5 ms to tell as text, and
+nothing to a fork or a mark (`node bench/blob.mjs`).
 
 **Meaning.** For every fact of type `of` or of a type that extends it: each value of
 `key` fits a kind or type if any is given, is in `enum` if given, lies within `min` and

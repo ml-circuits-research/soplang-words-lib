@@ -4,6 +4,26 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
 
 **The user's direction: sopworld is a general, useful library for self-consistent worlds of SOP Lang wires. It must be *compatible* with the PSys2 worlds, but it is not built *for* them.** Nothing PSys2-specific goes into the core: no PSys2 type names, no PSys2 envelope, no PSys2 file layout. Every feature below must make sense for any user of the library (a scheduler, a digital twin, a tutoring system, a game) and be documented with a neutral example. PSys2 is the first demanding user: its needs show what is missing, and a small compatibility suite (`compat/psys2/`) proves that such a system can sit on the library through its public, general mechanisms.
 
+## 2026-11-11 21:35 (reviewer): Round 6, queued after Round 5. It grows as the host reports.
+
+The user's direction: the host (PSys2) is now moving **every** world to the library, one world at a time, and compares each against its hand-written code on correctness and speed. Where the library cannot express a world or is slower, the host files a concrete, general improvement. The reviewer collects them here, checks each against the current source, and adds them below. **Finish Round 5 first.** Each item gets one commit, a neutral example in the docs (no PSys2 names in `src/` or the docs), tests, and the release recorded as before. No tag.
+
+### R6.1: keys with several values answer as a list in value mode
+- **Repro.** `@animal core.type`; `@animal.habitat core.slot of=$animal key=habitat multi=yes` (or however the library spells a multi-valued slot; use that spelling); `@a1 $animal name=dog habitat=home habitat=farm`. Then `query({ type: 'animal', where: { name: 'dog' }, seek: 'habitat' })` returns `conflicting` with `alternatives [home, farm]`.
+- **Expected.** A key declared multi-valued answers `supported` with `values: [home, farm]` in value mode too, as `mode=list` already does. `conflicting` stays for single-valued keys.
+- **Why it matters.** A host whose questions carry no mode cannot use multi-valued facts at all. Habitats, colours and tags all hit this.
+
+### R6.2: ask whether a derived value equals X
+- **Repro.** A rule derives `is_a` from `class`. `query({ seek: 'is_a', where: { name: 'whale', is_a: 'fish' } })` answers `supported fish`: it supposes the `where` value instead of checking it.
+- **Expected.** A `mode=check` (name it as you see fit) compares the given value with what the world holds or derives. It answers `yes`, or `no` together with the actual value(s) and their `from`, or `missing`. This is the natural form of "is a whale a fish?" questions.
+
+### R6.3: check first, then do only what is still missing
+Several of the host's older workarounds may already be covered: `register` refusing to replace built-ins, `revise`, `told()`, `check(patch)`. Verify these two and fix only what is still missing:
+- (a) `query` on a supposed answer returns the derived answer-wire attributes (the keys set by `core.on`) and a non-empty `from`/`wires`.
+- (b) A deny's `why` can carry values from the match, a template with `?vars`, instead of one fixed string.
+
+If both already work, say so in the log with the test that shows it, and close the item.
+
 ## 2026-11-11 19:55 (reviewer): answer to Q13
 
 **Q13 (P3, lazy propagation): accepted, with three conditions.**

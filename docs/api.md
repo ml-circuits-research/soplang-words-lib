@@ -240,9 +240,13 @@ true ["8"]
 ### world.applyPatch(patch, options?)
 
 Applies several changes that must hold together, all or nothing. A patch is an array
-of `{ id, key, value }` fills, or `{ wires, fills, sets, retract }`: wires to tell,
-values to add, values to replace, ids to retract. Options: `strict`, `tier`, `budget`.
-Returns a change result. `undo` takes a patch back as one statement.
+of `{ id, key, value }` fills, or `{ wires, fills, sets, retract, replace }`: wires to
+tell, values to add, values to replace, ids to retract, and wires to replace in place.
+`replace: { id, attrs }` (or a list of them) gives a told wire exactly the keys in
+`attrs` (keys it had and `attrs` lacks are dropped) and keeps its id, so the wires that
+refer to it stay; what was derived from the old content is withdrawn. Options:
+`strict`, `tier`, `budget`. Returns a change result, with `replaced` (ids) when there
+were replacements. `undo` takes a patch back as one statement.
 
 ```js run
 const w = shop();

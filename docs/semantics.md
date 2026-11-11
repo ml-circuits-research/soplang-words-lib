@@ -384,9 +384,14 @@ costs.
 
 **S59.** `check(patch)` says what `applyPatch(patch)` would do and changes nothing;
 `applyPatch` applies all of a patch or none of it; `diff` of a world and a fork that
-applied the patch is the patch's effect, and is empty once both applied it.
+applied the patch is the patch's effect, and is empty once both applied it. A patch may
+replace told wires in place: each keeps its id and the wires that refer to it, and gets
+exactly the given keys; the replacement is a statement of its own in the log, so undo,
+redo and replay treat it like the others. *Why:* an editor changes a paragraph without
+renaming it, and the comments on it must stay.
 *Tests:* `patch: check and applyPatch take wires and fills, all or nothing`;
-`semantics: check(patch) changes nothing; applyPatch gives the world a fork that applied it has`
+`semantics: check(patch) changes nothing; applyPatch gives the world a fork that applied it has`;
+`patch: replace in place keeps the id and what refers to it, changes and drops keys, and undoes as one statement`
 
 **S60.** `check()` without a patch validates every wire against the whole matrix and
 returns every violation and every standing issue; `describe()` and `diff()` return

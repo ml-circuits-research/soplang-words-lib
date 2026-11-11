@@ -186,3 +186,31 @@ test('a deny over a state refuses the event that would break it, when the event 
   assert.deepEqual([r.ok, r.violations[0].why, r.violations[0].support, w.has('s2'), w.get('w1').attrs.amount], [false, 'that would leave -34', ['w1', 's2', 's1'], false, ['6']]);
   assert.equal(w.check().ok, true);
 });
+
+test('patch: replace in place keeps the id and what refers to it, changes and drops keys, and undoes as one statement', () => {
+  const w = new World();
+  w.load('@k core.slot of=para key=n id=true\n@p para n=?n style=?s\n@t para core.on=$p styled=yes\n@r core.rule when=$p then=$t');
+  w.tell('@p1 para n=1 style=bold text="hello world"  @c1 comment on=$p1 text="nice"');
+  const r = w.applyPatch({ replace: { id: 'p1', attrs: { n: 1, text: 'hello there' } }, wires: '@c2 comment on=$p1 text="ok"' });
+  assert.deepEqual([r.ok, r.added, r.replaced], [true, ['c2'], ['p1']]);
+  assert.deepEqual(w.get('p1').attrs, { n: ['1'], text: ['"hello there"'] }, 'style is gone, and with it what the rule concluded from it');
+  assert.equal(w.has('c1'), true, 'a wire that refers to it stays');
+  assert.equal(w.diff(World.fromJSON(w.toJSON())).same, true, 'the log replays it');
+  assert.deepEqual(w.told().find((x) => x.id === 'p1').attrs, { n: ['1'], text: ['"hello there"'] });
+  // undo takes back the whole patch; redo tells it again
+  w.undo();
+  assert.deepEqual([w.get('p1').attrs.style, w.get('p1').attrs.styled, w.has('c2')], [['bold'], ['yes'], false]);
+  w.redo();
+  assert.deepEqual([w.get('p1').attrs.style, w.has('c2')], [undefined, true]);
+  // all or nothing: a replacement that breaks the world changes nothing
+  w.load('@k2 core.slot of=para key=text required=true kind=string');
+  const bad = w.applyPatch({ replace: [{ id: 'p1', attrs: { n: 1, text: 'x' } }, { id: 'c1', attrs: { on: '$nowhere' } }] });
+  assert.equal(bad.ok, false);
+  assert.equal(w.get('p1').attrs.text[0], '"hello there"');
+  assert.equal(w.applyPatch({ replace: { id: 'nobody', attrs: {} } }).violations[0].kind, 'unknown-wire');
+  // a retracted wire takes its replacements out of the log with it
+  w.retract('c1');
+  w.retract('c2');
+  w.retract('p1');
+  assert.equal(w.log.some((e) => e.op === 'replace'), false);
+});

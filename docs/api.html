@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="7a43c3d4ce7d">
+<meta name="source-hash" content="218389476110">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -112,7 +112,7 @@ w.tell(&#x27;@pen item name=pen price=2  @l1 line item=$pen qty=3&#x27;);
 print(w.replace(&#x27;l1&#x27;, &#x27;@l1 line item=$pen qty=4&#x27;).ok, w.get(&#x27;l1&#x27;).attrs.cost);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true [&quot;8&quot;]</code></pre></figure>
 <h3 id="worldapplypatchpatch-options">world.applyPatch(patch, options?)</h3>
-<p>Applies several changes that must hold together, all or nothing. A patch is an array of <code>{ id, key, value }</code> fills, or <code>{ wires, fills, sets, retract }</code>: wires to tell, values to add, values to replace, ids to retract. Options: <code>strict</code>, <code>tier</code>, <code>budget</code>. Returns a change result. <code>undo</code> takes a patch back as one statement.</p>
+<p>Applies several changes that must hold together, all or nothing. A patch is an array of <code>{ id, key, value }</code> fills, or <code>{ wires, fills, sets, retract, replace }</code>: wires to tell, values to add, values to replace, ids to retract, and wires to replace in place. <code>replace: { id, attrs }</code> (or a list of them) gives a told wire exactly the keys in <code>attrs</code> (keys it had and <code>attrs</code> lacks are dropped) and keeps its id, so the wires that refer to it stay; what was derived from the old content is withdrawn. Options: <code>strict</code>, <code>tier</code>, <code>budget</code>. Returns a change result, with <code>replaced</code> (ids) when there were replacements. <code>undo</code> takes a patch back as one statement.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 const r = w.applyPatch({ wires: &#x27;@pen item name=pen  @l1 line item=$pen&#x27;, fills: [{ id: &#x27;pen&#x27;, key: &#x27;price&#x27;, value: 2 }, { id: &#x27;l1&#x27;, key: &#x27;qty&#x27;, value: 5 }] });
 print(r.ok, w.get(&#x27;l1&#x27;).attrs.cost);

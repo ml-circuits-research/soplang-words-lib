@@ -277,6 +277,8 @@ export class World {
           if (!e.facts.includes(w.id) || !this.has(w.id)) continue;
           out.set(w.id, cloneWire(w));
         }
+      } else if (e.op === 'replace' && this.has(e.id)) {
+        out.set(e.id, cloneWire(e.wire));
       } else if ((e.op === 'fill' || e.op === 'set') && !this._weakFill(e) && this.has(e.id)) {
         const w = [...out.values()].find((x) => this.resolve(x.id) === this.resolve(e.id));
         if (!w) continue;
@@ -409,14 +411,42 @@ export class World {
 
   _patch(patch, { dry = false, strict = this.options.strict, via = 'core.tell', tier } = {}) {
     this._knownTier(tier);
-    const { wires = [], fills = [], sets = [], retract = [] } = Array.isArray(patch) ? { fills: patch } : patch || {};
+    const { wires = [], fills = [], sets = [], retract = [], replace = [] } = Array.isArray(patch) ? { fills: patch } : patch || {};
     const ws = (typeof wires === 'string' ? parse(wires) : wires).map(cloneWire);
     const told = ws.map(cloneWire);
     const res = this._result();
     res._tier = tier;
     const mark = this._begin(!dry);
     let facts = [];
+    const replaced = []; // { id, successor, gone }
     try {
+      // replace in place: the wire keeps its id (and what refers to it) and gets these keys
+      for (const r of [].concat(replace)) { // bounded: the replacements of one patch
+        const target = this.wires.get(r.id);
+        if (this.alias.has(r.id) || !target || !target.meta.told) { res.violations.push({ kind: 'unknown-wire', id: r.id, why: 'only told wires that were not merged can be replaced' }); continue; }
+        const attrs = {};
+        for (const [k, v] of Object.entries(r.attrs || {})) {
+          attrs[k] = [].concat(v).map((x) => { x = String(x); return x[0] !== '"' && /[\s"\\]/.test(x) ? quote(x) : x; });
+        }
+        const wire = { id: r.id, type: r.type || target.type, attrs, pattern: false };
+        const gone = this._unsay(res, [r.id], []); // no cascade: the new content takes the id
+        this._ingest([cloneWire(wire)], res);
+        replaced.push({ id: r.id, successor: wire, gone });
+      }
+      if (replaced.length && !res.violations.length) {
+        // told wires that only meant the old content go with it; the others now refer to the new one
+        this._chase(res);
+        const orphans = [];
+        for (const { gone } of replaced) for (const x of gone) {
+          if (this.wires.has(x)) continue;
+          for (const ref of this.refs.get(x) || []) {
+            const w = this.wires.get(ref);
+            if (!w || !this._dependsOn(w, x)) continue;
+            if (w.meta.told) orphans.push(ref); else res._touched.add(ref);
+          }
+        }
+        if (orphans.length && !res.violations.length) for (const x of this._withdraw(res, orphans, [])) res.removed.push(x);
+      }
       if (ws.length) facts = this._ingest(ws, res);
       for (const f of fills) { // bounded: the fills of one patch
         const w = this.get(f.id);
@@ -450,14 +480,17 @@ export class World {
       throw e;
     }
     // in the log the parts of a patch carry the same group, so that a replay applies them together
-    const group = fills.length + sets.length + (ws.length ? 1 : 0) > 1 ? `g${this.seq}` : undefined;
+    const group = fills.length + sets.length + replaced.length + (ws.length ? 1 : 0) > 1 ? `g${this.seq}` : undefined;
+    res.added = res.added.filter((x) => !replaced.some((r) => r.id === x));
     const entries = [
+      ...replaced.map((r) => ({ op: 'replace', id: r.id, wire: cloneWire(r.successor), ...(group ? { group } : {}), ...(tier ? { tier } : {}) })),
       ...(ws.length ? [{ op: 'tell', wires: told, facts, ...(group ? { group } : {}), ...(tier ? { tier } : {}) }] : []),
       ...fills.map((f) => ({ op: 'fill', id: f.id, key: f.key, value: String(f.value), via, ...(group ? { group } : {}), ...(tier ? { tier } : {}) })),
       ...sets.map((f) => ({ op: 'set', id: f.id, key: f.key, value: String(f.value), via, ...(group ? { group } : {}), ...(tier ? { tier } : {}) })),
     ];
     const done = this._finish(mark, res, dry, entries);
     if (done.ok && res._revised) done.revised = res._revised;
+    if (done.ok && replaced.length) done.replaced = replaced.map((r) => r.id);
     return done;
   }
 
@@ -470,7 +503,8 @@ export class World {
       if (!kept.length) continue;
       const tell = kept.find((e) => e.op === 'tell');
       const fills = kept.filter((e) => e.op === 'fill'), sets = kept.filter((e) => e.op === 'set');
-      const r = this._patch({ wires: tell ? tell.wires : [], fills, sets }, { strict: false, via: (fills[0] || sets[0])?.via, tier: (tell || fills[0] || sets[0]).tier });
+      const replace = kept.filter((e) => e.op === 'replace').map((e) => ({ id: e.id, type: e.wire.type, attrs: e.wire.attrs }));
+      const r = this._patch({ wires: tell ? tell.wires : [], fills, sets, replace }, { strict: false, via: (fills[0] || sets[0])?.via, tier: (tell || fills[0] || sets[0] || kept[0]).tier });
       if (!r.ok) return r;
     }
     return null;
@@ -644,7 +678,7 @@ export class World {
       } else log.splice(i, 1);
     }
     if (this._fills) {
-      const kept = (log || old).filter((e) => e.op !== 'fill' || !(dead.has(e.id) || e.id === replaced));
+      const kept = (log || old).filter((e) => !((e.op === 'fill' && (dead.has(e.id) || e.id === replaced)) || (e.op === 'replace' && dead.has(e.id))));
       if (kept.length !== (log || old).length) { this._fills -= (log || old).length - kept.length; log = kept; }
     }
     if (!log) return;

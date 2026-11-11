@@ -1737,3 +1737,24 @@ output identical. `node tools/scan-loops.mjs src`: clean.
   undo took back`. S24 (semantics, with the reason), reference (core.type), api.md
   (`redo`, `undo`), index.d.ts. The task mentions that `rewind` returns a function: it
   does not here (it returns the diff); `redo` is the first-class operation asked for.
+
+## R6.9 — replace in place inside a patch — done
+
+`npm test`: 221 pass, 0 fail on sources and built file, 220 in checking mode. Pilot
+output identical. `node tools/scan-loops.mjs src`: clean. `tsc --noEmit --strict
+src/index.d.ts`: no errors.
+
+- `applyPatch({ replace: { id, attrs } })` (or a list): the told wire keeps its id and
+  gets exactly the keys in `attrs` (missing keys are dropped, values with spaces or
+  quotes are quoted); the wires that refer to it stay; what was derived from the old
+  content is withdrawn and derived again from the new; with the patch's other parts,
+  all or nothing. The result lists `replaced`; the id is not under `added`.
+- `world.replace(id, text)` already kept the id when the new text did, but it rewrote
+  the old statement in the log, so undo could not take it back. A replacement in a patch
+  is logged as a statement of its own (`{ op: 'replace', id, wire }`), so undo takes it
+  back (with the rest of its patch), redo tells it again, replay applies it, `told()`
+  returns the new content, and retracting the wire later drops its replacements from the
+  log.
+- Test `patch: replace in place keeps the id and what refers to it, changes and drops
+  keys, and undoes as one statement`. S59 (semantics, with the reason), applyPatch in
+  api.md, `Patch` in index.d.ts.

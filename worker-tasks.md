@@ -4,6 +4,29 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
 
 **The user's direction: sopworld is a general, useful library for self-consistent worlds of SOP Lang wires. It must be *compatible* with the PSys2 worlds, but it is not built *for* them.** Nothing PSys2-specific goes into the core: no PSys2 type names, no PSys2 envelope, no PSys2 file layout. Every feature below must make sense for any user of the library (a scheduler, a digital twin, a tutoring system, a game) and be documented with a neutral example. PSys2 is the first demanding user: its needs show what is missing, and a small compatibility suite (`compat/psys2/`) proves that such a system can sit on the library through its public, general mechanisms.
 
+## 2026-11-11 19:15 (reviewer): Round 5, performance of forks and completing. Read this first.
+
+0.6.1 is still validated. A demanding host (PSys2, now on the library by default) profiled its turns. It fixed what was on its side and found three costs inside the library. All three are general: any host that forks or marks per request, or completes after every tell, pays them. The reviewer confirmed each one in the code. Do them in order, one commit each, with a bench in `bench/` and **no change in any output** (all tests plus `compat/psys2/run.mjs` identical).
+
+### P1: `complete()` / `next()` with nothing to fill must be cheap
+- **Problem.** `_next()` (src/complete.mjs) calls `this.assumptions()` at the top, before it looks at any fill. That is a pass over every cell of every wire. It runs on every loop of `complete()`, even when no slot can ever be filled. Measured: about 1 ms per call in a world of about 300 wires, and about 0.17 ms when nothing changed at all.
+- **Change.**
+  - Compute `review` only when the caller asks for it, for example `next({ review: true })`. `complete()` does not need it.
+  - Add a fast exit: if nothing changed since the last `complete` (compare the world's stamp or version), return at once.
+  - Add a public, cheap `canComplete()`, or `next({ count: true })`, that says whether any empty slot has a candidate: a default, or for a required slot an enum, a type or a range. Today hosts read the private `world._compiled().slots` to find this out. Give them a documented API.
+
+### P2: the first change after `fork()` or `mark()` must not copy the whole world
+- **Problem.** `_detach()` (src/revise.mjs) copies every wire and every index on the first change after a fork or a mark: wires, `byType`, `index`, `refs`, `byWire`, `byRule`, `matrix`, `alias`, `used`, `firings`, logs and events. This happens even when the change is one fact. Measured: 0.07 ms for a base of 60 wires and about 0.5 ms for a few hundred. It grows with the size of the base, and hosts that mark per turn and fork per dry run pay it several times per request.
+- **Change.** Copy-on-write per structure. The matrix, alias and rule indexes do not change when a plain fact is told, so share them until a rule or matrix wire is loaded. Copy only the wires and index sets that a change touches.
+- **Alternative.** Make `mark()` journal-based: an undo log, so that a tell after a mark copies nothing.
+- **Target.** fork + first one-wire tell within 2× the cost of a tell on a detached world, independent of the base size. Show this in the bench at 60, 600 and 6,000 wires.
+
+### P3: `act` and many tells in a fresh fork
+- **Problem.** A declarative action that tells about 70 wires in a fresh fork costs about 4 ms: the detach, then a propagation after each `ctx.tell`.
+- **Change.** Inside one action or transaction, batch the tells and propagate once at commit, with the same results and the same refusals. Measure the cost with 70 tells in a fork.
+
+When P1–P3 are done, record the release as before: package.json, docs/version.md and a changelog entry on main. No tag. The host will pin the commit.
+
 ## Where things stand (reviewer, 2026-11-10 15:15) — read this first
 
 The reviewer's first two commits to this repository were a false start; ignore them. One list is valid: **G1–G9 below**. The earlier S1–S8 list and the `psys2/` directory no longer exist; only `compat/psys2/` does.

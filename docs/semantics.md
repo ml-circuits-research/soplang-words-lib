@@ -332,6 +332,13 @@ with `yes`, else `no` or `unknown` (S19). A query that runs out of budget has st
 *Tests:* `query: count and exists; "no" needs a type whose instances are all known`;
 `budget: query, act, fill, apply, step, trial and asOf are guarded too`
 
+**S55a.** `mode=check` asks whether the value given for the sought key (in `where` or as
+`value`) is one the world holds or derives for the wire: `supported` with `yes`; `no`
+with the values it does have (`actual`) and their `from` and `via`; `missing` when it
+has none; any other status as a value query gives it. The value is compared, not
+supposed. *Why:* "is a whale a fish?" must not be answered by supposing that it is.
+*Test:* `query: mode=check says whether a held or derived value is the one given, and if not, what it is`
+
 **S56.** A question may be an object, a wire or text, with the same effect; with
 `{ record: true }` the question and its answer are told as wires.
 *Test:* `query: a question wire has the same effect as an object; record writes the answer as a wire`

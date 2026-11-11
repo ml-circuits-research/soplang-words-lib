@@ -55,7 +55,36 @@ export const querying = {
    * state; calcs compute; every check must hold (the guard); then all writes are applied
    * as one patch. Every expression was evaluated on the state before the action.
    */
-/**
+  /**
+   * mode=check: is the value given for the sought key (in `where`, or as `value`) the one
+   * the world holds or derives? `supported` with `yes`; `no` with the values it does
+   * have (`actual`) and where they come from; `missing` when it has none; any other
+   * status (refused, conflicting, ...) as a value query gives it.
+   */
+  _check(question, opts) {
+    const c = this._compiled();
+    const { seek } = question;
+    if (!seek) throw new Error('query: mode=check needs seek= and the value to check');
+    const type = question.type || this._matching(question)[0]?.type;
+    const key = type ? c.shortKey(type, seek) : seek;
+    const where = { ...(question.where || {}) };
+    let expected = question.value;
+    for (const k of Object.keys(where)) {
+      if ((type ? c.shortKey(type, k) : k) !== key) continue;
+      expected ??= where[k];
+      delete where[k];
+    }
+    if (expected === undefined) throw new Error(`query: mode=check needs the value of ${seek} to check (in where or as value)`);
+    expected = this._norm(String(expected));
+    const r = this._query({ ...question, where, mode: 'list' }, opts);
+    if (r.status !== 'supported') return r;
+    const values = r.values || [r.value];
+    const { values: _v, value: _one, ...rest } = r;
+    if (values.some((v) => this._same(type, key, v, expected))) return { ...rest, status: 'supported', value: 'yes', checked: expected };
+    return { ...rest, status: 'no', actual: values, checked: expected };
+  },
+
+  /**
    * Tell several queued statements as one change: each is taken in (and logged) as its
    * own statement, then the rules run once and the world is validated once. A refusal
    * names, under `queued`, every queued tell whose wires are involved in it, in the order
@@ -220,6 +249,7 @@ export const querying = {
     const ask = slot?.ask ? slot.ask.replace(/^"|"$/g, '') : undefined;
     let r, suppositionOf = null;
 
+    if (mode === 'check') return this._check(question, { record, suppose });
     if (mode === 'count') {
       r = { status: 'supported', value: String(key ? wires.filter((w) => w.attrs[key]).length : wires.length), from: wires.map((w) => w.id) };
     } else if (mode === 'exists') {

@@ -558,7 +558,9 @@ true false
 ### world.query(question, options?)
 
 Asks for a value, with a status. `question` is `{ type, where, seek, mode }` or
-`{ about, seek }`, a `core.question` wire, or its text. Options: `record` (tell the
+`{ about, seek }`, a `core.question` wire, or its text. Modes: `value` (default),
+`list`, `count`, `exists`, `check` (is `where[seek]`, or `value`, the value the world
+has? `yes`, or `no` with `actual`), `abduce`. Options: `record` (tell the
 question and the answer as wires), `suppose` (default true: S53), `at`. Returns
 `{ status, value | values, from, via, tier, rests, wires }` and, by status,
 `alternatives`, `missing`, `reason`, `issues`, `howto`, `supposed`, `violations`. The

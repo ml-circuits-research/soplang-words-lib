@@ -35,7 +35,7 @@ export interface Result {
 export interface Issue { id: string; rule?: string; about: string[]; key?: string; why?: string }
 export interface OpenKey { id: string; type: string; key: string; ask?: string }
 export interface Candidate { value: string; source: 'default' | 'enum' | 'wire' | 'range'; count: number }
-export interface Question { type?: string; seek?: string; where?: Record<string, string | number>; about?: string; mode?: 'value' | 'list' | 'count' | 'exists' }
+export interface Question { type?: string; seek?: string; where?: Record<string, string | number>; about?: string; mode?: 'value' | 'list' | 'count' | 'exists' | 'check' | 'abduce'; /** for mode=check: the value to check, when it is not in where */ value?: string | number }
 export interface QueryResult {
   /** 'budget': the call ran out of budget; `site`, `steps` and `why` say where */
   status: 'supported' | 'conflicting' | 'ambiguous' | 'missing' | 'refused' | 'no' | 'unknown' | 'budget' | 'unsupported';
@@ -50,6 +50,8 @@ export interface QueryResult {
   issues?: string[];
   site?: string; steps?: number; why?: string;
   value?: string; values?: string[];
+  /** mode=check: the value checked, and when the answer is 'no', the values the world has */
+  checked?: string; actual?: string[];
   alternatives?: { value: string; from: string[] }[];
   missing?: { id?: string; type?: string; key: string; ask?: string }[];
   violations?: Violation[];

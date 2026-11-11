@@ -390,3 +390,28 @@ test('query: a key that may hold several values answers with all of them in valu
   // a key not declared many keeps the old answer: several values are a conflict
   assert.equal(w.query({ about: 'a3', seek: 'colour' }).status, 'conflicting');
 });
+
+test('query: mode=check says whether a held or derived value is the one given, and if not, what it is', () => {
+  const w = new World();
+  w.load(`
+    @k core.slot of=animal key=name id=true
+    @k2 core.slot of=animal key=legs kind=integer
+    @m animal class=mammal
+    @t animal core.on=$m is_a=mammal
+    @r core.rule when=$m then=$t
+  `);
+  w.tell('@w1 animal name=whale class=mammal legs=0  @s1 animal name=shark');
+  const no = w.query({ type: 'animal', seek: 'is_a', where: { name: 'whale', is_a: 'fish' }, mode: 'check' });
+  assert.deepEqual([no.status, no.actual, no.checked, no.from, no.via], ['no', ['mammal'], 'fish', ['w1'], ['r']]);
+  const yes = w.query({ type: 'animal', seek: 'is_a', where: { name: 'whale' }, value: 'mammal', mode: 'check' });
+  assert.deepEqual([yes.status, yes.value], ['supported', 'yes']);
+  // numbers compare as numbers under a numeric slot; a told value is checked like a derived one
+  assert.equal(w.query({ type: 'animal', seek: 'legs', where: { name: 'whale', legs: '0.0' }, mode: 'check' }).value, 'yes');
+  // nothing to compare with: missing
+  assert.equal(w.query({ type: 'animal', seek: 'is_a', where: { name: 'shark', is_a: 'fish' }, mode: 'check' }).status, 'missing');
+  // the same as a question wire
+  assert.equal(w.query('@q core.question type=animal seek=is_a where.name=whale where.is_a=fish mode=check').status, 'no');
+  // a value that would be refused if supposed is not supposed: the check says no
+  assert.equal(w.query({ type: 'animal', seek: 'is_a', where: { name: 'whale', is_a: 'bird' }, mode: 'check' }).status, 'no');
+  assert.equal(w.get('w1').attrs.is_a.length, 1, 'and nothing changed');
+});

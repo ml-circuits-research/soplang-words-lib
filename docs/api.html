@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="9f7bf4a910a7">
+<meta name="source-hash" content="92433bb1b8f7">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -240,7 +240,7 @@ w.tell(&#x27;@pen item name=pen price=2&#x27;);
 print(w.holds(&#x27;item name=pen&#x27;), w.holds(&#x27;item name=ink&#x27;));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true false</code></pre></figure>
 <h3 id="worldqueryquestion-options">world.query(question, options?)</h3>
-<p>Asks for a value, with a status. <code>question</code> is <code>{ type, where, seek, mode }</code> or <code>{ about, seek }</code>, a <code>core.question</code> wire, or its text. Options: <code>record</code> (tell the question and the answer as wires), <code>suppose</code> (default true: S53), <code>at</code>. Returns <code>{ status, value | values, from, via, tier, rests, wires }</code> and, by status, <code>alternatives</code>, <code>missing</code>, <code>reason</code>, <code>issues</code>, <code>howto</code>, <code>supposed</code>, <code>violations</code>. The statuses are defined in <a href="semantics.html#queries">semantics</a>.</p>
+<p>Asks for a value, with a status. <code>question</code> is <code>{ type, where, seek, mode }</code> or <code>{ about, seek }</code>, a <code>core.question</code> wire, or its text. Modes: <code>value</code> (default), <code>list</code>, <code>count</code>, <code>exists</code>, <code>check</code> (is <code>where[seek]</code>, or <code>value</code>, the value the world has? <code>yes</code>, or <code>no</code> with <code>actual</code>), <code>abduce</code>. Options: <code>record</code> (tell the question and the answer as wires), <code>suppose</code> (default true: S53), <code>at</code>. Returns <code>{ status, value | values, from, via, tier, rests, wires }</code> and, by status, <code>alternatives</code>, <code>missing</code>, <code>reason</code>, <code>issues</code>, <code>howto</code>, <code>supposed</code>, <code>violations</code>. The statuses are defined in <a href="semantics.html#queries">semantics</a>.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 w.tell(&#x27;@pen item name=pen price=2  @l1 line item=$pen qty=3&#x27;);
 const q = w.query({ about: &#x27;l1&#x27;, seek: &#x27;cost&#x27; });

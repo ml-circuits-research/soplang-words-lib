@@ -1586,3 +1586,20 @@ slot `many=true`.
 - Test `query: a key that may hold several values answers with all of them in value mode;
   a single-valued key still conflicts` (the habitat repro, one value, several wires, a
   key without `many`). S50 in semantics.md states the rule and the reason.
+
+## R6.2 — mode=check: is a held or derived value the one given — done
+
+`npm test`: 215 pass, 0 fail on sources and built file, 214 in checking mode. Pilot
+output identical. `tsc --noEmit --strict src/index.d.ts`: no errors.
+
+- `query({ ..., mode: 'check' })`: the value to check is `where[seek]` (or `value`); it
+  is taken out of `where`, the rest of the question is asked in list mode, and the value
+  is compared with what the world holds or derives (as numbers under a numeric slot):
+  `supported` with `value: 'yes'`; `no` with `actual` (the values it has), `from`, `via`
+  and `checked`; `missing` when there is nothing to compare with; any other status
+  passes through. The value is never supposed. The same from a `core.question` wire with
+  `mode=check where.<key>=<value>`.
+- Test `query: mode=check says whether a held or derived value is the one given, and if
+  not, what it is` (whale/fish: `no` with `mammal`, from `w1` via `r`; `yes`; `0.0`
+  against `0` under an integer slot; `missing`; the question-wire form; nothing changed).
+  S55a in semantics.md (with the reason), the query entry of api.md, index.d.ts.

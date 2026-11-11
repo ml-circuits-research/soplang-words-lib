@@ -11,7 +11,7 @@ const RANGE_CAP = 2000;
 export const SCHEMA_TYPES = new Set([
   'core.slot', 'core.type', 'core.abducible', 'core.precision', 'core.tier', 'core.rule', 'core.deny', 'core.calc', 'core.check', 'core.use',
   'core.schema.map', 'core.namespace', 'core.producer', 'core.action',
-  'core.sequence', 'core.fluent', 'core.effect', 'core.relation',
+  'core.sequence', 'core.fluent', 'core.effect', 'core.relation', 'core.aggregate',
 ]);
 
 /**
@@ -29,6 +29,7 @@ export const GRAMMAR = {
   'core.rule': ['when', 'not', 'with', 'if', 'then'],
   'core.deny': ['when', 'not', 'with', 'if', 'why', 'soft'],
   'core.calc': ['out', 'fn', 'args', 'over', 'pick', 'ties', 'relation'],
+  'core.aggregate': ['over', 'by', 'then', 'default', 'fn', 'out', 'args', 'pick', 'ties', 'count', 'sum', 'min', 'max', 'argmin', 'argmax', 'collect'],
   'core.check': ['fn', 'args', 'why'],
   'core.relation': ['when', 'sum', 'sub', 'equals'],
   'core.abducible': ['of', 'key', 'cost'],
@@ -421,6 +422,7 @@ export function compileMatrix(world) {
 
   for (const w of world.matrix.values()) {
     if (w.type === 'core.rule' || w.type === 'core.deny') buildRule(world, w, c);
+    else if (w.type === 'core.aggregate') buildAggregate(world, w, c);
   }
   buildRelations(world, c);
   // An action written as wires: parameters, patterns that read the state, a guard, and
@@ -556,7 +558,31 @@ function buildRelations(world, c) {
   }
 }
 
-function buildRule(world, w, c, extra, register = true) {
+/**
+ * core.aggregate: one aggregate over every match of its patterns, with no pattern of its
+ * own to anchor it. Without by= it gives exactly one result, also over nothing (default=
+ * for the functions that have no value then); with by=?v one result per value of ?v
+ * among the matches. It is a rule with no when= and one aggregating calc.
+ */
+function buildAggregate(world, w, c) {
+  const names = ['count', 'sum', 'min', 'max', 'argmin', 'argmax', 'collect'].filter((n) => w.attrs[n]);
+  let fn = first(w, 'fn'), out = first(w, 'out');
+  if (fn && names.length) { c.errors.push(`${w.id}: give fn= and out=, or one of ${names.join(', ')}=?var, not both`); return; }
+  if (!fn) {
+    if (names.length !== 1) { c.errors.push(`${w.id}: core.aggregate needs one result: count=?var, sum=?var, ... (or fn= and out=)`); return; }
+    fn = names[0];
+    out = first(w, fn);
+  }
+  if (!w.attrs.over) { c.errors.push(`${w.id}: core.aggregate needs over=`); return; }
+  const calc = { id: `${w.id}.calc`, type: 'core.calc', pattern: false, attrs: { out: [out], fn: [fn], over: w.attrs.over } };
+  for (const k of ['args', 'pick', 'ties']) if (w.attrs[k]) calc.attrs[k] = w.attrs[k];
+  const body = { id: w.id, type: 'core.rule', pattern: false, attrs: { with: ['$' + calc.id], then: w.attrs.then || [] } };
+  const by = (w.attrs.by || []).filter(isVar);
+  if (by.length !== (w.attrs.by || []).length) c.errors.push(`${w.id}: by= takes variables (by=?kind)`);
+  buildRule(world, body, c, new Map([[calc.id, calc]]), true, { by, dflt: first(w, 'default') });
+}
+
+function buildRule(world, w, c, extra, register = true, aggregate = null) {
   const find = (id) => extra?.get(id) || world.matrix.get(id);
   const locals = new Set();
   for (const k of LINKS) for (const v of w.attrs[k] || []) if (v[0] === '$') locals.add(v.slice(1));
@@ -604,7 +630,12 @@ function buildRule(world, w, c, extra, register = true) {
       if (!world.filters?.[m[1]]) c.errors.push(`${w.id}: the reason uses the filter "${m[1]}", which is not registered (world.register('filter', '${m[1]}', fn))`);
     }
   }
-  if (!rule.when.length) { c.errors.push(`${w.id}: needs at least one when=`); return; }
+  if (aggregate) {
+    rule.by = aggregate.by;
+    if (aggregate.dflt !== undefined) rule.calc[0].dflt = aggregate.dflt;
+    const seen = new Set(rule.calc[0].over.flatMap((p) => Object.values(p.attrs).flat().filter(hasVar).map((v) => (v[0] === '$' ? v.slice(1) : v))));
+    for (const v of rule.by) if (!seen.has(v)) c.errors.push(`${w.id}: by=${v} is not a variable of its over= patterns`);
+  } else if (!rule.when.length) { c.errors.push(`${w.id}: needs at least one when=`); return; }
   // A soft deny refuses nothing: it is a rule whose conclusion is a standing core.issue
   // wire about the wires it matched, kept up to date like any derived wire.
   if (rule.kind === 'deny' && flag(w, 'soft')) {
@@ -629,6 +660,7 @@ function buildRule(world, w, c, extra, register = true) {
     for (const v of Object.values(p.attrs).flat()) if (hasVar(v)) vars.add(v[0] === '$' ? v.slice(1) : v);
   }
   for (const x of rule.calc) if (x.out) vars.add(x.out);
+  for (const v of rule.by || []) vars.add(v);
   // the tied picks of an argmax or argmin are part of what a firing concluded (see TIES in world.mjs)
   for (const x of rule.calc) if (x.out && (x.fn === 'argmax' || x.fn === 'argmin')) vars.add(x.out + '\u0003ties');
   rule.vars = [...vars].sort();
@@ -639,7 +671,7 @@ function buildRule(world, w, c, extra, register = true) {
   rule.selective = rule.hasSelect || rule.aggregate;
   // An aggregate depends on a group: the bindings its patterns share with the rule's own
   // patterns. When a wire of an aggregated pattern changes, only its group is looked at again.
-  const whenVars = new Set(rule.when.flatMap((p) => ['?' + p.id, ...Object.values(p.attrs).flat().filter(hasVar).map((v) => (v[0] === '$' ? v.slice(1) : v))]));
+  const whenVars = new Set([...rule.when.flatMap((p) => ['?' + p.id, ...Object.values(p.attrs).flat().filter(hasVar).map((v) => (v[0] === '$' ? v.slice(1) : v))]), ...(rule.by || [])]);
   rule.overs = rule.calc.flatMap((x) => (x.over || []).map((p) => ({
     pat: p,
     group: [...new Set(Object.values(p.attrs).flat().filter(hasVar).map((v) => (v[0] === '$' ? v.slice(1) : v)))].filter((v) => whenVars.has(v)),

@@ -222,3 +222,32 @@ test('aggregates: a tie for argmax or argmin is ambiguous, with the alternatives
   first.load('@r1 race  @e1 entry of=$r1 who=ana score=3  @e2 entry of=$r1 who=bob score=3');
   assert.deepEqual([first.query({ about: 'r1', seek: 'winner' }).status, first.query({ about: 'r1', seek: 'winner' }).value], ['supported', 'ana']);
 });
+
+test('core.aggregate: one result even over nothing, one per group with by=, kept up to date, with no anchor wire', () => {
+  const w = new World();
+  w.load(`
+    @t task status=?s
+    @n core.aggregate over=$t count=?c then=$all
+    @all total of=tasks count=?c
+    @k core.aggregate over=$t by=?s count=?c then=$per
+    @per tally of=tasks status=?s count=?c
+    @e estimate task=?x hours=?h
+    @m core.aggregate over=$e fn=max out=?h args=?h default=0 then=$top
+    @top longest of=estimates hours=?h
+  `);
+  const show = () => [...w.ofType('total'), ...w.ofType('tally'), ...w.ofType('longest')].map((x) => Object.entries(x.attrs).map(([k, v]) => `${k}=${v}`).join(' '));
+  assert.deepEqual(show(), ['of=tasks count=0', 'of=estimates hours=0'], 'over nothing: one result each, the default for max');
+  w.tell('@t1 task status=todo  @t2 task status=done  @t3 task status=todo');
+  assert.deepEqual(show(), ['of=tasks count=3', 'of=tasks status=todo count=2', 'of=tasks status=done count=1', 'of=estimates hours=0']);
+  w.retract('t2');
+  assert.deepEqual(show(), ['of=tasks count=2', 'of=tasks status=todo count=2', 'of=estimates hours=0'], 'an emptied group has no result');
+  w.tell('@e1 estimate task=t1 hours=3  @e2 estimate task=t3 hours=5');
+  assert.equal(show().at(-1), 'of=estimates hours=5');
+  // the result is derived like any other: provenance, and the same world from the log
+  const total = w.ofType('total')[0];
+  assert.equal(w.explain(total.id).via, 'n');
+  assert.equal(w.diff(World.fromJSON(w.toJSON())).same, true);
+  // mistakes
+  assert.match(new World().tell('@t task\n@a core.aggregate over=$t then=$x\n@x total').violations[0].why, /needs one result/);
+  assert.match(new World().tell('@t task s=?s\n@a core.aggregate over=$t by=?z count=?c then=$x\n@x total n=?c').violations[0].why, /by=\?z is not a variable of its over= patterns/);
+});

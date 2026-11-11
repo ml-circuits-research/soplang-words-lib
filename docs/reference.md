@@ -461,6 +461,69 @@ print(w.get('l1').attrs.net, w.get('l1').attrs.gross);
 **Limits.** A function sees only its arguments and the world; it must not change the
 world.
 
+### core.aggregate
+
+One aggregate over every match of some patterns, with no wire to anchor it: a total, a
+count per kind, the longest of something.
+
+**Syntax**
+
+| Attribute | Value | Default | Rep. | Meaning |
+| --- | --- | --- | --- | --- |
+| `over` | `$pattern` | required | yes | the patterns it ranges over |
+| `count`, `sum`, `min`, `max`, `argmin`, `argmax`, `collect` | `?variable` | | | the result, by the name of its [aggregate](#aggregates): `count=?c` |
+| `fn` | aggregate name | | | instead: the aggregate, with `out` |
+| `out` | `?variable` | | | with `fn`: the variable that gets the result |
+| `args` | `?variable` | none | | the value taken from each match (for all but `count`) |
+| `pick` | `?variable` | | | for `argmax`/`argmin`: what to return for the best match |
+| `ties` | `first` | report ties | | as on [core.calc](#corecalc) |
+| `by` | `?variable` | none | yes | one result per value of these variables among the matches |
+| `default` | value | none | | the result when there is nothing to aggregate |
+| `then` | `$template` | | yes | what holds, with the result (and the `by` variables) |
+
+**Meaning.** Without `by`: exactly one result exists at all times, computed over every
+match of the `over` patterns; over no match, `count` and `sum` give 0 and the others
+give `default` (or nothing, and then the templates do not hold). With `by`: one result
+for each distinct value of the `by` variables among the matches; a value that no match
+has any more has no result. The templates hold with the result, like the conclusion of
+a [rule](#corerule).
+
+**When it is evaluated.** In the chase, with the other aggregates: when the matrix
+changes, and for the groups whose wires arrive, change or go.
+
+**Interactions.** *Withdrawal:* when the result changes, the old conclusion is withdrawn
+and the new one made. *Identity:* the templates of two aggregates should differ in type
+or in a key, since a template that has every entry of an existing wire is that wire.
+*Stratification:* an aggregate may not range over what its own templates produce.
+*Provenance:* `via` is the aggregate's id.
+
+**Violations.** `schema` (no result, both `fn=` and a result name, no `over`, a `by`
+variable that no `over` pattern has, a pattern that names a blob key).
+
+**Example**
+
+```js run
+const w = new World();
+w.load(`
+  @t task status=?s
+  @n core.aggregate over=$t count=?c then=$all
+  @all total of=tasks count=?c
+  @k core.aggregate over=$t by=?s count=?c then=$per
+  @per tally status=?s count=?c
+`);
+print(w.ofType('total').map((x) => x.attrs.count[0]));
+w.tell('@t1 task status=todo  @t2 task status=done  @t3 task status=todo');
+print(w.ofType('total').map((x) => x.attrs.count[0]), w.ofType('tally').map((x) => `${x.attrs.status}:${x.attrs.count}`));
+```
+
+```output
+["0"]
+["3"] ["todo:2","done:1"]
+```
+
+**Limits.** One aggregate per wire; for several results over the same patterns, write
+several aggregates, or a rule with several calcs.
+
 ### core.check
 
 A condition computed by a function, inside a rule, deny or action.

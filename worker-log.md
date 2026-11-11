@@ -1674,3 +1674,25 @@ output identical. `tsc --noEmit --strict src/index.d.ts`: no errors.
   options in api.md, index.d.ts.
 - A change a host may notice: a reason that wrote `?x:word` meaning the value followed
   by ":word" now names a filter; I found no such reason in the repository.
+
+## R6.6 — core.aggregate: one result even over nothing, one per group with by= — done
+
+`npm test`: 218 pass, 0 fail on sources and built file, 217 in checking mode. Pilot
+output identical. `node tools/scan-loops.mjs src`: clean.
+
+- `@n core.aggregate over=$t count=?c then=$all`: an aggregate with no pattern to anchor
+  it. Without `by` there is exactly one result at all times (over nothing, `count` and
+  `sum` are 0 and the others take `default=`); with `by=?s` one result per value of
+  `?s` among the matches, and a value that no match has any more has none. The result is
+  any aggregate by name (`count=?c`, `sum=?s args=?x`, ...) or `fn=` with `out=`.
+- It compiles to a rule with no `when=` and one aggregating calc, so it is kept up to
+  date by the existing aggregate machinery (the group is the `by` variables), fires once
+  per distinct result, withdraws the old conclusion when the result changes, and has
+  provenance (`via` = the aggregate's id).
+- Note for hosts, now in the reference: a template that has every entry of an existing
+  wire is that wire, so the templates of a total and of a per-kind tally should differ
+  in type or in a key (my first test wrote both as `summary of=tasks count=2` and the
+  total folded into a tally).
+- Test `core.aggregate: one result even over nothing, one per group with by=, kept up to
+  date, with no anchor wire`. Reference entry (all seven parts, the attribute table
+  checked against `GRAMMAR` by the docs tests), S38 in semantics.md.

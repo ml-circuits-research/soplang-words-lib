@@ -24,7 +24,7 @@ const K = (type, key, value) => `${type}\u0001${key}\u0001${value}`;
 // the keys through which a matrix wire names its patterns and templates
 const NAMES = {
   'core.rule': LINKS, 'core.deny': LINKS, 'core.calc': ['over'], 'core.relation': ['when'],
-  'core.action': ['when', 'with', 'if', 'set', 'add', 'remove'],
+  'core.action': ['when', 'with', 'if', 'set', 'add', 'remove'], 'core.aggregate': ['over', 'then'],
 };
 // a variable in a reason, with an optional filter: ?n, ?n:ordinal
 const SAY = /\?([A-Za-z_][\w.\-]*)(?::([A-Za-z_][\w\-]*))?/g;
@@ -1099,6 +1099,20 @@ export class World {
 
   /** Complete matches of a rule body: patterns, then calcs, tests and negated patterns. */
   *_bodies(rule, s0, skip) {
+    if (rule.by?.length && rule.by.some((v) => hasVar(walk(v, s0)))) {
+      // core.aggregate by=?v: one body per value of ?v among the matches of its patterns
+      const seen = new Set();
+      for (const t of this._matchAll(rule.calc[0].over, 0, s0)) {
+        this._b.tick('aggregate');
+        const key = rule.by.map((v) => walk(v, t)).join('\u0001');
+        if (seen.has(key)) continue;
+        seen.add(key);
+        let s1 = s0;
+        for (const v of rule.by) s1 = unify(v, walk(v, t), s1);
+        if (s1) yield* this._bodies(rule, s1, skip);
+      }
+      return;
+    }
     const pats = skip < 0 ? rule.when : rule.when.filter((_, i) => i !== skip);
     next: for (let s of this._matchAll(pats, 0, s0)) {
       let reads = null;
@@ -1121,7 +1135,9 @@ export class World {
             values.push(a);
             picks.push(walk(c.pick || '$?' + c.over[0].id, t));
           }
+          if (!n && rule.by?.length) continue next; // a group with nothing in it has no result
           out = aggregates[c.fn](values, picks, n);
+          if (out === undefined && c.dflt !== undefined) out = c.dflt;
           if (Array.isArray(out)) out = LIST + out.join(LIST); // several values for one key
           // several wires share the best value: the pick is the first, the others are remembered
           if ((c.fn === 'argmax' || c.fn === 'argmin') && out !== undefined && c.ties !== 'first') {

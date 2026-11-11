@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.7.0
+
+Round 6, R6.1–R6.12, from hosts moving their worlds onto the library.
+
+### New
+- A key declared `many=true` answers with all its values in value mode (`values`).
+- `query({ ..., mode: 'check' })`: is a given value the one the world holds or derives?
+  `yes`, or `no` with `actual`.
+- `kind=blob`: opaque values kept as given, out of the indexes and the rules.
+- Refusals carry their variables as data (`vars`); reasons write values through filters
+  the host registers (`?n:ordinal`; `filters` option, `register('filter', ...)`).
+- `core.aggregate`: one result even over nothing (`default=`), one per group with `by=`,
+  with no anchor wire.
+- `core.rank of=$p by=key within=?v out=?r`: the position of a wire among its peers.
+- `core.type ... transient=true` (undo passes over it) and `world.redo(n)`.
+- `applyPatch({ replace: { id, attrs } })`: replace in place, logged as its own
+  statement (undo, redo, replay).
+- Text functions: `matches` (bounded patterns), `contains`, `starts_with`, `ends_with`,
+  `lower`.
+- Questions on a hypothetical world: `check(patch, { query, ask })`, `query(q, { given })`,
+  `ask(p, { given })`.
+
+### Faster
+- A value of a key that nothing reads is validated but not propagated (200 such values:
+  6.9 → 1.5 ms).
+- `rewind` compares only what the events since the mark name (11.9 → 0.009 ms at 6,000
+  wires); `diff` and `tier` read without copying.
+- `complete({ defaults })` stops at the first default that fits (150 defaults: 89 → 25 ms).
+- The parser reads long strings in one pass (a 1 MB string: 77 → 5.5 ms).
+
+### Changed (may need a change in a host)
+- Several values of a `many=true` key are `supported` with `values` (they were
+  `conflicting`).
+- In a reason, `?name:word` names a filter (it was the value followed by ":word").
+- New violation kind `nothing-to-redo`.
+
 ## 0.6.2
 
 Performance of forks, marks and completing (Round 5). No output changes: the whole suite

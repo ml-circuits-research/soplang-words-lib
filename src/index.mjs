@@ -8,7 +8,7 @@ export { solvers, Problem, Sat, toDimacs, toASP } from './solve.mjs';
 
 export { GRAMMAR, MODIFIERS, SCHEMA_TYPES } from './matrix.mjs';
 export { aggregates } from './builtins.mjs';
-export const version = '0.6.2';
+export const version = '0.7.0';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)
  * tools/build.mjs fills in `hash`, a fingerprint of the bundled sources, and `date`,

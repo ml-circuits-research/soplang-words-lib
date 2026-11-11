@@ -1855,3 +1855,13 @@ measured 160). Each round of `complete` tried every remaining optional default i
 run, but uses only the first that fits: now it stops at that one (the result is the
 same: forced values still come first, and the list of pending defaults is computed in
 full where it is returned).
+
+## 0.7.0 — R6.1–R6.12 and the two notes released (version, changelog, rebuild; no tag) — done
+
+`npm test`: 225 pass, 0 fail on sources and built file, 224 in checking mode.
+`npm run test:browser`: all browser checks passed. Pilot 147/147, 212/217, 231/232,
+output identical. `docs/version.md`: 0.7.0, build 7df4580b3a63, built 2026-11-11.
+A minor version: new wire types (`core.aggregate`, `core.rank`), a new slot kind, and
+two answers that change (`many` keys in value mode; `?x:word` in reasons).
+
+Next: R6.13–R6.17.

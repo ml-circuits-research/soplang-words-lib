@@ -43,6 +43,15 @@ The host reports these, and the reviewer checked each against 0.6.1: none of the
 - **R6.11 Evaluate without telling.** Add `check({ wires, overlay: true })` or `world.ask(question)`. It evaluates denies and rules on the world plus a hypothetical set of wires, and changes nothing.
 - **R6.12 Skip the rule pass for values no rule reads.** A patch that only changes slots no rule or deny mentions should not run the propagation. Detect it from the compiled matrix, with no new syntax if possible. Builds on P2 and P3.
 
+### R6.13–R6.17: from a map and a chart world moved onto the library
+
+The reviewer checked these against the source at a1af19d: none of them exists, except that `ties` is already an option on argmax/argmin (see R6.17). Two of the host's other points are already covered: copy-on-write per change (P2; the host measured it before re-vendoring and will measure again) and redo (R6.8).
+- **R6.13 External fact source.** Today rules and denies cannot read a large static table (about 1,000 cities) without holding it as wires: 37 ms per turn as wires against 6 ms without. Add a host-provided provider per type, for example `new World({ facts: { city: (where) => [...] } })`, whose results are matched in rule bodies and denies like wires but never copied, forked or logged. Document what a provider must guarantee (pure, bounded) and how it counts against the budget.
+- **R6.14 Bulk sync of a collection.** Add `world.sync(type | prefix, wires)`: in one transaction it computes retract, set and tell by id between what the world holds and the given list, and returns the delta. Hosts each write the same 100-line diff today.
+- **R6.15 JSON value kind.** Add `kind=json` (or `kind=object`) with path access in patterns (`center.lat=?lat`), so structured values are not flattened into keys plus a duplicate string. Keep it bounded: depth and size limits, and a stable canonical form for comparison.
+- **R6.16 Tier from the host.** A host must be able to tell a value as an assumption, for example `tell(text, { tier: 'default' })` or a per-key annotation, so that `assumptions()` lists it ("I assumed a bar chart") and a later told value replaces it.
+- **R6.17 Ties in aggregates.** Check whether `ties` on argmax/argmin (in the matrix vocabulary) already returns every tied pick inside a rule. If it does, document it with an example in docs/semantics.md and close the item. If not, add `ties=all`.
+
 ### R6.3: check first, then do only what is still missing
 Several of the host's older workarounds may already be covered: `register` refusing to replace built-ins, `revise`, `told()`, `check(patch)`. Verify these two and fix only what is still missing:
 - (a) `query` on a supposed answer returns the derived answer-wire attributes (the keys set by `core.on`) and a non-empty `from`/`wires`.

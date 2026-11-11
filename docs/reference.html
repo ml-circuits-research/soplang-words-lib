@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="e6d7f4dab3bd">
+<meta name="source-hash" content="11b98161bf33">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -147,11 +147,12 @@ print(w.ask(&#x27;grandparent of=?x child=?z&#x27;));</code></pre></figure>
 <h3 id="coredeny">core.deny</h3>
 <p>The patterns must not match.</p>
 <p><strong>Syntax</strong></p>
-<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>when</code>, <code>not</code>, <code>with</code>, <code>if</code></td><td>as in <a href="#corerule">core.rule</a></td><td></td><td>yes</td><td></td></tr><tr><td><code>why</code></td><td>string</td><td>none</td><td></td><td>the reason; may contain the deny's variables</td></tr><tr><td><code>soft</code></td><td>flag</td><td>false</td><td></td><td>record an issue instead of refusing</td></tr></tbody></table></div>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>when</code>, <code>not</code>, <code>with</code>, <code>if</code></td><td>as in <a href="#corerule">core.rule</a></td><td></td><td>yes</td><td></td></tr><tr><td><code>why</code></td><td>string</td><td>none</td><td></td><td>the reason; <code>?v</code> writes a variable's value, <code>?v:f</code> writes it through the registered filter <code>f</code></td></tr><tr><td><code>soft</code></td><td>flag</td><td>false</td><td></td><td>record an issue instead of refusing</td></tr></tbody></table></div>
 <p><strong>Meaning.</strong> No change may leave the world in a state where the body matches. A change that would is refused as a whole, with <code>why</code> (variables replaced by their values) and the wires that matched. With <code>soft=true</code> nothing is refused: see <a href="#coreissue">core.issue</a>.</p>
 <p><strong>When it is evaluated.</strong> Validation, at the end of every change, after the chase: from the wires the change touched; in full for denies with <code>not=</code>, a selector or <code>core.absent=</code>, and when the matrix changes.</p>
 <p><strong>Interactions.</strong> <em>Search:</em> denies without negation, selectors, aggregates or computed values are turned into ruled-out combinations for the solvers; the others are checked when a whole assignment is verified. <em>States:</em> a deny over a fluent is checked when an event changes it, so the event is what is refused.</p>
-<p><strong>Violations.</strong> <code>deny</code>, with <code>rule</code>, <code>why</code>, <code>bindings</code>, <code>wires</code>, <code>support</code>, <code>involved</code>.</p>
+<p><strong>Violations.</strong> <code>deny</code>, with <code>rule</code>, <code>why</code>, <code>bindings</code> (every variable and matched wire, as tokens), <code>vars</code> (the variables as data: strings as their text, plain numbers as numbers, no wire ids), <code>wires</code>, <code>support</code>, <code>involved</code>.</p>
+<p><strong>Filters.</strong> In <code>why</code>, <code>?n:ordinal</code> writes the value of <code>?n</code> through the filter <code>ordinal</code>, which the host registers (<code>new World({ filters })</code> or <code>world.register('filter', name, fn)</code>; <code>fn(value, { world, name })</code> returns the text). No filter is built in, so the core holds no language: a host registers the ones of its own. A filter that is not registered is a <code>schema</code> violation of the deny. A colon not followed by a name is text (<code>?n: too many</code>).</p>
 <p><strong>Example</strong></p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`

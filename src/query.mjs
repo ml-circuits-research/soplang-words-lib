@@ -143,7 +143,7 @@ export const querying = {
       }
       for (const t of rule.test) {
         const xs = t.args.map((a) => walk(a, s));
-        if (xs.some(hasVar) || !this.fns[t.fn](xs, this)) return refuse({ kind: 'guard', action: name, check: t.id, why: t.why ? this._say(str(t.why), rule, s).text : `${t.fn}(${xs.join(', ')}) does not hold`, bindings: this._say('', rule, s).bindings });
+        if (xs.some(hasVar) || !this.fns[t.fn](xs, this)) return refuse({ kind: 'guard', action: name, check: t.id, why: t.why ? this._say(str(t.why), rule, s).text : `${t.fn}(${xs.join(', ')}) does not hold`, bindings: this._say('', rule, s).bindings, vars: this._say('', rule, s).vars });
       }
       for (const t of rule.then) {
         const attrs = {};

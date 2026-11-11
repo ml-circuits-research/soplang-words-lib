@@ -50,7 +50,7 @@ const shop = () => {
 
 ### new World(options?)
 
-Options, all optional: `fns`, `actions`, `producers` (host functions by name; see
+Options, all optional: `fns`, `actions`, `producers`, `filters` (host functions by name; see
 [register](#worldregisterkind-name-fn-options)), `override` (let `fns` replace
 built-ins: `true` or names), `library` (module name to matrix text, for `core.use`),
 `maxDepth` (12), `maxSteps` (rule firings per change), `budget`, `decimals`, `strict`
@@ -796,8 +796,9 @@ print(w.toSOP(), Object.keys(w.toJSON()));
 ### world.register(kind, name, fn, options?)
 
 Adds a host function after the world was made. `kind` is `function` (`(args, world)
-=> value`, for calcs, checks and effects), `action` (`(context, args) => value`) or
-`producer` (`(context) => value`). A `function` with the name of a built-in throws
+=> value`, for calcs, checks and effects), `action` (`(context, args) => value`),
+`producer` (`(context) => value`) or `filter` (`(value, { world, name }) => text`, for
+`?v:name` in a reason). A `function` with the name of a built-in throws
 unless `{ override: true }`. Returns the world.
 
 ```js run

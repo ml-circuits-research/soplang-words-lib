@@ -598,6 +598,12 @@ function buildRule(world, w, c, extra, register = true) {
     calc: get('with').map((x) => fn(x, 'calc')), test: get('if').map((x) => fn(x, 'test')),
     why: first(w, 'why') ? str(first(w, 'why')) : undefined,
   };
+  // a reason may write a value through a filter (?n:ordinal): the filter must be registered
+  for (const why of [rule.why, ...rule.test.map((t) => t.why && str(t.why))]) {
+    for (const m of (why || '').matchAll(/\?[A-Za-z_][\w.\-]*:([A-Za-z_][\w\-]*)/g)) {
+      if (!world.filters?.[m[1]]) c.errors.push(`${w.id}: the reason uses the filter "${m[1]}", which is not registered (world.register('filter', '${m[1]}', fn))`);
+    }
+  }
   if (!rule.when.length) { c.errors.push(`${w.id}: needs at least one when=`); return; }
   // A soft deny refuses nothing: it is a rule whose conclusion is a standing core.issue
   // wire about the wires it matched, kept up to date like any derived wire.

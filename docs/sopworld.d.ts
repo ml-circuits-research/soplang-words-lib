@@ -18,6 +18,10 @@ export interface Violation {
   involved?: { id: string; type: string; attrs: Record<string, string[]> }[];
   /** for a deny: the values of its variables */
   bindings?: Record<string, string>;
+  /** for a deny or a guard: its variables as data (strings as text, plain numbers as numbers) */
+  vars?: Record<string, string | number>;
+  /** for a refusal of queued tells in an action: the tells involved */
+  queued?: { index: number; ids: string[] }[];
 }
 export interface Result {
   ok: boolean;
@@ -134,6 +138,8 @@ export interface WorldOptions {
   actions?: Record<string, (context: any, args: Record<string, string>) => unknown>;
   /** functions that compute a key on demand: (context) => value */
   producers?: Record<string, (context: any) => unknown>;
+  /** how a reason writes a value: ?n:name calls filters[name](value, { world, name }) */
+  filters?: Record<string, (value: string | number, context: { world: World; name: string }) => string>;
   /** allow `fns` to replace built-ins: true, or the names */
   override?: boolean | string[];
   /** decimals kept in derived numbers (default: 12 significant digits) */
@@ -188,7 +194,7 @@ export class World {
   /** shares the state until one of the two worlds changes; copies nothing */
   fork(): World;
   /** add a host function; a 'function' with a built-in's name needs { override: true } */
-  register(kind: 'function' | 'action' | 'producer', name: string, fn: Function, options?: { override?: boolean | string[] }): this;
+  register(kind: 'function' | 'action' | 'producer' | 'filter', name: string, fn: Function, options?: { override?: boolean | string[] }): this;
   actions: Record<string, Function>;
   producers: Record<string, Function>;
   /** for functions: say why no result can be given, before returning nothing */

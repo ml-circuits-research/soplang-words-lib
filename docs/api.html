@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="92433bb1b8f7">
+<meta name="source-hash" content="3d7f61cc1fbb">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -38,7 +38,7 @@
 };</code></pre></figure>
 <h2 id="making-a-world">Making a world</h2>
 <h3 id="new-worldoptions">new World(options?)</h3>
-<p>Options, all optional: <code>fns</code>, <code>actions</code>, <code>producers</code> (host functions by name; see <a href="#worldregisterkind-name-fn-options">register</a>), <code>override</code> (let <code>fns</code> replace built-ins: <code>true</code> or names), <code>library</code> (module name to matrix text, for <code>core.use</code>), <code>maxDepth</code> (12), <code>maxSteps</code> (rule firings per change), <code>budget</code>, <code>decimals</code>, <code>strict</code> (refuse a change that leaves no completion), <code>lookahead</code> (true), <code>solver</code>, <code>searchBudget</code>, <code>rank</code> (reorder suggestions and explanations), <code>vocabulary</code> (names of the question, answer and request wires and their keys).</p>
+<p>Options, all optional: <code>fns</code>, <code>actions</code>, <code>producers</code>, <code>filters</code> (host functions by name; see <a href="#worldregisterkind-name-fn-options">register</a>), <code>override</code> (let <code>fns</code> replace built-ins: <code>true</code> or names), <code>library</code> (module name to matrix text, for <code>core.use</code>), <code>maxDepth</code> (12), <code>maxSteps</code> (rule firings per change), <code>budget</code>, <code>decimals</code>, <code>strict</code> (refuse a change that leaves no completion), <code>lookahead</code> (true), <code>solver</code>, <code>searchBudget</code>, <code>rank</code> (reorder suggestions and explanations), <code>vocabulary</code> (names of the question, answer and request wires and their keys).</p>
 <p>Properties: <code>wires</code> (Map of facts by id), <code>matrix</code> (Map of matrix wires by id), <code>log</code> (the statements), <code>warnings</code>, <code>stamp</code> (a number that changes with every committed change), <code>actions</code>, <code>producers</code>, <code>options</code>.</p>
 <p>Throws if <code>fns</code> would replace a built-in without <code>override</code>. Cost: constant.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World({ decimals: 2, fns: { double: ([x]) =&gt; Number(x) * 2 } });
@@ -336,7 +336,7 @@ w.tell(&#x27;@pen item name=pen price=2&#x27;);
 print(w.toSOP(), Object.keys(w.toJSON()));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>@pen item name=pen price=2 [&quot;format&quot;,&quot;version&quot;,&quot;log&quot;]</code></pre></figure>
 <h3 id="worldregisterkind-name-fn-options">world.register(kind, name, fn, options?)</h3>
-<p>Adds a host function after the world was made. <code>kind</code> is <code>function</code> (<code>(args, world) =&gt; value</code>, for calcs, checks and effects), <code>action</code> (<code>(context, args) =&gt; value</code>) or <code>producer</code> (<code>(context) =&gt; value</code>). A <code>function</code> with the name of a built-in throws unless <code>{ override: true }</code>. Returns the world.</p>
+<p>Adds a host function after the world was made. <code>kind</code> is <code>function</code> (<code>(args, world) =&gt; value</code>, for calcs, checks and effects), <code>action</code> (<code>(context, args) =&gt; value</code>), <code>producer</code> (<code>(context) =&gt; value</code>) or <code>filter</code> (<code>(value, { world, name }) =&gt; text</code>, for <code>?v:name</code> in a reason). A <code>function</code> with the name of a built-in throws unless <code>{ override: true }</code>. Returns the world.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.register(&#x27;function&#x27;, &#x27;half&#x27;, ([x]) =&gt; Number(x) / 2);
 try { w.register(&#x27;function&#x27;, &#x27;add&#x27;, () =&gt; 0); } catch (e) { print(e.message.slice(0, 60)); }

@@ -358,7 +358,7 @@ The patterns must not match.
 | Attribute | Value | Default | Rep. | Meaning |
 | --- | --- | --- | --- | --- |
 | `when`, `not`, `with`, `if` | as in [core.rule](#corerule) | | yes | |
-| `why` | string | none | | the reason; may contain the deny's variables |
+| `why` | string | none | | the reason; `?v` writes a variable's value, `?v:f` writes it through the registered filter `f` |
 | `soft` | flag | false | | record an issue instead of refusing |
 
 **Meaning.** No change may leave the world in a state where the body matches. A change
@@ -375,7 +375,16 @@ values are turned into ruled-out combinations for the solvers; the others are ch
 when a whole assignment is verified. *States:* a deny over a fluent is checked when an
 event changes it, so the event is what is refused.
 
-**Violations.** `deny`, with `rule`, `why`, `bindings`, `wires`, `support`, `involved`.
+**Violations.** `deny`, with `rule`, `why`, `bindings` (every variable and matched wire,
+as tokens), `vars` (the variables as data: strings as their text, plain numbers as
+numbers, no wire ids), `wires`, `support`, `involved`.
+
+**Filters.** In `why`, `?n:ordinal` writes the value of `?n` through the filter
+`ordinal`, which the host registers (`new World({ filters })` or
+`world.register('filter', name, fn)`; `fn(value, { world, name })` returns the text). No
+filter is built in, so the core holds no language: a host registers the ones of its
+own. A filter that is not registered is a `schema` violation of the deny. A colon not
+followed by a name is text (`?n: too many`).
 
 **Example**
 

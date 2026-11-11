@@ -423,3 +423,28 @@ test('violations: explainable after the change is undone; a reason may quote the
   // a variable that is not bound stays as written; text without variables is untouched
   assert.equal(w._say('ask ?nobody about ?m', { vars: ['?m'] }, null).text.startsWith('ask ?nobody'), true);
 });
+
+test('violations: a reason writes values through registered filters, and carries the variables as data', () => {
+  const ordinal = (n) => `${n}${[, 'st', 'nd', 'rd'][n % 100 >> 3 ^ 1 && n % 10] || 'th'}`; // an English filter, registered by the host
+  const words = (n) => ['zero', 'one', 'two', 'three'][n] ?? String(n);
+  const w = new World({ filters: { ordinal } });
+  w.register('filter', 'words', words);
+  w.load(`
+    @c chapter n=?n title=?t
+    @d chapter n=?n title=?t
+    @same core.check fn=neq args=$c args=$d
+    @dup core.deny when=$c when=$d if=$same why="the ?n:ordinal chapter is told twice (?t, ?n:words)"
+  `);
+  w.tell('@c1 chapter n=2 title="Rain"');
+  const v = w.tell('@c2 chapter n=2 title="Rain"').violations[0];
+  assert.equal(v.why, 'the 2nd chapter is told twice (Rain, two)');
+  assert.deepEqual(v.vars, { n: 2, t: 'Rain' }, 'numbers as numbers, strings as their text, no wire ids');
+  assert.deepEqual(v.bindings, { c: 'c2', d: 'c1', n: '2', t: '"Rain"' });
+  // a filter that is not registered is a mistake in the matrix
+  const bad = new World().tell('@p item n=?n\n@x core.deny when=$p why="?n:roman items"');
+  assert.match(bad.violations[0].why, /filter "roman", which is not registered/);
+  // a colon that is not followed by a name is text, as before
+  const t = new World();
+  t.load('@p item n=?n\n@x core.deny when=$p why="count ?n: too many"');
+  assert.equal(t.tell('@i item n=4').violations[0].why, 'count 4: too many');
+});

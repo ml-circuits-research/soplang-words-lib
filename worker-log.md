@@ -1652,3 +1652,25 @@ output identical. `node tools/scan-loops.mjs src`: clean.
 - Test `slots: kind=blob keeps an opaque value as given, out of the indexes and of
   rules, and it undoes with the rest`. Documented in the core.slot entry of
   reference.md, with the reason and the bench figures.
+
+## R6.5 — the variables of a refusal as data, and filters in reasons — done
+
+`npm test`: 217 pass, 0 fail on sources and built file, 216 in checking mode. Pilot
+output identical. `tsc --noEmit --strict src/index.d.ts`: no errors.
+
+- A deny's violation (and an action guard's) has `vars`: its variables as data, strings
+  as their text, plain numbers as numbers, without the ids of the matched wires (those
+  stay in `bindings`, which is unchanged).
+- `?n:name` in a reason writes the value through the filter `name`: `new World({ filters
+  })` or `world.register('filter', name, fn)`, `fn(value, { world, name })` returns the
+  text. No filter is built in, so no language is in the core; the test registers an
+  English `ordinal` and `words`. A filter that is not registered is a `schema` violation
+  of the rule. A colon not followed by a name stays text (`?n: too many`). The same
+  filling applies to soft denies (their issue's `why`) and to guards.
+- Test `violations: a reason writes values through registered filters, and carries the
+  variables as data` ("the 2nd chapter is told twice (Rain, two)", `vars` `{ n: 2, t:
+  'Rain' }`, the unregistered filter, the colon as text). Documented in the core.deny
+  entry of reference.md, the violations section of semantics.md, `register` and the
+  options in api.md, index.d.ts.
+- A change a host may notice: a reason that wrote `?x:word` meaning the value followed
+  by ":word" now names a filter; I found no such reason in the repository.

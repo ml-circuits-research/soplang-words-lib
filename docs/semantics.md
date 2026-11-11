@@ -412,7 +412,9 @@ These hold between any two calls.
 
 A violation is an object with `kind`, usually `why`, and what it is about (`id`, `key`,
 `rule`, `wires`), the told wires it rests on (`support`) and those wires as they were
-(`involved`).
+(`involved`). A deny's or a guard's violation also has its variables as data (`vars`),
+for a host that words the message itself; `why` may write them through filters the host
+registers ([reference](reference.md#coredeny)).
 
 | Kind | Raised when | By |
 | --- | --- | --- |

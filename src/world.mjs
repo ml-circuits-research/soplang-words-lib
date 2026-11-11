@@ -26,6 +26,8 @@ const NAMES = {
   'core.rule': LINKS, 'core.deny': LINKS, 'core.calc': ['over'], 'core.relation': ['when'],
   'core.action': ['when', 'with', 'if', 'set', 'add', 'remove'],
 };
+// a variable in a reason, with an optional filter: ?n, ?n:ordinal
+const SAY = /\?([A-Za-z_][\w.\-]*)(?::([A-Za-z_][\w\-]*))?/g;
 const LIST = '\u0002'; // marks a list of values bound to one variable (the result of collect)
 const TIES = '\u0003ties'; // suffix of the hidden variable that holds the tied picks of an argmax or argmin
 
@@ -44,9 +46,9 @@ export class World {
   constructor(options = {}) {
     const {
       fns = {}, library = {}, maxDepth = 12, maxSteps = 50000,
-      lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {}, budget = {}, decimals, actions = {}, producers = {}, override = false,
+      lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {}, budget = {}, decimals, actions = {}, producers = {}, filters = {}, override = false,
     } = options;
-    this.options = { fns, actions, producers, override, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget, decimals };
+    this.options = { fns, actions, producers, filters, override, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget, decimals };
     this._cannot = null;          // reasons given by functions during a query (see cannot)
     this.warnings = [];           // things that still work and will not: { kind, id, why }
     this._reads = new WeakMap();  // bindings of a rule body -> the aggregated cells it read
@@ -61,6 +63,8 @@ export class World {
     this.fns = { ...builtins };
     this.actions = {};
     this.producers = {};
+    this.filters = {}; // how a reason writes a value: ?n:ordinal calls filters.ordinal(n); none built in, so no language is
+    for (const [name, fn] of Object.entries(filters)) this.register('filter', name, fn);
     for (const [name, fn] of Object.entries(fns)) this.register('function', name, fn, { override });
     for (const [name, fn] of Object.entries(actions)) this.register('action', name, fn);
     for (const [name, fn] of Object.entries(producers)) this.register('producer', name, fn);
@@ -167,6 +171,7 @@ export class World {
       this.fns[name] = fn;
     } else if (kind === 'action') this.actions[name] = fn;
     else if (kind === 'producer') this.producers[name] = fn;
+    else if (kind === 'filter') this.filters[name] = fn;
     else throw new Error(`sopworld: unknown kind of function "${kind}"`);
     this._c = null; // a matrix that names it compiles now
     this._completed = null; // and what complete() found may change
@@ -1413,13 +1418,26 @@ export class World {
   _say(why, rule, s) {
     const bindings = {};
     for (const v of rule.vars || []) { const x = walk(v, s); if (!hasVar(x) && x[0] !== LIST) bindings[v.slice(1)] = x; }
-    if (typeof why !== 'string' || !why.includes('?')) return { text: why, bindings: Object.keys(bindings).length ? bindings : undefined };
-    const text = why.replace(/\?([A-Za-z_][\w.\-]*)/g, (m, name) => {
+    // the variables as data, for a host that words the message itself: not the ids of
+    // the matched wires, strings as their text, plain numbers as numbers
+    const pats = new Set((rule.when || []).map((p) => p.id));
+    const vars = {};
+    for (const [k, x] of Object.entries(bindings)) {
+      if (pats.has(k) || k.includes('\u0003')) continue;
+      vars[k] = x[0] === '"' ? str(x) : /^-?\d+(\.\d+)?$/.test(x) ? Number(x) : x;
+    }
+    const some = (o) => (Object.keys(o).length ? o : undefined);
+    if (typeof why !== 'string' || !why.includes('?')) return { text: why, bindings: some(bindings), vars: some(vars) };
+    const text = why.replace(SAY, (m, name, filter) => {
       let n = name;
       while (n && bindings[n] === undefined && /[.\-]$/.test(n)) n = n.slice(0, -1); // bounded: the punctuation after a name
-      return bindings[n] === undefined ? m : str(bindings[n]) + name.slice(n.length);
+      if (bindings[n] === undefined) return m;
+      const rest = name.slice(n.length);
+      if (!filter || rest) return str(bindings[n]) + rest + (filter && rest ? `:${filter}` : '');
+      const f = this.filters[filter];
+      return f ? String(f(vars[n] ?? str(bindings[n]), { world: this, name: n })) : m;
     });
-    return { text, bindings };
+    return { text, bindings, vars: some(vars) };
   }
 
   /** A standing issue as plain data. */
@@ -1483,7 +1501,7 @@ export class World {
         seen.add(name);
       } else reported.add(d);
       const said = this._say(d.why, d, s);
-      res.violations.push({ kind: 'deny', rule: d.id, why: said.text, ...(said.bindings ? { bindings: said.bindings } : {}), wires });
+      res.violations.push({ kind: 'deny', rule: d.id, why: said.text, ...(said.bindings ? { bindings: said.bindings } : {}), ...(said.vars ? { vars: said.vars } : {}), wires });
     };
     for (const id of res._touched) {
       const w = this.wires.get(id);

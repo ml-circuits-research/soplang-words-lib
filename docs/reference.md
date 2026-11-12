@@ -606,6 +606,8 @@ distinct value: a rule anchored on a member computes it once per member (2,000 m
 and the new one made. *Identity:* the templates of two aggregates should differ in type
 or in a key, since a template that has every entry of an existing wire is that wire.
 *Stratification:* an aggregate may not range over what its own templates produce.
+*Namespaces:* a result is in the namespace of the wires it counts, in the default one
+when they span several ([SC5a](language.md#12-scope)).
 *Provenance:* `via` is the aggregate's id.
 
 **Violations.** `schema` (no result, both `fn=` and a result name, no `over`, a `by`

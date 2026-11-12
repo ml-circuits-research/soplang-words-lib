@@ -390,6 +390,11 @@ to every namespace. Questions with `{ ns }` see only that namespace; `sync` with
 `{ ns }` works inside it. Matrix wires are in no namespace. The separator `::` has no
 other meaning in the language. *Test:* `scope: facts in different namespaces are never joined by value nor merged by identity; written references and shared types cross`
 
+**SC5a. Derived wires.** What a rule makes is in the namespace of its match. What an
+aggregate with no anchor (`core.aggregate`) makes is in the namespace of the wires it
+counts; when they are in several namespaces, in the default one; when it counts none (a
+declared empty group), in the world's namespace. *Test:* `N2: aggregate results belong to the namespace of the wires they count; across namespaces, to the default one`
+
 **SC6. A world.** Two worlds share nothing but what was given to both (a library, a
 host's providers). A fork starts with what its world had and then is its own.
 *Tests:* `scope: a world given a namespace puts every statement in it; one world never sees another`;

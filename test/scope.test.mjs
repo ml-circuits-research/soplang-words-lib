@@ -91,3 +91,29 @@ test('N1: replace in a namespaced world keeps the replaced wire\'s namespace', (
   // and the log replays the same world
   assert.equal(World.fromJSON(w.toJSON(), { ns: 'A' }).toSOP(), w.toSOP());
 });
+
+test('N2: aggregate results belong to the namespace of the wires they count; across namespaces, to the default one', () => {
+  const w = new World({ ns: 'A' });
+  w.load(`
+    @it item cat=?c
+    @h have cat=?c n=?n
+    @g core.aggregate over=$it by=?c count=?n then=$h
+    @hv have cat=?c2 n=?n2
+    @lim limit cat=?c2 max=?m
+    @big core.check fn=gt args=?n2 args=?m
+    @d core.deny when=$hv when=$lim if=$big why="too many ?c2"
+  `);
+  w.tell('@i1 item cat=x  @i2 item cat=x  @l limit cat=x max=2');
+  assert.deepEqual(w.ofType('have').map((x) => [x.id.split('::')[0], x.attrs.n[0]]), [['A', '2']]);
+  // the deny joins the result with the namespace's facts
+  const r = w.tell('@i3 item cat=x');
+  assert.deepEqual([r.ok, r.violations[0]?.why], [false, 'too many x']);
+  // a group whose members are in two namespaces: one result, in the default namespace
+  const v = new World();
+  v.load('@it item cat=?c\n@h have cat=?c n=?n\n@g core.aggregate over=$it by=?c count=?n then=$h');
+  v.tell('@a item cat=x', { ns: 'A' });
+  v.tell('@b item cat=y', { ns: 'B' });
+  assert.deepEqual(v.ofType('have').map((x) => x.id.split('::').length === 2 ? `${x.id.split('::')[0]}:${x.attrs.cat}` : `default:${x.attrs.cat}`).sort(), ['A:x', 'B:y']);
+  v.tell('@c item cat=x', { ns: 'B' });
+  assert.deepEqual(v.ofType('have').map((x) => `${x.id.includes('::') ? x.id.split('::')[0] : 'default'}:${x.attrs.cat}:${x.attrs.n}`).sort(), ['B:y:1', 'default:x:2']);
+});

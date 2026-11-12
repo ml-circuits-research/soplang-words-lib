@@ -2619,3 +2619,18 @@ identical. `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`: cle
   replaced wire (bare ids and references), not the world's.
 - Test `N1: ...` (test/scope.test.mjs): the repro gives `A::x` with k=2; a `B::` wire
   replaced from an `A` world stays in B; the log replays the same world.
+
+## N2 — aggregate results in the namespace of what they count — done
+
+Checked against 0.13.0: the repro's `have` wire was `_h_…` in the default namespace.
+`npm test`: 269 pass, 0 fail on sources and built file, 268 in checking mode. Pilot output
+identical. `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`: clean.
+
+- An aggregate with no anchor, in a world that uses namespaces, binds the namespace of a
+  group before it computes: the one namespace of its members; the default one when they
+  span several (then all members count); the world's namespace when it has none (a
+  declared empty group). Worlds without namespaces skip this.
+- Test `N2: ...`: the result is `A::…`, a deny joining it with A's facts fires; a group
+  spanning A and B gives one result in the default namespace, the others stay in theirs.
+- Docs: language.md SC5a (with its test), reference.md core.aggregate.
+- `node bench/distinct.mjs` (no namespaces, unchanged path): anchored on a member   2,000 members: 242.7 ms; one more member: 9.88 ms; tallies 50, g7 = 41

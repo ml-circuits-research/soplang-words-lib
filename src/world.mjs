@@ -1405,6 +1405,19 @@ export class World {
       }
       return;
     }
+    // an aggregate with no anchor: its result belongs to the namespace of the wires it
+    // counts; when they span namespaces, to the default one; with none, to the world's
+    if (this._nsUsed && !rule.when.length && rule.calc[0]?.over && isVar(walk(NS, s0))) {
+      const seen = new Set();
+      for (const t of this._matchAll(rule.calc[0].over, 0, s0)) { // bounded: the matches of one group
+        this._b.tick('aggregate');
+        const ns = walk(NS, t);
+        seen.add(isVar(ns) ? '' : ns);
+        if (seen.size > 1) break;
+      }
+      const home = seen.size === 1 ? [...seen][0] : seen.size ? '' : this.options.ns || '';
+      if (home) s0 = unify(NS, home, s0);
+    }
     const pats = skip < 0 ? rule.when : rule.when.filter((_, i) => i !== skip);
     next: for (let s of this._matchAll(pats, 0, s0)) {
       let reads = null;

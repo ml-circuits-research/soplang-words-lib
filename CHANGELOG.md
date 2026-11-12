@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.12.0
+
+Round 12: from the host's world-aware reading.
+
+### Changes
+- `score`: the value a question asks for is no longer a lack, so a question is not beaten
+  by a nonsense statement.
+- In a split, a frame with no verb takes the verb of the frame before it, as a follow-up.
+
+### New
+- `judged` and `judgedBy` on every scored reading; a fallback judgement for actions the
+  matrix does not declare (referents, slots through `of` or `type.key` arguments, denies),
+  and `veto` no longer calls such a judged reading unavailable.
+- examples/reader.mjs: a shop described with `core.word` the way a host writes words for
+  pattern generation, read back with splits, typos, loose words and examples.
+
 ## 0.11.1
 
 Round 11 additions from the host's word descriptions. No change to the library's code.

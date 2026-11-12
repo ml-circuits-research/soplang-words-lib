@@ -2578,3 +2578,9 @@ clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
   answers, nothing told; RO forms and units; a typo ("pnes" read as "pens"); loose words;
   every generated example reads back to its tool.
 - Docs: api.md (splits), design doc status.
+
+## 0.12.0 — Round 12 released (version, changelog, rebuild; no tag)
+
+A minor version: the ranking of questions changed and score results gained fields.
+`npm test` 267 / 267 / 266. Pilot 147/147, 212/217, 231/232, output identical. No open
+questions.

@@ -142,6 +142,7 @@ export const querying = {
     if (cand.unused || cand.unresolved) out.words = { used: cand.used || [], unused: cand.unused || [], unresolved: cand.unresolved || [] };
     this._trial(() => {
       cand.parts.forEach((p, part) => { // bounded: the parts of one message
+        if (p.unread) { out.parts.push({ index: part, unread: true, ok: true, judged: false, judgedBy: null, violations: [], referents: [], lacks: [], assumes: [] }); return; } // a frame interpret could not read: its words are in the message's unresolved
         const r = this._scoreOne(p, part, true);
         delete r.words;
         out.parts.push(r);

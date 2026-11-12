@@ -747,8 +747,9 @@ judges the parts in order, each on the world with the parts before it, as one wh
 frame of a split with no verb, "... and one ink", takes the verb of the frame before it
 and its words replace that frame's for the same slots):
 consistent when every part is, with the parts' lacks, assumptions and referents (each
-marked `part`) and `parts`, the score of each. A split that leaves a word out loses on
-`words`.
+marked `part`) and `parts`, the score of each. A frame that has no reading stays as an
+unresolved part (`unread: true`, with its words in the candidate's `unresolved`), so a
+split that leaves a word out loses on `words` and `veto` reports `words-left-out`.
 
 ```js run
 const w = new World();

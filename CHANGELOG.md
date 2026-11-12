@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.2
+
+### Fixes
+- A split keeps a frame `interpret` cannot read as an unresolved part with its words, so
+  `rank` and `veto` see what was left out ("mark Paris then undo") (R14.1).
+
 ## 0.13.1
 
 Round 13: namespace defects and two judgement gaps, from the host's probes.

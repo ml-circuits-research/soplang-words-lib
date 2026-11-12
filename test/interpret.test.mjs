@@ -271,3 +271,23 @@ test('words keep their declaration order: words(), readings, examples; across fo
   w.retract('m1'); w.tell('@m1b core.word text=football means=ball of=item.name');
   assert.deepEqual(ballWords(w), ['orb', 'globe', 'football']);
 });
+
+test('R14.1: a split keeps a frame it cannot read as an unresolved part, so veto sees the words left out', () => {
+  const w = new World();
+  w.load('@k core.slot of=city key=name id=true\n@m core.slot of=mark key=at type=city required=true');
+  w.tell('@paris city name=Paris  @w1 core.word text=mark means=mark  @w2 core.word text=undo means=mark.at');
+  // "mark Paris then undo": "undo" is a known word that gives no reading as a verb here; "redo" is not a word at all
+  for (const second of [{ verb: 'undo' }, { verb: 'redo', args: ['it'] }]) {
+    const r = w.interpret([[{ verb: 'mark', args: ['Paris'] }, second]]);
+    const c = r.candidates[0];
+    assert.deepEqual([c.parts.length, c.parts[1].unread, c.unresolved], [2, true, [second.verb, ...(second.args || [])]]);
+    const v = w.veto(w.score(r.candidates));
+    assert.deepEqual([v.answer, v.reasons.map((x) => x.reason)], [false, ['words-left-out']]);
+  }
+  // a split that reads every frame it was given ranks above one with an unread part
+  const s = w.score(w.interpret([
+    [{ verb: 'mark', args: ['Paris'] }, { verb: 'undo' }],
+    [{ verb: 'mark', args: ['Paris'] }],
+  ]).candidates);
+  assert.deepEqual([s.order, s.candidates[0].on], [[1, 0], 'words']);
+});

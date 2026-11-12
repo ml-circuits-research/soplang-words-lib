@@ -107,7 +107,8 @@ export interface Scored {
   action?: { available: boolean; status: string; missing?: { key: string; ask?: string }[] };
   answer?: QueryResult;
   words?: { used: string[]; unused: string[]; unresolved: string[] };
-  parts?: Scored[];
+  /** a part of a split; `unread` when interpret found no reading for its frame */
+  parts?: (Scored & { unread?: boolean })[];
   split?: number;
   judged: boolean;
   judgedBy: 'statement' | 'action' | 'question' | 'referents' | 'slots' | 'denies' | 'fallback' | 'parts' | null;

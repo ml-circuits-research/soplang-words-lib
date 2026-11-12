@@ -423,13 +423,15 @@ export const interpreting = {
       for (const r of per) combos = combos.flatMap((c) => (r.candidates.length ? r.candidates : [null]).map((x) => [...c, x]));
       for (const parts of combos) { // bounded: the product is cut at limit below
         if (out.length >= limit) { dropped++; continue; }
-        const kept = parts.filter(Boolean);
-        const cand = { parts: kept, split: s };
-        cand.reading = kept.flatMap((p, i) => p.reading.map((x) => ({ ...x, part: i })));
-        cand.used = kept.flatMap((p) => p.used);
-        // a frame with no reading at all leaves all its words out
-        cand.unused = parts.flatMap((p, i) => (p ? p.unused : (split[i].args || []).map((a) => (typeof a === 'string' ? a : a.word)).filter((w) => !per[i].unresolved.includes(w))));
-        cand.unresolved = per.flatMap((r) => r.unresolved);
+        // a frame with no reading stays, as an unresolved part with all its words: nothing of
+        // the message is dropped without a trace, so rank and veto see it
+        const words = (f) => [...(f.verb !== undefined ? [f.verb] : []), ...(f.args || []).map((a) => (typeof a === 'string' ? a : a.word)), ...(f.words || []), ...(f.numbers || []).map(String)];
+        const all = parts.map((p, i) => p || { unread: true, frame: i, words: words(split[i]), reading: [], used: [], unused: [], unresolved: words(split[i]) });
+        const cand = { parts: all, split: s };
+        cand.reading = all.flatMap((p, i) => p.reading.map((x) => ({ ...x, part: i })));
+        cand.used = all.flatMap((p) => p.used);
+        cand.unused = all.flatMap((p) => p.unused);
+        cand.unresolved = [...new Set(all.flatMap((p, i) => (p.unread ? p.unresolved : per[i].unresolved)))];
         out.push(cand);
       }
     });

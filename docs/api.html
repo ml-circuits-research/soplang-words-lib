@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="a28b41cf4104">
+<meta name="source-hash" content="59c0b1cca0fb">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.13.1</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.13.2</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -284,7 +284,7 @@ missing</code></pre></figure>
 <p>Word forms: a <code>core.word</code> may carry several <code>text=</code> forms (<code>text=notebook text=notebooks</code>). A token that is no known form goes through the host's <code>lemma</code> function, if one is registered (<code>lemma: fn</code> or <code>register('lemma', fn)</code>), before near words are tried; no language is built in.</p>
 <p>Follow-ups ("no, a red one", "and the price?", "the other one", "tuesday then"): with <code>{ previous }</code>, a frame with no verb or no arguments, or one the front end marks <code>anaphor</code> (a pronoun or "one"), <code>correction</code> ("no, X") or <code>other</code> ("the other one"), inherits the previous frame's verb, question flag and words; what it states takes the place of what the previous frame said for the same slot (a correction even in a many slot). <code>previous</code> is a frame, <code>{ frame, ids }</code> (the ids the previous reading resolved to: <code>other</code> then describes another wire of the same type, <code>refer.not</code>), or <code>'told'</code>: the last told statement, which the frame then revises (a candidate <code>{ revise: { id, values } }</code>, which <code>score</code> judges like the rest). Candidates carry <code>inherited: { verb, words, wire }</code> and <code>replaced</code> (inherited words the reading does not use). A frame with a verb and arguments and no mark is read on its own.</p>
 <p>Loose words ("pen two buy", "red house big"): a frame <code>{ words, numbers, question }</code> has no verb and no order. Each word that may be a verb (it means an action, a type or a key, or is near one) is tried as the verb with the others as arguments (<code>verbWord</code>), then each action and type that has a word as an implied verb with all the words (<code>implied</code>, kept when it uses one). <code>score</code> and <code>rank</code> order them by what they use; a tie at the top is the host's cue to ask. Bounded by <code>limit</code> and charged to the budget (site <code>interpret</code>; a run-out returns no candidates and <code>budget</code>).</p>
-<p>One message may be several frames ("reserve the pen and order ink"). A list of frames is one split of it; a list of lists is alternative splits. Each candidate is then <code>{ parts, split }</code>, one reading per frame (new wires <code>new1</code>, <code>new2</code>, ...), and <code>score</code> judges the parts in order, each on the world with the parts before it, as one whole (a frame of a split with no verb, "... and one ink", takes the verb of the frame before it and its words replace that frame's for the same slots): consistent when every part is, with the parts' lacks, assumptions and referents (each marked <code>part</code>) and <code>parts</code>, the score of each. A split that leaves a word out loses on <code>words</code>.</p>
+<p>One message may be several frames ("reserve the pen and order ink"). A list of frames is one split of it; a list of lists is alternative splits. Each candidate is then <code>{ parts, split }</code>, one reading per frame (new wires <code>new1</code>, <code>new2</code>, ...), and <code>score</code> judges the parts in order, each on the world with the parts before it, as one whole (a frame of a split with no verb, "... and one ink", takes the verb of the frame before it and its words replace that frame's for the same slots): consistent when every part is, with the parts' lacks, assumptions and referents (each marked <code>part</code>) and <code>parts</code>, the score of each. A frame that has no reading stays as an unresolved part (<code>unread: true</code>, with its words in the candidate's <code>unresolved</code>), so a split that leaves a word out loses on <code>words</code> and <code>veto</code> reports <code>words-left-out</code>.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@k1 core.slot of=item key=name id=true
   @k2 core.slot of=order key=item kind=ref to=item required=true
@@ -524,7 +524,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.13.1 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.13.2 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

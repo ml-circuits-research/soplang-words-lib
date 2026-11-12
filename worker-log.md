@@ -2729,3 +2729,18 @@ clean.
 
 A patch version: fixes only, no new syntax. `npm test` 275 / 275 / 274. Pilot 147/147,
 212/217, 231/232, output identical. No open questions.
+
+## R14.1 — a split keeps unreadable frames — done; 0.13.2 released (no tag)
+
+Checked against 0.13.1: "mark Paris then undo" (undo a known word with no reading as a
+verb) gave one part, empty `unresolved`, and veto answered. `npm test`: 276 pass, 0 fail
+on sources and built file, 275 in checking mode. Pilot 147/147, 212/217, 231/232, output
+identical. `git grep -i psys2 src/`: empty. scan-loops clean. tsc clean.
+
+- In a split, a frame with no reading becomes a part `{ unread: true, words, unresolved }`
+  and all its words (verb, arguments, numbers) go to the candidate's `unresolved`; the
+  verb of such a frame was also missing from `unused` before. `score` keeps the part
+  (`unread`, not judged); `rank` counts its words; `veto` says `words-left-out`.
+- Test `R14.1: ...`: a known-but-unreadable verb and an unknown verb with an argument both
+  give an unread part and `words-left-out`; a split reading every frame ranks first.
+- Docs: api.md splits, index.d.ts (`unread`), CHANGELOG 0.13.2.

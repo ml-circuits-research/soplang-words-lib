@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="62834905b872">
+<meta name="source-hash" content="34915d8d71ef">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.12.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.13.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html" aria-current="page">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -488,20 +488,20 @@ only 30 left
 [{&quot;action&quot;:&quot;take&quot;,&quot;key&quot;:&quot;count&quot;,&quot;ask&quot;:&quot;How many?&quot;}]</code></pre></figure>
 <p><strong>Limits.</strong> Written as wires: no aggregates in its calcs; a <code>set</code> writes one value per key.</p>
 <h3 id="coreword">core.word</h3>
-<p>A word of one language and the one name of the matrix it means: an action, a type, a key (<code>type.key</code>) or a value of a slot. Words are facts the host tells or loads, not matrix wires, so namespaces, <code>sync</code>, undo and snapshots apply to them. Only <code>world.interpret</code> and <code>world.words</code> read them.</p>
+<p>A word and the one name of the matrix it means: an action, a type, a key (<code>type.key</code>) or a value of a slot. The words of a world are in one language, the one its matrix is written in; translation is the host's, outside the world. Words are facts the host tells or loads, not matrix wires, so namespaces, <code>sync</code>, undo and snapshots apply to them. Only <code>world.interpret</code> and <code>world.words</code> read them.</p>
 <p><strong>Syntax</strong></p>
-<div class="table"><table><thead><tr><th>Attribute</th><th>Meaning</th></tr></thead><tbody><tr><td><code>lang</code></td><td>the language (any label: <code>en</code>, <code>ro</code>)</td></tr><tr><td><code>text</code></td><td>rep.; the word as the host's front end gives it (compared without case); several are forms of one word</td></tr><tr><td><code>means</code></td><td>an action name, a type, <code>type.key</code>, or a value</td></tr><tr><td><code>of</code></td><td><code>type.key</code>: the slot the value belongs to (needed when <code>means</code> is not an enum value, or to choose one slot)</td></tr></tbody></table></div>
-<p><strong>Meaning.</strong> A value in another language names its canonical spelling through <code>means</code> and <code>of</code>: <code>@w core.word lang=ro text=minge means=ball of=item.name</code> reads "minge" as the value <code>ball</code> of <code>item.name</code>, and <code>interpret</code> puts <code>ball</code> (not "minge") in what it returns; <code>text=lei means=leu of=price.unit</code> does the same for an enum value. One wire, one meaning: a text with two meanings is two wires, and <code>world.score</code> chooses between the readings they give. A word whose <code>means</code> names nothing is reported in <code>world.warnings</code> (<code>unknown-word</code>) when it is told or when the matrix changes. Words keep their declaration order (the most usual first): see <a href="api.html#worldwordslang-and-worldinterpretframe-options">world.words</a>.</p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Meaning</th></tr></thead><tbody><tr><td><code>text</code></td><td>rep.; the word as the host's front end gives it (compared without case); several are forms of one word</td></tr><tr><td><code>means</code></td><td>an action name, a type, <code>type.key</code>, or a value</td></tr><tr><td><code>of</code></td><td><code>type.key</code>: the slot the value belongs to (needed when <code>means</code> is not an enum value, or to choose one slot)</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> A value written another way names its canonical spelling through <code>means</code> and <code>of</code>: <code>@w core.word text=football means=ball of=item.name</code> reads "football" as the value <code>ball</code> of <code>item.name</code>, and <code>interpret</code> puts <code>ball</code> (not "football") in what it returns; <code>text=pounds means=gbp of=price.unit</code> does the same for an enum value. One wire, one meaning: a text with two meanings is two wires, and <code>world.score</code> chooses between the readings they give. A word whose <code>means</code> names nothing is reported in <code>world.warnings</code> (<code>unknown-word</code>) when it is told or when the matrix changes. Words keep their declaration order (the most usual first): see <a href="api.html#worldwords-and-worldinterpretframe-options">world.words</a>.</p>
 <p><strong>Example</strong></p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(&#x27;@k core.slot of=meeting key=day enum=mon enum=tue required=true&#x27;);
-w.tell(&#x27;@w1 core.word lang=ro text=luni means=mon of=meeting.day  @w2 core.word lang=ro text=întâlnire means=meeting&#x27;);
-print(w.interpret({ lang: &#x27;ro&#x27;, verb: &#x27;întâlnire&#x27;, args: [&#x27;luni&#x27;] }).candidates[0].wires);
-w.tell(&#x27;@w3 core.word lang=ro text=vineri means=fri of=meeting.day&#x27;);
+w.tell(&#x27;@w1 core.word text=monday text=mondays means=mon of=meeting.day  @w2 core.word text=meet means=meeting&#x27;);
+print(w.interpret({ verb: &#x27;meet&#x27;, args: [&#x27;mondays&#x27;] }).candidates[0].wires);
+w.tell(&#x27;@w3 core.word text=friday means=fri of=meeting.day&#x27;);
 print(w.warnings[0].kind);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>@new meeting day=mon
 unknown-word</code></pre></figure>
-<p><strong>Limits.</strong> No language is built in: tokenizing and morphology are the host's, through <code>text=</code> forms and a registered <code>lemma</code> function (<code>world.register('lemma', lang, fn)</code>).</p>
+<p><strong>Limits.</strong> One language per world, and none built in: tokenizing and morphology are the host's, through <code>text=</code> forms and a registered <code>lemma</code> function (<code>world.register('lemma', fn)</code>). The <code>lang=</code> key of 0.9–0.12 is gone.</p>
 <h2 id="certainty-and-soft-constraints">Certainty and soft constraints</h2>
 <h3 id="coretier">core.tier</h3>
 <p>A tier of certainty of the host's own.</p>
@@ -596,7 +596,7 @@ print(builtins.time_add([&#x27;10:40&#x27;, &#x27;35min&#x27;]), builtins.div([&
 11:15 3 true tuesday</code></pre></figure>
 <p class="source">Generated from <code>docs/reference.md</code>.</p>
 </main>
-<footer>sopworld 0.12.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.13.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

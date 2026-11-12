@@ -2584,3 +2584,27 @@ clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
 A minor version: the ranking of questions changed and score results gained fields.
 `npm test` 267 / 267 / 266. Pilot 147/147, 212/217, 231/232, output identical. No open
 questions.
+
+## Words have no language (reviewer 07:10) — done; 0.13.0 released (no tag)
+
+`npm test`: 267 pass, 0 fail on sources and built file, 266 in checking mode. Pilot
+147/147, 212/217, 231/232, output identical. `npm run examples`: exit 0. `git grep -i
+psys2 src/`: empty. `node tools/scan-loops.mjs src`: clean. `npx tsc --noEmit --strict
+src/index.d.ts`: no errors. The 07:00 note (keep `lang=`, 0.12.1) is superseded and was
+not released.
+
+- src/interpret.mjs: `words()` (no language filter, no `lang` on entries), frames and
+  loose frames without `lang`, `examples(templates, options)`; the lemma hook is
+  `this.lemma` (`new World({ lemma })`, `register('lemma', fn)`), called `fn(token)`.
+  A quoted `text=` is decoded (needed for "biro's"). index.d.ts follows.
+- Tests and the reader example in English: the shared fixture's second-language words
+  became synonyms (hold, buy, meeting, alongside, mondays, biro, supply); "the same frame
+  in two languages" became "in synonyms"; word forms use notebook/notebooks/pad and a
+  possessive lemma ("biro's"); canonical values use football → ball and pounds → gbp;
+  the order test uses football, orb, globe. examples/reader.mjs: purchase, biro(s), pair,
+  carton(s) instead of the Romanian words (14 words).
+- Docs: reference.md core.word (no `lang`, one language per world), api.md (words,
+  interpret, examples, lemma, constructor), language.md §4 item 6, semantics.md, the
+  design doc without per-language parts. CHANGELOG notes the breaking change.
+- `node bench/interpret.mjs`: interpret 0.034–0.038 ms a frame; `node bench/examples.mjs`:
+  8 examples in 0.041 ms, all read back.

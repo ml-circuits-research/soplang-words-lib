@@ -46,35 +46,36 @@ A "tool" is anything an utterance can ask the world to do or to tell: an action
 | what values an argument takes | `kind=`, `enum=`, `min=`/`max=`, `to=` (ref), `type=` | nothing |
 | which arguments identify an entity | `id=true`, `unique=` on slots | nothing |
 | the role an argument plays | — | a role per argument (optional) |
-| the words for tools, roles and values, per language | — | words |
+| the words for tools, roles and values | — | words |
 | examples of utterances | — | examples (for tests and for a host's learner) |
 
 So two things are missing, and both are data the host registers, not built in:
 
-**Words.** A word wire maps a surface form in one language to a name the matrix
-already has: a type, a key, an action, or an enum value. Proposed shape (Q17):
+**Words.** A word wire maps a surface form to a name the matrix already has: a type, a
+key, an action, or an enum value. The words of a world are in one language, the one its
+matrix is written in; translation is the host's, outside the world (the `lang=` key of
+0.9–0.12 was dropped in 0.13.0). The shape (Q17):
 
 ```sop
-@w1 core.word lang=en text=book    means=reserve
-@w2 core.word lang=en text=order   means=order
-@w3 core.word lang=ro text=comandă means=order
-@w4 core.word lang=en text=monday  means=mon of=meeting.day
-@w5 core.word lang=en text=with    means=meeting.with
+@w1 core.word text=book    means=reserve
+@w2 core.word text=order   means=order
+@w3 core.word text=buy     means=order
+@w4 core.word text=monday  means=mon of=meeting.day
+@w5 core.word text=with    means=meeting.with
 ```
 
 `means=` names an action, a type, a qualified key (`type.key`) or a value; `of=` places a
 value in its slot when the same text could be a value of several. A word means one thing
-per language and `of=`; a word with two meanings is two wires, and choosing between
+per `of=`; a word with two meanings is two wires, and choosing between
 them is exactly what scoring does. Words are facts the host tells (or loads from a
 module), so they get namespaces, `sync` and snapshots for free. Nothing in the kernel
 reads them except `interpret`.
 
 **Roles and examples.** A role is a short label on an argument (`agent`, `theme`,
-`time`, `with`, `amount`) that a frame can use when the language marks the role (a
-preposition, a case) rather than naming the key. It can be a key on the existing slot
+`time`, `with`, `amount`) that a frame can use when a preposition marks the role rather than naming the key. It can be a key on the existing slot
 or param wire if the reviewer accepts it (Q18: `role=` on `core.slot` and on `core.action`
 params); until then a host keeps it in its own wires. Examples are ordinary facts of a
-host type (`@e1 example lang=en text="book the pen" reads=...`); they need no
+host type (`@e1 example text="book the pen" reads=...`); they need no
 vocabulary of their own.
 
 Everything else a reader needs is read from the compiled matrix, which already exposes
@@ -82,11 +83,11 @@ it through `schema(type)` and `World.audit`.
 
 ## 2. Frames to wires: `world.interpret(frame)` (built in R9.1)
 
-A frame is language-neutral; producing it (tokenizing, morphology, a parser or a
-learned model) belongs to the host. Proposed shape:
+A frame is the host's: producing it (tokenizing, morphology, a parser or a learned model)
+belongs to the host. Proposed shape:
 
 ```js
-{ lang: 'en', verb: 'book', args: [{ word: 'pen' }, { role: 'time', word: 'monday' }],
+{ verb: 'book', args: [{ word: 'pen' }, { role: 'time', word: 'monday' }],
   numbers: [2], question: false }
 ```
 
@@ -152,17 +153,17 @@ questions mixed): 1 candidate 0.26–0.31 ms, 10 candidates 1.2–1.6 ms, 100 ca
 
 ## 4. Generating readers
 
-Built as a sketch in R9.4: `world.examples(lang, templates)` fills the host's templates
+Built as a sketch in R9.4: `world.examples(templates)` fills the host's templates
 with the tools, slots and words, and gives with each sentence the frame and the reading
 it should give back, so a lexicon is tested by reading its own examples.
 
-From tool descriptions and words a host can generate a reader per language without
-writing one by hand. What the library would own and what stays in the host:
+From tool descriptions and words a host can generate a reader without writing one by
+hand. What the library would own and what stays in the host:
 
 | Library | Host |
 | --- | --- |
 | tool descriptions: slots, actions, asks, roles (read from the matrix) | tokenizing, morphology, lemmas |
-| words as facts (`core.word`, Q17), with namespaces and sync | which words to register; a lexicon per language |
+| words as facts (`core.word`, Q17), with namespaces and sync | which words to register; translation, outside the world |
 | `interpret(frame)`: words + schema + state → candidates | producing the frame (rules, a parser, or a learned model) |
 | `score(candidates)` and its order | the final choice, and asking the user when `order` has ties |
 | `describe()`/`schema()` as a source for prompts and grammars | prompt templates, grammars in a parser's format |
@@ -199,8 +200,8 @@ The tests that would prove the design, beyond those written for `score`:
    audit of a lexicon against its matrix;
 2. `interpret` never invents a value: for random frames, every value in a candidate
    comes from a word or a number of the frame;
-3. `interpret` + `score` on a corpus of examples per language picks the reading the
-   example gives, reported as a rate per language;
-4. the same frame in two languages (different words, same meanings) gives the same
+3. `interpret` + `score` on a corpus of examples picks the reading the example gives,
+   reported as a rate;
+4. the same frame in synonyms (different words, same meanings) gives the same
    candidates;
 5. `score` is read-only under checking mode (`SOPWORLD_COW_CHECK=1`) and with forks.

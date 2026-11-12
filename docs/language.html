@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld The language</title>
-<meta name="source-hash" content="398f95bbf266">
+<meta name="source-hash" content="4bb7ba33abf5">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.12.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.13.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html" aria-current="page">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -71,7 +71,7 @@ print(writeValue({ kind: &#x27;string&#x27;, v: &#x27;say &quot;hi&quot;&#x27; }
 &quot;say \&quot;hi\&quot;&quot; $b1</code></pre></figure>
 <h2 id="4-what-a-wire-is">4. What a wire is</h2>
 <p>A wire is either a <strong>fact</strong> or part of the <strong>matrix</strong>. The matrix is the set of wires that say what facts may exist and what follows from them.</p>
-<ol><li>A wire is part of the matrix when - its type is a matrix type (<code>core.slot</code>, <code>core.type</code>, <code>core.rule</code>, <code>core.deny</code>, <code>core.calc</code>, <code>core.check</code>, <code>core.relation</code>, <code>core.abducible</code>, <code>core.sequence</code>, <code>core.fluent</code>, <code>core.effect</code>, <code>core.producer</code>, <code>core.action</code>, <code>core.tier</code>, <code>core.precision</code>, <code>core.namespace</code>, <code>core.use</code>, <code>core.schema.map</code>), or - a <code>core.schema.map</code> wire declares its type to be schema, or - a rule, deny, calc, relation or action <strong>in the same text</strong> names it, through <code>when=</code>, <code>not=</code>, <code>then=</code>, <code>with=</code>, <code>if=</code>, <code>over=</code>, <code>set=</code>, <code>add=</code> or <code>remove=</code>.</li><li>A wire named through <code>when=</code>, <code>not=</code>, <code>over=</code> or <code>remove=</code> is a <strong>pattern</strong>: a description of wires to find. A wire named through <code>then=</code>, <code>set=</code> or <code>add=</code> is a <strong>template</strong>: a description of a wire to make or to complete. It is one or the other because of where it is named. A pattern needs no variable.</li><li>Every other wire is a <strong>fact</strong>.</li><li>A fact may not contain a variable. A wire with a variable that nothing names is refused (<code>variable</code>).</li><li>A rule and the wires it names are told together, in one text. A wire that has the id of a pattern and is told later on its own is a fact.</li></ol>
+<ol><li>A wire is part of the matrix when - its type is a matrix type (<code>core.slot</code>, <code>core.type</code>, <code>core.rule</code>, <code>core.deny</code>, <code>core.calc</code>, <code>core.check</code>, <code>core.relation</code>, <code>core.abducible</code>, <code>core.sequence</code>, <code>core.fluent</code>, <code>core.effect</code>, <code>core.producer</code>, <code>core.action</code>, <code>core.tier</code>, <code>core.precision</code>, <code>core.namespace</code>, <code>core.use</code>, <code>core.schema.map</code>), or - a <code>core.schema.map</code> wire declares its type to be schema, or - a rule, deny, calc, relation or action <strong>in the same text</strong> names it, through <code>when=</code>, <code>not=</code>, <code>then=</code>, <code>with=</code>, <code>if=</code>, <code>over=</code>, <code>set=</code>, <code>add=</code> or <code>remove=</code>.</li><li>A wire named through <code>when=</code>, <code>not=</code>, <code>over=</code> or <code>remove=</code> is a <strong>pattern</strong>: a description of wires to find. A wire named through <code>then=</code>, <code>set=</code> or <code>add=</code> is a <strong>template</strong>: a description of a wire to make or to complete. It is one or the other because of where it is named. A pattern needs no variable.</li><li>Every other wire is a <strong>fact</strong>.</li><li>A fact may not contain a variable. A wire with a variable that nothing names is refused (<code>variable</code>).</li><li>A rule and the wires it names are told together, in one text. A wire that has the id of a pattern and is told later on its own is a fact.</li><li>Words (<code>core.word text=… means=… of=…</code>, see the <a href="reference.html#coreword">reference</a>) are facts. SOP Lang knows no natural languages: the words of a world are in the one language its matrix is written in, and translation is done by the host, outside the world.</li></ol>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`
   @p purchase item=?i qty=?q            # a pattern: the rule names it in when=
@@ -155,7 +155,7 @@ print(format(w.matrix.get(&#x27;p&#x27;)));</code></pre></figure>
 <p><strong>SC7. A module.</strong> A module of the library gets its name as a prefix of its ids, may declare types and slots only under that prefix, and with <code>exports=</code> lets other modules read only the types listed (<a href="reference.html#coremodule">core.module</a>). A short key that two modules declare along one type's lineage is reported as <code>ambiguous-key</code>. <em>Tests:</em> <code>composition: two different declarations of one key are a conflict unless one says how they combine</code>; <code>modules: ownership of names, exports, and a warning for keys two modules declare</code></p>
 <p class="source">Generated from <code>docs/language.md</code>.</p>
 </main>
-<footer>sopworld 0.12.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.13.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

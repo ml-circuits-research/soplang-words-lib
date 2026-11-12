@@ -12,10 +12,10 @@ w.load(`@k1 core.slot of=item key=name id=true
   @r item core.on=$it reserved=yes`);
 w.tell(Array.from({length:300},(_, i)=>`@i${i} item name=n${i} stock=1`).join('\n'));
 w.tell(Array.from({length:40},(_, i)=>`@p${i} person name=q${i}`).join('\n'));
-w.tell(`@w1 core.word lang=en text=book means=reserve  @w2 core.word lang=en text=order means=order
-  @w3 core.word lang=en text=meet means=meeting  @w4 core.word lang=en text=with means=meeting.with
-  @w5 core.word lang=en text=monday means=mon of=meeting.day @w6 core.word lang=en text=stock means=item.stock`);
-const t=[];for(let i=0;i<21;i++){const s=process.hrtime.bigint();w.examples('en');t.push(Number(process.hrtime.bigint()-s)/1e6);}
-t.sort((a,b)=>a-b);const ex=w.examples('en');
+w.tell(`@w1 core.word text=book means=reserve  @w2 core.word text=order means=order
+  @w3 core.word text=meet means=meeting  @w4 core.word text=with means=meeting.with
+  @w5 core.word text=monday means=mon of=meeting.day @w6 core.word text=stock means=item.stock`);
+const t=[];for(let i=0;i<21;i++){const s=process.hrtime.bigint();w.examples();t.push(Number(process.hrtime.bigint()-s)/1e6);}
+t.sort((a,b)=>a-b);const ex=w.examples();
 let ok=0;for(const e of ex){ if(w.interpret(e.frame).candidates.length) ok++; }
 console.log(`${ex.length} examples in ${t[10].toFixed(3)} ms; ${ok} read back with candidates`);

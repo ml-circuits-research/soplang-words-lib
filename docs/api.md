@@ -51,7 +51,7 @@ const shop = () => {
 ### new World(options?)
 
 Options, all optional: `ns` (the [namespace](language.md#12-scope) of every
-statement of this world), `facts` (below), `fns`, `actions`, `producers`, `filters`, `lemmas` (host functions by name, `lemmas` by language; see
+statement of this world), `facts` (below), `fns`, `actions`, `producers`, `filters` (host functions by name), `lemma` (the host's lemma function; see
 [register](#worldregisterkind-name-fn-options)), `override` (let `fns` replace
 built-ins: `true` or names), `library` (module name to matrix text, for `core.use`),
 `maxDepth` (12), `maxSteps` (rule firings per change), `budget`, `decimals`, `strict`
@@ -684,20 +684,20 @@ supported 6 ["r"] derived
 missing
 ```
 
-### world.words(lang?) and world.interpret(frame, options?)
+### world.words() and world.interpret(frame, options?)
 
-`words(lang)` maps each text of a language to its `core.word` entries, with what each
+`words()` maps each text to its `core.word` entries, with what each
 means in the matrix (`meanings`: `{ kind: 'action' | 'type' | 'key' | 'value', ... }`).
 
-**Order.** Words keep the order in which they were told: the texts of `words(lang)`,
+**Order.** Words keep the order in which they were told: the texts of `words()`,
 the entries of one text, the forms of one word, the readings `interpret` gives for a
 word with several meanings, the near words at one distance, and the fillers `examples`
 uses. So a host declares the most usual word first, and it comes first in examples and
 in ties (`rank` keeps the given order). The order survives forks, undo and snapshots; a
 word retracted and told again goes to the end.
 
-`interpret(frame)` reads a language-neutral frame into candidates for `score`. A frame
-is `{ lang, verb, args, numbers, question, mode, ns }`; an argument is a word or `{ word,
+`interpret(frame)` reads a frame (the host's: its tokens, lemmas, parse) into candidates
+for `score`. A frame is `{ verb, args, numbers, question, mode, ns }`; an argument is a word or `{ word,
 role }`, where `role` is a word for a key (`with`, `on`). A verb that means an action
 gives `{ action, args }`, one that means a type gives `{ wires, refer }` (a slot that
 holds a wire gets a described referent), and `question: true` gives `{ question }`. An
@@ -708,16 +708,17 @@ is invented: every value comes from a word or a number of the frame. Options: `l
 (default 50 candidates), `id` (of the new wire, default `new`), `near` (default true).
 
 A word that is not known (no word wire, no name, no enum value) is read as the nearest
-known words of the language (a typo): within an edit distance of 1 for words of 4
+known words (a typo): within an edit distance of 1 for words of 4
 letters or fewer, 2 for longer, adjacent swaps counting one; only those at the smallest
 distance; for the verb only words that mean an action, a type or a key. Such a candidate
 has `assumes: [{ word, read }]`, which `score` keeps, so `rank` puts exact readings
 first and a host can say "(I read X as Y)". A known word is never corrected; `near:
 false` turns this off.
 
-Word forms: a `core.word` may carry several `text=` forms (`text=caiet text=caietul
-text=caiete`). A token that is no known form goes through the host's `lemma` function for
-its language, if one is registered, before near words are tried; no language is built in.
+Word forms: a `core.word` may carry several `text=` forms (`text=notebook
+text=notebooks`). A token that is no known form goes through the host's `lemma` function,
+if one is registered (`lemma: fn` or `register('lemma', fn)`), before near words are
+tried; no language is built in.
 
 Follow-ups ("no, a red one", "and the price?", "the other one", "tuesday then"): with
 `{ previous }`, a frame with no verb or no arguments, or one the front end marks
@@ -731,7 +732,7 @@ values } }`, which `score` judges like the rest). Candidates carry `inherited: {
 words, wire }` and `replaced` (inherited words the reading does not use). A frame with a
 verb and arguments and no mark is read on its own.
 
-Loose words ("pen two buy", "red house big"): a frame `{ lang, words, numbers,
+Loose words ("pen two buy", "red house big"): a frame `{ words, numbers,
 question }` has no verb and no order. Each word that may be a verb (it means an action,
 a type or a key, or is near one) is tried as the verb with the others as arguments
 (`verbWord`), then each action and type that has a word as an implied verb with all the
@@ -754,8 +755,8 @@ const w = new World();
 w.load(`@k1 core.slot of=item key=name id=true
   @k2 core.slot of=order key=item kind=ref to=item required=true
   @k3 core.slot of=order key=qty kind=integer min=1 default=1`);
-w.tell('@i1 item name=pen  @w core.word lang=en text=order means=order');
-const r = w.interpret({ lang: 'en', verb: 'order', args: ['pen', 'spoon'], numbers: [2] });
+w.tell('@i1 item name=pen  @w core.word text=order means=order');
+const r = w.interpret({ verb: 'order', args: ['pen', 'spoon'], numbers: [2] });
 print(r.candidates[0].wires, r.candidates[0].refer, r.unresolved);
 ```
 
@@ -763,15 +764,15 @@ print(r.candidates[0].wires, r.candidates[0].refer, r.unresolved);
 @new order item=$r1 qty=2 {"r1":{"type":"item","where":{"name":"pen"}}} ["spoon"]
 ```
 
-### world.examples(lang, templates?, options?)
+### world.examples(templates?, options?)
 
-Example sentences of a language, generated from the tools (actions, types and keys that
+Example sentences, generated from the tools (actions, types and keys that
 have words), their slots and the words; the host gives the templates, the library what
 fills them. `templates` is `{ action, statement, question }`, each a string with
 `{verb}`, `{args}` and `{<key>}`, or a function `({ verb, args }) => string`; an argument
 is written `role word` when its key has a word. Values come only from words and from
 names the world holds (`sample` per type, default 2); a number slot takes its `min` (or
-1). Each example is `{ lang, tool, text, frame, expect }`: the frame a front end should
+1). Each example is `{ tool, text, frame, expect }`: the frame a front end should
 give `interpret` for `text`, and the reading it should then give, so a lexicon can be
 tested by reading its own examples back. Options: `per` (default 3 a tool), `all` (every
 slot with fillers, not only the required ones), `sample`.
@@ -781,14 +782,14 @@ const w = new World();
 w.load(`@k6 core.slot of=person key=name id=true
   @k5 core.slot of=meeting key=with type=person required=true
   @k4 core.slot of=meeting key=day enum=mon enum=tue required=true`);
-w.tell(`@p1 person name=ann  @w1 core.word lang=ro text=întâlnire means=meeting
-  @w2 core.word lang=ro text=cu means=meeting.with  @w3 core.word lang=ro text=luni means=mon of=meeting.day`);
-const [e] = w.examples('ro', { statement: '{verb} {day} {with}' });
+w.tell(`@p1 person name=ann  @w1 core.word text=meet means=meeting
+  @w2 core.word text=with means=meeting.with  @w3 core.word text=monday means=mon of=meeting.day`);
+const [e] = w.examples({ statement: '{verb} {day} {with}' });
 print(e.text, e.frame.args, e.expect.attrs);
 ```
 
 ```output
-întâlnire luni cu ann [{"role":"cu","word":"ann"},"luni"] {"day":"mon"}
+meet monday with ann [{"role":"with","word":"ann"},"monday"] {"day":"mon"}
 ```
 
 ### world.score(candidates, options?)
@@ -880,8 +881,8 @@ w.load(`@k1 core.slot of=item key=name id=true
   @it item name=?item stock=?s
   @left core.check fn=gt args=?s args=0 why="?item is out of stock"
   @r item core.on=$it reserved=yes`);
-w.tell('@i1 item name=pen stock=3  @i2 item name=ink stock=0  @w core.word lang=en text=reserve means=reserve');
-const v = (args) => w.veto(w.score(w.interpret({ lang: 'en', verb: 'reserve', args }).candidates));
+w.tell('@i1 item name=pen stock=3  @i2 item name=ink stock=0  @w core.word text=reserve means=reserve');
+const v = (args) => w.veto(w.score(w.interpret({ verb: 'reserve', args }).candidates));
 print(v(['pen']).answer, v(['ink']).reasons.map((r) => [r.reason, r.why]), v(['pen', 'blue']).reasons[0].why);
 ```
 
@@ -1119,9 +1120,9 @@ print(w.toSOP(), Object.keys(w.toJSON()));
 Adds a host function after the world was made. `kind` is `function` (`(args, world)
 => value`, for calcs, checks and effects), `action` (`(context, args) => value`),
 `producer` (`(context) => value`), `filter` (`(value, { world, name }) => text`, for
-`?v:name` in a reason) or `lemma` (`(token, lang) => form | forms`, named by a language or
-`'*'`: the dictionary forms of a token that is not a known word, for `interpret`; it must
-be pure and know nothing of the world). A `function` with the name of a built-in throws
+`?v:name` in a reason) or `lemma`, given as `register('lemma', fn)` with no name (`(token) => form | forms`:
+the dictionary forms of a token that is not a known word, for `interpret`; it must be
+pure and know nothing of the world). A `function` with the name of a built-in throws
 unless `{ override: true }`. Returns the world.
 
 ```js run

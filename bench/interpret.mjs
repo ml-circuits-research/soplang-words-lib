@@ -18,13 +18,13 @@ w.load(`
 `);
 w.tell(lines(300, (i) => `@i${i} item name=n${i} stock=${i % 7}`));
 w.tell(lines(40, (i) => `@p${i} person name=q${i}`));
-w.tell(`@w1 core.word lang=en text=book means=reserve  @w2 core.word lang=en text=book means=order
-  @w3 core.word lang=en text=meet means=meeting  @w4 core.word lang=en text=with means=meeting.with
-  @w5 core.word lang=en text=monday means=mon of=meeting.day  @w6 core.word lang=en text=stock means=item.stock`);
+w.tell(`@w1 core.word text=book means=reserve  @w2 core.word text=book means=order
+  @w3 core.word text=meet means=meeting  @w4 core.word text=with means=meeting.with
+  @w5 core.word text=monday means=mon of=meeting.day  @w6 core.word text=stock means=item.stock`);
 const frames = [
-  { lang: 'en', verb: 'book', args: ['n17'], numbers: [2] },
-  { lang: 'en', verb: 'meet', args: [{ role: 'with', word: 'q3' }, 'monday'] },
-  { lang: 'en', verb: 'stock', args: ['n5'], question: true },
+  { verb: 'book', args: ['n17'], numbers: [2] },
+  { verb: 'meet', args: [{ role: 'with', word: 'q3' }, 'monday'] },
+  { verb: 'stock', args: ['n5'], question: true },
 ];
 for (const f of frames) {
   w.interpret(f);
@@ -35,24 +35,24 @@ for (const f of frames) {
 }
 // splits: "book n17 and meet q3 on monday", two ways
 const split = [
-  [{ lang: 'en', verb: 'book', args: ['n17'] }, { lang: 'en', verb: 'meet', args: [{ role: 'with', word: 'q3' }, 'monday'] }],
-  [{ lang: 'en', verb: 'book', args: ['n17', 'q3', 'monday'] }],
+  [{ verb: 'book', args: ['n17'] }, { verb: 'meet', args: [{ role: 'with', word: 'q3' }, 'monday'] }],
+  [{ verb: 'book', args: ['n17', 'q3', 'monday'] }],
 ];
 const a = med(Array.from({ length: 21 }, () => time(() => w.interpret(split))));
 const rs = w.interpret(split);
 const b = med(Array.from({ length: 21 }, () => time(() => w.score(rs.candidates))));
 console.log(`splits ${rs.candidates.length} candidates: interpret ${a.toFixed(3)} ms, score ${b.toFixed(3)} ms; order ${w.score(rs.candidates).order}`);
 // typos: an unknown verb and an unknown name, read through the nearest known words (300 item names)
-for (const f of [{ lang: 'en', verb: 'bokk', args: ['n17'] }, { lang: 'en', verb: 'book', args: ['n1x7'] }]) {
+for (const f of [{ verb: 'bokk', args: ['n17'] }, { verb: 'book', args: ['n1x7'] }]) {
   const t = med(Array.from({ length: 21 }, () => time(() => w.interpret(f))));
   const r = w.interpret(f);
   console.log(`typo ${JSON.stringify(f.verb)} ${JSON.stringify(f.args)}: ${r.candidates.length} candidates, interpret ${t.toFixed(3)} ms, read as ${JSON.stringify(r.candidates[0]?.assumes)}`);
 }
 // follow-ups: "monday then" after a meeting frame, and after the last told statement
-const prevF = { lang: 'en', verb: 'meet', args: [{ role: 'with', word: 'q3' }] };
+const prevF = { verb: 'meet', args: [{ role: 'with', word: 'q3' }] };
 w.tell('@mt meeting with=$p3 day=tue');
 for (const [label, o] of [['previous frame', { previous: prevF }], ['last told', { previous: 'told' }]]) {
-  const f = { lang: 'en', args: ['monday'] };
+  const f = { args: ['monday'] };
   const t = med(Array.from({ length: 21 }, () => time(() => w.interpret(f, o))));
   const r = w.interpret(f, o);
   const s = med(Array.from({ length: 21 }, () => time(() => w.score(r.candidates))));
@@ -60,7 +60,7 @@ for (const [label, o] of [['previous frame', { previous: prevF }], ['last told',
 }
 // loose words: no verb order
 for (const words of [['n17', 'book'], ['q3', 'monday'], ['n17', 'q3', 'monday', 'book']]) {
-  const f = { lang: 'en', words };
+  const f = { words };
   const t = med(Array.from({ length: 21 }, () => time(() => w.interpret(f))));
   const r = w.interpret(f);
   const s = med(Array.from({ length: 11 }, () => time(() => w.score(r.candidates))));

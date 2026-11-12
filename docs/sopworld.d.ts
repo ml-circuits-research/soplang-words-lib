@@ -47,14 +47,12 @@ export type WordMeaning =
   | { kind: 'value'; type: string; key: string; value: string };
 export type Template = string | ((parts: { verb: string; args: { key: string; role?: string; text: string; value: string }[] }) => string);
 export interface Example {
-  lang: string;
   tool: { kind: 'action'; name: string } | { kind: 'type'; type: string } | { kind: 'question'; type: string; key: string };
   text: string;
   frame: Frame;
   expect: { action: string; args: Record<string, string> } | { type: string; attrs: Record<string, string>; refer: Record<string, { type: string; where: Record<string, string> }> } | { question: Question };
 }
 export interface Frame {
-  lang?: string;
   verb?: string;
   args?: (string | { word: string; role?: string })[];
   numbers?: (number | string)[];
@@ -242,8 +240,8 @@ export interface WorldOptions {
   facts?: Record<string, (where: Record<string, string>, world: World) => ({ id: string; attrs?: Record<string, unknown>; [key: string]: unknown })[]>;
   /** how a reason writes a value: ?n:name calls filters[name](value, { world, name }) */
   filters?: Record<string, (value: string | number, context: { world: World; name: string }) => string>;
-  /** by language (or '*'): the dictionary forms of a token, for interpret */
-  lemmas?: Record<string, (token: string, lang: string) => string | string[]>;
+  /** the dictionary forms of a token, for interpret */
+  lemma?: (token: string) => string | string[];
   /** allow `fns` to replace built-ins: true, or the names */
   override?: boolean | string[];
   /** decimals kept in derived numbers (default: 12 significant digits) */
@@ -300,7 +298,9 @@ export class World {
   /** shares the state until one of the two worlds changes; copies nothing */
   fork(): World;
   /** add a host function; a 'function' with a built-in's name needs { override: true } */
-  register(kind: 'function' | 'action' | 'producer' | 'filter' | 'lemma', name: string, fn: Function, options?: { override?: boolean | string[] }): this;
+  register(kind: 'function' | 'action' | 'producer' | 'filter', name: string, fn: Function, options?: { override?: boolean | string[] }): this;
+  /** the host's lemma function for interpret: fn(token) gives the dictionary forms of a token */
+  register(kind: 'lemma', fn: (token: string) => string | string[]): this;
   actions: Record<string, Function>;
   producers: Record<string, Function>;
   /** for functions: say why no result can be given, before returning nothing */
@@ -370,12 +370,12 @@ export class World {
   /** apply several changes that must hold together: all or nothing */
   applyPatch(patch: Patch, options?: Budgeted & { strict?: boolean }): Result;
   query(question: Question | Wire | string, options?: Budgeted & { record?: boolean; suppose?: boolean; at?: number; /** only this namespace */ ns?: string; /** answer on the world as it would be with this patch */ given?: Patch }): QueryResult;
-  /** the core.word entries of a language, by text */
-  words(lang?: string): Map<string, { id: string; lang: string; means: string; of?: string; meanings: WordMeaning[] }[]>;
-  /** read a language-neutral frame into candidates for score; nothing invented */
+  /** the core.word entries of the world, by text */
+  words(): Map<string, { id: string; means: string; of?: string; meanings: WordMeaning[] }[]>;
+  /** read a frame into candidates for score; nothing invented */
   interpret(frame: Frame | Frame[] | Frame[][], options?: Budgeted & { limit?: number; id?: string; ns?: string; /** read unknown words as the nearest known ones (default true) */ near?: boolean; /** a follow-up to this frame, or to the last told statement */ previous?: Frame | { frame: Frame; ids?: string[] } | 'told' }): { candidates: (ScoreCandidate & Reading)[]; unresolved: string[]; dropped: number; budget?: Violation };
   /** example sentences from the tools, slots and words, with the host's templates */
-  examples(lang: string, templates?: { action?: Template; statement?: Template; question?: Template }, options?: { per?: number; all?: boolean; sample?: number }): Example[];
+  examples(templates?: { action?: Template; statement?: Template; question?: Template }, options?: { per?: number; all?: boolean; sample?: number }): Example[];
   /** answer with the top reading of score, or not, and why */
   veto(result: { candidates: Scored[]; order: number[] } | Scored[], options?: VetoOptions): Veto;
   /** judge candidate readings against the world; nothing is told */

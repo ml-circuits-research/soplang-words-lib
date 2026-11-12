@@ -503,4 +503,4 @@ registers ([reference](reference.md#coredeny)).
 Notes that refuse nothing are in `world.warnings`: `deprecated` (a pattern declared the
 old way), `unknown-attribute` (an attribute a matrix wire type does not read),
 `ambiguous-key` (a short key that two modules declare along one type's lineage, with
-both qualified names) and `unknown-word` (a `core.word` whose `means=` names nothing).
+both qualified names) and `unknown-word` (a `core.word` whose `means=` names nothing; words are in the world's one language, with no `lang=`).

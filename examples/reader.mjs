@@ -18,25 +18,24 @@ export const items = `
 `;
 
 // The descriptions: an operation word, argument words (several forms of one word), number
-// words and unit words, each with means= (and of= for a value of a slot). Declared in the
-// order a host wants them in examples: the most usual form first.
+// words, unit words and synonyms, each with means= (and of= for a value of a slot). Declared in the
+// order a host wants them in examples: the most usual form first. All in one language,
+// the matrix's own: translation is the host's, outside the world.
 export const words = `
-@w_buy  core.word lang=en text=buy text=get means=line
-@w_pen  core.word lang=en text=pen text=pens means=pen of=item.name
-@w_ink  core.word lang=en text=ink text=inks means=ink of=item.name
-@w_pad  core.word lang=en text=pad text=pads means=pad of=item.name
-@w_one  core.word lang=en text=one text=a means=1 of=line.qty
-@w_two  core.word lang=en text=two means=2 of=line.qty
-@w_three core.word lang=en text=three means=3 of=line.qty
-@w_piece core.word lang=en text=piece text=pieces means=piece of=line.unit
-@w_box  core.word lang=en text=box text=boxes means=box of=line.unit
-@w_price core.word lang=en text=price means=item.price
-@r_buy  core.word lang=ro text=cumpără means=line
-@r_pen  core.word lang=ro text=pix text=pixuri means=pen of=item.name
-@r_ink  core.word lang=ro text=cerneală means=ink of=item.name
-@r_one  core.word lang=ro text=un text=o means=1 of=line.qty
-@r_two  core.word lang=ro text=două text=doi means=2 of=line.qty
-@r_box  core.word lang=ro text=cutie text=cutii means=box of=line.unit
+@w_buy  core.word text=buy text=get means=line
+@w_pen  core.word text=pen text=pens means=pen of=item.name
+@w_ink  core.word text=ink text=inks means=ink of=item.name
+@w_pad  core.word text=pad text=pads means=pad of=item.name
+@w_one  core.word text=one text=a means=1 of=line.qty
+@w_two  core.word text=two means=2 of=line.qty
+@w_three core.word text=three means=3 of=line.qty
+@w_piece core.word text=piece text=pieces means=piece of=line.unit
+@w_box  core.word text=box text=boxes means=box of=line.unit
+@w_price core.word text=price means=item.price
+@w_purchase core.word text=purchase means=line
+@w_biro core.word text=biro text=biros means=pen of=item.name
+@w_pair core.word text=pair text=couple means=2 of=line.qty
+@w_carton core.word text=carton text=cartons means=box of=line.unit
 `;
 
 export function makeShop() {
@@ -60,11 +59,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   console.log('words declared:', w.ofType('core.word').length, '— warnings:', w.warnings.length);
   // "buy two pens and one ink": two frames (the second takes the verb), or one
   console.log('buy two pens and one ink:\n   ', show(w, w.interpret([
-    [{ lang: 'en', verb: 'buy', args: ['two', 'pens'] }, { lang: 'en', args: ['one', 'ink'] }],
-    [{ lang: 'en', verb: 'buy', args: ['two', 'pens', 'one', 'ink'] }],
+    [{ verb: 'buy', args: ['two', 'pens'] }, { args: ['one', 'ink'] }],
+    [{ verb: 'buy', args: ['two', 'pens', 'one', 'ink'] }],
   ])));
-  console.log('cumpără două cutii de pixuri:\n   ', show(w, w.interpret({ lang: 'ro', verb: 'cumpără', args: ['două', 'cutii', 'pixuri'] })));
-  console.log('buy a pnes (a typo):\n   ', show(w, w.interpret({ lang: 'en', verb: 'buy', args: ['a', 'pnes'] })));
-  console.log('pens two buy (loose words):\n   ', show(w, w.interpret({ lang: 'en', words: ['pens', 'two', 'buy'] })));
-  console.log('examples (en):', w.examples('en', { statement: '{verb} {qty} {unit} {item}' }, { all: true, per: 2 }).map((e) => e.text).join(' / '));
+  console.log('purchase a pair of cartons of biros (synonyms):\n   ', show(w, w.interpret({ verb: 'purchase', args: ['pair', 'cartons', 'biros'] })));
+  console.log('buy a pnes (a typo):\n   ', show(w, w.interpret({ verb: 'buy', args: ['a', 'pnes'] })));
+  console.log('pens two buy (loose words):\n   ', show(w, w.interpret({ words: ['pens', 'two', 'buy'] })));
+  console.log('examples:', w.examples({ statement: '{verb} {qty} {unit} {item}' }, { all: true, per: 2 }).map((e) => e.text).join(' / '));
 }

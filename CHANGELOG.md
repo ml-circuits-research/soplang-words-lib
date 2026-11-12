@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.13.0
+
+Words have no language.
+
+### Breaking
+- `core.word` has no `lang=` any more: a word is `core.word text=… means=… [of=…]`. The
+  words of a world are in the one language its matrix is written in; translation is the
+  host's, outside the world. A `lang=` on an old word is ignored.
+- `world.words(lang)` is `world.words()`; frames lose `lang`; `world.examples(lang,
+  templates, options)` is `world.examples(templates, options)`.
+- The lemma hook is one function: `new World({ lemma: fn })` or `register('lemma', fn)`,
+  called as `fn(token)` (was `lemmas: { lang: fn }` and `fn(token, lang)`).
+
+### Changed
+- Every Romanian word in examples, tests and docs is replaced by English (synonyms,
+  plurals, a possessive for the lemma example).
+- A quoted `text=` of a word is read as its content.
+
 ## 0.12.0
 
 Round 12: from the host's world-aware reading.

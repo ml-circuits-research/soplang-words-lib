@@ -1188,8 +1188,9 @@ key.
 
 ### core.word
 
-A word of one language and the one name of the matrix it means: an action, a type, a
-key (`type.key`) or a value of a slot. Words are facts the host tells or loads, not
+A word and the one name of the matrix it means: an action, a type, a key (`type.key`) or
+a value of a slot. The words of a world are in one language, the one its matrix is
+written in; translation is the host's, outside the world. Words are facts the host tells or loads, not
 matrix wires, so namespaces, `sync`, undo and snapshots apply to them. Only
 `world.interpret` and `world.words` read them.
 
@@ -1197,29 +1198,28 @@ matrix wires, so namespaces, `sync`, undo and snapshots apply to them. Only
 
 | Attribute | Meaning |
 | --- | --- |
-| `lang` | the language (any label: `en`, `ro`) |
 | `text` | rep.; the word as the host's front end gives it (compared without case); several are forms of one word |
 | `means` | an action name, a type, `type.key`, or a value |
 | `of` | `type.key`: the slot the value belongs to (needed when `means` is not an enum value, or to choose one slot) |
 
-**Meaning.** A value in another language names its canonical spelling through `means`
-and `of`: `@w core.word lang=ro text=minge means=ball of=item.name` reads "minge" as the
-value `ball` of `item.name`, and `interpret` puts `ball` (not "minge") in what it returns;
-`text=lei means=leu of=price.unit` does the same for an enum value. One wire, one
+**Meaning.** A value written another way names its canonical spelling through `means`
+and `of`: `@w core.word text=football means=ball of=item.name` reads "football" as the
+value `ball` of `item.name`, and `interpret` puts `ball` (not "football") in what it
+returns; `text=pounds means=gbp of=price.unit` does the same for an enum value. One wire, one
 meaning: a text with two meanings is two wires, and
 `world.score` chooses between the readings they give. A word whose `means` names
 nothing is reported in `world.warnings` (`unknown-word`) when it is told or when the
 matrix changes. Words keep their declaration order (the most usual first): see
-[world.words](api.md#worldwordslang-and-worldinterpretframe-options).
+[world.words](api.md#worldwords-and-worldinterpretframe-options).
 
 **Example**
 
 ```js run
 const w = new World();
 w.load('@k core.slot of=meeting key=day enum=mon enum=tue required=true');
-w.tell('@w1 core.word lang=ro text=luni means=mon of=meeting.day  @w2 core.word lang=ro text=întâlnire means=meeting');
-print(w.interpret({ lang: 'ro', verb: 'întâlnire', args: ['luni'] }).candidates[0].wires);
-w.tell('@w3 core.word lang=ro text=vineri means=fri of=meeting.day');
+w.tell('@w1 core.word text=monday text=mondays means=mon of=meeting.day  @w2 core.word text=meet means=meeting');
+print(w.interpret({ verb: 'meet', args: ['mondays'] }).candidates[0].wires);
+w.tell('@w3 core.word text=friday means=fri of=meeting.day');
 print(w.warnings[0].kind);
 ```
 
@@ -1228,7 +1228,7 @@ print(w.warnings[0].kind);
 unknown-word
 ```
 
-**Limits.** No language is built in: tokenizing and morphology are the host's, through `text=` forms and a registered `lemma` function (`world.register('lemma', lang, fn)`).
+**Limits.** One language per world, and none built in: tokenizing and morphology are the host's, through `text=` forms and a registered `lemma` function (`world.register('lemma', fn)`). The `lang=` key of 0.9–0.12 is gone.
 
 ## Certainty and soft constraints
 

@@ -4,6 +4,19 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
 
 **The user's direction: sopworld is a general, useful library for self-consistent worlds of SOP Lang wires. It must be *compatible* with the PSys2 worlds, but it is not built *for* them.** Nothing PSys2-specific goes into the core: no PSys2 type names, no PSys2 envelope, no PSys2 file layout. Every feature below must make sense for any user of the library (a scheduler, a digital twin, a tutoring system, a game) and be documented with a neutral example. PSys2 is the first demanding user: its needs show what is missing, and a small compatibility suite (`compat/psys2/`) proves that such a system can sit on the library through its public, general mechanisms.
 
+## 2026-11-12 07:45 (reviewer): Round 13: namespace defects and two judgement gaps, with repros from the host
+
+The host vendored 0.12.0 and probed its use of namespaces. These are defects with minimal repros, as the host wrote them; it says none is fixed in 0.10–0.12. Check each against 0.13.0 first, then fix it, one commit each, with a test per repro. Release 0.13.1.
+
+- **N1 `replace` in a namespaced world.** `w = new World({ ns: 'A' }); w.load('@t core.type\n@t.k core.slot of=t key=k kind=number'); w.tell('@x t k=1'); w.replace('A::x', '@x t k=2')` leaves the wire as `x` (default namespace); expected `A::x`. A bare id in the replacement text belongs to the namespace of the replaced wire.
+- **N2 Aggregate results land in the default namespace.** In a world with `ns: 'A'`, a `core.aggregate over=… by=?k count=?c then=…` tells its `have` wire as `_hk_…` in the default namespace, so a deny that joins `have` with the namespace's facts never matches. Results belong to the namespace of the wires they count. When a group spans namespaces, use the default namespace, and document that.
+- **N3 `core.schema.map` ignores `shared=`, `transient=` and `unique=`.** Only native `core.type` reads them. The map needs those fields.
+- **N4 Log entries forget their namespace.** `tell('@e.user agent', { ns: '' })` on a world with `ns: 'A'`, then a replay on a second `ns: 'A'` world, gives `A::e.user`. Store `ns` per log entry, and make restore and replay honour it.
+- **N5 References to shared types do not fall back to the default namespace.** `@agent core.type shared=true`, `tell('@e.user agent', { ns: '' })`, then in `ns: 'A'` the reference `@p1 pet owner=$e.user` is `dangling-ref $A::e.user`. For `shared=true` types, a bare reference falls back to the default namespace, as docs/language.md section 12 promises for shared facts.
+- **N6 `check(patch, { query })` runs the inner query without `ns`.** Pass it through. The host read this in the source; confirm it with a test.
+- **J1 A question given as a wire.** `score({ question: <core.question wire with seek=count, type=… where.…> })` about a computed answer that does not exist yet still reports the sought key as a lack. R12.1 only covers `{ type, seek }` objects with an existing subject. Accept a question wire (`seek` in its attrs) and a missing subject whose type and key are the sought ones.
+- **J2 Judging actions the host carries out.** The fallback judgement needs `type.key` argument names or `of=`. A host action with bare argument names (`kind`, `color`) stays unjudged, and `veto` reports `action-unavailable` for every one of them. Document and test how a host declares an action's parameters as slots without making the library carry the action out (`core.action name=… param.kind=draw.kind …`, or whatever `param=` already supports), so that the fallback judges it and `action-unavailable` is only reported for actions really unknown.
+
 ## 2026-11-12 07:25 (reviewer): 0.13.0 validated
 
 0.13.0 (8b9a46b) is validated:

@@ -34,7 +34,7 @@
     "test:src": "node --test",
     "test:browser": "node tools/browser-check.mjs",
     "bench": "node tools/bench.mjs",
-    "examples": "node examples/deduction.mjs && node examples/abduction.mjs && node examples/induction.mjs && node examples/chat.mjs && node examples/twin.mjs && node examples/workflow.mjs && node examples/compose.mjs && node examples/solvers.mjs && node examples/time.mjs && node examples/aggregates.mjs",
+    "examples": "node examples/deduction.mjs && node examples/abduction.mjs && node examples/induction.mjs && node examples/chat.mjs && node examples/twin.mjs && node examples/workflow.mjs && node examples/compose.mjs && node examples/solvers.mjs && node examples/time.mjs && node examples/aggregates.mjs && node examples/reader.mjs",
     "docs": "python3 tools/build_docs.py"
   },
   "license": "MIT",

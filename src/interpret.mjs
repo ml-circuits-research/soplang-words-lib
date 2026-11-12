@@ -152,7 +152,9 @@ export const interpreting = {
    * or question. At most `limit` candidates (default 50); `dropped` counts the rest.
    *
    * One message may be several frames ("book the pen and order ink"). A list of frames is
-   * one split; a list of lists is alternative splits of the same message. Each candidate
+   * one split; a list of lists is alternative splits of the same message. A frame of a
+   * split with no verb ("buy two pens and one ink") is read as a follow-up of the frame
+   * before it: it takes its verb, and its own words replace the ones for the same slots. Each candidate
    * is then `{ parts, split }`: one reading per frame (new wires are `new1`, `new2`, ...),
    * judged by score in order, each part on the world with the parts before it.
    */
@@ -415,7 +417,8 @@ export const interpreting = {
     const out = [], unresolved = new Set();
     let dropped = 0;
     splits.forEach((split, s) => { // bounded: the splits the host gives
-      const per = split.map((f, i) => this.interpret(f, { ...opts, limit, id: `${opts.id || 'new'}${i + 1}` }));
+      // a frame of a split with no verb ("... and one ink") is a follow-up of the frame before it
+      const per = split.map((f, i) => this.interpret(f, { ...opts, limit, id: `${opts.id || 'new'}${i + 1}`, ...(i > 0 && f.verb === undefined && !f.words ? { previous: split[i - 1] } : {}) }));
       for (const r of per) { r.unresolved.forEach((u) => unresolved.add(u)); dropped += r.dropped; }
       let combos = [[]];
       for (const r of per) combos = combos.flatMap((c) => (r.candidates.length ? r.candidates : [null]).map((x) => [...c, x]));

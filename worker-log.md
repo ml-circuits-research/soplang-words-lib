@@ -2556,3 +2556,25 @@ clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
 - `node bench/score.mjs`:   1 undeclared-action readings (fallback): 0.03 ms (0.031 ms a reading)
 - `node bench/score.mjs`:  10 undeclared-action readings (fallback): 0.20 ms (0.020 ms a reading)
 - `node bench/score.mjs`: 100 undeclared-action readings (fallback): 3.06 ms (0.031 ms a reading)
+
+## R12.3 — interpret from a host's word descriptions — done
+
+`npm test`: 267 pass, 0 fail on sources and built file, 266 in checking mode. Pilot
+147/147, 212/217, 231/232, output identical. `npm run examples`: exit 0.
+`git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`: clean.
+`npx tsc --noEmit --strict src/index.d.ts`: no errors.
+
+- examples/reader.mjs: a neutral shop described the way a host writes words for pattern
+  generation (16 `core.word` facts: an operation word with two forms, argument words with
+  plural forms, number words and unit words, all `means=`, values with `of=`; EN and RO),
+  read back with splits, a typo, loose words, `score`, `veto` and `examples`. Added to
+  `npm run examples`.
+- One change to `src/`: in a split, a frame with no verb ("... and one ink") is read as a
+  follow-up of the frame before it (it takes its verb; its words replace that frame's for
+  the same slots). Without it the second frame of "buy two pens and one ink" had no
+  reading.
+- test/reader.test.mjs (2): the words load with no warning; "buy two pens and one ink"
+  reads as two lines (qty 2 pen, qty 1 ink), the one-frame split loses on words, veto
+  answers, nothing told; RO forms and units; a typo ("pnes" read as "pens"); loose words;
+  every generated example reads back to its tool.
+- Docs: api.md (splits), design doc status.

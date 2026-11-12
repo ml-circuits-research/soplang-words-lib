@@ -742,7 +742,9 @@ a tie at the top is the host's cue to ask. Bounded by `limit` and charged to the
 One message may be several frames ("reserve the pen and order ink"). A list of frames
 is one split of it; a list of lists is alternative splits. Each candidate is then `{
 parts, split }`, one reading per frame (new wires `new1`, `new2`, ...), and `score`
-judges the parts in order, each on the world with the parts before it, as one whole:
+judges the parts in order, each on the world with the parts before it, as one whole (a
+frame of a split with no verb, "... and one ink", takes the verb of the frame before it
+and its words replace that frame's for the same slots):
 consistent when every part is, with the parts' lacks, assumptions and referents (each
 marked `part`) and `parts`, the score of each. A split that leaves a word out loses on
 `words`.

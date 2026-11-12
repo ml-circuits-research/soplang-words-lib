@@ -2484,3 +2484,17 @@ clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
 A minor version: a new aggregate attribute (`groups=`) and new snapshot options.
 `npm test` 261 / 261 / 260 (sources, built file, checking mode). Pilot 147/147, 212/217,
 231/232, output identical. Open for the reviewer: Q20 (non-blocking).
+
+## R11.4 — a canonical value per surface form — done without a new key (Q21)
+
+`npm test`: 262 pass, 0 fail on sources and built file, 261 in checking mode. Pilot
+output identical. `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`:
+clean. No change to `src/`.
+
+- The proposed `means=item.name value=ball` is what R9.1 already writes as
+  `means=ball of=item.name`; a second spelling would break "one meaning, one construct",
+  so none was added. Q21 says so, with the rename as the alternative if preferred.
+- Test `core.word: a value in another language names its canonical value ...`: "mingea"
+  (a second form of "minge") reads as the item `ball`; "lei" as the unit `leu` with an
+  amount; `words('ro')` shows the meaning.
+- reference.md core.word: the Meaning now opens with the canonical-value case.

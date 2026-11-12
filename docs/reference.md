@@ -1202,7 +1202,11 @@ matrix wires, so namespaces, `sync`, undo and snapshots apply to them. Only
 | `means` | an action name, a type, `type.key`, or a value |
 | `of` | `type.key`: the slot the value belongs to (needed when `means` is not an enum value, or to choose one slot) |
 
-**Meaning.** One wire, one meaning: a text with two meanings is two wires, and
+**Meaning.** A value in another language names its canonical spelling through `means`
+and `of`: `@w core.word lang=ro text=minge means=ball of=item.name` reads "minge" as the
+value `ball` of `item.name`, and `interpret` puts `ball` (not "minge") in what it returns;
+`text=lei means=leu of=price.unit` does the same for an enum value. One wire, one
+meaning: a text with two meanings is two wires, and
 `world.score` chooses between the readings they give. A word whose `means` names
 nothing is reported in `world.warnings` (`unknown-word`) when it is told or when the
 matrix changes.

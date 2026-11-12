@@ -240,3 +240,13 @@ test('word forms: several text= forms on one word, and a host lemma function use
   assert.ok(w.examples('ro').some((e) => e.text === 'comandă caiet'));
   assert.ok(!w.examples('ro').some((e) => e.text === 'comandă caietul'));
 });
+
+test('core.word: a value in another language names its canonical value (means= with of=); interpret returns the canonical one', () => {
+  const w = shopAndCalendar();
+  w.load('@k9 core.slot of=price key=unit enum=leu enum=euro  @k10 core.slot of=price key=amount kind=number');
+  w.tell('@b1 item name=ball stock=2');
+  w.tell('@m1 core.word lang=ro text=minge text=mingea means=ball of=item.name  @m2 core.word lang=ro text=lei text=leu means=leu of=price.unit  @m3 core.word lang=ro text=preț means=price');
+  assert.deepEqual(w.interpret({ lang: 'ro', verb: 'comandă', args: ['mingea'] }).candidates.map((c) => c.refer), [{ r1: { type: 'item', where: { name: 'ball' } } }]);
+  assert.deepEqual(w.interpret({ lang: 'ro', verb: 'preț', args: ['lei'], numbers: [5] }).candidates.map((c) => c.wires), ['@new price unit=leu amount=5']);
+  assert.deepEqual(w.words('ro').get('minge')[0].meanings, [{ kind: 'value', type: 'item', key: 'name', value: 'ball' }]);
+});

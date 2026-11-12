@@ -799,7 +799,8 @@ action, args }`, or `{ question }` (as for `query`). Returns `{ candidates, orde
 each scored candidate has `ok`, `violations`, `referents` (`{ name, ids, unique, fits }`:
 `fits` are the ids that keep the statement consistent when the description alone is
 ambiguous), `lacks` (referents nothing matches, required keys still open, missing
-arguments), `assumes` (defaults the statement would rest on), `action` (`{ available,
+arguments, the subject of a question that is not there; not the value a question asks
+for), `assumes` (defaults the statement would rest on), `action` (`{ available,
 status, missing }`), `answer`, `words` (for candidates from `interpret`), and its place:
 `place`, `why`, and for a loser `lostTo` and `on`. `order` is best first by `rank` (below);
 option `criteria` replaces the default ones. See

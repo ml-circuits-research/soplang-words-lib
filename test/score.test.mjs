@@ -109,3 +109,16 @@ test('veto: an action the world does not have', () => {
   const r = w.veto(w.score([{ action: 'teleport', args: {} }]));
   assert.deepEqual([r.answer, r.reasons.map((x) => x.reason)], [false, ['action-unavailable']]);
 });
+
+test('rank and questions: the value a question asks for is not a lack, so a question is not beaten by a nonsense statement', () => {
+  const w = world();
+  // "what color is the pen": the pen has no color yet; the statement reading leaves out a word
+  const r = w.score([
+    { wires: '@n note text=what', used: ['what'], unused: ['pen'], unresolved: [] },
+    { question: { type: 'item', where: { name: 'pen' }, seek: 'color' }, used: ['what', 'pen'], unused: [], unresolved: [] },
+  ]);
+  assert.deepEqual([r.candidates[1].lacks, r.order, r.candidates[0].on], [[], [1, 0], 'words']);
+  // a question about a subject that is not there still lacks it
+  const none = w.score([{ question: { type: 'item', where: { name: 'cup' }, seek: 'color' } }]);
+  assert.deepEqual(none.candidates[0].lacks.map((l) => [l.type, l.key, l.id]), [['item', 'color', undefined]]);
+});

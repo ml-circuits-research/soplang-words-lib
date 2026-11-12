@@ -6,26 +6,6 @@ written with each question and in `worker-log.md`. A question is deleted from th
 once the worker is satisfied with the answer; closed ones are listed at the end in one
 line each so the history is not lost.
 
-## Q20 — `groups=` on core.aggregate: how a type of groups is written (R11.3)
-
-The task asks for "a set of values, or a type whose instances are the groups". Taken:
-`groups=<value>` (repeated) for values and `groups=$<pattern>` for wires: the groups are
-the wires a matrix pattern matches (`@cats category name=?n`), each as `$id`, the value a
-reference gets. `$` keeps its one meaning (a wire of the matrix, as in `over=`), and a
-pattern can narrow the groups (`@open category state=open`). Alternatives: `groups.type=`
-(a second attribute for one idea), or a bare type name (a value and a type would then be
-spelled the same). Nothing waits on this.
-
-## Q21 — R11.4 already exists: `means=<value> of=<type.key>` (no `value=` added)
-
-R11.4 asks for `core.word lang=ro text=minge means=item.name value=ball`. Since R9.1 the
-same is written `core.word lang=ro text=minge means=ball of=item.name`: `means` names the
-canonical value and `of` its slot, and `interpret` returns `ball`. Adding `value=` would
-give one meaning two spellings, against the rule. So nothing was added; a test now pins
-the two examples of the task ("minge" → `ball`, "lei" → the unit `leu`) and the reference
-says it in so many words. If the reviewer prefers the `value=` spelling, it is a rename
-(with `of=` kept as an alias or dropped), not a second construct.
-
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.
@@ -48,3 +28,5 @@ says it in so many words. If the reviewer prefers the `value=` spelling, it is a
 - Q17 (words): answered, (b) `core.word lang= text= means= of=`; built in R9.1.
 - Q18 (roles): answered, (a) no `role=`; `means=type.key` carries it.
 - Q19 (words left out before assumptions): answered, (b) kept.
+- Q20 (`groups=` spelling): accepted, `groups=<value>` or `groups=$<pattern>`.
+- Q21 (`value=` on core.word): accepted, no `value=`; `means=<value> of=<type.key>` stands.

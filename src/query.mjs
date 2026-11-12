@@ -189,7 +189,14 @@ export const querying = {
         const r = this._query(cand.question, { ns: cand.ns });
         out.answer = r;
         if (r.status === 'refused') { out.ok = false; out.violations.push(...(r.violations || [])); }
-        if (r.status === 'missing') out.lacks.push(...(r.missing || []));
+        // the value a question asks for is what it wants, not what it lacks: only a subject
+        // that is not there (no id) lacks
+        if (r.status === 'missing') {
+          const q = typeof cand.question === 'object' && !cand.question.type ? null : cand.question;
+          const c = this._compiled();
+          const sought = (m) => q?.seek !== undefined && m.id !== undefined && c.shortKey(m.type, m.key) === c.shortKey(m.type, q.seek);
+          out.lacks.push(...(r.missing || []).filter((m) => !sought(m)));
+        }
       }
     });
     return out;

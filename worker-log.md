@@ -2517,3 +2517,18 @@ clean. No change to `src/`.
 
 A patch version: tests and docs only. `npm test` 263 / 263 / 262. Pilot output
 identical. Open for the reviewer: Q20, Q21 (both non-blocking).
+
+## Q20, Q21 closed; R12.1 — rank and questions — done
+
+`npm test`: 264 pass, 0 fail on sources and built file, 263 in checking mode. Pilot
+output identical. `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`:
+clean.
+
+- `score` no longer counts as a lack the value a question asks for (a missing entry with
+  the sought key on a wire that exists); a question about a subject that is not there
+  still lacks it.
+- Test `rank and questions: ...`: "what color is the pen" read as a question (the pen has
+  no color yet) now ranks above a nonsense statement that leaves a word out (`order
+  [1, 0]`, the statement loses `on: 'words'`); the test fails without the change (checked
+  by stashing src/query.mjs); a question about a missing subject keeps its lack.
+- Docs: api.md score `lacks`.

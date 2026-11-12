@@ -2407,3 +2407,10 @@ clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
   `leftOut: 1`; a near word in `read`; an open referent; no reading; a missing argument
   asked; a tie; an unknown action.
 - Docs: api.md (`veto`), index.d.ts (`Veto`, `VetoOptions`).
+
+## 0.10.0 — Round 10 released (version, changelog, rebuild; no tag)
+
+A minor version: new frame shapes (`words`), options (`previous`, `near`, `lemmas`), a
+candidate kind (`revise`) and a budget site. `npm test` 258 / 258 / 257 (sources, built
+file, checking mode). Pilot 147/147, 212/217, 231/232, output identical. No open
+questions.

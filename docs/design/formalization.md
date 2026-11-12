@@ -1,8 +1,9 @@
 # Formalization: reading language into wires (design study, Round 8)
 
 Status: `world.score` is built (0.8.1); `core.word` (Q17, answered (b)) and
-`world.interpret` are built (Round 9, R9.1); roles stay out (Q18, answered (a)). The rest
-is design.
+`world.interpret` are built (Round 9, R9.1); roles stay out (Q18, answered (a)). Round 10
+(0.10.0) added, from a host's audit of its errors: near words for typos, follow-ups,
+loose words, word forms with a host lemma function, and `veto`. The rest is design.
 
 The library already knows most of what a reader needs to choose between readings of a
 sentence: the types and their slots, kinds, enums and ranges, which keys identify an

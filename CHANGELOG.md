@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.10.0
+
+Round 10: the reader core against the errors a host sees.
+
+### New
+- Near words: an unknown word is read as the nearest known words (edit distance 1 for
+  short words, 2 for longer), as `assumes: [{ word, read }]`; known words are never
+  corrected; `near: false` turns it off.
+- Follow-ups: `interpret(frame, { previous })` with a frame, `{ frame, ids }` or `'told'`;
+  marks `anaphor`, `correction`, `other`; candidates say what they inherited and
+  replaced; a new candidate kind `{ revise }`; `refer.not`.
+- Loose words: a frame `{ words }` with no verb order, read with each verb word and each
+  implied tool; a budget site `interpret`.
+- Word forms: several `text=` on `core.word`; a host `lemma` function per language
+  (`lemmas` option, `register('lemma', lang, fn)`).
+- `world.veto(result)` / `veto`: answer with the top reading or not, with reasons, what to
+  ask and which words were read as others.
+
 ## 0.9.0
 
 Round 9: a reader core, from design to code.

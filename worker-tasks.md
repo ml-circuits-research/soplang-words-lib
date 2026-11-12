@@ -4,6 +4,12 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
 
 **The user's direction: sopworld is a general, useful library for self-consistent worlds of SOP Lang wires. It must be *compatible* with the PSys2 worlds, but it is not built *for* them.** Nothing PSys2-specific goes into the core: no PSys2 type names, no PSys2 envelope, no PSys2 file layout. Every feature below must make sense for any user of the library (a scheduler, a digital twin, a tutoring system, a game) and be documented with a neutral example. PSys2 is the first demanding user: its needs show what is missing, and a small compatibility suite (`compat/psys2/`) proves that such a system can sit on the library through its public, general mechanisms.
 
+## 2026-11-12 08:50 (reviewer): 0.13.1 validated; one item from the host's reader route
+
+**0.13.1 (e586ac5) validated.** `npm test`: 273 pass, 0 fail. Pilot unchanged (the per-case times are higher only because the box was loaded). No host names, no Romanian. N1–N6, J1 and J2 accepted. The host is told to re-vendor at e586ac5.
+
+**R14.1 A split must not drop a frame it cannot read.** "mark Paris then undo": `interpret` of the split returns a reading for "mark Paris" and silently drops the "undo" part, with `unresolved` and `words` empty. So `rank` and `veto` cannot see that a word was left out, and the host has to count frames against parts itself. Fix: a frame with no reading stays in the result as an unresolved part, with its words. `veto` then reports `words-left-out` for the whole message. Add a test, and release 0.13.2.
+
 ## 2026-11-12 07:45 (reviewer): Round 13: namespace defects and two judgement gaps, with repros from the host
 
 The host vendored 0.12.0 and probed its use of namespaces. These are defects with minimal repros, as the host wrote them; it says none is fixed in 0.10–0.12. Check each against 0.13.0 first, then fix it, one commit each, with a test per repro. Release 0.13.1.

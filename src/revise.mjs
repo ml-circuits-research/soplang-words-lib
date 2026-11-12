@@ -468,7 +468,8 @@ revision._replace = function _replace(id, input) {
   if (this.alias.has(id) || !target || !target.meta.told) {
     return { ...this._result(), ok: false, violations: [{ kind: 'unknown-wire', id, why: 'only told wires that were not merged can be replaced' }] };
   }
-  const wires = (typeof input === 'string' ? parse(input) : input).map(cloneWire);
+  // a bare id in the replacement belongs to the namespace of the wire it replaces
+  const wires = this._qualifyFacts((typeof input === 'string' ? parse(input) : input).map(cloneWire), this._nsOf(id) || undefined);
   const told = wires.map(cloneWire);
   const res = this._result();
   const mark = this._begin(true);

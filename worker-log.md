@@ -2608,3 +2608,14 @@ not released.
   design doc without per-language parts. CHANGELOG notes the breaking change.
 - `node bench/interpret.mjs`: interpret 0.034–0.038 ms a frame; `node bench/examples.mjs`:
   8 examples in 0.041 ms, all read back.
+
+## N1 — replace in a namespaced world — done
+
+Checked against 0.13.0 first: the repro left the wire as `x` (default namespace).
+`npm test`: 268 pass, 0 fail on sources and built file, 267 in checking mode. Pilot output
+identical. `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`: clean.
+
+- `replace(id, text)`: the replacement's facts are qualified with the namespace of the
+  replaced wire (bare ids and references), not the world's.
+- Test `N1: ...` (test/scope.test.mjs): the repro gives `A::x` with k=2; a `B::` wire
+  replaced from an `A` world stays in B; the log replays the same world.

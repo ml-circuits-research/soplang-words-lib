@@ -77,3 +77,17 @@ test('modules: ownership of names, exports, and a warning for keys two modules d
   // the host's own matrix is in no module: it reads everything
   assert.equal(w.tell('@p shop.secret code=?c\n@n note code=?c\n@r core.rule when=$p then=$n').ok, true);
 });
+
+test('N1: replace in a namespaced world keeps the replaced wire\'s namespace', () => {
+  const w = new World({ ns: 'A' });
+  w.load('@t core.type\n@t.k core.slot of=t key=k kind=number');
+  w.tell('@x t k=1');
+  assert.equal(w.replace('A::x', '@x t k=2').ok, true);
+  assert.deepEqual([w.has('A::x'), w.has('x'), w.get('A::x').attrs.k], [true, false, ['2']]);
+  // a wire of another namespace replaced from this world stays in its own
+  w.tell('@y t k=1', { ns: 'B' });
+  w.replace('B::y', '@y t k=3');
+  assert.deepEqual([w.get('B::y').attrs.k, w.has('A::y')], [['3'], false]);
+  // and the log replays the same world
+  assert.equal(World.fromJSON(w.toJSON(), { ns: 'A' }).toSOP(), w.toSOP());
+});

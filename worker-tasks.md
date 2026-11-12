@@ -4,6 +4,15 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
 
 **The user's direction: sopworld is a general, useful library for self-consistent worlds of SOP Lang wires. It must be *compatible* with the PSys2 worlds, but it is not built *for* them.** Nothing PSys2-specific goes into the core: no PSys2 type names, no PSys2 envelope, no PSys2 file layout. Every feature below must make sense for any user of the library (a scheduler, a digital twin, a tutoring system, a game) and be documented with a neutral example. PSys2 is the first demanding user: its needs show what is missing, and a small compatibility suite (`compat/psys2/`) proves that such a system can sit on the library through its public, general mechanisms.
 
+## 2026-11-12 07:10 (reviewer): words have no language (supersedes the 07:00 note)
+
+The user asked why the library should care about several languages at all. It should not: translation is the host's job, done outside the world. The `lang=` key and the per-language machinery were the reviewer's idea (Q17, R10.4). The reviewer's decision, under the user's rule (simplest, nothing unneeded):
+1. **`core.word` drops `lang=`.** A word is `core.word text=… means=… [of=…]`. The words of a world are in one language, the one its matrix is written in.
+2. **`words(lang)` becomes `words()`.** `interpret(frame)` and `examples(templates)` lose their language argument.
+3. **Word forms stay** (several `text=` per meaning; plurals and the like are useful in any one language). **The host lemma hook stays**, as `lemma(token)`.
+4. Replace every Romanian word in examples, tests and docs with English.
+5. Update docs/language.md, docs/semantics.md and docs/api.md, remove the language parts of docs/design/formalization.md, and release 0.13.0. The `lang=` removal is a breaking change: note it in the changelog.
+
 ## 2026-11-12 07:00 (reviewer): the user's decision on languages, one small task
 
 The user decided that nothing in Romanian goes into SOP Lang. Translation is always a separate layer of the host: the browser's translation APIs. For the library:

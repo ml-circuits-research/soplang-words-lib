@@ -122,3 +122,30 @@ test('rank and questions: the value a question asks for is not a lack, so a ques
   const none = w.score([{ question: { type: 'item', where: { name: 'cup' }, seek: 'color' } }]);
   assert.deepEqual(none.candidates[0].lacks.map((l) => [l.type, l.key, l.id]), [['item', 'color', undefined]]);
 });
+
+test('score judges readings whose action the matrix does not declare: referents, slots, denies (judgedBy)', () => {
+  const w = world();
+  w.load('@k8 core.slot of=line key=qty kind=integer min=1  @k9 core.slot of=line key=unit enum=piece enum=box  @bad line qty=?q  @nx core.deny when=$bad if=$big why="at most 9"  @big core.check fn=gt args=?q args=9');
+  const r = w.score([
+    { action: 'buy', args: { item: '$i1', qty: '2' }, of: 'line' },        // fine
+    { action: 'buy', args: { item: '$i9', qty: '2' }, of: 'line' },        // no such wire
+    { action: 'buy', args: { qty: 'two' }, of: 'line' },                   // not an integer
+    { action: 'buy', args: { 'line.unit': 'crate' } },                     // not in the enum
+    { action: 'buy', args: { qty: '20' }, of: 'line' },                    // a deny fires
+    { action: 'buy', args: { what: 'x' } },                                // nothing to check
+    { wires: '@o order item=$i1' },                                        // a statement
+    { action: 'reserve', args: { item: 'pen' } },                          // a declared action
+    { question: { type: 'item', where: { name: 'pen' }, seek: 'stock' } },
+  ]);
+  assert.deepEqual(r.candidates.map((c) => [c.ok, c.judged, c.judgedBy]), [
+    [true, true, 'fallback'], [false, true, 'referents'], [false, true, 'slots'], [false, true, 'slots'],
+    [false, true, 'denies'], [true, false, null], [true, true, 'statement'], [true, true, 'action'], [true, true, 'question'],
+  ]);
+  assert.deepEqual(r.candidates[0].checks, ['referents', 'slots', 'denies']);
+  assert.equal(r.candidates[1].violations[0].kind, 'dangling-ref');
+  assert.equal(r.candidates[4].violations[0].why, 'at most 9');
+  // a reading the fallback judged is not vetoed for an action the world does not declare
+  assert.equal(w.veto(w.score([{ action: 'buy', args: { item: '$i1', qty: '2' }, of: 'line' }])).answer, true);
+  assert.equal(w.veto(w.score([{ action: 'buy', args: { what: 'x' } }])).reasons[0].reason, 'action-unavailable');
+  assert.equal(w.has('\u0006judge1'), false, 'nothing told');
+});

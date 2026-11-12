@@ -119,6 +119,9 @@ export const querying = {
     Object.assign(out, { ok: best.ok, violations: best.violations, lacks: [...out.lacks, ...best.lacks], assumes: [...read, ...best.assumes] });
     if (best.action) out.action = best.action;
     if (best.answer) out.answer = best.answer;
+    out.judged = !!best.judgedBy;
+    out.judgedBy = best.judgedBy || null;
+    if (best.checks) out.checks = best.checks;
     // a referent the description left open may be settled by what fits the world
     for (const ref of out.referents) {
       if (ref.unique || !ref.ids.length) continue;
@@ -149,6 +152,8 @@ export const querying = {
         out.assumes.push(...r.assumes.map((x) => ({ ...x, part })));
       });
     });
+    out.judged = out.parts.every((p) => p.judged);
+    out.judgedBy = out.judged ? 'parts' : null;
     return out;
   },
 
@@ -161,6 +166,7 @@ export const querying = {
         // a referent that nothing matched is left out of the statement: it lacks, it is not wrong
         const ws = (typeof cand.wires === 'string' ? parse(cand.wires) : cand.wires).map((w) => ({ ...w, attrs: Object.fromEntries(Object.entries(w.attrs).map(([k, vs]) => [k, vs.filter((v) => !missing.has(v)).map(sub)]).filter(([, vs]) => vs.length)) }));
         const r = this._tell(ws, { strict: false, ns: cand.ns });
+        out.judgedBy = 'statement';
         out.ok = r.ok;
         out.violations = r.violations;
         if (r.ok) {
@@ -172,13 +178,17 @@ export const querying = {
       if (cand.revise) { // a follow-up that changes a wire already told
         const values = Object.fromEntries(Object.entries(cand.revise.values || {}).filter(([, v]) => !missing.has(v)).map(([k, v]) => [k, sub(v)]));
         const r = this.revise(cand.revise.id, values);
+        out.judgedBy = 'statement';
         out.ok = r.ok;
         out.violations = r.violations || [];
       }
       if (cand.action) {
         const args = Object.fromEntries(Object.entries(cand.args || {}).map(([k, v]) => [k, typeof v === 'string' ? sub(v) : v]));
-        if (!this._compiled().actions.get(cand.action)) out.action = { available: false, status: 'unsupported' };
-        else {
+        if (!this._compiled().actions.get(cand.action)) {
+          out.action = { available: false, status: 'unsupported' };
+          if (!out.judgedBy) this._judgeLoosely(cand, args, missing, out); // an action the host carries out: judged without it
+        } else {
+          out.judgedBy = 'action';
           const r = this.act({ action: cand.action, args });
           out.action = { available: r.ok, status: r.status, ...(r.missing ? { missing: r.missing } : {}) };
           if (r.missing) out.lacks.push(...r.missing.map((m) => ({ action: cand.action, key: m.key, ask: m.ask })));
@@ -187,6 +197,7 @@ export const querying = {
       }
       if (cand.question) {
         const r = this._query(cand.question, { ns: cand.ns });
+        out.judgedBy ||= 'question';
         out.answer = r;
         if (r.status === 'refused') { out.ok = false; out.violations.push(...(r.violations || [])); }
         // the value a question asks for is what it wants, not what it lacks: only a subject
@@ -200,6 +211,56 @@ export const querying = {
       }
     });
     return out;
+  },
+
+  /**
+   * The judgement of a reading whose action the matrix does not declare (the host carries
+   * it out), with what the matrix does know, in the reading's undone transaction:
+   *   referents  every `$id` among the arguments is a wire of the world;
+   *   slots      the arguments, as keys of `of` (a type) or as `type.key` names, are told
+   *              as a wire of that type: each value must fit its slot's kind, enum and range;
+   *   denies     and no deny fires on the world with that wire.
+   * `judgedBy` is the test that refused, or 'fallback' when all that could run passed
+   * (`checks` lists them); with nothing to check the reading stays unjudged.
+   */
+  _judgeLoosely(cand, args, missing, out) {
+    const checks = [];
+    const refs = Object.entries(args).filter(([, v]) => typeof v === 'string' && v[0] === '$' && !missing.has(v));
+    if (refs.length) {
+      checks.push('referents');
+      const gone = refs.filter(([, v]) => !this.has(v.slice(1)));
+      if (gone.length) {
+        out.ok = false;
+        out.violations.push(...gone.map(([k, v]) => ({ kind: 'dangling-ref', key: k, ref: v.slice(1), why: `${k}=${v}: no such wire` })));
+        out.judgedBy = 'referents';
+        out.checks = checks;
+        return;
+      }
+    }
+    // the arguments as wires: one per type (of=, or type.key names)
+    const byType = new Map();
+    for (const [k, v] of Object.entries(args)) { // bounded: the arguments
+      if (typeof v !== 'string' && typeof v !== 'number') continue;
+      if (missing.has(v)) continue;
+      const dot = k.lastIndexOf('.');
+      const type = dot > 0 ? k.slice(0, dot) : cand.of;
+      if (!type) continue;
+      (byType.get(type) || byType.set(type, {}).get(type))[dot > 0 ? k.slice(dot + 1) : k] = [String(v)];
+    }
+    if (byType.size) {
+      checks.push('slots', 'denies');
+      let n = 0;
+      const wires = [...byType].map(([type, attrs]) => ({ id: `\u0006judge${++n}`, type, attrs, pattern: false }));
+      const r = this._tell(wires, { strict: false, ns: cand.ns });
+      if (!r.ok) {
+        out.ok = false;
+        out.violations.push(...r.violations);
+        out.judgedBy = r.violations.some((v) => v.kind !== 'deny') ? 'slots' : 'denies'; // a value that does not fit its slot decides first
+        out.checks = checks;
+        return;
+      }
+    }
+    if (checks.length) { out.judgedBy = 'fallback'; out.checks = checks; }
   },
 
   /**

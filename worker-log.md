@@ -2532,3 +2532,27 @@ clean.
   [1, 0]`, the statement loses `on: 'words'`); the test fails without the change (checked
   by stashing src/query.mjs); a question about a missing subject keeps its lack.
 - Docs: api.md score `lacks`.
+
+## R12.2 — a fallback judgement for readings with no declared action — done
+
+`npm test`: 265 pass, 0 fail on sources and built file, 264 in checking mode. Pilot
+output identical. `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`:
+clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
+
+- Every scored candidate has `judged` and `judgedBy`: `statement`, `action`, `question`,
+  `parts`, or for an action the matrix does not declare the fallback: `referents` (each
+  `$id` argument exists, else `dangling-ref`), `slots` (arguments as keys of the
+  candidate's `of` type or as `type.key` names, told as an overlay wire in the undone
+  transaction: kind, enum, range), `denies` (no deny fires with it). `judgedBy` names the
+  test that refused, or `fallback` with `checks` when all passed; nothing to check leaves
+  `judged: false`. A slot misfit decides before a deny.
+- `veto` no longer reports `action-unavailable` for a reading the fallback judged.
+- Test `score judges readings whose action the matrix does not declare ...`: nine
+  readings covering every `judgedBy`; the deny's reason; veto with and without a judgement;
+  nothing told.
+- `node bench/score.mjs`:   1 candidates: 0.29 ms (0.288 ms a candidate)
+- `node bench/score.mjs`:  10 candidates: 0.93 ms (0.093 ms a candidate)
+- `node bench/score.mjs`: 100 candidates: 6.76 ms (0.068 ms a candidate)
+- `node bench/score.mjs`:   1 undeclared-action readings (fallback): 0.03 ms (0.031 ms a reading)
+- `node bench/score.mjs`:  10 undeclared-action readings (fallback): 0.20 ms (0.020 ms a reading)
+- `node bench/score.mjs`: 100 undeclared-action readings (fallback): 3.06 ms (0.031 ms a reading)

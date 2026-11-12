@@ -93,6 +93,8 @@ export interface ScoreCandidate {
   args?: Record<string, string>;
   question?: Question | Wire | string;
   ns?: string;
+  /** for an action the matrix does not declare: the type its arguments are keys of (fallback judgement) */
+  of?: string;
   /** one message read as several parts, judged in order */
   parts?: ScoreCandidate[];
   split?: number;
@@ -109,6 +111,9 @@ export interface Scored {
   words?: { used: string[]; unused: string[]; unresolved: string[] };
   parts?: Scored[];
   split?: number;
+  judged: boolean;
+  judgedBy: 'statement' | 'action' | 'question' | 'referents' | 'slots' | 'denies' | 'fallback' | 'parts' | null;
+  checks?: ('referents' | 'slots' | 'denies')[];
   place: number;
   why: string;
   lostTo?: number;

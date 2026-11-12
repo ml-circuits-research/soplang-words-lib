@@ -63,7 +63,8 @@ export function rank(scored, criteria = RANKING) {
  *   inconsistent       the top reading breaks the world (its violations)
  *   no-referent        something it refers to matches nothing
  *   ambiguous          a referent is still open between several wires
- *   action-unavailable its action is not one the world can do (unsupported); a guard
+ *   action-unavailable its action is not one the world can do (unsupported) and nothing
+ *                      judged the reading (see score's judgedBy); a guard
  *                      that refuses is reported as inconsistent
  *   words-left-out     it leaves words of the message out (more than `leftOut`, default 0)
  *   too-few-words      it uses fewer than `minWords` words (default 1, for frames with words)
@@ -83,7 +84,7 @@ export function vetoOf(result, { minWords = 1, leftOut = 0, criteria = RANKING }
   if (none.length) reasons.push({ reason: 'no-referent', why: `nothing matches ${none.map((x) => x.name).join(', ')}`, referents: none.map((x) => x.name) });
   const open = (top.referents || []).filter((x) => x.ids.length > 1 && !(x.fits?.length === 1));
   if (open.length) reasons.push({ reason: 'ambiguous', why: open.map((x) => `${x.name} could be ${(x.fits?.length ? x.fits : x.ids).join(' or ')}`).join('; '), referents: open.map((x) => x.name) });
-  if (top.ok && top.action && !top.action.available && top.action.status !== 'missing') reasons.push({ reason: 'action-unavailable', why: `the action is ${top.action.status}`, status: top.action.status });
+  if (top.ok && top.action && !top.action.available && top.action.status !== 'missing' && !top.judged) reasons.push({ reason: 'action-unavailable', why: `the action is ${top.action.status}`, status: top.action.status });
   if (top.words) {
     const out = [...top.words.unused, ...top.words.unresolved];
     if (out.length > leftOut) reasons.push({ reason: 'words-left-out', why: `leaves out ${out.join(', ')}`, words: out });

@@ -36,3 +36,11 @@ for (const n of [1, 10, 100]) {
   const m = med(ts);
   console.log(`${String(n).padStart(3)} candidates: ${m.toFixed(2)} ms (${(m / n).toFixed(3)} ms a candidate)`);
 }
+// R12.2: readings of an action the matrix does not declare, judged by the fallback
+w.load('@k8 core.slot of=line key=qty kind=integer min=1');
+for (const n of [1, 10, 100]) {
+  const cs = Array.from({ length: n }, (_, i) => ({ action: 'buy', args: { item: `$i${i % 300}`, qty: String(1 + (i % 5)) }, of: 'line' }));
+  w.score(cs);
+  const m = med(Array.from({ length: 15 }, () => time(() => w.score(cs))));
+  console.log(`${String(n).padStart(3)} undeclared-action readings (fallback): ${m.toFixed(2)} ms (${(m / n).toFixed(3)} ms a reading)`);
+}

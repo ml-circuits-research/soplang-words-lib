@@ -795,7 +795,17 @@ Judges candidate readings of one utterance against the world and tells nothing. 
 candidate is any of `{ wires, refer }` (a statement; `refer` maps a reference name used
 in `wires` to `{ type, where, ns, not }`, a description resolved against the state,
 `not` listing ids it is not), `{ revise: { id, values } }` (a change to a told wire), `{
-action, args }`, or `{ question }` (as for `query`). Returns `{ candidates, order }`;
+action, args, of }`, or `{ question }` (as for `query`).
+
+Every scored candidate says whether it was judged and by what (`judged`, `judgedBy`):
+`statement`, `action` (a declared action, tried), `question`, or, for an action the matrix
+does not declare (the host carries it out), a fallback with what the matrix does know:
+`referents` (every `$id` argument is a wire), `slots` (the arguments, as keys of `of` or
+as `type.key` names, told as a wire of that type, fit their slots' kind, enum and range),
+`denies` (no deny fires with that wire). `judgedBy` is the test that refused, or
+`fallback` when all that could run passed (`checks` lists them); with nothing to check,
+`judged` is false. `veto` does not report `action-unavailable` for a reading the fallback
+judged. Returns `{ candidates, order }`;
 each scored candidate has `ok`, `violations`, `referents` (`{ name, ids, unique, fits }`:
 `fits` are the ids that keep the statement consistent when the description alone is
 ambiguous), `lacks` (referents nothing matches, required keys still open, missing

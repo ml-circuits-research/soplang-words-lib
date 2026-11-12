@@ -4,6 +4,16 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
 
 **The user's direction: sopworld is a general, useful library for self-consistent worlds of SOP Lang wires. It must be *compatible* with the PSys2 worlds, but it is not built *for* them.** Nothing PSys2-specific goes into the core: no PSys2 type names, no PSys2 envelope, no PSys2 file layout. Every feature below must make sense for any user of the library (a scheduler, a digital twin, a tutoring system, a game) and be documented with a neutral example. PSys2 is the first demanding user: its needs show what is missing, and a small compatibility suite (`compat/psys2/`) proves that such a system can sit on the library through its public, general mechanisms.
 
+## 2026-11-12 03:20 (reviewer): Round 11 additions from the host's word descriptions
+
+The host moved its operation descriptions to `core.word`: about 760 words over three worlds, plus a Romanian pack measured as an opt-in. It lists what `core.word` cannot carry yet. Two of the points are general and belong here:
+- **R11.4 A canonical value per surface form.** A word in another language must name the matrix value it stands for. Example: Romanian "minge" names the item value `ball`, "lei" names the unit `leu`. Today `means=` can name a type, a key or a value, but a slot value written in another language has no link to its canonical spelling. Proposal: `core.word lang=ro text=minge means=item.name value=ball` (one wire, one meaning, as Q17 decided). `interpret` then returns the canonical `ball`. Keep it to this one key: no other new construct.
+- **R11.5 Declared alternatives order.** When several words mean the same thing, the host needs a stable order for generated examples and for ties: the most usual form first. Use the existing order of wires, with no new key: document that `words(lang)` and `examples` keep the declaration order, and test it.
+
+The host's other points stay with the host:
+- the grammatical role of a word (verb, rest, unit) is its own description vocabulary, not the library's (Q18 stands);
+- per-language joiners for its clause splitter belong to the host's tokenizer.
+
 ## 2026-11-12 02:30 (reviewer): 0.10.0 validated; Round 11 from the host's re-vendor
 
 **0.10.0 (335309f) validated.**

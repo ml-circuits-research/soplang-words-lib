@@ -470,8 +470,10 @@ export class World {
       return this._guard(opts, () => this._trial(() => {
         const r = this._patch(patch, { ...opts, query: undefined, ask: undefined });
         if (!r.ok) return r;
-        if (opts.query) r.answer = this._query(opts.query, {});
-        if (opts.ask) r.rows = this.ask(opts.ask);
+        // the questions see the namespace the patch was told in
+        const ns = opts.ns ?? this.options.ns;
+        if (opts.query) r.answer = this._query(opts.query, ns !== undefined ? { ns } : {});
+        if (opts.ask) r.rows = this.ask(opts.ask, ns !== undefined ? { ns } : {});
         return r;
       }), (v) => this._refusal(v));
     }
@@ -523,7 +525,7 @@ export class World {
 
   _patch(patch, { dry = false, strict = this.options.strict, via = 'core.tell', tier, ns = this.options.ns } = {}) {
     this._knownTier(tier);
-    const { wires = [], fills = [], sets = [], retract = [], replace = [] } = Array.isArray(patch) ? { fills: patch } : patch || {};
+    const { wires = [], fills = [], sets = [], retract = [], replace = [] } = Array.isArray(patch) ? { fills: patch } : typeof patch === 'string' ? { wires: patch } : patch || {}; // text: wires
     const ws = this._qualifyFacts((typeof wires === 'string' ? parse(wires) : wires).map(cloneWire), ns);
     const told = ws.map(cloneWire);
     const res = this._result();

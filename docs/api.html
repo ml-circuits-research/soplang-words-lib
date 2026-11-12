@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="1b922fb2e84c">
+<meta name="source-hash" content="0e05e01f37bf">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -385,7 +385,7 @@ print(w.describe().types, w.diff(f).changed);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;item&quot;:{&quot;count&quot;:1,&quot;instances&quot;:[&quot;pen&quot;]}} [{&quot;id&quot;:&quot;pen&quot;,&quot;key&quot;:&quot;price&quot;,&quot;from&quot;:&quot;2&quot;,&quot;fromTier&quot;:&quot;told&quot;,&quot;to&quot;:&quot;4&quot;,&quot;toTier&quot;:&quot;told&quot;}]</code></pre></figure>
 <h3 id="worldcheckpatch-options">world.check(patch?, options?)</h3>
 <p>With a patch: what <code>applyPatch(patch)</code> would return, without changing anything. Without one: validates the whole world and returns <code>{ ok, violations, issues }</code>.</p>
-<p>With <code>{ query }</code> or <code>{ ask }</code> (a question for <code>query</code>, patterns for <code>ask</code>) the patch is applied in a transaction that is then undone, and the result also has <code>answer</code> (what <code>query</code> gives on the world with the patch) or <code>rows</code> (what <code>ask</code> gives there). The same from the other side: <code>query(q, { given: patch })</code> and <code>ask(patterns, { given: patch })</code> answer on the world as it would be with the patch; a patch the world refuses gives the status <code>refused</code> with the violations. Nothing changes.</p>
+<p>With <code>{ query }</code> or <code>{ ask }</code> (a question for <code>query</code>, patterns for <code>ask</code>) the patch is applied in a transaction that is then undone, and the result also has <code>answer</code> (what <code>query</code> gives on the world with the patch) or <code>rows</code> (what <code>ask</code> gives there). The same from the other side: <code>query(q, { given: patch })</code> and <code>ask(patterns, { given: patch })</code> answer on the world as it would be with the patch; a patch the world refuses gives the status <code>refused</code> with the violations. Nothing changes. The questions are asked in the patch's namespace (<code>ns</code>, or the world's). A patch may also be SOP text: its wires.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 w.tell(&#x27;@pen item name=pen price=2&#x27;);
 print(w.check({ wires: &#x27;@ink item name=ink price=-1&#x27; }).violations[0].why, w.has(&#x27;ink&#x27;));

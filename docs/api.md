@@ -1007,7 +1007,8 @@ applied in a transaction that is then undone, and the result also has `answer` (
 `query` gives on the world with the patch) or `rows` (what `ask` gives there). The same
 from the other side: `query(q, { given: patch })` and `ask(patterns, { given: patch })`
 answer on the world as it would be with the patch; a patch the world refuses gives the
-status `refused` with the violations. Nothing changes.
+status `refused` with the violations. Nothing changes. The questions are asked in the
+patch's namespace (`ns`, or the world's). A patch may also be SOP text: its wires.
 
 ```js run
 const w = shop();

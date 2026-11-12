@@ -2677,3 +2677,17 @@ mode. Pilot output identical. `git grep -i psys2 src/`: empty. scan-loops clean.
 - Test `N5: ...`: the repro is accepted with `owner=$e.user`; a wire of the same id in A
   wins; a type that is not shared still dangles; the log replays it.
 - Docs: language.md SC5 (with the test).
+
+## N6 — check(patch, { query, ask }) passes the namespace — done
+
+Confirmed against 0.13.0 by the new test (it fails without the change: the inner query
+saw both namespaces). `npm test`: 273 pass, 0 fail on sources and built file, 272 in
+checking mode. Pilot output identical. `git grep -i psys2 src/`: empty. scan-loops clean.
+
+- The inner `query` and `ask` get `ns` (the option, or the world's).
+- Found on the way: a patch given as SOP text was read as an object (a string's
+  `replace` method became a replacement: `unknown-wire`); text is now read as the
+  patch's wires.
+- Test `N6: ...`: in a two-namespace world, `check(text, { ns: 'A', query, ask })`
+  answers A's stock and lists A's items; a world with `ns: 'B'` answers B's.
+- Docs: api.md check.

@@ -147,3 +147,17 @@ test('N5: a bare reference to a wire of a shared type falls back to the default 
   // and the log replays it
   assert.equal(World.fromJSON(w.toJSON(), { ns: 'A' }).get('A::p1').attrs.owner[0], '$e.user');
 });
+
+test('N6: check(patch, { query, ask }) answers in the namespace of the patch', () => {
+  const w = new World();
+  w.load('@k core.slot of=item key=name id=true');
+  w.tell('@i1 item name=pen stock=3', { ns: 'A' });
+  w.tell('@i1 item name=pen stock=9', { ns: 'B' });
+  const r = w.check('@i2 item name=ink stock=1', { ns: 'A', query: { type: 'item', where: { name: 'pen' }, seek: 'stock' }, ask: 'item name=?n' });
+  assert.deepEqual([r.answer.value, r.rows.map((x) => x.n).sort()], ['3', ['ink', 'pen']]);
+  const v = new World({ ns: 'B' });
+  v.load('@k core.slot of=item key=name id=true');
+  v.tell('@i1 item name=pen stock=3', { ns: 'A' });
+  v.tell('@i1 item name=pen stock=9');
+  assert.equal(v.check('@x item name=cup', { query: { type: 'item', where: { name: 'pen' }, seek: 'stock' } }).answer.value, '9', 'the world\'s namespace');
+});

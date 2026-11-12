@@ -4,6 +4,16 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
 
 **The user's direction: sopworld is a general, useful library for self-consistent worlds of SOP Lang wires. It must be *compatible* with the PSys2 worlds, but it is not built *for* them.** Nothing PSys2-specific goes into the core: no PSys2 type names, no PSys2 envelope, no PSys2 file layout. Every feature below must make sense for any user of the library (a scheduler, a digital twin, a tutoring system, a game) and be documented with a neutral example. PSys2 is the first demanding user: its needs show what is missing, and a small compatibility suite (`compat/psys2/`) proves that such a system can sit on the library through its public, general mechanisms.
 
+## 2026-11-12 09:10 (reviewer): Round 15: host functions declared in SOP Lang (user decision)
+
+The user asked for something like `jsEval` / `jsAssert` wires. We already have `core.calc fn=` and `core.check fn=` over functions the host registers. The user agreed with the reviewer's proposal: **no code inside wires**. Instead, every host function is **declared in SOP Lang**, so the schema says which tools a world has. This is also the formal description of tools that formalization was missing.
+1. **`core.function`, as wires, like the rest of the schema.** Example: `@f.distance core.function name=distance out.kind=number pure=true doc="…"`, plus one `core.function.arg` per argument (`of=$f.distance name=a kind=number`, `optional=true`). Use repeated keys only; there is no notation inside values (the rule from E3). Check the vocabulary against existing names: there is no `core.function` in `src` today.
+2. **Checked at load.** A `core.calc fn=` or `core.check fn=` names a declared function, with the right number of arguments and compatible kinds. A `core.check`'s function returns a boolean. A registered function with no declaration gives a warning, not an error, for compatibility. A declared function that is never registered gives a warning at load and an issue when it is called.
+3. **`pure=true`** lets the library cache results within a stamp and use the function in lazy rules and in `score`/`check` overlays. Impure functions are refused there, with a reason.
+4. **Visible to readers.** `world.functions()` lists the declarations, so a host can derive tool descriptions and examples (Round 9's `examples`) from them.
+5. **Facts never call functions.** Only matrix wires (rules, calcs, checks, denies) do. A told fact that names `fn=` is refused. This keeps instances as pure data: users' words never run code.
+6. Docs: language.md (the vocabulary), semantics.md (when a function runs, purity, budget), api.md (`register` and `functions()`). Neutral examples only. Release 0.14.0.
+
 ## 2026-11-12 08:50 (reviewer): 0.13.1 validated; one item from the host's reader route
 
 **0.13.1 (e586ac5) validated.** `npm test`: 273 pass, 0 fail. Pilot unchanged (the per-case times are higher only because the box was loaded). No host names, no Romanian. N1–N6, J1 and J2 accepted. The host is told to re-vendor at e586ac5.

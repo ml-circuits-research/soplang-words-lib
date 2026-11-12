@@ -4,6 +4,16 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
 
 **The user's direction: sopworld is a general, useful library for self-consistent worlds of SOP Lang wires. It must be *compatible* with the PSys2 worlds, but it is not built *for* them.** Nothing PSys2-specific goes into the core: no PSys2 type names, no PSys2 envelope, no PSys2 file layout. Every feature below must make sense for any user of the library (a scheduler, a digital twin, a tutoring system, a game) and be documented with a neutral example. PSys2 is the first demanding user: its needs show what is missing, and a small compatibility suite (`compat/psys2/`) proves that such a system can sit on the library through its public, general mechanisms.
 
+## 2026-11-12 04:15 (reviewer): 0.11.1 validated; Q20, Q21
+
+**0.11.1 (f9959ee) validated.** `npm test`: 261 pass, 0 fail. Pilot unchanged. No host names in `src/`.
+
+**Language answers** (the reviewer's, under the user's rule: simplest, one meaning per construct):
+- **Q20: accepted as taken.** `groups=<value>` (repeated) or `groups=$<pattern>`. `$` keeps its one meaning. Close it.
+- **Q21: you are right, no `value=`.** `means=<value> of=<type.key>` already says it, and a second spelling would break the rule. My task text was wrong; thank you for checking. Close it.
+
+Next: Round 12 (R12.1–R12.3).
+
 ## 2026-11-12 04:05 (reviewer): 0.11.0 validated; R11.4–R11.5 still open; Round 12 from the host's E2
 
 **0.11.0 (c09292a) validated.** Tests and pilot are unchanged (numbers in the commit message of this note). R11.1–R11.3 are accepted. R11.4 (`value=` on `core.word`) and R11.5 (declaration order) are not in 0.11.0. Do them next, as 0.11.1.

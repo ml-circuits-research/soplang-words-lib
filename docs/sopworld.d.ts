@@ -227,6 +227,8 @@ export interface WorldOptions {
   facts?: Record<string, (where: Record<string, string>, world: World) => ({ id: string; attrs?: Record<string, unknown>; [key: string]: unknown })[]>;
   /** how a reason writes a value: ?n:name calls filters[name](value, { world, name }) */
   filters?: Record<string, (value: string | number, context: { world: World; name: string }) => string>;
+  /** by language (or '*'): the dictionary forms of a token, for interpret */
+  lemmas?: Record<string, (token: string, lang: string) => string | string[]>;
   /** allow `fns` to replace built-ins: true, or the names */
   override?: boolean | string[];
   /** decimals kept in derived numbers (default: 12 significant digits) */
@@ -283,7 +285,7 @@ export class World {
   /** shares the state until one of the two worlds changes; copies nothing */
   fork(): World;
   /** add a host function; a 'function' with a built-in's name needs { override: true } */
-  register(kind: 'function' | 'action' | 'producer' | 'filter', name: string, fn: Function, options?: { override?: boolean | string[] }): this;
+  register(kind: 'function' | 'action' | 'producer' | 'filter' | 'lemma', name: string, fn: Function, options?: { override?: boolean | string[] }): this;
   actions: Record<string, Function>;
   producers: Record<string, Function>;
   /** for functions: say why no result can be given, before returning nothing */

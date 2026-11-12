@@ -219,3 +219,24 @@ test('loose words: a bag with no verb order is read with each verb word and each
   const f = { lang: 'en', verb: 'book', args: ['ink'] };
   assert.deepEqual(w.interpret(f).candidates.map((c) => c.verbWord ?? c.implied), [undefined, undefined]);
 });
+
+test('word forms: several text= forms on one word, and a host lemma function used before lookup', () => {
+  const w = shopAndCalendar();
+  w.tell('@ro9 core.word lang=ro text=caiet text=caietul text=caiete means=notebook of=item.name  @nb item name=notebook stock=4');
+  const read = (verb, arg) => w.interpret({ lang: 'ro', verb, args: [arg] }).candidates.map((c) => c.refer?.r1?.where.name ?? c.unresolved);
+  assert.deepEqual(read('comandă', 'caietul'), ['notebook']);
+  assert.deepEqual(read('comandă', 'caiete'), ['notebook']);
+  // "pixul" (the pen) is no form of pix: without a lemma function it is read as the near word pix
+  assert.deepEqual(w.interpret({ lang: 'ro', verb: 'comandă', args: ['pixul'] }).candidates[0].assumes, [{ word: 'pixul', read: 'pix' }]);
+  // a host lemma function (here: drop a definite article -ul) makes it exact
+  w.register('lemma', 'ro', (t) => (t.endsWith('ul') ? [t.slice(0, -2)] : t));
+  const exact = w.interpret({ lang: 'ro', verb: 'comandă', args: ['pixul'] }).candidates[0];
+  assert.deepEqual([exact.refer.r1.where.name, exact.assumes], ['pen', undefined]);
+  // a known word is never lemmatized, and other languages are untouched
+  w.tell('@ro10 core.word lang=ro text=pixul means=ink of=item.name');
+  assert.deepEqual(read('comandă', 'pixul'), ['ink']);
+  assert.deepEqual(w.interpret({ lang: 'en', verb: 'order', args: ['penul'] }).candidates[0].assumes, [{ word: 'penul', read: 'pen' }], 'no lemma for en: only a near word');
+  // examples write a word in its first form
+  assert.ok(w.examples('ro').some((e) => e.text === 'comandă caiet'));
+  assert.ok(!w.examples('ro').some((e) => e.text === 'comandă caietul'));
+});

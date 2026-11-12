@@ -51,7 +51,7 @@ const shop = () => {
 ### new World(options?)
 
 Options, all optional: `ns` (the [namespace](language.md#12-scope) of every
-statement of this world), `facts` (below), `fns`, `actions`, `producers`, `filters` (host functions by name; see
+statement of this world), `facts` (below), `fns`, `actions`, `producers`, `filters`, `lemmas` (host functions by name, `lemmas` by language; see
 [register](#worldregisterkind-name-fn-options)), `override` (let `fns` replace
 built-ins: `true` or names), `library` (module name to matrix text, for `core.use`),
 `maxDepth` (12), `maxSteps` (rule firings per change), `budget`, `decimals`, `strict`
@@ -687,6 +687,10 @@ has `assumes: [{ word, read }]`, which `score` keeps, so `rank` puts exact readi
 first and a host can say "(I read X as Y)". A known word is never corrected; `near:
 false` turns this off.
 
+Word forms: a `core.word` may carry several `text=` forms (`text=caiet text=caietul
+text=caiete`). A token that is no known form goes through the host's `lemma` function for
+its language, if one is registered, before near words are tried; no language is built in.
+
 Follow-ups ("no, a red one", "and the price?", "the other one", "tuesday then"): with
 `{ previous }`, a frame with no verb or no arguments, or one the front end marks
 `anaphor` (a pronoun or "one"), `correction` ("no, X") or `other` ("the other one"),
@@ -1041,8 +1045,10 @@ print(w.toSOP(), Object.keys(w.toJSON()));
 
 Adds a host function after the world was made. `kind` is `function` (`(args, world)
 => value`, for calcs, checks and effects), `action` (`(context, args) => value`),
-`producer` (`(context) => value`) or `filter` (`(value, { world, name }) => text`, for
-`?v:name` in a reason). A `function` with the name of a built-in throws
+`producer` (`(context) => value`), `filter` (`(value, { world, name }) => text`, for
+`?v:name` in a reason) or `lemma` (`(token, lang) => form | forms`, named by a language or
+`'*'`: the dictionary forms of a token that is not a known word, for `interpret`; it must
+be pure and know nothing of the world). A `function` with the name of a built-in throws
 unless `{ override: true }`. Returns the world.
 
 ```js run

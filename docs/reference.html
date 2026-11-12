@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="12ca9fbfab15">
+<meta name="source-hash" content="c2ef27577a45">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -481,7 +481,7 @@ only 30 left
 <h3 id="coreword">core.word</h3>
 <p>A word of one language and the one name of the matrix it means: an action, a type, a key (<code>type.key</code>) or a value of a slot. Words are facts the host tells or loads, not matrix wires, so namespaces, <code>sync</code>, undo and snapshots apply to them. Only <code>world.interpret</code> and <code>world.words</code> read them.</p>
 <p><strong>Syntax</strong></p>
-<div class="table"><table><thead><tr><th>Attribute</th><th>Meaning</th></tr></thead><tbody><tr><td><code>lang</code></td><td>the language (any label: <code>en</code>, <code>ro</code>)</td></tr><tr><td><code>text</code></td><td>the word as the host's front end gives it (compared without case)</td></tr><tr><td><code>means</code></td><td>an action name, a type, <code>type.key</code>, or a value</td></tr><tr><td><code>of</code></td><td><code>type.key</code>: the slot the value belongs to (needed when <code>means</code> is not an enum value, or to choose one slot)</td></tr></tbody></table></div>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Meaning</th></tr></thead><tbody><tr><td><code>lang</code></td><td>the language (any label: <code>en</code>, <code>ro</code>)</td></tr><tr><td><code>text</code></td><td>rep.; the word as the host's front end gives it (compared without case); several are forms of one word</td></tr><tr><td><code>means</code></td><td>an action name, a type, <code>type.key</code>, or a value</td></tr><tr><td><code>of</code></td><td><code>type.key</code>: the slot the value belongs to (needed when <code>means</code> is not an enum value, or to choose one slot)</td></tr></tbody></table></div>
 <p><strong>Meaning.</strong> One wire, one meaning: a text with two meanings is two wires, and <code>world.score</code> chooses between the readings they give. A word whose <code>means</code> names nothing is reported in <code>world.warnings</code> (<code>unknown-word</code>) when it is told or when the matrix changes.</p>
 <p><strong>Example</strong></p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
@@ -492,7 +492,7 @@ w.tell(&#x27;@w3 core.word lang=ro text=vineri means=fri of=meeting.day&#x27;);
 print(w.warnings[0].kind);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>@new meeting day=mon
 unknown-word</code></pre></figure>
-<p><strong>Limits.</strong> Words are not inflected: lemmas, morphology and tokenizing are the host's.</p>
+<p><strong>Limits.</strong> No language is built in: tokenizing and morphology are the host's, through <code>text=</code> forms and a registered <code>lemma</code> function (<code>world.register('lemma', lang, fn)</code>).</p>
 <h2 id="certainty-and-soft-constraints">Certainty and soft constraints</h2>
 <h3 id="coretier">core.tier</h3>
 <p>A tier of certainty of the host's own.</p>

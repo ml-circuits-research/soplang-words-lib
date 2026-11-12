@@ -2369,3 +2369,22 @@ clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
 - `node bench/interpret.mjs`: loose ["n17","book"]: 2 candidates, interpret 0.150 ms, score 0.121 ms, steps 18
 - `node bench/interpret.mjs`: loose ["q3","monday"]: 1 candidates, interpret 0.107 ms, score 0.068 ms, steps 14
 - `node bench/interpret.mjs`: loose ["n17","q3","monday","book"]: 3 candidates, interpret 0.168 ms, score 0.247 ms, steps 30
+
+## R10.4 — word forms — done
+
+`npm test`: 256 pass, 0 fail on sources and built file, 255 in checking mode. Pilot
+output identical. `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`:
+clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
+
+- `core.word` takes several `text=`: each is a form of the one word (`text=caiet
+  text=caietul text=caiete`). `examples` writes a word in its first form.
+- A host lemma function per language: `new World({ lemmas: { ro: fn } })` or
+  `register('lemma', 'ro', fn)` (`'*'` for any). Contract: `fn(token, lang)` is pure,
+  returns a form or a list of forms to look up, and knows nothing of the world. Order of
+  lookup: the token's own word; else the lemma forms; else names and enum values; else
+  near words. A known word is never lemmatized. No language in the core.
+- Test `word forms: ...`: forms read to the same word; "pixul" is a near word (an
+  assumption) without a lemma function and exact with one; a word whose own text is
+  "pixul" wins over the lemma; English untouched; examples use the first form.
+- Docs: api.md (constructor `lemmas`, `register('lemma')`, interpret word forms),
+  reference.md (`text` repeatable, limits), index.d.ts.

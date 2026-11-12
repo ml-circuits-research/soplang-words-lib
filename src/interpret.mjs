@@ -52,11 +52,31 @@ export const interpreting = {
     for (const id of this.byType.get(WORD) || []) {
       const w = this._peek(id);
       if (lang && first(w, 'lang') !== lang) continue;
-      const text = norm(first(w, 'text') ?? '');
       const entry = { id, lang: first(w, 'lang'), means: first(w, 'means'), of: first(w, 'of') };
       entry.meanings = this._meaningsOf(entry.means, entry.of);
-      (out.get(text) || out.set(text, []).get(text)).push(entry);
+      // several text= are several forms of one word (plural, an attached article, ...)
+      for (const text of new Set((w.attrs.text || ['']).map(norm))) (out.get(text) || out.set(text, []).get(text)).push(entry);
     }
+    out.lang = lang;
+    return out;
+  },
+
+  /**
+   * The word entries for a token: the token's own, else those of the dictionary forms the
+   * host's lemma function gives for its language (`lemmas: { ro: fn }`, or '*'). The
+   * contract: fn(token, lang) is pure, returns a string or a list of strings (forms to look
+   * up; the token itself may be among them) and knows nothing of the world. A token that
+   * is a known word is never lemmatized.
+   */
+  _lookup(token, lexicon) {
+    const text = norm(token);
+    const own = lexicon.get(text);
+    if (own?.length) return own;
+    const fn = this.lemmas[lexicon.lang] || this.lemmas['*'];
+    if (!fn) return [];
+    const forms = [].concat(fn(token, lexicon.lang) ?? []).map(norm).filter((f) => f && f !== text);
+    const out = [];
+    for (const f of new Set(forms)) for (const e of lexicon.get(f) || []) if (!out.includes(e)) out.push(e); // bounded: the forms of one token
     return out;
   },
 
@@ -103,7 +123,7 @@ export const interpreting = {
       const ids = this._matching({ type, where: { [key]: value }, ns }).map((w) => w.id);
       if (ids.length) out.push({ kind: 'entity', type, where: { [key]: value }, ids });
     };
-    const entries = lexicon.get(text) || [];
+    const entries = this._lookup(word, lexicon);
     for (const e of entries) {
       for (const m of e.meanings) {
         out.push({ ...m, word: e.id });
@@ -157,7 +177,7 @@ export const interpreting = {
       const readings = this._readingsOf(a.word, lexicon, ns);
       let role = null;
       if (a.role !== undefined) {
-        role = (lexicon.get(norm(a.role)) || []).flatMap((e) => e.meanings).filter((m) => m.kind === 'key');
+        role = this._lookup(a.role, lexicon).flatMap((e) => e.meanings).filter((m) => m.kind === 'key');
         if (!role.length) unresolved.push(a.role);
       }
       if (!readings.length && opts.near !== false) readings.push(...this._nearReadings(a.word, lexicon, ns, false));
@@ -168,11 +188,11 @@ export const interpreting = {
     // a follow-up: the previous frame's words come after this frame's, so what this frame states takes their place
     for (const a of follow?.args || []) {
       const x = typeof a === 'string' ? { word: a } : a;
-      const role = x.role === undefined ? null : (lexicon.get(norm(x.role)) || []).flatMap((e) => e.meanings).filter((m) => m.kind === 'key');
+      const role = x.role === undefined ? null : this._lookup(x.role, lexicon).flatMap((e) => e.meanings).filter((m) => m.kind === 'key');
       items.push({ word: x.word, readings: this._readingsOf(x.word, lexicon, ns), role, inherited: true });
     }
     for (const n of follow?.numbers || []) items.push({ word: String(n), readings: [{ kind: 'number', value: String(n) }], role: null, inherited: true });
-    const verbs = opts._verbs ? opts._verbs.slice() : frame.verb === undefined ? [] : (lexicon.get(norm(frame.verb)) || []).flatMap((e) => e.meanings.map((m) => ({ ...m, word: e.id })));
+    const verbs = opts._verbs ? opts._verbs.slice() : frame.verb === undefined ? [] : this._lookup(frame.verb, lexicon).flatMap((e) => e.meanings.map((m) => ({ ...m, word: e.id })));
     if (frame.verb !== undefined && !verbs.length && opts.near !== false) verbs.push(...this._nearReadings(frame.verb, lexicon, ns, true));
     if (frame.verb !== undefined && !verbs.length) unresolved.push(frame.verb);
     let verbNear = null; // the near reading of the verb in the candidates being built
@@ -367,7 +387,7 @@ export const interpreting = {
     const base = { lang: frame.lang, numbers: frame.numbers, question: frame.question, mode: frame.mode, ns: frame.ns };
     words.forEach((w, i) => { // bounded: the words of one message
       this._b?.tick('interpret');
-      const exact = (lexicon.get(norm(w)) || []).flatMap((e) => e.meanings);
+      const exact = this._lookup(w, lexicon).flatMap((e) => e.meanings);
       const verbish = exact.length ? exact.some((m) => m.kind !== 'value') : this._nearReadings(w, lexicon, frame.ns, true).length > 0;
       if (!verbish) return;
       add(this._interpret({ ...base, verb: w, args: words.filter((_, j) => j !== i) }, { ...opts, limit }), { verbWord: w });
@@ -434,7 +454,8 @@ export const interpreting = {
     const c = this._compiled();
     const per = opts.per ?? 3, sample = opts.sample ?? 2;
     const lexicon = this.words(lang);
-    const entries = [...lexicon.entries()].flatMap(([text, es]) => es.flatMap((e) => e.meanings.map((m) => ({ text, ...m }))));
+    const once = new Set(); // a word with several forms is written in its first form
+    const entries = [...lexicon.entries()].flatMap(([text, es]) => es.filter((e) => !once.has(e.id) && once.add(e.id)).flatMap((e) => e.meanings.map((m) => ({ text, ...m }))));
     const keyWord = (type, key) => entries.find((m) => m.kind === 'key' && m.type === type && m.key === key)?.text;
     const isA = (t, u) => t === u || c.isA(t, u);
     // what can fill a slot: [{ text, value, refer? }]

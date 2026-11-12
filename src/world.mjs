@@ -49,7 +49,7 @@ export class World {
   constructor(options = {}) {
     const {
       fns = {}, library = {}, maxDepth = 12, maxSteps = 50000,
-      lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {}, budget = {}, decimals, actions = {}, producers = {}, filters = {}, facts = {}, override = false, ns,
+      lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {}, budget = {}, decimals, actions = {}, producers = {}, filters = {}, lemmas = {}, facts = {}, override = false, ns,
     } = options;
     this.options = { fns, actions, producers, filters, facts, override, ns, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget, decimals };
     this._cannot = null;          // reasons given by functions during a query (see cannot)
@@ -74,7 +74,9 @@ export class World {
     this._version = ++VERSIONS; // see version
     this._nsUsed = false; // some fact is in a namespace: matches and identity stay inside one
     this.filters = {}; // how a reason writes a value: ?n:ordinal calls filters.ordinal(n); none built in, so no language is
+    this.lemmas = {}; // lang -> fn(token) giving the dictionary forms of a token; none built in, so no language is
     for (const [name, fn] of Object.entries(filters)) this.register('filter', name, fn);
+    for (const [lang, fn] of Object.entries(lemmas)) this.register('lemma', lang, fn);
     for (const [name, fn] of Object.entries(fns)) this.register('function', name, fn, { override });
     for (const [name, fn] of Object.entries(actions)) this.register('action', name, fn);
     for (const [name, fn] of Object.entries(producers)) this.register('producer', name, fn);
@@ -195,6 +197,7 @@ export class World {
     } else if (kind === 'action') this.actions[name] = fn;
     else if (kind === 'producer') this.producers[name] = fn;
     else if (kind === 'filter') this.filters[name] = fn;
+    else if (kind === 'lemma') this.lemmas[name] = fn; // name: a language, or '*' for any
     else throw new Error(`sopworld: unknown kind of function "${kind}"`);
     this._c = null; // a matrix that names it compiles now
     this._completed = null; // and what complete() found may change

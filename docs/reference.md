@@ -1184,7 +1184,7 @@ matrix wires, so namespaces, `sync`, undo and snapshots apply to them. Only
 | Attribute | Meaning |
 | --- | --- |
 | `lang` | the language (any label: `en`, `ro`) |
-| `text` | the word as the host's front end gives it (compared without case) |
+| `text` | rep.; the word as the host's front end gives it (compared without case); several are forms of one word |
 | `means` | an action name, a type, `type.key`, or a value |
 | `of` | `type.key`: the slot the value belongs to (needed when `means` is not an enum value, or to choose one slot) |
 
@@ -1209,7 +1209,7 @@ print(w.warnings[0].kind);
 unknown-word
 ```
 
-**Limits.** Words are not inflected: lemmas, morphology and tokenizing are the host's.
+**Limits.** No language is built in: tokenizing and morphology are the host's, through `text=` forms and a registered `lemma` function (`world.register('lemma', lang, fn)`).
 
 ## Certainty and soft constraints
 

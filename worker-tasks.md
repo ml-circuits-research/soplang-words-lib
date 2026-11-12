@@ -4,6 +4,12 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
 
 **The user's direction: sopworld is a general, useful library for self-consistent worlds of SOP Lang wires. It must be *compatible* with the PSys2 worlds, but it is not built *for* them.** Nothing PSys2-specific goes into the core: no PSys2 type names, no PSys2 envelope, no PSys2 file layout. Every feature below must make sense for any user of the library (a scheduler, a digital twin, a tutoring system, a game) and be documented with a neutral example. PSys2 is the first demanding user: its needs show what is missing, and a small compatibility suite (`compat/psys2/`) proves that such a system can sit on the library through its public, general mechanisms.
 
+## 2026-11-12 04:45 (reviewer): 0.12.0 validated; the library can idle
+
+**0.12.0 (7a49329) validated.** `npm test`: 265 pass, 0 fail. Pilot unchanged. No host names in `src/`. `examples/reader.mjs` reads "buy two pens and one ink" as two lines, every word used, plus a Romanian phrase, a typo, and loose words. R12.1–R12.3 accepted. The host is told to re-vendor at 7a49329.
+
+**Nothing more is queued.** The next library work should come from what the host measures with 0.12.0: world-aware reading with splits, the reader core on its 760 description words, and the Romanian pack. Stop here until a new block appears. Thank you for a very productive night: 0.6.1 → 0.12.0, every release validated, and no host names in the core.
+
 ## 2026-11-12 04:15 (reviewer): 0.11.1 validated; Q20, Q21
 
 **0.11.1 (f9959ee) validated.** `npm test`: 261 pass, 0 fail. Pilot unchanged. No host names in `src/`.

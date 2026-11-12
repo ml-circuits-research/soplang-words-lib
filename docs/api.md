@@ -699,6 +699,14 @@ values } }`, which `score` judges like the rest). Candidates carry `inherited: {
 words, wire }` and `replaced` (inherited words the reading does not use). A frame with a
 verb and arguments and no mark is read on its own.
 
+Loose words ("pen two buy", "red house big"): a frame `{ lang, words, numbers,
+question }` has no verb and no order. Each word that may be a verb (it means an action,
+a type or a key, or is near one) is tried as the verb with the others as arguments
+(`verbWord`), then each action and type that has a word as an implied verb with all the
+words (`implied`, kept when it uses one). `score` and `rank` order them by what they use;
+a tie at the top is the host's cue to ask. Bounded by `limit` and charged to the budget
+(site `interpret`; a run-out returns no candidates and `budget`).
+
 One message may be several frames ("reserve the pen and order ink"). A list of frames
 is one split of it; a list of lists is alternative splits. Each candidate is then `{
 parts, split }`, one reading per frame (new wires `new1`, `new2`, ...), and `score`
@@ -1069,7 +1077,7 @@ unsupported no rate for usd 5
 
 The cost of the last call: `{ steps, limit, exhausted, site, sites, ms }`, `sites`
 giving the steps per place (`match`, `chase`, `negation`, `aggregate`, `fluent`,
-`withdraw`, `validate`, `complete`, `ground`, `solve`, `abduce`, `induce`).
+`withdraw`, `validate`, `complete`, `ground`, `solve`, `abduce`, `induce`, `interpret`).
 
 ```js run
 const w = shop();

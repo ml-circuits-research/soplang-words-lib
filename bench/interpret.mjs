@@ -58,3 +58,11 @@ for (const [label, o] of [['previous frame', { previous: prevF }], ['last told',
   const s = med(Array.from({ length: 21 }, () => time(() => w.score(r.candidates))));
   console.log(`follow-up (${label}): ${r.candidates.length} candidate, interpret ${t.toFixed(3)} ms, score ${s.toFixed(3)} ms, ok ${w.score(r.candidates).candidates[0].ok}`);
 }
+// loose words: no verb order
+for (const words of [['n17', 'book'], ['q3', 'monday'], ['n17', 'q3', 'monday', 'book']]) {
+  const f = { lang: 'en', words };
+  const t = med(Array.from({ length: 21 }, () => time(() => w.interpret(f))));
+  const r = w.interpret(f);
+  const s = med(Array.from({ length: 11 }, () => time(() => w.score(r.candidates))));
+  console.log(`loose ${JSON.stringify(words)}: ${r.candidates.length} candidates, interpret ${t.toFixed(3)} ms, score ${s.toFixed(3)} ms, steps ${(w.interpret(f), w.stats().sites.interpret)}`);
+}

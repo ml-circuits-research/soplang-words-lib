@@ -137,7 +137,13 @@ export const interpreting = {
    * judged by score in order, each part on the world with the parts before it.
    */
   interpret(frame, opts = {}) {
+    if (opts._inner) return this._interpret(frame, opts);
+    return this._guard(opts, () => this._interpret(frame, { ...opts, _inner: true, budget: undefined }), (v) => ({ candidates: [], unresolved: [], dropped: 0, budget: v }));
+  },
+
+  _interpret(frame, opts) {
     if (Array.isArray(frame)) return this._interpretSplits(frame, opts);
+    if (frame.words) return this._interpretLoose(frame, opts);
     if (opts.previous && !opts._follow && (frame.verb === undefined || !(frame.args?.length || frame.numbers?.length) || frame.anaphor || frame.correction || frame.other)) return this._interpretFollow(frame, opts);
     const follow = opts._follow || null;
     const limit = opts.limit ?? 50;
@@ -166,7 +172,7 @@ export const interpreting = {
       items.push({ word: x.word, readings: this._readingsOf(x.word, lexicon, ns), role, inherited: true });
     }
     for (const n of follow?.numbers || []) items.push({ word: String(n), readings: [{ kind: 'number', value: String(n) }], role: null, inherited: true });
-    const verbs = frame.verb === undefined ? [] : (lexicon.get(norm(frame.verb)) || []).flatMap((e) => e.meanings.map((m) => ({ ...m, word: e.id })));
+    const verbs = opts._verbs ? opts._verbs.slice() : frame.verb === undefined ? [] : (lexicon.get(norm(frame.verb)) || []).flatMap((e) => e.meanings.map((m) => ({ ...m, word: e.id })));
     if (frame.verb !== undefined && !verbs.length && opts.near !== false) verbs.push(...this._nearReadings(frame.verb, lexicon, ns, true));
     if (frame.verb !== undefined && !verbs.length) unresolved.push(frame.verb);
     let verbNear = null; // the near reading of the verb in the candidates being built
@@ -192,6 +198,7 @@ export const interpreting = {
       const chosen = new Array(items.length).fill(null);
       const taken = new Set();
       const walk = (i) => {
+        this._b?.tick('interpret');
         if (out.length >= limit) { dropped++; return; }
         if (i === items.length) return build(chosen.slice());
         let placed = false;
@@ -327,6 +334,58 @@ export const interpreting = {
     const defined = Object.fromEntries(Object.entries(frame).filter(([, v]) => v !== undefined));
     const merged = { ...p, ...defined, verb: frame.verb ?? p.verb, args: frame.args || [], numbers: frame.numbers || [] };
     return this.interpret(merged, { ...base, _follow: { args: p.args || [], numbers: p.numbers || [], verb: frame.verb === undefined ? p.verb : undefined, correction: !!frame.correction, other: frame.other ? prev.ids || [] : null } });
+  },
+
+  /**
+   * Loose words ("pen two buy", "red house big"): a bag of words with no verb or order,
+   * { lang, words, numbers, question }. Each word that may be a verb (it means an action,
+   * a type or a key, or is near one) is tried as the verb with the rest as arguments; then
+   * each action and each type that has a word is tried as an implied verb (`implied`) with
+   * all the words as arguments, kept only when it uses one. Candidates are those of
+   * interpret, with `verbWord` or `implied`; score and rank order them by words used, and a
+   * tie at the top is the host's cue to ask. Bounded by `limit` and by the budget
+   * (site `interpret`).
+   */
+  _interpretLoose(frame, opts) {
+    const limit = opts.limit ?? 50;
+    const c = this._compiled();
+    const lexicon = this.words(frame.lang);
+    const words = frame.words.map(String);
+    const out = [], seen = new Set(), unresolved = new Set();
+    let dropped = 0;
+    const add = (r, mark) => {
+      dropped += r.dropped;
+      r.unresolved.forEach((u) => unresolved.add(u));
+      for (const cand of r.candidates) { // bounded: limit
+        const key = JSON.stringify([cand.action, cand.args, cand.wires, cand.refer, cand.question]);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        if (out.length >= limit) { dropped++; continue; }
+        out.push(Object.assign(cand, mark));
+      }
+    };
+    const base = { lang: frame.lang, numbers: frame.numbers, question: frame.question, mode: frame.mode, ns: frame.ns };
+    words.forEach((w, i) => { // bounded: the words of one message
+      this._b?.tick('interpret');
+      const exact = (lexicon.get(norm(w)) || []).flatMap((e) => e.meanings);
+      const verbish = exact.length ? exact.some((m) => m.kind !== 'value') : this._nearReadings(w, lexicon, frame.ns, true).length > 0;
+      if (!verbish) return;
+      add(this._interpret({ ...base, verb: w, args: words.filter((_, j) => j !== i) }, { ...opts, limit }), { verbWord: w });
+    });
+    // implied verbs: every action and every type that has a word of this language
+    const tools = new Map();
+    for (const es of lexicon.values()) for (const e of es) for (const m of e.meanings) if (m.kind === 'action' || m.kind === 'type') tools.set(`${m.kind}:${m.name || m.type}`, m);
+    for (const m of tools.values()) { // bounded: the tools of the matrix
+      this._b?.tick('interpret');
+      if (frame.question) break;
+      const r = this._interpret({ ...base, args: words }, { ...opts, limit, _verbs: [m] });
+      r.candidates = r.candidates.filter((x) => x.used.length > 0);
+      r.unresolved = [];
+      add(r, { implied: m.name || m.type });
+    }
+    // a word read as the verb is not left out
+    for (const cand of out) if (cand.unresolved.length) cand.unresolved = cand.unresolved.filter((u) => u !== cand.verbWord);
+    return { candidates: out, unresolved: [...unresolved].filter((u) => !out.some((x) => x.verbWord === u)), dropped };
   },
 
   /** Alternative splits of one message: every reading of every split, as compound candidates. */

@@ -18,6 +18,7 @@ export const SITES = [
   'solve',      // search steps of the solvers
   'abduce',     // goals expanded and explanations verified
   'induce',     // alignments of examples tried
+  'interpret',  // placements of words tried by interpret
 ];
 
 export class Budget {
@@ -25,7 +26,7 @@ export class Budget {
     this.limit = steps;
     this.steps = 0;
     // a literal, not built from SITES: a budget is made for every call and this keeps it cheap
-    this.sites = { match: 0, chase: 0, negation: 0, aggregate: 0, fluent: 0, withdraw: 0, validate: 0, complete: 0, ground: 0, solve: 0, abduce: 0, induce: 0 };
+    this.sites = { match: 0, chase: 0, negation: 0, aggregate: 0, fluent: 0, withdraw: 0, validate: 0, complete: 0, ground: 0, solve: 0, abduce: 0, induce: 0, interpret: 0 };
     this.started = Date.now();
     this.deadline = ms ? this.started + ms : 0;
     this.site = null;                 // where it ran out

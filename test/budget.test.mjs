@@ -150,7 +150,7 @@ test('budget: stats() reports the steps of the last call, per site; world option
   assert.equal(w.ask('@a node\n?b node').length, 25);
   const s = w.stats();
   assert.deepEqual([s.steps, s.limit, s.exhausted, s.site, s.sites.match], [30, 50, false, null, 30]);
-  assert.deepEqual(Object.keys(s.sites), ['match', 'chase', 'negation', 'aggregate', 'fluent', 'withdraw', 'validate', 'complete', 'ground', 'solve', 'abduce', 'induce']);
+  assert.deepEqual(Object.keys(s.sites), ['match', 'chase', 'negation', 'aggregate', 'fluent', 'withdraw', 'validate', 'complete', 'ground', 'solve', 'abduce', 'induce', 'interpret']);
   assert.equal(w.ask('@a node\n?b node\n?c node').budget.steps, 51, 'the world default applies');
   assert.equal(w.ask('@a node\n?b node\n?c node', { budget: { steps: 1000 } }).length, 125, 'a call can raise it');
   // the same call on the same world always costs the same

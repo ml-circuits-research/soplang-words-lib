@@ -61,6 +61,8 @@ export interface Frame {
   question?: boolean;
   mode?: string;
   ns?: string;
+  /** a bag of words with no verb or order (loose words) */
+  words?: string[];
   /** marks the front end sets for a follow-up */
   anaphor?: boolean;
   correction?: boolean;
@@ -77,6 +79,9 @@ export interface Reading {
   /** for a follow-up: what came from the previous frame or statement */
   inherited?: { verb?: string; words: string[]; wire?: string };
   replaced?: string[];
+  /** for loose words: the word read as the verb, or the tool implied */
+  verbWord?: string;
+  implied?: string;
 }
 export interface ScoreCandidate {
   /** a statement; references named in `refer` are resolved against the state */
@@ -351,7 +356,7 @@ export class World {
   /** the core.word entries of a language, by text */
   words(lang?: string): Map<string, { id: string; lang: string; means: string; of?: string; meanings: WordMeaning[] }[]>;
   /** read a language-neutral frame into candidates for score; nothing invented */
-  interpret(frame: Frame | Frame[] | Frame[][], options?: { limit?: number; id?: string; ns?: string; /** read unknown words as the nearest known ones (default true) */ near?: boolean; /** a follow-up to this frame, or to the last told statement */ previous?: Frame | { frame: Frame; ids?: string[] } | 'told' }): { candidates: (ScoreCandidate & Reading)[]; unresolved: string[]; dropped: number };
+  interpret(frame: Frame | Frame[] | Frame[][], options?: Budgeted & { limit?: number; id?: string; ns?: string; /** read unknown words as the nearest known ones (default true) */ near?: boolean; /** a follow-up to this frame, or to the last told statement */ previous?: Frame | { frame: Frame; ids?: string[] } | 'told' }): { candidates: (ScoreCandidate & Reading)[]; unresolved: string[]; dropped: number; budget?: Violation };
   /** example sentences from the tools, slots and words, with the host's templates */
   examples(lang: string, templates?: { action?: Template; statement?: Template; question?: Template }, options?: { per?: number; all?: boolean; sample?: number }): Example[];
   /** judge candidate readings against the world; nothing is told */

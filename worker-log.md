@@ -2346,3 +2346,26 @@ clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
   with `previous` reads exactly as without.
 - `node bench/interpret.mjs`: follow-up (previous frame): 1 candidate, interpret 0.029 ms, score 0.128 ms, ok true
 - `node bench/interpret.mjs`: follow-up (last told): 1 candidate, interpret 0.018 ms, score 0.027 ms, ok true
+
+## R10.3 — loose words — done
+
+`npm test`: 255 pass, 0 fail on sources and built file, 254 in checking mode. Pilot
+output identical. `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`:
+clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
+
+- A frame `{ lang, words, numbers, question }`: each word that may be a verb (means an
+  action, a type or a key, or is near one) is tried as the verb with the rest as
+  arguments (`verbWord`); then each action and type with a word in the language as an
+  implied verb with all the words (`implied`; kept only when it uses a word; not for
+  questions). Identical readings once. Ranked by score and rank as any candidates (words
+  used, then assumptions).
+- Budget: a new site `interpret` (placements tried and verbs tried); `interpret` now runs
+  under the budget like other calls and returns `{ candidates: [], budget }` when it runs
+  out. `stats().sites` lists it (budget test updated).
+- Test `loose words: ...`: "pen order 2" reads order first, reserve (implied) second on
+  words; "bob monday meet"; "monday bob" by an implied meeting; "pen" alone: reserve,
+  then order on assumes (qty); a question bag; a budget of 20 steps runs out; a frame with
+  a verb gets no loose marks.
+- `node bench/interpret.mjs`: loose ["n17","book"]: 2 candidates, interpret 0.150 ms, score 0.121 ms, steps 18
+- `node bench/interpret.mjs`: loose ["q3","monday"]: 1 candidates, interpret 0.107 ms, score 0.068 ms, steps 14
+- `node bench/interpret.mjs`: loose ["n17","q3","monday","book"]: 3 candidates, interpret 0.168 ms, score 0.247 ms, steps 30

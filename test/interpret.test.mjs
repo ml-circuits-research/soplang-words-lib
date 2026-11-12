@@ -200,3 +200,22 @@ test('follow-ups: corrections, ellipsis, "the other one", and a change to the la
   const full = { lang: 'en', verb: 'meet', args: ['ann', 'monday'] };
   assert.deepEqual(w.interpret(full, { previous: prev }).candidates, w.interpret(full).candidates);
 });
+
+test('loose words: a bag with no verb order is read with each verb word and each implied tool; ranked by words used; bounded', () => {
+  const w = shopAndCalendar();
+  const read = (f) => { const r = w.interpret(f); const s = w.score(r.candidates); return s.order.map((i) => [r.candidates[i].action || r.candidates[i].wires, r.candidates[i].verbWord || `implied ${r.candidates[i].implied}`, s.candidates[i].on || 'first']); };
+  assert.deepEqual(read({ lang: 'en', words: ['pen', 'order'], numbers: [2] }), [
+    ['@new order item=$r1 qty=2', 'order', 'first'],
+    ['reserve', 'implied reserve', 'words'],
+  ]);
+  assert.deepEqual(read({ lang: 'en', words: ['bob', 'monday', 'meet'] }), [['@new meeting with=$r1 day=mon', 'meet', 'first']]);
+  assert.deepEqual(read({ lang: 'en', words: ['monday', 'bob'] }), [['@new meeting day=mon with=$r1', 'implied meeting', 'first']]);
+  assert.deepEqual(read({ lang: 'en', words: ['pen'] }), [['reserve', 'implied reserve', 'first'], ['@new order item=$r1', 'implied order', 'assumes']]);
+  const q = w.interpret({ lang: 'en', words: ['pen', 'stock'], question: true });
+  assert.deepEqual(q.candidates.map((c) => c.question), [{ type: 'item', where: { name: 'pen' }, seek: 'stock' }]);
+  // charged to the budget, and a frame with a verb is read as before
+  const out = w.interpret({ lang: 'en', words: ['pen', 'ink', 'bob', 'ann', 'monday'] }, { budget: { steps: 20 } });
+  assert.deepEqual([out.candidates.length, out.budget.kind], [0, 'budget']);
+  const f = { lang: 'en', verb: 'book', args: ['ink'] };
+  assert.deepEqual(w.interpret(f).candidates.map((c) => c.verbWord ?? c.implied), [undefined, undefined]);
+});

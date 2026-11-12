@@ -1043,11 +1043,20 @@ export class World {
     const maps = this._compiled().maps;
     const q = (id) => (id.startsWith('::') ? id.slice(2) : id.includes('::') || !ns ? id : `${ns}::${id}`);
     let used = false;
-    for (const w of wires) {
-      if (w.pattern || SCHEMA_TYPES.has(w.type) || maps.has(w.type) || w.type === 'core.schema.map' || linked.has(w.id)) continue;
-      w.id = q(w.id);
-      if (w.id.includes('::')) used = true;
-      for (const k of Object.keys(w.attrs)) w.attrs[k] = w.attrs[k].map((v) => (v[0] === '$' && v[1] !== '?' ? '$' + q(v.slice(1)) : v));
+    const facts = wires.filter((w) => !(w.pattern || SCHEMA_TYPES.has(w.type) || maps.has(w.type) || w.type === 'core.schema.map' || linked.has(w.id)));
+    for (const w of facts) { w.id = q(w.id); if (w.id.includes('::')) used = true; }
+    // a bare reference means a wire of its own namespace; when there is none there and the
+    // default namespace has one of a shared type, it means that one (shared facts are in all)
+    const here = new Set(facts.map((w) => w.id));
+    const c = this._compiled();
+    const ref = (x) => {
+      const id = q(x);
+      if (id === x || x.includes('::') || here.has(id) || this.wires.has(id) || this.alias.has(id)) return id;
+      const d = this.wires.get(this.resolve(x));
+      return d && !d.id.includes('::') && c.isShared(d.type) ? x : id;
+    };
+    for (const w of facts) {
+      for (const k of Object.keys(w.attrs)) w.attrs[k] = w.attrs[k].map((v) => (v[0] === '$' && v[1] !== '?' ? '$' + ref(v.slice(1)) : v));
     }
     if (used && !this._nsUsed) { this._nsUsed = true; this._do(() => { this._nsUsed = false; }); }
     return wires;

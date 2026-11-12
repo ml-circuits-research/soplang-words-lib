@@ -386,7 +386,8 @@ in the same namespace; another is reached only when written out: `$other::x`, or
 or a question is in one namespace: wires joined by a value are of the same namespace; a
 wire reached by a written reference may be in another. Two facts merge by identity only
 inside one namespace. A type declared `shared=true`, and facts a host provides, belong
-to every namespace. Questions with `{ ns }` see only that namespace; `sync` with
+to every namespace: a bare reference to a wire of a shared type that its own namespace
+does not have means the one in the default namespace (*Test:* `N5: a bare reference to a wire of a shared type falls back to the default namespace`). Questions with `{ ns }` see only that namespace; `sync` with
 `{ ns }` works inside it. Matrix wires are in no namespace. The separator `::` has no
 other meaning in the language. *Test:* `scope: facts in different namespaces are never joined by value nor merged by identity; written references and shared types cross`
 

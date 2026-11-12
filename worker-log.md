@@ -2664,3 +2664,16 @@ mode. Pilot output identical. `git grep -i psys2 src/`: empty. scan-loops clean.
   replay) keeps `e.user` in the default namespace.
 - `node bench/snapshot.mjs` (no namespaces): 8 turns: each mark its log 805.9 kB, restore 143.2 ms; marks at 90.5 kB, restore 8.5 ms; delta 1.8 kB, restore 4.1 ms
 - `node bench/snapshot.mjs` (no namespaces): 40 turns: each mark its log 3789.5 kB, restore 302.3 ms; marks at 97.4 kB, restore 5.9 ms; delta 8.7 kB, restore 2.9 ms
+
+## N5 — references to shared types fall back to the default namespace — done
+
+Checked against 0.13.0: `@p1 pet owner=$e.user` in `ns: 'A'` was `dangling-ref
+$A::e.user`. `npm test`: 272 pass, 0 fail on sources and built file, 271 in checking
+mode. Pilot output identical. `git grep -i psys2 src/`: empty. scan-loops clean.
+
+- A bare reference resolves in its own namespace first (a wire there, or one told in the
+  same statement); when there is none and the default namespace has a wire of a shared
+  type with that id, the reference keeps the bare id (the default one).
+- Test `N5: ...`: the repro is accepted with `owner=$e.user`; a wire of the same id in A
+  wins; a type that is not shared still dangles; the log replays it.
+- Docs: language.md SC5 (with the test).

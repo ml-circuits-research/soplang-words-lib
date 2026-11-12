@@ -131,3 +131,19 @@ test('N4: log entries keep the namespace they were told in; a replay and a resto
   w.undo();
   assert.deepEqual(ids(w), ['A::p1', 'e.user']);
 });
+
+test('N5: a bare reference to a wire of a shared type falls back to the default namespace', () => {
+  const w = new World({ ns: 'A' });
+  w.load('@agent core.type shared=true');
+  w.tell('@e.user agent', { ns: '' });
+  const r = w.tell('@p1 pet owner=$e.user');
+  assert.deepEqual([r.ok, w.get('A::p1').attrs.owner], [true, ['$e.user']]);
+  // a wire of the same id in the namespace itself wins; a type that is not shared does not fall back
+  w.tell('@e.user agent');
+  w.tell('@p2 pet owner=$e.user');
+  assert.deepEqual(w.get('A::p2').attrs.owner, ['$A::e.user']);
+  w.tell('@thing box', { ns: '' });
+  assert.equal(w.tell('@p3 pet owner=$thing').violations[0].kind, 'dangling-ref');
+  // and the log replays it
+  assert.equal(World.fromJSON(w.toJSON(), { ns: 'A' }).get('A::p1').attrs.owner[0], '$e.user');
+});

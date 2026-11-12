@@ -6,6 +6,16 @@ written with each question and in `worker-log.md`. A question is deleted from th
 once the worker is satisfied with the answer; closed ones are listed at the end in one
 line each so the history is not lost.
 
+## Q20 — `groups=` on core.aggregate: how a type of groups is written (R11.3)
+
+The task asks for "a set of values, or a type whose instances are the groups". Taken:
+`groups=<value>` (repeated) for values and `groups=$<pattern>` for wires: the groups are
+the wires a matrix pattern matches (`@cats category name=?n`), each as `$id`, the value a
+reference gets. `$` keeps its one meaning (a wire of the matrix, as in `over=`), and a
+pattern can narrow the groups (`@open category state=open`). Alternatives: `groups.type=`
+(a second attribute for one idea), or a bare type name (a value and a type would then be
+spelled the same). Nothing waits on this.
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

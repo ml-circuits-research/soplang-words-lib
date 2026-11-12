@@ -2457,3 +2457,24 @@ clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
 - `node bench/fork.mjs` (rewind column, 60 / 600 / 6,000 wires): 0.0131 / 0.0099 / 0.0104
   ms, flat as before (0.009–0.015 ms in R6/R7).
 - Docs: api.md (rewind and redo), the rewind doc comment.
+
+## R11.3 — groups with zero members: `groups=` on core.aggregate — done
+
+`npm test`: 261 pass, 0 fail on sources and built file, 260 in checking mode. Pilot
+output identical. `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`:
+clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
+
+- `groups=` (repeated) with exactly one `by=` variable: values, or `$pattern`, the wires
+  a matrix pattern matches (as `$id`, what a reference value is). Every declared group gets
+  a body; an empty one gives `count` 0, or `default=` when given (for any aggregate). A
+  group wire that arrives or goes seeds its group (a `groupsOf` entry beside the aggregate's
+  over patterns), so its result comes and goes with it. Undeclared groups behave as before.
+- The spelling `groups=$pattern` for "a type whose instances are the groups" is Q20 for
+  the reviewer (keeps `$` as a wire of the matrix; a pattern can narrow the groups).
+- Test `aggregate groups=: ...`: declared groups at 0 before any member; members counted;
+  pattern groups with default; last member gone (group stays); group wire gone (result
+  gone); a new group wire; an undeclared empty group still has none; two by variables
+  refused.
+- `node bench/distinct.mjs` unchanged in shape: by= 20.9–26.4 ms for 2,000 members, one
+  more 0.26–0.38 ms (R6: 15–25 ms).
+- Docs: reference.md core.aggregate (table, meaning, evaluation, violations, example).

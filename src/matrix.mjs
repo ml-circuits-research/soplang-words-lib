@@ -30,7 +30,7 @@ export const GRAMMAR = {
   'core.rule': ['when', 'not', 'with', 'if', 'then', 'lazy'],
   'core.deny': ['when', 'not', 'with', 'if', 'why', 'soft', 'priority'],
   'core.calc': ['out', 'fn', 'args', 'over', 'pick', 'ties', 'relation'],
-  'core.aggregate': ['over', 'by', 'then', 'default', 'fn', 'out', 'args', 'pick', 'ties', 'count', 'sum', 'min', 'max', 'argmin', 'argmax', 'collect'],
+  'core.aggregate': ['over', 'by', 'groups', 'then', 'default', 'fn', 'out', 'args', 'pick', 'ties', 'count', 'sum', 'min', 'max', 'argmin', 'argmax', 'collect'],
   'core.check': ['fn', 'args', 'why'],
   'core.rank': ['of', 'by', 'out', 'order', 'within'],
   'core.relation': ['when', 'sum', 'sub', 'equals'],
@@ -716,7 +716,11 @@ function buildAggregate(world, w, c) {
   const body = { id: w.id, type: 'core.rule', pattern: false, attrs: { with: ['$' + calc.id], then: w.attrs.then || [] } };
   const by = (w.attrs.by || []).filter(isVar);
   if (by.length !== (w.attrs.by || []).length) c.errors.push(`${w.id}: by= takes variables (by=?kind)`);
-  buildRule(world, body, c, new Map([[calc.id, calc]]), true, { by, dflt: first(w, 'default') });
+  // groups=: the groups that always get a result, empty or not: values, or $pattern (the wires it matches)
+  const groups = w.attrs.groups || [];
+  if (groups.length && by.length !== 1) c.errors.push(`${w.id}: groups= needs exactly one by= variable`);
+  if (groups.some((g) => g[0] === '$')) body.attrs.groups = groups.filter((g) => g[0] === '$');
+  buildRule(world, body, c, new Map([[calc.id, calc]]), true, { by, dflt: first(w, 'default'), groups: groups.length ? groups.filter((g) => g[0] !== '$').map(str) : null });
 }
 
 function buildRule(world, w, c, extra, register = true, aggregate = null) {
@@ -725,6 +729,7 @@ function buildRule(world, w, c, extra, register = true, aggregate = null) {
   for (const k of LINKS) for (const v of w.attrs[k] || []) if (v[0] === '$') locals.add(v.slice(1));
   // the patterns an aggregate ranges over belong to the rule too
   for (const v of w.attrs.with || []) for (const o of find(v.slice(1))?.attrs.over || []) if (o[0] === '$') locals.add(o.slice(1));
+  for (const v of w.attrs.groups || []) locals.add(v.slice(1)); // an aggregate's groups= patterns
   const get = (k, from = w) => (from.attrs[k] || []).map((v) => {
     const s = find(v.slice(1));
     if (!s) { c.errors.push(`${w.id}: ${k}=${v} is not a wire of the matrix`); return null; }
@@ -806,6 +811,7 @@ function buildRule(world, w, c, extra, register = true, aggregate = null) {
   if (aggregate) {
     rule.by = aggregate.by;
     if (aggregate.dflt !== undefined) rule.calc[0].dflt = aggregate.dflt;
+    if (aggregate.groups) rule.groups = { values: aggregate.groups, pats: get('groups') };
     const seen = new Set(rule.calc[0].over.flatMap((p) => Object.values(p.attrs).flat().filter(hasVar).map((v) => (v[0] === '$' ? v.slice(1) : v))));
     for (const v of rule.by) if (!seen.has(v)) c.errors.push(`${w.id}: by=${v} is not a variable of its over= patterns`);
   } else if (!rule.when.length) { c.errors.push(`${w.id}: needs at least one when=`); return; }
@@ -849,8 +855,10 @@ function buildRule(world, w, c, extra, register = true, aggregate = null) {
     pat: p,
     group: [...new Set(Object.values(p.attrs).flat().filter(hasVar).map((v) => (v[0] === '$' ? v.slice(1) : v)))].filter((v) => whenVars.has(v)),
   })));
+  // a wire that a groups= pattern matches is a group: when it comes or goes, its group is looked at again
+  for (const p of rule.groups?.pats || []) rule.overs.push({ pat: p, group: [], groupsOf: rule.by[0] });
   // the types whose wires can change what the rule concludes
-  rule.types = [...new Set([...rule.when, ...rule.not, ...rule.calc.flatMap((x) => x.over || [])].map((p) => p.type))];
+  rule.types = [...new Set([...rule.when, ...rule.not, ...rule.calc.flatMap((x) => x.over || []), ...(rule.groups?.pats || [])].map((p) => p.type))];
   for (const p of [...rule.when, ...rule.not]) if (p.select && !['latest', 'first'].includes(p.select)) c.errors.push(`${w.id}: core.select must be latest or first`);
 
   // templates in dependency order, so a template is created before the ones that refer to it

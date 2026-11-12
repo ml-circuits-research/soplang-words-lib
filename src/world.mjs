@@ -25,7 +25,7 @@ const K = (type, key, value) => `${type}\u0001${key}\u0001${value}`;
 // the keys through which a matrix wire names its patterns and templates
 const NAMES = {
   'core.rule': LINKS, 'core.deny': LINKS, 'core.calc': ['over'], 'core.relation': ['when'],
-  'core.action': ['when', 'with', 'if', 'set', 'add', 'remove'], 'core.aggregate': ['over', 'then'],
+  'core.action': ['when', 'with', 'if', 'set', 'add', 'remove'], 'core.aggregate': ['over', 'then', 'groups'],
 };
 // a variable in a reason, with an optional filter: ?n, ?n:ordinal
 const SAY = /\?([A-Za-z_][\w.\-]*)(?::([A-Za-z_][\w\-]*))?/g;
@@ -1392,6 +1392,16 @@ export class World {
         for (const v of rule.by) s1 = unify(v, walk(v, t), s1);
         if (s1) yield* this._bodies(rule, s1, skip);
       }
+      // groups=: every declared group gets a body, members or not
+      if (rule.groups) {
+        for (const g of this._groupsOf(rule)) { // bounded: the declared groups
+          this._b.tick('aggregate');
+          if (seen.has(g)) continue;
+          seen.add(g);
+          const s1 = unify(rule.by[0], g, s0);
+          if (s1) yield* this._bodies(rule, s1, skip);
+        }
+      }
       return;
     }
     const pats = skip < 0 ? rule.when : rule.when.filter((_, i) => i !== skip);
@@ -1416,10 +1426,10 @@ export class World {
             values.push(a);
             picks.push(walk(c.pick || '$?' + c.over[0].id, t));
           }
-          if (!n && rule.by?.length) continue next; // a group with nothing in it has no result
+          if (!n && rule.by?.length && !(rule.groups && this._groupsOf(rule).includes(walk(rule.by[0], s)))) continue next; // a group with nothing in it has no result, unless declared
           if (c.rank) out = this._rankOf(c.rank, matches, s);
           else out = aggregates[c.fn](values, picks, n);
-          if (out === undefined && c.dflt !== undefined) out = c.dflt;
+          if ((out === undefined || (!n && rule.groups)) && c.dflt !== undefined) out = c.dflt; // a declared group with no member takes default=
           if (Array.isArray(out)) out = LIST + out.join(LIST); // several values for one key
           // several wires share the best value: the pick is the first, the others are remembered
           if ((c.fn === 'argmax' || c.fn === 'argmin') && out !== undefined && c.ties !== 'first') {
@@ -1549,11 +1559,24 @@ export class World {
     return at < 0 ? undefined : String(at + 1);
   }
 
+  /** The groups an aggregate with groups= declares: its values, and `$id` for each wire its patterns match. */
+  _groupsOf(rule) {
+    const out = [...rule.groups.values];
+    for (const p of rule.groups.pats) for (const t of this._matchAll([p], 0, EMPTY)) out.push('$' + walk('?' + p.id, t)); // bounded: the wires a pattern matches
+    return out;
+  }
+
   /** Note the groups of the aggregates that a wire belongs to, so they are looked at again. Call before the wire changes. */
   _seed(w, res) {
     const c = this._c;
     if (!c || !c.overByType.size) return;
-    for (const { rule, pat, group } of c.forType(c.overByType, w.type)) {
+    for (const { rule, pat, group, groupsOf } of c.forType(c.overByType, w.type)) {
+      if (groupsOf) { // the wire is a group of rule: its result is looked at again
+        if (this._matchWire(pat, w, EMPTY).next().done) continue;
+        const seeds = res._seeds.get(rule) || res._seeds.set(rule, new Map()).get(rule);
+        seeds.set('$' + w.id + '\u0001', unify(groupsOf, '$' + w.id, EMPTY));
+        continue;
+      }
       for (const s of this._matchWire(pat, w, EMPTY)) {
         let s0 = EMPTY, key = '';
         for (const v of group) { const x = walk(v, s); s0 = unify(v, x, s0); key += x + '\u0001'; }

@@ -351,3 +351,34 @@ test('small functions: between, sign, clamp', () => {
   w.tell('@m1 move from=2 to=6 over=4  @m2 move from=2 to=6 over=6');
   assert.deepEqual(w.ofType('jump').map((x) => x.attrs.of[0]), ['$m1']);
 });
+
+test('aggregate groups=: every declared group has a result, empty ones 0 or default; groups by pattern come and go with their wires', async () => {
+  const { World } = await import('../tools/lib-under-test.mjs');
+  const w = new World();
+  w.load(`
+    @it item cat=?c
+    @t tally cat=?c n=?n
+    @g core.aggregate over=$it by=?c count=?n groups=tools groups=toys then=$t
+    @it2 item cat=?d price=?p
+    @cats category name=?cn
+    @t2 total cat=?d sum=?s
+    @g2 core.aggregate over=$it2 by=?d sum=?s args=?p groups=$cats default=none then=$t2
+  `);
+  const rows = (type) => w.ofType(type).map((x) => `${x.attrs.cat}:${x.attrs.n || x.attrs.sum}`).sort();
+  assert.deepEqual(rows('tally'), ['tools:0', 'toys:0'], 'declared groups with no member');
+  w.tell('@i1 item cat=tools  @i2 item cat=tools  @i0 item cat=misc');
+  assert.deepEqual(rows('tally'), ['misc:1', 'tools:2', 'toys:0']);
+  w.tell('@c1 category name=a  @c2 category name=b  @i3 item cat=$c1 price=5');
+  assert.deepEqual(rows('total'), ['$c1:5', '$c2:none']);
+  w.retract('i3');
+  assert.deepEqual(rows('total'), ['$c1:none', '$c2:none'], 'the last member goes: the group stays, empty');
+  w.retract('c2');
+  assert.deepEqual(rows('total'), ['$c1:none'], 'a group wire goes: its result goes');
+  w.tell('@c3 category name=c');
+  assert.deepEqual(rows('total'), ['$c1:none', '$c3:none']);
+  w.retract('i0');
+  assert.deepEqual(rows('tally'), ['tools:2', 'toys:0'], 'an undeclared group still has no result when empty');
+  // groups= needs exactly one by variable
+  const bad = new World();
+  assert.throws(() => bad.load('@it item cat=?c k=?k  @t tally n=?n  @g core.aggregate over=$it by=?c by=?k count=?n groups=x then=$t'), /exactly one by=/);
+});

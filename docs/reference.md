@@ -583,18 +583,22 @@ count per kind, the longest of something.
 | `pick` | `?variable` | | | for `argmax`/`argmin`: what to return for the best match |
 | `ties` | `first` \| `all` | report ties | | as on [core.calc](#corecalc) |
 | `by` | `?variable` | none | yes | one result per value of these variables among the matches |
-| `default` | value | none | | the result when there is nothing to aggregate |
+| `groups` | value \| `$pattern` | none | yes | with one `by` variable: groups that always have a result, members or not (a value, or every wire the pattern matches, as `$id`) |
+| `default` | value | none | | the result when there is nothing to aggregate (and for a declared group with no member) |
 | `then` | `$template` | | yes | what holds, with the result (and the `by` variables) |
 
 **Meaning.** Without `by`: exactly one result exists at all times, computed over every
 match of the `over` patterns; over no match, `count` and `sum` give 0 and the others
 give `default` (or nothing, and then the templates do not hold). With `by`: one result
 for each distinct value of the `by` variables among the matches; a value that no match
-has any more has no result. The templates hold with the result, like the conclusion of
+has any more has no result. With `groups=`, every declared group has a result as well:
+an empty one gets `count` 0, or `default` when given; a group named by a pattern comes and
+goes with the wires the pattern matches. The templates hold with the result, like the conclusion of
 a [rule](#corerule).
 
 **When it is evaluated.** In the chase, with the other aggregates: when the matrix
-changes, and for the groups whose wires arrive, change or go.
+changes, and for the groups whose wires arrive, change or go (and, with `groups=$pattern`,
+for a group wire that arrives or goes).
 
 **Interactions.** *Distinct anchors:* `by=` is the way to compute something once per
 distinct value: a rule anchored on a member computes it once per member (2,000 members in
@@ -605,7 +609,8 @@ or in a key, since a template that has every entry of an existing wire is that w
 *Provenance:* `via` is the aggregate's id.
 
 **Violations.** `schema` (no result, both `fn=` and a result name, no `over`, a `by`
-variable that no `over` pattern has, a pattern that names a blob key).
+variable that no `over` pattern has, a pattern that names a blob key, `groups=` without
+exactly one `by` variable).
 
 **Example**
 
@@ -621,11 +626,20 @@ w.load(`
 print(w.ofType('total').map((x) => x.attrs.count[0]));
 w.tell('@t1 task status=todo  @t2 task status=done  @t3 task status=todo');
 print(w.ofType('total').map((x) => x.attrs.count[0]), w.ofType('tally').map((x) => `${x.attrs.status}:${x.attrs.count}`));
+const g = new World();
+g.load(`
+  @t task status=?s
+  @k core.aggregate over=$t by=?s count=?c groups=todo groups=doing groups=done then=$per
+  @per tally status=?s count=?c
+`);
+g.tell('@t1 task status=todo');
+print(g.ofType('tally').map((x) => `${x.attrs.status}:${x.attrs.count}`).sort());
 ```
 
 ```output
 ["0"]
 ["3"] ["todo:2","done:1"]
+["doing:0","done:0","todo:1"]
 ```
 
 **Limits.** One aggregate per wire; for several results over the same patterns, write

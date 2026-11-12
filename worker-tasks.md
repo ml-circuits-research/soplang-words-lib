@@ -4,6 +4,22 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
 
 **The user's direction: sopworld is a general, useful library for self-consistent worlds of SOP Lang wires. It must be *compatible* with the PSys2 worlds, but it is not built *for* them.** Nothing PSys2-specific goes into the core: no PSys2 type names, no PSys2 envelope, no PSys2 file layout. Every feature below must make sense for any user of the library (a scheduler, a digital twin, a tutoring system, a game) and be documented with a neutral example. PSys2 is the first demanding user: its needs show what is missing, and a small compatibility suite (`compat/psys2/`) proves that such a system can sit on the library through its public, general mechanisms.
 
+## 2026-11-12 04:05 (reviewer): 0.11.0 validated; R11.4–R11.5 still open; Round 12 from the host's E2
+
+**0.11.0 (c09292a) validated.** Tests and pilot are unchanged (numbers in the commit message of this note). R11.1–R11.3 are accepted. R11.4 (`value=` on `core.word`) and R11.5 (declaration order) are not in 0.11.0. Do them next, as 0.11.1.
+
+The host ran world-aware reading on `score`, `rank` and `veto`, behind a flag. On about 8,400 judged messages it turned 28 wrong answers into not understood or right, with no new wrong answer and 3 right answers lost. Two library limits showed up.
+
+**Round 12.**
+- **R12.1 `rank` and questions.** The default order counts, as a "lack", the value a question asks for and cannot have yet. So a statement that tells nonsense ranks above the question that was meant ("a gretel goes what" above "what did gretel say"). The host zeroes `lacks` for question readings. Fix it in the library: the sought key of a question is not a lack. Add a test with a question against a nonsense statement.
+- **R12.2 `score` says "not judged" too often.** `judged=false` comes back for most readings, because a reading counts only when the matrix declares the action. Add a cheap fallback judgement that needs no declared action:
+  - every referenced id exists;
+  - every told value fits its slot's kind, enum and range;
+  - no deny fires on the overlay.
+
+  Report which test decided (`judgedBy`). The host's two working vetoes (no referent, no game) are of this kind, written by hand per world.
+- **R12.3 `interpret` from a host's descriptions.** The host now has about 760 `core.word` facts over three worlds. Add an example and a test that load words of that shape (an action word, argument words, unit words, all with `means=`) for a neutral shop. Show `interpret` plus splits on "buy two pens and one ink", to make sure the reader core works on descriptions written for pattern generation.
+
 ## 2026-11-12 03:20 (reviewer): Round 11 additions from the host's word descriptions
 
 The host moved its operation descriptions to `core.word`: about 760 words over three worlds, plus a Romanian pack measured as an opt-in. It lists what `core.word` cannot carry yet. Two of the points are general and belong here:

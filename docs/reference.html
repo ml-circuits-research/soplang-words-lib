@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="63937b3b50ed">
+<meta name="source-hash" content="cc7daec22fd1">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -99,7 +99,7 @@ unknown-key</code></pre></figure>
 <p>How to read slot, type and module declarations that are written in another notation.</p>
 <p><strong>Syntax</strong></p>
 <div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>from</code></td><td>type</td><td>required</td><td></td><td>the type of the foreign wires</td></tr><tr><td><code>as</code></td><td><code>slot</code> | <code>type</code> | <code>module</code></td><td><code>slot</code></td><td></td><td>what they declare</td></tr><tr><td>one per field</td><td>where to find it</td><td></td><td></td><td>see below</td></tr></tbody></table></div>
-<p>Fields for <code>as=slot</code>: <code>owner</code> (the type; default <code>id.prefix</code>), <code>key</code> (default <code>id.suffix</code>), <code>value</code> (kinds and <code>$type</code> references together), <code>kind</code>, <code>type</code>, <code>enum</code>, <code>many</code>, <code>required</code>, <code>id</code>, <code>prefix</code>, <code>default</code>, <code>ask</code>, <code>min</code>, <code>max</code>, <code>step</code>. For <code>as=type</code>: <code>name</code>, <code>extends</code>, <code>closed</code>, <code>complete</code>, <code>root</code> (a type that every type without a parent extends). For <code>as=module</code>: <code>name</code>, <code>imports</code>.</p>
+<p>Fields for <code>as=slot</code>: <code>owner</code> (the type; default <code>id.prefix</code>), <code>key</code> (default <code>id.suffix</code>), <code>value</code> (kinds and <code>$type</code> references together), <code>kind</code>, <code>type</code>, <code>enum</code>, <code>many</code>, <code>required</code>, <code>id</code>, <code>prefix</code>, <code>default</code>, <code>ask</code>, <code>min</code>, <code>max</code>, <code>step</code>. For <code>as=type</code>: <code>name</code>, <code>extends</code>, <code>closed</code>, <code>complete</code>, <code>transient</code>, <code>shared</code> (each true when the field gives <code>true</code> or <code>yes</code>), <code>unique</code> (keys, repeated or comma-separated), <code>root</code> (a type that every type without a parent extends). For <code>as=module</code>: <code>name</code>, <code>imports</code>.</p>
 <p>A field is found by: <code>id</code> (the wire's id), <code>id.prefix</code> (its id up to the last dot), <code>id.suffix</code> (the rest), <code>&lt;attr&gt;</code> (that attribute), <code>&lt;attr&gt;:&lt;value&gt;</code> (true when the attribute has that value).</p>
 <p><strong>Meaning.</strong> Every wire of type <code>from</code> is read as the declaration it maps to, exactly as if it had been written as a <code>core.slot</code> or <code>core.type</code> wire, and belongs to the matrix.</p>
 <p><strong>When it is evaluated.</strong> When the matrix is compiled. The mapping must be told before, or with, the wires it maps.</p>

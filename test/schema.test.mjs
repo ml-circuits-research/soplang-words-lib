@@ -403,3 +403,22 @@ test('slots: kind=ref to=<type> and unique= keep integrity without hand-written 
   w.retract('s1');
   assert.equal(w.retract('r1').ok, true);
 });
+
+test('N3: core.schema.map as=type reads shared=, transient= and unique= like core.type', async () => {
+  const { World } = await import('../tools/lib-under-test.mjs');
+  const w = new World();
+  w.load(`@m core.schema.map from=kind as=type name=id shared=shared:yes transient=transient:yes unique=unique
+    @agent kind shared=yes
+    @cursor kind transient=yes
+    @user kind unique=email`);
+  w.tell('@u1 user email=a@x');
+  assert.equal(w.tell('@u2 user email=a@x').violations[0].kind, 'unique');
+  // shared: one agent fact belongs to every namespace
+  w.tell('@e agent name=e');
+  w.load('@p pet owner=?o\n@a agent name=?o\n@r core.rule when=$p when=$a then=$k\n@k known pet=$p');
+  w.tell('@p1 pet owner=e', { ns: 'A' });
+  assert.equal(w.ofType('known').length, 1, 'the shared agent joins a namespaced pet');
+  // transient: a statement of only cursors is not undone
+  w.tell('@c1 cursor at=1');
+  assert.equal(w.undo().undone[0].ids[0], 'A::p1');
+});

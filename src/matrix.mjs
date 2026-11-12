@@ -273,10 +273,13 @@ export function compileMatrix(world) {
       c.types.set(name, w);
       if (closed) c.closed.add(name);
       if (f ? field(f.complete, w) === 'true' : flag(w, 'complete')) c.complete.add(name);
-      if (!f && flag(w, 'transient')) c.transient.add(name);
-      if (!f && flag(w, 'shared')) c.shared.add(name);
+      // a map reads them like closed and complete: a field spec giving 'true' (attr:value) or the value itself
+      const truthy = (k) => (f ? ['true', 'yes'].includes(field(f[k], w)) : flag(w, k));
+      if (truthy('transient')) c.transient.add(name);
+      if (truthy('shared')) c.shared.add(name);
       // unique=a unique=b: no two wires of the type share the values of these keys together
-      if (!f && w.attrs.unique) (c.uniqueSets.get(name) || c.uniqueSets.set(name, []).get(name)).push(w.attrs.unique.map((k) => c.shortKey?.(name, k) ?? k));
+      const unique = f ? (f.unique ? field(f.unique, w, true).flatMap((v) => v.split(',')).filter(Boolean) : []) : w.attrs.unique || [];
+      if (unique.length) (c.uniqueSets.get(name) || c.uniqueSets.set(name, []).get(name)).push(unique.map((k) => c.shortKey?.(name, k) ?? k));
       if (ext && ext !== name) c.parent.set(name, ext);
     } else if (map?.as === 'module' || w.type === 'core.module') {
       const native = w.type === 'core.module';

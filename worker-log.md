@@ -2634,3 +2634,16 @@ identical. `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`: cle
   spanning A and B gives one result in the default namespace, the others stay in theirs.
 - Docs: language.md SC5a (with its test), reference.md core.aggregate.
 - `node bench/distinct.mjs` (no namespaces, unchanged path): anchored on a member   2,000 members: 242.7 ms; one more member: 9.88 ms; tallies 50, g7 = 41
+
+## N3 — core.schema.map reads shared=, transient=, unique= — done
+
+Checked against 0.13.0: a map with those fields set nothing (only native core.type read
+them). `npm test`: 270 pass, 0 fail on sources and built file, 269 in checking mode.
+Pilot output identical. `git grep -i psys2 src/`: empty. scan-loops clean.
+
+- `as=type` maps read `transient`, `shared` (true when the field gives `true` or `yes`,
+  so both `shared=shared:yes` and `shared=<attr>` work) and `unique` (keys, repeated or
+  comma-separated), the same as `core.type`.
+- Test `N3: ...` (test/schema.test.mjs): a mapped unique key refuses a duplicate; a mapped
+  shared type joins a namespaced fact; a mapped transient statement is not undone.
+- Docs: reference.md core.schema.map fields.

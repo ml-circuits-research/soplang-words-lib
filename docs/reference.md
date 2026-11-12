@@ -239,8 +239,9 @@ How to read slot, type and module declarations that are written in another notat
 Fields for `as=slot`: `owner` (the type; default `id.prefix`), `key` (default
 `id.suffix`), `value` (kinds and `$type` references together), `kind`, `type`, `enum`,
 `many`, `required`, `id`, `prefix`, `default`, `ask`, `min`, `max`, `step`. For
-`as=type`: `name`, `extends`, `closed`, `complete`, `root` (a type that every type
-without a parent extends). For `as=module`: `name`, `imports`.
+`as=type`: `name`, `extends`, `closed`, `complete`, `transient`, `shared` (each true
+when the field gives `true` or `yes`), `unique` (keys, repeated or comma-separated),
+`root` (a type that every type without a parent extends). For `as=module`: `name`, `imports`.
 
 A field is found by: `id` (the wire's id), `id.prefix` (its id up to the last dot),
 `id.suffix` (the rest), `<attr>` (that attribute), `<attr>:<value>` (true when the

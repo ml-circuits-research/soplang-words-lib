@@ -687,6 +687,18 @@ has `assumes: [{ word, read }]`, which `score` keeps, so `rank` puts exact readi
 first and a host can say "(I read X as Y)". A known word is never corrected; `near:
 false` turns this off.
 
+Follow-ups ("no, a red one", "and the price?", "the other one", "tuesday then"): with
+`{ previous }`, a frame with no verb or no arguments, or one the front end marks
+`anaphor` (a pronoun or "one"), `correction` ("no, X") or `other` ("the other one"),
+inherits the previous frame's verb, question flag and words; what it states takes the
+place of what the previous frame said for the same slot (a correction even in a many
+slot). `previous` is a frame, `{ frame, ids }` (the ids the previous reading resolved
+to: `other` then describes another wire of the same type, `refer.not`), or `'told'`:
+the last told statement, which the frame then revises (a candidate `{ revise: { id,
+values } }`, which `score` judges like the rest). Candidates carry `inherited: { verb,
+words, wire }` and `replaced` (inherited words the reading does not use). A frame with a
+verb and arguments and no mark is read on its own.
+
 One message may be several frames ("reserve the pen and order ink"). A list of frames
 is one split of it; a list of lists is alternative splits. Each candidate is then `{
 parts, split }`, one reading per frame (new wires `new1`, `new2`, ...), and `score`
@@ -741,7 +753,8 @@ print(e.text, e.frame.args, e.expect.attrs);
 
 Judges candidate readings of one utterance against the world and tells nothing. A
 candidate is any of `{ wires, refer }` (a statement; `refer` maps a reference name used
-in `wires` to `{ type, where, ns }`, a description resolved against the state), `{
+in `wires` to `{ type, where, ns, not }`, a description resolved against the state,
+`not` listing ids it is not), `{ revise: { id, values } }` (a change to a told wire), `{
 action, args }`, or `{ question }` (as for `query`). Returns `{ candidates, order }`;
 each scored candidate has `ok`, `violations`, `referents` (`{ name, ids, unique, fits }`:
 `fits` are the ids that keep the statement consistent when the description alone is

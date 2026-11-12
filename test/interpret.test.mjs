@@ -168,3 +168,35 @@ test('near words: an unknown word is read as the nearest known one, as an assump
   ];
   for (const f of frames) assert.deepEqual(w.interpret(f).candidates, w.interpret(f, { near: false }).candidates, JSON.stringify(f));
 });
+
+test('follow-ups: corrections, ellipsis, "the other one", and a change to the last statement', () => {
+  const w = shopAndCalendar();
+  w.load('@k7 core.slot of=order key=color enum=red enum=blue  @k8 core.slot of=order key=note many=true enum=gift enum=urgent');
+  w.tell('@en10 core.word lang=en text=price means=item.price  @en11 core.word lang=en text=tuesday means=tue of=meeting.day');
+  w.revise('i1', 'price', '2');
+  const pick = (r) => r.candidates.map(({ reading, used, unused, unresolved, verb, ...c }) => c);
+  // "no, red": replaces the colour of the previous frame, keeps the item and the verb
+  const prev = { lang: 'en', verb: 'order', args: ['pen', 'blue'] };
+  assert.deepEqual(pick(w.interpret({ lang: 'en', args: ['red'], correction: true }, { previous: prev })), [
+    { wires: '@new order color=red item=$r1', refer: { r1: { type: 'item', where: { name: 'pen' } } }, inherited: { words: ['pen'], verb: 'order' }, replaced: ['blue'] },
+  ]);
+  // in a many slot a follow-up adds and a correction replaces
+  const gift = { lang: 'en', verb: 'order', args: ['pen', 'gift'] };
+  assert.match(w.interpret({ lang: 'en', args: ['urgent'], anaphor: true }, { previous: gift }).candidates[0].wires, /note=urgent item=\$r1 note=gift/);
+  assert.deepEqual(w.interpret({ lang: 'en', args: ['urgent'], correction: true }, { previous: gift }).candidates[0].replaced, ['gift']);
+  // "and the price?": the question keeps its subject
+  const q = w.interpret({ lang: 'en', verb: 'price', question: true }, { previous: { lang: 'en', verb: 'stock', args: ['pen'], question: true } });
+  assert.deepEqual(pick(q)[0].question, { type: 'item', where: { name: 'pen' }, seek: 'price' });
+  assert.equal(w.score(q.candidates).candidates[0].answer.value, '2');
+  // "the other one": another wire of the same type than the one the previous reading resolved to
+  const other = w.score(w.interpret({ lang: 'en', other: true }, { previous: { frame: { lang: 'en', verb: 'meet', args: ['bob', 'tuesday'] }, ids: ['p2'] } }).candidates);
+  assert.deepEqual(other.candidates[0].referents.map((x) => x.ids), [['p1']]);
+  // "tuesday" after a told meeting: revise it
+  w.tell('@mt meeting with=$p2 day=mon');
+  const told = w.interpret({ lang: 'en', args: ['tuesday'] }, { previous: 'told' });
+  assert.deepEqual(pick(told), [{ revise: { id: 'mt', values: { day: 'tue' } }, inherited: { words: [], wire: 'mt' }, replaced: [] }]);
+  assert.deepEqual([w.score(told.candidates).candidates[0].ok, w.get('mt').attrs.day], [true, ['mon']], 'scored, not told');
+  // no wrong reading where there was none: a full frame is not a follow-up
+  const full = { lang: 'en', verb: 'meet', args: ['ann', 'monday'] };
+  assert.deepEqual(w.interpret(full, { previous: prev }).candidates, w.interpret(full).candidates);
+});

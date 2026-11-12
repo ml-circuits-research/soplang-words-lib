@@ -2323,3 +2323,26 @@ clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
 - `node bench/interpret.mjs`: a verb typo 0.031 ms; a name typo among 300 names 0.363 ms
   (22 candidates: the synthetic names n0..n299 have many neighbours at distance 1).
 - Docs: api.md (interpret, near words), index.d.ts.
+
+## R10.2 — follow-ups and ellipsis — done
+
+`npm test`: 254 pass, 0 fail on sources and built file, 253 in checking mode. Pilot
+output identical. `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`:
+clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
+
+- `interpret(frame, { previous })`. A follow-up is a frame with no verb or no arguments,
+  or marked by the host's front end `anaphor`, `correction` or `other` (the core does not
+  detect pronouns: that is language). It inherits the previous frame's verb, question flag
+  and words; its own words come first, so they take the slot (a correction blocks the
+  inherited value even in a many slot; a plain follow-up adds there).
+- `previous` is a frame, `{ frame, ids }` (for `other`: the referent becomes another wire
+  of the same type, `refer.not: ids`, honoured by score), or `'told'`: the last told
+  statement, read as `{ revise: { id, values } }`, a new candidate kind score judges with
+  `revise` inside its undone transaction.
+- Candidates carry `inherited: { verb, words, wire }` and `replaced`.
+- Test `follow-ups: ...`: "no, red" replaces blue and keeps pen and the verb; many slot add
+  versus correction; "and the price?" keeps pen and answers 2; "the other one" gives p1
+  after p2; "tuesday" after a told meeting revises it, scored and not told; a full frame
+  with `previous` reads exactly as without.
+- `node bench/interpret.mjs`: follow-up (previous frame): 1 candidate, interpret 0.029 ms, score 0.128 ms, ok true
+- `node bench/interpret.mjs`: follow-up (last told): 1 candidate, interpret 0.018 ms, score 0.027 ms, ok true

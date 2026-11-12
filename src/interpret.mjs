@@ -138,6 +138,8 @@ export const interpreting = {
    */
   interpret(frame, opts = {}) {
     if (Array.isArray(frame)) return this._interpretSplits(frame, opts);
+    if (opts.previous && !opts._follow && (frame.verb === undefined || !(frame.args?.length || frame.numbers?.length) || frame.anaphor || frame.correction || frame.other)) return this._interpretFollow(frame, opts);
+    const follow = opts._follow || null;
     const limit = opts.limit ?? 50;
     const ns = frame.ns ?? opts.ns;
     const lexicon = this.words(frame.lang);
@@ -157,10 +159,19 @@ export const interpreting = {
       items.push({ word: a.word, readings, role });
     }
     for (const n of frame.numbers || []) items.push({ word: String(n), readings: [{ kind: 'number', value: String(n) }], role: null });
+    // a follow-up: the previous frame's words come after this frame's, so what this frame states takes their place
+    for (const a of follow?.args || []) {
+      const x = typeof a === 'string' ? { word: a } : a;
+      const role = x.role === undefined ? null : (lexicon.get(norm(x.role)) || []).flatMap((e) => e.meanings).filter((m) => m.kind === 'key');
+      items.push({ word: x.word, readings: this._readingsOf(x.word, lexicon, ns), role, inherited: true });
+    }
+    for (const n of follow?.numbers || []) items.push({ word: String(n), readings: [{ kind: 'number', value: String(n) }], role: null, inherited: true });
     const verbs = frame.verb === undefined ? [] : (lexicon.get(norm(frame.verb)) || []).flatMap((e) => e.meanings.map((m) => ({ ...m, word: e.id })));
     if (frame.verb !== undefined && !verbs.length && opts.near !== false) verbs.push(...this._nearReadings(frame.verb, lexicon, ns, true));
     if (frame.verb !== undefined && !verbs.length) unresolved.push(frame.verb);
     let verbNear = null; // the near reading of the verb in the candidates being built
+    // a follow-up to the last told statement: what this frame states revises that wire
+    if (follow?.told && frame.verb === undefined) verbs.push({ kind: 'type', type: follow.told.type, revise: follow.told.id });
 
     const out = [];
     let dropped = 0;
@@ -185,7 +196,7 @@ export const interpreting = {
         if (i === items.length) return build(chosen.slice());
         let placed = false;
         for (const p of lists[i]) { // bounded: the places of one argument
-          if (taken.has(p.slot) && !p.many) continue;
+          if (taken.has(p.slot) && (!p.many || (items[i].inherited && follow?.correction))) continue; // a correction replaces, even in a many slot
           placed = true;
           taken.add(p.slot); chosen[i] = p;
           walk(i + 1);
@@ -198,7 +209,13 @@ export const interpreting = {
     const finish = (cand, chosen) => {
       cand.reading = chosen.map((p, i) => (p ? { word: items[i].word, as: p.as } : null)).filter(Boolean);
       cand.used = cand.reading.map((r) => r.word);
-      cand.unused = items.filter((it, i) => !chosen[i] && it.readings.length).map((it) => it.word);
+      cand.unused = items.filter((it, i) => !chosen[i] && it.readings.length && !it.inherited).map((it) => it.word);
+      if (follow) {
+        cand.inherited = { words: items.filter((it, i) => chosen[i] && it.inherited).map((it) => it.word) };
+        if (follow.verb !== undefined) cand.inherited.verb = follow.verb;
+        if (follow.told) cand.inherited.wire = follow.told.id;
+        cand.replaced = items.filter((it, i) => !chosen[i] && it.inherited && it.readings.length).map((it) => it.word);
+      }
       cand.unresolved = unresolved.slice();
       // words read as a near known word (a typo): an assumption score and rank count
       const near = [verbNear, ...chosen.map((p) => p?.near)].filter(Boolean);
@@ -243,13 +260,17 @@ export const interpreting = {
           if (r.kind === 'number' && numeric(s)) return { ...at, value: r.value };
           return null;
         }), (chosen) => {
-          const attrs = [], refer = {};
-          chosen.forEach((p) => {
+          const attrs = [], refer = {}, values = {};
+          chosen.forEach((p, i) => {
             if (!p) return;
-            if (p.refer) { const name = `r${++n}`; refer[name] = p.refer; attrs.push(`${p.slot}=$${name}`); }
-            else attrs.push(`${p.slot}=${this._quoteValue(p.value)}`);
+            if (p.refer) {
+              const name = `r${++n}`;
+              // "the other one": a referent taken from the previous frame is not the one it resolved to
+              refer[name] = items[i].inherited && follow?.other?.length ? { type: p.refer.type, not: follow.other } : p.refer; // another of the same type
+              attrs.push(`${p.slot}=$${name}`); values[p.slot] = `$${name}`;
+            } else { attrs.push(`${p.slot}=${this._quoteValue(p.value)}`); values[p.slot] = p.value; }
           });
-          const cand = { wires: `@${opts.id || 'new'} ${v.type}${attrs.length ? ' ' + attrs.join(' ') : ''}` };
+          const cand = v.revise ? { revise: { id: v.revise, values } } : { wires: `@${opts.id || 'new'} ${v.type}${attrs.length ? ' ' + attrs.join(' ') : ''}` };
           if (Object.keys(refer).length) cand.refer = refer;
           finish(cand, chosen);
         });
@@ -280,6 +301,32 @@ export const interpreting = {
       }
     }
     return { candidates: out, unresolved, dropped };
+  },
+
+  /**
+   * A follow-up ("no, a red one", "and the price?", "the other one", "make it yellow"):
+   * a frame with no verb or no arguments, or marked by the host's front end as `anaphor` (a pronoun or
+   * "one"), `correction` ("no, X") or `other` ("the other one"), read with the previous
+   * frame. It inherits the verb, the question flag and the words the previous frame had;
+   * what it states takes the place of what the previous frame said for the same slot (a
+   * correction even in a many slot). `previous` is a frame, or { frame, ids } with the ids
+   * the previous reading resolved to (for `other`), or 'told': the last told statement,
+   * which the frame then revises ({ revise: { id, values } }). Candidates say what they
+   * inherited (`inherited: { verb, words, wire }`) and which inherited words were replaced.
+   */
+  _interpretFollow(frame, opts) {
+    const prev = opts.previous;
+    const base = { ...opts, previous: undefined };
+    if (prev === 'told' || prev.told) {
+      const e = [...this.log].reverse().find((x) => x.op === 'tell' && x.facts?.length); // bounded: the log
+      const w = e && this._peek(e.facts[e.facts.length - 1]);
+      if (!w) return this.interpret(frame, base);
+      return this.interpret(frame, { ...base, _follow: { told: { id: w.id, type: w.type }, correction: !!frame.correction } });
+    }
+    const p = prev.frame || prev;
+    const defined = Object.fromEntries(Object.entries(frame).filter(([, v]) => v !== undefined));
+    const merged = { ...p, ...defined, verb: frame.verb ?? p.verb, args: frame.args || [], numbers: frame.numbers || [] };
+    return this.interpret(merged, { ...base, _follow: { args: p.args || [], numbers: p.numbers || [], verb: frame.verb === undefined ? p.verb : undefined, correction: !!frame.correction, other: frame.other ? prev.ids || [] : null } });
   },
 
   /** Alternative splits of one message: every reading of every split, as compound candidates. */

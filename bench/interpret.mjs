@@ -48,3 +48,13 @@ for (const f of [{ lang: 'en', verb: 'bokk', args: ['n17'] }, { lang: 'en', verb
   const r = w.interpret(f);
   console.log(`typo ${JSON.stringify(f.verb)} ${JSON.stringify(f.args)}: ${r.candidates.length} candidates, interpret ${t.toFixed(3)} ms, read as ${JSON.stringify(r.candidates[0]?.assumes)}`);
 }
+// follow-ups: "monday then" after a meeting frame, and after the last told statement
+const prevF = { lang: 'en', verb: 'meet', args: [{ role: 'with', word: 'q3' }] };
+w.tell('@mt meeting with=$p3 day=tue');
+for (const [label, o] of [['previous frame', { previous: prevF }], ['last told', { previous: 'told' }]]) {
+  const f = { lang: 'en', args: ['monday'] };
+  const t = med(Array.from({ length: 21 }, () => time(() => w.interpret(f, o))));
+  const r = w.interpret(f, o);
+  const s = med(Array.from({ length: 21 }, () => time(() => w.score(r.candidates))));
+  console.log(`follow-up (${label}): ${r.candidates.length} candidate, interpret ${t.toFixed(3)} ms, score ${s.toFixed(3)} ms, ok ${w.score(r.candidates).candidates[0].ok}`);
+}

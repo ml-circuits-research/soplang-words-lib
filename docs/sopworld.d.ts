@@ -61,6 +61,10 @@ export interface Frame {
   question?: boolean;
   mode?: string;
   ns?: string;
+  /** marks the front end sets for a follow-up */
+  anaphor?: boolean;
+  correction?: boolean;
+  other?: boolean;
 }
 export interface Reading {
   reading: { word: string; as: string }[];
@@ -70,11 +74,16 @@ export interface Reading {
   verb?: string;
   /** words read as a near known word */
   assumes?: { word: string; read: string }[];
+  /** for a follow-up: what came from the previous frame or statement */
+  inherited?: { verb?: string; words: string[]; wire?: string };
+  replaced?: string[];
 }
 export interface ScoreCandidate {
   /** a statement; references named in `refer` are resolved against the state */
   wires?: string | Wire[];
-  refer?: Record<string, { type?: string; where?: Record<string, string>; ns?: string }>;
+  refer?: Record<string, { type?: string; where?: Record<string, string>; ns?: string; /** ids it is not */ not?: string[] }>;
+  /** a change to a told wire (a follow-up) */
+  revise?: { id: string; values: Record<string, string> };
   action?: string;
   args?: Record<string, string>;
   question?: Question | Wire | string;
@@ -342,7 +351,7 @@ export class World {
   /** the core.word entries of a language, by text */
   words(lang?: string): Map<string, { id: string; lang: string; means: string; of?: string; meanings: WordMeaning[] }[]>;
   /** read a language-neutral frame into candidates for score; nothing invented */
-  interpret(frame: Frame | Frame[] | Frame[][], options?: { limit?: number; id?: string; ns?: string; /** read unknown words as the nearest known ones (default true) */ near?: boolean }): { candidates: (ScoreCandidate & Reading)[]; unresolved: string[]; dropped: number };
+  interpret(frame: Frame | Frame[] | Frame[][], options?: { limit?: number; id?: string; ns?: string; /** read unknown words as the nearest known ones (default true) */ near?: boolean; /** a follow-up to this frame, or to the last told statement */ previous?: Frame | { frame: Frame; ids?: string[] } | 'told' }): { candidates: (ScoreCandidate & Reading)[]; unresolved: string[]; dropped: number };
   /** example sentences from the tools, slots and words, with the host's templates */
   examples(lang: string, templates?: { action?: Template; statement?: Template; question?: Template }, options?: { per?: number; all?: boolean; sample?: number }): Example[];
   /** judge candidate readings against the world; nothing is told */

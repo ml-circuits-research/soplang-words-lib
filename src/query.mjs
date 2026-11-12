@@ -91,7 +91,7 @@ export const querying = {
     const read = (cand.assumes || []).filter((a) => a.word !== undefined); // words read as near known ones
     const options = {}; // referent -> the ids it may be
     for (const [name, d] of Object.entries(cand.refer || {})) {
-      const ids = this._matching({ type: d.type, where: d.where || {}, ns: d.ns }).map((w) => w.id);
+      const ids = this._matching({ type: d.type, where: d.where || {}, ns: d.ns }).map((w) => w.id).filter((id) => !d.not?.includes(id));
       out.referents.push({ name, ids, unique: ids.length === 1 });
       if (!ids.length) out.lacks.push({ referent: name, type: d.type });
       else options[name] = ids.slice(0, 20);
@@ -163,6 +163,12 @@ export const querying = {
           out.lacks.push(...this.open().filter((o) => mine.has(o.id)).map((o) => ({ id: o.id, key: o.key, ask: o.ask })));
           out.assumes.push(...this._next().fills.filter((f) => mine.has(f.id) && f.kind === 'default').map((f) => ({ id: f.id, key: f.key, value: f.value })));
         }
+      }
+      if (cand.revise) { // a follow-up that changes a wire already told
+        const values = Object.fromEntries(Object.entries(cand.revise.values || {}).filter(([, v]) => !missing.has(v)).map(([k, v]) => [k, sub(v)]));
+        const r = this.revise(cand.revise.id, values);
+        out.ok = r.ok;
+        out.violations = r.violations || [];
       }
       if (cand.action) {
         const args = Object.fromEntries(Object.entries(cand.args || {}).map(([k, v]) => [k, typeof v === 'string' ? sub(v) : v]));

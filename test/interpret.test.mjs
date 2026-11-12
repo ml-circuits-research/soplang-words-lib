@@ -145,3 +145,26 @@ test('examples: sentences from the tools, slots and words with the host\'s templ
   const en = w.examples('en', { statement: ({ verb, args }) => `please ${verb} ${args.map((a) => a.text).join(' and ')}` }, { all: true, per: 1 });
   assert.ok(en.some((e) => e.text === 'please order pen and 1' && e.frame.numbers[0] === '1'));
 });
+
+test('near words: an unknown word is read as the nearest known one, as an assumption; known words are never corrected', () => {
+  const w = shopAndCalendar();
+  w.tell('@en8 core.word lang=en text=reserve means=reserve');
+  const typo = w.interpret({ lang: 'en', verb: 'resreve', args: ['pne'] });
+  assert.deepEqual(strip(typo.candidates), [{ action: 'reserve', args: { item: 'pen' }, assumes: [{ word: 'resreve', read: 'reserve' }, { word: 'pne', read: 'pen' }] }]);
+  assert.deepEqual(typo.unresolved, []);
+  const meet = w.score(w.interpret({ lang: 'en', verb: 'meet', args: [{ role: 'with', word: 'bbo' }, 'mondya'] }).candidates);
+  assert.equal(meet.candidates[0].why, 'consistent with the world; every referent settled; lacks nothing; uses every word; assumes bbo is bob, mondya is monday');
+  // exact readings rank first
+  const both = w.score([...w.interpret({ lang: 'en', verb: 'order', args: ['inc'] }).candidates, ...w.interpret({ lang: 'en', verb: 'order', args: ['ink'] }).candidates]);
+  assert.deepEqual([both.order, both.candidates[0].on], [[1, 0], 'assumes']);
+  // bounds: 1 edit for words of 4 letters or fewer, 2 for longer; nothing near stays unresolved
+  assert.deepEqual(w.interpret({ lang: 'en', verb: 'order', args: ['oxk'] }).unresolved, ['oxk']);
+  assert.deepEqual(w.interpret({ lang: 'en', verb: 'ordxx', args: [] }).candidates.map((c) => c.assumes), [[{ word: 'ordxx', read: 'order' }]]);
+  // no wrong reading where there was none before: frames of known words read the same with or without near words
+  const frames = [
+    { lang: 'en', verb: 'book', args: ['ink'] }, { lang: 'en', verb: 'meet', args: ['ann', 'monday'] },
+    { lang: 'ro', verb: 'comandă', args: ['pix'], numbers: [2] }, { lang: 'ro', verb: 'stoc', args: ['pix'], question: true },
+    { lang: 'en', verb: 'order', args: ['pen', 'ink'] },
+  ];
+  for (const f of frames) assert.deepEqual(w.interpret(f).candidates, w.interpret(f, { near: false }).candidates, JSON.stringify(f));
+});

@@ -2302,3 +2302,24 @@ clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
 A minor version: `core.word` is new vocabulary and the default ranking order changed
 (Q19). `npm test` 252 / 252 / 251 (sources, built file, checking mode). Pilot 147/147,
 212/217, 231/232, output identical. Open for the reviewer: Q19.
+
+## Q19 closed; R10.1 — near words (typos) — done
+
+`npm test`: 253 pass, 0 fail on sources and built file, 252 in checking mode. Pilot
+output identical. `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`:
+clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
+
+- A word with no reading (no word wire, no name the world holds, no enum value) is read
+  through the nearest known words: edit distance with adjacent swaps (bounded, stops past
+  the limit), at most 1 for words of 4 letters or fewer, 2 for longer, only the smallest
+  distance found. Verb: words meaning an action, a type or a key. Argument: any word, enum
+  values, values of identifying keys (kept per version). The schema then places them as
+  any reading. Known words are never corrected; `near: false` turns it off.
+- Candidates carry `assumes: [{ word, read }]`; score keeps them in `assumes`, rank says
+  `assumes pne is pen`, so exact readings rank first (`on: 'assumes'`).
+- Test `near words: ...`: verb and argument typos, a role-marked name and an enum word,
+  exact first, the bounds (`oxk` stays unresolved; `ordxx` is read as order), and five
+  frames of known words give identical candidates with and without near words.
+- `node bench/interpret.mjs`: a verb typo 0.031 ms; a name typo among 300 names 0.363 ms
+  (22 candidates: the synthetic names n0..n299 have many neighbours at distance 1).
+- Docs: api.md (interpret, near words), index.d.ts.

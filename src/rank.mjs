@@ -21,7 +21,7 @@ export const RANKING = [
   { name: 'words', measure: leftOver,
     say: (r) => (leftOver(r) ? `leaves out ${[...r.words.unused, ...r.words.unresolved].join(', ')}` : 'uses every word') },
   { name: 'assumes', measure: (r) => (r.assumes || []).length,
-    say: (r) => (r.assumes?.length ? `assumes ${r.assumes.map((a) => `${a.key}=${a.value}`).join(', ')}` : 'assumes nothing') },
+    say: (r) => (r.assumes?.length ? `assumes ${r.assumes.map((a) => (a.word !== undefined ? `${a.word} is ${a.read}` : `${a.key}=${a.value}`)).join(', ')}` : 'assumes nothing') },
 ];
 
 /**

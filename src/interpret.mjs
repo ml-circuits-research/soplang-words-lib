@@ -18,6 +18,28 @@ const WORD = 'core.word';
 const first = (w, k) => w.attrs[k]?.[0];
 const norm = (t) => String(t).trim().toLowerCase();
 
+/** Edit distance with adjacent transpositions, stopping once it exceeds max (bounded). */
+export function editDistance(a, b, max = 2) {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev2 = null, prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) { // bounded: the length of a word
+    const cur = [i];
+    let low = i;
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      let d = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+      if (prev2 && i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d = Math.min(d, prev2[j - 2] + 1);
+      cur.push(d);
+      if (d < low) low = d;
+    }
+    if (low > max) return max + 1;
+    prev2 = prev; prev = cur;
+  }
+  return prev[b.length];
+}
+/** How far a word may be from a known one: 1 for short words (4 letters or fewer), else 2. */
+const reach = (w) => (w.length <= 4 ? 1 : 2);
+
 export const interpreting = {
   /**
    * The words of a language: text -> [{ id, means, of, meanings }], each meaning one of
@@ -130,12 +152,15 @@ export const interpreting = {
         role = (lexicon.get(norm(a.role)) || []).flatMap((e) => e.meanings).filter((m) => m.kind === 'key');
         if (!role.length) unresolved.push(a.role);
       }
+      if (!readings.length && opts.near !== false) readings.push(...this._nearReadings(a.word, lexicon, ns, false));
       if (!readings.length) unresolved.push(a.word);
       items.push({ word: a.word, readings, role });
     }
     for (const n of frame.numbers || []) items.push({ word: String(n), readings: [{ kind: 'number', value: String(n) }], role: null });
     const verbs = frame.verb === undefined ? [] : (lexicon.get(norm(frame.verb)) || []).flatMap((e) => e.meanings.map((m) => ({ ...m, word: e.id })));
+    if (frame.verb !== undefined && !verbs.length && opts.near !== false) verbs.push(...this._nearReadings(frame.verb, lexicon, ns, true));
     if (frame.verb !== undefined && !verbs.length) unresolved.push(frame.verb);
+    let verbNear = null; // the near reading of the verb in the candidates being built
 
     const out = [];
     let dropped = 0;
@@ -152,7 +177,7 @@ export const interpreting = {
 
     // every way of giving each argument one place (a place takes one argument), bounded by limit
     const assign = (placesOf, build) => {
-      const lists = items.map((it) => it.readings.flatMap((r) => placesOf(r, it)).filter(Boolean));
+      const lists = items.map((it) => it.readings.flatMap((r) => [].concat(placesOf(r, it)).filter(Boolean).map((p) => (r.near ? { ...p, near: r.near } : p))));
       const chosen = new Array(items.length).fill(null);
       const taken = new Set();
       const walk = (i) => {
@@ -175,12 +200,16 @@ export const interpreting = {
       cand.used = cand.reading.map((r) => r.word);
       cand.unused = items.filter((it, i) => !chosen[i] && it.readings.length).map((it) => it.word);
       cand.unresolved = unresolved.slice();
+      // words read as a near known word (a typo): an assumption score and rank count
+      const near = [verbNear, ...chosen.map((p) => p?.near)].filter(Boolean);
+      if (near.length) cand.assumes = near.map((n) => ({ word: n.word, read: n.read }));
       if (ns !== undefined) cand.ns = ns;
       if (frame.verb !== undefined) cand.verb = frame.verb;
       push(cand);
     };
 
     for (const v of frame.question ? [] : verbs) {
+      verbNear = v.near || null;
       if (v.kind === 'action') {
         const a = c.actions.get(v.name);
         const params = (a.params || []).map((p) => {
@@ -233,6 +262,7 @@ export const interpreting = {
       const types = [...verbs, ...items.flatMap((it) => it.readings)].filter((m) => m.kind === 'type').map((m) => m.type);
       const targets = seeks.length ? seeks : [...new Set(types)].map((type) => ({ kind: 'key', type, key: undefined }));
       for (const sk of targets) {
+        verbNear = sk.near || null;
         assign((r, it) => {
           if (r.kind === 'key' && r === sk) return [{ slot: '\u0000seek', as: `seek ${sk.type}.${sk.key}` }];
           if (r.kind === 'type' && r.type === sk.type) return [{ slot: '\u0000type', as: `type ${r.type}` }];
@@ -383,6 +413,62 @@ export const interpreting = {
       }
     }
     return out;
+  },
+
+  /**
+   * Readings of a word that is not known, through the nearest known words (a typo): words
+   * of the language within a bounded edit distance (1 for words of 4 letters or fewer, else
+   * 2), only those at the smallest distance found. For a verb, words that mean an action,
+   * a type or a key; for an argument, any word, an enum value, or a name the world holds
+   * under an identifying key. Each reading carries near: { word, read }.
+   */
+  _nearReadings(word, lexicon, ns, verb) {
+    const c = this._compiled();
+    const text = norm(word), max = reach(text);
+    let best = max + 1;
+    const found = []; // [{ read, readings }]
+    const consider = (read, make) => {
+      if (read === text) return;
+      const d = editDistance(text, read, Math.min(max, best));
+      if (d > max || d > best) return;
+      if (d < best) { best = d; found.length = 0; }
+      found.push({ read, make });
+    };
+    for (const [t, es] of lexicon) { // bounded: the words of one language
+      const ms = es.flatMap((e) => e.meanings.map((m) => ({ ...m, word: e.id })));
+      if (verb && !ms.some((m) => m.kind !== 'value')) continue;
+      consider(t, () => (verb ? ms.filter((m) => m.kind !== 'value') : this._readingsOf(t, lexicon, ns)));
+    }
+    if (!verb) {
+      for (const n of this._names()) consider(norm(n.text), () => this._readingsOf(n.text, lexicon, ns)); // bounded: the names the world holds
+    }
+    const out = [], seen = new Set();
+    for (const f of found) {
+      for (const r of f.make()) {
+        const key = JSON.stringify([r.kind, r.type, r.key, r.value, r.name, r.where]);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({ ...r, near: { word, read: f.read } });
+      }
+    }
+    return out;
+  },
+
+  /** The names a typo may be near: enum values and the values of identifying keys (kept per version). */
+  _names() {
+    if (this._namesAt?.version === this.version && this._namesAt.c === this._compiled()) return this._namesAt.list;
+    const c = this._compiled();
+    const list = [], seen = new Set();
+    const add = (text) => { if (!seen.has(text)) { seen.add(text); list.push({ text }); } };
+    for (const [type, mine] of c.slots.own) {
+      for (const [key, s] of mine) {
+        for (const v of s.enum || []) add(v);
+        if (!s.identity) continue;
+        for (const id of this.byType.get(type) || []) { const v = this._peek(id)?.attrs[key]?.[0]; if (v !== undefined && v[0] !== '$') add(v); } // bounded: the wires of a type
+      }
+    }
+    this._namesAt = { version: this.version, c, list };
+    return list;
   },
 
   _quoteValue(v) {

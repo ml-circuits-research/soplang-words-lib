@@ -42,3 +42,9 @@ const a = med(Array.from({ length: 21 }, () => time(() => w.interpret(split))));
 const rs = w.interpret(split);
 const b = med(Array.from({ length: 21 }, () => time(() => w.score(rs.candidates))));
 console.log(`splits ${rs.candidates.length} candidates: interpret ${a.toFixed(3)} ms, score ${b.toFixed(3)} ms; order ${w.score(rs.candidates).order}`);
+// typos: an unknown verb and an unknown name, read through the nearest known words (300 item names)
+for (const f of [{ lang: 'en', verb: 'bokk', args: ['n17'] }, { lang: 'en', verb: 'book', args: ['n1x7'] }]) {
+  const t = med(Array.from({ length: 21 }, () => time(() => w.interpret(f))));
+  const r = w.interpret(f);
+  console.log(`typo ${JSON.stringify(f.verb)} ${JSON.stringify(f.args)}: ${r.candidates.length} candidates, interpret ${t.toFixed(3)} ms, read as ${JSON.stringify(r.candidates[0]?.assumes)}`);
+}

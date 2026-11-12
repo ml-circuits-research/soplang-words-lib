@@ -88,6 +88,7 @@ export const querying = {
     if (cand.parts) return this._scoreParts(cand, index);
     const out = { index, ok: true, violations: [], referents: [], lacks: [], assumes: [] };
     if (cand.unused || cand.unresolved) out.words = { used: cand.used || [], unused: cand.unused || [], unresolved: cand.unresolved || [] };
+    const read = (cand.assumes || []).filter((a) => a.word !== undefined); // words read as near known ones
     const options = {}; // referent -> the ids it may be
     for (const [name, d] of Object.entries(cand.refer || {})) {
       const ids = this._matching({ type: d.type, where: d.where || {}, ns: d.ns }).map((w) => w.id);
@@ -110,7 +111,7 @@ export const querying = {
     }
     const best = fitting[0]?.r || first;
     if (keep) this._scoreWith(cand, fitting[0]?.bind || combos[0], missing, true); // a part of a message: later parts see it
-    Object.assign(out, { ok: best.ok, violations: best.violations, lacks: [...out.lacks, ...best.lacks], assumes: best.assumes });
+    Object.assign(out, { ok: best.ok, violations: best.violations, lacks: [...out.lacks, ...best.lacks], assumes: [...read, ...best.assumes] });
     if (best.action) out.action = best.action;
     if (best.answer) out.answer = best.answer;
     // a referent the description left open may be settled by what fits the world

@@ -677,7 +677,15 @@ argument with no word wire is read as an entity it names by an identifying key, 
 enum value spelled as is. Returns `{ candidates, unresolved, dropped }`; each candidate
 also has `reading` (which word went where), `used`, `unused` and `unresolved`. Nothing
 is invented: every value comes from a word or a number of the frame. Options: `limit`
-(default 50 candidates), `id` (of the new wire, default `new`).
+(default 50 candidates), `id` (of the new wire, default `new`), `near` (default true).
+
+A word that is not known (no word wire, no name, no enum value) is read as the nearest
+known words of the language (a typo): within an edit distance of 1 for words of 4
+letters or fewer, 2 for longer, adjacent swaps counting one; only those at the smallest
+distance; for the verb only words that mean an action, a type or a key. Such a candidate
+has `assumes: [{ word, read }]`, which `score` keeps, so `rank` puts exact readings
+first and a host can say "(I read X as Y)". A known word is never corrected; `near:
+false` turns this off.
 
 One message may be several frames ("reserve the pen and order ink"). A list of frames
 is one split of it; a list of lists is alternative splits. Each candidate is then `{

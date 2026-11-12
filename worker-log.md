@@ -2436,3 +2436,24 @@ clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
   7.0–21.0 ms, delta 1.8 kB / 4.5–6.2 ms; 40 turns: 3789.5 kB / 301.0–311.7 ms, 97.4 kB /
   6.3–8.7 ms, 8.7 kB / 2.8–6.6 ms. `bundle`: delta 3.8 ms (8 turns), 2.4 ms (40 turns).
 - Docs: api.md (toJSON options, fromJSON with base), index.d.ts.
+
+## R11.2 — redo after a rewind — done
+
+`npm test`: 260 pass, 0 fail on sources and built file, 259 in checking mode. Pilot
+output identical. `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`:
+clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
+
+- `rewind(mark)`: when the mark is on the way of the log, the entries it takes back go on
+  the redo stack as one group; `redo()` tells them again until the next statement (which
+  clears the stack, as after undo). After an undo past the mark there is nothing to redo.
+- `rewind(mark, { only })`: the sync is a statement (it clears older redo); then the
+  statements that put the unit back as it was are computed on a fork and pushed, so
+  `redo()` restores the unit.
+- `redo()` no longer leaves an open mark behind (it used `mark()` internally; now a private
+  fork), and a refused redo keeps the redo stack.
+- Test `redo after a rewind ...`: rewind then redo of two statements; nothing more to redo;
+  `only: 'note'` then redo; a statement after a rewind makes it final; a refused redo
+  leaves world, stack and marks as they were.
+- `node bench/fork.mjs` (rewind column, 60 / 600 / 6,000 wires): 0.0131 / 0.0099 / 0.0104
+  ms, flat as before (0.009–0.015 ms in R6/R7).
+- Docs: api.md (rewind and redo), the rewind doc comment.

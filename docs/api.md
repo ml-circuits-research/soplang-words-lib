@@ -392,7 +392,9 @@ mark }`. `rewind(mark)` makes the world exactly what it was and returns `{ ok, r
 added, changed }`; the marks made after it are closed. A mark can be used again.
 `rewind(mark, { only })` takes back one unit only: the told wires of a type (`only:
 'note'`) or of an id prefix (`only: { prefix: 'ui.' }`) become what they were at the mark,
-in one transaction, and everything else stays. `toJSON({ timeline: true })` also writes
+in one transaction, and everything else stays. What a rewind takes back is kept as after
+`undo()`: `redo()` tells it again, as one step, until the next statement (for `only`, the
+unit as it was before the rewind). `toJSON({ timeline: true })` also writes
 the open marks and what `redo` would tell again, and `World.fromJSON` restores them, so a
 host that restarts keeps undo, redo and rewind; with `since: base` only what came after
 the base is written (see `World.fromJSON`).

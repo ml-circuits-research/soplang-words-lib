@@ -325,3 +325,35 @@ test('snapshots: marks as positions in one log, and deltas against a base (toJSO
   ro.rewind(ro.marks()[0].mark);
   assert.equal(ro.has('n1'), false);
 });
+
+test('redo after a rewind tells again what the rewind took back, until the next statement; with only= too', async () => {
+  const { World } = await import('../tools/lib-under-test.mjs');
+  const w = new World();
+  w.tell('@a item name=a');
+  const m = w.mark();
+  w.tell('@b item name=b');
+  w.tell('@c item name=c');
+  assert.deepEqual(w.rewind(m).removed, ['b', 'c']);
+  const r = w.redo();
+  assert.deepEqual([r.ok, w.has('b'), w.has('c')], [true, true, true]);
+  assert.equal(w.redo().violations[0].kind, 'nothing-to-redo');
+  // one unit only, then redo puts the unit back as it was
+  const m2 = w.mark();
+  w.tell('@n note text=x');
+  w.tell('@d item name=d');
+  assert.deepEqual(w.rewind(m2, { only: 'note' }).removed, ['n']);
+  assert.deepEqual([w.has('n'), w.has('d')], [false, true]);
+  assert.deepEqual([w.redo().ok, w.has('n'), w.has('d')], [true, true, true]);
+  // the next statement makes the rewind final
+  w.rewind(m2);
+  w.tell('@e item name=e');
+  assert.equal(w.redo().violations[0].kind, 'nothing-to-redo');
+  // a refused redo leaves the world and the redo stack as they were, and adds no mark
+  const v = new World();
+  v.load('@k core.slot of=item key=n kind=integer');
+  v.tell('@y item n=1');
+  v._redo = [[{ op: 'tell', wires: [{ id: 'x', type: 'item', attrs: { n: ['abc'] }, pattern: false }], facts: ['x'] }]]; // a group the matrix refuses
+  const marks = v.marks().length;
+  const bad = v.redo();
+  assert.deepEqual([bad.ok, v.has('x'), v._redo.length, v.marks().length], [false, false, 1, marks]);
+});

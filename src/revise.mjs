@@ -187,14 +187,15 @@ export const revision = {
       if (!stack.length) return { ok: false, redone: [], removed: [], added: [], changed: [], violations: [{ kind: 'nothing-to-redo', why: 'nothing has been undone since the last statement' }] };
       const groups = stack.slice(-n).reverse();
       const was = this.fork();
-      const mark = this.mark();
+      const back = { world: this.fork(), seq: this.seq }; // not an open mark: only to go back if a group is refused
       this._redoing = true;
       let refused = null;
       try {
         for (const entries of groups) { refused = this._replay(entries); if (refused) break; } // bounded: the undone groups
       } finally { this._redoing = false; }
       if (refused) {
-        this.rewind(mark);
+        this.rewind(back);
+        this._redo = stack;
         return { ok: false, redone: [], removed: [], added: [], changed: [], violations: refused.violations };
       }
       this._redo = stack.slice(0, stack.length - groups.length);
@@ -269,6 +270,13 @@ export const revision = {
   /** The open marks, oldest first: { label, seq, mark }. A rewind closes the marks made after the one it goes back to. */
   marks() { return (this._marks || []).map((m) => ({ label: m.label, seq: m.seq, mark: m })); },
 
+  /**
+   * Make the world what it was at the mark. What the rewind takes back is kept, as after
+   * undo(): redo() tells it again, as one step, until the next statement (when the mark is
+   * on the way of the log: an undo past the mark leaves nothing to redo). With { only },
+   * one unit (the told wires of a type or an id prefix) is put back, as one statement;
+   * redo() then puts the unit back as it was before the rewind.
+   */
   rewind(mark, { only } = {}) {
     if (!mark || !mark.world || typeof mark.world.fork !== 'function') throw new Error('sopworld: rewind needs a mark from world.mark()');
     if (this._tx) throw new Error('sopworld: rewind inside a transaction');
@@ -278,11 +286,22 @@ export const revision = {
       const coll = typeof only === 'string' ? { type: only } : only;
       const c = this._compiled();
       const inside = (w) => (coll.type ? c.isA(w.type, coll.type) : w.id.startsWith(coll.prefix));
+      const before = this.told().filter(inside);
       const r = this.sync(coll, mark.world.told().filter(inside), { raw: true });
+      if (r.ok && (r.retracted.length || r.told.length || r.replaced.length)) {
+        // redo() puts the unit back as it was: the statements that would, computed on a fork
+        const f = this.fork();
+        f.sync(coll, before, { raw: true });
+        const entries = f.log.slice(this.log.length);
+        if (entries.length) this._redo = [...(this._redo || []), entries];
+      }
       return { ok: r.ok, removed: r.retracted || [], added: r.told || [], changed: r.replaced || [], violations: r.violations };
     }
     const at = (this._marks || []).indexOf(mark);
     if (at >= 0) this._marks = this._marks.slice(0, at + 1);
+    // what the rewind takes back, when the mark is on the way of the log: redo() tells it again
+    const L = mark.world.log.length;
+    const back = L < this.log.length && this._startsWith(mark.world.log) ? this.log.slice(L) : null;
     const was = this.fork();
     const copy = mark.world.fork();
     const events = this.events;
@@ -298,6 +317,7 @@ export const revision = {
       }
     }
     this._adopt(copy, 'rewind', touched ? [...touched] : null);
+    if (back) this._redo = [...(this._redo || []), back];
     this.events = layerList(events);
     this.events.push({ seq: this.seq, op: 'rewind', to: mark.seq, ...(touched ? {} : { rebuilt: true }) });
     this._emitted = this.events.length;

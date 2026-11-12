@@ -4,6 +4,19 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
 
 **The user's direction: sopworld is a general, useful library for self-consistent worlds of SOP Lang wires. It must be *compatible* with the PSys2 worlds, but it is not built *for* them.** Nothing PSys2-specific goes into the core: no PSys2 type names, no PSys2 envelope, no PSys2 file layout. Every feature below must make sense for any user of the library (a scheduler, a digital twin, a tutoring system, a game) and be documented with a neutral example. PSys2 is the first demanding user: its needs show what is missing, and a small compatibility suite (`compat/psys2/`) proves that such a system can sit on the library through its public, general mechanisms.
 
+## 2026-11-12 01:25 (reviewer): 0.9.0 validated; Q19; Round 10
+
+**0.9.0 (f062052) validated.** `npm test`: 250 pass, 0 fail. Pilot 147/147, 212/217, 231/232. `git grep -i psys2 src/` is empty. R9.1–R9.4 are accepted. The host is told to re-vendor at f062052.
+
+**Q19: (b) is right, keep it.** Leaving out part of what was said is worse than resting on a declared default. The host's audit has a real case of exactly this: in one language, "make the hair red" was read as "make it red" with "hair" dropped, and the wrong thing changed. Close Q19.
+
+**Round 10: the reader core against the errors a host actually sees.** The host audited about 1,160 formalization errors. Beyond compounds (done in R9.3) and state-based choice (`score`/`rank`), these classes are general and belong in `interpret`. They are listed in order of size. Use neutral examples, one commit each, and add tests that show **no wrong reading where there was none before**.
+1. **R10.1 Near words (typos).** Typos are the largest class: 222 errors, every one a word that is not in the lexicon. When a frame word is not a `core.word`, propose the nearest words of that language: a bounded edit distance (at most 2, and 1 for short words), only among the words the schema can use in that slot. Each such candidate carries `assumes: [{ word, read }]`, so `rank` puts exact readings first and the host can say "(I read X as Y)". Never correct a word that is itself a known word.
+2. **R10.2 Follow-ups and ellipsis.** About 40 errors are follow-ups: "no, a red one", "make it yellow", "the other one", "and the price?". Add `interpret(frame, { previous })`: a frame with no verb, or with a pronoun or "one", inherits the verb, type and missing arguments from the previous frame or the last told statement, and replaces what it states. Candidates say what they inherited. Corrections ("no, X") replace the value of the previous frame's matching slot instead of adding to it.
+3. **R10.3 Loose words.** About 240 errors are word salad: "red house big", "pen two buy". `interpret` of a bag of words, with no verb order: try each action whose words or argument types match. Return candidates ranked by words used. Leave the host to ask when the top two tie. Bound the search, and charge it to the budget.
+4. **R10.4 Word forms.** One language needs inflected forms: plural, definite article attached to the word ("părul", "copacii"). Do not build any language into the core. Let `core.word` carry several `text=` forms, and accept an optional host-registered `lemma(lang, token)` function used before lookup. Document the contract.
+5. **R10.5 Veto report.** `rank` already explains places. Add `world.veto(scored, { minWords })`, which says for the top candidate whether a host should answer or not, with the reasons: inconsistent, no referent, words left out, action not available. A host must be able to turn a would-be wrong answer into "not understood" or a question. This is the host's first use of the reader core.
+
 ## 2026-11-12 00:40 (reviewer): 0.8.0/0.8.1 validated; answers to Q15–Q18
 
 **Validated at 23f81b0 (0.8.1).**

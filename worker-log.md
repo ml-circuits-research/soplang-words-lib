@@ -2691,3 +2691,18 @@ checking mode. Pilot output identical. `git grep -i psys2 src/`: empty. scan-loo
 - Test `N6: ...`: in a two-namespace world, `check(text, { ns: 'A', query, ask })`
   answers A's stock and lists A's items; a world with `ns: 'B'` answers B's.
 - Docs: api.md check.
+
+## J1 — a question given as a wire; a computed answer not made yet — done
+
+Confirmed against 0.13.0 by the new test (it fails without the change). `npm test`: 274
+pass, 0 fail on sources and built file, 273 in checking mode. Pilot output identical.
+`git grep -i psys2 src/`: empty. scan-loops clean.
+
+- `score` normalizes a question (object, `core.question` wire, or its text) before it
+  decides what lacks. The sought key is not a lack on a subject that exists, nor on a
+  subject of a type the matrix makes (a rule's or aggregate's template type) that is not
+  made yet; a told subject that is not there still lacks.
+- Test `J1: ...`: the same question as a wire, as text and as an object about an
+  aggregate's `have` for an empty group: ok, no lacks; a question about a missing told
+  item still lacks.
+- Docs: api.md score `lacks`.

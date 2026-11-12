@@ -200,12 +200,15 @@ export const querying = {
         out.judgedBy ||= 'question';
         out.answer = r;
         if (r.status === 'refused') { out.ok = false; out.violations.push(...(r.violations || [])); }
-        // the value a question asks for is what it wants, not what it lacks: only a subject
-        // that is not there (no id) lacks
+        // the value a question asks for is what it wants, not what it lacks: on a subject
+        // that is there, or on one the matrix makes (a computed answer not made yet); only a
+        // told subject that is not there lacks. The question may be an object, a wire or text.
         if (r.status === 'missing') {
-          const q = typeof cand.question === 'object' && !cand.question.type ? null : cand.question;
+          const q = this._question(cand.question);
           const c = this._compiled();
-          const sought = (m) => q?.seek !== undefined && m.id !== undefined && c.shortKey(m.type, m.key) === c.shortKey(m.type, q.seek);
+          const made = c._madeTypes || (c._madeTypes = new Set(c.rules.flatMap((x) => x.then.map((t) => t.type))));
+          const computed = (type) => [...made].some((t) => c.isA(t, type) || c.isA(type, t));
+          const sought = (m) => q?.seek !== undefined && c.shortKey(m.type, m.key) === c.shortKey(m.type, q.seek) && (m.id !== undefined || computed(m.type));
           out.lacks.push(...(r.missing || []).filter((m) => !sought(m)));
         }
       }

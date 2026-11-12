@@ -149,3 +149,15 @@ test('score judges readings whose action the matrix does not declare: referents,
   assert.equal(w.veto(w.score([{ action: 'buy', args: { what: 'x' } }])).reasons[0].reason, 'action-unavailable');
   assert.equal(w.has('\u0006judge1'), false, 'nothing told');
 });
+
+test('J1: a question given as a wire, about a computed answer not made yet, does not lack what it asks', () => {
+  const w = world();
+  w.load('@ln line cat=?c\n@hv have cat=?c count=?n\n@ag core.aggregate over=$ln by=?c count=?n then=$hv');
+  const wire = { id: 'q1', type: 'core.question', attrs: { type: ['have'], seek: ['count'], 'where.cat': ['toys'] }, pattern: false };
+  for (const question of [wire, '@q1 core.question type=have seek=count where.cat=toys', { type: 'have', where: { cat: 'toys' }, seek: 'count' }]) {
+    const r = w.score([{ question }]);
+    assert.deepEqual([r.candidates[0].ok, r.candidates[0].lacks], [true, []], JSON.stringify(question));
+  }
+  // a told subject that is not there still lacks
+  assert.equal(w.score([{ question: '@q2 core.question type=item seek=color where.name=cup' }]).candidates[0].lacks.length, 1);
+});

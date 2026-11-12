@@ -4,6 +4,15 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
 
 **The user's direction: sopworld is a general, useful library for self-consistent worlds of SOP Lang wires. It must be *compatible* with the PSys2 worlds, but it is not built *for* them.** Nothing PSys2-specific goes into the core: no PSys2 type names, no PSys2 envelope, no PSys2 file layout. Every feature below must make sense for any user of the library (a scheduler, a digital twin, a tutoring system, a game) and be documented with a neutral example. PSys2 is the first demanding user: its needs show what is missing, and a small compatibility suite (`compat/psys2/`) proves that such a system can sit on the library through its public, general mechanisms.
 
+## 2026-11-12 09:55 (reviewer): 0.13.2 and 0.14.0 validated
+
+0.13.2 (R14.1) and 0.14.0 (c7247e2, Round 15: `core.function`, `core.function.arg`, load checks, purity, `functions()`, facts never call functions) are validated:
+- `npm test`: 278 pass, 0 fail.
+- Pilot unchanged.
+- No host names and no Romanian.
+
+The host is told to re-vendor at c7247e2. Nothing more is queued.
+
 ## 2026-11-12 09:10 (reviewer): Round 15: host functions declared in SOP Lang (user decision)
 
 The user asked for something like `jsEval` / `jsAssert` wires. We already have `core.calc fn=` and `core.check fn=` over functions the host registers. The user agreed with the reviewer's proposal: **no code inside wires**. Instead, every host function is **declared in SOP Lang**, so the schema says which tools a world has. This is also the formal description of tools that formalization was missing.

@@ -4,6 +4,24 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
 
 **The user's direction: sopworld is a general, useful library for self-consistent worlds of SOP Lang wires. It must be *compatible* with the PSys2 worlds, but it is not built *for* them.** Nothing PSys2-specific goes into the core: no PSys2 type names, no PSys2 envelope, no PSys2 file layout. Every feature below must make sense for any user of the library (a scheduler, a digital twin, a tutoring system, a game) and be documented with a neutral example. PSys2 is the first demanding user: its needs show what is missing, and a small compatibility suite (`compat/psys2/`) proves that such a system can sit on the library through its public, general mechanisms.
 
+## 2026-11-12 02:30 (reviewer): 0.10.0 validated; Round 11 from the host's re-vendor
+
+**0.10.0 (335309f) validated.**
+- `npm test`: 256 pass, 0 fail. Pilot 147/147, 212/217, 231/232. `git grep -i psys2 src/` is empty.
+- R10.1 has the test "known words are never corrected". R10.3 runs under the budget guard.
+- R10.1–R10.5 accepted. The host is told to re-vendor at 335309f.
+
+The host vendored 0.9.0. Its gap against hand-written code went from +3.0 to about +2.0 ms per turn, and its workarounds are gone (canComplete, replace in place, filters, aggregate, blob, the kb as wires again). It reports three general items, with repros.
+
+**Round 11.** One commit each, plus a release.
+- **R11.1 Delta snapshots.** `toJSON({ timeline: true })` writes the whole log, base included: 507 kB for one instance after eight turns. `fromJSON` takes 96 ms, plus a full replay per open mark. Add:
+  - `toJSON({ timeline: true, since: base })`: only the entries after the base's own log;
+  - `World.fromJSON(data, { base })`: forks the base, replays the rest, and restores the marks as forks.
+
+  Show the size and the restore time for 8 and 40 turns over a 1,000-wire base.
+- **R11.2 Redo after a rewind.** `m = w.mark(); w.tell(x); w.rewind(m); w.redo()` gives `nothing-to-redo`. A rewind must keep what it took back, so `redo()` re-applies it, until the next change, as after `undo()`. Check that R7.1's `rewind({ only })` composes with it.
+- **R11.3 Groups with zero members.** `core.aggregate by=?k` gives no tally for a group with no member, and hosts need 0. Add `groups=` (a set of values, or a type whose instances are the groups) so that every declared group gets a result, with `default=` for the empty ones.
+
 ## 2026-11-12 01:25 (reviewer): 0.9.0 validated; Q19; Round 10
 
 **0.9.0 (f062052) validated.** `npm test`: 250 pass, 0 fail. Pilot 147/147, 212/217, 231/232. `git grep -i psys2 src/` is empty. R9.1–R9.4 are accepted. The host is told to re-vendor at f062052.

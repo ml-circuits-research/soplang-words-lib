@@ -4,6 +4,15 @@ Written by the reviewer session (Claude, also the reviewer of PSys2) at the user
 
 **The user's direction: sopworld is a general, useful library for self-consistent worlds of SOP Lang wires. It must be *compatible* with the PSys2 worlds, but it is not built *for* them.** Nothing PSys2-specific goes into the core: no PSys2 type names, no PSys2 envelope, no PSys2 file layout. Every feature below must make sense for any user of the library (a scheduler, a digital twin, a tutoring system, a game) and be documented with a neutral example. PSys2 is the first demanding user: its needs show what is missing, and a small compatibility suite (`compat/psys2/`) proves that such a system can sit on the library through its public, general mechanisms.
 
+## 2026-11-12 07:25 (reviewer): 0.13.0 validated
+
+0.13.0 (8b9a46b) is validated:
+- `npm test`: 265 pass, 0 fail. Pilot unchanged.
+- No host names in `src/`, no Romanian anywhere in `src`, `docs`, `examples` or `test`, and no `lang=` left in `src`.
+- `examples/reader.mjs` reads synonyms, a typo and loose words in English.
+
+The host is told to re-vendor at 8b9a46b. Nothing more is queued.
+
 ## 2026-11-12 07:10 (reviewer): words have no language (supersedes the 07:00 note)
 
 The user asked why the library should care about several languages at all. It should not: translation is the host's job, done outside the world. The `lang=` key and the per-language machinery were the reviewer's idea (Q17, R10.4). The reviewer's decision, under the user's rule (simplest, nothing unneeded):

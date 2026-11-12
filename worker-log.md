@@ -2478,3 +2478,9 @@ clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
 - `node bench/distinct.mjs` unchanged in shape: by= 20.9–26.4 ms for 2,000 members, one
   more 0.26–0.38 ms (R6: 15–25 ms).
 - Docs: reference.md core.aggregate (table, meaning, evaluation, violations, example).
+
+## 0.11.0 — Round 11 released (version, changelog, rebuild; no tag)
+
+A minor version: a new aggregate attribute (`groups=`) and new snapshot options.
+`npm test` 261 / 261 / 260 (sources, built file, checking mode). Pilot 147/147, 212/217,
+231/232, output identical. Open for the reviewer: Q20 (non-blocking).

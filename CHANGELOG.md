@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.11.0
+
+Round 11: from the host's re-vendor.
+
+### New
+- Delta snapshots: `toJSON({ timeline: true, since: base })` writes only what came after
+  the base, with a fingerprint; `World.fromJSON(data, { base })` forks the base and
+  replays the rest. Open marks on the way of the log are written as positions and
+  restored as forks taken during the one replay.
+- `redo()` after `rewind(mark)` tells again what the rewind took back (also after
+  `rewind(mark, { only })`), until the next statement.
+- `groups=` on `core.aggregate` (values, or `$pattern`): every declared group has a
+  result; empty ones get 0 or `default=`.
+
+### Fixes
+- `redo()` no longer leaves an open mark behind, and a refused redo keeps the redo stack.
+
 ## 0.10.0
 
 Round 10: the reader core against the errors a host sees.

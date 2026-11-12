@@ -218,7 +218,7 @@ export interface NextStep {
 export interface Explanation { assume: Wire[]; fills: { id: string; key: string; value: string }[]; text: string; cost: number }
 export interface StepResult extends Result { questions: Wire[]; dead: OpenKey[]; pending: object[] }
 export interface WorldEvent { seq: number; op: string; [key: string]: unknown }
-export interface Snapshot { format: 'sopworld'; version: number; log: object[]; /** with toJSON({ timeline: true }) */ timeline?: { marks: { label?: string; seq: number; log: object[] }[]; redo: object[][] } }
+export interface Snapshot { format: 'sopworld'; version: number; log: object[]; /** with toJSON({ since }): the base the log continues */ base?: { length: number; last: string | null }; /** with toJSON({ timeline: true }) */ timeline?: { marks: { label?: string; seq: number; /** a position in log */ at?: number; log?: object[]; whole?: boolean }[]; redo: object[][] } }
 export type Fn = (args: string[], world: World) => string | number | boolean | undefined;
 export interface WorldOptions {
   fns?: Record<string, Fn>; maxDepth?: number; maxSteps?: number;
@@ -334,8 +334,8 @@ export class World {
   stats(): Stats;
   on(listener: (events: WorldEvent[], world: World) => void): () => void;
   /** timeline: also the open marks and the redo stack */
-  toJSON(options?: { timeline?: boolean }): Snapshot;
-  static fromJSON(data: Snapshot, options?: WorldOptions): World;
+  toJSON(options?: { timeline?: boolean; /** only what came after this world's log */ since?: World }): Snapshot;
+  static fromJSON(data: Snapshot, options?: WorldOptions & { /** the base a snapshot with since= was written against */ base?: World }): World;
   get(id: string): Wire | undefined;
   has(id: string): boolean;
   resolve(id: string): string;

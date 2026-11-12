@@ -286,3 +286,42 @@ test('sync: a collection is made equal to a list in one transaction, and the del
   assert.equal(bad.ok, false);
   assert.deepEqual([w.has('r2'), w.has('r4')], [true, true], 'a refused sync changes nothing');
 });
+
+test('snapshots: marks as positions in one log, and deltas against a base (toJSON({ since }), fromJSON(data, { base }))', async () => {
+  const { World } = await import('../tools/lib-under-test.mjs');
+  const base = new World();
+  base.load('@k core.slot of=item key=name id=true');
+  base.tell('@i1 item name=pen stock=3  @i2 item name=ink stock=1');
+  const w = base.fork();
+  w.mark('a'); w.tell('@n1 note text=one');
+  w.mark('b'); w.revise('i1', 'stock', '9');
+  const whole = w.toJSON({ timeline: true });
+  assert.deepEqual(whole.timeline.marks.map((m) => [m.label, m.at]), [['a', 2], ['b', 3]]);
+  const delta = w.toJSON({ timeline: true, since: base });
+  assert.deepEqual([delta.log.length, delta.base.length, delta.timeline.marks.map((m) => m.at)], [2, 2, [0, 1]]);
+  const r = World.fromJSON(JSON.parse(JSON.stringify(delta)), { base });
+  assert.equal(r.toSOP(), w.toSOP());
+  r.rewind(r.marks()[1].mark);
+  assert.deepEqual([r.get('i1').attrs.stock, r.has('n1')], [['3'], true]);
+  r.rewind(r.marks()[0].mark);
+  assert.equal(r.has('n1'), false);
+  assert.equal(base.has('n1'), false, 'the base is forked, not changed');
+  // the base must be the one written against
+  assert.throws(() => World.fromJSON(delta), /pass the same base/);
+  const other = base.fork(); other.tell('@x item name=x');
+  assert.throws(() => World.fromJSON(delta, { base: other }), /not the one/);
+  assert.throws(() => other.toJSON({ since: w }), /grew from/);
+  // a mark that is no longer on the way (an undo went past it) keeps its own log
+  const u = base.fork();
+  u.tell('@n2 note text=two'); u.mark('c'); u.tell('@n3 note text=three'); u.undo(2);
+  const ju = u.toJSON({ timeline: true, since: base });
+  assert.deepEqual([ju.timeline.marks[0].at, ju.timeline.marks[0].log.length], [undefined, 1]);
+  const ru = World.fromJSON(ju, { base });
+  ru.rewind(ru.marks()[0].mark);
+  assert.deepEqual([ru.has('n2'), ru.has('n3')], [true, false]);
+  // the format before 0.11 (each mark its own log) is still read
+  const old = { ...whole, timeline: { ...whole.timeline, marks: w.marks().map(({ label, seq, mark }) => ({ label, seq, log: mark.world.log })) } };
+  const ro = World.fromJSON(old);
+  ro.rewind(ro.marks()[0].mark);
+  assert.equal(ro.has('n1'), false);
+});

@@ -2414,3 +2414,25 @@ A minor version: new frame shapes (`words`), options (`previous`, `near`, `lemma
 candidate kind (`revise`) and a budget site. `npm test` 258 / 258 / 257 (sources, built
 file, checking mode). Pilot 147/147, 212/217, 231/232, output identical. No open
 questions.
+
+## R11.1 — delta snapshots — done
+
+`npm test`: 259 pass, 0 fail on sources and built file, 258 in checking mode. Pilot
+output identical. `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`:
+clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
+
+- `toJSON({ timeline: true, since: base })`: only the log after the base's log, with
+  `base: { length, last }` (FNV-1a of the base's last entry); refused if this world did not
+  grow from the base. Marks whose log is a beginning of the world's log are written as a
+  position (`at`), in both modes; others keep their own log (`whole` when it does not start
+  with the base).
+- `World.fromJSON(data, { base })`: checks the fingerprint, forks the base, replays the
+  rest once, and takes each mark as a fork when the replay reaches its position (no replay
+  per mark). Snapshots in the old format (each mark its log) are still read.
+- Test `snapshots: ...`: delta size and round trip, rewinds to both restored marks, the
+  base untouched, a wrong or missing base refused, a mark an undo went past, the old format.
+- `node bench/snapshot.mjs` (1,000-wire base; per turn a mark, a note, a revision), two
+  runs: 8 turns: each mark its log 805.9 kB / 139.9–147.2 ms, marks at 90.5 kB /
+  7.0–21.0 ms, delta 1.8 kB / 4.5–6.2 ms; 40 turns: 3789.5 kB / 301.0–311.7 ms, 97.4 kB /
+  6.3–8.7 ms, 8.7 kB / 2.8–6.6 ms. `bundle`: delta 3.8 ms (8 turns), 2.4 ms (40 turns).
+- Docs: api.md (toJSON options, fromJSON with base), index.d.ts.

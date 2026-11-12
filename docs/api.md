@@ -97,7 +97,25 @@ print(w.wires.size, w.matrix.size, w.stamp, w.options.decimals);
 
 Rebuilds a world from what `toJSON()` returned, by replaying its log. Host functions
 are not in a snapshot: pass the same options. Returns the world. Cost: that of telling
-the log again, O(h) changes.
+the log again, O(h) changes; the open marks of a timeline are forks taken on the way, not
+replays of their own. A snapshot written with `since: base` is restored with `{ base }`:
+the base is forked (its options and functions come with it), checked against the
+fingerprint in the snapshot, and only the rest is replayed.
+
+```js run
+const base = shop();
+base.tell('@a item name=pen price=2');
+const w = base.fork();
+w.mark('before'); w.tell('@b item name=ink price=3');
+const d = w.toJSON({ timeline: true, since: base });
+const r = World.fromJSON(JSON.parse(JSON.stringify(d)), { base });
+r.rewind(r.marks()[0].mark);
+print(d.log.length, r.has('b'), base.has('b'));
+```
+
+```output
+1 false false
+```
 
 ```js run
 const w = shop();
@@ -376,7 +394,8 @@ added, changed }`; the marks made after it are closed. A mark can be used again.
 'note'`) or of an id prefix (`only: { prefix: 'ui.' }`) become what they were at the mark,
 in one transaction, and everything else stays. `toJSON({ timeline: true })` also writes
 the open marks and what `redo` would tell again, and `World.fromJSON` restores them, so a
-host that restarts keeps undo, redo and rewind.
+host that restarts keeps undo, redo and rewind; with `since: base` only what came after
+the base is written (see `World.fromJSON`).
 
 ```js run
 const w = shop();
@@ -1058,7 +1077,10 @@ print(seen, w.history().length);
 `toSOP` writes the facts as text, in order of arrival. Options: `schema` (the matrix
 too), `derived` (true; false leaves out derived wires), `provenance` (add `core.via`
 and `core.from`). `toJSON` returns `{ format: 'sopworld', version, log }`, for
-`World.fromJSON`.
+`World.fromJSON`. Options: `timeline` (also the open marks and the redo stack; a mark on
+the way of the log is its position `at`, any other its own log), `since` (a world this
+one grew from, such as the one it was forked from: only the entries after that world's
+log are written, with `base: { length, last }`, a fingerprint).
 
 ```js run
 const w = shop();

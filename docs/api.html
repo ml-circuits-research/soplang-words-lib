@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="80db6f992dd6">
+<meta name="source-hash" content="64eea51c9ffb">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -46,7 +46,16 @@
 print(w.wires.size, w.matrix.size, w.stamp, w.options.decimals);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>0 0 0 2</code></pre></figure>
 <h3 id="worldfromjsonsnapshot-options">World.fromJSON(snapshot, options?)</h3>
-<p>Rebuilds a world from what <code>toJSON()</code> returned, by replaying its log. Host functions are not in a snapshot: pass the same options. Returns the world. Cost: that of telling the log again, O(h) changes.</p>
+<p>Rebuilds a world from what <code>toJSON()</code> returned, by replaying its log. Host functions are not in a snapshot: pass the same options. Returns the world. Cost: that of telling the log again, O(h) changes; the open marks of a timeline are forks taken on the way, not replays of their own. A snapshot written with <code>since: base</code> is restored with <code>{ base }</code>: the base is forked (its options and functions come with it), checked against the fingerprint in the snapshot, and only the rest is replayed.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const base = shop();
+base.tell(&#x27;@a item name=pen price=2&#x27;);
+const w = base.fork();
+w.mark(&#x27;before&#x27;); w.tell(&#x27;@b item name=ink price=3&#x27;);
+const d = w.toJSON({ timeline: true, since: base });
+const r = World.fromJSON(JSON.parse(JSON.stringify(d)), { base });
+r.rewind(r.marks()[0].mark);
+print(d.log.length, r.has(&#x27;b&#x27;), base.has(&#x27;b&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>1 false false</code></pre></figure>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 w.tell(&#x27;@a item name=pen price=2&#x27;);
 const copy = World.fromJSON(JSON.parse(JSON.stringify(w.toJSON())));
@@ -153,7 +162,7 @@ const r = w.redo();
 print(r.ok, r.redone, w.has(&#x27;ink&#x27;));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true [{&quot;op&quot;:&quot;tell&quot;,&quot;ids&quot;:[&quot;ink&quot;]}] true</code></pre></figure>
 <h3 id="worldmarklabel-worldmarks-and-worldrewindmark-options">world.mark(label?), world.marks() and world.rewind(mark, options?)</h3>
-<p><code>mark(label)</code> returns a point to come back to (a fork: the world's next change copies only what it touches); <code>marks()</code> lists the open ones, oldest first, as <code>{ label, seq, mark }</code>. <code>rewind(mark)</code> makes the world exactly what it was and returns <code>{ ok, removed, added, changed }</code>; the marks made after it are closed. A mark can be used again. <code>rewind(mark, { only })</code> takes back one unit only: the told wires of a type (<code>only: 'note'</code>) or of an id prefix (<code>only: { prefix: 'ui.' }</code>) become what they were at the mark, in one transaction, and everything else stays. <code>toJSON({ timeline: true })</code> also writes the open marks and what <code>redo</code> would tell again, and <code>World.fromJSON</code> restores them, so a host that restarts keeps undo, redo and rewind.</p>
+<p><code>mark(label)</code> returns a point to come back to (a fork: the world's next change copies only what it touches); <code>marks()</code> lists the open ones, oldest first, as <code>{ label, seq, mark }</code>. <code>rewind(mark)</code> makes the world exactly what it was and returns <code>{ ok, removed, added, changed }</code>; the marks made after it are closed. A mark can be used again. <code>rewind(mark, { only })</code> takes back one unit only: the told wires of a type (<code>only: 'note'</code>) or of an id prefix (<code>only: { prefix: 'ui.' }</code>) become what they were at the mark, in one transaction, and everything else stays. <code>toJSON({ timeline: true })</code> also writes the open marks and what <code>redo</code> would tell again, and <code>World.fromJSON</code> restores them, so a host that restarts keeps undo, redo and rewind; with <code>since: base</code> only what came after the base is written (see <code>World.fromJSON</code>).</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 w.tell(&#x27;@pen item name=pen price=2&#x27;);
 const m = w.mark();
@@ -413,7 +422,7 @@ off();
 print(seen, w.history().length);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;tell&quot;] 1</code></pre></figure>
 <h3 id="worldtosopoptions-and-worldtojson">world.toSOP(options?) and world.toJSON()</h3>
-<p><code>toSOP</code> writes the facts as text, in order of arrival. Options: <code>schema</code> (the matrix too), <code>derived</code> (true; false leaves out derived wires), <code>provenance</code> (add <code>core.via</code> and <code>core.from</code>). <code>toJSON</code> returns <code>{ format: 'sopworld', version, log }</code>, for <code>World.fromJSON</code>.</p>
+<p><code>toSOP</code> writes the facts as text, in order of arrival. Options: <code>schema</code> (the matrix too), <code>derived</code> (true; false leaves out derived wires), <code>provenance</code> (add <code>core.via</code> and <code>core.from</code>). <code>toJSON</code> returns <code>{ format: 'sopworld', version, log }</code>, for <code>World.fromJSON</code>. Options: <code>timeline</code> (also the open marks and the redo stack; a mark on the way of the log is its position <code>at</code>, any other its own log), <code>since</code> (a world this one grew from, such as the one it was forked from: only the entries after that world's log are written, with <code>base: { length, last }</code>, a fingerprint).</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 w.tell(&#x27;@pen item name=pen price=2&#x27;);
 print(w.toSOP(), Object.keys(w.toJSON()));</code></pre></figure>

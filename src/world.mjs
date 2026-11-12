@@ -45,6 +45,13 @@ function hash(s) {
   return h.toString(36);
 }
 
+/** A short fingerprint of a text (FNV-1a, 32 bits, hex): to recognize a snapshot's base. */
+function fingerprint(text) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } // bounded: the text
+  return h.toString(16).padStart(8, '0');
+}
+
 export class World {
   constructor(options = {}) {
     const {
@@ -327,21 +334,44 @@ export class World {
     return this._guard(opts, () => this._patch({ sets: pairs.map(([k, v]) => ({ id, key: k, value: v })) }, opts), (v) => this._refusal(v));
   }
 
-  /** Everything needed to rebuild the world: what it was told, in order. */
   /**
-   * The world as data: its log. With { timeline: true } also the open marks (each as its
-   * own log, with its label) and what redo would tell again, so a host that restarts keeps
-   * undo, redo and rewind.
+   * The world as data: its log. With { timeline: true } also the open marks and what redo
+   * would tell again, so a host that restarts keeps undo, redo and rewind. A mark whose
+   * log is a beginning of the world's log is written as its position (`at`, entries after
+   * the start of what is written), any other as its own log. With { since: base }, a
+   * world this one grew from (its log begins with the base's), only the entries after the
+   * base's log are written, with a fingerprint of the base; World.fromJSON(data, { base })
+   * restores it on a fork of that base.
    */
   toJSON(opts) {
-    const out = { format: 'sopworld', version: 1, log: this.log.map((e) => ({ ...e })) };
+    const since = opts && typeof opts === 'object' ? opts.since : undefined;
+    const n = since ? since.log.length : 0;
+    if (since && !this._startsWith(since.log)) throw new Error('toJSON: since= must be a world this one grew from (its log is not the beginning of this log)');
+    const out = { format: 'sopworld', version: 1, log: this.log.slice(n).map((e) => ({ ...e })) };
+    if (since) out.base = { length: n, last: n ? fingerprint(JSON.stringify(since.log[n - 1])) : null };
     if (opts && typeof opts === 'object' && opts.timeline) {
       out.timeline = {
-        marks: (this._marks || []).map((m) => ({ ...(m.label !== undefined ? { label: m.label } : {}), seq: m.seq, log: m.world.log.map((e) => ({ ...e })) })),
+        marks: (this._marks || []).map((m) => {
+          const head = { ...(m.label !== undefined ? { label: m.label } : {}), seq: m.seq };
+          const L = m.world.log.length;
+          if (L >= n && this._startsWith(m.world.log)) return { ...head, at: L - n };
+          if (since && L >= n && m.world._startsWith(since.log)) return { ...head, log: m.world.log.slice(n).map((e) => ({ ...e })) };
+          return { ...head, log: m.world.log.map((e) => ({ ...e })), whole: true };
+        }),
         redo: (this._redo || []).map((group) => group.map((e) => ({ ...e }))),
       };
     }
     return out;
+  }
+
+  /** Does this world's log begin with the given log? Entries are compared as objects, then as data. */
+  _startsWith(log) {
+    if (log.length > this.log.length) return false;
+    for (let i = log.length - 1; i >= 0; i--) { // bounded: the log
+      const a = log[i], b = this.log[i];
+      if (a !== b && JSON.stringify(a) !== JSON.stringify(b)) return false;
+    }
+    return true;
   }
 
   /**
@@ -350,11 +380,38 @@ export class World {
    */
   static fromJSON(data, options = {}) {
     if (data?.format !== 'sopworld') throw new Error('World.fromJSON: not a sopworld snapshot');
-    const w = new World(options);
-    const r = w._replay(data.log);
-    if (r) throw new Error('World.fromJSON: the snapshot is refused by the matrix: ' + JSON.stringify(r.violations[0]));
+    const { base, ...rest } = options;
+    let w;
+    if (data.base) {
+      // a delta: the base it was written against, forked (its functions and options come with it)
+      if (!base) throw new Error('World.fromJSON: the snapshot was written with since=; pass the same base: fromJSON(data, { base })');
+      const n = data.base.length;
+      if (base.log.length !== n || (n && fingerprint(JSON.stringify(base.log[n - 1])) !== data.base.last)) throw new Error('World.fromJSON: the base given is not the one the snapshot was written against');
+      w = base.fork();
+    } else w = new World(rest);
+    const fresh = () => (data.base ? base.fork() : new World(rest));
+    // the log once, in order; a mark at a position is a fork taken when the replay gets there
+    const marks = data.timeline?.marks || [];
+    const at = marks.map((m, i) => [m.at, i]).filter(([p]) => p !== undefined).sort((a, b) => a[0] - b[0]);
+    const made = new Array(marks.length);
+    let done = 0;
+    const replay = (to) => {
+      const r = w._replay(data.log.slice(done, to));
+      if (r) throw new Error('World.fromJSON: the snapshot is refused by the matrix: ' + JSON.stringify(r.violations[0]));
+      done = to;
+    };
+    for (const [p, i] of at) { replay(p); made[i] = w.fork(); } // bounded: the marks
+    replay(data.log.length);
     if (data.timeline) {
-      w._marks = data.timeline.marks.map((m) => ({ world: World.fromJSON({ format: 'sopworld', version: 1, log: m.log }, options), seq: m.seq, ...(m.label !== undefined ? { label: m.label } : {}) }));
+      w._marks = marks.map((m, i) => {
+        let world = made[i];
+        if (!world) { // a mark that is not on the way: its own log
+          world = m.whole || !data.base ? new World(rest) : fresh();
+          const r = world._replay(m.log);
+          if (r) throw new Error('World.fromJSON: a mark of the snapshot is refused by the matrix: ' + JSON.stringify(r.violations[0]));
+        }
+        return { world, seq: m.seq, ...(m.label !== undefined ? { label: m.label } : {}) };
+      });
       w._redo = data.timeline.redo.map((g) => g.map((e) => ({ ...e })));
     }
     return w;

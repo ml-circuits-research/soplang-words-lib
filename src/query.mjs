@@ -220,14 +220,19 @@ export const querying = {
    * The judgement of a reading whose action the matrix does not declare (the host carries
    * it out), with what the matrix does know, in the reading's undone transaction:
    *   referents  every `$id` among the arguments is a wire of the world;
-   *   slots      the arguments, as keys of `of` (a type) or as `type.key` names, are told
-   *              as a wire of that type: each value must fit its slot's kind, enum and range;
+   *   slots      the arguments, as keys of `of` (a type; by default the type named like the
+   *              action, so a host describes its action's parameters as the slots of a
+   *              type of that name) or as `type.key` names, are told as a wire of that
+   *              type: each value must fit its slot's kind, enum and range; the type's
+   *              required keys the reading does not give lack, with their ask;
    *   denies     and no deny fires on the world with that wire.
    * `judgedBy` is the test that refused, or 'fallback' when all that could run passed
    * (`checks` lists them); with nothing to check the reading stays unjudged.
    */
   _judgeLoosely(cand, args, missing, out) {
     const checks = [];
+    const c = this._compiled();
+    const of = cand.of ?? (c.slots.get(cand.action) ? cand.action : undefined);
     const refs = Object.entries(args).filter(([, v]) => typeof v === 'string' && v[0] === '$' && !missing.has(v));
     if (refs.length) {
       checks.push('referents');
@@ -246,10 +251,11 @@ export const querying = {
       if (typeof v !== 'string' && typeof v !== 'number') continue;
       if (missing.has(v)) continue;
       const dot = k.lastIndexOf('.');
-      const type = dot > 0 ? k.slice(0, dot) : cand.of;
+      const type = dot > 0 ? k.slice(0, dot) : of;
       if (!type) continue;
       (byType.get(type) || byType.set(type, {}).get(type))[dot > 0 ? k.slice(dot + 1) : k] = [String(v)];
     }
+    if (!byType.size && of) byType.set(of, {}); // no arguments: the parameters it needs still show
     if (byType.size) {
       checks.push('slots', 'denies');
       let n = 0;
@@ -262,6 +268,9 @@ export const querying = {
         out.checks = checks;
         return;
       }
+      // required parameters the reading does not give: what a host would ask
+      const mine = new Set(wires.map((w) => w.id));
+      out.lacks.push(...this.open().filter((o) => mine.has(o.id)).map((o) => ({ action: cand.action, key: o.key, ...(o.ask ? { ask: o.ask } : {}) })));
     }
     if (checks.length) { out.judgedBy = 'fallback'; out.checks = checks; }
   },

@@ -803,8 +803,10 @@ action, args, of }`, or `{ question }` (as for `query`).
 Every scored candidate says whether it was judged and by what (`judged`, `judgedBy`):
 `statement`, `action` (a declared action, tried), `question`, or, for an action the matrix
 does not declare (the host carries it out), a fallback with what the matrix does know:
-`referents` (every `$id` argument is a wire), `slots` (the arguments, as keys of `of` or
-as `type.key` names, told as a wire of that type, fit their slots' kind, enum and range),
+`referents` (every `$id` argument is a wire), `slots` (the arguments, as keys of `of`,
+by default the type named like the action, or as `type.key` names, told as a wire of
+that type, fit their slots' kind, enum and range; required keys not given lack, with
+their `ask`),
 `denies` (no deny fires with that wire). `judgedBy` is the test that refused, or
 `fallback` when all that could run passed (`checks` lists them); with nothing to check,
 `judged` is false. `veto` does not report `action-unavailable` for a reading the fallback

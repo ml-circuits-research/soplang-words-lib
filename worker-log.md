@@ -2706,3 +2706,21 @@ pass, 0 fail on sources and built file, 273 in checking mode. Pilot output ident
   aggregate's `have` for an empty group: ok, no lacks; a question about a missing told
   item still lacks.
 - Docs: api.md score `lacks`.
+
+## J2 — judging actions the host carries out — done (no new syntax)
+
+Checked against 0.13.0: a host action with bare argument names stayed unjudged and veto
+said `action-unavailable`. `npm test`: 275 pass, 0 fail on sources and built file, 274
+in checking mode. Pilot output identical. `git grep -i psys2 src/`: empty. scan-loops
+clean.
+
+- How a host declares its action's parameters: as the slots of a type named like the
+  action (`@d core.slot of=draw key=kind enum=… required=true ask=…`). No `core.action`,
+  no function, nothing new in the language: the fallback judgement takes that type as the
+  default `of`, checks kinds, enums, ranges and denies, and reports the required
+  parameters a reading does not give as lacks with their `ask`. Nothing is told or
+  carried out. `action-unavailable` remains only for an action with neither a declaration
+  nor such a type (and no `of`/`type.key` arguments).
+- Test `J2: ...`: draw with good, bad and missing arguments (`fallback`, `slots`, a lack
+  with "What shape?"), veto answers for draw and says unavailable for teleport.
+- Docs: reference.md core.action (Interactions), api.md score.

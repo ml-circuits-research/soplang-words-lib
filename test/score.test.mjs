@@ -161,3 +161,20 @@ test('J1: a question given as a wire, about a computed answer not made yet, does
   // a told subject that is not there still lacks
   assert.equal(w.score([{ question: '@q2 core.question type=item seek=color where.name=cup' }]).candidates[0].lacks.length, 1);
 });
+
+test('J2: an action the host carries out is described by a type of the same name; the fallback judges it and only unknown actions are unavailable', () => {
+  const w = world();
+  // the host's action "draw": its parameters as the slots of a type named draw; no core.action, no function
+  w.load('@d1 core.slot of=draw key=kind enum=circle enum=square required=true ask="What shape?"  @d2 core.slot of=draw key=color enum=red enum=blue');
+  const r = w.score([
+    { action: 'draw', args: { kind: 'circle', color: 'red' } },
+    { action: 'draw', args: { kind: 'star' } },
+    { action: 'draw', args: { color: 'blue' } },
+    { action: 'teleport', args: { to: 'mars' } },
+  ]);
+  assert.deepEqual(r.candidates.map((c) => [c.ok, c.judgedBy]), [[true, 'fallback'], [false, 'slots'], [true, 'fallback'], [true, null]]);
+  assert.deepEqual(r.candidates[2].lacks, [{ action: 'draw', key: 'kind', ask: 'What shape?' }]);
+  assert.equal(w.veto(w.score([{ action: 'draw', args: { kind: 'square' } }])).answer, true);
+  assert.equal(w.veto(w.score([{ action: 'teleport', args: { to: 'mars' } }])).reasons[0].reason, 'action-unavailable');
+  assert.equal(w.ofType('draw').length, 0, 'nothing told, nothing carried out');
+});

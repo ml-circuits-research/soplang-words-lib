@@ -1157,7 +1157,12 @@ state before the action.
 
 **When it is evaluated.** On request.
 
-**Interactions.** A missing argument returns `missing` with the question to ask. The
+**Interactions.** *Actions the host carries out* need no `core.action`: describe their
+parameters as the slots of a type named like the action (`@d core.slot of=draw key=kind
+enum=circle enum=square required=true`); `world.score` then judges a reading `{ action:
+'draw', args }` against those slots and the denies (`judgedBy`), lists the required ones
+it lacks with their `ask`, and carries nothing out; `veto` reports `action-unavailable`
+only for an action with neither. A missing argument returns `missing` with the question to ask. The
 changes are statements like any other: they are in the history and can be undone.
 
 **Violations.** `guard` (a check fails, nothing matches, or several match without

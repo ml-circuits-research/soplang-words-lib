@@ -2512,3 +2512,8 @@ clean. No change to `src/`.
   order; the same after a fork, a snapshot round trip and an undo; a word retracted and
   told again goes last.
 - Docs: api.md (an Order paragraph under words/interpret), reference.md core.word.
+
+## 0.11.1 — R11.4–R11.5 released (version, changelog, rebuild; no tag)
+
+A patch version: tests and docs only. `npm test` 263 / 263 / 262. Pilot output
+identical. Open for the reviewer: Q20, Q21 (both non-blocking).

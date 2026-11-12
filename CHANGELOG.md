@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.11.1
+
+Round 11 additions from the host's word descriptions. No change to the library's code.
+
+### Documented
+- A value in another language names its canonical value with `means=<value>
+  of=<type.key>`, and `interpret` returns the canonical one (R11.4; Q21 explains why no
+  `value=` key was added).
+- Words keep their declaration order in `words`, readings, near words, examples and ties,
+  across forks, undo and snapshots (R11.5).
+
 ## 0.11.0
 
 Round 11: from the host's re-vendor.

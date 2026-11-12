@@ -689,6 +689,13 @@ missing
 `words(lang)` maps each text of a language to its `core.word` entries, with what each
 means in the matrix (`meanings`: `{ kind: 'action' | 'type' | 'key' | 'value', ... }`).
 
+**Order.** Words keep the order in which they were told: the texts of `words(lang)`,
+the entries of one text, the forms of one word, the readings `interpret` gives for a
+word with several meanings, the near words at one distance, and the fillers `examples`
+uses. So a host declares the most usual word first, and it comes first in examples and
+in ties (`rank` keeps the given order). The order survives forks, undo and snapshots; a
+word retracted and told again goes to the end.
+
 `interpret(frame)` reads a language-neutral frame into candidates for `score`. A frame
 is `{ lang, verb, args, numbers, question, mode, ns }`; an argument is a word or `{ word,
 role }`, where `role` is a word for a key (`with`, `on`). A verb that means an action

@@ -250,3 +250,24 @@ test('core.word: a value in another language names its canonical value (means= w
   assert.deepEqual(w.interpret({ lang: 'ro', verb: 'preț', args: ['lei'], numbers: [5] }).candidates.map((c) => c.wires), ['@new price unit=leu amount=5']);
   assert.deepEqual(w.words('ro').get('minge')[0].meanings, [{ kind: 'value', type: 'item', key: 'name', value: 'ball' }]);
 });
+
+test('words keep their declaration order: words(), readings, examples; across forks, undo and snapshots', () => {
+  const w = shopAndCalendar();
+  w.tell('@b1 item name=ball stock=2');
+  // the most usual first: "minge", then "zar", then "bilă" (not alphabetical)
+  w.tell('@m1 core.word lang=ro text=minge means=ball of=item.name  @m2 core.word lang=ro text=zar means=ball of=item.name  @m3 core.word lang=ro text=bilă means=ball of=item.name');
+  const ballWords = (x) => [...x.words('ro').entries()].filter(([, es]) => es.some((e) => e.means === 'ball')).map(([t]) => t);
+  const orders = (x) => x.examples('ro', {}, { per: 9 }).filter((e) => e.tool.kind === 'type' && e.tool.type === 'order').map((e) => e.text);
+  assert.deepEqual(ballWords(w), ['minge', 'zar', 'bilă']);
+  assert.deepEqual(orders(w), ['comandă pix', 'comandă minge', 'comandă zar', 'comandă bilă', 'comandă ink']);
+  // a text with several meanings: readings in the order of its wires (book: reserve, then order)
+  assert.deepEqual(w.interpret({ lang: 'en', verb: 'book', args: ['pen'] }).candidates.map((c) => c.action ? 'action' : 'wires'), ['action', 'wires']);
+  // the same order after a fork, a snapshot, an undo
+  const f = w.fork(); f.tell('@x item name=x');
+  const s = World.fromJSON(JSON.parse(JSON.stringify(w.toJSON())));
+  const u = w.fork(); u.tell('@m4 core.word lang=ro text=sferă means=ball of=item.name'); u.undo();
+  for (const x of [f, s, u]) assert.deepEqual([ballWords(x), orders(x)], [ballWords(w), orders(w)]);
+  // retracted and told again: last
+  w.retract('m1'); w.tell('@m1b core.word lang=ro text=minge means=ball of=item.name');
+  assert.deepEqual(ballWords(w), ['zar', 'bilă', 'minge']);
+});

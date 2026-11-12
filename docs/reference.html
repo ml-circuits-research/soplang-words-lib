@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="71eaf5e66bd6">
+<meta name="source-hash" content="62834905b872">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -491,7 +491,7 @@ only 30 left
 <p>A word of one language and the one name of the matrix it means: an action, a type, a key (<code>type.key</code>) or a value of a slot. Words are facts the host tells or loads, not matrix wires, so namespaces, <code>sync</code>, undo and snapshots apply to them. Only <code>world.interpret</code> and <code>world.words</code> read them.</p>
 <p><strong>Syntax</strong></p>
 <div class="table"><table><thead><tr><th>Attribute</th><th>Meaning</th></tr></thead><tbody><tr><td><code>lang</code></td><td>the language (any label: <code>en</code>, <code>ro</code>)</td></tr><tr><td><code>text</code></td><td>rep.; the word as the host's front end gives it (compared without case); several are forms of one word</td></tr><tr><td><code>means</code></td><td>an action name, a type, <code>type.key</code>, or a value</td></tr><tr><td><code>of</code></td><td><code>type.key</code>: the slot the value belongs to (needed when <code>means</code> is not an enum value, or to choose one slot)</td></tr></tbody></table></div>
-<p><strong>Meaning.</strong> A value in another language names its canonical spelling through <code>means</code> and <code>of</code>: <code>@w core.word lang=ro text=minge means=ball of=item.name</code> reads "minge" as the value <code>ball</code> of <code>item.name</code>, and <code>interpret</code> puts <code>ball</code> (not "minge") in what it returns; <code>text=lei means=leu of=price.unit</code> does the same for an enum value. One wire, one meaning: a text with two meanings is two wires, and <code>world.score</code> chooses between the readings they give. A word whose <code>means</code> names nothing is reported in <code>world.warnings</code> (<code>unknown-word</code>) when it is told or when the matrix changes.</p>
+<p><strong>Meaning.</strong> A value in another language names its canonical spelling through <code>means</code> and <code>of</code>: <code>@w core.word lang=ro text=minge means=ball of=item.name</code> reads "minge" as the value <code>ball</code> of <code>item.name</code>, and <code>interpret</code> puts <code>ball</code> (not "minge") in what it returns; <code>text=lei means=leu of=price.unit</code> does the same for an enum value. One wire, one meaning: a text with two meanings is two wires, and <code>world.score</code> chooses between the readings they give. A word whose <code>means</code> names nothing is reported in <code>world.warnings</code> (<code>unknown-word</code>) when it is told or when the matrix changes. Words keep their declaration order (the most usual first): see <a href="api.html#worldwordslang-and-worldinterpretframe-options">world.words</a>.</p>
 <p><strong>Example</strong></p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(&#x27;@k core.slot of=meeting key=day enum=mon enum=tue required=true&#x27;);

@@ -1209,7 +1209,8 @@ value `ball` of `item.name`, and `interpret` puts `ball` (not "minge") in what i
 meaning: a text with two meanings is two wires, and
 `world.score` chooses between the readings they give. A word whose `means` names
 nothing is reported in `world.warnings` (`unknown-word`) when it is told or when the
-matrix changes.
+matrix changes. Words keep their declaration order (the most usual first): see
+[world.words](api.md#worldwordslang-and-worldinterpretframe-options).
 
 **Example**
 

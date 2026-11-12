@@ -2498,3 +2498,17 @@ clean. No change to `src/`.
   (a second form of "minge") reads as the item `ball`; "lei" as the unit `leu` with an
   amount; `words('ro')` shows the meaning.
 - reference.md core.word: the Meaning now opens with the canonical-value case.
+
+## R11.5 — declared alternatives order — done (documented and tested; no new key)
+
+`npm test`: 263 pass, 0 fail on sources and built file, 262 in checking mode. Pilot
+output identical. `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`:
+clean. No change to `src/`.
+
+- The order is the order the words were told, already: the type index keeps insertion
+  order, `words(lang)` walks it, and readings, near words, example fillers and ties follow.
+- Test `words keep their declaration order ...`: "minge", "zar", "bilă" (not
+  alphabetical) in `words('ro')` and in generated examples; "book" read as reserve then
+  order; the same after a fork, a snapshot round trip and an undo; a word retracted and
+  told again goes last.
+- Docs: api.md (an Order paragraph under words/interpret), reference.md core.word.

@@ -594,11 +594,14 @@ export class World {
     // in the log the parts of a patch carry the same group, so that a replay applies them together
     const group = fills.length + sets.length + replaced.length + (ws.length ? 1 : 0) > 1 ? `g${this.seq}` : undefined;
     res.added = res.added.filter((x) => !replaced.some((r) => r.id === x));
+    // each entry says the namespace it was told in: its wires are stored with their ids
+    // qualified, so a replay on any world gives the same ids
+    const at = ns !== undefined ? { ns: ns || '' } : {};
     const entries = [
-      ...replaced.map((r) => ({ op: 'replace', id: r.id, wire: cloneWire(r.successor), ...(group ? { group } : {}), ...(tier ? { tier } : {}) })),
-      ...(ws.length ? [{ op: 'tell', wires: told, facts, ...(group ? { group } : {}), ...(tier ? { tier } : {}) }] : []),
-      ...fills.map((f) => ({ op: 'fill', id: f.id, key: f.key, value: String(f.value), via, ...(group ? { group } : {}), ...(tier ? { tier } : {}) })),
-      ...sets.map((f) => ({ op: 'set', id: f.id, key: f.key, value: String(f.value), via, ...(group ? { group } : {}), ...(tier ? { tier } : {}) })),
+      ...replaced.map((r) => ({ op: 'replace', id: r.id, wire: cloneWire(r.successor), ...(group ? { group } : {}), ...(tier ? { tier } : {}), ...at })),
+      ...(ws.length ? [{ op: 'tell', wires: told, facts, ...(group ? { group } : {}), ...(tier ? { tier } : {}), ...at }] : []),
+      ...fills.map((f) => ({ op: 'fill', id: f.id, key: f.key, value: String(f.value), via, ...(group ? { group } : {}), ...(tier ? { tier } : {}), ...at })),
+      ...sets.map((f) => ({ op: 'set', id: f.id, key: f.key, value: String(f.value), via, ...(group ? { group } : {}), ...(tier ? { tier } : {}), ...at })),
     ];
     const done = this._finish(mark, res, dry, entries);
     if (done.ok && res._revised) done.revised = res._revised;
@@ -616,7 +619,11 @@ export class World {
       const tell = kept.find((e) => e.op === 'tell');
       const fills = kept.filter((e) => e.op === 'fill'), sets = kept.filter((e) => e.op === 'set');
       const replace = kept.filter((e) => e.op === 'replace').map((e) => ({ id: e.id, type: e.wire.type, attrs: e.wire.attrs }));
-      const r = this._patch({ wires: tell ? tell.wires : [], fills, sets, replace }, { strict: false, via: (fills[0] || sets[0])?.via, tier: (tell || fills[0] || sets[0] || kept[0]).tier });
+      // an entry that carries ns= holds its wires as they were stored (ids already in their
+      // namespaces, a bare id in the default one): replayed as is, on any world; older logs
+      // without it are put in the world's namespace, as before
+      const ns = kept.some((e) => e.ns !== undefined) ? '' : undefined;
+      const r = this._patch({ wires: tell ? tell.wires : [], fills, sets, replace }, { strict: false, via: (fills[0] || sets[0])?.via, tier: (tell || fills[0] || sets[0] || kept[0]).tier, ns });
       if (!r.ok) return r;
     }
     return null;
@@ -637,7 +644,7 @@ export class World {
       this._rollback(mark);
       throw e;
     }
-    return this._finish(mark, res, dry, { op: 'tell', wires: told, facts, ...(tier ? { tier } : {}) });
+    return this._finish(mark, res, dry, { op: 'tell', wires: told, facts, ...(tier ? { tier } : {}), ...(ns !== undefined ? { ns: ns || '' } : {}) });
   }
 
   _fill(id, key, value, { dry = false, via = 'core.tell', strict = this.options.strict, tier } = {}) {

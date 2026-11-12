@@ -2647,3 +2647,20 @@ Pilot output identical. `git grep -i psys2 src/`: empty. scan-loops clean.
 - Test `N3: ...` (test/schema.test.mjs): a mapped unique key refuses a duplicate; a mapped
   shared type joins a namespaced fact; a mapped transient statement is not undone.
 - Docs: reference.md core.schema.map fields.
+
+## N4 — log entries keep their namespace — done
+
+Checked against 0.13.0: the repro replayed `e.user` (told with `{ ns: '' }`) as
+`A::e.user`. `npm test`: 271 pass, 0 fail on sources and built file, 270 in checking
+mode. Pilot output identical. `git grep -i psys2 src/`: empty. scan-loops clean.
+
+- Every log entry told with a namespace (the world's or a given one, `''` for the default)
+  carries `ns`. Its wires were already stored qualified, so a replay of such an entry
+  qualifies nothing more: a bare id stays in the default namespace on any world. Logs
+  without `ns` (older snapshots) are replayed in the world's namespace, as before.
+  `replace` logs the namespace of the replaced wire.
+- Test `N4: ...`: `e.user` (default), `A::p1` referring to it with `$::e.user`, a `B::`
+  wire; the same ids after `fromJSON` with `ns: 'A'`, none and `ns: 'C'`; undo (a
+  replay) keeps `e.user` in the default namespace.
+- `node bench/snapshot.mjs` (no namespaces): 8 turns: each mark its log 805.9 kB, restore 143.2 ms; marks at 90.5 kB, restore 8.5 ms; delta 1.8 kB, restore 4.1 ms
+- `node bench/snapshot.mjs` (no namespaces): 40 turns: each mark its log 3789.5 kB, restore 302.3 ms; marks at 97.4 kB, restore 5.9 ms; delta 8.7 kB, restore 2.9 ms

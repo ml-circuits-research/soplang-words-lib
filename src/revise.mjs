@@ -508,7 +508,7 @@ revision._replace = function _replace(id, input) {
   this._event({ op: 'replace', id, removed });
   res._touchedChange = true;
   const rest = told.filter((w) => w !== successor);
-  const entry = rest.length ? { op: 'tell', wires: rest, facts: facts.filter((x) => !successor || x !== id) } : null;
+  const entry = rest.length ? { op: 'tell', wires: rest, facts: facts.filter((x) => !successor || x !== id), ns: this._nsOf(id) } : null;
   const out = this._finish(mark, res, false, entry);
   out.removed = removed;
   return out;

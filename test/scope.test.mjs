@@ -117,3 +117,17 @@ test('N2: aggregate results belong to the namespace of the wires they count; acr
   v.tell('@c item cat=x', { ns: 'B' });
   assert.deepEqual(v.ofType('have').map((x) => `${x.id.includes('::') ? x.id.split('::')[0] : 'default'}:${x.attrs.cat}:${x.attrs.n}`).sort(), ['B:y:1', 'default:x:2']);
 });
+
+test('N4: log entries keep the namespace they were told in; a replay and a restore honour it', () => {
+  const w = new World({ ns: 'A' });
+  w.load('@agent core.type shared=true');
+  w.tell('@e.user agent', { ns: '' });
+  w.tell('@p1 pet owner=$::e.user');
+  w.tell('@b1 pet owner=$::e.user', { ns: 'B' });
+  const ids = (x) => [...x.wires.keys()].filter((k) => !k.startsWith('_')).sort();
+  assert.deepEqual(ids(w), ['A::p1', 'B::b1', 'e.user']);
+  for (const opts of [{ ns: 'A' }, {}, { ns: 'C' }]) assert.deepEqual(ids(World.fromJSON(JSON.parse(JSON.stringify(w.toJSON())), opts)), ids(w), JSON.stringify(opts));
+  // undo rebuilds by replay: the default-namespace wire stays where it was
+  w.undo();
+  assert.deepEqual(ids(w), ['A::p1', 'e.user']);
+});

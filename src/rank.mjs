@@ -53,3 +53,48 @@ export function rank(scored, criteria = RANKING) {
   });
   return { order: order.map((i) => list[i].index ?? i), ranked };
 }
+
+/**
+ * Should a host answer with the top reading, or say "not understood" / ask? `result` is
+ * what world.score returned (or its candidates, ranked by `rank`). Returns { answer,
+ * index, reasons, ask, read }: `answer` is false when any reason is given. Reasons, each
+ * { reason, why }:
+ *   nothing            no reading at all
+ *   inconsistent       the top reading breaks the world (its violations)
+ *   no-referent        something it refers to matches nothing
+ *   ambiguous          a referent is still open between several wires
+ *   action-unavailable its action is not one the world can do (unsupported); a guard
+ *                      that refuses is reported as inconsistent
+ *   words-left-out     it leaves words of the message out (more than `leftOut`, default 0)
+ *   too-few-words      it uses fewer than `minWords` words (default 1, for frames with words)
+ *   tie                the next reading is as good on every criterion: ask which
+ * `ask` lists what the reading lacks with its question (`ask`), for a host that asks
+ * instead of answering; `read` lists words read as near known words ("I read X as Y").
+ */
+export function vetoOf(result, { minWords = 1, leftOut = 0, criteria = RANKING } = {}) {
+  const list = Array.isArray(result) ? result : result?.candidates || [];
+  const order = Array.isArray(result) ? rank(list, criteria).order : result.order || rank(list, criteria).order;
+  const byIndex = new Map(list.map((r, i) => [r.index ?? i, r]));
+  const top = byIndex.get(order[0]);
+  if (!top) return { answer: false, index: null, reasons: [{ reason: 'nothing', why: 'no reading of the message' }], ask: [], read: [] };
+  const reasons = [];
+  if (!top.ok) reasons.push({ reason: 'inconsistent', why: (top.violations || []).map((v) => v.why || v.kind).join('; ') || 'refused', violations: top.violations || [] });
+  const none = (top.referents || []).filter((x) => !x.ids.length);
+  if (none.length) reasons.push({ reason: 'no-referent', why: `nothing matches ${none.map((x) => x.name).join(', ')}`, referents: none.map((x) => x.name) });
+  const open = (top.referents || []).filter((x) => x.ids.length > 1 && !(x.fits?.length === 1));
+  if (open.length) reasons.push({ reason: 'ambiguous', why: open.map((x) => `${x.name} could be ${(x.fits?.length ? x.fits : x.ids).join(' or ')}`).join('; '), referents: open.map((x) => x.name) });
+  if (top.ok && top.action && !top.action.available && top.action.status !== 'missing') reasons.push({ reason: 'action-unavailable', why: `the action is ${top.action.status}`, status: top.action.status });
+  if (top.words) {
+    const out = [...top.words.unused, ...top.words.unresolved];
+    if (out.length > leftOut) reasons.push({ reason: 'words-left-out', why: `leaves out ${out.join(', ')}`, words: out });
+    if (top.words.used.length < minWords && (top.words.used.length + out.length) > 0) reasons.push({ reason: 'too-few-words', why: `uses ${top.words.used.length} word(s), fewer than ${minWords}` });
+  }
+  const next = byIndex.get(order[1]);
+  if (next && criteria.every((c) => c.measure(next) === c.measure(top))) reasons.push({ reason: 'tie', why: `#${top.index} and #${next.index} are as good on every criterion`, between: [top.index, next.index] });
+  const ask = (top.lacks || []).filter((l) => !l.referent).map((l) => ({ ...l }));
+  const read = (top.assumes || []).filter((a) => a.word !== undefined).map((a) => ({ word: a.word, read: a.read }));
+  return { answer: reasons.length === 0, index: top.index ?? order[0], reasons, ask, read };
+}
+
+/** The same as world.veto, for a host that has scored readings in hand. */
+export function veto(result, options) { return vetoOf(result, options); }

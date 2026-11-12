@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="1d1bd2beb61e">
+<meta name="source-hash" content="80db6f992dd6">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -318,6 +318,18 @@ print(r.order, r.candidates[0].on, r.candidates[0].why);
 print(RANKING.map((c) =&gt; c.name));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[1,0] consistent inconsistent: ink is out of stock; #1: consistent with the world
 [&quot;consistent&quot;,&quot;referents&quot;,&quot;lacks&quot;,&quot;words&quot;,&quot;assumes&quot;]</code></pre></figure>
+<h3 id="worldvetoresult-options-and-vetoresult-options">world.veto(result, options?) and veto(result, options?)</h3>
+<p>Whether a host should answer with the top reading of <code>score</code>, or say "not understood" or ask. Returns <code>{ answer, index, reasons, ask, read }</code>; <code>answer</code> is false when any reason is given, each <code>{ reason, why }</code>: <code>nothing</code> (no reading), <code>inconsistent</code> (the top reading breaks the world, a refusing guard included), <code>no-referent</code>, <code>ambiguous</code> (a referent still open), <code>action-unavailable</code> (an action the world does not have), <code>words-left-out</code> (more than <code>leftOut</code>, default 0), <code>too-few-words</code> (fewer than <code>minWords</code>, default 1), <code>tie</code> (the next reading is as good on every criterion). <code>ask</code> lists what the reading lacks with its question, for a host that asks instead of answering; <code>read</code> lists the words read as near known ones. Options: <code>minWords</code>, <code>leftOut</code>, <code>criteria</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@k1 core.slot of=item key=name id=true
+  @a core.action name=reserve param=item when=$it if=$left set=$r
+  @it item name=?item stock=?s
+  @left core.check fn=gt args=?s args=0 why=&quot;?item is out of stock&quot;
+  @r item core.on=$it reserved=yes`);
+w.tell(&#x27;@i1 item name=pen stock=3  @i2 item name=ink stock=0  @w core.word lang=en text=reserve means=reserve&#x27;);
+const v = (args) =&gt; w.veto(w.score(w.interpret({ lang: &#x27;en&#x27;, verb: &#x27;reserve&#x27;, args }).candidates));
+print(v([&#x27;pen&#x27;]).answer, v([&#x27;ink&#x27;]).reasons.map((r) =&gt; [r.reason, r.why]), v([&#x27;pen&#x27;, &#x27;blue&#x27;]).reasons[0].why);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true [[&quot;inconsistent&quot;,&quot;ink is out of stock&quot;]] leaves out blue</code></pre></figure>
 <h3 id="worldgetid-worldhasid-worldresolveid-worldoftypetype">world.get(id), world.has(id), world.resolve(id), world.ofType(type)</h3>
 <p><code>get</code> returns the fact <code>{ id, type, attrs, meta }</code> or undefined; <code>attrs</code> maps each key to an array of values. <code>has</code> says whether it exists. <code>resolve</code> returns the id of the wire that an id names now (after a merge), or the id itself. <code>ofType</code> returns the facts of a type and of its subtypes. Do not modify what they return. Cost: constant; <code>ofType</code> O(result).</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();

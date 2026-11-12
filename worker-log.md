@@ -2388,3 +2388,22 @@ clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
   "pixul" wins over the lemma; English untouched; examples use the first form.
 - Docs: api.md (constructor `lemmas`, `register('lemma')`, interpret word forms),
   reference.md (`text` repeatable, limits), index.d.ts.
+
+## R10.5 — veto report — done
+
+`npm test`: 258 pass, 0 fail on sources and built file, 257 in checking mode. Pilot
+output identical. `git grep -i psys2 src/`: empty. `node tools/scan-loops.mjs src`:
+clean. `npx tsc --noEmit --strict src/index.d.ts`: no errors.
+
+- `world.veto(result, { minWords, leftOut, criteria })` and the exported `veto`: for the
+  top reading of `score`, `{ answer, index, reasons, ask, read }`. Reasons (field
+  `reason`, not `kind`, since they are not violations): nothing, inconsistent (a refusing
+  guard included, so it is not reported twice), no-referent, ambiguous, action-unavailable
+  (an action the world does not have), words-left-out (more than `leftOut`, default 0),
+  too-few-words (fewer than `minWords`, default 1), tie. `ask`: what the reading lacks
+  with its question (a missing argument is a question, not a veto). `read`: near words
+  ("I read X as Y").
+- Tests (test/score.test.mjs, 2): an answer; ink out of stock; a word left out and
+  `leftOut: 1`; a near word in `read`; an open referent; no reading; a missing argument
+  asked; a tie; an unknown action.
+- Docs: api.md (`veto`), index.d.ts (`Veto`, `VetoOptions`).

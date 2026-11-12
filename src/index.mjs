@@ -7,7 +7,7 @@ export { builtins, quantity } from './builtins.mjs';
 export { solvers, Problem, Sat, toDimacs, toASP } from './solve.mjs';
 
 export { GRAMMAR, MODIFIERS, SCHEMA_TYPES } from './matrix.mjs';
-export { rank, RANKING } from './rank.mjs';
+export { rank, RANKING, veto } from './rank.mjs';
 export { aggregates } from './builtins.mjs';
 export const version = '0.9.0';
 /**

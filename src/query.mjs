@@ -20,7 +20,7 @@
 
 import { parse, str, cloneWire } from './parser.mjs';
 import { abduce } from './abduce.mjs';
-import { rank, RANKING } from './rank.mjs';
+import { rank, RANKING, vetoOf } from './rank.mjs';
 import { EMPTY, walk, unify, hasVar } from './unify.mjs';
 
 const VOCABULARY = {
@@ -82,6 +82,11 @@ export const querying = {
       scored.forEach((r, i) => Object.assign(r, { place: ranked[i].place, why: ranked[i].why }, ranked[i].on ? { lostTo: ranked[i].lostTo, on: ranked[i].on } : ranked[i].lostTo !== undefined ? { lostTo: ranked[i].lostTo } : {}));
       return { candidates: scored, order };
     }, (v) => ({ candidates: [], order: [], budget: v }));
+  },
+
+  /** Answer with the top reading, or not: veto(result, options) from src/rank.mjs. */
+  veto(result, opts = {}) {
+    return vetoOf(result, opts);
   },
 
   _scoreOne(cand, index, keep = false) {

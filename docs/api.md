@@ -819,6 +819,35 @@ print(RANKING.map((c) => c.name));
 ["consistent","referents","lacks","words","assumes"]
 ```
 
+### world.veto(result, options?) and veto(result, options?)
+
+Whether a host should answer with the top reading of `score`, or say "not understood"
+or ask. Returns `{ answer, index, reasons, ask, read }`; `answer` is false when any
+reason is given, each `{ reason, why }`: `nothing` (no reading), `inconsistent` (the top
+reading breaks the world, a refusing guard included), `no-referent`, `ambiguous` (a
+referent still open), `action-unavailable` (an action the world does not have),
+`words-left-out` (more than `leftOut`, default 0), `too-few-words` (fewer than
+`minWords`, default 1), `tie` (the next reading is as good on every criterion). `ask`
+lists what the reading lacks with its question, for a host that asks instead of
+answering; `read` lists the words read as near known ones. Options: `minWords`,
+`leftOut`, `criteria`.
+
+```js run
+const w = new World();
+w.load(`@k1 core.slot of=item key=name id=true
+  @a core.action name=reserve param=item when=$it if=$left set=$r
+  @it item name=?item stock=?s
+  @left core.check fn=gt args=?s args=0 why="?item is out of stock"
+  @r item core.on=$it reserved=yes`);
+w.tell('@i1 item name=pen stock=3  @i2 item name=ink stock=0  @w core.word lang=en text=reserve means=reserve');
+const v = (args) => w.veto(w.score(w.interpret({ lang: 'en', verb: 'reserve', args }).candidates));
+print(v(['pen']).answer, v(['ink']).reasons.map((r) => [r.reason, r.why]), v(['pen', 'blue']).reasons[0].why);
+```
+
+```output
+true [["inconsistent","ink is out of stock"]] leaves out blue
+```
+
 ### world.get(id), world.has(id), world.resolve(id), world.ofType(type)
 
 `get` returns the fact `{ id, type, attrs, meta }` or undefined; `attrs` maps each key

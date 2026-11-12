@@ -123,6 +123,16 @@ export interface Criterion {
 /** order scored readings best first, explaining every place */
 export declare function rank(scored: Scored[], criteria?: Criterion[]): { order: number[]; ranked: { index: number; place: number; why: string; lostTo?: number; on?: string }[] };
 export declare const RANKING: Criterion[];
+export interface Veto {
+  answer: boolean;
+  index: number | null;
+  reasons: { reason: 'nothing' | 'inconsistent' | 'no-referent' | 'ambiguous' | 'action-unavailable' | 'words-left-out' | 'too-few-words' | 'tie'; why: string; [k: string]: unknown }[];
+  ask: { key?: string; ask?: string; id?: string; action?: string }[];
+  read: { word: string; read: string }[];
+}
+export interface VetoOptions { minWords?: number; leftOut?: number; criteria?: Criterion[] }
+/** answer with the top reading, or not, and why */
+export declare function veto(result: { candidates: Scored[]; order: number[] } | Scored[], options?: VetoOptions): Veto;
 export interface QueryResult {
   /** 'budget': the call ran out of budget; `site`, `steps` and `why` say where */
   status: 'supported' | 'conflicting' | 'ambiguous' | 'missing' | 'refused' | 'no' | 'unknown' | 'budget' | 'unsupported';
@@ -361,6 +371,8 @@ export class World {
   interpret(frame: Frame | Frame[] | Frame[][], options?: Budgeted & { limit?: number; id?: string; ns?: string; /** read unknown words as the nearest known ones (default true) */ near?: boolean; /** a follow-up to this frame, or to the last told statement */ previous?: Frame | { frame: Frame; ids?: string[] } | 'told' }): { candidates: (ScoreCandidate & Reading)[]; unresolved: string[]; dropped: number; budget?: Violation };
   /** example sentences from the tools, slots and words, with the host's templates */
   examples(lang: string, templates?: { action?: Template; statement?: Template; question?: Template }, options?: { per?: number; all?: boolean; sample?: number }): Example[];
+  /** answer with the top reading of score, or not, and why */
+  veto(result: { candidates: Scored[]; order: number[] } | Scored[], options?: VetoOptions): Veto;
   /** judge candidate readings against the world; nothing is told */
   score(candidates: ScoreCandidate[], options?: Budgeted & { criteria?: Criterion[] }): { candidates: Scored[]; order: number[] };
   /** run fn against the world as it was at a point of the sequence */

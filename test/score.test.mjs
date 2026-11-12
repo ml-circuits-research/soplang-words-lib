@@ -78,3 +78,34 @@ test('rank: fewer referents left ambiguous wins, and the loser names who they co
   assert.deepEqual([r.order, r.candidates[0].on], [[1, 0], 'referents']);
   assert.equal(r.candidates[0].why, 'ambiguous: who could be p1 or p2 or p3; #1: every referent settled');
 });
+
+test('veto: whether a host should answer with the top reading, and why not', () => {
+  const w = world();
+  w.tell(`@w1 core.word lang=en text=reserve means=reserve  @w2 core.word lang=en text=meet means=meeting
+    @w3 core.word lang=en text=monday means=mon of=meeting.day  @w4 core.word lang=en text=order means=order`);
+  const v = (f, o) => w.veto(w.score(w.interpret(f).candidates), o);
+  assert.deepEqual(v({ lang: 'en', verb: 'reserve', args: ['pen'] }), { answer: true, index: 0, reasons: [], ask: [], read: [] });
+  // the only reading breaks the world
+  const ink = v({ lang: 'en', verb: 'reserve', args: ['ink'] });
+  assert.deepEqual([ink.answer, ink.reasons.map((r) => r.reason), ink.reasons[0].why], [false, ['inconsistent'], 'ink is out of stock']);
+  // a word left out, read as a near word, a referent open, nothing at all
+  assert.deepEqual(v({ lang: 'en', verb: 'reserve', args: ['pen', 'blue'] }).reasons.map((r) => [r.reason, r.why]), [['words-left-out', 'leaves out blue']]);
+  assert.equal(v({ lang: 'en', verb: 'reserve', args: ['pen', 'blue'] }, { leftOut: 1 }).answer, true);
+  assert.deepEqual(v({ lang: 'en', verb: 'reserve', args: ['pne'] }).read, [{ word: 'pne', read: 'pen' }]);
+  w.tell('@p3 person name=cy off=mon');
+  const who = w.veto(w.score([{ wires: '@m meeting with=$who day=tue', refer: { who: { type: 'person' } } }]));
+  assert.deepEqual([who.answer, who.reasons[0].reason, who.reasons[0].why], [false, 'ambiguous', 'who could be p1 or p2 or p3']);
+  assert.deepEqual(w.veto(w.score([])).reasons[0].reason, 'nothing');
+  // what it lacks is what a host asks for; a missing argument is not a veto
+  const ask = v({ lang: 'en', verb: 'meet', args: ['monday'] });
+  assert.deepEqual([ask.answer, ask.ask.map((a) => a.key)], [true, ['with']]);
+  // a tie at the top is a reason to ask
+  const tie = w.veto(w.score([{ question: { type: 'item', where: { name: 'pen' }, seek: 'stock' } }, { question: { type: 'item', where: { name: 'ink' }, seek: 'stock' } }]));
+  assert.deepEqual([tie.answer, tie.reasons[0].reason, tie.reasons[0].between], [false, 'tie', [0, 1]]);
+});
+
+test('veto: an action the world does not have', () => {
+  const w = world();
+  const r = w.veto(w.score([{ action: 'teleport', args: {} }]));
+  assert.deepEqual([r.answer, r.reasons.map((x) => x.reason)], [false, ['action-unavailable']]);
+});

@@ -261,7 +261,7 @@ test('functions: three registries; a host name never replaces a built-in by acci
   // the old place for an action still works, with a note
   const old = new World({ fns: { greet: () => 'hello' } });
   old.load('@a core.action name=greet fn=greet');
-  assert.deepEqual([old.act({ action: 'greet' }).value, old.warnings.map((x) => [x.kind, x.id])], ['hello', [['deprecated', 'greet']]]);
+  assert.deepEqual([old.act({ action: 'greet' }).value, old.warnings.map((x) => [x.kind, x.id])], ['hello', [['undeclared-function', 'greet'], ['deprecated', 'greet']]]);
   assert.match(new World().tell('@a core.action name=x fn=nothing').violations[0].why, /unknown action function/);
 });
 

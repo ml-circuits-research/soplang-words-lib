@@ -4,7 +4,7 @@
 import { TIERS } from './tiers.mjs';
 import { cloneWire, str } from './parser.mjs';
 import { hasVar, isVar } from './unify.mjs';
-import { quantity, clock, date, aggregates, safeRegex, jsonValue } from './builtins.mjs';
+import { quantity, clock, date, aggregates, safeRegex, jsonValue, builtins } from './builtins.mjs';
 
 const RANGE_CAP = 2000;
 
@@ -12,6 +12,7 @@ export const SCHEMA_TYPES = new Set([
   'core.slot', 'core.type', 'core.abducible', 'core.precision', 'core.tier', 'core.rule', 'core.deny', 'core.calc', 'core.check', 'core.use',
   'core.schema.map', 'core.namespace', 'core.producer', 'core.action',
   'core.sequence', 'core.fluent', 'core.effect', 'core.relation', 'core.aggregate', 'core.rank', 'core.module',
+  'core.function', 'core.function.arg',
 ]);
 
 /**
@@ -41,6 +42,8 @@ export const GRAMMAR = {
   'core.producer': ['of', 'key', 'fn'],
   'core.action': ['name', 'fn', 'required', 'input', 'param', 'when', 'with', 'if', 'set', 'add', 'remove', 'returns', 'all', 'ask.'],
   'core.tier': ['name', 'below', 'cost'],
+  'core.function': ['name', 'out.kind', 'pure', 'doc'],
+  'core.function.arg': ['of', 'name', 'kind', 'optional', 'doc'],
   'core.precision': ['decimals'],
 };
 /** Attributes that may stand on a pattern or a template of any type. */
@@ -146,7 +149,38 @@ export function compileMatrix(world) {
     fluents: new Map(),   // fluent id -> { id, of, key, by, effects }
     fluentsByType: new Map(), // holder type -> fluents
     effectsByEvent: new Map(), // event type -> effects
+    functions: new Map(), // function name -> its declaration (core.function and its core.function.arg wires)
+    fnNotes: [],          // functions declared but not registered, registered but not declared
   };
+  // ---- host functions declared in SOP Lang: what tools the world has, checked when used
+  const fnById = new Map();
+  for (const w of world.matrix.values()) {
+    if (w.type !== 'core.function') continue;
+    const name = first(w, 'name');
+    if (!name) { c.errors.push(`${w.id}: core.function needs name=`); continue; }
+    if (c.functions.has(name)) { c.errors.push(`${w.id}: the function ${name} is already declared by ${c.functions.get(name).id}`); continue; }
+    if (Object.hasOwn(builtins, name) || Object.hasOwn(aggregates, name)) { c.errors.push(`${w.id}: ${name} is a built-in function; declare only the host's`); continue; }
+    const out = first(w, 'out.kind');
+    if (out && !KINDS[out]) c.errors.push(`${w.id}: out.kind=${out} is not a kind (${Object.keys(KINDS).join(', ')})`);
+    const d = { id: w.id, name, out: out ? { kind: out } : {}, pure: flag(w, 'pure'), doc: first(w, 'doc') !== undefined ? str(first(w, 'doc')) : undefined, args: [] };
+    c.functions.set(name, d);
+    fnById.set(w.id, d);
+  }
+  for (const w of world.matrix.values()) {
+    if (w.type !== 'core.function.arg') continue;
+    const of = (first(w, 'of') || '').replace(/^\$/, ''), name = first(w, 'name'), kind = first(w, 'kind');
+    const d = fnById.get(of);
+    if (!d) { c.errors.push(`${w.id}: of=$${of} is not a core.function`); continue; }
+    if (!name) { c.errors.push(`${w.id}: core.function.arg needs name=`); continue; }
+    if (kind && !KINDS[kind]) c.errors.push(`${w.id}: kind=${kind} is not a kind (${Object.keys(KINDS).join(', ')})`);
+    if (d.args.some((a) => a.optional) && !flag(w, 'optional')) c.errors.push(`${w.id}: a required argument cannot follow an optional one (${d.name})`);
+    d.args.push({ name, ...(kind ? { kind } : {}), optional: flag(w, 'optional'), ...(first(w, 'doc') !== undefined ? { doc: str(first(w, 'doc')) } : {}) });
+  }
+  for (const [name, d] of c.functions) if (!world.fns[name]) c.fnNotes.push({ kind: 'unregistered-function', id: d.id, name, why: `${d.id}: the function ${name} is declared but not registered (world.register('function', '${name}', fn))` });
+  for (const name of Object.keys(world.fns)) {
+    if (Object.hasOwn(builtins, name) || c.functions.has(name)) continue;
+    c.fnNotes.push({ kind: 'undeclared-function', id: name, name, why: `the function ${name} is registered but not declared (@f core.function name=${name} ...)` });
+  }
   for (const w of world.matrix.values()) {
     if (w.type === 'core.schema.map') {
       const m = readMap(w);
@@ -516,6 +550,11 @@ export function compileMatrix(world) {
   if (c.lazyTypes.size) {
     for (const r of c.rules) if (readsLazy(r)) c.errors.push(`${r.id}: reads what the lazy rule${c.lazyRules.length > 1 ? 's' : ''} ${c.lazyRules.map((x) => x.id).join(', ')} make${c.lazyRules.length > 1 ? '' : 's'}; a rule that is not lazy cannot (make it lazy too, or read it in a question or a deny)`);
   }
+  // a lazy rule runs when a question asks, inside an overlay: only pure functions there
+  for (const r of c.lazyRules) for (const f of [...r.calc, ...r.test]) {
+    const d = c.functions.get(f.fn);
+    if (d && !d.pure) c.errors.push(`${r.id}: a lazy rule may call only pure functions; ${f.fn} is not declared pure=true (${d.id})`);
+  }
   c.lazyDenies = c.lazyTypes.size ? c.denies.filter(readsLazy) : [];
   for (const d of c.lazyDenies) d.readsLazy = true;
   c.lazyWatch = new Set([...c.lazyInputs, ...c.lazyDenies.flatMap(readsOf)]); // a change to these makes the lazy denies look again
@@ -762,7 +801,17 @@ function buildRule(world, w, c, extra, register = true, aggregate = null) {
     const name = first(x, 'fn');
     // with over= the calc is an aggregate over every match of those patterns
     const over = x.attrs.over ? get('over', find(x.id) || x) : null;
-    if (over ? !aggregates[name] : !world.fns[name]) c.errors.push(`${w.id}: unknown ${over ? 'aggregate' : kind} function "${name}"`);
+    const decl = over ? null : c.functions.get(name);
+    if (over ? !aggregates[name] : !world.fns[name] && !decl) c.errors.push(`${w.id}: unknown ${over ? 'aggregate' : kind} function "${name}"`);
+    if (decl) { // a declared function: the number of arguments, their kinds, a check's boolean
+      const given = x.attrs.args || [], need = decl.args.filter((a) => !a.optional).length;
+      if (given.length < need || given.length > decl.args.length) c.errors.push(`${w.id}: ${x.id} gives ${name} ${given.length} argument(s); it takes ${need === decl.args.length ? need : `${need} to ${decl.args.length}`} (${decl.id})`);
+      given.forEach((v, i) => {
+        const a = decl.args[i];
+        if (a?.kind && !hasVar(v) && v[0] !== '$' && !KINDS[a.kind](str(v))) c.errors.push(`${w.id}: ${x.id} gives ${name} ${v} as ${a.name}, which must be ${a.kind}`);
+      });
+      if (kind === 'test' && decl.out.kind && decl.out.kind !== 'boolean') c.errors.push(`${w.id}: ${x.id} is a check, but ${name} returns ${decl.out.kind}, not boolean`);
+    }
     // a pattern written in the matrix is checked when the matrix is read, not when it is first used
     const pat = (x.attrs.args || [])[1];
     if (name === 'matches' && pat !== undefined && !hasVar(pat)) { const re = safeRegex(str(pat)); if (re.refused) c.errors.push(`${w.id}: ${x.id}: ${re.refused}`); }

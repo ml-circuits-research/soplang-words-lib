@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.14.0
+
+Round 15: host functions declared in SOP Lang (no code inside wires).
+
+### New
+- `core.function name= out.kind= pure= doc=` and one `core.function.arg of=$f name= kind=
+  optional= doc=` per argument: the tools a world has are in its schema.
+- Checked at load: a calc or check that names a declared function gives it the right
+  number of arguments, literals of the right kind, and a check's function returns boolean.
+- `pure=true`: results kept for a step; only pure functions run in lazy rules (else a
+  `schema` error) and in the overlays of `score` and `check` (else `impure`).
+- `world.functions()` lists the declarations.
+- Notes in `world.warnings`: `undeclared-function` (registered, not declared; it still
+  works) and `unregistered-function` (declared, not registered; a call gives no result).
+
+### Changes
+- A fact that names `fn=` is refused (`function-in-fact`): only matrix wires call
+  functions.
+
 ## 0.13.2
 
 ### Fixes

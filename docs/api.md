@@ -1122,7 +1122,9 @@ print(w.toSOP(), Object.keys(w.toJSON()));
 
 ### world.register(kind, name, fn, options?)
 
-Adds a host function after the world was made. `kind` is `function` (`(args, world)
+Adds a host function after the world was made. Declare it in the matrix too
+(`core.function`, see the [reference](reference.md#corefunction)): a
+registered function with no declaration still works, with an `undeclared-function` note. `kind` is `function` (`(args, world)
 => value`, for calcs, checks and effects), `action` (`(context, args) => value`),
 `producer` (`(context) => value`), `filter` (`(value, { world, name }) => text`, for
 `?v:name` in a reason) or `lemma`, given as `register('lemma', fn)` with no name (`(token) => form | forms`:
@@ -1140,6 +1142,25 @@ print(typeof w.fns.half);
 ```output
 sopworld: the function "add" would replace the built-in of t
 function
+```
+
+### world.functions()
+
+The host functions the matrix declares, in order: `{ name, out: { kind }, pure, doc,
+args: [{ name, kind, optional, doc }], registered }`. A reader derives its tool
+descriptions from them.
+
+```js run
+const w = new World({ fns: { near: ([a, b, d = 3]) => Math.abs(a - b) <= d } });
+w.load(`@f core.function name=near out.kind=boolean pure=true doc="within a distance"
+  @f.a core.function.arg of=$f name=a kind=number
+  @f.b core.function.arg of=$f name=b kind=number
+  @f.d core.function.arg of=$f name=within kind=number optional=true`);
+print(w.functions()[0].args.map((a) => a.name + (a.optional ? '?' : '')), w.functions()[0].registered);
+```
+
+```output
+["a","b","within?"] true
 ```
 
 ### world.cannot(reason)

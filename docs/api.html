@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="59c0b1cca0fb">
+<meta name="source-hash" content="1ff083a1ac9b">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.13.2</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.14.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -430,13 +430,22 @@ w.tell(&#x27;@pen item name=pen price=2&#x27;);
 print(w.toSOP(), Object.keys(w.toJSON()));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>@pen item name=pen price=2 [&quot;format&quot;,&quot;version&quot;,&quot;log&quot;]</code></pre></figure>
 <h3 id="worldregisterkind-name-fn-options">world.register(kind, name, fn, options?)</h3>
-<p>Adds a host function after the world was made. <code>kind</code> is <code>function</code> (<code>(args, world) =&gt; value</code>, for calcs, checks and effects), <code>action</code> (<code>(context, args) =&gt; value</code>), <code>producer</code> (<code>(context) =&gt; value</code>), <code>filter</code> (<code>(value, { world, name }) =&gt; text</code>, for <code>?v:name</code> in a reason) or <code>lemma</code>, given as <code>register('lemma', fn)</code> with no name (<code>(token) =&gt; form | forms</code>: the dictionary forms of a token that is not a known word, for <code>interpret</code>; it must be pure and know nothing of the world). A <code>function</code> with the name of a built-in throws unless <code>{ override: true }</code>. Returns the world.</p>
+<p>Adds a host function after the world was made. Declare it in the matrix too (<code>core.function</code>, see the <a href="reference.html#corefunction">reference</a>): a registered function with no declaration still works, with an <code>undeclared-function</code> note. <code>kind</code> is <code>function</code> (<code>(args, world) =&gt; value</code>, for calcs, checks and effects), <code>action</code> (<code>(context, args) =&gt; value</code>), <code>producer</code> (<code>(context) =&gt; value</code>), <code>filter</code> (<code>(value, { world, name }) =&gt; text</code>, for <code>?v:name</code> in a reason) or <code>lemma</code>, given as <code>register('lemma', fn)</code> with no name (<code>(token) =&gt; form | forms</code>: the dictionary forms of a token that is not a known word, for <code>interpret</code>; it must be pure and know nothing of the world). A <code>function</code> with the name of a built-in throws unless <code>{ override: true }</code>. Returns the world.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.register(&#x27;function&#x27;, &#x27;half&#x27;, ([x]) =&gt; Number(x) / 2);
 try { w.register(&#x27;function&#x27;, &#x27;add&#x27;, () =&gt; 0); } catch (e) { print(e.message.slice(0, 60)); }
 print(typeof w.fns.half);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>sopworld: the function &quot;add&quot; would replace the built-in of t
 function</code></pre></figure>
+<h3 id="worldfunctions">world.functions()</h3>
+<p>The host functions the matrix declares, in order: <code>{ name, out: { kind }, pure, doc, args: [{ name, kind, optional, doc }], registered }</code>. A reader derives its tool descriptions from them.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World({ fns: { near: ([a, b, d = 3]) =&gt; Math.abs(a - b) &lt;= d } });
+w.load(`@f core.function name=near out.kind=boolean pure=true doc=&quot;within a distance&quot;
+  @f.a core.function.arg of=$f name=a kind=number
+  @f.b core.function.arg of=$f name=b kind=number
+  @f.d core.function.arg of=$f name=within kind=number optional=true`);
+print(w.functions()[0].args.map((a) =&gt; a.name + (a.optional ? &#x27;?&#x27; : &#x27;&#x27;)), w.functions()[0].registered);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;a&quot;,&quot;b&quot;,&quot;within?&quot;] true</code></pre></figure>
 <h3 id="worldcannotreason">world.cannot(reason)</h3>
 <p>For host functions: say why there is no result, before returning nothing. A query that supposed a wire and needed the result answers <code>unsupported</code> with that reason.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World({ fns: { rate: ([c], world) =&gt; (c === &#x27;eur&#x27; ? 5 : world.cannot(`no rate for ${c}`)) } });
@@ -524,7 +533,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.13.2 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.14.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

@@ -53,7 +53,7 @@ export function abduce(world, goal, { maxDepth = 3, max = 10, maxAssumptions = 4
         const args = q.args.map((a) => walk(a, s));
         const missing = args.filter(hasVar).length;
         if (missing === 0) {
-          const v = world.fns[q.fn](args, world);
+          const v = world._call(q.fn, args);
           if (v === undefined || v === null) return null;
           if (hasVar(out)) { s = unify(out, String(v), s); if (!s) return null; progress = true; }
           else if (String(v) !== out && !builtins.eq([String(v), out])) return null;

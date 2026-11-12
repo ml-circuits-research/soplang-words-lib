@@ -465,9 +465,10 @@ export class World {
    */
   check(patch, opts = {}) {
     if (patch === undefined || patch === null) return this._guard(opts, () => this._audit(), (v) => ({ ok: false, violations: [v], issues: [] }));
+    const refuseImpure = ([r, impure]) => (impure ? { ...r, ok: false, violations: [...(r.violations || []), { kind: 'impure', fn: impure, why: `${impure} is not declared pure=true, so it does not run on a change that is only checked` }] } : r);
     if (opts.query || opts.ask) {
       // evaluate on the world with the patch, and answer questions there; nothing stays
-      return this._guard(opts, () => this._trial(() => {
+      return this._guard(opts, () => refuseImpure(this._asOverlay(() => this._trial(() => {
         const r = this._patch(patch, { ...opts, query: undefined, ask: undefined });
         if (!r.ok) return r;
         // the questions see the namespace the patch was told in
@@ -475,9 +476,9 @@ export class World {
         if (opts.query) r.answer = this._query(opts.query, ns !== undefined ? { ns } : {});
         if (opts.ask) r.rows = this.ask(opts.ask, ns !== undefined ? { ns } : {});
         return r;
-      }), (v) => this._refusal(v));
+      }))), (v) => this._refusal(v));
     }
-    return this._guard(opts, () => this._patch(patch, { ...opts, dry: true }), (v) => this._refusal(v));
+    return this._guard(opts, () => refuseImpure(this._asOverlay(() => this._patch(patch, { ...opts, dry: true }))), (v) => this._refusal(v));
   }
 
   /**
@@ -1156,6 +1157,8 @@ export class World {
     const c = this._compiled();
     for (const w of wires) {
       if (isSchema(w)) continue;
+      // facts are data: only matrix wires call functions (a user's words never run code)
+      if (w.attrs.fn) { res.violations.push({ kind: 'function-in-fact', id: w.id, why: `${w.id} is a fact and names fn=${w.attrs.fn[0]}: only matrix wires (calcs, checks, rules) call functions` }); continue; }
       if (this.wires.has(w.id) || this.alias.has(w.id)) {
         // the same wire stated again, saying nothing new, is not an error: an export can be told back
         const have = this.get(w.id), c0 = this._compiled();
@@ -1207,7 +1210,59 @@ export class World {
     return facts;
   }
 
-  _compiled() { return this._c || (this._c = compileMatrix(this)); }
+  _compiled() {
+    if (this._c) return this._c;
+    this._c = compileMatrix(this);
+    // functions declared but not registered, registered but not declared: notes, not errors,
+    // kept up to date as declarations and registrations come (a note no longer true goes)
+    const now = new Set(this._c.fnNotes.map((n) => n.kind + '|' + n.id));
+    if (this.warnings.some((x) => (x.kind === 'undeclared-function' || (x.kind === 'unregistered-function' && !x.called)) && !now.has(x.kind + '|' + x.id))) {
+      this.warnings = this.warnings.filter((x) => !((x.kind === 'undeclared-function' || (x.kind === 'unregistered-function' && !x.called)) && !now.has(x.kind + '|' + x.id)));
+    }
+    for (const n of this._c.fnNotes) if (!this.warnings.some((x) => x.kind === n.kind && x.id === n.id)) this.warnings.push({ kind: n.kind, id: n.id, why: n.why });
+    return this._c;
+  }
+
+  /**
+   * The host functions the matrix declares (core.function), in order: { name, out, pure,
+   * doc, args: [{ name, kind, optional, doc }], registered }. A reader can derive tool
+   * descriptions and examples from them.
+   */
+  functions() {
+    return [...this._compiled().functions.values()].map((d) => ({ name: d.name, out: { ...d.out }, pure: d.pure, ...(d.doc !== undefined ? { doc: d.doc } : {}), args: d.args.map((a) => ({ ...a })), registered: !!this.fns[d.name] }));
+  }
+
+  /**
+   * Call a function a calc, a check or an effect names. A declared pure function's results
+   * are kept for the current stamp. In an overlay (score, check) a declared function that
+   * is not pure is not called: the overlay is refused (kind `impure`). A declared function
+   * that is not registered gives no result and a note in warnings.
+   */
+  _call(name, args) {
+    const fn = this.fns[name];
+    const d = this._c?.functions.get(name);
+    if (!fn) {
+      if (!this.warnings.some((x) => x.kind === 'unregistered-function' && x.id === name && x.called)) this.warnings.push({ kind: 'unregistered-function', id: name, called: true, why: `${name} was called but is not registered` });
+      return undefined;
+    }
+    if (d && !d.pure && this._overlay) { this._impure ||= name; return undefined; }
+    if (d?.pure) {
+      if (this._fnCache?.stamp !== this.stamp) this._fnCache = { stamp: this.stamp, map: new Map() };
+      const key = name + '\u0001' + args.join('\u0001');
+      if (this._fnCache.map.has(key)) return this._fnCache.map.get(key);
+      const v = fn(args, this);
+      this._fnCache.map.set(key, v);
+      return v;
+    }
+    return fn(args, this);
+  }
+
+  /** Run fn as an overlay (score, check): impure declared functions are refused there; returns [result, the impure function called or null]. */
+  _asOverlay(fn) {
+    const was = this._overlay, before = this._impure;
+    this._overlay = true; this._impure = null;
+    try { const r = fn(); return [r, this._impure]; } finally { this._overlay = was; this._impure = before; }
+  }
 
   // ---------------------------------------------------------------- matching
 
@@ -1473,7 +1528,7 @@ export class World {
         } else {
           const args = c.args.map((a) => walk(a, s));
           if (args.some(hasVar)) continue next;
-          out = this.fns[c.fn](args, this);
+          out = this._call(c.fn, args);
         }
         if (typeof out === 'number') out = String(out);
         out = this._round(out);
@@ -1483,7 +1538,7 @@ export class World {
       }
       for (const t of rule.test) {
         const args = t.args.map((a) => walk(a, s));
-        if (args.some(hasVar) || !this.fns[t.fn](args, this)) continue next;
+        if (args.some(hasVar) || !this._call(t.fn, args)) continue next;
       }
       if (this._negated(rule, s)) continue;
       if (reads) this._reads.set(s, reads);

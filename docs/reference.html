@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="7cabcc4c2c51">
+<meta name="source-hash" content="47e4207c7121">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.13.2</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.14.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html" aria-current="page">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -547,6 +547,45 @@ w.load(&#x27;@p core.precision decimals=2\n@s share total=?t people=?n\n@c core.
 w.tell(&#x27;@s1 share total=10 people=3  @s2 share total=10 people=4&#x27;);
 print(w.get(&#x27;s1&#x27;).attrs.each, w.get(&#x27;s2&#x27;).attrs.each);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;3.33&quot;] [&quot;2.5&quot;]</code></pre></figure>
+<h3 id="corefunction">core.function</h3>
+<p>A host function, declared in SOP Lang: the tools a world has are in its schema. A function is written in the host's language and registered with <code>world.register</code>; its declaration says its name, its arguments (<a href="#corefunctionarg">core.function.arg</a>) and their kinds, what it returns and whether it is pure. No code goes inside wires.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Meaning</th></tr></thead><tbody><tr><td><code>name</code></td><td>the name a calc or check uses in <code>fn=</code></td></tr><tr><td><code>out.kind</code></td><td>the kind of what it returns (<code>number</code>, <code>boolean</code>, ...)</td></tr><tr><td><code>pure</code></td><td><code>true</code>: the same arguments always give the same result and nothing else happens</td></tr><tr><td><code>doc</code></td><td>what it does, for readers</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> A <code>core.calc fn=</code> or <code>core.check fn=</code> that names a declared function must give it a number of arguments it takes; a literal argument must fit the argument's kind; a check's function must return <code>boolean</code>. A pure function's results are kept for the current step, and it may run where nothing is told: in lazy rules and in the overlays of <code>score</code> and <code>check</code>. A function that is not pure is refused there, with the reason (<code>impure</code>). <code>world.functions()</code> lists the declarations. Built-in functions need no declaration and cannot be declared.</p>
+<p><strong>When it is evaluated.</strong> When the matrix is compiled: declarations, argument counts and kinds, a check's boolean, purity in lazy rules. A function runs when a calc, a check or an effect that names it is evaluated, under the budget of the call.</p>
+<p><strong>Interactions.</strong> <em>Compatibility:</em> a registered function with no declaration still works, with an <code>undeclared-function</code> note in <code>world.warnings</code>; a declared function that is not registered is noted too (<code>unregistered-function</code>), and a calc that calls it gets no result. <em>Facts:</em> only matrix wires call functions: a fact that names <code>fn=</code> is refused (<code>function-in-fact</code>), so a user's words never run code. <em>Readers:</em> the declarations are the formal description of a world's tools (see <a href="design/formalization.md">design/formalization</a>).</p>
+<p><strong>Violations.</strong> <code>schema</code> (no name, declared twice, a built-in's name, an unknown kind, a required argument after an optional one, a wrong number of arguments, a literal of the wrong kind, a check whose function does not return boolean, an impure function in a lazy rule); <code>impure</code> in <code>score</code> and <code>check</code>; <code>function-in-fact</code>.</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World({ fns: { distance: ([a, b]) =&gt; String(Math.abs(Number(a) - Number(b))) } });
+w.load(`
+  @f.distance core.function name=distance out.kind=number pure=true doc=&quot;how far apart two positions are&quot;
+  @f.distance.a core.function.arg of=$f.distance name=a kind=number
+  @f.distance.b core.function.arg of=$f.distance name=b kind=number
+  @p pair a=?a b=?b
+  @c core.calc out=?d fn=distance args=?a args=?b
+  @t pair core.on=$p gap=?d
+  @r core.rule when=$p with=$c then=$t
+`);
+w.tell(&#x27;@x pair a=2 b=7&#x27;);
+print(w.get(&#x27;x&#x27;).attrs.gap, w.functions().map((f) =&gt; [f.name, f.args.map((a) =&gt; a.name), f.pure]));
+print(w.tell(&#x27;@y note fn=distance&#x27;).violations[0].kind);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;5&quot;] [[&quot;distance&quot;,[&quot;a&quot;,&quot;b&quot;],true]]
+function-in-fact</code></pre></figure>
+<p><strong>Limits.</strong> Kinds are checked for literal arguments; a variable's value is checked when it fits a slot, not against the function. A pure function is trusted to be pure.</p>
+<h3 id="corefunctionarg">core.function.arg</h3>
+<p>One argument of a declared host function, in order: one wire per argument, repeated wires rather than a notation inside a value.</p>
+<p><strong>Syntax</strong></p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Meaning</th></tr></thead><tbody><tr><td><code>of</code></td><td><code>$&lt;the core.function wire&gt;</code></td></tr><tr><td><code>name</code></td><td>the argument's name</td></tr><tr><td><code>kind</code></td><td>the kind its value must have</td></tr><tr><td><code>optional</code></td><td><code>true</code>: it may be left out (only after the required ones)</td></tr><tr><td><code>doc</code></td><td>what it is</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> The arguments of a function are its <code>core.function.arg</code> wires in the order they are written; a calc or check gives them in that order (<code>args=</code> repeated).</p>
+<p><strong>When it is evaluated.</strong> When the matrix is compiled, with its function.</p>
+<p><strong>Interactions.</strong> See <a href="#corefunction">core.function</a>.</p>
+<p><strong>Violations.</strong> <code>schema</code> (<code>of</code> is not a core.function, no name, an unknown kind, a required argument after an optional one).</p>
+<p><strong>Example</strong></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(&#x27;@f core.function name=clamp3 out.kind=number pure=true\n@f.x core.function.arg of=$f name=x kind=number\n@f.hi core.function.arg of=$f name=hi kind=number optional=true&#x27;);
+print(w.functions()[0].args.map((a) =&gt; [a.name, a.kind, a.optional]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;x&quot;,&quot;number&quot;,false],[&quot;hi&quot;,&quot;number&quot;,true]]</code></pre></figure>
+<p><strong>Limits.</strong> An argument has one kind; a function taking any value leaves <code>kind</code> out.</p>
 <h2 id="functions">Functions</h2>
 <p>A function is called with its arguments as text and returns text (or true/false for a comparison). When it has no result it returns nothing and the rule does not fire. Host functions are added with <code>new World({ fns })</code>; a name from the tables below cannot be taken without <code>override</code>.</p>
 <p>A <strong>number</strong> is an integer or decimal, optionally followed by a unit (<code>5</code>, <code>2.5</code>, <code>3kg</code>, <code>10N/kg</code>). Arithmetic keeps 12 significant digits.</p>
@@ -596,7 +635,7 @@ print(builtins.time_add([&#x27;10:40&#x27;, &#x27;35min&#x27;]), builtins.div([&
 11:15 3 true tuesday</code></pre></figure>
 <p class="source">Generated from <code>docs/reference.md</code>.</p>
 </main>
-<footer>sopworld 0.13.2 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.14.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

@@ -145,7 +145,7 @@ export const timing = {
     let next;
     if (e.op === 'set') next = amount;
     else if (value === undefined) return undefined; // an unknown start stays unknown
-    else next = this.fns[e.op]([value, amount], this);
+    else next = this._call(e.op, [value, amount]);
     if (next === undefined || next === null) return undefined;
     next = this._round(String(next));
     const q = quantity(next);

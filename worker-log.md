@@ -2744,3 +2744,35 @@ identical. `git grep -i psys2 src/`: empty. scan-loops clean. tsc clean.
 - Test `R14.1: ...`: a known-but-unreadable verb and an unknown verb with an argument both
   give an unread part and `words-left-out`; a split reading every frame ranks first.
 - Docs: api.md splits, index.d.ts (`unread`), CHANGELOG 0.13.2.
+
+## Round 15 — host functions declared in SOP Lang — done; 0.14.0 released (no tag)
+
+`npm test`: 280 pass, 0 fail on sources and built file, 279 in checking mode. Pilot
+147/147, 212/217, 231/232, output identical. `npm run examples`: exit 0. `git grep -i
+psys2 src/`: empty. scan-loops clean. tsc clean. One commit for the round: the six parts
+share the compile step and the call path.
+
+1. Vocabulary (no `core.function` existed before): `core.function name= out.kind= pure=
+   doc=` and `core.function.arg of=$f name= kind= optional= doc=`, matrix types with
+   GRAMMAR entries; arguments in wire order; repeated wires, no notation inside values.
+   A built-in's name cannot be declared.
+2. Load checks in compile: argument count (optional ones at the end), literal kinds,
+   a check's function returns boolean. `undeclared-function` and `unregistered-function`
+   notes, kept current as declarations and registrations come; a call to an unregistered
+   function gives no result and a `called` note.
+3. Purity: every function call goes through `world._call` (rules, denies, action guards,
+   abduction, effects). Pure results are kept per stamp. A lazy rule with an impure
+   declared function is a `schema` error; `score` readings and `check` (dry, query, ask)
+   run as overlays where an impure declared function is not called and the result is
+   refused with `impure`.
+4. `world.functions()`.
+5. A fact with `fn=` is refused (`function-in-fact`).
+6. Docs: reference.md (core.function, core.function.arg), language.md §4 item 6,
+   semantics.md S43a–S43c (with tests), api.md (register, functions), design doc;
+   violation table and warnings.
+- test/functions.test.mjs (4 tests): declarations and load checks; notes; caching and
+  impure refusals in score, check and lazy rules; facts never call functions. One older
+  test now also expects the `undeclared-function` note for a function registered as an
+  action the old way.
+- `node bench/functions.mjs` (1,000 pairs, two calcs on the same arguments): not
+  declared 50.0–76.7 ms, 2,000 calls; declared pure 44.8–49.1 ms, 1,000 calls.

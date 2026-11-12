@@ -160,6 +160,13 @@ export const querying = {
 
   /** One choice of referents, tried in a transaction that is undone (or kept, inside a message's trial). */
   _scoreWith(cand, bind, missing, keep = false) {
+    // an overlay: a declared function that is not pure is not called, and refuses the reading
+    const [out, impure] = this._asOverlay(() => this._scoreBody(cand, bind, missing, keep));
+    if (impure) { out.ok = false; out.violations.push({ kind: 'impure', fn: impure, why: `${impure} is not declared pure=true, so it does not run on a reading that is only tried` }); }
+    return out;
+  },
+
+  _scoreBody(cand, bind, missing, keep) {
     const out = { ok: true, violations: [], lacks: [], assumes: [] };
     const sub = (v) => (v[0] === '$' && bind[v.slice(1)] ? '$' + bind[v.slice(1)] : v);
     (keep ? (f) => f() : (f) => this._trial(f))(() => {
@@ -355,7 +362,7 @@ export const querying = {
       for (const q of rule.calc) {
         const xs = q.args.map((a) => walk(a, s));
         this._cannot = [];
-        const out = xs.some(hasVar) ? undefined : this.fns[q.fn](xs, this);
+        const out = xs.some(hasVar) ? undefined : this._call(q.fn, xs);
         const why = this._cannot[0];
         this._cannot = null;
         if (out === undefined || out === null) return refuse({ kind: 'guard', action: name, calc: q.id, why: why || `${q.fn} has no result here` });
@@ -364,7 +371,7 @@ export const querying = {
       }
       for (const t of rule.test) {
         const xs = t.args.map((a) => walk(a, s));
-        if (xs.some(hasVar) || !this.fns[t.fn](xs, this)) return refuse({ kind: 'guard', action: name, check: t.id, why: t.why ? this._say(str(t.why), rule, s).text : `${t.fn}(${xs.join(', ')}) does not hold`, bindings: this._say('', rule, s).bindings, vars: this._say('', rule, s).vars });
+        if (xs.some(hasVar) || !this._call(t.fn, xs)) return refuse({ kind: 'guard', action: name, check: t.id, why: t.why ? this._say(str(t.why), rule, s).text : `${t.fn}(${xs.join(', ')}) does not hold`, bindings: this._say('', rule, s).bindings, vars: this._say('', rule, s).vars });
       }
       for (const t of rule.then) {
         const attrs = {};

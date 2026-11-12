@@ -153,7 +153,12 @@ that say what facts may exist and what follows from them.
    refused (`variable`).
 5. A rule and the wires it names are told together, in one text. A wire that has the id
    of a pattern and is told later on its own is a fact.
-6. Words (`core.word text=… means=… of=…`, see the [reference](reference.md#coreword))
+6. Host functions are declared in the matrix (`core.function name=… out.kind=… pure=…`
+   with one `core.function.arg of=$f name=… kind=…` per argument, see the
+   [reference](reference.md#corefunction)); the code itself is the host's,
+   registered with `world.register`. Only matrix wires call functions: a fact that names
+   `fn=` is refused. No code goes inside a wire.
+7. Words (`core.word text=… means=… of=…`, see the [reference](reference.md#coreword))
    are facts. SOP Lang knows no natural languages: the words of a world are in the one
    language its matrix is written in, and translation is done by the host, outside the
    world.

@@ -297,6 +297,27 @@ systems is neither, and belongs with the other search.
 *Tests:* `relation: a chain of relations is propagated to a fixpoint; units must agree`;
 `relation: propagation is local; what needs search is left to the search`
 
+## Functions
+
+**S43a.** A function runs only when a matrix wire that names it is evaluated: a calc or a
+check in a rule, a deny or an action, an effect. A fact never calls one (a fact with
+`fn=` is refused, `function-in-fact`). A function's work counts against the budget of the
+call that evaluates it, like the rest of that call; the library does not stop a function
+that loops. *Why:* a user's words are data; code runs only where the matrix says.
+*Test:* `core.function: facts never call functions`
+
+**S43b.** A function declared `pure=true` gives the same result for the same arguments
+within one step, so the library calls it once per step for those arguments. Only pure
+functions run where nothing is told: in lazy rules (refused when the matrix is compiled)
+and in the overlays of `score` and `check` (the reading or the change is refused,
+`impure`). A function that is not declared is called as before, with a note.
+*Tests:* `core.function: pure results are kept for a step; impure functions are refused in lazy rules and in score and check overlays`;
+`core.function: undeclared and unregistered functions are notes, not errors; a call to an unregistered one gives no result`
+
+**S43c.** A declared function is checked where it is used: the number of arguments, the
+kind of a literal argument, and that a check's function returns `boolean`.
+*Test:* `core.function: declarations are listed and checked at load (count, kinds, a check returns boolean)`
+
 ## Search
 
 **S44.** `solve`, `solveReport`, `satisfiable`, `suggest` and `next` look for values
@@ -496,6 +517,8 @@ registers ([reference](reference.md#coredeny)).
 | `guard` | an action's check failed, or its patterns matched nothing or too much | `act` |
 | `refused`, `error` | an action function refused, or threw | `act` |
 | `unknown-action` | no action of that name | `act` |
+| `impure` | a declared function that is not `pure=true` would run on a reading or a change that is only tried | `score`, `check` |
+| `function-in-fact` | a fact names `fn=`: only matrix wires call functions | any change |
 | `nothing-to-undo` | no statement left | `undo` |
 | `nothing-to-redo` | nothing undone since the last statement | `redo` |
 | `unsupported` | the change would remove a wire that absorbed a told one | `retract`, `revise` |
@@ -503,4 +526,4 @@ registers ([reference](reference.md#coredeny)).
 Notes that refuse nothing are in `world.warnings`: `deprecated` (a pattern declared the
 old way), `unknown-attribute` (an attribute a matrix wire type does not read),
 `ambiguous-key` (a short key that two modules declare along one type's lineage, with
-both qualified names) and `unknown-word` (a `core.word` whose `means=` names nothing; words are in the world's one language, with no `lang=`).
+both qualified names), `unknown-word` (a `core.word` whose `means=` names nothing; words are in the world's one language, with no `lang=`), `undeclared-function` (a registered host function with no `core.function`) and `unregistered-function` (a declared function that is not registered; noted again, with `called`, when a calc or check calls it and gets no result).

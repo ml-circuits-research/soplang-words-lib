@@ -1349,6 +1349,111 @@ print(w.get('s1').attrs.each, w.get('s2').attrs.each);
 ["3.33"] ["2.5"]
 ```
 
+### core.function
+
+A host function, declared in SOP Lang: the tools a world has are in its schema. A
+function is written in the host's language and registered with `world.register`; its
+declaration says its name, its arguments ([core.function.arg](#corefunctionarg)) and
+their kinds, what it returns and whether it is pure. No code goes inside wires.
+
+**Syntax**
+
+| Attribute | Meaning |
+| --- | --- |
+| `name` | the name a calc or check uses in `fn=` |
+| `out.kind` | the kind of what it returns (`number`, `boolean`, ...) |
+| `pure` | `true`: the same arguments always give the same result and nothing else happens |
+| `doc` | what it does, for readers |
+
+**Meaning.** A `core.calc fn=` or `core.check fn=` that names a declared function must
+give it a number of arguments it takes; a literal argument must fit the argument's
+kind; a check's function must return `boolean`. A pure function's results are kept for
+the current step, and it may run where nothing is told: in lazy rules and in the
+overlays of `score` and `check`. A function that is not pure is refused there, with the
+reason (`impure`). `world.functions()` lists the declarations. Built-in functions need no
+declaration and cannot be declared.
+
+**When it is evaluated.** When the matrix is compiled: declarations, argument counts and
+kinds, a check's boolean, purity in lazy rules. A function runs when a calc, a check or
+an effect that names it is evaluated, under the budget of the call.
+
+**Interactions.** *Compatibility:* a registered function with no declaration still works,
+with an `undeclared-function` note in `world.warnings`; a declared function that is not
+registered is noted too (`unregistered-function`), and a calc that calls it gets no
+result. *Facts:* only matrix wires call functions: a fact that names `fn=` is refused
+(`function-in-fact`), so a user's words never run code. *Readers:* the declarations are
+the formal description of a world's tools (see [design/formalization](design/formalization.md)).
+
+**Violations.** `schema` (no name, declared twice, a built-in's name, an unknown kind, a
+required argument after an optional one, a wrong number of arguments, a literal of the
+wrong kind, a check whose function does not return boolean, an impure function in a lazy
+rule); `impure` in `score` and `check`; `function-in-fact`.
+
+**Example**
+
+```js run
+const w = new World({ fns: { distance: ([a, b]) => String(Math.abs(Number(a) - Number(b))) } });
+w.load(`
+  @f.distance core.function name=distance out.kind=number pure=true doc="how far apart two positions are"
+  @f.distance.a core.function.arg of=$f.distance name=a kind=number
+  @f.distance.b core.function.arg of=$f.distance name=b kind=number
+  @p pair a=?a b=?b
+  @c core.calc out=?d fn=distance args=?a args=?b
+  @t pair core.on=$p gap=?d
+  @r core.rule when=$p with=$c then=$t
+`);
+w.tell('@x pair a=2 b=7');
+print(w.get('x').attrs.gap, w.functions().map((f) => [f.name, f.args.map((a) => a.name), f.pure]));
+print(w.tell('@y note fn=distance').violations[0].kind);
+```
+
+```output
+["5"] [["distance",["a","b"],true]]
+function-in-fact
+```
+
+**Limits.** Kinds are checked for literal arguments; a variable's value is checked when
+it fits a slot, not against the function. A pure function is trusted to be pure.
+
+### core.function.arg
+
+One argument of a declared host function, in order: one wire per argument, repeated
+wires rather than a notation inside a value.
+
+**Syntax**
+
+| Attribute | Meaning |
+| --- | --- |
+| `of` | `$<the core.function wire>` |
+| `name` | the argument's name |
+| `kind` | the kind its value must have |
+| `optional` | `true`: it may be left out (only after the required ones) |
+| `doc` | what it is |
+
+**Meaning.** The arguments of a function are its `core.function.arg` wires in the order
+they are written; a calc or check gives them in that order (`args=` repeated).
+
+**When it is evaluated.** When the matrix is compiled, with its function.
+
+**Interactions.** See [core.function](#corefunction).
+
+**Violations.** `schema` (`of` is not a core.function, no name, an unknown kind, a
+required argument after an optional one).
+
+**Example**
+
+```js run
+const w = new World();
+w.load('@f core.function name=clamp3 out.kind=number pure=true\n@f.x core.function.arg of=$f name=x kind=number\n@f.hi core.function.arg of=$f name=hi kind=number optional=true');
+print(w.functions()[0].args.map((a) => [a.name, a.kind, a.optional]));
+```
+
+```output
+[["x","number",false],["hi","number",true]]
+```
+
+**Limits.** An argument has one kind; a function taking any value leaves `kind` out.
+
 ## Functions
 
 A function is called with its arguments as text and returns text (or true/false for a

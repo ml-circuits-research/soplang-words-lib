@@ -79,7 +79,10 @@ host type (`@e1 example text="book the pen" reads=...`); they need no
 vocabulary of their own.
 
 Everything else a reader needs is read from the compiled matrix, which already exposes
-it through `schema(type)` and `World.audit`.
+it through `schema(type)` and `World.audit`. Since 0.14.0 the host's functions are
+declared there too (`core.function` with `core.function.arg`, listed by
+`world.functions()`): names, argument kinds, result kind and purity, the formal
+description of a world's tools.
 
 ## 2. Frames to wires: `world.interpret(frame)` (built in R9.1)
 

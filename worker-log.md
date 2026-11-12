@@ -2724,3 +2724,8 @@ clean.
 - Test `J2: ...`: draw with good, bad and missing arguments (`fallback`, `slots`, a lack
   with "What shape?"), veto answers for draw and says unavailable for teleport.
 - Docs: reference.md core.action (Interactions), api.md score.
+
+## 0.13.1 — Round 13 released (version, changelog, rebuild; no tag)
+
+A patch version: fixes only, no new syntax. `npm test` 275 / 275 / 274. Pilot 147/147,
+212/217, 231/232, output identical. No open questions.

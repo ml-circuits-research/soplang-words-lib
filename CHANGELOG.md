@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.13.1
+
+Round 13: namespace defects and two judgement gaps, from the host's probes.
+
+### Fixes
+- `replace` keeps the namespace of the wire it replaces (N1).
+- An aggregate's result is in the namespace of the wires it counts; the default one when
+  they span several (N2).
+- `core.schema.map as=type` reads `shared`, `transient` and `unique` (N3).
+- Log entries keep their namespace; replay and restore honour it (N4).
+- A bare reference to a wire of a shared type falls back to the default namespace (N5).
+- `check(patch, { query, ask })` asks in the patch's namespace; a text patch is its wires (N6).
+- `score`: a question given as a wire or text is understood; a computed answer not made yet
+  is not a lack (J1).
+- `score`: an action the host carries out is judged against the slots of a type named
+  like it, with its required parameters as lacks; `veto` calls only unknown actions
+  unavailable (J2).
+
 ## 0.13.0
 
 Words have no language.

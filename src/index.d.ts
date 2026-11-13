@@ -399,6 +399,8 @@ export class World {
   abduce(goal: string | Wire[], options?: Budgeted & { maxDepth?: number; max?: number; maxAssumptions?: number }): Explanation[] & { budget?: BudgetViolation };
   explain(id: string): object | null;
   history(): WorldEvent[];
+  /** why a wire, or one of its values, is what it is: the chain back to what was told */
+  why(id: string, key?: string): { id: string; key?: string; steps: { id: string; key?: string; value?: string | string[]; wire?: string; tier?: string; how: 'told' | 'action' | 'rule' | 'aggregate' | 'default' | 'open'; rule?: string; action?: string; choice?: { key: string; value: string; tier?: string; source?: string }; from?: string[] }[] } | null;
   toSOP(options?: { schema?: boolean; derived?: boolean; provenance?: boolean }): string;
 }
 /** Thrown for text that is not SOP Lang; says where. */

@@ -3122,3 +3122,23 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
 - Still missing (as before, documented): a retraction is not undone; take a `mark()`.
 - test/sentence.test.mjs (3: refused, missing with ask, done/undo/redo as one step and
   after a save). api: "One sentence, all or nothing" (runnable). index.d.ts overload.
+
+## R19 item 4 — why-answers — done
+
+`/tmp/check.sh`: 312 pass, 0 fail on sources and built file, 311 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean.
+
+- What existed: `explain(id)` (a tree per wire: told, via, from, fills) and `query(...).via`.
+  Neither said a default from a computed value in one place, nor which action told a
+  thing, nor std.fill's tier and source.
+- Added `world.why(id, key?)` → `{ id, key, steps }`: from the cell back to what was told,
+  each wire once, depth first in the order the rules read them. Step: `{ id, key, value }`
+  or `wire`, `tier`, `how` ∈ told | action | rule | aggregate | default | open, with
+  `rule` + `from`, or `action`; a filled `std.fill.need` adds `choice { key, value, tier,
+  source }` and continues through the chosen offer (and through the need's own origin:
+  the rule that said the key was missing).
+- Statements made inside `act` now carry `by: <action>` in the log (`why` reads it): "why did
+  you open chess?" → `how: action, action: open`.
+- test/why.test.mjs (2: the std.fill chain step by step and stable; computed value, told,
+  default, open, set by an action, told by a host action, unknown id). api `world.why`
+  (runnable). index.d.ts.

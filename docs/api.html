@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="e417cf9d4060">
+<meta name="source-hash" content="647cab0669e8">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -375,6 +375,23 @@ w.tell(&#x27;@pen item name=pen price=2  @l1 line item=$pen qty=3&#x27;);
 const e = w.explain(&#x27;l1&#x27;);
 print(e.told, e.fills.map((f) =&gt; [f.key, f.value, f.via, f.from]));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true [[&quot;cost&quot;,&quot;6&quot;,&quot;r&quot;,[&quot;l1&quot;,&quot;pen&quot;]]]</code></pre></figure>
+<h3 id="worldwhyid-key">world.why(id, key?)</h3>
+<p>Why a wire, or one of its values, is what it is, in one structure a host turns into a sentence ("why is it so low?", "why did you open chess?"): <code>{ id, key, steps }</code>, the steps from the cell asked about back to what was told, each wire once, depth first in the order the rules read them. A step is <code>{ id, key, value }</code> (or <code>wire</code>, its text, for a whole wire), its <code>tier</code>, and <code>how</code>: <code>told</code>; <code>action</code> (told or set by the action named in <code>action</code>); <code>rule</code> (with <code>rule</code> and the wires it read, <code>from</code>); <code>aggregate</code> (a group result); <code>default</code> (a slot default); <code>open</code> (no value). A <code>std.fill</code> need that was filled says its <code>choice</code> (<code>{ key, value, tier, source }</code>) and goes on through the offer chosen. <code>null</code> for an unknown id. <code>explain</code> gives the same as a tree, for one wire.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@b box h=?h
+  @c core.calc out=?y fn=sub args=100 args=?h
+  @t box core.on=$b y=?y
+  @r core.rule when=$b with=$c then=$t
+  @k core.slot of=box key=name id=true
+  @it box name=?x
+  @to box core.on=$it h=?v
+  @grow core.action name=grow param=x param=v when=$it set=$to`);
+w.tell(&#x27;@a box name=cup&#x27;);
+w.act({ action: &#x27;grow&#x27;, args: { x: &#x27;cup&#x27;, v: 90 } });
+print(w.why(&#x27;a&#x27;, &#x27;y&#x27;).steps.map((s) =&gt; [s.id, s.key, s.how, s.rule]));
+print(w.why(&#x27;a&#x27;, &#x27;h&#x27;).steps[0].how, w.why(&#x27;a&#x27;, &#x27;h&#x27;).steps[0].action);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;a&quot;,&quot;y&quot;,&quot;rule&quot;,&quot;r&quot;],[&quot;a&quot;,null,&quot;told&quot;,null]]
+action grow</code></pre></figure>
 <h3 id="worldtierid-key-and-worldassumptionsids">world.tier(id, key?) and world.assumptions(ids?)</h3>
 <p><code>tier</code> is the certainty of a cell, or of a wire as a whole: <code>told</code>, <code>derived</code>, <code>forced</code>, <code>default</code>, <code>guessed</code> or a declared tier; undefined when there is no such cell. <code>assumptions()</code> lists every cell weaker than <code>derived</code>, weakest first: <code>[{ id, key, value, tier, dependants }]</code>; <code>assumptions(ids)</code> only what those wires rest on, with dependants among them, without a pass over the world.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();

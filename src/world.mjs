@@ -278,6 +278,51 @@ export class World {
     return node;
   }
 
+  /**
+   * Why a wire, or one of its values, is what it is: the chain that produced it, from the
+   * cell asked about back to what was told. Each step is { id, key?, value? | wire, tier,
+   * how, rule?, action?, choice?, from? }; `how` is told, action (told by that action),
+   * rule, aggregate, default or open. A std.fill need that was filled says its choice
+   * ({ key, value, tier, source }) and goes on through the offer chosen. Each wire once,
+   * depth first, in the order the rules read them.
+   */
+  why(id, key) {
+    const start = this.get(id);
+    if (!start) return null;
+    const c = this._compiled();
+    const steps = [], seen = new Set();
+    const statement = (wid, k) => { // the log entry that told it
+      if (k) for (let i = this.log.length - 1; i >= 0; i--) { const e = this.log[i]; if ((e.op === 'fill' || e.op === 'set') && e.key === k && this.resolve(e.id) === wid) return e; } // bounded: the log
+      return this._logOf.get(wid);
+    };
+    const visit = (wid, k, whole = false) => {
+      const w = this.get(wid);
+      if (!w) return;
+      if (!k && !whole && w.type === 'std.fill.need' && w.attrs.value) k = 'value'; // a filled need: how it was filled
+      const at = w.id + '\u0001' + (k ?? '');
+      if (seen.has(at)) return;
+      seen.add(at);
+      const fill = k ? (w.meta.fills || []).filter((f) => f.key === k).at(-1) : null;
+      const step = { id: w.id };
+      if (k) { step.key = k; const v = w.attrs[k]; if (v) step.value = v.length === 1 ? v[0] : [...v]; } else step.wire = format(w);
+      step.tier = this.tier(w.id, k);
+      let from = [];
+      if (k && !w.attrs[k]) step.how = 'open';
+      else if (fill && fill.via === 'core.default') step.how = 'default';
+      else if (fill && fill.via !== 'core.tell') { step.how = 'rule'; step.rule = fill.via; from = fill.from || []; }
+      else if (fill || w.meta.told) step.how = 'told';
+      else { step.how = 'rule'; step.rule = w.meta.via; from = w.meta.from || []; }
+      if (step.how === 'rule' && c.rules.some((r) => r.id === step.rule && r.aggregate && !r.when.length)) step.how = 'aggregate';
+      if (step.how === 'told') { const e = statement(w.id, fill ? k : undefined); if (e?.by) { step.how = 'action'; step.action = e.by; } }
+      if (k === 'value' && w.type === 'std.fill.need' && w.attrs.value) step.choice = { key: w.attrs.key[0], value: w.attrs.value[0], tier: w.attrs.tier?.[0], source: w.attrs.source?.[0] };
+      if (from.length) step.from = [...from];
+      steps.push(step);
+      for (const x of from) visit(x, undefined, x === w.id); // bounded: each wire once; its own wire: where it came from
+    };
+    visit(start.id, key);
+    return { id: start.id, ...(key ? { key } : {}), steps };
+  }
+
   /** Serialise the facts (and optionally the matrix) back to SOP Lang. */
   toSOP({ schema = false, derived = true, provenance = false } = {}) {
     const lines = [];
@@ -778,6 +823,7 @@ export class World {
     }
     if (this._mine && !this._mine.has(this.log)) { this.log = [...this.log]; this._mine.add(this.log); } // shared with a fork
     if (this._step) entry.step = this._step; // the requests of one sentence: one step for undo
+    if (this._by) entry.by = this._by; // the action that made this statement
     this.log.push(entry);
     if (entry.op === 'tell') for (const id of entry.facts) this._logOf.set(id, entry); // bounded: the facts of one tell
     else this._fills++;

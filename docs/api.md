@@ -977,6 +977,39 @@ print(e.told, e.fills.map((f) => [f.key, f.value, f.via, f.from]));
 true [["cost","6","r",["l1","pen"]]]
 ```
 
+### world.why(id, key?)
+
+Why a wire, or one of its values, is what it is, in one structure a host turns into a
+sentence ("why is it so low?", "why did you open chess?"): `{ id, key, steps }`, the
+steps from the cell asked about back to what was told, each wire once, depth first in
+the order the rules read them. A step is `{ id, key, value }` (or `wire`, its text, for a
+whole wire), its `tier`, and `how`: `told`; `action` (told or set by the action named in
+`action`); `rule` (with `rule` and the wires it read, `from`); `aggregate` (a group
+result); `default` (a slot default); `open` (no value). A `std.fill` need that was filled
+says its `choice` (`{ key, value, tier, source }`) and goes on through the offer chosen.
+`null` for an unknown id. `explain` gives the same as a tree, for one wire.
+
+```js run
+const w = new World();
+w.load(`@b box h=?h
+  @c core.calc out=?y fn=sub args=100 args=?h
+  @t box core.on=$b y=?y
+  @r core.rule when=$b with=$c then=$t
+  @k core.slot of=box key=name id=true
+  @it box name=?x
+  @to box core.on=$it h=?v
+  @grow core.action name=grow param=x param=v when=$it set=$to`);
+w.tell('@a box name=cup');
+w.act({ action: 'grow', args: { x: 'cup', v: 90 } });
+print(w.why('a', 'y').steps.map((s) => [s.id, s.key, s.how, s.rule]));
+print(w.why('a', 'h').steps[0].how, w.why('a', 'h').steps[0].action);
+```
+
+```output
+[["a","y","rule","r"],["a",null,"told",null]]
+action grow
+```
+
 ### world.tier(id, key?) and world.assumptions(ids?)
 
 `tier` is the certainty of a cell, or of a wire as a whole: `told`, `derived`,

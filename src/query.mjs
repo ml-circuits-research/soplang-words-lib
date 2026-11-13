@@ -750,6 +750,12 @@ export const querying = {
     } else ({ action: name, args = {} } = request || {});
     const action = this._compiled().actions.get(name);
     if (!action) return { ok: false, status: 'unsupported', violations: [{ kind: 'unknown-action', why: `no action named "${name}"` }] };
+    const by = this._by;
+    this._by = name; // what it states is recorded as said by this action
+    try { return this._actNamed(action, name, args, id); } finally { this._by = by; }
+  },
+
+  _actNamed(action, name, args, id) {
     const lacking = action.required.filter((k) => args[k] === undefined);
     if (lacking.length) {
       return { ok: false, status: 'missing', missing: lacking.map((k) => ({ action: name, key: k, ask: (first({ attrs: action.ask }, `ask.${k}`) || '').replace(/^"|"$/g, '') || undefined })), violations: [] };

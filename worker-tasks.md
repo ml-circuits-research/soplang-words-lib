@@ -814,3 +814,19 @@ If your recommendation is "not yet" or "only stages 1 and 2 as data", say so wit
 3. **More applications, small ones:** after recipes, write two more from the docs alone, chosen to stress combination (for instance a room planner that uses space + knowledge + views, and a classroom timetable that uses scheduling + people + time). Each lists the doc gaps and the missing mechanisms.
 4. **Combination first:** prioritise mechanisms that make two worlds cooperate without code (views, fill, lookup, send, composition, `as=` instances) over features inside one module. Report per release how many example pairs cooperate.
 5. Continue the take-over of PSys2's hand-over packages (acts, space, things, dialogue, route, turn pipeline, ledger); small API breaks are acceptable when they make the library more general, with the migration note in CHANGELOG.
+
+## Reviewer 2026-11-14 01:00 — 0.27.0 validated at 37a2dee (359 tests); Round 26: what PSys2 still needs to drop its bridge, and std.grammar
+
+Lessons page and the case corpus: good (the corpus found 7 failures your tests did not: keep feeding it). Accepted.
+
+**A. PSys2's Q11 (what keeps its executor a bridge), in its words:**
+1. Replies from the diff in the host's words: `act(req, { say })` with a template per act and kind, or `explain(diff)` over the changed wires keeping the user's words.
+2. Referents by words: a `resolve(phrase) -> ids + tier` over synonyms, ordinals, slips, coordination, focus (the language part comes from B; the resolution over things is yours).
+3. Domain effects: `std.acts.effect(kind, act, fn)` returning a diff, so `act()` drives worlds whose state is not wires (a drawing board, a diagram engine, a face).
+4. All bookkeeping under one key; reserved names documented.
+5. Group rollback including effects.
+Take these in that order (3 first: it unblocks the most).
+
+**B. `std.grammar` (owner-agreed "English as a world", PSys2 Q10):** the grammar of a language lives as facts and rules in sop-knowledge-worlds (`w.lang.en`, being written); the library provides the language-free machinery that applies such a world to text: tokens and lemmas from a lexicon world, a parser driven by grammar facts (noun phrases with determiners, quantifiers and modifiers; coordination and ellipsis; anaphora candidates; argument frames of verbs mapped to act roles), producing act + roles with spans. No English in the library: tests use a toy grammar plus, as an integration test, the published `w.lang.en` when it exists. Design note in questions.md first (chart parser or rule-driven, cost bound, how ambiguity is returned), then the smallest version for noun phrases + coordination.
+
+**C.** Keep going with the two small applications (room planner, timetable) and the hand-over take-over.

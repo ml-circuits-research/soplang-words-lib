@@ -312,7 +312,7 @@ whose content differs from what was told is replaced in place (its id, and the w
 that refer to it, stay); one that is the same is left alone; a wire of the collection
 that is not in the list is retracted. Returns the change result with `told`, `replaced`,
 `retracted` and `same` (ids). All or nothing. `undo` takes back what it told and
-replaced; like any retraction, what it retracted is not undone (use a mark). Options:
+replaced; what it retracted is not given back (use a mark). Options:
 `strict`, `tier`, `budget`. Cost: one pass over the told wires, then the patch.
 
 With `{ ns }` the list is told in that namespace and the collection is its part.
@@ -347,8 +347,8 @@ print(w.apply([{ id: 'pen', key: 'price', value: 2 }]).filled);
 
 Takes back the last `n` statements. Returns `{ ok, undone, removed, added, changed,
 violations }`; `nothing-to-undo` when the log is empty. Statements that only touched
-wires of `transient` types are passed over and kept. Retractions are not taken back
-(use a mark). Cost: O(h) changes, since the world is rebuilt from the statements that
+wires of `transient` types are passed over and kept. A retraction is a statement like
+the others: undo gives the wire back. Cost: O(h) changes, since the world is rebuilt from the statements that
 remain.
 
 ```js run
@@ -448,7 +448,7 @@ sentence in turn inside one transaction: if one is not done (`missing`, `refused
 `unsupported`, `error`) none is kept, and the result says which (`failed`, its index),
 with every result so far (`results`) and, for a missing argument, what to ask (`missing`).
 What they did together is one step for `undo` and `redo`, also after `toJSON` and
-`fromJSON`. A retraction inside is not undone, as everywhere (take a `mark()` first).
+`fromJSON`. A retraction inside is undone with the rest.
 To know beforehand whether each request would be refused, without applying anything,
 give the readings to `score` ([integration §5b](integration.md#5b-readings-the-present-state-would-refuse)).
 

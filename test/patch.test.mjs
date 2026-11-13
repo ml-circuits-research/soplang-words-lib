@@ -208,11 +208,14 @@ test('patch: replace in place keeps the id and what refers to it, changes and dr
   assert.equal(bad.ok, false);
   assert.equal(w.get('p1').attrs.text[0], '"hello there"');
   assert.equal(w.applyPatch({ replace: { id: 'nobody', attrs: {} } }).violations[0].kind, 'unknown-wire');
-  // a retracted wire takes its replacements out of the log with it
+  // a retraction is a statement in the log: undo gives the wire back
   w.retract('c1');
   w.retract('c2');
   w.retract('p1');
-  assert.equal(w.log.some((e) => e.op === 'replace'), false);
+  assert.equal(w.log.filter((e) => e.op === 'retract').length, 3);
+  w.undo();
+  assert.deepEqual([w.has('p1'), w.has('c2')], [true, false]);
+  assert.equal(w.diff(World.fromJSON(w.toJSON())).same, true, 'the log replays it');
 });
 
 test('patch: evaluate without telling: check(patch, { query, ask }) and query/ask with given answer on the world plus the patch', () => {

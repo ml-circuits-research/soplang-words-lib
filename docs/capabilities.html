@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld What the library can do</title>
-<meta name="source-hash" content="b238d281730c">
+<meta name="source-hash" content="e7fc96360b73">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -13,7 +13,7 @@
 <body>
 <header class="top">
   <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.26.0</small></a>
-  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="capabilities.html" aria-current="page">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="playground.html">Playground</a></nav>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="capabilities.html" aria-current="page">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
 <h1>What the library can do</h1>
@@ -58,7 +58,7 @@ print(w.query({ about: &#x27;a&#x27;, seek: &#x27;y&#x27; }).value, w.why(&#x27;
 <figure class="code"><figcaption>prints</figcaption><pre><code>10 [[&quot;a&quot;,&quot;rule&quot;,&quot;r&quot;],[&quot;a&quot;,&quot;told&quot;,null]]</code></pre></figure>
 <h2 id="act-undo-groups">Act, undo, groups</h2>
 <p><em>In <code>world.act</code>, <code>world.undo</code>; since 0.5.</em></p>
-<p>Actions change the world in one transaction (declared in SOP Lang, or a host function); several requests of one sentence go together or not at all and are one undo step; every action returns its difference. <strong>Limits:</strong> <code>undo</code> does not bring back a retraction (take a <code>mark()</code>).</p>
+<p>Actions change the world in one transaction (declared in SOP Lang, or a host function); several requests of one sentence go together or not at all and are one undo step; every action returns its difference. <strong>Limits:</strong> a collection replaced with <code>world.sync</code> is not given back by <code>undo</code> (take a <code>mark()</code>).</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@k core.slot of=item key=name id=true
   @it item name=?x

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="7d06e46e4999">
+<meta name="source-hash" content="f6a28acc51b9">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -13,7 +13,7 @@
 <body>
 <header class="top">
   <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.26.0</small></a>
-  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="playground.html">Playground</a></nav>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
 <h1>API: every public name, with what it takes and returns</h1>
@@ -131,7 +131,7 @@ print(w.has(&#x27;pen&#x27;), w.has(&#x27;l1&#x27;));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true [&quot;10&quot;]
 false false</code></pre></figure>
 <h3 id="worldsynccollection-input-options">world.sync(collection, input, options?)</h3>
-<p>Makes a collection of told wires equal to a list, in one transaction. <code>collection</code> is a type (its told facts and those of its subtypes) or <code>{ prefix }</code> (the told facts whose id starts with it); <code>input</code> is SOP text or parsed wires. A wire with a new id is told; one whose content differs from what was told is replaced in place (its id, and the wires that refer to it, stay); one that is the same is left alone; a wire of the collection that is not in the list is retracted. Returns the change result with <code>told</code>, <code>replaced</code>, <code>retracted</code> and <code>same</code> (ids). All or nothing. <code>undo</code> takes back what it told and replaced; like any retraction, what it retracted is not undone (use a mark). Options: <code>strict</code>, <code>tier</code>, <code>budget</code>. Cost: one pass over the told wires, then the patch.</p>
+<p>Makes a collection of told wires equal to a list, in one transaction. <code>collection</code> is a type (its told facts and those of its subtypes) or <code>{ prefix }</code> (the told facts whose id starts with it); <code>input</code> is SOP text or parsed wires. A wire with a new id is told; one whose content differs from what was told is replaced in place (its id, and the wires that refer to it, stay); one that is the same is left alone; a wire of the collection that is not in the list is retracted. Returns the change result with <code>told</code>, <code>replaced</code>, <code>retracted</code> and <code>same</code> (ids). All or nothing. <code>undo</code> takes back what it told and replaced; what it retracted is not given back (use a mark). Options: <code>strict</code>, <code>tier</code>, <code>budget</code>. Cost: one pass over the told wires, then the patch.</p>
 <p>With <code>{ ns }</code> the list is told in that namespace and the collection is its part.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 w.tell(&#x27;@pen item name=pen price=2  @ink item name=ink price=3&#x27;);
@@ -145,7 +145,7 @@ w.tell(&#x27;@pen item name=pen&#x27;);
 print(w.apply([{ id: &#x27;pen&#x27;, key: &#x27;price&#x27;, value: 2 }]).filled);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;id&quot;:&quot;pen&quot;,&quot;key&quot;:&quot;price&quot;,&quot;value&quot;:&quot;2&quot;,&quot;via&quot;:&quot;core.complete&quot;}]</code></pre></figure>
 <h3 id="worldundon--1-options">world.undo(n = 1, options?)</h3>
-<p>Takes back the last <code>n</code> statements. Returns <code>{ ok, undone, removed, added, changed, violations }</code>; <code>nothing-to-undo</code> when the log is empty. Statements that only touched wires of <code>transient</code> types are passed over and kept. Retractions are not taken back (use a mark). Cost: O(h) changes, since the world is rebuilt from the statements that remain.</p>
+<p>Takes back the last <code>n</code> statements. Returns <code>{ ok, undone, removed, added, changed, violations }</code>; <code>nothing-to-undo</code> when the log is empty. Statements that only touched wires of <code>transient</code> types are passed over and kept. A retraction is a statement like the others: undo gives the wire back. Cost: O(h) changes, since the world is rebuilt from the statements that remain.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 w.tell(&#x27;@pen item name=pen price=2&#x27;);
 w.tell(&#x27;@ink item name=ink price=3&#x27;);
@@ -182,7 +182,7 @@ print(w.act({ action: &#x27;rename&#x27;, args: { from: &#x27;pen&#x27;, to: &#x
 print(w.act({ action: &#x27;rename&#x27;, args: { from: &#x27;pen&#x27; } }).missing);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>done [&quot;pencil&quot;]
 [{&quot;action&quot;:&quot;rename&quot;,&quot;key&quot;:&quot;to&quot;}]</code></pre></figure>
-<p><strong>One sentence, all or nothing.</strong> <code>world.act([request, ...])</code> runs the requests of one sentence in turn inside one transaction: if one is not done (<code>missing</code>, <code>refused</code>, <code>unsupported</code>, <code>error</code>) none is kept, and the result says which (<code>failed</code>, its index), with every result so far (<code>results</code>) and, for a missing argument, what to ask (<code>missing</code>). What they did together is one step for <code>undo</code> and <code>redo</code>, also after <code>toJSON</code> and <code>fromJSON</code>. A retraction inside is not undone, as everywhere (take a <code>mark()</code> first). To know beforehand whether each request would be refused, without applying anything, give the readings to <code>score</code> (<a href="integration.html#5b-readings-the-present-state-would-refuse">integration §5b</a>).</p>
+<p><strong>One sentence, all or nothing.</strong> <code>world.act([request, ...])</code> runs the requests of one sentence in turn inside one transaction: if one is not done (<code>missing</code>, <code>refused</code>, <code>unsupported</code>, <code>error</code>) none is kept, and the result says which (<code>failed</code>, its index), with every result so far (<code>results</code>) and, for a missing argument, what to ask (<code>missing</code>). What they did together is one step for <code>undo</code> and <code>redo</code>, also after <code>toJSON</code> and <code>fromJSON</code>. A retraction inside is undone with the rest. To know beforehand whether each request would be refused, without applying anything, give the readings to <code>score</code> (<a href="integration.html#5b-readings-the-present-state-would-refuse">integration §5b</a>).</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@k core.slot of=item key=name id=true
   @k2 core.slot of=item key=place enum=table enum=shelf

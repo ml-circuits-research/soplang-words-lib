@@ -87,7 +87,7 @@ print(w.query({ about: 'a', seek: 'y' }).value, w.why('a', 'y').steps.map((s) =>
 Actions change the world in one transaction (declared in SOP Lang, or a host function);
 several requests of one sentence go together or not at all and are one undo step; every
 action returns its difference.
-**Limits:** `undo` does not bring back a retraction (take a `mark()`).
+**Limits:** a collection replaced with `world.sync` is not given back by `undo` (take a `mark()`).
 
 ```js run
 const w = new World();

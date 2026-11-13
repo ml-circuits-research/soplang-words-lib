@@ -319,6 +319,7 @@ export class World {
       else { step.how = 'rule'; step.rule = w.meta.via; from = w.meta.from || []; }
       if (step.how === 'rule' && c.rules.some((r) => r.id === step.rule && r.aggregate && !r.when.length)) step.how = 'aggregate';
       if (step.how === 'told') { const e = statement(w.id, fill ? k : undefined); if (e?.by) { step.how = 'action'; step.action = e.by; } }
+      if (k && step.tier === 'default' && (step.how === 'told' || step.how === 'action')) step.how = 'default'; // a default an act set (the act stays named)
       if (k === 'value' && w.type === 'std.fill.need' && w.attrs.value) step.choice = { key: w.attrs.key[0], value: w.attrs.value[0], tier: w.attrs.tier?.[0], source: w.attrs.source?.[0] };
       if (from.length) step.from = [...from];
       steps.push(step);
@@ -676,8 +677,8 @@ export class World {
         for (const id of ids) if (!this.wires.has(id)) res.violations.push({ kind: 'unknown-wire', id });
         if (!res.violations.length) {
           removed = [...this._withdraw(res, ids, [])].filter((x) => !this.wires.has(x));
-          this._logRemove(new Set(removed));
           this._event({ op: 'retract', ids: removed });
+          res._retracted = ids; // logged as a statement with the patch (undo gives it back)
         }
       }
       this._settle(res, strict);
@@ -687,7 +688,8 @@ export class World {
       throw e;
     }
     // in the log the parts of a patch carry the same group, so that a replay applies them together
-    const group = fills.length + sets.length + replaced.length + (ws.length ? 1 : 0) > 1 ? `g${this.seq}` : undefined;
+    const retracted = res._retracted || [];
+    const group = fills.length + sets.length + replaced.length + (ws.length ? 1 : 0) + (retracted.length ? 1 : 0) > 1 ? `g${this.seq}` : undefined;
     res.added = res.added.filter((x) => !replaced.some((r) => r.id === x));
     // each entry says the namespace it was told in: its wires are stored with their ids
     // qualified, so a replay on any world gives the same ids
@@ -697,6 +699,7 @@ export class World {
       ...(ws.length ? [{ op: 'tell', wires: told, facts, ...(group ? { group } : {}), ...(tier ? { tier } : {}), ...at }] : []),
       ...fills.map((f) => ({ op: 'fill', id: f.id, key: f.key, value: String(f.value), via, ...(group ? { group } : {}), ...(tier ? { tier } : {}), ...at })),
       ...sets.map((f) => ({ op: 'set', id: f.id, key: f.key, value: String(f.value), via, ...(group ? { group } : {}), ...(tier ? { tier } : {}), ...at })),
+      ...(retracted.length ? [{ op: 'retract', ids: retracted, ...(group ? { group } : {}), ...at }] : []),
     ];
     const done = this._finish(mark, res, dry, entries);
     if (done.ok && res._revised) done.revised = res._revised;
@@ -714,6 +717,7 @@ export class World {
       const tell = kept.find((e) => e.op === 'tell');
       const fills = kept.filter((e) => e.op === 'fill'), sets = kept.filter((e) => e.op === 'set');
       const replace = kept.filter((e) => e.op === 'replace').map((e) => ({ id: e.id, type: e.wire.type, attrs: e.wire.attrs }));
+      const retract = kept.filter((e) => e.op === 'retract').flatMap((e) => e.ids);
       // an entry that carries ns= holds its wires as they were stored (ids already in their
       // namespaces, a bare id in the default one): replayed as is, on any world; older logs
       // without it are put in the world's namespace, as before
@@ -721,7 +725,7 @@ export class World {
       const outer = this._step;
       this._step = kept[0].step; // replayed, the requests of one sentence stay one step
       let r;
-      try { r = this._patch({ wires: tell ? tell.wires : [], fills, sets, replace }, { strict: false, via: (fills[0] || sets[0])?.via, tier: (tell || fills[0] || sets[0] || kept[0]).tier, ns }); } finally { this._step = outer; }
+      try { r = this._patch({ wires: tell ? tell.wires : [], fills, sets, replace, retract }, { strict: false, via: (fills[0] || sets[0])?.via, tier: (tell || fills[0] || sets[0] || kept[0]).tier, ns }); } finally { this._step = outer; }
       if (!r.ok) return r;
     }
     return null;

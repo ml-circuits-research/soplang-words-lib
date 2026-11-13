@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sopworld Lessons</title>
+<meta name="source-hash" content="5f735343cc68">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.26.0</small></a>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html" aria-current="page">Lessons</a><a href="playground.html">Playground</a></nav>
+</header>
+<main>
+<h1>Lessons: how worlds are made and combined</h1>
+<p class="lead">What each round taught, from the library's own work, from the applications (PSys2, the examples written from the docs) and from the case corpus. Each lesson ends with what the library did, or will do, about it. Newest first.</p>
+<h2 id="the-case-corpus-finds-what-the-tests-did-not-2026-11-14">The case corpus finds what the tests did not (2026-11-14)</h2>
+<p>The first 17 language-free cases, taken from PSys2's hand-over tests, failed 7 times on a library whose own tests were green: "make 2 tables" (no amount), "remove all the tables" then undo (a retraction was not given back), a table that seats 2 taking a third guest (no capacity), "white because that is the default" (a default an act wrote looked told). The application's tests describe behaviour users ask for; the library's tests described what the library already did. <strong>Done:</strong> <code>make</code> takes <code>amount</code>; a retraction is a statement in the log, so undo gives it back; every act is one undo step however many statements it makes; <code>std.schema.capacity</code>; defaults written by <code>make</code> are at the tier <code>default</code>. The corpus (<code>cases/</code>, <code>node tools/cases.mjs</code>) runs in CI against a baseline that only grows.</p>
+<h2 id="the-path-of-a-request-is-data-its-stages-are-not-round-25">The path of a request is data, its stages are not (Round 25)</h2>
+<p>Which stages run, in what order, who provides each and what happens when one yields nothing changes between applications; what a stage does (reading text, forking a world) does not, and cannot be a rule. <strong>Done:</strong> <code>std.turn</code> + <code>turnFlow</code>; the declared default gives what <code>turn</code> gives on 30 requests.</p>
+<h2 id="a-second-application-shows-where-the-docs-stop-round-24">A second application shows where the docs stop (Round 24)</h2>
+<p>Written from the docs alone, the recipe planner hit five gaps; the worst was joining two things through a reference (<code>of=$rs</code>, not <code>of=?x</code>): the wrong rule ran without error and scaled every ingredient by every recipe. Silent wrong answers come from what the docs do not show, not from what they say wrong. <strong>Done:</strong> the join and "make into a container" are in the docs; <code>turn</code> gives replies on every status. <strong>Will do:</strong> more applications from the docs (a room planner, a timetable), each listing its gaps.</p>
+<h2 id="general-mechanisms-hide-in-one-applications-code-round-24">General mechanisms hide in one application's code (Round 24)</h2>
+<p>PSys2's catalog, turn pipeline, routing and failure ledger were general but lived among its tabs; each took 50–250 lines to move, and the moving refused what was English or about one interface. <strong>Done:</strong> <code>createCatalog</code>, <code>turn</code>, <code>route</code>, the ledger; a take-over table in capabilities. <strong>Will do:</strong> space selection and layouts, a per-kind act hook, a turn log.</p>
+<h2 id="reuse-shows-up-as-shape-but-a-name-clash-looks-the-same-round-23">Reuse shows up as shape, but a name clash looks the same (Round 23)</h2>
+<p>The detector found real reuse (the board game in chess and tic-tac-toe; "a reference must exist" in seven worlds; face parts that are object parts) and false reuse (two different types named <code>item</code>). Shape under renaming is a good first signal and a poor judge. <strong>Done:</strong> <code>tools/reuse.mjs</code> with verdicts by hand, the option <code>advise</code>, <code>core.use as=</code> for parameterised worlds.</p>
+<h2 id="one-store-many-views-beats-copying-things-between-worlds-round-22">One store, many views beats copying things between worlds (Round 22)</h2>
+<p>Three views over one set of things needed no synchronisation: an act in one is seen in the others because there is only one wire. What views need is a declaration of what they show (aspects) and a reason when a thing lacks it. <strong>Done:</strong> aspects, views, <code>show</code>, taught facts at their own tier.</p>
+<h2 id="worlds-as-data-need-the-acts-to-be-generic-code-round-20">Worlds as data need the acts to be generic code (Round 20)</h2>
+<p>A rule's template has a fixed type and fixed keys, so "make a &lt;kind&gt;" cannot be a rule; entity-attribute-value wires would make it one but lose every slot check. Kinds stay types, attributes stay slots, and one generic function per act does the writing. <strong>Done:</strong> <code>std.schema</code>, <code>std.acts</code>; a third schema needs no rule.</p>
+<h2 id="costs-come-from-re-running-what-did-not-change-rounds-1921">Costs come from re-running what did not change (Rounds 19–21)</h2>
+<p>Every large slowdown had one shape: a rule re-evaluated in full (core.absent, core.rank per peer), or a withdrawal that re-matched a fact shared by thousands. <strong>Done:</strong> absent-only rules driven by single wires; a rank ordered once per group; one wire requeued per withdrawn firing, none when a wire it read is gone (a make on 2,000 things: 92,212 → 163 steps).</p>
+<p class="source">Generated from <code>docs/lessons.md</code>.</p>
+</main>
+<footer>sopworld 0.26.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+
+</body>
+</html>

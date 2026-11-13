@@ -1615,7 +1615,7 @@ kept the same way to one thing stand in a row (5 apart), in the order they were 
 thing has one place: a told place and a kept one together are a `conflict`. The action
 `relations.put_all` (`k`, `rel`, `ref`) puts every thing of a kind that has a told place
 there, kept; `relations.put_pairs` (`s`, `rel`) puts each where a `spread` pairs it. Both
-retract the told places, so `undo` does not bring them back: take a `mark()` first.
+retract the told places; `undo` gives them back.
 
 **What is rules only and what is not.** Rules only: the five relations, chains, rows,
 "the first", "each" (with things that come later), the pairing of "one per place", and
@@ -1651,6 +1651,7 @@ say the rest. The acts are the same for every world; a new schema needs no rule.
 | `std.schema.kind` | `of` (a type), `world` (rep.), `acts` (rep.) | a kind of one or more worlds, and the acts that apply to it: `make`, `remove`, `change`, `place`, `connect`, `group`, `pick`, `ask`, `copy`, `send`, `save`, `load`, `undo`, `redo` |
 | `std.schema.kinds` | `world`, `from` (a type), `key` (default `name`), `acts`, `stand_in` (a type) | any kind that a wire of `from` names (`k.object name=cup`): such things are `std.schema.thing` and take any attribute; see std.know for `stand_in` |
 | `std.schema.limit` | `of`, `max` | at most so many things of a kind (rules: a count and a deny) |
+| `std.schema.capacity` | `of` (a container kind), `key` (its count key), `holds` (a kind), `via` (the key that refers to the container) | a container holds at most its own count: making or moving one more is refused ("table1 has room for 0 more guests"), and so is a count below what it holds |
 
 Every thing has `kind` and `world`. Checked at load: an act not in the list, a kind of a
 world that is not declared.
@@ -1661,7 +1662,7 @@ world that is not declared.
 
 | Act | Arguments | Does |
 | --- | --- | --- |
-| `make` | `kind`, `world`?, `id`?, attributes | a new thing with the slot defaults and the attributes given |
+| `make` | `kind`, `world`?, `id`?, `amount`?, attributes | a new thing (or `amount` of them) with the attributes given and the slot defaults at the tier `default` |
 | `remove` | `thing` | takes it away, with its links |
 | `change` | `thing`, `attr`, `value`, or `by` (`more`/`less`) and `amount`? | sets an attribute; more or less by the slot's `step` (else 1) |
 | (sets and values) | `set`: `each`, `all`, `first`, `last` (with `thing` a kind); `value`: `random`, `different`, `same as <thing>` | `change` and `remove` act on the whole set in one undo step; `random` picks from the slot's values, `different` gives each thing another value and none the same, `same as` copies another thing's value |

@@ -3690,3 +3690,33 @@ as data; the stages' insides stay functions; parallel candidates not yet).
 `/tmp/check.sh`: 359 pass, 0 fail on sources and built file, 358 in checking mode; pilot
 identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
 (`docs/version.md`: sopworld 0.26.0). Open: Q30, Q31.
+
+## Standing direction (2026-11-14 00:40) — lessons, the case corpus, and what it found
+
+`/tmp/check.sh`: 360 pass, 0 fail on sources and built file, 359 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean. `node tools/cases.mjs`: 17 / 17;
+acting 12/12, replying 2/2, routing 2/2, filling 1/1.
+
+- docs/lessons.md (a docs page): eight lessons, newest first, each ending with what the
+  library did or will do.
+- The case corpus: cases/*.cases.json (language-free steps: acts, why, route, turn, with
+  the expected diff / refusal / route / status), cases/schemas/ (a seating schema after
+  PSys2's handover/acts executor tests), tools/cases.mjs (per-stage report), a test with a
+  baseline that only grows (cases/baseline.json). PSys2's own ledger (2,148 rows) is about
+  reading and translation (language), so the first language-free cases come from its
+  hand-over tests.
+- First run: 10 / 17. What it found and what was done (kernel and std.acts):
+  1. `make` with `amount` (several things in one act).
+  2. A retraction was erased from the log, so `undo` could not give it back: now a
+     retraction (world.retract and a patch's retract) is a statement (`op: retract`),
+     replayed; sync still erases (docs say so). One old test (patch: "a retracted wire
+     takes its replacements out of the log") rewritten to the new rule; docs updated in
+     four places.
+  3. An act that makes several statements was several undo steps: every act is now one
+     step (`step` set in `_act` when none is open).
+  4. Capacity: `std.schema.capacity of= key= holds= via=` — one more guest at a full table
+     refused ("table1 has room for 0 more guests"), and seats below the guests seated.
+  5. Defaults written by `make` were told values: now at the tier `default`, and `why`
+     says `default` (with the act still named).
+  6. The case expected `range` where the library says `domain`: the case follows the
+     library's name.

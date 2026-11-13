@@ -750,13 +750,14 @@ export const querying = {
     } else ({ action: name, args = {} } = request || {});
     const action = this._compiled().actions.get(name);
     if (!action) return { ok: false, status: 'unsupported', violations: [{ kind: 'unknown-action', why: `no action named "${name}"` }] };
-    const by = this._by;
+    const by = this._by, step = this._step;
     this._by = name; // what it states is recorded as said by this action
+    if (!step) this._step = `a${this.seq}`; // and, however many statements it makes, it is one step for undo
     const from = this.events.length; // what the action changed, for replies, logs and why-answers
     const was = this._was;
     this._was = was || new Map(); // wires removed on the way (a replaced wire is removed and told again)
     let r;
-    try { r = this._actNamed(action, name, args, id); } finally { this._by = by; }
+    try { r = this._actNamed(action, name, args, id); } finally { this._by = by; this._step = step; }
     if (r.ok && !r.diff) r.diff = this._diffSince(from, this._was);
     if (!was) this._was = null;
     return r;

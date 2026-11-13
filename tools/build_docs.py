@@ -9,7 +9,7 @@ ROOT = OUT.parent
 SOURCES = [('index.html', 'Overview', 'SPEC.md'), ('language.html', 'Language', 'docs/language.md'),
            ('reference.html', 'Reference', 'docs/reference.md'), ('semantics.html', 'Semantics', 'docs/semantics.md'),
            ('api.html', 'API', 'docs/api.md'), ('glossary.html', 'Glossary', 'docs/glossary.md'),
-           ('integration.html', 'Integration', 'docs/integration.md'), ('capabilities.html', 'Capabilities', 'docs/capabilities.md'), ('quickstart.html', 'Quickstart', 'docs/quickstart.md'), ('modules.html', 'Modules', 'docs/modules.md'), ('patterns.html', 'Patterns', 'docs/patterns.md'), ('host-contract.html', 'Host contract', 'docs/host-contract.md')]
+           ('integration.html', 'Integration', 'docs/integration.md'), ('capabilities.html', 'Capabilities', 'docs/capabilities.md'), ('quickstart.html', 'Quickstart', 'docs/quickstart.md'), ('modules.html', 'Modules', 'docs/modules.md'), ('patterns.html', 'Patterns', 'docs/patterns.md'), ('host-contract.html', 'Host contract', 'docs/host-contract.md'), ('lessons.html', 'Lessons', 'docs/lessons.md')]
 PAGES = [(f, t) for f, t, _ in SOURCES] + [('playground.html', 'Playground')]
 VERSION = json.loads((ROOT / 'package.json').read_text())['version']
 

@@ -58,6 +58,32 @@ function thingOf(w, arg, nth, inside) {
   if (!all.length) return { why: `there is no ${id}`, kind: id };
   return { why: `which ${id}? there are ${all.length}`, kind: id, which: all.map((t) => t.id) };
 }
+/**
+ * Capacity (a container holds at most its own count of things of a kind:
+ * `std.schema.capacity of=table key=seats holds=guest via=at`): what a new or moved thing
+ * would break, or what a smaller count would break. Returns the reason or null.
+ */
+function overCapacity(w, kind, attrs, except) {
+  for (const c of w.ofType('std.schema.capacity')) {
+    if (c.attrs.holds[0] !== kind) continue;
+    const via = c.attrs.via[0], target = attrs[via] !== undefined ? String(one(attrs[via])).replace(/^\$/, '') : null;
+    const box = target && w.get(target);
+    if (!box || box.attrs.kind?.[0] !== c.attrs.of[0]) continue;
+    const max = Number(box.attrs[c.attrs.key[0]]?.[0]);
+    if (!Number.isFinite(max)) continue;
+    const n = w.ofType('std.schema.thing').filter((t) => t.id !== except && t.attrs.kind?.[0] === kind && t.attrs[via]?.[0] === ref(box.id)).length;
+    if (n + 1 > max) return { why: `${box.id} has room for ${Math.max(0, max - n)} more ${kind}${max - n === 1 ? '' : 's'} (${c.attrs.key[0]} ${max})`, room: Math.max(0, max - n), of: box.id };
+  }
+  return null;
+}
+function shrinksBelow(w, t, key, value) {
+  for (const c of w.ofType('std.schema.capacity')) {
+    if (c.attrs.of[0] !== t.attrs.kind?.[0] || c.attrs.key[0] !== key) continue;
+    const n = w.ofType('std.schema.thing').filter((x) => x.attrs.kind?.[0] === c.attrs.holds[0] && x.attrs[c.attrs.via[0]]?.[0] === ref(t.id)).length;
+    if (Number(value) < n) return { why: `${t.id} has ${n} ${c.attrs.holds[0]}${n === 1 ? '' : 's'} now`, has: n };
+  }
+  return null;
+}
 const allows = (w, t, act) => kindsOf(w, t.attrs.kind[0]).some((k) => k.acts.includes(act));
 const wireText = (id, type, attrs) => `@${id} ${type}` + Object.entries(attrs).flatMap(([k, vs]) => [].concat(vs).map((v) => ` ${k}=${/^[\w.$:+\-#]+$/.test(String(v)) ? v : JSON.stringify(String(v))}`)).join('');
 const fresh = (w, kind) => { const base = kind.replace(/\W/g, '_'); let n = 1; while (w.has(base + n)) n++; return base + n; }; // bounded: the wires of the world
@@ -139,22 +165,38 @@ const changeOne = (ctx, args) => ACTIONS.acts_change_one(ctx, args);
 
 const ACTIONS = {
   acts_make: (ctx, args) => pre('make', ctx, args, (w) => {
+    if (args.amount !== undefined && Number(one(args.amount)) !== 1) { // several at once: one act, one undo step
+      const n = Number(one(args.amount));
+      if (!Number.isInteger(n) || n < 1) return { ok: false, why: `how many? (${one(args.amount)})` };
+      const made = [];
+      for (let i = 0; i < n; i++) { // bounded: the amount asked
+        const r = ACTIONS.acts_make(ctx, { ...args, amount: undefined, id: undefined });
+        if (r.ok === false) return r;
+        made.push(r.thing);
+      }
+      return { act: 'make', things: made, thing: made[0] };
+    }
     const kind = String(one(args.kind));
     const ks = kindsOf(w, kind).filter((k) => args.world === undefined || k.world === one(args.world));
     if (!ks.length) return refuse(w, 'make', kind, `no world here has ${art(kind)}`);
     const k = ks.find((x) => x.acts.includes('make'));
     if (!k) return refuse(w, 'make', kind, `${art(kind)} cannot be made here`);
-    const attrs = { kind, world: k.world };
-    for (const s of attrsOf(w, k.type)) { const sl = slotOf(w, k.type, s); if (sl.default !== undefined) attrs[s] = String(sl.default).replace(/^"|"$/g, ''); }
+    const attrs = { kind, world: k.world }, defaults = {};
+    for (const s of attrsOf(w, k.type)) { const sl = slotOf(w, k.type, s); if (sl.default !== undefined) defaults[s] = String(sl.default).replace(/^"|"$/g, ''); }
     for (const [key, v] of Object.entries(args)) {
-      if (RESERVED.has(key) || key === 'id') continue;
+      if (RESERVED.has(key) || key === 'id' || v === undefined) continue;
       if (!k.open && !attrsOf(w, k.type).includes(key)) return refuse(w, 'make', kind, `${art(kind)} has no ${key}`, { attr: key });
       attrs[key] = v;
     }
     if (k.standIn) attrs.drawn_as = k.standIn;
+    const full = overCapacity(w, kind, attrs);
+    if (full) return refuse(w, 'make', kind, full.why, { room: full.room, of: full.of });
     const id = args.id ? String(args.id) : fresh(w, kind);
     const r = ctx.tell(wireText(id, k.type, attrs), { now: true });
     if (r.ok === false) return r;
+    // the slot defaults it was not given: at the tier default, so why says "the default"
+    const unset = Object.entries(defaults).filter(([key]) => attrs[key] === undefined);
+    if (unset.length) { const p = w.applyPatch({ sets: unset.map(([key, value]) => ({ id, key, value })) }, { tier: 'default' }); if (p.ok === false) return p; }
     // what std.fill chose for the keys it left out (knowledge, focus, ...): applied as defaults, with the source
     const filled = [];
     for (const n of ctx.find('std.fill.need', { for: ref(id) })) { // through the index: the needs of this thing
@@ -199,6 +241,8 @@ const ACTIONS = {
       value = String(+(now + (one(args.by) === 'less' ? -step : step)).toFixed(10));
     }
     if (value === undefined) return refuse(w, 'change', k, `to what? (${attr})`, { attr, missing: 'value' });
+    const small = shrinksBelow(w, t, attr, value) || overCapacity(w, k, { ...Object.fromEntries(Object.entries(t.attrs).map(([a, v]) => [a, v[0]])), [attr]: value }, t.id);
+    if (small) return refuse(w, 'change', k, small.why, { attr });
     const r = w.applyPatch({ sets: [{ id: t.id, key: attr, value }] }); // a set: one undo step, logged with the act's name
     return r.ok === false ? r : { act: 'change', thing: t.id, attr, value };
   }),
@@ -629,6 +673,10 @@ ${calcs.join('\n')}
 @k.kinds.aspects core.slot of=std.schema.kinds key=aspects many=true
 @k.view.name core.slot of=std.schema.view key=name id=true
 @k.view.shows core.slot of=std.schema.view key=shows many=true
+@k.cap.of core.slot of=std.schema.capacity key=of id=true
+@k.cap.key core.slot of=std.schema.capacity key=key required=true
+@k.cap.holds core.slot of=std.schema.capacity key=holds required=true
+@k.cap.via core.slot of=std.schema.capacity key=via required=true
 @k.limit.of core.slot of=std.schema.limit key=of id=true
 @k.limit.max core.slot of=std.schema.limit key=max kind=integer required=true
 @k.count.kind core.slot of=std.schema.count key=kind id=true

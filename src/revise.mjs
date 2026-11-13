@@ -46,10 +46,10 @@ export const revision = {
     if (res.violations.length) return this._finish(mark, res, false, null);
 
     const removed = [...gone].filter((x) => !this.wires.has(x));
-    this._logRemove(new Set(removed));
     this._event({ op: 'retract', ids: removed });
     res._touchedChange = true;
-    const out = this._finish(mark, res, false, null);
+    // the retraction is a statement in the log (not an erasure of the tell): undo and replay give it back
+    const out = this._finish(mark, res, false, [{ op: 'retract', ids: [id] }]);
     out.removed = removed;
     return out;
   },
@@ -150,8 +150,8 @@ export const revision = {
    * not taken back: it is told again after the others are gone, if it still can be. The
    * world is rebuilt from the statements that remain, so everything that followed from
    * the undone ones goes too. Returns { ok, undone, removed, added, changed }. What was
-   * undone can be told again with redo(). (A retraction is not a statement and is not
-   * undone by this; for an exact earlier state use mark and rewind.)
+   * undone can be told again with redo(). A retraction is a statement too: undo gives the
+   * wire back. (For an exact earlier state, use mark and rewind.)
    */
   undo(n = 1, opts = {}) {
     return this._guard(opts, () => {

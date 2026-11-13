@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.21.0
+
+Round 22 (shared things, views, taught facts) and Round 23's study of reuse.
+
+### New
+- Aspects, views and the act `show` (a reasoned refusal when a thing lacks an aspect);
+  `teach` and `forget`: facts at the tier `taught`, with who taught them; std.fill's tier
+  `taught` (rank 3.5); `is_a` followed by std.know.
+- docs/reuse.md: a catalogue of reuse patterns; tools/reuse.mjs: a detector of reuse
+  candidates between worlds; three reports in docs/reuse-reports/.
+
+### Changes
+- std.fill tier ranks are numbers.
+
 ## 0.20.0
 
 Round 21, second part: the remaining acts, sets and values.

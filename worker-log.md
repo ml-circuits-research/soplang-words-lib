@@ -3407,3 +3407,9 @@ identical. psys2 grep empty. scan-loops clean. tsc clean. Answer to item 1 in Q2
   of horse" is taught by Ana, a new pony is in a field and large in all three. A pony made
   before keeps no place (defaults are applied at make; noted in Q28 b).
 - test/views.test.mjs (2); test/fill.test.mjs tier list updated; reference section.
+
+## Release 0.21.0 (Round 22 items 1-4, Round 23 items 1-2)
+
+`/tmp/check.sh`: 335 pass, 0 fail on sources and built file, 334 in checking mode; pilot
+identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.21.0). Next: Round 23 items 3-7.

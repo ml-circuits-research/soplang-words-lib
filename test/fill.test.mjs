@@ -80,5 +80,5 @@ test('std.fill: a host adds a tier with one wire; an offer of an unknown tier is
 test('std.fill: the tiers are declared once in the module, best first', () => {
   const w = make();
   assert.deepEqual(w.ofType('std.fill.tier').map((t) => [t.attrs.name[0], t.attrs.rank[0]]),
-    [['user', '1'], ['focus', '2'], ['scene', '3'], ['knowledge', '4'], ['default', '5']]);
+    [['user', '1'], ['focus', '2'], ['scene', '3'], ['taught', '3.5'], ['knowledge', '4'], ['default', '5']]);
 });

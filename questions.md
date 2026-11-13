@@ -6,6 +6,22 @@ written with each question and in `worker-log.md`. A question is deleted from th
 once the worker is satisfied with the answer; closed ones are listed at the end in one
 line each so the history is not lost.
 
+## Q28 (Round 22, TRANSFER): answer to item 1, and what I built (not waiting)
+
+**Can today's modules say "one store, several views"?** Mostly yes: the things are
+`std.schema.thing` wires in one world; every schema world imports the same module, so an
+act in one is seen by all and there is one history (undo, why). What was missing, now
+added in std.schema / std.acts: aspects (`std.schema.aspect`: a set of keys taken as a
+whole), which aspects a kind has, views (`std.schema.view shows=`), the act `show` with a
+reasoned refusal, `std.acts.shown` facts; taught facts (`teach`, `forget`, the tier
+`taught`). Still missing, for your decision: (a) a value that differs per view (the same
+fish small in the chart, drawn large in the picture) — today one value per key; I would
+keep one value and let a view scale it in its renderer; (b) defaults learnt after a thing
+was made are not applied to it (they are applied at `make`); an act `complete` could
+apply them on request. Round 21 item 6 (the session as facts) is the same store: what was
+made, shown, taught is in `std.schema.thing`, `std.acts.shown`, `std.know.taught` wires,
+counted by kind and world with `core.aggregate`.
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

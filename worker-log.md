@@ -3387,3 +3387,23 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
 - First run on PSys2 listed 23 action-signature pairs, nearly all `name -> one value`
   lookups; grouped into families (3), lookups scored lower. Examples printed on import:
   silenced while reading.
+
+## R22 items 1–4 (and R21 item 6) — shared things, views, taught facts — done
+
+`/tmp/check.sh`: 335 pass, 0 fail on sources and built file, 334 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean. Answer to item 1 in Q28.
+
+- std.schema: `std.schema.aspect name keys doc`, `aspects=` on kinds (declared and open),
+  `std.schema.view name shows`. std.acts: `show` (a thing, a kind with a set, or `*`),
+  refused with the aspect's doc ("a table has no place on Earth") and the aspects the
+  thing has; it records `std.acts.shown view thing`. `teach` (knowledge wires as text, at
+  the tier `taught`, `core.source="taught by <who>"`, a `std.know.taught fact by at`
+  wire), `forget`.
+- std.fill: tier `taught` rank 3.5 (rank is a number now): below the user, the focus and
+  the scene, above knowledge. std.know: every fact gets its tier (`std.know.from`: taught
+  or knowledge), offers carry it; `is_a` gives the other kind's place and size at the tier
+  of the `is_a` fact.
+- examples/views.mjs: picture, chart, list over the same things; after "a pony is a kind
+  of horse" is taught by Ana, a new pony is in a field and large in all three. A pony made
+  before keeps no place (defaults are applied at make; noted in Q28 b).
+- test/views.test.mjs (2); test/fill.test.mjs tier list updated; reference section.

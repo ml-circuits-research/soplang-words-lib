@@ -1671,6 +1671,24 @@ world that is not declared.
 | `send` | `thing`, `to` | to another world: the kind must be sendable from its world and makeable in `to` (a kind may belong to several worlds: `world=` repeated); one undo step |
 | `save`, `load` | `name` | the told things as they are, kept in a `std.acts.saved` wire; load changes them back, makes again what went, takes away what was made since |
 | `undo`, `redo` | `n`? | as `world.undo` / `redo`, with `diff`; not inside another change (a sentence, an action) |
+| `show` | `thing` (or `*`), `set`?, `view` | the things in a view (below) |
+| `teach`, `forget` | `fact` (SOP Lang), `by`?; `fact` (an id) | facts at the tier `taught` (below) |
+
+**Aspects and views.** `std.schema.aspect name= keys= doc=` names a set of keys a kind
+takes as a whole (a place on Earth, a size); a kind says which it has
+(`std.schema.kind ... aspects=`, also on `std.schema.kinds`); `std.schema.view name=
+shows=` is a view over the shared things that shows some aspects. All views read the
+same wires, so an act in one is seen in the others, with one history. The act `show`
+(`thing` or a kind with `set`; `thing=*` for every thing; `view`) gives each thing's
+values of the view's keys and records `std.acts.shown view= thing=`; a thing that lacks an
+aspect is refused with the aspect's `doc` ("a table has no place on Earth") and the
+aspects it has. **Taught facts:** `teach` (`fact`: knowledge wires as SOP Lang, `by`)
+tells them at the tier `taught` (declared by std.know, right below `told`) with
+`core.source="taught by <who>"` and a `std.know.taught fact= by= at=` wire; std.know offers
+them at the std.fill tier `taught` (rank 3.5: below what was just said and the scene,
+above knowledge), and follows `is_a` to the other kind's place and size. `forget` (`fact`)
+takes one back. Defaults are applied when a thing is made: things made before keep theirs.
+`examples/views.mjs` has three views over the same things.
 
 **What an act gives.** `result` (`act`, `thing`, ...) and, like every action that is
 done, `diff`: `{ added, removed, changed }`, what it told and what rules derived from it,

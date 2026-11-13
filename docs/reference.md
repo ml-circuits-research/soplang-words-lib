@@ -1695,7 +1695,9 @@ takes one back. Defaults are applied when a thing is made; things made before ge
 `examples/views.mjs` has three views over the same things.
 
 **Composition.** A thing inside another is one with a key that refers to it (an eye
-with `of=$face2`); `in` (a thing, or a kind with `in_nth`) limits an act to the things
+with `of=$face2`: declare the slot with `type=` the container's kind, and give it to
+`make` as an argument, `of: '$face2'`; a rule reads the container through the reference
+by naming its pattern, `@r ingredient of=$rs` with `@rs recipe serves=?n`); `in` (a thing, or a kind with `in_nth`) limits an act to the things
 inside: "make the eyes of the second face green" is `change thing=eye set=each attr=colour
 value=green in=a_face in_nth=2`.
 

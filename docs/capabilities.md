@@ -37,6 +37,10 @@ Rules derive wires from wires; a conclusion goes when what it rests on goes. Den
 refuse a change that breaks them; soft denies only advise. **Limits:**
 no rule may negate or aggregate what its own conclusions produce (stratified).
 
+A rule joins two things through a reference by naming the other pattern
+(`@r line order=$o qty=?q` with `@o order ...`): a variable (`order=?x`) would join
+nothing.
+
 ```js run
 const w = new World();
 w.load(`@p person name=?n age=?a

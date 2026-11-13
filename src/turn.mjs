@@ -39,7 +39,8 @@ export function turn(world, readings, { reply = actReply } = {}) {
   const missing = tried.find((t) => t.status === 'missing');
   if (missing) {
     const m = missing.missing[0];
-    return { status: 'ask', reading: missing.index, question: m.ask || `What ${m.key}?`, missing: missing.missing, dropped: tried };
+    const question = m.ask || `What ${m.key}?`;
+    return { status: 'ask', reading: missing.index, question, replies: [question], missing: missing.missing, dropped: tried };
   }
   const elsewhere = tried.find((t) => { const r = t.violation?.reason; return r && (r.hasIt?.length || (r.allowed?.length && !r.allowed.includes(r.act) && r.elsewhere?.length)); }); // the kind is known here: say what it can do and where the act is
   if (elsewhere) {
@@ -51,7 +52,8 @@ export function turn(world, readings, { reply = actReply } = {}) {
   if (!best) return { status: 'nothing', replies: [], dropped: [] };
   const req = best.requests[best.failed ?? 0];
   const why = best.violation?.why ? String(best.violation.why).replace(/^"|"$/g, '') : 'it was refused';
-  return { status: 'unknown', reading: best.index, guess: req, question: `Did you mean to ${whatOf(req)}? (${why})`, dropped: tried };
+  const question = `Did you mean to ${whatOf(req)}? (${why})`;
+  return { status: 'unknown', reading: best.index, guess: req, question, replies: [question], dropped: tried };
 }
 
 /**

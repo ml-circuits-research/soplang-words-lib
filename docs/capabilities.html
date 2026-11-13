@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld What the library can do</title>
-<meta name="source-hash" content="79339b0d35f8">
+<meta name="source-hash" content="e58ba9e2e60c">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -33,6 +33,7 @@ print(w.open().map((o) =&gt; o.ask));</code></pre></figure>
 <h2 id="state-facts-and-rules">State facts and rules</h2>
 <p><em>In core: <code>core.rule</code>, <code>core.deny</code>; since 0.1.</em></p>
 <p>Rules derive wires from wires; a conclusion goes when what it rests on goes. Denies refuse a change that breaks them; soft denies only advise. <strong>Limits:</strong> no rule may negate or aggregate what its own conclusions produce (stratified).</p>
+<p>A rule joins two things through a reference by naming the other pattern (<code>@r line order=$o qty=?q</code> with <code>@o order ...</code>): a variable (<code>order=?x</code>) would join nothing.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@p person name=?n age=?a
   @adult core.check fn=gte args=?a args=18

@@ -966,7 +966,8 @@ value), `guesses` (values filled by tiers, with their source) and `replies` (fro
 `actReply`, or `options.reply`). Otherwise a graded fallback: `ask` (a reading only lacks
 an argument: `question`, `missing`), `elsewhere` (the kind is known but the act or the
 attribute is not here: the reply says what it can do and where), `unknown` (the best
-guess named in a `question`). Every result lists the readings `dropped` with the reason.
+guess named in a `question`). Every result but `nothing` has `replies` (for `ask` and
+`unknown`, the question), and lists the readings `dropped` with the reason.
 
 ```js run
 const w = new World();

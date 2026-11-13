@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="cbef13619896">
+<meta name="source-hash" content="a0a08f257fb6">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -362,7 +362,7 @@ const cat = createCatalog({ index, vocab: { cup: [&#x27;k.t/a&#x27;] }, read: bu
 print(cat.shardsOf(&#x27;cup&#x27;), cat.plan(cat.shardsOf(&#x27;cup&#x27;)), cat.intoSync(new World(), &#x27;cup&#x27;).ok);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;k.t/a&quot;] [&quot;k.t/schema.sop&quot;,&quot;k.t/a.sop&quot;] true</code></pre></figure>
 <h3 id="turnworld-readings-options">turn(world, readings, options?)</h3>
-<p>One request, end to end. <code>readings</code> are the candidate readings of one message, best first: each a request <code>{ action, args }</code>, a list of requests (one sentence), or <code>{ requests }</code>. Each is tried on a fork (nothing changes); the first the world takes is applied as one sentence (all or nothing, one undo step) and the result has <code>status: 'done'</code>, <code>reading</code> (its index), <code>results</code>, <code>diff</code>, <code>why</code> (the chain of each changed value), <code>guesses</code> (values filled by tiers, with their source) and <code>replies</code> (from <code>actReply</code>, or <code>options.reply</code>). Otherwise a graded fallback: <code>ask</code> (a reading only lacks an argument: <code>question</code>, <code>missing</code>), <code>elsewhere</code> (the kind is known but the act or the attribute is not here: the reply says what it can do and where), <code>unknown</code> (the best guess named in a <code>question</code>). Every result lists the readings <code>dropped</code> with the reason.</p>
+<p>One request, end to end. <code>readings</code> are the candidate readings of one message, best first: each a request <code>{ action, args }</code>, a list of requests (one sentence), or <code>{ requests }</code>. Each is tried on a fork (nothing changes); the first the world takes is applied as one sentence (all or nothing, one undo step) and the result has <code>status: 'done'</code>, <code>reading</code> (its index), <code>results</code>, <code>diff</code>, <code>why</code> (the chain of each changed value), <code>guesses</code> (values filled by tiers, with their source) and <code>replies</code> (from <code>actReply</code>, or <code>options.reply</code>). Otherwise a graded fallback: <code>ask</code> (a reading only lacks an argument: <code>question</code>, <code>missing</code>), <code>elsewhere</code> (the kind is known but the act or the attribute is not here: the reply says what it can do and where), <code>unknown</code> (the best guess named in a <code>question</code>). Every result but <code>nothing</code> has <code>replies</code> (for <code>ask</code> and <code>unknown</code>, the question), and lists the readings <code>dropped</code> with the reason.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@acts core.use world=std.acts
   @plan std.schema.world name=plan

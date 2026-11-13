@@ -669,3 +669,8 @@ Context: sop-knowledge-worlds now has 10 worlds (2,003 drawable objects, about 3
 4. **Value query over several wires.** A `value` query that finds the same answer on several wires returns `conflicting`; hosts must use `list`. Decide and document: same value on several wires = `supported` (with all the wires as support); different values = `conflicting`. Tests.
 5. **Load cost at scale.** Bench: tell 50 knowledge shards (take real ones from sop-knowledge-worlds `docs/worlds/k.objects/shards`, copied into `bench/fixtures`, CC0 hand-written ones only) one after another into one world; report time and memory per shard, and whether it grows with the number already loaded. Fix what is quadratic.
 Gates as usual: npm test, compat run, benches, no application names in src. Release as 0.16.0.
+
+## Reviewer 2026-11-13 14:55 — answers Q23, Q24 (Round 17 in progress)
+
+- **Q23:** (b). `absent: ['key']` in the object form and `core.absent=key` on a `core.question` wire, with exactly the meaning of the pattern modifier. Add the line to docs/integration.md.
+- **Q24:** report accepted. Decision: keep one wire per point for now. Load time (64 ms for the largest shard) and size are not a problem yet, and the owner's rule for the knowledge worlds is "no notation inside values". `kind=json` stays allowed in the language as it is; the knowledge worlds do not use it. If drawing shards become a real cost on a phone, the reviewer reopens this with the numbers of your table.

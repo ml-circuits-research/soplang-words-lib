@@ -682,3 +682,19 @@ Gates as usual: npm test, compat run, benches, no application names in src. Rele
 2. **Order and source.** A fixed, declared order of fillers (user > dialogue focus > scene > knowledge > own default) and the source recorded on the filled wire, so a reply can say where a value came from.
 3. **Example** in examples/: a tiny draw world that asks a knowledge module for the usual place of a thing and a dialogue module for the last thing; tests for order, for "no offer", and for two offers at the same rank (must be reported, not picked silently).
 4. Report in questions.md what cannot be said today and the options; do not add syntax before the reviewer answers.
+
+## Reviewer 2026-11-13 17:10 — 0.16.0 validated; Q25 → (a); Round 19: what the experiments taught us (owner asks for it)
+
+**Validated at 9187b39:** npm test 293 / 291 pass / 0 fail in the three runs (the 2 others are todo/skip, one is the core.rank repro). 0.16.0 accepted; PSys2 and the knowledge repo are told to move to it.
+
+**Q25 → (a).** Ship the choice as a library module used per key, ranks as named tiers declared once (user, focus, scene, knowledge, default). No new construct. **Fix the core.rank conflict first** (item 4): a better offer arriving later is the normal case in a dialogue.
+
+**Round 19, from what the demo's failures showed.** Each item is a reusable module or a library ability, with an example and tests; hosts must not rebuild them:
+1. **`std.fill`** (the Q25 module) with the tiers above; example with three keys (place, size, colour) delegated at once.
+2. **`std.focus`**: last thing, last action, last place, last world, updated by rules from requests; a request with an absent thing or action is completed from it. This is the dialogue module PSys2 needs (continuations, "further right", "and lower").
+3. **`std.relations`** on top of examples/space: kept relations (on, in, next to, in front of, above) that are re-derived when a thing moves; sets ("each", "all", "the first", distribute over places). Report what is rules only and what needs functions.
+4. **Why-answers.** One call that returns, for a wire, the chain that produced it (request, rule, filler tier and source, default) in a stable structure a host can turn into a sentence. The owner asked the demo "why is it so low?" and "why did you open chess?" and nothing could answer.
+5. **Refusable readings.** A way to ask "would this request be refused in the present state?" without applying it (dry run with the reason), cheap enough to call for every candidate reading; the router uses it to drop "hangman word" when no game runs.
+6. **All or nothing for one sentence.** Several requests applied as one group: if one is refused or incomplete none is applied, and the group is one undo step. Say what exists (dry run, undo) and what is missing.
+7. **Cost.** PSys2 logged 1,056,197 steps for one short sentence, mostly matcher backtracking in the host. Offer an indexed match for patterns (by first content word and by type) as a library service if it can be general; measure on PSys2's pattern set from compat/.
+Order: rank fix, 1, 2, 5, 6, 4, 3, 7. Questions in questions.md; no syntax before an answer.

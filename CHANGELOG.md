@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.26.0
+
+Round 25: the request pipeline as data.
+
+### New
+- `std.turn`: the stages of a request, their order, providers by tier and what an empty
+  stage does, as wires; advice when a stage has no provider.
+- `turnFlow`: runs the declared path, with a trace of every stage; the default gives what
+  `turn` gives. Built-in providers include `confirm` (before an act on a whole set) and
+  `route`.
+
 ## 0.25.0
 
 Round 24, last part: tools for authors and the documentation a new project starts from.

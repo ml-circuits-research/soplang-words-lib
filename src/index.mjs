@@ -14,7 +14,7 @@ export { schemaCard, schemaExamples, actReply, schemaGrid, gridTests } from './s
 export { createCatalog, bundleReader } from './knowledge.mjs';
 export { turn, route, turnFlow } from './turn.mjs';
 export { ledgerAppend, ledgerGroups, ledgerKey, stageOf, STAGES } from './ledger.mjs';
-export const version = '0.25.0';
+export const version = '0.26.0';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)
  * tools/build.mjs fills in `hash`, a fingerprint of the bundled sources, and `date`,

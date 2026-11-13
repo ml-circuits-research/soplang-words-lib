@@ -3684,3 +3684,9 @@ as data; the stages' insides stay functions; parallel candidates not yet).
 - `node bench/flow.mjs` (30 requests): turn 32.2 / 12.9 ms, turnFlow 25.8 / 18.9 ms; steps
   summed 670 both (the library steps are the same; the overhead is JavaScript only).
 - Docs: reference std.turn, api turnFlow, capabilities job (17 jobs in README), modules.
+
+## Release 0.26.0 (Round 25)
+
+`/tmp/check.sh`: 359 pass, 0 fail on sources and built file, 358 in checking mode; pilot
+identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.26.0). Open: Q30, Q31.

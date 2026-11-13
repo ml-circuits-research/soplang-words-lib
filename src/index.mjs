@@ -13,6 +13,7 @@ export { PatternIndex } from './patterns.mjs';
 export { schemaCard, schemaExamples, actReply, schemaGrid, gridTests } from './schema-words.mjs';
 export { createCatalog, bundleReader } from './knowledge.mjs';
 export { turn, route } from './turn.mjs';
+export { ledgerAppend, ledgerGroups, ledgerKey, stageOf, STAGES } from './ledger.mjs';
 export const version = '0.24.0';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)

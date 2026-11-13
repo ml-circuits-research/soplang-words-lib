@@ -1033,6 +1033,29 @@ print(schemaGrid(w).map((c) => [c.text, c.expect.ok ? c.expect.changed : c.expec
 [["make an eye","at most 1 eye"],["make a blue eye","at most 1 eye"],["make the colour of the eye blue",["colour"]]]
 ```
 
+### ledgerAppend, ledgerGroups, ledgerKey, stageOf, STAGES
+
+A failure ledger: a failing case is data. A row is `{ text, world, language, happened,
+expected, stage, class, source, first_seen, build, was_passing }`; `ledgerKey` is its
+source, text and world. `ledgerAppend(rows, add)` gives the rows of `add` that are new
+(old rows are never rewritten or added again). `ledgerGroups(rows, { signals, examples })`
+groups by `stage` (one of `STAGES`: reading, routing, filling, acting, replying), `class`
+and the first of the host's cause signals (`[name, row => boolean]`) that holds, largest
+first, with examples spread over sources. `stageOf(turnResult)` files a failed `turn`.
+On disk: `node tools/ledger.mjs add <ledger.jsonl> <rows.jsonl>` and `node tools/ledger.mjs
+report <ledger.jsonl> [--signals m.mjs] [--out r.md]`. `node tools/validate.mjs [--advise]
+<files>` loads a world and lists what is refused, what is noted and the grid's holes.
+
+```js run
+const rows = [{ text: 'draw a cup', source: 'logs', stage: 'reading', class: 'miss' }, { text: 'a red one', source: 'logs', stage: 'filling', class: 'miss' }];
+const more = ledgerAppend(rows, [{ text: 'draw a cup', source: 'logs' }, { text: 'paint a mug', source: 'pairs', stage: 'reading', class: 'miss' }]);
+print(more.map((r) => r.text), ledgerGroups([...rows, ...more], { signals: [['a cup word', (r) => /cup|mug/.test(r.text)]] }).map((g) => [g.key, g.count]));
+```
+
+```output
+["paint a mug"] [["reading / miss / a cup word",2],["filling / miss / other",1]]
+```
+
 ### rank(scored, criteria?) and RANKING
 
 Orders scored readings best first and explains every place. `RANKING` is the default

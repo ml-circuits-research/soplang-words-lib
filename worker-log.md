@@ -3580,3 +3580,21 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
 `/tmp/check.sh`: 351 pass, 0 fail on sources and built file, 350 in checking mode; pilot
 identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
 (`docs/version.md`: sopworld 0.24.0). Next: A6, quickstart, host contract, the second app.
+
+## R24 A6 — tools for authors: validate, failure ledger — done
+
+`/tmp/check.sh`: 354 pass, 0 fail on sources and built file, 353 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean. Doc examples: 90, 0 problems.
+
+- src/ledger.mjs: `ledgerKey` (source, text, world), `ledgerAppend` (append-only: old rows
+  never rewritten nor added again), `ledgerGroups` (by stage, class and the first of the
+  host's cause signals; largest first; examples round-robin over sources; stable),
+  `stageOf(turn result)`, `STAGES` (reading, routing, filling, acting, replying).
+  tools/ledger.mjs: `add` (JSONL, append-only) and `report` (Markdown table).
+- tools/validate.mjs: load files (.sop or .mjs) with optional advice; prints refusals,
+  notes and the coverage grid's holes; exit 1 when refused. On examples/acts.mjs it first
+  showed 35 false holes: the schema files do not load std.acts themselves; now it loads
+  it and says so in a note.
+- From PSys2 handover/failure-ledger: taken — the format, append-only key, grouping and
+  examples over sources; refused — its cause-signal list and the replay of its own eval
+  scripts (host). test/ledger.test.mjs (3). api and capabilities (runnable); the table.

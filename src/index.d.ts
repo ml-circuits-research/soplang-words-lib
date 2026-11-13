@@ -489,3 +489,14 @@ export function route(world: World, request: { action: string; args?: Record<str
 export function schemaGrid(world: World, name?: string, options?: { per?: number }): { world: string; act: string; kind: string; text: string; request: { action: string; args: Record<string, unknown> }; expect: { ok: boolean; added?: string[]; removed?: number; changed?: string[]; status?: string; why?: string } }[];
 /** a node:test file for grid cases */
 export function gridTests(cases: object[], options?: { importFrom?: string; make?: string }): string;
+
+/** the stages of the request pipeline a failure is filed under */
+export const STAGES: string[];
+/** the key of a ledger row: source, text and world */
+export function ledgerKey(row: object): string;
+/** the rows of `add` new to `rows` (append-only) */
+export function ledgerAppend<R extends object>(rows: R[], add: R[]): R[];
+/** rows grouped by stage, class and the first cause signal that holds; largest first */
+export function ledgerGroups(rows: object[], options?: { signals?: [string, (row: any) => boolean][]; examples?: number }): { key: string; stage: string; class: string; cause: string; count: number; examples: object[] }[];
+/** the stage a turn result failed at, or null when it was done */
+export function stageOf(result: object): string | null;

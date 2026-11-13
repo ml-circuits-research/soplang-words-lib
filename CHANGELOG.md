@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.24.0
+
+Round 24, second part: one request pipeline, choosing a world, the coverage grid.
+
+### New
+- `turn`: the readings of one message dry-run, the first the world takes applied as one
+  sentence, with diff, why, guesses and replies; a graded fallback (ask, elsewhere, a named
+  guess) otherwise.
+- `route`: the world for a request, scored by cards, the thing named, a dry run and a
+  host signal.
+- `schemaGrid`, `gridTests`: the coverage grid of the schemas and a test file from it.
+- The act `complete`: defaults learnt later applied to existing things, on request (Q28).
+- `core.use world= as=`: a library module loaded under another name (Q29).
+
 ## 0.23.0
 
 Round 24, first part: what the library can do, documented; knowledge by lookup.

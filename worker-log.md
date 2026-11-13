@@ -3574,3 +3574,9 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
   said they came from `list`.
 - Q28, Q29 closed in questions.md. Reference: core.use `as`, std.acts `complete`;
   reuse.md and capabilities updated.
+
+## Release 0.24.0 (Round 24: A2, A3, A4, A5; Q28, Q29)
+
+`/tmp/check.sh`: 351 pass, 0 fail on sources and built file, 350 in checking mode; pilot
+identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.24.0). Next: A6, quickstart, host contract, the second app.

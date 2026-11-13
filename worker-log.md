@@ -3177,3 +3177,24 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
   90/70, cup 95/60; first cup $cup3; lamps 217/8 317/8; cup2 next to s2 345/15.
 - Note: `undo` does not bring back retractions, so the actions' effect is undone by
   `rewind(mark)` (documented).
+
+## R19 item 7 — indexed match for patterns — done in general; real measurement waits on Q26
+
+`/tmp/check.sh`: 318 pass, 0 fail on sources and built file, 317 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean. `node tools/doc-examples.mjs`:
+109 runnable examples, 0 problems.
+
+- `PatternIndex` (src/patterns.mjs, exported): a pattern is `{ id, kind, needs }` (+ host
+  data), `needs` a list of word sets (one word of each must be in the sentence); each
+  pattern kept under its rarest set; `candidates(tokens, { kind })` gives only the patterns
+  every set of which meets the sentence, in insertion order (host priority holds);
+  patterns that need no word always come. General: "by first content word and by type"
+  becomes "by the rarest needed word, filtered by kind"; the matcher stays the host's.
+- `node bench/patterns.mjs` (synthetic: 3,000 patterns, 2,000-word Zipf-like vocabulary,
+  1,000 sentences of 8 words): every pattern tried = 3,000 per sentence, filtering alone
+  201.4 ms; index built 9.9–13.7 ms, 51.50 handed out per sentence (same set as the full
+  filter: true), 26.8–40.6 ms per 1,000 sentences; bundle 51.50, 27.0 ms.
+- Not measured on PSys2's set: it is not in compat/ (`grep -rc match=` over
+  compat/psys2/worlds and matrices: 0; only the legend's declarations). Q26 asks for its
+  patterns.sop and spec 03 (option a) or leaves the measurement to PSys2 (b).
+- test/patterns.test.mjs (2), api "PatternIndex" (runnable), index.d.ts.

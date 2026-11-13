@@ -9,6 +9,7 @@ export { solvers, Problem, Sat, toDimacs, toASP } from './solve.mjs';
 export { GRAMMAR, MODIFIERS, SCHEMA_TYPES } from './matrix.mjs';
 export { rank, RANKING, veto } from './rank.mjs';
 export { aggregates } from './builtins.mjs';
+export { PatternIndex } from './patterns.mjs';
 export const version = '0.16.0';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)

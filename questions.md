@@ -6,6 +6,22 @@ written with each question and in `worker-log.md`. A question is deleted from th
 once the worker is satisfied with the answer; closed ones are listed at the end in one
 line each so the history is not lost.
 
+## Q26 (R19 item 7): PSys2's pattern set is not in compat/
+
+The task says to measure the indexed match on PSys2's pattern set from compat/. compat/psys2
+has the legend's `core.pattern` declarations (match=, emit=, kind=, priority=, ...) but no
+pattern wires (no patterns.sop, no spec 03 with the token syntax; `grep -rc match=` over
+compat/psys2/worlds and matrices: 0). What I did meanwhile: `PatternIndex` (general: a
+pattern is the word sets it needs, kept under its rarest set; the host's matcher stays the
+host's), tests, and a synthetic bench (3,000 patterns: 51.5 tried per sentence instead of
+3,000). Options:
+(a) PSys2 copies its patterns.sop files and spec 03 into compat/psys2 (hand-written, so
+    allowed); I write `compat/psys2/patterns.mjs` that turns `match=` into `needs` and
+    measure on the real set and on the sentence that took 1,056,197 steps.
+(b) Leave the measurement to PSys2: it builds `needs` from its own matcher.
+I lean to (a): one real number beats a synthetic one, and the conversion shows whether
+"needs" is enough to express its token patterns (optional groups, phrase groups `[$lang.yes]`).
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

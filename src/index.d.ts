@@ -441,3 +441,13 @@ export function induceRule(examples: { when: string | Wire[]; then: string | Wir
 export function induceSlots(wires: string | Wire[], options?: { enumMax?: number; prefix?: string }): string;
 export function abduce(world: World, goal: string | Wire[], options?: object): Explanation[];
 export const builtins: Record<string, Fn>;
+
+/** An index of sentence patterns by the words they need: only the patterns a sentence can match are handed out. */
+export class PatternIndex<P extends { id: string; kind?: string; needs?: (string | string[])[] } = { id: string; kind?: string; needs?: (string | string[])[] }> {
+  constructor(patterns?: P[], options?: { normalize?: (word: string) => string });
+  add(pattern: P): this;
+  readonly size: number;
+  /** the patterns every set of whose needed words meets the sentence, in the order added */
+  candidates(tokens: string | string[], options?: { kind?: string | string[] }): (P & { at: number })[];
+  stats(): { patterns: number; words: number; open: number; perSentence: number };
+}

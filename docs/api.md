@@ -868,6 +868,34 @@ print(r.candidates[0].ok, r.candidates[0].referents[0].fits, w.has('m'));
 true ["p2"] false
 ```
 
+### PatternIndex
+
+`new PatternIndex(patterns, { normalize })` indexes a host's sentence patterns by the
+words they need, so its matcher tries only the patterns a sentence can match. A pattern
+is `{ id, kind, needs }` plus anything of the host's (handed back as given): `needs` is a
+list of word sets, one word of each set must be in the sentence (a literal is a set of
+one, an alternative a set of several; leave out what is optional and the slots). A
+pattern that needs no word is tried on every sentence. `candidates(tokens, { kind })`
+returns the patterns every set of which meets the sentence, in the order they were added
+(so a host's priority order holds); `add(pattern)` adds one later; `stats()` says
+`{ patterns, words, open, perSentence }`. Each pattern is kept under its rarest set, which
+does not change the answer, only the work. The matching itself stays the host's; words
+are lowercased unless `normalize` says otherwise. `node bench/patterns.mjs`: 3,000
+synthetic patterns, 1,000 sentences, 51.5 handed out per sentence instead of 3,000.
+
+```js run
+const ix = new PatternIndex([
+  { id: 'draw', kind: 'do', needs: [['draw', 'paint']] },
+  { id: 'move', kind: 'do', needs: [['move', 'put'], ['left', 'right']] },
+  { id: 'hangman', kind: 'do', needs: ['hangman', ['word', 'letter']] },
+]);
+print(ix.candidates('Paint it, then move it right'.replace(',', '')).map((p) => p.id), ix.candidates('hangman cat').length);
+```
+
+```output
+["draw","move"] 0
+```
+
 ### rank(scored, criteria?) and RANKING
 
 Orders scored readings best first and explains every place. `RANKING` is the default

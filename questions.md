@@ -6,6 +6,35 @@ written with each question and in `worker-log.md`. A question is deleted from th
 once the worker is satisfied with the answer; closed ones are listed at the end in one
 line each so the history is not lost.
 
+## Q25 — delegation between modules: what the documented pattern cannot say (R18.4)
+
+Built with rules, `core.absent=`, aggregates and a soft deny (docs/integration.md §5a,
+examples/delegation.mjs, test/delegation.test.mjs): needs, offers from other modules, a
+declared order, the source on the filled wire, ties reported, "no offer" left open. What
+it cannot say cleanly:
+
+1. **The order is numbers each module writes** (`rank=4`): nothing checks that two
+   modules mean the same thing by 4, and a new kind of filler means renumbering.
+2. **The choice is six wires** (two aggregates, the choose rule, the tie deny) repeated
+   for every key that can be delegated.
+3. **The filled value goes to another key** (`use_place`, not `place`): a rule that wrote
+   `place` would end its own `core.absent=place` condition and take itself back.
+4. **core.rank is not safe for this yet**: choosing by `core.rank` over the offers gave a
+   `conflict` when a better offer arrived (an old place in line not taken back). It is
+   kept as a todo test with its repro; aggregates were used instead.
+
+Options:
+- (a) Keep the pattern; ship the draw module's six wires as a library module that a world
+  uses for each key (`core.use`), and declare the ranks once as named `core.tier`s.
+- (b) One construct, `core.fill of=<type> key=<key> from=<offer type> by=<rank key>`, that
+  takes the best offer, records its source and reports ties; the value can then go to the
+  key itself, since the library keeps the gap open while it fills.
+- (c) Nothing more: hosts copy the pattern.
+
+**Recommendation: (a)** now: it needs no syntax, keeps one meaning per construct, and
+item 4 is a bug to fix on its own (to be done before any of this is used with core.rank).
+Revisit (b) if several worlds delegate more than a few keys.
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

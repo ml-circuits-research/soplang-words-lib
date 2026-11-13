@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Putting a system on sopworld</title>
-<meta name="source-hash" content="c3ddaf54ae75">
+<meta name="source-hash" content="ece977803867">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -47,6 +47,10 @@
 <p>What stays outside the matrix: turning text into wires, wording of replies, string handling (splitting "milk, eggs and bread"). Keep those in your own code or in actions.</p>
 <h2 id="5-sessions-what-if-persistence">5. Sessions, what-if, persistence</h2>
 <ul><li>One <code>World</code> per session or per device. Build one with the schema and matrix loaded, and <code>fork()</code> it for each session: a fork copies nothing until it changes.</li><li><code>world.trial(fn)</code> and <code>{ dry: true }</code> try a change and undo it. <code>world.asOf(at, fn)</code> reads the past.</li><li><code>world.toJSON()</code> and <code>World.fromJSON(data, options)</code> save and restore.</li><li><code>world.on(listener)</code> receives the committed events.</li></ul>
+<h2 id="5a-worlds-as-modules-needs-offers-an-order-a-source">5a. Worlds as modules: needs, offers, an order, a source</h2>
+<p>A world can let other worlds fill what a request leaves open, with what the language already has (<code>examples/delegation.mjs</code>, tested in <code>test/delegation.test.mjs</code>):</p>
+<ul><li><strong>The need</strong> is a request with an absent key: <code>@gap draw.request thing=?t core.absent=place</code>.</li><li><strong>An offer</strong> is a wire another module derives for that request: <code>draw.offer for=$gap value=?p source=know rank=4</code>, from its own facts. A module offers only what it knows; nothing is asked of a module that has nothing.</li><li><strong>The order</strong> of fillers is the <code>rank</code> each module states (1 the user, 2 the dialogue focus, 3 the scene, 4 knowledge, 5 the world's own default); an aggregate takes the best rank per request and counts the offers at each rank.</li><li><strong>The choice</strong> is a rule: the offer of the best rank, when it is alone at that rank, fills the request (<code>use_place</code>) with its <code>source</code>; two offers at the best rank raise a soft issue and fill nothing. The user's own value comes first by a rule of its own.</li><li><strong>The source</strong> is on the filled wire (<code>place_source</code>), and <code>query</code> names the rule that filled it (<code>via</code>).</li></ul>
+<p>When a better offer comes or goes, the choice follows. Q25 lists what this pattern cannot say yet.</p>
 <h2 id="6-limits">6. Limits</h2>
 <p>Every call takes <code>{ budget: { steps, ms } }</code> (SPEC 4.11). A call that runs out returns a <code>budget</code> result and leaves the world as it was. Set a default for all calls with <code>new World({ budget })</code>. <code>world.stats()</code> says where the steps of the last call went.</p>
 <h2 id="7-prove-it-a-runner-over-your-own-tests">7. Prove it: a runner over your own tests</h2>

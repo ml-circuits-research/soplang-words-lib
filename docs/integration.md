@@ -103,6 +103,27 @@ handling (splitting "milk, eggs and bread"). Keep those in your own code or in a
 - `world.toJSON()` and `World.fromJSON(data, options)` save and restore.
 - `world.on(listener)` receives the committed events.
 
+## 5a. Worlds as modules: needs, offers, an order, a source
+
+A world can let other worlds fill what a request leaves open, with what the language
+already has (`examples/delegation.mjs`, tested in `test/delegation.test.mjs`):
+
+- **The need** is a request with an absent key: `@gap draw.request thing=?t core.absent=place`.
+- **An offer** is a wire another module derives for that request:
+  `draw.offer for=$gap value=?p source=know rank=4`, from its own facts. A module offers
+  only what it knows; nothing is asked of a module that has nothing.
+- **The order** of fillers is the `rank` each module states (1 the user, 2 the dialogue
+  focus, 3 the scene, 4 knowledge, 5 the world's own default); an aggregate takes the best
+  rank per request and counts the offers at each rank.
+- **The choice** is a rule: the offer of the best rank, when it is alone at that rank,
+  fills the request (`use_place`) with its `source`; two offers at the best rank raise a
+  soft issue and fill nothing. The user's own value comes first by a rule of its own.
+- **The source** is on the filled wire (`place_source`), and `query` names the rule that
+  filled it (`via`).
+
+When a better offer comes or goes, the choice follows. Q25 lists what this pattern cannot
+say yet.
+
 ## 6. Limits
 
 Every call takes `{ budget: { steps, ms } }` (SPEC 4.11). A call that runs out returns a

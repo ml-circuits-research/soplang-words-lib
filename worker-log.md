@@ -2962,3 +2962,27 @@ identical. `git grep -i psys2 src/`: empty. scan-loops clean. tsc clean.
 
 A minor version: the standard pack, the object form of `core.absent`, fixes. `npm test`
 290 / 290 / 289. Pilot 147/147, 212/217, 231/232, output identical. No open questions.
+
+## Round 18 — delegation between modules — pattern, example, tests, report (Q25); no syntax
+
+`npm test`: 292 pass, 0 fail, 1 todo on sources and built file; 291 pass, 1 todo in
+checking mode. Pilot output identical. `npm run examples`: exit 0. `git grep -i psys2
+src/`: empty. scan-loops clean. tsc clean. No change to `src/`.
+
+1. Needs and offers are expressible today: a request with `core.absent=<key>` is the need;
+   other modules derive `draw.offer for=$request value= source= rank=` from their facts.
+2. Order and source: aggregates take the best rank per request and count offers per rank;
+   a rule fills `use_place` and `place_source` from the best offer when it is alone at its
+   rank; the user's value comes first by its own rule; `query(...).via` names the rule.
+3. examples/delegation.mjs: modules draw, talk (dialogue focus, rank 2) and know (usual
+   place, rank 4) in a host library, the draw world's own default at rank 5. Tests
+   (test/delegation.test.mjs): the order user > dialogue > knowledge > default, a better
+   offer arriving and leaving, the source and the rule; no offer leaves the need open; two
+   offers at the same rank raise a soft issue and fill nothing.
+4. Q25: what the pattern cannot say (ranks as numbers, six wires per key, the value on a
+   second key) and options; recommendation (a), the pattern as a library module, ranks as
+   named tiers. docs/integration.md §5a documents the pattern.
+- Found: choosing by `core.rank` over derived offers gives a `conflict` on the place in
+  line when a better offer arrives (an old fill not taken back). Kept as a todo test with
+  its repro (`delegation with core.rank: ...`); simpler core.rank cases (derived peers
+  coming and going) pass. Not fixed in this round.

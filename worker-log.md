@@ -3247,3 +3247,12 @@ identical. psys2 grep empty. scan-loops clean. tsc clean. Answers 1–4 in quest
 identical; psys2 grep empty; scan-loops clean; tsc clean. Version in package.json and
 src/index.mjs, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 0.18.0). PSys2 can
 switch its A1–A3 host side to these modules.
+
+## R21 item 1 — the core.rank conflict (Q25 item 4): fixed
+
+Fixed in R19 (42461eb): a better offer arriving later re-ranks with no `conflict` or loop;
+then (19f98b2) a moved key under a rank. Tests: test/delegation.test.mjs
+"delegation with core.rank: a better offer re-ranks the others without a conflict" (was the
+todo), test/kernel.test.mjs "a rank re-computed when a better peer comes, ..." and "a rank
+over a key that a rule fills follows when that key moves, ...". `npm test` at b5c7f3d:
+322 / 322 / 321 pass, 0 fail (the reviewer's validation).

@@ -3352,3 +3352,9 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
   values to choose from". Random is reproducible for a given world state (seeded by the
   world's sequence): the same request in the same state chooses the same.
 - test/acts-sets.test.mjs (2), reference row.
+
+## Release 0.20.0 (Round 21: items 2 and 5)
+
+`/tmp/check.sh`: 333 pass, 0 fail on sources and built file, 332 in checking mode; pilot
+identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.20.0). Item 6 (the session as facts) merges with Round 22.

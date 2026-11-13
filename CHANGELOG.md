@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.20.0
+
+Round 21, second part: the remaining acts, sets and values.
+
+### New
+- Acts `send` (to another world that has the kind; a kind may belong to several worlds),
+  `save` / `load`, `undo` / `redo` (with `diff`, outside a transaction).
+- `change` and `remove` on sets (`each`, `all`, `first`, `last`); values `random`,
+  `different`, `same as <thing>`; one undo step for the set.
+
 ## 0.19.0
 
 Round 21, first part: from schema to words, knowledge as a filler.

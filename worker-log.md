@@ -3653,3 +3653,12 @@ identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, do
 (`docs/version.md`: sopworld 0.25.0). Round 24 done except the remaining PSys2 hand-over
 packages (acts, space, session.things, session.dialogue, common.sense) and the three
 extractions from the PSys2 reuse report.
+
+## R24 — the other hand-over packages compared (Q30)
+
+handover/acts, space, session.things, session.dialogue, common.sense read in place at
+PSys2 main: what is already here, what is refused (English forms and readers, tab words,
+facts), what is missing (a per-kind act hook `on.<act>`, space selection by order /
+position / size, layouts, overlap enforcement, spatial questions, pieces with their
+solver, a turn log with `amend`). Q30 with the proposed order; not blocking. Row in the
+capabilities table.

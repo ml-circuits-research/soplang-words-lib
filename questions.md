@@ -6,6 +6,38 @@ written with each question and in `worker-log.md`. A question is deleted from th
 once the worker is satisfied with the answer; closed ones are listed at the end in one
 line each so the history is not lost.
 
+## Q30 (Round 24): the five other PSys2 hand-over packages, compared; what to port first
+
+Read in place at PSys2 main (handover/, copies at 9e370c47). What the library already has,
+what it refuses, and what is missing:
+- **acts** (458 SOP + 1,117 code + 580 generators): roles, schema, executor with undo,
+  diff, reply and why, graded fallback, card, examples, coverage grid — all here (std.schema,
+  std.acts, turn, schemaGrid; 19 acts against its 15). Refused: the English forms, verbs and
+  `splitThings` (reading), the pattern / lexicon generators. **Missing:** its hook
+  `domain.<act>` (a world's own effect for one act on one kind, e.g. hangman's "make a
+  word"). Proposal: `std.schema.kind ... on.make=<action name>` — the act calls that host
+  action instead of the generic write; needs your yes (it is a new attribute).
+- **session.things** (263 SOP + 460 code): one thing, many views, aspects, show, why not —
+  here (std.schema aspects and views, `show`). Refused: `viewByWords`, `ASPECT_WORDS`, its
+  English commands. Missing: `find` across views by description — `pick` with attributes
+  and `*` covers most; nothing to port unless you want `find` by aspect.
+- **session.dialogue** (151 SOP + 529 code): focus, fill, why from the last turn —
+  std.focus, std.fill, `turn` (why, guesses). Refused: reading the kind of a turn
+  (continuation, correction, complaint: English). Missing: a per-session log of turn
+  records and `amend` (a correction = undo the last sentence and act again); small, on
+  `turn` + `undo`.
+- **common.sense** (565 SOP, 62 code): facts → sop-knowledge-worlds (not the library);
+  the reader → `createCatalog` (done).
+- **space** (293 SOP + 1,648 code + 28): relations — std.relations; geometry — std.boxes.
+  **Missing, the largest:** selection by order / position / size ("the second one on the
+  left", "the bigger one"), moves by an amount ("a little to the left": `change by` covers
+  the act, not the words), layouts (row, column, grid, circle), overlap and contact
+  enforcement, spatial questions, the piece model with its constraint solver.
+Proposed order (as pack functions + rules, with its tests ported): 1. `on.<act>` hook (if
+yes); 2. space selection and layouts (rules + std.boxes functions); 3. overlap
+enforcement (a deny + a function); 4. the turn log and `amend`; 5. pieces and the solver
+(largest; the library has solvers already: compare first). Not blocking: I start with 2.
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

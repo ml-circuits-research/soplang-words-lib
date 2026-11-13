@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Putting a system on sopworld</title>
-<meta name="source-hash" content="ece977803867">
+<meta name="source-hash" content="3bdfc93ea884">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -50,7 +50,9 @@
 <h2 id="5a-worlds-as-modules-needs-offers-an-order-a-source">5a. Worlds as modules: needs, offers, an order, a source</h2>
 <p>A world can let other worlds fill what a request leaves open, with what the language already has (<code>examples/delegation.mjs</code>, tested in <code>test/delegation.test.mjs</code>):</p>
 <ul><li><strong>The need</strong> is a request with an absent key: <code>@gap draw.request thing=?t core.absent=place</code>.</li><li><strong>An offer</strong> is a wire another module derives for that request: <code>draw.offer for=$gap value=?p source=know rank=4</code>, from its own facts. A module offers only what it knows; nothing is asked of a module that has nothing.</li><li><strong>The order</strong> of fillers is the <code>rank</code> each module states (1 the user, 2 the dialogue focus, 3 the scene, 4 knowledge, 5 the world's own default); an aggregate takes the best rank per request and counts the offers at each rank.</li><li><strong>The choice</strong> is a rule: the offer of the best rank, when it is alone at that rank, fills the request (<code>use_place</code>) with its <code>source</code>; two offers at the best rank raise a soft issue and fill nothing. The user's own value comes first by a rule of its own.</li><li><strong>The source</strong> is on the filled wire (<code>place_source</code>), and <code>query</code> names the rule that filled it (<code>via</code>).</li></ul>
-<p>When a better offer comes or goes, the choice follows. Q25 lists what this pattern cannot say yet.</p>
+<p>When a better offer comes or goes, the choice follows. The standard pack ships the pattern: <code>std.fill</code> (named tiers, one need per key; <code>examples/fill.mjs</code>) and <code>std.focus</code> (the dialogue focus per turn, offered in tier <code>focus</code>; <code>examples/focus.mjs</code>); see the <a href="reference.html#stdfill-a-value-for-a-key-a-request-left-out">reference</a>.</p>
+<h2 id="5b-readings-the-present-state-would-refuse">5b. Readings the present state would refuse</h2>
+<p>A router with several readings of one sentence ("hangman cat": a guess, a new word for the game, a drawing of a cat) gives them all to <code>world.score</code> and drops the ones that are not <code>ok</code> before it chooses; nothing is applied or recorded. Each says why: <code>judgedBy</code> is what refused (<code>action</code>: a declared action's guard, which names the pattern nothing matches, as in <code>nothing matches game name=hangman state=running</code>; <code>denies</code>: a deny on the wire a host action would be; <code>slots</code>; <code>referents</code>), and <code>violations[0].why</code> is the reason. A reading that is not refused but incomplete has <code>lacks</code>, with the question to ask. <code>examples/refusal.mjs</code> sifts readings this way; <code>node bench/refusal.mjs</code> measures the cost per reading (tens of microseconds, not growing with unrelated facts).</p>
 <h2 id="6-limits">6. Limits</h2>
 <p>Every call takes <code>{ budget: { steps, ms } }</code> (SPEC 4.11). A call that runs out returns a <code>budget</code> result and leaves the world as it was. Set a default for all calls with <code>new World({ budget })</code>. <code>world.stats()</code> says where the steps of the last call went.</p>
 <h2 id="7-prove-it-a-runner-over-your-own-tests">7. Prove it: a runner over your own tests</h2>

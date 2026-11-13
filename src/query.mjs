@@ -180,7 +180,7 @@ export const querying = {
         out.violations = r.violations;
         if (r.ok) {
           const mine = new Set([...r.added, ...r.merged.map((m) => m.into)]);
-          out.lacks.push(...this.open().filter((o) => mine.has(o.id)).map((o) => ({ id: o.id, key: o.key, ask: o.ask })));
+          out.lacks.push(...[...mine].flatMap((id) => this.open(id)).map((o) => ({ id: o.id, key: o.key, ask: o.ask })));
           out.assumes.push(...this._next().fills.filter((f) => mine.has(f.id) && f.kind === 'default').map((f) => ({ id: f.id, key: f.key, value: f.value })));
         }
       }
@@ -279,7 +279,7 @@ export const querying = {
       }
       // required parameters the reading does not give: what a host would ask
       const mine = new Set(wires.map((w) => w.id));
-      out.lacks.push(...this.open().filter((o) => mine.has(o.id)).map((o) => ({ action: cand.action, key: o.key, ...(o.ask ? { ask: o.ask } : {}) })));
+      out.lacks.push(...[...mine].flatMap((id) => this.open(id)).map((o) => ({ action: cand.action, key: o.key, ...(o.ask ? { ask: o.ask } : {}) })));
     }
     if (checks.length) { out.judgedBy = 'fallback'; out.checks = checks; }
   },
@@ -354,7 +354,14 @@ export const querying = {
     let s0 = EMPTY;
     for (const p of action.params) s0 = unify('?' + p, this._norm(String(args[p])), s0);
     const matches = [...this._matchAll(rule.when, 0, s0)];
-    if (!matches.length) return refuse({ kind: 'guard', action: name, why: 'nothing in the world matches what the action needs' });
+    if (!matches.length) {
+      // name the first pattern that nothing matches, with the values it asked for
+      let at = rule.when.length - 1;
+      for (let i = 1; i <= rule.when.length; i++) if (this._matchAll(rule.when.slice(0, i), 0, s0).next().done) { at = i - 1; break; }
+      const p = rule.when[at];
+      const asked = Object.entries(p.attrs).flatMap(([k, vs]) => vs.map((v) => [k, walk(v, s0)])).filter(([k, v]) => !hasVar(v) && !k.startsWith('core.')).map(([k, v]) => `${k}=${v}`);
+      return refuse({ kind: 'guard', action: name, pattern: p.id, why: `nothing matches ${[p.type, ...asked].join(' ')}` });
+    }
     if (matches.length > 1 && !action.all) return refuse({ kind: 'guard', action: name, why: `${matches.length} things match; the action is for one (say all=true to act on each)` });
     const patch = { wires: [], sets: [], retract: [] };
     let value;

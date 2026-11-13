@@ -121,8 +121,22 @@ already has (`examples/delegation.mjs`, tested in `test/delegation.test.mjs`):
 - **The source** is on the filled wire (`place_source`), and `query` names the rule that
   filled it (`via`).
 
-When a better offer comes or goes, the choice follows. Q25 lists what this pattern cannot
-say yet.
+When a better offer comes or goes, the choice follows. The standard pack ships the
+pattern: `std.fill` (named tiers, one need per key; `examples/fill.mjs`) and `std.focus`
+(the dialogue focus per turn, offered in tier `focus`; `examples/focus.mjs`); see the
+[reference](reference.md#stdfill-a-value-for-a-key-a-request-left-out).
+
+## 5b. Readings the present state would refuse
+
+A router with several readings of one sentence ("hangman cat": a guess, a new word for
+the game, a drawing of a cat) gives them all to `world.score` and drops the ones that are
+not `ok` before it chooses; nothing is applied or recorded. Each says why: `judgedBy` is
+what refused (`action`: a declared action's guard, which names the pattern nothing
+matches, as in `nothing matches game name=hangman state=running`; `denies`: a deny on the
+wire a host action would be; `slots`; `referents`), and `violations[0].why` is the
+reason. A reading that is not refused but incomplete has `lacks`, with the question to
+ask. `examples/refusal.mjs` sifts readings this way; `node bench/refusal.mjs` measures the
+cost per reading (tens of microseconds, not growing with unrelated facts).
 
 ## 6. Limits
 

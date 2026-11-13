@@ -210,7 +210,7 @@ test('act: an action written as wires: parameters, a guard, writes that read the
   const before = w.toSOP();
   const no = w.act({ action: 'take', args: { item: 'bolt', count: 99 } });
   assert.deepEqual([no.status, no.violations[0].kind, no.violations[0].check, no.violations[0].why, w.toSOP()], ['refused', 'guard', 'enough', 'not enough in stock', before]);
-  assert.match(w.act({ action: 'take', args: { item: 'spring', count: 1 } }).violations[0].why, /nothing in the world matches/);
+  assert.match(w.act({ action: 'take', args: { item: 'spring', count: 1 } }).violations[0].why, /^nothing matches item name=spring$/);
   assert.deepEqual(w.act({ action: 'take', args: { item: 'bolt' } }).missing, [{ action: 'take', key: 'count', ask: 'How many do you take?' }]);
   assert.equal(w.act('@r1 core.request action=take arg.item=bolt arg.count=5').value, '25', 'a request wire works the same');
   // two writes at once: both read the balances as they were

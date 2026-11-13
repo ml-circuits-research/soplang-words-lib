@@ -3079,3 +3079,26 @@ output identical. psys2 grep empty. scan-loops clean. tsc clean.
   examples/focus.mjs: draw a cup on the table / a red one / move it right / and lower /
   now draw a boat / smaller → draw cup, draw cup, move cup, move cup, draw boat, draw boat.
 - Found: `undo()` takes back tells, not retracts (existing behaviour, test written for it).
+
+## R19 item 5 — refusable readings — done (what existed, two fixes)
+
+`/tmp/check.sh`: 307 pass, 0 fail on sources and built file, 306 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean.
+
+- What exists: `world.score(readings)` is the dry run. Per reading: `ok`, `judgedBy`
+  (`action` for a declared action's guard, `denies` for a deny on the wire a host action
+  would be, `slots`, `referents`), `violations[0].why`, and `lacks` (with `ask`) for a
+  reading that is incomplete but not refused. Nothing applied or recorded (tested:
+  `toSOP({ derived: true })` and `history().length` unchanged).
+- Fix 1: a declared action's guard said "nothing in the world matches what the action
+  needs"; it now names the first pattern nothing matches with the values it asked for
+  (`nothing matches game name=hangman state=running`) and gives `pattern:`. One test in
+  test/query.test.mjs updated to the new text; pilot output identical.
+- Fix 2: `lacks` came from `open()` over every wire of the world, per reading; now only
+  the reading's own wires. `node bench/refusal.mjs` (new; 4 readings, 2 refused), before
+  (src/query.mjs stashed) → after: 0 facts 27.2 → 22.4 µs per reading, 2,000: 92.7 → 52.3,
+  20,000: 345.9 → 27.9.
+- examples/refusal.mjs (`sift(world, readings)` → kept with what they lack, dropped with
+  the reason): no game → guess "nothing matches game name=hangman state=running",
+  hangman_word "no game of hangman runs"; a game runs → all kept, `draw` without a thing
+  lacks "What shall I draw?". test/refusal.test.mjs (2). integration §5b.

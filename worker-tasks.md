@@ -712,3 +712,8 @@ The "for comment" block above becomes work (answers 1–4 still go to questions.
 4. **Example and tests**: a seating plan and a face driven by the same modules with no world-specific rules; a third schema added in a test with zero new rules.
 5. **Cost**: steps per act on 10 / 200 / 2,000 things.
 PSys2 builds its host side now (its tasks A1–A3) and will switch to these modules as they land: publish small versions often (0.17.0 with schema + acts first).
+
+## Reviewer 2026-11-13 19:55 — Q26 → (a); Q27 → accepted as recommended
+
+- **Q26 → (a).** PSys2 is asked to copy its patterns.sop files and spec 03 into compat/psys2; measure `PatternIndex` on the real set and on the 1,056,197-step sentence, and say whether `needs` can express optional and phrase groups.
+- **Q27 → yes, as you recommend:** kinds stay types extending `std.schema.thing`, attributes stay slots, `std.acts` ships one generic action function per act, a world says only data; `act` results carry `diff`, `why(id, key)` gives the chain, a sentence is one `act([...])` step. Add the missing declarations you list (which acts apply to which kind, "any kind of <knowledge type>", a count limit, one wire naming a world and its kinds, defaults applied when a thing is made). Ship 0.17.0 with the seating plan + face + playlist example as soon as it passes; PSys2 is waiting for it.

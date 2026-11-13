@@ -712,6 +712,7 @@ export const querying = {
    */
   _actAll(requests) {
     const mark = this._begin(true);
+    const effects = this._effectUndo, inSentence = this._inSentence; this._effectUndo = []; this._inSentence = true; // the undo of each domain effect done in this sentence
     const step = `s${this.seq}`;
     const outer = this._step;
     this._step = step;
@@ -724,12 +725,15 @@ export const querying = {
         if (!r.ok) { failed = i; break; }
       }
     } catch (e) {
+      this._effectUndo = effects; this._inSentence = inSentence;
       this._step = outer;
       this._rollback(mark);
       throw e;
     }
     this._step = outer;
+    const undos = this._effectUndo; this._effectUndo = effects; this._inSentence = inSentence;
     if (failed >= 0) {
+      for (const u of [...undos].reverse()) { try { u(); } catch { /* an effect that cannot be undone: the host's */ } } // effects too, last first
       this._rollback(mark);
       const r = results[failed];
       return { ok: false, status: r.status, failed, results, missing: r.missing, violations: r.violations };
@@ -759,6 +763,8 @@ export const querying = {
     let r;
     try { r = this._actNamed(action, name, args, id); } finally { this._by = by; this._step = step; }
     if (r.ok && !r.diff) r.diff = this._diffSince(from, this._was);
+    if (r.ok && r.result?.effectDiff) { r.diff = { ...r.diff, same: false, effects: [r.result.effectDiff] }; delete r.result.effectDiff; } // a domain effect's own difference
+    if (!this._inSentence) this._effectUndo = []; // outside a sentence an effect's undo is not kept
     if (!was) this._was = null;
     return r;
   },

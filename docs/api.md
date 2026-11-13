@@ -909,7 +909,11 @@ request each should become (`{ world, act, kind, text, request }`; `per: 2` adds
 for make). `actReply` gives the reply for an act from its result: what was done (with the
 old value, from `diff`), or why not and what is possible (from `reason`: the attributes
 the kind has, the kinds that have the attribute, what the kind allows and where the act
-works, which thing was meant).
+works, which thing was meant). `actReply(world, request, result, { templates })` writes
+in the host's words: a template per act and kind (`'change.seat'`, then `'change'`; for a
+refusal `'refused.change.seat'`, `'refused.change'`, `'refused'`), a string with `{thing}`,
+`{name}`, `{kind}`, `{attr}`, `{value}`, `{from}`, `{to}`, `{why}`, or a function of those;
+with no template for the case, the plain English default. Pass it to `turn` as `reply`.
 
 ```js run
 const w = new World();

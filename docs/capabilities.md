@@ -133,6 +133,30 @@ print(r.violations[0].why, r.violations[0].reason.attrs, r.violations[0].reason.
 a chair has no size ["colour"] ["make","change"]
 ```
 
+## Drive a world whose state is not wires
+
+*In `std.schema.effect`; since 0.28.*
+
+One act on one kind can be given to the host (a drawing board, a diagram engine, a face):
+the act still checks the schema, its result and difference come back like any act's, and
+a refused sentence undoes the effects done before the refusal. **Limits:** `world.undo`
+of an effect act takes back its wires only; the host keeps its own history.
+
+```js run
+const board = [];
+const w = new World({ actions: { draw: (ctx, args) => { board.push(args.kind); return { thing: `s${board.length}`, diff: { added: [`s${board.length}`] }, undo: () => board.pop() }; } } });
+w.load(`@acts core.use world=std.acts
+  @b std.schema.world name=board
+  @t core.type of=circle extends=std.schema.thing
+  @k std.schema.kind of=circle world=board acts=make
+  @e std.schema.effect of=circle act=make action=draw`);
+print(w.act({ action: 'make', args: { kind: 'circle' } }).diff.effects, w.act([{ action: 'make', args: { kind: 'circle' } }, { action: 'make', args: { kind: 'kite' } }]).ok, board);
+```
+
+```output
+[{"added":["s1"]}] false ["circle"]
+```
+
 ## Fill gaps from other worlds
 
 *In `std.fill`, `std.know`; since 0.17.*

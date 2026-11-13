@@ -87,8 +87,20 @@ export function schemaExamples(w, name, { per = 1 } = {}) {
 }
 
 /** The reply for an act: what was done, from `result` and `diff`; or why not and what is possible, from `reason`. */
-export function actReply(w, request, result) {
+export function actReply(w, request, result, { templates } = {}) {
   const args = request.args || {};
+  if (templates) { // the host's words: a template per act and kind ("change.seat", "change", "refused.change", "refused")
+    const res = result.result || {}, v = result.violations?.[0] || {};
+    const thing = res.thing ?? (args.thing !== undefined ? String(args.thing).replace(/^\$/, '') : undefined);
+    const kind = res.kind ?? (thing && w.get(thing)?.attrs.kind?.[0]) ?? args.kind ?? v.reason?.kind;
+    const c = (result.diff?.changed || []).find((x) => x.id === thing && (res.attr === undefined || x.key === res.attr));
+    const t = result.ok ? templates[`${request.action}.${kind}`] ?? templates[request.action] : templates[`refused.${request.action}.${kind}`] ?? templates[`refused.${request.action}`] ?? templates.refused;
+    if (t !== undefined) {
+      const name = thing && (w.get(thing)?.attrs.name?.[0] ?? w.get(thing)?.attrs.title?.[0]);
+      const fill = { act: request.action, kind, thing, name: name !== undefined ? unq(name) : thing, attr: res.attr ?? args.attr, value: res.value ?? args.value, from: c?.from !== undefined ? unq(c.from) : undefined, to: c?.to !== undefined ? unq(c.to) : undefined, why: v.why !== undefined ? unq(v.why) : undefined };
+      return typeof t === 'function' ? t(fill, result) : String(t).replace(/\{(\w+)\}/g, (m, k) => (fill[k] !== undefined ? String(fill[k]) : m));
+    }
+  }
   const kindOf = (id) => w.get(String(id).replace(/^\$/, ''))?.attrs.kind?.[0] ?? String(id);
   const name = (id) => { const t = w.get(String(id).replace(/^\$/, '')); const n = t?.attrs.name?.[0] ?? t?.attrs.title?.[0]; return n ? `${human(kindOf(id))} ${unq(n)}` : t ? `the ${human(kindOf(id))} (${t.id})` : `the ${human(kindOf(id))}`; };
   if (!result.ok) {

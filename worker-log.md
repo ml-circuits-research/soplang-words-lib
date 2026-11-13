@@ -3729,3 +3729,23 @@ migration note), docs rebuilt (`docs/version.md`: sopworld 0.27.0). Corpus `node
 tools/cases.mjs`: 17 / 17 (acting 12/12, replying 2/2, routing 2/2, filling 1/1).
 Cooperation `node tools/cooperation.mjs`: 25 pairs in 29 files. Next: two more
 applications from the docs (room planner, classroom timetable), more cases.
+
+## R26 A3, A1, A5, A4 — domain effects, replies in the host's words, effect rollback, reserved names — done; B designed (Q32)
+
+`/tmp/check.sh`: 363 pass, 0 fail on sources and built file, 362 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean. Corpus 17 / 17.
+
+- A3 `std.schema.effect of= act= action=`: make, remove, change, place, connect, group,
+  copy, send, show on that kind go to the host action `(ctx, args, { act, kind, thing })`;
+  its result and `diff` come back (`diff.effects`, `same: false`); a refusal with its why.
+- A5 a refused sentence calls the `undo()` of the effects done before the refusal (last
+  first); outside a sentence nothing is kept (test: a sentence of two circles and a kite
+  leaves the board empty).
+- A1 `actReply(w, req, result, { templates })`: a template per act and kind ("change.seat",
+  "change", "refused.change", "refused"), with {thing} {name} {kind} {attr} {value} {from}
+  {to} {why}, or a function; tested with Romanian templates through `turn`.
+- A4 reserved names documented in the reference (keys kind, world, drawn_as; types under
+  std.; ids the library makes).
+- A2 (`resolve(phrase)`) waits on B (the language part); B: design note Q32 (an Earley
+  chart parser over grammar facts, ambiguity returned ranked with a cap, budget-bounded).
+- test/effects.test.mjs (3); capabilities job "Drive a world whose state is not wires".

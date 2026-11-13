@@ -1651,6 +1651,7 @@ say the rest. The acts are the same for every world; a new schema needs no rule.
 | `std.schema.kind` | `of` (a type), `world` (rep.), `acts` (rep.) | a kind of one or more worlds, and the acts that apply to it: `make`, `remove`, `change`, `place`, `connect`, `group`, `pick`, `ask`, `copy`, `send`, `save`, `load`, `undo`, `redo` |
 | `std.schema.kinds` | `world`, `from` (a type), `key` (default `name`), `acts`, `stand_in` (a type) | any kind that a wire of `from` names (`k.object name=cup`): such things are `std.schema.thing` and take any attribute; see std.know for `stand_in` |
 | `std.schema.limit` | `of`, `max` | at most so many things of a kind (rules: a count and a deny) |
+| `std.schema.effect` | `of` (a kind), `act`, `action` (a host action) | that act on that kind is the host's: for a world whose state is not wires (a drawing board, a diagram engine). The action gets `(ctx, args, { act, kind, thing })` and returns `{ ok?, why?, diff, undo?, ...result }`; its `diff` comes back as `diff.effects`; `undo()` is called when the sentence it is part of is refused |
 | `std.schema.capacity` | `of` (a container kind), `key` (its count key), `holds` (a kind), `via` (the key that refers to the container) | a container holds at most its own count: making or moving one more is refused ("table1 has room for 0 more guests"), and so is a count below what it holds |
 
 Every thing has `kind` and `world`. Checked at load: an act not in the list, a kind of a
@@ -1701,6 +1702,12 @@ with `of=$face2`: declare the slot with `type=` the container's kind, and give i
 by naming its pattern, `@r ingredient of=$rs` with `@rs recipe serves=?n`); `in` (a thing, or a kind with `in_nth`) limits an act to the things
 inside: "make the eyes of the second face green" is `change thing=eye set=each attr=colour
 value=green in=a_face in_nth=2`.
+
+**Reserved names.** On every thing the acts write `kind` and `world` (and `drawn_as` for
+a stand-in); everything else the library keeps is in types under `std.` (`std.acts.link`,
+`.group`, `.saved`, `.shown`, `std.know.taught`, `std.fill.*`, `std.focus.*`,
+`std.schema.count`), with ids the library makes: `<kind>N` for things, `link N`, `group N`,
+`saved.<name>`, `shown.<view>.<id>`, `taught.<id>`. A host keeps its own keys off these.
 
 **What an act gives.** `result` (`act`, `thing`, ...) and, like every action that is
 done, `diff`: `{ added, removed, changed }`, what it told and what rules derived from it,

@@ -364,6 +364,32 @@ const ACTIONS = {
   }),
 };
 
+// Domain effects (Round 26, A3): `std.schema.effect of=<kind> act=<act> action=<host action>`
+// gives one act on one kind to the host, for a world whose state is not wires (a drawing
+// board, a diagram engine, a face). The host action gets (ctx, args, { act, kind, thing })
+// and returns { ok?, why?, diff, undo?, ...result }: its `diff` is the act's difference
+// (beside any wires it told), its `undo()` is called when the sentence it is part of is
+// refused (all or nothing includes effects).
+const EFFECT_ACTS = ['make', 'remove', 'change', 'place', 'connect', 'group', 'copy', 'send', 'show'];
+for (const act of EFFECT_ACTS) {
+  const key = `acts_${act}`, generic = ACTIONS[key];
+  ACTIONS[key] = (ctx, args) => {
+    const w = ctx.world;
+    const thingId = args.thing !== undefined ? String(one(args.thing)).replace(/^\$/, '') : null;
+    const thing = thingId ? w.get(thingId) : null;
+    const kind = args.kind !== undefined ? String(one(args.kind)) : thing?.attrs.kind?.[0] ?? thingId;
+    const e = kind && w.ofType('std.schema.effect').find((x) => x.attrs.of[0] === kind && x.attrs.act[0] === act);
+    if (!e) return generic(ctx, args);
+    const fn = w._host('action', e.attrs.action[0]);
+    if (!fn) return { ok: false, why: `no action ${e.attrs.action[0]} is registered for ${act} of ${kind}` };
+    const out = fn(ctx, args, { act, kind, thing: thing?.id }) || {};
+    if (out.ok === false) return refuse(w, act, kind, out.why || `${act} of ${kind} was refused`, out.reason || {});
+    const { ok, diff, undo, ...rest } = out;
+    if (typeof undo === 'function') (w._effectUndo ||= []).push(undo); // for a refused sentence
+    return { act, kind, effect: e.attrs.action[0], ...rest, effectDiff: diff || {} };
+  };
+}
+
 // acts on the history of the world: they run outside a transaction (act() knows them by `outside`)
 ACTIONS.acts_undo = Object.assign((w, args) => { const r = w.undo(Number(one(args.n ?? 1))); return r.ok ? { act: 'undo', undone: r.undone } : r; }, { outside: true });
 ACTIONS.acts_redo = Object.assign((w, args) => { const r = w.redo(Number(one(args.n ?? 1))); return r.ok ? { act: 'redo', redone: r.redone } : r; }, { outside: true });
@@ -673,6 +699,9 @@ ${calcs.join('\n')}
 @k.kinds.aspects core.slot of=std.schema.kinds key=aspects many=true
 @k.view.name core.slot of=std.schema.view key=name id=true
 @k.view.shows core.slot of=std.schema.view key=shows many=true
+@k.eff.of core.slot of=std.schema.effect key=of required=true
+@k.eff.act core.slot of=std.schema.effect key=act required=true
+@k.eff.action core.slot of=std.schema.effect key=action required=true
 @k.cap.of core.slot of=std.schema.capacity key=of id=true
 @k.cap.key core.slot of=std.schema.capacity key=key required=true
 @k.cap.holds core.slot of=std.schema.capacity key=holds required=true

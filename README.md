@@ -29,6 +29,7 @@ what it cannot decide, and refuses what is not allowed.
 | Ask and explain | `world.query`, `world.why` | [example](docs/capabilities.md#ask-and-explain) | 0.1 |
 | Act, undo, groups | `world.act`, `world.undo` | [example](docs/capabilities.md#act-undo-groups) | 0.5 |
 | Worlds that do things, as data; refuse with alternatives | `std.schema`, `std.acts` | [example](docs/capabilities.md#worlds-that-do-things-as-data-refuse-with-alternatives) | 0.18 |
+| Drive a world whose state is not wires | `std.schema.effect` | [example](docs/capabilities.md#drive-a-world-whose-state-is-not-wires) | 0.28 |
 | Fill gaps from other worlds | `std.fill`, `std.know` | [example](docs/capabilities.md#fill-gaps-from-other-worlds) | 0.17 |
 | Keep focus in a dialogue | `std.focus` | [example](docs/capabilities.md#keep-focus-in-a-dialogue) | 0.17 |
 | Relate and place things | `std.relations`, `std.boxes` | [example](docs/capabilities.md#relate-and-place-things) | 0.16 |

@@ -72,6 +72,36 @@ providers })`, two variants by facts only (a confirmation stage before `remove` 
 set; a second reader at the reading stage), and the test that 30 requests give the same
 diffs through `turn` and the declared default.
 
+## Q32 (Round 26 B): std.grammar — design note (building the smallest version next)
+
+**What it is.** Language-free machinery that applies a grammar world (facts and rules in
+sop-knowledge-worlds, `w.lang.en`) to text: tokens and lemmas from its lexicon, a parser
+driven by its grammar facts, producing act + roles with spans. No word of any language in
+the library; tests use a toy grammar.
+- **Facts it reads (shape proposed to w.lang.en):** `g.word text= lemma= cat= feat=...`
+  (the lexicon), `g.rule lhs= rhs= rhs= ...` (ordered categories, optional `?` and
+  repeatable `*` marks), `g.frame verb= act= role.<n>=<category or slot>` (argument frames
+  mapped to act roles), `g.coord word=` (coordinating words), `g.anaphor word= kind=`.
+- **Parser: a chart parser (Earley)**, not rule-driven SOP: grammar rules read as data,
+  parsing as a function (it must handle optional and repeated parts, coordination and
+  ambiguity, which rules over wires cannot do cheaply). **Cost bound:** O(n³·|G|) in
+  principle; each item counts against the library's budget (`{ budget }`), sentences are
+  short, and a cap on items per position stops a pathological grammar with a `budget`
+  violation, never a hang.
+- **Ambiguity** is returned, not resolved: all complete parses up to a cap (default 8),
+  each with its spans, ranked by a score (fewer rules, fewer optional parts skipped, then
+  left to right), so `turn`'s readings are the parses best first and the world's dry run
+  chooses among them (the refusal decides, as today).
+- **Output per parse:** `{ act, roles: { <role>: { text, span: [i, j], np: { det, num,
+  mods: [...], head, lemma } } }, coord: [...], anaphora: [{ span, candidates }] }`;
+  anaphora candidates come from std.focus (the last thing of a fitting kind); coordination
+  gives a list for a role ("a cup and a plate" → thing: [cup, plate]) that `make` takes as
+  one sentence.
+- **Smallest version now:** tokens and lemmas from a lexicon world; noun phrases (det?,
+  number?, adjective*, noun, with a PP?) and coordination of noun phrases; the toy grammar
+  in the test; verbs and frames next.
+Not blocking.
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld What the library can do</title>
-<meta name="source-hash" content="e7fc96360b73">
+<meta name="source-hash" content="8e6bea728272">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -84,6 +84,18 @@ w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;chair&#x27; } });
 const r = w.act({ action: &#x27;change&#x27;, args: { thing: &#x27;chair&#x27;, attr: &#x27;size&#x27;, value: 3 } });
 print(r.violations[0].why, r.violations[0].reason.attrs, r.violations[0].reason.allowed);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>a chair has no size [&quot;colour&quot;] [&quot;make&quot;,&quot;change&quot;]</code></pre></figure>
+<h2 id="drive-a-world-whose-state-is-not-wires">Drive a world whose state is not wires</h2>
+<p><em>In <code>std.schema.effect</code>; since 0.28.</em></p>
+<p>One act on one kind can be given to the host (a drawing board, a diagram engine, a face): the act still checks the schema, its result and difference come back like any act's, and a refused sentence undoes the effects done before the refusal. <strong>Limits:</strong> <code>world.undo</code> of an effect act takes back its wires only; the host keeps its own history.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const board = [];
+const w = new World({ actions: { draw: (ctx, args) =&gt; { board.push(args.kind); return { thing: `s${board.length}`, diff: { added: [`s${board.length}`] }, undo: () =&gt; board.pop() }; } } });
+w.load(`@acts core.use world=std.acts
+  @b std.schema.world name=board
+  @t core.type of=circle extends=std.schema.thing
+  @k std.schema.kind of=circle world=board acts=make
+  @e std.schema.effect of=circle act=make action=draw`);
+print(w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;circle&#x27; } }).diff.effects, w.act([{ action: &#x27;make&#x27;, args: { kind: &#x27;circle&#x27; } }, { action: &#x27;make&#x27;, args: { kind: &#x27;kite&#x27; } }]).ok, board);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;added&quot;:[&quot;s1&quot;]}] false [&quot;circle&quot;]</code></pre></figure>
 <h2 id="fill-gaps-from-other-worlds">Fill gaps from other worlds</h2>
 <p><em>In <code>std.fill</code>, <code>std.know</code>; since 0.17.</em></p>
 <p>When a request leaves a key out, other modules offer values in named tiers (<code>std.fill</code>: user, focus, scene, taught, knowledge, default); the best tier wins, the source is kept, a tie is advice. <code>std.know</code> offers from a knowledge catalog.</p>

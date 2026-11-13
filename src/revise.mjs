@@ -338,6 +338,10 @@ export const revision = {
     share.holders++;
     if (this.wires instanceof CowMap) this.wires.frozen = true; // nobody writes it again, not even a read that copies
     for (const k of STATE) copy[k] = this[k];
+    // the host functions too: those registered later and those a standard module brought
+    copy.fns = { ...this.fns }; copy.actions = { ...this.actions }; copy.producers = { ...this.producers };
+    if (this.filters) copy.filters = { ...this.filters };
+    if (this.lemma) copy.lemma = this.lemma;
     copy._shared = share;
     copy._emitted = copy.events.length;
     if (CHECK) sealState(this);

@@ -453,3 +453,10 @@ export class PatternIndex<P extends { id: string; kind?: string; needs?: (string
   candidates(tokens: string | string[], options?: { kind?: string | string[] }): (P & { at: number })[];
   stats(): { patterns: number; words: number; open: number; perSentence: number };
 }
+
+/** the card of each world declared with std.schema (or of one) */
+export function schemaCard(world: World, name?: string): { world: string; doc?: string; kinds: { kind: string; words?: string[]; acts: string[]; attrs: object[]; limit?: number; open?: boolean; from?: string }[] }[];
+/** example sentences per act and kind, with the request each should become */
+export function schemaExamples(world: World, name?: string, options?: { per?: number }): { world: string; act: string; kind: string; text: string; request: { action: string; args: Record<string, unknown> } }[];
+/** the reply for an act, from its result: what was done, or why not and what is possible */
+export function actReply(world: World, request: { action: string; args?: Record<string, unknown> }, result: object): string;

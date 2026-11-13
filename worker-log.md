@@ -3256,3 +3256,24 @@ then (19f98b2) a moved key under a rank. Tests: test/delegation.test.mjs
 todo), test/kernel.test.mjs "a rank re-computed when a better peer comes, ..." and "a rank
 over a key that a rule fills follows when that key moves, ...". `npm test` at b5c7f3d:
 322 / 322 / 321 pass, 0 fail (the reviewer's validation).
+
+## R21 item 3 — from schema to words — done
+
+`/tmp/check.sh`: 326 pass, 0 fail on sources and built file, 325 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean.
+
+- `schemaCard(world, name?)`: per world `{ world, doc, kinds }`; a kind has words
+  (core.word means=kind, else its name), acts, attrs (name, kind, values, min, max, step,
+  default, required, refers), limit; an open world has kind `*` with `from`.
+- `schemaExamples(world, name?, { per })`: sentences per act and kind with the request
+  each should become. On the seating + face schemas with one thing of each kind: 35
+  examples (per 2), all 35 done on a fork (test).
+- `actReply(world, request, result)`: plain English from the result: "I made a seat
+  (seat1).", "I changed the colour of the seat (seat1) from blue to red.", "I can't change
+  the size of a seat: a seat has no size. The eye in face has a size.", "Which eye? There
+  are 2: ...", missing arguments as the question.
+- Found: `fork()` lost host functions registered after construction and the actions/
+  functions a standard module brought (a fork could not run `make`: "this._host(...) is
+  not a function"). A fork now carries fns, actions, producers, filters, lemma (test).
+- Refusal reasons use "an" before a vowel sound (not "a eye"; "a unicorn" stays).
+- test/schema-words.test.mjs (4), api section (runnable), index.d.ts.

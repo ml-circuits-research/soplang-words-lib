@@ -43,7 +43,7 @@ test('acts: a refusal names what the kind allows, its attributes, and where the 
   v = act(w, 'remove', { thing: 'eye' }).violations[0];
   assert.deepEqual([v.why, v.reason.which], ['which eye? there are 2', ['eye1', 'eye2']]);
   v = act(w, 'connect', { a: 'eye1', b: 'eye2' }).violations[0];
-  assert.deepEqual([v.why, v.reason.elsewhere], ['a eye cannot be connected here', ['seating']]);
+  assert.deepEqual([v.why, v.reason.elsewhere], ['an eye cannot be connected here', ['seating']]);
   assert.equal(act(w, 'make', { kind: 'hat' }).violations[0].why, 'no world here has a hat');
 });
 

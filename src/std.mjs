@@ -13,6 +13,7 @@ const values = (xs) => xs.filter((v) => v !== undefined && v !== '').map(num);
 
 
 // ---- std.acts: the generic acts over a schema (Round 20) ----------------------------------
+const art = (word) => (/^[aeiou]/i.test(String(word)) && !/^(uni|use|eu|one|once)/i.test(String(word)) ? `an ${word}` : `a ${word}`);
 const one = (x) => (Array.isArray(x) ? x[0] : x);
 const ref = (id) => '$' + String(id).replace(/^\$/, '');
 const RESERVED = new Set(['kind', 'world']);
@@ -60,14 +61,14 @@ const ACTIONS = {
   acts_make: (ctx, args) => pre('make', ctx, args, (w) => {
     const kind = String(one(args.kind));
     const ks = kindsOf(w, kind).filter((k) => args.world === undefined || k.world === one(args.world));
-    if (!ks.length) return refuse(w, 'make', kind, `no world here has a ${kind}`);
+    if (!ks.length) return refuse(w, 'make', kind, `no world here has ${art(kind)}`);
     const k = ks.find((x) => x.acts.includes('make'));
-    if (!k) return refuse(w, 'make', kind, `a ${kind} cannot be made here`);
+    if (!k) return refuse(w, 'make', kind, `${art(kind)} cannot be made here`);
     const attrs = { kind, world: k.world };
     for (const s of attrsOf(w, k.type)) { const sl = slotOf(w, k.type, s); if (sl.default !== undefined) attrs[s] = String(sl.default).replace(/^"|"$/g, ''); }
     for (const [key, v] of Object.entries(args)) {
       if (RESERVED.has(key) || key === 'id') continue;
-      if (!k.open && !attrsOf(w, k.type).includes(key)) return refuse(w, 'make', kind, `a ${kind} has no ${key}`, { attr: key });
+      if (!k.open && !attrsOf(w, k.type).includes(key)) return refuse(w, 'make', kind, `${art(kind)} has no ${key}`, { attr: key });
       attrs[key] = v;
     }
     const id = args.id ? String(args.id) : fresh(w, kind);
@@ -77,7 +78,7 @@ const ACTIONS = {
   acts_remove: (ctx, args) => pre('remove', ctx, args, (w) => {
     const { thing: t, why, kind, which } = thingOf(w, args.thing, args.nth);
     if (!t) return refuse(w, 'remove', kind, why, which ? { which } : {});
-    if (!allows(w, t, 'remove')) return refuse(w, 'remove', t.attrs.kind[0], `a ${t.attrs.kind[0]} cannot be removed here`);
+    if (!allows(w, t, 'remove')) return refuse(w, 'remove', t.attrs.kind[0], `${art(t.attrs.kind[0])} cannot be removed here`);
     for (const l of w.ofType('std.acts.link')) if (l.attrs.a[0] === ref(t.id) || l.attrs.b[0] === ref(t.id)) ctx.retract(l.id); // its links go with it
     ctx.retract(t.id);
     return { act: 'remove', thing: t.id };
@@ -86,11 +87,11 @@ const ACTIONS = {
     const { thing: t, why, kind, which } = thingOf(w, args.thing, args.nth);
     if (!t) return refuse(w, 'change', kind, why, which ? { which } : {});
     const k = t.attrs.kind[0], attr = String(one(args.attr));
-    if (!allows(w, t, 'change')) return refuse(w, 'change', k, `a ${k} cannot be changed here`);
+    if (!allows(w, t, 'change')) return refuse(w, 'change', k, `${art(k)} cannot be changed here`);
     const open = t.type === 'std.schema.thing';
     if (!open && !attrsOf(w, t.type).includes(attr)) {
       const others = [...new Set(w.ofType('std.schema.kind').filter((x) => x.attrs.of[0] !== k && attrsOf(w, x.attrs.of[0]).includes(attr)).map((x) => `${x.attrs.world[0]}:${x.attrs.of[0]}`))];
-      return refuse(w, 'change', k, `a ${k} has no ${attr}`, { attr, hasIt: others });
+      return refuse(w, 'change', k, `${art(k)} has no ${attr}`, { attr, hasIt: others });
     }
     let value = args.value === undefined ? undefined : String(one(args.value));
     if (args.by !== undefined) { // more / less: a number moved by an amount (the slot's step, else 1)
@@ -107,7 +108,7 @@ const ACTIONS = {
     const a = thingOf(w, args.a), b = thingOf(w, args.b);
     for (const x of [a, b]) {
       if (!x.thing) return refuse(w, 'connect', x.kind, x.why, x.which ? { which: x.which } : {});
-      if (!allows(w, x.thing, 'connect')) return refuse(w, 'connect', x.thing.attrs.kind[0], `a ${x.thing.attrs.kind[0]} cannot be connected here`);
+      if (!allows(w, x.thing, 'connect')) return refuse(w, 'connect', x.thing.attrs.kind[0], `${art(x.thing.attrs.kind[0])} cannot be connected here`);
     }
     const id = fresh(w, 'link');
     ctx.tell(wireText(id, 'std.acts.link', { a: ref(a.thing.id), b: ref(b.thing.id), ...(args.rel ? { rel: one(args.rel) } : {}) }), { now: true });
@@ -118,7 +119,7 @@ const ACTIONS = {
     for (const x of [].concat(args.things)) {
       const r = thingOf(w, x);
       if (!r.thing) return refuse(w, 'group', r.kind, r.why, r.which ? { which: r.which } : {});
-      if (!allows(w, r.thing, 'group')) return refuse(w, 'group', r.thing.attrs.kind[0], `a ${r.thing.attrs.kind[0]} cannot be grouped here`);
+      if (!allows(w, r.thing, 'group')) return refuse(w, 'group', r.thing.attrs.kind[0], `${art(r.thing.attrs.kind[0])} cannot be grouped here`);
       ids.push(ref(r.thing.id));
     }
     const name = args.name ? String(one(args.name)) : fresh(w, 'group');
@@ -143,7 +144,7 @@ const ACTIONS = {
   acts_copy: (ctx, args) => pre('copy', ctx, args, (w) => {
     const { thing: t, why, kind, which } = thingOf(w, args.thing, args.nth);
     if (!t) return refuse(w, 'copy', kind, why, which ? { which } : {});
-    if (!allows(w, t, 'copy')) return refuse(w, 'copy', t.attrs.kind[0], `a ${t.attrs.kind[0]} cannot be copied here`);
+    if (!allows(w, t, 'copy')) return refuse(w, 'copy', t.attrs.kind[0], `${art(t.attrs.kind[0])} cannot be copied here`);
     const id = fresh(w, t.attrs.kind[0]);
     ctx.tell(wireText(id, t.type, t.attrs), { now: true });
     return { act: 'copy', thing: id, from: t.id };

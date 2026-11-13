@@ -896,6 +896,41 @@ print(ix.candidates('Paint it, then move it right'.replace(',', '')).map((p) => 
 ["draw","move"] 0
 ```
 
+### schemaCard(world, name?), schemaExamples(world, name?, options?), actReply(world, request, result)
+
+What a host needs to read and to speak about worlds declared with
+[std.schema](reference.md#stdschema-and-stdacts-worlds-that-do-things-declared-as-data),
+generated from the schema, in plain English (hosts translate). `schemaCard` gives each
+world (or one) as `{ world, doc, kinds }`, each kind with its `words` (`core.word means=`
+the kind, else its name), `acts`, `attrs` (name, kind, values, min, max, step, default,
+required, refers) and `limit`; a world that takes any kind of a knowledge type has a kind
+`*` with `open` and `from`. `schemaExamples` gives sentences per act and kind with the
+request each should become (`{ world, act, kind, text, request }`; `per: 2` adds a second
+for make). `actReply` gives the reply for an act from its result: what was done (with the
+old value, from `diff`), or why not and what is possible (from `reason`: the attributes
+the kind has, the kinds that have the attribute, what the kind allows and where the act
+works, which thing was meant).
+
+```js run
+const w = new World();
+w.load(`@acts core.use world=std.acts
+  @face std.schema.world name=face
+  @t core.type of=eye extends=std.schema.thing closed=true
+  @s core.slot of=eye key=colour enum=brown enum=blue default=brown
+  @k std.schema.kind of=eye world=face acts=make acts=change`);
+print(schemaExamples(w).map((e) => e.text));
+const req = { action: 'make', args: { kind: 'eye' } };
+print(actReply(w, req, w.act(req)));
+const bad = { action: 'change', args: { thing: 'eye', attr: 'size', value: 3 } };
+print(actReply(w, bad, w.act(bad)));
+```
+
+```output
+["make an eye","make the colour of the eye blue"]
+I made an eye (eye1).
+I can't change the size of an eye: an eye has no size. An eye has colour.
+```
+
 ### rank(scored, criteria?) and RANKING
 
 Orders scored readings best first and explains every place. `RANKING` is the default

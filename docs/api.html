@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="a29ef8ea7369">
+<meta name="source-hash" content="0c83bda35cdc">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -361,6 +361,19 @@ I can&#x27;t change the size of an eye: an eye has no size. An eye has colour.</
 const cat = createCatalog({ index, vocab: { cup: [&#x27;k.t/a&#x27;] }, read: bundleReader({ files: { &#x27;k.t/schema.sop&#x27;: &#x27;@k core.slot of=k.thing key=name id=true&#x27;, &#x27;k.t/a.sop&#x27;: &#x27;@c k.thing name=cup&#x27; } }) });
 print(cat.shardsOf(&#x27;cup&#x27;), cat.plan(cat.shardsOf(&#x27;cup&#x27;)), cat.intoSync(new World(), &#x27;cup&#x27;).ok);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;k.t/a&quot;] [&quot;k.t/schema.sop&quot;,&quot;k.t/a.sop&quot;] true</code></pre></figure>
+<h3 id="turnworld-readings-options">turn(world, readings, options?)</h3>
+<p>One request, end to end. <code>readings</code> are the candidate readings of one message, best first: each a request <code>{ action, args }</code>, a list of requests (one sentence), or <code>{ requests }</code>. Each is tried on a fork (nothing changes); the first the world takes is applied as one sentence (all or nothing, one undo step) and the result has <code>status: 'done'</code>, <code>reading</code> (its index), <code>results</code>, <code>diff</code>, <code>why</code> (the chain of each changed value), <code>guesses</code> (values filled by tiers, with their source) and <code>replies</code> (from <code>actReply</code>, or <code>options.reply</code>). Otherwise a graded fallback: <code>ask</code> (a reading only lacks an argument: <code>question</code>, <code>missing</code>), <code>elsewhere</code> (the kind is known but the act or the attribute is not here: the reply says what it can do and where), <code>unknown</code> (the best guess named in a <code>question</code>). Every result lists the readings <code>dropped</code> with the reason.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@acts core.use world=std.acts
+  @plan std.schema.world name=plan
+  @t core.type of=chair extends=std.schema.thing closed=true
+  @s core.slot of=chair key=colour enum=red enum=blue default=blue
+  @k std.schema.kind of=chair world=plan acts=make acts=change`);
+const t = turn(w, [{ action: &#x27;make&#x27;, args: { kind: &#x27;table&#x27; } }, { action: &#x27;make&#x27;, args: { kind: &#x27;chair&#x27;, colour: &#x27;red&#x27; } }]);
+print(t.status, t.reading, t.replies, t.dropped[0].violation.why);
+print(turn(w, [{ action: &#x27;make&#x27;, args: { kind: &#x27;sofa&#x27; } }]).question);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>done 1 [&quot;I made a chair (chair1).&quot;] no world here has a table
+Did you mean to make sofa? (no world here has a sofa)</code></pre></figure>
 <h3 id="rankscored-criteria-and-ranking">rank(scored, criteria?) and RANKING</h3>
 <p>Orders scored readings best first and explains every place. <code>RANKING</code> is the default list of criteria, each <code>{ name, measure, say }</code> (lower <code>measure</code> is better): <code>consistent</code>, <code>referents</code> (how many are left ambiguous), <code>lacks</code>, <code>words</code> (words of the frame left out), <code>assumes</code>; ties keep the given order. Returns <code>{ order, ranked }</code>; <code>ranked[i]</code> is <code>{ index, place, why, lostTo, on }</code>: the first says what it satisfies, any other names the first criterion on which the winner is better and what each is on it, a tie says so. A host may put its own criteria before, after or instead of these.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();

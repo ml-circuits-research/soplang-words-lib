@@ -290,12 +290,35 @@ print(cat.intoSync(w, 'cup').told, w.get('cup').attrs.usual);
 ["k.things/schema.sop","k.things/s1.sop"] ["table"]
 ```
 
+## Handle one request end to end
+
+`turn` takes the candidate readings of one message, tries each on a fork, applies the
+first the world takes as one sentence, and gives back the difference, the why of each
+changed value, the guesses it made and the replies; when none is taken, a graded
+fallback: one question, "not here but there", or the best guess named. The host reads
+text into readings and renders. *since 0.24.* **Limits:** the readings are the host's;
+replies are plain English unless the host passes `reply`.
+
+```js run
+const w = new World();
+w.load(`@acts core.use world=std.acts
+  @plan std.schema.world name=plan
+  @t core.type of=chair extends=std.schema.thing closed=true
+  @s core.slot of=chair key=colour enum=red enum=blue default=blue
+  @k std.schema.kind of=chair world=plan acts=make acts=change`);
+w.act({ action: 'make', args: { kind: 'chair' } });
+const t = turn(w, [{ action: 'change', args: { thing: 'chair', attr: 'colour', value: 'red' } }]);
+print(t.replies, t.why[0].steps[0].action);
+```
+
+```output
+["I changed the colour of the chair (chair1) from blue to red."] change
+```
+
 ## Not done yet
 
 - **Choose a world for a request** (routing by cards, referents, state, refusals): A2.
   Today `score` drops what would be refused.
-- **One request pipeline** (readings → dry run → fill → act → diff → why → reply, with
-  graded fallback): A3, A4. Today the steps exist one by one.
 - **A coverage grid and test skeletons** from a schema: A5. **A failure ledger**: A6.
 
 ## Taken over from PSys2
@@ -306,3 +329,4 @@ taken, what is about one language, one interface or one application is refused.
 | PSys2 package | here | PSys2 lines it replaces | refused (stays in the host) | since |
 | --- | --- | --- | --- | --- |
 | knowledge-loader | `createCatalog`, `bundleReader`, `tools/build-bundle.mjs` | 254 (catalog 105, cache 52, source 20, bundle loader 20, bundle generator 57) | English lemma rules (the host passes `lemma`), decoding k.objects parts for drawing, the avatar's faces, the evaluation-set generator; taught facts are the act `teach` | since 0.23 |
+| turn-pipeline | `turn` (dry run on a fork, all or nothing, diff, why, guesses, replies, graded fallback) | the dry-run protocol, all-or-nothing holds and graded fallback (estimated 120 + 350 of its 900 general lines) | the reading of English, the per-turn tick budget wiring (the library has its own budgets), translation, the encoder accept rule | since 0.24 |

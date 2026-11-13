@@ -12,6 +12,7 @@ export { aggregates } from './builtins.mjs';
 export { PatternIndex } from './patterns.mjs';
 export { schemaCard, schemaExamples, actReply } from './schema-words.mjs';
 export { createCatalog, bundleReader } from './knowledge.mjs';
+export { turn } from './turn.mjs';
 export const version = '0.23.0';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)

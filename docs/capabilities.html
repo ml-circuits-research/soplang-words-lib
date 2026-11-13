@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld What the library can do</title>
-<meta name="source-hash" content="e0d803f89f65">
+<meta name="source-hash" content="5c31e4f901f8">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -165,8 +165,20 @@ const cat = createCatalog({ index, vocab: { cup: [&#x27;k.things/s1&#x27;] }, re
 const w = new World();
 print(cat.intoSync(w, &#x27;cup&#x27;).told, w.get(&#x27;cup&#x27;).attrs.usual);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;k.things/schema.sop&quot;,&quot;k.things/s1.sop&quot;] [&quot;table&quot;]</code></pre></figure>
+<h2 id="handle-one-request-end-to-end">Handle one request end to end</h2>
+<p><code>turn</code> takes the candidate readings of one message, tries each on a fork, applies the first the world takes as one sentence, and gives back the difference, the why of each changed value, the guesses it made and the replies; when none is taken, a graded fallback: one question, "not here but there", or the best guess named. The host reads text into readings and renders. <em>since 0.24.</em> <strong>Limits:</strong> the readings are the host's; replies are plain English unless the host passes <code>reply</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@acts core.use world=std.acts
+  @plan std.schema.world name=plan
+  @t core.type of=chair extends=std.schema.thing closed=true
+  @s core.slot of=chair key=colour enum=red enum=blue default=blue
+  @k std.schema.kind of=chair world=plan acts=make acts=change`);
+w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;chair&#x27; } });
+const t = turn(w, [{ action: &#x27;change&#x27;, args: { thing: &#x27;chair&#x27;, attr: &#x27;colour&#x27;, value: &#x27;red&#x27; } }]);
+print(t.replies, t.why[0].steps[0].action);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;I changed the colour of the chair (chair1) from blue to red.&quot;] change</code></pre></figure>
 <h2 id="not-done-yet">Not done yet</h2>
-<ul><li><strong>Choose a world for a request</strong> (routing by cards, referents, state, refusals): A2. Today <code>score</code> drops what would be refused.</li><li><strong>One request pipeline</strong> (readings → dry run → fill → act → diff → why → reply, with graded fallback): A3, A4. Today the steps exist one by one.</li><li><strong>A coverage grid and test skeletons</strong> from a schema: A5. <strong>A failure ledger</strong>: A6.</li></ul>
+<ul><li><strong>Choose a world for a request</strong> (routing by cards, referents, state, refusals): A2. Today <code>score</code> drops what would be refused.</li><li><strong>A coverage grid and test skeletons</strong> from a schema: A5. <strong>A failure ledger</strong>: A6.</li></ul>
 <h2 id="taken-over-from-psys2">Taken over from PSys2</h2>
 <p>General modules PSys2 hands over (its <code>handover/</code> folder) land here; what is general is taken, what is about one language, one interface or one application is refused.</p>
 <div class="table"><table><thead><tr><th>PSys2 package</th><th>here</th><th>PSys2 lines it replaces</th><th>refused (stays in the host)</th><th>since</th></tr></thead><tbody><tr><td>knowledge-loader</td><td><code>createCatalog</code>, <code>bundleReader</code>, <code>tools/build-bundle.mjs</code></td><td>254 (catalog 105, cache 52, source 20, bundle loader 20, bundle generator 57)</td><td>English lemma rules (the host passes <code>lemma</code>), decoding k.objects parts for drawing, the avatar's faces, the evaluation-set generator; taught facts are the act <code>teach</code></td><td>since 0.23</td></tr></tbody></table></div>

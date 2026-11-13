@@ -955,6 +955,36 @@ print(cat.shardsOf('cup'), cat.plan(cat.shardsOf('cup')), cat.intoSync(new World
 ["k.t/a"] ["k.t/schema.sop","k.t/a.sop"] true
 ```
 
+### turn(world, readings, options?)
+
+One request, end to end. `readings` are the candidate readings of one message, best
+first: each a request `{ action, args }`, a list of requests (one sentence), or
+`{ requests }`. Each is tried on a fork (nothing changes); the first the world takes is
+applied as one sentence (all or nothing, one undo step) and the result has `status:
+'done'`, `reading` (its index), `results`, `diff`, `why` (the chain of each changed
+value), `guesses` (values filled by tiers, with their source) and `replies` (from
+`actReply`, or `options.reply`). Otherwise a graded fallback: `ask` (a reading only lacks
+an argument: `question`, `missing`), `elsewhere` (the kind is known but the act or the
+attribute is not here: the reply says what it can do and where), `unknown` (the best
+guess named in a `question`). Every result lists the readings `dropped` with the reason.
+
+```js run
+const w = new World();
+w.load(`@acts core.use world=std.acts
+  @plan std.schema.world name=plan
+  @t core.type of=chair extends=std.schema.thing closed=true
+  @s core.slot of=chair key=colour enum=red enum=blue default=blue
+  @k std.schema.kind of=chair world=plan acts=make acts=change`);
+const t = turn(w, [{ action: 'make', args: { kind: 'table' } }, { action: 'make', args: { kind: 'chair', colour: 'red' } }]);
+print(t.status, t.reading, t.replies, t.dropped[0].violation.why);
+print(turn(w, [{ action: 'make', args: { kind: 'sofa' } }]).question);
+```
+
+```output
+done 1 ["I made a chair (chair1)."] no world here has a table
+Did you mean to make sofa? (no world here has a sofa)
+```
+
 ### rank(scored, criteria?) and RANKING
 
 Orders scored readings best first and explains every place. `RANKING` is the default

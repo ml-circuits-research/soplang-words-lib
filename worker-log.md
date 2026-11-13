@@ -3503,3 +3503,25 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
 identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
 (`docs/version.md`: sopworld 0.23.0).
 - Fix: src/knowledge.mjs named the consumer in a comment (`git grep -i psys2 src/`: 1 after the 0.23.0 commit); removed, now 0. The built file is rebuilt; the version stays 0.23.0.
+
+## R24 A3 and A4 — the request pipeline and the graded fallback — done
+
+`/tmp/check.sh`: 346 pass, 0 fail on sources and built file, 345 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean. Doc examples: 85, 0 problems.
+
+- src/turn.mjs, `turn(world, readings, { reply })`: each reading dry-run on a fork; the
+  first the world takes applied as one sentence (`act([...])`: all or nothing, one undo
+  step); result: status done, reading, results, diff, why per changed value, guesses
+  (values filled by tiers, said as "I guessed place water (knowledge, hand-core 1)"),
+  replies (actReply or the host's), dropped readings with the reason. Fallback: `ask`
+  (only an argument missing: question), `elsewhere` (a known kind, act or attribute not
+  here: the reply says what it can do and where), `unknown` (the best guess named:
+  "Did you mean to make hat? (no world here has a hat)").
+- First version said "elsewhere" for an unknown kind too (every refusal lists worlds
+  that allow the act): now only when the kind is known here or another kind has the
+  attribute.
+- Compared with PSys2 handover/turn-pipeline: taken — the dry run on a fork, all or
+  nothing for a sentence, fill by tiers (std.fill, already), graded fallback, the why
+  trace; refused — English reading, translation, the encoder accept rule, the host's
+  guard; the per-turn tick budget is the library's own budget. Row in the capabilities
+  table. test/turn.test.mjs (3). api section, capabilities job (both runnable).

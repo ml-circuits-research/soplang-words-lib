@@ -3749,3 +3749,10 @@ identical. psys2 grep empty. scan-loops clean. tsc clean. Corpus 17 / 17.
 - A2 (`resolve(phrase)`) waits on B (the language part); B: design note Q32 (an Earley
   chart parser over grammar facts, ambiguity returned ranked with a cap, budget-bounded).
 - test/effects.test.mjs (3); capabilities job "Drive a world whose state is not wires".
+
+## Release 0.28.0 (Round 26 A)
+
+`/tmp/check.sh`: 363 pass, 0 fail on sources and built file, 362 in checking mode; pilot
+identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.28.0). Corpus 17 / 17. Next: std.grammar (Q32), resolve,
+the two applications.

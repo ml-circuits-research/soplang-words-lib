@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.28.0
+
+Round 26, part A: what a host needs to drop its own executor.
+
+### New
+- `std.schema.effect of= act= action=`: an act on a kind whose state is not wires is the
+  host's; its difference comes back in `diff.effects`; a refused sentence undoes the
+  effects done before the refusal.
+- `actReply(world, request, result, { templates })`: replies in the host's words, a
+  template per act and kind.
+- Reserved names documented (reference, std.acts).
+
 ## 0.27.0
 
 The standing direction: learn from the applications. A case corpus, lessons, and what the

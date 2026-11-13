@@ -524,7 +524,12 @@ export const querying = {
         if (s.rank > rank) rank = s.rank;
         for (const [name, cell] of s.basis) if (this._rank(cell.tier) > floor && cell.id !== skip) rests.set(name, cell);
       };
+      // one value however written: 2 and 2.0 under a numeric key, the same quantity in its unit
+      const same = new Map(); // normalized -> the first spelling seen
       const note = (value, from, via, ties) => {
+        const iv = type ? this._iv(type, key, value) : value;
+        if (!same.has(iv)) same.set(iv, value);
+        value = same.get(iv);
         const e = found.get(value) || found.set(value, { from: [], via: [] }).get(value);
         if (ties) e.ties = ties;
         for (const x of from) if (!e.from.includes(x)) e.from.push(x);

@@ -455,3 +455,15 @@ test('facts: a host provider is matched by rules, denies and questions like wire
   const many = w.ask('city country=it', { budget: { steps: 50 } });
   assert.ok(many.budget, 'a pattern that fixes nothing pages through the whole table, and the budget stops it');
 });
+
+test('query: the same value on several wires is supported, with all of them; different values conflict', () => {
+  const w = new World();
+  w.load('@k core.slot of=drawing key=size kind=number');
+  w.tell('@a drawing name=cat colour=red size=2  @b drawing name=cat colour=red size=2.0  @c drawing name=dog colour=red  @d drawing name=dog colour=blue');
+  const cat = w.query({ type: 'drawing', where: { name: 'cat' }, seek: 'colour' });
+  assert.deepEqual([cat.status, cat.value, cat.from], ['supported', 'red', ['a', 'b']]);
+  const size = w.query({ type: 'drawing', where: { name: 'cat' }, seek: 'size' });
+  assert.deepEqual([size.status, size.from], ['supported', ['a', 'b']], '2 and 2.0 are one number');
+  const dog = w.query({ type: 'drawing', where: { name: 'dog' }, seek: 'colour' });
+  assert.deepEqual([dog.status, dog.alternatives.map((x) => x.value)], ['conflicting', ['red', 'blue']]);
+});

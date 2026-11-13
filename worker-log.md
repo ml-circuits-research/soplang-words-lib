@@ -2865,3 +2865,18 @@ value" in rules and in `ask` text (`w.ask('@d drawing name=cat core.absent=varia
 gives `[{"d":"a"}]` for a plain and a variant drawing). The object form of `query` /
 `score` has no way to say it. Q23 recommends (b): `absent: [keys]` on question objects and
 `core.absent=` on `core.question` wires, the same modifier, no new sign.
+
+## R17.4 — value query over several wires — done
+
+Measured on 0.15.0 with a script: the same text value on two wires was already
+`supported` with both wires in `from`, different values `conflicting`. But the same
+number written two ways (2 and 2.0 under a numeric slot) came back `conflicting`: answers
+were grouped by spelling. `npm test`: 285 pass, 0 fail on sources and built file, 284 in
+checking mode. Pilot output identical. `git grep -i psys2 src/`: empty. scan-loops clean.
+
+- `_query` groups found values by their normalized form (the index form: numbers as
+  numbers, quantities in their unit), keeping the first spelling seen.
+- Semantics S50 now says it: the same value on several wires is one answer, `supported`,
+  with every wire in `from`.
+- Test `query: the same value on several wires is supported, with all of them; different
+  values conflict`: text, numbers written two ways, and two different values.

@@ -1588,6 +1588,51 @@ print(w.ofType('std.fill.need')[0].attrs.value, w.ofType('std.focus.last')[0].at
 ["cup"] ["cup"]
 ```
 
+## std.relations: things in a picture and the relations kept between them
+
+A module of the standard pack (`core.use world=std.relations`), written with rules, the
+built-in arithmetic, `core.rank` and declared actions; no function of its own.
+
+| Type | Keys | Meaning |
+| --- | --- | --- |
+| `std.relations.box` | `kind`, `w`, `h`; then `x`, `y`, `order` | a thing; `x y` its top left corner, `y` growing downwards; `order` its place among its kind from the left |
+| `std.relations.at` | `thing`, `x`, `y` | a place told |
+| `std.relations.keep` | `thing`, `rel`, `ref`; then `slot` | a place kept: `rel` is `on`, `in`, `next_to`, `above` or `in_front_of` |
+| `std.relations.nth` | `kind`, `n`; then `item` | "the first cup": the n-th of a kind from the left |
+| `std.relations.each` | `kind`, `w`, `h`, `rel`, `over` | one new thing of `kind` kept `rel` to every thing of kind `over`, also those that come later |
+| `std.relations.spread` | `kind`, `over`; derives `std.relations.pair thing= ref=` | the things of one kind paired one to one, left to right, with those of another |
+
+**Meaning.** A kept thing's place is computed from the thing it is kept to, and computed
+again when that one moves (a chain follows: a cup on a book on a table). On: centred, its
+bottom on the other's top; in: centred in it; above: centred, 10 above; in front of:
+centred, its bottom 5 below the other's; next to: 5 to the right, bottoms aligned. Things
+kept the same way to one thing stand in a row (5 apart), in the order they were kept. A
+thing has one place: a told place and a kept one together are a `conflict`. The action
+`relations.put_all` (`k`, `rel`, `ref`) puts every thing of a kind that has a told place
+there, kept; `relations.put_pairs` (`s`, `rel`) puts each where a `spread` pairs it. Both
+retract the told places, so `undo` does not bring them back: take a `mark()` first.
+
+**What is rules only and what is not.** Rules only: the five relations, chains, rows,
+"the first", "each" (with things that come later), the pairing of "one per place", and
+moving things (declared actions with `all=true`). Not without a function: a row of
+things of different widths (each would need the sum of the widths before it, an
+aggregate over a part of the group), a group centred as a whole, and avoiding overlaps
+with what else is there; the relations are boxes, so "on" a slope or "in" a shape that is
+not a box needs geometry. `examples/relations.mjs` runs a scene.
+
+```js run
+const w = new World();
+w.load('@u core.use world=std.relations');
+w.tell(`@t std.relations.box kind=table w=100 h=20  @ta std.relations.at thing=$t x=0 y=80
+  @b std.relations.box kind=book w=20 h=10  @kb std.relations.keep thing=$b rel=on ref=$t`);
+w.revise('ta', { x: 50 });
+print(w.get('b').attrs.x, w.get('b').attrs.y);
+```
+
+```output
+["90"] ["70"]
+```
+
 ## Functions
 
 A function is called with its arguments as text and returns text (or true/false for a

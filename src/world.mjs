@@ -2004,12 +2004,14 @@ export class World {
     const reads = (rec, id) => {
       const keys = lostKeys.get(id);
       const rule = ruleOf?.get(rec.rule);
-      if (!keys || gone.has(id) || !rule || !rec.s) return true;
-      for (const p of [...rule.when, ...rule.not]) {
-        if (walk('?' + p.id, rec.s) !== id) continue;
-        for (const k of keys) if (p.attrs[k] || p.absent?.includes(k) || p.paths?.length) return true;
-      }
-      return rule.when.every((p) => walk('?' + p.id, rec.s) !== id); // not one of its patterns: be safe
+      if (!keys || gone.has(id) || !rule) return true;
+      if (rule.not.length && !rec.s) return true;
+      // the patterns matched to this wire: from the bindings when kept, else from the firing's
+      // own list of matched wires (one per when= pattern, in order)
+      const on = rec.s ? [...rule.when, ...rule.not].filter((p) => walk('?' + p.id, rec.s) === id) : rule.when.filter((_, i) => rec.from[i] === id);
+      if (!on.length) return true; // not one of its patterns: be safe
+      for (const p of on) for (const k of keys) if (p.attrs[k] || p.absent?.includes(k) || p.paths?.length) return true;
+      return false;
     };
     const invalidate = (sig) => {
       const rec = this._forgetFiring(sig);

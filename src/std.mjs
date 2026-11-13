@@ -183,4 +183,103 @@ ${['overlaps', 'contains_box', 'box_distance'].map((f) => ['x1', 'y1', 'w1', 'h1
 `,
     fns: {},
   },
+  // Round 19: things in a picture and the relations kept between them. A thing is a
+  // `std.relations.box kind= w= h=`; its place (x, y: top left, y grows downwards) is
+  // either told with `std.relations.at thing= x= y=` or kept by a relation to another
+  // thing, `std.relations.keep thing= rel= ref=` with rel one of on, in, next_to, above,
+  // in_front_of: when the other thing moves, the place follows. Several things kept the
+  // same way on one thing stand in a row, in the order they were kept. Rules and the
+  // built-in arithmetic only; sets: `each`, `nth` ("the first"), `spread` (one per place)
+  // and the action `relations.put_all`.
+  'std.relations': {
+    text: String.raw`
+@k.kind core.slot of=std.relations.box key=kind
+${['x', 'y', 'w', 'h'].map((k) => `@k.${k} core.slot of=std.relations.box key=${k} kind=number`).join('\n')}
+@k.at.thing core.slot of=std.relations.at key=thing id=true
+@k.keep.thing core.slot of=std.relations.keep key=thing id=true
+@k.keep.rel core.slot of=std.relations.keep key=rel enum=on enum=in enum=next_to enum=above enum=in_front_of required=true
+@k.keep.ref core.slot of=std.relations.keep key=ref required=true
+
+# a place told
+@at.t std.relations.box
+@at.a std.relations.at thing=$at.t x=?x y=?y
+@at.p std.relations.box core.on=$at.t x=?x y=?y
+@told core.rule when=$at.t when=$at.a then=$at.p
+
+# the things kept the same way on one thing, in the order they were kept: 1, 2, ...
+# (core.rank orders by a key that every peer has alike, so they stay in the order kept)
+@k0 std.relations.keep rel=?l
+@k1 std.relations.keep core.on=$k0 kept=yes
+@marked core.rule when=$k0 then=$k1
+@kp std.relations.keep ref=?r rel=?l kept=?z
+@slot core.rank of=$kp by=kept within=?r within=?l out=?i
+@ks std.relations.keep core.on=$kp slot=?i
+@slotted core.rule when=$kp with=$slot then=$ks
+
+${[
+  // rel, x of the first (from the other thing rx ry rw rh and this one's w h), y
+  ['on', 'centre', ['sub', '?ry', '?h']],
+  ['in', 'centre', null],
+  ['above', 'centre', null],
+  ['in_front_of', 'centre', null],
+  ['next_to', 'after', null],
+].map(([rel]) => {
+  const p = (n) => `${rel}.${n}`;
+  const x0 = rel === 'next_to'
+    ? `@${p('a')} core.calc out=?a fn=add args=?rx args=?rw\n@${p('b')} core.calc out=?b fn=add args=?a args=5`
+    : `@${p('a')} core.calc out=?a fn=sub args=?rw args=?w\n@${p('a2')} core.calc out=?a2 fn=div args=?a args=2\n@${p('b')} core.calc out=?b fn=add args=?rx args=?a2`;
+  const y = {
+    on: `@${p('y')} core.calc out=?y fn=sub args=?ry args=?h`,
+    above: `@${p('y0')} core.calc out=?y0 fn=sub args=?ry args=?h\n@${p('y')} core.calc out=?y fn=sub args=?y0 args=10`,
+    in: `@${p('y0')} core.calc out=?y0 fn=sub args=?rh args=?h\n@${p('y1')} core.calc out=?y1 fn=div args=?y0 args=2\n@${p('y')} core.calc out=?y fn=add args=?ry args=?y1`,
+    in_front_of: `@${p('y0')} core.calc out=?y0 fn=add args=?ry args=?rh\n@${p('y1')} core.calc out=?y1 fn=sub args=?y0 args=?h\n@${p('y')} core.calc out=?y fn=add args=?y1 args=5`,
+    next_to: `@${p('y0')} core.calc out=?y0 fn=add args=?ry args=?rh\n@${p('y')} core.calc out=?y fn=sub args=?y0 args=?h`,
+  }[rel];
+  const calcs = [...x0.split('\n'), `@${p('i')} core.calc out=?i1 fn=sub args=?i args=1`, `@${p('s')} core.calc out=?st fn=add args=?w args=5`, `@${p('o')} core.calc out=?off fn=mul args=?i1 args=?st`, `@${p('x')} core.calc out=?x fn=add args=?b args=?off`, ...y.split('\n')];
+  return `# ${rel.replace(/_/g, ' ')}
+@${p('t')} std.relations.box w=?w h=?h
+@${p('r')} std.relations.box x=?rx y=?ry w=?rw h=?rh
+@${p('k')} std.relations.keep thing=$${p('t')} rel=${rel} ref=$${p('r')} slot=?i
+${calcs.join('\n')}
+@${p('p')} std.relations.box core.on=$${p('t')} x=?x y=?y
+@${rel} core.rule when=$${p('t')} when=$${p('r')} when=$${p('k')} ${calcs.map((c) => 'with=$' + c.slice(1, c.indexOf(' '))).join(' ')} then=$${p('p')}`;
+}).join('\n\n')}
+
+# the order of the things of a kind from the left: 1, 2, ...; "the first cup" is order 1
+@ob std.relations.box kind=?k x=?x
+@order core.rank of=$ob by=x within=?k out=?n
+@oo std.relations.box core.on=$ob order=?n
+@ordered core.rule when=$ob with=$order then=$oo
+@nq std.relations.nth kind=?k n=?n
+@nb std.relations.box kind=?k order=?n
+@nr std.relations.nth core.on=$nq item=$nb
+@picked core.rule when=$nq when=$nb then=$nr
+
+# each: one new thing of a kind for every thing of another kind, kept to it
+@ee std.relations.each kind=?k w=?w h=?h rel=?l over=?o
+@er std.relations.box kind=?o
+@eb std.relations.box kind=?k w=?w h=?h for=$er
+@ek std.relations.keep thing=$eb rel=?l ref=$er
+@each core.rule when=$ee when=$er then=$eb then=$ek
+
+# spread: the things of a kind paired one to one, left to right, with the things of another
+@ss std.relations.spread kind=?k over=?o
+@sa std.relations.box kind=?k order=?n
+@sb std.relations.box kind=?o order=?n
+@sp std.relations.pair thing=$sa ref=$sb spread=$ss
+@paired core.rule when=$ss when=$sa when=$sb then=$sp
+
+# put all the things of a kind (that have a told place) somewhere, kept there
+@pa.b std.relations.box kind=?k
+@pa.a std.relations.at thing=$pa.b
+@pa.k std.relations.keep thing=$pa.b rel=?rel ref=?ref
+@put_all core.action name=relations.put_all param=k param=rel param=ref when=$pa.b when=$pa.a remove=$pa.a add=$pa.k all=true
+# and each one where spread pairs it
+@pp.p std.relations.pair thing=?t ref=?r spread=?s
+@pp.a std.relations.at thing=?t
+@pp.k std.relations.keep thing=?t rel=?rel ref=?r
+@put_pairs core.action name=relations.put_pairs param=s param=rel when=$pp.p when=$pp.a remove=$pp.a add=$pp.k all=true
+`,
+    fns: {},
+  },
 };

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="61c73b044708">
+<meta name="source-hash" content="f54724a35c8e">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -636,6 +636,18 @@ w.tell(&#x27;@q1 req thing=cup&#x27;);
 w.tell(&#x27;@q2 req colour=red&#x27;);
 print(w.ofType(&#x27;std.fill.need&#x27;)[0].attrs.value, w.ofType(&#x27;std.focus.last&#x27;)[0].attrs.value);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;cup&quot;] [&quot;cup&quot;]</code></pre></figure>
+<h2 id="stdrelations-things-in-a-picture-and-the-relations-kept-between-them">std.relations: things in a picture and the relations kept between them</h2>
+<p>A module of the standard pack (<code>core.use world=std.relations</code>), written with rules, the built-in arithmetic, <code>core.rank</code> and declared actions; no function of its own.</p>
+<div class="table"><table><thead><tr><th>Type</th><th>Keys</th><th>Meaning</th></tr></thead><tbody><tr><td><code>std.relations.box</code></td><td><code>kind</code>, <code>w</code>, <code>h</code>; then <code>x</code>, <code>y</code>, <code>order</code></td><td>a thing; <code>x y</code> its top left corner, <code>y</code> growing downwards; <code>order</code> its place among its kind from the left</td></tr><tr><td><code>std.relations.at</code></td><td><code>thing</code>, <code>x</code>, <code>y</code></td><td>a place told</td></tr><tr><td><code>std.relations.keep</code></td><td><code>thing</code>, <code>rel</code>, <code>ref</code>; then <code>slot</code></td><td>a place kept: <code>rel</code> is <code>on</code>, <code>in</code>, <code>next_to</code>, <code>above</code> or <code>in_front_of</code></td></tr><tr><td><code>std.relations.nth</code></td><td><code>kind</code>, <code>n</code>; then <code>item</code></td><td>"the first cup": the n-th of a kind from the left</td></tr><tr><td><code>std.relations.each</code></td><td><code>kind</code>, <code>w</code>, <code>h</code>, <code>rel</code>, <code>over</code></td><td>one new thing of <code>kind</code> kept <code>rel</code> to every thing of kind <code>over</code>, also those that come later</td></tr><tr><td><code>std.relations.spread</code></td><td><code>kind</code>, <code>over</code>; derives <code>std.relations.pair thing= ref=</code></td><td>the things of one kind paired one to one, left to right, with those of another</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> A kept thing's place is computed from the thing it is kept to, and computed again when that one moves (a chain follows: a cup on a book on a table). On: centred, its bottom on the other's top; in: centred in it; above: centred, 10 above; in front of: centred, its bottom 5 below the other's; next to: 5 to the right, bottoms aligned. Things kept the same way to one thing stand in a row (5 apart), in the order they were kept. A thing has one place: a told place and a kept one together are a <code>conflict</code>. The action <code>relations.put_all</code> (<code>k</code>, <code>rel</code>, <code>ref</code>) puts every thing of a kind that has a told place there, kept; <code>relations.put_pairs</code> (<code>s</code>, <code>rel</code>) puts each where a <code>spread</code> pairs it. Both retract the told places, so <code>undo</code> does not bring them back: take a <code>mark()</code> first.</p>
+<p><strong>What is rules only and what is not.</strong> Rules only: the five relations, chains, rows, "the first", "each" (with things that come later), the pairing of "one per place", and moving things (declared actions with <code>all=true</code>). Not without a function: a row of things of different widths (each would need the sum of the widths before it, an aggregate over a part of the group), a group centred as a whole, and avoiding overlaps with what else is there; the relations are boxes, so "on" a slope or "in" a shape that is not a box needs geometry. <code>examples/relations.mjs</code> runs a scene.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(&#x27;@u core.use world=std.relations&#x27;);
+w.tell(`@t std.relations.box kind=table w=100 h=20  @ta std.relations.at thing=$t x=0 y=80
+  @b std.relations.box kind=book w=20 h=10  @kb std.relations.keep thing=$b rel=on ref=$t`);
+w.revise(&#x27;ta&#x27;, { x: 50 });
+print(w.get(&#x27;b&#x27;).attrs.x, w.get(&#x27;b&#x27;).attrs.y);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;90&quot;] [&quot;70&quot;]</code></pre></figure>
 <h2 id="functions">Functions</h2>
 <p>A function is called with its arguments as text and returns text (or true/false for a comparison). When it has no result it returns nothing and the rule does not fire. Host functions are added with <code>new World({ fns })</code>; a name from the tables below cannot be taken without <code>override</code>.</p>
 <p>A <strong>number</strong> is an integer or decimal, optionally followed by a unit (<code>5</code>, <code>2.5</code>, <code>3kg</code>, <code>10N/kg</code>). Arithmetic keeps 12 significant digits.</p>

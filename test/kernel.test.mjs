@@ -649,3 +649,25 @@ test('a rule that reads what a group aggregate concludes waits for it: a second 
   w.retract('i1');
   assert.deepEqual(w.get('b1').attrs.only, ['cup']);
 });
+
+test('a rank over a key that a rule fills follows when that key moves, and the other fills of the wire stay', () => {
+  const w = new World();
+  w.load(String.raw`
+@k core.slot of=box key=x kind=number
+@at.t box
+@at.a at thing=$at.t x=?x
+@at.p box core.on=$at.t x=?x
+@told core.rule when=$at.t when=$at.a then=$at.p
+@ob box kind=?k x=?x
+@order core.rank of=$ob by=x within=?k out=?n
+@oo box core.on=$ob order=?n
+@ordered core.rule when=$ob with=$order then=$oo
+`);
+  w.tell('@a box kind=c  @aa at thing=$a x=10  @b box kind=c  @ba at thing=$b x=20  @c box kind=c  @ca at thing=$c x=30');
+  const o = () => ['a', 'b', 'c'].map((i) => `${w.get(i).attrs.x}#${w.get(i).attrs.order}`).join(' ');
+  assert.equal(o(), '10#1 20#2 30#3');
+  const r = w.applyPatch({ retract: ['ba'], wires: '@bb at thing=$b x=40' });
+  assert.deepEqual([r.ok, r.violations, o()], [true, [], '10#1 40#3 30#2']);
+  assert.equal(w.applyPatch({ retract: ['aa'], wires: '@ab at thing=$a x=35' }).ok, true);
+  assert.equal(o(), '35#2 40#3 30#1');
+});

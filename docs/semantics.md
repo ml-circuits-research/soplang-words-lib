@@ -281,10 +281,12 @@ fires only once the groups touched by the change have been computed again, so it
 acts on a result that is about to change; a rule with an aggregate anchored on a wire
 (`core.rank`, a total per wire) takes back what it concluded for that wire before it
 concludes something else. A value taken back invalidates only the firings whose patterns
-on that wire name the key (or ask for its absence). *Why:* a second offer arriving later,
+on that wire name the key (or ask for its absence), whether or not the rule keeps its
+bindings. *Why:* a second offer arriving later,
 or a better one, is the normal case in a dialogue; it must re-decide, not conflict or loop.
 *Tests:* `a rule that reads what a group aggregate concludes waits for it: a second member arriving later is no conflict`;
-`a rank re-computed when a better peer comes, with a rule that writes the winner onto the wire the peers read`
+`a rank re-computed when a better peer comes, with a rule that writes the winner onto the wire the peers read`;
+`a rank over a key that a rule fills follows when that key moves, and the other fills of the wire stay`
 
 **S40.** A deny may speak about a group, and is checked also when a wire leaves it.
 *Tests:* `aggregates: a deny can speak about a whole group, and names the wires behind it`;

@@ -3142,3 +3142,38 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
 - test/why.test.mjs (2: the std.fill chain step by step and stable; computed value, told,
   default, open, set by an action, told by a host action, unknown id). api `world.why`
   (runnable). index.d.ts.
+
+## R19 item 3 — std.relations — done (with a kernel fix)
+
+`/tmp/check.sh`: 316 pass, 0 fail on sources and built file, 315 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean.
+
+- `std.relations` in src/std.mjs: rules, built-in arithmetic, core.rank, declared actions.
+  `box kind w h` (+ `x y` filled), `at thing x y` (told place), `keep thing rel ref`
+  (rel: on, in, next_to, above, in_front_of; enum slot), rows of things kept the same way
+  to one thing (slot by core.rank over a shared mark `kept=yes`: core.rank frees the `by`
+  key, so ranking by `rel` with within=rel sorted by rel text — found in the first run:
+  in/above/... got slots 2,1,3,4), `nth kind n` → `item` (order from the left), `each kind
+  w h rel over` (derived things carry `for=` so a told thing alike does not absorb them),
+  `spread kind over` → `pair`, actions `relations.put_all` and `relations.put_pairs`
+  (remove the told place, add the keep, `all=true`).
+- Rules only vs not (reference "What is rules only"): rules only — the five relations,
+  chains, rows, the first, each (also later things), pairing, moving. Needs a function —
+  rows of different widths (sum of the widths before), a group centred as a whole,
+  avoiding overlaps, non-box shapes.
+- Kernel defect: moving a thing whose `x` a rule fills (retract the told `at`, tell a new
+  one) was refused with a `conflict` on its `order` (core.rank). Cause: key-aware
+  withdrawal (R19 rank fix) only knew which patterns matched a wire when the firing kept
+  its bindings (rules with not= or a selector); otherwise it withdrew everything, so the
+  place of an unrelated peer (`at` rule, pattern with no keys) was taken back while the
+  rank was recomputed: the peer vanished from the group. Now the matched wires come from
+  the firing's own `from` list (one per when= pattern) when bindings are not kept. Kernel
+  test (fails without: stash, 35 pass 1 fail). semantics S39a updated.
+- `node bench/distinct.mjs` anchored: 187.3 / 215.7 ms, one more 9.74 / 7.80 ms;
+  `node bench/rank.mjs` 400: 383.4 ms, one more 1.48 ms.
+- Tests: test/relations.test.mjs (3: chain follows and retract; five relations, row, told
+  and kept conflict; nth, each with a later shelf, spread and put_pairs with mark/rewind,
+  put_all row). examples/relations.mjs output: cup on book 45/60 → table to x 50: book
+  90/70, cup 95/60; first cup $cup3; lamps 217/8 317/8; cup2 next to s2 345/15.
+- Note: `undo` does not bring back retractions, so the actions' effect is undone by
+  `rewind(mark)` (documented).

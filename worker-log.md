@@ -3277,3 +3277,40 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
   not a function"). A fork now carries fns, actions, producers, filters, lemma (test).
 - Refusal reasons use "an" before a vowel sound (not "a eye"; "a unicorn" stays).
 - test/schema-words.test.mjs (4), api section (runnable), index.d.ts.
+
+## R21 item 4 — knowledge as a filler — done (with three kernel cost fixes)
+
+`/tmp/check.sh`: 328 pass, 0 fail on sources and built file, 327 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean.
+
+- `std.know` (rules, loads std.fill): a `std.schema.thing` without place, size or colour
+  needs one; `k.commonsense.thing at= size=` and `k.objects.part name=body colour=` offer
+  at tier `knowledge` with `core.source` as the source (a multi-colour body is a tie:
+  advice). `make` applies what std.fill chose as defaults (tier `default`), lists them in
+  `result.filled` (key, value, tier, source); a closed kind takes only its own attributes.
+  `std.schema.kinds stand_in=<type>`: a kind the catalog does not name, drawn as its
+  stand-in (`drawn_as`). examples/know.mjs with three wires copied unchanged from
+  sop-knowledge-worlds (hand-core, CC0-1.0): fish → water/small, sun → sky/huge, robot →
+  grey, unicorn → drawn as horse. test/know.test.mjs (2). reference "std.know".
+- Cost, `node bench/know.mjs` (one make on a world of n things, each with its needs):
+  first version 672 / 9,412 / 92,212 steps at 10 / 200 / 2,000 things (linear). Three
+  kernel causes, each fixed:
+  1. rules with `core.absent=` were re-evaluated in full on every change of a type they
+     read (all things × 3 keys). A rule whose only selection is core.absent on its own
+     patterns is now driven by single wires; a match a gained key ends is taken back on
+     that wire; rules reading a rank's or a group aggregate's result wait for it (the
+     wait now covers anchored ranks too); the stratification check still applies to them.
+     → 475 / 5,795 / 56,195.
+  2. a withdrawn firing requeued every wire it read, so a shared knowledge fact read by
+     every thing re-matched all of them. Now one wire is requeued, the one with the fewest
+     firings (any of them finds the same match). → 262 / 1,782 / 16,182.
+  3. and none when a wire it read is gone (it cannot hold again; the tier wire of
+     std.fill was re-matching every offer). → 163 / 163 / 163.
+  Also: aggregate firings by group found through an index (rebuilt when byRule is another
+  object), not by scanning the rule's firings per seed.
+- Benches after: `node bench/acts.mjs` 2,000 things make 9 steps; `node bench/distinct.mjs`
+  anchored 211.5 ms, one more 9.96 ms; `node bench/rank.mjs` 400: 398.8 ms; `node
+  bench/focus.mjs` 400: 4478 ms, one more 21.9 ms.
+     10 things: make 163 steps 3.61 ms, filled 2
+    200 things: make 163 steps 2.33 ms, filled 2
+   2000 things: make 163 steps 1.73 ms, filled 2

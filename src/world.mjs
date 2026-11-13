@@ -1056,7 +1056,32 @@ export class World {
     });
   }
 
+  /**
+   * The firings of an aggregate rule with by= in one group (Round 21): an index kept beside
+   * byRule, rebuilt when byRule is another object (a fork, a rebuild, a new layer), added to
+   * as firings are recorded; a firing since forgotten is filtered out where it is read.
+   */
+  _groupSigs(rule, key) {
+    let g = this._grp;
+    if (!g || g.byRule !== this.byRule) {
+      g = this._grp = { byRule: this.byRule, map: new Map() };
+      const c = this._c;
+      for (const r of c ? c.rules : []) { // bounded: the rules, then the firings of each aggregate rule with by=
+        if (!r.aggregate || !r.by?.length) continue;
+        for (const sig of this.byRule.get(r.id) || []) this._groupAdd(g, r, sig, this.firings.get(sig));
+      }
+    }
+    const set = g.map.get(rule.id + '\u0002' + key);
+    return set ? [...set].filter((sig) => this.firings.has(sig)) : [];
+  }
+  _groupAdd(g, rule, sig, rec) {
+    if (!rec?.s) return;
+    const k = rule.id + '\u0002' + rule.by.map((v) => walk(v, rec.s)).join('\u0001');
+    (g.map.get(k) || g.map.set(k, new Set()).get(k)).add(sig);
+  }
+
   _indexFiring(sig, rec) {
+    if (this._grp && this._grp.byRule === this.byRule) { const r = this._c?._ruleById?.get(rec.rule); if (r?.aggregate && r.by?.length) this._groupAdd(this._grp, r, sig, rec); }
     this.firings.set(sig, rec);
     for (const id of rec.ids) this._setOf(this.byWire, id).add(sig);
     if (rec.s) this._setOf(this.byRule, rec.rule).add(sig);
@@ -1712,6 +1737,11 @@ export class World {
               if (this.wires.has(w.id)) for (const s0 of this._matchWire(rule.when[idx], this.wires.get(w.id), EMPTY)) matches.push(...this._bodies(rule, s0, idx));
             }
           }
+          if (rule.absentOnly) { // a key it requires absent may have come: its matches through this wire that no longer hold go
+            const now = new Set(matches.map((m) => this._sig(rule, m)));
+            const stale = [...(this.byWire.get(w.id) || [])].filter((sig) => { const f = this.firings.get(sig); return f && f.rule === rule.id && f.from[idx] === w.id && !now.has(sig); }); // bounded: the firings that touch one wire
+            if (stale.length) this._unsay(res, [], [], stale);
+          }
           // (seeded again: the wire may have changed under an earlier rule of this loop)
           if (rule.afterAggregates && (this._seed(w, res), pending())) { (res._later ||= []).push([rule, idx, w.id]); continue; }
           fireAll(rule, matches);
@@ -1728,11 +1758,15 @@ export class World {
           // only the groups whose aggregated wires changed are looked at again
           const seeds = res._seeds.get(rule);
           res._seeds.delete(rule);
+          const keyOf = (s) => rule.by.map((v) => walk(v, s)).join('\u0001');
+          if (rule.by?.length) (c._ruleById ||= new Map(c.rules.map((r) => [r.id, r]))); // for the group index
           for (const s0 of seeds ? seeds.values() : []) {
             let bodies = [...this._bodies(rule, s0, -1)];
             const now = new Set(bodies.map((s) => this._sig(rule, s)));
             const group = bound(s0).map((v) => [v, walk(v, s0)]);
-            const stale = [...(this.byRule.get(rule.id) || [])].filter((sig) => {
+            const whole = rule.by?.length && rule.by.every((v) => group.some(([g]) => g === v));
+            const candidates = whole ? this._groupSigs(rule, keyOf(s0)) : [...(this.byRule.get(rule.id) || [])]; // the firings of this group only
+            const stale = candidates.filter((sig) => {
               if (now.has(sig)) return false;
               const s = this.firings.get(sig).s;
               return group.every(([v, x]) => walk(v, s) === x);
@@ -2022,12 +2056,19 @@ export class World {
       for (const p of on) for (const k of keys) if (p.attrs[k] || p.absent?.includes(k) || p.paths?.length) return true;
       return false;
     };
+    // a firing taken back may hold again: matching from any one of the wires it read finds it,
+    // so the one with the fewest firings is looked at again (not a shared fact read by thousands)
+    const again = (rec) => {
+      let best = null, n = Infinity;
+      for (const id of rec.from) { if (!this.wires.has(id)) return; const k = this.byWire.get(id)?.size || 0; if (k < n) { n = k; best = id; } } // a wire it read is gone: it cannot hold again
+      if (best !== null) requeue(best);
+    };
     const invalidate = (sig) => {
       const rec = this._forgetFiring(sig);
       if (!rec) return;
       rec.made.forEach(kill);
       rec.fills.forEach(unfill);
-      rec.from.forEach(requeue);
+      again(rec);
     };
     ids.forEach(kill);
     values.forEach(unfill);
@@ -2042,7 +2083,7 @@ export class World {
         else if (!rec.from.length && rec.made.every((x) => this.wires.has(x)) && rec.fills.every((f) => this.wires.get(f.id)?.attrs[f.key]?.includes(f.value))) {
           // a firing with no anchor (an aggregate's result) that only wrote here, and all it
           // wrote still stands: keep it, nothing would make it fire again
-        } else { this._forgetFiring(sig); rec.from.forEach(requeue); } // it only wrote here: let it fire again
+        } else { this._forgetFiring(sig); again(rec); } // it only wrote here: let it fire again
       }
     }
     res._agenda = res._agenda.filter((id) => this.wires.has(id));

@@ -24,6 +24,10 @@ function kindsOf(w, kind) {
   if (!out.length) for (const k of w.ofType('std.schema.kinds')) { // any kind a knowledge type names
     const from = k.attrs.from[0], key = k.attrs.key?.[0] || 'name';
     if (w.ofType(from).some((x) => x.attrs[key]?.includes(kind))) out.push({ type: 'std.schema.thing', world: k.attrs.world[0], acts: k.attrs.acts || [], open: true });
+    else if (k.attrs.stand_in) { // a kind the catalog does not draw, with a stand-in that it does
+      const s = w.ofType(k.attrs.stand_in[0]).find((x) => x.attrs.name?.includes(kind));
+      if (s) out.push({ type: 'std.schema.thing', world: k.attrs.world[0], acts: k.attrs.acts || [], open: true, standIn: s.attrs.drawing?.[0] });
+    }
   }
   return out;
 }
@@ -71,9 +75,20 @@ const ACTIONS = {
       if (!k.open && !attrsOf(w, k.type).includes(key)) return refuse(w, 'make', kind, `${art(kind)} has no ${key}`, { attr: key });
       attrs[key] = v;
     }
+    if (k.standIn) attrs.drawn_as = k.standIn;
     const id = args.id ? String(args.id) : fresh(w, kind);
     const r = ctx.tell(wireText(id, k.type, attrs), { now: true });
-    return r.ok === false ? r : { act: 'make', thing: id };
+    if (r.ok === false) return r;
+    // what std.fill chose for the keys it left out (knowledge, focus, ...): applied as defaults, with the source
+    const filled = [];
+    for (const n of ctx.find('std.fill.need', { for: ref(id) })) { // through the index: the needs of this thing
+      if (!n.attrs.value) continue;
+      const key = n.attrs.key[0];
+      if (!k.open && !attrsOf(w, k.type).includes(key)) continue;
+      filled.push({ key, value: n.attrs.value[0], tier: n.attrs.tier?.[0], source: n.attrs.source?.[0] !== undefined ? String(n.attrs.source[0]).replace(/^"|"$/g, '') : undefined });
+    }
+    if (filled.length) { const p = w.applyPatch({ sets: filled.map((f) => ({ id, key: f.key, value: f.value })) }, { tier: 'default' }); if (p.ok === false) return p; }
+    return { act: 'make', thing: id, ...(filled.length ? { filled } : {}), ...(k.standIn ? { standIn: k.standIn } : {}) };
   }),
   acts_remove: (ctx, args) => pre('remove', ctx, args, (w) => {
     const { thing: t, why, kind, which } = thingOf(w, args.thing, args.nth);
@@ -437,6 +452,7 @@ ${calcs.join('\n')}
 @k.kind.acts core.slot of=std.schema.kind key=acts many=true ACTENUM
 @k.kinds.world core.slot of=std.schema.kinds key=world id=true
 @k.kinds.from core.slot of=std.schema.kinds key=from required=true
+@k.kinds.stand core.slot of=std.schema.kinds key=stand_in
 @k.kinds.acts core.slot of=std.schema.kinds key=acts many=true ACTENUM
 @k.limit.of core.slot of=std.schema.limit key=of id=true
 @k.limit.max core.slot of=std.schema.limit key=max kind=integer required=true
@@ -485,5 +501,34 @@ ${calcs.join('\n')}
 `,
     fns: {},
     actions: ACTIONS,
+  },
+  // Round 21: knowledge as a filler. A thing of a schema that has no place, size or colour
+  // needs one (std.fill); facts of a knowledge catalog offer them at the tier `knowledge`,
+  // with the fact's `core.source` as the source: the usual place and size of a thing
+  // (k.commonsense.thing at= size=), the colour of its body (k.objects.part name=body). The
+  // act `make` applies what std.fill chose, as defaults, and says where each came from.
+  'std.know': {
+    text: String.raw`
+@fill core.use world=std.fill
+${['place', 'size', 'colour'].map((k) => `@gap.${k} std.schema.thing kind=?kind core.absent=${k}
+@need.${k} std.fill.need for=$gap.${k} key=${k}
+@ask.${k} core.rule when=$gap.${k} then=$need.${k}`).join('\n')}
+
+@t std.schema.thing kind=?kind
+@n std.fill.need for=$t key=?key
+@usual k.commonsense.thing name=?kind at=?v core.source=?src
+@o.place std.fill.offer for=$n value=?v tier=knowledge source=?src
+@is.place core.check fn=eq args=?key args=place
+@r.place core.rule when=$t when=$n when=$usual if=$is.place then=$o.place
+@big k.commonsense.thing name=?kind size=?v core.source=?src
+@o.size std.fill.offer for=$n value=?v tier=knowledge source=?src
+@is.size core.check fn=eq args=?key args=size
+@r.size core.rule when=$t when=$n when=$big if=$is.size then=$o.size
+@body k.objects.part of=?kind name=body colour=?v core.source=?src
+@o.colour std.fill.offer for=$n value=?v tier=knowledge source=?src
+@is.colour core.check fn=eq args=?key args=colour
+@r.colour core.rule when=$t when=$n when=$body if=$is.colour then=$o.colour
+`,
+    fns: {},
   },
 };

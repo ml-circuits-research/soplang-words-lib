@@ -574,7 +574,7 @@ export function compileMatrix(world) {
   }
   // a rule that reads what a group aggregate concludes waits for the aggregates to settle,
   // so it never fires on a count or a best value that is about to change
-  const aggOut = c.rules.filter((r) => r.aggregate && !r.when.length).flatMap((r) => r.then.map((t) => t.type));
+  const aggOut = c.rules.filter((r) => r.aggregate).flatMap((r) => r.then.map((t) => t.type)); // a group result or a rank
   if (aggOut.length) for (const r of c.rules) if (!r.aggregate && r.when.some((p) => aggOut.some((t) => c.isA(t, p.type)))) r.afterAggregates = true;
   // ---- exports: a rule of one module reads another module's types only if it exports them
   const moduleOfType = (t) => { for (const [name, m] of c.modules) if (m.exports && (t === name || t.startsWith(name + '.'))) return [name, m]; return null; };
@@ -658,7 +658,7 @@ export function compileMatrix(world) {
   const made = (r) => r.then.map((t) => ({ type: t.type, keys: t.on ? Object.keys(t.attrs) : null }));
   const wakes = (item, p) => c.isA(item.type, p.type) && (!item.keys || item.keys.some((k) => p.attrs[k] || p.absent?.includes(k)));
   const reads = (r) => [...r.when, ...r.not, ...r.calc.flatMap((x) => x.over || [])];
-  for (const r of c.negRules) {
+  for (const r of [...c.negRules, ...c.rules.filter((x) => x.absentOnly)]) { // and the rules driven by single wires that require an absence
     if (r.kind !== 'rule') continue;
     const reach = made(r);
     const seen = new Set([r]);
@@ -905,6 +905,10 @@ function buildRule(world, w, c, extra, register = true, aggregate = null) {
   // a pattern with core.select=latest|first picks one wire by sequence: what it picks can change
   // a pattern with core.absent= relies on something not being there: what it matched can stop matching
   rule.hasSelect = rule.when.some((p) => p.select || p.absent) || rule.not.some((p) => p.select) || rule.calc.some((x) => (x.over || []).some((p) => p.select));
+  // a rule whose only selection is core.absent= on its own patterns (Round 21): what it
+  // matches changes only with the wires it matches, so it is driven by single wires like any
+  // rule (a match that a gained key ends is taken back there), not re-evaluated in full
+  if (rule.kind === 'rule' && rule.hasSelect && !rule.not.length && !rule.when.some((p) => p.select) && !rule.calc.some((x) => x.over)) { rule.hasSelect = false; rule.absentOnly = true; }
   rule.aggregate = rule.calc.some((x) => x.over);
   rule.selective = rule.hasSelect || rule.aggregate;
   // An aggregate depends on a group: the bindings its patterns share with the rule's own

@@ -822,8 +822,10 @@ the wire described.
 **Meaning.** As in the table. What a rule concluded from an absence or a selection is
 withdrawn when the key is filled, or a later wire arrives.
 
-**When it is evaluated.** With the rule; rules that use `core.absent` or `core.select`
-are re-evaluated in full when a type they read changes.
+**When it is evaluated.** With the rule. A rule whose only selection is `core.absent` on
+its own patterns is driven by the wires it matches, like any rule: a match that a key
+coming ends is taken back there. Rules that use `core.select`, and denies with
+`core.absent`, are re-evaluated in full when a type they read changes.
 
 **Interactions.** A rule may not fill a key that it requires to be absent (`schema`).
 With either of the two pattern attributes in the matrix, the search stops trying values
@@ -1644,7 +1646,7 @@ say the rest. The acts are the same for every world; a new schema needs no rule.
 | --- | --- | --- |
 | `std.schema.world` | `name`, `doc` | a world |
 | `std.schema.kind` | `of` (a type), `world`, `acts` (rep.) | a kind of the world, and the acts that apply to it: `make`, `remove`, `change`, `place`, `connect`, `group`, `pick`, `ask`, `copy` |
-| `std.schema.kinds` | `world`, `from` (a type), `key` (default `name`), `acts` | any kind that a wire of `from` names (`k.object name=cup`): such things are `std.schema.thing` and take any attribute |
+| `std.schema.kinds` | `world`, `from` (a type), `key` (default `name`), `acts`, `stand_in` (a type) | any kind that a wire of `from` names (`k.object name=cup`): such things are `std.schema.thing` and take any attribute; see std.know for `stand_in` |
 | `std.schema.limit` | `of`, `max` | at most so many things of a kind (rules: a count and a deny) |
 
 Every thing has `kind` and `world`. Checked at load: an act not in the list, a kind of a
@@ -1690,6 +1692,20 @@ print(r.diff.changed, w.act({ action: 'remove', args: { thing: 'eye' } }).violat
 ```output
 [{"id":"eye1","key":"colour","from":"brown","to":"blue","toTier":"told"}] ["make","change"]
 ```
+
+## std.know: knowledge as a filler
+
+`core.use world=std.know` (it loads std.fill). A thing of a schema (`std.schema.thing`)
+that has no `place`, `size` or `colour` needs one, and the facts of a knowledge catalog
+offer them at the tier `knowledge`, with the fact's `core.source` as the source: the usual
+place and size (`k.commonsense.thing name= at= size=`), the colour of the body
+(`k.objects.part of= name=body colour=`; a body of several colours is a tie, so advice and
+no choice). Other modules may offer at better tiers (the user, the focus). The act `make`
+applies what std.fill chose as defaults (tier `default`: an assumption, weaker than what
+is told) and lists them in `result.filled` (`key`, `value`, `tier`, `source`); a closed
+kind takes only its own attributes. `std.schema.kinds stand_in=<type>`: a kind the catalog
+does not name but a stand-in wire does (`name=unicorn drawing=horse`) is made with
+`drawn_as`. `examples/know.mjs` uses wires copied from sop-knowledge-worlds (CC0).
 
 ## Functions
 

@@ -653,3 +653,8 @@ G1, G2, G6, G3, G4, G7, G5, G8, G9. G8 for the shop world can start as soon as G
 4. **`version=` on `core.module`** is an unknown attribute today. Accept it (a string, reported by `modules()`), nothing more.
 5. **"One of" in a deny pattern** (`at` is sky or grass) needs two denies today. Only report: is a repeated value on a pattern key (`at=sky at=grass` = any of) consistent with the existing meaning of repeated keys? Do not implement before the reviewer answers.
 Gates as usual: npm test, compat run, benches, no application names in src.
+
+## Reviewer 2026-11-13 09:35 — 0.15.0 (Round 16) validated at 782cd0c
+
+npm test passes (283, 283, 282), compat run unchanged (kids.arith 212/217, kids.tasks 231/232), no application names in src. Accepted. PSys2 and sop-knowledge-worlds are told to move to 782cd0c.
+- **Q22:** (a). A repeated key stays "all of" everywhere; "one of" is two denies. No `one_of` built-in for now: two short denies are easier to read than a check, and nobody has needed a third yet.

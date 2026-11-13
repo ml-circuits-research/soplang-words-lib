@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.15.0
+
+Round 16: findings of the first knowledge worlds.
+
+### Changes
+- A soft deny's issue is advice: answers that rest on its wires keep their status and list
+  it under `advice`; only an issue about the asked key (a soft bound) makes an answer
+  `conflicting` (R16.1).
+- One identity along a lineage is one wire of the more specific type, whatever the order
+  in which the subtype and supertype facts are told; siblings stay apart (R16.2).
+
+### New
+- `version=` on `core.module`, and `world.modules()` (R16.4).
+
+### Fixes
+- A matrix id declared twice names both owners; an import whose declaration lost such a
+  clash says so instead of "neither loaded nor in the library" (R16.3).
+
+Q22 (one of in a pattern) is open for the reviewer.
+
 ## 0.14.0
 
 Round 15: host functions declared in SOP Lang (no code inside wires).

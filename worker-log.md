@@ -2848,3 +2848,8 @@ like in a fact. Reading it as "any of" would give one writing two meanings and c
 existing rules. No built-in tests membership (`contains` is a substring test). Q22 gives
 the options and recommends a built-in `one_of(value, choices...)` used by one check and
 one deny, no new syntax.
+
+## 0.15.0 — Round 16 released (version, changelog, rebuild; no tag)
+
+A minor version: answer status and merge behaviour changed, one new call. `npm test`
+284 / 284 / 283. Pilot 147/147, 212/217, 231/232, output identical. Open: Q22.

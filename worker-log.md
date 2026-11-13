@@ -3451,3 +3451,9 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
 - Reuse number: `tools/reuse.mjs` prints per world the types used, own and from
   elsewhere, and the ratio; in all three reports. `node tools/reuse.mjs examples` now:
   acts 0.6, delegation 0.67, fill 0.88 (head of the table).
+
+## Release 0.22.0 (Round 23)
+
+`/tmp/check.sh`: 340 pass, 0 fail on sources and built file, 339 in checking mode; pilot
+identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.22.0). Open: Q28, Q29.

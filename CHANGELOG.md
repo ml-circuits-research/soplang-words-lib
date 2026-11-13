@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.22.0
+
+Round 23: reuse between worlds.
+
+### New
+- Acts reach inside a thing (`in`, `in_nth`): "the eyes of the second face".
+- Option `advise`: advice at load for authors (a kind with the shape of another module's,
+  a rule already in a module), never an error.
+- examples/reuse.mjs: one board module as tic-tac-toe and chess, one list module as tasks,
+  shopping and playlist.
+- `change` on a set takes more / less.
+
 ## 0.21.0
 
 Round 22 (shared things, views, taught facts) and Round 23's study of reuse.

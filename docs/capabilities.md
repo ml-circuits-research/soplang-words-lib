@@ -195,8 +195,9 @@ print(w.get('b').attrs.x, w.get('b').attrs.y);
 
 Several views read the same things; a view shows some aspects; showing a thing that lacks
 one is refused with the reason. Facts the user teaches sit at their own tier and say who
-taught them. *0.21.* **Limits:** one value per key for all views; defaults learnt later do
-not reach things already made.
+taught them; the act `complete` applies defaults learnt later to things already made.
+*0.21; complete since 0.24.* **Limits:** one value per key for all views (a view restyles
+in its renderer).
 
 ```js run
 const w = new World();

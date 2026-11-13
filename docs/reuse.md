@@ -62,7 +62,7 @@ report, candidates 10, 14, 15).
 **Example.** `examples/reuse.mjs`: one `board` module as tic-tac-toe and chess, one
 `list` module as tasks, shopping and playlist, instantiated by renaming the module's
 prefix in its text (`instance`).
-**Missing.** Instantiating a library module twice under two names with `core.use` (Q29).
+**Done:** `core.use world=list as=tasks` loads a library module under another name, as many times as wanted (words are told after loading).
 
 ## 7. Rule lifting
 

@@ -290,11 +290,14 @@ Load a matrix from the library.
 | --- | --- | --- | --- | --- |
 | `world` | module name | required | yes | the module, a key of `new World({ library })` |
 | `prefix` | `false` | prefixed | | load the ids as written |
+| `as` | name | the module name | | load the module under another name: its own prefix (`list.`) becomes this one (`tasks.`) in its ids, types and references |
 
 **Meaning.** The text kept in the library under that name is told as part of the same
 change. Unless `prefix=false`, every id it declares, and every reference among them,
 gets the module name and a dot in front, so two modules cannot clash. A module is
-loaded once per world. `world.use(name)` is the same as telling this wire.
+loaded once per world, and once per `as` name: `core.use world=list as=tasks` and
+`core.use world=list as=shopping` give two worlds of one module (words are told after
+loading, as `core.word` wires). `world.use(name)` is the same as telling this wire.
 
 **When it is evaluated.** When it is told.
 
@@ -1673,6 +1676,7 @@ world that is not declared.
 | `undo`, `redo` | `n`? | as `world.undo` / `redo`, with `diff`; not inside another change (a sentence, an action) |
 | `show` | `thing` (or `*`), `set`?, `view` | the things in a view (below) |
 | `teach`, `forget` | `fact` (SOP Lang), `by`?; `fact` (an id) | facts at the tier `taught` (below) |
+| `complete` | `thing`? (or a kind with `set`) | applies what std.fill chose since the things were made (defaults learnt later), as defaults with tier and source in `result.filled`; never done silently |
 
 **Aspects and views.** `std.schema.aspect name= keys= doc=` names a set of keys a kind
 takes as a whole (a place on Earth, a size); a kind says which it has
@@ -1687,7 +1691,7 @@ tells them at the tier `taught` (declared by std.know, right below `told`) with
 `core.source="taught by <who>"` and a `std.know.taught fact= by= at=` wire; std.know offers
 them at the std.fill tier `taught` (rank 3.5: below what was just said and the scene,
 above knowledge), and follows `is_a` to the other kind's place and size. `forget` (`fact`)
-takes one back. Defaults are applied when a thing is made: things made before keep theirs.
+takes one back. Defaults are applied when a thing is made; things made before get the ones learnt later with the act `complete`, on request.
 `examples/views.mjs` has three views over the same things.
 
 **Composition.** A thing inside another is one with a key that refers to it (an eye

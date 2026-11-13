@@ -3556,3 +3556,21 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
 - The build refuses "node:" in src (a Node-only marker), also in comments and in text
   written for the host: spelled apart.
 - api section, capabilities job (runnable); index.d.ts.
+
+## Q28 (b) and Q29 (a) — the act `complete`, `core.use as=` — done
+
+`/tmp/check.sh`: 351 pass, 0 fail on sources and built file, 350 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean.
+
+- `complete` (std.acts): for every thing (or a thing / a kind with a set), what std.fill
+  chose since it was made and it still lacks is applied as defaults (tier `default`) in
+  one set (one undo step), listed with tier and source in `result.filled`. Test: a pony
+  made before "a pony is a kind of horse" was taught gets field / large (taught by Ana)
+  only when `complete` is asked.
+- `core.use world=<module> as=<name>`: the module's own prefix renamed in ids, types and
+  references; loaded once per `as` name; the module of each wire is its `as` name (the
+  prefix check then holds). Test: one `list` as tasks and shopping, separate counts, each
+  closed. First run refused "module list declares the type tasks.item": the wires still
+  said they came from `list`.
+- Q28, Q29 closed in questions.md. Reference: core.use `as`, std.acts `complete`;
+  reuse.md and capabilities updated.

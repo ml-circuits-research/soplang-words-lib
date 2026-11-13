@@ -288,6 +288,20 @@ const ACTIONS = {
     ctx.retract(m.id); ctx.retract(id);
     return { act: 'forget', fact: id };
   }),
+  acts_complete: (ctx, args) => pre('complete', ctx, args, (w) => { // what std.fill chose since a thing was made, applied on request, as defaults with the source
+    const things = args.thing === undefined ? w.ofType('std.schema.thing') : setOf(w, { ...args, set: args.set ?? 'each' });
+    const filled = [];
+    for (const t of things) {
+      const k = kindsOf(w, t.attrs.kind?.[0])[0];
+      for (const n of ctx.find('std.fill.need', { for: ref(t.id) })) {
+        const key = n.attrs.key[0];
+        if (!n.attrs.value || t.attrs[key] || (k && !k.open && !attrsOf(w, k.type).includes(key))) continue;
+        filled.push({ thing: t.id, key, value: n.attrs.value[0], tier: n.attrs.tier?.[0], source: n.attrs.source?.[0] !== undefined ? String(n.attrs.source[0]).replace(/^"|"$/g, '') : undefined });
+      }
+    }
+    if (filled.length) { const p = w.applyPatch({ sets: filled.map((f) => ({ id: f.thing, key: f.key, value: f.value })) }, { tier: 'default' }); if (p.ok === false) return p; }
+    return { act: 'complete', filled };
+  }),
   acts_save: (ctx, args) => pre('save', ctx, args, (w) => { // the things as they are now, kept under a name
     const name = String(one(args.name));
     const things = w.ofType('std.schema.thing').filter((t) => w.get(t.id)?.meta.told).map((t) => wireText(t.id, t.type, t.attrs));
@@ -636,7 +650,7 @@ ${calcs.join('\n')}
 @lc std.schema.count kind=?k n=?n
 @over core.check fn=gt args=?n args=?m
 @toomany core.deny when=$lm when=$lc if=$over why="at most ?m ?k"
-`.replace(/ACTENUM/g, 'enum=make enum=remove enum=change enum=place enum=connect enum=group enum=pick enum=ask enum=copy enum=send enum=save enum=load enum=undo enum=redo enum=show enum=teach enum=forget'),
+`.replace(/ACTENUM/g, 'enum=make enum=remove enum=change enum=place enum=connect enum=group enum=pick enum=ask enum=copy enum=send enum=save enum=load enum=undo enum=redo enum=show enum=teach enum=forget enum=complete'),
     fns: {},
   },
   // Round 20: the acts, the same for every world declared with std.schema. Each is one
@@ -663,6 +677,7 @@ ${calcs.join('\n')}
 @show core.action name=show fn=acts_show required=thing required=view
 @teach core.action name=teach fn=acts_teach required=fact
 @forget core.action name=forget fn=acts_forget required=fact
+@complete core.action name=complete fn=acts_complete
 @k.shown.view core.slot of=std.acts.shown key=view id=true
 @k.shown.thing core.slot of=std.acts.shown key=thing id=true
 @save core.action name=save fn=acts_save required=name

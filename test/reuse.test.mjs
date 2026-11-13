@@ -45,3 +45,13 @@ test('reuse: "a reference must exist" is one slot attribute; the detector sees a
   assert.ok(r.reuse.every((x) => typeof x.reuse === 'number'));
   assert.ok(Array.isArray(r.candidates));
 });
+
+test('core.use as=: one library module loaded twice under two names (Q29)', async () => {
+  const { list } = await import('../examples/reuse.mjs');
+  const generic = list.replace('{amount}', 'amount').replace('{item}', 'item').replace('{items}', 'items');
+  const w = new World({ library: { list: generic } });
+  w.load('@a core.use world=list as=tasks\n@b core.use world=list as=shopping');
+  w.tell('@t1 tasks.item title=wash  @t2 tasks.item title=cook  @s1 shopping.item title=milk amount=2');
+  assert.deepEqual([w.ofType('tasks.status')[0].attrs.open, w.ofType('shopping.status')[0].attrs.open], [['2'], ['1']]);
+  assert.equal(w.tell('@x tasks.item title=y colour=red').ok, false, 'each instance keeps the module\'s checks');
+});

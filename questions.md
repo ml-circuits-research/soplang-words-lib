@@ -6,37 +6,6 @@ written with each question and in `worker-log.md`. A question is deleted from th
 once the worker is satisfied with the answer; closed ones are listed at the end in one
 line each so the history is not lost.
 
-## Q28 (Round 22, TRANSFER): answer to item 1, and what I built (not waiting)
-
-**Can today's modules say "one store, several views"?** Mostly yes: the things are
-`std.schema.thing` wires in one world; every schema world imports the same module, so an
-act in one is seen by all and there is one history (undo, why). What was missing, now
-added in std.schema / std.acts: aspects (`std.schema.aspect`: a set of keys taken as a
-whole), which aspects a kind has, views (`std.schema.view shows=`), the act `show` with a
-reasoned refusal, `std.acts.shown` facts; taught facts (`teach`, `forget`, the tier
-`taught`). Still missing, for your decision: (a) a value that differs per view (the same
-fish small in the chart, drawn large in the picture) — today one value per key; I would
-keep one value and let a view scale it in its renderer; (b) defaults learnt after a thing
-was made are not applied to it (they are applied at `make`); an act `complete` could
-apply them on request. Round 21 item 6 (the session as facts) is the same store: what was
-made, shown, taught is in `std.schema.thing`, `std.acts.shown`, `std.know.taught` wires,
-counted by kind and world with `core.aggregate`.
-
-## Q29 (R23 item 4): one module instantiated several times under other names
-
-What exists: `core.use world=<module> prefix=` loads a library module once, under its own
-name (`this.used`); its types are written with their full names, so a second `core.use`
-of the same module under another name is not possible, and `prefix=` only prefixes ids.
-`examples/reuse.mjs` instantiates by renaming the module's prefix in its text before
-loading (`instance(text, 'list', 'tasks', { item: 'task' })`): tasks, shopping and
-playlist from one `list`, tic-tac-toe and chess from one `board`. Options:
-(a) `core.use world=list as=tasks word.item=task ...`: the library renames the module's
-    own prefix (ids, types, `$` references) and fills `{name}` placeholders from `word.*`
-    attributes; a module says it is a template by containing `{...}`.
-(b) keep it a host helper (`instance` moves to the library as a function, no syntax).
-I lean to (a) without the words part first (`as=` only: renaming is one sign with one
-meaning; words can be told as `core.word` wires after loading), and (b) meanwhile.
-
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.
@@ -68,3 +37,5 @@ meaning; words can be told as `core.word` wires after loading), and (b) meanwhil
 - Q26 (PSys2's pattern set): answered (a); PSys2 copies patterns.sop and spec 03 into compat/psys2, then the index is measured on them.
 - Q27 (ACTS × SCHEMAS): accepted as recommended; shipped in 0.18.0.
 - Q-H8 (PSys2 hand-over, knowledge-loader): (a) done in 0.23: `createCatalog` (index, vocabulary, host reader, cache, host lemma, schemas first) and `tools/build-bundle.mjs` writing bundles in the shard format, read by `bundleReader`; refused: English lemma rules, k.objects drawing decode, faces, the evaluation-set generator.
+- Q28 (shared store): (a) one value per key, a view restyles in its renderer; (b) the act `complete`, done in 0.24.
+- Q29 (instances): (a) `core.use ... as=`, done in 0.24; words told after loading.

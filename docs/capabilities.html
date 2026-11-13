@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld What the library can do</title>
-<meta name="source-hash" content="dd951b156000">
+<meta name="source-hash" content="14d69cda4620">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -120,7 +120,7 @@ w.revise(&#x27;ta&#x27;, { x: 50 });
 print(w.get(&#x27;b&#x27;).attrs.x, w.get(&#x27;b&#x27;).attrs.y);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;90&quot;] [&quot;70&quot;]</code></pre></figure>
 <h2 id="share-things-between-views-teach-facts">Share things between views; teach facts</h2>
-<p>Several views read the same things; a view shows some aspects; showing a thing that lacks one is refused with the reason. Facts the user teaches sit at their own tier and say who taught them. <em>0.21.</em> <strong>Limits:</strong> one value per key for all views; defaults learnt later do not reach things already made.</p>
+<p>Several views read the same things; a view shows some aspects; showing a thing that lacks one is refused with the reason. Facts the user teaches sit at their own tier and say who taught them; the act <code>complete</code> applies defaults learnt later to things already made. <em>0.21; complete since 0.24.</em> <strong>Limits:</strong> one value per key for all views (a view restyles in its renderer).</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@acts core.use world=std.acts
   @z std.schema.world name=zoo

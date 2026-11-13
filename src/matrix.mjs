@@ -26,7 +26,7 @@ export const GRAMMAR = {
   'core.type': ['of', 'extends', 'closed', 'complete', 'transient', 'shared', 'unique'],
   'core.namespace': ['prefix', 'open'],
   'core.schema.map': ['from', 'as'], // and one attribute per field it maps
-  'core.use': ['world', 'prefix'],
+  'core.use': ['world', 'prefix', 'as'],
   'core.module': ['name', 'version', 'imports', 'exports'],
   'core.rule': ['when', 'not', 'with', 'if', 'then', 'lazy'],
   'core.deny': ['when', 'not', 'with', 'if', 'why', 'soft', 'priority'],

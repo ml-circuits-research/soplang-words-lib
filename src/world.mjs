@@ -1220,18 +1220,21 @@ export class World {
     // facts and matrix wires have separate id spaces: a pattern @m1 of the matrix does not clash with a fact @m1
     for (const w of wires) if (w.legacy) this._deprecated(w.id);
     const isSchema = (w) => w.pattern || SCHEMA_TYPES.has(w.type) || maps.has(w.type) || linked.has(w.id);
-    const load = (name, prefixed) => { // a module of the library, once
-      if (this.used.has(name)) return;
-      this.used.add(name);
-      this._do(() => this.used.delete(name));
-      const mod = parse(this.options.library[name]);
+    const load = (name, prefixed, as) => { // a module of the library, once (once per name it is loaded as)
+      const key = as || name;
+      if (this.used.has(key)) return;
+      this.used.add(key);
+      this._do(() => this.used.delete(key));
+      // as=: the module under another name: its own prefix renamed in ids, types and references
+      const text = as ? this.options.library[name].replace(new RegExp(`(^|[\\s$@=])${name.replace(/\./g, '\\.')}\\.`, 'gm'), `$1${as}.`) : this.options.library[name];
+      const mod = parse(text);
       // a module of the standard pack brings its functions (pure, declared in it); a host's function of the same name stays
       if (STD[name] && this.options.library[name] === STD[name].text) {
         for (const [f, fn] of Object.entries(STD[name].fns)) if (!this.fns[f]) this.fns[f] = fn;
         for (const [f, fn] of Object.entries(STD[name].actions || {})) if (!this.actions[f]) this.actions[f] = fn; // and its actions
       }
-      const ws = prefixed ? prefixModule(mod, name) : mod.map(cloneWire);
-      for (const w of ws) Object.defineProperty(w, 'module', { value: name, enumerable: false }); // which module said it
+      const ws = prefixed ? prefixModule(mod, key) : mod.map(cloneWire);
+      for (const w of ws) Object.defineProperty(w, 'module', { value: key, enumerable: false }); // which module said it (the name it is loaded as)
       note(ws);
       wires.push(...ws);
     };
@@ -1254,7 +1257,7 @@ export class World {
       if (w.type === 'core.use') {
         const name = first(w, 'world');
         if (!name || !(name in this.options.library)) res.violations.push({ kind: 'schema', why: `${w.id}: no matrix named "${name}" in the library` });
-        else load(name, first(w, 'prefix') !== 'false'); // prefix=false: the module's ids are already qualified
+        else load(name, first(w, 'prefix') !== 'false', first(w, 'as')); // prefix=false: the module's ids are already qualified
       } else if (map?.as === 'module' || w.type === 'core.module') { // a module that declares itself and what it imports
         const self = w.type === 'core.module' ? { name: first(w, 'name') || w.id, imports: w.attrs.imports || [] } : readModule(map, w);
         if (self.name && !this.used.has(self.name)) { this.used.add(self.name); this._do(() => this.used.delete(self.name)); }

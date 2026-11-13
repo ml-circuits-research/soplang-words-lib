@@ -34,3 +34,15 @@ test('taught facts: their own tier, who taught them, the same change in all thre
   assert.deepEqual(w.act({ action: 'forget', args: { fact: 'pony.isa' } }).result, { act: 'forget', fact: 'pony.isa' });
   assert.equal(w.act({ action: 'make', args: { kind: 'pony' } }).result.filled, undefined, 'forgotten: nothing to fill from');
 });
+
+test('complete: defaults learnt after a thing was made are applied on request, with tier and source; never silently', () => {
+  const w = makeWorld();
+  w.act({ action: 'make', args: { kind: 'pony' } });
+  w.act({ action: 'teach', args: { fact: '@pony.isa k.commonsense.thing name=pony is_a=horse', by: 'Ana' } });
+  assert.equal(w.get('pony1').attrs.place, undefined, 'not silently');
+  const r = w.act({ action: 'complete', args: {} });
+  assert.deepEqual(r.result.filled, [{ thing: 'pony1', key: 'place', value: 'field', tier: 'taught', source: 'taught by Ana' }, { thing: 'pony1', key: 'size', value: 'large', tier: 'taught', source: 'taught by Ana' }]);
+  assert.deepEqual([w.get('pony1').attrs.place, w.tier('pony1', 'place')], [['field'], 'default']);
+  w.undo();
+  assert.equal(w.get('pony1').attrs.place, undefined, 'one undo step');
+});

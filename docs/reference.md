@@ -1461,6 +1461,49 @@ print(w.functions()[0].args.map((a) => [a.name, a.kind, a.optional]));
 
 **Limits.** An argument has one kind; a function taking any value leaves `kind` out.
 
+## The standard function pack
+
+Pure functions declared in SOP Lang (`core.function`), shipped with the library and
+opt-in: a matrix that says `core.use world=std.numbers` (or `std.order`, `std.boxes`)
+gets their declarations and their code. `world.functions()` lists them; a host's function
+or a host library module of the same name wins. Every function is checked where it is
+used (number of arguments, literal kinds, a check returns boolean).
+
+| Module | Function | Arguments | Result |
+| --- | --- | --- | --- |
+| std.numbers | average | two to eight numbers | their mean |
+| std.numbers | median | one to eight numbers | the middle one (the mean of the two middle ones for an even count) |
+| std.order | rank_in | a value, then one to eight numbers | its place among them, 1 for the smallest |
+| std.order | nth_smallest | n, then one to eight numbers | the n-th smallest |
+| std.order | nth_largest | n, then one to eight numbers | the n-th largest |
+| std.boxes | centre_x, centre_y | x and w, or y and h | the middle of a box across, or down |
+| std.boxes | overlaps | two boxes (x1 y1 w1 h1 x2 y2 w2 h2) | whether they share some area (touching edges do not) |
+| std.boxes | contains_box | two boxes | whether the first holds the whole of the second |
+| std.boxes | box_distance | two boxes | the distance between their centres |
+
+A box is `x y w h`, its top left corner and its size, with `y` growing downwards. What
+the pack does not repeat: `min`, `max`, `add`, `abs`, `round`, `clamp`, `between`,
+`sign` and the comparisons are built in (below); a minimum, maximum, sum or count over
+many wires is `core.aggregate`; the place of a wire among its peers is `core.rank`. The
+pack's functions take the values of one match: for many wires, aggregate first.
+`examples/space.mjs` writes "the middle one", "left of" and "in a row" with the pack and
+rules only.
+
+```js run
+const w = new World();
+w.load(`@u core.use world=std.boxes
+  @b box x=?x w=?w
+  @c core.calc out=?m fn=centre_x args=?x args=?w
+  @t box core.on=$b middle=?m
+  @r core.rule when=$b with=$c then=$t`);
+w.tell('@b1 box x=10 w=20');
+print(w.get('b1').attrs.middle, w.functions().map((f) => f.name).slice(0, 2));
+```
+
+```output
+["20"] ["centre_x","centre_y"]
+```
+
 ## Functions
 
 A function is called with its arguments as text and returns text (or true/false for a

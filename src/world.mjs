@@ -13,6 +13,7 @@ import { completion } from './complete.mjs';
 import { revision } from './revise.mjs';
 import { querying } from './query.mjs';
 import { interpreting } from './interpret.mjs';
+import { STD } from './std.mjs';
 import { timing } from './time.mjs';
 import { Budget } from './budget.mjs';
 import { tiering } from './tiers.mjs';
@@ -58,7 +59,9 @@ export class World {
       fns = {}, library = {}, maxDepth = 12, maxSteps = 50000,
       lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {}, budget = {}, decimals, actions = {}, producers = {}, filters = {}, lemma = null, facts = {}, override = false, ns,
     } = options;
-    this.options = { fns, actions, producers, filters, facts, override, ns, library, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget, decimals };
+    // the standard function pack is in every library (opt-in by core.use world=std.<name>); a host's module of the same name wins
+    const lib = { ...Object.fromEntries(Object.entries(STD).map(([k, v]) => [k, v.text])), ...library };
+    this.options = { fns, actions, producers, filters, facts, override, ns, library: lib, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget, decimals };
     this._cannot = null;          // reasons given by functions during a query (see cannot)
     this.warnings = [];           // things that still work and will not: { kind, id, why }
     this._reads = new WeakMap();  // bindings of a rule body -> the aggregated cells it read
@@ -1102,6 +1105,8 @@ export class World {
       this.used.add(name);
       this._do(() => this.used.delete(name));
       const mod = parse(this.options.library[name]);
+      // a module of the standard pack brings its functions (pure, declared in it); a host's function of the same name stays
+      if (STD[name] && this.options.library[name] === STD[name].text) for (const [f, fn] of Object.entries(STD[name].fns)) if (!this.fns[f]) this.fns[f] = fn;
       const ws = prefixed ? prefixModule(mod, name) : mod.map(cloneWire);
       for (const w of ws) Object.defineProperty(w, 'module', { value: name, enumerable: false }); // which module said it
       note(ws);
@@ -1892,7 +1897,10 @@ export class World {
         const rec = this.firings.get(sig);
         if (!rec) continue;
         if (rec.from.includes(id)) invalidate(sig);
-        else { this._forgetFiring(sig); rec.from.forEach(requeue); } // it only wrote here: let it fire again
+        else if (!rec.from.length && rec.made.every((x) => this.wires.has(x)) && rec.fills.every((f) => this.wires.get(f.id)?.attrs[f.key]?.includes(f.value))) {
+          // a firing with no anchor (an aggregate's result) that only wrote here, and all it
+          // wrote still stands: keep it, nothing would make it fire again
+        } else { this._forgetFiring(sig); rec.from.forEach(requeue); } // it only wrote here: let it fire again
       }
     }
     res._agenda = res._agenda.filter((id) => this.wires.has(id));

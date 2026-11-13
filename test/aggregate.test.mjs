@@ -382,3 +382,23 @@ test('aggregate groups=: every declared group has a result, empty ones 0 or defa
   const bad = new World();
   assert.throws(() => bad.load('@it item cat=?c k=?k  @t tally n=?n  @g core.aggregate over=$it by=?c by=?k count=?n groups=x then=$t'), /exactly one by=/);
 });
+
+test('aggregate: two results merged into one told wire stay in step after a revision of a member', async () => {
+  const { World } = await import('../tools/lib-under-test.mjs');
+  const w = new World();
+  w.load(`
+    @k core.slot of=box key=name id=true
+    @k2 core.slot of=thing key=v kind=number
+    @m thing in=?g v=?v
+    @a core.aggregate over=$m by=?g count=?n then=$t
+    @t box name=?g n=?n
+    @a2 core.aggregate over=$m by=?g max=?hi args=?v then=$t2
+    @t2 box name=?g hi=?hi
+  `);
+  w.tell('@b box name=x  @t1 thing in=x v=1');
+  assert.ok(w.revise('t1', 'v', '5').ok);
+  const r = w.tell('@t2 thing in=x v=3');
+  assert.deepEqual([r.ok, w.get('b').attrs.n, w.get('b').attrs.hi], [true, ['2'], ['5']]);
+  w.retract('t2');
+  assert.deepEqual([w.get('b').attrs.n, w.get('b').attrs.hi], [['1'], ['5']]);
+});

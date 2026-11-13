@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="af4797466051">
+<meta name="source-hash" content="f48dc803b817">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -586,6 +586,19 @@ w.load(&#x27;@f core.function name=clamp3 out.kind=number pure=true\n@f.x core.f
 print(w.functions()[0].args.map((a) =&gt; [a.name, a.kind, a.optional]));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;x&quot;,&quot;number&quot;,false],[&quot;hi&quot;,&quot;number&quot;,true]]</code></pre></figure>
 <p><strong>Limits.</strong> An argument has one kind; a function taking any value leaves <code>kind</code> out.</p>
+<h2 id="the-standard-function-pack">The standard function pack</h2>
+<p>Pure functions declared in SOP Lang (<code>core.function</code>), shipped with the library and opt-in: a matrix that says <code>core.use world=std.numbers</code> (or <code>std.order</code>, <code>std.boxes</code>) gets their declarations and their code. <code>world.functions()</code> lists them; a host's function or a host library module of the same name wins. Every function is checked where it is used (number of arguments, literal kinds, a check returns boolean).</p>
+<div class="table"><table><thead><tr><th>Module</th><th>Function</th><th>Arguments</th><th>Result</th></tr></thead><tbody><tr><td>std.numbers</td><td>average</td><td>two to eight numbers</td><td>their mean</td></tr><tr><td>std.numbers</td><td>median</td><td>one to eight numbers</td><td>the middle one (the mean of the two middle ones for an even count)</td></tr><tr><td>std.order</td><td>rank_in</td><td>a value, then one to eight numbers</td><td>its place among them, 1 for the smallest</td></tr><tr><td>std.order</td><td>nth_smallest</td><td>n, then one to eight numbers</td><td>the n-th smallest</td></tr><tr><td>std.order</td><td>nth_largest</td><td>n, then one to eight numbers</td><td>the n-th largest</td></tr><tr><td>std.boxes</td><td>centre_x, centre_y</td><td>x and w, or y and h</td><td>the middle of a box across, or down</td></tr><tr><td>std.boxes</td><td>overlaps</td><td>two boxes (x1 y1 w1 h1 x2 y2 w2 h2)</td><td>whether they share some area (touching edges do not)</td></tr><tr><td>std.boxes</td><td>contains_box</td><td>two boxes</td><td>whether the first holds the whole of the second</td></tr><tr><td>std.boxes</td><td>box_distance</td><td>two boxes</td><td>the distance between their centres</td></tr></tbody></table></div>
+<p>A box is <code>x y w h</code>, its top left corner and its size, with <code>y</code> growing downwards. What the pack does not repeat: <code>min</code>, <code>max</code>, <code>add</code>, <code>abs</code>, <code>round</code>, <code>clamp</code>, <code>between</code>, <code>sign</code> and the comparisons are built in (below); a minimum, maximum, sum or count over many wires is <code>core.aggregate</code>; the place of a wire among its peers is <code>core.rank</code>. The pack's functions take the values of one match: for many wires, aggregate first. <code>examples/space.mjs</code> writes "the middle one", "left of" and "in a row" with the pack and rules only.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@u core.use world=std.boxes
+  @b box x=?x w=?w
+  @c core.calc out=?m fn=centre_x args=?x args=?w
+  @t box core.on=$b middle=?m
+  @r core.rule when=$b with=$c then=$t`);
+w.tell(&#x27;@b1 box x=10 w=20&#x27;);
+print(w.get(&#x27;b1&#x27;).attrs.middle, w.functions().map((f) =&gt; f.name).slice(0, 2));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;20&quot;] [&quot;centre_x&quot;,&quot;centre_y&quot;]</code></pre></figure>
 <h2 id="functions">Functions</h2>
 <p>A function is called with its arguments as text and returns text (or true/false for a comparison). When it has no result it returns nothing and the rule does not fire. Host functions are added with <code>new World({ fns })</code>; a name from the tables below cannot be taken without <code>override</code>.</p>
 <p>A <strong>number</strong> is an integer or decimal, optionally followed by a unit (<code>5</code>, <code>2.5</code>, <code>3kg</code>, <code>10N/kg</code>). Arithmetic keeps 12 significant digits.</p>

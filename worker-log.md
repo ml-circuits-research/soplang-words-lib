@@ -2915,3 +2915,32 @@ px/py on the part 143 wires, 9.2 ms, +1.23 MB; the existing `kind=json` (one lis
 duplicate value is dropped, measured), so an ordered list would be a second meaning; a
 new list kind would duplicate `kind=json`. Q24 recommends the existing `kind=json` for
 drawings, one wire per point only where rules reason about single points.
+
+## R17.2 — the standard function pack and a space world — done
+
+`npm test`: 289 pass, 0 fail on sources and built file, 288 in checking mode. Pilot output
+identical. `npm run examples`: exit 0. `git grep -i psys2 src/`: empty. scan-loops clean.
+tsc clean.
+
+- src/std.mjs: three modules in every library (a host module of the same name wins),
+  opt-in by `core.use world=std.<name>`; using one registers its functions (a host
+  function of the same name wins). All pure and declared with `core.function`:
+  std.numbers `average` (2-8 numbers), `median` (1-8); std.order `rank_in`,
+  `nth_smallest`, `nth_largest`; std.boxes `centre_x`, `centre_y`, `overlaps`,
+  `contains_box`, `box_distance`. Not repeated: built-in min, max, add, abs, round,
+  clamp, between, sign, comparisons; aggregates over many wires; core.rank.
+- examples/space.mjs: five items in a frame; centres from the pack, places by core.rank,
+  frame size, top and bottom by core.aggregate; "the middle one", "left of", "in a row" as
+  rules. Added to `npm run examples`.
+- Found on the way and fixed (src/world.mjs, withdrawal): an aggregate result merged into a
+  told wire lost its firing when another result on the same wire was withdrawn (a firing
+  with no anchor that "only wrote here" was forgotten and could never fire again, its value
+  left behind), so the next change of the group was a `conflict`. Such a firing is now kept
+  while all it wrote still stands. Test `aggregate: two results merged into one told wire
+  stay in step after a revision of a member` (fails without the change).
+- Observation, not changed: `min=`/`max=` on core.aggregate without `args=` silently gives
+  no result.
+- test/std.test.mjs (3): every function, opt-in, declarations checked where used, host
+  names win; the space world, a revision that breaks the row, a sixth item (no middle),
+  "left of the clock" by `ask`.
+- Docs: reference.md "The standard function pack" (with what it does not repeat).

@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.16.0
+
+Round 17: what the knowledge worlds and the coming `space` module need.
+
+### New
+- The standard function pack, declared in SOP Lang and opt-in by `core.use`:
+  `std.numbers` (average, median), `std.order` (rank_in, nth_smallest, nth_largest),
+  `std.boxes` (centre_x, centre_y, overlaps, contains_box, box_distance); and
+  examples/space.mjs, a space world written with it and rules only (R17.2).
+- `absent: [keys]` in the object form of questions and descriptions, and `core.absent=` on
+  `core.question` wires: the pattern modifier, reached from objects (R17.1, Q23).
+- bench/load.mjs over the hand-written CC0 knowledge shards (R17.5).
+
+### Fixes
+- The same number written two ways on several wires is one answer, `supported` (R17.4).
+- Identity lookup walks the smallest identity index set: no slowdown as a world grows (R17.5).
+- An aggregate result merged into a told wire keeps its firing when another result on that
+  wire is withdrawn; the next change of the group is no longer a `conflict` (R17.2).
+
+Q24 (ordered sequences) reported; one wire per point stays.
+
 ## 0.15.0
 
 Round 16: findings of the first knowledge worlds.

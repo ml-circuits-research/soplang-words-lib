@@ -39,7 +39,7 @@ export interface Result {
 export interface Issue { id: string; rule?: string; about: string[]; key?: string; why?: string }
 export interface OpenKey { id: string; type: string; key: string; ask?: string }
 export interface Candidate { value: string; source: 'default' | 'enum' | 'wire' | 'range'; count: number }
-export interface Question { type?: string; seek?: string; where?: Record<string, string | number>; about?: string; mode?: 'value' | 'list' | 'count' | 'exists' | 'check' | 'abduce'; /** for mode=check: the value to check, when it is not in where */ value?: string | number }
+export interface Question { type?: string; seek?: string; where?: Record<string, string | number>; /** keys the wire has no value for (core.absent=) */ absent?: string[]; about?: string; mode?: 'value' | 'list' | 'count' | 'exists' | 'check' | 'abduce'; /** for mode=check: the value to check, when it is not in where */ value?: string | number }
 export type WordMeaning =
   | { kind: 'action'; name: string }
   | { kind: 'type'; type: string }
@@ -84,7 +84,7 @@ export interface Reading {
 export interface ScoreCandidate {
   /** a statement; references named in `refer` are resolved against the state */
   wires?: string | Wire[];
-  refer?: Record<string, { type?: string; where?: Record<string, string>; ns?: string; /** ids it is not */ not?: string[] }>;
+  refer?: Record<string, { type?: string; where?: Record<string, string>; absent?: string[]; ns?: string; /** ids it is not */ not?: string[] }>;
   /** a change to a told wire (a follow-up) */
   revise?: { id: string; values: Record<string, string> };
   action?: string;

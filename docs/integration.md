@@ -81,7 +81,9 @@ preference:
 3. **A state** (`core.fluent`) for anything that is replayed today: balances, counts,
    progress. Undo is `retract`; the past is `asOf`.
 4. **An aggregate** (`over=`) for totals, counts, the largest of a group.
-5. **`core.absent=<key>`** for "when this was not given".
+5. **`core.absent=<key>`** for "when this was not given": on a pattern, in `ask` text,
+   on a `core.question` wire, and as `absent: ['key']` in the object form of `query`
+   and `score` (a wire that has no value for that key).
 6. **A producer** (`core.producer`) for a value that only a function can compute.
 7. **An action** (`core.action`) for an operation that changes the world: written as
    wires where it is "check, then update", else a function registered under `actions`

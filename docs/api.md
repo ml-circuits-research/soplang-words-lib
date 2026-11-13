@@ -662,8 +662,10 @@ true false
 
 ### world.query(question, options?)
 
-Asks for a value, with a status. `question` is `{ type, where, seek, mode }` or
-`{ about, seek }`, a `core.question` wire, or its text. Modes: `value` (default),
+Asks for a value, with a status. `question` is `{ type, where, absent, seek, mode }` or
+`{ about, seek }`, a `core.question` wire, or its text. `absent` (keys) and
+`core.absent=` on a question wire match only wires with no value for those keys, as the
+pattern modifier does. Modes: `value` (default),
 `list`, `count`, `exists`, `check` (is `where[seek]`, or `value`, the value the world
 has? `yes`, or `no` with `actual`), `abduce`. Options: `record` (tell the
 question and the answer as wires), `suppose` (default true: S53), `at`. Returns

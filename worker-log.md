@@ -2944,3 +2944,21 @@ tsc clean.
   names win; the space world, a revision that breaks the row, a sixth item (no middle),
   "left of the clock" by `ask`.
 - Docs: reference.md "The standard function pack" (with what it does not repeat).
+
+## R17.1 (Q23 answered (b)) — absent keys in the object form — done; Q24 closed
+
+`npm test`: 290 pass, 0 fail on sources and built file, 289 in checking mode. Pilot output
+identical. `git grep -i psys2 src/`: empty. scan-loops clean. tsc clean.
+
+- `absent: [keys]` on question objects (query, score's `refer` descriptions) and
+  `core.absent=` on `core.question` wires: the pattern modifier, nothing new
+  (`_question`, `_matching`).
+- Test `query: absent= in the object form and core.absent= on a question wire mean the
+  pattern modifier`: object, wire text, without it (conflicting), `ask`, a referent.
+- Docs: docs/integration.md (the line asked for), api.md query, index.d.ts.
+- Q24: report accepted, one wire per point stays; Q23 and Q24 moved to Closed.
+
+## 0.16.0 — Round 17 released (version, changelog, rebuild; no tag)
+
+A minor version: the standard pack, the object form of `core.absent`, fixes. `npm test`
+290 / 290 / 289. Pilot 147/147, 212/217, 231/232, output identical. No open questions.

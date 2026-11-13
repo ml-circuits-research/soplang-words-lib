@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Putting a system on sopworld</title>
-<meta name="source-hash" content="832916a0c665">
+<meta name="source-hash" content="c3ddaf54ae75">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.15.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.16.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html" aria-current="page">Integration</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -43,7 +43,7 @@
 <ol><li><strong>A rule that fills a key on the thing asked about.</strong> The question type is a wire type; when no such wire exists the world supposes one with the question's keys, runs the rules, reads the answer and undoes it. Use <code>core.on=$pattern</code> to put the result on the supposed wire:</li></ol>
 <p><code> @q quote item=?i count=?n @p price item=?i cost=?c @c core.calc out=?t fn=mul args=?n args=?c @a quote core.on=$q total=?t @r core.rule when=$q when=$p with=$c then=$a </code></p>
 <p><code>world.query({ type: 'quote', seek: 'total', where: { item: 'pen', count: 3 } })</code> answers with the total, <code>missing</code> when the price is unknown, and nothing is recorded.</p>
-<ol><li><strong>A deny for what cannot be.</strong> "Paid less than the cost" is a <code>core.deny</code> over the supposed wire: the answer is <code>refused</code>, with your <code>why</code>.</li><li><strong>A state</strong> (<code>core.fluent</code>) for anything that is replayed today: balances, counts, progress. Undo is <code>retract</code>; the past is <code>asOf</code>.</li><li><strong>An aggregate</strong> (<code>over=</code>) for totals, counts, the largest of a group.</li><li><strong><code>core.absent=&lt;key&gt;</code></strong> for "when this was not given".</li><li><strong>A producer</strong> (<code>core.producer</code>) for a value that only a function can compute.</li><li><strong>An action</strong> (<code>core.action</code>) for an operation that changes the world: written as wires where it is "check, then update", else a function registered under <code>actions</code> (its own registry: an action named <code>add</code> does not replace the arithmetic) that runs in one transaction with <code>find</code>, <code>val</code>, <code>tell</code>, <code>fill</code>, <code>replace</code>, <code>retract</code>. Declare its required arguments and the question for each; a call without them returns <code>missing</code> with those questions.</li></ol>
+<ol><li><strong>A deny for what cannot be.</strong> "Paid less than the cost" is a <code>core.deny</code> over the supposed wire: the answer is <code>refused</code>, with your <code>why</code>.</li><li><strong>A state</strong> (<code>core.fluent</code>) for anything that is replayed today: balances, counts, progress. Undo is <code>retract</code>; the past is <code>asOf</code>.</li><li><strong>An aggregate</strong> (<code>over=</code>) for totals, counts, the largest of a group.</li><li><strong><code>core.absent=&lt;key&gt;</code></strong> for "when this was not given": on a pattern, in <code>ask</code> text, on a <code>core.question</code> wire, and as <code>absent: ['key']</code> in the object form of <code>query</code> and <code>score</code> (a wire that has no value for that key).</li><li><strong>A producer</strong> (<code>core.producer</code>) for a value that only a function can compute.</li><li><strong>An action</strong> (<code>core.action</code>) for an operation that changes the world: written as wires where it is "check, then update", else a function registered under <code>actions</code> (its own registry: an action named <code>add</code> does not replace the arithmetic) that runs in one transaction with <code>find</code>, <code>val</code>, <code>tell</code>, <code>fill</code>, <code>replace</code>, <code>retract</code>. Declare its required arguments and the question for each; a call without them returns <code>missing</code> with those questions.</li></ol>
 <p>What stays outside the matrix: turning text into wires, wording of replies, string handling (splitting "milk, eggs and bread"). Keep those in your own code or in actions.</p>
 <h2 id="5-sessions-what-if-persistence">5. Sessions, what-if, persistence</h2>
 <ul><li>One <code>World</code> per session or per device. Build one with the schema and matrix loaded, and <code>fork()</code> it for each session: a fork copies nothing until it changes.</li><li><code>world.trial(fn)</code> and <code>{ dry: true }</code> try a change and undo it. <code>world.asOf(at, fn)</code> reads the past.</li><li><code>world.toJSON()</code> and <code>World.fromJSON(data, options)</code> save and restore.</li><li><code>world.on(listener)</code> receives the committed events.</li></ul>
@@ -59,7 +59,7 @@
 <p>The eleven failures and their reasons are listed in <code>worker-log.md</code> (G8): three are an impossible event that the library refuses when told and the old system reports when asked; four are a reply convention; the rest are a rounding rule, a division by zero, a tie, and an operation of another world.</p>
 <p class="source">Generated from <code>docs/integration.md</code>.</p>
 </main>
-<footer>sopworld 0.15.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.16.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

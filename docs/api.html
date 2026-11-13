@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="8ca27592884b">
+<meta name="source-hash" content="b47c321c8e03">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.15.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.16.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -268,7 +268,7 @@ w.tell(&#x27;@pen item name=pen price=2&#x27;);
 print(w.holds(&#x27;item name=pen&#x27;), w.holds(&#x27;item name=ink&#x27;));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true false</code></pre></figure>
 <h3 id="worldqueryquestion-options">world.query(question, options?)</h3>
-<p>Asks for a value, with a status. <code>question</code> is <code>{ type, where, seek, mode }</code> or <code>{ about, seek }</code>, a <code>core.question</code> wire, or its text. Modes: <code>value</code> (default), <code>list</code>, <code>count</code>, <code>exists</code>, <code>check</code> (is <code>where[seek]</code>, or <code>value</code>, the value the world has? <code>yes</code>, or <code>no</code> with <code>actual</code>), <code>abduce</code>. Options: <code>record</code> (tell the question and the answer as wires), <code>suppose</code> (default true: S53), <code>at</code>. Returns <code>{ status, value | values, from, via, tier, rests, wires }</code> and, by status, <code>alternatives</code>, <code>missing</code>, <code>reason</code>, <code>issues</code>, <code>howto</code>, <code>supposed</code>, <code>violations</code>. The statuses are defined in <a href="semantics.html#queries">semantics</a>.</p>
+<p>Asks for a value, with a status. <code>question</code> is <code>{ type, where, absent, seek, mode }</code> or <code>{ about, seek }</code>, a <code>core.question</code> wire, or its text. <code>absent</code> (keys) and <code>core.absent=</code> on a question wire match only wires with no value for those keys, as the pattern modifier does. Modes: <code>value</code> (default), <code>list</code>, <code>count</code>, <code>exists</code>, <code>check</code> (is <code>where[seek]</code>, or <code>value</code>, the value the world has? <code>yes</code>, or <code>no</code> with <code>actual</code>), <code>abduce</code>. Options: <code>record</code> (tell the question and the answer as wires), <code>suppose</code> (default true: S53), <code>at</code>. Returns <code>{ status, value | values, from, via, tier, rests, wires }</code> and, by status, <code>alternatives</code>, <code>missing</code>, <code>reason</code>, <code>issues</code>, <code>howto</code>, <code>supposed</code>, <code>violations</code>. The statuses are defined in <a href="semantics.html#queries">semantics</a>.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 w.tell(&#x27;@pen item name=pen price=2  @l1 line item=$pen qty=3&#x27;);
 const q = w.query({ about: &#x27;l1&#x27;, seek: &#x27;cost&#x27; });
@@ -539,7 +539,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.15.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.16.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

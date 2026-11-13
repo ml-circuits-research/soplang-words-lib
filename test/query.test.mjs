@@ -467,3 +467,16 @@ test('query: the same value on several wires is supported, with all of them; dif
   const dog = w.query({ type: 'drawing', where: { name: 'dog' }, seek: 'colour' });
   assert.deepEqual([dog.status, dog.alternatives.map((x) => x.value)], ['conflicting', ['red', 'blue']]);
 });
+
+test('query: absent= in the object form and core.absent= on a question wire mean the pattern modifier', () => {
+  const w = new World();
+  w.tell('@a drawing name=cat colour=grey  @b drawing name=cat variant=2 colour=black');
+  const q = w.query({ type: 'drawing', where: { name: 'cat' }, absent: ['variant'], seek: 'colour' });
+  assert.deepEqual([q.status, q.value, q.wires], ['supported', 'grey', ['a']]);
+  assert.equal(w.query('@q1 core.question type=drawing where.name=cat core.absent=variant seek=colour').value, 'grey');
+  assert.equal(w.query({ type: 'drawing', where: { name: 'cat' }, seek: 'colour' }).status, 'conflicting', 'without it, both drawings');
+  assert.deepEqual(w.ask('@d drawing name=cat core.absent=variant').map((r) => r.d), ['a'], 'the same as in a pattern');
+  // a referent described the same way in score
+  const s = w.score([{ wires: '@p pick it=$it', refer: { it: { type: 'drawing', where: { name: 'cat' }, absent: ['variant'] } } }]);
+  assert.deepEqual(s.candidates[0].referents[0].ids, ['a']);
+});

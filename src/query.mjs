@@ -47,7 +47,8 @@ export const querying = {
     const where = {};
     for (const k of Object.keys(w.attrs)) if (k.startsWith(v.where)) where[k.slice(v.where.length)] = w.attrs[k][0];
     const about = first(w, v.about);
-    return { id: this.has(w.id) ? this.resolve(w.id) : undefined, type: first(w, v.type), seek: first(w, v.seek), where, about: about ? about.replace(/^\$/, '') : undefined, mode: first(w, v.mode) || 'value' };
+    const absent = w.attrs['core.absent']; // the pattern modifier: keys the wire must not have
+    return { id: this.has(w.id) ? this.resolve(w.id) : undefined, type: first(w, v.type), seek: first(w, v.seek), where, ...(absent ? { absent: [...absent] } : {}), about: about ? about.replace(/^\$/, '') : undefined, mode: first(w, v.mode) || 'value' };
   },
 
   /** What a registered function sees of the world. */
@@ -96,7 +97,7 @@ export const querying = {
     const read = (cand.assumes || []).filter((a) => a.word !== undefined); // words read as near known ones
     const options = {}; // referent -> the ids it may be
     for (const [name, d] of Object.entries(cand.refer || {})) {
-      const ids = this._matching({ type: d.type, where: d.where || {}, ns: d.ns }).map((w) => w.id).filter((id) => !d.not?.includes(id));
+      const ids = this._matching({ type: d.type, where: d.where || {}, absent: d.absent, ns: d.ns }).map((w) => w.id).filter((id) => !d.not?.includes(id));
       out.referents.push({ name, ids, unique: ids.length === 1 });
       if (!ids.length) out.lacks.push({ referent: name, type: d.type });
       else options[name] = ids.slice(0, 20);
@@ -441,7 +442,7 @@ export const querying = {
   },
 
   /** The wires a question is about: the one it names, or those of its type that meet the constraints. */
-  _matching({ type, where = {}, about, ns }) {
+  _matching({ type, where = {}, absent, ns, about }) {
     // in a namespace: an id or a reference without one is in it, and only its wires match
     const q = (id) => (ns === undefined || id.includes('::') ? id.replace(/^::/, '') : ns ? `${ns}::${id}` : id);
     if (about) { const w = this.get(q(about)); return w ? [w] : []; }
@@ -452,7 +453,9 @@ export const querying = {
     const seen = new Set();
     const out = [];
     const s0 = ns !== undefined && this._nsUsed ? unify('?\u0005ns', ns, EMPTY) : EMPTY;
-    for (const s of this._matchAll([{ id: 'q', type, attrs, pattern: true }], 0, s0)) {
+    // absent: keys the wire has no value for (the object form of core.absent=)
+    const pat = { id: 'q', type, attrs, pattern: true, ...(absent?.length ? { absent: [].concat(absent).map((k) => c.shortKey(type, k)) } : {}) };
+    for (const s of this._matchAll([pat], 0, s0)) {
       const id = walk('?q', s);
       if (!seen.has(id)) { seen.add(id); out.push(this.wires.get(id) || this._external.get(id)); }
     }

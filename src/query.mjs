@@ -757,7 +757,7 @@ export const querying = {
     this._was = was || new Map(); // wires removed on the way (a replaced wire is removed and told again)
     let r;
     try { r = this._actNamed(action, name, args, id); } finally { this._by = by; }
-    if (r.ok) r.diff = this._diffSince(from, this._was);
+    if (r.ok && !r.diff) r.diff = this._diffSince(from, this._was);
     if (!was) this._was = null;
     return r;
   },
@@ -768,6 +768,15 @@ export const querying = {
       return { ok: false, status: 'missing', missing: lacking.map((k) => ({ action: name, key: k, ask: (first({ attrs: action.ask }, `ask.${k}`) || '').replace(/^"|"$/g, '') || undefined })), violations: [] };
     }
     if (action.rule) return this._actDeclared(action, name, args);
+    // an action that works on the world's history (undo, redo, load) runs outside a transaction
+    const own = this._host('action', action.fn);
+    if (own?.outside) {
+      if (this._tx) return { ok: false, status: 'refused', violations: [{ kind: 'refused', why: `${name} cannot run inside another change (one sentence, an action)` }] };
+      const was = this.fork();
+      const out = own(this, args);
+      if (out && out.ok === false) return { ok: false, status: 'refused', violations: out.violations?.length ? out.violations : [{ kind: 'refused', why: out.why }] };
+      return { ok: true, status: 'done', result: out, diff: was.diff(this) };
+    }
     const mark = this._begin(true);
     const violations = [];
     const guard = (r) => { if (r && r.ok === false) { violations.push(...(r.violations || [])); throw REFUSED; } return r; };

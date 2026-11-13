@@ -4,6 +4,7 @@
 // built-ins (min, max, add, abs, round, clamp, between, sign, lt, ...), the aggregates
 // (count, sum, min, max, argmin, argmax, collect) or core.rank already do.
 
+import { parse } from './parser.mjs';
 const num = (v) => Number(v);
 const out = (x) => (Number.isFinite(x) ? String(+x.toFixed(10)) : undefined);
 /** n optional number arguments after `required` ones: declarations a, b, c, ... */
@@ -20,7 +21,7 @@ const RESERVED = new Set(['kind', 'world']);
 /** The kinds the world's schemas declare: [{ type, world, acts, open }] for a kind name. */
 function kindsOf(w, kind) {
   const out = [];
-  for (const k of w.ofType('std.schema.kind')) if (k.attrs.of?.[0] === kind) out.push({ type: kind, world: k.attrs.world[0], acts: k.attrs.acts || [] });
+  for (const k of w.ofType('std.schema.kind')) if (k.attrs.of?.[0] === kind) for (const world of k.attrs.world) out.push({ type: kind, world, acts: k.attrs.acts || [] });
   if (!out.length) for (const k of w.ofType('std.schema.kinds')) { // any kind a knowledge type names
     const from = k.attrs.from[0], key = k.attrs.key?.[0] || 'name';
     if (w.ofType(from).some((x) => x.attrs[key]?.includes(kind))) out.push({ type: 'std.schema.thing', world: k.attrs.world[0], acts: k.attrs.acts || [], open: true });
@@ -42,7 +43,7 @@ const slotOf = (w, type, key) => w._compiled().slots.get(type)?.get(key);
 /** Refuse with what the kind allows and which worlds allow the act. */
 function refuse(w, act, kind, why, extra = {}) {
   const here = kindsOf(w, kind)[0];
-  const elsewhere = [...new Set(w.ofType('std.schema.kind').filter((k) => (k.attrs.acts || []).includes(act)).map((k) => k.attrs.world[0]))];
+  const elsewhere = [...new Set(w.ofType('std.schema.kind').filter((k) => (k.attrs.acts || []).includes(act)).flatMap((k) => k.attrs.world))];
   return { ok: false, why, reason: { act, kind, allowed: here ? here.acts : [], ...(here ? { attrs: attrsOf(w, here.type) } : {}), elsewhere, ...extra } };
 }
 /** The thing an argument names: an id, or a kind with one thing (or the nth). */
@@ -105,7 +106,7 @@ const ACTIONS = {
     if (!allows(w, t, 'change')) return refuse(w, 'change', k, `${art(k)} cannot be changed here`);
     const open = t.type === 'std.schema.thing';
     if (!open && !attrsOf(w, t.type).includes(attr)) {
-      const others = [...new Set(w.ofType('std.schema.kind').filter((x) => x.attrs.of[0] !== k && attrsOf(w, x.attrs.of[0]).includes(attr)).map((x) => `${x.attrs.world[0]}:${x.attrs.of[0]}`))];
+      const others = [...new Set(w.ofType('std.schema.kind').filter((x) => x.attrs.of[0] !== k && attrsOf(w, x.attrs.of[0]).includes(attr)).flatMap((x) => x.attrs.world.map((wd) => `${wd}:${x.attrs.of[0]}`)))];
       return refuse(w, 'change', k, `${art(k)} has no ${attr}`, { attr, hasIt: others });
     }
     let value = args.value === undefined ? undefined : String(one(args.value));
@@ -156,6 +157,26 @@ const ACTIONS = {
     const attr = String(one(args.attr));
     return { act: 'ask', thing: t.id, attr, value: t.attrs[attr]?.[0] ?? null, why: w.why(t.id, attr) };
   }),
+  acts_send: (ctx, args) => pre('send', ctx, args, (w) => { // to another world that has the kind: both schemas checked, one set
+    const { thing: t, why, kind, which } = thingOf(w, args.thing, args.nth);
+    if (!t) return refuse(w, 'send', kind, why, which ? { which } : {});
+    const k = t.attrs.kind[0], to = String(one(args.to)), from = t.attrs.world?.[0];
+    if (!w.ofType('std.schema.world').some((x) => x.attrs.name[0] === to)) return refuse(w, 'send', k, `there is no world ${to}`);
+    const here = kindsOf(w, k).find((x) => x.world === from), there = kindsOf(w, k).find((x) => x.world === to);
+    if (!here?.acts.includes('send')) return refuse(w, 'send', k, `${art(k)} cannot be sent from ${from}`);
+    if (!there) return refuse(w, 'send', k, `${to} has no ${k}`, { to });
+    if (!there.acts.includes('make')) return refuse(w, 'send', k, `${art(k)} cannot be made in ${to}`, { to });
+    const r = w.applyPatch({ sets: [{ id: t.id, key: 'world', value: to }] });
+    return r.ok === false ? r : { act: 'send', thing: t.id, from, to };
+  }),
+  acts_save: (ctx, args) => pre('save', ctx, args, (w) => { // the things as they are now, kept under a name
+    const name = String(one(args.name));
+    const things = w.ofType('std.schema.thing').filter((t) => w.get(t.id)?.meta.told).map((t) => wireText(t.id, t.type, t.attrs));
+    const id = 'saved.' + name.replace(/\W/g, '_');
+    const content = JSON.stringify(things);
+    const r = w.has(id) ? w.applyPatch({ sets: [{ id, key: 'content', value: content }] }) : ctx.tell(wireText(id, 'std.acts.saved', { name, content }), { now: true });
+    return r.ok === false ? r : { act: 'save', name, things: things.length };
+  }),
   acts_copy: (ctx, args) => pre('copy', ctx, args, (w) => {
     const { thing: t, why, kind, which } = thingOf(w, args.thing, args.nth);
     if (!t) return refuse(w, 'copy', kind, why, which ? { which } : {});
@@ -165,6 +186,20 @@ const ACTIONS = {
     return { act: 'copy', thing: id, from: t.id };
   }),
 };
+
+// acts on the history of the world: they run outside a transaction (act() knows them by `outside`)
+ACTIONS.acts_undo = Object.assign((w, args) => { const r = w.undo(Number(one(args.n ?? 1))); return r.ok ? { act: 'undo', undone: r.undone } : r; }, { outside: true });
+ACTIONS.acts_redo = Object.assign((w, args) => { const r = w.redo(Number(one(args.n ?? 1))); return r.ok ? { act: 'redo', redone: r.redone } : r; }, { outside: true });
+ACTIONS.acts_load = Object.assign((w, args) => { // the things as they were saved: changed back, made again, the others taken away
+  const name = String(one(args.name));
+  const saved = w.ofType('std.acts.saved').find((x) => x.attrs.name?.[0] === name);
+  if (!saved) return { ok: false, why: `nothing is saved as ${name}` };
+  const wires = JSON.parse(JSON.parse(saved.attrs.content[0]));
+  const keep = new Set(wires.map((t) => t.slice(1, t.indexOf(' '))));
+  const now = w.ofType('std.schema.thing').filter((t) => w.get(t.id)?.meta.told);
+  const r = w.applyPatch({ wires: wires.filter((t) => !w.has(t.slice(1, t.indexOf(' ')))).join('\n'), replace: wires.filter((t) => w.has(t.slice(1, t.indexOf(' ')))).map((t) => { const [x] = parse(t); return { id: x.id, attrs: x.attrs }; }), retract: now.filter((t) => !keep.has(t.id)).map((t) => t.id) });
+  return r.ok ? { act: 'load', name, things: wires.length } : r;
+}, { outside: true });
 
 export const STD = {
   'std.numbers': {
@@ -448,7 +483,7 @@ ${calcs.join('\n')}
 @k.thing.world core.slot of=std.schema.thing key=world
 @k.world.name core.slot of=std.schema.world key=name id=true
 @k.kind.of core.slot of=std.schema.kind key=of id=true
-@k.kind.world core.slot of=std.schema.kind key=world required=true
+@k.kind.world core.slot of=std.schema.kind key=world required=true many=true
 @k.kind.acts core.slot of=std.schema.kind key=acts many=true ACTENUM
 @k.kinds.world core.slot of=std.schema.kinds key=world id=true
 @k.kinds.from core.slot of=std.schema.kinds key=from required=true
@@ -475,7 +510,7 @@ ${calcs.join('\n')}
 @lc std.schema.count kind=?k n=?n
 @over core.check fn=gt args=?n args=?m
 @toomany core.deny when=$lm when=$lc if=$over why="at most ?m ?k"
-`.replace(/ACTENUM/g, 'enum=make enum=remove enum=change enum=place enum=connect enum=group enum=pick enum=ask enum=copy'),
+`.replace(/ACTENUM/g, 'enum=make enum=remove enum=change enum=place enum=connect enum=group enum=pick enum=ask enum=copy enum=send enum=save enum=load enum=undo enum=redo'),
     fns: {},
   },
   // Round 20: the acts, the same for every world declared with std.schema. Each is one
@@ -498,6 +533,12 @@ ${calcs.join('\n')}
 @pick core.action name=pick fn=acts_pick required=kind
 @ask core.action name=ask fn=acts_ask required=thing
 @copy core.action name=copy fn=acts_copy required=thing
+@send core.action name=send fn=acts_send required=thing required=to
+@save core.action name=save fn=acts_save required=name
+@load core.action name=load fn=acts_load required=name
+@undo core.action name=undo fn=acts_undo
+@redo core.action name=redo fn=acts_redo
+@k.saved.name core.slot of=std.acts.saved key=name id=true
 `,
     fns: {},
     actions: ACTIONS,

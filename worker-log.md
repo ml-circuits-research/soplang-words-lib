@@ -3320,3 +3320,22 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
 `/tmp/check.sh`: 328 pass, 0 fail on sources and built file, 327 in checking mode; pilot
 identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
 (`docs/version.md`: sopworld 0.19.0). Next: item 2 (send, save/load, undo/redo as acts).
+
+## R21 item 2 — send, save / load, undo / redo as acts — done
+
+`/tmp/check.sh`: 331 pass, 0 fail on sources and built file, 330 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean.
+
+- `send thing to`: the thing's kind must allow `send` in its world and `make` in `to`; a
+  kind may now belong to several worlds (`std.schema.kind world=` repeated). Done as one
+  `set` of `world`: one undo step, both schemas checked. Refusals: "chart has no hat",
+  "there is no world nowhere", "a bar cannot be sent from chart".
+- `save name`: the told things kept in a `std.acts.saved` wire; `load name`: one patch that
+  changes them back, makes again what went, takes away what was made since (the diff says
+  which; a retraction is not undone by `undo`, as everywhere).
+- `undo`, `redo` (and `load`): actions on the history run outside a transaction (an action
+  function marked `outside`); result and `diff` (from a fork before) like any act; inside
+  another change (a sentence) they are refused, so the sentence is not applied.
+- First build failed: tools/build.mjs refuses a renamed import (`parse as parseWire`);
+  imported as `parse`.
+- test/acts-history.test.mjs (3). reference table rows.

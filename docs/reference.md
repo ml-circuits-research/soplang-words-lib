@@ -1645,7 +1645,7 @@ say the rest. The acts are the same for every world; a new schema needs no rule.
 | Type | Keys | Meaning |
 | --- | --- | --- |
 | `std.schema.world` | `name`, `doc` | a world |
-| `std.schema.kind` | `of` (a type), `world`, `acts` (rep.) | a kind of the world, and the acts that apply to it: `make`, `remove`, `change`, `place`, `connect`, `group`, `pick`, `ask`, `copy` |
+| `std.schema.kind` | `of` (a type), `world` (rep.), `acts` (rep.) | a kind of one or more worlds, and the acts that apply to it: `make`, `remove`, `change`, `place`, `connect`, `group`, `pick`, `ask`, `copy`, `send`, `save`, `load`, `undo`, `redo` |
 | `std.schema.kinds` | `world`, `from` (a type), `key` (default `name`), `acts`, `stand_in` (a type) | any kind that a wire of `from` names (`k.object name=cup`): such things are `std.schema.thing` and take any attribute; see std.know for `stand_in` |
 | `std.schema.limit` | `of`, `max` | at most so many things of a kind (rules: a count and a deny) |
 
@@ -1667,6 +1667,9 @@ world that is not declared.
 | `pick` | `kind`, attributes, `nth`? | the things that fit (`result.things`); changes nothing |
 | `ask` | `thing`, `attr`? | its attributes, or one value with `why` |
 | `copy` | `thing` | a new thing with the same attributes |
+| `send` | `thing`, `to` | to another world: the kind must be sendable from its world and makeable in `to` (a kind may belong to several worlds: `world=` repeated); one undo step |
+| `save`, `load` | `name` | the told things as they are, kept in a `std.acts.saved` wire; load changes them back, makes again what went, takes away what was made since |
+| `undo`, `redo` | `n`? | as `world.undo` / `redo`, with `diff`; not inside another change (a sentence, an action) |
 
 **What an act gives.** `result` (`act`, `thing`, ...) and, like every action that is
 done, `diff`: `{ added, removed, changed }`, what it told and what rules derived from it,

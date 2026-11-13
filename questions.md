@@ -38,6 +38,40 @@ yes); 2. space selection and layouts (rules + std.boxes functions); 3. overlap
 enforcement (a deny + a function); 4. the turn log and `amend`; 5. pieces and the solver
 (largest; the library has solvers already: compare first). Not blocking: I start with 2.
 
+## Q31 (Round 25): is the request pipeline itself a world? — design and recommendation
+
+**Recommendation: yes for the order, the providers and the fallbacks (items 1 and 2 as
+data); no for the stages' insides.** What a stage does stays a function (reading text,
+scoring a world, a dry run, applying an act): rules cannot read text or fork a world.
+What changes between applications is which stages run, in what order, who provides each
+and what happens when one yields nothing — that is data, and cheap to make data.
+
+- **Declared:** `std.turn.stage name= after= yields= on_empty=` (on_empty: `ask`, `next`
+  = the next candidate, `fail`) with `skip_if=<yield already present>` and `only=<action>`;
+  `std.turn.provider stage= fn= tier=`: several providers of one stage ranked by tier (the
+  first that yields wins; a reader that yields candidates adds them in tier order). The
+  order is the `after` chain, checked at load (one start, no cycle, every stage has a
+  provider: a stage nobody provides is advice, not an error).
+- **Worth having (I believe):** skipping a stage already answered (the request names the
+  world: `skip_if`); going back to the next candidate when a later stage fails (`next`;
+  `turn` does it today); a stage that asks (`ask`, e.g. a confirmation before removing many
+  things); per-action stages (`only=remove`). **Not yet:** candidates carried in parallel
+  and judged at the end by cost (the sequential dry run already picks the first that
+  works; parallel costs a fork per candidate per stage for little gain); per-world stage
+  differences beyond `only=` (no case yet).
+- **Fixed, whatever the declaration:** apply is one `act([...])` (one undo step, all or
+  nothing); every call within the step budget; the same input and state give the same
+  path (the order is a sort of the declaration, providers by tier then name); a trace of
+  every stage taken (stage, provider, what it yielded or why it yielded nothing), and
+  `why` of a changed value can be preceded by the trace.
+- **Cost:** a declared run adds a lookup of the declaration per turn (cached per world
+  version) and one call per stage; measured against `turn` on the same requests (bench).
+
+Building now: `std.turn` (the default stages as SOP Lang), `turnFlow(world, readings, {
+providers })`, two variants by facts only (a confirmation stage before `remove` with a
+set; a second reader at the reading stage), and the test that 30 requests give the same
+diffs through `turn` and the declared default.
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

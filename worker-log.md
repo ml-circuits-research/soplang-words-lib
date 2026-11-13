@@ -3044,3 +3044,38 @@ Pilot output identical. `git grep -i psys2 src/`: empty. scan-loops clean. tsc c
 - Docs: reference "std.fill" (runnable example), semantics S39a.
 - `node bench/distinct.mjs` anchored: 214.6 / 253.8 ms, one more 12.40 / 15.10 ms;
   `core.aggregate by=`: 33.6 / 24.1 ms, 0.43 / 0.34 ms.
+
+## R19 item 2 — std.focus; core.rank ordered once per group — done
+
+`/tmp/check.sh`: 305 pass, 0 fail on sources and built file, 304 in checking mode. Pilot
+output identical. psys2 grep empty. scan-loops clean. tsc clean.
+
+- `std.focus` in src/std.mjs, rules only (`core.use world=std.focus`, loads std.fill). The
+  host writes one rule each: `std.focus.turn of=<request> in=<dialogue>`, a
+  `std.focus.mention of= kind= value=` per key a request names, a `std.fill.need` per key it
+  leaves out. std.focus numbers turns (core.rank by `in` within the dialogue: equal values
+  keep arrival order), keeps `std.focus.state turn= kind= value=` (what the turn mentions,
+  else the state after the turn before: `not=`), and offers to each need the state of its
+  kind after the turn before, tier `focus`. `std.focus.last kind=` (a fluent over the
+  mentions) is the focus now: thing, action, place, world declared.
+- Why per turn and not only "the focus now": with only the current focus, "a red one" was
+  re-completed to "move" when a later turn moved (first try, measured in a scratch run:
+  q2 action draw → move after q3). Now earlier turns keep theirs.
+- Limit (in the reference): a value chosen through std.fill is not a mention. Written as
+  one, the stratification check refuses the matrix (the focus state negates mentions,
+  and mentions would come from needs that come from the state). Turns come from the host
+  for the same reason (from needs: a cycle through core.rank).
+- Kernel, performance: core.rank ordered its peers once for every wire of the group and
+  each firing copied the reads of all peers. Now a group is ordered once per evaluation and
+  the reads list is shared (copied only if another aggregate of the rule adds to it).
+  `node bench/rank.mjs` (new; turns told one at a time), before (HEAD 34f613a, src/world.mjs
+  stashed) → after: 100 turns 386.0 → 70.7 ms, 200: 2120.0 → 125.8 ms, 400: 20016.3 →
+  463.2 ms; one more at 400: 137.84 → 3.88 ms. `node bench/distinct.mjs` anchored 233.4 ms,
+  one more 7.18 ms.
+- `node bench/focus.mjs` (new): 100 turns 374 ms, 200: 985 ms, 400: 3407–3802 ms; one more at
+  400: 18.7–25.0 ms. The rest is the `not=` rule, re-evaluated in full when quiet.
+- Tests: test/focus.test.mjs (5: continuations and earlier turns keep theirs; first turn
+  and told keys; retract and undo; two dialogues; a better tier wins over focus).
+  examples/focus.mjs: draw a cup on the table / a red one / move it right / and lower /
+  now draw a boat / smaller → draw cup, draw cup, move cup, move cup, draw boat, draw boat.
+- Found: `undo()` takes back tells, not retracts (existing behaviour, test written for it).

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="68fbfdd3b45d">
+<meta name="source-hash" content="61c73b044708">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -617,6 +617,25 @@ w.tell(&#x27;@u1 usual thing=cup key=place value=table  @q1 req thing=cup&#x27;)
 const need = w.ofType(&#x27;std.fill.need&#x27;)[0];
 print(need.attrs.value, need.attrs.tier, need.attrs.source);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;table&quot;] [&quot;knowledge&quot;] [&quot;usual&quot;]</code></pre></figure>
+<h2 id="stdfocus-what-a-dialogue-is-about">std.focus: what a dialogue is about</h2>
+<p>A module of the standard pack written in rules only (<code>core.use world=std.focus</code>; it loads std.fill). The host writes three things, each one rule: a turn for every request, a mention for each key a request names, a need (std.fill) for each key it leaves out.</p>
+<div class="table"><table><thead><tr><th>Type</th><th>Keys</th><th>Who writes it</th></tr></thead><tbody><tr><td><code>std.focus.turn</code></td><td><code>of</code> (the request), <code>in</code> (the dialogue); then <code>pos</code>, <code>prev</code></td><td>the host; std.focus numbers the turns of a dialogue in arrival order</td></tr><tr><td><code>std.focus.mention</code></td><td><code>of</code> (the request), <code>kind</code>, <code>value</code></td><td>the host, from what a request names</td></tr><tr><td><code>std.focus.state</code></td><td><code>turn</code>, <code>kind</code>, <code>value</code></td><td>std.focus: the focus after each turn</td></tr><tr><td><code>std.focus.last</code></td><td><code>kind</code>; the state <code>value</code></td><td>std.focus: the focus now, for <code>thing</code>, <code>action</code>, <code>place</code>, <code>world</code>; a host adds a kind with one wire</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> The focus after a turn is, for each kind, what the turn mentions, else the focus after the turn before. A std.fill need of a request for a key gets the focus of that kind after the turn before, as an offer of tier <code>focus</code>: "a red one" after "draw a cup" is a drawing of a cup, and it stays one when a later turn moves on. A turn taken back (retract, undo) gives the earlier focus again. A mention is what a request says, not what it was completed with (a value chosen through std.fill is not a mention: the rules would read their own conclusions through a negation). Dialogues with different <code>in</code> keep separate focus. <code>examples/focus.mjs</code> runs "draw a cup on the table", "a red one", "move it right", "and lower".</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@u core.use world=std.focus
+  @any req
+  @turn std.focus.turn of=$any in=main
+  @r1 core.rule when=$any then=$turn
+  @sd req thing=?v
+  @m std.focus.mention of=$sd kind=thing value=?v
+  @r2 core.rule when=$sd then=$m
+  @gap req core.absent=thing
+  @n std.fill.need for=$gap key=thing
+  @r3 core.rule when=$gap then=$n`);
+w.tell(&#x27;@q1 req thing=cup&#x27;);
+w.tell(&#x27;@q2 req colour=red&#x27;);
+print(w.ofType(&#x27;std.fill.need&#x27;)[0].attrs.value, w.ofType(&#x27;std.focus.last&#x27;)[0].attrs.value);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;cup&quot;] [&quot;cup&quot;]</code></pre></figure>
 <h2 id="functions">Functions</h2>
 <p>A function is called with its arguments as text and returns text (or true/false for a comparison). When it has no result it returns nothing and the rule does not fire. Host functions are added with <code>new World({ fns })</code>; a name from the tables below cannot be taken without <code>override</code>.</p>
 <p>A <strong>number</strong> is an integer or decimal, optionally followed by a unit (<code>5</code>, <code>2.5</code>, <code>3kg</code>, <code>10N/kg</code>). Arithmetic keeps 12 significant digits.</p>

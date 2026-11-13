@@ -1544,6 +1544,50 @@ print(need.attrs.value, need.attrs.tier, need.attrs.source);
 ["table"] ["knowledge"] ["usual"]
 ```
 
+## std.focus: what a dialogue is about
+
+A module of the standard pack written in rules only (`core.use world=std.focus`; it
+loads std.fill). The host writes three things, each one rule: a turn for every request,
+a mention for each key a request names, a need (std.fill) for each key it leaves out.
+
+| Type | Keys | Who writes it |
+| --- | --- | --- |
+| `std.focus.turn` | `of` (the request), `in` (the dialogue); then `pos`, `prev` | the host; std.focus numbers the turns of a dialogue in arrival order |
+| `std.focus.mention` | `of` (the request), `kind`, `value` | the host, from what a request names |
+| `std.focus.state` | `turn`, `kind`, `value` | std.focus: the focus after each turn |
+| `std.focus.last` | `kind`; the state `value` | std.focus: the focus now, for `thing`, `action`, `place`, `world`; a host adds a kind with one wire |
+
+**Meaning.** The focus after a turn is, for each kind, what the turn mentions, else the
+focus after the turn before. A std.fill need of a request for a key gets the focus of
+that kind after the turn before, as an offer of tier `focus`: "a red one" after "draw a
+cup" is a drawing of a cup, and it stays one when a later turn moves on. A turn taken
+back (retract, undo) gives the earlier focus again. A mention is what a request says, not
+what it was completed with (a value chosen through std.fill is not a mention: the rules
+would read their own conclusions through a negation). Dialogues with different `in` keep
+separate focus. `examples/focus.mjs` runs "draw a cup on the table", "a red one", "move
+it right", "and lower".
+
+```js run
+const w = new World();
+w.load(`@u core.use world=std.focus
+  @any req
+  @turn std.focus.turn of=$any in=main
+  @r1 core.rule when=$any then=$turn
+  @sd req thing=?v
+  @m std.focus.mention of=$sd kind=thing value=?v
+  @r2 core.rule when=$sd then=$m
+  @gap req core.absent=thing
+  @n std.fill.need for=$gap key=thing
+  @r3 core.rule when=$gap then=$n`);
+w.tell('@q1 req thing=cup');
+w.tell('@q2 req colour=red');
+print(w.ofType('std.fill.need')[0].attrs.value, w.ofType('std.focus.last')[0].attrs.value);
+```
+
+```output
+["cup"] ["cup"]
+```
+
 ## Functions
 
 A function is called with its arguments as text and returns text (or true/false for a

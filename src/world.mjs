@@ -1518,15 +1518,35 @@ export class World {
       if (home) s0 = unify(NS, home, s0);
     }
     const pats = skip < 0 ? rule.when : rule.when.filter((_, i) => i !== skip);
+    // core.rank: the peers of one group are ordered once for every wire of the group (not once per wire)
+    const ranked = rule.calc.some((c) => c.rank) ? new Map() : null;
     next: for (let s of this._matchAll(pats, 0, s0)) {
-      let reads = null;
+      let reads = null, shared = false;
       for (const c of rule.calc) {
         let out;
-        if (c.over) { // an aggregate: every match of the patterns it ranges over, under the bindings so far
+        if (c.rank) {
+          const vars = c.over.flatMap((p) => Object.values(p.attrs).flat().filter(hasVar));
+          const key = c.id + '\u0001' + vars.map((v) => walk(v[0] === '$' ? v.slice(1) : v, s)).join('\u0001');
+          let g = ranked.get(key);
+          if (!g) {
+            const matches = [...this._matchAll(c.over, 0, s)].map((t) => [walk('?' + c.over[0].id, t), t]).sort((x, y) => this.compare(x[0], y[0]));
+            const cells = [];
+            for (const [, t] of matches) {
+              this._b.tick('aggregate');
+              for (const p of c.over) { const ks = Object.keys(p.attrs), id = walk('?' + p.id, t); for (const k of ks.length ? ks : [null]) cells.push([id, k]); }
+            }
+            g = { cells, at: this._rankAll(c.rank, matches) };
+            ranked.set(key, g);
+          }
+          if (g.cells.length) { reads = reads ? reads.concat(g.cells) : g.cells; shared = !reads.length || reads === g.cells; } // shared, never changed in place
+          out = g.at.get(walk(c.rank.of, s));
+          if (out === undefined) continue next;
+        } else if (c.over) { // an aggregate: every match of the patterns it ranges over, under the bindings so far
           const values = [], picks = [];
           // in sequence order, so that the result does not depend on how the indexes happen to be laid out
           const matches = [...this._matchAll(c.over, 0, s)].map((t) => [walk('?' + c.over[0].id, t), t]).sort((x, y) => this.compare(x[0], y[0]));
           const n = matches.length;
+          if (shared) { reads = reads.slice(); shared = false; }
           for (const [, t] of matches) {
             this._b.tick('aggregate');
             for (const p of c.over) { // bounded: the patterns of one aggregate
@@ -1686,6 +1706,21 @@ export class World {
    * wires of the same pattern with any value of the key), ordered by that key, as numbers
    * when both are numbers, else as times or text; equal values in sequence order.
    */
+  /** core.rank for a whole group: each peer's position, as a map from its id. */
+  _rankAll(rank, matches) {
+    const valueOf = (id) => this.wires.get(id)?.attrs[rank.key]?.[0];
+    const ids = [...new Set(matches.map(([id]) => id))]; // in sequence order already
+    const cmp = (a, b) => {
+      const x = valueOf(a), y = valueOf(b);
+      if (x === y) return 0;
+      if (this.fns.lt([x, y], this)) return -1;
+      if (this.fns.lt([y, x], this)) return 1;
+      return x < y ? -1 : 1;
+    };
+    const sorted = ids.map((id, i) => [id, i]).sort((a, b) => (rank.order === 'desc' ? cmp(b[0], a[0]) : cmp(a[0], b[0])) || a[1] - b[1]);
+    return new Map(sorted.map(([id], i) => [id, String(i + 1)]));
+  }
+
   _rankOf(rank, matches, s) {
     const me = walk(rank.of, s);
     const valueOf = (id) => this.wires.get(id)?.attrs[rank.key]?.[0];

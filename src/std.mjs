@@ -125,4 +125,62 @@ ${['overlaps', 'contains_box', 'box_distance'].map((f) => ['x1', 'y1', 'w1', 'h1
 `,
     fns: {},
   },
+  // Round 19: the dialogue focus. A host's rules write `std.focus.mention of=<request>
+  // kind= value=` for what a request names (a thing, an action, a place, a world). Each
+  // request is a turn, in the order of arrival; the focus after a turn is what it mentions
+  // and, for the kinds it does not mention, the focus after the turn before. With std.fill,
+  // a need of a request for a key gets the focus of that kind after the turn before it, in
+  // tier `focus`; what a need is filled with is a mention of its request too, so a dialogue
+  // keeps its thing over several turns. `std.focus.last kind=` holds the focus now.
+  'std.focus': {
+    text: String.raw`
+@fill core.use world=std.fill
+@k.turn.of core.slot of=std.focus.turn key=of id=true
+@k.turn.in core.slot of=std.focus.turn key=in required=true
+@k.turn.pos core.slot of=std.focus.turn key=pos kind=integer
+@k.turn.prev core.slot of=std.focus.turn key=prev kind=integer
+@k.m.of core.slot of=std.focus.mention key=of required=true
+@k.m.kind core.slot of=std.focus.mention key=kind required=true
+@k.m.value core.slot of=std.focus.mention key=value required=true
+@k.st.turn core.slot of=std.focus.state key=turn id=true
+@k.st.kind core.slot of=std.focus.state key=kind id=true
+@k.last.kind core.slot of=std.focus.last key=kind id=true
+
+# the turns of a dialogue, in arrival order (the host writes one per request: of= in=)
+@t std.focus.turn in=?d
+@order core.rank of=$t by=in within=?d out=?p
+@prev core.calc out=?q fn=add args=?p args=-1
+@tp std.focus.turn core.on=$t pos=?p prev=?q
+@place core.rule when=$t with=$order with=$prev then=$tp
+
+# the focus after a turn: what it mentions; else what the focus was after the turn before
+@sm std.focus.mention of=?r kind=?k value=?v
+@st std.focus.turn of=?r
+@s1 std.focus.state turn=$st kind=?k value=?v
+@said core.rule when=$sm when=$st then=$s1
+@ct std.focus.turn of=?r in=?d prev=?q
+@cp std.focus.turn in=?d pos=?q
+@cs std.focus.state turn=$cp kind=?k value=?v
+@cn std.focus.mention of=?r kind=?k
+@s2 std.focus.state turn=$ct kind=?k value=?v
+@kept core.rule when=$ct when=$cp when=$cs not=$cn then=$s2
+
+# a need of a request: the focus of its kind after the turn before is offered
+@n std.fill.need for=?r key=?k
+@nt std.focus.turn of=?r in=?d prev=?q
+@np std.focus.turn in=?d pos=?q
+@ns std.focus.state turn=$np kind=?k value=?v
+@o std.fill.offer for=$n value=?v tier=focus source=focus
+@offer core.rule when=$n when=$nt when=$np when=$ns then=$o
+
+# the focus now: the last mention of each kind
+@f core.fluent of=std.focus.last key=value
+@e core.effect on=std.focus.mention fluent=$f op=set amount=value where.kind=kind
+@thing std.focus.last kind=thing
+@action std.focus.last kind=action
+@place.now std.focus.last kind=place
+@world std.focus.last kind=world
+`,
+    fns: {},
+  },
 };

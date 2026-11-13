@@ -658,3 +658,14 @@ Gates as usual: npm test, compat run, benches, no application names in src.
 
 npm test passes (283, 283, 282), compat run unchanged (kids.arith 212/217, kids.tasks 231/232), no application names in src. Accepted. PSys2 and sop-knowledge-worlds are told to move to 782cd0c.
 - **Q22:** (a). A repeated key stays "all of" everywhere; "one of" is two denies. No `one_of` built-in for now: two short denies are easier to read than a check, and nobody has needed a third yet.
+
+## Round 17 (reviewer, 2026-11-13): what the knowledge worlds and the coming `space` module need
+
+Context: sop-knowledge-worlds now has 10 worlds (2,003 drawable objects, about 337,000 wires in 654 shards) and reported limits; PSys2 starts a shared `space` module (selection by position, relative moves, layouts) used by several worlds.
+
+1. **A condition for "this key has no value"** in queries and patterns. Today a query cannot ask for facts without a key (the knowledge worker could not keep two drawings of one name apart). Propose the simplest form that adds no second meaning to an existing sign, show it against the current syntax, implement after the reviewer answers in this file (write the proposal as Q23; not blocking for items 2–4).
+2. **A standard function pack, declared in SOP Lang** (`core.function`, pure), shipped with the library and opt-in by `core.use`: numbers (min, max, sum, average, median, abs, round, clamp, between), order (rank of a value in a set, nth smallest/largest), boxes (overlap of two boxes, centre, distance, contains). Each with its declaration, tests, and a note on what `core.aggregate` and `core.rank` already cover so nothing is duplicated. The `space` module must be writable with these and rules only: add a small example world `examples/space` (5 items in a frame; "the middle one", "left of", "in a row") with tests.
+3. **Report only: ordered sequences.** One wire per point makes 80% of the wires of the drawable objects (`k.objects.point of= n= x= y=`). Options, with the cost of each in load time and memory on a shard of 1,700 wires, and whether each stays inside "no notation inside values": keep as is; a repeated key that keeps its order; a typed list kind. Recommend one. Do not implement.
+4. **Value query over several wires.** A `value` query that finds the same answer on several wires returns `conflicting`; hosts must use `list`. Decide and document: same value on several wires = `supported` (with all the wires as support); different values = `conflicting`. Tests.
+5. **Load cost at scale.** Bench: tell 50 knowledge shards (take real ones from sop-knowledge-worlds `docs/worlds/k.objects/shards`, copied into `bench/fixtures`, CC0 hand-written ones only) one after another into one world; report time and memory per shard, and whether it grows with the number already loaded. Fix what is quadratic.
+Gates as usual: npm test, compat run, benches, no application names in src. Release as 0.16.0.

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sopworld Patterns of reuse between worlds</title>
+<meta name="source-hash" content="30418eb45cc2">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.20.0</small></a>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="reuse.html" aria-current="page">Reuse</a><a href="playground.html">Playground</a></nav>
+</header>
+<main>
+<h1>Patterns of reuse between worlds</h1>
+<p class="lead">A catalogue (Round 23): ways one world can reuse another instead of restating it. Each has when it applies, how it is said today in SOP Lang, a minimal example, and what is missing. Some come from the owner's list, some from what <code>tools/reuse.mjs</code> found in PSys2's worlds, in the examples and in the knowledge repo (<a href="reuse-reports">reports</a>). It is a study: where something is uncertain it says so.</p>
+<h2 id="1-shared-things-several-views">1. Shared things, several views</h2>
+<p><strong>When.</strong> The same things are shown or edited by several worlds (a picture, a chart, a list of the same objects). <strong>Today.</strong> One module declares the things (<code>std.schema.thing</code> kinds and their slots); each world imports it and reads the attributes it needs. An act in one world changes the shared wire, so every other world sees it; there is one history. <strong>Example.</strong> <code>examples/acts.mjs</code>: one face, any number of readers of <code>eye.colour</code>. <strong>Missing.</strong> Declaring which attributes (aspects) a view shows, and refusing to show a thing that lacks them ("a table has no place on Earth"): Round 22.</p>
+<h2 id="2-filling-by-delegation">2. Filling by delegation</h2>
+<p><strong>When.</strong> A request leaves out a value that another module knows (the place of a cup). <strong>Today.</strong> <code>std.fill</code>: a need per key, offers in named tiers, the best tier chosen, the source kept; <code>std.focus</code> and <code>std.know</code> offer. <code>examples/fill.mjs</code>, <code>examples/know.mjs</code>. <strong>Missing.</strong> Nothing for the pattern itself; each catalog needs its adapter rule.</p>
+<h2 id="3-defaults-by-tier">3. Defaults by tier</h2>
+<p><strong>When.</strong> A value can come from several places of different strength (what was just said, what was taught, the scene, knowledge, a default). <strong>Today.</strong> std.fill's tiers (<code>user</code>, <code>focus</code>, <code>scene</code>, <code>knowledge</code>, <code>default</code>; a host adds one with one wire) and the library's own tiers of a cell (<code>told</code>, <code>default</code>, ...). <strong>Missing.</strong> A taught tier (above knowledge, below what was just said): Round 22 item 3.</p>
+<h2 id="4-specialisation">4. Specialisation</h2>
+<p><strong>When.</strong> A world is a kind of another with overrides (a seating plan for a wedding). <strong>Today.</strong> <code>core.type extends=</code> for kinds (slots, rules and denies are inherited; the nearest slot wins); a module imports another and adds slots and rules. <strong>Example.</strong> <code>@t core.type of=wedding_table extends=table</code> with its own <code>default=</code>. <strong>Missing.</strong> Overriding a parent's rule or deny by name (today a child can only add); uncertain whether it is needed: none of the reports found a case.</p>
+<h2 id="5-composition">5. Composition</h2>
+<p><strong>When.</strong> A thing of one world is itself a world of another schema (a face in a picture, a chart in a document). <strong>Today.</strong> A reference slot (<code>type=</code>) from the outer thing to the inner world's things; acts reach the inner things by id. <strong>Missing.</strong> Acts that reach inside by role ("the eyes of the second face"): item 5.</p>
+<h2 id="6-the-parameterised-world">6. The parameterised world</h2>
+<p><strong>When.</strong> One module, several instances with other names and words (a list as tasks, shopping, playlist; a board game as chess, tic-tac-toe). <strong>Today.</strong> <code>core.use world=&lt;module&gt; prefix=</code> loads a module under a prefix; words are data. <strong>Found:</strong> chess and tic-tac-toe declare the same game keys (<code>user level seed</code>) and the same move keys (<code>by n</code>), and the same "no move after the game is over" deny (PSys2 report, candidates 10, 14, 15). <strong>Missing.</strong> Instantiating the same module twice under two prefixes with its own words: item 4.</p>
+<h2 id="7-rule-lifting">7. Rule lifting</h2>
+<p><strong>When.</strong> A rule is about a kind, not a world: it holds wherever the kind is. <strong>Today.</strong> Write the rule in the module that owns the kind; a world that imports it gets the rule. <strong>Found:</strong> a selection or a reference must name something that exists (the same deny in art.draw, diagram.sketch, docs.editor, docs.reader, data.charts, media.music, ui.shell); no two things of a kind with the same name (<code>core.type unique=</code> says it in one line); an exclusive pair ("not both") in k.space and k.values. <strong>Missing.</strong> Nothing in the language; the rules are restated by hand. The detector's "liftable" kind finds many false positives (two different types with one name).</p>
+<h2 id="8-pipeline">8. Pipeline</h2>
+<p><strong>When.</strong> The result of one world is the content of another (a sum becomes a chart; the session's acts become a list). <strong>Today.</strong> A rule in the second world reads the first's derived wires; with std.acts, the <code>diff</code> of an act is the data to pass on. <strong>Missing.</strong> The session as facts (Round 21 item 6, merged into Round 22).</p>
+<h2 id="9-analogy">9. Analogy</h2>
+<p><strong>When.</strong> The structure of one world maps onto another's (seats ↔ slots, a row ↔ a queue, a face's slots ↔ a layout's slots). <strong>Today.</strong> <code>core.schema.map</code> maps a foreign shape onto the library's; types with the same shape can extend one parent. <strong>Found:</strong> k.faces.point and k.objects.point are the same type; a face part is an object part with a slot; a face slot is a layout slot (knowledge report 1, 6, 8). <strong>Missing.</strong> A declared mapping between two worlds' kinds and keys that acts follow (uncertain: the found cases are better served by one shared type).</p>
+<h2 id="10-shared-words">10. Shared words</h2>
+<p><strong>When.</strong> Several worlds say the same thing with the same words (colour, size, remove). <strong>Today.</strong> <code>core.word</code> in one module, imported. <strong>Found:</strong> colour words in k.faces and k.values (they should come from k.colours). <strong>Missing.</strong> Nothing; the detector's word overlap measures it.</p>
+<h2 id="11-the-last-thing-focus">11. The last thing (focus)</h2>
+<p><strong>When.</strong> "It", "the last one", "again": a world needs what was made or named last. <strong>Found:</strong> art.draw and diagram.sketch each keep their own <code>last</code> type (PSys2 report 19). <strong>Today.</strong> <code>std.focus</code> (per turn, per kind). <strong>Missing:</strong> nothing; the worlds can use it.</p>
+<h2 id="12-a-box-aspect">12. A box aspect</h2>
+<p><strong>When.</strong> Many kinds have a place and a size on a plane (layout slots, wearable places, object parts, face parts). <strong>Found:</strong> knowledge report 9, 10. <strong>Today.</strong> Each declares x, y, w, h. <code>std.boxes</code> has the functions, <code>std.relations</code> the relations. <strong>Missing:</strong> an aspect (a set of keys a kind takes as a whole), which is also what views need (Round 22).</p>
+<p class="source">Generated from <code>docs/reuse.md</code>.</p>
+</main>
+<footer>sopworld 0.20.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+
+</body>
+</html>

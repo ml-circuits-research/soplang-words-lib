@@ -3358,3 +3358,32 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
 `/tmp/check.sh`: 333 pass, 0 fail on sources and built file, 332 in checking mode; pilot
 identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
 (`docs/version.md`: sopworld 0.20.0). Item 6 (the session as facts) merges with Round 22.
+
+## R23 items 1 and 2 — the catalogue of reuse patterns, the detector, three reports — done
+
+`/tmp/check.sh`: 333 pass, 0 fail on sources and built file, 332 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean.
+
+- docs/reuse.md (a page of the docs, reuse.html): 12 patterns, each with when, how today,
+  example, what is missing: shared things with views, delegation, defaults by tier,
+  specialisation, composition, the parameterised world, rule lifting, pipeline, analogy,
+  shared words, and two the reports found: the last thing (focus), a box aspect.
+- tools/reuse.mjs: reads sopworld and PSys2 dialects (.sop files, world directories,
+  example .mjs files); finds types and rules of the same shape under renaming, shared
+  words, action-signature families, parameterised-world pairs, liftable rules; a reuse
+  number per world (types used that come from elsewhere / types used).
+- Reports in docs/reuse-reports/ (tool output unchanged + my verdict on each of the top 20):
+  - `node tools/reuse.mjs <psys2>/worlds` (all 32 PSys2 worlds read in place, PSys2 at
+    78d9db7f; compat/psys2 has only the kids.* worlds): 157 candidates; top 20: 8
+    believed, 7 partly, 5 not. Strongest: "a reference must exist" deny in 7 tab worlds;
+    the board game (chess / tic-tac-toe: game keys, move keys, "no move after over"); the
+    last thing (= std.focus).
+  - `node tools/reuse.mjs examples`: 20 candidates; 1 believed, 12 partly, 7 not. Most
+    "liftable" hits are two different types with one name (`item`, `line`): the tool
+    cannot tell a name clash from reuse.
+  - `node tools/reuse.mjs <sop-knowledge-worlds>/docs/worlds` (at 66d8653): 13 candidates;
+    4 believed (face/object point, the exclusive pair, face part ⊂ object part, face slot
+    ⊂ layout slot), 5 partly, 4 not.
+- First run on PSys2 listed 23 action-signature pairs, nearly all `name -> one value`
+  lookups; grouped into families (3), lookups scored lower. Examples printed on import:
+  silenced while reading.

@@ -3496,3 +3496,9 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
   worlds; host lemma; a failed read retried; bundle of "cup": 3 files, 1 shard, 1 word.
 - Docs: capabilities "Load knowledge by lookup" (runnable) and "Taken over from PSys2"
   table; api section (runnable); index.d.ts.
+
+## Release 0.23.0 (Round 24: B1, A1)
+
+`/tmp/check.sh`: 343 pass, 0 fail on sources and built file, 342 in checking mode; pilot
+identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.23.0).

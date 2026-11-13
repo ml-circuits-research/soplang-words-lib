@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.23.0
+
+Round 24, first part: what the library can do, documented; knowledge by lookup.
+
+### New
+- docs/capabilities.md: the library by job, each with a runnable example (run in CI),
+  module, version and limits, and what is not done yet.
+- `createCatalog`, `bundleReader`, tools/build-bundle.mjs: knowledge worlds loaded by
+  lookup through the host's reader, cached, schemas first; offline bundles (from PSys2's
+  knowledge-loader hand-over).
+
 ## 0.22.0
 
 Round 23: reuse between worlds.

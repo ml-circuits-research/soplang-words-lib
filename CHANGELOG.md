@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.27.0
+
+The standing direction: learn from the applications. A case corpus, lessons, and what the
+first cases found.
+
+### New
+- The case corpus (`cases/`, `node tools/cases.mjs`): language-free cases by pipeline
+  stage, run in CI against a baseline that only grows (17 / 17).
+- docs/lessons.md; tools/cooperation.mjs (worlds and modules that cooperate without code:
+  25 pairs).
+- `make` takes `amount`; `std.schema.capacity` (a container holds at most its own count).
+
+### Changes (migration)
+- A retraction is a statement in the log: `undo` gives the wire back, `toJSON` keeps it.
+  Code that relied on `undo` passing over retractions must take that into account; a
+  collection replaced with `world.sync` is still not given back.
+- Every act is one undo step, however many statements it makes.
+- The slot defaults `make` writes are at the tier `default` (`why` says `default`).
+
 ## 0.26.0
 
 Round 25: the request pipeline as data.

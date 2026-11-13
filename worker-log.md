@@ -3720,3 +3720,12 @@ acting 12/12, replying 2/2, routing 2/2, filling 1/1.
      says `default` (with the act still named).
   6. The case expected `range` where the library says `domain`: the case follows the
      library's name.
+
+## Release 0.27.0 (standing direction: corpus, lessons)
+
+`/tmp/check.sh`: 360 pass, 0 fail on sources and built file, 359 in checking mode; pilot
+identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG (with the
+migration note), docs rebuilt (`docs/version.md`: sopworld 0.27.0). Corpus `node
+tools/cases.mjs`: 17 / 17 (acting 12/12, replying 2/2, routing 2/2, filling 1/1).
+Cooperation `node tools/cooperation.mjs`: 25 pairs in 29 files. Next: two more
+applications from the docs (room planner, classroom timetable), more cases.

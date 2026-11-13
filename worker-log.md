@@ -2857,3 +2857,11 @@ A minor version: answer status and merge behaviour changed, one new call. `npm t
 ## Q22 closed
 
 Answered (a) by the reviewer (09:35): a repeated key stays "all of"; "one of" is two denies; no built-in added. questions.md: moved to Closed. No code change.
+
+## R17.1 — absent key: proposal written (Q23), waiting for the reviewer
+
+Measured: the pattern modifier `core.absent=<key>` (S18) already says "this key has no
+value" in rules and in `ask` text (`w.ask('@d drawing name=cat core.absent=variant')`
+gives `[{"d":"a"}]` for a plain and a variant drawing). The object form of `query` /
+`score` has no way to say it. Q23 recommends (b): `absent: [keys]` on question objects and
+`core.absent=` on `core.question` wires, the same modifier, no new sign.

@@ -6,6 +6,29 @@ written with each question and in `worker-log.md`. A question is deleted from th
 once the worker is satisfied with the answer; closed ones are listed at the end in one
 line each so the history is not lost.
 
+## Q23 — a condition for "this key has no value" (R17.1; not blocking)
+
+It exists already for patterns: `core.absent=<key>` (a pattern modifier, semantics S18,
+reference "Patterns"). A rule's pattern `@x drawing name=?n core.absent=variant` matches
+only a drawing with no `variant`, and is kept up to date; `ask` takes the same text:
+`w.ask('@d drawing name=cat core.absent=variant')` returns only the plain drawing
+(measured: `[{"d":"a"}]` with `@a drawing name=cat` and `@b drawing name=cat variant=2`).
+
+What is missing is the object form used by `query`, `score` and `check({ query })`:
+`where` holds only values, so a host building questions as objects cannot say it.
+Options, against the current syntax:
+- (a) Nothing new; hosts write `ask` text or a rule with `core.absent=`.
+- (b) The object form of the same modifier: `{ type, where, absent: ['variant'], seek }`,
+  and `core.absent=variant` on a `core.question` wire. It means exactly what the pattern
+  modifier means; no new sign, no second meaning (a key named `absent` inside `where`
+  would stay an ordinary key).
+- (c) A special value in `where` (`variant: null` or `variant=_`): a value with a second
+  meaning, against the rule.
+
+**Recommendation: (b).** It is the existing construct reached from the object form; one
+line in docs/integration.md would also have told the knowledge worker about
+`core.absent=`. Implemented after the reviewer's answer.
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

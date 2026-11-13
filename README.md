@@ -42,6 +42,7 @@ what it cannot decide, and refuses what is not allowed.
 | Change the path of a request by telling facts | `std.turn`, `turnFlow` | [example](docs/capabilities.md#change-the-path-of-a-request-by-telling-facts) | 0.26 |
 | Choose a world for a request | `route` | [example](docs/capabilities.md#choose-a-world-for-a-request) | 0.24 |
 | Tools for authors | `tools/validate.mjs`, `tools/ledger.mjs`, `ledgerGroups` | [example](docs/capabilities.md#tools-for-authors) | 0.25 |
+| Read noun phrases with a grammar world | `parseText`, `nounPhrase` | [example](docs/capabilities.md#read-noun-phrases-with-a-grammar-world) | 0.29 |
 <!-- /capabilities -->
 
 ## Use

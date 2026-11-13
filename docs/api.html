@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="0d7b1f5c0aeb">
+<meta name="source-hash" content="532ef974426d">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -417,6 +417,14 @@ w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;chair&#x27; } }); w.act({ 
 const t = turnFlow(w, [{ action: &#x27;remove&#x27;, args: { thing: &#x27;chair&#x27;, set: &#x27;all&#x27; } }]);
 print(t.status, t.question, t.trace.map((x) =&gt; x.stage));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>ask Remove all 2 chairs? [&quot;read&quot;,&quot;dryrun&quot;,&quot;confirm&quot;]</code></pre></figure>
+<h3 id="parsetextworld-text-options-grammarofworld-nounphrasenode-cats">parseText(world, text, options?), grammarOf(world), nounPhrase(node, cats?)</h3>
+<p>The language-free part of reading: a grammar world holds the language as facts — <code>g.word text= lemma= cat=</code> (more keys are features), <code>g.rule lhs= rhs= ...</code> (in order; <code>X?</code> optional, <code>X*</code> any number, <code>X+</code> one or more), <code>g.coord word=</code> — and <code>parseText</code> reads text with them: every complete parse of <code>start</code> (default <code>S</code>), best first (fewer nodes, then the higher coordination), at most <code>max</code> (8), within <code>budget</code> steps (a pathological grammar stops with an error, never hangs). A node is <code>{ cat, span: [i, j], word?, lemma?, feat?, children?, coord? }</code>. <code>nounPhrase(node)</code> reads a noun phrase as <code>{ det, num, mods, head, lemma, pp, span }</code> (a coordination as <code>{ coord: [...] }</code>); the category names are the grammar's (<code>cats</code>). Verbs and argument frames are next (questions.md Q32).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(`@a g.word text=two lemma=2 cat=Num  @b g.word text=red lemma=red cat=Adj  @c g.word text=cups lemma=cup cat=N
+  @d g.word text=plate lemma=plate cat=N  @e g.word text=a lemma=a cat=Det
+  @r g.rule lhs=NP rhs=Det? rhs=Num? rhs=Adj* rhs=N  @k g.coord word=and`);
+print(nounPhrase(parseText(w, &#x27;two red cups and a plate&#x27;, { start: &#x27;NP&#x27; })[0].tree).coord.map((x) =&gt; [x.num ?? x.det, x.mods, x.lemma]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;2&quot;,[&quot;red&quot;],&quot;cup&quot;],[&quot;a&quot;,[],&quot;plate&quot;]]</code></pre></figure>
 <h3 id="rankscored-criteria-and-ranking">rank(scored, criteria?) and RANKING</h3>
 <p>Orders scored readings best first and explains every place. <code>RANKING</code> is the default list of criteria, each <code>{ name, measure, say }</code> (lower <code>measure</code> is better): <code>consistent</code>, <code>referents</code> (how many are left ambiguous), <code>lacks</code>, <code>words</code> (words of the frame left out), <code>assumes</code>; ties keep the given order. Returns <code>{ order, ranked }</code>; <code>ranked[i]</code> is <code>{ index, place, why, lostTo, on }</code>: the first says what it satisfies, any other names the first criterion on which the winner is better and what each is on it, a tie says so. A host may put its own criteria before, after or instead of these.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();

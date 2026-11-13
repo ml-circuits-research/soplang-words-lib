@@ -1091,6 +1091,30 @@ print(t.status, t.question, t.trace.map((x) => x.stage));
 ask Remove all 2 chairs? ["read","dryrun","confirm"]
 ```
 
+### parseText(world, text, options?), grammarOf(world), nounPhrase(node, cats?)
+
+The language-free part of reading: a grammar world holds the language as facts —
+`g.word text= lemma= cat=` (more keys are features), `g.rule lhs= rhs= ...` (in order; `X?`
+optional, `X*` any number, `X+` one or more), `g.coord word=` — and `parseText` reads text
+with them: every complete parse of `start` (default `S`), best first (fewer nodes, then
+the higher coordination), at most `max` (8), within `budget` steps (a pathological grammar
+stops with an error, never hangs). A node is `{ cat, span: [i, j], word?, lemma?, feat?,
+children?, coord? }`. `nounPhrase(node)` reads a noun phrase as `{ det, num, mods, head,
+lemma, pp, span }` (a coordination as `{ coord: [...] }`); the category names are the
+grammar's (`cats`). Verbs and argument frames are next (questions.md Q32).
+
+```js run
+const w = new World();
+w.tell(`@a g.word text=two lemma=2 cat=Num  @b g.word text=red lemma=red cat=Adj  @c g.word text=cups lemma=cup cat=N
+  @d g.word text=plate lemma=plate cat=N  @e g.word text=a lemma=a cat=Det
+  @r g.rule lhs=NP rhs=Det? rhs=Num? rhs=Adj* rhs=N  @k g.coord word=and`);
+print(nounPhrase(parseText(w, 'two red cups and a plate', { start: 'NP' })[0].tree).coord.map((x) => [x.num ?? x.det, x.mods, x.lemma]));
+```
+
+```output
+[["2",["red"],"cup"],["a",[],"plate"]]
+```
+
 ### rank(scored, criteria?) and RANKING
 
 Orders scored readings best first and explains every place. `RANKING` is the default

@@ -3756,3 +3756,22 @@ identical. psys2 grep empty. scan-loops clean. tsc clean. Corpus 17 / 17.
 identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
 (`docs/version.md`: sopworld 0.28.0). Corpus 17 / 17. Next: std.grammar (Q32), resolve,
 the two applications.
+
+## R26 B — std.grammar, the smallest version — done
+
+`/tmp/check.sh`: 366 pass, 0 fail on sources and built file, 365 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean.
+
+- src/grammar.mjs: `grammarOf(world)` (g.word lexicon with features, g.rule with `?` `*`
+  `+` expanded into plain rules, g.coord), `parseText(world, text, { start, max, budget })`
+  (a memoised chart over spans, left recursion cut, coordination of any category, every
+  complete parse best first: fewer nodes, then the higher coordination; a step budget),
+  `nounPhrase(node, cats)` (det, num, mods, head, lemma, pp; coord). No word of any
+  language in src; the toy grammar is in the test, and a made-up language (modifiers after
+  the noun) reads with the same code.
+- "a cup on the table and a plate" gives both parses, (a cup on the table) and (a plate)
+  first; "two red cups and plate" reads as one noun phrase with a coordinated head (fewer
+  nodes): the world's dry run is to choose among parses, as Q32 says.
+- The build refused "node:" (a node property `node: {...}` looked Node-only): renamed.
+- test/grammar.test.mjs (3); api and capabilities (runnable). Verbs, frames and
+  `resolve(phrase)` (A2) next.

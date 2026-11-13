@@ -439,6 +439,26 @@ print(g.map((x) => [x.key, x.count]), stageOf({ status: 'ask' }));
 [["routing / kind / other",2]] filling
 ```
 
+## Read noun phrases with a grammar world
+
+*In `parseText`, `nounPhrase`; since 0.29.*
+
+A language is a world of facts (its lexicon, its rules, its coordinating words); the
+library's parser reads text with it into noun phrases with determiners, numbers,
+modifiers and a prepositional phrase, and coordinations, every parse best first. **Limits:**
+noun phrases only for now (verbs and frames next); the grammar of a real language lives in
+sop-knowledge-worlds, not here.
+
+```js run
+const w = new World();
+w.tell(`@a g.word text=ko lemma=cup cat=N  @b g.word text=mi lemma=red cat=Adj  @r g.rule lhs=NP rhs=N rhs=Adj*`);
+print(nounPhrase(parseText(w, 'ko mi', { start: 'NP' })[0].tree));
+```
+
+```output
+{"span":[0,2],"mods":["red"],"head":"ko","lemma":"cup"}
+```
+
 ## Not done yet
 
 - **The other PSys2 hand-over packages** (acts, space, session.things, session.dialogue,

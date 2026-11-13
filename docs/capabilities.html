@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld What the library can do</title>
-<meta name="source-hash" content="8e6bea728272">
+<meta name="source-hash" content="bda40ad67063">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -233,6 +233,13 @@ print(route(w, { action: &#x27;make&#x27;, args: { kind: &#x27;rose&#x27; } }));
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const g = ledgerGroups([{ text: &#x27;remove eyeglasses&#x27;, source: &#x27;logs&#x27;, stage: &#x27;routing&#x27;, class: &#x27;kind&#x27; }, { text: &#x27;delete the box&#x27;, source: &#x27;logs&#x27;, stage: &#x27;routing&#x27;, class: &#x27;kind&#x27; }]);
 print(g.map((x) =&gt; [x.key, x.count]), stageOf({ status: &#x27;ask&#x27; }));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;routing / kind / other&quot;,2]] filling</code></pre></figure>
+<h2 id="read-noun-phrases-with-a-grammar-world">Read noun phrases with a grammar world</h2>
+<p><em>In <code>parseText</code>, <code>nounPhrase</code>; since 0.29.</em></p>
+<p>A language is a world of facts (its lexicon, its rules, its coordinating words); the library's parser reads text with it into noun phrases with determiners, numbers, modifiers and a prepositional phrase, and coordinations, every parse best first. <strong>Limits:</strong> noun phrases only for now (verbs and frames next); the grammar of a real language lives in sop-knowledge-worlds, not here.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(`@a g.word text=ko lemma=cup cat=N  @b g.word text=mi lemma=red cat=Adj  @r g.rule lhs=NP rhs=N rhs=Adj*`);
+print(nounPhrase(parseText(w, &#x27;ko mi&#x27;, { start: &#x27;NP&#x27; })[0].tree));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;span&quot;:[0,2],&quot;mods&quot;:[&quot;red&quot;],&quot;head&quot;:&quot;ko&quot;,&quot;lemma&quot;:&quot;cup&quot;}</code></pre></figure>
 <h2 id="not-done-yet">Not done yet</h2>
 <ul><li><strong>The other PSys2 hand-over packages</strong> (acts, space, session.things, session.dialogue, common.sense) are compared with std.acts, std.relations, the views and std.focus as they are taken; until then those jobs are done by the modules above, with their limits.</li></ul>
 <h2 id="taken-over-from-psys2">Taken over from PSys2</h2>

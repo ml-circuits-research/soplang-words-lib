@@ -503,3 +503,10 @@ export function stageOf(result: object): string | null;
 
 /** the request pipeline as data: runs the stages a world declares with std.turn; providers are functions of a context */
 export function turnFlow(world: World, readings: object[], options?: { providers?: Record<string, (ctx: any) => unknown>; reply?: (world: World, request: object, result: object) => string; confirmed?: boolean }): ReturnType<typeof turn> & { trace: { stage: string; provider?: string; yielded?: unknown; empty?: string; skipped?: string }[]; stage?: string };
+
+/** a grammar world's lexicon (g.word), rules (g.rule, with ? * + expanded) and coordinating words (g.coord) */
+export function grammarOf(world: World): { lex: Map<string, { cat: string; lemma: string; feat: Record<string, string> }[]>; rules: Map<string, string[][]>; coord: Set<string> };
+/** text parsed with a grammar world: every complete parse of `start`, best first */
+export function parseText(world: World, text: string, options?: { start?: string; max?: number; budget?: number }): { tree: object; size: number }[];
+/** a noun phrase node read as roles */
+export function nounPhrase(node: object, cats?: { det?: string; num?: string; mod?: string; head?: string; pp?: string }): { span: [number, number]; det?: string; num?: string; mods?: string[]; head?: string; lemma?: string; pp?: object[]; coord?: object[] };

@@ -422,3 +422,17 @@ test('N3: core.schema.map as=type reads shared=, transient= and unique= like cor
   w.tell('@c1 cursor at=1');
   assert.equal(w.undo().undone[0].ids[0], 'A::p1');
 });
+
+test('modules: an imported module whose ids clash with the application\'s says so, with both ids and both owners', () => {
+  const library = { shapes: '@shapes core.module name=shapes\n@k core.slot of=circle key=r kind=number' };
+  const w = new World({ library });
+  const r = w.tell('@app core.module name=app imports=shapes\n@k core.slot of=square key=side kind=number');
+  assert.equal(r.ok, false);
+  const whys = r.violations.map((v) => v.why).filter(Boolean);
+  assert.ok(whys.some((x) => /@k is declared by the application and by module shapes/.test(x)), whys.join(' | '));
+  assert.ok(!whys.some((x) => /neither loaded nor in the library/.test(x)));
+  // the module's own declaration lost the clash: the import says that, not "not in the library"
+  const v = new World({ library });
+  const r2 = v.tell('@shapes core.type\n@app core.module name=app imports=shapes');
+  assert.match(r2.violations.map((x) => x.why).join(' | '), /app imports shapes; shapes was loaded but its matrix ids clash with ids already declared: @shapes \(the application and module shapes\)/);
+});

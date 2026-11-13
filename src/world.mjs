@@ -1108,10 +1108,17 @@ export class World {
       wires.push(...ws);
     };
     let schemaChanged = false;
+    const clashes = []; // matrix ids declared twice, with who declared each: { id, first, second }
+    const owner = (x) => (x?.module ? `module ${x.module}` : 'the application');
     for (let i = 0; i < wires.length; i++) { // the list grows when a module is loaded
       const w = wires[i];
       if (!isSchema(w)) continue;
-      if (this.matrix.has(w.id)) { res.violations.push({ kind: 'duplicate-id', id: w.id }); continue; }
+      if (this.matrix.has(w.id)) {
+        const prior = this.matrix.get(w.id);
+        clashes.push({ id: w.id, first: owner(prior), second: owner(w), module: w.module ?? prior.module });
+        res.violations.push({ kind: 'duplicate-id', id: w.id, ...(w.module || prior.module ? { why: `@${w.id} is declared by ${owner(prior)} and by ${owner(w)}` } : {}) });
+        continue;
+      }
       this.matrix.set(w.id, w);
       this._do(() => this.matrix.delete(w.id));
       schemaChanged = true;
@@ -1144,7 +1151,15 @@ export class World {
       }
       for (const [name, mod] of c.modules) {
         for (const dep of mod.imports) {
-          if (!c.modules.has(dep)) res.violations.push({ kind: 'schema', why: `module ${name} imports ${dep}, which is neither loaded nor in the library` });
+          if (c.modules.has(dep)) continue;
+          // loaded from the library but not declared: its declaration lost an id clash
+          const mine = clashes.filter((x) => x.module === dep);
+          const why = !(dep in this.options.library)
+            ? `module ${name} imports ${dep}, which is neither loaded nor in the library`
+            : mine.length
+              ? `module ${name} imports ${dep}; ${dep} was loaded but its matrix ids clash with ids already declared: ${mine.map((x) => `@${x.id} (${x.first} and ${x.second})`).join(', ')}`
+              : `module ${name} imports ${dep}; ${dep} was loaded but does not declare itself (core.module name=${dep})`;
+          res.violations.push({ kind: 'schema', why });
         }
       }
       if (!prev || prev.hierarchy !== c.hierarchy || prev.numbers !== c.numbers || prev.blobs !== c.blobs) this._reindex();

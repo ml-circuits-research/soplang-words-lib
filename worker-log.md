@@ -2809,3 +2809,19 @@ identical. `git grep -i psys2 src/`: empty. scan-loops clean. tsc clean.
   the subtype, in either order`: three orders give the same world; the alias resolves;
   undo restores the supertype wire; two siblings stay two.
 - `node bench/complete.mjs` unchanged: 150 defaults 14.2 ms.
+
+## R16.3 — an import's id clash is reported as such — done
+
+Checked against 0.14.0: an imported module whose `core.module` id clashed with an
+application id said "neither loaded nor in the library". `npm test`: 283 pass, 0 fail on
+sources and built file, 282 in checking mode. Pilot output identical. `git grep -i
+psys2 src/`: empty. scan-loops clean. tsc clean.
+
+- A matrix id declared twice gives `duplicate-id` with "@k is declared by the
+  application and by module shapes" (owners from the wires' module tags). An import that
+  is in the library but did not declare itself names the clashes of that module, or says
+  it does not declare itself; the old message stays for an import not in the library.
+- Test `modules: an imported module whose ids clash ...`: a slot id clash names both
+  owners and no misleading message; a clash on the module's own id is named in the import
+  message.
+- Docs: reference.md core.module Violations.

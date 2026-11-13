@@ -347,7 +347,10 @@ modules; they may be in [namespaces](language.md#12-scope).
 
 **Violations.** `schema` (a type or slot outside the module's prefix, naming the module
 and the type; a rule that reads a type another module does not export, naming both
-modules; a module declared twice with other imports).
+modules; a module declared twice with other imports; an import that is not in the
+library). `duplicate-id` for a matrix id declared twice, naming both owners (the
+application or a module); an import whose own declaration lost such a clash says so,
+with the ids.
 
 **Example**
 

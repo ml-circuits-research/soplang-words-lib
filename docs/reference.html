@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="06c463133f7b">
+<meta name="source-hash" content="9d0c67f1f7d4">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -139,7 +139,7 @@ must be quantity.mass</code></pre></figure>
 <p><strong>Meaning.</strong> A module loaded from the library (by <code>core.use</code> or <code>imports</code>) may declare types and slots only under its own prefix: <code>shop</code> declares <code>shop.item</code>, not <code>item</code> and not <code>geo.place</code>. With <code>exports</code>, a rule or deny of another module may read only those types (and their subtypes) of this module. After modules are joined, a short key that two modules declare along one type's lineage is reported in <code>world.warnings</code> (<code>ambiguous-key</code>, with both qualified names). The same can be declared through a <a href="#coreschemamap">core.schema.map</a> with <code>as=module</code> (its <code>exports</code> field).</p>
 <p><strong>When it is evaluated.</strong> When the matrix is compiled.</p>
 <p><strong>Interactions.</strong> <em>Modules without exports:</em> every type is readable, as before. <em>Rules outside any module</em> (the host's own matrix) read everything. <em>Facts</em> are not in modules; they may be in <a href="language.html#12-scope">namespaces</a>.</p>
-<p><strong>Violations.</strong> <code>schema</code> (a type or slot outside the module's prefix, naming the module and the type; a rule that reads a type another module does not export, naming both modules; a module declared twice with other imports).</p>
+<p><strong>Violations.</strong> <code>schema</code> (a type or slot outside the module's prefix, naming the module and the type; a rule that reads a type another module does not export, naming both modules; a module declared twice with other imports; an import that is not in the library). <code>duplicate-id</code> for a matrix id declared twice, naming both owners (the application or a module); an import whose own declaration lost such a clash says so, with the ids.</p>
 <p><strong>Example</strong></p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const library = {
   shop: &#x27;@m core.module name=shop exports=item\n@k core.slot of=shop.item key=price kind=number\n@s core.slot of=shop.secret key=code&#x27;,

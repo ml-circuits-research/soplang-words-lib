@@ -3314,3 +3314,9 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
      10 things: make 163 steps 3.61 ms, filled 2
     200 things: make 163 steps 2.33 ms, filled 2
    2000 things: make 163 steps 1.73 ms, filled 2
+
+## Release 0.19.0 (Round 21: items 1, 3, 4)
+
+`/tmp/check.sh`: 328 pass, 0 fail on sources and built file, 327 in checking mode; pilot
+identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.19.0). Next: item 2 (send, save/load, undo/redo as acts).

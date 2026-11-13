@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.19.0
+
+Round 21, first part: from schema to words, knowledge as a filler.
+
+### New
+- `schemaCard`, `schemaExamples`, `actReply`: the card of a world, example sentences per
+  act with their requests, and the plain-English reply for a done act or a refusal.
+- `std.know`: facts of a knowledge catalog (`k.commonsense.thing`, `k.objects.part`)
+  offered to std.fill at the tier `knowledge`, with their `core.source`; `make` applies the
+  choice as defaults and lists it in `result.filled`. `std.schema.kinds stand_in=`.
+
+### Fixes
+- A fork keeps host functions registered later and those a standard module brought.
+- Rules whose only selection is `core.absent=` are driven by single wires, not re-run in
+  full; a withdrawn firing requeues one wire, none when a wire it read is gone: a make on
+  2,000 things with knowledge costs 163 steps, as on 10 (was 92,212).
+
 ## 0.18.0
 
 Round 20: ACTS × SCHEMAS, the library side.

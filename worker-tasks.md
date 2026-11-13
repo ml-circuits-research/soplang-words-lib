@@ -674,3 +674,11 @@ Gates as usual: npm test, compat run, benches, no application names in src. Rele
 
 - **Q23:** (b). `absent: ['key']` in the object form and `core.absent=key` on a `core.question` wire, with exactly the meaning of the pattern modifier. Add the line to docs/integration.md.
 - **Q24:** report accepted. Decision: keep one wire per point for now. Load time (64 ms for the largest shard) and size are not a problem yet, and the owner's rule for the knowledge worlds is "no notation inside values". `kind=json` stays allowed in the language as it is; the knowledge worlds do not use it. If drawing shards become a real cost on a phone, the reviewer reopens this with the numbers of your table.
+
+## Reviewer 2026-11-13 16:45 — Round 18 (after 0.16.0): delegation between modules (owner)
+
+**Owner's direction:** worlds are reusable modules; a world delegates and gets reasoning, defaults and gap filling from other worlds. PSys2 gets the host side as WORLDS-AS-MODULES (see its worker-tasks.md, M3). Propose the library side, smallest that works, one meaning per construct:
+1. **Needs and offers.** A module states what a request needs when a key is absent (a typed gap); another module states what it can offer for that type. Check whether rules + `core.absent` + imports already express it; if yes, write the documented pattern and an example, no new construct.
+2. **Order and source.** A fixed, declared order of fillers (user > dialogue focus > scene > knowledge > own default) and the source recorded on the filled wire, so a reply can say where a value came from.
+3. **Example** in examples/: a tiny draw world that asks a knowledge module for the usual place of a thing and a dialogue module for the last thing; tests for order, for "no offer", and for two offers at the same rank (must be reported, not picked silently).
+4. Report in questions.md what cannot be said today and the options; do not add syntax before the reviewer answers.

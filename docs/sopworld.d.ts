@@ -484,3 +484,8 @@ export function turn(world: World, readings: ({ action: string; args?: Record<st
 
 /** the worlds of the schemas scored for a request: their cards, the thing named, a dry run, the host's own signal; best first */
 export function route(world: World, request: { action: string; args?: Record<string, unknown> }, options?: { scores?: Record<string, number> }): { world: string; score: number; why: string[] }[];
+
+/** the coverage grid: world × kind × act cases run on a world with one thing of each kind, with what came of each */
+export function schemaGrid(world: World, name?: string, options?: { per?: number }): { world: string; act: string; kind: string; text: string; request: { action: string; args: Record<string, unknown> }; expect: { ok: boolean; added?: string[]; removed?: number; changed?: string[]; status?: string; why?: string } }[];
+/** a node:test file for grid cases */
+export function gridTests(cases: object[], options?: { importFrom?: string; make?: string }): string;

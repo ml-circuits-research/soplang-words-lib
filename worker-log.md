@@ -3539,3 +3539,20 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
   face 5 beats seating 3 for a seat.
 - PSys2 meta.worlds hand-over: the routing rules are general (taken in this form); the
   generated cards and the tab registry stay in the host. Row in the capabilities table.
+
+## R24 A5 — the coverage grid and test skeletons — done
+
+`/tmp/check.sh`: 349 pass, 0 fail on sources and built file, 348 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean.
+
+- `schemaGrid(world, name?, { per })`: every world × kind × act case (the requests of
+  schemaExamples) run on a fork that holds one thing of each kind (made with `make`, so
+  with defaults; told when the kind cannot be made), with `expect`: done (kinds added,
+  removed count, keys changed) or the reason. Seating + face: 35 cases, 0 holes; face with
+  a limit of 1 eye: 3 holes ("at most 1 eye"). First version told the base things without
+  their defaults: "make the eye bigger" was a false hole (size not a number).
+- `gridTests(cases, { importFrom, make })`: a node:test file; tested by running it in its
+  own test run (NODE_TEST_CONTEXT cleared: a nested run printed nothing): 13 pass, 0 fail.
+- The build refuses "node:" in src (a Node-only marker), also in comments and in text
+  written for the host: spelled apart.
+- api section, capabilities job (runnable); index.d.ts.

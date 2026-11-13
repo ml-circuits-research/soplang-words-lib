@@ -214,11 +214,13 @@ print(w.act({ action: 'show', args: { thing: 'table', view: 'map' } }).violation
 a table has no place on Earth
 ```
 
-## Generate cards, examples, replies
+## Generate cards, examples, replies, a coverage grid and tests
 
 From a schema: the card of a world (kinds, attributes, acts, words), example sentences per
-act with their requests, and the plain-English reply for a done act or a refusal.
-*0.19.* **Limits:** English only (hosts translate); no coverage grid yet (Round 24).
+act with their requests, the plain-English reply for a done act or a refusal, a coverage
+grid (every world × kind × act case run, with its expected difference; the holes are the
+cases not done) and a node:test file from the grid. *0.19; grid since 0.24.* **Limits:**
+English only (hosts translate).
 
 ```js run
 const w = new World();
@@ -336,7 +338,7 @@ print(route(w, { action: 'make', args: { kind: 'rose' } }));
 
 ## Not done yet
 
-- **A coverage grid and test skeletons** from a schema: A5. **A failure ledger**: A6.
+- **A failure ledger** keyed by pipeline stage, and validating a world in one command: A6.
 
 ## Taken over from PSys2
 

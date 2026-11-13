@@ -1009,6 +1009,30 @@ print(route(w, { action: 'make', args: { kind: 'rose' } })[0], route(w, { action
 {"world":"garden","score":3,"why":["has rose","allows make"]} kitchen
 ```
 
+### schemaGrid(world, name?, options?) and gridTests(cases, options?)
+
+The coverage grid: for every world × kind × act the schemas allow, the example request
+(`schemaExamples`) run on a copy of the world that holds one thing of each kind, with what
+came of it in `expect`: done, with the kinds added, the number removed and the keys
+changed; or not, with the reason (the holes are the cases not done). `gridTests(cases, {
+importFrom, make })` writes a node:test file that runs each case again on `make()` (a
+function the host exports from `importFrom`) and checks it.
+
+```js run
+const w = new World();
+w.load(`@acts core.use world=std.acts
+  @face std.schema.world name=face
+  @t core.type of=eye extends=std.schema.thing closed=true
+  @s core.slot of=eye key=colour enum=brown enum=blue default=brown
+  @k std.schema.kind of=eye world=face acts=make acts=change
+  @l std.schema.limit of=eye max=1`);
+print(schemaGrid(w).map((c) => [c.text, c.expect.ok ? c.expect.changed : c.expect.why]));
+```
+
+```output
+[["make an eye","at most 1 eye"],["make a blue eye","at most 1 eye"],["make the colour of the eye blue",["colour"]]]
+```
+
 ### rank(scored, criteria?) and RANKING
 
 Orders scored readings best first and explains every place. `RANKING` is the default

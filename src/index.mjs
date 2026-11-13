@@ -10,7 +10,7 @@ export { GRAMMAR, MODIFIERS, SCHEMA_TYPES } from './matrix.mjs';
 export { rank, RANKING, veto } from './rank.mjs';
 export { aggregates } from './builtins.mjs';
 export { PatternIndex } from './patterns.mjs';
-export { schemaCard, schemaExamples, actReply } from './schema-words.mjs';
+export { schemaCard, schemaExamples, actReply, schemaGrid, gridTests } from './schema-words.mjs';
 export { createCatalog, bundleReader } from './knowledge.mjs';
 export { turn, route } from './turn.mjs';
 export const version = '0.23.0';

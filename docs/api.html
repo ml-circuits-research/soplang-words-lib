@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="fa23ad9c4e4f">
+<meta name="source-hash" content="d5f0ef16fb0f">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -386,6 +386,17 @@ w.load(`@acts core.use world=std.acts
   @k2 std.schema.kind of=pot world=kitchen world=garden acts=make`);
 print(route(w, { action: &#x27;make&#x27;, args: { kind: &#x27;rose&#x27; } })[0], route(w, { action: &#x27;make&#x27;, args: { kind: &#x27;pot&#x27; } }, { scores: { kitchen: 1 } })[0].world);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;world&quot;:&quot;garden&quot;,&quot;score&quot;:3,&quot;why&quot;:[&quot;has rose&quot;,&quot;allows make&quot;]} kitchen</code></pre></figure>
+<h3 id="schemagridworld-name-options-and-gridtestscases-options">schemaGrid(world, name?, options?) and gridTests(cases, options?)</h3>
+<p>The coverage grid: for every world × kind × act the schemas allow, the example request (<code>schemaExamples</code>) run on a copy of the world that holds one thing of each kind, with what came of it in <code>expect</code>: done, with the kinds added, the number removed and the keys changed; or not, with the reason (the holes are the cases not done). <code>gridTests(cases, { importFrom, make })</code> writes a node:test file that runs each case again on <code>make()</code> (a function the host exports from <code>importFrom</code>) and checks it.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@acts core.use world=std.acts
+  @face std.schema.world name=face
+  @t core.type of=eye extends=std.schema.thing closed=true
+  @s core.slot of=eye key=colour enum=brown enum=blue default=brown
+  @k std.schema.kind of=eye world=face acts=make acts=change
+  @l std.schema.limit of=eye max=1`);
+print(schemaGrid(w).map((c) =&gt; [c.text, c.expect.ok ? c.expect.changed : c.expect.why]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;make an eye&quot;,&quot;at most 1 eye&quot;],[&quot;make a blue eye&quot;,&quot;at most 1 eye&quot;],[&quot;make the colour of the eye blue&quot;,[&quot;colour&quot;]]]</code></pre></figure>
 <h3 id="rankscored-criteria-and-ranking">rank(scored, criteria?) and RANKING</h3>
 <p>Orders scored readings best first and explains every place. <code>RANKING</code> is the default list of criteria, each <code>{ name, measure, say }</code> (lower <code>measure</code> is better): <code>consistent</code>, <code>referents</code> (how many are left ambiguous), <code>lacks</code>, <code>words</code> (words of the frame left out), <code>assumes</code>; ties keep the given order. Returns <code>{ order, ranked }</code>; <code>ranked[i]</code> is <code>{ index, place, why, lostTo, on }</code>: the first says what it satisfies, any other names the first criterion on which the winner is better and what each is on it, a tie says so. A host may put its own criteria before, after or instead of these.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();

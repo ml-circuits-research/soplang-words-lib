@@ -29,6 +29,32 @@ Options, against the current syntax:
 line in docs/integration.md would also have told the knowledge worker about
 `core.absent=`. Implemented after the reviewer's answer.
 
+## Q24 — ordered sequences: points of a drawing (R17.3, report only; not implemented)
+
+Measured on `k.objects/shards/noto-place-geographic-01.sop` (1,696 wires, 1,563 of them
+points), read in place from a clone; each variant loaded 5 times into a fresh world with
+the k.commonsense and k.objects schemas, median time, heap after the load (/tmp/seq.mjs):
+
+| Option | Wires | Text | Load | Heap | Inside "no notation in values"? |
+| --- | --- | --- | --- | --- | --- |
+| keep as is: one wire per point (`part= n= x= y=`) | 1,706 | 201 kB | 64.0 ms | +4.61 MB | yes |
+| a repeated key that keeps order (`px=… py=…` on the part) | 143 | 46 kB | 9.2 ms | +1.23 MB | yes in writing, but see below |
+| a list in one value: the existing `kind=json` (`points="[[50.8,72.4],…]"`) | 143 | 41 kB | 5.2 ms | +0.75 MB | no: JSON inside a value (already a kind of the language) |
+| (for scale) the existing `kind=blob`, opaque | 143 | 38 kB | 4.1 ms | +0.78 MB | no |
+
+- Repeated keys are sets today: `x=10 x=20 x=10` keeps `10, 20` (measured), and patterns
+  read them as "all of" (Q22). An ordered list with duplicates would give the same writing
+  a second meaning, and x and y would have to be two parallel keys kept in step.
+- A new typed list kind would be a second notation for what `kind=json` already holds.
+- `kind=json` already exists: one value per part, about 12 times faster to load and 6
+  times less memory here; rules can still read inside it with JSON paths (`c.paths`), and
+  a renderer gets the list in one piece. Its cost: the points are no longer wires, so a
+  rule cannot join on one point as a fact.
+
+**Recommendation:** for drawings, the existing `kind=json` on the part (no change to the
+language); keep one wire per point only where rules reason about single points. Not
+implemented, as asked.
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

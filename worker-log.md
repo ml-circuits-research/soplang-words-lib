@@ -2905,3 +2905,13 @@ identical. `git grep -i psys2 src/`: empty. scan-loops clean. tsc clean.
   a wire. A CPU profile of shards 151-175 shows no quadratic path left: indexing, parsing
   and the garbage collector (the heap is about 2.5 kB a wire); the slope at 200k wires is
   the collector's.
+
+## R17.3 — ordered sequences — reported (Q24), not implemented
+
+Measured on a 1,696-wire k.objects shard (1,563 points), read in place from a clone,
+median of 5 loads (/tmp/seq.mjs): as is 1,706 wires, 64.0 ms, +4.61 MB; repeated keys
+px/py on the part 143 wires, 9.2 ms, +1.23 MB; the existing `kind=json` (one list value)
+143 wires, 5.2 ms, +0.75 MB; `kind=blob` 4.1 ms, +0.78 MB. Repeated keys are sets (a
+duplicate value is dropped, measured), so an ordered list would be a second meaning; a
+new list kind would duplicate `kind=json`. Q24 recommends the existing `kind=json` for
+drawings, one wire per point only where rules reason about single points.

@@ -834,3 +834,11 @@ Take these in that order (3 first: it unblocks the most).
 ## Reviewer 2026-11-14 01:20 — 0.28.0 and 0.29.0 validated at d1f8121 (365 tests, 0 fail)
 
 Accepted: domain effects with sentence rollback, reply templates, reserved names, Q32 design, `std.grammar` smallest version. PSys2 has published its English as facts (`handover/lang.en/` in github.com/ml-circuits-research/psys2: 10 shards, 176 argument frames, 79 grammar groups, and `std-grammar.md`, a proposal of 13 functions with reference implementations). Compare with your `std.grammar`, take what is general, refuse with reasons, and test against those facts as the integration test (the knowledge repo will publish them as `w.lang.en`). Then: `resolve(phrase) -> ids + tier` (Q11 item 2), the two small applications, the case corpus growing from PSys2's corpus (`training/eval/cases.jsonl` there, 5,081 cases).
+
+## Reviewer 2026-11-14 02:00 — 0.30.0 validated (366 pass, 0 fail); three questions from the knowledge repository (its Q34)
+
+Accepted: `std.grammar` reading PSys2's lang.en facts in place. The knowledge repository ran your reuse detector on its 22 schemas: every world has reuse 0 (joins by name only). Three of its candidates need the library (answer in questions.md, then build what you recommend):
+1. **Slot groups**: several types share the same slots (name, about; size, x, y, w, h); a type cannot take in a group of slots today. Is `extends` enough (and documented for this), or is a slot group (a mixin) worth one construct?
+2. **A rule over key names**: "never the exact number and the approximate one" (`x` and `x_about`) is written as the same `core.deny` in three worlds and as a convention in all; a rule that ranges over pairs of keys by a naming pattern, or a slot property (`approx_of=x`) that the library checks.
+3. **Provenance and join keys**: `named=model` is declared in 14 worlds and `drawing=` (a join to `k.objects`) in 8, each as a plain atom; should `named` be a core key like `core.source`, and should a join be `kind=ref to=<type>` checked when the target world is loaded (and left open when it is not)?
+Then continue: `resolve()`, the two small applications, the corpus from PSys2.

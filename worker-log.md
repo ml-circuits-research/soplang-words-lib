@@ -2839,3 +2839,12 @@ pass, 0 fail on sources and built file, 283 in checking mode. Pilot output ident
   reported as written.
 - Docs: reference.md core.module (table, meaning, limits), api.md `world.modules()`,
   index.d.ts.
+
+## R16.5 — "one of" in a deny pattern — reported (Q22), not implemented
+
+Measured with a script: a pattern `thing tag=a tag=b` (a `many` key) matches only a wire
+that has both values (`z`, not `x` nor `y`): a repeated key in a pattern is "all of",
+like in a fact. Reading it as "any of" would give one writing two meanings and change
+existing rules. No built-in tests membership (`contains` is a substring test). Q22 gives
+the options and recommends a built-in `one_of(value, choices...)` used by one check and
+one deny, no new syntax.

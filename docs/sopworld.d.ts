@@ -500,3 +500,6 @@ export function ledgerAppend<R extends object>(rows: R[], add: R[]): R[];
 export function ledgerGroups(rows: object[], options?: { signals?: [string, (row: any) => boolean][]; examples?: number }): { key: string; stage: string; class: string; cause: string; count: number; examples: object[] }[];
 /** the stage a turn result failed at, or null when it was done */
 export function stageOf(result: object): string | null;
+
+/** the request pipeline as data: runs the stages a world declares with std.turn; providers are functions of a context */
+export function turnFlow(world: World, readings: object[], options?: { providers?: Record<string, (ctx: any) => unknown>; reply?: (world: World, request: object, result: object) => string; confirmed?: boolean }): ReturnType<typeof turn> & { trace: { stage: string; provider?: string; yielded?: unknown; empty?: string; skipped?: string }[]; stage?: string };

@@ -38,6 +38,7 @@ what it cannot decide, and refuses what is not allowed.
 | Measure reuse | `tools/reuse.mjs`, option `advise` | [example](docs/capabilities.md#measure-reuse) | 0.21 |
 | Load knowledge by lookup | `createCatalog`, `bundleReader` | [example](docs/capabilities.md#load-knowledge-by-lookup) | 0.23 |
 | Handle one request end to end | `turn` | [example](docs/capabilities.md#handle-one-request-end-to-end) | 0.24 |
+| Change the path of a request by telling facts | `std.turn`, `turnFlow` | [example](docs/capabilities.md#change-the-path-of-a-request-by-telling-facts) | 0.26 |
 | Choose a world for a request | `route` | [example](docs/capabilities.md#choose-a-world-for-a-request) | 0.24 |
 | Tools for authors | `tools/validate.mjs`, `tools/ledger.mjs`, `ledgerGroups` | [example](docs/capabilities.md#tools-for-authors) | 0.25 |
 <!-- /capabilities -->

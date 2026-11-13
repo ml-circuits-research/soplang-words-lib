@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="a0a08f257fb6">
+<meta name="source-hash" content="7d06e46e4999">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -403,6 +403,20 @@ print(schemaGrid(w).map((c) =&gt; [c.text, c.expect.ok ? c.expect.changed : c.ex
 const more = ledgerAppend(rows, [{ text: &#x27;draw a cup&#x27;, source: &#x27;logs&#x27; }, { text: &#x27;paint a mug&#x27;, source: &#x27;pairs&#x27;, stage: &#x27;reading&#x27;, class: &#x27;miss&#x27; }]);
 print(more.map((r) =&gt; r.text), ledgerGroups([...rows, ...more], { signals: [[&#x27;a cup word&#x27;, (r) =&gt; /cup|mug/.test(r.text)]] }).map((g) =&gt; [g.key, g.count]));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;paint a mug&quot;] [[&quot;reading / miss / a cup word&quot;,2],[&quot;filling / miss / other&quot;,1]]</code></pre></figure>
+<h3 id="turnflowworld-readings-options">turnFlow(world, readings, options?)</h3>
+<p><code>turn</code> with its path declared as data (<code>core.use world=std.turn</code>): the stages, their order, their providers by tier and what an empty stage does are wires the application can change by telling facts (see std.turn in the <a href="reference.html">reference</a>). The providers are functions <code>(ctx) =&gt; value</code> (nothing yielded: <code>undefined</code>); the library gives <code>given</code>, <code>dryrun</code>, <code>apply</code>, <code>reply</code>, <code>fallback</code>, <code>confirm</code> (asks before an act on a whole set unless <code>confirmed</code>) and <code>route</code> (fills the world of a make); the host adds its own in <code>providers</code>. The result is <code>turn</code>'s, with <code>trace</code>: every stage taken, its provider, what it yielded, why it yielded nothing, or why it was skipped. The declared default gives what <code>turn</code> gives (tested on 30 requests).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@acts core.use world=std.acts
+  @t core.use world=std.turn
+  @plan std.schema.world name=plan
+  @c core.type of=chair extends=std.schema.thing closed=true
+  @k std.schema.kind of=chair world=plan acts=make acts=remove
+  @confirm std.turn.stage name=confirm before=apply on_empty=ask only=remove
+  @pc std.turn.provider stage=confirm name=confirm`);
+w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;chair&#x27; } }); w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;chair&#x27; } });
+const t = turnFlow(w, [{ action: &#x27;remove&#x27;, args: { thing: &#x27;chair&#x27;, set: &#x27;all&#x27; } }]);
+print(t.status, t.question, t.trace.map((x) =&gt; x.stage));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>ask Remove all 2 chairs? [&quot;read&quot;,&quot;dryrun&quot;,&quot;confirm&quot;]</code></pre></figure>
 <h3 id="rankscored-criteria-and-ranking">rank(scored, criteria?) and RANKING</h3>
 <p>Orders scored readings best first and explains every place. <code>RANKING</code> is the default list of criteria, each <code>{ name, measure, say }</code> (lower <code>measure</code> is better): <code>consistent</code>, <code>referents</code> (how many are left ambiguous), <code>lacks</code>, <code>words</code> (words of the frame left out), <code>assumes</code>; ties keep the given order. Returns <code>{ order, ranked }</code>; <code>ranked[i]</code> is <code>{ index, place, why, lostTo, on }</code>: the first says what it satisfies, any other names the first criterion on which the winner is better and what each is on it, a tie says so. A host may put its own criteria before, after or instead of these.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();

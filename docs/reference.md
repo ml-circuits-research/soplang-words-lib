@@ -1740,6 +1740,24 @@ kind takes only its own attributes. `std.schema.kinds stand_in=<type>`: a kind t
 does not name but a stand-in wire does (`name=unicorn drawing=horse`) is made with
 `drawn_as`. `examples/know.mjs` uses wires copied from sop-knowledge-worlds (CC0).
 
+## std.turn: the request pipeline as data
+
+`core.use world=std.turn`; run by `turnFlow`. A stage: `std.turn.stage name= after=
+before= per=candidate on_empty= skip_if= only= when=exhausted`; a provider:
+`std.turn.provider stage= name= tier=`. The order is the `after` chain from the stage that
+follows nothing (equal places by name); a stage with `before=` goes right before that one.
+Stages with `per=candidate` run for each candidate reading in turn; when one yields
+nothing, `on_empty` says what follows: `next` (the next candidate), `ask` (return the
+question it set), `fail`. `skip_if=<key>`: skipped when a request of the candidate has that
+argument (the message named the world, say); `only=<action>`: run only for those actions.
+`when=exhausted`: run when no candidate was taken (the graded fallback). Providers of one
+stage are tried by tier: the first that yields wins; a reader's candidates add up.
+**The default:** read (given) → dryrun → apply → reply per candidate; fallback when
+exhausted. **Advice:** a stage nobody provides, or placed after or before an undeclared
+stage, is a soft issue (`world.check().issues`). **Fixed:** apply is one sentence (one
+undo step, all or nothing), budgets per call, the same input and state give the same path,
+a trace of every stage taken.
+
 ## Functions
 
 A function is called with its arguments as text and returns text (or true/false for a

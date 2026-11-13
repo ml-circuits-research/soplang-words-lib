@@ -1057,6 +1057,36 @@ print(more.map((r) => r.text), ledgerGroups([...rows, ...more], { signals: [['a 
 ["paint a mug"] [["reading / miss / a cup word",2],["filling / miss / other",1]]
 ```
 
+### turnFlow(world, readings, options?)
+
+`turn` with its path declared as data (`core.use world=std.turn`): the stages, their
+order, their providers by tier and what an empty stage does are wires the application can
+change by telling facts (see std.turn in the [reference](reference.md)). The providers are
+functions `(ctx) => value` (nothing yielded: `undefined`); the library gives `given`,
+`dryrun`, `apply`, `reply`, `fallback`, `confirm` (asks before an act on a whole set unless
+`confirmed`) and `route` (fills the world of a make); the host adds its own in
+`providers`. The result is `turn`'s, with `trace`: every stage taken, its provider, what it
+yielded, why it yielded nothing, or why it was skipped. The declared default gives what
+`turn` gives (tested on 30 requests).
+
+```js run
+const w = new World();
+w.load(`@acts core.use world=std.acts
+  @t core.use world=std.turn
+  @plan std.schema.world name=plan
+  @c core.type of=chair extends=std.schema.thing closed=true
+  @k std.schema.kind of=chair world=plan acts=make acts=remove
+  @confirm std.turn.stage name=confirm before=apply on_empty=ask only=remove
+  @pc std.turn.provider stage=confirm name=confirm`);
+w.act({ action: 'make', args: { kind: 'chair' } }); w.act({ action: 'make', args: { kind: 'chair' } });
+const t = turnFlow(w, [{ action: 'remove', args: { thing: 'chair', set: 'all' } }]);
+print(t.status, t.question, t.trace.map((x) => x.stage));
+```
+
+```output
+ask Remove all 2 chairs? ["read","dryrun","confirm"]
+```
+
 ### rank(scored, criteria?) and RANKING
 
 Orders scored readings best first and explains every place. `RANKING` is the default

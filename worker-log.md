@@ -3662,3 +3662,25 @@ facts), what is missing (a per-kind act hook `on.<act>`, space selection by orde
 position / size, layouts, overlap enforcement, spatial questions, pieces with their
 solver, a turn log with `amend`). Q30 with the proposed order; not blocking. Row in the
 capabilities table.
+
+## R25 — the request pipeline as data — done (Q31: yes for order, providers, fallbacks)
+
+Answer in questions.md Q31 (recommendation: the order, the providers and the fallbacks
+as data; the stages' insides stay functions; parallel candidates not yet).
+- `std.turn` (src/std.mjs): `std.turn.stage name after before per on_empty skip_if only
+  when`, `std.turn.provider stage name tier`; the default path read → dryrun → apply →
+  reply per candidate, fallback when exhausted; soft denies as advice for a stage nobody
+  provides or placed after / before an undeclared stage. (`fn=` is reserved for matrix
+  wires: the provider key is `name=`.)
+- `turnFlow(world, readings, { providers, reply, confirmed })` (src/turn.mjs): the order
+  from the after chain (ties by name), `before=` insertion, providers by tier (readers add
+  up), `on_empty` next / ask / fail, `skip_if`, `only`; built-in providers given, dryrun,
+  apply, reply, fallback (factored out of `turn`), confirm, route; a trace of every stage.
+- test/flow.test.mjs (3): the declared default and `turn` give the same status, reading,
+  replies and diffs on 30 requests, and the same world at the end; the trace; a hole is an
+  issue; variants by facts only — a confirmation before removing a whole set ("Remove all
+  3 seats?", done when confirmed, skipped for make), a second reader at tier 2 taken when
+  the first reading fails.
+- `node bench/flow.mjs` (30 requests): turn 32.2 / 12.9 ms, turnFlow 25.8 / 18.9 ms; steps
+  summed 670 both (the library steps are the same; the overhead is JavaScript only).
+- Docs: reference std.turn, api turnFlow, capabilities job (17 jobs in README), modules.

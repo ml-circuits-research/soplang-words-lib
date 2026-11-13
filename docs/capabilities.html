@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld What the library can do</title>
-<meta name="source-hash" content="ce5ea0da5a9f">
+<meta name="source-hash" content="b238d281730c">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -192,6 +192,19 @@ w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;chair&#x27; } });
 const t = turn(w, [{ action: &#x27;change&#x27;, args: { thing: &#x27;chair&#x27;, attr: &#x27;colour&#x27;, value: &#x27;red&#x27; } }]);
 print(t.replies, t.why[0].steps[0].action);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;I changed the colour of the chair (chair1) from blue to red.&quot;] change</code></pre></figure>
+<h2 id="change-the-path-of-a-request-by-telling-facts">Change the path of a request by telling facts</h2>
+<p><em>In <code>std.turn</code>, <code>turnFlow</code>; since 0.26.</em></p>
+<p>The stages of <code>turn</code> are declared with <code>std.turn</code>: an application adds a stage (a confirmation before removing many things, a permission check), gives a stage a second provider ranked by tier (a second reader), or skips one, by telling wires; <code>turnFlow</code> runs the declared path and gives a trace of every stage taken. <strong>Limits:</strong> what a stage does is a function; candidates are tried one after the other, not in parallel.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@acts core.use world=std.acts
+  @t core.use world=std.turn
+  @plan std.schema.world name=plan
+  @c core.type of=chair extends=std.schema.thing closed=true
+  @k std.schema.kind of=chair world=plan acts=make
+  @p2 std.turn.provider stage=read name=second tier=2`);
+const t = turnFlow(w, [{ action: &#x27;make&#x27;, args: { kind: &#x27;sofa&#x27; } }], { providers: { second: () =&gt; [{ action: &#x27;make&#x27;, args: { kind: &#x27;chair&#x27; } }] } });
+print(t.status, t.reading, t.replies);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>done 1 [&quot;I made a chair (chair1).&quot;]</code></pre></figure>
 <h2 id="choose-a-world-for-a-request">Choose a world for a request</h2>
 <p><em>In <code>route</code>; since 0.24.</em></p>
 <p><code>route</code> scores the worlds of the schemas for a request by their cards, the thing it names, a dry run, and a signal of the host's own (an encoder's score), best first with the reasons. <strong>Limits:</strong> no reading of text: the request comes from the host.</p>

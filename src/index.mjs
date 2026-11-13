@@ -12,7 +12,7 @@ export { aggregates } from './builtins.mjs';
 export { PatternIndex } from './patterns.mjs';
 export { schemaCard, schemaExamples, actReply, schemaGrid, gridTests } from './schema-words.mjs';
 export { createCatalog, bundleReader } from './knowledge.mjs';
-export { turn, route } from './turn.mjs';
+export { turn, route, turnFlow } from './turn.mjs';
 export { ledgerAppend, ledgerGroups, ledgerKey, stageOf, STAGES } from './ledger.mjs';
 export const version = '0.25.0';
 /**

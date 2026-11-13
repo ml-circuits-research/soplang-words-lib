@@ -743,4 +743,49 @@ ${['place', 'size', 'colour'].map((k) => `@gap.${k} std.schema.thing kind=?kind 
 `,
     fns: {},
   },
+  // Round 25: the request pipeline as data. The stages of a turn, their order (`after`),
+  // who provides each (`std.turn.provider stage= name= tier=`, ranked by tier), what happens when one yields
+  // nothing (`on_empty`: next = the next candidate reading, ask, fail), stages run per
+  // candidate (`per=candidate`) or once, placed `before` another stage, skipped when what they yield is there already
+  // (`skip_if`), only for some actions (`only`), and the stages run when no candidate was
+  // taken (`when=exhausted`). What a stage does is a function (turnFlow's providers).
+  'std.turn': {
+    text: String.raw`
+@k.stage.name core.slot of=std.turn.stage key=name id=true
+@k.stage.after core.slot of=std.turn.stage key=after
+@k.stage.before core.slot of=std.turn.stage key=before
+@k.stage.on core.slot of=std.turn.stage key=on_empty enum=next enum=ask enum=fail
+@k.stage.per core.slot of=std.turn.stage key=per enum=candidate
+@k.stage.when core.slot of=std.turn.stage key=when enum=exhausted
+@k.stage.skip core.slot of=std.turn.stage key=skip_if
+@k.stage.only core.slot of=std.turn.stage key=only many=true
+@k.prov.stage core.slot of=std.turn.provider key=stage required=true
+@k.prov.name core.slot of=std.turn.provider key=name required=true
+@k.prov.tier core.slot of=std.turn.provider key=tier kind=number
+
+# the default path: the readings given; each candidate tried on a copy, then applied; the replies; the graded fallback
+@read std.turn.stage name=read on_empty=fail
+@try std.turn.stage name=dryrun after=read per=candidate on_empty=next
+@apply std.turn.stage name=apply after=dryrun per=candidate on_empty=next
+@reply std.turn.stage name=reply after=apply per=candidate on_empty=fail
+@fallback std.turn.stage name=fallback when=exhausted on_empty=fail
+@p.read std.turn.provider stage=read name=given tier=1
+@p.try std.turn.provider stage=dryrun name=dryrun tier=1
+@p.apply std.turn.provider stage=apply name=apply tier=1
+@p.reply std.turn.provider stage=reply name=reply tier=1
+@p.fallback std.turn.provider stage=fallback name=fallback tier=1
+
+# advice for authors: a stage nobody provides, a stage placed after or before one that is not declared
+@hs std.turn.stage name=?n
+@hp std.turn.provider stage=?n
+@hole core.deny when=$hs not=$hp soft=true why="the stage ?n has no provider"
+@ha std.turn.stage name=?n after=?a
+@hb std.turn.stage name=?a
+@dangling core.deny when=$ha not=$hb soft=true why="the stage ?n comes after ?a, which is not declared"
+@hc std.turn.stage name=?n before=?b
+@hd std.turn.stage name=?b
+@dangling2 core.deny when=$hc not=$hd soft=true why="the stage ?n comes before ?b, which is not declared"
+`,
+    fns: {},
+  },
 };

@@ -350,6 +350,32 @@ print(t.replies, t.why[0].steps[0].action);
 ["I changed the colour of the chair (chair1) from blue to red."] change
 ```
 
+## Change the path of a request by telling facts
+
+*In `std.turn`, `turnFlow`; since 0.26.*
+
+The stages of `turn` are declared with `std.turn`: an application adds a stage (a
+confirmation before removing many things, a permission check), gives a stage a second
+provider ranked by tier (a second reader), or skips one, by telling wires; `turnFlow` runs
+the declared path and gives a trace of every stage taken. **Limits:** what a stage does is
+a function; candidates are tried one after the other, not in parallel.
+
+```js run
+const w = new World();
+w.load(`@acts core.use world=std.acts
+  @t core.use world=std.turn
+  @plan std.schema.world name=plan
+  @c core.type of=chair extends=std.schema.thing closed=true
+  @k std.schema.kind of=chair world=plan acts=make
+  @p2 std.turn.provider stage=read name=second tier=2`);
+const t = turnFlow(w, [{ action: 'make', args: { kind: 'sofa' } }], { providers: { second: () => [{ action: 'make', args: { kind: 'chair' } }] } });
+print(t.status, t.reading, t.replies);
+```
+
+```output
+done 1 ["I made a chair (chair1)."]
+```
+
 ## Choose a world for a request
 
 *In `route`; since 0.24.*

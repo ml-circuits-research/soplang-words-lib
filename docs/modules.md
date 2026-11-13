@@ -17,6 +17,7 @@ measures it). Details and examples: [reference](reference.md), [capabilities](ca
 | `std.relations` | relations kept between things; rows; first; each; one per place | — | `std.relations.box`, `.at`, `.keep`, `.nth`, `.each`, `.spread`, `.pair` | actions `relations.put_all`, `relations.put_pairs` | — | `node bench/rank.mjs` (the rank it uses): 400 peers ≈ 0.4 s |
 | `std.schema` | a world that does things, as data: kinds, attributes, acts, aspects, views, limits | — | `std.schema.thing`, `.world`, `.kind`, `.kinds`, `.aspect`, `.view`, `.limit`, `.count` | rules (load checks, limits) | — | part of an act's cost |
 | `std.acts` | the acts, the same for every schema | `std.schema` | `std.acts.link`, `.group`, `.saved`, `.shown` | actions `make`, `remove`, `change`, `place`, `connect`, `group`, `ungroup`, `pick`, `ask`, `copy`, `send`, `save`, `load`, `undo`, `redo`, `show`, `teach`, `forget`, `complete` | — | `node bench/acts.mjs`: an act on 2,000 things ≈ 10 steps, under 10 ms |
+| `std.turn` | the request pipeline as data: stages, order, providers, fallbacks | — | `std.turn.stage`, `std.turn.provider` | soft denies (advice on holes); run by `turnFlow` | — | `node bench/flow.mjs`: 30 requests, the same steps as `turn` |
 | `std.know` | knowledge as a filler: usual place, size, colour; `is_a`; taught facts | `std.fill` | `std.know.taught`, `std.know.from` | rules; the tier `taught` (a `core.tier`) | offers at `knowledge` or `taught` | `node bench/know.mjs`: a make on 2,000 things ≈ 220 steps, ≈ 2 ms |
 
 `core.use world=<module> as=<name>` loads a module under another name, as many times as
@@ -26,7 +27,7 @@ wanted (see [patterns](patterns.md), the parameterised world).
 
 | Export | Purpose | Works with | Cost |
 | --- | --- | --- | --- |
-| `turn`, `route` | one request end to end with a graded fallback; the world for a request | `std.acts`, any action | one dry run per reading on a fork |
+| `turn`, `turnFlow`, `route` | one request end to end with a graded fallback (coded, or as declared with std.turn); the world for a request | `std.acts`, any action | one dry run per reading on a fork |
 | `schemaCard`, `schemaExamples`, `actReply`, `schemaGrid`, `gridTests` | cards, examples, replies, the coverage grid, test files | `std.schema` | the grid runs every case on a fork |
 | `createCatalog`, `bundleReader` | knowledge loaded by lookup, cached, schemas first; offline bundles | any catalog in the sop-knowledge-worlds layout | one read per path |
 | `ledgerAppend`, `ledgerGroups`, `ledgerKey`, `stageOf`, `STAGES` | the failure ledger | `turn` | linear in the rows |

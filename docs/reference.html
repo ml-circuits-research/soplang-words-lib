@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="9d0c67f1f7d4">
+<meta name="source-hash" content="af4797466051">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -135,8 +135,8 @@ must be quantity.mass</code></pre></figure>
 <h3 id="coremodule">core.module</h3>
 <p>A module that names itself: what it imports and what other modules may read.</p>
 <p><strong>Syntax</strong></p>
-<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>name</code></td><td>name</td><td>the wire's id</td><td></td><td>the module, and the prefix of its types</td></tr><tr><td><code>imports</code></td><td>module name</td><td>none</td><td>yes</td><td>modules of the library loaded with it, ids unchanged</td></tr><tr><td><code>exports</code></td><td>type</td><td>all its types</td><td>yes</td><td>the types other modules may read (<code>item</code> means <code>&lt;name&gt;.item</code>)</td></tr></tbody></table></div>
-<p><strong>Meaning.</strong> A module loaded from the library (by <code>core.use</code> or <code>imports</code>) may declare types and slots only under its own prefix: <code>shop</code> declares <code>shop.item</code>, not <code>item</code> and not <code>geo.place</code>. With <code>exports</code>, a rule or deny of another module may read only those types (and their subtypes) of this module. After modules are joined, a short key that two modules declare along one type's lineage is reported in <code>world.warnings</code> (<code>ambiguous-key</code>, with both qualified names). The same can be declared through a <a href="#coreschemamap">core.schema.map</a> with <code>as=module</code> (its <code>exports</code> field).</p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Value</th><th>Default</th><th>Rep.</th><th>Meaning</th></tr></thead><tbody><tr><td><code>name</code></td><td>name</td><td>the wire's id</td><td></td><td>the module, and the prefix of its types</td></tr><tr><td><code>version</code></td><td>text</td><td>none</td><td></td><td>a label for the module's version, reported by <code>world.modules()</code>; nothing checks it</td></tr><tr><td><code>imports</code></td><td>module name</td><td>none</td><td>yes</td><td>modules of the library loaded with it, ids unchanged</td></tr><tr><td><code>exports</code></td><td>type</td><td>all its types</td><td>yes</td><td>the types other modules may read (<code>item</code> means <code>&lt;name&gt;.item</code>)</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> A module loaded from the library (by <code>core.use</code> or <code>imports</code>) may declare types and slots only under its own prefix: <code>shop</code> declares <code>shop.item</code>, not <code>item</code> and not <code>geo.place</code>. With <code>exports</code>, a rule or deny of another module may read only those types (and their subtypes) of this module. <code>world.modules()</code> lists the modules with their <code>version</code>. After modules are joined, a short key that two modules declare along one type's lineage is reported in <code>world.warnings</code> (<code>ambiguous-key</code>, with both qualified names). The same can be declared through a <a href="#coreschemamap">core.schema.map</a> with <code>as=module</code> (its <code>exports</code> field).</p>
 <p><strong>When it is evaluated.</strong> When the matrix is compiled.</p>
 <p><strong>Interactions.</strong> <em>Modules without exports:</em> every type is readable, as before. <em>Rules outside any module</em> (the host's own matrix) read everything. <em>Facts</em> are not in modules; they may be in <a href="language.html#12-scope">namespaces</a>.</p>
 <p><strong>Violations.</strong> <code>schema</code> (a type or slot outside the module's prefix, naming the module and the type; a rule that reads a type another module does not export, naming both modules; a module declared twice with other imports; an import that is not in the library). <code>duplicate-id</code> for a matrix id declared twice, naming both owners (the application or a module); an import whose own declaration lost such a clash says so, with the ids.</p>
@@ -154,7 +154,7 @@ print(w.use(&#x27;bad&#x27;).violations[0].why);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true true
 spy.r: module spy reads shop.secret, which module shop does not export (exports=shop.item)
 bad.k: module bad declares the slot of type shop.item, which is not under its own prefix bad. (the prefix of module shop)</code></pre></figure>
-<p><strong>Limits.</strong> Exports name types, not keys.</p>
+<p><strong>Limits.</strong> Exports name types, not keys. A <code>version</code> is a label: imports do not ask for one.</p>
 <h2 id="saying-what-follows-and-what-cannot-be">Saying what follows and what cannot be</h2>
 <h3 id="corerule">core.rule</h3>
 <p>If the patterns match, the templates hold.</p>

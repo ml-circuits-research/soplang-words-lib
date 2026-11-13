@@ -2825,3 +2825,17 @@ psys2 src/`: empty. scan-loops clean. tsc clean.
   owners and no misleading message; a clash on the module's own id is named in the import
   message.
 - Docs: reference.md core.module Violations.
+
+## R16.4 — version= on core.module — done
+
+Checked against 0.14.0: `version=` was an `unknown-attribute` warning. `npm test`: 284
+pass, 0 fail on sources and built file, 283 in checking mode. Pilot output identical.
+`git grep -i psys2 src/`: empty. scan-loops clean. tsc clean.
+
+- `core.module version=` (text; also a `version` field of an `as=module` map) is kept as a
+  label. New `world.modules()`: `{ name, version, imports, exports }` per module (there
+  was no such call before). Nothing checks versions.
+- Test `modules: version= on core.module is a label that modules() reports`: no warning,
+  reported as written.
+- Docs: reference.md core.module (table, meaning, limits), api.md `world.modules()`,
+  index.d.ts.

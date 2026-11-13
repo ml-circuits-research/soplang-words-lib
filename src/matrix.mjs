@@ -27,7 +27,7 @@ export const GRAMMAR = {
   'core.namespace': ['prefix', 'open'],
   'core.schema.map': ['from', 'as'], // and one attribute per field it maps
   'core.use': ['world', 'prefix'],
-  'core.module': ['name', 'imports', 'exports'],
+  'core.module': ['name', 'version', 'imports', 'exports'],
   'core.rule': ['when', 'not', 'with', 'if', 'then', 'lazy'],
   'core.deny': ['when', 'not', 'with', 'if', 'why', 'soft', 'priority'],
   'core.calc': ['out', 'fn', 'args', 'over', 'pick', 'ties', 'relation'],
@@ -325,7 +325,10 @@ export function compileMatrix(world) {
         const ex = native ? w.attrs.exports : map.fields.exports ? field(map.fields.exports, w, true) : undefined;
         const exports = ex ? ex.map((t) => (t.includes('.') || t === name ? t : `${name}.${t}`)) : null;
         if (old && old.wire !== w && JSON.stringify(old.imports) !== JSON.stringify(imports)) c.errors.push(`${w.id}: module ${name} is already declared by ${old.wire.id} with other imports`);
-        else c.modules.set(name, { wire: w, imports, exports });
+        else {
+          const version = native ? first(w, 'version') : map.fields.version ? field(map.fields.version, w) : undefined; // a label, reported, nothing more
+          c.modules.set(name, { wire: w, imports, exports, ...(version !== undefined ? { version: str(version) } : {}) });
+        }
       }
     } else if (w.type === 'core.tier') {
       extra.push(w);

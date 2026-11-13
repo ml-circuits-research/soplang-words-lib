@@ -1144,6 +1144,21 @@ sopworld: the function "add" would replace the built-in of t
 function
 ```
 
+### world.modules()
+
+The modules of the matrix, in order: `{ name, version, imports, exports }` (`version`
+and `exports` when the module declares them).
+
+```js run
+const w = new World();
+w.load('@m core.module name=shop version=1.2.0 exports=item\n@k core.slot of=shop.item key=price kind=number');
+print(w.modules());
+```
+
+```output
+[{"name":"shop","version":"1.2.0","imports":[],"exports":["shop.item"]}]
+```
+
 ### world.functions()
 
 The host functions the matrix declares, in order: `{ name, out: { kind }, pure, doc,

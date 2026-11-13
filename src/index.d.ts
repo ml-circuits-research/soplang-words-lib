@@ -381,6 +381,8 @@ export class World {
   examples(templates?: { action?: Template; statement?: Template; question?: Template }, options?: { per?: number; all?: boolean; sample?: number }): Example[];
   /** answer with the top reading of score, or not, and why */
   veto(result: { candidates: Scored[]; order: number[] } | Scored[], options?: VetoOptions): Veto;
+  /** the modules of the matrix */
+  modules(): { name: string; version?: string; imports: string[]; exports?: string[] }[];
   /** the host functions the matrix declares (core.function) */
   functions(): { name: string; out: { kind?: string }; pure: boolean; doc?: string; args: { name: string; kind?: string; optional: boolean; doc?: string }[]; registered: boolean }[];
   /** judge candidate readings against the world; nothing is told */

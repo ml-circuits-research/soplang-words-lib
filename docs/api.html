@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="1ff083a1ac9b">
+<meta name="source-hash" content="8ca27592884b">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -437,6 +437,12 @@ try { w.register(&#x27;function&#x27;, &#x27;add&#x27;, () =&gt; 0); } catch (e)
 print(typeof w.fns.half);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>sopworld: the function &quot;add&quot; would replace the built-in of t
 function</code></pre></figure>
+<h3 id="worldmodules">world.modules()</h3>
+<p>The modules of the matrix, in order: <code>{ name, version, imports, exports }</code> (<code>version</code> and <code>exports</code> when the module declares them).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(&#x27;@m core.module name=shop version=1.2.0 exports=item\n@k core.slot of=shop.item key=price kind=number&#x27;);
+print(w.modules());</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;name&quot;:&quot;shop&quot;,&quot;version&quot;:&quot;1.2.0&quot;,&quot;imports&quot;:[],&quot;exports&quot;:[&quot;shop.item&quot;]}]</code></pre></figure>
 <h3 id="worldfunctions">world.functions()</h3>
 <p>The host functions the matrix declares, in order: <code>{ name, out: { kind }, pure, doc, args: [{ name, kind, optional, doc }], registered }</code>. A reader derives its tool descriptions from them.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World({ fns: { near: ([a, b, d = 3]) =&gt; Math.abs(a - b) &lt;= d } });

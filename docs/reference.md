@@ -328,13 +328,14 @@ A module that names itself: what it imports and what other modules may read.
 | Attribute | Value | Default | Rep. | Meaning |
 | --- | --- | --- | --- | --- |
 | `name` | name | the wire's id | | the module, and the prefix of its types |
+| `version` | text | none | | a label for the module's version, reported by `world.modules()`; nothing checks it |
 | `imports` | module name | none | yes | modules of the library loaded with it, ids unchanged |
 | `exports` | type | all its types | yes | the types other modules may read (`item` means `<name>.item`) |
 
 **Meaning.** A module loaded from the library (by `core.use` or `imports`) may declare
 types and slots only under its own prefix: `shop` declares `shop.item`, not `item` and
 not `geo.place`. With `exports`, a rule or deny of another module may read only those
-types (and their subtypes) of this module. After modules are joined, a short key that
+types (and their subtypes) of this module. `world.modules()` lists the modules with their `version`. After modules are joined, a short key that
 two modules declare along one type's lineage is reported in `world.warnings`
 (`ambiguous-key`, with both qualified names). The same can be declared through a
 [core.schema.map](#coreschemamap) with `as=module` (its `exports` field).
@@ -373,7 +374,8 @@ spy.r: module spy reads shop.secret, which module shop does not export (exports=
 bad.k: module bad declares the slot of type shop.item, which is not under its own prefix bad. (the prefix of module shop)
 ```
 
-**Limits.** Exports name types, not keys.
+**Limits.** Exports name types, not keys. A `version` is a label: imports do not ask
+for one.
 
 ## Saying what follows and what cannot be
 

@@ -1239,6 +1239,11 @@ export class World {
     return this._c;
   }
 
+  /** The modules of the matrix, in order: { name, version, imports, exports } (version and exports when declared). */
+  modules() {
+    return [...this._compiled().modules].map(([name, m]) => ({ name, ...(m.version !== undefined ? { version: m.version } : {}), imports: [...m.imports], ...(m.exports ? { exports: [...m.exports] } : {}) }));
+  }
+
   /**
    * The host functions the matrix declares (core.function), in order: { name, out, pure,
    * doc, args: [{ name, kind, optional, doc }], registered }. A reader can derive tool

@@ -436,3 +436,9 @@ test('modules: an imported module whose ids clash with the application\'s says s
   const r2 = v.tell('@shapes core.type\n@app core.module name=app imports=shapes');
   assert.match(r2.violations.map((x) => x.why).join(' | '), /app imports shapes; shapes was loaded but its matrix ids clash with ids already declared: @shapes \(the application and module shapes\)/);
 });
+
+test('modules: version= on core.module is a label that modules() reports', () => {
+  const w = new World();
+  w.load('@m core.module name=shop version="2.1" exports=item\n@k core.slot of=shop.item key=price kind=number');
+  assert.deepEqual([w.modules(), w.warnings], [[{ name: 'shop', version: '2.1', imports: [], exports: ['shop.item'] }], []]);
+});

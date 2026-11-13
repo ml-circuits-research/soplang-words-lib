@@ -825,6 +825,11 @@ the wire described.
 **Meaning.** As in the table. What a rule concluded from an absence or a selection is
 withdrawn when the key is filled, or a later wire arrives.
 
+**Joining by reference.** A value `$p` in a pattern is the wire that pattern `p` matched:
+`@rm room w=?rw` and `@pin piece in=$rm x=?x` match a room and the pieces whose `in`
+refers to it (the order of `when=` gives the order of the join). There is no attribute for
+the id of a matched wire: a reference is the join.
+
 **When it is evaluated.** With the rule. A rule whose only selection is `core.absent` on
 its own patterns is driven by the wires it matches, like any rule: a match that a key
 coming ends is taken back there. Rules that use `core.select`, and denies with

@@ -68,3 +68,25 @@ per peer), or a withdrawal that re-matched a fact shared by thousands. **Done:**
 rules driven by single wires; a rank ordered once per group; one wire requeued per
 withdrawn firing, none when a wire it read is gone (a make on 2,000 things: 92,212 → 163
 steps).
+
+## A grammar world needs names of its own, and owns no noun (01:20 item 1)
+
+PSys2's English facts did not use the library's type names. Their closed classes were
+types of their own (`lang.en.det`, `lang.en.prep`), and their nouns lived elsewhere. The
+parser read them only once three things became options: the fact types, which types are
+closed classes, and the host's open-class lexicon. No English went into the library.
+**Done:** `types`, `classes`, `lexicon`, `digits`. 11 of 11 noun-phrase examples parse
+from the shards as they are.
+
+## Resolution is separate from reading (01:20 item 2)
+
+The grammar says which word is an ordinal or a pronoun. Which thing "the last red table"
+is depends only on the world's things, `core.word` and the focus. Keeping the two apart
+let one `resolve` serve a toy grammar and PSys2's English unchanged. **Done:** `resolve`,
+with a tier for each answer.
+
+## Applications show where the docs end (01:20 item 3)
+
+The room planner and the timetable reused acts, boxes, fill, views, denies and the solver
+without code in between. They also found six places where the docs or the library stopped
+short (docs/reuse-reports/apps.md). Three are fixed; three are open.

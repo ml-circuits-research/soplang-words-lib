@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.32.0
+
+The reviewer's 01:20 item 3: two small applications written from the docs, a room planner
+and a classroom timetable (`examples/second-app/`, `test/apps.test.mjs`). What they found
+is in `docs/reuse-reports/apps.md`.
+
+### Changed
+- `show thing=* view=...` leaves out the things the view does not show and lists them in
+  `skipped`. It is refused only when nothing is left; before, it was refused at the first
+  thing without the view's aspects.
+
+### Docs
+- reference.md: joining two patterns by reference (`in=$rm`).
+- api.md: the `complete` act is not the solver; `world.complete` is.
+- docs/lessons.md: three new lessons.
+
 ## 0.31.0
 
 The reviewer's 01:20 item 2 (PSys2's Q11 item 2): referents by words.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="340a271383d8">
+<meta name="source-hash" content="6c6380e10de7">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.31.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.32.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -227,7 +227,7 @@ print(w.canComplete(), w.canComplete(&#x27;l2&#x27;));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>false false
 true true</code></pre></figure>
 <h3 id="worldcompleteoptions">world.complete(options?)</h3>
-<p>Applies what <code>next</code> found: forced values, with <code>{ defaults: true }</code> the defaults, with <code>{ choose: true }</code> one full solution of what is left (tier <code>guessed</code>). Returns <code>{ filled, questions, dead, pending }</code>. A call on a world that has not changed since a call with the same options that filled nothing returns that answer again at once.</p>
+<p>Applies what <code>next</code> found: forced values, with <code>{ defaults: true }</code> the defaults, with <code>{ choose: true }</code> one full solution of what is left (tier <code>guessed</code>). Returns <code>{ filled, questions, dead, pending }</code>. A call on a world that has not changed since a call with the same options that filled nothing returns that answer again at once. The std.acts act <code>complete</code> is different: it applies what <code>std.fill</code> chose for a thing; the solver runs only here.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 w.tell(&#x27;@pen item name=pen price=2  @l1 line item=$pen&#x27;);
 const c = w.complete({ defaults: true });
@@ -702,7 +702,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.31.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.32.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

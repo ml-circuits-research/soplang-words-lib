@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="9ece467bc559">
+<meta name="source-hash" content="36d1025c4a49">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.31.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.32.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html" aria-current="page">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -326,6 +326,7 @@ conflict</code></pre></figure>
 <p>Three attributes are read on patterns and templates of any type and are not part of the wire described.</p>
 <div class="table"><table><thead><tr><th>Attribute</th><th>On</th><th>Value</th><th>Meaning</th></tr></thead><tbody><tr><td><code>core.absent</code></td><td>pattern</td><td>key, rep.</td><td>matches only a wire that has no value for that key</td></tr><tr><td><code>core.select</code></td><td>pattern</td><td><code>latest</code> | <code>first</code></td><td>of the wires that fit the bindings made so far, only the latest (first) in the sequence</td></tr><tr><td><code>core.on</code></td><td>template</td><td><code>$pattern</code></td><td>add the template's entries to the wire that pattern matched</td></tr></tbody></table></div>
 <p><strong>Meaning.</strong> As in the table. What a rule concluded from an absence or a selection is withdrawn when the key is filled, or a later wire arrives.</p>
+<p><strong>Joining by reference.</strong> A value <code>$p</code> in a pattern is the wire that pattern <code>p</code> matched: <code>@rm room w=?rw</code> and <code>@pin piece in=$rm x=?x</code> match a room and the pieces whose <code>in</code> refers to it (the order of <code>when=</code> gives the order of the join). There is no attribute for the id of a matched wire: a reference is the join.</p>
 <p><strong>When it is evaluated.</strong> With the rule. A rule whose only selection is <code>core.absent</code> on its own patterns is driven by the wires it matches, like any rule: a match that a key coming ends is taken back there. Rules that use <code>core.select</code>, and denies with <code>core.absent</code>, are re-evaluated in full when a type they read changes.</p>
 <p><strong>Interactions.</strong> A rule may not fill a key that it requires to be absent (<code>schema</code>). With either of the two pattern attributes in the matrix, the search stops trying values one at a time (<a href="semantics.html#search">semantics</a>).</p>
 <p><strong>Example</strong></p>
@@ -721,7 +722,7 @@ print(builtins.time_add([&#x27;10:40&#x27;, &#x27;35min&#x27;]), builtins.div([&
 11:15 3 true tuesday</code></pre></figure>
 <p class="source">Generated from <code>docs/reference.md</code>.</p>
 </main>
-<footer>sopworld 0.31.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.32.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

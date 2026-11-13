@@ -301,10 +301,11 @@ const ACTIONS = {
     if (!view) return { ok: false, why: `there is no view ${one(args.view)}` };
     const things = args.set !== undefined || !w.get(String(one(args.thing)).replace(/^\$/, ''))?.attrs.kind ? setOf(w, { ...args, set: args.set ?? 'each' }) : [w.get(String(one(args.thing)).replace(/^\$/, ''))];
     if (!things.length) return refuse(w, 'show', String(one(args.thing)), `there is no ${one(args.thing)}`);
-    const shows = view.attrs.shows || [], out = [];
+    const shows = view.attrs.shows || [], out = [], skipped = [];
     for (const t of things) {
       const k = t.attrs.kind[0], has = new Set(kindsOf(w, k).flatMap((x) => x.aspects));
       const lack = shows.find((a) => !has.has(a));
+      if (lack !== undefined && String(one(args.thing)) === '*') { skipped.push(t.id); continue; } // every thing in a view: those the view does not show are left out, and said
       if (lack !== undefined) {
         const asp = w.ofType('std.schema.aspect').find((a) => a.attrs.name[0] === lack);
         return refuse(w, 'show', k, `${art(k)} has no ${asp?.attrs.doc ? String(asp.attrs.doc[0]).replace(/^"|"$/g, '') : lack}`, { view: view.attrs.name[0], aspect: lack, has: [...has] });
@@ -313,7 +314,8 @@ const ACTIONS = {
       out.push({ id: t.id, kind: k, values: Object.fromEntries(keys.map((key) => [key, t.attrs[key]?.[0] ?? null])) });
       if (!w.ofType('std.acts.shown').some((x) => x.attrs.view[0] === view.attrs.name[0] && x.attrs.thing[0] === ref(t.id))) ctx.tell(wireText(`shown.${view.attrs.name[0]}.${t.id}`.replace(/[^\w.]/g, '_'), 'std.acts.shown', { view: view.attrs.name[0], thing: ref(t.id) }), { now: true });
     }
-    return { act: 'show', view: view.attrs.name[0], things: out };
+    if (!out.length && skipped.length) return refuse(w, 'show', '*', `nothing here has what the view ${view.attrs.name[0]} shows`, { view: view.attrs.name[0] });
+    return { act: 'show', view: view.attrs.name[0], things: out, ...(skipped.length ? { skipped } : {}) };
   }),
   acts_teach: (ctx, args) => pre('teach', ctx, args, (w) => { // facts in the form of knowledge wires, at the tier taught, with who taught them
     const by = args.by !== undefined ? String(one(args.by)) : 'the user';

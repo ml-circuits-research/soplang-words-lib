@@ -3823,3 +3823,29 @@ clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 
   - PSys2's lang.en shards read in place: "the last table", "table 1", "the star next to
     the blue table", "all the tables", "it".
 - Next: the two small applications (room planner, timetable).
+
+## 01:20 item 3 — the two small applications (room planner, timetable) — done; release 0.32.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 0.32.0).
+
+- examples/second-app/rooms.mjs uses std.acts, std.boxes and std.fill, plus a catalog for
+  w / d / price, the floor and shopping views, and `resolve` with `core.word`.
+  `node examples/second-app/rooms.mjs`:
+  - a desk on the sofa is refused ("it would stand on another piece");
+  - a bed past the wall is refused ("it does not fit in the room there");
+  - "the couch" resolves to sofa1 (tier user).
+- examples/second-app/timetable.mjs has teachers, groups, rooms, periods and lessons, with
+  denies for a clash in one period, seats and days away.
+  `node examples/second-app/timetable.mjs`:
+  - "the solver placed 8 values; open now: 0; dead ends: 0".
+- test/apps.test.mjs: 2 tests.
+- docs/reuse-reports/apps.md lists 7 cooperating pairs and 6 doc gaps (3 fixed, 3 open):
+  - `show thing=*` now skips what a view does not show;
+  - a paragraph on joining by reference in reference.md;
+  - "the complete act is not the solver" in api.md.
+- Next generality: `std.schema.unique` ("no X twice in one Y": 3 times here, 3 in
+  scheduling) and `std.know.fill` for any catalog key.
+- 0.31.0 shipped a consumer name in a src comment: `git grep -i psys2 src/` printed 1 line,
+  because the gate's grep did not see the file before it was added. It is removed here, and
+  the gate now gives 0.

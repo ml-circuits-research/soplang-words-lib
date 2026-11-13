@@ -1,4 +1,4 @@
-// resolve: the things a noun phrase names (PSys2's Q11 item 2). The language part (which
+// resolve: the things a noun phrase names. The language part (which
 // word is a determiner, an ordinal, a pronoun) comes from the grammar world through
 // parseText / nounPhrase; the resolution over the world's things is here, and it is
 // language-free: kinds and values are named by the matrix and by core.word.

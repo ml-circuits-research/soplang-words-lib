@@ -555,7 +555,9 @@ true true
 Applies what `next` found: forced values, with `{ defaults: true }` the defaults, with
 `{ choose: true }` one full solution of what is left (tier `guessed`). Returns
 `{ filled, questions, dead, pending }`. A call on a world that has not changed since a call with
-the same options that filled nothing returns that answer again at once.
+the same options that filled nothing returns that answer again at once. The std.acts act
+`complete` is different: it applies what `std.fill` chose for a thing; the solver runs
+only here.
 
 ```js run
 const w = shop();

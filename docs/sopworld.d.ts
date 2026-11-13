@@ -462,3 +462,16 @@ export function schemaCard(world: World, name?: string): { world: string; doc?: 
 export function schemaExamples(world: World, name?: string, options?: { per?: number }): { world: string; act: string; kind: string; text: string; request: { action: string; args: Record<string, unknown> } }[];
 /** the reply for an act, from its result: what was done, or why not and what is possible */
 export function actReply(world: World, request: { action: string; args?: Record<string, unknown> }, result: object): string;
+
+/** a catalog of knowledge worlds: find what a word needs, read it once through the host's reader, tell it into a world (schemas first) */
+export function createCatalog(options: { index: { worlds: { id: string; schema?: string; depends?: string[]; shards?: { id: string; path: string }[] }[] }; vocab?: Record<string, string[]>; read: (path: string) => string | null | Promise<string | null>; cache?: { get(path: string): string | undefined; set(path: string, text: string): void }; lemma?: (word: string) => string[] }): {
+  shardsOf(word: string): string[];
+  plan(shards: string | string[]): string[];
+  fetch(word: string): Promise<{ path: string; text: string }[]>;
+  into(world: World, word: string): Promise<{ word: string; shards: string[]; told: string[]; ok: boolean; violations: Violation[] }>;
+  intoSync(world: World, word: string): { word: string; shards: string[]; told: string[]; ok: boolean; violations: Violation[] };
+  shardsOfWorld(id: string): string[];
+  worlds(): string[];
+};
+/** a read(path) over an offline bundle written by tools/build-bundle.mjs */
+export function bundleReader(bundle: { files: Record<string, string> }): (path: string) => string | null;

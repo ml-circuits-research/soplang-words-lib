@@ -3475,3 +3475,24 @@ docs/capabilities.md`: 12 runnable examples, 0 problems (CI runs them: docs test
   README's coming table) say since which version a job exists on purpose: allowed there
   for "since" only. A first example showed `range` where the library says `domain`.
 - A page of the docs (capabilities.html).
+
+## R24 A1 — loading worlds by lookup (PSys2 knowledge-loader hand-over) — done
+
+`/tmp/check.sh`: 343 pass, 0 fail on sources and built file, 342 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean.
+
+- src/knowledge.mjs: `createCatalog({ index, vocab, read, cache, lemma })` — shards of a
+  word, the plan (schemas of the worlds and their dependencies first, cycles cut), each
+  path read once (a failed read is retried next time), `into` / `intoSync` tell into a
+  World (schemas once per World). `bundleReader`. tools/build-bundle.mjs: a bundle (index
+  subset, vocabulary subset, shard texts by path) for words, shards or whole worlds.
+- Compared with PSys2 handover/knowledge-loader (copied at 9e370c47, read in place): taken —
+  catalog, cache interface, source interface, bundle reader, bundle generator (254 lines);
+  refused — `variants` (English plurals: the host passes `lemma`), `parseShard` decoding
+  k.objects parts (a drawing concern; the library tells shards as SOP Lang), faces,
+  learned facts (= the act `teach`), the lookup evaluation-set generator. Q-H8 noted.
+- test/knowledge.test.mjs (3) on the CC0 fixtures: cup → 3 paths (k.commonsense schema,
+  k.objects schema, household shard); schemas once per world; each path read once across
+  worlds; host lemma; a failed read retried; bundle of "cup": 3 files, 1 shard, 1 word.
+- Docs: capabilities "Load knowledge by lookup" (runnable) and "Taken over from PSys2"
+  table; api section (runnable); index.d.ts.

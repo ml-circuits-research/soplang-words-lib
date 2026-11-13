@@ -269,12 +269,40 @@ print(w.warnings[0].why);
 kind card here has the shape of shapes.box in module shapes: import it?
 ```
 
+## Load knowledge by lookup
+
+A catalog (an index of worlds with their schemas, dependencies and shards, and a
+vocabulary from words to shards) finds what a word needs, reads each shard once through
+the host's `read` (a file, `fetch`, a bundle), caches it, and tells it into a world with
+the schemas first. `tools/build-bundle.mjs` writes an offline bundle for a list of words
+that `bundleReader` reads with the same code. *since 0.23.* **Limits:** the lemma of a
+word is the host's (`lemma` option); the library knows no language.
+
+```js run
+const index = { worlds: [{ id: 'k.things', schema: 'k.things/schema.sop', shards: [{ id: 'k.things/s1', path: 'k.things/s1.sop' }] }] };
+const files = { 'k.things/schema.sop': '@k core.slot of=k.thing key=name id=true', 'k.things/s1.sop': '@cup k.thing name=cup usual=table' };
+const cat = createCatalog({ index, vocab: { cup: ['k.things/s1'] }, read: bundleReader({ files }) });
+const w = new World();
+print(cat.intoSync(w, 'cup').told, w.get('cup').attrs.usual);
+```
+
+```output
+["k.things/schema.sop","k.things/s1.sop"] ["table"]
+```
+
 ## Not done yet
 
-- **Load knowledge by lookup** (a catalog, a loader with a cache, an offline bundle):
-  Round 24 A1. Today a host tells the knowledge wires it needs.
 - **Choose a world for a request** (routing by cards, referents, state, refusals): A2.
   Today `score` drops what would be refused.
 - **One request pipeline** (readings → dry run → fill → act → diff → why → reply, with
   graded fallback): A3, A4. Today the steps exist one by one.
 - **A coverage grid and test skeletons** from a schema: A5. **A failure ledger**: A6.
+
+## Taken over from PSys2
+
+General modules PSys2 hands over (its `handover/` folder) land here; what is general is
+taken, what is about one language, one interface or one application is refused.
+
+| PSys2 package | here | PSys2 lines it replaces | refused (stays in the host) | since |
+| --- | --- | --- | --- | --- |
+| knowledge-loader | `createCatalog`, `bundleReader`, `tools/build-bundle.mjs` | 254 (catalog 105, cache 52, source 20, bundle loader 20, bundle generator 57) | English lemma rules (the host passes `lemma`), decoding k.objects parts for drawing, the avatar's faces, the evaluation-set generator; taught facts are the act `teach` | since 0.23 |

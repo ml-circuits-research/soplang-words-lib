@@ -67,3 +67,4 @@ meaning; words can be told as `core.word` wires after loading), and (b) meanwhil
 - Q25 (delegation): answered (a); the pattern becomes `std.fill`, ranks as named tiers.
 - Q26 (PSys2's pattern set): answered (a); PSys2 copies patterns.sop and spec 03 into compat/psys2, then the index is measured on them.
 - Q27 (ACTS × SCHEMAS): accepted as recommended; shipped in 0.18.0.
+- Q-H8 (PSys2 hand-over, knowledge-loader): (a) done in 0.23: `createCatalog` (index, vocabulary, host reader, cache, host lemma, schemas first) and `tools/build-bundle.mjs` writing bundles in the shard format, read by `bundleReader`; refused: English lemma rules, k.objects drawing decode, faces, the evaluation-set generator.

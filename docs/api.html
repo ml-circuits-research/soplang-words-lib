@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="8b8a97ab08d4">
+<meta name="source-hash" content="a29ef8ea7369">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -355,6 +355,12 @@ print(actReply(w, bad, w.act(bad)));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;make an eye&quot;,&quot;make the colour of the eye blue&quot;]
 I made an eye (eye1).
 I can&#x27;t change the size of an eye: an eye has no size. An eye has colour.</code></pre></figure>
+<h3 id="createcatalogoptions-and-bundlereaderbundle">createCatalog(options) and bundleReader(bundle)</h3>
+<p>Loading knowledge worlds by lookup. <code>createCatalog({ index, vocab, read, cache, lemma })</code>: <code>index.worlds</code> lists each world's <code>schema</code>, <code>depends</code> and <code>shards</code> (<code>{ id, path }</code>), as in sop-knowledge-worlds' <code>index.json</code>; <code>vocab</code> maps a word to shard ids (<code>vocab.json</code>); <code>read(path)</code> is the host's (a file, <code>fetch</code>, a bundle; a promise or a text); <code>cache</code> is any <code>{ get, set }</code> (a Map by default); <code>lemma(word)</code> gives other forms to look up (none by default). <code>shardsOf(word)</code> lists the shards (nothing read); <code>plan(shards)</code> the paths to tell, schemas of the worlds and of what they depend on first; <code>fetch(word)</code> reads them; <code>into(world, word)</code> tells them (schemas once per world) and resolves to <code>{ shards, told, ok, violations }</code>; <code>intoSync</code> does the same when <code>read</code> answers at once. A failed read is not remembered. <code>bundleReader({ files })</code> reads a bundle written by <code>node tools/build-bundle.mjs &lt;catalog dir&gt; &lt;out.json&gt; &lt;word|shard|world&gt; ...</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const index = { worlds: [{ id: &#x27;k.t&#x27;, schema: &#x27;k.t/schema.sop&#x27;, shards: [{ id: &#x27;k.t/a&#x27;, path: &#x27;k.t/a.sop&#x27; }] }] };
+const cat = createCatalog({ index, vocab: { cup: [&#x27;k.t/a&#x27;] }, read: bundleReader({ files: { &#x27;k.t/schema.sop&#x27;: &#x27;@k core.slot of=k.thing key=name id=true&#x27;, &#x27;k.t/a.sop&#x27;: &#x27;@c k.thing name=cup&#x27; } }) });
+print(cat.shardsOf(&#x27;cup&#x27;), cat.plan(cat.shardsOf(&#x27;cup&#x27;)), cat.intoSync(new World(), &#x27;cup&#x27;).ok);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;k.t/a&quot;] [&quot;k.t/schema.sop&quot;,&quot;k.t/a.sop&quot;] true</code></pre></figure>
 <h3 id="rankscored-criteria-and-ranking">rank(scored, criteria?) and RANKING</h3>
 <p>Orders scored readings best first and explains every place. <code>RANKING</code> is the default list of criteria, each <code>{ name, measure, say }</code> (lower <code>measure</code> is better): <code>consistent</code>, <code>referents</code> (how many are left ambiguous), <code>lacks</code>, <code>words</code> (words of the frame left out), <code>assumes</code>; ties keep the given order. Returns <code>{ order, ranked }</code>; <code>ranked[i]</code> is <code>{ index, place, why, lostTo, on }</code>: the first says what it satisfies, any other names the first criterion on which the winner is better and what each is on it, a tie says so. A host may put its own criteria before, after or instead of these.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld What the library can do</title>
-<meta name="source-hash" content="77d8d3a6c585">
+<meta name="source-hash" content="e0d803f89f65">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -157,8 +157,19 @@ print(r.ok, r.violations[0].why);</code></pre></figure>
 w.load(&#x27;@m core.module name=app imports=shapes\n@a1 core.slot of=card key=x kind=number\n@a2 core.slot of=card key=y kind=number&#x27;);
 print(w.warnings[0].why);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>kind card here has the shape of shapes.box in module shapes: import it?</code></pre></figure>
+<h2 id="load-knowledge-by-lookup">Load knowledge by lookup</h2>
+<p>A catalog (an index of worlds with their schemas, dependencies and shards, and a vocabulary from words to shards) finds what a word needs, reads each shard once through the host's <code>read</code> (a file, <code>fetch</code>, a bundle), caches it, and tells it into a world with the schemas first. <code>tools/build-bundle.mjs</code> writes an offline bundle for a list of words that <code>bundleReader</code> reads with the same code. <em>since 0.23.</em> <strong>Limits:</strong> the lemma of a word is the host's (<code>lemma</code> option); the library knows no language.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const index = { worlds: [{ id: &#x27;k.things&#x27;, schema: &#x27;k.things/schema.sop&#x27;, shards: [{ id: &#x27;k.things/s1&#x27;, path: &#x27;k.things/s1.sop&#x27; }] }] };
+const files = { &#x27;k.things/schema.sop&#x27;: &#x27;@k core.slot of=k.thing key=name id=true&#x27;, &#x27;k.things/s1.sop&#x27;: &#x27;@cup k.thing name=cup usual=table&#x27; };
+const cat = createCatalog({ index, vocab: { cup: [&#x27;k.things/s1&#x27;] }, read: bundleReader({ files }) });
+const w = new World();
+print(cat.intoSync(w, &#x27;cup&#x27;).told, w.get(&#x27;cup&#x27;).attrs.usual);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;k.things/schema.sop&quot;,&quot;k.things/s1.sop&quot;] [&quot;table&quot;]</code></pre></figure>
 <h2 id="not-done-yet">Not done yet</h2>
-<ul><li><strong>Load knowledge by lookup</strong> (a catalog, a loader with a cache, an offline bundle): Round 24 A1. Today a host tells the knowledge wires it needs.</li><li><strong>Choose a world for a request</strong> (routing by cards, referents, state, refusals): A2. Today <code>score</code> drops what would be refused.</li><li><strong>One request pipeline</strong> (readings → dry run → fill → act → diff → why → reply, with graded fallback): A3, A4. Today the steps exist one by one.</li><li><strong>A coverage grid and test skeletons</strong> from a schema: A5. <strong>A failure ledger</strong>: A6.</li></ul>
+<ul><li><strong>Choose a world for a request</strong> (routing by cards, referents, state, refusals): A2. Today <code>score</code> drops what would be refused.</li><li><strong>One request pipeline</strong> (readings → dry run → fill → act → diff → why → reply, with graded fallback): A3, A4. Today the steps exist one by one.</li><li><strong>A coverage grid and test skeletons</strong> from a schema: A5. <strong>A failure ledger</strong>: A6.</li></ul>
+<h2 id="taken-over-from-psys2">Taken over from PSys2</h2>
+<p>General modules PSys2 hands over (its <code>handover/</code> folder) land here; what is general is taken, what is about one language, one interface or one application is refused.</p>
+<div class="table"><table><thead><tr><th>PSys2 package</th><th>here</th><th>PSys2 lines it replaces</th><th>refused (stays in the host)</th><th>since</th></tr></thead><tbody><tr><td>knowledge-loader</td><td><code>createCatalog</code>, <code>bundleReader</code>, <code>tools/build-bundle.mjs</code></td><td>254 (catalog 105, cache 52, source 20, bundle loader 20, bundle generator 57)</td><td>English lemma rules (the host passes <code>lemma</code>), decoding k.objects parts for drawing, the avatar's faces, the evaluation-set generator; taught facts are the act <code>teach</code></td><td>since 0.23</td></tr></tbody></table></div>
 <p class="source">Generated from <code>docs/capabilities.md</code>.</p>
 </main>
 <footer>sopworld 0.22.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>

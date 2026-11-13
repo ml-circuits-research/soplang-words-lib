@@ -931,6 +931,30 @@ I made an eye (eye1).
 I can't change the size of an eye: an eye has no size. An eye has colour.
 ```
 
+### createCatalog(options) and bundleReader(bundle)
+
+Loading knowledge worlds by lookup. `createCatalog({ index, vocab, read, cache, lemma })`:
+`index.worlds` lists each world's `schema`, `depends` and `shards` (`{ id, path }`), as in
+sop-knowledge-worlds' `index.json`; `vocab` maps a word to shard ids (`vocab.json`);
+`read(path)` is the host's (a file, `fetch`, a bundle; a promise or a text); `cache` is any
+`{ get, set }` (a Map by default); `lemma(word)` gives other forms to look up (none by
+default). `shardsOf(word)` lists the shards (nothing read); `plan(shards)` the paths to
+tell, schemas of the worlds and of what they depend on first; `fetch(word)` reads them;
+`into(world, word)` tells them (schemas once per world) and resolves to `{ shards, told,
+ok, violations }`; `intoSync` does the same when `read` answers at once. A failed read is
+not remembered. `bundleReader({ files })` reads a bundle written by
+`node tools/build-bundle.mjs <catalog dir> <out.json> <word|shard|world> ...`.
+
+```js run
+const index = { worlds: [{ id: 'k.t', schema: 'k.t/schema.sop', shards: [{ id: 'k.t/a', path: 'k.t/a.sop' }] }] };
+const cat = createCatalog({ index, vocab: { cup: ['k.t/a'] }, read: bundleReader({ files: { 'k.t/schema.sop': '@k core.slot of=k.thing key=name id=true', 'k.t/a.sop': '@c k.thing name=cup' } }) });
+print(cat.shardsOf('cup'), cat.plan(cat.shardsOf('cup')), cat.intoSync(new World(), 'cup').ok);
+```
+
+```output
+["k.t/a"] ["k.t/schema.sop","k.t/a.sop"] true
+```
+
 ### rank(scored, criteria?) and RANKING
 
 Orders scored readings best first and explains every place. `RANKING` is the default

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Patterns of reuse between worlds</title>
-<meta name="source-hash" content="3acb8024ad23">
+<meta name="source-hash" content="9ebf99a4d02c">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -27,7 +27,7 @@
 <h2 id="4-specialisation">4. Specialisation</h2>
 <p><strong>When.</strong> A world is a kind of another with overrides (a seating plan for a wedding). <strong>Today.</strong> <code>core.type extends=</code> for kinds (slots, rules and denies are inherited; the nearest slot wins); a module imports another and adds slots and rules. <strong>Example.</strong> <code>@t core.type of=wedding_table extends=table</code> with its own <code>default=</code>. <strong>Missing.</strong> Overriding a parent's rule or deny by name (today a child can only add); uncertain whether it is needed: none of the reports found a case.</p>
 <h2 id="5-composition">5. Composition</h2>
-<p><strong>When.</strong> A thing of one world is itself a world of another schema (a face in a picture, a chart in a document). <strong>Today.</strong> A reference slot (<code>type=</code>) from the outer thing to the inner world's things; acts reach the inner things by id. <strong>Missing.</strong> Acts that reach inside by role ("the eyes of the second face"): item 5.</p>
+<p><strong>When.</strong> A thing of one world is itself a world of another schema (a face in a picture, a chart in a document). <strong>Today.</strong> A reference slot (<code>type=</code>) from the outer thing to the inner world's things; acts reach the inner things by id. <strong>Done:</strong> acts reach inside with <code>in</code> and <code>in_nth</code> ("the eyes of the second face"), reference std.acts. <strong>Missing:</strong> a world nested as a whole (a chart <em>document</em> inside a document, with its own undo) — uncertain whether it is needed beyond <code>in</code>.</p>
 <h2 id="6-the-parameterised-world">6. The parameterised world</h2>
 <p><strong>When.</strong> One module, several instances with other names and words (a list as tasks, shopping, playlist; a board game as chess, tic-tac-toe). <strong>Today.</strong> <code>core.use world=&lt;module&gt; prefix=</code> loads a module under a prefix; words are data. <strong>Found:</strong> chess and tic-tac-toe declare the same game keys (<code>user level seed</code>) and the same move keys (<code>by n</code>), and the same "no move after the game is over" deny (PSys2 report, candidates 10, 14, 15). <strong>Example.</strong> <code>examples/reuse.mjs</code>: one <code>board</code> module as tic-tac-toe and chess, one <code>list</code> module as tasks, shopping and playlist, instantiated by renaming the module's prefix in its text (<code>instance</code>). <strong>Missing.</strong> Instantiating a library module twice under two names with <code>core.use</code> (Q29).</p>
 <h2 id="7-rule-lifting">7. Rule lifting</h2>

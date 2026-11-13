@@ -1040,6 +1040,26 @@ print(e.told, e.fills.map((f) => [f.key, f.value, f.via, f.from]));
 true [["cost","6","r",["l1","pen"]]]
 ```
 
+### Advice at load (`advise`)
+
+`new World({ advise: true })`: when the matrix is loaded, `world.warnings` gets advice
+(kind `advice`, never an error) for an author: a kind of the application with the shape
+of a kind of an imported module ("kind card here has the shape of shapes.box in module
+shapes: import it?"), and a rule with the shape of a rule of another module, such as the
+standard pack ("the rule mine is already in std.relations (std.relations.slotted)").
+Off by default. The study behind it is [reuse](reuse.md); `tools/reuse.mjs` does the same
+across whole worlds.
+
+```js run
+const w = new World({ advise: true, library: { shapes: '@s core.module name=shapes\n@b1 core.slot of=shapes.box key=x kind=number\n@b2 core.slot of=shapes.box key=y kind=number' } });
+w.load('@m core.module name=app imports=shapes\n@a1 core.slot of=card key=x kind=number\n@a2 core.slot of=card key=y kind=number');
+print(w.warnings.map((x) => x.why));
+```
+
+```output
+["kind card here has the shape of shapes.box in module shapes: import it?"]
+```
+
 ### world.why(id, key?)
 
 Why a wire, or one of its values, is what it is, in one structure a host turns into a

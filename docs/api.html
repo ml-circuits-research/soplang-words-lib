@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="c379ec84dea5">
+<meta name="source-hash" content="8b8a97ab08d4">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -400,6 +400,12 @@ w.tell(&#x27;@pen item name=pen price=2  @l1 line item=$pen qty=3&#x27;);
 const e = w.explain(&#x27;l1&#x27;);
 print(e.told, e.fills.map((f) =&gt; [f.key, f.value, f.via, f.from]));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true [[&quot;cost&quot;,&quot;6&quot;,&quot;r&quot;,[&quot;l1&quot;,&quot;pen&quot;]]]</code></pre></figure>
+<h3 id="advice-at-load-advise">Advice at load (<code>advise</code>)</h3>
+<p><code>new World({ advise: true })</code>: when the matrix is loaded, <code>world.warnings</code> gets advice (kind <code>advice</code>, never an error) for an author: a kind of the application with the shape of a kind of an imported module ("kind card here has the shape of shapes.box in module shapes: import it?"), and a rule with the shape of a rule of another module, such as the standard pack ("the rule mine is already in std.relations (std.relations.slotted)"). Off by default. The study behind it is <a href="reuse.html">reuse</a>; <code>tools/reuse.mjs</code> does the same across whole worlds.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World({ advise: true, library: { shapes: &#x27;@s core.module name=shapes\n@b1 core.slot of=shapes.box key=x kind=number\n@b2 core.slot of=shapes.box key=y kind=number&#x27; } });
+w.load(&#x27;@m core.module name=app imports=shapes\n@a1 core.slot of=card key=x kind=number\n@a2 core.slot of=card key=y kind=number&#x27;);
+print(w.warnings.map((x) =&gt; x.why));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;kind card here has the shape of shapes.box in module shapes: import it?&quot;]</code></pre></figure>
 <h3 id="worldwhyid-key">world.why(id, key?)</h3>
 <p>Why a wire, or one of its values, is what it is, in one structure a host turns into a sentence ("why is it so low?", "why did you open chess?"): <code>{ id, key, steps }</code>, the steps from the cell asked about back to what was told, each wire once, depth first in the order the rules read them. A step is <code>{ id, key, value }</code> (or <code>wire</code>, its text, for a whole wire), its <code>tier</code>, and <code>how</code>: <code>told</code>; <code>action</code> (told or set by the action named in <code>action</code>); <code>rule</code> (with <code>rule</code> and the wires it read, <code>from</code>); <code>aggregate</code> (a group result); <code>default</code> (a slot default); <code>open</code> (no value). A <code>std.fill</code> need that was filled says its <code>choice</code> (<code>{ key, value, tier, source }</code>) and goes on through the offer chosen. <code>null</code> for an unknown id. <code>explain</code> gives the same as a tree, for one wire.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();

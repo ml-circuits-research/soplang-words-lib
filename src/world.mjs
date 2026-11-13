@@ -57,11 +57,11 @@ export class World {
   constructor(options = {}) {
     const {
       fns = {}, library = {}, maxDepth = 12, maxSteps = 50000,
-      lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {}, budget = {}, decimals, actions = {}, producers = {}, filters = {}, lemma = null, facts = {}, override = false, ns,
+      lookahead = true, strict = false, searchBudget, rank = null, solver = cdcl(), vocabulary = {}, budget = {}, decimals, actions = {}, producers = {}, filters = {}, lemma = null, facts = {}, override = false, ns, advise = false,
     } = options;
     // the standard function pack is in every library (opt-in by core.use world=std.<name>); a host's module of the same name wins
     const lib = { ...Object.fromEntries(Object.entries(STD).map(([k, v]) => [k, v.text])), ...library };
-    this.options = { fns, actions, producers, filters, facts, override, ns, library: lib, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget, decimals };
+    this.options = { fns, actions, producers, filters, facts, override, ns, library: lib, maxDepth, maxSteps, lookahead, strict, searchBudget, rank, solver, vocabulary, budget, decimals, advise };
     this._cannot = null;          // reasons given by functions during a query (see cannot)
     this.warnings = [];           // things that still work and will not: { kind, id, why }
     this._reads = new WeakMap();  // bindings of a rule body -> the aggregated cells it read
@@ -326,6 +326,45 @@ export class World {
     };
     visit(start.id, key);
     return { id: start.id, ...(key ? { key } : {}), steps };
+  }
+
+  /**
+   * Advice for authors (Round 23, option `advise`): never an error. A kind with the shape of
+   * a kind of another module ("import it?"), and a rule with the shape of a rule of another
+   * module, such as one of the standard pack ("already in std.relations").
+   */
+  _advise(c) {
+    const moduleOf = (id) => this.matrix.get(id)?.module || 'the application';
+    const add = (key, why, extra) => { if (!this.warnings.some((x) => x.kind === 'advice' && x.key === key)) this.warnings.push({ kind: 'advice', key, why, ...extra }); };
+    // kinds: the same key names and kinds, in two modules
+    const kinds = [];
+    for (const [type, slots] of c.slots.own) {
+      const ss = [...slots.values()].filter((x) => !x.prefix);
+      if (ss.length < 2) continue;
+      kinds.push({ type, module: moduleOf(ss[0].id), keys: new Map(ss.map((x) => [x.key, `${x.kinds?.join('/') || ''}${x.enum ? 'enum' : ''}${x.refs?.length ? 'ref' : ''}`])) });
+    }
+    for (let i = 0; i < kinds.length; i++) for (let j = 0; j < kinds.length; j++) { // bounded: the declared kinds, pairwise
+      const a = kinds[i], b = kinds[j];
+      if (i === j || a.module === b.module || a.module.startsWith('std.') || a.type === b.type || (b.module === 'the application' && a.module !== 'the application')) continue; // advice to the author of what is loaded last
+      const same = [...a.keys].filter(([k, v]) => b.keys.get(k) === v).length;
+      if (same >= 2 && same / Math.max(a.keys.size, b.keys.size) >= 0.75) add(`${a.type}~${b.type}`, `kind ${a.type} here has the shape of ${b.type} in ${b.module === 'the application' ? 'the application' : `module ${b.module}`}: import it?`, { type: a.type, like: b.type, module: b.module });
+    }
+    // rules: the same patterns (types renamed by first appearance, keys kept) and conclusions
+    const shape = (r) => {
+      const T = new Map(), t = (x) => (T.has(x) ? T.get(x) : (T.set(x, `T${T.size}`), T.get(x)));
+      const pat = (p) => `${t(p.type)}(${Object.keys(p.attrs).filter((k) => k !== 'core.on').sort().join(',')}${p.absent ? `;-${p.absent.join(',')}` : ''})`;
+      return `${r.kind} ${r.when.map(pat).join(' ')} ! ${r.not.map(pat).join(' ')} ${r.calc.map((x) => x.fn).join(',')} ${r.test.map((x) => x.fn).join(',')} => ${r.then.map(pat).join(' ')}`;
+    };
+    const seen = new Map();
+    for (const r of [...c.rules, ...c.denies]) {
+      if (!r.when.length) continue;
+      const sh = shape(r), m = moduleOf(r.id);
+      const prior = seen.get(sh);
+      if (prior && prior.module !== m) {
+        const [mine, theirs] = prior.module.startsWith('std.') ? [r, prior] : m.startsWith('std.') ? [prior, { ...r, module: m }] : [r, prior];
+        add(`rule:${mine.id}`, `the rule ${mine.id} is already in ${theirs.module === 'the application' ? 'the application' : theirs.module} (${theirs.id})`, { rule: mine.id, like: theirs.id, module: theirs.module });
+      } else if (!prior) seen.set(sh, { id: r.id, module: m });
+    }
   }
 
   /** Serialise the facts (and optionally the matrix) back to SOP Lang. */
@@ -1233,6 +1272,7 @@ export class World {
         if (this.warnings.some((x) => x.kind === 'ambiguous-key' && x.type === a.type && x.key === a.key)) continue;
         this.warnings.push({ kind: 'ambiguous-key', type: a.type, key: a.key, names: a.names, why: `on ${a.type}, the key ${a.key} is declared by modules ${a.modules.join(' and ')}: ${a.names.join(' and ')}` });
       }
+      if (this.options.advise) this._advise(c); // for authors: reuse that the matrix could make, as advice
       this._checkWords();
       for (const u of c.unknown) {
         if (this.warnings.some((x) => x.kind === 'unknown-attribute' && x.id === u.id && x.key === u.key)) continue;

@@ -3431,3 +3431,23 @@ identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, do
   `core.slot ... type=<kind>`; tested.
 - Instances are made by renaming the module's prefix in its text (`instance`), because
   `core.use` loads a module once under its own name: Q29 proposes `core.use ... as=`.
+
+## R23 items 5, 6, 7 — composition, advice at load, reuse number — done
+
+`/tmp/check.sh`: 340 pass, 0 fail on sources and built file, 339 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean.
+
+- Composition: a thing inside another is one with a key referring to it (`of=$face2`);
+  acts take `in` (a thing, or a kind with `in_nth`): "make the eyes of the second face
+  green" = change eye set=each colour green in=a_face in_nth=2 → eye3, eye4 only; an
+  ambiguous container is refused ("which a_face? there are 2"). `change` on a set now
+  also takes `by` more/less. test/compose-advise.test.mjs.
+- Advice at load: option `advise` (off by default): warnings of kind `advice` for a kind
+  of the application with the shape of an imported module's kind ("kind card here has the
+  shape of shapes.box in module shapes: import it?") and a rule with the shape of another
+  module's rule ("the rule mine is already in std.relations (std.relations.slotted)").
+  First version also advised the library module toward the application: narrowed to
+  advice on what the author loads. api section (runnable), semantics warnings list.
+- Reuse number: `tools/reuse.mjs` prints per world the types used, own and from
+  elsewhere, and the ratio; in all three reports. `node tools/reuse.mjs examples` now:
+  acts 0.6, delegation 0.67, fill 0.88 (head of the table).

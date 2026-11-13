@@ -1690,6 +1690,11 @@ above knowledge), and follows `is_a` to the other kind's place and size. `forget
 takes one back. Defaults are applied when a thing is made: things made before keep theirs.
 `examples/views.mjs` has three views over the same things.
 
+**Composition.** A thing inside another is one with a key that refers to it (an eye
+with `of=$face2`); `in` (a thing, or a kind with `in_nth`) limits an act to the things
+inside: "make the eyes of the second face green" is `change thing=eye set=each attr=colour
+value=green in=a_face in_nth=2`.
+
 **What an act gives.** `result` (`act`, `thing`, ...) and, like every action that is
 done, `diff`: `{ added, removed, changed }`, what it told and what rules derived from it,
 with `from`, `to` and tiers. An act is one undo step; `why(id, key)` names the act

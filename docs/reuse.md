@@ -47,7 +47,9 @@ uncertain whether it is needed: none of the reports found a case.
 a chart in a document).
 **Today.** A reference slot (`type=`) from the outer thing to the inner world's things;
 acts reach the inner things by id.
-**Missing.** Acts that reach inside by role ("the eyes of the second face"): item 5.
+**Done:** acts reach inside with `in` and `in_nth` ("the eyes of the second face"),
+reference std.acts. **Missing:** a world nested as a whole (a chart *document* inside a
+document, with its own undo) — uncertain whether it is needed beyond `in`.
 
 ## 6. The parameterised world
 

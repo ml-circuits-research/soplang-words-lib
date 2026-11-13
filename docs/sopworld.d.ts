@@ -229,6 +229,8 @@ export interface WorldEvent { seq: number; op: string; [key: string]: unknown }
 export interface Snapshot { format: 'sopworld'; version: number; log: object[]; /** with toJSON({ since }): the base the log continues */ base?: { length: number; last: string | null }; /** with toJSON({ timeline: true }) */ timeline?: { marks: { label?: string; seq: number; /** a position in log */ at?: number; log?: object[]; whole?: boolean }[]; redo: object[][] } }
 export type Fn = (args: string[], world: World) => string | number | boolean | undefined;
 export interface WorldOptions {
+  /** for authors: advice at load (a kind with the shape of another module's, a rule already in a module), as warnings of kind 'advice' */
+  advise?: boolean;
   fns?: Record<string, Fn>; maxDepth?: number; maxSteps?: number;
   lookahead?: boolean; strict?: boolean; searchBudget?: number;
   library?: Record<string, string>;

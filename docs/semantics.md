@@ -550,4 +550,4 @@ registers ([reference](reference.md#coredeny)).
 Notes that refuse nothing are in `world.warnings`: `deprecated` (a pattern declared the
 old way), `unknown-attribute` (an attribute a matrix wire type does not read),
 `ambiguous-key` (a short key that two modules declare along one type's lineage, with
-both qualified names), `unknown-word` (a `core.word` whose `means=` names nothing; words are in the world's one language, with no `lang=`), `undeclared-function` (a registered host function with no `core.function`) and `unregistered-function` (a declared function that is not registered; noted again, with `called`, when a calc or check calls it and gets no result).
+both qualified names), `unknown-word` (a `core.word` whose `means=` names nothing; words are in the world's one language, with no `lang=`), `undeclared-function` (a registered host function with no `core.function`) `unregistered-function` (a declared function that is not registered; noted again, with `called`, when a calc or check calls it and gets no result), and, with the option `advise`, `advice` (a kind or a rule with the shape of another module's).

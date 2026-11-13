@@ -730,3 +730,12 @@ PSys2 builds its host side now (its tasks A1–A3) and will switch to these modu
 5. **Sets and values in acts**: "each", "all", "the first", "random", "different", "same as X" as role values the acts understand (change colour of each car to a random colour).
 6. **The session as facts** (the owner's "a chart about the current discussion"): the acts done so far offered as queryable facts (what was made, counts per kind, per world) so another schema can take them as content.
 Order: 1, 3, 4, 2, 5, 6. Small releases.
+
+## Reviewer 2026-11-13 21:30 — Round 22: TRANSFER between worlds (owner's current goal), the library side
+
+Read "TRANSFER" in PSys2's worker-tasks.md. Answer in questions.md and build what needs no new syntax:
+1. **A shared store of things across schema worlds**: one module holding things (identity, kind, attributes); several schema worlds as **views** over it, each declaring which attributes (grouped as aspects) it shows; an act in one view is seen by the others; one undo history. Can today's modules + imports + `std.schema` say this? What is missing?
+2. **View selection**: "show these things in that view" as an act; a refusal when a thing lacks the aspect, with the reason ("a table has no place on Earth").
+3. **Taught facts**: facts told by the user in the format of knowledge wires, kept in their own module at their own tier (above knowledge, below what was just said), with `why` naming who taught it and when; retracting one.
+4. **Example and tests**: three views (a picture, a chart, a list) over the same things; a thing made in one appears in the others it has the aspects for; a taught "is a kind of" changes a default in all three.
+5. Round 21 keeps its order; item 6 there (the session as facts) is the same store: merge them.

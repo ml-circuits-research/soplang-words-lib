@@ -572,6 +572,10 @@ export function compileMatrix(world) {
     if (r.hasSelect) continue;
     r.when.forEach((p, idx) => push(c.ruleByType, p.type, { rule: r, idx }));
   }
+  // a rule that reads what a group aggregate concludes waits for the aggregates to settle,
+  // so it never fires on a count or a best value that is about to change
+  const aggOut = c.rules.filter((r) => r.aggregate && !r.when.length).flatMap((r) => r.then.map((t) => t.type));
+  if (aggOut.length) for (const r of c.rules) if (!r.aggregate && r.when.some((p) => aggOut.some((t) => c.isA(t, p.type)))) r.afterAggregates = true;
   // ---- exports: a rule of one module reads another module's types only if it exports them
   const moduleOfType = (t) => { for (const [name, m] of c.modules) if (m.exports && (t === name || t.startsWith(name + '.'))) return [name, m]; return null; };
   const moduleOfRule = (r) => world.matrix.get(r.id)?.module || [...c.modules.keys()].find((n) => r.id.startsWith(n + '.'));

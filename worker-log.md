@@ -3011,3 +3011,36 @@ tsc clean.
   change, checked by stashing src/world.mjs).
 - `node bench/distinct.mjs` anchored on a member: before 233.7 ms, one more 6.69 ms; after
   212.6–230.2 ms, one more 7.63–14.37 ms; `core.aggregate by=` unchanged.
+
+## R19 item 1 — std.fill (Q25 → a), and rules that wait for aggregates — done
+
+`npm test`: 300 pass, 0 fail on sources and built file, 299 in checking mode (/tmp/check.sh).
+Pilot output identical. `git grep -i psys2 src/`: empty. scan-loops clean. tsc clean.
+
+- `std.fill` in src/std.mjs, rules only (`core.use world=std.fill`): `std.fill.need for= key=`
+  (the host writes it from `core.absent=<key>`), `std.fill.offer for= value= tier= source=`
+  (each filler), `std.fill.tier name= rank=` declared once: user 1, focus 2, scene 3,
+  knowledge 4, default 5. Best rank per need and count per rank by `core.aggregate`; the
+  offer alone at the best rank is written onto the need (`value tier source`, rule
+  `std.fill.choose`); several at the best rank: soft deny "N offers of the best tier for
+  <key> of <request>". Types are under `std.fill.` (a prefixed module must declare under
+  its own prefix). Not core.rank: it gives equal values distinct positions (sequence
+  order), so it cannot see a tie.
+- Kernel defect found on the way: a second offer of the same tier arriving later was
+  refused (`conflict` on the need's value). The choice rule fired on the offer in the
+  agenda before the group count was computed again (aggregates run when the agenda is
+  quiet), so it saw the old "1 offer". Now a rule whose patterns read what a group
+  aggregate concludes waits (per wire that woke it) while groups are pending, and runs
+  after them; the woken wire is seeded again before the decision (an earlier rule in the
+  same loop may have changed it). semantics S39a.
+- Tests: test/fill.test.mjs (5: three keys at once; a better tier later per key and back
+  on retract down to default; a tie as advice, resolved by a better tier or by a retract;
+  a host tier with one wire, an unknown tier never chosen; the declared tiers); kernel
+  test for the wait (fails without the change: checked by stashing src/world.mjs and
+  src/matrix.mjs, 34 pass 1 fail).
+- examples/fill.mjs: place, size, colour delegated at once; fillers (user, focus, scene,
+  knowledge, default) written once for every key; `node examples/fill.mjs` output: cup →
+  table/knowledge, medium/default, white/knowledge; then small/scene; shelf/focus; red/user.
+- Docs: reference "std.fill" (runnable example), semantics S39a.
+- `node bench/distinct.mjs` anchored: 214.6 / 253.8 ms, one more 12.40 / 15.10 ms;
+  `core.aggregate by=`: 33.6 / 24.1 ms, 0.43 / 0.34 ms.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="f48dc803b817">
+<meta name="source-hash" content="68fbfdd3b45d">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -587,7 +587,7 @@ print(w.functions()[0].args.map((a) =&gt; [a.name, a.kind, a.optional]));</code>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;x&quot;,&quot;number&quot;,false],[&quot;hi&quot;,&quot;number&quot;,true]]</code></pre></figure>
 <p><strong>Limits.</strong> An argument has one kind; a function taking any value leaves <code>kind</code> out.</p>
 <h2 id="the-standard-function-pack">The standard function pack</h2>
-<p>Pure functions declared in SOP Lang (<code>core.function</code>), shipped with the library and opt-in: a matrix that says <code>core.use world=std.numbers</code> (or <code>std.order</code>, <code>std.boxes</code>) gets their declarations and their code. <code>world.functions()</code> lists them; a host's function or a host library module of the same name wins. Every function is checked where it is used (number of arguments, literal kinds, a check returns boolean).</p>
+<p>Pure functions declared in SOP Lang (<code>core.function</code>), shipped with the library and opt-in: a matrix that says <code>core.use world=std.numbers</code> (or <code>std.order</code>, <code>std.boxes</code>) gets their declarations and their code (<code>std.fill</code>, below, is rules only). <code>world.functions()</code> lists them; a host's function or a host library module of the same name wins. Every function is checked where it is used (number of arguments, literal kinds, a check returns boolean).</p>
 <div class="table"><table><thead><tr><th>Module</th><th>Function</th><th>Arguments</th><th>Result</th></tr></thead><tbody><tr><td>std.numbers</td><td>average</td><td>two to eight numbers</td><td>their mean</td></tr><tr><td>std.numbers</td><td>median</td><td>one to eight numbers</td><td>the middle one (the mean of the two middle ones for an even count)</td></tr><tr><td>std.order</td><td>rank_in</td><td>a value, then one to eight numbers</td><td>its place among them, 1 for the smallest</td></tr><tr><td>std.order</td><td>nth_smallest</td><td>n, then one to eight numbers</td><td>the n-th smallest</td></tr><tr><td>std.order</td><td>nth_largest</td><td>n, then one to eight numbers</td><td>the n-th largest</td></tr><tr><td>std.boxes</td><td>centre_x, centre_y</td><td>x and w, or y and h</td><td>the middle of a box across, or down</td></tr><tr><td>std.boxes</td><td>overlaps</td><td>two boxes (x1 y1 w1 h1 x2 y2 w2 h2)</td><td>whether they share some area (touching edges do not)</td></tr><tr><td>std.boxes</td><td>contains_box</td><td>two boxes</td><td>whether the first holds the whole of the second</td></tr><tr><td>std.boxes</td><td>box_distance</td><td>two boxes</td><td>the distance between their centres</td></tr></tbody></table></div>
 <p>A box is <code>x y w h</code>, its top left corner and its size, with <code>y</code> growing downwards. What the pack does not repeat: <code>min</code>, <code>max</code>, <code>add</code>, <code>abs</code>, <code>round</code>, <code>clamp</code>, <code>between</code>, <code>sign</code> and the comparisons are built in (below); a minimum, maximum, sum or count over many wires is <code>core.aggregate</code>; the place of a wire among its peers is <code>core.rank</code>. The pack's functions take the values of one match: for many wires, aggregate first. <code>examples/space.mjs</code> writes "the middle one", "left of" and "in a row" with the pack and rules only.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
@@ -599,6 +599,24 @@ w.load(`@u core.use world=std.boxes
 w.tell(&#x27;@b1 box x=10 w=20&#x27;);
 print(w.get(&#x27;b1&#x27;).attrs.middle, w.functions().map((f) =&gt; f.name).slice(0, 2));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;20&quot;] [&quot;centre_x&quot;,&quot;centre_y&quot;]</code></pre></figure>
+<h2 id="stdfill-a-value-for-a-key-a-request-left-out">std.fill: a value for a key a request left out</h2>
+<p>A module of the standard pack written in rules only (<code>core.use world=std.fill</code>). A host says what is missing, other modules offer values in named tiers, and std.fill chooses, for each missing key on its own.</p>
+<div class="table"><table><thead><tr><th>Type</th><th>Keys</th><th>Who writes it</th></tr></thead><tbody><tr><td><code>std.fill.need</code></td><td><code>for</code> (the request), <code>key</code>; then <code>value</code>, <code>tier</code>, <code>source</code></td><td>the host, by a rule on its request with <code>core.absent=&lt;key&gt;</code>; std.fill writes the choice</td></tr><tr><td><code>std.fill.offer</code></td><td><code>for</code> (the need), <code>value</code>, <code>tier</code>, <code>source</code></td><td>each filling module, by a rule</td></tr><tr><td><code>std.fill.tier</code></td><td><code>name</code>, <code>rank</code> (1 is the best)</td><td>std.fill: <code>user</code> 1, <code>focus</code> 2, <code>scene</code> 3, <code>knowledge</code> 4, <code>default</code> 5; a host adds one with one wire</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> Each offer takes the rank of its tier. The offer of the best rank for a need is chosen when it is alone at that rank: its <code>value</code>, <code>tier</code> and <code>source</code> are written onto the need, by the rule <code>std.fill.choose</code>. Two or more offers at the best rank are a soft deny (<code>"2 offers of the best tier for place of $q1"</code>): advice, nothing chosen. An offer arriving, changing or going later decides again (S39a). An offer whose tier is not declared has no rank and is never chosen. <code>examples/fill.mjs</code> fills where a thing goes, how big it is and its colour at once, with fillers written once for every key.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@u core.use world=std.fill
+  @g req thing=?t core.absent=place
+  @gn std.fill.need for=$g key=place
+  @gr core.rule when=$g then=$gn
+  @q req thing=?t
+  @n std.fill.need for=$q key=?k
+  @us usual thing=?t key=?k value=?v
+  @o std.fill.offer for=$n value=?v tier=knowledge source=usual
+  @r core.rule when=$q when=$n when=$us then=$o`);
+w.tell(&#x27;@u1 usual thing=cup key=place value=table  @q1 req thing=cup&#x27;);
+const need = w.ofType(&#x27;std.fill.need&#x27;)[0];
+print(need.attrs.value, need.attrs.tier, need.attrs.source);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;table&quot;] [&quot;knowledge&quot;] [&quot;usual&quot;]</code></pre></figure>
 <h2 id="functions">Functions</h2>
 <p>A function is called with its arguments as text and returns text (or true/false for a comparison). When it has no result it returns nothing and the rule does not fire. Host functions are added with <code>new World({ fns })</code>; a name from the tables below cannot be taken without <code>override</code>.</p>
 <p>A <strong>number</strong> is an integer or decimal, optionally followed by a unit (<code>5</code>, <code>2.5</code>, <code>3kg</code>, <code>10N/kg</code>). Arithmetic keeps 12 significant digits.</p>

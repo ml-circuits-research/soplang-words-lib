@@ -1465,7 +1465,7 @@ print(w.functions()[0].args.map((a) => [a.name, a.kind, a.optional]));
 
 Pure functions declared in SOP Lang (`core.function`), shipped with the library and
 opt-in: a matrix that says `core.use world=std.numbers` (or `std.order`, `std.boxes`)
-gets their declarations and their code. `world.functions()` lists them; a host's function
+gets their declarations and their code (`std.fill`, below, is rules only). `world.functions()` lists them; a host's function
 or a host library module of the same name wins. Every function is checked where it is
 used (number of arguments, literal kinds, a check returns boolean).
 
@@ -1502,6 +1502,46 @@ print(w.get('b1').attrs.middle, w.functions().map((f) => f.name).slice(0, 2));
 
 ```output
 ["20"] ["centre_x","centre_y"]
+```
+
+## std.fill: a value for a key a request left out
+
+A module of the standard pack written in rules only (`core.use world=std.fill`). A host
+says what is missing, other modules offer values in named tiers, and std.fill chooses,
+for each missing key on its own.
+
+| Type | Keys | Who writes it |
+| --- | --- | --- |
+| `std.fill.need` | `for` (the request), `key`; then `value`, `tier`, `source` | the host, by a rule on its request with `core.absent=<key>`; std.fill writes the choice |
+| `std.fill.offer` | `for` (the need), `value`, `tier`, `source` | each filling module, by a rule |
+| `std.fill.tier` | `name`, `rank` (1 is the best) | std.fill: `user` 1, `focus` 2, `scene` 3, `knowledge` 4, `default` 5; a host adds one with one wire |
+
+**Meaning.** Each offer takes the rank of its tier. The offer of the best rank for a need
+is chosen when it is alone at that rank: its `value`, `tier` and `source` are written onto
+the need, by the rule `std.fill.choose`. Two or more offers at the best rank are a soft
+deny (`"2 offers of the best tier for place of $q1"`): advice, nothing chosen. An offer
+arriving, changing or going later decides again (S39a). An offer whose tier is not
+declared has no rank and is never chosen. `examples/fill.mjs` fills where a thing goes,
+how big it is and its colour at once, with fillers written once for every key.
+
+```js run
+const w = new World();
+w.load(`@u core.use world=std.fill
+  @g req thing=?t core.absent=place
+  @gn std.fill.need for=$g key=place
+  @gr core.rule when=$g then=$gn
+  @q req thing=?t
+  @n std.fill.need for=$q key=?k
+  @us usual thing=?t key=?k value=?v
+  @o std.fill.offer for=$n value=?v tier=knowledge source=usual
+  @r core.rule when=$q when=$n when=$us then=$o`);
+w.tell('@u1 usual thing=cup key=place value=table  @q1 req thing=cup');
+const need = w.ofType('std.fill.need')[0];
+print(need.attrs.value, need.attrs.tier, need.attrs.source);
+```
+
+```output
+["table"] ["knowledge"] ["usual"]
 ```
 
 ## Functions

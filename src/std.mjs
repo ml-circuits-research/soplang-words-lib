@@ -64,4 +64,65 @@ ${['overlaps', 'contains_box', 'box_distance'].map((f) => ['x1', 'y1', 'w1', 'h1
       box_distance: (a) => { const [x1, y1, w1, h1, x2, y2, w2, h2] = a.map(num); return out(Math.hypot(x1 + w1 / 2 - (x2 + w2 / 2), y1 + h1 / 2 - (y2 + h2 / 2))); },
     },
   },
+  // Round 19 (Q25 → a): choosing a value for a key a request left out, from offers of other
+  // modules, by named tiers declared once. Rules, aggregates and a soft deny;
+  // no function. A host writes `std.fill.need for=<request> key=<key>` when its request lacks a
+  // key, its modules write `std.fill.offer for=<need> value= tier= source=`, and std.fill writes
+  // the choice onto the need: `value= tier= source=`. Two offers of the best tier: a soft deny
+  // (advice), nothing chosen. A tier a host adds is one more `std.fill.tier name= rank=` wire.
+  'std.fill': {
+    text: String.raw`
+@k.need.for core.slot of=std.fill.need key=for id=true
+@k.need.key core.slot of=std.fill.need key=key id=true
+@k.need.value core.slot of=std.fill.need key=value
+@k.need.tier core.slot of=std.fill.need key=tier
+@k.need.source core.slot of=std.fill.need key=source
+@k.offer.for core.slot of=std.fill.offer key=for required=true
+@k.offer.value core.slot of=std.fill.offer key=value required=true
+@k.offer.tier core.slot of=std.fill.offer key=tier required=true
+@k.offer.source core.slot of=std.fill.offer key=source
+@k.offer.rank core.slot of=std.fill.offer key=rank kind=integer
+@k.tier.name core.slot of=std.fill.tier key=name id=true
+@k.tier.rank core.slot of=std.fill.tier key=rank kind=integer required=true
+@k.best.need core.slot of=std.fill.best key=need id=true
+@k.at.need core.slot of=std.fill.at_rank key=need id=true
+@k.at.rank core.slot of=std.fill.at_rank key=rank id=true
+
+# the tiers, best first: what the user said, the dialogue focus, the scene, knowledge, a default
+@user std.fill.tier name=user rank=1
+@focus std.fill.tier name=focus rank=2
+@scene std.fill.tier name=scene rank=3
+@knowledge std.fill.tier name=knowledge rank=4
+@default std.fill.tier name=default rank=5
+
+# an offer takes the rank of its tier
+@o std.fill.offer tier=?t
+@tr std.fill.tier name=?t rank=?r
+@or std.fill.offer core.on=$o rank=?r
+@ranked core.rule when=$o when=$tr then=$or
+
+# the best rank offered for each need, and how many offers each rank has (equal ranks are a tie)
+@ro std.fill.offer for=?n rank=?r
+@low core.aggregate over=$ro by=?n min=?m args=?r then=$bs
+@bs std.fill.best need=?n rank=?m
+@cnt core.aggregate over=$ro by=?n by=?r count=?c then=$at
+@at std.fill.at_rank need=?n rank=?r n=?c
+
+# the choice: the offer of the best rank, when it is alone at that rank
+@nd std.fill.need for=?req key=?k
+@top std.fill.best need=$nd rank=?m
+@alone std.fill.at_rank need=$nd rank=?m n=1
+@first std.fill.offer for=$nd rank=?m value=?v tier=?t source=?s
+@put std.fill.need core.on=$nd value=?v tier=?t source=?s
+@choose core.rule when=$nd when=$top when=$alone when=$first then=$put
+
+# more than one offer at the best rank: advice, nothing chosen
+@nd2 std.fill.need for=?req key=?k
+@top2 std.fill.best need=$nd2 rank=?m
+@two std.fill.at_rank need=$nd2 rank=?m n=?c
+@more core.check fn=gt args=?c args=1
+@tie core.deny when=$nd2 when=$top2 when=$two if=$more soft=true why="?c offers of the best tier for ?k of ?req"
+`,
+    fns: {},
+  },
 };

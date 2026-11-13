@@ -626,3 +626,26 @@ test('a rank re-computed when a better peer comes, with a rule that writes the w
   const r = w.tell('@f1 focus thing=cup place=shelf');
   assert.deepEqual([r.ok, w.get('q1').attrs.use, w.ofType('offer').map((o) => o.attrs.in_line[0]).sort()], [true, ['shelf'], ['1', '2']]);
 });
+
+test('a rule that reads what a group aggregate concludes waits for it: a second member arriving later is no conflict', () => {
+  const w = new World();
+  w.load(String.raw`
+@k1 core.slot of=box key=name id=true
+@k2 core.slot of=box key=only
+@k3 core.slot of=tally key=box id=true
+@m item box=?b name=?x
+@c core.aggregate over=$m by=?b count=?n then=$t
+@t tally box=?b n=?n
+@bx box name=?b
+@one tally box=?b n=1
+@it item box=?b name=?x
+@put box core.on=$bx only=?x
+@r core.rule when=$bx when=$one when=$it then=$put
+`);
+  w.tell('@b1 box name=red  @i1 item box=red name=pen');
+  assert.deepEqual(w.get('b1').attrs.only, ['pen']);
+  const r = w.tell('@i2 item box=red name=cup');
+  assert.deepEqual([r.ok, r.violations, w.get('b1').attrs.only], [true, [], undefined]);
+  w.retract('i1');
+  assert.deepEqual(w.get('b1').attrs.only, ['cup']);
+});

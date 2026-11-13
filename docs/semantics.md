@@ -276,6 +276,16 @@ recomputing only the groups that changed gives the same world as recomputing all
 *Tests:* `aggregates: kept up to date when wires arrive, change or leave`;
 `aggregates: looking only at changed groups gives the same world as evaluating everything`
 
+**S39a.** A rule that reads what a group aggregate concludes (a count, a best value)
+fires only once the groups touched by the change have been computed again, so it never
+acts on a result that is about to change; a rule with an aggregate anchored on a wire
+(`core.rank`, a total per wire) takes back what it concluded for that wire before it
+concludes something else. A value taken back invalidates only the firings whose patterns
+on that wire name the key (or ask for its absence). *Why:* a second offer arriving later,
+or a better one, is the normal case in a dialogue; it must re-decide, not conflict or loop.
+*Tests:* `a rule that reads what a group aggregate concludes waits for it: a second member arriving later is no conflict`;
+`a rank re-computed when a better peer comes, with a rule that writes the winner onto the wire the peers read`
+
 **S40.** A deny may speak about a group, and is checked also when a wire leaves it.
 *Tests:* `aggregates: a deny can speak about a whole group, and names the wires behind it`;
 `aggregates: a deny over a group is also checked when a wire leaves the group`;

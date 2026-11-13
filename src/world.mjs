@@ -1589,6 +1589,18 @@ export class World {
         this._fire(rule, s, c, res);
       }
     };
+    // a group aggregate has groups to look at again: what it concludes may be about to change
+    const pending = () => { for (const r of res._seeds.keys()) if (r.aggregate && r.kind === 'rule') return true; return false; };
+    const later = () => { // the rules that waited for the aggregates, on the wires that woke them
+      const xs = res._later; res._later = null;
+      for (const [rule, idx, id] of xs) {
+        const w = this.wires.get(id);
+        if (!w || res.violations.length) continue;
+        const matches = [];
+        for (const s0 of this._matchWire(rule.when[idx], w, EMPTY)) matches.push(...this._bodies(rule, s0, idx));
+        fireAll(rule, matches);
+      }
+    };
     for (;;) {
       while ((res._agenda.length || res._fluents.size) && !res.violations.length) {
         this._b.tick('chase');
@@ -1621,6 +1633,8 @@ export class World {
               if (this.wires.has(w.id)) for (const s0 of this._matchWire(rule.when[idx], this.wires.get(w.id), EMPTY)) matches.push(...this._bodies(rule, s0, idx));
             }
           }
+          // (seeded again: the wire may have changed under an earlier rule of this loop)
+          if (rule.afterAggregates && (this._seed(w, res), pending())) { (res._later ||= []).push([rule, idx, w.id]); continue; }
           fireAll(rule, matches);
         }
       }
@@ -1662,7 +1676,8 @@ export class World {
         fireAll(rule, bodies);
       }
       res._full = false;
-      if ((!res._agenda.length && !res._fluents.size) || res.violations.length) return;
+      if (res._later?.length && !pending() && !res.violations.length) later();
+      if ((!res._agenda.length && !res._fluents.size && !res._later?.length) || res.violations.length) return;
     }
   }
 

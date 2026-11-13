@@ -3198,3 +3198,11 @@ identical. psys2 grep empty. scan-loops clean. tsc clean. `node tools/doc-exampl
   compat/psys2/worlds and matrices: 0; only the legend's declarations). Q26 asks for its
   patterns.sop and spec 03 (option a) or leaves the measurement to PSys2 (b).
 - test/patterns.test.mjs (2), api "PatternIndex" (runnable), index.d.ts.
+
+## Release 0.17.0 (Round 19)
+
+`/tmp/check.sh`: 318 pass, 0 fail on sources and built file, 317 in checking mode; pilot
+identical; psys2 grep empty; scan-loops clean; tsc clean. Version in package.json and
+src/index.mjs, CHANGELOG entry, docs rebuilt (`docs/version.md`: sopworld 0.17.0). Round 19
+items in the reviewer's order: rank fix, 1 std.fill, 2 std.focus, 5 refusable readings,
+6 act([...]), 4 world.why, 3 std.relations, 7 PatternIndex (real measurement: Q26).

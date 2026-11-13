@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.17.0
+
+Round 19: what the demo's failures showed.
+
+### New
+- `std.fill`: a value for a key a request left out, from offers in named tiers (user,
+  focus, scene, knowledge, default), chosen per key, with tier and source; ties are advice
+  (Q25 a). examples/fill.mjs.
+- `std.focus`: the dialogue focus per turn (thing, action, place, world); a request that
+  leaves out its thing or action is completed from the turn before, through std.fill;
+  earlier turns keep theirs. examples/focus.mjs.
+- `std.relations`: relations kept between things (on, in, next_to, above, in_front_of)
+  that follow when a thing moves; rows; `nth`, `each`, `spread`; actions
+  `relations.put_all` and `relations.put_pairs`. examples/relations.mjs; what needs a
+  function is listed in the reference.
+- `world.why(id, key?)`: the chain behind a wire or a value, with std.fill's choice and the
+  action that told a thing; statements made inside `act` record the action.
+- `world.act([requests])`: the requests of one sentence, all or nothing, one undo step.
+- `PatternIndex`: a host's sentence patterns indexed by the words they need.
+- Refusable readings: `score` as the dry run (integration §5b, examples/refusal.mjs); an
+  action's guard names the pattern nothing matches.
+
+### Fixes
+- core.rank re-ranks when a better peer arrives, with no `conflict` or loop; a value taken
+  back withdraws only what reads that key.
+- A rule that reads a group aggregate's result waits for the group to be computed again: a
+  second offer arriving later is no `conflict`.
+- Moving a thing whose ranked key a rule fills is no `conflict`.
+- core.rank orders a group once, not once per peer (400 peers told one at a time: 20 s →
+  0.4 s); `score` looks for open keys on the reading's wires only (20,000 facts: 346 →
+  28 µs per reading).
+
+Q26 (PSys2's pattern set for the index measurement) open.
+
 ## 0.16.0
 
 Round 17: what the knowledge worlds and the coming `space` module need.

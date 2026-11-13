@@ -752,7 +752,14 @@ export const querying = {
     if (!action) return { ok: false, status: 'unsupported', violations: [{ kind: 'unknown-action', why: `no action named "${name}"` }] };
     const by = this._by;
     this._by = name; // what it states is recorded as said by this action
-    try { return this._actNamed(action, name, args, id); } finally { this._by = by; }
+    const from = this.events.length; // what the action changed, for replies, logs and why-answers
+    const was = this._was;
+    this._was = was || new Map(); // wires removed on the way (a replaced wire is removed and told again)
+    let r;
+    try { r = this._actNamed(action, name, args, id); } finally { this._by = by; }
+    if (r.ok) r.diff = this._diffSince(from, this._was);
+    if (!was) this._was = null;
+    return r;
   },
 
   _actNamed(action, name, args, id) {
@@ -798,7 +805,10 @@ export const querying = {
     let out;
     try {
       out = this._host('action', action.fn)(ctx, args);
-      if (out && out.ok === false) { violations.push({ kind: 'refused', why: out.why || out.reason, reason: out.reason }); throw REFUSED; }
+      if (out && out.ok === false) { // a refused result: its own violations when it has them (a change the world refused)
+        if (out.violations?.length && !out.why) violations.push(...out.violations); else violations.push({ kind: 'refused', why: out.why || out.reason, reason: out.reason });
+        throw REFUSED;
+      }
       flush();
     } catch (e) {
       this._rollback(mark);
@@ -812,3 +822,41 @@ export const querying = {
 };
 
 const REFUSED = {};
+
+/**
+ * What changed since event `from`, read from the events (no copy of the world): wires
+ * added and removed, and per wire and key the values that went (`from`) and came (`to`),
+ * with the tier the value has now. The shape of `world.diff`.
+ */
+querying._diffSince = function (from, was = new Map()) {
+  const born = new Set(), gone = new Set(), cells = new Map(), back = new Set();
+  const cell = (id, key) => { const k = id + '\u0001' + key; return cells.get(k) || cells.set(k, { id, key, out: [], in: [] }).get(k); };
+  for (const e of this.events.slice(from)) { // bounded: the events of one action (a layered list: sliced, not indexed)
+    if (e.op === 'tell' || e.op === 'derive') { if (gone.delete(e.id)) back.add(e.id); else born.add(e.id); }
+    else if (e.op === 'remove') { if (!born.delete(e.id)) gone.add(e.id); }
+    else if (e.op === 'retract') for (const id of e.ids || []) { if (!born.delete(id)) gone.add(id); }
+    else if (e.op === 'fill' || e.op === 'state') cell(e.id, e.key).in.push(String(e.value));
+    else if (e.op === 'unfill') cell(e.id, e.key).out.push(String(e.value));
+  }
+  const added = [...born].filter((id) => this.wires.has(id)).map((id) => ({ id, type: this.get(id).type, tier: this.tier(id) }));
+  const removed = [...gone].map((id) => ({ id }));
+  // a wire removed and told again (replaced): its keys against what it was
+  for (const id of back) {
+    const old = was.get(id), now = this.get(id);
+    if (!old || !now) continue;
+    for (const k of new Set([...Object.keys(old.attrs), ...Object.keys(now.attrs)])) {
+      const a = old.attrs[k] || [], b = now.attrs[k] || [];
+      const c = cell(id, k);
+      c.out.push(...a.filter((v) => !b.includes(v)));
+      c.in.push(...b.filter((v) => !a.includes(v)));
+    }
+  }
+  const changed = [];
+  for (const c of cells.values()) {
+    if (born.has(c.id) || gone.has(c.id) || !this.wires.has(c.id)) continue;
+    const out = c.out.filter((v) => !c.in.includes(v)), inn = c.in.filter((v) => !c.out.includes(v));
+    if (!out.length && !inn.length) continue;
+    changed.push({ id: c.id, key: c.key, ...(out.length ? { from: out.length === 1 ? out[0] : out } : {}), ...(inn.length ? { to: inn.length === 1 ? inn[0] : inn, toTier: this.tier(c.id, c.key) } : {}) });
+  }
+  return { same: !added.length && !removed.length && !changed.length, added, removed, changed };
+};

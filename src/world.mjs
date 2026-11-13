@@ -292,7 +292,12 @@ export class World {
     const c = this._compiled();
     const steps = [], seen = new Set();
     const statement = (wid, k) => { // the log entry that told it
-      if (k) for (let i = this.log.length - 1; i >= 0; i--) { const e = this.log[i]; if ((e.op === 'fill' || e.op === 'set') && e.key === k && this.resolve(e.id) === wid) return e; } // bounded: the log
+      for (let i = this.log.length - 1; i >= 0; i--) { // bounded: the log
+        const e = this.log[i];
+        if (k && (e.op === 'fill' || e.op === 'set') && e.key === k && this.resolve(e.id) === wid) return e;
+        if (e.op === 'replace' && this.resolve(e.id) === wid) return e; // replaced: the statement that gave it its keys now
+        if (e.op === 'tell' && e.facts?.includes(wid)) return e;
+      }
       return this._logOf.get(wid);
     };
     const visit = (wid, k, whole = false) => {
@@ -1009,6 +1014,7 @@ export class World {
   }
 
   _removeWire(w) {
+    if (this._was && !this._was.has(w.id)) this._was.set(w.id, { type: w.type, attrs: Object.fromEntries(Object.entries(w.attrs).map(([k, v]) => [k, [...v]])) }); // an action's diff: the wire as it was
     this._drop(w);
     this._do(() => this._put(w));
   }
@@ -1156,7 +1162,10 @@ export class World {
       this._do(() => this.used.delete(name));
       const mod = parse(this.options.library[name]);
       // a module of the standard pack brings its functions (pure, declared in it); a host's function of the same name stays
-      if (STD[name] && this.options.library[name] === STD[name].text) for (const [f, fn] of Object.entries(STD[name].fns)) if (!this.fns[f]) this.fns[f] = fn;
+      if (STD[name] && this.options.library[name] === STD[name].text) {
+        for (const [f, fn] of Object.entries(STD[name].fns)) if (!this.fns[f]) this.fns[f] = fn;
+        for (const [f, fn] of Object.entries(STD[name].actions || {})) if (!this.actions[f]) this.actions[f] = fn; // and its actions
+      }
       const ws = prefixed ? prefixModule(mod, name) : mod.map(cloneWire);
       for (const w of ws) Object.defineProperty(w, 'module', { value: name, enumerable: false }); // which module said it
       note(ws);

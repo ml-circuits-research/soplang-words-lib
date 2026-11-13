@@ -1633,6 +1633,64 @@ print(w.get('b').attrs.x, w.get('b').attrs.y);
 ["90"] ["70"]
 ```
 
+## std.schema and std.acts: worlds that do things, declared as data
+
+`core.use world=std.acts` (it loads `std.schema`). A world that does things is a schema,
+not a program: its kinds are types that extend `std.schema.thing`, their attributes are
+`core.slot` (kinds, enums, ranges, steps, defaults, all checked as usual), and three wires
+say the rest. The acts are the same for every world; a new schema needs no rule.
+
+| Type | Keys | Meaning |
+| --- | --- | --- |
+| `std.schema.world` | `name`, `doc` | a world |
+| `std.schema.kind` | `of` (a type), `world`, `acts` (rep.) | a kind of the world, and the acts that apply to it: `make`, `remove`, `change`, `place`, `connect`, `group`, `pick`, `ask`, `copy` |
+| `std.schema.kinds` | `world`, `from` (a type), `key` (default `name`), `acts` | any kind that a wire of `from` names (`k.object name=cup`): such things are `std.schema.thing` and take any attribute |
+| `std.schema.limit` | `of`, `max` | at most so many things of a kind (rules: a count and a deny) |
+
+Every thing has `kind` and `world`. Checked at load: an act not in the list, a kind of a
+world that is not declared.
+
+**The acts** are actions (`world.act({ action, args })`, or several as one sentence with
+`act([...])`). `thing` is an id, or a kind when there is one thing of it (else `nth`, from
+1, or -1 for the last; otherwise the refusal lists `which`).
+
+| Act | Arguments | Does |
+| --- | --- | --- |
+| `make` | `kind`, `world`?, `id`?, attributes | a new thing with the slot defaults and the attributes given |
+| `remove` | `thing` | takes it away, with its links |
+| `change` | `thing`, `attr`, `value`, or `by` (`more`/`less`) and `amount`? | sets an attribute; more or less by the slot's `step` (else 1) |
+| `place` | `thing`, `x`, or `rel` and `ref` | sets where it is (`x`, or `at=<rel>:<ref>`) |
+| `connect` | `a`, `b`, `rel`? | a `std.acts.link` |
+| `group`, `ungroup` | `things`, `name`?; `group` | a `std.acts.group` with its members; takes it apart |
+| `pick` | `kind`, attributes, `nth`? | the things that fit (`result.things`); changes nothing |
+| `ask` | `thing`, `attr`? | its attributes, or one value with `why` |
+| `copy` | `thing` | a new thing with the same attributes |
+
+**What an act gives.** `result` (`act`, `thing`, ...) and, like every action that is
+done, `diff`: `{ added, removed, changed }`, what it told and what rules derived from it,
+with `from`, `to` and tiers. An act is one undo step; `why(id, key)` names the act
+(`how: action`). **A refusal** says why and, in `reason`, what the kind allows
+(`allowed`, `attrs`), which worlds allow the act (`elsewhere`), and for an attribute the
+kind lacks, which kinds have it (`hasIt`: "a seat has no size; the face's eye does").
+`examples/acts.mjs` drives a seating plan and a face; `node bench/acts.mjs` measures an
+act on 10, 200 and 2,000 things.
+
+```js run
+const w = new World();
+w.load(`@acts core.use world=std.acts
+  @face std.schema.world name=face
+  @t core.type of=eye extends=std.schema.thing closed=true
+  @s core.slot of=eye key=colour enum=brown enum=blue default=brown
+  @k std.schema.kind of=eye world=face acts=make acts=change`);
+w.act({ action: 'make', args: { kind: 'eye' } });
+const r = w.act({ action: 'change', args: { thing: 'eye', attr: 'colour', value: 'blue' } });
+print(r.diff.changed, w.act({ action: 'remove', args: { thing: 'eye' } }).violations[0].reason.allowed);
+```
+
+```output
+[{"id":"eye1","key":"colour","from":"brown","to":"blue","toTier":"told"}] ["make","change"]
+```
+
 ## Functions
 
 A function is called with its arguments as text and returns text (or true/false for a

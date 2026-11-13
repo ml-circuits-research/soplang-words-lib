@@ -3206,3 +3206,37 @@ identical; psys2 grep empty; scan-loops clean; tsc clean. Version in package.jso
 src/index.mjs, CHANGELOG entry, docs rebuilt (`docs/version.md`: sopworld 0.17.0). Round 19
 items in the reviewer's order: rank fix, 1 std.fill, 2 std.focus, 5 refusable readings,
 6 act([...]), 4 world.why, 3 std.relations, 7 PatternIndex (real measurement: Q26).
+
+## R20 items 1–5 — std.schema, std.acts, refusals with alternatives, example, cost — done
+
+`/tmp/check.sh`: 322 pass, 0 fail on sources and built file, 321 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean. Answers 1–4 in questions.md Q27.
+
+- `std.schema` (rules and slots): kinds are types extending `std.schema.thing`, attributes
+  are `core.slot`; `std.schema.world`, `std.schema.kind of= world= acts=` (acts: enum
+  slot), `std.schema.kinds world= from= key= acts=` (any kind a knowledge type names; those
+  things are `std.schema.thing`), `std.schema.limit of= max=` (count + deny). Load checks:
+  unknown act (enum), kind of an undeclared world (deny with not=).
+- `std.acts`: make, remove (with its links), change (value, or more/less by the slot's
+  step), place, connect, group/ungroup, pick, ask (with why), copy: one generic action
+  function each, shipped by the library (the standard pack can now ship actions as it
+  ships functions). No world-specific code; a schema is data.
+- Library: every done action result has `diff` (added, removed, changed with from/to and
+  tiers), read from the action's events plus the wires it removed on the way (no copy of
+  the world: a fork inside a transaction is not allowed). A host action that returns a
+  refused change result passes its violations through (a `domain` stays `domain`).
+  `why` finds the statement of a replaced wire.
+- Refusals: `reason` = { act, kind, allowed, attrs, elsewhere (worlds allowing the act),
+  hasIt (kinds having the attribute), which (ambiguous thing) }.
+- First version changed values by `replace`: the log rewrites the old tell in place, so it
+  was not an undo step and why said "make"; now a `set` patch (one undo step, logged with
+  the act's name).
+- examples/acts.mjs (seating + face, the same acts); test/acts.test.mjs (4: both worlds;
+  refusals with alternatives, limit, ambiguity; a third schema (playlist) with zero rules,
+  links follow, one sentence all or nothing; open kinds from knowledge and load checks).
+- Cost, `node bench/acts.mjs` (steps from `world.stats()`): first version (limit count over
+  every thing) at 2,000 things: make 4018 steps, change 2013, remove 4016 — linear. The
+  count now runs only for kinds that have a limit (`over=` the limit and the things):
+     10 things: make 9 steps 1.69 ms; change 10 steps 1.39 ms; pick 0 steps 0.14 ms; remove 9 steps 0.87 ms
+    200 things: make 9 steps 0.31 ms; change 10 steps 0.34 ms; pick 0 steps 0.08 ms; remove 9 steps 0.30 ms
+   2000 things: make 9 steps 5.73 ms; change 10 steps 0.20 ms; pick 0 steps 0.40 ms; remove 9 steps 7.19 ms

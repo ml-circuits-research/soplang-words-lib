@@ -161,7 +161,9 @@ export interface QueryResult {
   from: string[]; via?: string[]; wires: string[];
   answer?: { ok: boolean; id?: string; question?: string; violations?: Violation[] };
 }
-export interface ActResult { ok: boolean; status: 'done' | 'missing' | 'refused' | 'error' | 'unsupported' | 'budget'; value?: string; result?: unknown; missing?: { action: string; key: string; ask?: string }[]; violations?: Violation[] }
+export interface ActResult {
+  /** what the action changed (when done): what it told and what rules derived from it */
+  diff?: Difference; ok: boolean; status: 'done' | 'missing' | 'refused' | 'error' | 'unsupported' | 'budget'; value?: string; result?: unknown; missing?: { action: string; key: string; ask?: string }[]; violations?: Violation[] }
 export interface Assignment { id: string; key: string; value: string }
 /** Changes judged as a whole: wires to tell and values to fill, or just the fills. */
 export type Patch = Assignment[] | { wires?: string | Wire[]; fills?: Assignment[]; /** replace what the key holds */ sets?: Assignment[]; /** wire ids to retract */ retract?: string[]; /** replace in place: the wire keeps its id and gets exactly these keys */ replace?: { id: string; type?: string; attrs: Record<string, string | number | (string | number)[]> } | { id: string; type?: string; attrs: Record<string, string | number | (string | number)[]> }[] };

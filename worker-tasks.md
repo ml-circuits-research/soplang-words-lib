@@ -644,3 +644,12 @@ G1, G2, G6, G3, G4, G7, G5, G8, G9. G8 for the shop world can start as soon as G
 - G11 (ddfcec5), W8 (280aec2), D1 parts 1–3 (1221361, 599e6de, e81f470): reviewer rerun 202 pass / 0 fail / 1 skipped. Notes on the language reference for v1.1 given.
 - D1 parts 3b–4 (e387c51, 6e60fe7) and 0.6.0 (c1aca9f): reviewer rerun 205 pass / 0 fail / 1 skipped; pilot unchanged.
 - 0.6.1 (775dfe7): language v1.1 notes done; reviewer rerun 207 pass / 0 fail / 1 skipped; probes pass.
+
+## Round 16 (reviewer, 2026-11-13): findings of the first knowledge worlds (sop-knowledge-worlds Round 1, worker-log there)
+
+1. **Advice must not make knowledge conflicting (bug).** After a soft issue (a fish placed in the sky), the answer to "where does a fish live" comes back `conflicting`, because it rests on the wire named by the issue. A soft issue (`soft=true`) is advice about the *placed* fact; it must not lower the status of the knowledge wires it read. Fix and add a test; hard denies keep today's behaviour.
+2. **Order-dependent merge across modules (bug).** A fact of a subtype told before the supertype fact of the same identity becomes one wire; told after, two. The result must not depend on the order. Decide the simplest rule, document it, test both orders.
+3. **Misleading error.** A module loaded through `imports=` whose short matrix ids clash with the application's ids reports "neither loaded nor in the library". Report the real cause (id clash, both ids, both modules).
+4. **`version=` on `core.module`** is an unknown attribute today. Accept it (a string, reported by `modules()`), nothing more.
+5. **"One of" in a deny pattern** (`at` is sky or grass) needs two denies today. Only report: is a repeated value on a pattern key (`at=sky at=grass` = any of) consistent with the existing meaning of repeated keys? Do not implement before the reviewer answers.
+Gates as usual: npm test, compat run, benches, no application names in src.

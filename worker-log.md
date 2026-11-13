@@ -3525,3 +3525,17 @@ identical. psys2 grep empty. scan-loops clean. tsc clean. Doc examples: 85, 0 pr
   trace; refused — English reading, translation, the encoder accept rule, the host's
   guard; the per-turn tick budget is the library's own budget. Row in the capabilities
   table. test/turn.test.mjs (3). api section, capabilities job (both runnable).
+
+## R24 A2 — choosing the world for a request — done
+
+`/tmp/check.sh`: 347 pass, 0 fail on sources and built file, 346 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean.
+
+- `route(world, request, { scores })` in src/turn.mjs: each std.schema world scored by its
+  card (+2 has the kind or takes it from a catalog, +1 allows the act), the thing named
+  (+2 it is one of its things), a dry run on a fork (−2 refused, with the reason) and the
+  host's signal per world; best first with `why`. Tested: eye1 → face 5 (has eye, allows
+  change, eye1 is here); a third eye → face 1 (refused: at most 2 eye); a host signal
+  face 5 beats seating 3 for a seat.
+- PSys2 meta.worlds hand-over: the routing rules are general (taken in this form); the
+  generated cards and the tab registry stay in the host. Row in the capabilities table.

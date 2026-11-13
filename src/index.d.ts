@@ -481,3 +481,6 @@ export function turn(world: World, readings: ({ action: string; args?: Record<st
   status: 'done' | 'ask' | 'elsewhere' | 'unknown' | 'nothing'; reading?: number; results?: object[]; diff?: { added: object[]; removed: object[]; changed: object[] };
   why?: { id: string; key: string; steps: object[] }[]; guesses?: object[]; replies?: string[]; question?: string; missing?: object[]; reason?: object; guess?: object; dropped: object[];
 };
+
+/** the worlds of the schemas scored for a request: their cards, the thing named, a dry run, the host's own signal; best first */
+export function route(world: World, request: { action: string; args?: Record<string, unknown> }, options?: { scores?: Record<string, number> }): { world: string; score: number; why: string[] }[];

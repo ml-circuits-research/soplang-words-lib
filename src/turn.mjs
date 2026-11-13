@@ -53,3 +53,36 @@ export function turn(world, readings, { reply = actReply } = {}) {
   const why = best.violation?.why ? String(best.violation.why).replace(/^"|"$/g, '') : 'it was refused';
   return { status: 'unknown', reading: best.index, guess: req, question: `Did you mean to ${whatOf(req)}? (${why})`, dropped: tried };
 }
+
+/**
+ * Choosing the world for a request (Round 24, A2): every world of the schemas is scored
+ * by what it knows about the request — its card has the kind (or takes any kind of a
+ * catalog), it allows the act, the thing named is one of its things — and by a dry run
+ * (a world where the act would be refused loses); the host may add its own signal per
+ * world (`scores`, an encoder's for instance). Best first: [{ world, score, why }].
+ */
+export function route(world, request, { scores = {} } = {}) {
+  const args = request.args || {};
+  const kindName = args.kind ?? null;
+  const thingId = args.thing !== undefined ? String(args.thing).replace(/^\$/, '') : null;
+  const thing = thingId ? world.get(thingId) : null;
+  const kind = kindName ?? thing?.attrs.kind?.[0] ?? thingId;
+  const out = [];
+  for (const wd of world.ofType('std.schema.world')) { // bounded: the declared worlds
+    const name = wd.attrs.name[0], why = [];
+    let score = 0;
+    const decl = world.ofType('std.schema.kind').find((k) => k.attrs.of[0] === kind && k.attrs.world.includes(name));
+    const open = !decl && world.ofType('std.schema.kinds').find((k) => k.attrs.world[0] === name && world.ofType(k.attrs.from[0]).some((x) => x.attrs[k.attrs.key?.[0] || 'name']?.includes(kind)));
+    const k = decl || open;
+    if (k) { score += 2; why.push(decl ? `has ${kind}` : `takes any ${k.attrs.from[0]}: ${kind}`); }
+    if (k && (k.attrs.acts || []).includes(request.action)) { score += 1; why.push(`allows ${request.action}`); }
+    if (thing?.attrs.world?.includes(name)) { score += 2; why.push(`${thing.id} is here`); }
+    if (k) {
+      const r = world.fork().act({ action: request.action, args: request.action === 'make' ? { ...args, world: name } : args });
+      if (!r.ok) { score -= 2; why.push(`refused: ${String(r.violations?.[0]?.why ?? r.status).replace(/^"|"$/g, '')}`); }
+    }
+    if (scores[name] !== undefined) { score += Number(scores[name]); why.push(`host ${scores[name]}`); }
+    out.push({ world: name, score, why });
+  }
+  return out.sort((a, b) => b.score - a.score || a.world.localeCompare(b.world));
+}

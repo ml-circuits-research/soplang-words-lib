@@ -44,3 +44,12 @@ test('turn: a value filled from knowledge is said as a guess', () => {
   const t = turn(w, [{ action: 'make', args: { kind: 'fish' } }]);
   assert.deepEqual(t.replies, ['I made a fish (fish1).', 'I guessed place water (knowledge, hand-core 1), size small (knowledge, hand-core 1).']);
 });
+
+test('route: worlds scored by their cards, the thing named, a dry run, and the host\'s own signal', async () => {
+  const { route } = await import('../tools/lib-under-test.mjs');
+  const w = make();
+  w.act({ action: 'make', args: { kind: 'eye' } }); w.act({ action: 'make', args: { kind: 'eye' } });
+  assert.deepEqual(route(w, { action: 'change', args: { thing: 'eye1', attr: 'colour', value: 'blue' } })[0], { world: 'face', score: 5, why: ['has eye', 'allows change', 'eye1 is here'] });
+  assert.deepEqual(route(w, { action: 'make', args: { kind: 'eye' } })[0], { world: 'face', score: 1, why: ['has eye', 'allows make', 'refused: at most 2 eye'] }, 'the limit is reached: a dry run says so');
+  assert.deepEqual(route(w, { action: 'make', args: { kind: 'seat' } }, { scores: { face: 5 } }).map((r) => [r.world, r.score]), [['face', 5], ['seating', 3]], 'a host signal counts, and says so');
+});

@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.30.0
+
+The reviewer's 01:20 item 1: PSys2's English grammar facts (`handover/lang.en`) read by
+`std.grammar` as they are.
+
+### New
+- `parseText` / `grammarOf` options: `types`, `classes` (closed classes as categories),
+  `lexicon` (the host's open classes), `digits`; literal words and `[a|b]` in rules,
+  `status=hole` skipped, `head=` honoured, `_` words of several parts, `'s` as a token,
+  left-recursive rules. Each node carries its `rule`.
+- `parseText` results say `tokens` and `unknown`.
+- `nounPhrase` adds `rule`, `quant`, `ord`, `name`, `pron` and `parts`.
+- `grammarView`, `viewDiff`: views of a closed class, and where two views differ.
+
+### Changed (migration)
+- Past its budget, `parseText` no longer throws. It returns what was complete, with
+  `truncated: true`. Replace `try { parseText(...) } catch` with
+  `const p = parseText(...); if (p.truncated) ...`.
+- `nounPhrase` results now include `rule` when the node came from a rule. A test that
+  compares the whole object needs that key added.
+
 ## 0.29.0
 
 Round 26, part B: reading with a grammar world (smallest version).

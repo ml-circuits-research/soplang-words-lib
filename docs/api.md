@@ -1091,17 +1091,33 @@ print(t.status, t.question, t.trace.map((x) => x.stage));
 ask Remove all 2 chairs? ["read","dryrun","confirm"]
 ```
 
-### parseText(world, text, options?), grammarOf(world), nounPhrase(node, cats?)
+### parseText(world, text, options?), grammarOf(world, options?), nounPhrase(node, cats?)
 
 The language-free part of reading: a grammar world holds the language as facts —
 `g.word text= lemma= cat=` (more keys are features), `g.rule lhs= rhs= ...` (in order; `X?`
 optional, `X*` any number, `X+` one or more), `g.coord word=` — and `parseText` reads text
 with them: every complete parse of `start` (default `S`), best first (fewer nodes, then
-the higher coordination), at most `max` (8), within `budget` steps (a pathological grammar
-stops with an error, never hangs). A node is `{ cat, span: [i, j], word?, lemma?, feat?,
-children?, coord? }`. `nounPhrase(node)` reads a noun phrase as `{ det, num, mods, head,
-lemma, pp, span }` (a coordination as `{ coord: [...] }`); the category names are the
-grammar's (`cats`). Verbs and argument frames are next (questions.md Q32).
+the higher coordination), at most `max` (8). A node is `{ cat, span: [i, j], rule?, word?,
+lemma?, feat?, children?, coord? }`; `rule` is the id of the rule that built it.
+
+A grammar world with names of its own says them in the options (they are the same for
+`grammarOf`): `types: { rule, word, coord }` renames the three fact types; `classes: { DET:
+'lang.det', ... }` makes each wire of a closed class a word of that category (its `text`,
+its `value` as lemma, its other keys as features); `lexicon: { word: { cat, lemma? } }` is
+the host's open classes (nouns, adjectives: the grammar owns none); `digits: 'NUM'` reads
+digits as that category. In a rule, a lower-case or quoted part is a literal word,
+`[all|each]` is one of several, a rule with `status=hole` is skipped, and `head=` names the
+part the phrase is about. A text with `_` (`next_to`) is a word of several parts, read as
+one token; `'s` is a token of its own. A left-recursive rule (`NP -> NP PP`) grows the
+phrases found so far.
+
+The result also says `tokens`, `unknown` (the words no lexicon entry, literal or digit
+read: reported, never judged) and, past `budget` steps (20000), `truncated: true` with
+what was complete by then: it never throws. `nounPhrase(node, cats)` reads a noun phrase
+as `{ span, rule, quant, det, num, ord, name, pron, mods, head, lemma, pp, parts }` (a
+coordination as `{ coord: [...] }`; `parts` are the phrases inside it of the same category,
+such as the owner in "the house's door"); the category names are the grammar's (`cats`).
+Verbs and argument frames are next (questions.md Q32).
 
 ```js run
 const w = new World();
@@ -1113,6 +1129,39 @@ print(nounPhrase(parseText(w, 'two red cups and a plate', { start: 'NP' })[0].tr
 
 ```output
 [["2",["red"],"cup"],["a",[],"plate"]]
+```
+
+A grammar with its own type names, a closed class and a host lexicon:
+
+```js run
+const w = new World();
+w.tell(`@d1 my.det text=the  @p1 my.prep text=next_to
+  @r1 my.rule lhs=NP rhs=DET? rhs=N head=N  @r2 my.rule lhs=NP rhs=NP rhs=PP head=NP  @r3 my.rule lhs=PP rhs=PREP rhs=NP`);
+const p = parseText(w, 'the star next to the house', { start: 'NP', types: { rule: 'my.rule' },
+  classes: { DET: 'my.det', PREP: 'my.prep' }, lexicon: { star: { cat: 'N' }, house: { cat: 'N' } } });
+const np = nounPhrase(p[0].tree, { det: 'DET', head: 'N', pp: 'PP' });
+print([np.rule, np.head, np.pp[0].words, parseText(w, 'the moon', { start: 'NP', types: { rule: 'my.rule' }, classes: { DET: 'my.det' } }).unknown]);
+```
+
+```output
+["r2","star",["next to","the","house"],[{"word":"moon","at":1}]]
+```
+
+### grammarView(world, type, view?), viewDiff(world, type, a, b)
+
+A view is the set of wires of `type` whose `in=` names it; `grammarView` gives their
+`text`s, sorted (every wire's without a view). Two callers that keep two lists of the same
+words keep two views until their owner unifies them; `viewDiff` says which words differ,
+so unifying is a measured decision.
+
+```js run
+const w = new World();
+w.tell('@a x.det text=the in=v1 in=v2  @b x.det text=a in=v1  @c x.det text=every in=v2');
+print(viewDiff(w, 'x.det', 'v1', 'v2'));
+```
+
+```output
+{"only":{"v1":["a"],"v2":["every"]},"both":["the"]}
 ```
 
 ### rank(scored, criteria?) and RANKING

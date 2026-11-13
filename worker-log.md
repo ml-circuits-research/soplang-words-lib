@@ -3781,3 +3781,27 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
 `/tmp/check.sh`: 366 pass, 0 fail on sources and built file, 365 in checking mode; pilot
 identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
 (`docs/version.md`: sopworld 0.29.0). Corpus 17 / 17.
+
+## 01:20 item 1 — PSys2's lang.en hand-over read by std.grammar — done; release 0.30.0
+
+`/tmp/check.sh`: 369 pass, 0 fail on sources and built file, 368 in checking mode; pilot
+identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.30.0).
+
+- `node /tmp/le.mjs <handover>`: the 5 noun-phrase shards (np, determiners, numbers,
+  prepositions, pronouns) loaded with `w.tell`. At first, 8 of the 11 examples parsed; after
+  adding digits, `_` words and `'s` tokens, all 11 parse with the right head.
+  `schema.sop` fails cardinality (`rhs`, `in` lack many=true), so it is not loaded.
+- src/grammar.mjs:
+  - options `types` / `classes` / `lexicon` / `digits`;
+  - literal and `[a|b]` rule parts; `status=hole`; `head=`;
+  - left recursion grown after the base results;
+  - multiword tokens; rule ids on nodes;
+  - `truncated` instead of a throw; `unknown`;
+  - `nounPhrase` gets quant / ord / name / pron / parts; `grammarView`, `viewDiff`.
+- test/grammar.test.mjs, from 3 tests to 6:
+  - a made-up grammar world with its own names;
+  - the hand-over read in place, with 14 phrases (skipped when absent);
+  - views.
+- The comparison and the refusals are written up in questions.md Q33. Next: `resolve(phrase)`
+  (item 2), then the two applications.

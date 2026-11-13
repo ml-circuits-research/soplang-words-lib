@@ -102,6 +102,40 @@ the library; tests use a toy grammar.
   in the test; verbs and frames next.
 Not blocking.
 
+## Q33 (01:20 item 1): PSys2's `handover/lang.en` and its std-grammar proposal, compared with std.grammar
+
+Read in place (CC0, not copied). The noun-phrase shards (np, determiners, numbers,
+prepositions, pronouns) now parse with the library's parser, unchanged: every noun-phrase
+`example` of np.sop that needs no clause reads, with the right head
+(test/grammar.test.mjs, test 5, skipped when the hand-over is not checked out next to
+the library). What that took, all general (no English in src):
+- **Taken.** Fact types named by the grammar (`types`), closed classes as categories
+  (`classes`: each wire's `text`, `value` as lemma, other keys as features), the host's
+  open classes (`lexicon`: the grammar owns no noun), literal words and `[a|b]` in rules,
+  `status=hole` skipped, `head=` honoured (the owner in "the house's door" is a part, not
+  the head), `next_to` as a word of several parts, `'s` as a token, digits as a named
+  category, left-recursive rules (NP -> NP PP), the rule id on every node.
+- **Taken from the semantics (section 4).** 2 "no noun is owned": `unknown` lists the
+  words nothing read. 3 "budgeted": past the budget the parse returns what was complete
+  with `truncated: true`, never throws (an API change, noted in CHANGELOG). 4 "views are
+  explicit": `grammarView` and `viewDiff` (the proposal's `grammar.view` / `grammar.diff`).
+- **Not taken, with reasons.**
+  - The schema.sop is not loaded: `rhs` and `in` lack `many=true`, so the shards fail its
+    cardinality check. The README says its slots are not final; once the knowledge repo
+    fixes it, the test will load it too.
+  - 5 "order is data": parses are ranked by size, then coordination, because np.sop's rules
+    carry no `priority`. A `priority` on rules would be honoured first if the facts had one.
+  - `np` returns the proposal's fields under the library's names (`quant` for `set`,
+    `parts` for `part_of`), because the names come from the grammar's categories and not
+    from English.
+  - `emit` is not read: the rule id on each node is enough for a host to find it.
+- **Next, in the proposal's order.** `inflect` (morphology as data), `fragment`, `agent`;
+  then `split` / `clauses` / `shared` / `elide` (clause shards, with the proposal's
+  provenance and conservative semantics); `refer` comes with `resolve` (item 2), and
+  `frames` / `read` come with verbs. Stays outside, as the proposal says: spelling,
+  translation, reading number words.
+Not blocking.
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

@@ -456,7 +456,7 @@ print(nounPhrase(parseText(w, 'ko mi', { start: 'NP' })[0].tree));
 ```
 
 ```output
-{"span":[0,2],"mods":["red"],"head":"ko","lemma":"cup"}
+{"span":[0,2],"rule":"r","mods":["red"],"head":"ko","lemma":"cup"}
 ```
 
 ## Not done yet

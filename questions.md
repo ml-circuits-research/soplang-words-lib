@@ -22,6 +22,33 @@ host's), tests, and a synthetic bench (3,000 patterns: 51.5 tried per sentence i
 I lean to (a): one real number beats a synthetic one, and the conversion shows whether
 "needs" is enough to express its token patterns (optional groups, phrase groups `[$lang.yes]`).
 
+## Q27 (Round 20, ACTS × SCHEMAS): answers 1–4 and what I build (not waiting)
+
+1. **A schema today.** Kinds are `core.type` (with `extends`, `closed`), attributes are
+   `core.slot` (kind, enum, min/max/step, default, required, ask), operations are
+   `core.action` (declared or host), words are `core.word`, modules say `exports`. All
+   checked at load. Missing: which acts apply to which kind; "any kind of <knowledge
+   type>"; a limit on how many of a kind; one wire that names a world and its kinds (for
+   cards and help); defaults applied when a thing is made (slot defaults today wait for
+   `complete`).
+2. **A generic act module.** Applicability, limits and checks can be rules and slots over
+   schema wires. The writes cannot be plain rules: a rule's template has a fixed type and
+   fixed keys, so "make a <kind>" or "set <attribute>" named by a value cannot be a
+   template (entity-attribute-value wires would make it possible but lose every native
+   slot check). Recommendation: kinds stay types (extending `std.schema.thing`, so one
+   pattern sees every thing), attributes stay slots, and `std.acts` ships one generic
+   action function per act (as the standard pack ships functions), with no world-specific
+   code; everything a world says is data. A third schema then needs zero rules.
+3. **What an applied act yields.** `act` results gain `diff` (`added`, `removed`,
+   `changed` with from/to and tiers, the same shape as `world.diff`), for every action;
+   `why(id, key)` gives the chain of any changed cell (`how: action`, the act's name, then
+   the rules that followed). Undo is the act's one step (`act([...])` for a sentence).
+   Replies and logs are generated from `diff` + `why`.
+4. **Smallest example.** A seating plan (table, seat, guest; name, colour, place) and a
+   face (eye, mouth, glasses; colour, size, variant) as two schemas, driven by the same
+   `std.acts`; a test adds a third (a playlist) with no rule. Refusals name what the kind
+   allows and which world allows the act ("a seat has no size; the face's eye does").
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

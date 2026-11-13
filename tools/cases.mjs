@@ -18,6 +18,7 @@ function check(w, r, e, kind) {
   if (kind === 'route') return r[0]?.world === e.world ? null : `route: ${r[0]?.world} ≠ ${e.world}`;
   if (kind === 'turn') return r.status === e.status ? null : `turn: ${r.status} ≠ ${e.status}`;
   if (e.ok !== undefined && r.ok !== e.ok) return `ok: ${r.ok} ≠ ${e.ok}${r.violations?.[0]?.why ? ` (${String(r.violations[0].why)})` : ''}`;
+  if (e.changes !== undefined && Boolean(r.diff && r.diff.same === false) !== e.changes) return `changes: ${r.diff ? !r.diff.same : 'no diff'} ≠ ${e.changes}`;
   if (e.why && !String(r.violations?.[0]?.why ?? '').includes(e.why)) return `why: "${r.violations?.[0]?.why}" lacks "${e.why}"`;
   if (e.kind && r.violations?.[0]?.kind !== e.kind) return `kind: ${r.violations?.[0]?.kind} ≠ ${e.kind}`;
   const told = (r.diff?.added || []).filter((a) => a.tier === 'told').map((a) => a.id);

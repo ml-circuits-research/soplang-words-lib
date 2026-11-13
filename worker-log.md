@@ -3849,3 +3849,24 @@ clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 
 - 0.31.0 shipped a consumer name in a src comment: `git grep -i psys2 src/` printed 1 line,
   because the gate's grep did not see the file before it was added. It is removed here, and
   the gate now gives 0.
+
+## 01:20 item 4 — the corpus grows from PSys2's corpus (plan.seating grid) — done; release 0.33.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 0.33.0).
+
+- `python3 -c` over PSys2's `training/eval/cases.jsonl`: 6279 lines. The grid cases
+  (with `grid_kind`) total 3378: 2704 right and 674 wrong. plan.seating has 420 of them,
+  over 18 (act, kind) pairs, each with what it expects: "the state of the world changes" or
+  "an answer that is not a refusal".
+- These became cases/grid.cases.json: 18 language-free cases, each one act per pair after
+  the same setup of two tables and two guests. The English stays in PSys2.
+- `node tools/cases.mjs --failures`, first run: 30 / 35.
+  - 3 failed because our seating schema refused copy, connect and group on guests. PSys2's
+    grid expects a change, so the schema now follows the grid.
+  - 2 failed on `place` (table, guest). For guests, `place at=<a thing>` is now general:
+    it sets the key whose slot refers to that thing's type. Tables got a place (x, y).
+- After the changes: 35 / 35 pass (acting 30/30). cases/baseline.json is raised to 35.
+- Next: the other grid worlds (art.draw, data.charts, diagram.sketch, ui.avatar,
+  plan.timeline) need their schemas as data first. `std.schema.unique` and
+  `std.know.fill` (docs/reuse-reports/apps.md).

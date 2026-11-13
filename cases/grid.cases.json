@@ -1,0 +1,843 @@
+[
+ {
+  "id": "grid.seating.make.table",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (make, table) expects 'the state of the world changes'",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "bob",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.make.guest",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (make, guest) expects 'the state of the world changes'",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "bob",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "cy"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.change.table",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (change, table) expects 'the state of the world changes'",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "bob",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "change",
+    "args": {
+     "thing": "table1",
+     "attr": "colour",
+     "value": "blue"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.change.guest",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (change, guest) expects 'the state of the world changes'",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "bob",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "change",
+    "args": {
+     "thing": "guest1",
+     "attr": "name",
+     "value": "anna"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.remove.table",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (remove, table) expects 'the state of the world changes'",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "bob",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "remove",
+    "args": {
+     "thing": "table2"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.remove.guest",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (remove, guest) expects 'the state of the world changes'",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "bob",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "remove",
+    "args": {
+     "thing": "guest2"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.ask.table",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (ask, table) expects 'an answer that is not a refusal'",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "bob",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "ask",
+    "args": {
+     "thing": "table1",
+     "attr": "seats"
+    },
+    "expect": {
+     "ok": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.ask.guest",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (ask, guest) expects 'an answer that is not a refusal'",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "bob",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "ask",
+    "args": {
+     "thing": "guest1",
+     "attr": "at"
+    },
+    "expect": {
+     "ok": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.copy.table",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (copy, table) expects 'the state of the world changes'",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "bob",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "copy",
+    "args": {
+     "thing": "table1"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.copy.guest",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (copy, guest) expects 'the state of the world changes'",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "bob",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "copy",
+    "args": {
+     "thing": "guest1"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.connect.table",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (connect, table) expects 'the state of the world changes'",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "bob",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "connect",
+    "args": {
+     "a": "table1",
+     "b": "table2"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.connect.guest",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (connect, guest) expects 'the state of the world changes'",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "bob",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "connect",
+    "args": {
+     "a": "guest1",
+     "b": "guest2"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.group.table",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (group, table) expects 'the state of the world changes'",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "bob",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "group",
+    "args": {
+     "things": [
+      "table1",
+      "table2"
+     ]
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.group.guest",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (group, guest) expects 'the state of the world changes'",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "bob",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "group",
+    "args": {
+     "things": [
+      "guest1",
+      "guest2"
+     ]
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.place.table",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (place, table) expects 'the state of the world changes'",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "bob",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "place",
+    "args": {
+     "thing": "table2",
+     "x": 300
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.place.guest",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (place, guest) expects 'the state of the world changes'",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "bob",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "place",
+    "args": {
+     "thing": "guest2",
+     "at": "$table2"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.pick.table",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (pick, table) expects 'an answer that is not a refusal'",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "bob",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "pick",
+    "args": {
+     "kind": "table"
+    },
+    "expect": {
+     "ok": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.pick.guest",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (pick, guest) expects 'an answer that is not a refusal'",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "bob",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "pick",
+    "args": {
+     "kind": "guest"
+    },
+    "expect": {
+     "ok": true
+    }
+   }
+  ]
+ }
+]

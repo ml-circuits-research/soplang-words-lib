@@ -246,7 +246,16 @@ const ACTIONS = {
     const r = w.applyPatch({ sets: [{ id: t.id, key: attr, value }] }); // a set: one undo step, logged with the act's name
     return r.ok === false ? r : { act: 'change', thing: t.id, attr, value };
   }),
-  acts_place: (ctx, args) => ACTIONS.acts_change(ctx, { ...args, attr: args.rel ? 'at' : 'x', value: args.rel ? `${one(args.rel)}:${String(one(args.ref)).replace(/^\$/, '')}` : args.x }),
+  acts_place: (ctx, args) => { // at a place (rel + ref), at x, or into a thing: the key whose slot refers to that thing's type
+    const w = ctx.world, into = args.at !== undefined ? w.get(String(one(args.at)).replace(/^\$/, '')) : null;
+    if (into?.attrs.kind) {
+      const r = thingOf(w, args.thing);
+      const slots = r.thing ? [...(w._compiled().slots.get(r.thing.type)?.values() || [])] : [];
+      const key = slots.find((sl) => sl.type === into.type)?.key;
+      if (key) return ACTIONS.acts_change(ctx, { ...args, attr: key, value: ref(into.id) });
+    }
+    return ACTIONS.acts_change(ctx, { ...args, attr: args.rel ? 'at' : 'x', value: args.rel ? `${one(args.rel)}:${String(one(args.ref)).replace(/^\$/, '')}` : args.x });
+  },
   acts_connect: (ctx, args) => pre('connect', ctx, args, (w) => {
     const a = thingOf(w, args.a), b = thingOf(w, args.b);
     for (const x of [a, b]) {

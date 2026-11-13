@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.33.0
+
+The reviewer's 01:20 item 4: the case corpus grows from PSys2's corpus. Its plan.seating
+grid (420 English cases over 18 (act, kind) pairs) becomes 18 language-free cases in
+`cases/grid.cases.json`. The corpus goes from 17 to 35, and all 35 pass.
+
+### New
+- `place thing= at=<a thing>` puts a thing into another, through the key whose slot refers
+  to that thing's type (a guest at a table). `x` and `rel` / `ref` are as before.
+- `tools/cases.mjs`: `expect.changes` (whether the act changed the world).
+
+### Changed
+- `cases/schemas/seating.sop` now follows PSys2's grid. Guests can be copied, connected and
+  grouped, and tables have a place (`x`, `y`).
+
 ## 0.32.0
 
 The reviewer's 01:20 item 3: two small applications written from the docs, a room planner

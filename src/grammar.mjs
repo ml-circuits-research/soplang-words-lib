@@ -151,10 +151,10 @@ export function nounPhrase(node, cats = {}) { // bounded: the depth of the tree
   const quant = leaves.find((l) => l.cat.startsWith('=') && l.span[0] === node.span[0]);
   const head = of(C.head).pop();
   const own = { span: node.span, ...(node.rule ? { rule: node.rule } : {}),
-    ...(quant ? { quant: quant.word } : {}), ...(first(C.det) ? { det: first(C.det).lemma } : {}), ...(first(C.num) ? { num: first(C.num).lemma } : {}),
+    ...(quant ? { quant: quant.word } : {}), ...(first(C.det) ? { det: first(C.det).lemma } : {}), ...(first(C.num) ? { num: first(C.num).lemma, ...(head && first(C.num).span[0] > head.span[0] ? { numAfter: true } : {}) } : {}),
     ...(first(C.ord) ? { ord: first(C.ord).lemma } : {}), ...(first(C.name) ? { name: first(C.name).word } : {}), ...(first(C.pron) ? { pron: first(C.pron).lemma } : {}),
     mods: of(C.mod).map((l) => l.lemma), ...(head ? { head: head.word, lemma: head.lemma } : {}),
-    ...(pps.length ? { pp: pps.map((p) => ({ span: p.span, words: leavesOf(p) })) } : {}), ...(parts.length ? { parts } : {}) };
+    ...(pps.length ? { pp: pps.map((p) => { const inner = (p.children || []).find((c) => c.cat === node.cat); return { span: p.span, words: leavesOf(p), ...(inner ? { np: nounPhrase(inner, cats) } : {}) }; }) } : {}), ...(parts.length ? { parts } : {}) };
   if (!base) return own;
   const allPp = [...(base.pp || []), ...(own.pp || [])], allParts = [...(base.parts || []), ...(own.parts || [])];
   return { ...base, span: node.span, ...(node.rule ? { rule: node.rule } : {}), ...(allPp.length ? { pp: allPp } : {}), ...(allParts.length ? { parts: allParts } : {}) };

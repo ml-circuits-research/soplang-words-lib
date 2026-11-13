@@ -3805,3 +3805,21 @@ identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, do
   - views.
 - The comparison and the refusals are written up in questions.md Q33. Next: `resolve(phrase)`
   (item 2), then the two applications.
+
+## 01:20 item 2 — resolve(phrase) -> ids + tier — done; release 0.31.0
+
+`/tmp/check.sh`: # pass 373 # fail 0 # pass 373 # fail 0 # pass 372 # fail 0 — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 0.31.0).
+
+- src/resolve.mjs: `resolve(world, phrase, { grammar, cats, focus, inside })`. The
+  language comes from the grammar world (parseText / nounPhrase); the resolution over
+  `std.schema.thing` is language-free.
+  - Kinds and values through core.word.
+  - Tiers user / scene / focus / slip, with `how` steps.
+  - When it cannot resolve: `why` and `which`.
+- test/resolve.test.mjs has 4 tests:
+  - a toy grammar: synonyms, ordinals, counts, sets, coordination, relations, focus and
+    pronouns, slips;
+  - PSys2's lang.en shards read in place: "the last table", "table 1", "the star next to
+    the blue table", "all the tables", "it".
+- Next: the two small applications (room planner, timetable).

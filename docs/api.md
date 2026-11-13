@@ -1164,6 +1164,41 @@ print(viewDiff(w, 'x.det', 'v1', 'v2'));
 {"only":{"v1":["a"],"v2":["every"]},"both":["the"]}
 ```
 
+### resolve(world, phrase, options?)
+
+The things a noun phrase names (`std.schema.thing` wires), and how sure the reading is.
+`phrase` is text, read with `options.grammar` (parseText's options, start `NP`) and
+`options.cats` (nounPhrase's), or a `nounPhrase` result. The kind is the head's lemma or a
+word that means it (`core.word text= means=`), else a kind one swap or letter away (a
+slip). Modifiers and a name are values of any key, and a `core.word ... of=<key>` word
+counts for that key only. A PP narrows to things with a key that refers to the one thing
+its noun phrase names. `quant` (all, each, both) and a phrase with no noun give the set.
+An ordinal, or a number after the noun, picks one (the id `<kind><n>` first); a number
+before the noun must be the count. A coordination is the union of its parts. A pronoun is
+the newest thing in focus (`options.focus`, ids newest first, else the
+`std.focus.last` wires that name things).
+
+Returns `{ ids, tier, how }`: `tier` is `user` (the words picked), `scene` (the only one of
+its kind), `focus` (the focus chose among several) or `slip` (the least sure in a
+coordination wins); `how` lists the steps, so a reply can say what it assumed. When it
+cannot resolve, it returns `{ ids: [], why, which?, kind?, unknown? }`.
+
+```js run
+const w = new World();
+w.tell(`@d x.det text=the  @r x.rule lhs=NP rhs=DET? rhs=MOD* rhs=N  @c x.coord word=and
+  @t1 std.schema.thing kind=table color=red  @t2 std.schema.thing kind=table color=blue  @l std.schema.thing kind=lamp
+  @syn core.word text=desk means=table`);
+const opt = { grammar: { types: { rule: 'x.rule', coord: 'x.coord' }, classes: { DET: 'x.det' },
+  lexicon: { desk: { cat: 'N' }, lamp: { cat: 'N' }, blue: { cat: 'MOD' } } }, cats: { det: 'DET', mod: 'MOD', head: 'N' } };
+print(resolve(w, 'the blue desk and the lamp', opt));
+print(resolve(w, 'the desk', { ...opt, focus: ['t1'] }).tier);
+```
+
+```output
+{"ids":["t2","l"],"tier":"scene","how":["\"desk\" means table","blue: 1 left"]}
+focus
+```
+
 ### rank(scored, criteria?) and RANKING
 
 Orders scored readings best first and explains every place. `RANKING` is the default

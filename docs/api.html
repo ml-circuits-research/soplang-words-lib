@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="15284376962f">
+<meta name="source-hash" content="340a271383d8">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.30.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.31.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -442,6 +442,19 @@ print([np.rule, np.head, np.pp[0].words, parseText(w, &#x27;the moon&#x27;, { st
 w.tell(&#x27;@a x.det text=the in=v1 in=v2  @b x.det text=a in=v1  @c x.det text=every in=v2&#x27;);
 print(viewDiff(w, &#x27;x.det&#x27;, &#x27;v1&#x27;, &#x27;v2&#x27;));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;only&quot;:{&quot;v1&quot;:[&quot;a&quot;],&quot;v2&quot;:[&quot;every&quot;]},&quot;both&quot;:[&quot;the&quot;]}</code></pre></figure>
+<h3 id="resolveworld-phrase-options">resolve(world, phrase, options?)</h3>
+<p>The things a noun phrase names (<code>std.schema.thing</code> wires), and how sure the reading is. <code>phrase</code> is text, read with <code>options.grammar</code> (parseText's options, start <code>NP</code>) and <code>options.cats</code> (nounPhrase's), or a <code>nounPhrase</code> result. The kind is the head's lemma or a word that means it (<code>core.word text= means=</code>), else a kind one swap or letter away (a slip). Modifiers and a name are values of any key, and a <code>core.word ... of=&lt;key&gt;</code> word counts for that key only. A PP narrows to things with a key that refers to the one thing its noun phrase names. <code>quant</code> (all, each, both) and a phrase with no noun give the set. An ordinal, or a number after the noun, picks one (the id <code>&lt;kind&gt;&lt;n&gt;</code> first); a number before the noun must be the count. A coordination is the union of its parts. A pronoun is the newest thing in focus (<code>options.focus</code>, ids newest first, else the <code>std.focus.last</code> wires that name things).</p>
+<p>Returns <code>{ ids, tier, how }</code>: <code>tier</code> is <code>user</code> (the words picked), <code>scene</code> (the only one of its kind), <code>focus</code> (the focus chose among several) or <code>slip</code> (the least sure in a coordination wins); <code>how</code> lists the steps, so a reply can say what it assumed. When it cannot resolve, it returns <code>{ ids: [], why, which?, kind?, unknown? }</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(`@d x.det text=the  @r x.rule lhs=NP rhs=DET? rhs=MOD* rhs=N  @c x.coord word=and
+  @t1 std.schema.thing kind=table color=red  @t2 std.schema.thing kind=table color=blue  @l std.schema.thing kind=lamp
+  @syn core.word text=desk means=table`);
+const opt = { grammar: { types: { rule: &#x27;x.rule&#x27;, coord: &#x27;x.coord&#x27; }, classes: { DET: &#x27;x.det&#x27; },
+  lexicon: { desk: { cat: &#x27;N&#x27; }, lamp: { cat: &#x27;N&#x27; }, blue: { cat: &#x27;MOD&#x27; } } }, cats: { det: &#x27;DET&#x27;, mod: &#x27;MOD&#x27;, head: &#x27;N&#x27; } };
+print(resolve(w, &#x27;the blue desk and the lamp&#x27;, opt));
+print(resolve(w, &#x27;the desk&#x27;, { ...opt, focus: [&#x27;t1&#x27;] }).tier);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;ids&quot;:[&quot;t2&quot;,&quot;l&quot;],&quot;tier&quot;:&quot;scene&quot;,&quot;how&quot;:[&quot;\&quot;desk\&quot; means table&quot;,&quot;blue: 1 left&quot;]}
+focus</code></pre></figure>
 <h3 id="rankscored-criteria-and-ranking">rank(scored, criteria?) and RANKING</h3>
 <p>Orders scored readings best first and explains every place. <code>RANKING</code> is the default list of criteria, each <code>{ name, measure, say }</code> (lower <code>measure</code> is better): <code>consistent</code>, <code>referents</code> (how many are left ambiguous), <code>lacks</code>, <code>words</code> (words of the frame left out), <code>assumes</code>; ties keep the given order. Returns <code>{ order, ranked }</code>; <code>ranked[i]</code> is <code>{ index, place, why, lostTo, on }</code>: the first says what it satisfies, any other names the first criterion on which the winner is better and what each is on it, a tie says so. A host may put its own criteria before, after or instead of these.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
@@ -689,7 +702,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.30.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.31.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.31.0
+
+The reviewer's 01:20 item 2 (PSys2's Q11 item 2): referents by words.
+
+### New
+- `resolve(world, phrase, options?)` gives the things a noun phrase names as `{ ids, tier,
+  how }`. The tier is `user`, `scene`, `focus` or `slip`. It handles synonyms through
+  `core.word` (values scoped to their key), modifiers, names, ordinals (`last` counts from
+  the end), a number after the noun, a count before it, all / each / both / everything,
+  coordination (the union), relations through a PP, pronouns and the focus, and
+  one-letter or swapped-letter slips. When it cannot resolve, it says why and which.
+- `nounPhrase`: each `pp` carries its inner `np`; `numAfter` marks a number after the
+  noun.
+
 ## 0.30.0
 
 The reviewer's 01:20 item 1: PSys2's English grammar facts (`handover/lang.en`) read by

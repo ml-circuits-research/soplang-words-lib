@@ -515,3 +515,5 @@ export function nounPhrase(node: object, cats?: { det?: string; num?: string; mo
 export function grammarView(world: World, type: string, view?: string): string[];
 /** Which words two views disagree on. */
 export function viewDiff(world: World, type: string, a: string, b: string): { only: Record<string, string[]>; both: string[] };
+/** The things a noun phrase names, and how sure: tier user / scene / focus / slip; or why not. */
+export function resolve(world: World, phrase: string | object, options?: { grammar?: object; cats?: Record<string, string>; focus?: string | string[]; inside?: string }): { ids: string[]; tier?: 'user' | 'scene' | 'focus' | 'slip'; how?: string[]; why?: string; which?: string[]; kind?: string; unknown?: { word: string; at: number }[] };

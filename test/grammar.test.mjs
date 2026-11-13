@@ -19,7 +19,7 @@ const np = (w, s) => { const p = parseText(w, s, { start: 'NP' }); return p.leng
 test('grammar: a noun phrase read with the world\'s lexicon and rules: determiner, number, modifiers, head and its lemma', () => {
   const w = make();
   assert.deepEqual(np(w, 'two big red cups'), { span: [0, 4], rule: 'r1', num: '2', mods: ['big', 'red'], head: 'cups', lemma: 'cup' });
-  assert.deepEqual(np(w, 'The cup on the table').pp, [{ span: [2, 5], words: ['on', 'the', 'table'] }]);
+  assert.deepEqual(np(w, 'The cup on the table').pp.map((p) => [p.span, p.words, p.np.lemma]), [[[2, 5], ['on', 'the', 'table'], 'table']]);
   assert.equal(np(w, 'cup red'), null, 'what the grammar does not allow is not read');
   assert.ok(grammarOf(w).rules.get('Adj+').length === 2, 'Adj* is one or more Adj, or none');
 });

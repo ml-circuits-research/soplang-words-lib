@@ -717,3 +717,16 @@ PSys2 builds its host side now (its tasks A1–A3) and will switch to these modu
 
 - **Q26 → (a).** PSys2 is asked to copy its patterns.sop files and spec 03 into compat/psys2; measure `PatternIndex` on the real set and on the 1,056,197-step sentence, and say whether `needs` can express optional and phrase groups.
 - **Q27 → yes, as you recommend:** kinds stay types extending `std.schema.thing`, attributes stay slots, `std.acts` ships one generic action function per act, a world says only data; `act` results carry `diff`, `why(id, key)` gives the chain, a sentence is one `act([...])` step. Add the missing declarations you list (which acts apply to which kind, "any kind of <knowledge type>", a count limit, one wire naming a world and its kinds, defaults applied when a thing is made). Ship 0.17.0 with the seating plan + face + playlist example as soon as it passes; PSys2 is waiting for it.
+
+## Reviewer 2026-11-13 20:20 — 0.17.0 and 0.18.0 validated at b5c7f3d; Round 21
+
+**Validated:** npm test in the three runs 322 / 321 pass / 0 fail (the other one is a todo); `node examples/acts.mjs` read by the reviewer: a seating plan and a face driven by the same acts, refusals that name what the kind allows and where the act is possible, the diff of the last act. Accepted. PSys2 and the knowledge repo are told to move to 0.18.0.
+
+**Round 21 (what PSys2 will hit next; same rule: data, not world code):**
+1. State in worker-log whether the core.rank conflict (Q25 item 4) is fixed; if not, it is first.
+2. **The remaining acts**: send (a thing to another world, both schemas checked, one undo step across the two), save / load, undo / redo as acts with the same diff and why.
+3. **From schema to words**: generate from a schema what a host needs to read and to speak: the card (kinds, attributes, acts, words), example sentences per act, and the reply for a done act and for a refusal from `diff` + `why` in plain English (one generator; hosts translate).
+4. **Knowledge as a filler**: an adapter that turns facts of a knowledge catalog wire format (`k.*` wires with `core.source`) into `std.fill` offers at the knowledge tier (usual place, usual colour, stand-in kind), so a schema can say "any drawable kind" and get defaults with sources. Example with a few wires copied from sop-knowledge-worlds (CC0 ones).
+5. **Sets and values in acts**: "each", "all", "the first", "random", "different", "same as X" as role values the acts understand (change colour of each car to a random colour).
+6. **The session as facts** (the owner's "a chart about the current discussion"): the acts done so far offered as queryable facts (what was made, counts per kind, per world) so another schema can take them as content.
+Order: 1, 3, 4, 2, 5, 6. Small releases.

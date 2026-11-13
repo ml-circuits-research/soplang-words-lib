@@ -3502,3 +3502,4 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
 `/tmp/check.sh`: 343 pass, 0 fail on sources and built file, 342 in checking mode; pilot
 identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
 (`docs/version.md`: sopworld 0.23.0).
+- Fix: src/knowledge.mjs named the consumer in a comment (`git grep -i psys2 src/`: 1 after the 0.23.0 commit); removed, now 0. The built file is rebuilt; the version stays 0.23.0.

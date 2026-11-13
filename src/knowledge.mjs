@@ -1,4 +1,4 @@
-// Loading knowledge worlds by lookup (Round 24, A1; from PSys2's knowledge-loader hand-over).
+// Loading knowledge worlds by lookup (Round 24, A1).
 // A catalog is an index of worlds (each with its schema, the worlds it depends on, and its
 // shards) and a vocabulary (a word -> the shards that hold it). `createCatalog` finds the
 // shards a word needs, reads each once through the host's `read(path)` (a file, `fetch`,

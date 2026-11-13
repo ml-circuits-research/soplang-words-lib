@@ -5,9 +5,9 @@ The single-file build in this folder.
 | | |
 | --- | --- |
 | Version | 0.23.0 |
-| Build | 886b54375222 |
+| Build | a3b0feef5d47 |
 | Built | 2026-11-13 |
-| `sopworld.mjs` (ES module) | 509.4 kB, 144.1 kB gzipped |
+| `sopworld.mjs` (ES module) | 509.3 kB, 144.1 kB gzipped |
 | `sopworld.js` (global `sopworld`, CommonJS) | 509.1 kB, 144.0 kB gzipped |
 | Modules bundled | 23 |
 
@@ -17,7 +17,7 @@ same code. The loaded library says the same thing about itself:
 ```js
 import { version, build } from './sopworld.mjs';
 version   // '0.23.0'
-build     // { version: '0.23.0', hash: '886b54375222', date: '2026-11-13' }
+build     // { version: '0.23.0', hash: 'a3b0feef5d47', date: '2026-11-13' }
 ```
 
 In a page that loads `sopworld.js` it is `sopworld.version` and `sopworld.build`. The

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Patterns of reuse between worlds</title>
-<meta name="source-hash" content="30418eb45cc2">
+<meta name="source-hash" content="3acb8024ad23">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -29,7 +29,7 @@
 <h2 id="5-composition">5. Composition</h2>
 <p><strong>When.</strong> A thing of one world is itself a world of another schema (a face in a picture, a chart in a document). <strong>Today.</strong> A reference slot (<code>type=</code>) from the outer thing to the inner world's things; acts reach the inner things by id. <strong>Missing.</strong> Acts that reach inside by role ("the eyes of the second face"): item 5.</p>
 <h2 id="6-the-parameterised-world">6. The parameterised world</h2>
-<p><strong>When.</strong> One module, several instances with other names and words (a list as tasks, shopping, playlist; a board game as chess, tic-tac-toe). <strong>Today.</strong> <code>core.use world=&lt;module&gt; prefix=</code> loads a module under a prefix; words are data. <strong>Found:</strong> chess and tic-tac-toe declare the same game keys (<code>user level seed</code>) and the same move keys (<code>by n</code>), and the same "no move after the game is over" deny (PSys2 report, candidates 10, 14, 15). <strong>Missing.</strong> Instantiating the same module twice under two prefixes with its own words: item 4.</p>
+<p><strong>When.</strong> One module, several instances with other names and words (a list as tasks, shopping, playlist; a board game as chess, tic-tac-toe). <strong>Today.</strong> <code>core.use world=&lt;module&gt; prefix=</code> loads a module under a prefix; words are data. <strong>Found:</strong> chess and tic-tac-toe declare the same game keys (<code>user level seed</code>) and the same move keys (<code>by n</code>), and the same "no move after the game is over" deny (PSys2 report, candidates 10, 14, 15). <strong>Example.</strong> <code>examples/reuse.mjs</code>: one <code>board</code> module as tic-tac-toe and chess, one <code>list</code> module as tasks, shopping and playlist, instantiated by renaming the module's prefix in its text (<code>instance</code>). <strong>Missing.</strong> Instantiating a library module twice under two names with <code>core.use</code> (Q29).</p>
 <h2 id="7-rule-lifting">7. Rule lifting</h2>
 <p><strong>When.</strong> A rule is about a kind, not a world: it holds wherever the kind is. <strong>Today.</strong> Write the rule in the module that owns the kind; a world that imports it gets the rule. <strong>Found:</strong> a selection or a reference must name something that exists (the same deny in art.draw, diagram.sketch, docs.editor, docs.reader, data.charts, media.music, ui.shell); no two things of a kind with the same name (<code>core.type unique=</code> says it in one line); an exclusive pair ("not both") in k.space and k.values. <strong>Missing.</strong> Nothing in the language; the rules are restated by hand. The detector's "liftable" kind finds many false positives (two different types with one name).</p>
 <h2 id="8-pipeline">8. Pipeline</h2>

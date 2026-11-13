@@ -57,8 +57,10 @@ shopping, playlist; a board game as chess, tic-tac-toe).
 data. **Found:** chess and tic-tac-toe declare the same game keys (`user level seed`) and
 the same move keys (`by n`), and the same "no move after the game is over" deny (PSys2
 report, candidates 10, 14, 15).
-**Missing.** Instantiating the same module twice under two prefixes with its own words:
-item 4.
+**Example.** `examples/reuse.mjs`: one `board` module as tic-tac-toe and chess, one
+`list` module as tasks, shopping and playlist, instantiated by renaming the module's
+prefix in its text (`instance`).
+**Missing.** Instantiating a library module twice under two names with `core.use` (Q29).
 
 ## 7. Rule lifting
 

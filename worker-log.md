@@ -3413,3 +3413,21 @@ identical. psys2 grep empty. scan-loops clean. tsc clean. Answer to item 1 in Q2
 `/tmp/check.sh`: 335 pass, 0 fail on sources and built file, 334 in checking mode; pilot
 identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
 (`docs/version.md`: sopworld 0.21.0). Next: Round 23 items 3-7.
+
+## R23 items 3 and 4 — three reuses done, the parameterised world — done (Q29 open)
+
+`/tmp/check.sh` below at the commit. examples/reuse.mjs, test/reuse.test.mjs (3).
+- The board game (PSys2 report 10, 14, 15): one `board` module (game keys, move keys, one
+  move number per move, whose turn by the parity of the move count, no move after the
+  result) instantiated as tic-tac-toe (+ `at`) and chess (+ `from`, `to`). Wires: in
+  PSys2's matrices the shared parts are restated (`grep` counts in
+  games.tictactoe/matrix.sop: game/move slots 5, turn 8, over 4; games.chess/matrix.sop:
+  slots 3, turn 2, over 0 — chess keeps its turn logic in JS): 22 wires; with the module:
+  20 wires once, plus 2 own wires per game.
+- The parameterised world: one `list` module (9 wires: a closed item type, title, done,
+  an amount key, two words, the open count) as tasks, shopping, playlist; each has its own
+  words and its own counts; a playlist song refuses a `quantity`.
+- "A reference must exist" (PSys2 report 1, 4, 11: seven tab worlds): one slot attribute,
+  `core.slot ... type=<kind>`; tested.
+- Instances are made by renaming the module's prefix in its text (`instance`), because
+  `core.use` loads a module once under its own name: Q29 proposes `core.use ... as=`.

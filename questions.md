@@ -22,6 +22,21 @@ apply them on request. Round 21 item 6 (the session as facts) is the same store:
 made, shown, taught is in `std.schema.thing`, `std.acts.shown`, `std.know.taught` wires,
 counted by kind and world with `core.aggregate`.
 
+## Q29 (R23 item 4): one module instantiated several times under other names
+
+What exists: `core.use world=<module> prefix=` loads a library module once, under its own
+name (`this.used`); its types are written with their full names, so a second `core.use`
+of the same module under another name is not possible, and `prefix=` only prefixes ids.
+`examples/reuse.mjs` instantiates by renaming the module's prefix in its text before
+loading (`instance(text, 'list', 'tasks', { item: 'task' })`): tasks, shopping and
+playlist from one `list`, tic-tac-toe and chess from one `board`. Options:
+(a) `core.use world=list as=tasks word.item=task ...`: the library renames the module's
+    own prefix (ids, types, `$` references) and fills `{name}` placeholders from `word.*`
+    attributes; a module says it is a template by containing `{...}`.
+(b) keep it a host helper (`instance` moves to the library as a function, no syntax).
+I lean to (a) without the words part first (`as=` only: renaming is one sign with one
+meaning; words can be told as `core.word` wires after loading), and (b) meanwhile.
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

@@ -34,9 +34,8 @@ test('delegation: no offer leaves the need open; two offers at the same rank are
   assert.deepEqual(w.ofType('core.issue').map((i) => i.attrs.why[0]), ['"2 offers at the same rank for $q1"']);
 });
 
-// Found while writing the example: choosing by core.rank instead of aggregates. When a better
-// offer arrives, re-ranking the offers gives a `conflict` on in_line (an old place in line is
-// not taken back). Kept as a todo with its repro for the reviewer.
+// Choosing by core.rank instead of aggregates: when a better offer arrives later (the normal
+// case in a dialogue), the others are re-ranked and the choice follows, with no conflict.
 const RANKED = `${library.draw.slice(0, library.draw.indexOf('# the best rank offered'))}
 ${String.raw`# the place of each offer in line for its request (1 = the best rank; equal ranks share it)
 @draw.o draw.offer for=?req rank=?r
@@ -58,10 +57,14 @@ ${String.raw`# the place of each offer in line for its request (1 = the best ran
 
 `}
 @draw.k.req core.slot of=draw.firsts key=req id=true`;
-test('delegation with core.rank: a better offer re-ranks the others without a conflict', { todo: 'core.rank leaves an old in_line behind here' }, () => {
+test('delegation with core.rank: a better offer re-ranks the others without a conflict', () => {
   const w = new World({ library: { ...library, draw: RANKED } });
   assert.ok(w.tell('@app core.module name=app imports=draw imports=talk imports=know').ok);
   w.tell('@u1 know.usual thing=cup place=table');
   w.tell('@q1 draw.request thing=cup');
   assert.equal(w.tell('@f1 talk.focus thing=cup place=shelf').ok, true);
+  assert.deepEqual(w.ofType('draw.offer').map((o) => [o.attrs.source[0], o.attrs.in_line[0]]).sort(), [['draw', '3'], ['know', '2'], ['talk', '1']]);
+  assert.deepEqual([w.get('q1').attrs.use_place, w.get('q1').attrs.place_source], [['shelf'], ['talk']]);
+  w.retract('f1');
+  assert.deepEqual([w.get('q1').attrs.use_place, w.get('q1').attrs.place_source], [['table'], ['know']]);
 });

@@ -2986,3 +2986,28 @@ src/`: empty. scan-loops clean. tsc clean. No change to `src/`.
   line when a better offer arrives (an old fill not taken back). Kept as a todo test with
   its repro (`delegation with core.rank: ...`); simpler core.rank cases (derived peers
   coming and going) pass. Not fixed in this round.
+
+## Q25 answered (a); R19 rank fix — core.rank re-ranking with a better peer — done
+
+`npm test`: 293 pass, 0 fail on sources and built file, 292 in checking mode (the todo is
+now a test). Pilot output identical. `git grep -i psys2 src/`: empty. scan-loops clean.
+tsc clean.
+
+- Cause, found with a smaller repro (rank over offers + a rule writing the winner onto the
+  request the offers read): two things in the kernel.
+  1. A rule with an aggregate anchored on a wire (core.rank, a per-wire total) re-fired
+     for a changed wire with a new result while its old firing for that wire stayed: two
+     places in line, a `conflict`. Now, before it fires for a wire, its firings for that
+     wire that no longer hold are taken back (found through the wire's own index, so no
+     scan of the rule's firings), and the bodies are computed again after that; the
+     group path computes its bodies again after taking stale firings back, too.
+  2. Taking back a value invalidated every firing anchored on the wire, even those whose
+     patterns never name that key; here, the winner written onto the request withdrew all
+     offers, which re-ranked, which changed the winner: a loop (budget). Now a firing whose
+     patterns on that wire name none of the lost keys (and no `core.absent=` or path on
+     them) holds; a removed wire still takes everything back.
+- Tests: the todo `delegation with core.rank: ...` is a test (a better offer comes and
+  goes, the choice follows); a kernel test with the smaller repro (fails without the
+  change, checked by stashing src/world.mjs).
+- `node bench/distinct.mjs` anchored on a member: before 233.7 ms, one more 6.69 ms; after
+  212.6–230.2 ms, one more 7.63–14.37 ms; `core.aggregate by=` unchanged.

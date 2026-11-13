@@ -1609,6 +1609,18 @@ export class World {
         for (const { rule, idx } of c.forType(c.ruleByType, w.type)) {
           const matches = [];
           for (const s0 of this._matchWire(rule.when[idx], w, EMPTY)) matches.push(...this._bodies(rule, s0, idx));
+          if (rule.aggregate) {
+            // an aggregate in a rule anchored on this wire (core.rank, a total per wire): what it
+            // concluded for this wire before goes when it concludes something else now
+            const now = new Set(matches.map((m) => this._sig(rule, m)));
+            const anchor = '?' + rule.when[idx].id;
+            const stale = [...(this.byWire.get(w.id) || [])].filter((sig) => { const f = this.firings.get(sig); return f && f.rule === rule.id && f.s && !now.has(sig) && walk(anchor, f.s) === w.id; }); // bounded: the firings that touch one wire
+            if (stale.length) {
+              this._unsay(res, [], [], stale);
+              matches.length = 0;
+              if (this.wires.has(w.id)) for (const s0 of this._matchWire(rule.when[idx], this.wires.get(w.id), EMPTY)) matches.push(...this._bodies(rule, s0, idx));
+            }
+          }
           fireAll(rule, matches);
         }
       }
@@ -1624,7 +1636,7 @@ export class World {
           const seeds = res._seeds.get(rule);
           res._seeds.delete(rule);
           for (const s0 of seeds ? seeds.values() : []) {
-            const bodies = [...this._bodies(rule, s0, -1)];
+            let bodies = [...this._bodies(rule, s0, -1)];
             const now = new Set(bodies.map((s) => this._sig(rule, s)));
             const group = bound(s0).map((v) => [v, walk(v, s0)]);
             const stale = [...(this.byRule.get(rule.id) || [])].filter((sig) => {
@@ -1632,7 +1644,10 @@ export class World {
               const s = this.firings.get(sig).s;
               return group.every(([v, x]) => walk(v, s) === x);
             });
-            if (stale.length) this._unsay(res, [], [], stale);
+            if (stale.length) {
+              this._unsay(res, [], [], stale);
+              bodies = [...this._bodies(rule, s0, -1)]; // what was taken back may have changed what holds
+            }
             fireAll(rule, bodies);
           }
           continue;
@@ -1878,7 +1893,23 @@ export class World {
       this._fluentTouch(w, res);
       this._event({ op: 'unfill', id, key, value });
       queue.push(id);
+      (lostKeys.get(id) || lostKeys.set(id, new Set()).get(id)).add(key);
       requeue(id);
+    };
+    // a wire that only lost values of some keys: a firing whose patterns on that wire read
+    // none of those keys still holds (a value no pattern of the rule names changes nothing)
+    const lostKeys = new Map();
+    const c = this._c;
+    const ruleOf = c ? (c._ruleById ||= new Map(c.rules.map((r) => [r.id, r]))) : null;
+    const reads = (rec, id) => {
+      const keys = lostKeys.get(id);
+      const rule = ruleOf?.get(rec.rule);
+      if (!keys || gone.has(id) || !rule || !rec.s) return true;
+      for (const p of [...rule.when, ...rule.not]) {
+        if (walk('?' + p.id, rec.s) !== id) continue;
+        for (const k of keys) if (p.attrs[k] || p.absent?.includes(k) || p.paths?.length) return true;
+      }
+      return rule.when.every((p) => walk('?' + p.id, rec.s) !== id); // not one of its patterns: be safe
     };
     const invalidate = (sig) => {
       const rec = this._forgetFiring(sig);
@@ -1896,7 +1927,7 @@ export class World {
       for (const sig of [...(this.byWire.get(id) || [])]) {
         const rec = this.firings.get(sig);
         if (!rec) continue;
-        if (rec.from.includes(id)) invalidate(sig);
+        if (rec.from.includes(id)) { if (reads(rec, id)) invalidate(sig); }
         else if (!rec.from.length && rec.made.every((x) => this.wires.has(x)) && rec.fills.every((f) => this.wires.get(f.id)?.attrs[f.key]?.includes(f.value))) {
           // a firing with no anchor (an aggregate's result) that only wrote here, and all it
           // wrote still stands: keep it, nothing would make it fire again

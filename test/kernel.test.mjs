@@ -600,3 +600,29 @@ test('a soft deny is advice: the knowledge wires it read keep their status; a so
   h.tell('@fish animal lives=water');
   assert.equal(h.tell('@p1 placed what=$fish at=sky').ok, false);
 });
+
+test('a rank re-computed when a better peer comes, with a rule that writes the winner onto the wire the peers read', () => {
+  const w = new World();
+  w.load(`
+    @k core.slot of=offer key=rank kind=integer
+    @gap req thing=?t core.absent=place
+    @own offer for=$gap value=centre rank=5
+    @d core.rule when=$gap then=$own
+    @g3 req thing=?t core.absent=place
+    @f focus thing=?t place=?p
+    @to offer for=$g3 value=?p rank=2
+    @r3 core.rule when=$g3 when=$f then=$to
+    @o offer for=?req rank=?r
+    @best core.rank of=$o by=rank within=?req out=?pos
+    @ob offer core.on=$o in_line=?pos
+    @ranked core.rule when=$o with=$best then=$ob
+    @rq req thing=?t core.absent=place
+    @first offer for=$rq value=?v in_line=1
+    @take req core.on=$rq use=?v
+    @choose core.rule when=$rq when=$first then=$take
+  `);
+  w.tell('@q1 req thing=cup');
+  assert.deepEqual(w.get('q1').attrs.use, ['centre']);
+  const r = w.tell('@f1 focus thing=cup place=shelf');
+  assert.deepEqual([r.ok, w.get('q1').attrs.use, w.ofType('offer').map((o) => o.attrs.in_line[0]).sort()], [true, ['shelf'], ['1', '2']]);
+});

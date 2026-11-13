@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.25.0
+
+Round 24, last part: tools for authors and the documentation a new project starts from.
+
+### New
+- The failure ledger: `ledgerAppend`, `ledgerGroups`, `ledgerKey`, `stageOf`, `STAGES`,
+  tools/ledger.mjs; tools/validate.mjs (a world in one command).
+- docs/quickstart.md, docs/modules.md, docs/patterns.md (the reuse catalogue),
+  docs/host-contract.md; README's capability table generated from docs/capabilities.md
+  (tools/capability-table.mjs).
+- examples/second-app: a recipe planner written from the docs.
+
+### Changes
+- `turn` gives `replies` for every status but `nothing` (the question for ask and unknown).
+
 ## 0.24.0
 
 Round 24, second part: one request pipeline, choosing a world, the coverage grid.

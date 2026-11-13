@@ -3645,3 +3645,11 @@ Where the docs were not enough (and what was done):
    noted for a next round (a declared "key from catalog type" offer).
 5. A derived attribute on a closed schema kind needs its slot declared (amount): implied
    by "closed", not said where rules are shown. Not changed.
+
+## Release 0.25.0 (Round 24: A6, B2-B7)
+
+`/tmp/check.sh`: 356 pass, 0 fail on sources and built file, 355 in checking mode; pilot
+identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.25.0). Round 24 done except the remaining PSys2 hand-over
+packages (acts, space, session.things, session.dialogue, common.sense) and the three
+extractions from the PSys2 reuse report.

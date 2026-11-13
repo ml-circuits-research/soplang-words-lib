@@ -1188,6 +1188,7 @@ export class World {
       facts.push(w.id);
       const same = this._findByIdentity(w.type, w.attrs, this._nsOf(w.id));
       if (same) {
+        if (same.type !== w.type && this._compiled().isA(w.type, same.type)) this._retype(same, w.type); // the subtype came second
         this._advance(w); // a statement about a wire that is already there happens at the place it declares
         if (res._tier && typeof res._tier === 'object') {
           for (const k of Object.keys(w.attrs)) this._merge(same, { [k]: w.attrs[k] }, { via: 'core.tell', from: [], tier: res._tier[k] }, res);
@@ -1735,18 +1736,43 @@ export class World {
     return null;
   }
 
-  // identity merges only inside one namespace, unless the type is shared
+  // identity merges only inside one namespace, unless the type is shared. One identity along
+  // one lineage is one wire, whichever is told first: a wire of the type or of a subtype (the
+  // index of a type holds its subtypes' wires), else a wire of a supertype that declares the
+  // same identity (the caller then makes it the more specific type). Siblings stay apart.
   _findByIdentity(type, attrs, ns = '') {
     const c = this._compiled();
     const keys = c.idKeys.get(type);
     if (!keys || !keys.every((k) => attrs[k])) return null;
     const apart = this._nsUsed && !c.isShared(type);
-    for (const id of this.index.get(K(type, keys[0], this._iv(type, keys[0], attrs[keys[0]][0]))) || []) {
-      if (apart && this._nsOf(id) !== ns) continue;
-      const w = this.wires.get(id);
-      if (keys.every((k) => w.attrs[k] && this._same(type, k, w.attrs[k][0], attrs[k][0]))) return w;
+    const look = (t, fits) => {
+      for (const id of this.index.get(K(t, keys[0], this._iv(t, keys[0], attrs[keys[0]][0]))) || []) { // bounded: the wires with one identity value
+        if (apart && this._nsOf(id) !== ns) continue;
+        const w = this.wires.get(id);
+        if (fits(w) && keys.every((k) => w.attrs[k] && this._same(type, k, w.attrs[k][0], attrs[k][0]))) return w;
+      }
+      return null;
+    };
+    const own = look(type, () => true);
+    if (own) return own;
+    for (const t of this._lineage(type)) { // bounded: the ancestors of one type
+      if (t === type) continue;
+      const up = c.idKeys.get(t);
+      if (!up || up.length !== keys.length || !up.every((k, i) => k === keys[i])) continue;
+      const w = look(t, (x) => x.type !== type && c.isA(type, x.type));
+      if (w) return w;
     }
     return null;
+  }
+
+  /** Make a wire the more specific type (a subtype told after it, with the same identity); undone with the step. */
+  _retype(w, type) {
+    const old = w.type;
+    this._drop(w);
+    w.type = type;
+    this._put(w);
+    this._do(() => { this._drop(w); w.type = old; this._put(w); });
+    this._event({ op: 'retype', id: w.id, from: old, to: type });
   }
 
   _findSubsuming(type, attrs, c, ns = '') {

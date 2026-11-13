@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Semantics</title>
-<meta name="source-hash" content="016842f530e7">
+<meta name="source-hash" content="03fb06e0f49f">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -28,6 +28,7 @@
 <p><strong>S6.</strong> After any accepted change the whole world is valid (<code>check()</code> finds nothing); after a refused one the wires, the state stamp and the log are what they were. <em>Test:</em> <code>semantics: an accepted change leaves a world that passes check(); a refused one leaves the world as it was</code></p>
 <h2 id="identity-and-merging">Identity and merging</h2>
 <p><strong>S7.</strong> A fact is identified by the values of the identity keys of its type (slots with <code>id=true</code>), when the type has any and the fact has a value for each. Two facts with the same identity are one wire: the second id becomes another name for the first, and the entries of the second are added to it. A different value for a single-valued key is a <code>conflict</code>. Without identity keys a fact is identified by its id; the same id for a different wire is <code>duplicate-id</code>. A statement that adds nothing is accepted. <em>Why identity by keys:</em> two sources that speak about the same thing rarely agree on an id. <em>Test:</em> <code>semantics: facts that agree on every identity key are one wire, whatever their ids</code></p>
+<p><strong>S7a.</strong> Along one lineage the same identity is one wire, whatever the order: a fact of a subtype and a fact of its supertype that agree on the identity the supertype declares are one wire of the subtype (the more specific type). The wire keeps the id told first; the other id is another name for it. Facts of two sibling types stay two wires. <em>Why:</em> the order in which modules or sources speak must not change the world. <em>Test:</em> <code>semantics: a subtype fact and a supertype fact with one identity are one wire of the subtype, in either order</code></p>
 <p><strong>S8.</strong> Under a key whose slot is numeric, values are compared as numbers; elsewhere as text. <em>Why:</em> <code>5</code> and <code>5.0</code> are one amount, but <code>007</code> and <code>7</code> are two names. <em>Test:</em> <code>numbers: under a key declared integer or number, 5 and 5.0 are one value</code></p>
 <p><strong>S9.</strong> A key may be written short (<code>name</code>) or qualified by its type (<code>city.name</code>); both are the same key everywhere. <em>Test:</em> <code>keys: short and qualified names are one key, in facts, fills, patterns and queries</code></p>
 <p><strong>S10.</strong> Keys of an open namespace (always <code>core.</code>) are bookkeeping: they are not validated, and a wire told again keeps the values of each statement. <em>Tests:</em> <code>keys: an open namespace is always allowed and not validated unless a slot declares it</code>; <code>bookkeeping: a wire told again keeps the bookkeeping of each statement; the sequence key may be declared late</code></p>

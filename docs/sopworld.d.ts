@@ -147,8 +147,10 @@ export interface QueryResult {
   supposed?: { type: string; attrs: Record<string, string[]>; set: Record<string, string | string[]>; fills: { key: string; value: string; via: string; from: string[]; tier: string }[] };
   /** the weakest tier under the answer, and the assumptions it rests on */
   tier?: string; rests?: Cell[];
-  /** ids of the standing core.issue wires the answer rests on */
+  /** ids of the standing core.issue wires about this key the answer rests on (soft bounds) */
   issues?: string[];
+  /** issues of soft denies about wires the answer rests on: advice, the status stays */
+  advice?: { issue: string; why: string }[];
   site?: string; steps?: number; why?: string;
   value?: string; values?: string[];
   /** mode=check: the value checked, and when the answer is 'no', the values the world has */

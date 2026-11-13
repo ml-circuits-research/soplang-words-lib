@@ -2793,3 +2793,19 @@ Checked against 0.14.0: an existing test even asserted the bug (the tank's level
   a fish live" is `supported`, water, with the advice; a hard deny still refuses. The
   older kernel test now expects `supported` with the advice for the tank.
 - Docs: semantics.md S50, reference.md core.issue, index.d.ts (`advice`).
+
+## R16.2 — order-independent identity merge along a lineage — done
+
+Checked against 0.14.0 with a script: subtype first gave one wire, supertype first two.
+`npm test`: 282 pass, 0 fail on sources and built file, 281 in checking mode. Pilot output
+identical. `git grep -i psys2 src/`: empty. scan-loops clean. tsc clean.
+
+- The rule (semantics S7a): along one lineage the same identity is one wire of the more
+  specific type, whatever the order; it keeps the id told first, the other id is an alias;
+  siblings stay apart. `_findByIdentity` also looks under ancestors that declare the same
+  identity keys; a supertype wire found that way is retyped to the subtype (`_retype`,
+  journaled, a `retype` event).
+- Test `semantics: a subtype fact and a supertype fact with one identity are one wire of
+  the subtype, in either order`: three orders give the same world; the alias resolves;
+  undo restores the supertype wire; two siblings stay two.
+- `node bench/complete.mjs` unchanged: 150 defaults 14.2 ms.

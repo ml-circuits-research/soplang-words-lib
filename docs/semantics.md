@@ -51,6 +51,13 @@ different wire is `duplicate-id`. A statement that adds nothing is accepted. *Wh
 identity by keys:* two sources that speak about the same thing rarely agree on an id.
 *Test:* `semantics: facts that agree on every identity key are one wire, whatever their ids`
 
+**S7a.** Along one lineage the same identity is one wire, whatever the order: a fact of a
+subtype and a fact of its supertype that agree on the identity the supertype declares
+are one wire of the subtype (the more specific type). The wire keeps the id told first;
+the other id is another name for it. Facts of two sibling types stay two wires. *Why:*
+the order in which modules or sources speak must not change the world.
+*Test:* `semantics: a subtype fact and a supertype fact with one identity are one wire of the subtype, in either order`
+
 **S8.** Under a key whose slot is numeric, values are compared as numbers; elsewhere
 as text. *Why:* `5` and `5.0` are one amount, but `007` and `7` are two names.
 *Test:* `numbers: under a key declared integer or number, 5 and 5.0 are one value`

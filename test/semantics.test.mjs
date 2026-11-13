@@ -75,3 +75,21 @@ test('semantics: check(patch) changes nothing; applyPatch gives the world a fork
   const rebuilt = World.fromJSON(JSON.parse(JSON.stringify(w.toJSON())));
   assert.equal(w.diff(rebuilt).same, true);                     // and the log rebuilds the same world
 });
+
+test('semantics: a subtype fact and a supertype fact with one identity are one wire of the subtype, in either order', () => {
+  const mk = () => { const w = new World(); w.load('@animal core.type\n@bird core.type extends=animal\n@fish core.type extends=animal\n@k core.slot of=animal key=name id=true'); return w; };
+  const shape = (w) => [...w.wires.values()].filter((x) => !x.id.startsWith('_')).map((x) => `${x.type}:${x.attrs.name}:${[x.attrs.wings, x.attrs.legs].flat().filter(Boolean).join(',')}`).sort();
+  const a = mk(); a.tell('@b1 bird name=tweety wings=2'); a.tell('@a1 animal name=tweety legs=2');
+  const b = mk(); b.tell('@a1 animal name=tweety legs=2'); b.tell('@b1 bird name=tweety wings=2');
+  const c = mk(); c.tell('@a1 animal name=tweety legs=2  @b1 bird name=tweety wings=2');
+  assert.deepEqual(shape(a), ['bird:tweety:2,2']);
+  assert.deepEqual(shape(b), shape(a));
+  assert.deepEqual(shape(c), shape(a));
+  assert.deepEqual([b.resolve('b1'), b.ofType('bird').length, b.ofType('animal').length], ['a1', 1, 1]);
+  // undone, the supertype wire is what it was
+  b.undo();
+  assert.deepEqual([b.get('a1').type, b.has('b1')], ['animal', false]);
+  // siblings stay apart
+  const s = mk(); s.tell('@b1 bird name=nemo'); s.tell('@f1 fish name=nemo');
+  assert.equal(s.ofType('animal').length, 2);
+});

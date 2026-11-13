@@ -3102,3 +3102,23 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
   the reason): no game → guess "nothing matches game name=hangman state=running",
   hangman_word "no game of hangman runs"; a game runs → all kept, `draw` without a thing
   lacks "What shall I draw?". test/refusal.test.mjs (2). integration §5b.
+
+## R19 item 6 — all or nothing for one sentence — done
+
+`/tmp/check.sh`: 310 pass, 0 fail on sources and built file, 309 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean.
+
+- What existed: `applyPatch` (wires, fills, sets, retracts, replacements: all or nothing,
+  one undo step), `check(patch)` and `{ dry: true }` (dry run), `score` (per reading: would
+  it be refused, item 5), `undo`/`redo`, `mark()`/`rewind`. Missing: several *requests*
+  (actions) together; an action whose host function tells several things was several
+  undo steps.
+- Added: `world.act([request, ...])`: run in turn inside one transaction; the first not
+  done (`missing`, `refused`, `unsupported`, `error`) rolls all back and is reported
+  (`failed` index, `results`, `missing` with the question). Done: one undo step — log
+  entries made inside carry `step`, `undo` groups by `step` (else by patch `group`), and
+  replay keeps `step` (first try lost it after one undo: the rebuilt world's log had no
+  marker; found by the test). Survives toJSON/fromJSON (tested).
+- Still missing (as before, documented): a retraction is not undone; take a `mark()`.
+- test/sentence.test.mjs (3: refused, missing with ask, done/undo/redo as one step and
+  after a save). api: "One sentence, all or nothing" (runnable). index.d.ts overload.

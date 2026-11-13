@@ -249,7 +249,8 @@ export const revision = {
     const out = [];
     for (let i = 0; i < this.log.length; i++) { // bounded: the log
       let j = i;
-      while (this.log[i].group !== undefined && this.log[j + 1]?.group === this.log[i].group) j++; // bounded: one patch
+      const part = (e) => e?.step ?? e?.group; // a patch, or the requests of one sentence
+      while (part(this.log[i]) !== undefined && part(this.log[j + 1]) === part(this.log[i])) j++; // bounded: one step
       out.push({ from: i, to: j, transient: this.log.slice(i, j + 1).every(transient) });
       i = j;
     }

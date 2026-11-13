@@ -443,6 +443,35 @@ done ["pencil"]
 [{"action":"rename","key":"to"}]
 ```
 
+**One sentence, all or nothing.** `world.act([request, ...])` runs the requests of one
+sentence in turn inside one transaction: if one is not done (`missing`, `refused`,
+`unsupported`, `error`) none is kept, and the result says which (`failed`, its index),
+with every result so far (`results`) and, for a missing argument, what to ask (`missing`).
+What they did together is one step for `undo` and `redo`, also after `toJSON` and
+`fromJSON`. A retraction inside is not undone, as everywhere (take a `mark()` first).
+To know beforehand whether each request would be refused, without applying anything,
+give the readings to `score` ([integration §5b](integration.md#5b-readings-the-present-state-would-refuse)).
+
+```js run
+const w = new World();
+w.load(`@k core.slot of=item key=name id=true
+  @k2 core.slot of=item key=place enum=table enum=shelf
+  @it item name=?x place=?p
+  @to item core.on=$it place=?q
+  @move core.action name=move param=x param=q when=$it set=$to`);
+w.tell('@a item name=cup place=table  @b item name=pen place=table');
+const r = w.act([{ action: 'move', args: { x: 'cup', q: 'shelf' } }, { action: 'move', args: { x: 'pen', q: 'sky' } }]);
+print(r.ok, r.failed, w.get('a').attrs.place);
+w.act([{ action: 'move', args: { x: 'cup', q: 'shelf' } }, { action: 'move', args: { x: 'pen', q: 'shelf' } }]);
+w.undo();
+print(w.get('a').attrs.place, w.get('b').attrs.place);
+```
+
+```output
+false 1 ["table"]
+["table"] ["table"]
+```
+
 ## Completing a world
 
 ### world.open(id?)

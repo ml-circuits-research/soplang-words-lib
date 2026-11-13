@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="b47c321c8e03">
+<meta name="source-hash" content="e417cf9d4060">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -182,6 +182,21 @@ print(w.act({ action: &#x27;rename&#x27;, args: { from: &#x27;pen&#x27;, to: &#x
 print(w.act({ action: &#x27;rename&#x27;, args: { from: &#x27;pen&#x27; } }).missing);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>done [&quot;pencil&quot;]
 [{&quot;action&quot;:&quot;rename&quot;,&quot;key&quot;:&quot;to&quot;}]</code></pre></figure>
+<p><strong>One sentence, all or nothing.</strong> <code>world.act([request, ...])</code> runs the requests of one sentence in turn inside one transaction: if one is not done (<code>missing</code>, <code>refused</code>, <code>unsupported</code>, <code>error</code>) none is kept, and the result says which (<code>failed</code>, its index), with every result so far (<code>results</code>) and, for a missing argument, what to ask (<code>missing</code>). What they did together is one step for <code>undo</code> and <code>redo</code>, also after <code>toJSON</code> and <code>fromJSON</code>. A retraction inside is not undone, as everywhere (take a <code>mark()</code> first). To know beforehand whether each request would be refused, without applying anything, give the readings to <code>score</code> (<a href="integration.html#5b-readings-the-present-state-would-refuse">integration §5b</a>).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@k core.slot of=item key=name id=true
+  @k2 core.slot of=item key=place enum=table enum=shelf
+  @it item name=?x place=?p
+  @to item core.on=$it place=?q
+  @move core.action name=move param=x param=q when=$it set=$to`);
+w.tell(&#x27;@a item name=cup place=table  @b item name=pen place=table&#x27;);
+const r = w.act([{ action: &#x27;move&#x27;, args: { x: &#x27;cup&#x27;, q: &#x27;shelf&#x27; } }, { action: &#x27;move&#x27;, args: { x: &#x27;pen&#x27;, q: &#x27;sky&#x27; } }]);
+print(r.ok, r.failed, w.get(&#x27;a&#x27;).attrs.place);
+w.act([{ action: &#x27;move&#x27;, args: { x: &#x27;cup&#x27;, q: &#x27;shelf&#x27; } }, { action: &#x27;move&#x27;, args: { x: &#x27;pen&#x27;, q: &#x27;shelf&#x27; } }]);
+w.undo();
+print(w.get(&#x27;a&#x27;).attrs.place, w.get(&#x27;b&#x27;).attrs.place);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>false 1 [&quot;table&quot;]
+[&quot;table&quot;] [&quot;table&quot;]</code></pre></figure>
 <h2 id="completing-a-world">Completing a world</h2>
 <h3 id="worldopenid">world.open(id?)</h3>
 <p>The open keys (required, no value) of the world or of one wire: <code>[{ id, type, key, ask }]</code>. Cost: O(n), or O(keys of the wire).</p>

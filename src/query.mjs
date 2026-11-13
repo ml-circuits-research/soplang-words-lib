@@ -701,7 +701,41 @@ export const querying = {
    * world is left as it was. A required argument that is missing is reported, not guessed.
    */
   act(request, opts = {}) {
+    if (Array.isArray(request)) return this._guard(opts, () => this._actAll(request), (v) => ({ ok: false, status: 'budget', results: [], violations: [v] }));
     return this._guard(opts, () => this._act(request), (v) => ({ ok: false, status: 'budget', violations: [v] }));
+  },
+
+  /**
+   * The requests of one sentence, all or nothing: each is run in turn inside one
+   * transaction; if one is not done (missing an argument, refused, unknown, an error) none
+   * is kept. What they did together is one step for undo.
+   */
+  _actAll(requests) {
+    const mark = this._begin(true);
+    const step = `s${this.seq}`;
+    const outer = this._step;
+    this._step = step;
+    const results = [];
+    let failed = -1;
+    try {
+      for (let i = 0; i < requests.length; i++) { // bounded: the requests given
+        const r = this._act(requests[i]);
+        results.push(r);
+        if (!r.ok) { failed = i; break; }
+      }
+    } catch (e) {
+      this._step = outer;
+      this._rollback(mark);
+      throw e;
+    }
+    this._step = outer;
+    if (failed >= 0) {
+      this._rollback(mark);
+      const r = results[failed];
+      return { ok: false, status: r.status, failed, results, missing: r.missing, violations: r.violations };
+    }
+    this._commit();
+    return { ok: true, status: 'done', results, violations: [] };
   },
 
   _act(request) {

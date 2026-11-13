@@ -629,7 +629,10 @@ export class World {
       // namespaces, a bare id in the default one): replayed as is, on any world; older logs
       // without it are put in the world's namespace, as before
       const ns = kept.some((e) => e.ns !== undefined) ? '' : undefined;
-      const r = this._patch({ wires: tell ? tell.wires : [], fills, sets, replace }, { strict: false, via: (fills[0] || sets[0])?.via, tier: (tell || fills[0] || sets[0] || kept[0]).tier, ns });
+      const outer = this._step;
+      this._step = kept[0].step; // replayed, the requests of one sentence stay one step
+      let r;
+      try { r = this._patch({ wires: tell ? tell.wires : [], fills, sets, replace }, { strict: false, via: (fills[0] || sets[0])?.via, tier: (tell || fills[0] || sets[0] || kept[0]).tier, ns }); } finally { this._step = outer; }
       if (!r.ok) return r;
     }
     return null;
@@ -774,6 +777,7 @@ export class World {
       this._do(() => { this._redo = redo; });
     }
     if (this._mine && !this._mine.has(this.log)) { this.log = [...this.log]; this._mine.add(this.log); } // shared with a fork
+    if (this._step) entry.step = this._step; // the requests of one sentence: one step for undo
     this.log.push(entry);
     if (entry.op === 'tell') for (const id of entry.facts) this._logOf.set(id, entry); // bounded: the facts of one tell
     else this._fills++;

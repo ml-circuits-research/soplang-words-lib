@@ -362,14 +362,17 @@ came `from`, the rule or producer `via`, and the `tier`.
 `query: a derived value names its rule; a producer computes what no wire has`
 
 **S50.** `conflicting`: several distinct values of a single-valued key (listed under
-`alternatives`), or one value that rests on a wire with a standing issue (`reason`,
-`issues`). Several values of a key declared `many=true`, and several values with
+`alternatives`), or one value that rests on a wire with a standing issue about that key
+(a soft bound: `reason`, `issues`). The issue of a soft deny names no key: it is advice
+about a combination of wires, and the answers that rest on those wires keep their status
+and list it under `advice`. Several values of a key declared `many=true`, and several values with
 `mode=list`, are `supported` and returned as `values`. *Why:* a key that may hold
 several values (habitats, tags) is answered by all of them; two values where one is
 expected are a contradiction to report.
 *Tests:* `query: several distinct values are conflicting, with the alternatives; mode=list returns them all`;
 `query: a key that may hold several values answers with all of them in value mode; a single-valued key still conflicts`;
-`soft constraints: the change is accepted, the problem stays on record, answers that rest on it say so`
+`soft constraints: the change is accepted, the problem stays on record, answers that rest on it say so`;
+`a soft deny is advice: the knowledge wires it read keep their status; a soft bound on the value still conflicts`
 
 **S51.** `ambiguous`: one value that is the pick of a tie (S41), or several values that
 could be assumed for an open abducible key (`howto`).

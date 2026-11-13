@@ -2776,3 +2776,20 @@ share the compile step and the call path.
   action the old way.
 - `node bench/functions.mjs` (1,000 pairs, two calcs on the same arguments): not
   declared 50.0–76.7 ms, 2,000 calls; declared pure 44.8–49.1 ms, 1,000 calls.
+
+## R16.1 — a soft issue is advice, not a conflict — done
+
+Checked against 0.14.0: an existing test even asserted the bug (the tank's level
+`conflicting` because a soft deny about two pumps named the tank). `npm test`: 281 pass,
+0 fail on sources and built file, 280 in checking mode. Pilot output identical.
+`git grep -i psys2 src/`: empty. scan-loops clean. tsc clean.
+
+- The rule: an issue lowers an answer only when it names the asked key (`key=`, a soft
+  bound on that value): `conflicting` with `reason` and `issues`, as before. The issue of
+  a soft deny names no key: it is advice about a combination, so the answers that rest on
+  its wires keep their status and carry `advice: [{ issue, why }]`. Hard denies refuse, as
+  before.
+- Test `a soft deny is advice ...`: a fish placed in the sky leaves one issue; "where does
+  a fish live" is `supported`, water, with the advice; a hard deny still refuses. The
+  older kernel test now expects `supported` with the advice for the tank.
+- Docs: semantics.md S50, reference.md core.issue, index.d.ts (`advice`).

@@ -1300,8 +1300,10 @@ no longer holds, the wire is gone. The change that caused it returns it under `i
 **When it is evaluated.** A soft deny in the chase (it is a rule that concludes an
 issue); a soft bound in validation.
 
-**Interactions.** A query whose answer rests on a wire an issue is about answers
-`conflicting`, with `reason` and `issues`. Rules may read issue wires. `world.check()`
+**Interactions.** A query whose answer rests on a wire with an issue about that key (a
+soft bound) answers `conflicting`, with `reason` and `issues`. An issue of a soft deny
+names no key: it is advice about the combination, so an answer that rests on one of its
+wires keeps its status and lists it under `advice` (`{ issue, why }`). Rules may read issue wires. `world.check()`
 and `world.describe()` list them.
 
 **Example**

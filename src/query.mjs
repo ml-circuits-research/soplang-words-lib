@@ -503,12 +503,17 @@ export const querying = {
       // every value some wire has, with where it came from; then what a producer computes
       const found = new Map(); // value -> { from, via }
       const lacking = [];
-      // standing issues (soft constraints) about the wires an answer rests on
-      const issues = new Map();
+      // standing issues (soft constraints) about the wires an answer rests on. An issue that
+      // names this key (a soft bound on the value) makes the answer conflicting; an issue of
+      // a soft deny names no key: it is advice about a combination of wires, so the answer
+      // keeps its status and lists it under `advice`
+      const issues = new Map(), advice = new Map();
       const flagged = (ids) => {
         for (const x of ids) for (const r of this.refs.get(x) || []) { // bounded: the wires that refer to one wire
           const i = this.wires.get(r);
-          if (i && i.type === 'core.issue' && (i.attrs.about || []).includes('$' + x)) issues.set(i.id, i);
+          if (!i || i.type !== 'core.issue' || !(i.attrs.about || []).includes('$' + x)) continue;
+          if ((i.attrs.key || []).includes(key)) issues.set(i.id, i);
+          else advice.set(i.id, i);
         }
       };
       // how solid the answer is: the weakest tier among the values it rests on, and the assumptions under it
@@ -613,6 +618,7 @@ export const querying = {
         const missing = lacking.length ? lacking.slice(0, 20).map((w) => ({ id: w.id, type: w.type, key, ask })) : [{ type, key, ask }];
         r = { status: 'missing', missing, from: [] };
       }
+      if (advice.size && (r.value !== undefined || r.values)) r.advice = [...advice.values()].map((i) => ({ issue: i.id, why: str(i.attrs.why?.[0] || '') }));
       if (rank >= 0 && (r.value !== undefined || r.values || r.alternatives)) {
         r.tier = c.tiers[rank];
         if (rests.size) r.rests = [...rests.values()].sort((x, y) => this._rank(y.tier) - this._rank(x.tier));

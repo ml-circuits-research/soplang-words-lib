@@ -381,7 +381,9 @@ test('soft constraints: the change is accepted, the problem stays on record, ans
   const two = w.ofType('core.issue');
   assert.ok(two.length >= 1);
   assert.deepEqual([two[0].attrs.rule, two[0].attrs.why, [...two[0].attrs.about].sort()], [['$two'], ['"two pumps on one tank"'], ['$p1', '$p2', '$t1']]);
-  assert.equal(w.query({ about: 't1', seek: 'level' }).status, 'conflicting', 'the tank is one of the wires the issue is about');
+  // a soft deny is advice about the combination: the tank's level stays supported, with the advice
+  const lv = w.query({ about: 't1', seek: 'level' });
+  assert.deepEqual([lv.status, lv.advice.map((a) => a.why)], ['supported', ['two pumps on one tank']]);
   assert.ok(w.retract('p2').ok);
   assert.deepEqual([w.ofType('core.issue').length, w.query({ about: 't1', seek: 'level' }).status], [0, 'supported']);
   // strict is the default: the same bound without soft=true refuses
@@ -576,4 +578,25 @@ test('version: the same in a world and a fork just made, unchanged by a statemen
   w.complete({ defaults: true });
   assert.deepEqual(w.assumptions(['x']), [], 'x was told its v');
   assert.deepEqual(w.assumptions(['y', 'x']).map((a) => [a.id, a.key]), w.assumptions().filter((a) => ['x', 'y'].includes(a.id)).map((a) => [a.id, a.key]));
+});
+
+test('a soft deny is advice: the knowledge wires it read keep their status; a soft bound on the value still conflicts', () => {
+  const w = new World();
+  w.load(`
+    @k core.slot of=animal key=name id=true
+    @a animal name=?n lives=?h
+    @p placed what=$a at=?at
+    @wrong core.check fn=neq args=?at args=?h
+    @d core.deny when=$p when=$a if=$wrong soft=true why="?n lives in ?h, not ?at"
+  `);
+  w.tell('@fish animal name=fish lives=water');
+  const r = w.tell('@p1 placed what=$fish at=sky');
+  assert.deepEqual([r.ok, w.ofType('core.issue').length], [true, 1]);
+  const q = w.query({ type: 'animal', where: { name: 'fish' }, seek: 'lives' });
+  assert.deepEqual([q.status, q.value, q.advice.map((a) => a.why)], ['supported', 'water', ['fish lives in water, not sky']]);
+  // a hard deny refuses, as before
+  const h = new World();
+  h.load('@a animal lives=?h\n@p placed what=$a at=?at\n@wrong core.check fn=neq args=?at args=?h\n@d core.deny when=$p when=$a if=$wrong why="no"');
+  h.tell('@fish animal lives=water');
+  assert.equal(h.tell('@p1 placed what=$fish at=sky').ok, false);
 });

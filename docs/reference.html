@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="47e4207c7121">
+<meta name="source-hash" content="06c463133f7b">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -524,7 +524,7 @@ print(w.tier(&#x27;g1&#x27;, &#x27;level&#x27;), w.tier(w.ofType(&#x27;alarm&#x2
 <div class="table"><table><thead><tr><th>Attribute</th><th>Meaning</th></tr></thead><tbody><tr><td><code>rule</code></td><td>the deny or slot that is violated</td></tr><tr><td><code>about</code></td><td>rep.; each wire involved</td></tr><tr><td><code>key</code></td><td>for a slot: the key</td></tr><tr><td><code>why</code></td><td>the reason</td></tr></tbody></table></div>
 <p><strong>Meaning.</strong> A <code>core.deny</code> with <code>soft=true</code>, or a <code>core.slot</code> with <code>min</code>/<code>max</code> and <code>soft=true</code>, refuses nothing. While its condition holds, an issue wire exists; when it no longer holds, the wire is gone. The change that caused it returns it under <code>issues</code>.</p>
 <p><strong>When it is evaluated.</strong> A soft deny in the chase (it is a rule that concludes an issue); a soft bound in validation.</p>
-<p><strong>Interactions.</strong> A query whose answer rests on a wire an issue is about answers <code>conflicting</code>, with <code>reason</code> and <code>issues</code>. Rules may read issue wires. <code>world.check()</code> and <code>world.describe()</code> list them.</p>
+<p><strong>Interactions.</strong> A query whose answer rests on a wire with an issue about that key (a soft bound) answers <code>conflicting</code>, with <code>reason</code> and <code>issues</code>. An issue of a soft deny names no key: it is advice about the combination, so an answer that rests on one of its wires keeps its status and lists it under <code>advice</code> (<code>{ issue, why }</code>). Rules may read issue wires. <code>world.check()</code> and <code>world.describe()</code> list them.</p>
 <p><strong>Example</strong></p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(&#x27;@k core.slot of=tank key=level kind=number max=100 soft=true&#x27;);

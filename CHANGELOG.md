@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.29.0
+
+Round 26, part B: reading with a grammar world (smallest version).
+
+### New
+- `parseText`, `grammarOf`, `nounPhrase`: a grammar world's lexicon, rules and
+  coordinating words applied to text; noun phrases and coordination, every parse best
+  first, bounded. No language in the library.
+
 ## 0.28.0
 
 Round 26, part A: what a host needs to drop its own executor.

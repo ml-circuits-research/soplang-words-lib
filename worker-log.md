@@ -3775,3 +3775,9 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
 - The build refused "node:" (a node property `node: {...}` looked Node-only): renamed.
 - test/grammar.test.mjs (3); api and capabilities (runnable). Verbs, frames and
   `resolve(phrase)` (A2) next.
+
+## Release 0.29.0 (Round 26 B)
+
+`/tmp/check.sh`: 366 pass, 0 fail on sources and built file, 365 in checking mode; pilot
+identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.29.0). Corpus 17 / 17.

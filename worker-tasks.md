@@ -801,3 +801,16 @@ The owner saw the path of a message as six fixed steps (kind of turn → world �
 4. **Cost and risk**: steps per turn against the coded `turn`; how an author is told that a declared pipeline has a hole (a need nobody offers) at load, as advice.
 5. **Example**: the default pipeline as a module (`std.turn` stages), and two variants obtained only by telling facts: one with a confirmation stage before `remove` of many things, one with a second reader competing at the reading stage. Tests: the same 30 requests through the coded and the declared default give the same diffs.
 If your recommendation is "not yet" or "only stages 1 and 2 as data", say so with reasons; the owner wants to know what is real.
+
+## Reviewer 2026-11-14 00:40 — STANDING DIRECTION; 0.25.0 and 0.26.0 validated at 4c33e81; Q31 accepted
+
+**Owner, 2026-11-13 22:54 (standing direction for all three repositories):** the goal is to accumulate experience in how worlds are made, to improve sopworld, to generalise, to accumulate cases, and to learn how to combine worlds so that coverage grows. Everything else is secondary. Small regressions are acceptable when generality and learning are gained.
+
+**Validated:** npm test 358 / 357 pass / 0 fail. Read: Q31 (accepted exactly as recommended: order, providers, fallbacks, skip, ask, per-action stages as data; insides of stages stay functions; parallel candidates not yet). Accepted: quickstart, modules, patterns, host contract, README capability table, the second application (recipes) from the docs, `std.turn` / `turnFlow`, hand-over comparison (Q30).
+
+**What this means here:**
+1. **The library learns from the applications.** Keep `docs/lessons.md`: what each round taught about how worlds are made and combined (from your own work, from PSys2's `docs/lessons.md` and its ledger, from the second application). Each lesson ends with what the library did or will do about it.
+2. **A case corpus in the library**: language-free cases (wires in, expected diff / refusal / route out) taken from PSys2's ledger and pilots through its hand-over, grouped by pipeline stage; every release runs it and reports per stage. It only grows.
+3. **More applications, small ones:** after recipes, write two more from the docs alone, chosen to stress combination (for instance a room planner that uses space + knowledge + views, and a classroom timetable that uses scheduling + people + time). Each lists the doc gaps and the missing mechanisms.
+4. **Combination first:** prioritise mechanisms that make two worlds cooperate without code (views, fill, lookup, send, composition, `as=` instances) over features inside one module. Report per release how many example pairs cooperate.
+5. Continue the take-over of PSys2's hand-over packages (acts, space, things, dialogue, route, turn pipeline, ledger); small API breaks are acceptable when they make the library more general, with the migration note in CHANGELOG.

@@ -1172,7 +1172,7 @@ true [["cost","6","r",["l1","pen"]]]
 of a kind of an imported module ("kind card here has the shape of shapes.box in module
 shapes: import it?"), and a rule with the shape of a rule of another module, such as the
 standard pack ("the rule mine is already in std.relations (std.relations.slotted)").
-Off by default. The study behind it is [reuse](reuse.md); `tools/reuse.mjs` does the same
+Off by default. The study behind it is [patterns](patterns.md); `tools/reuse.mjs` does the same
 across whole worlds.
 
 ```js run

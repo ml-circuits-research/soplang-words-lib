@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sopworld Quickstart</title>
+<meta name="source-hash" content="ab184f990834">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.24.0</small></a>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html" aria-current="page">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="playground.html">Playground</a></nav>
+</header>
+<main>
+<h1>Quickstart: a new application in an hour</h1>
+<p class="lead">A small room planner: a schema, three acts, knowledge by lookup, replies, and one request handled end to end. Every block on this page runs in CI against the library. A page about what each job can do is <a href="capabilities.html">capabilities</a>; what a host supplies is the <a href="host-contract.html">host contract</a>.</p>
+<h2 id="1-install-and-load">1. Install and load</h2>
+<p>Zero dependencies: <code>npm install sopworld</code>, or copy <code>docs/sopworld.mjs</code> (one file, Node and browsers). <code>import { World, turn, createCatalog, bundleReader } from 'sopworld';</code></p>
+<h2 id="2-describe-the-world-as-data">2. Describe the world as data</h2>
+<p>A world that does things is a schema: kinds are types that extend <code>std.schema.thing</code>, attributes are slots, and one wire per kind says which acts apply. Nothing else: the acts come from <code>std.acts</code>.</p>
+<figure class="code"><figcaption>js (used by the examples below)</figcaption><pre><code>const ROOMS = `
+@acts core.use world=std.acts
+@know core.use world=std.know
+@rooms std.schema.world name=rooms doc=&quot;rooms and the furniture in them&quot;
+@t.room core.type of=room extends=std.schema.thing closed=true
+@s.room.name core.slot of=room key=name required=true
+@s.room.area core.slot of=room key=area kind=number min=4 max=60 step=1 default=12
+@k.room std.schema.kind of=room world=rooms acts=make acts=change acts=ask
+@any std.schema.kinds world=rooms from=k.commonsense.thing acts=make acts=change acts=remove
+@lim std.schema.limit of=room max=6
+`;
+const app = () =&gt; { const w = new World(); w.load(ROOMS); return w; };</code></pre></figure>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = app();
+print(schemaCard(w, &#x27;rooms&#x27;)[0].kinds.map((k) =&gt; [k.kind, k.acts]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;room&quot;,[&quot;make&quot;,&quot;change&quot;,&quot;ask&quot;]],[&quot;*&quot;,[&quot;make&quot;,&quot;change&quot;,&quot;remove&quot;]]]</code></pre></figure>
+<h2 id="3-three-acts">3. Three acts</h2>
+<p><code>make</code>, <code>change</code>, <code>ask</code> (and the others) work on any schema. Each returns its difference and is one undo step; a refusal says what is allowed.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = app();
+w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;room&#x27;, name: &#x27;kitchen&#x27; } });
+const r = w.act({ action: &#x27;change&#x27;, args: { thing: &#x27;room&#x27;, attr: &#x27;area&#x27;, by: &#x27;more&#x27;, amount: 4 } });
+print(r.diff.changed, w.act({ action: &#x27;ask&#x27;, args: { thing: &#x27;room&#x27;, attr: &#x27;area&#x27; } }).result.value);
+print(w.act({ action: &#x27;change&#x27;, args: { thing: &#x27;room&#x27;, attr: &#x27;colour&#x27;, value: &#x27;red&#x27; } }).violations[0].why);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;id&quot;:&quot;room1&quot;,&quot;key&quot;:&quot;area&quot;,&quot;from&quot;:&quot;12&quot;,&quot;to&quot;:&quot;16&quot;,&quot;toTier&quot;:&quot;told&quot;}] 16
+a room has no colour</code></pre></figure>
+<h2 id="4-knowledge-by-lookup">4. Knowledge by lookup</h2>
+<p>The furniture comes from a knowledge catalog: the host says how to read a path (a file, <code>fetch</code>, a bundle); the catalog tells the shards a word needs, schemas first. Here a two-file bundle stands in for sop-knowledge-worlds.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const files = {
+  &#x27;k.commonsense/schema.sop&#x27;: &#x27;@k1 core.slot of=k.commonsense.thing key=name id=true\n@k2 core.slot of=k.commonsense.thing key=at many=true\n@k3 core.slot of=k.commonsense.thing key=size&#x27;,
+  &#x27;k.commonsense/shards/home.sop&#x27;: &#x27;@sofa k.commonsense.thing name=sofa at=living_room size=large core.source=&quot;hand-core 1&quot;&#x27;,
+};
+const index = { worlds: [{ id: &#x27;k.commonsense&#x27;, schema: &#x27;k.commonsense/schema.sop&#x27;, shards: [{ id: &#x27;k.commonsense/shards/home&#x27;, path: &#x27;k.commonsense/shards/home.sop&#x27; }] }] };
+const cat = createCatalog({ index, vocab: { sofa: [&#x27;k.commonsense/shards/home&#x27;] }, read: bundleReader({ files }) });
+const w = app();
+cat.intoSync(w, &#x27;sofa&#x27;);
+const r = w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;sofa&#x27; } });
+print(r.result.filled.map((f) =&gt; `${f.key}=${f.value} (${f.source})`));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;place=living_room (hand-core 1)&quot;,&quot;size=large (hand-core 1)&quot;]</code></pre></figure>
+<h2 id="5-one-request-end-to-end-with-a-reply">5. One request end to end, with a reply</h2>
+<p>The host reads text into candidate readings (its job); <code>turn</code> tries them, applies the first the world takes, and gives the replies; when none fits it falls back to one question, "not here but there", or a named guess.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = app();
+w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;room&#x27;, name: &#x27;study&#x27; } });
+// &quot;make the study bigger&quot;: two readings, best first
+const t = turn(w, [{ action: &#x27;change&#x27;, args: { thing: &#x27;study&#x27;, attr: &#x27;size&#x27;, by: &#x27;more&#x27; } }, { action: &#x27;change&#x27;, args: { thing: &#x27;room&#x27;, attr: &#x27;area&#x27;, by: &#x27;more&#x27; } }]);
+print(t.status, t.replies, t.dropped[0].violation.why);
+print(turn(w, [{ action: &#x27;make&#x27;, args: { kind: &#x27;spaceship&#x27; } }]).question);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>done [&quot;I changed the area of room study from 12 to 13.&quot;] there is no study
+Did you mean to make spaceship? (no world here has a spaceship)</code></pre></figure>
+<h2 id="6-next">6. Next</h2>
+<ul><li>Test the schema: <code>schemaGrid(world)</code> runs every world × kind × act case; <code>gridTests</code> writes a test file from it; <code>node tools/validate.mjs &lt;files&gt;</code> in one command.</li><li>Share things between views, teach facts, keep a dialogue's focus, relate things: <a href="capabilities.html">capabilities</a>.</li><li>Every standard module: <a href="modules.html">modules</a>. How worlds combine: <a href="patterns.html">patterns</a>.</li></ul>
+<p class="source">Generated from <code>docs/quickstart.md</code>.</p>
+</main>
+<footer>sopworld 0.24.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+
+</body>
+</html>

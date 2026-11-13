@@ -1,4 +1,4 @@
-# Patterns of reuse between worlds
+# Patterns: how worlds combine
 
 A catalogue (Round 23): ways one world can reuse another instead of restating it. Each has
 when it applies, how it is said today in SOP Lang, a minimal example, and what is missing.

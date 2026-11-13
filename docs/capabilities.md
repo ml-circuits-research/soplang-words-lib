@@ -3,13 +3,15 @@
 By job, not by API. Each job has a paragraph, an example that runs (every example on this
 page is run in CI and must print what is shown), the module and the version it came in,
 and its limits. Where a job is not done yet, it says so. API details:
-[api](api.md), [reference](reference.md); how worlds combine: [reuse](reuse.md).
+[api](api.md), [reference](reference.md); how worlds combine: [patterns](patterns.md).
 
 ## Describe a world
 
+*In core: `core.type`, `core.slot`; since 0.1.*
+
 Kinds of things are types; their attributes are slots with kinds, value lists, ranges,
 defaults and questions to ask when they are missing. Everything told is checked against
-them at once. *Core, since 0.1.* **Limits:** one value per key unless the slot says
+them at once. **Limits:** one value per key unless the slot says
 `many`; a missing required key is an open question, not a refusal.
 
 ```js run
@@ -29,8 +31,10 @@ true domain
 
 ## State facts and rules
 
+*In core: `core.rule`, `core.deny`; since 0.1.*
+
 Rules derive wires from wires; a conclusion goes when what it rests on goes. Denies
-refuse a change that breaks them; soft denies only advise. *Core, since 0.1.* **Limits:**
+refuse a change that breaks them; soft denies only advise. **Limits:**
 no rule may negate or aggregate what its own conclusions produce (stratified).
 
 ```js run
@@ -52,9 +56,11 @@ print(w.ofType('person').length);
 
 ## Ask and explain
 
+*In `world.query`, `world.why`; since 0.1.*
+
 `query` answers with a status (`yes`, `no`, `unknown`, `supported`, ...) and what the
 answer rests on; `why` gives the chain behind a wire or a value, back to what was told
-(the rule, the act, the tier, the source). *query since 0.1, why since 0.17.*
+(the rule, the act, the tier, the source).
 
 ```js run
 const w = new World();
@@ -72,9 +78,11 @@ print(w.query({ about: 'a', seek: 'y' }).value, w.why('a', 'y').steps.map((s) =>
 
 ## Act, undo, groups
 
+*In `world.act`, `world.undo`; since 0.5.*
+
 Actions change the world in one transaction (declared in SOP Lang, or a host function);
 several requests of one sentence go together or not at all and are one undo step; every
-action returns its difference. *act since 0.5, sentences and diff since 0.17–0.18.*
+action returns its difference.
 **Limits:** `undo` does not bring back a retraction (take a `mark()`).
 
 ```js run
@@ -97,10 +105,12 @@ true [{"id":"a","key":"place","from":"table","to":"shelf","toTier":"told"}]
 
 ## Worlds that do things, as data; refuse with alternatives
 
+*In `std.schema`, `std.acts`; since 0.18.*
+
 A world is a schema (`std.schema`): kinds, attributes, which acts apply. The acts
 (`std.acts`: make, remove, change, place, connect, group, pick, ask, copy, send, save,
 load, undo, redo, show, teach, forget) are the same everywhere; a new world needs no rule.
-A refusal says what is allowed and where. *0.18–0.22.* **Limits:** `place` writes a
+A refusal says what is allowed and where.  **Limits:** `place` writes a
 position key; relations are std.relations' job.
 
 ```js run
@@ -121,9 +131,11 @@ a chair has no size ["colour"] ["make","change"]
 
 ## Fill gaps from other worlds
 
+*In `std.fill`, `std.know`; since 0.17.*
+
 When a request leaves a key out, other modules offer values in named tiers (`std.fill`:
 user, focus, scene, taught, knowledge, default); the best tier wins, the source is kept,
-a tie is advice. `std.know` offers from a knowledge catalog. *0.17, 0.19, 0.21.*
+a tie is advice. `std.know` offers from a knowledge catalog.
 
 ```js run
 const w = new World();
@@ -147,9 +159,11 @@ print(n.attrs.value, n.attrs.tier);
 
 ## Keep focus in a dialogue
 
+*In `std.focus`; since 0.17.*
+
 `std.focus` keeps what a dialogue is about after each turn (thing, action, place, world);
 a request that leaves out its thing or action is completed from the turn before, and
-earlier turns keep theirs. *0.17.* **Limits:** a value chosen by std.fill is not a
+earlier turns keep theirs. **Limits:** a value chosen by std.fill is not a
 mention.
 
 ```js run
@@ -174,9 +188,11 @@ print(w.ofType('std.fill.need')[0].attrs.value);
 
 ## Relate and place things
 
+*In `std.relations`, `std.boxes`; since 0.16.*
+
 `std.relations`: on, in, next to, above, in front of, kept: when the other thing moves,
 the place follows; rows; the first; one per place. `std.boxes` has the geometry
-functions. *0.16–0.17.* **Limits:** boxes only; a row assumes equal widths.
+functions. **Limits:** boxes only; a row assumes equal widths.
 
 ```js run
 const w = new World();
@@ -193,10 +209,12 @@ print(w.get('b').attrs.x, w.get('b').attrs.y);
 
 ## Share things between views; teach facts
 
+*In `std.schema` views, `show`, `teach`, `complete`; since 0.21.*
+
 Several views read the same things; a view shows some aspects; showing a thing that lacks
 one is refused with the reason. Facts the user teaches sit at their own tier and say who
 taught them; the act `complete` applies defaults learnt later to things already made.
-*0.21; complete since 0.24.* **Limits:** one value per key for all views (a view restyles
+**Limits:** one value per key for all views (a view restyles
 in its renderer).
 
 ```js run
@@ -217,10 +235,12 @@ a table has no place on Earth
 
 ## Generate cards, examples, replies, a coverage grid and tests
 
+*In `schemaCard`, `schemaExamples`, `actReply`, `schemaGrid`, `gridTests`; since 0.19.*
+
 From a schema: the card of a world (kinds, attributes, acts, words), example sentences per
 act with their requests, the plain-English reply for a done act or a refusal, a coverage
 grid (every world × kind × act case run, with its expected difference; the holes are the
-cases not done) and a node:test file from the grid. *0.19; grid since 0.24.* **Limits:**
+cases not done) and a node:test file from the grid. **Limits:**
 English only (hosts translate).
 
 ```js run
@@ -240,8 +260,10 @@ print(schemaExamples(w).map((e) => e.text), actReply(w, req, w.act(req)));
 
 ## Drop readings the present state would refuse
 
+*In `world.score`; since 0.13.*
+
 `score` judges candidate readings of one sentence without applying anything: which would
-be refused and why, which lack something and what to ask. *0.13, cost per reading 0.17.*
+be refused and why, which lack something and what to ask.
 
 ```js run
 const w = new World();
@@ -258,9 +280,11 @@ false nothing matches game name=hangman state=running
 
 ## Measure reuse
 
+*In `tools/reuse.mjs`, option `advise`; since 0.21.*
+
 `tools/reuse.mjs` finds candidates for shared modules across worlds (types and rules of
 the same shape, shared words, parameterised worlds) and a reuse number per world; the
-option `advise` gives the same advice to an author at load. *0.21–0.22.*
+option `advise` gives the same advice to an author at load.
 
 ```js run
 const w = new World({ advise: true, library: { shapes: '@s core.module name=shapes\n@b1 core.slot of=shapes.box key=x kind=number\n@b2 core.slot of=shapes.box key=y kind=number' } });
@@ -274,11 +298,13 @@ kind card here has the shape of shapes.box in module shapes: import it?
 
 ## Load knowledge by lookup
 
+*In `createCatalog`, `bundleReader`; since 0.23.*
+
 A catalog (an index of worlds with their schemas, dependencies and shards, and a
 vocabulary from words to shards) finds what a word needs, reads each shard once through
 the host's `read` (a file, `fetch`, a bundle), caches it, and tells it into a world with
 the schemas first. `tools/build-bundle.mjs` writes an offline bundle for a list of words
-that `bundleReader` reads with the same code. *since 0.23.* **Limits:** the lemma of a
+that `bundleReader` reads with the same code. **Limits:** the lemma of a
 word is the host's (`lemma` option); the library knows no language.
 
 ```js run
@@ -295,11 +321,13 @@ print(cat.intoSync(w, 'cup').told, w.get('cup').attrs.usual);
 
 ## Handle one request end to end
 
+*In `turn`; since 0.24.*
+
 `turn` takes the candidate readings of one message, tries each on a fork, applies the
 first the world takes as one sentence, and gives back the difference, the why of each
 changed value, the guesses it made and the replies; when none is taken, a graded
 fallback: one question, "not here but there", or the best guess named. The host reads
-text into readings and renders. *since 0.24.* **Limits:** the readings are the host's;
+text into readings and renders. **Limits:** the readings are the host's;
 replies are plain English unless the host passes `reply`.
 
 ```js run
@@ -320,9 +348,11 @@ print(t.replies, t.why[0].steps[0].action);
 
 ## Choose a world for a request
 
+*In `route`; since 0.24.*
+
 `route` scores the worlds of the schemas for a request by their cards, the thing it
 names, a dry run, and a signal of the host's own (an encoder's score), best first with
-the reasons. *since 0.24.* **Limits:** no reading of text: the request comes from the host.
+the reasons. **Limits:** no reading of text: the request comes from the host.
 
 ```js run
 const w = new World();
@@ -339,10 +369,12 @@ print(route(w, { action: 'make', args: { kind: 'rose' } }));
 
 ## Tools for authors
 
+*In `tools/validate.mjs`, `tools/ledger.mjs`, `ledgerGroups`; since 0.25.*
+
 Validate a world in one command (what is refused, what is noted, the grid's holes); keep
 a failure ledger (append-only, grouped by the pipeline stage where a case failed and by
 cause signals the host plugs in); find reuse; measure with the benches in `bench/`.
-*since 0.25.* **Limits:** the cause signals and the replay of the sources are the host's.
+**Limits:** the cause signals and the replay of the sources are the host's.
 
 ```js run
 const g = ledgerGroups([{ text: 'remove eyeglasses', source: 'logs', stage: 'routing', class: 'kind' }, { text: 'delete the box', source: 'logs', stage: 'routing', class: 'kind' }]);

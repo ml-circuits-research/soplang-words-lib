@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>sopworld Patterns of reuse between worlds</title>
-<meta name="source-hash" content="1850c2087280">
+<title>sopworld Patterns</title>
+<meta name="source-hash" content="be2bcd682f6c">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -13,10 +13,10 @@
 <body>
 <header class="top">
   <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.24.0</small></a>
-  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="reuse.html" aria-current="page">Reuse</a><a href="capabilities.html">Capabilities</a><a href="playground.html">Playground</a></nav>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html" aria-current="page">Patterns</a><a href="host-contract.html">Host contract</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
-<h1>Patterns of reuse between worlds</h1>
+<h1>Patterns: how worlds combine</h1>
 <p class="lead">A catalogue (Round 23): ways one world can reuse another instead of restating it. Each has when it applies, how it is said today in SOP Lang, a minimal example, and what is missing. Some come from the owner's list, some from what <code>tools/reuse.mjs</code> found in PSys2's worlds, in the examples and in the knowledge repo (<a href="reuse-reports">reports</a>). It is a study: where something is uncertain it says so.</p>
 <h2 id="1-shared-things-several-views">1. Shared things, several views</h2>
 <p><strong>When.</strong> The same things are shown or edited by several worlds (a picture, a chart, a list of the same objects). <strong>Today.</strong> One module declares the things (<code>std.schema.thing</code> kinds and their slots); each world imports it and reads the attributes it needs. An act in one world changes the shared wire, so every other world sees it; there is one history. <strong>Example.</strong> <code>examples/acts.mjs</code>: one face, any number of readers of <code>eye.colour</code>. <strong>Missing.</strong> Declaring which attributes (aspects) a view shows, and refusing to show a thing that lacks them ("a table has no place on Earth"): Round 22.</p>
@@ -42,7 +42,7 @@
 <p><strong>When.</strong> "It", "the last one", "again": a world needs what was made or named last. <strong>Found:</strong> art.draw and diagram.sketch each keep their own <code>last</code> type (PSys2 report 19). <strong>Today.</strong> <code>std.focus</code> (per turn, per kind). <strong>Missing:</strong> nothing; the worlds can use it.</p>
 <h2 id="12-a-box-aspect">12. A box aspect</h2>
 <p><strong>When.</strong> Many kinds have a place and a size on a plane (layout slots, wearable places, object parts, face parts). <strong>Found:</strong> knowledge report 9, 10. <strong>Today.</strong> Each declares x, y, w, h. <code>std.boxes</code> has the functions, <code>std.relations</code> the relations. <strong>Missing:</strong> an aspect (a set of keys a kind takes as a whole), which is also what views need (Round 22).</p>
-<p class="source">Generated from <code>docs/reuse.md</code>.</p>
+<p class="source">Generated from <code>docs/patterns.md</code>.</p>
 </main>
 <footer>sopworld 0.24.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 

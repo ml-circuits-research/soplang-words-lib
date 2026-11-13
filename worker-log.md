@@ -3457,3 +3457,21 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
 `/tmp/check.sh`: 340 pass, 0 fail on sources and built file, 339 in checking mode; pilot
 identical; psys2 grep empty; scan-loops clean; tsc clean. Version, CHANGELOG, docs rebuilt
 (`docs/version.md`: sopworld 0.22.0). Open: Q28, Q29.
+
+## R24 B1 — docs/capabilities.md for what exists — done
+
+`/tmp/check.sh`: 340 pass, 0 fail on sources and built file, 339 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean. `node tools/doc-examples.mjs
+docs/capabilities.md`: 12 runnable examples, 0 problems (CI runs them: docs test).
+
+- 12 jobs, each a paragraph, a runnable example, module and version, limits: describe a
+  world; facts and rules; ask and explain; act, undo, sentences; worlds as data and
+  refusals with alternatives; fill gaps; dialogue focus; relate and place; views and
+  taught facts; generate cards, examples, replies; drop refusable readings; measure reuse.
+- Holes it shows (the "Not done yet" section): load knowledge by lookup (A1), choose a
+  world (A2), one request pipeline with graded fallback (A3, A4), coverage grid and test
+  skeletons (A5), failure ledger (A6).
+- The docs test forbade naming an earlier version ("since 0.1"); the capability page (and
+  README's coming table) say since which version a job exists on purpose: allowed there
+  for "since" only. A first example showed `range` where the library says `domain`.
+- A page of the docs (capabilities.html).

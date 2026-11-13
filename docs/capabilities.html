@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sopworld What the library can do</title>
+<meta name="source-hash" content="77d8d3a6c585">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.22.0</small></a>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="reuse.html">Reuse</a><a href="capabilities.html" aria-current="page">Capabilities</a><a href="playground.html">Playground</a></nav>
+</header>
+<main>
+<h1>What the library can do</h1>
+<p class="lead">By job, not by API. Each job has a paragraph, an example that runs (every example on this page is run in CI and must print what is shown), the module and the version it came in, and its limits. Where a job is not done yet, it says so. API details: <a href="api.html">api</a>, <a href="reference.html">reference</a>; how worlds combine: <a href="reuse.html">reuse</a>.</p>
+<h2 id="describe-a-world">Describe a world</h2>
+<p>Kinds of things are types; their attributes are slots with kinds, value lists, ranges, defaults and questions to ask when they are missing. Everything told is checked against them at once. <em>Core, since 0.1.</em> <strong>Limits:</strong> one value per key unless the slot says <code>many</code>; a missing required key is an open question, not a refusal.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@k1 core.slot of=room key=name id=true
+  @k2 core.slot of=room key=size kind=number min=4 max=40
+  @k3 core.slot of=room key=use enum=sleep enum=cook enum=work required=true ask=&quot;What is it for?&quot;`);
+print(w.tell(&#x27;@r1 room name=kitchen size=12 use=cook&#x27;).ok, w.tell(&#x27;@r2 room name=hall size=90&#x27;).violations[0].kind);
+w.tell(&#x27;@r3 room name=study size=10&#x27;);
+print(w.open().map((o) =&gt; o.ask));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true domain
+[&quot;What is it for?&quot;]</code></pre></figure>
+<h2 id="state-facts-and-rules">State facts and rules</h2>
+<p>Rules derive wires from wires; a conclusion goes when what it rests on goes. Denies refuse a change that breaks them; soft denies only advise. <em>Core, since 0.1.</em> <strong>Limits:</strong> no rule may negate or aggregate what its own conclusions produce (stratified).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@p person name=?n age=?a
+  @adult core.check fn=gte args=?a args=18
+  @t person core.on=$p adult=yes
+  @r core.rule when=$p if=$adult then=$t`);
+w.tell(&#x27;@a person name=ana age=30  @b person name=bo age=9&#x27;);
+print(w.get(&#x27;a&#x27;).attrs.adult, w.get(&#x27;b&#x27;).attrs.adult);
+w.retract(&#x27;a&#x27;);
+print(w.ofType(&#x27;person&#x27;).length);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;yes&quot;] undefined
+1</code></pre></figure>
+<h2 id="ask-and-explain">Ask and explain</h2>
+<p><code>query</code> answers with a status (<code>yes</code>, <code>no</code>, <code>unknown</code>, <code>supported</code>, ...) and what the answer rests on; <code>why</code> gives the chain behind a wire or a value, back to what was told (the rule, the act, the tier, the source). <em>query since 0.1, why since 0.17.</em></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@b box h=?h
+  @c core.calc out=?y fn=sub args=100 args=?h
+  @t box core.on=$b y=?y
+  @r core.rule when=$b with=$c then=$t`);
+w.tell(&#x27;@a box h=90&#x27;);
+print(w.query({ about: &#x27;a&#x27;, seek: &#x27;y&#x27; }).value, w.why(&#x27;a&#x27;, &#x27;y&#x27;).steps.map((s) =&gt; [s.id, s.how, s.rule ?? null]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>10 [[&quot;a&quot;,&quot;rule&quot;,&quot;r&quot;],[&quot;a&quot;,&quot;told&quot;,null]]</code></pre></figure>
+<h2 id="act-undo-groups">Act, undo, groups</h2>
+<p>Actions change the world in one transaction (declared in SOP Lang, or a host function); several requests of one sentence go together or not at all and are one undo step; every action returns its difference. <em>act since 0.5, sentences and diff since 0.17–0.18.</em> <strong>Limits:</strong> <code>undo</code> does not bring back a retraction (take a <code>mark()</code>).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@k core.slot of=item key=name id=true
+  @it item name=?x
+  @to item core.on=$it place=?q
+  @move core.action name=move param=x param=q when=$it set=$to`);
+w.tell(&#x27;@a item name=cup place=table  @b item name=pen place=table&#x27;);
+const r = w.act([{ action: &#x27;move&#x27;, args: { x: &#x27;cup&#x27;, q: &#x27;shelf&#x27; } }, { action: &#x27;move&#x27;, args: { x: &#x27;pen&#x27;, q: &#x27;shelf&#x27; } }]);
+print(r.ok, r.results[0].diff.changed);
+w.undo();
+print(w.get(&#x27;a&#x27;).attrs.place, w.get(&#x27;b&#x27;).attrs.place);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true [{&quot;id&quot;:&quot;a&quot;,&quot;key&quot;:&quot;place&quot;,&quot;from&quot;:&quot;table&quot;,&quot;to&quot;:&quot;shelf&quot;,&quot;toTier&quot;:&quot;told&quot;}]
+[&quot;table&quot;] [&quot;table&quot;]</code></pre></figure>
+<h2 id="worlds-that-do-things-as-data-refuse-with-alternatives">Worlds that do things, as data; refuse with alternatives</h2>
+<p>A world is a schema (<code>std.schema</code>): kinds, attributes, which acts apply. The acts (<code>std.acts</code>: make, remove, change, place, connect, group, pick, ask, copy, send, save, load, undo, redo, show, teach, forget) are the same everywhere; a new world needs no rule. A refusal says what is allowed and where. <em>0.18–0.22.</em> <strong>Limits:</strong> <code>place</code> writes a position key; relations are std.relations' job.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@acts core.use world=std.acts
+  @plan std.schema.world name=plan
+  @t core.type of=chair extends=std.schema.thing closed=true
+  @s core.slot of=chair key=colour enum=red enum=blue default=blue
+  @k std.schema.kind of=chair world=plan acts=make acts=change`);
+w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;chair&#x27; } });
+const r = w.act({ action: &#x27;change&#x27;, args: { thing: &#x27;chair&#x27;, attr: &#x27;size&#x27;, value: 3 } });
+print(r.violations[0].why, r.violations[0].reason.attrs, r.violations[0].reason.allowed);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>a chair has no size [&quot;colour&quot;] [&quot;make&quot;,&quot;change&quot;]</code></pre></figure>
+<h2 id="fill-gaps-from-other-worlds">Fill gaps from other worlds</h2>
+<p>When a request leaves a key out, other modules offer values in named tiers (<code>std.fill</code>: user, focus, scene, taught, knowledge, default); the best tier wins, the source is kept, a tie is advice. <code>std.know</code> offers from a knowledge catalog. <em>0.17, 0.19, 0.21.</em></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@u core.use world=std.fill
+  @g req thing=?t core.absent=place
+  @gn std.fill.need for=$g key=place
+  @gr core.rule when=$g then=$gn
+  @q req thing=?t
+  @n std.fill.need for=$q key=?k
+  @us usual thing=?t value=?v
+  @o std.fill.offer for=$n value=?v tier=knowledge source=usual
+  @r core.rule when=$q when=$n when=$us then=$o`);
+w.tell(&#x27;@u1 usual thing=cup value=table  @q1 req thing=cup&#x27;);
+const n = w.ofType(&#x27;std.fill.need&#x27;)[0];
+print(n.attrs.value, n.attrs.tier);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;table&quot;] [&quot;knowledge&quot;]</code></pre></figure>
+<h2 id="keep-focus-in-a-dialogue">Keep focus in a dialogue</h2>
+<p><code>std.focus</code> keeps what a dialogue is about after each turn (thing, action, place, world); a request that leaves out its thing or action is completed from the turn before, and earlier turns keep theirs. <em>0.17.</em> <strong>Limits:</strong> a value chosen by std.fill is not a mention.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@u core.use world=std.focus
+  @any req
+  @turn std.focus.turn of=$any in=main
+  @r1 core.rule when=$any then=$turn
+  @sd req thing=?v
+  @m std.focus.mention of=$sd kind=thing value=?v
+  @r2 core.rule when=$sd then=$m
+  @gap req core.absent=thing
+  @n std.fill.need for=$gap key=thing
+  @r3 core.rule when=$gap then=$n`);
+w.tell(&#x27;@q1 req thing=cup&#x27;); w.tell(&#x27;@q2 req colour=red&#x27;);
+print(w.ofType(&#x27;std.fill.need&#x27;)[0].attrs.value);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;cup&quot;]</code></pre></figure>
+<h2 id="relate-and-place-things">Relate and place things</h2>
+<p><code>std.relations</code>: on, in, next to, above, in front of, kept: when the other thing moves, the place follows; rows; the first; one per place. <code>std.boxes</code> has the geometry functions. <em>0.16–0.17.</em> <strong>Limits:</strong> boxes only; a row assumes equal widths.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(&#x27;@u core.use world=std.relations&#x27;);
+w.tell(`@t std.relations.box kind=table w=100 h=20  @ta std.relations.at thing=$t x=0 y=80
+  @b std.relations.box kind=book w=20 h=10  @kb std.relations.keep thing=$b rel=on ref=$t`);
+w.revise(&#x27;ta&#x27;, { x: 50 });
+print(w.get(&#x27;b&#x27;).attrs.x, w.get(&#x27;b&#x27;).attrs.y);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;90&quot;] [&quot;70&quot;]</code></pre></figure>
+<h2 id="share-things-between-views-teach-facts">Share things between views; teach facts</h2>
+<p>Several views read the same things; a view shows some aspects; showing a thing that lacks one is refused with the reason. Facts the user teaches sit at their own tier and say who taught them. <em>0.21.</em> <strong>Limits:</strong> one value per key for all views; defaults learnt later do not reach things already made.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@acts core.use world=std.acts
+  @z std.schema.world name=zoo
+  @a std.schema.aspect name=place keys=place doc=&quot;place on Earth&quot;
+  @t core.type of=table extends=std.schema.thing closed=true
+  @k std.schema.kind of=table world=zoo acts=make acts=show
+  @v std.schema.view name=map shows=place`);
+w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;table&#x27; } });
+print(w.act({ action: &#x27;show&#x27;, args: { thing: &#x27;table&#x27;, view: &#x27;map&#x27; } }).violations[0].why);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>a table has no place on Earth</code></pre></figure>
+<h2 id="generate-cards-examples-replies">Generate cards, examples, replies</h2>
+<p>From a schema: the card of a world (kinds, attributes, acts, words), example sentences per act with their requests, and the plain-English reply for a done act or a refusal. <em>0.19.</em> <strong>Limits:</strong> English only (hosts translate); no coverage grid yet (Round 24).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@acts core.use world=std.acts
+  @face std.schema.world name=face
+  @t core.type of=eye extends=std.schema.thing closed=true
+  @s core.slot of=eye key=colour enum=brown enum=blue default=brown
+  @k std.schema.kind of=eye world=face acts=make acts=change`);
+const req = { action: &#x27;make&#x27;, args: { kind: &#x27;eye&#x27; } };
+print(schemaExamples(w).map((e) =&gt; e.text), actReply(w, req, w.act(req)));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;make an eye&quot;,&quot;make the colour of the eye blue&quot;] I made an eye (eye1).</code></pre></figure>
+<h2 id="drop-readings-the-present-state-would-refuse">Drop readings the present state would refuse</h2>
+<p><code>score</code> judges candidate readings of one sentence without applying anything: which would be refused and why, which lack something and what to ask. <em>0.13, cost per reading 0.17.</em></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@g game name=hangman state=running
+  @gs game core.on=$g guess=?l
+  @guess core.action name=guess param=l when=$g set=$gs`);
+const r = w.score([{ action: &#x27;guess&#x27;, args: { l: &#x27;a&#x27; } }]).candidates[0];
+print(r.ok, r.violations[0].why);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>false nothing matches game name=hangman state=running</code></pre></figure>
+<h2 id="measure-reuse">Measure reuse</h2>
+<p><code>tools/reuse.mjs</code> finds candidates for shared modules across worlds (types and rules of the same shape, shared words, parameterised worlds) and a reuse number per world; the option <code>advise</code> gives the same advice to an author at load. <em>0.21–0.22.</em></p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World({ advise: true, library: { shapes: &#x27;@s core.module name=shapes\n@b1 core.slot of=shapes.box key=x kind=number\n@b2 core.slot of=shapes.box key=y kind=number&#x27; } });
+w.load(&#x27;@m core.module name=app imports=shapes\n@a1 core.slot of=card key=x kind=number\n@a2 core.slot of=card key=y kind=number&#x27;);
+print(w.warnings[0].why);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>kind card here has the shape of shapes.box in module shapes: import it?</code></pre></figure>
+<h2 id="not-done-yet">Not done yet</h2>
+<ul><li><strong>Load knowledge by lookup</strong> (a catalog, a loader with a cache, an offline bundle): Round 24 A1. Today a host tells the knowledge wires it needs.</li><li><strong>Choose a world for a request</strong> (routing by cards, referents, state, refusals): A2. Today <code>score</code> drops what would be refused.</li><li><strong>One request pipeline</strong> (readings → dry run → fill → act → diff → why → reply, with graded fallback): A3, A4. Today the steps exist one by one.</li><li><strong>A coverage grid and test skeletons</strong> from a schema: A5. <strong>A failure ledger</strong>: A6.</li></ul>
+<p class="source">Generated from <code>docs/capabilities.md</code>.</p>
+</main>
+<footer>sopworld 0.22.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+
+</body>
+</html>

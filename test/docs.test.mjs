@@ -158,7 +158,7 @@ import { existsSync } from 'node:fs';
 
 test('docs: every HTML page is generated from the current text of its markdown file', () => {
   const root = new URL('../', import.meta.url);
-  const sources = { 'index.html': 'SPEC.md', 'language.html': 'docs/language.md', 'reference.html': 'docs/reference.md', 'semantics.html': 'docs/semantics.md', 'api.html': 'docs/api.md', 'glossary.html': 'docs/glossary.md', 'integration.html': 'docs/integration.md', 'reuse.html': 'docs/reuse.md' };
+  const sources = { 'index.html': 'SPEC.md', 'language.html': 'docs/language.md', 'reference.html': 'docs/reference.md', 'semantics.html': 'docs/semantics.md', 'api.html': 'docs/api.md', 'glossary.html': 'docs/glossary.md', 'integration.html': 'docs/integration.md', 'reuse.html': 'docs/reuse.md', 'capabilities.html': 'docs/capabilities.md' };
   for (const [page, source] of Object.entries(sources)) {
     const hash = createHash('sha256').update(readFileSync(new URL(source, root))).digest('hex').slice(0, 12);
     const html = readFileSync(new URL(`docs/${page}`, root), 'utf8');
@@ -179,7 +179,10 @@ test('docs: nothing in the documentation speaks of an earlier state of the libra
     const text = readFileSync(new URL(f, root), 'utf8').replace(/<style[\s\S]*?<\/style>/g, '');
     assert.doesNotMatch(text, /seven wire types/i, f);
     // "before version N" is history and stays true; anything else that names a version must name this one
+    // the capability page and table say since which version a job exists (Round 24): that is history on purpose
+    const since = /capabilities\.(md|html)$|README\.md$/.test(f);
     for (const m of text.matchAll(/(?<!before )\b(?:version|sopworld|since|in) (0\.\d+)(?:\.\d+)?\b/gi)) {
+      if (since && /^since/i.test(m[0])) continue;
       assert.ok(version.startsWith(m[1]), `${f} mentions ${m[0]}; the version is ${version}`);
     }
     // the language page is where the old declaration is shown, once, as something still read

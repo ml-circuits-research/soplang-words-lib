@@ -10,7 +10,7 @@ export { GRAMMAR, MODIFIERS, SCHEMA_TYPES } from './matrix.mjs';
 export { rank, RANKING, veto } from './rank.mjs';
 export { aggregates } from './builtins.mjs';
 export { PatternIndex } from './patterns.mjs';
-export const version = '0.17.0';
+export const version = '0.18.0';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)
  * tools/build.mjs fills in `hash`, a fingerprint of the bundled sources, and `date`,

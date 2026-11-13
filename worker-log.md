@@ -3240,3 +3240,10 @@ identical. psys2 grep empty. scan-loops clean. tsc clean. Answers 1–4 in quest
      10 things: make 9 steps 1.69 ms; change 10 steps 1.39 ms; pick 0 steps 0.14 ms; remove 9 steps 0.87 ms
     200 things: make 9 steps 0.31 ms; change 10 steps 0.34 ms; pick 0 steps 0.08 ms; remove 9 steps 0.30 ms
    2000 things: make 9 steps 5.73 ms; change 10 steps 0.20 ms; pick 0 steps 0.40 ms; remove 9 steps 7.19 ms
+
+## Release 0.18.0 (Round 20: std.schema + std.acts)
+
+`/tmp/check.sh`: 322 pass, 0 fail on sources and built file, 321 in checking mode; pilot
+identical; psys2 grep empty; scan-loops clean; tsc clean. Version in package.json and
+src/index.mjs, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 0.18.0). PSys2 can
+switch its A1–A3 host side to these modules.

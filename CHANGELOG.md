@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.18.0
+
+Round 20: ACTS × SCHEMAS, the library side.
+
+### New
+- `std.schema`: a world that does things declared as data: kinds (types extending
+  `std.schema.thing`), attributes (`core.slot`), `std.schema.world`, `std.schema.kind`
+  (which acts apply), `std.schema.kinds` (any kind a knowledge type names),
+  `std.schema.limit`.
+- `std.acts`: make, remove, change (set, more, less), place, connect, group / ungroup,
+  pick, ask, copy; the same for every schema, no world-specific rule. A refusal names what
+  the kind allows, which worlds allow the act and which kinds have the attribute.
+- Every done action result has `diff` (added, removed, changed, with tiers).
+- The standard pack can ship actions. examples/acts.mjs (a seating plan and a face),
+  bench/acts.mjs (an act costs the same steps on 10, 200 and 2,000 things).
+
+### Fixes
+- A host action that returns a refused change passes its violations through.
+
 ## 0.17.0
 
 Round 19: what the demo's failures showed.

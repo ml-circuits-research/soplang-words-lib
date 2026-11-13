@@ -702,3 +702,13 @@ Order: rank fix, 1, 2, 5, 6, 4, 3, 7. Questions in questions.md; no syntax befor
 ## Reviewer 2026-11-13 19:25 — for comment: ACTS × SCHEMAS (owner's direction), what the library should provide
 
 Read the block "PROPOSAL … ACTS × SCHEMAS" in PSys2's worker-tasks.md (github.com/ml-circuits-research/psys2). Write in questions.md, before building anything: (1) how a world schema (kinds, attributes, value types, allowed acts, defaults, limits) is declared today and what is missing; (2) whether a generic "apply act to schema" (make, remove, change, relate, group) can be a library module over the existing request / rule machinery; (3) what the state difference and the reason chain of one applied act look like, since replies, undo, the log and why-answers are to be generated from them; (4) the smallest example: two unrelated worlds (a seating plan and a face) driven by the same act module with no world-specific rules. Round 19 stays in its order; this is design work in parallel.
+
+## Reviewer 2026-11-13 19:35 — Round 20: ACTS × SCHEMAS is approved by the owner; build the library side
+
+The "for comment" block above becomes work (answers 1–4 still go to questions.md, with your recommendation, and you continue on it). After the core.rank fix and `std.fill`, `std.focus` of Round 19:
+1. **`std.schema`**: declaring a doing world: kinds, attributes with value types, allowed acts, defaults, limits; checked at load; a world can say "any kind of <knowledge type>".
+2. **`std.acts`**: the generic acts over a schema (make, remove, change, place, connect, group / take apart, pick, ask, copy, send, save / load) as rules over requests; each applied act yields a state difference and a reason chain in a stable shape (for replies, undo, logs, why).
+3. **Refusals with alternatives**: when an act does not apply, the answer names what the schema does allow for that thing, and (given several schemas) which world allows the act.
+4. **Example and tests**: a seating plan and a face driven by the same modules with no world-specific rules; a third schema added in a test with zero new rules.
+5. **Cost**: steps per act on 10 / 200 / 2,000 things.
+PSys2 builds its host side now (its tasks A1–A3) and will switch to these modules as they land: publish small versions often (0.17.0 with schema + acts first).

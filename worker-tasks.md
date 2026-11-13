@@ -758,3 +758,26 @@ Order: 1 and 2 first (reports), then 3, 4, 5, 6, 7. Round 22 (shared things, vie
 ## Reviewer 2026-11-13 22:40 — the general modules built in PSys2 move here (owner)
 
 Owner's rule: general worlds do not live in PSys2. Modules that need functions belong to this library's standard pack. PSys2 today has its own bridges: `worlds/acts` (act grammar tables, executor), `worlds/space` (selection, amounts, relations, pieces, the stable solver, joins), `worlds/session.things` (shared things and views), `worlds/session.dialogue` (focus, continuation, correction), `worlds/meta.worlds` (routing rules). PSys2 will put each under `handover/<module>/` in its repository (github.com/ml-circuits-research/psys2) with a note. For each, as it appears: compare with your `std.*` module of the same job, take what is general (rules as SOP Lang, geometry and solvers as pack functions, with tests ported), say what you refuse and why, and release. Nothing English-specific and nothing about PSys2's tabs enters the library. Keep a table in docs: module, PSys2 lines replaced, version.
+
+## Reviewer 2026-11-13 22:50 — Round 24 (owner): every general mechanism for handling and using worlds lives in this library, and what the library can do is well documented
+
+**Owner:** "all general mechanisms for manipulating and using worlds must be in the reusable library, so we can use them in other projects; and what the library can do must be well documented."
+
+**A. Scope: what moves here beyond the modules already listed (22:40 block).** Anything a second project would have to rebuild:
+1. **Loading worlds by lookup**: a catalog (index + vocabulary → shard), a loader with a cache interface and an offline bundle generated from a catalog; today it is PSys2's `src/knowledge/catalog.mjs` and `facts.mjs`. The library gets the mechanism; fetching and storage stay injected by the host.
+2. **Choosing the world for a request** (routing by cards, referents, state, refusals) as a module over `std.schema` cards; the host supplies only signals it owns (an encoder score).
+3. **The request life cycle**: candidate readings → dry run → fill by tiers → act (all or nothing) → diff → why → reply data; one documented pipeline with hooks, so a host writes reading and rendering only.
+4. **Graded fallback** (fill and say the guess; not here but there; one question) as part of that pipeline.
+5. **Generators from a schema**: card, examples, reply data (exists), a coverage grid (world × act × kind cases with expected diffs), test skeletons.
+6. **Tools for authors**: validate a world, the reuse detector, a failure-ledger format and grouper keyed by pipeline stage (reading, routing, filling, acting), a bench.
+State for each what is general and what you refuse (anything about English, a UI, or one application).
+
+**B. Documentation (as important as A).** One place a new project starts from:
+1. **`docs/capabilities.md`: what the library can do**, by job not by API: describe a world; state facts and rules; ask and explain (why); act, undo, groups; refuse with alternatives; fill gaps from other worlds; keep focus in a dialogue; relate and place things; share things between views; teach facts; load knowledge by lookup; choose a world; generate cards, examples, tests; measure reuse. Each job: one paragraph, a ten-line example that runs (tested in CI so it cannot rot), the module and version, limits and what it cannot do.
+2. **`docs/quickstart.md`**: a new application in an hour: a schema, three acts, a knowledge world by lookup, a reply. Runs as a test.
+3. **`docs/modules.md`**: every `std.*` module: purpose, what it imports, its types and actions, its tiers, cost.
+4. **`docs/patterns.md`**: the reuse catalogue of Round 23 joined to it (how worlds combine).
+5. **`docs/host-contract.md`**: exactly what a host must supply (reading text into requests, rendering, storage, fetching) and what it must not rebuild.
+6. A **capability table in README** (job → module → example → since version) generated from the examples' headers; CHANGELOG entries point to it.
+7. Check the docs by using them: write `examples/second-app/` (not PSys2: for instance a small recipe planner or a room planner) using only the documentation, and list in worker-log every place the docs were not enough.
+Order: B1 for what exists today first (it will show the holes), then A1, A3, A4, A2, A5, A6 with their docs as they land, then B7. Rounds 21–23 continue; where they overlap, one implementation.

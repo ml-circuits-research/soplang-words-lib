@@ -2853,3 +2853,7 @@ one deny, no new syntax.
 
 A minor version: answer status and merge behaviour changed, one new call. `npm test`
 284 / 284 / 283. Pilot 147/147, 212/217, 231/232, output identical. Open: Q22.
+
+## Q22 closed
+
+Answered (a) by the reviewer (09:35): a repeated key stays "all of"; "one of" is two denies; no built-in added. questions.md: moved to Closed. No code change.

@@ -698,3 +698,7 @@ Gates as usual: npm test, compat run, benches, no application names in src. Rele
 6. **All or nothing for one sentence.** Several requests applied as one group: if one is refused or incomplete none is applied, and the group is one undo step. Say what exists (dry run, undo) and what is missing.
 7. **Cost.** PSys2 logged 1,056,197 steps for one short sentence, mostly matcher backtracking in the host. Offer an indexed match for patterns (by first content word and by type) as a library service if it can be general; measure on PSys2's pattern set from compat/.
 Order: rank fix, 1, 2, 5, 6, 4, 3, 7. Questions in questions.md; no syntax before an answer.
+
+## Reviewer 2026-11-13 19:25 — for comment: ACTS × SCHEMAS (owner's direction), what the library should provide
+
+Read the block "PROPOSAL … ACTS × SCHEMAS" in PSys2's worker-tasks.md (github.com/ml-circuits-research/psys2). Write in questions.md, before building anything: (1) how a world schema (kinds, attributes, value types, allowed acts, defaults, limits) is declared today and what is missing; (2) whether a generic "apply act to schema" (make, remove, change, relate, group) can be a library module over the existing request / rule machinery; (3) what the state difference and the reason chain of one applied act look like, since replies, undo, the log and why-answers are to be generated from them; (4) the smallest example: two unrelated worlds (a seating plan and a face) driven by the same act module with no world-specific rules. Round 19 stays in its order; this is design work in parallel.

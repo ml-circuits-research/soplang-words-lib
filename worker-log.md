@@ -2880,3 +2880,28 @@ checking mode. Pilot output identical. `git grep -i psys2 src/`: empty. scan-loo
   with every wire in `from`.
 - Test `query: the same value on several wires is supported, with all of them; different
   values conflict`: text, numbers written two ways, and two different values.
+
+## R17.5 — load cost at scale — done
+
+`npm test`: 285 pass, 0 fail on sources and built file, 284 in checking mode. Pilot output
+identical. `git grep -i psys2 src/`: empty. scan-loops clean. tsc clean.
+
+- bench/fixtures/knowledge: the 8 hand-written schemas and the 31 shards whose header says
+  `sources: hand-core` and `license: CC0-1.0`, copied unchanged from sop-knowledge-worlds
+  (540 kB, with a README). No imported shard is copied.
+- bench/load.mjs: the schemas, then 50 shards told one after another (the 31, then 19 again
+  in namespaces of their own); time and heap per shard. `--corpus <clone>` reads the
+  k.objects shards of a local clone in place instead (imported data, not committed),
+  `--shards <n>` how many.
+- Found and fixed: identity lookup walked the index set of the first identity key only;
+  for parts (`of`, `name`) that is every part of one object, for points (`part`, `n`)
+  every point with that number. It now walks the smallest of the identity keys' sets.
+  A 10-wire tell after 40 / 80 / 120 / 160 / 200 corpus shards (a script, /tmp/grow.mjs):
+  before 0.29 / 0.33 / 0.48 / 0.58 / 1.49 ms, after 0.15 / 0.16 / 0.30 / 0.20 / 0.32 ms.
+- `node --expose-gc bench/load.mjs`: 50 shards, 4,059 wires told, 139 ms, heap +11.4 MB;
+  0.038 ms a wire for shards 1-10, 0.023 for the last 10 (no growth).
+- With `--corpus` (50 k.objects shards): 37,399 wires, 1,365 ms, +98.3 MB; 0.046 then 0.043
+  ms a wire. With `--shards 200`: 201,532 wires, 11,789 ms, +512.7 MB; 0.047 then 0.077 ms
+  a wire. A CPU profile of shards 151-175 shows no quadratic path left: indexing, parsing
+  and the garbage collector (the heap is about 2.5 kB a wire); the slope at 200k wires is
+  the collector's.

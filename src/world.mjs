@@ -1766,7 +1766,14 @@ export class World {
     if (!keys || !keys.every((k) => attrs[k])) return null;
     const apart = this._nsUsed && !c.isShared(type);
     const look = (t, fits) => {
-      for (const id of this.index.get(K(t, keys[0], this._iv(t, keys[0], attrs[keys[0]][0]))) || []) { // bounded: the wires with one identity value
+      // walk the smallest of the identity keys' index sets (of=cat has many parts, name=tail few)
+      let set = null;
+      for (const k of keys) { // bounded: the identity keys
+        const s = this.index.get(K(t, k, this._iv(t, k, attrs[k][0])));
+        if (!s || !s.size) return null;
+        if (!set || s.size < set.size) set = s;
+      }
+      for (const id of set) { // bounded: the wires with one identity value
         if (apart && this._nsOf(id) !== ns) continue;
         const w = this.wires.get(id);
         if (fits(w) && keys.every((k) => w.attrs[k] && this._same(type, k, w.attrs[k][0], attrs[k][0]))) return w;

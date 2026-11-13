@@ -3339,3 +3339,16 @@ identical. psys2 grep empty. scan-loops clean. tsc clean.
 - First build failed: tools/build.mjs refuses a renamed import (`parse as parseWire`);
   imported as `parse`.
 - test/acts-history.test.mjs (3). reference table rows.
+
+## R21 item 5 — sets and values in acts — done
+
+`/tmp/check.sh`: 333 pass, 0 fail on sources and built file, 332 in checking mode. Pilot
+identical. psys2 grep empty. scan-loops clean. tsc clean.
+
+- `change` and `remove` take `set` (each, all, first, last) with `thing` a kind; `change`
+  takes `value` random (from the slot's enum or range), different (one per thing, none the
+  same, each other than it was where the slot allows), `same as <thing>`. The whole set is
+  one `set` patch: one undo step. A value list missing: "the name of a car has no list of
+  values to choose from". Random is reproducible for a given world state (seeded by the
+  world's sequence): the same request in the same state chooses the same.
+- test/acts-sets.test.mjs (2), reference row.

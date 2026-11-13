@@ -1661,6 +1661,7 @@ world that is not declared.
 | `make` | `kind`, `world`?, `id`?, attributes | a new thing with the slot defaults and the attributes given |
 | `remove` | `thing` | takes it away, with its links |
 | `change` | `thing`, `attr`, `value`, or `by` (`more`/`less`) and `amount`? | sets an attribute; more or less by the slot's `step` (else 1) |
+| (sets and values) | `set`: `each`, `all`, `first`, `last` (with `thing` a kind); `value`: `random`, `different`, `same as <thing>` | `change` and `remove` act on the whole set in one undo step; `random` picks from the slot's values, `different` gives each thing another value and none the same, `same as` copies another thing's value |
 | `place` | `thing`, `x`, or `rel` and `ref` | sets where it is (`x`, or `at=<rel>:<ref>`) |
 | `connect` | `a`, `b`, `rel`? | a `std.acts.link` |
 | `group`, `ungroup` | `things`, `name`?; `group` | a `std.acts.group` with its members; takes it apart |

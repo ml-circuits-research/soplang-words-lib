@@ -62,6 +62,60 @@ const wireText = (id, type, attrs) => `@${id} ${type}` + Object.entries(attrs).f
 const fresh = (w, kind) => { const base = kind.replace(/\W/g, '_'); let n = 1; while (w.has(base + n)) n++; return base + n; }; // bounded: the wires of the world
 const pre = (act, ctx, args, body) => { const w = ctx.world; return body(w); };
 
+/** The things a set names: each / all of a kind, the first or the last (Round 21). */
+function setOf(w, args) {
+  const kind = String(one(args.thing)).replace(/^\$/, '');
+  const byId = w.get(kind);
+  if (byId?.attrs.kind && args.set === undefined) return [byId];
+  const all = w.ofType('std.schema.thing').filter((t) => t.attrs.kind?.[0] === kind);
+  const set = String(one(args.set ?? 'each'));
+  if (set === 'first') return all.slice(0, 1);
+  if (set === 'last') return all.slice(-1);
+  return all; // each, all
+}
+/** A value a role names: random (one of the slot's values), different (one per thing, none the same), same as <thing>. */
+function valuesFor(w, things, attr, spec, seed) {
+  const s = String(spec);
+  const slot = (t) => slotOf(w, t.type, attr);
+  if (s.startsWith('same as ')) {
+    const r = thingOf(w, s.slice(8));
+    const v = r.thing?.attrs[attr]?.[0];
+    return v === undefined ? { why: r.thing ? `${r.thing.id} has no ${attr}` : r.why } : { values: things.map(() => v) };
+  }
+  const pool = (t) => slot(t)?.enum || slot(t)?.range;
+  if (things.some((t) => !pool(t))) return { why: `the ${attr} of ${art(things.find((t) => !pool(t)).attrs.kind[0])} has no list of values to choose from` };
+  let h = seed; // deterministic for a given world state: the same request gives the same choice again
+  const next = (n) => { h = (h * 1103515245 + 12345) % 2147483648; return h % n; };
+  if (s === 'random') return { values: things.map((t) => { const p = pool(t); return p[next(p.length)]; }) };
+  // different: as many different values as there are things, each other than its present one where possible
+  const used = new Set();
+  return { values: things.map((t) => {
+    const p = pool(t), now = t.attrs[attr]?.[0];
+    const free = p.filter((v) => !used.has(v) && v !== now);
+    const v = free.length ? free[next(free.length)] : p.filter((x) => !used.has(x))[0] ?? p[next(p.length)];
+    used.add(v);
+    return v;
+  }) };
+}
+function changeMany(ctx, args) {
+  const w = ctx.world;
+  const things = setOf(w, args), attr = String(one(args.attr)), kind = String(one(args.thing));
+  if (!things.length) return refuse(w, 'change', kind, `there is no ${kind}`);
+  for (const t of things) if (!allows(w, t, 'change')) return refuse(w, 'change', t.attrs.kind[0], `${art(t.attrs.kind[0])} cannot be changed here`);
+  for (const t of things) if (t.type !== 'std.schema.thing' && !attrsOf(w, t.type).includes(attr)) return refuse(w, 'change', t.attrs.kind[0], `${art(t.attrs.kind[0])} has no ${attr}`, { attr });
+  const spec = args.value === undefined ? undefined : String(one(args.value));
+  let values;
+  if (spec === undefined) return refuse(w, 'change', kind, `to what? (${attr})`, { attr, missing: 'value' });
+  if (/^(random|different|same as )/.test(spec)) {
+    const r = valuesFor(w, things, attr, spec, (w.seq * 31 + things.length) % 2147483647);
+    if (r.why) return refuse(w, 'change', kind, r.why, { attr });
+    values = r.values;
+  } else values = things.map(() => spec);
+  const p = w.applyPatch({ sets: things.map((t, i) => ({ id: t.id, key: attr, value: values[i] })) }); // all of them: one undo step
+  return p.ok === false ? p : { act: 'change', things: things.map((t) => t.id), attr, values: Object.fromEntries(things.map((t, i) => [t.id, values[i]])) };
+}
+const changeOne = (ctx, args) => ACTIONS.acts_change_one(ctx, args);
+
 const ACTIONS = {
   acts_make: (ctx, args) => pre('make', ctx, args, (w) => {
     const kind = String(one(args.kind));
@@ -92,6 +146,13 @@ const ACTIONS = {
     return { act: 'make', thing: id, ...(filled.length ? { filled } : {}), ...(k.standIn ? { standIn: k.standIn } : {}) };
   }),
   acts_remove: (ctx, args) => pre('remove', ctx, args, (w) => {
+    if (args.set !== undefined) { // each / all / the first / the last of a kind
+      const things = setOf(w, args), kind = String(one(args.thing));
+      if (!things.length) return refuse(w, 'remove', kind, `there is no ${kind}`);
+      for (const t of things) if (!allows(w, t, 'remove')) return refuse(w, 'remove', t.attrs.kind[0], `${art(t.attrs.kind[0])} cannot be removed here`);
+      for (const t of things) { for (const l of w.ofType('std.acts.link')) if (l.attrs.a[0] === ref(t.id) || l.attrs.b[0] === ref(t.id)) ctx.retract(l.id); ctx.retract(t.id); }
+      return { act: 'remove', things: things.map((t) => t.id) };
+    }
     const { thing: t, why, kind, which } = thingOf(w, args.thing, args.nth);
     if (!t) return refuse(w, 'remove', kind, why, which ? { which } : {});
     if (!allows(w, t, 'remove')) return refuse(w, 'remove', t.attrs.kind[0], `${art(t.attrs.kind[0])} cannot be removed here`);
@@ -99,7 +160,8 @@ const ACTIONS = {
     ctx.retract(t.id);
     return { act: 'remove', thing: t.id };
   }),
-  acts_change: (ctx, args) => pre('change', ctx, args, (w) => {
+  acts_change: (ctx, args) => (args.set !== undefined || /^(random|different|same as )/.test(String(one(args.value ?? ''))) ? changeMany(ctx, args) : changeOne(ctx, args)),
+  acts_change_one: (ctx, args) => pre('change', ctx, args, (w) => {
     const { thing: t, why, kind, which } = thingOf(w, args.thing, args.nth);
     if (!t) return refuse(w, 'change', kind, why, which ? { which } : {});
     const k = t.attrs.kind[0], attr = String(one(args.attr));

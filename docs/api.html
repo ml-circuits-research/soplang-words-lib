@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="84f57f2e158a">
+<meta name="source-hash" content="808be9f39481">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.80.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.81.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -671,6 +671,16 @@ w.tell(&#x27;@cow k.animal name=cow sound=moo  @s core.word text=make text=makes
 const O = { question: [&#x27;what&#x27;, &#x27;which&#x27;, &#x27;does&#x27;], skip: [&#x27;a&#x27;, &#x27;the&#x27;, &#x27;of&#x27;] };
 print([&#x27;what sound does a cow make&#x27;, &#x27;a cow makes which sound&#x27;, &#x27;cow sound?&#x27;].map((t) =&gt; readByTypes(w, t, O).best.answer[0]));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;moo&quot;,&quot;moo&quot;,&quot;moo&quot;]</code></pre></figure>
+<h3 id="inflectbyworld-word-op-options-and-articleforworld-word-options">inflectBy(world, word, op?, options?) and articleFor(world, word, options?)</h3>
+<p>Plurals and articles from a language world's facts (std.morph). <code>inflectBy</code> changes a word by ordered suffix rules (<code>op= order= suffix= after=consonant|vowel unless_suffix= min_length= replace= | add= drop=</code>), with irregular forms first (<code>singular= plural= read_only=</code>). A rule with keys it does not know is not applied. <code>articleFor</code> gives the determiner whose <code>before=</code> is the sound the word begins with, by the longest <code>onset</code> (<code>begins= sound=</code>) that matches, else by its first letter. The types default to w.lang.en's (<code>w.lang.en.inflect</code>, <code>.irregular</code>, <code>.det</code>, <code>.onset</code>). <code>discourseRealiser</code> uses both when the language world has them: <code>{kind:num=pl}</code> gives the plural, and "a" or "an" takes its form from the next word.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(`@t core.type of=w.lang.en.inflect  @t1 core.slot of=w.lang.en.inflect key=op  @t2 core.slot of=w.lang.en.inflect key=order kind=number
+  @t3 core.slot of=w.lang.en.inflect key=suffix many=true  @t4 core.slot of=w.lang.en.inflect key=add  @t5 core.slot of=w.lang.en.inflect key=drop kind=number  @t6 core.slot of=w.lang.en.inflect key=after
+  @d core.type of=w.lang.en.det  @d1 core.slot of=w.lang.en.det key=text  @d2 core.slot of=w.lang.en.det key=before
+  @r1 w.lang.en.inflect op=plural order=1 suffix=y after=consonant drop=1 add=ies  @r2 w.lang.en.inflect op=plural order=2 add=s
+  @a w.lang.en.det text=a before=consonant  @an w.lang.en.det text=an before=vowel`);
+print(inflectBy(w, &#x27;baby&#x27;), inflectBy(w, &#x27;day&#x27;), articleFor(w, &#x27;owl&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>babies days an</code></pre></figure>
 <h3 id="discourserealiserworld-options-and-discoursetemplatesworld-type">discourseRealiser(world, options?) and discourseTemplates(world, type?)</h3>
 <p>Sentences for composition frames from a language world's discourse templates (<code>w.lang.en.discourse</code>: a move, a register, a text with <code>{slots}</code>). The realiser picks, by seed, a template of the frame's move and register whose slots it can all fill. It fills them from the frame, the fact it cites, the story plan and the outline.</p>
 <ul><li>A story sentence tells its own element, and only elements told before it.</li><li>A move about the topic says the first claim.</li><li>No sentence is used twice while another fits.</li><li>What has no fitting template stays without text; <code>compose</code> lists it in <code>short</code>.</li></ul>
@@ -988,7 +998,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.80.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.81.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

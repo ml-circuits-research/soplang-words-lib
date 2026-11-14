@@ -5,6 +5,8 @@
 // noun phrase is the language's: `clause(fact, world)`, `np(name)`, `inflect(word, features)`
 // come from the host; the defaults only join words (`the penguin`, `the penguin eats fish`).
 
+import { inflectBy, articleFor } from './morph.mjs';
+
 const bare = (v) => String(v).replace(/^"|"$/g, '').replace(/^\$/, '');
 const META = new Set(['name', 'about', 'kind', 'class', 'is', 'source', 'own', 'cite', 'derived']);
 
@@ -23,6 +25,9 @@ export function discourseTemplates(world, type = 'w.lang.en.discourse') {
  */
 export function discourseRealiser(world, { seed = 1, type, clause, np, inflect, fill } = {}) {
   const templates = discourseTemplates(world, type);
+  const lang = (type ?? 'w.lang.en.discourse').split('.').slice(0, 2).join('.'); // the language world's own inflection and articles, when it has them
+  if (!inflect && world.ofType(`${lang}.inflect`).length) inflect = (w, f) => (f.num === 'pl' ? String(w).split(' ').map((x, i, a) => (i === a.length - 1 ? inflectBy(world, x, 'plural', { types: { rule: `${lang}.inflect`, irregular: `${lang}.irregular` } }) : x)).join(' ') : w);
+  const dets = new Set(world.ofType(`${lang}.det`).filter((d) => d.attrs.before).map((d) => bare(d.attrs.text[0]).toLowerCase()));
   const rand = rng(seed);
   const NP = np ?? ((n) => `the ${String(n).replace(/_/g, ' ')}`);
   let topicNow = null; // a fact with no about or name is about the topic it names
@@ -86,6 +91,7 @@ export function discourseRealiser(world, { seed = 1, type, clause, np, inflect, 
     used.add(t.id);
     let text = t.text;
     for (const [k, v] of Object.entries(values)) text = text.split(k).join(v);
+    if (dets.size) text = text.replace(/\b(a|an) (\S+)/gi, (m, a, next) => (dets.has(a.toLowerCase()) ? `${articleFor(world, next, { types: { det: `${lang}.det`, onset: `${lang}.onset` } }) ?? a} ${next}` : m)); // the article takes its form from the next word
     text = text.charAt(0).toUpperCase() + text.slice(1);
     return { text, template: t.id };
   };

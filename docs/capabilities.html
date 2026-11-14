@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld What the library can do</title>
-<meta name="source-hash" content="f01557fe6797">
+<meta name="source-hash" content="2d6aecb1e4dd">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.80.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.81.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html" aria-current="page">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -335,7 +335,7 @@ print(sample(w, { mode: &#x27;one&#x27;, seed: 1 }).frames[0].args);</code></pre
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>print(summarizeText(&#x27;Owls hunt at night. Their eyes are large. An owl can turn its head about 270 degrees. Some owls live in barns.&#x27;, { n: 1 }).picked);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;Owls hunt at night.&quot;]</code></pre></figure>
 <h2 id="compose-a-text-from-knowledge">Compose a text from knowledge</h2>
-<p><em>In <code>compose</code>, <code>discourseRealiser</code>, <code>discourseTemplates</code>, <code>writeDocument</code>, <code>readDocument</code>, <code>solveChoices</code>, <code>readStory</code>, <code>storyPlan</code>, <code>STORY_RELATIONS</code>, <code>interestOf</code>, <code>measuresOf</code>, <code>shapeShare</code>, <code>interestModel</code>; since 0.64.</em> <em>Works on: knowledge worlds (facts about a topic, genres, interest features).</em></p>
+<p><em>In <code>compose</code>, <code>discourseRealiser</code>, <code>discourseTemplates</code>, <code>inflectBy</code>, <code>articleFor</code>, <code>writeDocument</code>, <code>readDocument</code>, <code>solveChoices</code>, <code>readStory</code>, <code>storyPlan</code>, <code>STORY_RELATIONS</code>, <code>interestOf</code>, <code>measuresOf</code>, <code>shapeShare</code>, <code>interestModel</code>; since 0.64.</em> <em>Works on: knowledge worlds (facts about a topic, genres, interest features).</em></p>
 <p>A composition with the moves of a genre: an outline from the topic's relations across the worlds, chosen by interest (the published <code>k.interest</code>: appraisals and features over measures computed from facts, each score explained), facts that each cite their wire and never repeat, and an exact size or a list of what the knowledge lacked. With the published <code>k.genres</code>, the layout follows the genre's parts, steps and register, and its choice points are solved jointly. A story is planned from <code>k.story</code>: its elements are solved jointly under its constraints over the catalog. <strong>Limits:</strong> measures of words and sentences (word band, concreteness, words over the register's maximum) come from the host. The sentences come from the language world's discourse templates when it has them (the clause of a fact is the host's). A composition is written as a <code>w.document</code> live world (<code>writeDocument</code>) and read back in order (<code>readDocument</code>). The procedures of <code>k.procedures</code> come next. The sentences come from the host's realiser.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.tell(&#x27;@owl k.animal name=owl  @f1 k.fact about=owl eggs=4&#x27;);
@@ -377,7 +377,7 @@ print(serialize([w1]).trim(), quantity(&#x27;2kg&#x27;), STAGES.length &gt; 3);<
 <div class="table"><table><thead><tr><th>PSys2 package</th><th>here</th><th>PSys2 lines it replaces</th><th>refused (stays in the host)</th><th>since</th></tr></thead><tbody><tr><td>knowledge-loader</td><td><code>createCatalog</code>, <code>bundleReader</code>, <code>tools/build-bundle.mjs</code></td><td>254 (catalog 105, cache 52, source 20, bundle loader 20, bundle generator 57)</td><td>English lemma rules (the host passes <code>lemma</code>), decoding k.objects parts for drawing, the avatar's faces, the evaluation-set generator; taught facts are the act <code>teach</code></td><td>since 0.23</td></tr><tr><td>turn-pipeline</td><td><code>turn</code> (dry run on a fork, all or nothing, diff, why, guesses, replies, graded fallback)</td><td>the dry-run protocol, all-or-nothing holds and graded fallback (estimated 120 + 350 of its 900 general lines)</td><td>the reading of English, the per-turn tick budget wiring (the library has its own budgets), translation, the encoder accept rule</td><td>since 0.24</td></tr><tr><td>meta.worlds</td><td><code>route</code> (cards, referents, a dry run, a host signal)</td><td>its routing rules (the cards stay generated by the host)</td><td>the tab registry and the generated cards of one application</td><td>since 0.24</td></tr><tr><td>failure-ledger</td><td><code>ledgerAppend</code>, <code>ledgerGroups</code>, <code>stageOf</code>, <code>tools/ledger.mjs</code></td><td>the format, append and counting (of its 160 generator lines)</td><td>its cause-signal list and the replay of its own evaluation scripts</td><td>since 0.25</td></tr><tr><td>acts, session.things, session.dialogue, common.sense, space</td><td>compared (questions.md Q30): already covered by std.schema, std.acts, views, std.focus, <code>turn</code>, <code>createCatalog</code>; missing: a per-kind act hook, space selection and layouts, overlap enforcement, a turn log, pieces</td><td>—</td><td>English forms and readers, its tabs' words, facts (to sop-knowledge-worlds)</td><td>—</td></tr></tbody></table></div>
 <p class="source">Generated from <code>docs/capabilities.md</code>.</p>
 </main>
-<footer>sopworld 0.80.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.81.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

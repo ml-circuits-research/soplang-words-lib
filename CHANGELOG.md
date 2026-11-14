@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.81.0
+
+Plurals and articles from the language world (reviewer 22:30, [KNOW] Q54 of the knowledge
+repository). The knowledge repository is pinned at fa8a629.
+
+### New
+- `inflectBy(world, word, op, { types, vowels })`: ordered suffix rules and irregular forms
+  from facts (w.lang.en's by default).
+- `articleFor(world, word, { types, vowels })`: the determiner by the sound the word begins
+  with (onset facts, else its first letter).
+- `discourseRealiser` uses both when the language world has them: `{x:num=pl}` gives the
+  plural, and a/an follows the next word.
+
 ## 0.80.0
 
 Cousins along the layered graph, the automatic tester and the skill (reviewer 21:55,

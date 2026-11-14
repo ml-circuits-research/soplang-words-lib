@@ -1853,6 +1853,32 @@ print(['what sound does a cow make', 'a cow makes which sound', 'cow sound?'].ma
 ["moo","moo","moo"]
 ```
 
+### inflectBy(world, word, op?, options?) and articleFor(world, word, options?)
+
+Plurals and articles from a language world's facts (std.morph). `inflectBy` changes a word
+by ordered suffix rules (`op= order= suffix= after=consonant|vowel unless_suffix=
+min_length= replace= | add= drop=`), with irregular forms first (`singular= plural=
+read_only=`). A rule with keys it does not know is not applied. `articleFor` gives the
+determiner whose `before=` is the sound the word begins with, by the longest `onset`
+(`begins= sound=`) that matches, else by its first letter. The types default to
+w.lang.en's (`w.lang.en.inflect`, `.irregular`, `.det`, `.onset`). `discourseRealiser`
+uses both when the language world has them: `{kind:num=pl}` gives the plural, and "a" or
+"an" takes its form from the next word.
+
+```js run
+const w = new World();
+w.tell(`@t core.type of=w.lang.en.inflect  @t1 core.slot of=w.lang.en.inflect key=op  @t2 core.slot of=w.lang.en.inflect key=order kind=number
+  @t3 core.slot of=w.lang.en.inflect key=suffix many=true  @t4 core.slot of=w.lang.en.inflect key=add  @t5 core.slot of=w.lang.en.inflect key=drop kind=number  @t6 core.slot of=w.lang.en.inflect key=after
+  @d core.type of=w.lang.en.det  @d1 core.slot of=w.lang.en.det key=text  @d2 core.slot of=w.lang.en.det key=before
+  @r1 w.lang.en.inflect op=plural order=1 suffix=y after=consonant drop=1 add=ies  @r2 w.lang.en.inflect op=plural order=2 add=s
+  @a w.lang.en.det text=a before=consonant  @an w.lang.en.det text=an before=vowel`);
+print(inflectBy(w, 'baby'), inflectBy(w, 'day'), articleFor(w, 'owl'));
+```
+
+```output
+babies days an
+```
+
 ### discourseRealiser(world, options?) and discourseTemplates(world, type?)
 
 Sentences for composition frames from a language world's discourse templates

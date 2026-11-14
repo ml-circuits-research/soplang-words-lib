@@ -4820,3 +4820,16 @@ Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-que
 - Dimensions for act families, alternation families and structure kinds as the knowledge repository publishes those edges.
 - [KNOW] Q54: realisation of English plurals and a/an through std.morph (w.lang.en `det before=` and `onset`).
 - Q57: solveChoices keys (binding.choose, choose_min, about, match.differs, soft, n).
+
+## 0.81.0: plurals and articles from w.lang.en (reviewer 22:30, [KNOW] Q54)
+
+- repos.pin: knowledge → fa8a629 (det before= and onset facts, k.procedures compositions, k.words frequency).
+- `inflectBy` and `articleFor` in std.morph read the language world's facts.
+- test/morph-en.test.mjs on the published w.lang.en:
+  - cat, box, baby, day, church, analysis, antenna → cats, boxes, babies, days, churches, analyses, antennas (antennae is read_only, so not generated);
+  - owl, cow, hour, unicorn, umbrella, heir → an, a, an, a, an, an.
+- `discourseRealiser` uses them by default when w.lang.en has them.
+- Answer to the knowledge repository's Q54: realiseEn's two jobs are now inflectBy(world, word, 'plural') and articleFor(world, word); discourseRealiser applies both. tools/lib/lang-en.mjs realiseEn can be deleted once PSys2 vendors 0.81.
+  - Limit: rules with keys the library does not know (exception=, unless_is_singular, used by the singular rules) are skipped. If singular is needed, please express those as lists (only_words= / only_suffix=).
+- Gates: npm test 454 / 454 / 452 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+- Next: Q57 (solveChoices keys from k.procedures: binding.choose, choose_min, about, match.differs, soft, n), then compose through the published k.procedures compositions.

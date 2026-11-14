@@ -63,7 +63,7 @@ contain and where code lives: [docs/kinds-of-worlds.md](docs/kinds-of-worlds.md)
 | Reach a goal by methods that are knowledge | `planner`, `factStore`, `PlanLive`, `readMethods`, `PLAN_LIMITS` | [example](docs/capabilities.md#reach-a-goal-by-methods-that-are-knowledge) | 0.55 |
 | Suggest random commands that work | `sample`, `diversity` | [example](docs/capabilities.md#suggest-random-commands-that-work) | 0.59 |
 | Summarise a log or a text | `actsOf`, `summarizeLog`, `summarizeText`, `overlap` | [example](docs/capabilities.md#summarise-a-log-or-a-text) | 0.61 |
-| Compose a text from knowledge | `compose`, `discourseRealiser`, `discourseTemplates`, `writeDocument`, `readDocument`, `solveChoices`, `readStory`, `storyPlan`, `STORY_RELATIONS`, `interestOf`, `measuresOf`, `shapeShare`, `interestModel` | [example](docs/capabilities.md#compose-a-text-from-knowledge) | 0.64 |
+| Compose a text from knowledge | `compose`, `discourseRealiser`, `discourseTemplates`, `inflectBy`, `articleFor`, `writeDocument`, `readDocument`, `solveChoices`, `readStory`, `storyPlan`, `STORY_RELATIONS`, `interestOf`, `measuresOf`, `shapeShare`, `interestModel` | [example](docs/capabilities.md#compose-a-text-from-knowledge) | 0.64 |
 | Read a question by the types of its words | `readByTypes`, `typedLexicon`, `nearWords`, `normalise`, `alternationsOf`, `storyState` | [example](docs/capabilities.md#read-a-question-by-the-types-of-its-words) | 0.72 |
 | Judge a fix on the cousins of its case | `cousins`, `ancestorsOf`, `kindChain`, `judgeFix`, `learnRules` | [example](docs/capabilities.md#judge-a-fix-on-the-cousins-of-its-case) | 0.73 |
 | Align two worlds by structure | `alignWorlds` | [example](docs/capabilities.md#align-two-worlds-by-structure) | 0.77 |

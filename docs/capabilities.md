@@ -759,7 +759,7 @@ print(summarizeText('Owls hunt at night. Their eyes are large. An owl can turn i
 
 ## Compose a text from knowledge
 
-*In `compose`, `discourseRealiser`, `discourseTemplates`, `writeDocument`, `readDocument`, `solveChoices`, `readStory`, `storyPlan`, `STORY_RELATIONS`, `interestOf`, `measuresOf`, `shapeShare`, `interestModel`; since 0.64.*
+*In `compose`, `discourseRealiser`, `discourseTemplates`, `inflectBy`, `articleFor`, `writeDocument`, `readDocument`, `solveChoices`, `readStory`, `storyPlan`, `STORY_RELATIONS`, `interestOf`, `measuresOf`, `shapeShare`, `interestModel`; since 0.64.*
 *Works on: knowledge worlds (facts about a topic, genres, interest features).*
 
 A composition with the moves of a genre: an outline from the topic's relations across the

@@ -214,3 +214,53 @@ export function realise(m, template, roles, { dictionary, base = {}, agree = ['g
 
 /** The template a language world gives for an act (and an answer shape). */
 export const templateFor = (m, act, shape = null) => m.templates.find((t) => t.act === act && t.shape === shape)?.text ?? m.templates.find((t) => t.act === act)?.text ?? null;
+
+// ---- suffix rules and articles read from a language world's facts (reviewer 22:30, [KNOW] Q54):
+// the plural (or any op) of a word by ordered suffix rules, irregular forms first; the article
+// before a word by the sound it begins with. Language-free: the rules, irregulars, articles and
+// onsets are the language world's facts.
+
+const q = (v) => String(v).replace(/^"|"$/g, '');
+const one1 = (w, k) => (w.attrs[k] ? q(w.attrs[k][0]) : undefined);
+const KNOWN_RULE_KEYS = new Set(['op', 'order', 'suffix', 'after', 'unless_suffix', 'min_length', 'replace', 'add', 'drop', 'set']);
+
+/**
+ * A word changed by ordered suffix rules (`<rule type> op= order= suffix=... after=consonant|vowel
+ * unless_suffix= min_length= replace= | add= drop=`), irregular forms first (`<irregular type>
+ * singular= plural= read_only=`). A rule with keys it does not know is not applied (said in
+ * `skipped`). Types default to w.lang.en's: { rule: 'w.lang.en.inflect', irregular: 'w.lang.en.irregular' }.
+ * Returns the form (lower case), or the word when no rule applies.
+ */
+export function inflectBy(world, word, op = 'plural', { types = {}, vowels } = {}) {
+  const T = { rule: 'w.lang.en.inflect', irregular: 'w.lang.en.irregular', ...types };
+  const w = String(word).toLowerCase();
+  const from = op === 'plural' ? 'singular' : 'plural', to = op === 'plural' ? 'plural' : 'singular';
+  const irr = world.ofType(T.irregular).find((x) => one1(x, from) === w && (op !== 'plural' || one1(x, 'read_only') !== 'yes'));
+  if (irr) return one1(irr, to);
+  const V = new RegExp(`[${vowels ?? 'aeiou'}]$`);
+  const rules = world.ofType(T.rule).filter((r) => one1(r, 'op') === op && Object.keys(r.attrs).every((k) => k.startsWith('core.') || KNOWN_RULE_KEYS.has(k))).sort((a, b) => Number(one1(a, 'order')) - Number(one1(b, 'order')));
+  for (const r of rules) { // bounded: the rules
+    if (one1(r, 'min_length') && w.length < Number(one1(r, 'min_length'))) continue;
+    const sfx = (r.attrs.suffix || []).map(q);
+    const hit = sfx.length ? sfx.find((s) => w.endsWith(s) && (!one1(r, 'after') || (one1(r, 'after') === 'consonant') === !V.test(w.slice(0, -s.length)))) : '';
+    if (hit === undefined) continue;
+    if ((r.attrs.unless_suffix || []).map(q).some((s) => w.endsWith(s))) continue;
+    const base = one1(r, 'replace') != null && hit ? w.slice(0, w.length - hit.length) : w.slice(0, w.length - Number(one1(r, 'drop') ?? 0));
+    return base + (one1(r, 'replace') ?? one1(r, 'add') ?? '');
+  }
+  return w;
+}
+
+/**
+ * The article before a word: the determiner whose `before=` is the sound the word begins with,
+ * by the longest `<onset type> begins= sound=` that matches, else by its first letter (vowels:
+ * `aeiou` unless given). Types default to w.lang.en's: { det: 'w.lang.en.det', onset: 'w.lang.en.onset' }.
+ */
+export function articleFor(world, word, { types = {}, vowels } = {}) {
+  const T = { det: 'w.lang.en.det', onset: 'w.lang.en.onset', ...types };
+  const w = String(word).toLowerCase();
+  const on = world.ofType(T.onset).filter((x) => w.startsWith(one1(x, 'begins'))).sort((a, b) => one1(b, 'begins').length - one1(a, 'begins').length)[0];
+  const sound = on ? one1(on, 'sound') : new RegExp(`^[${vowels ?? 'aeiou'}]`).test(w) ? 'vowel' : 'consonant';
+  const d = world.ofType(T.det).find((x) => one1(x, 'before') === sound);
+  return d ? one1(d, 'text') : null;
+}

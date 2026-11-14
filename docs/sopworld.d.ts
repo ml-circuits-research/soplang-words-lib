@@ -646,3 +646,7 @@ export function learnRules(world: World, cases: { text: string; frame: object }[
 export function alignWorlds(a: World, b: World, options?: { min?: number }): { map: Record<string, string>; slots: Record<string, Record<string, string>>; score: number; offers: { to: { type: string; key: string }; what: string; value: unknown; from: { type: string; key: string } }[] };
 /** A story then a question: quantities held by owners follow the story; the question is read against them. */
 export function storyState(text: string, options?: { verbs?: Record<string, 'set' | 'add' | 'remove' | 'give'>; numbers?: Record<string, number>; pronouns?: string[]; question?: string[]; all?: string[]; skip?: string[] }): { state: Record<string, Record<string, number>>; steps: object[]; answers: { question: string; answer: number | null; owner?: string; item: string; why: string }[]; unread: string[] };
+/** A word changed by a language world's ordered suffix rules, irregular forms first. */
+export function inflectBy(world: World, word: string, op?: string, options?: { types?: { rule?: string; irregular?: string }; vowels?: string }): string;
+/** The article before a word, by the sound it begins with (onsets, else its first letter). */
+export function articleFor(world: World, word: string, options?: { types?: { det?: string; onset?: string }; vowels?: string }): string | null;

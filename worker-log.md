@@ -3940,3 +3940,23 @@ cases/schemas/map.sop). Version, CHANGELOG, docs rebuilt (`docs/version.md`: sop
   - undo gives back layer none.
 - test/view-acts.test.mjs (1 test); reference.md (views paragraph, change and ask rows).
 - Next: items 2 (typed needs) and 3 (ask over attributes and relations).
+
+## Reviewer 03:10 item 3 — ask over any attribute and relation, with the answer's shape — done; release 0.38.0
+
+`/tmp/check.sh`: # pass 381 # fail 0 # pass 381 # fail 0 # pass 380 # fail 0 — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/cases.mjs`: 39 / 39 (new: `ask.which.rel`, stage
+replying; the tool now checks `expect.result`). Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.38.0).
+
+- src/std.mjs: `ask` now handles
+  - knowledge facts by name;
+  - shapes: number with unit (`quantity`), value, list, none;
+  - `rel` + `of` → yes/no either way round;
+  - `kind` + `rel` / `of`, `attr` / `value`, `count`.
+- `node /tmp/ask.mjs` over four hand-written countries:
+  - "which border france" → spain, germany;
+  - population → number 68000000 people, with its source;
+  - spain borders germany → false; portugal borders spain → true;
+  - count → 4.
+- test/ask-shapes.test.mjs: 2 tests (knowledge, schema). reference.md: the ask row.
+- Next: item 2 (typed needs), item 5 (the corpus by stage from PSys2).

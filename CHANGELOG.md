@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.38.0
+
+Reviewer 03:10 item 3: `ask` over any attribute and any relation, of a schema or a
+knowledge world, with the shape of the answer.
+
+### New
+- `ask thing= attr=` gives a `shape`: `number` (with `unit`, from `68000000people`),
+  `value`, `list` or `none`. A knowledge fact is found by its `name`, and its source comes
+  with the answer.
+- `ask thing= rel= of=` answers `yes/no`, either way round (France lists Spain, or Spain
+  lists France). `ask thing= rel=` without `of` gives the list.
+- `ask kind= rel= of=` ("which countries border France"), `ask kind= attr= value=`, and
+  `count=true` ("how many").
+
 ## 0.37.0
 
 Reviewer 03:10 item 1, from a map pilot: acts on the view itself.

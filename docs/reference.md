@@ -1678,7 +1678,7 @@ world that is not declared.
 | `connect` | `a`, `b`, `rel`? | a `std.acts.link` |
 | `group`, `ungroup` | `things`, `name`?; `group` | a `std.acts.group` with its members; takes it apart |
 | `pick` | `kind`, attributes, `nth`? | the things that fit (`result.things`); changes nothing |
-| `ask` | `thing` (or a view's state), `attr`? | its attributes, or one value with `why` |
+| `ask` | `thing` (or a view's state, or a knowledge fact by its `name`), `attr`? or `rel` and `of`?; or `kind` with `rel` + `of`, `attr` + `value`, `count`? | its attributes, or one value with `why` and its `shape`: `number` (with `unit`), `value`, `list`, `none`; with `rel`: the values (`list`) or, with `of`, whether one relates to the other either way round (`yes/no`, `answer`); with `kind`: which things (`list`, `things`, `names`, `count`) or how many (`number`) |
 | `copy` | `thing` | a new thing with the same attributes |
 | `send` | `thing`, `to` | to another world: the kind must be sendable from its world and makeable in `to` (a kind may belong to several worlds: `world=` repeated); one undo step |
 | `save`, `load` | `name` | the told things as they are, kept in a `std.acts.saved` wire; load changes them back, makes again what went, takes away what was made since |

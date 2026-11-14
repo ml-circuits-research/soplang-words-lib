@@ -5,6 +5,7 @@
 // (count, sum, min, max, argmin, argmax, collect) or core.rank already do.
 
 import { parse } from './parser.mjs';
+import { quantity } from './builtins.mjs';
 const num = (v) => Number(v);
 const out = (x) => (Number.isFinite(x) ? String(+x.toFixed(10)) : undefined);
 /** n optional number arguments after `required` ones: declarations a, b, c, ... */
@@ -120,6 +121,54 @@ function viewThing(ctx, args) {
     t = w.get(id);
   }
   return { ...args, thing: t.id };
+}
+/**
+ * Questions over any attribute and relation (reviewer 03:10 item 3), of schema things and of
+ * knowledge facts alike, with the shape of the answer: `number` (with its unit), `value`,
+ * `list`, `yes/no`.
+ */
+const bare = (v) => String(v).replace(/^\$/, '').replace(/^"|"$/g, '');
+function shapeOf(vs) {
+  if (!vs || !vs.length) return { shape: 'none' };
+  if (vs.length > 1) return { shape: 'list', values: vs.map(bare) };
+  const q = quantity(vs[0]);
+  return q ? { shape: 'number', number: q.n, ...(q.unit ? { unit: q.unit } : {}) } : { shape: 'value' };
+}
+/** A wire by its id or its name (`name=`), of a type when given: a knowledge fact or a thing. */
+function named(w, x, type) {
+  const id = bare(one(x));
+  const byId = w.get(id);
+  if (byId) return byId;
+  const pool = type !== undefined ? w.ofType(String(one(type))) : [...w.wires.values()];
+  return pool.find((f) => !f.type.startsWith('core.') && (f.attrs.name || []).some((n) => bare(n) === id)) || null;
+}
+/** Does a relate to b by key rel (either way round: a lists b, or b lists a)? */
+const relates = (a, b, rel) => (a.attrs[rel] || []).some((v) => bare(v) === b.id || (b.attrs.name || []).some((n) => bare(n) === bare(v))) || (b.attrs[rel] || []).some((v) => bare(v) === a.id || (a.attrs.name || []).some((n) => bare(n) === bare(v)));
+function askFact(w, f, args) {
+  if (args.rel !== undefined) {
+    const rel = String(one(args.rel));
+    if (args.of !== undefined) { const b = named(w, args.of, args.type); if (!b) return { ok: false, why: `there is no ${bare(one(args.of))}` }; return { act: 'ask', thing: f.id, rel, of: b.id, shape: 'yes/no', answer: relates(f, b, rel) }; }
+    const values = (f.attrs[rel] || []).map(bare);
+    return { act: 'ask', thing: f.id, rel, shape: 'list', values, count: values.length };
+  }
+  if (args.attr === undefined) return { act: 'ask', thing: f.id, attrs: Object.fromEntries(Object.entries(f.attrs).filter(([k]) => !k.startsWith('core.')).map(([k, v]) => [k, v.length === 1 ? v[0] : [...v]])) };
+  const attr = String(one(args.attr));
+  return { act: 'ask', thing: f.id, attr, ...shapeOf(f.attrs[attr]), value: f.attrs[attr]?.[0] ?? null, ...(f.attrs['core.source'] ? { source: bare(f.attrs['core.source'][0]) } : {}) };
+}
+/** Which (or how many) things of a kind: `rel` + `of` (related to one), `attr` + `value`. */
+function askWhich(w, args) {
+  const kind = bare(one(args.kind));
+  let pool = w.ofType('std.schema.thing').filter((t) => t.attrs.kind?.[0] === kind);
+  if (!pool.length) pool = w.ofType(kind); // a knowledge type
+  if (args.rel !== undefined && args.of !== undefined) {
+    const b = named(w, args.of);
+    if (!b) return { ok: false, why: `there is no ${bare(one(args.of))}` };
+    pool = pool.filter((x) => x.id !== b.id && relates(x, b, String(one(args.rel))));
+  }
+  if (args.attr !== undefined && args.value !== undefined) pool = pool.filter((x) => (x.attrs[String(one(args.attr))] || []).some((v) => bare(v) === bare(one(args.value))));
+  const names = pool.map((x) => (x.attrs.name ? bare(x.attrs.name[0]) : x.id));
+  if (args.count !== undefined && String(one(args.count)) !== 'false') return { act: 'ask', kind, shape: 'number', number: pool.length, things: pool.map((x) => x.id) };
+  return { act: 'ask', kind, shape: 'list', things: pool.map((x) => x.id), names, count: pool.length };
 }
 /** The things a set names: each / all of a kind, the first or the last (Round 21). */
 function setOf(w, args) {
@@ -328,13 +377,19 @@ const ACTIONS = {
     return { act: 'pick', things: all.map((t) => t.id) };
   }),
   acts_ask: (ctx, a) => pre('ask', ctx, a, (w) => {
+    if (a.kind !== undefined && a.thing === undefined) return askWhich(w, a); // which / how many things of a kind
     const args = viewThing(ctx, a);
     if (args.thing === undefined) return { ok: false, why: 'ask about what?' };
+    if (!w.get(String(one(args.thing)).replace(/^\$/, ''))?.attrs.kind && !w.ofType('std.schema.thing').some((t) => t.attrs.kind?.[0] === String(one(args.thing)))) { // a fact of a knowledge world, by its name
+      const f = named(w, args.thing, args.type);
+      if (f) return askFact(w, f, args);
+    }
+    if (args.rel !== undefined) { const r = thingOf(w, args.thing, args.nth, inOf(w, args)); if (!r.thing) return refuse(w, 'ask', r.kind, r.why, r.which ? { which: r.which } : {}); if (!allows(w, r.thing, 'ask')) return refuse(w, 'ask', r.thing.attrs.kind[0], `${art(r.thing.attrs.kind[0])} cannot be asked about here`); return askFact(w, r.thing, args); }
     const { thing: t, why, kind, which } = thingOf(w, args.thing, args.nth, inOf(w, args));
     if (!t) return refuse(w, 'ask', kind, why, which ? { which } : {});
     if (args.attr === undefined) return { act: 'ask', thing: t.id, attrs: Object.fromEntries(Object.entries(t.attrs).map(([k, v]) => [k, v.length === 1 ? v[0] : [...v]])) };
     const attr = String(one(args.attr));
-    return { act: 'ask', thing: t.id, attr, value: t.attrs[attr]?.[0] ?? null, why: w.why(t.id, attr) };
+    return { act: 'ask', thing: t.id, attr, ...shapeOf(t.attrs[attr]), value: t.attrs[attr]?.[0] ?? null, why: w.why(t.id, attr) };
   }),
   acts_send: (ctx, args) => pre('send', ctx, args, (w) => { // to another world that has the kind: both schemas checked, one set
     const { thing: t, why, kind, which } = thingOf(w, args.thing, args.nth, inOf(w, args));

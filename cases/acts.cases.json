@@ -645,5 +645,66 @@
     }
    }
   ]
+ },
+ {
+  "id": "ask.which.rel",
+  "stage": "replying",
+  "source": "reviewer 03:10 item 3: who sits at table 1; does guest1 sit at table1",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "bob"
+    }
+   },
+   {
+    "act": "ask",
+    "args": {
+     "kind": "guest",
+     "rel": "at",
+     "of": "table1"
+    },
+    "expect": {
+     "ok": true,
+     "result": {
+      "shape": "list",
+      "things": [
+       "guest1"
+      ]
+     }
+    }
+   },
+   {
+    "act": "ask",
+    "args": {
+     "thing": "guest1",
+     "rel": "at",
+     "of": "table1"
+    },
+    "expect": {
+     "ok": true,
+     "result": {
+      "shape": "yes/no",
+      "answer": true
+     }
+    }
+   }
+  ]
  }
 ]

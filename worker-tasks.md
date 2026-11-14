@@ -917,3 +917,18 @@ The owner confirms the skills belong here because the library is unique and reus
 1. Skills (Round 27) take the target repositories as parameters (one or several knowledge repositories, one application); nothing in a skill names sop-knowledge-worlds or PSys2 except in its dry-run examples.
 2. **Several catalogs at once**: `createCatalog` (and `std.know.fill`, typed needs, the word index) must load from several catalogs with an order of precedence, report when two catalogs define the same thing differently, and keep each fact's catalog in its source; a test with two small catalogs that overlap.
 3. The pinned published worlds (`worlds.pin`) become a list of repositories with their commits.
+
+## Reviewer 2026-11-14 07:25 — documentation (owner): what each kind of world may contain, where code lives, and everything the library and its skills can do
+
+**A. A page `docs/kinds-of-worlds.md`** (linked from README, glossary, capabilities, quickstart, host contract), in detail and with a small runnable example for each point:
+1. **World schema**: what it may contain: kinds of things, attributes with types, ranges, defaults and questions, count limits, slot groups, `excludes`, joins, which acts apply to which kind, rules and denies, words; how it **names** the functions it uses: pure functions of the standard pack (which ones exist), and effects the application provides (`std.schema.effect`, and `on.<act>` if added): declared in the schema, implemented outside it. It holds no particular things and no code.
+2. **Knowledge world**: facts, constraints (slots, `excludes`, joins), rules (derivations such as habitat → usual place, carried things go with their carrier, "is a kind of" chains), provenance (`core.source`, model-labelled facts); no session state, no code; what to do when a rule needs a computation (ask the library for a function; never embed code).
+3. **Live world**: an instance of a schema in a session: state, focus, history and undo, the view that shows it; it inherits constraints and rules from its schema and reads knowledge worlds by lookup; the application's tools (renderers, engines, editors) are attached to it through effects; how the library keeps state and view consistent (state difference after each act; rendered = state).
+4. **Library modules** (`std.*`): mechanisms, not worlds; which module serves which kind of world.
+5. **Where code lives, as a rule:** world schemas and knowledge worlds stay SOP Lang only so any application can reuse them; a general function goes into the standard pack; a specific tool stays in the application, connected through a declared effect. With three examples of a need and where it ends up.
+6. A diagram (text or SVG) of how the three combine at run time: schema + knowledge + session state = live world; a request goes through `turn`.
+
+**B. Skills documentation (Round 27):** `skills/README.md`: what each skill is for, when to use it, its inputs (repositories, failure batches), what it changes and what it must never do, its outputs (changes per repository, the before / after table, lessons), how to run a dry run, and how the skills form the consolidation cycle; each `SKILL.md` self-contained. Link it from README and capabilities.
+
+**C. Keep `docs/capabilities.md` complete:** every module and tool the library has, with a runnable example, its version and its limits, including the newest (grammar, resolve, know.fill, needs, view acts, ask over relations, several catalogs, turnFlow, ledger, corpus, reuse, bundle); a test fails when an exported function has no entry in capabilities or the reference.
+Order: A and C now (they document what exists), B with Round 27.

@@ -567,7 +567,7 @@ export function factStore(worlds: { id: string; schemaText: string; shards: { te
 /** A working copy of a live world for planning. */
 export class PlanLive { constructor(options?: { world?: string | null; things?: { id: string; kind: string; attrs?: Record<string, unknown>; members?: string[] }[]; history?: object[]; kinds?: Record<string, string> | null; store?: FactStore | null }); world: string | null; things: Map<string, object>; history: object[] }
 export interface PlanResult { method?: string; methods: string[]; acts: object[]; lines: string[]; explain: string[]; requests: { action: string; args: Record<string, unknown> }[]; skipped: string[]; effects: object[]; asks: string[]; refused?: boolean; tried?: { method: string; why: string }[]; truncated?: boolean }
-export function planner(store: FactStore, options?: { chain?: { type: string; keys: string[] }[]; prefix?: string; roles?: string }): { methods: object[]; isA(a: string, b: string): boolean; plan(goal: { act: string; roles?: Record<string, unknown> }, live?: PlanLive): PlanResult };
+export function planner(store: FactStore, options?: { chain?: { type: string; keys: string[] }[]; prefix?: string; roles?: string; about?: string[]; seed?: number; chooseLimit?: number }): { methods: object[]; isA(a: string, b: string): boolean; plan(goal: { act: string; roles?: Record<string, unknown> }, live?: PlanLive): PlanResult };
 export function readMethods(store: FactStore, prefix?: string): object[];
 export const PLAN_LIMITS: { acts: number; depth: number };
 /** The full motion format (k.motion) as plain objects. */

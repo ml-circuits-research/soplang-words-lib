@@ -93,3 +93,30 @@ test('plan: a toy method, offline — make the anchor first when there is none, 
   const again = P.plan({ act: 'make', roles: { kind: 'person', place: { value: 'swing', rel: 'on' } } }, new PlanLive({ store, things: [{ id: 'swing7', kind: 'swing' }] }));
   assert.deepEqual(again.lines, ['make kind=person', 'place thing=person1 place=seat of=swing7 rel=on'], 'an existing swing is used: the precondition skips step 1');
 });
+
+test('std.plan reads choice points (Q57): choose / choose_min, differs, soft, n; solved jointly before the steps', () => {
+  const procedures = `@m k.procedures.method name="seat two" act=make
+@g k.procedures.goal method="seat two" role=kind value=table
+@b1 k.procedures.binding method="seat two" name=menu value=vegan
+@b2 k.procedures.binding method="seat two" name=host from=k.toy.guest choose=1
+@b3 k.procedures.binding method="seat two" name=guests from=k.toy.guest choose=2 choose_min=1
+@x1 k.procedures.match method="seat two" binding=guests key=diet n=1 equals=menu
+@x2 k.procedures.match method="seat two" binding=guests key=name n=2 differs=host
+@x3 k.procedures.match method="seat two" binding=host key=town n=1 equals=menu soft=true
+@s1 k.procedures.step method="seat two" n=1 act=make each=guests
+@a1 k.procedures.arg method="seat two" step=1 role=kind binding=guests key=name`;
+  const ids = { method: ['name'], goal: ['method', 'role'], binding: ['method', 'name'], match: ['method', 'binding', 'key', 'n'], step: ['method', 'n'], arg: ['method', 'step', 'role'], condition: ['method', 'n'] };
+  const schema = Object.entries(ids).flatMap(([t, keys]) => keys.map((k, i) => `@${t}${i} core.slot of=k.procedures.${t} key=${k} id=true`)).join('\n');
+  const guests = '@a k.toy.guest name=ann diet=vegan  @b k.toy.guest name=bob diet=meat  @c k.toy.guest name=cy diet=vegan  @d k.toy.guest name=di diet=vegan';
+  const store = factStore([{ id: 'k.procedures', schemaText: schema, shards: [{ text: procedures }] }, { id: 'k.toy', schemaText: '@s core.slot of=k.toy.guest key=name id=true', shards: [{ text: guests }] }, { id: 'k.actions', schemaText: '', shards: [] }]);
+  for (const seed of [1, 2, 3]) {
+    const r = planner(store, { chain: [], seed }).plan({ act: 'make', roles: { kind: 'table' } }, new PlanLive({ store }));
+    assert.ok(r.chosen, JSON.stringify(r));
+    const [host] = r.chosen.host, g = r.chosen.guests;
+    assert.ok(g.length >= 1 && g.length <= 2, 'between choose_min and choose');
+    assert.ok(g.every((x) => ['ann', 'cy', 'di'].includes(x)), 'every guest vegan (equals the menu)');
+    assert.ok(!g.includes(host), 'no guest is the host (differs)');
+    assert.equal(new Set(g).size, g.length, 'different guests');
+    assert.equal(r.lines.length, g.length, 'the steps expand the chosen values');
+  }
+});

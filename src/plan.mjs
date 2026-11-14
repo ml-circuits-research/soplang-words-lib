@@ -83,7 +83,7 @@ export class PlanLive {
 }
 
 /** A planner over the methods of a knowledge store. Options: `chain`, `prefix` (default k.procedures), `roles` (default k.actions.role). */
-export function planner(store, { chain, prefix = 'k.procedures', roles = 'k.actions.role' } = {}) {
+export function planner(store, { chain, prefix = 'k.procedures', roles = 'k.actions.role', about: aboutTypes = [], seed = 1, chooseLimit = 200000 } = {}) {
   const k = store;
   const links = chain ?? store.facts('std.know.chain').map((f) => ({ type: f.attrs.of[0], keys: f.attrs.key })); // what "is a kind of" is
   const parentsCache = new Map();
@@ -114,12 +114,13 @@ export function planner(store, { chain, prefix = 'k.procedures', roles = 'k.acti
     return key === 'kind' || key === 'name' ? [item] : [];
   };
   const kindName = (live, v) => { const t = live.thing(v); return t ? t.kind : v; };
-  const show = (live, item) => { if (item && item.type && item.attrs) return item.attrs.name?.[0] ?? JSON.stringify(item.attrs); const t = live.thing(item); return t ? t.id : String(item); };
+  const show = (live, item) => { if (item && item.type && item.attrs) return item.attrs.name?.[0] ?? item.attrs.scene?.[0] ?? item.attrs.thing?.[0] ?? JSON.stringify(item.attrs); const t = live.thing(item); return t ? t.id : String(item); }; // a fact by its name (a has-fact by its scene, an obstacle by its thing)
   const roleValue = (goal, role, g) => { const x = goal.roles?.[role]; return x === undefined ? (g?.default !== undefined ? g.default : undefined) : x; };
 
   function values(ctx, name) { // bounded: bindings name earlier ones (together, upto, equals); the method facts have no cycle
     const { live, env, method } = ctx;
     if (env.current.has(name)) return [env.current.get(name)];
+    if (env.fixed?.has(name)) return env.fixed.get(name); // a choice point, solved with the others
     const bd = method.bind[name];
     if (!bd) throw new Error(`sopworld: plan: ${method.name}: no binding ${name}`);
     let vals;
@@ -127,8 +128,9 @@ export function planner(store, { chain, prefix = 'k.procedures', roles = 'k.acti
     else if (bd.step.length) vals = bd.step.flatMap((s) => (env.made.get(s) ?? []).filter((t) => !t.id || live.things.has(t.id)));
     else if (bd.from) vals = candidates(ctx, bd).filter((f) => passes(ctx, bd, f));
     else if (bd.live) vals = [...live.things.values()].filter((t) => (bd.live === 'any' || same(bd.live, t.kind)) && passes(ctx, bd, t));
-    else if (bd.together.length) vals = bd.together.flatMap((x) => values(ctx, x));
+    else if (bd.together.length) vals = bd.together.flatMap((x) => values(ctx, x)).filter((x) => passes(ctx, bd, x)); // a binding's matches hold on every source (Q57)
     else if (bd.history) vals = [...(live.before ?? live.history)];
+    else if (bd.about) vals = values(ctx, bd.about).flatMap((t) => statementsAbout(t)); // the statements of the catalog about a thing
     else if (bd.upto) { const n = Number(values(ctx, bd.upto)[0] ?? 0); vals = Array.from({ length: n }, (_, i) => i + 1); }
     else vals = bd.value === undefined ? [] : [bd.value];
     if (bd.key) vals = [...new Set(vals.flatMap((x) => keyOf(live, x, bd.key)))];
@@ -145,18 +147,75 @@ export function planner(store, { chain, prefix = 'k.procedures', roles = 'k.acti
     const index = k.index(bd.from, key);
     return [...new Set([...want].flatMap((w) => index.get(w) ?? []))].sort((a, b) => a.n - b.n);
   }
-  function passes(ctx, bd, item) {
-    for (const [key, t] of Object.entries(bd.match)) {
-      const vals = keyOf(ctx.live, item, key);
+  function passes(ctx, bd, item, others = []) {
+    for (const t of bd.matches ?? Object.entries(bd.match).map(([key, x]) => ({ key, ...x }))) {
+      if (t.soft) continue;
+      const key = t.key, vals = keyOf(ctx.live, item, key);
+      if (t.differs) {
+        if (t.differs === bd.name) { if (others.some((o) => keyOf(ctx.live, o, key).some((v) => vals.includes(v)))) return false; }
+        else { const refs = (ctx.env.fixed?.has(t.differs) || !ctx.method.bind[t.differs]?.choose ? values(ctx, t.differs) : []).flatMap((r) => (t.equals_key ? keyOf(ctx.live, r, t.equals_key) : keyOf(ctx.live, r, key).concat([kindName(ctx.live, r)]))); if (vals.some((v) => refs.includes(v))) return false; }
+      }
       if (t.present !== undefined && (vals.length > 0) !== t.present) return false;
       if (t.value !== undefined && !vals.includes(t.value)) return false;
       if (t.not !== undefined && vals.includes(t.not)) return false;
-      if (t.equals) {
+      if (t.equals && (!ctx.method.bind[t.equals]?.choose || ctx.env.fixed?.has(t.equals))) {
         const refs = values(ctx, t.equals).flatMap((r) => (t.equals_key ? keyOf(ctx.live, r, t.equals_key) : [kindName(ctx.live, r)]));
         if (!vals.some((x) => refs.some((r) => same(x, r)))) return false;
       }
     }
     return true;
+  }
+  // The statements of the catalog about a thing: one row per key of each fact named by it (types: `about`).
+  function statementsAbout(thing) {
+    const name = typeof thing === 'object' && thing?.attrs ? thing.attrs.name?.[0] : thing;
+    const rows = [];
+    for (const type of aboutTypes) for (const f of k.index(type, 'name').get(name) ?? []) for (const [key, vs] of Object.entries(f.attrs)) {
+      if (['name', 'named', 'derived', 'drawing', 'sense'].includes(key)) continue;
+      for (const value of vs) rows.push({ thing: name, type, key, value });
+    }
+    return rows;
+  }
+  // The choice points of a method (`choose=` bindings) solved jointly (Q57): a slot per value, made in order (an unmade
+  // one ends the run past choose_min), different within a binding, every hard match checked as soon as what it reads is
+  // chosen, soft matches doubling the weight. Returns Map(binding -> [values]) or null.
+  function solveChoose(ctx) {
+    const chooseB = Object.values(ctx.method.bind).filter((b) => b.choose !== undefined);
+    if (!chooseB.length) return new Map();
+    const count = (v) => (v === undefined ? undefined : /^\d+$/.test(String(v)) ? Number(v) : Number(values(ctx, v)[0]));
+    const slots = [];
+    for (const b of chooseB) { const hi = count(b.choose), lo = b.choose_min !== undefined ? count(b.choose_min) : hi; for (let i = 1; i <= hi; i++) slots.push({ v: `${b.name}#${i}`, b, i, optional: i > lo }); }
+    const slotOf = Object.fromEntries(slots.map((x) => [x.v, x]));
+    const fixedOf = (p) => { const f = new Map(); for (const b of chooseB) { const vs = slots.filter((x) => x.b === b && p[x.v] !== undefined).map((x) => p[x.v]); if (slots.filter((x) => x.b === b).every((x) => p[x.v] !== undefined)) f.set(b.name, vs.filter((x) => x !== null)); } return f; };
+    const own = new Map();
+    const domain = (v, p) => {
+      const { b, optional } = slotOf[v];
+      ctx.env.fixed = fixedOf(p);
+      const all = [...(b.key ? (() => { const bd = { ...b, key: undefined }; const save = ctx.method.bind[b.name]; ctx.method.bind[b.name] = { ...save, choose: undefined, key: undefined }; const r = values(ctx, b.name); ctx.method.bind[b.name] = save; return [...new Set(r.flatMap((x) => keyOf(ctx.live, x, b.key)))]; })() : (() => { const save = ctx.method.bind[b.name]; ctx.method.bind[b.name] = { ...save, choose: undefined }; const r = values(ctx, b.name); ctx.method.bind[b.name] = save; return r; })())];
+      own.set(v, all.length);
+      return optional ? [...all, null] : all;
+    };
+    const ok = (p, v) => {
+      const { b, i } = slotOf[v];
+      const x = p[v];
+      const mine = slots.filter((y) => y.b === b && y.i < i).map((y) => p[y.v]);
+      if (x === null) return true;
+      if (mine.includes(null) || mine.some((y) => y === x)) return false;
+      ctx.env.fixed = fixedOf(p);
+      if (!b.key && !passes(ctx, b, x, mine)) return false;
+      // a match of an earlier chosen binding that reads this one, checked now
+      for (const o of chooseB) { if (o === b || o.key) continue; const done = ctx.env.fixed.get(o.name); if (!done) continue; if (!done.every((y, j) => passes(ctx, o, y, done.filter((_, z) => z !== j)))) return false; }
+      return true;
+    };
+    const weight = (v, x, p) => {
+      if (x === null) return 0.05;
+      const { b } = slotOf[v];
+      ctx.env.fixed = fixedOf(p);
+      return (b.matches || []).filter((m) => m.soft && m.equals).reduce((w, m) => { const known = !ctx.method.bind[m.equals]?.choose || ctx.env.fixed.has(m.equals); if (!known) return w; const names = values(ctx, m.equals).flatMap((r) => (m.equals_key ? keyOf(ctx.live, r, m.equals_key) : keyOf(ctx.live, r, 'name').concat([kindName(ctx.live, r)]))); return keyOf(ctx.live, x, m.key).some((y) => names.includes(y)) ? w * 2 : w; }, 1);
+    };
+    const r = solveChoices(slots.map((x) => x.v), { domain, ok, weight, seed, limit: chooseLimit });
+    ctx.env.fixed = undefined;
+    if (r.why) return null;
+    return fixedOf(r.values);
   }
   function holds(ctx, c) {
     const { live } = ctx;
@@ -218,6 +277,10 @@ export function planner(store, { chain, prefix = 'k.procedures', roles = 'k.acti
     const env = { goal, made: new Map(), current: new Map() };
     const ctx = { live, method, env };
     const made = [];
+    const chosen = solveChoose(ctx);
+    if (chosen === null) { out.refused = out.refused ?? []; out.refused.push(`${method.name}: no choice satisfies its matches`); return []; }
+    env.fixed = chosen;
+    if (chosen.size) out.chosen = Object.fromEntries([...chosen].map(([kk, vs]) => [kk, vs.map((x) => show(live, x))]));
     for (const step of order(method)) {
       const items = step.each ? values(ctx, step.each) : [undefined];
       for (const item of items) {
@@ -333,8 +396,12 @@ export function readMethods(k, prefix = 'k.procedures') {
   for (const a of of('method')) methods.set(one(a, 'name'), { name: one(a, 'name'), about: one(a, 'about'), act: one(a, 'act'), world: one(a, 'world'), rank: num(a.rank?.[0]) ?? 1, example: all(a, 'example'), goal: {}, bind: {}, steps: [], conditions: [] });
   const m = (a) => { const x = methods.get(one(a, 'method')); if (!x) throw new Error(`sopworld: plan: no method ${one(a, 'method')}`); return x; };
   for (const a of of('goal')) m(a).goal[one(a, 'role')] = { from: one(a, 'from'), by: one(a, 'by'), value: one(a, 'value'), kind: one(a, 'kind'), rel: one(a, 'rel'), needed: one(a, 'needed') === 'true', default: one(a, 'default') };
-  for (const a of of('binding')) m(a).bind[one(a, 'name')] = { goal: one(a, 'goal'), step: (a.step ?? []).map(num), from: one(a, 'from'), live: one(a, 'live'), history: one(a, 'history') === 'true', upto: one(a, 'upto'), together: all(a, 'together'), value: one(a, 'value'), key: one(a, 'key'), match: {} };
-  for (const a of of('match')) { const bd = m(a).bind[one(a, 'binding')]; if (!bd) throw new Error(`sopworld: plan: match on unknown binding ${one(a, 'binding')}`); bd.match[one(a, 'key')] = { value: one(a, 'value'), not: one(a, 'not'), equals: one(a, 'equals'), equals_key: one(a, 'equals_key'), present: a.present ? one(a, 'present') === 'true' : undefined }; }
+  for (const a of of('binding')) m(a).bind[one(a, 'name')] = { name: one(a, 'name'), goal: one(a, 'goal'), step: (a.step ?? []).map(num), from: one(a, 'from'), live: one(a, 'live'), history: one(a, 'history') === 'true', upto: one(a, 'upto'), together: all(a, 'together'), value: one(a, 'value'), key: one(a, 'key'), about: one(a, 'about'), choose: one(a, 'choose'), choose_min: one(a, 'choose_min'), match: {}, matches: [] };
+  for (const a of of('match')) { // several matches may read one key (n= tells them apart); soft ones only weight a choice (Q57)
+    const bd = m(a).bind[one(a, 'binding')]; if (!bd) throw new Error(`sopworld: plan: match on unknown binding ${one(a, 'binding')}`);
+    const t = { key: one(a, 'key'), value: one(a, 'value'), not: one(a, 'not'), equals: one(a, 'equals'), equals_key: one(a, 'equals_key'), differs: one(a, 'differs'), soft: one(a, 'soft') === 'true', present: a.present ? one(a, 'present') === 'true' : undefined };
+    bd.matches.push(t); if (!t.soft) bd.match[t.key] = t;
+  }
   for (const a of of('step')) m(a).steps.push({ n: num(a.n[0]), act: one(a, 'act'), each: one(a, 'each'), after: (a.after ?? []).map(num), expand: one(a, 'expand') !== 'false', optional: one(a, 'optional') === 'true', about: one(a, 'about'), args: [] });
   for (const x of methods.values()) x.steps.sort((p, q) => p.n - q.n);
   for (const a of of('arg')) { const st = m(a).steps.find((s) => s.n === num(a.step[0])); st.args.push({ role: one(a, 'role'), attribute: one(a, 'attribute'), binding: one(a, 'binding'), key: one(a, 'key'), else_key: one(a, 'else_key'), value: one(a, 'value'), rel: one(a, 'rel'), of: one(a, 'of') }); }

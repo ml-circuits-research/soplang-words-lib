@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="808be9f39481">
+<meta name="source-hash" content="4f39b2288911">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.81.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.82.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -531,6 +531,8 @@ print(motionPlan(w, [{ t: 500, type: &#x27;button&#x27; }], { until: 6000 }).map
 <p>The plan returns:</p>
 <ul><li><code>method</code>, <code>methods</code> (every method used, in order);</li><li><code>lines</code> (one per act), <code>explain</code> (one short line per step: the method, what the step is for, the act);</li><li><code>requests</code> (role-named requests for std.acts), <code>skipped</code>, <code>effects</code>;</li><li>or <code>asks</code> (a needed role missing), or <code>refused</code> with <code>tried</code> (each alternative and why it failed); <code>truncated</code> past <code>PLAN_LIMITS</code>.</li></ul>
 <p>Alternatives are chosen by goal fit, world, preconditions, then rank, then name. Decomposition goes to depth 3, never into the same method, with at most 200 acts.</p>
+<p><strong>Choice points</strong> (Q57). A binding with <code>choose=</code> (a number or a binding that gives one) and <code>choose_min=</code> is a choice point.</p>
+<ul><li>The choice points of a method are solved jointly before its steps, with <code>solveChoices</code>: one slot per value, the slots of a binding made in order and different, every hard match checked as soon as what it reads is chosen.</li><li>Matches may read one key several times (<code>n=</code> tells them apart): - <code>differs=</code> names a binding whose values must not be shared, or the binding itself for values different among its own; - <code>soft=true</code> only doubles the weight of a candidate that holds it; - a binding's matches hold on every source, <code>together</code> included.</li><li><code>about=</code> gives the statements of the catalog about a binding's things, for the types in <code>planner</code>'s <code>about</code> option.</li><li><code>seed</code> sets the draw, and <code>chooseLimit</code> bounds the search (default 200,000 nodes).</li><li>The plan says what was chosen in <code>chosen</code>, or refuses when no choice satisfies the matches.</li></ul>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const ids = { method: [&#x27;name&#x27;], goal: [&#x27;method&#x27;, &#x27;role&#x27;], binding: [&#x27;method&#x27;, &#x27;name&#x27;], step: [&#x27;method&#x27;, &#x27;n&#x27;], arg: [&#x27;method&#x27;, &#x27;step&#x27;, &#x27;role&#x27;] };
 const schema = Object.entries(ids).flatMap(([t, keys]) =&gt; keys.map((k, i) =&gt; `@${t}${i} core.slot of=k.procedures.${t} key=${k} id=true`)).join(&#x27;\n&#x27;);
 const facts = `@m k.procedures.method name=pair about=&quot;two of a kind&quot; act=make  @g k.procedures.goal method=pair role=kind
@@ -998,7 +1000,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.81.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.82.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

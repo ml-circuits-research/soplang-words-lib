@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.82.0
+
+std.plan reads choice points (reviewer 21:55, Q57 of the knowledge repository): one
+solver, so tools/lib/choose.mjs there can be deleted.
+
+### New
+- Bindings with `choose=` / `choose_min=` are solved jointly before a method's steps
+  (`solveChoices`), and the plan lists them in `chosen`.
+- Matches gain `n=` (several per key), `differs=` (another binding, or the binding itself)
+  and `soft=true` (a weight only).
+- Bindings gain `about=` (the statements about a thing, for the types in the planner's
+  `about` option).
+- `planner(store, { about, seed, chooseLimit })`.
+
+### Changed
+- A binding's matches hold on every source, `together` included (they held only on `from`
+  and `live`).
+- A fact is shown by its name, else its scene, else its thing.
+
 ## 0.81.0
 
 Plurals and articles from the language world (reviewer 22:30, [KNOW] Q54 of the knowledge

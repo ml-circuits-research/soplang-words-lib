@@ -1452,6 +1452,22 @@ The plan returns:
 Alternatives are chosen by goal fit, world, preconditions, then rank, then name.
 Decomposition goes to depth 3, never into the same method, with at most 200 acts.
 
+**Choice points** (Q57). A binding with `choose=` (a number or a binding that gives one)
+and `choose_min=` is a choice point.
+- The choice points of a method are solved jointly before its steps, with `solveChoices`:
+  one slot per value, the slots of a binding made in order and different, every hard
+  match checked as soon as what it reads is chosen.
+- Matches may read one key several times (`n=` tells them apart):
+  - `differs=` names a binding whose values must not be shared, or the binding itself
+    for values different among its own;
+  - `soft=true` only doubles the weight of a candidate that holds it;
+  - a binding's matches hold on every source, `together` included.
+- `about=` gives the statements of the catalog about a binding's things, for the types
+  in `planner`'s `about` option.
+- `seed` sets the draw, and `chooseLimit` bounds the search (default 200,000 nodes).
+- The plan says what was chosen in `chosen`, or refuses when no choice satisfies the
+  matches.
+
 ```js run
 const ids = { method: ['name'], goal: ['method', 'role'], binding: ['method', 'name'], step: ['method', 'n'], arg: ['method', 'step', 'role'] };
 const schema = Object.entries(ids).flatMap(([t, keys]) => keys.map((k, i) => `@${t}${i} core.slot of=k.procedures.${t} key=${k} id=true`)).join('\n');

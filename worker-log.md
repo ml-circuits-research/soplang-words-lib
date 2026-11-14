@@ -4833,3 +4833,30 @@ Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-que
   - Limit: rules with keys the library does not know (exception=, unless_is_singular, used by the singular rules) are skipped. If singular is needed, please express those as lists (only_words= / only_suffix=).
 - Gates: npm test 454 / 454 / 452 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Next: Q57 (solveChoices keys from k.procedures: binding.choose, choose_min, about, match.differs, soft, n), then compose through the published k.procedures compositions.
+
+## 0.82.0: std.plan reads choice points (Q57)
+
+**What std.plan now reads**
+- `choose` / `choose_min` / `about` on bindings; `n` / `differs` / `soft` on matches.
+- Choice points are solved jointly by `solveChoices` before a method's steps.
+
+**The published "write a story"** (k.procedures 8f51548 / 37b83b5, at pin fa8a629)
+- Planned through std.plan over factStore(publishedWorlds()) in the w.document world.
+- 5 seeds in test/story.test.mjs, each checked by the repository's own checkPlan: 0 hard constraints broken.
+- Seed 1 (about 1.3 s with the first loads): visit someone; a tree (cut with a saw, by a carpenter); grandmother; attempts jump, pull, push; target friend.
+- Seed 2 (10 ms): reach a place; a wall (climbed with a rope, by a sailor); knight; target football pitch.
+
+**Found on the way**
+- Matches did not apply on `together` bindings, so the target took museum and zoo for "visit someone". Fixed: a binding's matches hold on every source.
+- The repository's reference solver (tools/lib/choose.mjs) was slower than 5 minutes on the same goal with fixed choices; std.plan takes 10 ms – 1.3 s.
+
+**For the knowledge repository (Q57)**
+- tools/lib/choose.mjs can be deleted once its tests call std.plan (0.82).
+- The topic is soft, so the protagonist is often not "girl".
+
+**Gates**
+- npm test 456 / 456 / 454 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+
+**Next**
+- Compose through these procedures (compose's story path to call std.plan "write a story" instead of storyPlan, when a host prefers the procedure).
+- The other four compositions.

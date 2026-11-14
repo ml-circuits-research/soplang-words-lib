@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="7cc1c3009bed">
+<meta name="source-hash" content="9f75e7e299da">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.98.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.99.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -769,6 +769,14 @@ const t = turn(w, [{ action: &#x27;make&#x27;, args: { kind: &#x27;lamp&#x27; } 
 print(t.status, t.loaded.map((n) =&gt; n.type));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;of&quot;:&quot;home&quot;,&quot;type&quot;:&quot;k.furniture&quot;,&quot;loaded&quot;:false}] needs k.furniture loaded first
 done [&quot;k.furniture&quot;]</code></pre></figure>
+<h3 id="signatureofworld-token-options-chunkworld-text-options-and-minepatternsworld-sentences-options">signatureOf(world, token, options?), chunk(world, text, options?) and minePatterns(world, sentences, options?)</h3>
+<p>Type signatures and a finite pattern inventory (reviewer 02:15, owner 18:10). <code>signatureOf</code> gives a word's signature as three levels, <code>[fine, middle, coarse]</code>:</p>
+<ul><li>knowledge types first: a thing <code>&lt;its type&gt;</code> / <code>&lt;thing&gt;</code> / <code>&lt;N&gt;</code>; an attribute <code>&lt;attr:key&gt;</code> / <code>&lt;attr&gt;</code>; a kind; an act; a verb the world declares for a key <code>&lt;verb:key&gt;</code> / <code>&lt;verb&gt;</code> / <code>&lt;V&gt;</code>;</li><li>a number <code>&lt;num&gt;</code>;</li><li>closed-class words (<code>closed</code>) stay literal;</li><li>other words by their ending (<code>&lt;w-ing&gt;</code>, <code>&lt;w-s&gt;</code>, …).</li></ul>
+<p><code>chunk</code> merges adjacent content words into one token whose signature is its head's, the last word. <code>minePatterns</code> turns sentences into patterns over chunk signatures at a <code>level</code> and reports <code>{ patterns: [{ pattern, count, example }], sentences, at80, at95 }</code>. <code>tools/bench-patterns.mjs</code> measures the owner's hypothesis, "few patterns", on PSys2's sentences.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(&#x27;@cow k.animal name=cow sound=moo  @dog k.animal name=dog sound=woof  @v core.word text=make text=makes means=sound&#x27;);
+print(minePatterns(w, [&#x27;what sound does a cow make&#x27;, &#x27;what sound does a dog make&#x27;], { closed: [&#x27;what&#x27;, &#x27;does&#x27;, &#x27;a&#x27;] }).patterns[0]);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;pattern&quot;:&quot;what &lt;attr&gt; does a &lt;thing&gt; &lt;verb&gt;&quot;,&quot;count&quot;:2,&quot;example&quot;:&quot;what sound does a cow make&quot;}</code></pre></figure>
 <h3 id="readensembleworld-text-options-defaultreadersread-canonical-and-riskcoveragerows">readEnsemble(world, text, options?), defaultReaders(read?, canonical?) and riskCoverage(rows)</h3>
 <p>Several readers, one confidence (reviewer 02:30). Readers run as parallel voices, not a fallback chain. Each is <code>(world, text) -&gt; [{ frame, unread?, cost?, specificity? }]</code>. The library's own are <code>types</code> (readByTypes), <code>canonical</code> (readCanonical) and <code>exact</code> (no near words), and a host adds its own voices. The candidate frames are pooled with features:</p>
 <ul><li><code>agreement</code>: the readers that proposed the frame, weighted by <code>weights</code> (default 1 each; learnt from cases, for example each reader's precision on a training half);</li><li>words left unread;</li><li>the cost of assumptions;</li><li>specificity.</li></ul>
@@ -1048,7 +1056,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.98.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.99.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

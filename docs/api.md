@@ -2166,6 +2166,33 @@ print(t.status, t.loaded.map((n) => n.type));
 done ["k.furniture"]
 ```
 
+### signatureOf(world, token, options?), chunk(world, text, options?) and minePatterns(world, sentences, options?)
+
+Type signatures and a finite pattern inventory (reviewer 02:15, owner 18:10).
+`signatureOf` gives a word's signature as three levels, `[fine, middle, coarse]`:
+- knowledge types first: a thing `<its type>` / `<thing>` / `<N>`; an attribute
+  `<attr:key>` / `<attr>`; a kind; an act; a verb the world declares for a key
+  `<verb:key>` / `<verb>` / `<V>`;
+- a number `<num>`;
+- closed-class words (`closed`) stay literal;
+- other words by their ending (`<w-ing>`, `<w-s>`, …).
+
+`chunk` merges adjacent content words into one token whose signature is its head's, the
+last word. `minePatterns` turns sentences into patterns over chunk signatures at a `level`
+and reports `{ patterns: [{ pattern, count, example }], sentences, at80, at95 }`.
+`tools/bench-patterns.mjs` measures the owner's hypothesis, "few patterns", on PSys2's
+sentences.
+
+```js run
+const w = new World();
+w.tell('@cow k.animal name=cow sound=moo  @dog k.animal name=dog sound=woof  @v core.word text=make text=makes means=sound');
+print(minePatterns(w, ['what sound does a cow make', 'what sound does a dog make'], { closed: ['what', 'does', 'a'] }).patterns[0]);
+```
+
+```output
+{"pattern":"what <attr> does a <thing> <verb>","count":2,"example":"what sound does a cow make"}
+```
+
 ### readEnsemble(world, text, options?), defaultReaders(read?, canonical?) and riskCoverage(rows)
 
 Several readers, one confidence (reviewer 02:30). Readers run as parallel voices, not a

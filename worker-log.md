@@ -5147,3 +5147,30 @@ Gates: npm test 474 pass, 0 fail; pilot identical; psys2=0 in src; scan clean; t
 
 **Gates**
 - npm test 476 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+
+## 0.99.0: type signatures and a pattern inventory (reviewer 02:15)
+
+`signatureOf` gives 3 levels: types from knowledge, verbs of keys as verbs, closed words literal, word endings for the rest. `chunk` merges content words under their head. `minePatterns` mines patterns and reports their coverage.
+
+**`node tools/bench-patterns.mjs`** (psys2 form pairs vs k.animals):
+
+| set | sentences | patterns (level 1) | 80 % by | 95 % by |
+| --- | --- | --- | --- | --- |
+| canonical | 93 | 52 | 34 | 48 |
+| variants | 565 | 102 | 13 | 74 |
+| variants as clauses, after canonicalise | 806 clauses | 104 | 11 | 64 |
+
+- Variants at level 0 (fine): 156 patterns; 80 % by 43.
+- Top patterns: "what <attr> <verb> a <thing>" 107, "how many <attr> does a <thing> <verb>" 61.
+
+**Reading the numbers**
+- The owner's hypothesis holds where the world types the words: 11 clause patterns cover 80 %.
+- The long tail is words the world does not type (`<w>`: arithmetic, geography, calendar), which a catalog with those worlds would type.
+
+**Not yet** (from 02:15)
+- WordNet supersenses and k.kinds.argument classes as signature levels.
+- Distributional (Brown-style) classes for untyped words.
+- Patterns mapped to frames as a reader (a voice for readEnsemble).
+
+**Gates**
+- npm test 478 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.

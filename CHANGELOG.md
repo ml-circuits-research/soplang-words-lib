@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.99.0
+
+Type signatures and a finite pattern inventory (reviewer 02:15, owner 18:10).
+
+### New
+- `signatureOf(world, token, { closed })`: three levels, knowledge types first, closed
+  words literal, endings for the rest.
+- `chunk(world, text)`: adjacent content words as one token with the head's signature.
+- `minePatterns(world, sentences, { level })`: patterns with their coverage (80 %, 95 %).
+- `tools/bench-patterns.mjs`.
+
 ## 0.98.0
 
 Several readers, one confidence (reviewer 02:30, owner 18:18).

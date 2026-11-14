@@ -686,3 +686,9 @@ export function readEnsemble(world: World, text: string, options?: { readers?: R
 export function defaultReaders(read?: object, canonical?: object): Record<string, (world: World, text: string) => object[]>;
 /** The risk–coverage curve of a reader with a confidence. */
 export function riskCoverage(rows: { confidence: number; correct: boolean }[]): { threshold: number; coverage: number; risk: number }[];
+/** A word's type signature at three levels: [fine, middle, coarse]. */
+export function signatureOf(world: World, token: string, options?: { closed?: string[]; lemma?: (w: string) => string[] }): [string, string, string];
+/** A sentence as chunks: adjacent content words merged, the signature its head's. */
+export function chunk(world: World, text: string, options?: { closed?: string[] }): { words: string[]; sig: [string, string, string]; content: boolean }[];
+/** Sentence patterns over chunk signatures, with their coverage. */
+export function minePatterns(world: World, sentences: string[], options?: { level?: 0 | 1 | 2; closed?: string[] }): { patterns: { pattern: string; count: number; example: string }[]; sentences: number; at80: number; at95: number };

@@ -1690,7 +1690,7 @@ print(cousins(w, kase).filter((c) => c.valid).map((c) => [c.degree, c.text]));
 [[1,"yak sound"],[2,"sheep sound"]]
 ```
 
-### readByTypes(world, text, options?) and typedLexicon(world)
+### readByTypes(world, text, options?), typedLexicon(world) and nearWords(world, word, options?)
 
 Type-driven reading (abstraction round, item 1). Each content word is typed through the
 world itself:
@@ -1710,7 +1710,18 @@ words fill, each word used once:
 Word order and function words only rank the frames, so paraphrases in any order read to one
 frame. Options: `question` (words that make a question), `skip` (words passed over),
 `lemma`. Words the world does not know are listed in `unread`. `typedLexicon` is the
-lexicon, memoised per world.
+lexicon, memoised per world. The language's own facts (k.words, w.lang, k.genres,
+k.interest) are not content.
+
+Lexical generalisation (item 3): `nearWords(world, word, { senses })` gives a word's near
+words through word senses (`k.words.sense`: word, synonym, is_a, kind_of):
+- a synonym costs 1, both ways;
+- the nearest kind (`is_a`) costs 2;
+- further kinds cost 3 or more.
+By default the senses are the world's own; a host passes `senses(word)` from a lazy
+catalog. `readByTypes` reads an unknown word as its nearest known word when the cost is
+within `near` (default 3). The result lists each such reading in `near` (`{ word, as,
+cost, via }`), and the cost lowers the frame's score.
 
 ```js run
 const w = new World();

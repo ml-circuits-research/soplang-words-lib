@@ -786,16 +786,16 @@ print(compose(w, 'owl', { size: { chapters: 1, sections: 1, sentences: 2 } }).ch
 
 ## Read a question by the types of its words
 
-*In `readByTypes`, `typedLexicon`; since 0.72.*
+*In `readByTypes`, `typedLexicon`, `nearWords`; since 0.72.*
 *Works on: any world with facts (names, keys, values) and acts.*
 
 "what sound does a cow make", "a cow makes which sound" and "cow sound?" read to one frame,
 the attribute `sound` of the thing `cow`, because the words are typed through the world's
 own facts and order only ranks. Inverse questions ("which animal says moo") and acts with
 arguments by type are read too.
-**Limits:** a first version. Word senses from k.words (synonyms, hypernyms), alternations
-as rules and induced rules are the next items of the abstraction round (questions.md
-Q54).
+An unknown word is read as its nearest known word through k.words senses (a synonym,
+a kind), with a cost. **Limits:** a first version. Alternations as rules and induced rules
+are the next items of the abstraction round (questions.md Q54).
 
 ```js run
 const w = new World();

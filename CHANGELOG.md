@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.74.0
+
+Abstraction round, item 3 (questions.md Q54): lexical generalisation at read time.
+
+### New
+- `nearWords(world, word, { senses })`: near words through `k.words.sense` (synonyms cost
+  1, the nearest kind 2, further kinds 3 or more).
+- `readByTypes(..., { senses, near })`: an unknown word is read as its nearest known word
+  within the cost bound; the result lists it in `near`, and the cost lowers the score.
+
+### Changed
+- `typedLexicon` leaves out the language's own facts (k.words, w.lang, k.genres,
+  k.interest).
+
 ## 0.73.0
 
 Cousins of a case (reviewer 21:35, owner 14:58: abstraction round, item 0).

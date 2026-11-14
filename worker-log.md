@@ -4730,3 +4730,12 @@ Gates: npm test 440 / 440 / 439 pass, 0 fail; pilot identical; psys2=0; scan cle
 - Q54 item 3 (word senses from k.words in typed slots) and item 2 (alternations).
 - cousins along acts and alternations as those land.
 - Use in the learn skill: a ledger failure is expanded into its cousins before a fix.
+
+## 0.74.0: lexical generalisation at read time (Q54 item 3)
+
+- `nearWords` reads k.words.sense facts: synonyms cost 1, the nearest kind 2, further kinds 3 or more. readByTypes reads an unknown word as its nearest known word within `near`.
+- test/read-types.test.mjs, toy senses:
+  - "what noise does a heifer make" reads as sound of cow → moo, with near = noise→sound (synonym, 1) and heifer→cow (kind, 2);
+  - "drake sound?" with near=1 leaves drake unread; with the default it reads as duck.
+- Gates: npm test 441 / 441 / 440 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+- Next: Q54 item 2 (alternations: a read-time normaliser plus alternations as language-world facts).

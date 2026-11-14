@@ -30,3 +30,15 @@ test('readByTypes: unread words are said; a lexicon from the world; acts by the 
   const r = readByTypes(v, 'remove the cow', { skip: ['the'] });
   assert.deepEqual([r.best.is, r.best.act], ['act', 'remove']);
 });
+
+test('readByTypes, lexical generalisation: an unknown word read as its nearest known word through word senses, with its cost', () => {
+  const v = new World();
+  v.tell(`@cow k.animal name=cow sound=moo  @duck k.animal name=duck sound=quack
+    @s1 k.words.sense word=noise pos=noun n=1 synonym=sound  @s2 k.words.sense word=heifer pos=noun n=1 is_a=cow kind_of=cow kind_of=cattle
+    @s3 k.words.sense word=drake pos=noun n=1 is_a=duck  @vs core.word text=make text=makes means=sound`);
+  const r = readByTypes(v, 'what noise does a heifer make', O);
+  assert.deepEqual(r.best, { is: 'ask', key: 'sound', of: { id: 'cow' }, answer: ['moo'] });
+  assert.deepEqual(r.near.map((x) => [x.word, x.as, x.via, x.cost]), [['noise', 'sound', 'synonym', 1], ['heifer', 'cow', 'kind', 2]]);
+  assert.deepEqual(readByTypes(v, 'drake sound?', { ...O, near: 1 }).unread, ['drake'], 'a cost above the bound: not read');
+  assert.equal(readByTypes(v, 'drake sound?', O).best.of.id, 'duck');
+});

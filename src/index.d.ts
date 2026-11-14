@@ -623,7 +623,7 @@ export function discourseRealiser(world: World, options?: { seed?: number; type?
 /** The discourse templates a world holds. */
 export function discourseTemplates(world: World, type?: string): { id: string; move: string; register: string; slots: string[]; text: string }[];
 /** Type-driven reading: frames from the types of the content words, word order only ranks. */
-export function readByTypes(world: World, text: string, options?: { question?: string[]; skip?: string[]; lemma?: (word: string) => string[] }): { frames: { frame: object; score: number; words: string[] }[]; best: { is: string; key?: string; of?: object; value?: string; kind?: string; act?: string; args?: Record<string, string>; answer?: string[] } | null; ambiguous?: boolean; unread: string[] };
+export function readByTypes(world: World, text: string, options?: { question?: string[]; skip?: string[]; lemma?: (word: string) => string[]; senses?: (word: string) => Wire[]; near?: number }): { near?: { word: string; as: string; cost: number; via: string }[]; frames: { frame: object; score: number; words: string[] }[]; best: { is: string; key?: string; of?: object; value?: string; kind?: string; act?: string; args?: Record<string, string>; answer?: string[] } | null; ambiguous?: boolean; unread: string[] };
 /** The world's own typed lexicon: word -> senses (thing, kind, attr, value, act, word). */
 export function typedLexicon(world: World): Map<string, object[]>;
 /** The cousins of a case: up along kinds or keys, down to other members, only the valid ones. */
@@ -632,3 +632,5 @@ export function cousins(world: World, kase: { frame: object; text?: string }, op
 export function kindChain(world: World, id: string, depth?: number): string[][];
 /** A fix judged on the case alone and on its valid cousins by degree. */
 export function judgeFix(answer: (text: string | undefined, frame: object) => unknown, kase: { frame: object; text?: string }, cousins: object[]): { case: boolean; byDegree: Record<string, { pass: number; of: number }>; share: number | null };
+/** The near words of a word through word senses (k.words.sense): synonyms 1, kinds 2 and more. */
+export function nearWords(world: World, word: string, options?: { senses?: (word: string) => Wire[] }): { word: string; cost: number; via: string }[];

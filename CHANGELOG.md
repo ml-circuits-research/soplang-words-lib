@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.115.0
+
+From the reviewer's 08:15 entry (the real work list: Romanian is 77 of PSys2's 190 failing real turns).
+
+### New
+- `readFrames(world, text, { lang, morph, dictionary })`: a language read by its language world's
+  frames and parts (leads, words, verbs by the act of their lemma's sense, determiners, roles by
+  words, numbers, prepositions, lists), through std.morph and the lemma dictionary, into the act
+  and roles of the reference language. `senseOf` reads a sense id.
+- tools/bench-ro-frames.mjs: PSys2's 161 real Romanian turns glossed by hand, on meaning: read
+  by a frame 93 (58 %), right act 74 (46 %), right act and thing 38 (24 %).
+
 ## 0.114.0
 
 From the reviewer's 06:55 entry (a host's Q16: runtime worlds are not typed) and the host's

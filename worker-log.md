@@ -5369,3 +5369,13 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Not done yet from 06:55: why storyState does not take the 23 word problems (needs PSys2's rows).
 - Deprecated names: stay until PSys2 renames (Q68).
 - Gate: npm test 504 pass / 0 fail; test:full 504 / 504 / 501, 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.115.0 — Romanian read by the frames of w.lang.ro (reviewer 08:15, item 1)
+
+- `readFrames(world, text, { lang, morph, dictionary })` (src/frames.mjs), `senseOf`.
+- `node tools/bench-ro-frames.mjs` (PSys2 23f283a6 real set, gold-real.tsv glosses, 161 turns): read by a
+  frame 93 (58 %), act right 74 (46 %), act and thing right 38 (24 %); glosses with an act k.actions
+  knows 121. Misses listed in questions.md Q69 (mostly missing lemmas; "și" as too; î/â fold; lists).
+- The meaning measure is crude: act by the gloss's first verb that k.actions knows; thing by a shared
+  content word. "pune și un lac" (gloss "put a lake too") counts as wrong though make is the meaning.
+- Gate: npm test 506 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

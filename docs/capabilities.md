@@ -845,6 +845,30 @@ print(judgeOnRelated((t) => (t === 'cow sound' ? ['moo'] : null), kase, relatedC
 0
 ```
 
+## Read a language by its frames
+
+*In `readFrames`, `senseOf`; since 0.115.*
+*Works on: a language world with frames, parts, closed classes and std.morph morphology (w.lang.ro), and its lemma dictionary.*
+
+A request in another language is read straight into the act and roles of the reference
+language: "deseneaza doua case" is `make`, amount 2, thing house. The parts are matched in
+order, verbs by the act of their lemma's sense, nouns and adjectives through the morphology
+and the dictionary, so forms typed without diacritics read too.
+**Limits:** a word missing from the language's dictionary stays as typed; lists ("a house and
+three clouds") are one role. On PSys2's 161 real Romanian turns glossed by hand (`node
+tools/bench-ro-frames.mjs`): 58 % read by a frame, 46 % with the right act, 24 % with the
+right act and thing, mostly limited by the dictionary's 256 lemmas.
+
+```js run
+const w = new World();
+w.tell('@f ex.frame name=x.make act=make priority=1\n@a ex.part frame=x.make at=1 is=word word=zap\n@b ex.part frame=x.make at=2 is=role role=thing takes=words');
+print(readFrames(w, 'zap a tree', { lang: 'ex' }).best.act);
+```
+
+```output
+make
+```
+
 ## Build the typed world of a world
 
 *In `typedWorldFor`, `schemaOf`, `fitsSlot`, `freeTextType`; since 0.114.*

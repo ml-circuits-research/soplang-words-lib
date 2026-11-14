@@ -1711,6 +1711,38 @@ print(fitsSlot(t, 'ex.player', 'instrument', 'the violin').ok, fitsSlot(t, 'ex.p
 true there is no instrument called "makes a cow"
 ```
 
+### readFrames(world, text, options?) and senseOf(world, id)
+
+Reading by the frames of a language world, as a reader next to machine translation. A language
+world declares frames (`<lang>.frame name= en= act= mode= priority=`) as ordered parts
+(`<lang>.part frame= at= is= ...`):
+- `lead` or `phrase`: an item of `<lang>.phrase name=`;
+- `word`: one of its words;
+- `verb act=`: a word whose lemma's sense is a verb of that act;
+- `det`: a determiner (`<lang>.det form=`);
+- `role`, which takes words (`max_words`), a number (`<lang>.numeral form= value=` or digits),
+  a preposition (`<lang>.prep form= rel=`), a list (`<lang>.lex name= item=`) or the rest.
+
+Words are analysed by the language's morphology (`morph`, from `morphOf`, and its lazy
+`dictionary` with a sense per lemma), so inflected and unaccented forms read. Items of a phrase
+named `skip` are passed over wherever they stand. `readFrames(world, text, { lang, morph,
+dictionary, senses, max })` returns `{ best, frames, tokens }`; a frame is `{ frame, en, act,
+mode, roles, verb?, score }`, where each role has its `text` and, for words, `words: [{ form,
+lemma, sense, en, pos, features }]` and `en` (the reference words). Of the frames that take
+every word, the highest priority wins, and words with a known sense count. `best` is null when
+no frame takes the text. `senseOf(world, id)` gives `{ act?, en?, pos? }` for a sense id: a verb
+fact of an act, or the id's own shape (`<prefix>.<word>.<pos>.<n>`).
+
+```js run
+const w = new World();
+w.tell('@f ex.frame name=x.make act=make priority=1\n@a ex.part frame=x.make at=1 is=word word=zap\n@b ex.part frame=x.make at=2 is=role role=thing takes=words');
+print(readFrames(w, 'zap a tree', { lang: 'ex' }).best.roles.thing.text);
+```
+
+```output
+a tree
+```
+
 ### compose(world, topic, options?) and interestOf(world, fact, options?)
 
 A composition of a genre about a topic, from knowledge, with no model (std.compose, first

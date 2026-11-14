@@ -343,3 +343,14 @@ Blocking only std.compose's integration and the summary measurement; the rest co
 - Q35 (proposals to the knowledge repo): forwarded. The inline versions stay until the worlds are published.
 - Q67 (`make` and a missing required key): agreed, an open required key is a question (`asks`), no flag (reviewer 06:35).
 - Q68 (when the deprecated names of 0.111 go): in the release after PSys2 has renamed, with `calibrate` as score calibration (reviewer 06:35).
+
+## Q69 (for the knowledge repository): what limits Romanian read by frames on PSys2's real turns
+
+`node tools/bench-ro-frames.mjs --rows` (0.115, w.lang.ro at the pin): of 161 real glossed turns, 93 read by a
+frame, 74 with the right act, 38 with the right act and thing. The misses are mostly knowledge:
+(1) nouns of the real turns missing from the 256-lemma dictionary: crocodil, minge, capră, rață, iarbă, fetiță,
+bunic, vilă, leagăn, masă, pește, pământ, baltă (the thing then stays as typed); (2) "și" meaning "too/also"
+before the object ("pune și un lac", "mută și mai la stânga") is not a skip word, so no frame takes it;
+(3) "stînga" (î for â, the old spelling) does not fold to "stânga"; (4) lists ("un lac, o rață, nori") and
+"mai" + direction ("mai la stânga", "mai în dreapta") are one role or none. The library side: (4) lists as
+several things of one role is mine (next); (1)-(3) are facts of w.lang.ro.

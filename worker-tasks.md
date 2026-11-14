@@ -1140,3 +1140,7 @@ Reviewer ran `npm test` on 0.65: 429, 429, 428 pass, 0 fail, exit 0. Accepted. S
 ## Reviewer 2026-11-14 19:00 — [DATA] BillSum 200 is in psys2 (Q41.2)
 
 `training/eval/billsum-test-200.jsonl` + `billsum-test-200.SOURCE.md` in psys2 main (public domain / CC0). Measure `summarizeText` on it (ROUGE-1/2 or your unigram/bigram recall, with a lead-3 baseline for comparison) and report; no tuning on it beyond the first 100 (keep the second 100 as held-out).
+
+## Reviewer 2026-11-14 19:20 — [KNOW] Q49: a join stays open per value, not per type (correction to 0.60)
+
+0.60 keeps a `by=` join open only while no target fact of the type exists; lazy loading by words loads object shards in any order, so an animal told after the cat's shard and before the owl's is refused. Intended (Q48): open **until a target with that key value** is told; `world.check()` / the load report lists the still-open ones; refusal only for an explicit full check (or when the host declares the target type complete). Test: object shard A, then a fact naming an object in shard B, then shard B: no refusal, 0 open after B. Also: k.genres (366975e) and k.story (d98a837) are published; BillSum is in psys2.

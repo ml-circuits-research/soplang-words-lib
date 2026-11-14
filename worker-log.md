@@ -5272,3 +5272,12 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   "the young of the owl is an owlet"; `drawing` (narrate=no) -> null.
 - compose / clauseOf drop narrate=no keys; discourseRealiser uses `w.lang.en.phrasing` when present.
 - Gate: npm test 492 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.107.0 — Q66: the join check is an index lookup; quoted = bare
+
+- `by=` join check uses `index` (type|key|value, kept on tell/retract) instead of scanning byType;
+  blob keys still scan. Quoted and bare names with the same text match.
+- /tmp/jt.mjs, 2,211 objects + 27,902 parts with `of` joined by name: 3099 ms before, 1050 ms after,
+  1003 ms with no join slot.
+- New test at that size (slots-q34): 0 open joins with mixed quoted/bare names.
+- Gate: npm test 493 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

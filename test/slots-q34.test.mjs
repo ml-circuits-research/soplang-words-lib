@@ -65,3 +65,17 @@ test('copy: a reference to another thing is left unset (a copied guest has no se
   const r = w.act({ action: 'copy', args: { thing: 'guest1' } });
   assert.deepEqual([r.result.unset, w.get('guest2').attrs.seat, w.get('guest2').attrs.name, w.get('guest2').attrs.party], [['seat'], undefined, ['ann'], ['$seat1']]);
 });
+
+test('by: the join check is an index lookup at the k.objects size, and a quoted name is the bare name (Q66)', () => {
+  const w = new World();
+  w.load('@o core.type of=k.objects.object  @on core.slot of=k.objects.object key=name\n@pt core.type of=k.objects.part  @pn core.slot of=k.objects.part key=name\n@po core.slot of=k.objects.part key=of type=k.objects.object by=name');
+  const objs = [], parts = [];
+  for (let i = 0; i < 2211; i++) objs.push(`@o${i} k.objects.object name=${i % 2 ? `"thing ${i}"` : `thing_${i}`}`);
+  assert.ok(w.tell(objs.join('\n')).ok);
+  for (let i = 0; i < 27902; i++) { const j = i % 2211; parts.push(`@p${i} k.objects.part name=part_${i} of=${j % 2 ? `"thing ${j}"` : `"thing_${j}"`}`); }
+  const t0 = performance.now(), r = w.tell(parts.join('\n')), ms = performance.now() - t0;
+  assert.ok(r.ok, JSON.stringify(r.violations?.[0]));
+  assert.deepEqual(r.openJoins ?? [], [], 'every part joins its object; "thing_0" is the bare thing_0');
+  assert.ok(ms < 20000, `27,902 joined parts told in ${Math.round(ms)} ms`);
+  assert.equal(w.tell('@px k.objects.part name=x of=nothing').openJoins.length, 1, 'an unknown object stays open');
+});

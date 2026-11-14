@@ -2624,6 +2624,8 @@ print(w.describe().types, w.diff(f).changed);
 
 Declares a type complete: all its facts are told. A `by=` join to that type stays open per
 value until a target with that value is told, whatever order the shards are loaded in.
+The check is a lookup in the world's index per (type, key, value), and a quoted string and a
+bare atom with the same text are the same name.
 Each tell lists the joins it left open in `openJoins`; `check()` reports them as
 `open-join` issues, and `check(undefined, { strict: true })` refuses them. After
 `closeType`, a join to the type that finds no target is refused. It returns the joins

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.107.0
+
+From the reviewer's 04:05 entry ([KNOW] Q66).
+
+### Changed
+- A join by a key (`core.slot ... type= by=`) is checked by a lookup in the index per
+  (type, key, value) that tell and retract keep, not by a scan of every target wire. On 27,902
+  parts joined to 2,211 objects the tell takes 1.05 s (3.10 s before; 1.00 s with no join).
+- In a join, a quoted string and a bare atom with the same text are one name.
+
 ## 0.106.0
 
 From the reviewer's 03:45 entry ([KNOW] Q63). The knowledge pin moves to 284e15a, which has

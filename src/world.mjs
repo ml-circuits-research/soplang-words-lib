@@ -2260,11 +2260,17 @@ export class World {
             }
             if (s.enum && !s.enum.includes(v) && !s.enum.some((e) => this._same(w.type, k, e, v))) res.violations.push(own({ kind: 'domain', id, key: k, value: v, allowed: s.enum }, v));
             if (s.by && s.type) { // a join by a key: checked once a world declares the type, open before
-              const fits = (t) => t?.attrs[s.by]?.includes(v) && s.match.every(([mine, theirs]) => (w.attrs[mine] || []).some((x) => (t.attrs[theirs || mine] || []).includes(x))); // a composite key: by= and every match=own:target
+              const nameOf = (x) => (x.length > 1 && x[0] === '"' && x[x.length - 1] === '"' ? x.slice(1, -1) : x); // a quoted string and a bare atom with the same text are one name (Q66)
+              const has = (vals, x) => (vals || []).some((y) => y === x || nameOf(y) === nameOf(x));
+              const fits = (t) => has(t?.attrs[s.by], v) && s.match.every(([mine, theirs]) => (w.attrs[mine] || []).some((x) => has(t.attrs[theirs || mine], x))); // a composite key: by= and every match=own:target
               // open until a target with that key value is told (Q49: lazy loading tells shards in any order);
               // reported by check() and the tell's `open`; refused only by a strict check, or once the host
               // has declared the target type complete (world.complete(type))
-              const targets = this.byType.get(s.type) ? [...this.byType.get(s.type)].map((tid) => this.wires.get(tid)) : [];
+              // the targets with that key value, from the index per (type, key, value) kept on tell/retract (Q66);
+              // a scan only for an opaque (blob) key, which is not indexed
+              const targets = this._compiled().blobKeys.size && this._compiled().blob(s.type, s.by)
+                ? [...(this.byType.get(s.type) || [])].map((tid) => this.wires.get(tid))
+                : [...new Set([nameOf(v), `"${nameOf(v)}"`].flatMap((x) => [...(this.index.get(K(s.type, s.by, this._iv(s.type, s.by, x))) || [])]))].map((tid) => this.wires.get(tid));
               if (targets.some(fits)) continue;
               if (!res._strict && !this._closedTypes?.has(s.type)) { (res.openJoins || (res.openJoins = [])).push({ kind: 'open-join', id, key: k, value: v, type: s.type, by: s.by }); continue; }
               res.violations.push(own({ kind: 'domain', id, key: k, value: v, why: `must be the ${s.by}${s.match.length ? ` (with ${s.match.map(([a, b]) => b || a).join(', ')})` : ''} of a ${s.type} wire` }, v));

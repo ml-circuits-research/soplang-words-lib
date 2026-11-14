@@ -5224,3 +5224,15 @@ Gates: npm test 474 pass, 0 fail; pilot identical; psys2=0 in src; scan clean; t
 - LIB-6 typedWorldOf and readRolesByTypes.
 - LIB-7 assignBySlotTypes.
 - LIB-8 judgeReply / tabulate / tableText.
+
+## 0.103.0: handover LIB-5..8
+
+All four were written here from PSys2's description (its code is AGPL; nothing copied). test/handover.test.mjs:
+- **LIB-5**: genreOf (scientific-article → scientific article; slide show → presentation; sonnet → null), topicIndex, randomTopics (seeded, by interest).
+- **LIB-6**: typedWorldOf, readRolesByTypes. "the circle blue" → { thing: c1, value: blue }; with a word left over → null.
+- **LIB-7**: assignBySlotTypes. One assignment gives a reading; two of the same types give none; no anchor gives none.
+- **LIB-8**: judgeReply (number words; a question must not change the state), tabulate, tableText.
+
+PSys2 can now delete its copies of LIB-1..8 when it vendors 0.103 (LIB-1..4 came in 0.102).
+
+Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.

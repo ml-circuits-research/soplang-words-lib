@@ -704,3 +704,21 @@ export function clauseOf(world: World, fact: { type: string; attrs: Record<strin
 export function actSentence(world: World, act: string, roles: Record<string, unknown>, options?: { mode?: string | null; lang?: string }): string | null;
 /** summarizeLog's frames as one sentence. */
 export function renderFrames(frames: object[], options?: { world?: World; say?: (frame: object) => string; failed?: number | object[]; max?: number; words?: Record<string, string> }): string;
+/** The k.genres genre a document type names, or null. */
+export function genreOf(world: World, type: string): string | null;
+/** The topics a world can compose about: names that at least `min` facts name. */
+export function topicIndex(world: World, options?: { types?: string[]; min?: number }): { topic: string; type: string; facts: number }[];
+/** Topics drawn by interest, seeded. */
+export function randomTopics(world: World, options?: { seed?: number; count?: number; types?: string[]; min?: number }): string[];
+/** A typed world from a session's things and the values each attribute can take. */
+export function typedWorldOf(things: { id: string; label?: string; kind?: string; attrs?: Record<string, unknown> }[], options?: { values?: Record<string, string[]> }): World;
+/** The free roles of a refused reading re-read by type; every content word placed, else null. */
+export function readRolesByTypes(world: World, text: string, roles: string[], options?: { skip?: string[] }): Record<string, string> | null;
+/** Every assignment of content tokens to the typed slots of each pattern; a reading has exactly one. */
+export function assignBySlotTypes(patterns: { name: string; slots: { name: string; type: string }[]; literals?: string[]; anchor?: string[] }[], tokens: string[], lexicons: Record<string, Set<string>>): { pattern: string; assignment: Record<string, string> }[];
+/** A reply judged against expected values (number words accepted) and an unchanged state. */
+export function judgeReply(reply: string, expected: unknown, options?: { numberWords?: Record<string, string>; before?: unknown; after?: unknown; question?: boolean }): boolean;
+/** Results as a degree × dimension table. */
+export function tabulate(results: { degree: number; dim?: string; dims?: string[]; pass: boolean }[]): Record<string, { pass: number; of: number }>;
+/** A degree × dimension table as text. */
+export function tableText(table: Record<string, { pass: number; of: number }>): string;

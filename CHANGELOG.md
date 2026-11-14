@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.103.0
+
+The rest of the host's handover (LIB-5 to LIB-8, reviewer 02:50).
+
+### New
+- `genreOf`, `topicIndex`, `randomTopics`.
+- `typedWorldOf`, `readRolesByTypes`.
+- `assignBySlotTypes`.
+- `judgeReply`, `tabulate`, `tableText`.
+
 ## 0.102.0
 
 PSys2's handover LIB-1 to LIB-4, and its Peru essay report (reviewer 02:50).

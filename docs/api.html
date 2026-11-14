@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="5a4687c2483a">
+<meta name="source-hash" content="7647708d30eb">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.102.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.103.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -794,6 +794,11 @@ print(r.frame.answer, r.confidence, r.voices.length);</code></pre></figure>
 <ul><li><code>joinList(['a', 'b', 'c'])</code> gives "a, b and c" (options <code>and</code>, <code>sep</code>).</li><li><code>clauseOf(world, fact)</code> gives one clause for a fact, or null without a subject. Verb-like keys come first (an auxiliary, an act of k.actions), then a preposition ("is on the table"), a type ("is a bird"), a yes/no ("is not landlocked"), a count ("has 2 legs"), and any other key as a noun ("has a capital of lima"); at most <code>parts</code> (3). Joins to other worlds and <code>quiet</code> keys are left out, and <code>names</code> are said without "the".</li><li><code>actSentence(world, act, roles)</code> uses the act template (<code>w.lang.en.template</code>) whose slots are exactly the roles given, the most specific first. <code>{x:num=pl}</code> gives the plural, a/an follows the next word, and the sentence is capitalised; null when none fits.</li><li><code>renderFrames(frames, { world, say, failed, max })</code> says summarizeLog's frames as one sentence ("You asked me to add 3 trees and remove a house, plus 2 other changes; 1 request was not understood.").</li></ul>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>print(joinList([&#x27;a cat&#x27;, &#x27;a dog&#x27;, &#x27;an owl&#x27;]), renderFrames([{ act: &#x27;add&#x27;, kind: &#x27;tree&#x27;, count: 3 }]));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>a cat, a dog and an owl You asked me to add 3 trees.</code></pre></figure>
+<h3 id="genreof-topicindex-randomtopics-typedworldof-readrolesbytypes-assignbyslottypes-judgereply-tabulate-and-tabletext">genreOf, topicIndex, randomTopics, typedWorldOf, readRolesByTypes, assignBySlotTypes, judgeReply, tabulate and tableText</h3>
+<p>General host code taken into the library (handover LIB-5 to LIB-8):</p>
+<ul><li><code>genreOf(world, type)</code> gives the k.genres genre a document type names (hyphens, underscores, spaces, or the genre's words), or null.</li><li><code>topicIndex(world, { types, min })</code> lists the topics a world can compose about: names that at least <code>min</code> (2) other facts name. <code>randomTopics(world, { seed, count })</code> draws topics by interest, seeded.</li><li><code>typedWorldOf(things, { values })</code> builds a typed world from a session's things <code>[{ id, label, kind, attrs }]</code> and the values each attribute can take.</li><li><code>readRolesByTypes(world, text, roles, { skip })</code> re-reads the free roles of a refused reading by type: a thing by its label, an attribute by its key, a value among the attribute's values. Every content word must be placed, else the result is null.</li><li><code>assignBySlotTypes(patterns, tokens, lexicons)</code> gives every assignment of content tokens to a pattern's typed slots. A reading needs exactly one assignment, every token a literal or a slot filler, and the anchor present.</li><li><code>judgeReply(reply, expected, { numberWords, before, after })</code> judges a reply text: every expected value is said (a number also as its word), and a question changes nothing. <code>tabulate(results)</code> and <code>tableText(table)</code> give a degree × dimension table.</li></ul>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>print(judgeReply(&#x27;A spider has eight legs.&#x27;, [&#x27;8&#x27;], { numberWords: { 8: &#x27;eight&#x27; } }), tableText(tabulate([{ degree: 1, dim: &#x27;kind&#x27;, pass: true }])));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true degree 1  kind       1/1  100 %</code></pre></figure>
 <h3 id="experimentcells-run-options-and-ablationcells-run-configs-options">experiment(cells, run, options?) and ablation(cells, run, configs, options?)</h3>
 <p>Experiment and ablation harnesses (Round 28 item 9). <code>experiment</code> runs cells <code>[{ id, input, expect, set?, class? }]</code> through <code>run(input, config)</code>. Each result becomes a ledger row: <code>{ source, text, cell, config, set, pass, got, expect, stage? }</code>. The options are <code>judge(got, expect, cell)</code> (default: equal as JSON), <code>stage(got, cell)</code>, and <code>name</code> and <code>config</code>.</p>
 <p><code>ablation</code> runs every configuration on every set. It returns:</p>
@@ -1063,7 +1068,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.102.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.103.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

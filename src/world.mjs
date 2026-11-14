@@ -589,12 +589,14 @@ export class World {
       for (const id of this.wires.keys()) res._touched.add(id);
       res._full = true;
       res._all = true;
+      res._audit = true;
       this._validate(res);
       for (const v of res.violations) this._support(v);
     } finally {
       this._rollback(mark);
     }
     const issues = this.ofType('core.issue').map((i) => ({ id: i.id, rule: (i.attrs.rule || [])[0]?.slice(1), about: (i.attrs.about || []).map((v) => v.slice(1)), ...(i.attrs.key ? { key: i.attrs.key[0] } : {}), why: i.attrs.why ? str(i.attrs.why[0]) : undefined }));
+    for (const j of res.openJoins || []) issues.push({ id: j.id, key: j.key, kind: 'open-join', why: `${j.value} is not yet the ${j.by} of a ${j.type} wire` }); // reported, not refused
     return { ok: !res.violations.length, violations: res.violations, issues };
   }
 
@@ -2246,7 +2248,13 @@ export class World {
             if (s.enum && !s.enum.includes(v) && !s.enum.some((e) => this._same(w.type, k, e, v))) res.violations.push(own({ kind: 'domain', id, key: k, value: v, allowed: s.enum }, v));
             if (s.by && s.type) { // a join by a key: checked once a world declares the type, open before
               const fits = (t) => t?.attrs[s.by]?.includes(v) && s.match.every(([mine, theirs]) => (w.attrs[mine] || []).some((x) => (t.attrs[theirs || mine] || []).includes(x))); // a composite key: by= and every match=own:target
-              if (c.types.has(s.type) && !(this.byType.get(s.type) ? [...this.byType.get(s.type)] : []).some((tid) => fits(this.wires.get(tid)))) res.violations.push(own({ kind: 'domain', id, key: k, value: v, why: `must be the ${s.by}${s.match.length ? ` (with ${s.match.map(([a, b]) => b || a).join(', ')})` : ''} of a ${s.type} wire` }, v));
+              // open while no fact of the target type has the key (a lazy load tells the referring facts first);
+              // refused when this statement makes the reference and the targets are there without it;
+              // a reference made earlier that is still open is reported by check(), not refused
+              const targets = this.byType.get(s.type) ? [...this.byType.get(s.type)].map((tid) => this.wires.get(tid)) : [];
+              if (!targets.some((t) => t?.attrs[s.by]?.length) || targets.some(fits)) continue;
+              if (res._audit || !res.added.includes(id)) { (res.openJoins || (res.openJoins = [])).push({ kind: 'open-join', id, key: k, value: v, type: s.type, by: s.by }); continue; }
+              res.violations.push(own({ kind: 'domain', id, key: k, value: v, why: `must be the ${s.by}${s.match.length ? ` (with ${s.match.map(([a, b]) => b || a).join(', ')})` : ''} of a ${s.type} wire` }, v));
               continue;
             }
             if (s.type && !s.kinds.length) {

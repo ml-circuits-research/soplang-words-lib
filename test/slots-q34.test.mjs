@@ -26,16 +26,22 @@ test('excludes: never the exact value and the approximate one together', () => {
   assert.deepEqual([r.violations[0].kind, r.violations[0].why], ['excludes', 'has x and x_about together']);
 });
 
-test('by: a join by a key to another world, open until a world declares the type', () => {
+test('by: a join by a key to another world, open until a fact of the target type has the key (Q48: deferred, both orders)', () => {
+  const objects = '@o core.type of=k.objects.object  @on core.slot of=k.objects.object key=name';
   const w = new World();
-  w.load('@d core.slot of=pic key=drawing type=k.objects.object by=name');
-  assert.ok(w.tell('@p1 pic drawing=unicorn').ok, 'the objects world is not loaded: open');
-  const objects = '@o core.type of=k.objects.object  @on core.slot of=k.objects.object key=name  @h k.objects.object name=horse';
-  const late = w.tell(objects);
-  assert.deepEqual([late.ok, late.violations[0].id], [false, 'p1'], 'loading the world checks the joins made before it');
-  assert.ok(w.tell(objects + '  @u k.objects.object name=unicorn').ok);
+  w.load('@d core.slot of=pic key=drawing type=k.objects.object by=name\n' + objects);
+  assert.ok(w.tell('@p1 pic drawing=unicorn').ok, 'the type is declared but has no object yet: open (a lazy load)');
+  assert.ok(w.tell('@h k.objects.object name=horse').ok, 'an object arrives: the earlier reference is not refused');
+  assert.deepEqual(w.check().issues.filter((i) => i.kind === 'open-join').map((i) => [i.id, i.key]), [['p1', 'drawing']], 'still open: reported by check()');
   assert.ok(w.tell('@p2 pic drawing=horse').ok);
-  assert.equal(w.tell('@p3 pic drawing=pegasus').violations[0].why, 'must be the name of a k.objects.object wire');
+  assert.equal(w.tell('@p3 pic drawing=pegasus').violations[0].why, 'must be the name of a k.objects.object wire', 'targets loaded, the key missing: refused');
+  w.tell('@u k.objects.object name=unicorn');
+  assert.deepEqual(w.check().issues.filter((i) => i.kind === 'open-join'), [], 'closed when its target arrives');
+  const v = new World(); // the other order: targets first
+  v.load('@d core.slot of=pic key=drawing type=k.objects.object by=name\n' + objects);
+  v.tell('@h k.objects.object name=horse');
+  assert.ok(v.tell('@p pic drawing=horse').ok);
+  assert.equal(v.tell('@q pic drawing=unicorn').ok, false);
 });
 
 test('by with match: a join by a composite key (a variant named within its slot)', () => {

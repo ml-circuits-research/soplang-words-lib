@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.60.0
+
+Q48 (the knowledge repository): deferred join checks.
+
+### Changed (migration)
+- A `type=T by=<key>` join stays open while no `T` fact has the key. Before, it was
+  checked as soon as a world declared `T`, which refused a lazy load that tells the
+  referring facts first. It is refused when the statement making the reference finds the
+  targets loaded without that value. Telling target facts no longer refuses references
+  made before them: those still open are listed by `world.check()` as `open-join` issues.
+  A host that relied on the refusal at load time reads `check().issues` instead.
+
 ## 0.59.0
 
 Reviewer 14:15 (owner): `std.sample`, random but relevant commands.

@@ -4487,3 +4487,19 @@ rebuilt (`docs/version.md`: sopworld 0.59.0).
   world templates) lands; `place` is not suggested.
 - Next: std.summarize and std.compose (14:45), Round 28 items 8–9, the std.plan follow-up,
   Round 27.
+
+## Reviewer 15:30 — Q48, deferred join checks — release 0.60.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/cases.mjs`: 61 / 61. Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.60.0).
+
+**For the knowledge repository: `drawing=` joins can be declared from 0.60.0.**
+- src/world.mjs: a `by=` join is open while no target fact has the key, and refused only
+  for the statement that makes the reference when the targets are loaded without the
+  value. A reference made earlier is not refused when targets arrive. `check()` lists it
+  as an `open-join` issue while it stays open.
+- test/slots-q34.test.mjs: the join test is rewritten for both orders (referrers first:
+  open, then reported, then closed when the target arrives; targets first: refused).
+- The user asked for an estimate (10:33); answered by message: about 6–7 hours for
+  summarize, compose, Round 28 items 8–9, the plan follow-up and Round 27.

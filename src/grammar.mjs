@@ -110,7 +110,7 @@ export function parseText(world, text, { start = 'S', max = 8, budget = 20000, .
         const more = at(cat, last.end + 1).filter((r) => !r.at.coord);
         if (!more.length) break;
         items = [...items, more.sort((a, b) => b.end - a.end)[0]];
-        out.push({ end: items[items.length - 1].end, at: { cat, span: [i, items[items.length - 1].end], coord: items.map((x) => x.at) } });
+        out.push({ end: items[items.length - 1].end, at: { cat, span: [i, items[items.length - 1].end], conj: tok[items[0].end], coord: items.map((x) => x.at) } });
       }
     }
     active.delete(key);
@@ -132,7 +132,14 @@ export function parseText(world, text, { start = 'S', max = 8, budget = 20000, .
 /** A noun phrase node read as roles: { det, num, mods, head, lemma, span, pp? } (categories named by the grammar: `cats`). */
 export function nounPhrase(node, cats = {}) { // bounded: the depth of the tree
   const C = { det: 'Det', num: 'Num', mod: 'Adj', head: 'N', pp: 'PP', ord: 'Ord', name: 'Name', pron: 'Pron', ...cats };
-  if (node.coord) return { coord: node.coord.map((n) => nounPhrase(n, cats)), span: node.span };
+  if (node.coord) return { coord: node.coord.map((n) => nounPhrase(n, cats)), span: node.span, ...(node.conj ? { conj: node.conj } : {}) };
+  // a coordination inside the phrase ("tables 1 and 2", "red and blue cups"): distributed, one phrase per part
+  const inner = (n) => (n !== node && (n.cat === node.cat || n.cat === C.pp) ? null : n.coord && n !== node ? n : (n.children || []).map(inner).find(Boolean) || null); // bounded: the depth of the tree; not into a PP or a phrase of the same category
+  const split = inner(node);
+  if (split) {
+    const swap = (n, c) => (n === split ? c : n.children ? { ...n, children: n.children.map((x) => swap(x, c)) } : n);
+    return { coord: split.coord.map((c) => nounPhrase(swap(node, c), cats)), span: node.span, ...(split.conj ? { conj: split.conj } : {}) };
+  }
   const kids = node.children || [];
   // a phrase built on a phrase of its own category (NP -> NP PP, NP -> NP of NP): the first is the base
   // ... unless the rule names another head (NP -> NP 's N: the N)

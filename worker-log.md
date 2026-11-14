@@ -3992,3 +3992,30 @@ No source change, so no release.
   library change.
 - Next: art.draw, data.charts, diagram.sketch, ui.avatar (the larger grid worlds; their
   schemas first).
+
+## Reviewer 03:30 — typed needs (done in 0.39.0); std-grammar.md section 8 in resolve — release 0.40.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/cases.mjs`: 45 / 45. Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.40.0).
+
+- Typed needs and views that carry them: 0.39.0. `std.schema.needs of=` takes a world or
+  a view name.
+- Section 8 (PSys2 handover/lang.en/std-grammar.md), semantics taken into `resolve`:
+  - a choice is asked (the coordinator's `kind=choice`);
+  - a part without its noun borrows one (a bare number from the part before, otherwise from
+    the next part);
+  - a coordination inside a phrase is distributed (`nounPhrase`, not into a PP);
+  - a part of a set is the whole set when the count covers it, else asked;
+  - "the other one" (`core.word ... means=std.other`);
+  - a pronoun carries `guess`.
+- Not taken yet:
+  - a relative clause with "be" folds into modifiers once the grammar has the rule, so
+    there is nothing to add in the library;
+  - time phrases ("is Monday before Friday") wait for an order in time.
+  - PSys2's tier names (said / focus / scene / knowledge / default) map onto std.fill's
+    (user / focus / scene / knowledge / default). `resolve` uses user, scene, focus and
+    slip.
+- test/resolve.test.mjs: 5 tests, 1 of them new (section 8). The grammar coordination
+  test still passes (no distribution into a PP).
+- docs/lessons.md: "A host's resolver is the specification".

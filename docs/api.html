@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="4be333954e55">
+<meta name="source-hash" content="e4a9c20c7ed0">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.39.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.40.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -444,6 +444,7 @@ print(viewDiff(w, &#x27;x.det&#x27;, &#x27;v1&#x27;, &#x27;v2&#x27;));</code></p
 <figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;only&quot;:{&quot;v1&quot;:[&quot;a&quot;],&quot;v2&quot;:[&quot;every&quot;]},&quot;both&quot;:[&quot;the&quot;]}</code></pre></figure>
 <h3 id="resolveworld-phrase-options">resolve(world, phrase, options?)</h3>
 <p>The things a noun phrase names (<code>std.schema.thing</code> wires), and how sure the reading is. <code>phrase</code> is text, read with <code>options.grammar</code> (parseText's options, start <code>NP</code>) and <code>options.cats</code> (nounPhrase's), or a <code>nounPhrase</code> result. The kind is the head's lemma or a word that means it (<code>core.word text= means=</code>), else a kind one swap or letter away (a slip). Modifiers and a name are values of any key, and a <code>core.word ... of=&lt;key&gt;</code> word counts for that key only. A PP narrows to things with a key that refers to the one thing its noun phrase names. <code>quant</code> (all, each, both) and a phrase with no noun give the set. An ordinal, or a number after the noun, picks one (the id <code>&lt;kind&gt;&lt;n&gt;</code> first); a number before the noun must be the count. A coordination is the union of its parts. A pronoun is the newest thing in focus (<code>options.focus</code>, ids newest first, else the <code>std.focus.last</code> wires that name things).</p>
+<p>Also: a coordination whose word the grammar marks <code>kind=choice</code> (<code>x.coord word=or kind=choice</code>) is asked, never both and never the last (<code>{ ids: [], ask: true, which }</code>). A part without its noun borrows one: a bare number takes the noun of the part before ("tables 1 and 2"), any other part the noun of the next part ("the red or the blue house"). A coordination inside a phrase is distributed ("red and blue cups"). A part of a set (a number, quantifier or determiner with a PP and no noun: "two of the tables") is the whole set when the count covers it, else asked. A modifier that <code>core.word</code> maps to <code>std.other</code> ("the other one") keeps the things of the kind that are not in focus. A pronoun also carries <code>guess: { word, ids }</code>, for the host's "I took it to mean ..." sentence.</p>
 <p>Returns <code>{ ids, tier, how }</code>: <code>tier</code> is <code>user</code> (the words picked), <code>scene</code> (the only one of its kind), <code>focus</code> (the focus chose among several) or <code>slip</code> (the least sure in a coordination wins); <code>how</code> lists the steps, so a reply can say what it assumed. When it cannot resolve, it returns <code>{ ids: [], why, which?, kind?, unknown? }</code>.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.tell(`@d x.det text=the  @r x.rule lhs=NP rhs=DET? rhs=MOD* rhs=N  @c x.coord word=and
@@ -713,7 +714,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.39.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.40.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

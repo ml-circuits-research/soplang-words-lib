@@ -90,3 +90,11 @@ with a tier for each answer.
 The room planner and the timetable reused acts, boxes, fill, views, denies and the solver
 without code in between. They also found six places where the docs or the library stopped
 short (docs/reuse-reports/apps.md). Four are fixed (0.32–0.35); two are open.
+
+## A host's resolver is the specification (03:30)
+
+PSys2's two resolvers became one host function. Its semantics were exact sentences:
+"a choice is asked, never both and never the last", and "a bare number takes the kind of
+the part before". Each one became a line of `resolve` and an assertion in its test, with
+the language left to the grammar world (which coordinator means a choice, which word
+means "other"). Reading a host's tests is the fastest way to know what to build.

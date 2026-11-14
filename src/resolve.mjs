@@ -56,21 +56,38 @@ export function resolve(world, phrase, { grammar = {}, cats, focus, inside } = {
     if (!p.length) return { ids: [], why: `cannot read "${phrase}" as a noun phrase`, ...(p.unknown ? { unknown: p.unknown } : {}) };
     np = nounPhrase(p[0].tree, cats);
   }
-  if (np.coord) { // coordination: the union, the least sure tier
-    const parts = np.coord.map((c) => resolve(world, c, { cats, focus, inside }));
+  if (np.coord) { // coordination: the union (or, for a word the grammar marks kind=choice, a question)
+    // a part without its noun takes one: a bare number the noun of the part before ("tables 1 and 2"), else the noun of the next part that has one ("the red or the blue house")
+    const items = np.coord.map((c, k) => {
+      if (c.head !== undefined || c.pron !== undefined || c.coord) return c;
+      const donor = (c.num !== undefined && !c.mods?.length ? np.coord.slice(0, k).reverse() : []).find((x) => x.head !== undefined) ?? np.coord.slice(k + 1).find((x) => x.head !== undefined) ?? np.coord.slice(0, k).reverse().find((x) => x.head !== undefined);
+      return donor ? { ...c, head: donor.head, lemma: donor.lemma, ...(c.num !== undefined && c.numAfter === undefined ? { numAfter: true } : {}) } : c;
+    });
+    const parts = items.map((c) => resolve(world, c, { cats, focus, inside }));
     const bad = parts.find((r) => r.why);
     if (bad) return bad;
     const order = ['user', 'scene', 'focus', 'slip'];
-    return { ids: [...new Set(parts.flatMap((r) => r.ids))], tier: parts.map((r) => r.tier).sort((a, b) => order.indexOf(b) - order.indexOf(a))[0], how: parts.flatMap((r) => r.how) };
+    const ids = [...new Set(parts.flatMap((r) => r.ids))];
+    const choice = np.conj !== undefined && world.ofType(grammar.types?.coord ?? 'g.coord').some((x) => (x.attrs.word || []).includes(np.conj) && x.attrs.kind?.[0] === 'choice');
+    if (choice) return { ids: [], why: `which: ${ids.join(' or ')}?`, ask: true, which: ids, how: parts.flatMap((r) => r.how) }; // a choice is asked, never both, never the last
+    return { ids, tier: parts.map((r) => r.tier).sort((a, b) => order.indexOf(b) - order.indexOf(a))[0], how: parts.flatMap((r) => r.how) };
   }
   const how = [];
   const things = world.ofType(THING).filter((t) => !inside || Object.values(t.attrs).some((vs) => vs.includes(ref(inside))));
   const fc = focusOf(world, focus);
 
+  // a part of a set ("two of the tables", "some of them"): the set inside; the whole set when the count covers it, else asked
+  if (np.head === undefined && np.pron === undefined && np.pp?.length === 1 && np.pp[0].np && (np.num !== undefined || np.quant !== undefined || np.det !== undefined)) {
+    const inner = resolve(world, { ...np.pp[0].np, quant: np.pp[0].np.quant ?? 'all' }, { grammar, cats, focus, inside }); // the set the part is taken from
+    if (inner.why) return inner;
+    const n = np.num !== undefined ? Number(np.num) : undefined;
+    if (n === undefined || n >= inner.ids.length) return { ...inner, how: [...inner.how, `part of ${inner.ids.length}: all of them`] };
+    return { ids: [], why: `which ${n} of ${inner.ids.length}?`, ask: true, which: inner.ids };
+  }
   // a pronoun: the newest thing in focus
   if (np.pron !== undefined && np.head === undefined) {
     const id = fc.find((x) => things.some((t) => t.id === x));
-    return id ? { ids: [id], tier: 'focus', how: [`${np.pron} = ${id} (the focus)`] } : { ids: [], why: `nothing in focus for "${np.pron}"` };
+    return id ? { ids: [id], tier: 'focus', how: [`${np.pron} = ${id} (the focus)`], guess: { word: np.pron, ids: [id] } } : { ids: [], why: `nothing in focus for "${np.pron}"` };
   }
   // the kind: everything, a kind by name or by a word that means it, else a kind one letter away
   let pool = things, kind = null, tier = 'user';
@@ -88,6 +105,11 @@ export function resolve(world, phrase, { grammar = {}, cats, focus, inside } = {
   // modifiers and a name: a value of any key (or a word that means one)
   const has = (t, word, key) => Object.entries(t.attrs).some(([k, vs]) => k !== 'kind' && k !== 'world' && (key === undefined || k === key) && vs.some((v) => meaning(world, word, k).includes(String(v).toLowerCase())));
   for (const m of np.mods || []) {
+    if (meaning(world, m).includes('std.other')) { // "the other one": the things of the kind not in focus
+      const next = pool.filter((t) => !fc.includes(t.id));
+      if (next.length === pool.length) return { ids: [], why: `other than what? nothing of the kind is in focus`, kind };
+      pool = next; how.push(`${m}: not ${fc.filter((x) => things.some((t) => t.id === x)).join(', ')}`); continue;
+    }
     const next = pool.filter((t) => has(t, m));
     if (!next.length) return { ids: [], why: `there is no ${m} ${kind ?? 'thing'}`, kind };
     pool = next; how.push(`${m}: ${pool.length} left`);

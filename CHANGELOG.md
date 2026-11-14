@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.40.0
+
+Reviewer 03:30: section 8 of PSys2's std-grammar.md, one noun-phrase reading over the
+facts, its semantics in `resolve`.
+
+### New
+- A choice (a coordinating word marked `kind=choice`) is asked: `ask: true` and `which`.
+- A part without its noun borrows one ("tables 1 and 2", "the red or the blue house").
+- `nounPhrase` distributes a coordination inside a phrase. It does not do so inside a PP.
+  The coordination node carries `conj`.
+- A part of a set ("two of the tables") gives the whole set when the count covers it, and
+  is asked otherwise.
+- "The other one": a modifier mapped to `std.other` keeps what is not in focus.
+- A pronoun's answer carries `guess`.
+
 ## 0.39.0
 
 Reviewer 03:10 item 2: typed needs.

@@ -1180,6 +1180,17 @@ before the noun must be the count. A coordination is the union of its parts. A p
 the newest thing in focus (`options.focus`, ids newest first, else the
 `std.focus.last` wires that name things).
 
+Also: a coordination whose word the grammar marks `kind=choice` (`x.coord word=or
+kind=choice`) is asked, never both and never the last (`{ ids: [], ask: true, which }`).
+A part without its noun borrows one: a bare number takes the noun of the part before
+("tables 1 and 2"), any other part the noun of the next part ("the red or the blue
+house"). A coordination inside a phrase is distributed ("red and blue cups"). A part of a
+set (a number, quantifier or determiner with a PP and no noun: "two of the tables") is
+the whole set when the count covers it, else asked. A modifier that `core.word` maps to
+`std.other` ("the other one") keeps the things of the kind that are not in focus. A
+pronoun also carries `guess: { word, ids }`, for the host's "I took it to mean ..."
+sentence.
+
 Returns `{ ids, tier, how }`: `tier` is `user` (the words picked), `scene` (the only one of
 its kind), `focus` (the focus chose among several) or `slip` (the least sure in a
 coordination wins); `how` lists the steps, so a reply can say what it assumed. When it

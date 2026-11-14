@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sopworld Related cases and generalisation</title>
+<meta name="source-hash" content="31bb2a353a00">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.111.0</small></a>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html" aria-current="page">Generalisation</a><a href="literature.html">Literature</a><a href="playground.html">Playground</a></nav>
+</header>
+<main>
+<h1>Related cases and generalisation</h1>
+<p class="lead">A case is never single. A fix that makes one failing sentence pass may be general, or may fit only that sentence. The library tells the two apart by deriving <strong>related cases</strong> from the case and judging the fix on them.</p>
+<h2 id="the-picture">The picture</h2>
+<p>The owner's picture: go <strong>up</strong> the graph of abstraction from the case, then <strong>down</strong> to other members. "What sound does a cow make" goes up from <em>cow</em> to <em>bovine</em>, then down to <em>yak</em> (distance 1: the same kind). It goes up again to <em>ruminant</em>, then down through <em>ovine</em> to <em>sheep</em> (distance 2: kinds that share a parent). The same walk works on other <strong>axes</strong>:</p>
+<ul><li><code>filler</code>: the thing asked about, along kind, class, is and is_a, or any <code>edges</code> a host names (a role, a habitat);</li><li><code>key</code>: another key of the same holder (its legs instead of its sound);</li><li><code>wording</code>: the same frame said another way: an alternation of the language world run backwards, a learnt or noise operator, a synonym, or a paraphrase the language world declares (<code>w.lang.en.variant</code>).</li></ul>
+<p>A related case is kept only when it is valid: the world has an answer for it (so the world is the oracle), its text reads back to the same frame, and it is not already a known case. <code>relatedCases(world, case, { distance, axes })</code> gives them, each tagged with its <code>distance</code> and the <code>axes</code> it changed.</p>
+<h2 id="the-measure">The measure</h2>
+<p><code>judgeOnRelated(answer, case, related)</code> judges a fix on the case alone and on its valid related cases, per distance. A point fix passes the case and shows a share of 0 on its related cases. A general fix passes both. <code>tools/generalisation-test.mjs</code> turns this into a table per distance × axis and names the pattern ("passes when kind changes, fails when role changes"). <code>learnRules</code> admits an induced rule only when its held-out cases and related cases pass. The related cases used to judge are never the ones the fix was made from.</p>
+<h2 id="the-literature">The literature</h2>
+<ul><li><strong>Metamorphic testing</strong> (Chen, Cheung and Yiu, 1998): when no oracle gives the expected output of each input, test relations between outputs of related inputs instead.</li><li><strong>CheckList</strong> (Ribeiro, Wu, Guestrin and Singh, ACL 2020): behavioural tests of NLP models: minimum functionality tests, invariance tests (a perturbation must not change the output) and directional tests (it must change it in a known way). A <code>wording</code> related case is an invariance test. A <code>filler</code> or <code>key</code> related case is a directional one: the expected answer changes, and the world computes it.</li><li><strong>Contrast sets</strong> (Gardner et al., Findings of EMNLP 2020): small, meaningful perturbations of test instances that change the gold label, to probe a model's local decision boundary.</li></ul>
+<p>How this differs: the perturbations are not written by hand or by templates. They come from the world's own graph of kinds and from the language world, so they stay valid when the knowledge changes. The expected answer of each is computed by the world, not labelled. The distance along the graph of abstraction orders them, from near to far.</p>
+<p class="source">Generated from <code>docs/generalisation.md</code>.</p>
+</main>
+<footer>sopworld 0.111.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+
+</body>
+</html>

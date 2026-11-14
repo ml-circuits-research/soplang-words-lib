@@ -16,7 +16,7 @@ description: From reading-stage failures and aligned pairs (a sentence and a var
 ## Steps
 
 1. **Collect pairs.** Take the reading-stage failures and pair each with the sentence it
-   should have been: the user's correction, or the case it is a cousin of. Keep only pairs
+   should have been: the user's correction, or the case it is a related case of. Keep only pairs
    judged same meaning.
 2. **Freeze a held-out half** before looking at the operators.
 3. **Learn typed operators.** Run `learnFormOperators(train, { heldOut, world })` with the

@@ -4,6 +4,7 @@
 // pairing whose references map to paired types scores more (structure, not names). What one world
 // has and the aligned slot of the other lacks (a default, a closed set of choices, required) is
 // OFFERED with the map, never told: the host measures it before taking it.
+// In the literature: structure mapping (Gentner 1983) and the Structure-Mapping Engine (Falkenhainer et al. 1989); docs/literature.md.
 
 const sigOf = (s) => [s.refs?.length ? 'ref' : (s.kinds || []).slice().sort().join('|') || 'atom', s.many ? 'many' : 'one', s.enum ? 'enum' : ''].join('/');
 

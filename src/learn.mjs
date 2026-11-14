@@ -1,9 +1,10 @@
 // Induction from cases (abstraction round item 4, Q54): cases that share a frame are anti-unified by
 // the library's own `induce` into one reading rule (words that differ become variables; a variable
 // that fills the frame is lifted to the kind of the thing it names, by a pattern on that thing's
-// fact). A rule is proposed with its support, then judged on held-out cases and on the cousins of
+// fact). A rule is proposed with its support, then judged on held-out cases and on the related cases of
 // its cases; it is admitted only when the training cases all pass and the held-out share does not
 // fall below `admit`. Nothing is told to the host's world: a rule is text to review.
+// In the literature: delexicalisation (dialogue and NLG) and rule induction by anti-unification (Plotkin 1970); docs/literature.md.
 
 import { induce } from './induce.mjs';
 
@@ -11,11 +12,11 @@ const enc = (text) => '@u utter ' + String(text).toLowerCase().replace(/[?!.]+\s
 
 /**
  * Proposals of reading rules from `cases` ([{ text, frame }] with frame { is: 'ask', key, of: { id } }).
- * Options: `heldOut` (more cases, not used to induce), `cousins(case) -> [cousins]` (valid ones are
+ * Options: `heldOut` (more cases, not used to induce), `related(case) -> [related cases]` (`cousins` is its deprecated name) (valid ones are
  * held out too), `admit` (the least held-out share, default 1), `min` (cases per rule, default 2).
  * Returns [{ text, support, train: { pass, of }, heldOut: { pass, of }, admitted, why? }].
  */
-export function learnRules(world, cases, { heldOut = [], cousins: cousinsOf, admit = 1, min = 2 } = {}) {
+export function learnRules(world, cases, { heldOut = [], related: relatedOf, cousins: cousinsOf = relatedOf, admit = 1, min = 2 } = {}) {
   const groups = new Map();
   for (const c of cases) { const n = enc(c.text).split(' ').length; const k = `${c.frame.is}|${c.frame.key}|${n}`; (groups.get(k) || groups.set(k, []).get(k)).push(c); }
   const out = [];
@@ -60,11 +61,12 @@ export function learnRules(world, cases, { heldOut = [], cousins: cousinsOf, adm
 const toksOf = (t) => String(t).toLowerCase().replace(/[?!.,]+/g, ' ').match(/[\p{L}\p{N}_'-]+/gu) || [];
 import { typedLexicon } from './readtypes.mjs';
 /**
- * Content words lifted to their type before aligning (reviewer 00:05): through the world's typed lexicon
+ * Delexicalisation (as in task-oriented dialogue and NLG): content words lifted to their type before aligning
+ * (reviewer 00:05): through the world's typed lexicon
  * a thing becomes <its type>, a kind <kind>, an attribute <attr>, a number <num>;
  * function words stay. So "hey a cow makes which sound" and "hey a dog makes which noise" align as one.
  */
-export function liftTokens(world, text, { senses } = {}) {
+export function delexicalise(world, text, { senses } = {}) {
   const lex = typedLexicon(world);
   return toksOf(text).map((t) => {
     if (/^\d+([.,]\d+)?$/.test(t)) return '<num>';
@@ -75,7 +77,7 @@ export function liftTokens(world, text, { senses } = {}) {
     return s0.cat === 'thing' ? `<${s0.type}>` : `<${s0.cat}>`;
   });
 }
-const tok2 = (world, t) => (world ? liftTokens(world, t) : toksOf(t));
+const tok2 = (world, t) => (world ? delexicalise(world, t) : toksOf(t));
 
 /** The operator of one pair: { from, to } with {x1}.. for the shared runs, or null when nothing is shared. */
 export function formOperator(canonical, variant, { min = 1, world } = {}) {
@@ -119,8 +121,8 @@ export function learnFormOperators(pairs, { heldOut = [], normalise: norm, world
   const ops = [...clusters.values()].sort((x, y) => y.support.length - x.support.length);
   ops.forEach((o, i) => {
     o.name = `op${i + 1}`;
-    const T = (x) => (world ? liftTokens(world, x) : toksOf(x)).join(' ');
-    const all = (x) => (norm ? [norm(o, x)].filter((y) => y != null) : applyRuleAll(o, world ? liftTokens(world, x).join(' ') : x));
+    const T = (x) => (world ? delexicalise(world, x) : toksOf(x)).join(' ');
+    const all = (x) => (norm ? [norm(o, x)].filter((y) => y != null) : applyRuleAll(o, world ? delexicalise(world, x).join(' ') : x));
     const mine = heldOut.filter((h) => all(h.variant).length && !all(h.variant).includes(T(h.variant)));
     const pass = mine.filter((h) => all(h.variant).includes(T(h.canonical))).length; // one of its readings gives the canonical sentence
     o.heldOut = { pass, of: mine.length };
@@ -202,3 +204,6 @@ export function familyOf(edit) {
   if (d.length >= 3 && n.length <= 2) return 'extra clause';
   return 'substitution';
 }
+
+/** @deprecated since 0.111.0, removed in 0.113.0: `delexicalise`. */
+export const liftTokens = (...a) => delexicalise(...a);

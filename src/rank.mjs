@@ -1,6 +1,7 @@
 // Ranking scored readings (Round 9). The default order is data, so a host can call it,
 // reorder it or add its own criteria, and every place in the ranking is explained: a
 // reading that lost says on which criterion, and against which reading.
+// In the literature: std.decide's ordered criteria relate to weighted abduction (Hobbs et al. 1993); learnRanking to learning to rank (Liu 2009); docs/literature.md.
 
 const settled = (r) => (r.referents || []).filter((x) => !(x.unique || x.fits?.length === 1));
 const leftOver = (r) => (r.words ? r.words.unused.length + r.words.unresolved.length : 0);
@@ -147,13 +148,14 @@ export function rankingOf(world) {
 }
 
 /**
- * Calibrating a choice kind on cases (reviewer 01:00 item 2: weights from the corpus, never hand-tuned):
+ * Learning to rank a choice kind's criteria from cases (reviewer 01:00 item 2: weights from the corpus, never
+ * hand-tuned; a listwise search over criteria orders rather than a learnt scoring function):
  * `cases` = [{ candidates, expected }] (the index of the right candidate). Every order of the kind's criteria
  * (at most 7! orders) is tried on the training cases; the best is proposed, as std.decide facts, and admitted
  * only when the held-out cases do not drop against the current order. Returns { current, best, admitted,
  * train: { current, best }, heldOut: { current, best }, facts }.
  */
-export function calibrate(world, kind, cases, { heldOut = [] } = {}) {
+export function learnRanking(world, kind, cases, { heldOut = [] } = {}) {
   const base = choose(world, kind, [], {}).criteria;
   const hits = (crit, list) => list.filter((c) => choose(world, kind, c.candidates, { criteria: crit, seed: null }).order[0] === c.candidates[c.expected]).length;
   const perms = (xs) => (xs.length <= 1 ? [xs] : xs.flatMap((x, i) => perms([...xs.slice(0, i), ...xs.slice(i + 1)]).map((p) => [x, ...p])));
@@ -166,3 +168,6 @@ export function calibrate(world, kind, cases, { heldOut = [] } = {}) {
   const facts = best.map((c, i) => `@std.decide.c.${kind}.cal${i + 1} std.decide.criterion of=${kind} n=${i + 1} name=${c.name} measure=${c.measure} dir=${c.dir}`).join('\n');
   return { current: base.map((c) => c.name), best: best.map((c) => c.name), admitted, train, heldOut: ho, facts };
 }
+
+/** @deprecated since 0.111.0, removed in 0.113.0: `learnRanking` (the name calibrate is kept for mapping scores to probabilities). */
+export const calibrate = (...a) => learnRanking(...a);

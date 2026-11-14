@@ -627,22 +627,22 @@ export function discourseTemplates(world: World, type?: string): { id: string; m
 export function readByTypes(world: World, text: string, options?: { question?: string[]; skip?: string[]; lemma?: (word: string) => string[]; senses?: (word: string) => Wire[]; near?: number }): { near?: { word: string; as: string; cost: number; via: string }[]; frames: { frame: object; score: number; words: string[] }[]; best: { is: string; key?: string; of?: object; value?: string; kind?: string; act?: string; args?: Record<string, string>; answer?: string[] } | null; ambiguous?: boolean; unread: string[] };
 /** The world's own typed lexicon: word -> senses (thing, kind, attr, value, act, word). */
 export function typedLexicon(world: World): Map<string, object[]>;
-/** The cousins of a case: up along kinds or keys, down to other members, only the valid ones. */
-export function cousins(world: World, kase: { frame: object; text?: string; langFrame?: string; roles?: Record<string, string | string[]> }, options?: { variants?: Map<string, { alternation: string; canonical: string[] }>; lang?: string; operators?: { name: string; from: string; to: string }[]; senses?: (word: string) => Wire[]; alternations?: { name: string; from: string; to: string }[]; edges?: Record<string, string>; degree?: number; dims?: string[]; known?: (string | object)[]; read?: object; n?: number; seed?: number }): { frame: object; text?: string; degree: number; dims: string[]; via?: string; valid: boolean; why?: string }[];
+/** The related cases of a case (perturbations along axes): up along kinds or keys, down to other members, only the valid ones. */
+export function relatedCases(world: World, kase: { frame: object; text?: string; langFrame?: string; roles?: Record<string, string | string[]> }, options?: { variants?: Map<string, { alternation: string; canonical: string[] }>; lang?: string; operators?: { name: string; from: string; to: string }[]; senses?: (word: string) => Wire[]; alternations?: { name: string; from: string; to: string }[]; edges?: Record<string, string>; distance?: number; axes?: string[]; known?: (string | object)[]; read?: object; n?: number; seed?: number }): { frame: object; text?: string; distance: number; axes: string[]; via?: string; valid: boolean; why?: string }[];
 /** The ancestors of a thing in the layered graph of abstraction: name -> { level, dim }. */
 export function ancestorsOf(world: World, id: string, options?: { depth?: number; edges?: Record<string, string> }): Map<string, { level: number; dim: string }>;
 /** The chain of kinds of a thing, nearest first. */
 export function kindChain(world: World, id: string, depth?: number): string[][];
-/** A fix judged on the case alone and on its valid cousins by degree. */
-export function judgeFix(answer: (text: string | undefined, frame: object) => unknown, kase: { frame: object; text?: string }, cousins: object[]): { case: boolean; byDegree: Record<string, { pass: number; of: number }>; share: number | null };
+/** A fix judged on the case alone and on its valid related cases by distance. */
+export function judgeOnRelated(answer: (text: string | undefined, frame: object) => unknown, kase: { frame: object; text?: string }, related: object[]): { case: boolean; byDistance: Record<string, { pass: number; of: number }>; share: number | null };
 /** The near words of a word through word senses (k.words.sense): synonyms 1, kinds 2 and more. */
 export function nearWords(world: World, word: string, options?: { senses?: (word: string) => Wire[] }): { word: string; cost: number; via: string }[];
 /** The canonical form of a text by the language world's alternation rules. */
 export function normalise(world: World, text: string, options?: { byRule?: 'order'; classes?: Map<string, Set<string>>; rules?: { name: string; from: string; to: string; mode?: string }[]; type?: string; lemma?: (word: string) => string[]; max?: number }): { text: string; applied: string[]; mode?: string };
 /** The alternation rules a world holds. */
 export function alternationsOf(world: World, type?: string): { name: string; from: string; to: string; mode?: string }[];
-/** Reading rules induced from cases (anti-unification), judged on held-out cases and cousins. */
-export function learnRules(world: World, cases: { text: string; frame: object }[], options?: { heldOut?: { text: string; frame: object }[]; cousins?: (kase: object) => object[]; admit?: number; min?: number }): { text?: string; support?: string[]; train?: { pass: number; of: number }; heldOut?: { pass: number; of: number }; admitted: boolean; why?: string }[];
+/** Reading rules induced from cases (anti-unification), judged on held-out cases and related cases. */
+export function learnRules(world: World, cases: { text: string; frame: object }[], options?: { heldOut?: { text: string; frame: object }[]; related?: (kase: object) => object[]; cousins?: (kase: object) => object[]; admit?: number; min?: number }): { text?: string; support?: string[]; train?: { pass: number; of: number }; heldOut?: { pass: number; of: number }; admitted: boolean; why?: string }[];
 /** Two world schemas aligned by structure; what one has and the other lacks is offered. */
 export function alignWorlds(a: World, b: World, options?: { min?: number }): { map: Record<string, string>; slots: Record<string, Record<string, string>>; score: number; offers: { to: { type: string; key: string }; what: string; value: unknown; from: { type: string; key: string } }[] };
 /** A story then a question: quantities held by owners follow the story; the question is read against them. */
@@ -662,7 +662,7 @@ export function learnFormEdits(pairs: { canonical: string; variant: string }[], 
 /** The family of an edit by its shape alone: filler, extra clause, insertion, deletion, inflection, substitution. */
 export function familyOf(edit: string): string;
 /** Content words lifted to their types through the world's typed lexicon; function words stay. */
-export function liftTokens(world: World, text: string, options?: { senses?: (word: string) => object[] }): string[];
+export function delexicalise(world: World, text: string, options?: { senses?: (word: string) => object[] }): string[];
 /** The inverse of the form operators at read time: clauses, fillers dropped, alternations undone. */
 export function canonicalise(world: World, text: string, options?: { fillers?: string[]; splitters?: string[]; rules?: object[]; classes?: Map<string, Set<string>>; type?: string }): { clauses: { text: string; applied: string[]; mode?: string }[]; dropped: string[] };
 /** canonicalise, then read each clause by types. */
@@ -676,7 +676,7 @@ export function choose<T extends object>(world: World | null, kind: string, cand
 /** RANKING's measures in the order std.decide (kind score) or the world declares. */
 export function rankingOf(world: World | null): object[];
 /** The order of a choice kind's criteria learnt from cases, admitted only when held-out cases do not drop. */
-export function calibrate(world: World | null, kind: string, cases: { candidates: object[]; expected: number }[], options?: { heldOut?: { candidates: object[]; expected: number }[] }): { current?: string[]; best?: string[]; admitted?: boolean; train?: object; heldOut?: object; facts?: string; why?: string };
+export function learnRanking(world: World | null, kind: string, cases: { candidates: object[]; expected: number }[], options?: { heldOut?: { candidates: object[]; expected: number }[] }): { current?: string[]; best?: string[]; admitted?: boolean; train?: object; heldOut?: object; facts?: string; why?: string };
 /** Cells with expectations run through a host, each result a ledger row. */
 export function experiment(cells: { id: string; input: unknown; expect: unknown; set?: string; class?: string }[], run: (input: any, config: any) => unknown, options?: { config?: object; name?: string; judge?: (got: unknown, expect: unknown, cell: object) => boolean; stage?: (got: unknown, cell: object) => string; source?: string }): object[];
 /** Configurations × sets: a table, what each configuration buys against the baseline, failures by cause. */
@@ -703,7 +703,7 @@ export function joinList(items: string[], options?: { and?: string; sep?: string
 export function narrationOf(world: World): Map<string, { narrate: boolean; salience: number; form: string | null }>;
 export function phraseOf(world: World, fact: { type: string; attrs: Record<string, string[]> }, options?: { key?: string; lang?: string; names?: Set<string> }): { text: string; key: string; phrasing: string } | null;
 export function realiseFrame(world: World, frame: string, roles?: Record<string, string | string[]>, options?: { lang?: string; pick?: number; optional?: boolean | string[]; det?: string | null }): string | null;
-export function variantsOf(world: World, options?: { lang?: string }): Map<string, { alternation: string; canonical: string[] }>;
+export function paraphrasesOf(world: World, options?: { lang?: string }): Map<string, { alternation: string; canonical: string[] }>;
 export function clauseOf(world: World, fact: { type: string; attrs: Record<string, string[]> }, options?: { parts?: number; lang?: string; names?: Set<string>; quiet?: string[]; words?: Record<string, string> }): string | null;
 /** The sentence of an act from the language world's act template whose slots equal the roles. */
 export function actSentence(world: World, act: string, roles: Record<string, unknown>, options?: { mode?: string | null; lang?: string }): string | null;
@@ -728,4 +728,18 @@ export function tabulate(results: { degree: number; dim?: string; dims?: string[
 /** A degree × dimension table as text. */
 export function tableText(table: Record<string, { pass: number; of: number }>): string;
 /** A verbless continuation: the previous act reused with the roles the message gives. */
-export function continueAct(world: World, text: string, previous: { act: string; args: Record<string, unknown> }, options?: { pronouns?: string[]; skip?: string[] }): { act: string; args: Record<string, unknown>; reused: true; changed: string[] } | null;
+export function resolveEllipsis(world: World, text: string, previous: { act: string; args: Record<string, unknown> }, options?: { pronouns?: string[]; skip?: string[] }): { act: string; args: Record<string, unknown>; reused: true; changed: string[] } | null;
+
+// Deprecated names (kept for two releases).
+/** @deprecated `delexicalise`. */
+export const liftTokens: typeof delexicalise;
+/** @deprecated `learnRanking`. */
+export const calibrate: typeof learnRanking;
+/** @deprecated `paraphrasesOf`. */
+export const variantsOf: typeof paraphrasesOf;
+/** @deprecated `resolveEllipsis`. */
+export const continueAct: typeof resolveEllipsis;
+/** @deprecated `relatedCases` (`degree` is `distance`, `dims` is `axes`). */
+export function cousins(world: World, kase: { frame: object; text?: string; langFrame?: string; roles?: Record<string, string | string[]> }, options?: Record<string, unknown> & { degree?: number; dims?: string[] }): { frame: object; text?: string; degree: number; dims: string[]; distance: number; axes: string[]; via?: string; valid: boolean; why?: string }[];
+/** @deprecated `judgeOnRelated` (`byDegree` is `byDistance`). */
+export function judgeFix(answer: (text: string | undefined, frame: object) => unknown, kase: { frame: object; text?: string }, related: object[]): { case: boolean; byDegree: Record<string, { pass: number; of: number }>; byDistance: Record<string, { pass: number; of: number }>; share: number | null };

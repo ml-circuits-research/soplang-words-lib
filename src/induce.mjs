@@ -9,6 +9,7 @@
 //     to match different wires, and negative examples add the comparisons between
 //     variables that are needed to exclude them.
 // induceSlots - required keys, reference types and small enums observed in a set of wires.
+// In the literature: anti-unification, least general generalisation (Plotkin 1970), and rule induction as in ILP; docs/literature.md.
 
 import { parse, format, cloneWire, quote } from './parser.mjs';
 import { builtins, quantity } from './builtins.mjs';

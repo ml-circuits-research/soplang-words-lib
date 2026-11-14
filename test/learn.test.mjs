@@ -1,9 +1,9 @@
 // Induction from cases (abstraction round item 4, Q54): the library's `induce` anti-unifies cases
 // that share a frame into one reading rule, the filler lifted to its kind; the rule is admitted only
-// when its training cases pass and its held-out cases and cousins do too. A toy world, invented.
+// when its training cases pass and its held-out cases and related cases do too. A toy world, invented.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { World, learnRules, cousins } from '../tools/lib-under-test.mjs';
+import { World, learnRules, relatedCases } from '../tools/lib-under-test.mjs';
 
 const w = new World();
 w.tell(`@cow k.animal name=cow kind=bovine sound=moo legs=4  @yak k.animal name=yak kind=bovine sound=grunt legs=4
@@ -13,9 +13,9 @@ w.tell(`@cow k.animal name=cow kind=bovine sound=moo legs=4  @yak k.animal name=
 const C = (t, k, o) => ({ text: t, frame: { is: 'ask', key: k, of: { id: o } } });
 const O = { question: ['what', 'does'], skip: ['a'] };
 
-test('learnRules: two cases anti-unified into a rule lifted to the kind, admitted on held-out cases and cousins', () => {
+test('learnRules: two cases anti-unified into a rule lifted to the kind, admitted on held-out cases and related cases', () => {
   const [r] = learnRules(w, [C('what sound does a cow make', 'sound', 'cow'), C('what sound does a duck make', 'sound', 'duck')],
-    { heldOut: [C('what sound does a goat make', 'sound', 'goat')], cousins: (c) => cousins(w, c, { degree: 4, dims: ['filler'], read: O }) });
+    { heldOut: [C('what sound does a goat make', 'sound', 'goat')], related: (c) => relatedCases(w, c, { distance: 4, axes: ['filler'], read: O }) });
   assert.match(r.text, /k\.animal name=\?v0/, 'the filler lifted to its kind');
   assert.match(r.text, /ask key=sound of=\?v0/);
   assert.deepEqual(r.train, { pass: 2, of: 2 });

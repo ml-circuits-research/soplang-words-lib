@@ -19,10 +19,10 @@ Nothing in a skill names a particular repository except its dry run.
 | [learn-language-rules](learn-language-rules/SKILL.md) | requests fail at reading because of their form | `node skills/learn-language-rules/scripts/dry-run.mjs` |
 | [consolidate](consolidate/SKILL.md) | the periodic cycle: freeze, learn, measure, keep only what raises held-out | `node skills/consolidate/scripts/dry-run.mjs` |
 | [audit-knowledge](audit-knowledge/SKILL.md) | model-labelled facts need checking against sources | `node skills/audit-knowledge/scripts/dry-run.mjs` |
-| [expand-and-test-case](expand-and-test-case/SKILL.md) | before fixing any case: its cousins, a table per degree × dimension, a forced rule | `node tools/cousins-test.mjs` |
+| [expand-and-test-case](expand-and-test-case/SKILL.md) | before fixing any case: its related cases, a table per distance × axis, a forced rule | `node tools/generalisation-test.mjs` |
 
 **The cycle.** `consolidate` runs `improve-world-from-failures` and `learn-language-rules`.
-Each fix goes through `expand-and-test-case`: it is judged on cousins, never on the case
+Each fix goes through `expand-and-test-case`: it is judged on related cases, never on the case
 alone. `audit-knowledge` and `learn-world-from-examples` feed the knowledge and the worlds
 the cycle reads. What a change buys is measured with `ablation`.
 

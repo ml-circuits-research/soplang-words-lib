@@ -2,6 +2,7 @@
 // fallback chain. Their candidate frames are pooled with features (which readers proposed each: agreement;
 // words left unread; the cost of assumptions; specificity), std.decide (kind ensemble) combines them, and the
 // winner comes with a confidence. Below a threshold the answer is a question naming the competing readings.
+// In the literature: ensembles with reranking (Charniak and Johnson 2005) and selective prediction, risk-coverage (Geifman and El-Yaniv 2017); docs/literature.md.
 
 import { choose } from './rank.mjs';
 import { readByTypes } from './readtypes.mjs';

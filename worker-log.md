@@ -5306,3 +5306,20 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - k.diagrams / w.diagram still unpublished (knowledge d3aaed2); composeDiagram and reading
   arrangement requests through w.lang.en frames wait for them.
 - Gate: npm test 497 pass / 0 fail; test:full 497 / 497 / 495, 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.111.0 — names against the literature (reviewer 05:10, 05:25)
+
+- Renamed with deprecated aliases (until 0.113.0): cousins→relatedCases (degree→distance, dims→axes),
+  judgeFix→judgeOnRelated (byDistance), cousinsTest→generalisationTest (tools/generalisation-test.mjs),
+  learnRules `cousins`→`related`, liftTokens→delexicalise, continueAct→resolveEllipsis,
+  variantsOf→paraphrasesOf, calibrate→learnRanking. src/cousins.mjs→src/related-cases.mjs; tests,
+  skills (expand-and-test-case, improve-world-from-failures, learn-language-rules, README) updated.
+- `git grep -i cousin` outside CHANGELOG/logs: only deprecation code and the deprecated-names doc entries.
+- New docs/generalisation.md, docs/literature.md (16 concepts, 28 references), glossary standard
+  equivalents; module headers cite docs/literature.md. The references are the standard ones written
+  from bibliographic knowledge; no source was fetched in this session. Each "difference" was checked
+  against the module's own code and header.
+- Decision: `calibrate` stays an alias of learnRanking for two releases, then becomes Platt/isotonic
+  score calibration for readEnsemble.
+- `node tools/generalisation-test.mjs`: toy host knowing only cows: related 3, share 0.
+- Gate: npm test 498 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

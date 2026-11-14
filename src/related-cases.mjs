@@ -1,12 +1,14 @@
-// Cousins of a case (abstraction round item 0, owner 14:58): a case is never single. Go up k levels
-// of abstraction along a dimension (a filler to its kind and the kind's parent; a key to the keys of
-// its holder's kind), then down k levels to other members, and keep the ones that are valid: legal
-// in the world (the new frame has an answer), read back to the same frame where a wording was made,
-// and not a case already known. Degree 1 = siblings (same kind), 2 = first cousins (the kinds share
-// a parent), and so on.
+// Related cases of a case (abstraction round item 0, owner 14:58): a case is never single. In the
+// testing literature these are perturbations along named axes (metamorphic testing; CheckList,
+// Ribeiro et al. 2020; contrast sets, Gardner et al. 2020). Here a related case is made from the
+// world: go up d levels of abstraction along an axis (a filler to its kind and the kind's parent; a
+// key to the keys of its holder's kind), then down d levels to other members, and keep the ones that
+// are valid: legal in the world (the new frame has an answer), read back to the same frame where a
+// wording was made, and not a case already known. Distance 1 = the same kind, 2 = kinds that share a
+// parent, and so on. docs/generalisation.md has the picture and the literature.
 
 import { readByTypes, nearWords } from './readtypes.mjs';
-import { realiseFrame, variantsOf } from './say.mjs';
+import { realiseFrame, paraphrasesOf } from './say.mjs';
 
 const bare = (v) => String(v).replace(/^"|"$/g, '').replace(/^\$/, '');
 const UP = ['kind', 'class', 'is', 'is_a'];
@@ -68,47 +70,47 @@ export function ancestorsOf(world, id, { depth = 3, edges } = {}) {
 }
 
 /**
- * The cousins of a case `{ frame, text? }` (a frame of readByTypes: ask / find / act). Options:
- * `degree` (the highest, default 2), `dims` (['filler', 'key']), `known` (frames or texts already
- * cases), `read` (options for readByTypes), `n` (at most, per degree), `seed`.
+ * The related cases of a case `{ frame, text? }` (a frame of readByTypes: ask / find / act). Options:
+ * `distance` (the highest, default 2), `axes` (['filler', 'key', 'wording']), `known` (frames or texts already
+ * cases), `read` (options for readByTypes), `n` (at most, per distance), `seed`.
  * A case with `langFrame` (the language world's frame it was said in) and `roles` also gets the
  * rewordings the language world declares (`w.lang.en.variant`), each realised by realiseFrame with
- * those roles, as `variant:<alternation>` cousins.
- * Returns [{ frame, text?, degree, dims, valid, why? }], valid ones first.
+ * those roles, as `variant:<alternation>` related cases.
+ * Returns [{ frame, text?, distance, axes, valid, why? }], valid ones first.
  */
-export function cousins(world, kase, { degree = 2, dims = ['filler', 'key', 'wording'], known = [], read = {}, n = 50, seed = 1, edges, alternations, operators, senses, variants, lang = 'w.lang.en' } = {}) {
+export function relatedCases(world, kase, { distance = 2, axes = ['filler', 'key', 'wording'], known = [], read = {}, n = 50, seed = 1, edges, alternations, operators, senses, variants, lang = 'w.lang.en' } = {}) {
   const f = kase.frame, out = [];
   const knownSet = new Set(known.map((k) => (typeof k === 'string' ? k : JSON.stringify(k))));
   const answerOf = (holderId, key) => (world.get(holderId)?.attrs[key] || []).map(bare);
   const nameOf = (id) => bare(world.get(id)?.attrs.name?.[0] ?? id);
   const holderId = f.of?.id;
-  if (dims.includes('filler') && holderId) {
-    const mine = ancestorsOf(world, holderId, { depth: degree + 1, edges });
+  if (axes.includes('filler') && holderId) {
+    const mine = ancestorsOf(world, holderId, { depth: distance + 1, edges });
     const seen = new Set();
     const things = [...world.wires.values()].filter((x) => !x.type.startsWith('core.') && x.attrs.name && x.id !== holderId);
     for (const t of things) { // bounded: the things, each once
-      const theirs = ancestorsOf(world, t.id, { depth: degree + 1, edges });
-      let best = null; // the nearest shared ancestor: degree max(up from the case, up from the other)
+      const theirs = ancestorsOf(world, t.id, { depth: distance + 1, edges });
+      let best = null; // the nearest shared ancestor: distance max(up from the case, up from the other)
       for (const [a, x] of mine) { const y = theirs.get(a); if (!y) continue; const d = Math.max(x.level, y.level); if (!best || d < best.d) best = { d, dim: x.dim, via: a }; }
-      if (!best || best.d > degree) continue;
+      if (!best || best.d > distance) continue;
       const frame = { ...f, of: { id: t.id }, answer: answerOf(t.id, f.key) };
       const k = JSON.stringify(frame); if (seen.has(k)) continue; seen.add(k); // deduplicated by frame
-      const c = { frame, degree: best.d, dims: [best.dim], via: best.via };
+      const c = { frame, distance: best.d, axes: [best.dim], via: best.via };
       if (kase.text) c.text = kase.text.replace(new RegExp(`\\b${nameOf(holderId)}(s?)\\b`, 'i'), `${nameOf(t.id)}$1`);
       out.push(c);
     }
   }
-  if (dims.includes('key') && f.key && holderId) {
+  if (axes.includes('key') && f.key && holderId) {
     const h = world.get(holderId);
     for (const k of Object.keys(h.attrs).filter((x) => !x.startsWith('core.') && !['name', ...UP, 'about', ...Object.keys(edges ?? {})].includes(x) && x !== f.key)) {
       const frame = { ...f, key: k, answer: answerOf(holderId, k) };
-      const c = { frame, degree: 1, dims: ['key'] };
+      const c = { frame, distance: 1, axes: ['key'] };
       if (kase.text) c.text = kase.text.replace(new RegExp(`\\b${f.key}(s?)\\b`, 'i'), `${k}$1`);
       out.push(c);
     }
   }
   const forms = [...(alternations || []), ...(operators || [])];
-  if (dims.includes('wording') && kase.text && forms.length) { // the same frame in other forms: each operator (alternations, noise, learnt) run backwards, tagged by its name
+  if (axes.includes('wording') && kase.text && forms.length) { // the same frame in other forms: each operator (alternations, noise, learnt) run backwards, tagged by its name
     const toks = String(kase.text).toLowerCase().replace(/[?!.]+\s*$/, '').match(/[\p{L}\p{N}_'-]+/gu) || [];
     const seen = new Set([toks.join(' ')]);
     for (const r of forms) {
@@ -117,16 +119,16 @@ export function cousins(world, kase, { degree = 2, dims = ['filler', 'key', 'wor
       const text = r.from.split(/\s+/).map((t) => { const m = /^\{([a-z_0-9]+)\}$/.exec(t); if (m) return (env[m[1]] || []).join(' '); const a = /^\[(.*)\]$/.exec(t); return a ? a[1].split('|')[0] : t; }).join(' ');
       if (!text || seen.has(text)) continue;
       seen.add(text);
-      out.push({ frame: { ...f }, text, degree: 1, dims: [`form:${r.name}`], via: r.name });
+      out.push({ frame: { ...f }, text, distance: 1, axes: [`form:${r.name}`], via: r.name });
     }
     for (let i = 0; i < toks.length; i++) for (const nw of nearWords(world, toks[i], { senses }).filter((x) => x.cost === 1 && !x.word.includes(' '))) { // lexical: a word for its synonym
       const text = [...toks.slice(0, i), nw.word, ...toks.slice(i + 1)].join(' ');
       if (seen.has(text)) continue; seen.add(text);
-      out.push({ frame: { ...f }, text, degree: 1, dims: ['form:synonym'], via: `${toks[i]} → ${nw.word}` });
+      out.push({ frame: { ...f }, text, distance: 1, axes: ['form:synonym'], via: `${toks[i]} → ${nw.word}` });
     }
   }
-  if (dims.includes('wording') && kase.langFrame && kase.roles) { // the language world's rewordings of the case's frame (w.lang.en.variant): realised with the case's roles
-    const V = variants ?? variantsOf(world, { lang });
+  if (axes.includes('wording') && kase.langFrame && kase.roles) { // the language world's rewordings of the case's frame (w.lang.en.variant): realised with the case's roles
+    const V = variants ?? paraphrasesOf(world, { lang });
     const mine = V.get(kase.langFrame);
     const related = [...V].filter(([, v]) => v.canonical.includes(kase.langFrame)).map(([fr, v]) => [fr, v.alternation])
       .concat((mine?.canonical || []).map((fr) => [fr, mine.alternation]))
@@ -136,7 +138,7 @@ export function cousins(world, kase, { degree = 2, dims = ['filler', 'key', 'wor
       const text = realiseFrame(world, fr, kase.roles, { lang });
       if (!text || seen.has(text.toLowerCase())) continue;
       seen.add(text.toLowerCase());
-      out.push({ frame: { ...f }, text, degree: 1, dims: [`variant:${alt}`], via: fr });
+      out.push({ frame: { ...f }, text, distance: 1, axes: [`variant:${alt}`], via: fr });
     }
   }
   for (const c of out) { // valid: legal (an answer), read back to the same frame, not known
@@ -150,28 +152,28 @@ export function cousins(world, kase, { degree = 2, dims = ['filler', 'key', 'wor
     c.valid = true;
   }
   let x = seed >>> 0; const rnd = () => { x = (x * 1103515245 + 12345) >>> 0; return x / 4294967296; };
-  const byDeg = new Map();
-  for (const c of out.map((c) => [c, rnd()]).sort((a, b) => Number(b[0].valid) - Number(a[0].valid) || a[0].degree - b[0].degree || a[1] - b[1]).map(([c]) => c)) {
-    const k = `${c.degree}|${c.dims[0]}`; const list = byDeg.get(k) || byDeg.set(k, []).get(k); if (list.length < n) list.push(c); // stratified per degree and dimension
+  const byDist = new Map();
+  for (const c of out.map((c) => [c, rnd()]).sort((a, b) => Number(b[0].valid) - Number(a[0].valid) || a[0].distance - b[0].distance || a[1] - b[1]).map(([c]) => c)) {
+    const k = `${c.distance}|${c.axes[0]}`; const list = byDist.get(k) || byDist.set(k, []).get(k); if (list.length < n) list.push(c); // stratified per distance and axis
   }
-  return [...byDeg.values()].flat().sort((a, b) => Number(b.valid) - Number(a.valid) || a.degree - b.degree);
+  return [...byDist.values()].flat().sort((a, b) => Number(b.valid) - Number(a.valid) || a.distance - b.distance);
 }
 
 /**
- * A fix judged both ways (owner 14:58): on the case alone and on its valid cousins by degree.
- * `answer(text, frame) -> answer` is the system with the fix; a cousin passes when its answer
- * equals the cousin's. Returns { case: bool, byDegree: { d: { pass, of } }, share }.
+ * A fix judged both ways (owner 14:58): on the case alone and on its valid related cases by distance.
+ * `answer(text, frame) -> answer` is the system with the fix; a related case passes when its answer
+ * equals the world's. Returns { case: bool, byDistance: { d: { pass, of } }, share }.
  */
-export function judgeFix(answer, kase, list) {
+export function judgeOnRelated(answer, kase, list) {
   const same = (a, b) => JSON.stringify([].concat(a ?? [])) === JSON.stringify([].concat(b ?? []));
-  const byDegree = {};
+  const byDistance = {};
   let pass = 0, of = 0;
   for (const c of list.filter((x) => x.valid)) {
     const ok = same(answer(c.text, c.frame), c.frame.answer);
-    const d = (byDegree[c.degree] ||= { pass: 0, of: 0 }); d.of++; of++;
+    const d = (byDistance[c.distance] ||= { pass: 0, of: 0 }); d.of++; of++;
     if (ok) { d.pass++; pass++; }
   }
-  return { case: same(answer(kase.text, kase.frame), kase.frame.answer), byDegree, share: of ? +(pass / of).toFixed(3) : null };
+  return { case: same(answer(kase.text, kase.frame), kase.frame.answer), byDistance, share: of ? +(pass / of).toFixed(3) : null };
 }
 
 function matchPattern(pat, toks, i = 0, env = {}, k = 0) { // bounded: the pattern and the tokens
@@ -180,4 +182,15 @@ function matchPattern(pat, toks, i = 0, env = {}, k = 0) { // bounded: the patte
   if (sp) { for (let j = i + 1; j <= toks.length; j++) { const r = matchPattern(pat, toks, j, { ...env, [sp[1]]: toks.slice(i, j) }, k + 1); if (r) return r; } return null; }
   const alts = /^\[(.*)\]$/.exec(pat[k]) ? pat[k].slice(1, -1).split('|') : [pat[k]];
   return i < toks.length && alts.includes(toks[i]) ? matchPattern(pat, toks, i + 1, env, k + 1) : null;
+}
+
+/** @deprecated since 0.111.0, removed in 0.113.0: `relatedCases` (`degree` is `distance`, `dims` is `axes`). */
+export function cousins(world, kase, { degree, dims, ...options } = {}) {
+  return relatedCases(world, kase, { ...options, ...(degree !== undefined ? { distance: degree } : {}), ...(dims ? { axes: dims } : {}) }).map((c) => ({ ...c, degree: c.distance, dims: c.axes }));
+}
+
+/** @deprecated since 0.111.0, removed in 0.113.0: `judgeOnRelated` (`byDegree` is `byDistance`). */
+export function judgeFix(answer, kase, list) {
+  const r = judgeOnRelated(answer, kase, list.map((c) => (c.distance === undefined ? { ...c, distance: c.degree } : c)));
+  return { ...r, byDegree: r.byDistance };
 }

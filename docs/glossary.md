@@ -95,6 +95,21 @@ Which kind each part of the API works on:
 | a live world | `act` and the acts of `std.acts`, `turn`, `turnFlow`, `route`, `resolve`, `why`, `undo` / `redo`, `fork`, `std.focus`, `std.fill`, `needsOf` (what a live world still needs loaded) |
 | any world | `tell`, `load`, `ask`, `query`, `check`, `complete`, `snapshot` |
 
+## Standard equivalents
+
+SOP Lang keeps its own names. Where a field has a standard term for the same idea, here it is,
+with the main difference.
+
+| SOP Lang | Standard term | Difference |
+| --- | --- | --- |
+| **wire** | a fact, rule or constraint in a logic program; a typed record (frame, feature structure) | one syntax for facts, rules, schemas and acts |
+| **circuit** | a knowledge graph; a semantic network | edges are references in values, not a separate relation table |
+| **matrix** | the TBox and rules of a knowledge base; a schema with integrity constraints | rules, denials and slots in one place, checked on every tell |
+| **world** | a knowledge base with a truth maintenance system | it keeps derivations, undo and history itself |
+| **world schema** | an ontology or domain model; in planning, a domain description | it also holds the acts and the words of the domain |
+| **knowledge world** | a background knowledge base; a lexical resource for `w.lang.*` | read at a pinned commit, never edited by a session |
+| **live world** | the dialogue state; the world state of a session | a full world: it checks, derives and undoes like any other |
+
 ## Words that were used for the same thing
 
 The code, the specification and the pages used to differ in these places. The left
@@ -114,3 +129,7 @@ column is no longer used.
 | "schema world", "schema" (for a reusable world), "world template" | **world schema** | documents (0.42) |
 | "knowledge base", "catalog world", "knowledge" (as a world) | **knowledge world**; the *catalog* is the index that loads one | documents (0.42) |
 | "session world", "the user's world", "instance" | **live world** | documents (0.42) |
+| `cousins`, `degree`, `dims` | `relatedCases`, `distance`, `axes` | functions; perturbation along axes (docs/generalisation.md); the old names are deprecated aliases for two releases |
+| `judgeFix`, `cousinsTest`, `tools/cousins-test.mjs` | `judgeOnRelated`, `generalisationTest`, `tools/generalisation-test.mjs` | functions and tool; deprecated aliases for two releases |
+| `liftTokens`, `continueAct`, `variantsOf` | `delexicalise`, `resolveEllipsis`, `paraphrasesOf` | functions; deprecated aliases for two releases |
+| `calibrate` (learns a criteria order) | `learnRanking` | function; `calibrate` is to mean mapping scores to probabilities |

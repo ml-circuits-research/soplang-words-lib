@@ -14,6 +14,7 @@
 // A higher priority holds a key over a lower one while both hold it (a talking mouth over an
 // expression mouth); other keys go on (blinking still happens). A new event of the same rule
 // cancels what was left of the earlier one. `ease` returns the keys to base after that long.
+// In the literature: rule-based scheduling of nonverbal behaviour, as in the Behavior Markup Language (Kopp et al. 2006); docs/literature.md.
 
 const unq = (t) => String(t).replace(/^"|"$/g, '');
 const range = (r) => { const [a, b] = unq(r ?? '0').split('-').map(Number); return [a, Number.isFinite(b) ? b : a]; };

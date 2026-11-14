@@ -161,7 +161,10 @@ export function realiseFrame(world, frame, roles = {}, { lang = 'w.lang.en', pic
   return out.filter(Boolean).join(' ').replace(/\s+/g, ' ').trim() || null;
 }
 
-/** The frames that are rewordings of a frame (`${lang}.variant frame= alternation= canonical=...`): Map(frame -> { alternation, canonical: [] }). */
-export function variantsOf(world, { lang = 'w.lang.en' } = {}) {
+/** The frames that are paraphrases (rewordings) of a frame (`${lang}.variant frame= alternation= canonical=...`): Map(frame -> { alternation, canonical: [] }). */
+export function paraphrasesOf(world, { lang = 'w.lang.en' } = {}) {
   return new Map(world.ofType(`${lang}.variant`).map((v) => [bare(v.attrs.frame[0]), { alternation: bare(v.attrs.alternation?.[0] ?? ''), canonical: (v.attrs.canonical || []).map(bare) }]));
 }
+
+/** @deprecated since 0.111.0, removed in 0.113.0: `paraphrasesOf`. */
+export const variantsOf = (...a) => paraphrasesOf(...a);

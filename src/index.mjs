@@ -7,7 +7,7 @@ export { builtins, quantity } from './builtins.mjs';
 export { solvers, Problem, Sat, toDimacs, toASP } from './solve.mjs';
 
 export { GRAMMAR, MODIFIERS, SCHEMA_TYPES } from './matrix.mjs';
-export { rank, RANKING, veto, choose, rankingOf, calibrate } from './rank.mjs';
+export { rank, RANKING, veto, choose, rankingOf, learnRanking, calibrate } from './rank.mjs';
 export { aggregates } from './builtins.mjs';
 export { PatternIndex } from './patterns.mjs';
 export { schemaCard, schemaExamples, actReply, schemaGrid, gridTests } from './schema-words.mjs';
@@ -17,7 +17,7 @@ export { parseText, grammarOf, nounPhrase, grammarView, viewDiff, grammarCheck }
 export { resolve } from './resolve.mjs';
 export { needsOf } from './std.mjs';
 export { segment, actWords } from './segment.mjs';
-export { dialogueTurn, focusLog, continueAct } from './dialogue.mjs';
+export { dialogueTurn, focusLog, resolveEllipsis, continueAct } from './dialogue.mjs';
 export { motionPlan, motionRun } from './motion.mjs';
 export { readMotion, planMotionFacts, splitText } from './motion-facts.mjs';
 export { sample, diversity } from './sample.mjs';
@@ -28,20 +28,20 @@ export { readStory, storyPlan, STORY_RELATIONS } from './story.mjs';
 export { writeDocument, readDocument } from './document.mjs';
 export { discourseRealiser, discourseTemplates } from './realise.mjs';
 export { readByTypes, typedLexicon, nearWords } from './readtypes.mjs';
-export { cousins, kindChain, judgeFix, ancestorsOf } from './cousins.mjs';
+export { relatedCases, judgeOnRelated, kindChain, ancestorsOf, cousins, judgeFix } from './related-cases.mjs';
 export { normalise, alternationsOf, wordClassesOf, canonicalise, fillersFrom, readCanonical, splitRunOn } from './alternate.mjs';
 export { experiment, ablation } from './experiment.mjs';
 export { readEnsemble, defaultReaders, riskCoverage } from './ensemble.mjs';
 export { signatureOf, chunk, minePatterns, patternReader } from './signature.mjs';
-export { joinList, clauseOf, actSentence, renderFrames, phraseOf, narrationOf, realiseFrame, variantsOf } from './say.mjs';
+export { joinList, clauseOf, actSentence, renderFrames, phraseOf, narrationOf, realiseFrame, paraphrasesOf, variantsOf } from './say.mjs';
 export { genreOf, topicIndex, randomTopics, typedWorldOf, readRolesByTypes, assignBySlotTypes, judgeReply, tabulate, tableText } from './handover.mjs';
-export { learnRules, learnFormOperators, formOperator, formEdits, learnFormEdits, familyOf, liftTokens } from './learn.mjs';
+export { learnRules, learnFormOperators, formOperator, formEdits, learnFormEdits, familyOf, delexicalise, liftTokens } from './learn.mjs';
 export { alignWorlds } from './align.mjs';
 export { storyState } from './story-focus.mjs';
 export { planner, factStore, PlanLive, readMethods, PLAN_LIMITS, solveChoices } from './plan.mjs';
 export { inflectBy, articleFor, morphOf, generate, analyse, fold, splitClitics, dictionary, realise, templateFor } from './morph.mjs';
 export { ledgerAppend, ledgerGroups, ledgerKey, stageOf, STAGES } from './ledger.mjs';
-export const version = '0.110.0';
+export const version = '0.111.0';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)
  * tools/build.mjs fills in `hash`, a fingerprint of the bundled sources, and `date`,

@@ -2,6 +2,7 @@
 // with coarse-to-fine levels (knowledge types first, then morphology, closed-class words literal); adjacent
 // content words are chunked into one token whose signature is its head's; sentences become patterns over the
 // chunk signatures; mining counts how many patterns cover 80 % / 95 % of the sentences at each level.
+// In the literature: supertagging (Bangalore and Joshi 1999), word classes (Brown et al. 1992), cascaded finite-state chunking (Abney 1996); docs/literature.md.
 
 import { typedLexicon } from './readtypes.mjs';
 

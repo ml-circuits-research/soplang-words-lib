@@ -20,18 +20,18 @@ test('learnFormOperators: pairs clustered into few operators, each checked on he
   assert.deepEqual(r.coverage, { pairs: 7, operators: 4, at80: 3, at95: 4 });
 });
 
-test('cousins under form operators: each operator (learnt, noise, synonym) tagged, so the tester says "fails under operator X"', async () => {
-  const { World, cousins, readByTypes } = await import('../tools/lib-under-test.mjs');
-  const { cousinsTest } = await import('../tools/cousins-test.mjs');
+test('relatedCases under form operators: each operator (learnt, noise, synonym) tagged, so the tester says "fails under operator X"', async () => {
+  const { World, relatedCases, readByTypes } = await import('../tools/lib-under-test.mjs');
+  const { generalisationTest } = await import('../tools/generalisation-test.mjs');
   const w = new World();
   w.tell('@cow k.animal name=cow sound=moo  @s1 k.words.sense word=noise pos=noun n=1 synonym=sound');
   const O = { question: ['what', 'does'], skip: ['the', 'of', 'tell', 'me', 'could', 'you', 'please', 'um'] };
   const text = 'tell me the sound of the cow', kase = { text, frame: readByTypes(w, text, O).best };
   const operators = learnFormOperators([{ canonical: 'open it', variant: 'could you open it' }, { canonical: 'add one', variant: 'um add one' }]).operators;
-  const cs = cousins(w, kase, { dims: ['wording'], operators, read: O });
-  assert.deepEqual(cs.map((c) => c.dims[0]).sort(), ['form:op1', 'form:op2', 'form:synonym']);
+  const cs = relatedCases(w, kase, { axes: ['wording'], operators, read: O });
+  assert.deepEqual(cs.map((c) => c.axes[0]).sort(), ['form:op1', 'form:op2', 'form:synonym']);
   const host = (t) => (/\bsound\b/.test(t) && !/\bum\b/.test(t) ? ['moo'] : null); // a host that fails on fillers and synonyms
-  const r = cousinsTest(w, kase, host, { dims: ['wording'], operators, read: O });
+  const r = generalisationTest(w, kase, host, { axes: ['wording'], operators, read: O });
   assert.match(r.pattern[0], /fails when .*form:op2.*changes|fails when .*form:synonym/);
 });
 
@@ -46,10 +46,10 @@ test('formEdits / learnFormEdits: a variant that combines operators splits into 
 });
 
 test('typed form operators: content words lifted to their types before aligning, so pairs about different things are one operator', async () => {
-  const { World, liftTokens } = await import('../tools/lib-under-test.mjs');
+  const { World, delexicalise } = await import('../tools/lib-under-test.mjs');
   const w = new World();
   w.tell('@cow k.animal name=cow sound=moo noise=moo  @dog k.animal name=dog sound=woof call=woof  @cat k.animal name=cat sound=meow cry=meow');
-  assert.deepEqual(liftTokens(w, 'Hey, what sound does a cow make? 3'), ['hey', 'what', '<attr>', 'does', 'a', '<k.animal>', 'make', '<num>']);
+  assert.deepEqual(delexicalise(w, 'Hey, what sound does a cow make? 3'), ['hey', 'what', '<attr>', 'does', 'a', '<k.animal>', 'make', '<num>']);
   const P = (c, v) => ({ canonical: c, variant: v });
   const pairs = [P('what sound does a cow make', 'hey a cow makes which noise'), P('what sound does a dog make', 'hey a dog makes which call')]; // the substituted word differs: constants without types
   assert.equal(learnFormOperators(pairs).coverage.operators, 2, 'untyped: one operator per example');

@@ -759,7 +759,7 @@ print(summarizeText('Owls hunt at night. Their eyes are large. An owl can turn i
 
 ## Compose a text from knowledge
 
-*In `compose`, `discourseRealiser`, `discourseTemplates`, `joinList`, `clauseOf`, `phraseOf`, `narrationOf`, `realiseFrame`, `variantsOf`, `actSentence`, `renderFrames`, `inflectBy`, `articleFor`, `writeDocument`, `readDocument`, `solveChoices`, `readStory`, `storyPlan`, `STORY_RELATIONS`, `interestOf`, `measuresOf`, `shapeShare`, `interestModel`; since 0.64.*
+*In `compose`, `discourseRealiser`, `discourseTemplates`, `joinList`, `clauseOf`, `phraseOf`, `narrationOf`, `realiseFrame`, `paraphrasesOf`, `actSentence`, `renderFrames`, `inflectBy`, `articleFor`, `writeDocument`, `readDocument`, `solveChoices`, `readStory`, `storyPlan`, `STORY_RELATIONS`, `interestOf`, `measuresOf`, `shapeShare`, `interestModel`; since 0.64.*
 *Works on: knowledge worlds (facts about a topic, genres, interest features).*
 
 A composition with the moves of a genre: an outline from the topic's relations across the
@@ -786,7 +786,7 @@ print(compose(w, 'owl', { size: { chapters: 1, sections: 1, sentences: 2 } }).ch
 
 ## Read a question by the types of its words
 
-*In `readByTypes`, `typedLexicon`, `nearWords`, `normalise`, `alternationsOf`, `wordClassesOf`, `canonicalise`, `readCanonical`, `splitRunOn`, `fillersFrom`, `storyState`, `readEnsemble`, `defaultReaders`, `riskCoverage`, `signatureOf`, `chunk`, `minePatterns`, `patternReader`, `continueAct`; since 0.72.*
+*In `readByTypes`, `typedLexicon`, `nearWords`, `normalise`, `alternationsOf`, `wordClassesOf`, `canonicalise`, `readCanonical`, `splitRunOn`, `fillersFrom`, `storyState`, `readEnsemble`, `defaultReaders`, `riskCoverage`, `signatureOf`, `chunk`, `minePatterns`, `patternReader`, `resolveEllipsis`; since 0.72.*
 *Works on: any world with facts (names, keys, values) and acts.*
 
 "what sound does a cow make", "a cow makes which sound" and "cow sound?" read to one frame,
@@ -814,27 +814,31 @@ print(readByTypes(w, 'which animal makes woof', { question: ['which'] }).best.an
 ["dog"]
 ```
 
-## Judge a fix on the cousins of its case
+## Judge a fix on the related cases of its case
 
-*In `cousins`, `ancestorsOf`, `kindChain`, `judgeFix`, `learnRules`, `learnFormOperators`, `formOperator`, `formEdits`, `learnFormEdits`, `familyOf`, `liftTokens`; since 0.73.*
+*In `relatedCases`, `ancestorsOf`, `kindChain`, `judgeOnRelated`, `learnRules`, `learnFormOperators`, `formOperator`, `formEdits`, `learnFormEdits`, `familyOf`, `delexicalise`; since 0.73.*
 *Works on: worlds with kinds (kind, class, is, is_a) and facts with keys.*
 
-A failing case is expanded into its siblings and cousins (up the kinds, then down to other
-members), valid ones only. A fix is then judged on the case and on its cousins by degree,
-which measures how general it is. `learnRules` induces reading rules from cases (the
-library's `induce`, fillers lifted to their kind) and admits them only on held-out cases
-and cousins. `learnFormOperators` extracts the few operators of form (wrappers, fillers,
-passive) from aligned pairs and counts how many cover 80 % and 95 % of them. Each is a
-cousin generator and a normalisation rule.
-**Limits:** the dimensions are fillers and keys. The others (act families, alternations,
-world structure kinds) come with the items of Q54. A cousin's wording is the case's text
-with the filler replaced, until generation is used.
+A failing case is expanded into its related cases: perturbations along named axes, as in
+metamorphic testing (up the kinds, then down to other members), valid ones only. A fix is
+then judged on the case and on its related cases by distance, which measures how general it
+is. `learnRules` induces reading rules from cases (the library's `induce`, fillers lifted to
+their kind) and admits them only on held-out cases and related cases. `learnFormOperators`
+extracts the few operators of form (wrappers, fillers, passive) from aligned pairs and counts
+how many cover 80 % and 95 % of them. Each generates related cases and is a normalisation
+rule.
+**Limits:** the axes are fillers, keys and wording (operators, alternations, published
+paraphrases). Act families and world structure kinds come with the items of Q54. A filler
+related case's wording is the case's text with the filler replaced.
+The names `cousins`, `judgeFix`, `liftTokens`, `continueAct`, `variantsOf` and `calibrate` are
+deprecated aliases of `relatedCases`, `judgeOnRelated`, `delexicalise`, `resolveEllipsis`,
+`paraphrasesOf` and `learnRanking`, kept for two releases (docs/literature.md says why).
 
 ```js run
 const w = new World();
 w.tell('@cow k.animal name=cow kind=bovine sound=moo  @yak k.animal name=yak kind=bovine sound=grunt');
 const kase = { text: 'cow sound', frame: readByTypes(w, 'cow sound').best };
-print(judgeFix((t) => (t === 'cow sound' ? ['moo'] : null), kase, cousins(w, kase)).share);
+print(judgeOnRelated((t) => (t === 'cow sound' ? ['moo'] : null), kase, relatedCases(w, kase)).share);
 ```
 
 ```output
@@ -910,8 +914,8 @@ them directly. Each is in [api](api.md) or [reference](reference.md) with its ex
 | `solvers`, `Problem`, `Sat`, `toDimacs`, `toASP` | search: pluggable solvers and exports for outside ones | 0.3 |
 | `abduce`, `adopt` | what would have to be true; taking one explanation | 0.4 |
 | `induce`, `induceRule`, `induceSlots` | rules and slots from examples | 0.5 |
-| `genreOf`, `topicIndex`, `randomTopics`, `typedWorldOf`, `readRolesByTypes`, `assignBySlotTypes`, `judgeReply`, `tabulate`, `tableText` | general host code taken in (genres and topics, a typed world from a session, roles re-read by type, slot-type assignment, judging replies and tabulating cousins) | 0.103 |
-| `aggregates`, `rank`, `RANKING`, `veto`, `choose`, `rankingOf`, `calibrate` | aggregates; ranking readings with reasons; vetoes; one way to choose at every choice point (std.decide criteria as data, docs/decisions.md) | 0.13; choose 0.92 |
+| `genreOf`, `topicIndex`, `randomTopics`, `typedWorldOf`, `readRolesByTypes`, `assignBySlotTypes`, `judgeReply`, `tabulate`, `tableText` | general host code taken in (genres and topics, a typed world from a session, roles re-read by type, slot-type assignment, judging replies and tabulating related cases) | 0.103 |
+| `aggregates`, `rank`, `RANKING`, `veto`, `choose`, `rankingOf`, `learnRanking` | aggregates; ranking readings with reasons; vetoes; one way to choose at every choice point (std.decide criteria as data, docs/decisions.md) | 0.13; choose 0.92 |
 | `GRAMMAR`, `MODIFIERS`, `SCHEMA_TYPES` | what each matrix wire type reads (the reference is checked against them) | 0.6 |
 | `grammarOf`, `grammarView`, `viewDiff`, `grammarCheck` | the grammar a world holds; the views of a closed class and where two differ; checks of a grammar | 0.29, 0.30, 0.58 |
 | `ledgerAppend`, `ledgerGroups`, `ledgerKey`, `stageOf`, `STAGES` | the failure ledger: rows, groups, keys, pipeline stages | 0.25 |

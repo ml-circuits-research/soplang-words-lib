@@ -9,6 +9,7 @@
 // and no act: the last act again, on it), `answer` (a reply to the question the world asked),
 // `request` (an act of its own). A world declared modal and active
 // (`std.dialogue.modal world= active=true`) sees the turn first: it is named in `first`.
+// In the literature: resolveEllipsis is ellipsis and fragment resolution (Fernández, Ginzburg and Lappin 2007); docs/literature.md.
 import { actWords } from './segment.mjs';
 import { typedLexicon } from './readtypes.mjs';
 
@@ -56,13 +57,14 @@ export function focusLog(world, dialogue) {
 }
 
 /**
+ * Ellipsis (fragment) resolution:
  * Discourse ellipsis (reviewer 03:20, a verbless continuation: "it to the top right", "and still up"): when a
  * message names no act, the previous act is reused with the roles the message gives, read by type: a thing by
  * its name (a pronoun in `pronouns` keeps the previous thing), a value of a closed set by its key. Returns
  * { act, args, reused: true, changed: [keys] }, or null when the message names an act or gives no role.
  * `previous`: { act, args }. Options: `pronouns`, `skip`, `acts` (more act words).
  */
-export function continueAct(world, text, previous, { pronouns = ['it', 'them', 'that', 'this'], skip = [] } = {}) {
+export function resolveEllipsis(world, text, previous, { pronouns = ['it', 'them', 'that', 'this'], skip = [] } = {}) {
   if (!previous?.act) return null;
   const lex = typedLexicon(world), S = new Set(skip.map((x) => x.toLowerCase())), P = new Set(pronouns.map((x) => x.toLowerCase()));
   const toks = (String(text).toLowerCase().match(/[\p{L}\p{N}_'-]+/gu) || []).filter((t) => !S.has(t));
@@ -81,3 +83,6 @@ export function continueAct(world, text, previous, { pronouns = ['it', 'them', '
   }
   return changed.length ? { act: previous.act, args, reused: true, changed } : null;
 }
+
+/** @deprecated since 0.111.0, removed in 0.113.0: `resolveEllipsis`. */
+export const continueAct = (...a) => resolveEllipsis(...a);

@@ -1,7 +1,7 @@
 // General host code taken into the library (a host's handover LIB-5..8, written here from its description):
 // the genre of a document type and the topics a world can compose about; a typed world from a session's things
 // and roles re-read by type; every assignment of words to the typed slots of a pattern; judging a reply and
-// tabulating cousins.
+// tabulating related cases.
 
 import { World } from './world.mjs';
 import { typedLexicon } from './readtypes.mjs';
@@ -109,7 +109,7 @@ export function assignBySlotTypes(patterns, tokens, lexicons) {
 }
 
 /**
- * A host's reply judged against a cousin (LIB-8): every expected value appears in the reply text (a number also
+ * A host's reply judged against a related case (LIB-8): every expected value appears in the reply text (a number also
  * as its word, `numberWords`), and a question changes nothing (`before` equals `after` when given).
  */
 export function judgeReply(reply, expected, { numberWords = {}, before, after, question = true } = {}) {
@@ -120,14 +120,14 @@ export function judgeReply(reply, expected, { numberWords = {}, before, after, q
   return true;
 }
 
-/** Results [{ degree, dim, pass }] as a table { 'degree|dim': { pass, of } } (LIB-8). */
+/** Results [{ distance, axis, pass }] as a table { 'distance|axis': { pass, of } } (LIB-8; `degree`, `dim`, `dims` are the deprecated names, until 0.113.0). */
 export function tabulate(results) {
   const t = {};
-  for (const r of results) { const k = `${r.degree}|${r.dim ?? r.dims?.[0] ?? '-'}`; const row = (t[k] ||= { pass: 0, of: 0 }); row.of++; if (r.pass) row.pass++; }
+  for (const r of results) { const k = `${r.distance ?? r.degree}|${r.axis ?? r.axes?.[0] ?? r.dim ?? r.dims?.[0] ?? '-'}`; const row = (t[k] ||= { pass: 0, of: 0 }); row.of++; if (r.pass) row.pass++; }
   return t;
 }
 
-/** A table as text: one line per degree × dimension, with its share (LIB-8). */
+/** A table as text: one line per distance × axis, with its share (LIB-8). */
 export function tableText(table) {
-  return Object.keys(table).sort().map((k) => { const [d, dim] = k.split('|'), r = table[k]; return `degree ${d}  ${dim.padEnd(10)} ${r.pass}/${r.of}  ${r.of ? Math.round((100 * r.pass) / r.of) : 0} %`; }).join('\n');
+  return Object.keys(table).sort().map((k) => { const [d, axis] = k.split('|'), r = table[k]; return `distance ${d}  ${axis.padEnd(10)} ${r.pass}/${r.of}  ${r.of ? Math.round((100 * r.pass) / r.of) : 0} %`; }).join('\n');
 }

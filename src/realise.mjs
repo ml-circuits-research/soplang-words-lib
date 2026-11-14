@@ -4,6 +4,7 @@
 // frame, the fact it cites, the story plan or the outline. How a fact becomes a clause and a name a
 // noun phrase is the language's: `clause(fact, world)`, `np(name)`, `inflect(word, features)`
 // come from the host; the defaults only join words (`the penguin`, `the penguin eats fish`).
+// In the literature: microplanning and surface realisation in the NLG pipeline (Reiter and Dale 2000); docs/literature.md.
 
 import { inflectBy, articleFor } from './morph.mjs';
 import { choose } from './rank.mjs';

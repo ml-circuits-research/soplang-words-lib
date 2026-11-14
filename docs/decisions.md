@@ -22,7 +22,8 @@ The order is the same for every kind; a kind lists only the criteria that apply 
 5. **Priors.** Typicality, interest (k.interest), recency and focus.
 6. **A seeded order.** The same seed gives the same choice.
 
-`calibrate(world, kind, cases)` learns a kind's order from cases and proposes it as facts,
+`learnRanking(world, kind, cases)` learns a kind's order from cases (learning to rank) and
+proposes it as facts,
 admitted only by held-out cases. A world, or a knowledge world, may declare criteria for a
 kind of its own. For a kind
 std.decide already declares, a host gives its list directly with `criteria`. Costs and priors should come from k.* facts, and

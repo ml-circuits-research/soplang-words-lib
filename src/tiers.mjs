@@ -10,6 +10,7 @@
 // (and is never stronger than `derived`). The tiers are ranks, not probabilities. A host
 // may add its own with `@t core.tier name=<name> below=<tier> cost=<n>` and state a tier
 // when it tells or fills: tell(text, { tier }). Mixed into World.prototype.
+// In the literature: evidence levels with default reasoning (Reiter 1980) and truth maintenance (Doyle 1979); docs/literature.md.
 
 export const TIERS = ['told', 'derived', 'forced', 'default', 'guessed'];
 

@@ -1,6 +1,6 @@
 ---
 name: improve-world-from-failures
-description: Take failures (ledger or case-corpus rows with the user's expectation), group them by cause and pipeline stage, decide where each fix belongs (knowledge world, world schema, language world, library mechanism, application), and make the smallest general change, gated on held-out rows and cousins. Use when a batch of failures arrives.
+description: Take failures (ledger or case-corpus rows with the user's expectation), group them by cause and pipeline stage, decide where each fix belongs (knowledge world, world schema, language world, library mechanism, application), and make the smallest general change, gated on held-out rows and related cases. Use when a batch of failures arrives.
 ---
 
 # Improve a world from failures
@@ -27,14 +27,14 @@ description: Take failures (ledger or case-corpus rows with the user's expectati
    - a kind or a slot → the world schema;
    - a missing mechanism → the library;
    - a host's own wiring → the application.
-4. **Expand one example of the group into its cousins** first (skill
-   `expand-and-test-case`), so the fix is judged on cousins, not on the case.
+4. **Expand one example of the group into its related cases** first (skill
+   `expand-and-test-case`), so the fix is judged on related cases, not on the case.
 5. **Make the smallest general change**: a rule at the common ancestor (`learnRules`), an
    operator (`learnFormOperators`), a fact. Never a phrase-specific rule.
 6. **Gate it.**
    - On the case corpus, no right answer turns wrong.
    - The held-out rows are untouched and do not drop.
-   - The cousins at degree 1–2 pass.
+   - The related cases at distance 1–2 pass.
    - The invariants hold.
    - What it buys is measured with `ablation` (before / after).
 7. **Write the lesson** in the repository the change went to (`docs/lessons.md`).

@@ -12,6 +12,7 @@
 // The knowledge is a fact store (`factStore(worlds)`: the facts of each type merged by
 // identity) or a World; the chain of kinds ("a man is a person") comes from `chain`
 // ([{ type, keys }]) or the store's `std.know.chain of= key=` facts.
+// In the literature: hierarchical task network (HTN) planning, as in SHOP2 (Nau et al. 2003); docs/literature.md.
 import { parse } from './parser.mjs';
 
 const tok = (t) => (typeof t === 'string' && t.startsWith('"') ? JSON.parse(t) : t);

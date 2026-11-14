@@ -1772,8 +1772,8 @@ The filler is taken as the text names it (the thing's name, not its id), so the 
 fact's name and the frame's holder are one variable. Each rule is judged on a fork of the
 world: first on its training cases (a rule that fails one is refused there), then on the
 `heldOut` cases,
-and on the valid cousins of its cases (`cousins(case)`, for example `cousins` of this
-library). It is `admitted` only when every training case passes and the held-out share is
+and on the valid related cases of its cases (`related(case)`, for example `relatedCases` of
+this library). It is `admitted` only when every training case passes and the held-out share is
 at least `admit` (default 1). The result is `[{ text, support, train, heldOut, admitted,
 why? }]`. Nothing is told to the world: a rule is text to review.
 
@@ -1789,7 +1789,7 @@ print(r.admitted, r.heldOut);
 true {"pass":1,"of":1}
 ```
 
-### learnFormOperators(pairs, options?), formOperator(canonical, variant), formEdits(canonical, variant), learnFormEdits(pairs), familyOf(edit) and liftTokens(world, text)
+### learnFormOperators(pairs, options?), formOperator(canonical, variant), formEdits(canonical, variant), learnFormEdits(pairs), familyOf(edit) and delexicalise(world, text)
 
 Form operators from aligned pairs (owner 16:12): a request is content × form × context,
 and the form varies by few operators. `formOperator` takes a canonical sentence and a
@@ -1803,7 +1803,7 @@ bring the variant back to its canonical sentence. It is admitted with two suppor
 held-out passes. The result is `{ operators: [{ name, from, to, support, heldOut, admitted
 }], coverage: { pairs, operators, at80, at95 }, unaligned }`, where `at80` and `at95` count
 how many operators, most frequent first, cover 80 % and 95 % of the pairs. An operator is
-both a generator (for `cousins`) and, read forwards, a normalisation rule (for
+both a generator (for `relatedCases`) and, read forwards, a normalisation rule (for
 `normalise`).
 
 Real variants combine several operators, such as a filler, an alternation and an extra
@@ -1815,7 +1815,8 @@ family by its shape alone, with no language: filler, extra clause, insertion, de
 inflection or substitution (`familyOf(edit)`); `families` counts them.
 
 **Typed** (`{ world }` on all four): content words are lifted to their types through the
-world's typed lexicon before aligning (`liftTokens(world, text)`):
+world's typed lexicon before aligning, which the dialogue and NLG literature calls
+delexicalisation (`delexicalise(world, text)`):
 - a thing becomes `<its type>`;
 - a kind becomes `<kind>`, an attribute `<attr>`, a number `<num>`;
 - function words stay.
@@ -1909,48 +1910,49 @@ print(canonicalise(w, 'um could you open the door and then close it', { fillers:
 ["open the door","close it"]
 ```
 
-### cousins(world, case, options?), ancestorsOf(world, id, options?), kindChain(world, id) and judgeFix(answer, case, cousins)
+### relatedCases(world, case, options?), ancestorsOf(world, id, options?), kindChain(world, id) and judgeOnRelated(answer, case, related)
 
-A case is never single (abstraction round, item 0). `cousins` goes up from a case `{ frame,
-text? }` (a frame of `readByTypes`) along a dimension, then down to other members. The
-dimensions:
+A case is never single (abstraction round, item 0). Its related cases are perturbations of it
+along named axes, as in metamorphic testing (docs/generalisation.md has the picture and the
+literature). `relatedCases` goes up from a case `{ frame, text? }` (a frame of `readByTypes`)
+along an axis, then down to other members. The axes:
 - `filler`: up the chain of kinds (`kind`, `class`, `is`, `is_a`, then the type), and down
-  to the other things below. The degree is how far up the case and the other thing must go
-  to meet: 1 = siblings, 2 = first cousins, and so on.
+  to the other things below. The distance is how far up the case and the other thing must go
+  to meet: 1 = the same kind, 2 = kinds that share a parent, and so on.
 - `key`: the other keys of the same holder.
 - `wording`: the same frame in other forms. Each form operator is run backwards and tagged
   `form:<name>`:
   - the language world's alternations (`alternations`, from `alternationsOf`);
   - noise or learnt operators (`operators`, for example from `learnFormOperators`);
   - a word for its synonym through word senses (`form:synonym`).
-  - the rewordings the language world declares (`w.lang.en.variant frame= alternation=
+  - the paraphrases the language world declares (`w.lang.en.variant frame= alternation=
     canonical=`), tagged `variant:<alternation>`, for a case with `langFrame` (the frame it was
     said in) and `roles`; each is realised with `realiseFrame`.
 
   With these, the tester can say "fails under operator X".
 
-A cousin is valid when it is legal in the world (it has an answer), when its wording, made
-by substituting the filler, reads back to the same frame, and when it is not a `known`
-case. Each cousin is tagged with its degree and the dimensions changed.
+A related case is valid when it is legal in the world (it has an answer), when its wording,
+made by substituting the filler, reads back to the same frame, and when it is not a `known`
+case. Each one is tagged with its `distance` and the `axes` changed.
 
-The graph is layered: a thing has several parents on several dimensions. `edges` (`{ key:
-dimension }`, by default kind / class / is / is_a as `kind`) names them, and
-`ancestorsOf(world, id, { depth, edges })` walks them breadth first. Cousins are
-deduplicated by frame and stratified per degree and dimension (`n` each). The automatic
-tester `tools/cousins-test.mjs` takes one example and a host and gives a table per degree ×
-dimension, naming the pattern of breaks. With `split` and `oracle` it judges every clause
-of a compound text: the host's answer to the whole text must hold the world's answer to
-each clause, so answering one half fails. The skill `skills/expand-and-test-case` hands the
-failures to `learnRules`. `judgeFix(answer,
-case, cousins)` judges a fix both ways: on the case alone and on its valid cousins by
-degree. Judged that way, a fix that passes only its case shows a share of 0.
+The graph is layered: a thing has several parents on several axes. `edges` (`{ key: axis }`,
+by default kind / class / is / is_a as `kind`) names them, and `ancestorsOf(world, id, {
+depth, edges })` walks them breadth first. Related cases are deduplicated by frame and
+stratified per distance and axis (`n` each). The generalisation test
+`tools/generalisation-test.mjs` takes one example and a host and gives a table per distance ×
+axis, naming the pattern of breaks. With `split` and `oracle` it judges every clause of a
+compound text: the host's answer to the whole text must hold the world's answer to each
+clause, so answering one half fails. The skill `skills/expand-and-test-case` hands the
+failures to `learnRules`. `judgeOnRelated(answer, case, related)` judges a fix both ways: on
+the case alone and on its valid related cases by distance (`byDistance`). Judged that way, a
+fix that passes only its case shows a share of 0.
 
 ```js run
 const w = new World();
 w.tell(`@cow k.animal name=cow kind=bovine sound=moo  @yak k.animal name=yak kind=bovine sound=grunt
   @sheep k.animal name=sheep kind=ovine sound=baa  @bovine k.kind name=bovine is_a=ruminant  @ovine k.kind name=ovine is_a=ruminant`);
 const kase = { text: 'cow sound', frame: readByTypes(w, 'cow sound').best };
-print(cousins(w, kase).filter((c) => c.valid).map((c) => [c.degree, c.text]));
+print(relatedCases(w, kase).filter((c) => c.valid).map((c) => [c.distance, c.text]));
 ```
 
 ```output
@@ -2238,9 +2240,9 @@ print(minePatterns(w, ['what sound does a cow make', 'what sound does a dog make
 {"pattern":"what <attr> does a <thing> <verb>","count":2,"example":"what sound does a cow make"}
 ```
 
-### continueAct(world, text, previous, options?)
+### resolveEllipsis(world, text, previous, options?)
 
-Discourse ellipsis (reviewer 03:20): a verbless continuation such as "it to the top
+Ellipsis (fragment) resolution (reviewer 03:20): a verbless continuation such as "it to the top
 right" or "and still up" reuses the previous act `{ act, args }` with the roles the message
 gives, read by type. A thing is read by its name, and a pronoun in `pronouns` keeps the
 previous thing. A value of a closed set is read by its key; multiword values like "top
@@ -2251,7 +2253,7 @@ names an act or gives no role.
 const w = new World();
 w.load('@acts core.use world=std.acts\n@art std.schema.world name=art doc=x\n@t core.type of=shape extends=std.schema.thing\n@s core.slot of=shape key=place enum=up enum=down\n@k std.schema.kind of=shape world=art acts=place');
 w.tell('@c1 shape name=cat');
-print(continueAct(w, 'and still up', { act: 'place', args: { thing: 'c1', place: 'down' } }, { skip: ['and', 'still'] }).args);
+print(resolveEllipsis(w, 'and still up', { act: 'place', args: { thing: 'c1', place: 'down' } }, { skip: ['and', 'still'] }).args);
 ```
 
 ```output
@@ -2343,15 +2345,15 @@ print(phraseOf(w, box).text, '|', phraseOf(w, box, { key: 'secret' }));
 the box likes tea and cake | null
 ```
 
-### realiseFrame(world, frame, roles, options?) and variantsOf(world, options?)
+### realiseFrame(world, frame, roles, options?) and paraphrasesOf(world, options?)
 
 A text in the shape of a frame of the language world: its parts (`w.lang.en.part frame= at=
 is=`) in order. A word part says its first word (or the `pick`-th), a phrase or lead part the
 first item of its `w.lang.en.phrase`, a det part `det` ("the") before a role that is given, a
 verb part the `verb` role or its act, and a role or lexicon part the role's words. Optional
 parts are left out unless `optional` is true; null when a required role is missing.
-`variantsOf(world)` gives a Map from a frame to `{ alternation, canonical }`, read from
-`w.lang.en.variant`: the frames it rewords.
+`paraphrasesOf(world)` gives a Map from a frame to `{ alternation, canonical }`, read from
+`w.lang.en.variant`: the frames it paraphrases.
 
 ```js run
 const w = new World();
@@ -2388,7 +2390,7 @@ print(judgeReply('A spider has eight legs.', ['8'], { numberWords: { 8: 'eight' 
 ```
 
 ```output
-true degree 1  kind       1/1  100 %
+true distance 1  kind       1/1  100 %
 ```
 
 ### experiment(cells, run, options?) and ablation(cells, run, configs, options?)
@@ -2418,7 +2420,7 @@ print(r.table, r.buys.square);
 {"add":{"all":{"pass":1,"of":2}},"square":{"all":{"pass":2,"of":2}}} {"gains":["b"],"losses":[]}
 ```
 
-### choose(world, kind, candidates, options?), rankingOf(world) and calibrate(world, kind, cases, options?)
+### choose(world, kind, candidates, options?), rankingOf(world) and learnRanking(world, kind, cases, options?)
 
 One way to choose (reviewer 01:00). The candidates of a choice point are ordered by the
 criteria declared for its kind, as data: `std.decide.criterion of=<kind> n= name= measure=
@@ -2431,8 +2433,9 @@ declares are `reading`, `template`, `word`, `rule`, `fact`, `parse` and `score`,
 `rankingOf(world)` gives `RANKING`'s measures in the order of kind `score`, which
 `world.score` uses.
 
-`calibrate(world, kind, cases, { heldOut })` learns the order of a kind's criteria from
-cases `[{ candidates, expected }]`. Every order (at most 7!) is tried on the training
+`learnRanking(world, kind, cases, { heldOut })` learns the order of a kind's criteria from
+cases `[{ candidates, expected }]` (learning to rank, by a search over orders rather than a
+learnt scoring function). Every order (at most 7!) is tried on the training
 cases. The best is proposed as std.decide facts, and admitted only when the held-out cases
 do not drop. The criteria are tuned on data, not in code. The map of all choice points is in docs/decisions.md.
 
@@ -3088,4 +3091,26 @@ print(typeof version, Object.keys(build));
 
 ```output
 string ["version","hash","date"]
+```
+
+### Deprecated names: cousins, judgeFix, liftTokens, continueAct, variantsOf and calibrate
+
+Names that the literature has better terms for (docs/literature.md). They still work, as the
+new functions under their old names, for two more releases, and are then removed:
+- `cousins(world, case, { degree, dims })` is `relatedCases` with `distance` and `axes`; each
+  result also carries `degree` and `dims`.
+- `judgeFix` is `judgeOnRelated`; its result also carries `byDegree`.
+- `liftTokens` is `delexicalise`, `continueAct` is `resolveEllipsis`, `variantsOf` is
+  `paraphrasesOf`, and `calibrate` is `learnRanking`. The name `calibrate` will then be used
+  for what the literature means by it: mapping scores to probabilities.
+- In `tools/generalisation-test.mjs`, `cousinsTest` is `generalisationTest`; `learnRules`
+  takes `cousins` as the old name of `related`; `tabulate` reads `degree` and `dim` as
+  `distance` and `axis`.
+
+```js run
+print(cousins === relatedCases, typeof cousins(new World(), { frame: {} }));
+```
+
+```output
+false object
 ```

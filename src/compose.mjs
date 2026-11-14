@@ -11,6 +11,7 @@
 // With the published k.genres (parts, steps, moves, registers) the layout follows the genre and
 // its choice points are solved jointly (`solveChoices` of std.plan). Not yet: story moves from
 // k.story, the composition procedures of k.procedures, w.document as the output.
+// In the literature: the NLG pipeline of Reiter and Dale (2000), content determination and document planning; docs/literature.md.
 
 import { solveChoices } from './plan.mjs';
 import { readStory, storyPlan } from './story.mjs';

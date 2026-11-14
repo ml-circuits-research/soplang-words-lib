@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.111.0
+
+From the reviewer's 05:10 and 05:25 entries (names against the literature).
+
+### Renamed (old names kept as deprecated aliases until 0.113.0)
+- `cousins(world, case, { degree, dims })` → `relatedCases(world, case, { distance, axes })`;
+  results carry `distance` and `axes`. `judgeFix` → `judgeOnRelated` (`byDistance`).
+- `tools/cousins-test.mjs` → `tools/generalisation-test.mjs`, `cousinsTest` →
+  `generalisationTest` (table keys `distance|axis`, `related` count). `learnRules` option
+  `cousins` → `related`. `tabulate` reads `distance` and `axis`.
+- `liftTokens` → `delexicalise`, `continueAct` → `resolveEllipsis`, `variantsOf` →
+  `paraphrasesOf`, `calibrate` → `learnRanking`. After the alias goes, `calibrate` is kept
+  for mapping scores to probabilities.
+- src/cousins.mjs → src/related-cases.mjs; tests renamed likewise.
+
+### Docs
+- docs/generalisation.md: related cases at a distance along axes, the owner's picture, the
+  measure and the literature (metamorphic testing, CheckList, contrast sets).
+- docs/literature.md: one line per concept with its established term, reference and how the
+  library differs; module headers cite it.
+- docs/glossary.md: standard equivalents of SOP Lang's names, and the renames.
+
 ## 0.110.0
 
 Ahead of the reviewer's 04:40 entry (diagrams composed from knowledge; `k.diagrams` and

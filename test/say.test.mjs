@@ -2,7 +2,7 @@
 // the published act templates, the frames of a log summary as a sentence.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { World, joinList, clauseOf, actSentence, renderFrames, phraseOf, narrationOf, realiseFrame, variantsOf, cousins, readByTypes } from '../tools/lib-under-test.mjs';
+import { World, joinList, clauseOf, actSentence, renderFrames, phraseOf, narrationOf, realiseFrame, paraphrasesOf, relatedCases, readByTypes } from '../tools/lib-under-test.mjs';
 import { worldsDir, catalogWorld } from '../tools/worlds.mjs';
 
 test('joinList and renderFrames', () => {
@@ -50,7 +50,7 @@ test('phraseOf on a toy world: per-key phrasing first, then by form', () => {
   assert.equal(phraseOf(w, f, { key: 'secret' }), null);
 });
 
-test('realiseFrame and variantsOf on a toy language world', () => {
+test('realiseFrame and paraphrasesOf on a toy language world', () => {
   const w = new World();
   assert.ok(w.tell([
     '@f1 w.lang.en.part frame=ask.what at=1 is=word word="what is"',
@@ -69,13 +69,13 @@ test('realiseFrame and variantsOf on a toy language world', () => {
   assert.equal(realiseFrame(w, 'ask.short', { attribute: 'sound', thing: 'cow' }), 'cow sound');
   assert.equal(realiseFrame(w, 'ask.short', { attribute: 'sound', thing: 'cow' }, { optional: true }), 'please cow sound');
   assert.equal(realiseFrame(w, 'ask.what', { attribute: 'sound' }), null, 'a required role missing');
-  assert.deepEqual(variantsOf(w).get('ask.short'), { alternation: 'verb ellipsis', canonical: ['ask.what'] });
+  assert.deepEqual(paraphrasesOf(w).get('ask.short'), { alternation: 'verb ellipsis', canonical: ['ask.what'] });
 });
 
-test('cousins: the published rewordings of a frame (w.lang.en.variant), read back to the same frame', { skip: !worldsDir() && 'offline' }, async () => {
+test('relatedCases: the published paraphrases of a frame (w.lang.en.variant), read back to the same frame', { skip: !worldsDir() && 'offline' }, async () => {
   const w = await catalogWorld({ 'w.lang.en': ['w.lang.en.frame', 'w.lang.en.part', 'w.lang.en.phrase', 'w.lang.en.variant'], 'k.animals': ['k.animals.animal'] });
   const text = 'what is the sound of the cow', frame = readByTypes(w, text).best;
-  const cs = cousins(w, { frame, text, langFrame: 'acts.ask.what', roles: { attribute: 'sound', thing: 'cow' } }, { dims: ['wording'] }).filter((c) => c.dims[0].startsWith('variant:'));
-  assert.ok(cs.some((c) => c.valid && c.text === 'the cow sound' && c.dims[0] === 'variant:verb ellipsis'), JSON.stringify(cs.map((c) => c.text)));
+  const cs = relatedCases(w, { frame, text, langFrame: 'acts.ask.what', roles: { attribute: 'sound', thing: 'cow' } }, { axes: ['wording'] }).filter((c) => c.axes[0].startsWith('variant:'));
+  assert.ok(cs.some((c) => c.valid && c.text === 'the cow sound' && c.axes[0] === 'variant:verb ellipsis'), JSON.stringify(cs.map((c) => c.text)));
   assert.ok(cs.some((c) => c.valid && c.text === 'tell me the cow sound'));
 });

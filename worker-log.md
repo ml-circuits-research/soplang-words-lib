@@ -4622,3 +4622,24 @@ clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 
 - Lead is strong on BillSum because bills open with their purpose.
 
 Gates: npm test 430 / 430 / 429 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+
+## 0.67.0: compose on the published k.genres, choice points solved jointly (reviewer 20:05 item 1)
+
+**What changed**
+- repos.pin: knowledge f7d2790 → 3a0f522, with k.genres 366975e and k.story d98a837.
+- `solveChoices` added to std.plan.
+- `compose` with a k.genres genre now lays out parts, steps with alternatives and the register. The repeats, the relation of each repeat and the alternative moves are solved jointly; summaries restate the claims.
+
+**Toy catalog** (penguin: 3 diet, 2 body, 2 habitat facts) with the published k.genres and k.interest:
+- presentation: title, agenda [k.diet, k.habitat, k.body], 3 points (claim plus compare / example), a summary restating the 3 claims, closing.
+- essay: introduction, 2 arguments, counterargument plus rebut, conclusion.
+- report: 6 parts.
+- story: its 8 moves are said to wait for k.story.
+- `size.sentences` 16 gives 13: short says the knowledge has no more.
+
+Gates: npm test 432 / 432 / 431 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+
+**Next**
+- Story moves by k.story through solveChoices: elements as variables, the hard constraints over the catalog worlds.
+- w.document as output when it is published.
+- Then Q49, the std.sample catalog option, 18:20.

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.67.0
+
+std.compose on the published `k.genres` (366975e), with choice points solved jointly
+(reviewer 20:05 item 1, 15:15 item 1). The knowledge repository is pinned at 3a0f522.
+
+### New
+- `solveChoices(vars, { domain, ok, weight, seed, limit })` (std.plan): depth-first with
+  backtracking; a seeded weighted draw orders the candidates; bounded; `why` and `deepest`
+  when there is no solution.
+- `compose(world, topic, { genre })` with a `k.genres` genre:
+  - parts in order with their repeats; steps with alternatives; sentences per step;
+  - the tense and the register;
+  - repeats, relations and alternative moves solved jointly;
+  - summaries restate the claims;
+  - `size.sentences` as a budget; `short` says what was missing.
+  The result has `parts` (the toy path keeps `chapters`).
+
 ## 0.66.0
 
 Measured on BillSum (reviewer 19:00): `tools/bench-billsum.mjs`, read in place from psys2.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="266d9af168ac">
+<meta name="source-hash" content="29f9e8f22c7a">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.66.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.67.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -593,6 +593,24 @@ w.tell(`@a k.interest.appraisal name=novelty combine=multiply base=0
   @r3 k.animal name=gull kind=bird fly=yes  @p k.animal name=penguin kind=bird fly=no`);
 print(interestOf(w, w.get(&#x27;p&#x27;)).by, interestOf(w, w.get(&#x27;r1&#x27;)).score);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;sibling_contrast&quot;:0.5} 0</code></pre></figure>
+<h3 id="compose-by-a-published-genre-kgenres">compose by a published genre (k.genres)</h3>
+<p>When the world holds the knowledge repository's <code>k.genres</code> and <code>genre</code> names one of its genres, <code>compose</code> lays the text out by it:</p>
+<ul><li>parts in order, each repeated between <code>min</code> and <code>max</code> times;</li><li>the steps of each part in order; several steps at one place are alternatives;</li><li>sentences per step: the minimum, and more while <code>size.sentences</code> and the facts allow;</li><li>every frame carries the step's tense (else the part's, else the register's); the register (person, tense, sentence lengths in words) is in <code>register</code>.</li></ul>
+<p>The choice points are solved jointly with <code>solveChoices</code>: how many times a repeated part occurs, which relation each occurrence takes, and the move at each place with alternatives. The constraints: no relation twice; a relation holds the facts its steps need at their minimum (when no layout allows that, it is relaxed and said in <code>short</code>); a compare move needs two facts. Interest weights the draw. Then the sentences are filled.</p>
+<ul><li><code>takes=topic</code> cites the topic.</li><li><code>outline</code> lists the relations of the repeated parts.</li><li><code>fact</code>, <code>facts</code> and <code>question</code> take a fact by interest, never one twice.</li><li>A <code>facts</code> move after the repeated parts (a summary) restates their claims (<code>recalls</code>).</li><li><code>story</code> moves are left to <code>k.story</code>.</li></ul>
+<p>The result is <code>{ genre, register, topic, parts: [{ part, heading?, layout?, relation?, moves: [frame] }], choices, nodes, short? }</code>. A small genre written in the k.genres format, made up for this example:</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(`@g k.genres.genre name=note  @m1 k.genres.move name=open takes=topic  @m2 k.genres.move name=tell takes=fact
+  @p1 k.genres.part genre=note name=head n=1 min=1 max=1  @s1 k.genres.step genre=note part=head n=1 move=open min=1 max=1
+  @p2 k.genres.part genre=note name=point n=2 min=1 max=2  @s2 k.genres.step genre=note part=point n=1 move=tell min=1 max=1
+  @owl k.animal name=owl  @a k.diet about=owl eats=mice  @b k.home about=owl lives=barn`);
+print(compose(w, &#x27;owl&#x27;, { genre: &#x27;note&#x27; }).parts.map((p) =&gt; [p.part, p.relation ?? &#x27;&#x27;, p.moves.map((m) =&gt; m.cites)]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;head&quot;,&quot;&quot;,[&quot;owl&quot;]],[&quot;point&quot;,&quot;k.home&quot;,[&quot;b&quot;]],[&quot;point&quot;,&quot;k.diet&quot;,[&quot;a&quot;]]]</code></pre></figure>
+<h3 id="solvechoicesvars--domain-ok-weight-seed-limit-">solveChoices(vars, { domain, ok, weight, seed, limit })</h3>
+<p>Choice points solved jointly (std.plan). Variables are decided in order. <code>domain(v, partial)</code> gives the candidates of a variable, given the choices made before it. <code>ok(partial)</code> checks the hard constraints, and false prunes the branch. <code>weight</code> orders the candidates by a seeded weighted draw, so the first solution found is a weighted sample; weight 0 is never drawn. The search is bounded by <code>limit</code> nodes. The result is <code>{ values, nodes }</code>, or <code>{ why, nodes, deepest }</code> with the variable that could not be filled.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const distinct = (p) =&gt; new Set(Object.values(p)).size === Object.keys(p).length;
+print(solveChoices([&#x27;a&#x27;, &#x27;b&#x27;, &#x27;c&#x27;, &#x27;d&#x27;], { domain: () =&gt; [1, 2, 3], ok: distinct }).deepest);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>d</code></pre></figure>
 <h3 id="measuresofworld-fact-state-shapesharefeature-x-and-interestmodelworld">measuresOf(world, fact, state?), shapeShare(feature, x) and interestModel(world)</h3>
 <p>The parts of <code>interestOf</code>. <code>measuresOf</code> gives the measures the library computes from facts and the text being written (<code>state</code>: <code>topic</code>, <code>said</code>, <code>moves</code>, <code>move</code>, <code>since</code>, <code>session</code>, <code>measures</code>). <code>shapeShare</code> is the share of a feature's shape (rising, falling, peak, step) at a value. <code>interestModel</code> reads the world's <code>k.interest.appraisal</code> and <code>k.interest.feature</code> facts, or gives null.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>print(shapeShare({ shape: &#x27;peak&#x27;, start_at: 0, peak_at: 0.5, full_at: 1 }, 0.25), interestModel(new World()));</code></pre></figure>
@@ -863,7 +881,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.66.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.67.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

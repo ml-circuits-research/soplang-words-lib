@@ -585,7 +585,7 @@ export function actsOf(world: World): { act: string; kind: string | null; things
 /** Aggregate a log of acts into frames, generalised up the chain of kinds, by salience. */
 export function summarizeLog(entries: { act: string; kind?: string | null; failed?: boolean; changed?: number }[], options?: { parentOf?: (kind: string) => string | null; length?: 'line' | 'paragraph' | 'bullets' }): { act: string; kind: string | null; count: number; kinds?: string[]; failed?: boolean; salience: number }[];
 /** An extractive summary of a text. */
-export function summarizeText(text: string, options?: { n?: number; stop?: string[]; redundancy?: number }): { sentences: { text: string; score: number; at: number }[]; picked: string[] };
+export function summarizeText(text: string, options?: { n?: number; words?: number; stop?: string[]; redundancy?: number }): { sentences: { text: string; score: number; at: number }[]; picked: string[] };
 /** Unigram recall of a summary against a reference. */
 export function overlap(summary: string, reference: string, options?: { stop?: string[] }): number;
 /** std.space: the spot for one thing (relative to a thing, in a region, or a default spot), avoiding overlaps. */
@@ -595,7 +595,7 @@ export function boxesOf(world: World, options?: { except?: string }): { id: stri
 /** The relation kinds a schema declares. */
 export function relationsOf(world: World, kind?: string): { name: string; kind: string; inverse?: string }[];
 /** std.compose: a composition of a genre about a topic, from knowledge, as frames citing their wires. */
-export function compose(world: World, topic: string, options?: { genre?: string; size?: { chapters: number; sections: number; sentences: number }; seed?: number; realise?: (frame: object) => string; measures?: (fact: Wire) => Record<string, number> }): { genre?: string | null; topic?: string; chapters?: { title: string; interest: number; sections: { interest: number; sentences: { move: string; fact: object; about: string; cites: string; text?: string }[] }[] }[]; short?: string[]; why?: string };
+export function compose(world: World, topic: string, options?: { genre?: string; size?: { chapters?: number; sections?: number; sentences?: number; repeats?: number }; seed?: number; realise?: (frame: object) => string; measures?: (fact: Wire) => Record<string, number> }): { genre?: string | null; topic?: string; register?: object | null; parts?: { part: string; heading?: string; layout?: string; relation?: string; moves: object[] }[]; choices?: Record<string, unknown>; nodes?: number; chapters?: { title: string; interest: number; sections: { interest: number; sentences: { move: string; fact: object; about: string; cites: string; text?: string }[] }[] }[]; short?: string[]; why?: string };
 /** The interest of a fact by the world's k.interest: novelty x coping x relevance - penalty, explained by feature. */
 export function interestOf(world: World, fact: Wire, options?: { topic?: string; said?: Set<string>; moves?: { move: string; type: string }[]; move?: string; since?: number; session?: Set<string>; measures?: Record<string, number>; draw?: number; model?: object }): { score: number; value: Record<string, number>; by: Record<string, number>; measured: Record<string, number>; why?: string };
 /** The k.interest measures computed from facts and from the text being written. */
@@ -604,3 +604,5 @@ export function measuresOf(world: World, fact: Wire, state?: object): Record<str
 export function shapeShare(feature: { shape: string; start_at?: number; peak_at?: number; full_at: number }, x: number): number;
 /** The interest model a world holds, or null. */
 export function interestModel(world: World): { appraisals: object[]; features: object[] } | null;
+/** Choice points solved jointly: a seeded weighted sample among the assignments the constraints allow. */
+export function solveChoices(vars: string[], options: { domain: (v: string, partial: Record<string, unknown>) => unknown[]; ok?: (partial: Record<string, unknown>, v?: string) => boolean; weight?: (v: string, value: unknown, partial: Record<string, unknown>) => number; seed?: number; limit?: number }): { values?: Record<string, unknown>; nodes: number; why?: string; deepest?: string | null };

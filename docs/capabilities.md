@@ -759,16 +759,17 @@ print(summarizeText('Owls hunt at night. Their eyes are large. An owl can turn i
 
 ## Compose a text from knowledge
 
-*In `compose`, `interestOf`, `measuresOf`, `shapeShare`, `interestModel`; since 0.64.*
+*In `compose`, `solveChoices`, `interestOf`, `measuresOf`, `shapeShare`, `interestModel`; since 0.64.*
 *Works on: knowledge worlds (facts about a topic, genres, interest features).*
 
 A composition with the moves of a genre: an outline from the topic's relations across the
 worlds, chosen by interest (the published `k.interest`: appraisals and features over measures computed from facts, each score explained), facts that each cite
 their wire and never repeat, and an exact size or a list of what the knowledge lacked.
-**Limits:** a first version. Measures of words and sentences (word band, concreteness,
-words over the register's maximum) come from the host. The genre's procedure as a plan,
-choices solved jointly, story constraints and register wait for `k.genres` and `k.story`;
-the sentences come from the host's realiser.
+With the published `k.genres`, the layout follows the genre's parts, steps and register,
+and its choice points are solved jointly. **Limits:** measures of words and sentences
+(word band, concreteness, words over the register's maximum) come from the host. Story
+moves wait for `k.story`, and the procedures for `k.procedures`. The sentences come from
+the host's realiser.
 
 ```js run
 const w = new World();

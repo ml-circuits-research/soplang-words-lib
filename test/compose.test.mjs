@@ -13,8 +13,7 @@ const CATALOG = `@robin k.animal name=robin kind=bird fly=yes  @crow k.animal na
 @w1 k.weight about=cat kg=4  @w2 k.weight about=dog kg=30  @w3 k.weight about=sheep kg=80  @w4 k.weight about=pig kg=150
 @w5 k.weight about=elephant kg=5000  @w6 k.weight about=horse kg=500
 @dog k.animal name=dog kind=mammal  @m1 k.kind_of about=dog kind=mammal derived=true
-@barn k.place name=barn  @antarctica k.place name=antarctica
-@g1 k.genres.genre name=presentation move=introduce move=fact move=compare move=conclude`;
+@barn k.place name=barn  @antarctica k.place name=antarctica`;
 const load = () => { const w = new World(); assert.ok(w.tell(worldText('k.interest')).ok); assert.ok(w.tell(CATALOG).ok); return w; };
 
 test('interest: the published k.interest over computed measures puts the exception over the far number over the obvious', { skip: !worldsDir() && 'offline' }, () => {
@@ -33,7 +32,7 @@ test('interest: the published k.interest over computed measures puts the excepti
 
 test("compose: the shape asked, each sentence citing its wire, no fact twice, the genre's moves; short said; realised by the host", { skip: !worldsDir() && 'offline' }, () => {
   const w = load();
-  const c = compose(w, 'penguin', { genre: 'presentation', size: { chapters: 1, sections: 1, sentences: 2 } });
+  const c = compose(w, 'penguin', { size: { chapters: 1, sections: 1, sentences: 2 } }); // no genre: introduce, ..., conclude
   const s = c.chapters[0].sections[0].sentences;
   assert.deepEqual(s.map((x) => x.move), ['introduce', 'conclude']);
   assert.ok(s.every((x) => w.get(x.cites)), 'every claim traces to a wire');
@@ -42,4 +41,23 @@ test("compose: the shape asked, each sentence citing its wire, no fact twice, th
   const r = compose(w, 'elephant', { size: { chapters: 1, sections: 1, sentences: 1 }, realise: (f) => `${f.move}: ${f.cites}` });
   assert.equal(r.chapters[0].sections[0].sentences[0].text, 'introduce: w5');
   assert.match(compose(w, 'penguin', { genre: 'sonnet' }).why, /no genre sonnet/);
+});
+
+test('compose by the published k.genres: parts in order, choices solved jointly, no relation twice, summaries restate, a budget', { skip: !worldsDir() && 'offline' }, () => {
+  const w = load(); assert.ok(w.tell(worldText('k.genres')).ok);
+  w.tell(`@d1 k.diet about=penguin eats=fish  @d2 k.diet about=penguin eats=krill  @d3 k.diet about=penguin eats=squid
+    @b1 k.body about=penguin height=1.1m  @b2 k.body about=penguin weight=35kg  @h1 k.habitat about=penguin place=chile`);
+  const c = compose(w, 'penguin', { genre: 'presentation' });
+  assert.deepEqual(c.parts.map((p) => p.part), ['title', 'agenda', 'point', 'point', 'point', 'summary', 'closing']);
+  assert.equal(c.register.name, 'presentation');
+  const rels = c.parts.filter((p) => p.part === 'point').map((p) => p.relation);
+  assert.equal(new Set(rels).size, 3, 'each point a different relation (joint choice)');
+  assert.deepEqual(c.parts[1].moves[0].outline, rels, 'the agenda lists the points');
+  const cites = c.parts.flatMap((p) => p.moves.map((m) => m.cites).filter(Boolean));
+  assert.equal(new Set(cites).size, cites.length, 'no fact twice');
+  assert.ok(c.parts.flatMap((p) => p.moves).every((m) => m.move !== 'compare' || c.parts.find((p) => p.moves.includes(m)).relation !== 'k.habitat'), 'compare only where two facts are left');
+  const b = compose(w, 'penguin', { genre: 'presentation', size: { sentences: 30 } });
+  assert.ok(b.parts.at(-2).moves.every((m) => m.recalls), 'nothing new left: the summary restates the claims');
+  assert.match(b.short.at(-1), /of 30 sentences/);
+  assert.match(compose(w, 'penguin', { genre: 'story' }).short[0], /filled by k.story/);
 });

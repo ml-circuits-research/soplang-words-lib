@@ -8,8 +8,11 @@
 // (and said when it does not). Language-free: the output is frames (a move and a fact); the
 // language world realises them (`realise(frame)`, or its templates per move).
 //
-// Not yet (waiting for the knowledge repository's worlds): the genre's procedure as a std.plan
-// method with choice points solved jointly, story constraints (k.story), register.
+// With the published k.genres (parts, steps, moves, registers) the layout follows the genre and
+// its choice points are solved jointly (`solveChoices` of std.plan). Not yet: story moves from
+// k.story, the composition procedures of k.procedures, w.document as the output.
+
+import { solveChoices } from './plan.mjs';
 
 const bare = (v) => String(v).replace(/^"|"$/g, '').replace(/^\$/, '');
 const isNum = (v) => /^-?\d+(\.\d+)?[a-z%]*$/i.test(bare(v));
@@ -160,6 +163,7 @@ export function compose(world, topic, { genre, size = { chapters: 2, sections: 1
   const rand = rng(seed);
   const g = genre ? world.ofType('k.genres.genre').find((x) => bare(x.attrs.name[0]) === genre) : null;
   if (genre && !g) return { why: `there is no genre ${genre}` };
+  if (g && world.ofType('k.genres.part').some((p) => one(p, 'genre') === genre)) return composeGenre(world, topic, g, { size, seed, realise, measures });
   const moves = g ? g.attrs.move.map(bare) : ['introduce', 'fact', 'fact', 'conclude'];
   const subject = [...world.wires.values()].find((w) => !w.type.startsWith('core.') && (w.attrs.name || []).some((n) => bare(n) === topic));
   // the topic's relations: every fact that names it, and its own facts, grouped by type (what they say)
@@ -196,4 +200,119 @@ export function compose(world, topic, { genre, size = { chapters: 2, sections: 1
     chapters.push({ title: group.type, interest: +group.interest.toFixed(3), sections });
   }
   return { genre: genre ?? null, topic, chapters, ...(short.length ? { short } : {}) };
+}
+
+// ---- a composition by the published k.genres: parts in order (repeated min..max), steps in order
+// with alternatives, sentences per step, the register's tense and sentence lengths. The repeats,
+// the relation of each repeated part and the move at each place with alternatives are choice
+// points solved jointly (solveChoices): no relation twice, each move fillable from what is left,
+// weighted by interest; then the sentences are filled by interest, never a fact twice.
+const TAKES_FACT = new Set(['fact', 'facts', 'question']);
+function composeGenre(world, topic, g, { size = {}, seed = 1, realise, measures } = {}) {
+  const genre = one(g, 'name');
+  const reg = world.ofType('k.genres.register').find((r) => one(r, 'name') === one(g, 'register'));
+  const register = reg ? { name: one(reg, 'name'), tense: one(reg, 'tense'), person: one(reg, 'person'), words: ['sentence_min', 'sentence_typical', 'sentence_max'].map((k) => Number(one(reg, k))) } : null;
+  const takes = Object.fromEntries(world.ofType('k.genres.move').map((m) => [one(m, 'name'), one(m, 'takes') ?? 'fact']));
+  const parts = world.ofType('k.genres.part').filter((p) => one(p, 'genre') === genre).sort((a, b) => Number(one(a, 'n')) - Number(one(b, 'n')));
+  const stepsOf = (p) => world.ofType('k.genres.step').filter((st) => one(st, 'genre') === genre && one(st, 'part') === one(p, 'name'));
+  const subject = [...world.wires.values()].find((w) => !w.type.startsWith('core.') && !w.type.startsWith('k.genres') && !w.type.startsWith('k.interest') && one(w, 'name') === topic);
+  const about = [...world.wires.values()].filter((w) => !w.type.startsWith('core.') && !w.type.startsWith('k.genres') && !w.type.startsWith('k.interest') && w !== subject
+    && Object.values(w.attrs).some((vs) => vs.some((v) => bare(v) === topic)));
+  const groups = new Map();
+  for (const f of about) (groups.get(f.type) || groups.set(f.type, []).get(f.type)).push(f);
+  const said = new Set(), interest = (f) => interestOf(world, f, { topic, said, measures: measures?.(f) }).score;
+  const groupNames = [...groups.keys()];
+  // the places: each part instance, each step place; repeated parts take one relation each
+  const repeat = parts.filter((p) => Number(one(p, 'max')) > 1);
+  const vars = [], dom = {}, meta = {};
+  for (const p of repeat) { const v = `times:${one(p, 'name')}`; vars.push(v); const lo = Number(one(p, 'min')), hi = Math.min(Number(one(p, 'max')), size.repeats ?? Infinity); dom[v] = []; for (let k = hi; k >= lo; k--) dom[v].push(k); }
+  const maxTimes = (p) => (Number(one(p, 'max')) > 1 ? Math.min(Number(one(p, 'max')), size.repeats ?? Infinity) : Number(one(p, 'max')));
+  for (const p of parts) for (let t = 0; t < maxTimes(p); t++) {
+    const pname = one(p, 'name'), inst = `${pname}#${t}`;
+    if (Number(one(p, 'max')) > 1) { const v = `rel:${inst}`; vars.push(v); dom[v] = [...groupNames, null]; meta[v] = { part: pname, t }; }
+    const steps = stepsOf(p), places = [...new Set(steps.map((st) => Number(one(st, 'n'))))].sort((a, b) => a - b);
+    for (const n of places) { const alts = steps.filter((st) => Number(one(st, 'n')) === n); if (alts.length > 1) { const v = `move:${inst}:${n}`; vars.push(v); dom[v] = alts.map((st) => one(st, 'move')); meta[v] = { part: pname, t }; } }
+  }
+  const active = (partial, part, t) => { const v = `times:${part}`; return !(v in partial) || t < partial[v]; };
+  const fillable = (move, facts) => { const k = takes[move]; return k === 'facts' || move === 'compare' ? facts.length >= 2 : TAKES_FACT.has(k) ? facts.length >= 1 : true; };
+  let strict = true;
+  const ok = (partial) => {
+    const used = Object.entries(partial).filter(([k, v]) => k.startsWith('rel:') && v !== null && active(partial, meta[k].part, meta[k].t)).map(([, v]) => v);
+    if (new Set(used).size !== used.length) return false; // no relation twice
+    for (const [k, v] of Object.entries(partial)) {
+      if (!k.startsWith('rel:')) continue;
+      if (active(partial, meta[k].part, meta[k].t) && v === null && groupNames.length > used.length) return false; // a repeated part takes a relation while any is left
+      if (!active(partial, meta[k].part, meta[k].t) && v !== null) return false; // a part not made takes none
+    }
+    for (const [k, v] of Object.entries(partial)) {
+      if (!k.startsWith('move:')) continue;
+      const rel = partial[`rel:${meta[k].part}#${meta[k].t}`];
+      if (rel !== undefined && active(partial, meta[k].part, meta[k].t) && !fillable(v, rel ? groups.get(rel) : about)) return false;
+    }
+    if (strict) for (const [k, rel] of Object.entries(partial)) { // a part's relation holds the facts all its steps need at their minimum
+      if (!k.startsWith('rel:') || !rel || !active(partial, meta[k].part, meta[k].t)) continue;
+      const p = parts.find((x) => one(x, 'name') === meta[k].part), steps = stepsOf(p);
+      let need = 0;
+      for (const n of new Set(steps.map((st) => Number(one(st, 'n'))))) {
+        const alts = steps.filter((st) => Number(one(st, 'n')) === n), mv = partial[`move:${meta[k].part}#${meta[k].t}:${n}`];
+        const st = alts.length > 1 ? (mv === undefined ? null : alts.find((x) => one(x, 'move') === mv)) : alts[0];
+        if (st && TAKES_FACT.has(takes[one(st, 'move')])) need += Number(one(st, 'min'));
+      }
+      if (need > groups.get(rel).length) return false;
+    }
+    return true;
+  };
+  const weight = (v, c, partial) => {
+    if (v.startsWith('times:')) return groupNames.length >= c ? 2 : 1; // as many repeats as there are relations
+    if (v.startsWith('rel:')) return c === null ? 0.01 : 1 + Math.max(0, ...groups.get(c).map(interest));
+    const rel = partial[`rel:${meta[v].part}#${meta[v].t}`], facts = rel ? groups.get(rel) : about;
+    const best = Math.max(0, ...facts.map((f) => interestOf(world, f, { topic, measures: measures?.(f) }).by[c === 'surprising fact' ? 'sibling_contrast' : 'on_topic'] ?? 0));
+    return 1 + best;
+  };
+  let sol = solveChoices(vars, { domain: (v) => dom[v], ok, weight, seed }), relaxed = null;
+  if (sol.why) { relaxed = `no layout gives every step its minimum facts (${sol.why}, at ${sol.deepest}): steps may go short`; strict = false; sol = solveChoices(vars, { domain: (v) => dom[v], ok, weight, seed }); }
+  if (sol.why) return { genre, topic, why: `${sol.why} (at ${sol.deepest})` };
+  const choice = Object.fromEntries(Object.entries(sol.values).filter(([k, v]) => !(k in meta) || active(sol.values, meta[k].part, meta[k].t)));
+  const relations = parts.filter((x) => Number(one(x, 'max')) > 1).flatMap((x) => Array.from({ length: choice[`times:${one(x, 'name')}`] }, (_, i) => choice[`rel:${one(x, 'name')}#${i}`])).filter(Boolean);
+  const pickFact = (pool) => pool.filter((f) => !said.has(f.id)).map((f) => [f, interest(f)]).filter(([, x]) => x > -0.5).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const fill = (extra) => { // the steps' minimum sentences; `extra` more go to steps in order, up to their maximum, while facts last
+    said.clear();
+    const short = [], out = [], claims = [];
+    for (const p of parts) {
+      const pname = one(p, 'name'), times = Number(one(p, 'max')) > 1 ? choice[`times:${pname}`] : Number(one(p, 'min')) || 1;
+      for (let t = 0; t < times; t++) {
+        const inst = `${pname}#${t}`, rel = choice[`rel:${inst}`], pool = rel ? groups.get(rel) : about;
+        const steps = stepsOf(p), places = [...new Set(steps.map((st) => Number(one(st, 'n'))))].sort((a, b) => a - b), moves = [];
+        for (const n of places) {
+          const alts = steps.filter((st) => Number(one(st, 'n')) === n), st = alts.length > 1 ? alts.find((x) => one(x, 'move') === choice[`move:${inst}:${n}`]) : alts[0];
+          const move = one(st, 'move'), k = takes[move], lo = Number(one(st, 'min')), hi = Number(one(st, 'max'));
+          const tense = one(st, 'tense') ?? one(p, 'tense') ?? register?.tense;
+          const recall = k === 'facts' && !rel && (claims.length > 0 || !pickFact(about)); // after the repeated parts, or with nothing new: it restates their claims (a summary)
+          let count = recall ? Math.min(hi, Math.max(lo, claims.length && lo ? Math.min(hi, claims.length) : lo)) : lo;
+          while (extra > 0 && count < hi && !recall && (k === 'fact' || k === 'facts') && pool.filter((f) => !said.has(f.id)).length > count) { count++; extra--; } // bounded: up to the step's maximum
+          for (let c = 0; c < count; c++) {
+            const frame = { part: pname, move, takes: k, tense };
+            if (k === 'topic') { frame.about = topic; if (subject && !said.has(subject.id)) { frame.cites = subject.id; said.add(subject.id); } }
+            else if (k === 'outline') frame.outline = relations;
+            else if (recall) { if (!claims[c]) break; frame.recalls = claims[c]; }
+            else if (TAKES_FACT.has(k)) {
+              const f = pickFact(pool) ?? (rel ? undefined : pickFact(about));
+              if (!f) { if (lo > 0) short.push(`${inst} ${move}: no fact left`); break; }
+              said.add(f.id); frame.cites = f.id; frame.fact = { type: f.type, attrs: Object.fromEntries(Object.entries(f.attrs).filter(([key]) => !key.startsWith('core.')).map(([key, vs]) => [key, vs.map(bare)])) };
+              if (rel && !moves.some((m) => m.cites)) claims.push(f.id); // the first fact of a repeated part: its claim
+            } else if (k === 'story') short.push(`${inst} ${move}: story moves are filled by k.story`);
+            if (realise) frame.text = realise(frame, register);
+            moves.push(frame);
+          }
+        }
+        out.push({ part: pname, ...(one(p, 'heading') ? { heading: one(p, 'heading') } : {}), ...(one(p, 'layout') ? { layout: one(p, 'layout') } : {}), ...(rel ? { relation: rel } : {}), moves });
+      }
+    }
+    return { out, short, sentences: out.reduce((x, p) => x + p.moves.length, 0) };
+  };
+  let r = fill(0);
+  if (size.sentences > r.sentences) r = fill(size.sentences - r.sentences);
+  const out = r.out, short = [...(relaxed ? [relaxed] : []), ...new Set(r.short)];
+  if (size.sentences && r.sentences !== size.sentences) short.push(r.sentences < size.sentences ? `${r.sentences} of ${size.sentences} sentences: the knowledge has no more` : `${r.sentences} sentences: the genre's minimum is above ${size.sentences}`);
+  return { genre, register, topic, parts: out, choices: choice, nodes: sol.nodes, ...(short.length ? { short } : {}) };
 }

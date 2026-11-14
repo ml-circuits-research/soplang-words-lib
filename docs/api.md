@@ -1624,6 +1624,61 @@ print(interestOf(w, w.get('p')).by, interestOf(w, w.get('r1')).score);
 {"sibling_contrast":0.5} 0
 ```
 
+### compose by a published genre (k.genres)
+
+When the world holds the knowledge repository's `k.genres` and `genre` names one of its
+genres, `compose` lays the text out by it:
+- parts in order, each repeated between `min` and `max` times;
+- the steps of each part in order; several steps at one place are alternatives;
+- sentences per step: the minimum, and more while `size.sentences` and the facts allow;
+- every frame carries the step's tense (else the part's, else the register's); the register
+  (person, tense, sentence lengths in words) is in `register`.
+
+The choice points are solved jointly with `solveChoices`: how many times a repeated part
+occurs, which relation each occurrence takes, and the move at each place with
+alternatives. The constraints: no relation twice; a relation holds the facts its steps
+need at their minimum (when no layout allows that, it is relaxed and said in `short`); a
+compare move needs two facts. Interest weights the draw. Then the sentences are filled.
+- `takes=topic` cites the topic.
+- `outline` lists the relations of the repeated parts.
+- `fact`, `facts` and `question` take a fact by interest, never one twice.
+- A `facts` move after the repeated parts (a summary) restates their claims (`recalls`).
+- `story` moves are left to `k.story`.
+The result is `{ genre, register, topic, parts: [{ part, heading?, layout?, relation?,
+moves: [frame] }], choices, nodes, short? }`. A small genre written in the k.genres
+format, made up for this example:
+
+```js run
+const w = new World();
+w.tell(`@g k.genres.genre name=note  @m1 k.genres.move name=open takes=topic  @m2 k.genres.move name=tell takes=fact
+  @p1 k.genres.part genre=note name=head n=1 min=1 max=1  @s1 k.genres.step genre=note part=head n=1 move=open min=1 max=1
+  @p2 k.genres.part genre=note name=point n=2 min=1 max=2  @s2 k.genres.step genre=note part=point n=1 move=tell min=1 max=1
+  @owl k.animal name=owl  @a k.diet about=owl eats=mice  @b k.home about=owl lives=barn`);
+print(compose(w, 'owl', { genre: 'note' }).parts.map((p) => [p.part, p.relation ?? '', p.moves.map((m) => m.cites)]));
+```
+
+```output
+[["head","",["owl"]],["point","k.home",["b"]],["point","k.diet",["a"]]]
+```
+
+### solveChoices(vars, { domain, ok, weight, seed, limit })
+
+Choice points solved jointly (std.plan). Variables are decided in order. `domain(v,
+partial)` gives the candidates of a variable, given the choices made before it. `ok(partial)`
+checks the hard constraints, and false prunes the branch. `weight` orders the candidates by
+a seeded weighted draw, so the first solution found is a weighted sample; weight 0 is never
+drawn. The search is bounded by `limit` nodes. The result is `{ values, nodes }`, or `{ why,
+nodes, deepest }` with the variable that could not be filled.
+
+```js run
+const distinct = (p) => new Set(Object.values(p)).size === Object.keys(p).length;
+print(solveChoices(['a', 'b', 'c', 'd'], { domain: () => [1, 2, 3], ok: distinct }).deepest);
+```
+
+```output
+d
+```
+
 ### measuresOf(world, fact, state?), shapeShare(feature, x) and interestModel(world)
 
 The parts of `interestOf`. `measuresOf` gives the measures the library computes from facts

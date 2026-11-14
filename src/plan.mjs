@@ -341,3 +341,36 @@ export function readMethods(k, prefix = 'k.procedures') {
   for (const a of of('condition')) m(a).conditions.push({ n: num(a.n[0]), step: num(a.step?.[0]), when: one(a, 'when'), fact: one(a, 'fact'), thing: one(a, 'thing'), other: one(a, 'other'), attribute: one(a, 'attribute'), value: one(a, 'value') });
   return [...methods.values()];
 }
+
+/**
+ * Choice points solved jointly (reviewer 15:15 item 1): "random but by the book". `vars` are
+ * names in the order they are decided; `domain(v, partial)` gives a variable's candidates given
+ * the values decided so far; `ok(partial)` checks the hard constraints on a partial assignment
+ * (false prunes the branch); `weight(v, value, partial)` (default 1) orders the candidates by a
+ * seeded weighted draw, so the first solution found is a weighted sample among those allowed.
+ * Depth-first with backtracking, bounded by `limit` nodes. Returns { values, nodes } or
+ * { why, nodes, deepest } when no assignment satisfies the constraints.
+ */
+export function solveChoices(vars, { domain, ok = () => true, weight = () => 1, seed = 1, limit = 20000 } = {}) {
+  let x = seed >>> 0;
+  const rnd = () => { x = (x + 0x6d2b79f5) >>> 0; let t = Math.imul(x ^ (x >>> 15), 1 | x); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const order = (v, cands, partial) => { // weighted draw without replacement: key u^(1/w) (Efraimidis-Spirakis)
+    return cands.map((c) => { const w = Math.max(0, weight(v, c, partial)); return [c, w > 0 ? Math.pow(rnd(), 1 / w) : -1]; })
+      .filter(([, k]) => k >= 0).sort((a, b) => b[1] - a[1]).map(([c]) => c);
+  };
+  let nodes = 0, deepest = 0;
+  const partial = {};
+  const go = (i) => { // bounded: the variables in depth, and `limit` nodes in all
+    if (i === vars.length) return true;
+    const v = vars[i];
+    for (const c of order(v, domain(v, partial) || [], partial)) {
+      if (++nodes > limit) return false;
+      partial[v] = c;
+      if (ok(partial, v)) { deepest = Math.max(deepest, i + 1); if (go(i + 1)) return true; }
+      delete partial[v];
+    }
+    return false;
+  };
+  if (go(0)) return { values: { ...partial }, nodes };
+  return { why: nodes > limit ? `no assignment within ${limit} nodes` : 'no assignment satisfies the constraints', nodes, deepest: vars[deepest] ?? null };
+}

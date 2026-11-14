@@ -2166,7 +2166,7 @@ print(t.status, t.loaded.map((n) => n.type));
 done ["k.furniture"]
 ```
 
-### signatureOf(world, token, options?), chunk(world, text, options?) and minePatterns(world, sentences, options?)
+### signatureOf(world, token, options?), chunk(world, text, options?), minePatterns(world, sentences, options?) and patternReader(world, cases, options?)
 
 Type signatures and a finite pattern inventory (reviewer 02:15, owner 18:10).
 `signatureOf` gives a word's signature as three levels, `[fine, middle, coarse]`:
@@ -2182,6 +2182,11 @@ last word. `minePatterns` turns sentences into patterns over chunk signatures at
 and reports `{ patterns: [{ pattern, count, example }], sentences, at80, at95 }`.
 `tools/bench-patterns.mjs` measures the owner's hypothesis, "few patterns", on PSys2's
 sentences.
+
+`patternReader(world, cases, { level, closed })` learns from cases `[{ text, frame }]`
+where each pattern's key and holder are (chunk positions). It returns a reader, a voice for
+`readEnsemble`, that reads new sentences of a known pattern into frames and gives nothing
+for an unknown pattern.
 
 ```js run
 const w = new World();

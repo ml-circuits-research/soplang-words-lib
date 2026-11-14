@@ -33,3 +33,16 @@ const u = judge(held, {}), l = judge(held, { weights });
 console.log(`\nweights learnt on ${train.length}: ${JSON.stringify(weights)}`);
 console.log(`held-out ${held.length}: equal weights precision ${pct(u.ok, u.ans)}; learnt weights precision ${pct(l.ok, l.ans)}`);
 console.log('held-out risk–coverage, learnt:', riskCoverage(l.rs).map((x) => `≥${x.threshold}: cov ${x.coverage}, risk ${x.risk}`).join('; '));
+// the pattern reader as an independent voice: patterns learnt on the training half (variant text, gold frame), judged on the held-out half
+const { patternReader, readByTypes: rbt } = await import('../src/index.mjs');
+const goldFrame = (p) => rbt(w, p, READ).best;
+const trainCases = train.map((c, i) => ({ text: c.text, frame: JSON.parse(c.gold) })).filter((c) => c.frame);
+const closed = ['a', 'an', 'the', 'of', 'in', 'on', 'to', 'and', 'or', 'what', 'which', 'who', 'where', 'how', 'many', 'much', 'does', 'do', 'is', 'are', 'was', 'can', 'could', 'you', 'me', 'it', 'they', 'please', 'hey', 'um', 'also', 'then', 'too', 'whatever'];
+const pr = patternReader(w, trainCases, { closed });
+let pa = 0, pr2 = 0; for (const c of held) { const f = pr(w, c.text)[0]?.frame; if (f) { pa++; if (norm(f) === c.gold) pr2++; } }
+console.log(`\npattern reader (learnt on ${trainCases.length}): held-out coverage ${pct(pa, held.length)}, precision ${pct(pr2, pa)}`);
+const R4 = { ...R, patterns: pr };
+const e4 = judge(held, { readers: R4 });
+const e4w = judge(held, { readers: R4, weights: { ...weights, patterns: pa ? pr2 / pa : 0 } });
+console.log(`ensemble with patterns, held-out: equal weights precision ${pct(e4.ok, e4.ans)}; learnt weights ${pct(e4w.ok, e4w.ans)}`);
+console.log('risk–coverage with patterns (learnt):', riskCoverage(e4w.rs).map((x) => `≥${x.threshold}: cov ${x.coverage}, risk ${x.risk}`).join('; '));

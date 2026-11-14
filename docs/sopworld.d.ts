@@ -692,3 +692,5 @@ export function signatureOf(world: World, token: string, options?: { closed?: st
 export function chunk(world: World, text: string, options?: { closed?: string[] }): { words: string[]; sig: [string, string, string]; content: boolean }[];
 /** Sentence patterns over chunk signatures, with their coverage. */
 export function minePatterns(world: World, sentences: string[], options?: { level?: 0 | 1 | 2; closed?: string[] }): { patterns: { pattern: string; count: number; example: string }[]; sentences: number; at80: number; at95: number };
+/** A reader learnt from mined patterns: a voice for readEnsemble. */
+export function patternReader(world: World, cases: { text: string; frame: object }[], options?: { level?: 0 | 1 | 2; closed?: string[] }): (world: World, text: string) => { frame: object; unread: number; cost: number; specificity: number }[];

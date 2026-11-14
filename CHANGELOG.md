@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.100.0
+
+### New
+- `patternReader(world, cases, { level, closed })`: a reader learnt from mined patterns (key
+  and holder positions per pattern), a voice for `readEnsemble`.
+
 ## 0.99.0
 
 Type signatures and a finite pattern inventory (reviewer 02:15, owner 18:10).

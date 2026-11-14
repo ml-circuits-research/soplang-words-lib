@@ -5174,3 +5174,13 @@ Gates: npm test 474 pass, 0 fail; pilot identical; psys2=0 in src; scan clean; t
 
 **Gates**
 - npm test 478 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+
+## 0.100.0: patternReader, a voice from mined patterns
+
+- `patternReader` learns from cases, per pattern, where the key and the holder are; it reads new sentences of a known pattern.
+- `node tools/bench-ensemble.mjs`, held-out half of psys2's form pairs:
+  - pattern reader learnt on 250: coverage 88.4 %, precision 45.2 %;
+  - ensemble with the pattern reader as a fourth voice: precision 46.8 % → 51.2 % (equal weights; learnt weights the same);
+  - risk–coverage at confidence ≥ 1: coverage 0.02, risk 0; at ≥ 0.648: coverage 0.875, risk 0.465.
+- Caution: the gold is the world's reading of the canonical sentence, which is itself about 50 % right on these pairs. Many cousin pairs change content (noted at 0.86). Please give a hand-judged gold frame per pair to measure precision.
+- Gates (5th release): test:full 479 / 479 / 477 pass, 0 fail; npm test 479; pilot identical; psys2=0; scan clean; tsc ok.

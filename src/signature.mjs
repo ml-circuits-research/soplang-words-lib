@@ -61,3 +61,33 @@ export function minePatterns(world, sentences, { level = 1, ...options } = {}) {
   const at = (share) => { let acc = 0; for (let i = 0; i < patterns.length; i++) { acc += patterns[i].count; if (acc >= share * n) return i + 1; } return patterns.length; };
   return { patterns, sentences: n, at80: at(0.8), at95: at(0.95) };
 }
+
+/**
+ * A reader from mined patterns (a voice for readEnsemble, reviewer 02:15/02:30): from training cases
+ * [{ text, frame: { is: 'ask', key, of: { id } } }], each pattern (at `level`) learns where its key and its
+ * holder are (chunk positions); reading a sentence of a known pattern fills the frame from those chunks.
+ * Returns (world, text) -> [{ frame, unread: 0, cost, specificity }] (empty for an unknown pattern).
+ */
+export function patternReader(world, cases, { level = 1, ...options } = {}) {
+  const lex = typedLexicon(world);
+  const thingOf = (c) => { for (const wd of [...c.words].reverse()) { const s = (lex.get(wd) || lex.get(wd.replace(/s$/, '')) || []).find((x) => x.cat === 'thing'); if (s) return s.id; } return null; };
+  const keyOfChunk = (c) => { const m = /^<(?:attr|verb):(.+)>$/.exec(c.sig[0]); return m ? m[1] : null; };
+  const table = new Map(); // pattern -> Map(slots -> count)
+  for (const k of cases) {
+    if (k.frame?.is !== 'ask') continue;
+    const cs = chunk(world, k.text, options), pat = cs.map((c) => c.sig[level]).join(' ');
+    const keyAt = cs.findIndex((c) => keyOfChunk(c) === k.frame.key), ofAt = cs.findIndex((c) => thingOf(c) === k.frame.of?.id);
+    if (keyAt < 0 || ofAt < 0) continue;
+    const slots = `${keyAt},${ofAt}`, m = table.get(pat) || table.set(pat, new Map()).get(pat);
+    m.set(slots, (m.get(slots) || 0) + 1);
+  }
+  return (w, text) => {
+    const cs = chunk(w, text, options), pat = cs.map((c) => c.sig[level]).join(' '), m = table.get(pat);
+    if (!m) return [];
+    const [slots, n] = [...m].sort((a, b) => b[1] - a[1])[0], [keyAt, ofAt] = slots.split(',').map(Number);
+    const key = keyOfChunk(cs[keyAt]), of = thingOf(cs[ofAt]);
+    if (!key || !of) return [];
+    const answer = (w.get(of)?.attrs[key] || []).map((v) => String(v).replace(/^"|"$/g, ''));
+    return [{ frame: { is: 'ask', key, of: { id: of }, answer }, unread: 0, cost: 0, specificity: n }];
+  };
+}

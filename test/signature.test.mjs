@@ -22,3 +22,13 @@ test('chunk and minePatterns: sentences about different things fall into one pat
   const r = minePatterns(w, ['what sound does a cow make', 'what sound does a dog make', 'how many legs does a cow have', 'what legs does a dog make'], { closed });
   assert.deepEqual([r.patterns[0].pattern, r.patterns[0].count, r.patterns.length, r.at80], ['what <attr> does a <thing> <verb>', 3, 2, 2]);
 });
+
+test('patternReader: a pattern learnt from cases reads new sentences of that pattern into frames (a voice for readEnsemble)', async () => {
+  const { patternReader } = await import('../tools/lib-under-test.mjs');
+  const v = new World();
+  v.tell('@cow k.animal name=cow sound=moo legs=4  @dog k.animal name=dog sound=woof legs=4  @hen k.animal name=hen sound=cluck legs=2  @m core.word text=make text=makes means=sound');
+  const C = (t, k, o) => ({ text: t, frame: { is: 'ask', key: k, of: { id: o } } });
+  const read = patternReader(v, [C('hey what sound a cow makes', 'sound', 'cow'), C('hey what legs a dog makes', 'legs', 'dog')], { closed: ['hey', 'what', 'a'] });
+  assert.deepEqual(read(v, 'hey what sound a hen makes')[0].frame, { is: 'ask', key: 'sound', of: { id: 'hen' }, answer: ['cluck'] });
+  assert.deepEqual(read(v, 'what is this'), [], 'an unknown pattern: no reading');
+});

@@ -1661,6 +1661,38 @@ print(compose(w, 'owl', { genre: 'note' }).parts.map((p) => [p.part, p.relation 
 [["head","",["owl"]],["point","k.home",["b"]],["point","k.diet",["a"]]]
 ```
 
+### writeDocument(world, composition, options?) and readDocument(world, id)
+
+`writeDocument` writes a composition by a genre as a `w.document` live world. The world
+must use the knowledge repository's `w.document` schema. Each part becomes a slide, when
+the genre's unit is slide, or a chapter with a paragraph. Each frame becomes a sentence
+with its `move` and `fact` (the ids of the wires it states). Everything is written through
+the acts of std.acts, so the schema's checks hold, and what was refused is listed.
+
+The text of a sentence is the frame's own `text`, else `realise(frame, register)`. With
+neither, it is a placeholder that says the move. Other options: `title`, `language`,
+`slides`, and `facts(frame)`, which by default gives the cited wire or a wire named as the
+story element's value. `readDocument` reads a document back in order, `{ title, genre,
+parts: [{ part, title, sentences: [{ text, move, facts }] }] }`, for a summary or a check.
+
+```js run
+const w = new World();
+w.tell(`@t core.type of=w.document.document  @t1 core.slot of=w.document.document key=title kind=atom kind=string
+  @c core.type of=w.document.slide  @c1 core.slot of=w.document.slide key=document kind=ref ref=w.document.document
+  @c2 core.slot of=w.document.slide key=n kind=number  @c3 core.slot of=w.document.slide key=part kind=atom kind=string
+  @s core.type of=w.document.sentence  @s1 core.slot of=w.document.sentence key=slide kind=ref ref=w.document.slide
+  @s2 core.slot of=w.document.sentence key=n kind=number  @s3 core.slot of=w.document.sentence key=text kind=atom kind=string
+  @s4 core.slot of=w.document.sentence key=fact kind=atom many=true
+  @d w.document.document title=Owls  @sl w.document.slide document=$d n=1 part=point
+  @x w.document.sentence slide=$sl n=1 text="Owls eat mice." fact=a`);
+print(readDocument(w, 'd').parts, writeDocument(w, { chapters: [] }).why);
+```
+
+```output
+[{"part":"point","sentences":[{"text":"Owls eat mice.","facts":["a"]}]}] not a composition by a genre (no parts)
+```
+
+
 ### readStory(world), storyPlan(kb, options?) and STORY_RELATIONS
 
 Story plans from the knowledge repository's `k.story`. Each element (setting, protagonist,

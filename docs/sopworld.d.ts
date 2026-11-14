@@ -612,3 +612,7 @@ export function readStory(world: World): object;
 export function storyPlan(kb: object, options?: { seed?: number; soft?: number; fixed?: Record<string, string | string[]>; relations?: Record<string, Function>; limit?: number }): { plan?: Record<string, string | string[]>; soft?: string[]; nodes?: number; why?: string; at?: string | null };
 /** What each relation of k.story means over the catalog's facts. */
 export const STORY_RELATIONS: Record<string, Function>;
+/** A composition by a genre written as a w.document live world through std.acts. */
+export function writeDocument(world: World, composition: object, options?: { title?: string; language?: string; realise?: (frame: object, register?: object) => string; slides?: boolean; facts?: (frame: object) => string[] }): { document?: string; made?: string[]; refused?: object[]; why?: string };
+/** A w.document document read back in order, with the sources of each sentence. */
+export function readDocument(world: World, id: string): { title?: string; genre?: string; parts?: { part?: string; title?: string; sentences: { text: string; move?: string; facts: string[] }[] }[]; why?: string };

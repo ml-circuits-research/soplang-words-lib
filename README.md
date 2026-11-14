@@ -63,7 +63,7 @@ contain and where code lives: [docs/kinds-of-worlds.md](docs/kinds-of-worlds.md)
 | Reach a goal by methods that are knowledge | `planner`, `factStore`, `PlanLive`, `readMethods`, `PLAN_LIMITS` | [example](docs/capabilities.md#reach-a-goal-by-methods-that-are-knowledge) | 0.55 |
 | Suggest random commands that work | `sample`, `diversity` | [example](docs/capabilities.md#suggest-random-commands-that-work) | 0.59 |
 | Summarise a log or a text | `actsOf`, `summarizeLog`, `summarizeText`, `overlap` | [example](docs/capabilities.md#summarise-a-log-or-a-text) | 0.61 |
-| Compose a text from knowledge | `compose`, `solveChoices`, `readStory`, `storyPlan`, `STORY_RELATIONS`, `interestOf`, `measuresOf`, `shapeShare`, `interestModel` | [example](docs/capabilities.md#compose-a-text-from-knowledge) | 0.64 |
+| Compose a text from knowledge | `compose`, `writeDocument`, `readDocument`, `solveChoices`, `readStory`, `storyPlan`, `STORY_RELATIONS`, `interestOf`, `measuresOf`, `shapeShare`, `interestModel` | [example](docs/capabilities.md#compose-a-text-from-knowledge) | 0.64 |
 <!-- /capabilities -->
 
 ## Use

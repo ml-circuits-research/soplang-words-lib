@@ -329,5 +329,5 @@ function composeGenre(world, topic, g, { size = {}, seed = 1, realise, measures,
   if (size.sentences > r.sentences) r = fill(size.sentences - r.sentences);
   const out = r.out, short = [...(relaxed ? [relaxed] : []), ...(storyNote ? [storyNote] : []), ...new Set(r.short)];
   if (size.sentences && r.sentences !== size.sentences) short.push(r.sentences < size.sentences ? `${r.sentences} of ${size.sentences} sentences: the knowledge has no more` : `${r.sentences} sentences: the genre's minimum is above ${size.sentences}`);
-  return { genre, register, topic, parts: out, ...(plan ? { story: plan } : {}), choices: choice, nodes: sol.nodes, ...(short.length ? { short } : {}) };
+  return { genre, register, topic, seed, parts: out, ...(plan ? { story: plan } : {}), choices: choice, nodes: sol.nodes, ...(short.length ? { short } : {}) };
 }

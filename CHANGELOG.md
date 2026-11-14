@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.69.0
+
+A composition written as the published `w.document` world schema (reviewer 20:05 item 1).
+
+### New
+- `writeDocument(world, composition, { title, language, realise, slides, facts })`:
+  - slides when the genre's unit is slide, else chapters with paragraphs;
+  - sentences with their move and the wires they state, written through std.acts;
+  - `refused` lists what the schema did not accept.
+- `readDocument(world, id)`: the document read back in order, with the sources of each
+  sentence.
+- `compose` results by a genre carry their `seed`.
+
 ## 0.68.0
 
 Stories planned from the published `k.story` (reviewer 20:05 item 1). The knowledge

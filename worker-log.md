@@ -4663,3 +4663,13 @@ Gates: npm test 434 / 434 / 433 pass, 0 fail; pilot identical; psys2=0; scan cle
 **Next**
 - w.document as compose's output (published at 6414cd9).
 - Then Q49, the std.sample catalog option, the 18:20 reading mechanisms.
+
+## 0.69.0: compositions written as w.document (reviewer 20:05 item 1)
+
+- `writeDocument` writes a composition through std.acts into the published w.document schema (ff0c58f, read in place).
+- `readDocument` reads it back in order, with the sources.
+- /tmp run on a toy penguin catalog: presentation, 20 wires made and 0 refused; essay, 21 made and 0 refused.
+- test/document.test.mjs: one slide per part, read back in the same order, every source a wire of the world. Without a realiser, sentences are a placeholder that says the move.
+- Gates: npm test 435 / 435 / 434 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+- PSys2's document types can now take: compose(world, topic, { genre }) → writeDocument → their editor or slides. Sentences come from their realiser until w.lang.en's act templates land.
+- Next: Q49 (per-value open join), the std.sample catalog option, the 18:20 reading mechanisms.

@@ -759,7 +759,7 @@ print(summarizeText('Owls hunt at night. Their eyes are large. An owl can turn i
 
 ## Compose a text from knowledge
 
-*In `compose`, `solveChoices`, `readStory`, `storyPlan`, `STORY_RELATIONS`, `interestOf`, `measuresOf`, `shapeShare`, `interestModel`; since 0.64.*
+*In `compose`, `writeDocument`, `readDocument`, `solveChoices`, `readStory`, `storyPlan`, `STORY_RELATIONS`, `interestOf`, `measuresOf`, `shapeShare`, `interestModel`; since 0.64.*
 *Works on: knowledge worlds (facts about a topic, genres, interest features).*
 
 A composition with the moves of a genre: an outline from the topic's relations across the
@@ -769,7 +769,8 @@ With the published `k.genres`, the layout follows the genre's parts, steps and r
 and its choice points are solved jointly. A story is planned from `k.story`: its elements
 are solved jointly under its constraints over the catalog. **Limits:** measures of words
 and sentences (word band, concreteness, words over the register's maximum) come from the
-host. The procedures of `k.procedures` and `w.document` as the output come next. The sentences come from
+host. A composition is written as a `w.document` live world (`writeDocument`) and read
+back in order (`readDocument`). The procedures of `k.procedures` come next. The sentences come from
 the host's realiser.
 
 ```js run

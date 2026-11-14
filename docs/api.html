@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="7c77ae4be31f">
+<meta name="source-hash" content="f87d44634d36">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.68.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.69.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -606,6 +606,20 @@ w.tell(`@g k.genres.genre name=note  @m1 k.genres.move name=open takes=topic  @m
   @owl k.animal name=owl  @a k.diet about=owl eats=mice  @b k.home about=owl lives=barn`);
 print(compose(w, &#x27;owl&#x27;, { genre: &#x27;note&#x27; }).parts.map((p) =&gt; [p.part, p.relation ?? &#x27;&#x27;, p.moves.map((m) =&gt; m.cites)]));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;head&quot;,&quot;&quot;,[&quot;owl&quot;]],[&quot;point&quot;,&quot;k.home&quot;,[&quot;b&quot;]],[&quot;point&quot;,&quot;k.diet&quot;,[&quot;a&quot;]]]</code></pre></figure>
+<h3 id="writedocumentworld-composition-options-and-readdocumentworld-id">writeDocument(world, composition, options?) and readDocument(world, id)</h3>
+<p><code>writeDocument</code> writes a composition by a genre as a <code>w.document</code> live world. The world must use the knowledge repository's <code>w.document</code> schema. Each part becomes a slide, when the genre's unit is slide, or a chapter with a paragraph. Each frame becomes a sentence with its <code>move</code> and <code>fact</code> (the ids of the wires it states). Everything is written through the acts of std.acts, so the schema's checks hold, and what was refused is listed.</p>
+<p>The text of a sentence is the frame's own <code>text</code>, else <code>realise(frame, register)</code>. With neither, it is a placeholder that says the move. Other options: <code>title</code>, <code>language</code>, <code>slides</code>, and <code>facts(frame)</code>, which by default gives the cited wire or a wire named as the story element's value. <code>readDocument</code> reads a document back in order, <code>{ title, genre, parts: [{ part, title, sentences: [{ text, move, facts }] }] }</code>, for a summary or a check.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(`@t core.type of=w.document.document  @t1 core.slot of=w.document.document key=title kind=atom kind=string
+  @c core.type of=w.document.slide  @c1 core.slot of=w.document.slide key=document kind=ref ref=w.document.document
+  @c2 core.slot of=w.document.slide key=n kind=number  @c3 core.slot of=w.document.slide key=part kind=atom kind=string
+  @s core.type of=w.document.sentence  @s1 core.slot of=w.document.sentence key=slide kind=ref ref=w.document.slide
+  @s2 core.slot of=w.document.sentence key=n kind=number  @s3 core.slot of=w.document.sentence key=text kind=atom kind=string
+  @s4 core.slot of=w.document.sentence key=fact kind=atom many=true
+  @d w.document.document title=Owls  @sl w.document.slide document=$d n=1 part=point
+  @x w.document.sentence slide=$sl n=1 text=&quot;Owls eat mice.&quot; fact=a`);
+print(readDocument(w, &#x27;d&#x27;).parts, writeDocument(w, { chapters: [] }).why);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;part&quot;:&quot;point&quot;,&quot;sentences&quot;:[{&quot;text&quot;:&quot;Owls eat mice.&quot;,&quot;facts&quot;:[&quot;a&quot;]}]}] not a composition by a genre (no parts)</code></pre></figure>
 <h3 id="readstoryworld-storyplankb-options-and-story_relations">readStory(world), storyPlan(kb, options?) and STORY_RELATIONS</h3>
 <p>Story plans from the knowledge repository's <code>k.story</code>. Each element (setting, protagonist, goal, target, obstacle, attempts, helper, means, turning point, resolution, ending) is a choice point. Its domain is the names of the facts of the types it is filled from (<code>fills</code>). The constraints (<code>element relation other</code>) are read as facts: hard ones prune, soft ones weight the draw (<code>soft</code>, default 30). <code>solveChoices</code> solves them jointly.</p>
 <ul><li>Elements the constraints link to what is already decided are decided first; the host's <code>fixed</code> choices come before everything.</li><li>An element that occurs several times (attempt, 0 to 3) is made in order, each different.</li><li><code>STORY_RELATIONS</code> says what each relation means over the catalog's facts. It is the one table that knows their shapes; a host adds to it or replaces it with <code>relations</code>.</li></ul>
@@ -891,7 +905,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.68.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.69.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

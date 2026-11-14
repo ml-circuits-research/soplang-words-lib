@@ -20,7 +20,7 @@
 
 import { parse, str, cloneWire } from './parser.mjs';
 import { abduce } from './abduce.mjs';
-import { rank, RANKING, vetoOf } from './rank.mjs';
+import { rank, RANKING, rankingOf, vetoOf } from './rank.mjs';
 import { EMPTY, walk, unify, hasVar } from './unify.mjs';
 
 const VOCABULARY = {
@@ -79,7 +79,7 @@ export const querying = {
     return this._guard(opts, () => {
       const list = [].concat(candidates || []);
       const scored = list.map((cand, index) => this._scoreOne(cand, index));
-      const { order, ranked } = rank(scored, opts.criteria || RANKING);
+      const { order, ranked } = rank(scored, opts.criteria || rankingOf(this)); // the order std.decide (kind score) declares
       scored.forEach((r, i) => Object.assign(r, { place: ranked[i].place, why: ranked[i].why }, ranked[i].on ? { lostTo: ranked[i].lostTo, on: ranked[i].on } : ranked[i].lostTo !== undefined ? { lostTo: ranked[i].lostTo } : {}));
       return { candidates: scored, order };
     }, (v) => ({ candidates: [], order: [], budget: v }));

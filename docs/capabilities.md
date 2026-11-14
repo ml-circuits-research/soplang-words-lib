@@ -878,7 +878,7 @@ them directly. Each is in [api](api.md) or [reference](reference.md) with its ex
 | `solvers`, `Problem`, `Sat`, `toDimacs`, `toASP` | search: pluggable solvers and exports for outside ones | 0.3 |
 | `abduce`, `adopt` | what would have to be true; taking one explanation | 0.4 |
 | `induce`, `induceRule`, `induceSlots` | rules and slots from examples | 0.5 |
-| `aggregates`, `rank`, `RANKING`, `veto` | aggregates; ranking readings with reasons; vetoes | 0.13 |
+| `aggregates`, `rank`, `RANKING`, `veto`, `choose`, `rankingOf` | aggregates; ranking readings with reasons; vetoes; one way to choose at every choice point (std.decide criteria as data, docs/decisions.md) | 0.13; choose 0.92 |
 | `GRAMMAR`, `MODIFIERS`, `SCHEMA_TYPES` | what each matrix wire type reads (the reference is checked against them) | 0.6 |
 | `grammarOf`, `grammarView`, `viewDiff`, `grammarCheck` | the grammar a world holds; the views of a closed class and where two differ; checks of a grammar | 0.29, 0.30, 0.58 |
 | `ledgerAppend`, `ledgerGroups`, `ledgerKey`, `stageOf`, `STAGES` | the failure ledger: rows, groups, keys, pipeline stages | 0.25 |

@@ -712,6 +712,15 @@ ${['overlaps', 'contains_box', 'box_distance'].map((f) => ['x1', 'y1', 'w1', 'h1
 @std.decide.c.rule.1 std.decide.criterion of=rule n=1 name=matches measure=misfit dir=hard
 @std.decide.c.rule.2 std.decide.criterion of=rule n=2 name=specificity measure=specificity dir=max about="more literal words"
 @std.decide.c.rule.3 std.decide.criterion of=rule n=3 name=order measure=n dir=min about="the order the language world tells"
+@std.decide.c.parse.1 std.decide.criterion of=parse n=1 name=priority measure=prio dir=max about="the grammar rule's priority"
+@std.decide.c.parse.2 std.decide.criterion of=parse n=2 name=specificity measure=lits dir=max about="more literal words"
+@std.decide.c.parse.3 std.decide.criterion of=parse n=3 name=size measure=size dir=min about="the smaller tree"
+@std.decide.c.parse.4 std.decide.criterion of=parse n=4 name=depth measure=depth dir=min
+@std.decide.c.score.1 std.decide.criterion of=score n=1 name=consistent measure=consistent dir=hard about="the order world.score ranks readings in (RANKING)"
+@std.decide.c.score.2 std.decide.criterion of=score n=2 name=referents measure=referents dir=min
+@std.decide.c.score.3 std.decide.criterion of=score n=3 name=lacks measure=lacks dir=min
+@std.decide.c.score.4 std.decide.criterion of=score n=4 name=words measure=words dir=min
+@std.decide.c.score.5 std.decide.criterion of=score n=5 name=assumes measure=assumes dir=min
 @std.decide.c.fact.1 std.decide.criterion of=fact n=1 name=unsaid measure=said dir=hard
 @std.decide.c.fact.2 std.decide.criterion of=fact n=2 name=interest measure=interest dir=max about="k.interest"
 `,

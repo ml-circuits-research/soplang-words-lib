@@ -104,7 +104,8 @@ export function veto(result, options) { return vetoOf(result, options); }
  * One way to choose (reviewer 01:00): candidates of a choice point decided by the criteria declared for its
  * kind (`std.decide.criterion of=<kind> n= name= measure= dir=hard|min|max`, from the world, or `criteria`
  * given). Each criterion reads a field of the candidate (`measure`; a missing field counts as 0): `hard`
- * loses on anything but 0 / false, `min` and `max` compare. Ties end in a seeded order. Returns { best,
+ * loses on anything but 0 / false, `min` and `max` compare. Ties end in a seeded order (`seed: null`: the
+ * given order). Returns { best,
  * order, ranked: [{ index, place, lostTo?, on?, why }], criteria } — every loss explained by the criterion it
  * lost on.
  */
@@ -117,7 +118,7 @@ export function choose(world, kind, candidates, { criteria, seed = 1 } = {}) {
   let x = seed >>> 0; const tie = candidates.map(() => { x = (x * 1103515245 + 12345) >>> 0; return x; });
   const val = (c, m) => { const v = typeof m === 'function' ? m(c) : c?.[m]; return v === true ? 1 : v === false || v === undefined || v === null ? 0 : Array.isArray(v) ? v.length : Number(v) || 0; };
   const crit = [...C.map((c) => ({ name: c.name, measure: (r) => { const v = val(r, c.measure); return c.dir === 'max' ? -v : c.dir === 'hard' ? (v ? 1 : 0) : v; }, say: (r) => `${c.name} ${val(r, c.measure)}` })),
-    { name: 'seed', measure: (r) => tie[candidates.indexOf(r)], say: () => 'seeded order' }];
+    ...(seed === null ? [] : [{ name: 'seed', measure: (r) => tie[r.index], say: () => 'seeded order' }])]; // seed null: ties keep the given order
   const r = rank(candidates.map((c, i) => Object.assign(Object.create(null), c, { index: i })), crit);
   const indexOf = (o) => o; // rank keeps the given index
   return { best: candidates[indexOf(r.order[0])] ?? null, order: r.order.map((i) => candidates[i]), ranked: r.ranked, criteria: C };
@@ -131,3 +132,16 @@ function defaultCriteria() {
   return STD_CRITERIA; // filled by setStdCriteria from std.mjs (no import cycle)
 }
 export function setStdCriteria(attrsList) { STD_CRITERIA = attrsList; }
+
+/**
+ * The criteria world.score ranks readings by, in the order std.decide (kind `score`) or the world declares:
+ * the measures stay RANKING's (they read a reading's structure), the order and the choice are data.
+ */
+export function rankingOf(world) {
+  const q = (v) => String(v).replace(/^"|"$/g, '');
+  const own = (world?.ofType?.('std.decide.criterion') ?? []).map((c) => c.attrs).filter((a) => q(a.of[0]) === 'score');
+  const facts = own.length ? own : defaultCriteria().filter((a) => q(a.of[0]) === 'score');
+  const names = facts.map((a) => [Number(q(a.n[0])), q(a.name[0])]).sort((x, y) => x[0] - y[0]).map(([, n]) => n);
+  const picked = names.map((n) => RANKING.find((c) => c.name === n)).filter(Boolean);
+  return picked.length ? picked : RANKING;
+}

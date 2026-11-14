@@ -2166,7 +2166,7 @@ print(t.status, t.loaded.map((n) => n.type));
 done ["k.furniture"]
 ```
 
-### choose(world, kind, candidates, options?)
+### choose(world, kind, candidates, options?) and rankingOf(world)
 
 One way to choose (reviewer 01:00). The candidates of a choice point are ordered by the
 criteria declared for its kind, as data: `std.decide.criterion of=<kind> n= name= measure=
@@ -2174,8 +2174,10 @@ dir=hard|min|max`, from the world, else std.decide's own facts. A criterion read
 the candidate (`measure`; missing counts as 0): `hard` loses on anything but 0, while `min`
 and `max` compare. Ties end in a seeded order. The result is `{ best, order, ranked,
 criteria }`, where each loser carries `lostTo`, `on` and `why`. The kinds std.decide
-declares are `reading`, `template`, `word`, `rule` and `fact`, and `criteria` gives a list
-directly. The map of all choice points is in docs/decisions.md.
+declares are `reading`, `template`, `word`, `rule`, `fact`, `parse` and `score`, and
+`criteria` gives a list directly. `seed: null` keeps the given order on ties.
+`rankingOf(world)` gives `RANKING`'s measures in the order of kind `score`, which
+`world.score` uses. The map of all choice points is in docs/decisions.md.
 
 ```js run
 const r = choose(null, 'word', [{ word: 'kin', cost: 2 }, { word: 'sound', cost: 1 }, { word: 'nose', cost: 1, misfit: true }]);

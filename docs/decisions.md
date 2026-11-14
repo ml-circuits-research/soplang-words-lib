@@ -31,14 +31,14 @@ tuned in code.
 
 | Choice point | Candidates | Decided by | Status |
 | --- | --- | --- | --- |
-| A reading of a message (`world.score`, `rank`) | readings | `RANKING`: consistent, referents settled, lacks, every word used, fewest assumptions | the same order as `std.decide` kind `reading`; to read its criteria from data |
+| A reading of a message (`world.score`, `rank`) | readings | `RANKING`'s measures in the order std.decide declares (kind `score`: consistent, referents, lacks, words, assumes; `rankingOf(world)`) | **order from data (0.94)**; the measures read a reading's structure |
 | A value of a key | values by tier | tiers: told > derived > forced > default > guessed | data (tiers are declared) |
 | The world that takes a request (`arbitrate`) | worlds | own / decline / refuse, then the world's rank | own method; to move to kind `world` |
 | A template of a sentence (`discourseRealiser`) | templates of the move and register whose slots fill | **`choose`**, kind `template`: fills, fresh, specificity, prior, seed | **done (0.92)** |
 | A near word (`readByTypes` `near`) | words through k.words senses | **`choose`**, kind `word`: fits, cost, prior | **done (0.92)** |
 | A frame of a question (`readByTypes`) | ask / find / act frames | **`choose`**, kind `reading`: words left unread, the cost of near words, specificity, the score as prior | **done (0.93)** |
 | An alternation rule (`normalise`) | rules that match | **`choose`**, kind `rule`: matches, specificity (literal words), then the order told (`n`); `byRule: 'order'` keeps the order alone | **done (0.93)**; 35/35 published cases unchanged |
-| A grammar parse (`parseText`) | parses | rule `priority`, then literal count, then size | to move to kind `reading` |
+| A grammar parse (`parseText`) | parses | **`choose`**, kind `parse`: priority, literal words, size, depth; ties keep a stable order | **done (0.94)** |
 | A fact for a move (`compose`) | facts about the topic | **`choose`**, kind `fact`: unsaid, interest (k.interest) | **done (0.93)** |
 | A choice point of a procedure (`std.plan`, `solveChoices`) | assignments | hard matches prune, soft matches weight a seeded draw | a weighted draw by design (variety), within hard constraints |
 | A frame to sample (`sample`) | legal frames | novelty weights, seeded | a weighted draw by design (variety) |

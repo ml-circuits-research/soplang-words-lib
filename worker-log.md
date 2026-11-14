@@ -5063,3 +5063,10 @@ Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-que
 - docs/decisions.md is updated.
   - Still to move: parseText parses, arbitrate, RANKING read from data, calibration on the corpus.
 - Gates: npm test 471 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+
+## 0.94.0: score order and parses from data
+
+- `world.score` ranks readings by RANKING's measures in the order of std.decide kind score (`rankingOf`); a world may declare another order.
+- parseText orders parses through `choose` (kind parse: priority, literal words, size, depth; seed null keeps a stable order on ties).
+- docs/decisions.md is updated. Still not through choose: arbitrate (worlds), and calibration of tie-breaks on the corpus.
+- Gates: npm test 471 pass, 0 fail; pilot identical (the parse and reading orders are unchanged on the pilot); psys2=0; scan clean; tsc ok.

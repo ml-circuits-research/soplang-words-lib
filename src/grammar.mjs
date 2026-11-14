@@ -1,3 +1,4 @@
+import { choose } from './rank.mjs';
 import { normalise } from './alternate.mjs';
 // std.grammar (Round 26 B, smallest version): language-free machinery that applies a
 // grammar world to text. The world holds the language as facts — `g.word text= lemma= cat=`
@@ -133,9 +134,10 @@ export function parseText(world, text, { start = 'S', max = 8, budget = 20000, a
   const literal = new Set([...g.rules.values()].flat(2).filter((x) => x.startsWith('=')).flatMap((x) => x.replace(/\+$/, '').slice(1).split('|')));
   const unknown = tok.map((word, at) => ({ word, at })).filter(({ word }) => !g.lex.has(word) && !literal.has(word) && !g.coord.has(word) && !(g.digits && /^\d+$/.test(word)));
   const parses = full.filter((p) => { const k = JSON.stringify(p.tree); if (seen.has(k)) return false; seen.add(k); return true; })
-    .sort((a, b) => b.prio - a.prio || b.lits - a.lits || a.size - b.size || a.depth - b.depth || JSON.stringify(a.tree).localeCompare(JSON.stringify(b.tree))).slice(0, max).map(({ depth, prio: _p, lits: _l, ...p }) => p);
+    .sort((a, b) => JSON.stringify(a.tree).localeCompare(JSON.stringify(b.tree))); // a stable order first, so ties keep it
+  const chosen = choose(world, 'parse', parses, { seed: null }).order.slice(0, max).map(({ depth, prio: _p, lits: _l, ...p }) => p); // one way to choose (std.decide, kind parse): priority, literal words, size, depth
   // no noun is owned: a word the lexicon does not have is reported, not judged
-  return Object.assign(parses, { tokens: tok, ...(unknown.length ? { unknown } : {}), ...(over ? { truncated: true, steps } : {}), ...(applied ? { applied, normalised: text } : {}), ...(mode ? { mode } : {}) });
+  return Object.assign(chosen, { tokens: tok, ...(unknown.length ? { unknown } : {}), ...(over ? { truncated: true, steps } : {}), ...(applied ? { applied, normalised: text } : {}), ...(mode ? { mode } : {}) });
 }
 
 /** A noun phrase node read as roles: { det, num, mods, head, lemma, span, pp? } (categories named by the grammar: `cats`). */

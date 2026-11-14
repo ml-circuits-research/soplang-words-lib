@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.94.0
+
+### Changed
+- `world.score` ranks readings by `RANKING`'s measures in the order std.decide declares
+  (kind `score`), or the world does (`rankingOf(world)`).
+- `parseText` orders parses through `choose` (kind `parse`: priority, literal words, size,
+  depth); ties keep a stable order.
+- `choose(..., { seed: null })` keeps the given order on ties.
+
 ## 0.93.0
 
 Three more choice points through `choose` (docs/decisions.md).

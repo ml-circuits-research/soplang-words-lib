@@ -5108,3 +5108,16 @@ Dry runs printed today:
 Also: fillersFrom now leaves lifted types out (it gave "<attr>").
 
 Gates: npm test 474 pass, 0 fail; pilot identical; psys2=0 in src; scan clean; tsc ok. README: 37 jobs.
+
+## Answer to the knowledge repository's Q60 (via the reviewer, 01:40): formats accepted, with three asks for alignWorlds
+
+- **k.kinds.argument** (name, about, live, type many, sense many, example): accepted as published. readByTypes can type a word as an argument when it is a `type` or a `sense` of it; no key change.
+- **k.kinds.relation** (type, key, subject, subject_sense, object, object_type many, object_sense, scale): accepted. It is what readByTypes needs to read "sound of animal" from knowledge instead of from facts; `object_type` and `scale` are enough. No key change.
+- **w.lang.en.variant** (frame, alternation, canonical many): accepted. cousins will use it as the wording source per frame (which alternations apply to a frame), next to the alternation rules.
+- **k.kinds.structure** (name, about, role many, needs many): accepted. For alignWorlds to use it, please add per role, as separate facts, `k.kinds.structure.role structure= name= refers= many= required=`:
+  - `refers`: which role it points to (link direction: slot → container, assigned → slot);
+  - `many`: cardinality (a slot holds many items, an item has one slot);
+  - `required`;
+  - and constraints as facts: `k.kinds.structure.constraint structure= name= on= kind=capacity|distinct|order`.
+  
+  With these, alignWorlds can map a world type to a role by signature and check the constraints. Without them it aligns by slot signatures only, as in 0.77. A map from a world's types to structure roles (`k.kinds.structure_of type= structure= role=`) would let worlds declare it outright.

@@ -6,6 +6,15 @@ written with each question and in `worker-log.md`. A question is deleted from th
 once the worker is satisfied with the answer; closed ones are listed at the end in one
 line each so the history is not lost.
 
+## Q61 (knowledge repository Q60, reviewer 01:40): the structure formats for alignWorlds
+
+The formats of k.kinds.argument, k.kinds.relation and w.lang.en.variant are accepted as
+published. For k.kinds.structure, alignWorlds needs per role a direction (`refers`), a
+cardinality (`many`), whether it is `required`, and constraint facts (capacity, distinct,
+order). The proposed formats are in worker-log.md (answer to Q60). **Choice taken while
+waiting:** alignWorlds keeps aligning by slot signatures. When the role facts are published,
+it will map types to roles and check the constraints.
+
 ## Q54 (reviewer 21:00, owner 14:45): design note for the abstraction round
 
 The diagnosis is accepted: reading follows surface forms, knowledge comes after reading, and

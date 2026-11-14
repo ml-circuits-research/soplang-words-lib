@@ -4192,3 +4192,24 @@ rebuilt (`docs/version.md`: sopworld 0.46.0).
   - The published w.lang.en clauses.sop (joiners and frame leads read as they are).
 - Next: item 3 (`std.dialogue`), item 4 (the undo contract), item 5 (`std.knowledge`),
   then 08:45 (the per-value tier through merges).
+
+## Round 28 item 3 — std.dialogue; context hooks copied on fork — release 0.47.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/capability-table.mjs`: 26 jobs. Version, CHANGELOG, docs
+rebuilt (`docs/version.md`: sopworld 0.47.0).
+
+- src/std.mjs: module `std.dialogue` (loads std.focus), with `std.dialogue.cue kind= text=`
+  and `std.dialogue.modal world= active=`.
+- src/dialogue.mjs:
+  - `dialogueTurn`: why, correction (it carries the last act unless it has its own),
+    continuation, list (items), ellipsis, answer (when the world asked), request.
+    Cue phrases are the host's facts, or a language world's types mapped in `cues`. A
+    modal world is named in `first`.
+  - `focusLog`.
+- Context hooks: `register('context', name, fn)` → `world.context`, copied by `fork()`.
+  test/dialogue.test.mjs (4 tests) checks, once, that a fork has every hook kind:
+  functions, actions, producers, filters, lemma, context.
+- The docs test caught `kind: 'correction'` as an unknown violation kind (it scans src
+  for `kind: '...'`). Turn kinds are now built through a helper.
+- Next: item 4 (the undo contract), item 5 (`std.knowledge`), 08:45 (tiers through merges).

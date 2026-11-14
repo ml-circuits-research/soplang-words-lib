@@ -534,3 +534,7 @@ export function arbitrate(world: World, request: { action: string; args?: Record
 export function segment(world: World, text: string, options?: { types?: { joiner?: string; frameLead?: string }; acts?: string[] }): { text: string; from: number; to: number; joiner?: string }[];
 /** The words that start an act: action names, core.word texts that mean one, and extra. */
 export function actWords(world: World, extra?: string[]): Set<string>;
+/** The kind of one turn (why, correction, continuation, list, ellipsis, answer, request). */
+export function dialogueTurn(world: World, text: string, options?: { cues?: Record<string, string>; acts?: string[]; last?: { action: string; args?: Record<string, unknown> }; asked?: boolean }): { kind: 'why' | 'correction' | 'continuation' | 'list' | 'ellipsis' | 'answer' | 'request'; rest: string; cue?: string; act?: string; items?: string[]; first?: string };
+/** What each turn of a dialogue mentions, in order. */
+export function focusLog(world: World, dialogue?: string): { turn: string; in?: string; pos: number; mentions: { kind: string; value: string }[] }[];

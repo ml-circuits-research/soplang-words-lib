@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.47.0
+
+Round 28 item 3: `std.dialogue`.
+
+### New
+- `core.use world=std.dialogue`: the host's cue phrases (`std.dialogue.cue kind= text=`)
+  and modal worlds (`std.dialogue.modal world= active=`).
+- `dialogueTurn(world, text, { cues, acts, last, asked })` gives the kind of one turn:
+  why, correction, continuation, list, ellipsis, answer or request. It names the act it
+  carries over, the text after the cue, and the modal world that sees the turn first.
+- `focusLog(world, dialogue)`: what each turn mentions, in order.
+- `register('context', name, fn)`: the host's context hooks (session facts, ...). They
+  are copied on fork, and one test covers every hook kind a fork must copy.
+
 ## 0.46.0
 
 Round 28 item 2: one segmenter that knows the act forms.

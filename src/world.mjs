@@ -83,6 +83,7 @@ export class World {
     this._external = new Map(); // id -> wire, of the facts providers returned (a cache: they are pure)
     this._version = ++VERSIONS; // see version
     this._nsUsed = false; // some fact is in a namespace: matches and identity stay inside one
+    this.context = {}; // the host's context hooks (register('context', name, fn)): read by its actions as ctx.world.context; copied on fork
     this.filters = {}; // how a reason writes a value: ?n:ordinal calls filters.ordinal(n); none built in, so no language is
     this.lemma = null; // fn(token): the dictionary forms of a token, for interpret; none built in
     for (const [name, fn] of Object.entries(filters)) this.register('filter', name, fn);
@@ -209,6 +210,7 @@ export class World {
     else if (kind === 'producer') this.producers[name] = fn;
     else if (kind === 'filter') this.filters[name] = fn;
     else if (kind === 'lemma') this.lemma = fn; // a name, if given, is not used
+    else if (kind === 'context') { this.context[name] = fn; return this; } // a host hook (session facts, ...): no matrix names it
     else throw new Error(`sopworld: unknown kind of function "${kind}"`);
     this._c = null; // a matrix that names it compiles now
     this._completed = null; // and what complete() found may change

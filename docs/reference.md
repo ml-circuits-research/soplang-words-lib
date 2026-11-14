@@ -1568,6 +1568,8 @@ a mention for each key a request names, a need (std.fill) for each key it leaves
 | `std.focus.mention` | `of` (the request), `kind`, `value` | the host, from what a request names |
 | `std.focus.state` | `turn`, `kind`, `value` | std.focus: the focus after each turn |
 | `std.focus.last` | `kind`; the state `value` | std.focus: the focus now, for `thing`, `action`, `place`, `world`; a host adds a kind with one wire |
+| `std.dialogue.cue` | `kind` (`why`, `correction`, `continuation`, `answer`), `text` (rep.) | std.dialogue: a cue phrase the host names; `dialogueTurn` reads it |
+| `std.dialogue.modal` | `world`, `active` (default true) | std.dialogue: this world sees a turn first while active |
 
 **Meaning.** The focus after a turn is, for each kind, what the turn mentions, else the
 focus after the turn before. A std.fill need of a request for a key gets the focus of

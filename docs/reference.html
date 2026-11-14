@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="33fa5169439e">
+<meta name="source-hash" content="598d3e1dc7a0">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.46.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.47.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html" aria-current="page">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -620,7 +620,7 @@ print(need.attrs.value, need.attrs.tier, need.attrs.source);</code></pre></figur
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;table&quot;] [&quot;knowledge&quot;] [&quot;usual&quot;]</code></pre></figure>
 <h2 id="stdfocus-what-a-dialogue-is-about">std.focus: what a dialogue is about</h2>
 <p>A module of the standard pack written in rules only (<code>core.use world=std.focus</code>; it loads std.fill). The host writes three things, each one rule: a turn for every request, a mention for each key a request names, a need (std.fill) for each key it leaves out.</p>
-<div class="table"><table><thead><tr><th>Type</th><th>Keys</th><th>Who writes it</th></tr></thead><tbody><tr><td><code>std.focus.turn</code></td><td><code>of</code> (the request), <code>in</code> (the dialogue); then <code>pos</code>, <code>prev</code></td><td>the host; std.focus numbers the turns of a dialogue in arrival order</td></tr><tr><td><code>std.focus.mention</code></td><td><code>of</code> (the request), <code>kind</code>, <code>value</code></td><td>the host, from what a request names</td></tr><tr><td><code>std.focus.state</code></td><td><code>turn</code>, <code>kind</code>, <code>value</code></td><td>std.focus: the focus after each turn</td></tr><tr><td><code>std.focus.last</code></td><td><code>kind</code>; the state <code>value</code></td><td>std.focus: the focus now, for <code>thing</code>, <code>action</code>, <code>place</code>, <code>world</code>; a host adds a kind with one wire</td></tr></tbody></table></div>
+<div class="table"><table><thead><tr><th>Type</th><th>Keys</th><th>Who writes it</th></tr></thead><tbody><tr><td><code>std.focus.turn</code></td><td><code>of</code> (the request), <code>in</code> (the dialogue); then <code>pos</code>, <code>prev</code></td><td>the host; std.focus numbers the turns of a dialogue in arrival order</td></tr><tr><td><code>std.focus.mention</code></td><td><code>of</code> (the request), <code>kind</code>, <code>value</code></td><td>the host, from what a request names</td></tr><tr><td><code>std.focus.state</code></td><td><code>turn</code>, <code>kind</code>, <code>value</code></td><td>std.focus: the focus after each turn</td></tr><tr><td><code>std.focus.last</code></td><td><code>kind</code>; the state <code>value</code></td><td>std.focus: the focus now, for <code>thing</code>, <code>action</code>, <code>place</code>, <code>world</code>; a host adds a kind with one wire</td></tr><tr><td><code>std.dialogue.cue</code></td><td><code>kind</code> (<code>why</code>, <code>correction</code>, <code>continuation</code>, <code>answer</code>), <code>text</code> (rep.)</td><td>std.dialogue: a cue phrase the host names; <code>dialogueTurn</code> reads it</td></tr><tr><td><code>std.dialogue.modal</code></td><td><code>world</code>, <code>active</code> (default true)</td><td>std.dialogue: this world sees a turn first while active</td></tr></tbody></table></div>
 <p><strong>Meaning.</strong> The focus after a turn is, for each kind, what the turn mentions, else the focus after the turn before. A std.fill need of a request for a key gets the focus of that kind after the turn before, as an offer of tier <code>focus</code>: "a red one" after "draw a cup" is a drawing of a cup, and it stays one when a later turn moves on. A turn taken back (retract, undo) gives the earlier focus again. A mention is what a request says, not what it was completed with (a value chosen through std.fill is not a mention: the rules would read their own conclusions through a negation). Dialogues with different <code>in</code> keep separate focus. <code>examples/focus.mjs</code> runs "draw a cup on the table", "a red one", "move it right", "and lower".</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@u core.use world=std.focus
@@ -723,7 +723,7 @@ print(builtins.time_add([&#x27;10:40&#x27;, &#x27;35min&#x27;]), builtins.div([&
 11:15 3 true tuesday</code></pre></figure>
 <p class="source">Generated from <code>docs/reference.md</code>.</p>
 </main>
-<footer>sopworld 0.46.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.47.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

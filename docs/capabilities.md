@@ -200,12 +200,14 @@ print(n.attrs.value, n.attrs.tier);
 
 ## Keep focus in a dialogue
 
-*In `std.focus`; since 0.17.*
+*In `std.focus`, `std.dialogue`; since 0.17.*
 *Works on: a live world.*
 
 `std.focus` keeps what a dialogue is about after each turn (thing, action, place, world);
 a request that leaves out its thing or action is completed from the turn before, and
-earlier turns keep theirs. **Limits:** a value chosen by std.fill is not a
+earlier turns keep theirs. `std.dialogue` (0.47) gives each turn its kind (why, correction, continuation, list,
+ellipsis, answer, request) from the host's cue phrases, with `dialogueTurn` and `focusLog`.
+**Limits:** a value chosen by std.fill is not a
 mention.
 
 ```js run

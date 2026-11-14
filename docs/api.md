@@ -1261,6 +1261,33 @@ print(segment(w, 'add a box and connect it to the shelf').map((c) => c.text), se
 ["add a box","connect it to the shelf"] 1
 ```
 
+### dialogueTurn(world, text, options?) and focusLog(world, dialogue?)
+
+The kind of one turn, from the cue phrases the host names (`std.dialogue.cue kind= text=`,
+with `core.use world=std.dialogue`, or a language world's facts mapped by type in
+`options.cues`) and from the world's act words:
+- `why`, `correction` (it replaces the last act), `continuation`;
+- `list` (several things and no act), `ellipsis` (a thing and no act);
+- `answer` (a reply, when `options.asked`), `request`.
+
+`act` is the action carried over from `options.last`, and `rest` is the text after the cue.
+A world declared modal and active (`std.dialogue.modal world= active=true`) is named in
+`first`: it sees the turn before the others. `focusLog` lists what each turn of a dialogue
+mentions, in order (std.focus wires). Every context hook a host registers
+(`register('context', ...)`) is copied on fork, so a dry run sees what the real run sees.
+
+```js run
+const w = new World();
+w.load(`@acts core.use world=std.acts  @d core.use world=std.dialogue
+  @c std.dialogue.cue kind=correction text="no wait"`);
+const last = { action: 'make', args: { kind: 'circle' } };
+print(dialogueTurn(w, 'no wait, a blue one', { last }), dialogueTurn(w, 'a square, a star', { last }).kind);
+```
+
+```output
+{"kind":"correction","rest":"a blue one","cue":"no wait","act":"make"} list
+```
+
 ### arbitrate(world, request, options?)
 
 The arbitration contract: one verdict per declared world for one request. `own`: the
@@ -1650,7 +1677,8 @@ Adds a host function after the world was made. Declare it in the matrix too
 registered function with no declaration still works, with an `undeclared-function` note. `kind` is `function` (`(args, world)
 => value`, for calcs, checks and effects), `action` (`(context, args) => value`),
 `producer` (`(context) => value`), `filter` (`(value, { world, name }) => text`, for
-`?v:name` in a reason) or `lemma`, given as `register('lemma', fn)` with no name (`(token) => form | forms`:
+`?v:name` in a reason), `context` (a host hook such as the session's facts, read by the
+host's actions as `ctx.world.context.<name>`; no matrix names it) or `lemma`, given as `register('lemma', fn)` with no name (`(token) => form | forms`:
 the dictionary forms of a token that is not a known word, for `interpret`; it must be
 pure and know nothing of the world). A `function` with the name of a built-in throws
 unless `{ override: true }`. Returns the world.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="3b49c80ab641">
+<meta name="source-hash" content="3606e962a561">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.46.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.47.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -473,6 +473,16 @@ w.load(`@acts core.use world=std.acts  @j g.joiner text=and cut=yes card_cut=yes
   @v core.word text=add means=make`);
 print(segment(w, &#x27;add a box and connect it to the shelf&#x27;).map((c) =&gt; c.text), segment(w, &#x27;make a cup, a plate and a bowl&#x27;).length);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;add a box&quot;,&quot;connect it to the shelf&quot;] 1</code></pre></figure>
+<h3 id="dialogueturnworld-text-options-and-focuslogworld-dialogue">dialogueTurn(world, text, options?) and focusLog(world, dialogue?)</h3>
+<p>The kind of one turn, from the cue phrases the host names (<code>std.dialogue.cue kind= text=</code>, with <code>core.use world=std.dialogue</code>, or a language world's facts mapped by type in <code>options.cues</code>) and from the world's act words:</p>
+<ul><li><code>why</code>, <code>correction</code> (it replaces the last act), <code>continuation</code>;</li><li><code>list</code> (several things and no act), <code>ellipsis</code> (a thing and no act);</li><li><code>answer</code> (a reply, when <code>options.asked</code>), <code>request</code>.</li></ul>
+<p><code>act</code> is the action carried over from <code>options.last</code>, and <code>rest</code> is the text after the cue. A world declared modal and active (<code>std.dialogue.modal world= active=true</code>) is named in <code>first</code>: it sees the turn before the others. <code>focusLog</code> lists what each turn of a dialogue mentions, in order (std.focus wires). Every context hook a host registers (<code>register('context', ...)</code>) is copied on fork, so a dry run sees what the real run sees.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@acts core.use world=std.acts  @d core.use world=std.dialogue
+  @c std.dialogue.cue kind=correction text=&quot;no wait&quot;`);
+const last = { action: &#x27;make&#x27;, args: { kind: &#x27;circle&#x27; } };
+print(dialogueTurn(w, &#x27;no wait, a blue one&#x27;, { last }), dialogueTurn(w, &#x27;a square, a star&#x27;, { last }).kind);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;kind&quot;:&quot;correction&quot;,&quot;rest&quot;:&quot;a blue one&quot;,&quot;cue&quot;:&quot;no wait&quot;,&quot;act&quot;:&quot;make&quot;} list</code></pre></figure>
 <h3 id="arbitrateworld-request-options">arbitrate(world, request, options?)</h3>
 <p>The arbitration contract: one verdict per declared world for one request. <code>own</code>: the world has the kind (or the thing, or a view whose state has the attribute), allows the act, and its dry run takes it. <code>decline</code>: it has no use for the kind, so it declines the verb; this rule is the library's, not the host's. <code>refuse</code>: it has the kind, but the act is not allowed or the dry run refuses. A refusal is given only in the <code>exact</code> pass; in a <code>spelling</code> or <code>view</code> pass (<code>options.pass</code>) it stays a decline. When several worlds own, <code>options.resolves(world, words)</code> (a host hook, with <code>options.words</code>) keeps the ones whose things hold the words. Returns <code>{ verdicts: [{ world, verdict, why }], owner, ambiguous?, pass }</code>.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
@@ -630,7 +640,7 @@ w.tell(&#x27;@pen item name=pen price=2&#x27;);
 print(w.toSOP(), Object.keys(w.toJSON()));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>@pen item name=pen price=2 [&quot;format&quot;,&quot;version&quot;,&quot;log&quot;]</code></pre></figure>
 <h3 id="worldregisterkind-name-fn-options">world.register(kind, name, fn, options?)</h3>
-<p>Adds a host function after the world was made. Declare it in the matrix too (<code>core.function</code>, see the <a href="reference.html#corefunction">reference</a>): a registered function with no declaration still works, with an <code>undeclared-function</code> note. <code>kind</code> is <code>function</code> (<code>(args, world) =&gt; value</code>, for calcs, checks and effects), <code>action</code> (<code>(context, args) =&gt; value</code>), <code>producer</code> (<code>(context) =&gt; value</code>), <code>filter</code> (<code>(value, { world, name }) =&gt; text</code>, for <code>?v:name</code> in a reason) or <code>lemma</code>, given as <code>register('lemma', fn)</code> with no name (<code>(token) =&gt; form | forms</code>: the dictionary forms of a token that is not a known word, for <code>interpret</code>; it must be pure and know nothing of the world). A <code>function</code> with the name of a built-in throws unless <code>{ override: true }</code>. Returns the world.</p>
+<p>Adds a host function after the world was made. Declare it in the matrix too (<code>core.function</code>, see the <a href="reference.html#corefunction">reference</a>): a registered function with no declaration still works, with an <code>undeclared-function</code> note. <code>kind</code> is <code>function</code> (<code>(args, world) =&gt; value</code>, for calcs, checks and effects), <code>action</code> (<code>(context, args) =&gt; value</code>), <code>producer</code> (<code>(context) =&gt; value</code>), <code>filter</code> (<code>(value, { world, name }) =&gt; text</code>, for <code>?v:name</code> in a reason), <code>context</code> (a host hook such as the session's facts, read by the host's actions as <code>ctx.world.context.&lt;name&gt;</code>; no matrix names it) or <code>lemma</code>, given as <code>register('lemma', fn)</code> with no name (<code>(token) =&gt; form | forms</code>: the dictionary forms of a token that is not a known word, for <code>interpret</code>; it must be pure and know nothing of the world). A <code>function</code> with the name of a built-in throws unless <code>{ override: true }</code>. Returns the world.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.register(&#x27;function&#x27;, &#x27;half&#x27;, ([x]) =&gt; Number(x) / 2);
 try { w.register(&#x27;function&#x27;, &#x27;add&#x27;, () =&gt; 0); } catch (e) { print(e.message.slice(0, 60)); }
@@ -739,7 +749,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.46.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.47.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

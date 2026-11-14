@@ -659,6 +659,20 @@ ${['overlaps', 'contains_box', 'box_distance'].map((f) => ['x1', 'y1', 'w1', 'h1
   // a need of a request for a key gets the focus of that kind after the turn before it, in
   // tier `focus`; what a need is filled with is a mention of its request too, so a dialogue
   // keeps its thing over several turns. `std.focus.last kind=` holds the focus now.
+  // Round 28 item 3: the dialogue. The host names its cue phrases (std.dialogue.cue kind=
+  // text=: why, correction, continuation; or a language world's facts, mapped by type), a
+  // world that must see a turn first declares it (std.dialogue.modal world= active=), and
+  // `dialogueTurn` (JS) gives each message its kind; std.focus keeps the focus log.
+  'std.dialogue': {
+    text: String.raw`
+@focus core.use world=std.focus
+@k.cue.kind core.slot of=std.dialogue.cue key=kind required=true enum=why enum=correction enum=continuation enum=answer
+@k.cue.text core.slot of=std.dialogue.cue key=text required=true many=true
+@k.modal.world core.slot of=std.dialogue.modal key=world id=true required=true
+@k.modal.active core.slot of=std.dialogue.modal key=active kind=boolean default=true
+`,
+    fns: {},
+  },
   'std.focus': {
     text: String.raw`
 @fill core.use world=std.fill

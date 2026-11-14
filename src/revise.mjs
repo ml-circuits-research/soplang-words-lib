@@ -341,6 +341,7 @@ export const revision = {
     // the host functions too: those registered later and those a standard module brought
     copy.fns = { ...this.fns }; copy.actions = { ...this.actions }; copy.producers = { ...this.producers };
     if (this.filters) copy.filters = { ...this.filters };
+    copy.context = { ...(this.context || {}) }; // every context hook: a dry run sees what the real run sees
     if (this.lemma) copy.lemma = this.lemma;
     copy._shared = share;
     copy._emitted = copy.events.length;

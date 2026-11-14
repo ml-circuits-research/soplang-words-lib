@@ -6,6 +6,7 @@
 // a parent), and so on.
 
 import { readByTypes, nearWords } from './readtypes.mjs';
+import { realiseFrame, variantsOf } from './say.mjs';
 
 const bare = (v) => String(v).replace(/^"|"$/g, '').replace(/^\$/, '');
 const UP = ['kind', 'class', 'is', 'is_a'];
@@ -70,9 +71,12 @@ export function ancestorsOf(world, id, { depth = 3, edges } = {}) {
  * The cousins of a case `{ frame, text? }` (a frame of readByTypes: ask / find / act). Options:
  * `degree` (the highest, default 2), `dims` (['filler', 'key']), `known` (frames or texts already
  * cases), `read` (options for readByTypes), `n` (at most, per degree), `seed`.
+ * A case with `langFrame` (the language world's frame it was said in) and `roles` also gets the
+ * rewordings the language world declares (`w.lang.en.variant`), each realised by realiseFrame with
+ * those roles, as `variant:<alternation>` cousins.
  * Returns [{ frame, text?, degree, dims, valid, why? }], valid ones first.
  */
-export function cousins(world, kase, { degree = 2, dims = ['filler', 'key', 'wording'], known = [], read = {}, n = 50, seed = 1, edges, alternations, operators, senses } = {}) {
+export function cousins(world, kase, { degree = 2, dims = ['filler', 'key', 'wording'], known = [], read = {}, n = 50, seed = 1, edges, alternations, operators, senses, variants, lang = 'w.lang.en' } = {}) {
   const f = kase.frame, out = [];
   const knownSet = new Set(known.map((k) => (typeof k === 'string' ? k : JSON.stringify(k))));
   const answerOf = (holderId, key) => (world.get(holderId)?.attrs[key] || []).map(bare);
@@ -119,6 +123,20 @@ export function cousins(world, kase, { degree = 2, dims = ['filler', 'key', 'wor
       const text = [...toks.slice(0, i), nw.word, ...toks.slice(i + 1)].join(' ');
       if (seen.has(text)) continue; seen.add(text);
       out.push({ frame: { ...f }, text, degree: 1, dims: ['form:synonym'], via: `${toks[i]} → ${nw.word}` });
+    }
+  }
+  if (dims.includes('wording') && kase.langFrame && kase.roles) { // the language world's rewordings of the case's frame (w.lang.en.variant): realised with the case's roles
+    const V = variants ?? variantsOf(world, { lang });
+    const mine = V.get(kase.langFrame);
+    const related = [...V].filter(([, v]) => v.canonical.includes(kase.langFrame)).map(([fr, v]) => [fr, v.alternation])
+      .concat((mine?.canonical || []).map((fr) => [fr, mine.alternation]))
+      .concat(mine ? [...V].filter(([fr, v]) => fr !== kase.langFrame && v.canonical.some((c) => mine.canonical.includes(c))).map(([fr, v]) => [fr, v.alternation]) : []);
+    const seen = new Set([String(kase.text ?? '').toLowerCase()]);
+    for (const [fr, alt] of related) {
+      const text = realiseFrame(world, fr, kase.roles, { lang });
+      if (!text || seen.has(text.toLowerCase())) continue;
+      seen.add(text.toLowerCase());
+      out.push({ frame: { ...f }, text, degree: 1, dims: [`variant:${alt}`], via: fr });
     }
   }
   for (const c of out) { // valid: legal (an answer), read back to the same frame, not known

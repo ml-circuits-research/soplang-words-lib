@@ -1904,6 +1904,9 @@ dimensions:
   - the language world's alternations (`alternations`, from `alternationsOf`);
   - noise or learnt operators (`operators`, for example from `learnFormOperators`);
   - a word for its synonym through word senses (`form:synonym`).
+  - the rewordings the language world declares (`w.lang.en.variant frame= alternation=
+    canonical=`), tagged `variant:<alternation>`, for a case with `langFrame` (the frame it was
+    said in) and `roles`; each is realised with `realiseFrame`.
 
   With these, the tester can say "fails under operator X".
 
@@ -2319,6 +2322,26 @@ print(phraseOf(w, box).text, '|', phraseOf(w, box, { key: 'secret' }));
 
 ```output
 the box likes tea and cake | null
+```
+
+### realiseFrame(world, frame, roles, options?) and variantsOf(world, options?)
+
+A text in the shape of a frame of the language world: its parts (`w.lang.en.part frame= at=
+is=`) in order. A word part says its first word (or the `pick`-th), a phrase or lead part the
+first item of its `w.lang.en.phrase`, a det part `det` ("the") before a role that is given, a
+verb part the `verb` role or its act, and a role or lexicon part the role's words. Optional
+parts are left out unless `optional` is true; null when a required role is missing.
+`variantsOf(world)` gives a Map from a frame to `{ alternation, canonical }`, read from
+`w.lang.en.variant`: the frames it rewords.
+
+```js run
+const w = new World();
+w.tell('@a w.lang.en.part frame=q at=1 is=word word="what is"\n@b w.lang.en.part frame=q at=2 is=det optional=yes\n@c w.lang.en.part frame=q at=3 is=role role=attribute\n@d w.lang.en.part frame=q at=4 is=word word=of\n@e w.lang.en.part frame=q at=5 is=role role=thing');
+print(realiseFrame(w, 'q', { attribute: 'sound', thing: 'cow' }));
+```
+
+```output
+what is the sound of cow
 ```
 
 ### genreOf, topicIndex, randomTopics, typedWorldOf, readRolesByTypes, assignBySlotTypes, judgeReply, tabulate and tableText

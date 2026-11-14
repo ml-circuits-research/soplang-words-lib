@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.108.0
+
+### New
+- `realiseFrame(world, frame, roles)` says a text in the shape of a language-world frame, from
+  its parts.
+- `variantsOf(world)` reads `w.lang.en.variant`: which frames reword which.
+- `cousins` takes the language world's rewordings as a wording source: a case with `langFrame`
+  and `roles` gets `variant:<alternation>` cousins, each read back to the same frame. On "what
+  is the sound of the cow" the published variants give "the cow sound" and "tell me the cow
+  sound", both valid.
+
 ## 0.107.0
 
 From the reviewer's 04:05 entry ([KNOW] Q66).

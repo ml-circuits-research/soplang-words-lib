@@ -130,3 +130,38 @@ export function phraseOf(world, fact, { lang = 'w.lang.en', names, key: wanted }
   text = text.replace(/\b(a|an) ([A-Za-z][\w-]*)/g, (m, x, w) => `${articleFor(world, w, { types: { det: `${lang}.det`, onset: `${lang}.onset` } }) ?? x} ${w}`);
   return { text, key: k, phrasing: p.name };
 }
+
+/**
+ * A text in the shape of a frame of the language world (`${lang}.frame name=` with its `${lang}.part
+ * frame= at= is=`): the parts in order; a word part says its first word (or the `pick`-th), a phrase part
+ * the first item of its `${lang}.phrase`, a det part `det` ("the") before a role that is given, a verb part the `verb` role or
+ * its act, a role or lexicon part the role's words. Optional parts are left out unless `optional` names
+ * them (`true` for all) and a role given fills them. Null when a required role is missing.
+ */
+export function realiseFrame(world, frame, roles = {}, { lang = 'w.lang.en', pick = 0, optional = false, det = 'the' } = {}) {
+  const parts = world.ofType(`${lang}.part`).filter((p) => bare(p.attrs.frame[0]) === frame).sort((a, b) => Number(bare(a.attrs.at[0])) - Number(bare(b.attrs.at[0])));
+  if (!parts.length) return null;
+  const phrases = new Map(world.ofType(`${lang}.phrase`).map((p) => [bare(p.attrs.name[0]), (p.attrs.item || []).map(bare)]));
+  const out = [];
+  const opt = (p) => bare(p.attrs.optional?.[0] ?? 'no') === 'yes';
+  for (let i = 0; i < parts.length; i++) {
+    const a = parts[i].attrs, is = bare(a.is[0]);
+    const take = !opt(parts[i]) || optional === true || (Array.isArray(optional) && optional.includes(is));
+    if (is === 'role' || is === 'lexicon') {
+      const r = bare((a.role ?? a.lexicon)[0]), v = roles[r];
+      if (v === undefined || v === null || v === '') { if (opt(parts[i])) continue; return null; }
+      out.push(Array.isArray(v) ? joinList(v.map(String)) : String(v));
+    } else if (is === 'det') { const next = parts[i + 1]; if (det && next && bare(next.attrs.is[0]) === 'role' && roles[bare(next.attrs.role[0])] !== undefined) out.push(det); } // optional or not: said before a role that is given (det: null leaves it out)
+    else if (!take) continue;
+    else if (is === 'word') { const ws = (a.word || []).map(bare); out.push(ws[Math.min(pick, ws.length - 1)]); }
+    else if (is === 'phrase') { const ws = phrases.get(bare(a.phrase[0])) || []; if (ws.length) out.push(ws[Math.min(pick, ws.length - 1)]); }
+    else if (is === 'lead') { const ws = phrases.get(bare(a.phrase?.[0] ?? '')) || []; if (ws.length) out.push(ws[Math.min(pick, ws.length - 1)]); }
+    else if (is === 'verb') out.push(String(roles.verb ?? bare(a.act?.[0] ?? '')));
+  }
+  return out.filter(Boolean).join(' ').replace(/\s+/g, ' ').trim() || null;
+}
+
+/** The frames that are rewordings of a frame (`${lang}.variant frame= alternation= canonical=...`): Map(frame -> { alternation, canonical: [] }). */
+export function variantsOf(world, { lang = 'w.lang.en' } = {}) {
+  return new Map(world.ofType(`${lang}.variant`).map((v) => [bare(v.attrs.frame[0]), { alternation: bare(v.attrs.alternation?.[0] ?? ''), canonical: (v.attrs.canonical || []).map(bare) }]));
+}

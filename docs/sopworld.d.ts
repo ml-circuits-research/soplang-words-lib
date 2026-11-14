@@ -627,7 +627,7 @@ export function readByTypes(world: World, text: string, options?: { question?: s
 /** The world's own typed lexicon: word -> senses (thing, kind, attr, value, act, word). */
 export function typedLexicon(world: World): Map<string, object[]>;
 /** The cousins of a case: up along kinds or keys, down to other members, only the valid ones. */
-export function cousins(world: World, kase: { frame: object; text?: string }, options?: { operators?: { name: string; from: string; to: string }[]; senses?: (word: string) => Wire[]; alternations?: { name: string; from: string; to: string }[]; edges?: Record<string, string>; degree?: number; dims?: string[]; known?: (string | object)[]; read?: object; n?: number; seed?: number }): { frame: object; text?: string; degree: number; dims: string[]; via?: string; valid: boolean; why?: string }[];
+export function cousins(world: World, kase: { frame: object; text?: string; langFrame?: string; roles?: Record<string, string | string[]> }, options?: { variants?: Map<string, { alternation: string; canonical: string[] }>; lang?: string; operators?: { name: string; from: string; to: string }[]; senses?: (word: string) => Wire[]; alternations?: { name: string; from: string; to: string }[]; edges?: Record<string, string>; degree?: number; dims?: string[]; known?: (string | object)[]; read?: object; n?: number; seed?: number }): { frame: object; text?: string; degree: number; dims: string[]; via?: string; valid: boolean; why?: string }[];
 /** The ancestors of a thing in the layered graph of abstraction: name -> { level, dim }. */
 export function ancestorsOf(world: World, id: string, options?: { depth?: number; edges?: Record<string, string> }): Map<string, { level: number; dim: string }>;
 /** The chain of kinds of a thing, nearest first. */
@@ -701,6 +701,8 @@ export function joinList(items: string[], options?: { and?: string; sep?: string
 /** A fact as one clause, from the language world's facts; null without a subject. */
 export function narrationOf(world: World): Map<string, { narrate: boolean; salience: number; form: string | null }>;
 export function phraseOf(world: World, fact: { type: string; attrs: Record<string, string[]> }, options?: { key?: string; lang?: string; names?: Set<string> }): { text: string; key: string; phrasing: string } | null;
+export function realiseFrame(world: World, frame: string, roles?: Record<string, string | string[]>, options?: { lang?: string; pick?: number; optional?: boolean | string[]; det?: string | null }): string | null;
+export function variantsOf(world: World, options?: { lang?: string }): Map<string, { alternation: string; canonical: string[] }>;
 export function clauseOf(world: World, fact: { type: string; attrs: Record<string, string[]> }, options?: { parts?: number; lang?: string; names?: Set<string>; quiet?: string[]; words?: Record<string, string> }): string | null;
 /** The sentence of an act from the language world's act template whose slots equal the roles. */
 export function actSentence(world: World, act: string, roles: Record<string, unknown>, options?: { mode?: string | null; lang?: string }): string | null;

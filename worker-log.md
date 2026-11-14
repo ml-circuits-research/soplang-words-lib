@@ -5281,3 +5281,13 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   1003 ms with no join slot.
 - New test at that size (slots-q34): 0 open joins with mixed quoted/bare names.
 - Gate: npm test 493 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.108.0 — w.lang.en.variant as a wording source for cousins
+
+- `variantsOf` reads 47 published variants (request wrapper 17, verb ellipsis 29 at d3aaed2's count;
+  the pin 284e15a has the same file). `realiseFrame` says a frame from its parts.
+- cousins on "what is the sound of the cow" (langFrame acts.ask.what): 3 variant cousins, 3 valid
+  (read back to the same frame): "tell me the cow sound", "can you say what sound is the cow in",
+  "the cow sound".
+- 04:40 (diagrams): k.diagrams / w.diagram not yet published at knowledge d3aaed2; waiting.
+- Gate: npm test 495 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

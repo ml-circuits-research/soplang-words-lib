@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="0596513e7de6">
+<meta name="source-hash" content="7d086ffc2969">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.107.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.108.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -673,7 +673,7 @@ print(canonicalise(w, &#x27;um could you open the door and then close it&#x27;, 
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;open the door&quot;,&quot;close it&quot;]</code></pre></figure>
 <h3 id="cousinsworld-case-options-ancestorsofworld-id-options-kindchainworld-id-and-judgefixanswer-case-cousins">cousins(world, case, options?), ancestorsOf(world, id, options?), kindChain(world, id) and judgeFix(answer, case, cousins)</h3>
 <p>A case is never single (abstraction round, item 0). <code>cousins</code> goes up from a case <code>{ frame, text? }</code> (a frame of <code>readByTypes</code>) along a dimension, then down to other members. The dimensions:</p>
-<ul><li><code>filler</code>: up the chain of kinds (<code>kind</code>, <code>class</code>, <code>is</code>, <code>is_a</code>, then the type), and down to the other things below. The degree is how far up the case and the other thing must go to meet: 1 = siblings, 2 = first cousins, and so on.</li><li><code>key</code>: the other keys of the same holder.</li><li><code>wording</code>: the same frame in other forms. Each form operator is run backwards and tagged <code>form:&lt;name&gt;</code>: - the language world's alternations (<code>alternations</code>, from <code>alternationsOf</code>); - noise or learnt operators (<code>operators</code>, for example from <code>learnFormOperators</code>); - a word for its synonym through word senses (<code>form:synonym</code>).</li></ul>
+<ul><li><code>filler</code>: up the chain of kinds (<code>kind</code>, <code>class</code>, <code>is</code>, <code>is_a</code>, then the type), and down to the other things below. The degree is how far up the case and the other thing must go to meet: 1 = siblings, 2 = first cousins, and so on.</li><li><code>key</code>: the other keys of the same holder.</li><li><code>wording</code>: the same frame in other forms. Each form operator is run backwards and tagged <code>form:&lt;name&gt;</code>: - the language world's alternations (<code>alternations</code>, from <code>alternationsOf</code>); - noise or learnt operators (<code>operators</code>, for example from <code>learnFormOperators</code>); - a word for its synonym through word senses (<code>form:synonym</code>). - the rewordings the language world declares (<code>w.lang.en.variant frame= alternation= canonical=</code>), tagged <code>variant:&lt;alternation&gt;</code>, for a case with <code>langFrame</code> (the frame it was said in) and <code>roles</code>; each is realised with <code>realiseFrame</code>.</li></ul>
 <p>With these, the tester can say "fails under operator X".</p>
 <p>A cousin is valid when it is legal in the world (it has an answer), when its wording, made by substituting the filler, reads back to the same frame, and when it is not a <code>known</code> case. Each cousin is tagged with its degree and the dimensions changed.</p>
 <p>The graph is layered: a thing has several parents on several dimensions. <code>edges</code> (<code>{ key: dimension }</code>, by default kind / class / is / is_a as <code>kind</code>) names them, and <code>ancestorsOf(world, id, { depth, edges })</code> walks them breadth first. Cousins are deduplicated by frame and stratified per degree and dimension (<code>n</code> each). The automatic tester <code>tools/cousins-test.mjs</code> takes one example and a host and gives a table per degree × dimension, naming the pattern of breaks. With <code>split</code> and <code>oracle</code> it judges every clause of a compound text: the host's answer to the whole text must hold the world's answer to each clause, so answering one half fails. The skill <code>skills/expand-and-test-case</code> hands the failures to <code>learnRules</code>. <code>judgeFix(answer, case, cousins)</code> judges a fix both ways: on the case alone and on its valid cousins by degree. Judged that way, a fix that passes only its case shows a share of 0.</p>
@@ -809,6 +809,12 @@ w.tell(&#x27;@n1 k.attributes.narration type=t key=secret narrate=no\n@p1 w.lang
 const box = { type: &#x27;t&#x27;, attrs: { name: [&#x27;box&#x27;], secret: [&#x27;x&#x27;], likes: [&#x27;tea&#x27;, &#x27;cake&#x27;] } };
 print(phraseOf(w, box).text, &#x27;|&#x27;, phraseOf(w, box, { key: &#x27;secret&#x27; }));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>the box likes tea and cake | null</code></pre></figure>
+<h3 id="realiseframeworld-frame-roles-options-and-variantsofworld-options">realiseFrame(world, frame, roles, options?) and variantsOf(world, options?)</h3>
+<p>A text in the shape of a frame of the language world: its parts (<code>w.lang.en.part frame= at= is=</code>) in order. A word part says its first word (or the <code>pick</code>-th), a phrase or lead part the first item of its <code>w.lang.en.phrase</code>, a det part <code>det</code> ("the") before a role that is given, a verb part the <code>verb</code> role or its act, and a role or lexicon part the role's words. Optional parts are left out unless <code>optional</code> is true; null when a required role is missing. <code>variantsOf(world)</code> gives a Map from a frame to <code>{ alternation, canonical }</code>, read from <code>w.lang.en.variant</code>: the frames it rewords.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(&#x27;@a w.lang.en.part frame=q at=1 is=word word=&quot;what is&quot;\n@b w.lang.en.part frame=q at=2 is=det optional=yes\n@c w.lang.en.part frame=q at=3 is=role role=attribute\n@d w.lang.en.part frame=q at=4 is=word word=of\n@e w.lang.en.part frame=q at=5 is=role role=thing&#x27;);
+print(realiseFrame(w, &#x27;q&#x27;, { attribute: &#x27;sound&#x27;, thing: &#x27;cow&#x27; }));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>what is the sound of cow</code></pre></figure>
 <h3 id="genreof-topicindex-randomtopics-typedworldof-readrolesbytypes-assignbyslottypes-judgereply-tabulate-and-tabletext">genreOf, topicIndex, randomTopics, typedWorldOf, readRolesByTypes, assignBySlotTypes, judgeReply, tabulate and tableText</h3>
 <p>General host code taken into the library (handover LIB-5 to LIB-8):</p>
 <ul><li><code>genreOf(world, type)</code> gives the k.genres genre a document type names (hyphens, underscores, spaces, or the genre's words), or null.</li><li><code>topicIndex(world, { types, min })</code> lists the topics a world can compose about: names that at least <code>min</code> (2) other facts name. <code>randomTopics(world, { seed, count })</code> draws topics by interest, seeded.</li><li><code>typedWorldOf(things, { values })</code> builds a typed world from a session's things <code>[{ id, label, kind, attrs }]</code> and the values each attribute can take.</li><li><code>readRolesByTypes(world, text, roles, { skip })</code> re-reads the free roles of a refused reading by type: a thing by its label, an attribute by its key, a value among the attribute's values. Every content word must be placed, else the result is null.</li><li><code>assignBySlotTypes(patterns, tokens, lexicons)</code> gives every assignment of content tokens to a pattern's typed slots. A reading needs exactly one assignment, every token a literal or a slot filler, and the anchor present.</li><li><code>judgeReply(reply, expected, { numberWords, before, after })</code> judges a reply text: every expected value is said (a number also as its word), and a question changes nothing. <code>tabulate(results)</code> and <code>tableText(table)</code> give a degree × dimension table.</li></ul>
@@ -1083,7 +1089,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.107.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.108.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

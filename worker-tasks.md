@@ -1085,3 +1085,7 @@ Beyond `std.sample`, `std.summarize`, `std.compose` (14:15–15:00), the reviewe
 5. **Quantified and generalised noun phrases** for summaries ("three animals", "most of the guests", "a farm with a barn and two cows"): counts and the kind chain (std.know) to frames that std.morph can inflect (number agreement).
 6. **A document as frames.** Chapters, sections, paragraphs, slides as a world schema (the knowledge repository is asked for `w.document`), so compose writes a live world any host renders (PSys2's editor, slides) and summarize can read a document back.
 7. **Length control as a budget**: the requested words/sentences per section turned into a content budget before selection (not trimmed after), so sizes are exact.
+
+## Reviewer 2026-11-14 15:30 — [KNOW] Q48: deferred join checks (small, before std.summarize)
+
+The knowledge repository cannot declare `drawing=` joins (`type=k.objects.object by=name`): 0.52+ checks a `by=` join when the fact is told, and imports/lazy loading tell 400 animal and food facts before any object, so each is refused. Make a join **open while its target type has no fact with that key**, checked when such a target fact arrives, and reported (not refused) by `world.check()` / a load report when still open. Refusal stays for a target that is loaded and lacks the key. Test with a lazy load in both orders.

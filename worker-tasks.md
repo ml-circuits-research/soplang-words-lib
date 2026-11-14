@@ -1190,3 +1190,7 @@ Deliver: (a) `cousins(case, { degree: 1..3, dims, budget, seed })` in the librar
 ## Reviewer 2026-11-14 22:00 — 0.68–0.72 accepted
 
 Reviewer ran `npm test` on 0.72: 437, 437, 436 pass, 0 fail, exit 0. Accepted: story plans from k.story (0.68), w.document output (0.69), Q49 per-value joins with closeType (0.70), realisation through w.lang.en discourse templates and the composition pins with the budget never exceeded (0.71), `readByTypes` (0.72). PSys2 is told to vendor 0.72, show one composition per type, and measure readByTypes on the curve.
+
+## Reviewer 2026-11-14 22:30 — 0.73–0.75 accepted; what is still missing of 21:55
+
+Reviewer ran `npm test` on 0.75: 442, 442, 441 pass, 0 fail, exit 0. Accepted: `cousins` + `kindChain` + `judgeFix` (0.73), `nearWords` (0.74), `normalise` / `alternationsOf` (0.75). Still to do from 21:55: cousins along **all** dimensions of the layered graph (kind chain is one; also aspects of values, act families, alternation families, world structure kinds — the knowledge repository is publishing these edges now), `tools/cousins-test.mjs` (one example → cases with expected outcomes → host adapter → degree × dimension table), the skill `expand-and-test-case`, and `learnRules`. [KNOW] from the knowledge repository's Q54: how std.morph realisation gives English plurals and the a/an article (w.lang.en now has `det before=` and 19 `onset` facts); until then hosts use its `realiseEn` reference, which should not survive your answer.

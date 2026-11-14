@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.91.0
+
+The inverse of the form operators at read time (reviewer 00:40) and Q58 of the knowledge
+repository. The knowledge repository is pinned at 2f54678 (alternations, k.kinds up edges,
+act families).
+
+### New
+- `canonicalise(world, text, { fillers, splitters })`: clauses split, fillers dropped,
+  each clause normalised.
+- `readCanonical(world, text, { read, ... })`: the same, then each clause read by types.
+- `fillersFrom(edits)`: the filler words of learnt edits.
+- `wordClassesOf(world)`: word classes for patterns (`{q:wh}`).
+
+### Changed
+- `normalise`:
+  - tries the rules in the order told (`n`);
+  - the innermost rule's mode wins ("can you tell me where …" is a question);
+  - patterns may name a word class.
+  - On the published w.lang.en, 35 of 35 test sentences give the right canonical text,
+    rules and mode.
+- `alternationsOf` returns `n` and `family`, sorted by `n`.
+
 ## 0.90.0
 
 PSys2's first real runs (reviewer 00:05 items 2 and 3).

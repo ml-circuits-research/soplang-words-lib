@@ -786,7 +786,7 @@ print(compose(w, 'owl', { size: { chapters: 1, sections: 1, sentences: 2 } }).ch
 
 ## Read a question by the types of its words
 
-*In `readByTypes`, `typedLexicon`, `nearWords`, `normalise`, `alternationsOf`, `storyState`; since 0.72.*
+*In `readByTypes`, `typedLexicon`, `nearWords`, `normalise`, `alternationsOf`, `wordClassesOf`, `canonicalise`, `readCanonical`, `fillersFrom`, `storyState`; since 0.72.*
 *Works on: any world with facts (names, keys, values) and acts.*
 
 "what sound does a cow make", "a cow makes which sound" and "cow sound?" read to one frame,
@@ -795,7 +795,9 @@ own facts and order only ranks. Inverse questions ("which animal says moo") and 
 arguments by type are read too.
 An unknown word is read as its nearest known word through k.words senses (a synonym,
 a kind), with a cost. Variants (passive, "could you", "please", dative shift) are brought
-back to the canonical form by the language world's alternation rules, written once. A
+back to the canonical form by the language world's alternation rules, written once.
+`readCanonical` puts the inverse operators in front of the reader: clauses split, fillers
+dropped, alternations undone. A
 question after a word problem's story is answered from the story's quantities
 (`storyState`).
 **Limits:** a first version. The alternation rules are a toy set until the language world

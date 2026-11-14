@@ -3,7 +3,8 @@
 // (`w.lang.en.alternation name= from= to= mode=`) until the knowledge repository publishes them.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { World, normalise, alternationsOf, parseText } from '../tools/lib-under-test.mjs';
+import { World, normalise, alternationsOf, parseText, canonicalise, fillersFrom } from '../tools/lib-under-test.mjs';
+import { worldsDir, catalogWorld } from '../tools/worlds.mjs';
 
 const RULES = `@t core.type of=w.lang.en.alternation  @t1 core.slot of=w.lang.en.alternation key=name kind=atom kind=string
 @t2 core.slot of=w.lang.en.alternation key=from kind=atom kind=string  @t3 core.slot of=w.lang.en.alternation key=to kind=atom kind=string
@@ -33,4 +34,36 @@ test('parseText with alternations: one rule for the canonical frame reads its va
   const alt = parseText(w, 'could you open the door', { alternations: true });
   assert.equal(plain.length, 0, 'without alternations the variant does not parse');
   assert.ok(alt.length > 0 && alt.applied.includes('could_you'), 'with them it does');
+});
+
+test('normalise on the published w.lang.en alternations: rules in their order (n), the innermost mode, all 35 test sentences', { skip: !worldsDir() && 'offline' }, async () => {
+  const w = await catalogWorld({ 'w.lang.en': ['w.lang.en.alternation', 'w.lang.en.alternation_case'] });
+  const cases = w.ofType('w.lang.en.alternation_case');
+  assert.ok(alternationsOf(w).length >= 300);
+  let ok = 0;
+  for (const c of cases) {
+    const q = (k) => (c.attrs[k] || []).map((x) => x.replace(/^"|"$/g, ''));
+    const r = normalise(w, q('text')[0]);
+    if (r.text === q('canonical')[0].toLowerCase().replace(/[?!.]+$/, '') && JSON.stringify(r.applied) === JSON.stringify(q('applied')) && (r.mode ?? undefined) === q('mode')[0]) ok++;
+  }
+  assert.equal(ok, cases.length, `${ok}/${cases.length}`);
+});
+
+test('canonicalise: clauses cut at splitters, fillers dropped, each clause to its canonical form; word classes in patterns', () => {
+  const w = new World(); w.tell(RULES);
+  w.tell(`@c core.type of=w.lang.en.word_class  @c1 core.slot of=w.lang.en.word_class key=name  @c2 core.slot of=w.lang.en.word_class key=word many=true
+    @wh w.lang.en.word_class name=wh word=what word=where word=who  @a6 w.lang.en.alternation name=tell_me from="tell me {q:wh} {x}" to="{q} {x}" mode=question`);
+  const r = canonicalise(w, 'um could you open the door and also tell me where the cat is', { fillers: ['um', 'hey'], splitters: ['and also', 'and then'] });
+  assert.deepEqual(r.clauses.map((c) => [c.text, c.mode]), [['open the door', 'request'], ['where the cat is', 'question']]);
+  assert.deepEqual(r.dropped, ['um']);
+  assert.deepEqual(fillersFrom({ operators: [{ edit: 'start: "um" -> ""', family: 'filler' }, { edit: 'inside: "a" -> ""', family: 'deletion' }] }), ['um']);
+});
+
+test('readCanonical: a compound, padded, wrapped request read clause by clause by types', async () => {
+  const { readCanonical } = await import('../tools/lib-under-test.mjs');
+  const w = new World(); w.tell(RULES);
+  w.tell('@cow k.animal name=cow sound=moo legs=4  @s core.word text=make text=makes means=sound');
+  const r = readCanonical(w, 'hey could you say what sound a cow makes and then how many legs does a cow have', { fillers: ['hey'], splitters: ['and then'], read: { question: ['what', 'how', 'many', 'does'], skip: ['a', 'say', 'have'] } });
+  assert.deepEqual(r.map((c) => [c.frame?.key, c.frame?.answer]), [['sound', ['moo']], ['legs', ['4']]]);
+  assert.equal(r[0].mode, 'request');
 });

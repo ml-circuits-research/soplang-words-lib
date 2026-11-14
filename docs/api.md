@@ -1841,6 +1841,39 @@ print(normalise(w, 'Could you please open the door?'));
 {"text":"open the door","applied":["could_you","please"],"mode":"request"}
 ```
 
+### canonicalise(world, text, options?), readCanonical(world, text, options?), fillersFrom(edits) and wordClassesOf(world)
+
+The inverse of the form operators at read time (reviewer 00:40), as one pipeline step:
+1. the text is cut into clauses at the `splitters` (an extra clause becomes a clause of its
+   own);
+2. the `fillers` are dropped at the start and end of each clause;
+3. each clause is brought to its canonical form by the alternation rules (`normalise`).
+4. Substitutions are read afterwards through word senses (`readByTypes`' `near`).
+
+`canonicalise` returns `{ clauses: [{ text, applied, mode? }], dropped }`. `readCanonical`
+also reads each clause by types: `[{ text, mode?, applied, frame, unread, near? }]`. The
+fillers and splitters are data: the host's, or learnt (`fillersFrom(learnFormEdits(...))`
+gives the words of the filler family).
+
+`normalise` tries the rules in the order the language world tells (`n`). The innermost
+rule's mode wins: "can you tell me where …" is a question. A pattern may name a word class,
+`{q:wh}`, from `w.lang.en.word_class name= word=...` (`wordClassesOf`), instead of one fact
+per alternative. On the published w.lang.en (368 rules), its 35 test sentences give the
+canonical text, the rules applied and the mode, 35 of 35.
+
+```js run
+const w = new World();
+w.tell(`@t core.type of=w.lang.en.alternation  @t1 core.slot of=w.lang.en.alternation key=name kind=atom kind=string
+  @t2 core.slot of=w.lang.en.alternation key=from kind=atom kind=string  @t3 core.slot of=w.lang.en.alternation key=to kind=atom kind=string
+  @t4 core.slot of=w.lang.en.alternation key=mode kind=atom kind=string
+  @a w.lang.en.alternation name=could_you from="could you {x}" to="{x}" mode=request`);
+print(canonicalise(w, 'um could you open the door and then close it', { fillers: ['um'], splitters: ['and then'] }).clauses.map((c) => c.text));
+```
+
+```output
+["open the door","close it"]
+```
+
 ### cousins(world, case, options?), ancestorsOf(world, id, options?), kindChain(world, id) and judgeFix(answer, case, cousins)
 
 A case is never single (abstraction round, item 0). `cousins` goes up from a case `{ frame,

@@ -662,3 +662,11 @@ export function learnFormEdits(pairs: { canonical: string; variant: string }[], 
 export function familyOf(edit: string): string;
 /** Content words lifted to their types through the world's typed lexicon; function words stay. */
 export function liftTokens(world: World, text: string, options?: { senses?: (word: string) => object[] }): string[];
+/** The inverse of the form operators at read time: clauses, fillers dropped, alternations undone. */
+export function canonicalise(world: World, text: string, options?: { fillers?: string[]; splitters?: string[]; rules?: object[]; classes?: Map<string, Set<string>>; type?: string }): { clauses: { text: string; applied: string[]; mode?: string }[]; dropped: string[] };
+/** canonicalise, then read each clause by types. */
+export function readCanonical(world: World, text: string, options?: { fillers?: string[]; splitters?: string[]; read?: object }): { text: string; mode?: string; applied: string[]; frame: object | null; unread: string[]; near?: object[] }[];
+/** The filler words of learnt edits. */
+export function fillersFrom(edits: { operators: { edit: string; family?: string }[] }): string[];
+/** The word classes a world holds for patterns ({x:wh}). */
+export function wordClassesOf(world: World, type?: string): Map<string, Set<string>>;

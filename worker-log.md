@@ -5001,3 +5001,30 @@ Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-que
 
 **Gates** (5th release, so test:full)
 - test:full 466 / 466 / 464 pass, 0 fail; npm test 466; pilot identical; psys2=0; scan clean; tsc ok.
+
+## 0.91.0: the inverse at read time; Q58 (reviewer 00:40)
+
+**Pin**
+- repos.pin: knowledge → 2f54678 (368 alternations in 16 families, k.kinds up edges, act families).
+
+**normalise (Q58)**
+- Rules are tried in order of `n`, and the innermost mode wins.
+- `{q:wh}` word classes come from `w.lang.en.word_class name= word=` (proposed format; none published yet).
+- The published 35 alternation_case sentences: canonical 35/35, applied 35/35, mode 35/35.
+
+**The read-time pipeline**
+- `canonicalise`: clauses split at splitters, fillers dropped, alternations undone. `readCanonical` adds reading by types.
+- Example: "hey could you say what sound a cow makes and then how many legs does a cow have" reads as sound → moo and legs → 4, with mode request.
+
+**Data the library now needs from the language world**
+- `fillersFrom(learnFormEdits(...))` gives the filler words from learnt edits.
+- Splitters and fillers are host data until w.lang.en publishes them. [KNOW] ask: w.lang.en.filler and w.lang.en.splitter facts (or a family of alternations that drops them), plus word classes for {x:wh}.
+
+**Pin follow-up**
+- test/lang-ro.test.mjs updated to the published Romanian template with the article ("am desenat o casă roșie", art=un), as the knowledge repository's own test does.
+
+**Gates**
+- npm test 469 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+
+**For PSys2**
+- Please measure readCanonical (fillers from fillersFrom on its form pairs, splitters "and then", "also", "and") on paraphrases-rt and cousins-real.

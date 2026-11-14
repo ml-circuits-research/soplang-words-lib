@@ -37,8 +37,9 @@ test('w.lang.ro: round trip for every lemma and cell, exact spelling and typed w
 test('w.lang.ro: replies from its templates, the adjective agreeing with the noun', { skip }, () => {
   const { m, dict } = setup();
   const base = { num: 'sg', case: 'nomacc' };
-  assert.equal(realise(m, templateFor(m, 'make'), { kind: 'casă', colour: 'roșu' }, { dictionary: dict, base }), 'am desenat casă roșie');
-  assert.equal(realise(m, templateFor(m, 'make'), { kind: 'copac', colour: 'verde' }, { dictionary: dict, base }), 'am desenat copac verde');
+  // the published template (8741e52) carries the indefinite article, agreeing with the noun like the adjective
+  assert.equal(realise(m, templateFor(m, 'make'), { art: 'un', kind: 'casă', colour: 'roșu' }, { dictionary: dict, base }), 'am desenat o casă roșie');
+  assert.equal(realise(m, templateFor(m, 'make'), { art: 'un', kind: 'copac', colour: 'verde' }, { dictionary: dict, base }), 'am desenat un copac verde');
   assert.equal(realise(m, templateFor(m, 'remove'), { thing: 'stea' }, { dictionary: dict, base }), 'am șters steaua');
   assert.equal(realise(m, templateFor(m, 'change'), { thing: 'mașină', colour: 'galben' }, { dictionary: dict, base }), 'mașina este acum galbenă');
 });

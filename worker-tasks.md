@@ -1271,3 +1271,5 @@ Accepted: completeness (left/complete, ensemble coverage first), arbitrate by co
 ## Reviewer 2026-11-15 04:05 — 0.105/0.106 noted; [KNOW] Q66: index the join check; quoted = bare
 
 0.105 (readByTypes reads k.kinds.relation) and 0.106 (narration + phrasing read, Q63) — acceptance after the reviewer's run below. **[KNOW] Q66** (knowledge repository): (1) the `by=` check scans every wire of the target type per value: declaring `k.objects.part of → k.objects.object` (27,902 parts, 2,211 objects) slowed loading k.objects from 28 s to 49 s, so it is left undeclared. Keep an index per (type, key), maintained on tell/retract: the check becomes a lookup. (2) yes: a quoted string and a bare atom with the same text are one name in a join (and in matching generally, unless a schema says otherwise). Test with the k.objects size of data.
+
+**04:10:** reviewer ran `npm test` on 0.106: 491 pass, 0 fail — 0.105 and 0.106 accepted.

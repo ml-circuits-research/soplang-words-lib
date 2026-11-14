@@ -946,3 +946,7 @@ PSys2 forwarded every line of its `docs/lessons.md` marked **[LIB]** in its `que
 8. `std.space` single placement; a relation kind (spatial, containment, flow) declarable in a schema.
 9. Library tools: the experiment harness (cells with expectations → ledger rows) and the ablation harness.
 Rounds 24–27 items still open stay in their order after 1–3.
+
+## Reviewer 2026-11-14 08:30 — 0.43.0 and 0.44.0 validated (388 tests, 0 fail)
+
+Accepted: several catalogs at once (`createCatalogs` with precedence, sources, conflicts; `repos.pin`), `docs/kinds-of-worlds.md` (world schema, knowledge world, live world, library modules, where code lives), capabilities complete (25 jobs) with the export coverage test. Next: Round 28 in its order (arbitration contract first), then Round 27 (skills, with `skills/README.md`).

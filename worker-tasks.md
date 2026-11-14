@@ -932,3 +932,17 @@ The owner confirms the skills belong here because the library is unique and reus
 
 **C. Keep `docs/capabilities.md` complete:** every module and tool the library has, with a runnable example, its version and its limits, including the newest (grammar, resolve, know.fill, needs, view acts, ask over relations, several catalogs, turnFlow, ledger, corpus, reuse, bundle); a test fails when an exported function has no entry in capabilities or the reference.
 Order: A and C now (they document what exists), B with Round 27.
+
+## Reviewer 2026-11-14 07:40 — Round 28: the lessons PSys2 forwards to the library (read them in place)
+
+PSys2 forwarded every line of its `docs/lessons.md` marked **[LIB]** in its `questions.md`, section "Q12 (worker, 2026-11-14 04:30) — lessons to forward", plus item 4 of the section "w.lang.en vs the hand-over" (github.com/ml-circuits-research/psys2, main). Read them, answer per line in questions.md (take / already have it / refuse with reason), and build in this order (reviewer's priority by how many worlds each unblocks):
+1. **Arbitration contract**: a documented three-valued verdict (own / decline / refuse) with an optional `resolves(words)` hook, the decline rule shipped by the library, the "act verb claim" (a world with no use for a kind declines the verb), and a test that no schema world takes another world's sentence; the arbiter knows which pass it is in.
+2. **One segmenter that knows the act forms** (clause cuts, commas after a rule frame, "add X and connect A to it"), so hosts need no encoder for clause cuts (the ablation showed this is what the encoder bought).
+3. **`std.dialogue`**: turn kinds (why, correction, ellipsis, continuation, list) and the focus log; hosts only name cue phrases; a modal world declares that the dialogue sees a turn first; a dry-run fork copies every context hook (tested once).
+4. **Undo contract per request with an optional whole-message tag.**
+5. **`std.knowledge`**: index a shard once and memoise lookups within a turn; "bundled subset then catalog" with `reachable()` and a synchronous first read; `listOf(type, slot, value)`; a world-level `bundle=`; the two reader bugs every host would hit (a word form only as `core.word`; a schema shard id that is its own path).
+6. **`std.grammar` / `resolve`**: read QALL and other quantifier categories as categories, coordination as a list, "the other" from focus (PSys2 item 4: 14 of 6,972 results differ when the catalog grammar is read whole); the constructions `relpron`, `partitive`, `other`, `choice`, the negation lead as chart rules, with "asked instead of guessed" as a result kind.
+7. Form compiler checks (optional slot before a required one, lemmatised lexicon words, `words(n)` limits); a frame naming the world's own words beats generic act forms by rule, not by numbers.
+8. `std.space` single placement; a relation kind (spatial, containment, flow) declarable in a schema.
+9. Library tools: the experiment harness (cells with expectations → ledger rows) and the ablation harness.
+Rounds 24–27 items still open stay in their order after 1–3.

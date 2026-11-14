@@ -7,7 +7,7 @@ export { builtins, quantity } from './builtins.mjs';
 export { solvers, Problem, Sat, toDimacs, toASP } from './solve.mjs';
 
 export { GRAMMAR, MODIFIERS, SCHEMA_TYPES } from './matrix.mjs';
-export { rank, RANKING, veto } from './rank.mjs';
+export { rank, RANKING, veto, choose } from './rank.mjs';
 export { aggregates } from './builtins.mjs';
 export { PatternIndex } from './patterns.mjs';
 export { schemaCard, schemaExamples, actReply, schemaGrid, gridTests } from './schema-words.mjs';
@@ -36,7 +36,7 @@ export { storyState } from './story-focus.mjs';
 export { planner, factStore, PlanLive, readMethods, PLAN_LIMITS, solveChoices } from './plan.mjs';
 export { inflectBy, articleFor, morphOf, generate, analyse, fold, splitClitics, dictionary, realise, templateFor } from './morph.mjs';
 export { ledgerAppend, ledgerGroups, ledgerKey, stageOf, STAGES } from './ledger.mjs';
-export const version = '0.91.0';
+export const version = '0.92.0';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)
  * tools/build.mjs fills in `hash`, a fingerprint of the bundled sources, and `date`,

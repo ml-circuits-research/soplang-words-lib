@@ -670,3 +670,5 @@ export function readCanonical(world: World, text: string, options?: { fillers?: 
 export function fillersFrom(edits: { operators: { edit: string; family?: string }[] }): string[];
 /** The word classes a world holds for patterns ({x:wh}). */
 export function wordClassesOf(world: World, type?: string): Map<string, Set<string>>;
+/** One way to choose: candidates ordered by the criteria declared for their kind (std.decide), every loss explained. */
+export function choose<T extends object>(world: World | null, kind: string, candidates: T[], options?: { criteria?: { name: string; measure: string; dir: 'hard' | 'min' | 'max' }[]; seed?: number }): { best: T | null; order: T[]; ranked: { index: number; place: number; lostTo?: number; on?: string; why: string }[]; criteria: object[] };

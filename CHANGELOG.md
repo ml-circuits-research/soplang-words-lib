@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.92.0
+
+One way to choose (reviewer 01:00, owner 17:16).
+
+### New
+- `std.decide`: criteria per choice kind as data (`std.decide.criterion of= n= name= measure=
+  dir=`) for `reading`, `template`, `word`, `rule` and `fact`, in one order: hard
+  constraints, coverage, assumptions' cost, specificity, priors, seed.
+- `choose(world, kind, candidates, { criteria, seed })`: the world's criteria for the kind,
+  else std.decide's own; every loss explained.
+- `docs/decisions.md`: the map of every choice point, its candidates, its criteria and
+  whether it already goes through `choose`.
+
+### Changed
+- `discourseRealiser` picks templates through `choose` (kind `template`: all slots filled,
+  not said before, the more specific, then seeded). It drew among the fresh ones before.
+- `readByTypes` picks a near word through `choose` (kind `word`: fits, cost, prior).
+
 ## 0.91.0
 
 The inverse of the form operators at read time (reviewer 00:40) and Q58 of the knowledge

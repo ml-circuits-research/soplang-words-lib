@@ -6,6 +6,7 @@
 // come from the host; the defaults only join words (`the penguin`, `the penguin eats fish`).
 
 import { inflectBy, articleFor } from './morph.mjs';
+import { choose } from './rank.mjs';
 
 const bare = (v) => String(v).replace(/^"|"$/g, '').replace(/^\$/, '');
 const META = new Set(['name', 'about', 'kind', 'class', 'is', 'source', 'own', 'cite', 'derived']);
@@ -86,8 +87,9 @@ export function discourseRealiser(world, { seed = 1, type, clause, np, inflect, 
       if (ok) filled.push({ t, values });
     }
     if (!filled.length) return null;
-    const fresh = filled.filter((x) => !used.has(x.t.id)), pool = fresh.length ? fresh : filled; // not the same sentence twice while another fits
-    const { t, values } = pool[Math.floor(rand() * pool.length)];
+    // one way to choose (std.decide, kind template): every slot filled, not said before, the more specific, then a seeded order
+    const pick = choose(world, 'template', filled.map((x) => ({ ...x, unfilled: 0, used: used.has(x.t.id), specificity: x.t.slots.length || Object.keys(x.values).length })), { seed: Math.floor(rand() * 1e9) }).best;
+    const { t, values } = pick;
     used.add(t.id);
     let text = t.text;
     for (const [k, v] of Object.entries(values)) text = text.split(k).join(v);

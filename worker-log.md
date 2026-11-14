@@ -5028,3 +5028,29 @@ Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-que
 
 **For PSys2**
 - Please measure readCanonical (fillers from fillersFrom on its form pairs, splitters "and then", "also", "and") on paraphrases-rt and cousins-real.
+
+## 0.92.0: one way to choose (reviewer 01:00, owner 17:16)
+
+**What was added**
+- std.decide: criteria per choice kind as data (reading, template, word, rule, fact) in one order: hard, coverage, cost, specificity, prior, seed.
+- `choose(world, kind, candidates)` reads the world's criteria for the kind, else std.decide's facts (parsed once from the module text: one source). Every loss is explained ("cost 2; #1: cost 1").
+- docs/decisions.md maps every choice point: its candidates, its method, and whether it goes through choose.
+  - It separates deciding (best by criteria) from drawing (a weighted draw within hard constraints for variety: sample, story, solveChoices).
+
+**Already through choose**
+- Templates in discourseRealiser (kind template: fills, fresh, specificity, then seeded; before, a draw among fresh ones).
+- Near words in readByTypes (kind word: fits, cost, prior).
+
+**To move next** (listed in decisions.md)
+- readByTypes frames and parseText parses → reading.
+- normalise rules → rule (specificity before n).
+- compose facts → fact.
+- arbitrate → world.
+- RANKING → reading read from data.
+- Calibrating tie-break weights on the case corpus.
+
+**Test**
+- test/decide.test.mjs.
+
+**Gates**
+- npm test 471 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.

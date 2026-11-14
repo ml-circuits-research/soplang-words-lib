@@ -1,3 +1,4 @@
+import { choose } from './rank.mjs';
 // Type-driven reading (abstraction round, item 1; questions.md Q54): a question or a request is read
 // by the TYPES of its content words, not by one fixed word order. Each content word is typed
 // through the world itself: a thing (a fact's name), a kind (a type, or a kind / class value), an
@@ -85,7 +86,8 @@ export function readByTypes(world, text, { question = [], skip = [], lemma, sens
     const f = forms(t).find((x) => lex.has(x));
     if (f) { words.push({ at: i, text: t, senses: lex.get(f) }); continue; }
     // lexical generalisation: an unknown word read as its nearest known word through word senses, with a cost
-    const alt = near > 0 ? forms(t).flatMap((x) => nearWords(world, x, { senses })).filter((x) => x.cost <= near).find((x) => lex.has(x.word)) : null;
+    let alt = near > 0 ? choose(world, 'word', forms(t).flatMap((x) => nearWords(world, x, { senses })).filter((x) => x.cost <= near).map((x) => ({ ...x, misfit: !lex.has(x.word) }))).best : null; // one way to choose (std.decide, kind word)
+    if (alt && alt.misfit) alt = null;
     if (alt) { words.push({ at: i, text: alt.word, senses: lex.get(alt.word), near: { word: t, as: alt.word, cost: alt.cost, via: alt.via } }); nearUsed.push({ word: t, as: alt.word, cost: alt.cost, via: alt.via }); } else unread.push(t);
   }
   const frames = [];

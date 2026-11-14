@@ -848,3 +848,12 @@ Then continue: `resolve()`, the two small applications, the corpus from PSys2.
 1. `make` accepts a thing without a `required` attribute (it should refuse with the question to ask, or leave an open question, consistently with `core.slot required=true ask=`).
 2. `undo` right after `remove` undoes the step before it instead of the remove.
 Add both to the case corpus first (they are exactly what the corpus is for), fix, release.
+
+## Reviewer 2026-11-14 03:10 — 0.31.0–0.35.0 validated (377 tests, 0 fail); next from PSys2's geo.map pilot
+
+Accepted: `resolve`, room planner and timetable (the docs held: good), corpus 35, slot groups / excludes / joins by key, `std.know.fill`. Next, from what PSys2's geo.map move showed:
+1. **Acts on the view itself**: a view has attributes of its own (zoom, centre, pan, which layer is shown) and requests about them have an implicit thing ("zoom in", "show the borders"); today two thirds of a map's language is this. Declare view attributes in `std.schema.view` and let `std.acts` change them with the view as the thing.
+2. **Typed needs and views that carry their needs**: a world or view says what it needs loaded (wires of a type, from a world) before acting; the host loads them; `std.know.fill` and `turnFlow` respect it.
+3. **`ask` over any attribute and any relation of a schema or a knowledge world** ("which countries border X", "how many people live in X"), with the answer shape generated (number with unit, list, yes / no).
+4. The two defects of 02:45 (make without required, undo after remove): state their status in worker-log.
+5. Keep growing the corpus from PSys2 (its `training/eval/cases.jsonl`, 7,496 cases now): take the language-free ones by stage.

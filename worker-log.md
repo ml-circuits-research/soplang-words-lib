@@ -5070,3 +5070,12 @@ Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-que
 - parseText orders parses through `choose` (kind parse: priority, literal words, size, depth; seed null keeps a stable order on ties).
 - docs/decisions.md is updated. Still not through choose: arbitrate (worlds), and calibration of tie-breaks on the corpus.
 - Gates: npm test 471 pass, 0 fail; pilot identical (the parse and reading orders are unchanged on the pilot); psys2=0; scan clean; tsc ok.
+
+## 0.95.0: calibrating a choice kind on cases (reviewer 01:00 item 2)
+
+- `calibrate(world, kind, cases, { heldOut })` tries every order of a kind's criteria (at most 7!) on training cases. It proposes the best as std.decide facts and admits it only if the held-out cases do not drop.
+- test/decide.test.mjs, toy word cases where frequency should beat cost:
+  - current order (fits, cost, prior): 0/6 train, 0/3 held-out;
+  - learnt order (prior before cost): 6/6 train, 3/3 held-out; admitted.
+- For PSys2: it can calibrate kind `reading` on its ledger, with each row's candidate readings and the right one.
+- Gates (5th release): test:full 472 / 472 / 470 pass, 0 fail; npm test 472; pilot identical; psys2=0; scan clean; tsc ok.

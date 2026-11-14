@@ -674,3 +674,5 @@ export function wordClassesOf(world: World, type?: string): Map<string, Set<stri
 export function choose<T extends object>(world: World | null, kind: string, candidates: T[], options?: { criteria?: { name: string; measure: string; dir: 'hard' | 'min' | 'max' }[]; seed?: number | null }): { best: T | null; order: T[]; ranked: { index: number; place: number; lostTo?: number; on?: string; why: string }[]; criteria: object[] };
 /** RANKING's measures in the order std.decide (kind score) or the world declares. */
 export function rankingOf(world: World | null): object[];
+/** The order of a choice kind's criteria learnt from cases, admitted only when held-out cases do not drop. */
+export function calibrate(world: World | null, kind: string, cases: { candidates: object[]; expected: number }[], options?: { heldOut?: { candidates: object[]; expected: number }[] }): { current?: string[]; best?: string[]; admitted?: boolean; train?: object; heldOut?: object; facts?: string; why?: string };

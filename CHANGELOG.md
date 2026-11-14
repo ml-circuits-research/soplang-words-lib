@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.95.0
+
+### New
+- `calibrate(world, kind, cases, { heldOut })`: the order of a choice kind's criteria learnt
+  from cases, proposed as std.decide facts, admitted only when held-out cases do not drop
+  (reviewer 01:00 item 2).
+
 ## 0.94.0
 
 ### Changed

@@ -145,3 +145,24 @@ export function rankingOf(world) {
   const picked = names.map((n) => RANKING.find((c) => c.name === n)).filter(Boolean);
   return picked.length ? picked : RANKING;
 }
+
+/**
+ * Calibrating a choice kind on cases (reviewer 01:00 item 2: weights from the corpus, never hand-tuned):
+ * `cases` = [{ candidates, expected }] (the index of the right candidate). Every order of the kind's criteria
+ * (at most 7! orders) is tried on the training cases; the best is proposed, as std.decide facts, and admitted
+ * only when the held-out cases do not drop against the current order. Returns { current, best, admitted,
+ * train: { current, best }, heldOut: { current, best }, facts }.
+ */
+export function calibrate(world, kind, cases, { heldOut = [] } = {}) {
+  const base = choose(world, kind, [], {}).criteria;
+  const hits = (crit, list) => list.filter((c) => choose(world, kind, c.candidates, { criteria: crit, seed: null }).order[0] === c.candidates[c.expected]).length;
+  const perms = (xs) => (xs.length <= 1 ? [xs] : xs.flatMap((x, i) => perms([...xs.slice(0, i), ...xs.slice(i + 1)]).map((p) => [x, ...p])));
+  if (base.length > 7) return { why: `${base.length} criteria: too many orders` };
+  let best = base, bestHits = hits(base, cases);
+  for (const p of perms(base)) { const h = hits(p, cases); if (h > bestHits) { best = p; bestHits = h; } } // bounded: at most 7! orders
+  const train = { current: hits(base, cases), best: bestHits, of: cases.length };
+  const ho = { current: hits(base, heldOut), best: hits(best, heldOut), of: heldOut.length };
+  const admitted = train.best > train.current && ho.best >= ho.current;
+  const facts = best.map((c, i) => `@std.decide.c.${kind}.cal${i + 1} std.decide.criterion of=${kind} n=${i + 1} name=${c.name} measure=${c.measure} dir=${c.dir}`).join('\n');
+  return { current: base.map((c) => c.name), best: best.map((c) => c.name), admitted, train, heldOut: ho, facts };
+}

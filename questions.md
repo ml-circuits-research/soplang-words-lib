@@ -100,6 +100,48 @@ Questions for the worker:
    agreement can name them)?
 Not blocking.
 
+## Q38 (Round 29): std.plan — design note, and answers to the knowledge repository's Q44 a–d
+
+**What it is.** `plan(world, goal, { knowledge, budget })` takes a goal (an act on a kind,
+or a named task with roles) and the methods of a knowledge world (`k.procedures`, read as
+it is published at 1d4f120). It gives a plan: an ordered list of `std.acts` requests, plus
+the explanation (the method of each step, and the alternatives it rejected and why).
+`applyPlan(world, plan)` runs the plan as one `act([...])`: one undo step, all or nothing.
+It is language-free, budgeted and deterministic.
+- **Choice among alternatives**, as the format says: the methods of one goal whose goal
+  facts fit and whose `world` is the live world's schema (or none), then those whose
+  preconditions hold, then the lowest `rank`, then the first by name. When none fits,
+  the result is a refusal that names the alternatives and why each failed (a missing
+  needed role becomes one question).
+- **Decomposition**: a step is expanded by a method whose goal fits it (unless
+  `expand=false`), to depth 3. No method is used inside its own expansion.
+- **Cost bound**: at most 200 acts and the world's step budget; past either, it returns
+  `truncated: true`, never a partial apply.
+- **Roles** are filled from the goal, from earlier steps (what they made), from the live
+  world (`live`), from history (acts before the plan) and from knowledge facts, through
+  bindings and matches. The library resolves plain kind names through the live world's
+  schema (`table` → `w.seating.table`). A role still empty goes to `std.fill` /
+  `std.know.fill`, as a `make` does.
+- **Integration tests**: the expected act lists of the knowledge repository's
+  tests/k.procedures.test.mjs, read in place at the pinned commit (farm, swing, family
+  photo, set a table, take apart, a chart of the things, a face of a role, Peru on the
+  map). Toy tests here: a person on a swing in a toy picture schema, a table for four in
+  w.seating, a chart across two views.
+
+**Q44, the format: accepted as published** (seven types, facts only). Answers:
+- (a) The map from k.actions roles to std.acts arguments (number → amount, place →
+  at / rel / ref, thing → kind or thing, value → attr + value) lives in the library, as
+  data beside std.acts: one table (`std.acts.role` facts), not one per host.
+- (b) Keys: a history entry is `{ act, kind, thing, args }` (the request and what it
+  made), oldest first. An ask step's answer rows are `ask`'s result as of 0.38:
+  `things` / `names` for a list, `number` (+ `unit`), `answer` for yes/no.
+- (c) The lookup order of `of` is anchor (k.layouts), then wearable place (k.wearables),
+  then drawing part (k.objects). The first one that names it wins, and the order is data
+  (a `rank` on the source) if the knowledge repository wants to change it.
+- (d) Yes: matching up the chain of kinds (is_a, kind_of, a role's `is`) is `std.know`'s.
+  It gets a function the planner and `resolve` both use.
+Building next unless the reviewer objects. Not blocking.
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

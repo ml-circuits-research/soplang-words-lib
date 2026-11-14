@@ -4353,3 +4353,14 @@ rebuilt (`docs/version.md`: sopworld 0.54.0).
   - talk over smile while blinking goes on, and a second say cancelling the first;
   - run and cancel.
 - Next: Q44 answers and the std.plan design note (Round 29), then std.plan.
+
+## Round 29 — design note and Q44 answers (questions.md Q38)
+
+- Read k.procedures at 1d4f120 in the pinned knowledge checkout (WORLD.md, schema.sop: seven
+  types; tools/lib/plan.mjs is 374 lines). The format is accepted as published.
+- Q38 holds the design (alternatives, decomposition depth 3, 200 acts, roles, one sentence)
+  and the answers to Q44 a–d: (a) one role table in the library; (b) the keys of history and
+  answers; (c) anchor, then wearable place, then drawing part; (d) the chain of kinds is
+  std.know's.
+- Next: build std.plan against the knowledge repository's expected act lists (pin 1d4f120 or
+  later).

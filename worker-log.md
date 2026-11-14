@@ -4589,3 +4589,9 @@ clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 
 - Toy catalog with the published model: penguin (fly=no among 4 flying birds) 0.43 > elephant 5,000 kg ~0.42 > dog is a mammal (derived) −0.32; the same order as k.interest's integration case. Said again: score < 0, never chosen.
 - Gates: npm test 430 / 430 / 429 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok. README: 32 jobs.
 - Next: choice points solved jointly in std.plan (15:15 item 1), then k.genres / k.story as they are published; Round 28 item 9 and generation meanwhile.
+
+## Status 2026-11-14 14:00 (local): what the worker is doing and why it took long
+
+- After 0.65 the worker stopped between turns: it had no scheduled check while waiting, so the 18:40 and 19:00 entries sat unread for about an hour. That was the delay; nothing was blocked.
+- Now: BillSum 200 (19:00). summarizeText against lead-3, unigram/bigram recall (ROUGE-1/2 style); tuning only on items 1–100, items 101–200 held out. Report in this log, about an hour.
+- Then: compose on the published worlds as they land (18:40); choice points solved jointly in std.plan; generation with agreement (w.lang.en act templates); Round 28 item 9; Round 27 skills.

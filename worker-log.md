@@ -4764,3 +4764,11 @@ Gates: npm test 440 / 440 / 439 pass, 0 fail; pilot identical; psys2=0; scan cle
 Gates: npm test 445 / 445 / 444 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 
 Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-question focus), then the 21:00 small decisions.
+
+## 0.77.0: transfer by analogy, alignWorlds (Q54 item 5)
+
+- test/align.test.mjs: a toy seating world (table / seat / person) and a toy timeline (day / slot / event).
+  - Map: table→day, seat→slot, person→event. Slots: seat.table→slot.day, seat.n→slot.hour, seat.guest→slot.event. Score 1.
+  - Offers: the default of day.slots (from table.seats=4); slot.day required (from seat.table). Not told: slot.day is still not required in b.
+- Gates: npm test 446 / 446 / 445 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+- Next: Q54 item 6 (story-then-question focus), then the 21:00 small decisions (summarizeLog failed: 'separate', compose deterministic by seed / memoisable, needs=text).

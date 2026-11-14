@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.77.0
+
+Abstraction round, item 5 (questions.md Q54): transfer by analogy between worlds.
+
+### New
+- `alignWorlds(a, b, { min })`: two schemas aligned by structure. Types are paired by
+  their slots and references, and slots by signature. Defaults, choices and required slots
+  the other world lacks are offered with the map, not told.
+
 ## 0.76.0
 
 Abstraction round, item 4 (questions.md Q54): induction from cases.

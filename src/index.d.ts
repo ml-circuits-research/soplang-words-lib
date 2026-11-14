@@ -640,3 +640,5 @@ export function normalise(world: World, text: string, options?: { rules?: { name
 export function alternationsOf(world: World, type?: string): { name: string; from: string; to: string; mode?: string }[];
 /** Reading rules induced from cases (anti-unification), judged on held-out cases and cousins. */
 export function learnRules(world: World, cases: { text: string; frame: object }[], options?: { heldOut?: { text: string; frame: object }[]; cousins?: (kase: object) => object[]; admit?: number; min?: number }): { text?: string; support?: string[]; train?: { pass: number; of: number }; heldOut?: { pass: number; of: number }; admitted: boolean; why?: string }[];
+/** Two world schemas aligned by structure; what one has and the other lacks is offered. */
+export function alignWorlds(a: World, b: World, options?: { min?: number }): { map: Record<string, string>; slots: Record<string, Record<string, string>>; score: number; offers: { to: { type: string; key: string }; what: string; value: unknown; from: { type: string; key: string } }[] };

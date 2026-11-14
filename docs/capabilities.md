@@ -834,6 +834,28 @@ print(judgeFix((t) => (t === 'cow sound' ? ['moo'] : null), kase, cousins(w, kas
 0
 ```
 
+## Align two worlds by structure
+
+*In `alignWorlds`; since 0.77.*
+*Works on: any two world schemas.*
+
+A seating world and a timeline world align: table to day, seat to slot, guest to event.
+Types are paired by the shape of their slots and references, not by their names. What one
+has and the other lacks (a default, a closed set of choices, a required slot) is offered
+with the map, never told.
+**Limits:** the offers are defaults, choices and required slots. Rules, procedures and
+question forms come next. The pairing is greedy (the best pairs first).
+
+```js run
+const a = new World(); a.load('@s core.type of=seat  @s1 core.slot of=seat key=n kind=number default=1');
+const b = new World(); b.load('@s core.type of=slot  @s1 core.slot of=slot key=hour kind=number');
+print(alignWorlds(a, b).map);
+```
+
+```output
+{"seat":"slot"}
+```
+
 ## Building blocks
 
 *In the core exports; since 0.1 (each as listed).*

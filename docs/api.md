@@ -1662,6 +1662,31 @@ print(compose(w, 'owl', { genre: 'note' }).parts.map((p) => [p.part, p.relation 
 [["head","",["owl"]],["point","k.home",["b"]],["point","k.diet",["a"]]]
 ```
 
+### alignWorlds(a, b, options?)
+
+Transfer by analogy between worlds (abstraction round, item 5). Two world schemas are
+aligned by structure:
+- A type's signature is its slots: a reference or a kind, many or one, a closed set.
+- Types are paired by the share of their slots that match (at least `min`, default 0.5).
+  A pairing whose references point to types that pair as well comes first.
+- Slots inside a pair are matched by signature.
+
+Whatever the aligned slot of `b` lacks (a default, a closed set of choices, being
+required) is offered with the map, never told. The host measures an offer before taking
+it. The result is `{ map: { typeA: typeB }, slots: { typeA: { keyA: keyB } }, score,
+offers: [{ to, what, value, from }] }`.
+
+```js run
+const a = new World(); a.load('@s core.type of=seat  @s1 core.slot of=seat key=guest type=person  @s2 core.slot of=seat key=n kind=number default=1  @p core.type of=person  @p1 core.slot of=person key=name');
+const b = new World(); b.load('@s core.type of=slot  @s1 core.slot of=slot key=event type=event  @s2 core.slot of=slot key=hour kind=number  @e core.type of=event  @e1 core.slot of=event key=name');
+const r = alignWorlds(a, b);
+print(r.map, r.offers[0].what);
+```
+
+```output
+{"seat":"slot","person":"event"} default
+```
+
 ### learnRules(world, cases, options?)
 
 Induction from cases (abstraction round, item 4). Cases `[{ text, frame }]` that share a

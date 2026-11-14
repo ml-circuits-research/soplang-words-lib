@@ -1559,6 +1559,35 @@ print(summarizeLog([{ act: 'make', kind: 'cat' }, { act: 'make', kind: 'dog' }, 
 [["make","animal",2],["remove","tree",1]]
 ```
 
+### placeFor(world, size, at?, options?), boxesOf(world), relationsOf(world, kind?)
+
+Single placement (std.space), so a host drops its own placement code. Things are boxes
+(`x y w h` on std.schema things). `placeFor(world, { w, h }, at, { frame, gap, except })`
+gives `{ x, y, how, overlaps? }` for one thing:
+- relative to another thing: `at = { rel, ref }`, with `rel` one of left_of, right_of,
+  above, below, near (the first free side), on, in;
+- inside a named region: `at = { region }`, from `std.schema.region name= x y w h`;
+- with no `at`, the first free spot of the frame.
+
+Every spot avoids the other boxes when it can, and says `overlaps` when it cannot.
+`relationsOf` lists the relation kinds a schema declares (`std.schema.relation name=
+kind=spatial|containment|flow inverse=?`). `connect ... rel=` refuses a relation the
+schema does not declare, when it declares some. A word for a relation is a `core.word`
+that means the relation's name, kept apart from the words of attributes.
+
+```js run
+const w = new World();
+w.load(`@acts core.use world=std.acts  @p std.schema.world name=p  @t core.type of=box extends=std.schema.thing
+  @x core.slot of=box key=x kind=number  @y core.slot of=box key=y kind=number  @w core.slot of=box key=w kind=number  @h core.slot of=box key=h kind=number
+  @k std.schema.kind of=box world=p acts=make`);
+w.act({ action: 'make', args: { kind: 'box', x: 40, y: 40, w: 20, h: 20 } });
+print(placeFor(w, { w: 10, h: 10 }, { rel: 'right_of', ref: 'box1' }), placeFor(w, { w: 10, h: 10 }));
+```
+
+```output
+{"x":62,"y":45,"how":"right_of"} {"x":0,"y":0,"how":"default"}
+```
+
 ### arbitrate(world, request, options?)
 
 The arbitration contract: one verdict per declared world for one request. `own`: the

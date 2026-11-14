@@ -1664,6 +1664,8 @@ say the rest. The acts are the same for every world; a new schema needs no rule.
 | `std.schema.limit` | `of`, `max` | at most so many things of a kind (rules: a count and a deny) |
 | `std.schema.effect` | `of` (a kind), `act`, `action` (a host action) | that act on that kind is the host's, or the world's own effect of one act on one kind (what `on.make=<action>` was proposed for: this is it, nothing else is needed): for a world whose state is not wires (a drawing board, a diagram engine). The action gets `(ctx, args, { act, kind, thing })` and returns `{ ok?, why?, diff, undo?, ...result }`; its `diff` comes back as `diff.effects`; `undo()` is called when the sentence it is part of is refused |
 | `std.schema.needs` | `of` (a world or a view), `type`, `from`? | what must be loaded before acting there: an act on a kind of that world (or in that view) is refused with `reason.needs` while no wire of `type` exists; `turn(..., { load })` asks the host to load each and reads again; `needsOf` lists them |
+| `std.schema.relation` | `name`, `kind` (`spatial`, `containment`, `flow`), `inverse`? | a relation the schema has; `connect rel=` refuses others when some are declared; `relationsOf` lists them |
+| `std.schema.region` | `name`, `x`, `y`, `w`, `h` | a named region of the frame, for `placeFor(..., { region })` |
 | `std.schema.capacity` | `of` (a container kind), `key` (its count key), `holds` (a kind), `via` (the key that refers to the container) | a container holds at most its own count: making or moving one more is refused ("table1 has room for 0 more guests"), and so is a count below what it holds |
 
 Every thing has `kind` and `world`. Checked at load: an act not in the list, a kind of a

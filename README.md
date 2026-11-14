@@ -40,7 +40,7 @@ contain and where code lives: [docs/kinds-of-worlds.md](docs/kinds-of-worlds.md)
 | Drive a world whose state is not wires | `std.schema.effect` | [example](docs/capabilities.md#drive-a-world-whose-state-is-not-wires) | 0.28 |
 | Fill gaps from other worlds | `std.fill`, `std.know` | [example](docs/capabilities.md#fill-gaps-from-other-worlds) | 0.17 |
 | Keep focus in a dialogue | `std.focus`, `std.dialogue` | [example](docs/capabilities.md#keep-focus-in-a-dialogue) | 0.17 |
-| Relate and place things | `std.relations`, `std.boxes` | [example](docs/capabilities.md#relate-and-place-things) | 0.16 |
+| Relate and place things | `std.relations`, `std.boxes`, `placeFor`, `boxesOf`, `relationsOf` | [example](docs/capabilities.md#relate-and-place-things) | 0.16 |
 | Share things between views; teach facts | `std.schema` views, `show`, `teach`, `complete` | [example](docs/capabilities.md#share-things-between-views-teach-facts) | 0.21 |
 | Generate cards, examples, replies, a coverage grid and tests | `schemaCard`, `schemaExamples`, `actReply`, `schemaGrid`, `gridTests` | [example](docs/capabilities.md#generate-cards-examples-replies-a-coverage-grid-and-tests) | 0.19 |
 | Drop readings the present state would refuse | `world.score` | [example](docs/capabilities.md#drop-readings-the-present-state-would-refuse) | 0.13 |

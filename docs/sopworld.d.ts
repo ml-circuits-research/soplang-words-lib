@@ -588,3 +588,9 @@ export function summarizeLog(entries: { act: string; kind?: string | null; faile
 export function summarizeText(text: string, options?: { n?: number; stop?: string[]; redundancy?: number }): { sentences: { text: string; score: number; at: number }[]; picked: string[] };
 /** Unigram recall of a summary against a reference. */
 export function overlap(summary: string, reference: string, options?: { stop?: string[] }): number;
+/** std.space: the spot for one thing (relative to a thing, in a region, or a default spot), avoiding overlaps. */
+export function placeFor(world: World, size?: { w?: number; h?: number }, at?: { rel?: string; ref?: string; region?: string }, options?: { frame?: { x: number; y: number; w: number; h: number }; gap?: number; except?: string }): { x?: number; y?: number; how?: string; overlaps?: boolean; why?: string };
+/** The boxes of the things that have a place. */
+export function boxesOf(world: World, options?: { except?: string }): { id: string; kind?: string; x: number; y: number; w: number; h: number }[];
+/** The relation kinds a schema declares. */
+export function relationsOf(world: World, kind?: string): { name: string; kind: string; inverse?: string }[];

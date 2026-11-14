@@ -4531,3 +4531,23 @@ rebuilt (`docs/version.md`: sopworld 0.61.0).
 - std.compose: `git ls-tree` of the knowledge repository's main shows no k.genres, k.story,
   k.interest or w.document yet. Per the reviewer (15:00 and 15:15: build when a world uses
   it), compose waits for them; I go to Round 28 items 8–9 meanwhile.
+
+## Round 28 item 8 — single placement, relation kinds — release 0.62.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 0.62.0).
+
+- src/space.mjs:
+  - `placeFor`: relative to a thing (7 relations; near takes the first free side), in a
+    region, or a default spot (a free scan of the frame); overlaps avoided, else said.
+  - `boxesOf`, `relationsOf`.
+- src/std.mjs: `std.schema.relation` (spatial / containment / flow, inverse) and
+  `std.schema.region`. The first name I tried, `std.space.region`, was refused because
+  module types live under std.schema. `connect rel=` refuses an undeclared relation when
+  some are declared.
+- test/space-place.test.mjs: 2 tests (the placements, a region, the default spot, overlaps
+  said; relation kinds, connect refusing "loves").
+- Q36 lines 10, 17 and 24 (second part) are done. Relation words are core.words that mean a
+  relation name.
+- Next: item 9 (experiment and ablation harnesses), then the std.plan follow-up, Round 27.
+  std.compose waits for k.genres / k.story / k.interest.

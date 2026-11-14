@@ -376,6 +376,8 @@ const ACTIONS = {
       if (!x.thing) return refuse(w, 'connect', x.kind, x.why, x.which ? { which: x.which } : {});
       if (!allows(w, x.thing, 'connect')) return refuse(w, 'connect', x.thing.attrs.kind[0], `${art(x.thing.attrs.kind[0])} cannot be connected here`);
     }
+    const declared = w.ofType('std.schema.relation');
+    if (args.rel !== undefined && declared.length && !declared.some((r) => r.attrs.name[0] === String(one(args.rel)))) return refuse(w, 'connect', a.thing.attrs.kind[0], `there is no relation ${one(args.rel)} here`, { relations: declared.map((r) => r.attrs.name[0]) });
     const id = fresh(w, 'link');
     ctx.tell(wireText(id, 'std.acts.link', { a: ref(a.thing.id), b: ref(b.thing.id), ...(args.rel ? { rel: one(args.rel) } : {}) }), { now: true });
     return { act: 'connect', link: id };
@@ -858,6 +860,14 @@ ${calcs.join('\n')}
 @k.view.state core.slot of=std.schema.view key=state
 @k.world.bundle core.slot of=std.schema.world key=bundle many=true
 @k.bundled.name core.slot of=std.schema.bundled key=name id=true
+@k.rel.name core.slot of=std.schema.relation key=name id=true required=true
+@k.rel.kind core.slot of=std.schema.relation key=kind enum=spatial enum=containment enum=flow default=spatial
+@k.rel.inverse core.slot of=std.schema.relation key=inverse
+@k.region.name core.slot of=std.schema.region key=name id=true required=true
+@k.region.x core.slot of=std.schema.region key=x kind=number
+@k.region.y core.slot of=std.schema.region key=y kind=number
+@k.region.w core.slot of=std.schema.region key=w kind=number
+@k.region.h core.slot of=std.schema.region key=h kind=number
 @k.needs.of core.slot of=std.schema.needs key=of required=true
 @k.needs.type core.slot of=std.schema.needs key=type required=true
 @k.needs.from core.slot of=std.schema.needs key=from

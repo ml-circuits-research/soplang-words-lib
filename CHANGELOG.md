@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.62.0
+
+Round 28 item 8: single placement and relation kinds.
+
+### New
+- `placeFor(world, { w, h }, at, { frame, gap, except })` gives the spot for one thing:
+  left_of, right_of, above, below, near (the first free side), on, in; in a region
+  (`std.schema.region`); or a default spot. It avoids overlaps and says when it cannot.
+- `boxesOf(world)`.
+- `std.schema.relation name= kind=spatial|containment|flow inverse=?` and
+  `relationsOf(world, kind)`. `connect rel=` refuses an undeclared relation when some are
+  declared.
+
 ## 0.61.0
 
 Reviewer 14:45 A: `std.summarize`.

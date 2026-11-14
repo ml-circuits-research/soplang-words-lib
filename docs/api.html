@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="d043d6f5662f">
+<meta name="source-hash" content="eba9196dd3d0">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.61.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.62.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -571,6 +571,17 @@ print([...new Set(sample(w, { mode: &#x27;actions&#x27;, prefer: { thing: &#x27;
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const parentOf = (k) =&gt; ([&#x27;cat&#x27;, &#x27;dog&#x27;].includes(k) ? &#x27;animal&#x27; : null);
 print(summarizeLog([{ act: &#x27;make&#x27;, kind: &#x27;cat&#x27; }, { act: &#x27;make&#x27;, kind: &#x27;dog&#x27; }, { act: &#x27;remove&#x27;, kind: &#x27;tree&#x27; }], { parentOf, length: &#x27;bullets&#x27; }).map((f) =&gt; [f.act, f.kind, f.count]));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;make&quot;,&quot;animal&quot;,2],[&quot;remove&quot;,&quot;tree&quot;,1]]</code></pre></figure>
+<h3 id="placeforworld-size-at-options-boxesofworld-relationsofworld-kind">placeFor(world, size, at?, options?), boxesOf(world), relationsOf(world, kind?)</h3>
+<p>Single placement (std.space), so a host drops its own placement code. Things are boxes (<code>x y w h</code> on std.schema things). <code>placeFor(world, { w, h }, at, { frame, gap, except })</code> gives <code>{ x, y, how, overlaps? }</code> for one thing:</p>
+<ul><li>relative to another thing: <code>at = { rel, ref }</code>, with <code>rel</code> one of left_of, right_of, above, below, near (the first free side), on, in;</li><li>inside a named region: <code>at = { region }</code>, from <code>std.schema.region name= x y w h</code>;</li><li>with no <code>at</code>, the first free spot of the frame.</li></ul>
+<p>Every spot avoids the other boxes when it can, and says <code>overlaps</code> when it cannot. <code>relationsOf</code> lists the relation kinds a schema declares (<code>std.schema.relation name= kind=spatial|containment|flow inverse=?</code>). <code>connect ... rel=</code> refuses a relation the schema does not declare, when it declares some. A word for a relation is a <code>core.word</code> that means the relation's name, kept apart from the words of attributes.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@acts core.use world=std.acts  @p std.schema.world name=p  @t core.type of=box extends=std.schema.thing
+  @x core.slot of=box key=x kind=number  @y core.slot of=box key=y kind=number  @w core.slot of=box key=w kind=number  @h core.slot of=box key=h kind=number
+  @k std.schema.kind of=box world=p acts=make`);
+w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;box&#x27;, x: 40, y: 40, w: 20, h: 20 } });
+print(placeFor(w, { w: 10, h: 10 }, { rel: &#x27;right_of&#x27;, ref: &#x27;box1&#x27; }), placeFor(w, { w: 10, h: 10 }));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;x&quot;:62,&quot;y&quot;:45,&quot;how&quot;:&quot;right_of&quot;} {&quot;x&quot;:0,&quot;y&quot;:0,&quot;how&quot;:&quot;default&quot;}</code></pre></figure>
 <h3 id="arbitrateworld-request-options">arbitrate(world, request, options?)</h3>
 <p>The arbitration contract: one verdict per declared world for one request. <code>own</code>: the world has the kind (or the thing, or a view whose state has the attribute), allows the act, and its dry run takes it. <code>decline</code>: it has no use for the kind, so it declines the verb; this rule is the library's, not the host's. <code>refuse</code>: it has the kind, but the act is not allowed or the dry run refuses. A refusal is given only in the <code>exact</code> pass; in a <code>spelling</code> or <code>view</code> pass (<code>options.pass</code>) it stays a decline. When several worlds own, <code>options.resolves(world, words)</code> (a host hook, with <code>options.words</code>) keeps the ones whose things hold the words. Returns <code>{ verdicts: [{ world, verdict, why }], owner, ambiguous?, pass }</code>.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
@@ -837,7 +848,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.61.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.62.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

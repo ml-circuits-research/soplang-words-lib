@@ -61,3 +61,12 @@ test('compose by the published k.genres: parts in order, choices solved jointly,
   assert.match(b.short.at(-1), /of 30 sentences/);
   assert.match(compose(w, 'penguin', { genre: 'story' }).short[0], /k.story/);
 });
+
+test('compose: deterministic by seed and memoised until the world changes (PSys2 21:00: hosts dry-run twice)', { skip: !worldsDir() && 'offline' }, () => {
+  const w = load(); w.tell(worldText('k.genres'));
+  const a = compose(w, 'penguin', { genre: 'presentation', seed: 3 }), b = compose(w, 'penguin', { genre: 'presentation', seed: 3 });
+  assert.equal(a, b, 'the same object: memoised');
+  assert.deepEqual(compose(w, 'penguin', { genre: 'presentation', seed: 3, memo: false }), a, 'and the same composition when computed again');
+  w.tell('@z1 k.diet about=penguin eats=squid');
+  assert.notEqual(compose(w, 'penguin', { genre: 'presentation', seed: 3 }), a, 'a change in the world: computed again');
+});

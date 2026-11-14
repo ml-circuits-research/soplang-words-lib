@@ -47,3 +47,14 @@ test('sample: actions for a selected thing (buttons); a dice; novelty; the round
   const d = diversity(sample(w, { seed: 7, n: 30 }).frames);
   assert.ok(d.acts >= 3 && d.kinds >= 3, JSON.stringify(d));
 });
+
+test('sample: a kind that needs=text is not made without a text filler; with one, the filler gives it (PSys2 21:00)', async () => {
+  const { World, sample } = await import('../tools/lib-under-test.mjs');
+  const w = new World();
+  w.load('@acts core.use world=std.acts\n@notes std.schema.world name=notes doc="notes"\n@nt core.type of=note extends=std.schema.thing  @nt1 core.slot of=note key=text\n@note std.schema.kind of=note world=notes acts=make needs=text');
+  const none = sample(w, { seed: 1, n: 5 });
+  assert.ok(!(none.frames ?? none).some?.((f) => f.args?.kind === 'note'), 'no note made without text');
+  const some = sample(w, { seed: 1, n: 3, fillers: { text: () => 'buy milk' } });
+  const made = (some.frames ?? some).filter?.((f) => f.args?.kind === 'note') ?? [];
+  assert.ok(made.length && made.every((f) => f.args.text === 'buy milk'));
+});

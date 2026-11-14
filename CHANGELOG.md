@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.79.0
+
+PSys2's decisions from the reviewer's 21:00 list.
+
+### New
+- `summarizeLog(entries, { failed: 'separate' })`: what failed is a list of its own
+  (`result.failed`).
+- `compose` is memoised by topic, genre, size and seed until the world changes, and
+  deterministic by seed. `memo: false` computes it again.
+- `std.schema.kind ... needs=text` (any need): `sample` does not draw a make it cannot
+  fill. `sample(world, { fillers: { text: (kind, rand) => ... } })` fills it.
+
 ## 0.78.0
 
 Abstraction round, item 6 (questions.md Q54; reviewer 18:20 item 1): a story then a

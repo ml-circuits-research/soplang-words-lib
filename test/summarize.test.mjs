@@ -34,3 +34,10 @@ test('summarize: a text, extractive; redundancy dropped; measured against refere
   assert.equal(twice.picked.filter((s) => s.startsWith('Owls hunt')).length, 1, 'the same thing twice is said once');
   for (const { text } of TEXTS) for (const s of summarizeText(text).picked) assert.ok(text.includes(s), 'every sentence is from the source');
 });
+
+test("summarizeLog({ failed: 'separate' }): what failed is a list of its own (PSys2 21:00)", async () => {
+  const { summarizeLog } = await import('../tools/lib-under-test.mjs');
+  const r = summarizeLog([{ act: 'make', kind: 'cat' }, { act: 'make', kind: 'dog', failed: true }, { act: 'remove', kind: 'cat' }], { failed: 'separate' });
+  assert.ok(r.every((f) => !f.failed));
+  assert.deepEqual(r.failed.map((f) => [f.act, f.kind, f.failed]), [['make', 'dog', true]]);
+});

@@ -1521,6 +1521,10 @@ host's language world), only frames that read back are kept; `roundTrip` gives t
 Modes: `one` (a dice), `few` (3 or 4), `actions` (the acts that fit `prefer.thing`, for
 buttons). `diversity` counts the distinct acts, kinds and attributes.
 
+A kind declared with `needs=` (for example `needs=text`) is made only when `fillers`
+has a filler for each need (`fillers: { text: (kind, rand) => ... }`). Sample never draws
+a make it cannot fill.
+
 ```js run
 const w = new World();
 w.load(`@acts core.use world=std.acts  @art std.schema.world name=art
@@ -1543,7 +1547,8 @@ Summaries with no model (std.summarize). `actsOf` reads a world's history into a
 by act and kind, generalises siblings up the chain of kinds (`parentOf`, as std.know or a
 planner gives it: cat, dog and horse become 3 animals), keeps failures, and orders by
 salience (changes, repetition, recency, failure). It gives frames for the language world
-to render: `line` keeps 1, `paragraph` 3, `bullets` all. `summarizeText(text, { n, words, stop,
+to render: `line` keeps 1, `paragraph` 3, `bullets` all. With `failed: 'separate'`, what
+failed is a list of its own (`result.failed`), never mixed with what was done. `summarizeText(text, { n, words, stop,
 redundancy })` is extractive. A sentence ends at a stop before a capital, a quote or a
 parenthesis, but not after an abbreviation ("Sec. 219"). It scores sentences by centrality (the content words they
 share with the others), information (numbers, names) and position, drops a sentence that

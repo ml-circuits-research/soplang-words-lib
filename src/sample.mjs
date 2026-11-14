@@ -42,10 +42,10 @@ function valueFor(world, slot, rand) {
  * - `realise(frame) -> text` and `read(text) -> frame`: the round-trip filter.
  * Returns { frames, tried, kept, roundTrip }.
  */
-export function sample(world, { seed = 1, n, mode = 'few', prefer = {}, seen = [], realise, read } = {}) {
+export function sample(world, { seed = 1, n, mode = 'few', prefer = {}, seen = [], realise, read, fillers = {} } = {}) {
   const rand = rng(seed);
   const c = world._compiled();
-  const kinds = world.ofType('std.schema.kind').map((k) => ({ type: k.attrs.of[0], worlds: k.attrs.world, acts: k.attrs.acts || [], open: false }));
+  const kinds = world.ofType('std.schema.kind').map((k) => ({ type: k.attrs.of[0], worlds: k.attrs.world, acts: k.attrs.acts || [], open: false, needs: (k.attrs.needs || []).map(bare) }));
   const open = world.ofType('std.schema.kinds').map((k) => ({ from: k.attrs.from[0], key: k.attrs.key?.[0] || 'name', world: k.attrs.world[0], acts: k.attrs.acts || [] }));
   const things = world.ofType('std.schema.thing').filter((t) => t.attrs.kind);
   const usedActs = new Map(), usedKinds = new Map();
@@ -65,7 +65,8 @@ export function sample(world, { seed = 1, n, mode = 'few', prefer = {}, seen = [
       if (target && !mine.includes(target)) continue;
       if (['remove', 'change', 'place', 'ask', 'copy', 'pick'].includes(act) && !mine.length) continue; // needs a thing
       if (act === 'make' && target) continue;
-      options.push({ item: { kind: k.type, act, world: wd, mine }, w: novelty(usedActs, act) * novelty(usedKinds, k.type) });
+      if (act === 'make' && k.needs.some((nd) => !fillers[nd])) continue; // a make it cannot fill (needs=text with no text filler) is not drawn
+      options.push({ item: { kind: k.type, act, world: wd, mine, needs: k.needs }, w: novelty(usedActs, act) * novelty(usedKinds, k.type) });
     }
     for (const o of open) for (const act of o.acts) {
       if (prefer.world && o.world !== prefer.world) continue;
@@ -92,6 +93,7 @@ export function sample(world, { seed = 1, n, mode = 'few', prefer = {}, seen = [
     const slots = [...(c.slots.get(ch.kind)?.values() || [])].filter((s) => !['kind', 'world'].includes(s.key) && !s.prefix);
     if (ch.act === 'make') {
       const args = { kind: ch.kind };
+      for (const nd of ch.needs || []) { const v = fillers[nd](ch.kind, rand); if (v === undefined) return undefined; args[nd] = v; } // the host fills what the kind needs
       for (const s of slots.filter((x) => x.required)) { const v = valueFor(world, s, rand); if (v === undefined) return undefined; args[s.key] = v; }
       const extra = slots.filter((s) => !s.required && (s.enum || s.min || s.by));
       if (extra.length && rand() < 0.6) { const s = extra[Math.floor(rand() * extra.length)]; const v = valueFor(world, s, rand); if (v !== undefined) args[s.key] = v; }

@@ -4786,3 +4786,12 @@ Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-que
 - Gates: npm test 447 / 447 / 446 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - [KNOW] ask: the verb effects (set / add / remove / give) as facts of w.lang.en (or k.actions), so hosts pass no table.
 - The Q54 items 0–6 are all in a first version. Next: the 21:00 small decisions (summarizeLog failed: 'separate', compose deterministic and memoisable, needs=text for sample), then Round 28 item 9 and Round 27 skills (the learn skill calls cousins + learnRules).
+
+## 0.79.0: the 21:00 decisions
+
+- `summarizeLog({ failed: 'separate' })`: failures are in `result.failed`; the main list holds only what was done (test in summarize.test.mjs).
+- `compose` is deterministic by seed and memoised until the world changes. A dry run twice gives the same object; `memo: false` recomputes an equal composition; a change in the world recomputes (test in compose.test.mjs).
+- `std.schema.kind ... needs=text`: sample does not draw a make it cannot fill. With `fillers: { text }` it makes and fills it (test in sample.test.mjs).
+- The gate caught a consumer name in a new src comment before commit (psys2=1 → 0).
+- Gates: npm test 450 / 450 / 449 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+- Next: the one-summariser ask (docr.summary into std.summarize; I need its interface from the reviewer); Round 28 item 9; Round 27 skills (the learn skill uses cousins + learnRules).

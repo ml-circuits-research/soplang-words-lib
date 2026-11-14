@@ -161,7 +161,18 @@ export function interestOf(world, fact, options = {}) {
  * Options: `genre` (a k.genres.genre name; default: introduce, fact, fact, conclude), `size`
  * { chapters, sections, sentences } (sentences per section), `seed`, `realise(frame) -> text`.
  */
-export function compose(world, topic, { genre, size, seed = 1, realise, measures, story } = {}) {
+const memo = new WeakMap(); // world -> Map(key -> { at, result }): a host that dry-runs twice gets the same composition
+export function compose(world, topic, options = {}) {
+  const { realise, measures, story } = options;
+  if (realise || measures || story || options.memo === false) return composeOnce(world, topic, options);
+  const key = JSON.stringify([topic, options.genre ?? null, options.size ?? null, options.seed ?? 1]), at = `${world.stamp ?? ''}|${world.wires.size}`;
+  const m = memo.get(world) || memo.set(world, new Map()).get(world), hit = m.get(key);
+  if (hit && hit.at === at) return hit.result;
+  const result = composeOnce(world, topic, options);
+  m.set(key, { at, result });
+  return result;
+}
+function composeOnce(world, topic, { genre, size, seed = 1, realise, measures, story } = {}) {
   const rand = rng(seed);
   const g = genre ? world.ofType('k.genres.genre').find((x) => bare(x.attrs.name[0]) === genre) : null;
   if (genre && !g) return { why: `there is no genre ${genre}` };

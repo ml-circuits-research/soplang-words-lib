@@ -31,7 +31,11 @@ export function actsOf(world) {
  * `parentOf(kind)`: the kind above it (the chain of kinds, as std.know or a planner's isA
  * gives it); `length`: 'line' (1 frame), 'paragraph' (3), 'bullets' (all).
  */
-export function summarizeLog(entries, { parentOf = () => null, length = 'paragraph' } = {}) {
+export function summarizeLog(entries, { parentOf = () => null, length = 'paragraph', failed: failedMode } = {}) {
+  if (failedMode === 'separate') { // what failed is its own list, never mixed into what was done (reviewer 21:00)
+    const ok = entries.filter((e) => !e.failed), bad = entries.filter((e) => e.failed);
+    return Object.assign(summarizeLog(ok, { parentOf, length }), { failed: summarizeLog(bad, { parentOf, length: 'bullets' }) });
+  }
   const groups = new Map();
   entries.forEach((e, i) => { // bounded: the entries
     const key = `${e.act}|${e.kind ?? ''}|${e.failed ? 'failed' : ''}`;

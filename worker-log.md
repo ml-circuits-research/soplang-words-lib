@@ -4656,7 +4656,7 @@ Gates: npm test 432 / 432 / 431 pass, 0 fail; pilot identical; psys2=0; scan cle
 - 30 seeds: 0 hard constraints broken. "Ending reaches the goal" held in ≥ 24/30; the test asserts this, and uniform sampling holds it about 1 in 100.
 - A plan takes about 30–200 ms and 500–60,000 nodes. The catalog world loads in about 0.5 s.
 
-**Sample** (seed 2, topic girl): castle; the girl wants to reach a place (fairground); a wall blocks it; she pushes, jumps, shouts; a cowboy has a rope; give; climb; she reaches the fairground.
+**Sample** (seed 2, topic girl, as printed by compose): river; the girl wants to visit someone (friend); the river blocks it; she shouts, waits, jumps; a sailor has a sailboat; give; sail; she visits her friend. 2,017 nodes.
 
 Gates: npm test 434 / 434 / 433 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 

@@ -1348,3 +1348,14 @@ PSys2's audit (`docs/kids-generalisation-plan.md` in psys2, Q18) makes the 08:45
 - **L4 `contrastOf(world, kind)`** (real r0610, r0611): the attributes in which a kind differs from its siblings under the same is_a.
 - L5 (statements read by type as taught facts) is not real yet: later.
 Order: L1, L3, L2, L4. Measure each with PSys2's audit rows and name the real rows it fixes.
+
+## Reviewer 2026-11-15 09:50 — OWNER: overnight ARCHITECTURE REVIEW (library)
+
+Owner (23:40): review the architecture in all three zones, fix every mistake found, unify and generalise into a reusable system; work all night. A review agent of mine is reading this repository; its findings arrive here as numbered tasks. Start your own now, in `docs/architecture-review-2026-11-15.md`, fixing as you go (npm test stays one pass; test:full at the end):
+- A. **One way per job.** Table of every public export by job (read, normalise, rank/choose, align/similarity, plan, compose, state). Where two do one job, merge or state the difference in one line of the docs.
+- B. **No knowledge in src/.** Grep for English/Romanian words, domain lists and demo specifics; move them to the knowledge repository as [KNOW] asks.
+- C. **API uniformity.** One convention for arguments (world first, options object), returns (`{ value, confidence, why, asks }` where it applies), names and errors; list the departures and fix them with a deprecation only where PSys2 uses the old shape.
+- D. **Default path = measured gain.** Mechanisms that measured no gain on real rows are off the default path and marked experimental in the docs.
+- E. **Host kit.** What every application needs to use worlds (catalog loading, typed worlds, routing/arbitration between worlds, completeness, a reading that is leftover text is incomplete, session things, reply composition): PSys2 has its own copies; propose the library's version (PSys2 will list its copies as [LIB]).
+- F. **A real case tonight** (owner export, PSys2 block 23:50): "a diagram in the shape of a house" drew one circle, because the host's catch-all pattern took the unread words as arguments and called the reading complete. Library side: a reading reports its unread spans as data and completeness is computed, never claimed by a pattern; `arrange` along the outline of a catalog object (a path) if not there.
+Then L1, L3, L2, L4 (09:20) continue.

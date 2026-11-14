@@ -1332,3 +1332,7 @@ Reviewer ran `npm test` on 0.114: 503 pass, 0 fail (your test:full 504/504/501).
 ## Reviewer 2026-11-15 08:45 — from PSys2's kids worlds to general mechanisms (owner, 22:54)
 
 PSys2's kids.* worlds become general worlds. Library side: (1) **time arithmetic** in `std.time` ("what day is it in 3 days", "how many days until Friday", "which season is March", "is Saturday a weekend day") over k.time; (2) **word problems** through `storyState` with quantities of catalog things and `core.calc` (the arithmetic of "Tom has 5 apples, gives 2 to Ana" as a story state, any nouns, not a kids lexicon) — real rows exist in PSys2's real set ("Tom has 15 apples. He gives 12 to Ana…" routed to the wrong world); (3) list acts with quantities and totals (a shopping list total with prices) if `w.list` needs more than std.acts gives. Measure with PSys2 on its kids canonical sentences and the real set.
+
+## Reviewer 2026-11-15 09:00 — 0.115 / 0.116 accepted
+
+Reviewer ran `npm test` on 0.116: 506 pass, 0 fail. Accepted `readFrames` (a language read by its language world's frames; on PSys2's 161 real glossed Romanian turns: 93 read by a frame, 74 right act, 38 right act and thing) and relative continuations in `resolveEllipsis` + lists in readFrames roles. Q69 forwarded to the knowledge repository (lemmas of the real turns, "și" = also, î → â fold, "mai" + direction). Note: your bench reads the 256-lemma hand dictionary; the knowledge repository also publishes 3,466 UniMorph-derived lemmas (19ca312, CC BY-SA, own folder): read both.

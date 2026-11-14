@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.116.0
+
+From the reviewer's 08:15 entry, item 2 (relative continuations in real turns).
+
+### New
+- `resolveEllipsis` reads relative continuations: a direction of `<lang>.lex name=acts.dir`, words
+  of more and of a small step (`relative`), a position among the things of the previous thing's
+  type (ordinals, first, last, middle), and a negated clause as the one rejected ("not the first
+  one, the middle one"); `lang` and `fold` for another language.
+- `readFrames`: a role of words is also cut into `items` at commas and at the language's "and".
+
 ## 0.115.0
 
 From the reviewer's 08:15 entry (the real work list: Romanian is 77 of PSys2's 190 failing real turns).

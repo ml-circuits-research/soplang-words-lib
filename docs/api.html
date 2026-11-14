@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="c7bee2105eae">
+<meta name="source-hash" content="6a46fc2d89bb">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.115.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.116.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -613,7 +613,7 @@ print(fitsSlot(t, &#x27;ex.player&#x27;, &#x27;instrument&#x27;, &#x27;the violi
 <h3 id="readframesworld-text-options-and-senseofworld-id">readFrames(world, text, options?) and senseOf(world, id)</h3>
 <p>Reading by the frames of a language world, as a reader next to machine translation. A language world declares frames (<code>&lt;lang&gt;.frame name= en= act= mode= priority=</code>) as ordered parts (<code>&lt;lang&gt;.part frame= at= is= ...</code>):</p>
 <ul><li><code>lead</code> or <code>phrase</code>: an item of <code>&lt;lang&gt;.phrase name=</code>;</li><li><code>word</code>: one of its words;</li><li><code>verb act=</code>: a word whose lemma's sense is a verb of that act;</li><li><code>det</code>: a determiner (<code>&lt;lang&gt;.det form=</code>);</li><li><code>role</code>, which takes words (<code>max_words</code>), a number (<code>&lt;lang&gt;.numeral form= value=</code> or digits), a preposition (<code>&lt;lang&gt;.prep form= rel=</code>), a list (<code>&lt;lang&gt;.lex name= item=</code>) or the rest.</li></ul>
-<p>Words are analysed by the language's morphology (<code>morph</code>, from <code>morphOf</code>, and its lazy <code>dictionary</code> with a sense per lemma), so inflected and unaccented forms read. Items of a phrase named <code>skip</code> are passed over wherever they stand. <code>readFrames(world, text, { lang, morph, dictionary, senses, max })</code> returns <code>{ best, frames, tokens }</code>; a frame is <code>{ frame, en, act, mode, roles, verb?, score }</code>, where each role has its <code>text</code> and, for words, <code>words: [{ form, lemma, sense, en, pos, features }]</code> and <code>en</code> (the reference words). Of the frames that take every word, the highest priority wins, and words with a known sense count. <code>best</code> is null when no frame takes the text. <code>senseOf(world, id)</code> gives <code>{ act?, en?, pos? }</code> for a sense id: a verb fact of an act, or the id's own shape (<code>&lt;prefix&gt;.&lt;word&gt;.&lt;pos&gt;.&lt;n&gt;</code>).</p>
+<p>Words are analysed by the language's morphology (<code>morph</code>, from <code>morphOf</code>, and its lazy <code>dictionary</code> with a sense per lemma), so inflected and unaccented forms read. Items of a phrase named <code>skip</code> are passed over wherever they stand. <code>readFrames(world, text, { lang, morph, dictionary, senses, max })</code> returns <code>{ best, frames, tokens }</code>; a frame is <code>{ frame, en, act, mode, roles, verb?, score }</code>, where each role has its <code>text</code> and, for words, <code>words: [{ form, lemma, sense, en, pos, features }]</code> and <code>en</code> (the reference words). Of the frames that take every word, the highest priority wins, and words with a known sense count. A role of words is also cut into <code>items</code> at commas and at the language's "and" (<code>&lt;lang&gt;.particle kind=conjunction meaning=and</code>), for a list. <code>best</code> is null when no frame takes the text. <code>senseOf(world, id)</code> gives <code>{ act?, en?, pos? }</code> for a sense id: a verb fact of an act, or the id's own shape (<code>&lt;prefix&gt;.&lt;word&gt;.&lt;pos&gt;.&lt;n&gt;</code>).</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.tell(&#x27;@f ex.frame name=x.make act=make priority=1\n@a ex.part frame=x.make at=1 is=word word=zap\n@b ex.part frame=x.make at=2 is=role role=thing takes=words&#x27;);
 print(readFrames(w, &#x27;zap a tree&#x27;, { lang: &#x27;ex&#x27; }).best.roles.thing.text);</code></pre></figure>
@@ -814,6 +814,7 @@ print(minePatterns(w, [&#x27;what sound does a cow make&#x27;, &#x27;what sound 
 <figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;pattern&quot;:&quot;what &lt;attr&gt; does a &lt;thing&gt; &lt;verb&gt;&quot;,&quot;count&quot;:2,&quot;example&quot;:&quot;what sound does a cow make&quot;}</code></pre></figure>
 <h3 id="resolveellipsisworld-text-previous-options">resolveEllipsis(world, text, previous, options?)</h3>
 <p>Ellipsis (fragment) resolution (reviewer 03:20): a verbless continuation such as "it to the top right" or "and still up" reuses the previous act <code>{ act, args }</code> with the roles the message gives, read by type. A thing is read by its name, and a pronoun in <code>pronouns</code> keeps the previous thing. A value of a closed set is read by its key; multiword values like "top right" count. The result is <code>{ act, args, reused: true, changed }</code>, or null when the message names an act or gives no role.</p>
+<p>Relative continuations, as in real turns ("more to the left", "a bit lower", "not the first one, the middle one"): a direction of the language world (<code>&lt;lang&gt;.lex name=acts.dir item=...</code>) goes in <code>args[dirKey]</code> (<code>dir</code>); a word of <code>more</code> marks the move as relative (<code>relative: { more: true }</code>, and <code>small: true</code> for a word of <code>small</code>), and "even more" alone repeats the previous direction. A position picks among the things of the previous thing's type, ordered by <code>x</code>: an ordinal (<code>&lt;lang&gt;.ordinal text= value=</code>) or a word of <code>positions</code> (first, last, middle). Of clauses split by commas, one with a negation (<code>&lt;lang&gt;.neg text=</code>) is the one rejected. <code>lang</code> (<code>w.lang.en</code>) and <code>fold</code> read another language with its own words.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(&#x27;@acts core.use world=std.acts\n@art std.schema.world name=art doc=x\n@t core.type of=shape extends=std.schema.thing\n@s core.slot of=shape key=place enum=up enum=down\n@k std.schema.kind of=shape world=art acts=place&#x27;);
 w.tell(&#x27;@c1 shape name=cat&#x27;);
@@ -1127,7 +1128,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>false object</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.115.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.116.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

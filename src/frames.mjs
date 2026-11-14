@@ -28,20 +28,24 @@ export function senseOf(world, id) {
  * Read `text` by the frames of a language world. Options: `lang` ('w.lang.ro'), `morph` (morphOf of the
  * language), `dictionary` (its lemma dictionary, with senses), `senses(id) -> { act, en, pos }` (default
  * senseOf), `max` (frames kept, 5). Returns { best, frames: [{ frame, en, act, mode, roles: { role: { text,
- * words: [{ form, lemma, sense, en, pos, features }], en } }, score }], tokens } with best null when no frame
+ * words: [{ form, lemma, sense, en, pos, features }], en, items? } }, score }], tokens } (items: a list cut at commas
+ * and at the language's "and") with best null when no frame
  * takes every word (skip phrases aside).
  */
 export function readFrames(world, text, { lang = 'w.lang.ro', morph: m, dictionary: dict, senses, max = 5 } = {}) {
   const norm = (s) => (m ? fold(m, String(s).toLowerCase()) : String(s).toLowerCase());
   const sense = senses ?? ((id) => senseOf(world, id));
-  const raw = String(text).toLowerCase().replace(/[.,!?;:"“”()]+/g, ' ').split(/\s+/).filter(Boolean);
-  let toks = raw.flatMap((t) => (m ? splitClitics(m, t) : [t]));
+  const raw = String(text).toLowerCase().replace(/[.!?;:"“”()]+/g, ' ').replace(/,/g, ' , ').split(/\s+/).filter(Boolean);
+  let toks = raw.flatMap((t) => (t === ',' ? [t] : m ? splitClitics(m, t) : [t]));
   const items = (type, name) => world.ofType(type).filter((x) => bare(x.attrs.name?.[0]) === name).flatMap((x) => (x.attrs.item || []).map((i) => norm(bare(i)).split(/\s+/)));
   // words to pass over wherever they stand (a phrase named skip)
   for (const s of items(`${lang}.phrase`, 'skip').sort((a, b) => b.length - a.length)) {
     for (let i = 0; i + s.length <= toks.length; i++) if (s.every((x, j) => norm(toks[i + j]) === x)) { toks.splice(i, s.length); i--; }
   }
+  const cuts = new Set(); // a comma is not a word: it marks where a list may be cut
+  toks = toks.filter((t, i) => { if (t !== ',') return true; cuts.add(toks.slice(0, i).filter((x) => x !== ',').length); return false; });
   const F = toks.map(norm);
+  const ands = new Set(world.ofType(`${lang}.particle`).filter((x) => bare(x.attrs.kind?.[0]) === 'conjunction' && bare(x.attrs.meaning?.[0]) === 'and').map((x) => norm(bare(x.attrs.form[0]))));
   const dets = new Set(world.ofType(`${lang}.det`).map((d) => norm(bare(d.attrs.form[0]))));
   const nums = new Map(world.ofType(`${lang}.numeral`).map((d) => [norm(bare(d.attrs.form[0])), Number(bare(d.attrs.value[0]))]));
   const preps = new Map(world.ofType(`${lang}.prep`).map((d) => [norm(bare(d.attrs.form[0])), bare(d.attrs.rel?.[0] ?? '')]));
@@ -88,10 +92,14 @@ export function readFrames(world, text, { lang = 'w.lang.ro', morph: m, dictiona
     const roles = go(0, 0, {});
     if (!roles) continue;
     const verb = roles._verb; delete roles._verb;
+    const wordsOf = (a, b) => { const ws = []; for (let i = a; i < b; i++) { if (dets.has(F[i]) || ands.has(F[i])) continue; const rs = readings(i), best = rs.find((x) => x.sense) ?? rs[0]; ws.push(best ?? { form: toks[i], lemma: null, sense: null, en: null, pos: null }); } return ws; };
     for (const v of Object.values(roles)) if (v.span) { // each word of a role with its reading: lemma, sense, reference word
-      v.words = [];
-      for (let i = v.span[0]; i < v.span[1]; i++) { if (dets.has(F[i])) continue; const rs = readings(i), best = rs.find((x) => x.sense) ?? rs[0]; v.words.push(best ?? { form: toks[i], lemma: null, sense: null, en: null, pos: null }); }
+      const [a, b] = v.span;
+      v.words = wordsOf(a, b);
       v.en = v.words.map((x) => x.en ?? x.form).join(' ');
+      const at = [a]; // a list: the role cut at a comma or an "and" (<lang>.particle kind=conjunction meaning=and)
+      for (let i = a + 1; i < b; i++) if (cuts.has(i) || ands.has(F[i])) at.push(i);
+      if (at.length > 1) v.items = at.map((x, k) => { const ws = wordsOf(x, k + 1 < at.length ? at[k + 1] : b); return { text: toks.slice(x, k + 1 < at.length ? at[k + 1] : b).filter((t) => !ands.has(norm(t))).join(' '), words: ws, en: ws.map((y) => y.en ?? y.form).join(' ') }; }).filter((x) => x.words.length);
       delete v.span;
     }
     const known = Object.values(roles).flatMap((v) => v.words || []).filter((x) => x.sense).length + Object.values(roles).filter((v) => v.item !== undefined || v.rel !== undefined || v.value !== undefined).length; // a word with a sense, or a role read from a closed list

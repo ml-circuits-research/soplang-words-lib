@@ -14,12 +14,14 @@ test('readFrames on a toy language: the frame that takes every word, its act and
 @p1 ex.part frame=x.make at=1 is=word word=zap  @p2 ex.part frame=x.make at=2 is=det optional=yes  @p3 ex.part frame=x.make at=3 is=role role=thing takes=words
 @q1 ex.part frame=x.make.n at=1 is=word word=zap  @q2 ex.part frame=x.make.n at=2 is=role role=amount takes=number  @q3 ex.part frame=x.make.n at=3 is=role role=thing takes=words
 @r1 ex.part frame=x.move at=1 is=word word=vush  @r2 ex.part frame=x.move at=2 is=role role=thing takes=words  @r3 ex.part frame=x.move at=3 is=role role=rel takes=lexicon lexicon=dir
-@l ex.lex name=dir item="to left" item="up"  @d ex.det form=lo  @n ex.numeral form=dui value=2  @s ex.phrase name=skip item=plis`);
+@l ex.lex name=dir item="to left" item="up"  @d ex.det form=lo  @n ex.numeral form=dui value=2  @s ex.phrase name=skip item=plis
+@c ex.particle form=ka kind=conjunction meaning=and`);
   const read = (t) => readFrames(w, t, { lang: 'ex' }).best;
   assert.deepEqual([read('zap lo tree').frame, read('zap lo tree').roles.thing.text], ['x.make', 'tree']);
   assert.deepEqual([read('zap dui trees').frame, read('zap dui trees').roles.amount.value], ['x.make.n', 2]);
   assert.deepEqual([read('vush the tree to left, plis').act, read('vush the tree to left').roles.rel.item], ['place', 'to left']);
   assert.equal(read('blorp'), null, 'no frame takes it');
+  assert.deepEqual(read('zap lo tree, lo cat ka sun').roles.thing.items.map((x) => x.text), ['tree', 'lo cat', 'sun'], 'a list: cut at a comma and at the language\'s and');
   assert.deepEqual(senseOf(w, 'k.actions.verb.place.move'), { act: 'place', en: 'move', pos: 'verb' });
   assert.deepEqual(senseOf(w, 'k.words.house.noun.1'), { en: 'house', pos: 'noun' });
 });

@@ -60,20 +60,45 @@ export function focusLog(world, dialogue) {
  * Ellipsis (fragment) resolution:
  * Discourse ellipsis (reviewer 03:20, a verbless continuation: "it to the top right", "and still up"): when a
  * message names no act, the previous act is reused with the roles the message gives, read by type: a thing by
- * its name (a pronoun in `pronouns` keeps the previous thing), a value of a closed set by its key. Returns
- * { act, args, reused: true, changed: [keys] }, or null when the message names an act or gives no role.
- * `previous`: { act, args }. Options: `pronouns`, `skip`, `acts` (more act words).
+ * its name (a pronoun in `pronouns` keeps the previous thing), a value of a closed set by its key.
+ * Relative continuations (reviewer 08:15, from real turns: "more to the left", "a bit lower", "not the first
+ * one, the middle one"): a direction of the language world (`<lang>.lex name=acts.dir item=...`) goes in
+ * `args[dirKey]`; a word of `more` marks the move as relative (`relative: { more: true, small?: true }` for a
+ * word of `small`); a position among the things of the previous thing's type, ordered by `x` (an ordinal of
+ * `<lang>.ordinal text= value=`, or a word of `positions`: first, last, middle), picks the thing, and a
+ * clause with a negation (`<lang>.neg text=`) is the one rejected. Returns { act, args, reused: true,
+ * changed: [keys], relative? }, or null when the message names an act or gives no role.
+ * `previous`: { act, args }. Options: `pronouns`, `skip`, `lang` ('w.lang.en'), `dirKey` ('dir'), `more`,
+ * `small`, `positions` ({ word: 1 | -1 | 'middle' }), `fold(word)` (a language's spelling folds).
  */
-export function resolveEllipsis(world, text, previous, { pronouns = ['it', 'them', 'that', 'this'], skip = [] } = {}) {
+export function resolveEllipsis(world, text, previous, { pronouns = ['it', 'them', 'that', 'this'], skip = [], lang = 'w.lang.en', dirKey = 'dir', more = ['more', 'further', 'even', 'again', 'still'], small = ['bit', 'little', 'slightly'], positions = { first: 1, last: -1, middle: 'middle', centre: 'middle', center: 'middle' }, fold = (x) => x } = {}) {
   if (!previous?.act) return null;
-  const lex = typedLexicon(world), S = new Set(skip.map((x) => x.toLowerCase())), P = new Set(pronouns.map((x) => x.toLowerCase()));
-  const toks = (String(text).toLowerCase().match(/[\p{L}\p{N}_'-]+/gu) || []).filter((t) => !S.has(t));
+  const lex = typedLexicon(world), S = new Set(skip.map((x) => fold(x.toLowerCase()))), P = new Set(pronouns.map((x) => x.toLowerCase()));
+  const bare = (v) => String(v ?? '').replace(/^"|"$/g, '');
+  const clauses = String(text).toLowerCase().split(/[,;]+/).map((c) => (c.match(/[\p{L}\p{N}_'-]+/gu) || []).map(fold).filter((t) => !S.has(t))).filter((c) => c.length);
+  const negs = new Set(world.ofType(`${lang}.neg`).flatMap((n) => (n.attrs.text || []).map((t) => fold(bare(t)))));
+  const kept = clauses.length > 1 ? clauses.filter((c) => !c.some((t) => negs.has(t))) : clauses; // "not the first one, the middle one": the clause without a negation
+  const toks = (kept.length ? kept : clauses).flat();
   const sensesOf = (t) => lex.get(t) || lex.get(t.replace(/s$/, '')) || [];
   if (toks.some((t) => sensesOf(t).some((s) => s.cat === 'act'))) return null; // it names an act: not an ellipsis
-  const args = { ...previous.args }, changed = [];
+  const args = { ...previous.args }, changed = [], relative = {};
+  const dirs = world.ofType(`${lang}.lex`).filter((x) => bare(x.attrs.name?.[0]) === 'acts.dir').flatMap((x) => (x.attrs.item || []).map((i) => bare(i).toLowerCase().split(/\s+/).map(fold))).sort((a, b) => b.length - a.length);
+  const ords = new Map([...Object.entries(positions).map(([k, v]) => [fold(k), v]), ...world.ofType(`${lang}.ordinal`).map((o) => [fold(bare(o.attrs.text[0])), Number(bare(o.attrs.value[0]))])]);
+  const M = new Set(more.map(fold)), SM = new Set(small.map(fold));
   for (let i = 0; i < toks.length; i++) { // bounded: the tokens
     const t = toks[i];
     if (P.has(t)) continue; // the previous thing stays
+    const dir = dirs.find((d) => d.every((x, j) => toks[i + j] === x));
+    if (dir) { args[dirKey] = dir.join(' '); changed.push(dirKey); i += dir.length - 1; continue; }
+    if (M.has(t)) { relative.more = true; continue; }
+    if (SM.has(t)) { relative.small = true; continue; }
+    if (ords.has(t)) { // a position among the things of the previous thing's type
+      const prev = previous.args?.thing !== undefined ? world.get(String(previous.args.thing).replace(/^\$/, '')) : null;
+      const set = prev ? world.ofType(prev.type).slice().sort((a, b) => Number(bare(a.attrs.x?.[0] ?? 0)) - Number(bare(b.attrs.x?.[0] ?? 0))) : [];
+      const p = ords.get(t), pick = p === 'middle' ? set[Math.floor((set.length - 1) / 2)] : p < 0 ? set[set.length + p] : set[p - 1];
+      if (pick) { args.thing = pick.id; changed.push('thing'); }
+      continue;
+    }
     const multi = [3, 2].map((n) => toks.slice(i, i + n).join(' ')).find((p) => p.includes(' ') && sensesOf(p).length);
     const word = multi ?? t, ss = sensesOf(word);
     const thing = ss.find((s) => s.cat === 'thing'), value = ss.find((s) => s.cat === 'value' && s.schema);
@@ -81,7 +106,9 @@ export function resolveEllipsis(world, text, previous, { pronouns = ['it', 'them
     else if (value) { args[value.key] = word; changed.push(value.key); }
     if (multi) i += multi.split(' ').length - 1;
   }
-  return changed.length ? { act: previous.act, args, reused: true, changed } : null;
+  if (relative.more && !changed.length && previous.args?.[dirKey] !== undefined) changed.push(dirKey); // "even more": the same direction again
+  if (!changed.length) return null;
+  return { act: previous.act, args, reused: true, changed, ...(Object.keys(relative).length ? { relative } : {}) };
 }
 
 /** @deprecated since 0.111.0, removed once the host has renamed: `resolveEllipsis`. */

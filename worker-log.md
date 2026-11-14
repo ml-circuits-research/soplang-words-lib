@@ -5379,3 +5379,11 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - The meaning measure is crude: act by the gloss's first verb that k.actions knows; thing by a shared
   content word. "pune și un lac" (gloss "put a lake too") counts as wrong though make is the meaning.
 - Gate: npm test 506 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.116.0 — relative continuations (reviewer 08:15, item 2); lists in readFrames
+
+- resolveEllipsis: /tmp/re.mjs on a toy world of 3 houses: "more to the left" -> dir left, relative more;
+  "a bit lower" -> dir lower, small; "not the first one, the middle one" -> house2; "the last" -> house3;
+  "even more" -> the same direction. Romanian "și mai la stânga" with w.lang.ro's acts.dir -> la stânga.
+- readFrames: roles cut into items at commas and "and" (bench numbers unchanged: 93 / 74 / 38 of 161).
+- Gate: npm test 507 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

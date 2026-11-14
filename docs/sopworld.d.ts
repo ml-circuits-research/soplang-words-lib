@@ -742,7 +742,7 @@ export function tabulate(results: { degree: number; dim?: string; dims?: string[
 /** A degree × dimension table as text. */
 export function tableText(table: Record<string, { pass: number; of: number }>): string;
 /** A verbless continuation: the previous act reused with the roles the message gives. */
-export function resolveEllipsis(world: World, text: string, previous: { act: string; args: Record<string, unknown> }, options?: { pronouns?: string[]; skip?: string[] }): { act: string; args: Record<string, unknown>; reused: true; changed: string[] } | null;
+export function resolveEllipsis(world: World, text: string, previous: { act: string; args: Record<string, unknown> }, options?: { pronouns?: string[]; skip?: string[]; lang?: string; dirKey?: string; more?: string[]; small?: string[]; positions?: Record<string, number | 'middle'>; fold?: (word: string) => string }): { act: string; args: Record<string, unknown>; reused: true; changed: string[]; relative?: { more?: boolean; small?: boolean } } | null;
 
 // Deprecated names (kept for two releases).
 /** @deprecated `delexicalise`. */

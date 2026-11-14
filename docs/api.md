@@ -1729,8 +1729,9 @@ named `skip` are passed over wherever they stand. `readFrames(world, text, { lan
 dictionary, senses, max })` returns `{ best, frames, tokens }`; a frame is `{ frame, en, act,
 mode, roles, verb?, score }`, where each role has its `text` and, for words, `words: [{ form,
 lemma, sense, en, pos, features }]` and `en` (the reference words). Of the frames that take
-every word, the highest priority wins, and words with a known sense count. `best` is null when
-no frame takes the text. `senseOf(world, id)` gives `{ act?, en?, pos? }` for a sense id: a verb
+every word, the highest priority wins, and words with a known sense count. A role of words is
+also cut into `items` at commas and at the language's "and" (`<lang>.particle kind=conjunction
+meaning=and`), for a list. `best` is null when no frame takes the text. `senseOf(world, id)` gives `{ act?, en?, pos? }` for a sense id: a verb
 fact of an act, or the id's own shape (`<prefix>.<word>.<pos>.<n>`).
 
 ```js run
@@ -2364,6 +2365,15 @@ gives, read by type. A thing is read by its name, and a pronoun in `pronouns` ke
 previous thing. A value of a closed set is read by its key; multiword values like "top
 right" count. The result is `{ act, args, reused: true, changed }`, or null when the message
 names an act or gives no role.
+
+Relative continuations, as in real turns ("more to the left", "a bit lower", "not the first
+one, the middle one"): a direction of the language world (`<lang>.lex name=acts.dir item=...`)
+goes in `args[dirKey]` (`dir`); a word of `more` marks the move as relative (`relative: { more:
+true }`, and `small: true` for a word of `small`), and "even more" alone repeats the previous
+direction. A position picks among the things of the previous thing's type, ordered by `x`: an
+ordinal (`<lang>.ordinal text= value=`) or a word of `positions` (first, last, middle). Of
+clauses split by commas, one with a negation (`<lang>.neg text=`) is the one rejected. `lang`
+(`w.lang.en`) and `fold` read another language with its own words.
 
 ```js run
 const w = new World();

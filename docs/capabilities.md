@@ -729,7 +729,7 @@ them directly. Each is in [api](api.md) or [reference](reference.md) with its ex
 | `induce`, `induceRule`, `induceSlots` | rules and slots from examples | 0.5 |
 | `aggregates`, `rank`, `RANKING`, `veto` | aggregates; ranking readings with reasons; vetoes | 0.13 |
 | `GRAMMAR`, `MODIFIERS`, `SCHEMA_TYPES` | what each matrix wire type reads (the reference is checked against them) | 0.6 |
-| `grammarOf`, `grammarView`, `viewDiff` | the grammar a world holds; the views of a closed class and where two differ | 0.29, 0.30 |
+| `grammarOf`, `grammarView`, `viewDiff`, `grammarCheck` | the grammar a world holds; the views of a closed class and where two differ; checks of a grammar | 0.29, 0.30, 0.58 |
 | `ledgerAppend`, `ledgerGroups`, `ledgerKey`, `stageOf`, `STAGES` | the failure ledger: rows, groups, keys, pipeline stages | 0.25 |
 | `needsOf` | the typed needs of a world or view | 0.39 |
 

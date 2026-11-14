@@ -1206,6 +1206,29 @@ print([np.rule, np.head, np.pp[0].words, parseText(w, 'the moon', { start: 'NP',
 ["r2","star",["next to","the","house"],[{"word":"moon","at":1}]]
 ```
 
+### grammarCheck(world, options?)
+
+Checks of a grammar that a host would otherwise find the hard way. It reports:
+- `optional-shares-words`: an optional part right before a part that can read the same
+  words. The chart keeps both readings, but a generated pattern would not.
+- `lemmatised-away`: a lexicon word that `options.lemma` changes into a word the lexicon
+  lacks.
+- `too-many-words`: a lexicon entry longer than `options.maxWords`.
+
+Parses are ranked so that order is data: the rules' `priority` first (a frame of the
+world's own words declared above the generic act forms), then the literal words a parse
+matched, then fewer nodes.
+
+```js run
+const w = new World();
+w.tell('@r g.rule lhs=NP rhs=Kind? rhs=N  @a g.word text=borders lemma=border cat=N  @b g.word text=borders lemma=border cat=Kind');
+print(grammarCheck(w).map((i) => [i.kind, i.optional, i.next, i.words]));
+```
+
+```output
+[["optional-shares-words","Kind","N",["borders"]]]
+```
+
 ### grammarView(world, type, view?), viewDiff(world, type, a, b)
 
 A view is the set of wires of `type` whose `in=` names it; `grammarView` gives their
@@ -1248,7 +1271,7 @@ the whole set when the count covers it, else asked. A modifier that `core.word` 
 pronoun also carries `guess: { word, ids }`, for the host's "I took it to mean ..."
 sentence.
 
-Since 0.57:
+More of what it reads:
 - A result that is not one reading carries `failure`: `unknown-word`, `unread`,
   `unknown-kind`, `none` (nothing fits), `no-number`, `no-focus` or `ambiguous` (also
   `ask: true`).

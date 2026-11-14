@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.58.0
+
+Round 28 item 7: form checks, and frame priority by rule.
+
+### New
+- `grammarCheck(world, { lemma, maxWords })` reports an optional part that shares words
+  with the next, lexicon words lemmatised away, and entries too long.
+- Grammar rules take `priority`. Parses are ranked by priority, then by the literal words
+  they matched, then by size (before: size only). With no priorities declared, a more
+  specific frame now wins over a generic one with the same nodes.
+
 ## 0.57.0
 
 Round 28 item 6: the grammar and `resolve` read what every host needed.

@@ -95,3 +95,23 @@ test('grammar: views — the words a caller uses, and where two views disagree',
   assert.deepEqual(grammarView(w, 'x.det'), ['a', 'every', 'no more', 'the']);
   assert.deepEqual(viewDiff(w, 'x.det', 'v1', 'v2'), { only: { v1: ['a'], v2: ['every', 'no more'] }, both: ['the'] });
 });
+
+test("grammar (Round 28 item 7): checks a form compiler needs; a frame of the world's own words beats a generic one by rule", async () => {
+  const { grammarCheck } = await import('../tools/lib-under-test.mjs');
+  const w = new World();
+  w.tell(`@r1 g.rule lhs=NP rhs=Kind? rhs=N  @r2 g.rule lhs=S rhs=V rhs=NP
+@a g.word text=borders lemma=border cat=N  @b g.word text=borders lemma=border cat=Kind  @c g.word text=sideways lemma=sideways cat=N
+@d g.word text="next to the" lemma=x cat=N`);
+  const issues = grammarCheck(w, { lemma: (x) => (x.endsWith('s') ? [x.slice(0, -1)] : []), maxWords: 2 });
+  assert.deepEqual(issues.map((i) => i.kind).sort(), ['lemmatised-away', 'lemmatised-away', 'optional-shares-words', 'too-many-words']);
+  assert.deepEqual(issues.find((i) => i.kind === 'optional-shares-words'), { kind: 'optional-shares-words', rule: 'r1', optional: 'Kind', next: 'N', words: ['borders'] });
+  const p = new World();
+  p.tell(`@v g.word text=share lemma=share cat=V  @n g.word text=border lemma=border cat=N  @x g.word text=a lemma=a cat=Det
+@generic g.rule lhs=S rhs=V rhs=NP  @np g.rule lhs=NP rhs=Det? rhs=N
+@own g.rule lhs=S rhs=share rhs=a rhs=border priority=5`);
+  assert.equal(parseText(p, 'share a border')[0].tree.rule, 'own', "the frame of the world's own words, by its priority");
+  p.tell('@own2 g.rule lhs=S rhs=share rhs=Det rhs=border');
+  const q = new World(); q.tell(`@v g.word text=share lemma=share cat=V  @n g.word text=border lemma=border cat=N  @x g.word text=a lemma=a cat=Det
+@generic g.rule lhs=S rhs=V rhs=NP  @np g.rule lhs=NP rhs=Det? rhs=N  @own g.rule lhs=S rhs=share rhs=Det rhs=border`);
+  assert.equal(parseText(q, 'share a border')[0].tree.rule, 'own', "without priorities: the parse with more of the frame's literal words first");
+});

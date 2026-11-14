@@ -39,7 +39,8 @@ export function grammarOf(world, { types = {}, classes = {}, lexicon = {}, digit
       if (mark === '*' || mark === '+') { if (!rules.has(unit)) { add(unit, [base]); add(unit, [base, unit]); } }
       variants = variants.flatMap((v) => (mark === '?' || mark === '*' ? [v, [...v, unit]] : [[...v, unit]]));
     }
-    for (const v of variants) if (v.length) { v.rule = w.id; v.head = w.attrs.head?.[0]; add(lhs, v); } // the rule's id travels with each expansion
+    const priority = Number(w.attrs.priority?.[0] ?? 0);
+    for (const v of variants) if (v.length) { v.rule = w.id; v.head = w.attrs.head?.[0]; if (priority) v.priority = priority; add(lhs, v); } // the rule's id (and priority) travels with each expansion
   }
   const multi = [...lex.keys()].filter((t) => /\s/.test(t)).sort((a, b) => b.split(/\s+/).length - a.split(/\s+/).length);
   return { lex, rules, coord, multi, digits };
@@ -90,7 +91,7 @@ export function parseText(world, text, { start = 'S', max = 8, budget = 20000, .
         partial = next.slice(0, max * 4);
         if (!partial.length) break;
       }
-      for (const p of partial) out.push({ end: p.end, at: { cat, span: [i, p.end], ...(rhs.rule ? { rule: rhs.rule } : {}), ...(rhs.head ? { head: rhs.head } : {}), children: p.children.flatMap((c) => (c.cat.endsWith('+') ? c.children || [c] : [c])) } });
+      for (const p of partial) out.push({ end: p.end, at: { cat, span: [i, p.end], ...(rhs.rule ? { rule: rhs.rule } : {}), ...(rhs.head ? { head: rhs.head } : {}), ...(rhs.priority ? { priority: rhs.priority } : {}), children: p.children.flatMap((c) => (c.cat.endsWith('+') ? c.children || [c] : [c])) } });
     }
     // a left-recursive rule (NP -> NP PP): grows each result found so far, until nothing new
     for (let k = 0; k < out.length && left.length && k < max * 8; k++) { // bounded: the results, capped
@@ -98,7 +99,7 @@ export function parseText(world, text, { start = 'S', max = 8, budget = 20000, .
       for (const rhs of left) {
         let partial = [{ end: base.end, children: [base.at] }];
         for (const part of rhs.slice(1)) { const next = []; for (const p of partial) for (const r of at(part, p.end)) { tick(); next.push({ end: r.end, children: [...p.children, r.at] }); } partial = next.slice(0, max * 4); if (!partial.length) break; }
-        for (const p of partial) out.push({ end: p.end, at: { cat, span: [i, p.end], ...(rhs.rule ? { rule: rhs.rule } : {}), ...(rhs.head ? { head: rhs.head } : {}), children: p.children.flatMap((c) => (c.cat.endsWith('+') ? c.children || [c] : [c])) } });
+        for (const p of partial) out.push({ end: p.end, at: { cat, span: [i, p.end], ...(rhs.rule ? { rule: rhs.rule } : {}), ...(rhs.head ? { head: rhs.head } : {}), ...(rhs.priority ? { priority: rhs.priority } : {}), children: p.children.flatMap((c) => (c.cat.endsWith('+') ? c.children || [c] : [c])) } });
       }
     }
     // coordination: C coord C (coord C ...), when the grammar declares coordinating words
@@ -119,12 +120,17 @@ export function parseText(world, text, { start = 'S', max = 8, budget = 20000, .
   }
   const size = (n) => 1 + (n.children || n.coord || []).reduce((s, c) => s + size(c), 0);
   const coordDepth = (n, d = 0) => (n.coord ? d : Math.min(99, ...(n.children || []).map((c) => coordDepth(c, d + 1)))); // a coordination high in the tree reads first
-  const full = at(start, 0).filter((r) => r.end === tok.length).map((r) => ({ tree: r.at, size: size(r.at), depth: coordDepth(r.at) }));
+  // order is data: the rules' priorities first (a frame of the world's own words declared above
+  // the generic act forms), then the literal words a parse matched (the more specific frame),
+  // then fewer nodes, then the higher coordination
+  const prio = (n) => (n.priority || 0) + (n.children || n.coord || []).reduce((s, c) => s + prio(c), 0);
+  const lits = (n) => (n.cat?.startsWith('=') ? 1 : 0) + (n.children || n.coord || []).reduce((s, c) => s + lits(c), 0);
+  const full = at(start, 0).filter((r) => r.end === tok.length).map((r) => ({ tree: r.at, size: size(r.at), depth: coordDepth(r.at), prio: prio(r.at), lits: lits(r.at) }));
   const seen = new Set();
   const literal = new Set([...g.rules.values()].flat(2).filter((x) => x.startsWith('=')).flatMap((x) => x.replace(/\+$/, '').slice(1).split('|')));
   const unknown = tok.map((word, at) => ({ word, at })).filter(({ word }) => !g.lex.has(word) && !literal.has(word) && !g.coord.has(word) && !(g.digits && /^\d+$/.test(word)));
   const parses = full.filter((p) => { const k = JSON.stringify(p.tree); if (seen.has(k)) return false; seen.add(k); return true; })
-    .sort((a, b) => a.size - b.size || a.depth - b.depth || JSON.stringify(a.tree).localeCompare(JSON.stringify(b.tree))).slice(0, max).map(({ depth, ...p }) => p);
+    .sort((a, b) => b.prio - a.prio || b.lits - a.lits || a.size - b.size || a.depth - b.depth || JSON.stringify(a.tree).localeCompare(JSON.stringify(b.tree))).slice(0, max).map(({ depth, prio: _p, lits: _l, ...p }) => p);
   // no noun is owned: a word the lexicon does not have is reported, not judged
   return Object.assign(parses, { tokens: tok, ...(unknown.length ? { unknown } : {}), ...(over ? { truncated: true, steps } : {}) });
 }
@@ -183,4 +189,31 @@ export function grammarView(world, type, view) {
 export function viewDiff(world, type, a, b) {
   const A = new Set(grammarView(world, type, a)), B = new Set(grammarView(world, type, b));
   return { only: { [a]: [...A].filter((x) => !B.has(x)), [b]: [...B].filter((x) => !A.has(x)) }, both: [...A].filter((x) => B.has(x)) };
+}
+
+/**
+ * Checks of a grammar a host would otherwise find the hard way (a form compiler's checks):
+ * an optional part right before a part that can read the same words (the optional one may
+ * take the word the next one needs; the chart keeps both readings, but a generated pattern
+ * would not); a lexicon word the host's lemma changes into a word the lexicon lacks; a
+ * lexicon entry longer than `maxWords`. Returns [{ kind, rule?, word?, ... }].
+ */
+export function grammarCheck(world, { lemma, maxWords, ...grammar } = {}) {
+  const g = grammarOf(world, grammar), T = { rule: 'g.rule', ...(grammar.types || {}) };
+  const catsOf = new Map(); // category -> its words
+  for (const [word, es] of g.lex) for (const e of es) (catsOf.get(e.cat) || catsOf.set(e.cat, new Set()).get(e.cat)).add(word);
+  const issues = [], is = (kind) => ({ kind }); // a kind of issue of a grammar (not a violation)
+  for (const w of world.ofType(T.rule)) { // bounded: the rules, then their parts
+    const parts = (w.attrs.rhs || []).map((x) => String(x).replace(/^"|"$/g, ''));
+    for (let i = 0; i + 1 < parts.length; i++) {
+      const m = /^(.+)\?$/.exec(parts[i]);
+      if (!m) continue;
+      const next = parts[i + 1].replace(/[?*+]$/, '');
+      const shared = [...(catsOf.get(m[1]) || [])].filter((x) => catsOf.get(next)?.has(x));
+      if (shared.length) issues.push({ ...is('optional-shares-words'), rule: w.id, optional: m[1], next, words: shared.slice(0, 5) });
+    }
+  }
+  if (lemma) for (const word of g.lex.keys()) for (const f of [].concat(lemma(word) || [])) if (f !== word && !g.lex.has(f)) issues.push({ ...is('lemmatised-away'), word, lemma: f });
+  if (maxWords) for (const word of g.lex.keys()) if (word.split(/\s+/).length > maxWords) issues.push({ ...is('too-many-words'), word, words: word.split(/\s+/).length });
+  return issues;
 }

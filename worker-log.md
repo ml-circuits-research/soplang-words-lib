@@ -4442,3 +4442,21 @@ clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 
   language world; the library now reads their result.
 - Next: item 7 (form checks, frame priority by rule), 8 (std.space placement, relation
   kinds), 9 (experiment / ablation harnesses).
+
+## Round 28 item 7 — form checks; frame priority by rule — release 0.58.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 0.58.0).
+
+- src/grammar.mjs:
+  - `grammarCheck`: optional-shares-words, lemmatised-away, too-many-words.
+  - Rules take `priority`. Parses are ranked by priority, then literal words matched, then
+    size. `npm test` after the ranking change, before the new tests: 419 / 419 / 418, no
+    regression.
+- test/grammar.test.mjs: 1 new test.
+  - The checks on "borders" (Kind? before N) and "sideways", and a 3-word entry.
+  - "share a border": the frame of the world's own words wins over `V NP`, by priority and,
+    without one, by its literal words.
+- Q36 lines 2, 3 and 24 are done. "An optional open slot backs off": the chart has no greedy
+  match, and the check reports where a generated pattern would swallow a word.
+- Next: item 8 (std.space single placement, relation kinds), item 9 (harnesses).

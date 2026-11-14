@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="0bc9ce7830d2">
+<meta name="source-hash" content="fba3c6affd57">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.57.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.58.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -455,6 +455,14 @@ const p = parseText(w, &#x27;the star next to the house&#x27;, { start: &#x27;NP
 const np = nounPhrase(p[0].tree, { det: &#x27;DET&#x27;, head: &#x27;N&#x27;, pp: &#x27;PP&#x27; });
 print([np.rule, np.head, np.pp[0].words, parseText(w, &#x27;the moon&#x27;, { start: &#x27;NP&#x27;, types: { rule: &#x27;my.rule&#x27; }, classes: { DET: &#x27;my.det&#x27; } }).unknown]);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;r2&quot;,&quot;star&quot;,[&quot;next to&quot;,&quot;the&quot;,&quot;house&quot;],[{&quot;word&quot;:&quot;moon&quot;,&quot;at&quot;:1}]]</code></pre></figure>
+<h3 id="grammarcheckworld-options">grammarCheck(world, options?)</h3>
+<p>Checks of a grammar that a host would otherwise find the hard way. It reports:</p>
+<ul><li><code>optional-shares-words</code>: an optional part right before a part that can read the same words. The chart keeps both readings, but a generated pattern would not.</li><li><code>lemmatised-away</code>: a lexicon word that <code>options.lemma</code> changes into a word the lexicon lacks.</li><li><code>too-many-words</code>: a lexicon entry longer than <code>options.maxWords</code>.</li></ul>
+<p>Parses are ranked so that order is data: the rules' <code>priority</code> first (a frame of the world's own words declared above the generic act forms), then the literal words a parse matched, then fewer nodes.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(&#x27;@r g.rule lhs=NP rhs=Kind? rhs=N  @a g.word text=borders lemma=border cat=N  @b g.word text=borders lemma=border cat=Kind&#x27;);
+print(grammarCheck(w).map((i) =&gt; [i.kind, i.optional, i.next, i.words]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;optional-shares-words&quot;,&quot;Kind&quot;,&quot;N&quot;,[&quot;borders&quot;]]]</code></pre></figure>
 <h3 id="grammarviewworld-type-view-viewdiffworld-type-a-b">grammarView(world, type, view?), viewDiff(world, type, a, b)</h3>
 <p>A view is the set of wires of <code>type</code> whose <code>in=</code> names it; <code>grammarView</code> gives their <code>text</code>s, sorted (every wire's without a view). Two callers that keep two lists of the same words keep two views until their owner unifies them; <code>viewDiff</code> says which words differ, so unifying is a measured decision.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
@@ -464,7 +472,7 @@ print(viewDiff(w, &#x27;x.det&#x27;, &#x27;v1&#x27;, &#x27;v2&#x27;));</code></p
 <h3 id="resolveworld-phrase-options">resolve(world, phrase, options?)</h3>
 <p>The things a noun phrase names (<code>std.schema.thing</code> wires), and how sure the reading is. <code>phrase</code> is text, read with <code>options.grammar</code> (parseText's options, start <code>NP</code>) and <code>options.cats</code> (nounPhrase's), or a <code>nounPhrase</code> result. The kind is the head's lemma or a word that means it (<code>core.word text= means=</code>), else a kind one swap or letter away (a slip). Modifiers and a name are values of any key, and a <code>core.word ... of=&lt;key&gt;</code> word counts for that key only. A PP narrows to things with a key that refers to the one thing its noun phrase names. <code>quant</code> (all, each, both) and a phrase with no noun give the set. An ordinal, or a number after the noun, picks one (the id <code>&lt;kind&gt;&lt;n&gt;</code> first); a number before the noun must be the count. A coordination is the union of its parts. A pronoun is the newest thing in focus (<code>options.focus</code>, ids newest first, else the <code>std.focus.last</code> wires that name things).</p>
 <p>Also: a coordination whose word the grammar marks <code>kind=choice</code> (<code>x.coord word=or kind=choice</code>) is asked, never both and never the last (<code>{ ids: [], ask: true, which }</code>). A part without its noun borrows one: a bare number takes the noun of the part before ("tables 1 and 2"), any other part the noun of the next part ("the red or the blue house"). A coordination inside a phrase is distributed ("red and blue cups"). A part of a set (a number, quantifier or determiner with a PP and no noun: "two of the tables") is the whole set when the count covers it, else asked. A modifier that <code>core.word</code> maps to <code>std.other</code> ("the other one") keeps the things of the kind that are not in focus. A pronoun also carries <code>guess: { word, ids }</code>, for the host's "I took it to mean ..." sentence.</p>
-<p>Since 0.57:</p>
+<p>More of what it reads:</p>
 <ul><li>A result that is not one reading carries <code>failure</code>: <code>unknown-word</code>, <code>unread</code>, <code>unknown-kind</code>, <code>none</code> (nothing fits), <code>no-number</code>, <code>no-focus</code> or <code>ambiguous</code> (also <code>ask: true</code>).</li><li>A negation lead (the grammar's <code>cats.neg</code>, as in "not the blue table") keeps the things of the kind the modifiers do not pick.</li><li>A relative clause after the noun ("the table that is red": a rule <code>NP -&gt; NP RELPRON COP MOD</code>) folds into the modifiers.</li><li>A bare name (<code>NP -&gt; NAME</code>) is the one thing of that name.</li><li><code>focusFor: 'pronoun'</code> keeps the focus for pronouns only.</li><li>Coordinating words are read from <code>word=</code> or <code>text=</code>.</li></ul>
 <p>Returns <code>{ ids, tier, how }</code>: <code>tier</code> is <code>user</code> (the words picked), <code>scene</code> (the only one of its kind), <code>focus</code> (the focus chose among several) or <code>slip</code> (the least sure in a coordination wins); <code>how</code> lists the steps, so a reply can say what it assumed. When it cannot resolve, it returns <code>{ ids: [], why, which?, kind?, unknown? }</code>.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
@@ -811,7 +819,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.57.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.58.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

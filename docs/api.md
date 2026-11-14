@@ -1956,7 +1956,9 @@ words fill, each word used once:
 
 Word order and function words only rank the frames, so paraphrases in any order read to one
 frame. Options: `question` (words that make a question), `skip` (words passed over),
-`lemma`. Words the world does not know are listed in `unread`. `typedLexicon` is the
+`lemma`. The result also says whether the reading is **complete** (reviewer 03:20).
+`left` lists the content words the best frame does not consume, and `complete` is true only
+when nothing is unread or left: an incomplete reading is not final. Words the world does not know are listed in `unread`. `typedLexicon` is the
 lexicon, memoised per world. The language's own facts (k.words, w.lang, k.genres,
 k.interest) are not content.
 
@@ -2212,6 +2214,26 @@ print(minePatterns(w, ['what sound does a cow make', 'what sound does a dog make
 {"pattern":"what <attr> does a <thing> <verb>","count":2,"example":"what sound does a cow make"}
 ```
 
+### continueAct(world, text, previous, options?)
+
+Discourse ellipsis (reviewer 03:20): a verbless continuation such as "it to the top
+right" or "and still up" reuses the previous act `{ act, args }` with the roles the message
+gives, read by type. A thing is read by its name, and a pronoun in `pronouns` keeps the
+previous thing. A value of a closed set is read by its key; multiword values like "top
+right" count. The result is `{ act, args, reused: true, changed }`, or null when the message
+names an act or gives no role.
+
+```js run
+const w = new World();
+w.load('@acts core.use world=std.acts\n@art std.schema.world name=art doc=x\n@t core.type of=shape extends=std.schema.thing\n@s core.slot of=shape key=place enum=up enum=down\n@k std.schema.kind of=shape world=art acts=place');
+w.tell('@c1 shape name=cat');
+print(continueAct(w, 'and still up', { act: 'place', args: { thing: 'c1', place: 'down' } }, { skip: ['and', 'still'] }).args);
+```
+
+```output
+{"thing":"c1","place":"up"}
+```
+
 ### readEnsemble(world, text, options?), defaultReaders(read?, canonical?) and riskCoverage(rows)
 
 Several readers, one confidence (reviewer 02:30). Readers run as parallel voices, not a
@@ -2226,8 +2248,10 @@ words), and a host adds its own voices. The candidate frames are pooled with fea
 
 std.decide (kind `ensemble`) combines them. The result is `{ frame, confidence, voices,
 candidates, ranked, ask? }`, where `confidence` is the weighted share of the readers that
-proposed the winner. Below `threshold`, or when two readings tie, `ask` holds the competing
-frames, for a question back instead of a guess.
+proposed the winner. Coverage comes first: a reading that leaves content words unconsumed
+loses to one that consumes them all, and `complete` says whether the winner does. Below
+`threshold`, when the winner is incomplete, or when two readings tie, `ask` holds the
+competing frames, for a question back instead of a guess.
 
 `riskCoverage(rows)` turns `[{ confidence, correct }]` into the risk–coverage curve: for
 each threshold, the share answered and the share of those that are wrong.

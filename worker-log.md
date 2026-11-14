@@ -5236,3 +5236,24 @@ All four were written here from PSys2's description (its code is AGPL; nothing c
 PSys2 can now delete its copies of LIB-1..8 when it vendors 0.103 (LIB-1..4 came in 0.102).
 
 Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+
+## 0.104.0: PSys2's Q15 items (reviewer 03:20)
+
+**1. Completeness**
+- readByTypes returns `left` and `complete`.
+- readEnsemble ranks coverage first (std.decide ensemble: coverage, then agreement) and asks back when the winner leaves content words.
+
+**2. arbitrate by coverage**
+- Among several owners: coverage of the request, then the open tab, then priority (std.decide kind world), with `ranked`.
+- test/arbitrate-coverage.test.mjs.
+
+**3. Discourse ellipsis**
+- `continueAct`: "it to the top right" gives place with the same thing and place "top right"; "and still up" gives up; a new thing replaces the previous one; an act word or no role gives null.
+- test/continue-act.test.mjs.
+
+**4. named:false**
+- The library never drops a name silently: std.acts make with a key the kind does not have is refused ("a shape has no name"). The silent drop PSys2 saw is in its art.draw engine.
+- If hosts want "make it and say the name was not kept" instead of a refusal, say so and I will add a `dropped` report to make.
+
+**Gates** (test:full)
+- 489 / 489 / 487 pass, 0 fail; npm test 489; pilot identical; psys2=0; scan clean; tsc ok.

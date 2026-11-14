@@ -722,3 +722,5 @@ export function judgeReply(reply: string, expected: unknown, options?: { numberW
 export function tabulate(results: { degree: number; dim?: string; dims?: string[]; pass: boolean }[]): Record<string, { pass: number; of: number }>;
 /** A degree × dimension table as text. */
 export function tableText(table: Record<string, { pass: number; of: number }>): string;
+/** A verbless continuation: the previous act reused with the roles the message gives. */
+export function continueAct(world: World, text: string, previous: { act: string; args: Record<string, unknown> }, options?: { pronouns?: string[]; skip?: string[] }): { act: string; args: Record<string, unknown>; reused: true; changed: string[] } | null;

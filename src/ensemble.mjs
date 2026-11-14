@@ -12,7 +12,7 @@ const keyOf = (f) => (f ? JSON.stringify({ is: f.is, key: f.key, of: f.of, value
 /** The library's own voices: types (readByTypes), canonical (readCanonical, first clause), exact (no near words). */
 export function defaultReaders(read = {}, canonical = {}) {
   return {
-    types: (w, t) => { const r = readByTypes(w, t, read); return r.best ? [{ frame: r.best, unread: r.unread.length, cost: (r.near || []).reduce((s, x) => s + x.cost, 0), specificity: r.frames[0]?.words?.length ?? 0 }] : []; },
+    types: (w, t) => { const r = readByTypes(w, t, read); return r.best ? [{ frame: r.best, unread: r.unread.length + r.left.length, cost: (r.near || []).reduce((s, x) => s + x.cost, 0), specificity: r.frames[0]?.words?.length ?? 0 }] : []; },
     canonical: (w, t) => readCanonical(w, t, { ...canonical, read }).filter((c) => c.frame).slice(0, 1).map((c) => ({ frame: c.frame, unread: c.unread.length, cost: (c.near || []).reduce((s, x) => s + x.cost, 0) + c.applied.length * 0.5, specificity: 0 })),
     exact: (w, t) => { const r = readByTypes(w, t, { ...read, near: 0 }); return r.best && !r.unread.length ? [{ frame: r.best, unread: 0, cost: 0, specificity: r.frames[0]?.words?.length ?? 0 }] : []; },
   };
@@ -48,7 +48,8 @@ export function readEnsemble(world, text, { readers, read = {}, canonical = {}, 
   const c = choose(world, 'ensemble', cands, { seed });
   const best = c.best, confidence = +(best.agreement / Math.max(1e-9, Object.keys(R).reduce((s, n) => s + wt(n), 0))).toFixed(3);
   const out = { frame: best.frame, confidence, voices: best.readers, candidates: c.order, ranked: c.ranked };
-  if (confidence < threshold || (c.order[1] && c.order[1].agreement === best.agreement)) out.ask = c.order.slice(0, 3).map((x) => x.frame);
+  out.complete = best.unread === 0; // every content word consumed by the winning reading
+  if (confidence < threshold || !out.complete || (c.order[1] && c.order[1].agreement === best.agreement && c.order[1].unread === best.unread)) out.ask = c.order.slice(0, 3).map((x) => x.frame); // an incomplete reading is not final
   return out;
 }
 

@@ -1,3 +1,4 @@
+import { choose } from './rank.mjs';
 // One request pipeline (Round 24, A3 and A4): the candidate readings of one message →
 // a dry run of each (on a fork: nothing changes) → the first reading the world takes →
 // applied as one sentence (all or nothing, one undo step) → its difference, the why of
@@ -108,9 +109,12 @@ export function route(world, request, { scores = {} } = {}) {
  * only in the `exact` pass; in a `spelling` or `view` pass (the host trying variants) it
  * stays a decline, so a variant never turns into a refusal. `resolves(world, words)` is an
  * optional host hook: when several worlds own, the one whose things hold the words wins.
+ * `coverage(world, words)` (how many words of the request the world's reading consumes) and `active`
+ * (the open tab's world) decide among several owners through std.decide kind `world`: coverage, then the
+ * tab, then the world's `priority`; `ranked` explains it.
  * Returns { verdicts: [{ world, verdict, why }], owner: world | null, ambiguous?: [worlds], pass }.
  */
-export function arbitrate(world, request, { pass = 'exact', resolves, words } = {}) {
+export function arbitrate(world, request, { pass = 'exact', resolves, words, coverage, active } = {}) {
   const args = request.args || {};
   const thingId = args.thing !== undefined ? String(args.thing).replace(/^\$/, '') : null;
   const thing = thingId ? world.get(thingId) : null;
@@ -131,6 +135,14 @@ export function arbitrate(world, request, { pass = 'exact', resolves, words } = 
   }
   let owners = verdicts.filter((v) => v.verdict === 'own').map((v) => v.world);
   if (owners.length > 1 && resolves && words) { const held = owners.filter((n) => resolves(n, words)); if (held.length) owners = held; }
+  if (owners.length > 1 && (coverage || active)) { // by coverage first, then the open tab, then priority (reviewer 03:20; std.decide kind world)
+    const prio = (n) => Number(String(world.ofType('std.schema.world').find((w) => w.attrs.name?.[0] === n)?.attrs.priority?.[0] ?? 0));
+    const cands = owners.map((n) => ({ name: n, coverage: coverage ? Number(coverage(n, words)) || 0 : 0, active: active === n ? 1 : 0, priority: prio(n) }));
+    const c = choose(world, 'world', cands, { seed: null }), top = c.best, second = c.order[1];
+    const tied = second && second.coverage === top.coverage && second.active === top.active && second.priority === top.priority;
+    if (!tied) owners = [top.name];
+    return { verdicts, owner: owners.length === 1 ? owners[0] : null, ...(owners.length > 1 ? { ambiguous: owners } : {}), pass, ranked: c.ranked.map((r, i) => ({ world: cands[r.index].name, ...r })) };
+  }
   return { verdicts, owner: owners.length === 1 ? owners[0] : null, ...(owners.length > 1 ? { ambiguous: owners } : {}), pass };
 }
 

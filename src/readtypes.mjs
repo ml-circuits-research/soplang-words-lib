@@ -141,5 +141,9 @@ export function readByTypes(world, text, { question = [], skip = [], lemma, sens
   for (const f of frames) delete f.left;
   const best = frames[0] ?? null;
   const ambiguous = frames.length > 1 && frames[1].score === best.score && JSON.stringify(frames[1].frame) !== JSON.stringify(best.frame);
-  return { frames, best: best?.frame ?? null, ...(ambiguous ? { ambiguous: true } : {}), unread, ...(nearUsed.length ? { near: nearUsed } : {}) };
+  // completeness (reviewer 03:20): a reading that leaves content words unconsumed is not final
+  const usedWords = new Set(best?.words ?? []);
+  const left = words.filter((w) => !usedWords.has(w.text) && !w.senses.some((s) => s.cat === 'word' || s.cat === 'act')).map((w) => w.near?.word ?? w.text);
+  const complete = !!best && !unread.length && !left.length;
+  return { frames, best: best?.frame ?? null, ...(ambiguous ? { ambiguous: true } : {}), unread, left, complete, ...(nearUsed.length ? { near: nearUsed } : {}) };
 }

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.104.0
+
+From PSys2's Q15 (reviewer 03:20).
+
+### New
+- Completeness: `readByTypes` returns `left` (content words the best frame does not
+  consume) and `complete`. `readEnsemble` ranks coverage first (std.decide kind `ensemble`)
+  and asks back when the winner is incomplete.
+- `arbitrate(world, request, { coverage, active })`: among several owners, coverage of the
+  request, then the open tab, then priority (std.decide kind `world`), with `ranked`.
+- `continueAct(world, text, previous)`: verbless continuations reuse the previous act with
+  new roles, read by type.
+
+### Changed
+- std.decide kind `ensemble`: coverage before agreement.
+
 ## 0.103.0
 
 The rest of the host's handover (LIB-5 to LIB-8, reviewer 02:50).

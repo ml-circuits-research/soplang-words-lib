@@ -35,7 +35,7 @@ tuned in code.
 | --- | --- | --- | --- |
 | A reading of a message (`world.score`, `rank`) | readings | `RANKING`'s measures in the order std.decide declares (kind `score`: consistent, referents, lacks, words, assumes; `rankingOf(world)`) | **order from data (0.94)**; the measures read a reading's structure |
 | A value of a key | values by tier | tiers: told > derived > forced > default > guessed | data (tiers are declared) |
-| The world that takes a request (`arbitrate`) | worlds | own / decline / refuse, then the world's rank | own method; to move to kind `world` |
+| The world that takes a request (`arbitrate`) | owning worlds | own / decline / refuse; among several owners **`choose`**, kind `world`: coverage of the request, the open tab, priority | **done (0.104)** |
 | A template of a sentence (`discourseRealiser`) | templates of the move and register whose slots fill | **`choose`**, kind `template`: fills, fresh, specificity, prior, seed | **done (0.92)** |
 | A near word (`readByTypes` `near`) | words through k.words senses | **`choose`**, kind `word`: fits, cost, prior | **done (0.92)** |
 | The reading of several readers (`readEnsemble`) | frames pooled from the readers | **`choose`**, kind `ensemble`: agreement (weighted), coverage, cost, specificity; a confidence, a question back below the threshold | **done (0.98)** |

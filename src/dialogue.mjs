@@ -10,6 +10,7 @@
 // `request` (an act of its own). A world declared modal and active
 // (`std.dialogue.modal world= active=true`) sees the turn first: it is named in `first`.
 import { actWords } from './segment.mjs';
+import { typedLexicon } from './readtypes.mjs';
 
 const as = (kind, o) => ({ kind, ...o }); // a turn kind (not a violation)
 const unq = (t) => String(t).replace(/^"|"$/g, '').replace(/_/g, ' ').toLowerCase();
@@ -52,4 +53,31 @@ export function focusLog(world, dialogue) {
   return turns.map((t) => ({ turn: unq(t.attrs.of[0]).replace(/^\$/, ''), in: t.attrs.in?.[0], pos: Number(t.attrs.pos?.[0] ?? 0),
     mentions: world.ofType('std.focus.mention').filter((m) => m.attrs.of[0] === t.attrs.of[0]).map((m) => ({ kind: m.attrs.kind[0], value: m.attrs.value[0] })) }))
     .sort((a, b) => a.pos - b.pos);
+}
+
+/**
+ * Discourse ellipsis (reviewer 03:20, a verbless continuation: "it to the top right", "and still up"): when a
+ * message names no act, the previous act is reused with the roles the message gives, read by type: a thing by
+ * its name (a pronoun in `pronouns` keeps the previous thing), a value of a closed set by its key. Returns
+ * { act, args, reused: true, changed: [keys] }, or null when the message names an act or gives no role.
+ * `previous`: { act, args }. Options: `pronouns`, `skip`, `acts` (more act words).
+ */
+export function continueAct(world, text, previous, { pronouns = ['it', 'them', 'that', 'this'], skip = [] } = {}) {
+  if (!previous?.act) return null;
+  const lex = typedLexicon(world), S = new Set(skip.map((x) => x.toLowerCase())), P = new Set(pronouns.map((x) => x.toLowerCase()));
+  const toks = (String(text).toLowerCase().match(/[\p{L}\p{N}_'-]+/gu) || []).filter((t) => !S.has(t));
+  const sensesOf = (t) => lex.get(t) || lex.get(t.replace(/s$/, '')) || [];
+  if (toks.some((t) => sensesOf(t).some((s) => s.cat === 'act'))) return null; // it names an act: not an ellipsis
+  const args = { ...previous.args }, changed = [];
+  for (let i = 0; i < toks.length; i++) { // bounded: the tokens
+    const t = toks[i];
+    if (P.has(t)) continue; // the previous thing stays
+    const multi = [3, 2].map((n) => toks.slice(i, i + n).join(' ')).find((p) => p.includes(' ') && sensesOf(p).length);
+    const word = multi ?? t, ss = sensesOf(word);
+    const thing = ss.find((s) => s.cat === 'thing'), value = ss.find((s) => s.cat === 'value' && s.schema);
+    if (thing) { args.thing = thing.id; changed.push('thing'); }
+    else if (value) { args[value.key] = word; changed.push(value.key); }
+    if (multi) i += multi.split(' ').length - 1;
+  }
+  return changed.length ? { act: previous.act, args, reused: true, changed } : null;
 }

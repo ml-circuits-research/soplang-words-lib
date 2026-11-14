@@ -721,8 +721,11 @@ ${['overlaps', 'contains_box', 'box_distance'].map((f) => ['x1', 'y1', 'w1', 'h1
 @std.decide.c.score.3 std.decide.criterion of=score n=3 name=lacks measure=lacks dir=min
 @std.decide.c.score.4 std.decide.criterion of=score n=4 name=words measure=words dir=min
 @std.decide.c.score.5 std.decide.criterion of=score n=5 name=assumes measure=assumes dir=min
-@std.decide.c.ensemble.1 std.decide.criterion of=ensemble n=1 name=agreement measure=agreement dir=max about="how many readers proposed it"
-@std.decide.c.ensemble.2 std.decide.criterion of=ensemble n=2 name=coverage measure=unread dir=min about="words left unread by its best reader"
+@std.decide.c.ensemble.1 std.decide.criterion of=ensemble n=1 name=coverage measure=unread dir=min about="content words left unconsumed by its best reader: an incomplete reading loses first (reviewer 03:20)"
+@std.decide.c.ensemble.2 std.decide.criterion of=ensemble n=2 name=agreement measure=agreement dir=max about="how many readers proposed it"
+@std.decide.c.world.1 std.decide.criterion of=world n=1 name=coverage measure=coverage dir=max about="the words of the request the world's reading consumes (reviewer 03:20)"
+@std.decide.c.world.2 std.decide.criterion of=world n=2 name=tab measure=active dir=max about="the open tab owns a tie"
+@std.decide.c.world.3 std.decide.criterion of=world n=3 name=priority measure=priority dir=max
 @std.decide.c.ensemble.3 std.decide.criterion of=ensemble n=3 name=cost measure=cost dir=min about="the assumptions of its cheapest reader"
 @std.decide.c.ensemble.4 std.decide.criterion of=ensemble n=4 name=specificity measure=specificity dir=max
 @std.decide.c.fact.1 std.decide.criterion of=fact n=1 name=unsaid measure=said dir=hard

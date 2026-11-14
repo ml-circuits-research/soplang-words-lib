@@ -786,7 +786,7 @@ print(compose(w, 'owl', { size: { chapters: 1, sections: 1, sentences: 2 } }).ch
 
 ## Read a question by the types of its words
 
-*In `readByTypes`, `typedLexicon`, `nearWords`, `normalise`, `alternationsOf`, `wordClassesOf`, `canonicalise`, `readCanonical`, `splitRunOn`, `fillersFrom`, `storyState`, `readEnsemble`, `defaultReaders`, `riskCoverage`, `signatureOf`, `chunk`, `minePatterns`, `patternReader`; since 0.72.*
+*In `readByTypes`, `typedLexicon`, `nearWords`, `normalise`, `alternationsOf`, `wordClassesOf`, `canonicalise`, `readCanonical`, `splitRunOn`, `fillersFrom`, `storyState`, `readEnsemble`, `defaultReaders`, `riskCoverage`, `signatureOf`, `chunk`, `minePatterns`, `patternReader`, `continueAct`; since 0.72.*
 *Works on: any world with facts (names, keys, values) and acts.*
 
 "what sound does a cow make", "a cow makes which sound" and "cow sound?" read to one frame,

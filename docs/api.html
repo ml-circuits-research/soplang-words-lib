@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="7647708d30eb">
+<meta name="source-hash" content="1660aa536e9d">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.103.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.104.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -688,7 +688,7 @@ print(cousins(w, kase).filter((c) =&gt; c.valid).map((c) =&gt; [c.degree, c.text
 <ul><li>a thing: a fact's name;</li><li>a kind: a type, or a <code>kind</code>, <code>class</code> or <code>is</code> value;</li><li>an attribute: a key that facts carry;</li><li>a value: a key's value;</li><li>an act: a word of an action;</li><li>a known word: a <code>core.word</code>. A verb that means a key asks for that key.</li></ul>
 <p>The candidate frames are the relations, inverse relations and acts whose argument types the words fill, each word used once:</p>
 <ul><li><code>ask</code>: the <code>key</code> of a thing or kind, with its <code>answer</code>;</li><li><code>find</code>: the holders of a kind with <code>key=value</code>;</li><li><code>act</code>: an act with typed arguments: the kind to make (a type), the thing to act on (a name), and values of a closed set by their key (<code>make a blue shape</code> → <code>{ kind: 'shape', colour: 'blue' }</code>).</li></ul>
-<p>Word order and function words only rank the frames, so paraphrases in any order read to one frame. Options: <code>question</code> (words that make a question), <code>skip</code> (words passed over), <code>lemma</code>. Words the world does not know are listed in <code>unread</code>. <code>typedLexicon</code> is the lexicon, memoised per world. The language's own facts (k.words, w.lang, k.genres, k.interest) are not content.</p>
+<p>Word order and function words only rank the frames, so paraphrases in any order read to one frame. Options: <code>question</code> (words that make a question), <code>skip</code> (words passed over), <code>lemma</code>. The result also says whether the reading is <strong>complete</strong> (reviewer 03:20). <code>left</code> lists the content words the best frame does not consume, and <code>complete</code> is true only when nothing is unread or left: an incomplete reading is not final. Words the world does not know are listed in <code>unread</code>. <code>typedLexicon</code> is the lexicon, memoised per world. The language's own facts (k.words, w.lang, k.genres, k.interest) are not content.</p>
 <p>Lexical generalisation (item 3): <code>nearWords(world, word, { senses })</code> gives a word's near words through word senses (<code>k.words.sense</code>: word, synonym, is_a, kind_of):</p>
 <ul><li>a synonym costs 1, both ways;</li><li>the nearest kind (<code>is_a</code>) costs 2;</li><li>further kinds cost 3 or more.</li></ul>
 <p>By default the senses are the world's own; a host passes <code>senses(word)</code> from a lazy catalog. <code>readByTypes</code> reads an unknown word as its nearest known word when the cost is within <code>near</code> (default 3). The result lists each such reading in <code>near</code> (<code>{ word, as, cost, via }</code>), and the cost lowers the frame's score.</p>
@@ -779,10 +779,17 @@ done [&quot;k.furniture&quot;]</code></pre></figure>
 w.tell(&#x27;@cow k.animal name=cow sound=moo  @dog k.animal name=dog sound=woof  @v core.word text=make text=makes means=sound&#x27;);
 print(minePatterns(w, [&#x27;what sound does a cow make&#x27;, &#x27;what sound does a dog make&#x27;], { closed: [&#x27;what&#x27;, &#x27;does&#x27;, &#x27;a&#x27;] }).patterns[0]);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;pattern&quot;:&quot;what &lt;attr&gt; does a &lt;thing&gt; &lt;verb&gt;&quot;,&quot;count&quot;:2,&quot;example&quot;:&quot;what sound does a cow make&quot;}</code></pre></figure>
+<h3 id="continueactworld-text-previous-options">continueAct(world, text, previous, options?)</h3>
+<p>Discourse ellipsis (reviewer 03:20): a verbless continuation such as "it to the top right" or "and still up" reuses the previous act <code>{ act, args }</code> with the roles the message gives, read by type. A thing is read by its name, and a pronoun in <code>pronouns</code> keeps the previous thing. A value of a closed set is read by its key; multiword values like "top right" count. The result is <code>{ act, args, reused: true, changed }</code>, or null when the message names an act or gives no role.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(&#x27;@acts core.use world=std.acts\n@art std.schema.world name=art doc=x\n@t core.type of=shape extends=std.schema.thing\n@s core.slot of=shape key=place enum=up enum=down\n@k std.schema.kind of=shape world=art acts=place&#x27;);
+w.tell(&#x27;@c1 shape name=cat&#x27;);
+print(continueAct(w, &#x27;and still up&#x27;, { act: &#x27;place&#x27;, args: { thing: &#x27;c1&#x27;, place: &#x27;down&#x27; } }, { skip: [&#x27;and&#x27;, &#x27;still&#x27;] }).args);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;thing&quot;:&quot;c1&quot;,&quot;place&quot;:&quot;up&quot;}</code></pre></figure>
 <h3 id="readensembleworld-text-options-defaultreadersread-canonical-and-riskcoveragerows">readEnsemble(world, text, options?), defaultReaders(read?, canonical?) and riskCoverage(rows)</h3>
 <p>Several readers, one confidence (reviewer 02:30). Readers run as parallel voices, not a fallback chain. Each is <code>(world, text) -&gt; [{ frame, unread?, cost?, specificity? }]</code>. The library's own are <code>types</code> (readByTypes), <code>canonical</code> (readCanonical) and <code>exact</code> (no near words), and a host adds its own voices. The candidate frames are pooled with features:</p>
 <ul><li><code>agreement</code>: the readers that proposed the frame, weighted by <code>weights</code> (default 1 each; learnt from cases, for example each reader's precision on a training half);</li><li>words left unread;</li><li>the cost of assumptions;</li><li>specificity.</li></ul>
-<p>std.decide (kind <code>ensemble</code>) combines them. The result is <code>{ frame, confidence, voices, candidates, ranked, ask? }</code>, where <code>confidence</code> is the weighted share of the readers that proposed the winner. Below <code>threshold</code>, or when two readings tie, <code>ask</code> holds the competing frames, for a question back instead of a guess.</p>
+<p>std.decide (kind <code>ensemble</code>) combines them. The result is <code>{ frame, confidence, voices, candidates, ranked, ask? }</code>, where <code>confidence</code> is the weighted share of the readers that proposed the winner. Coverage comes first: a reading that leaves content words unconsumed loses to one that consumes them all, and <code>complete</code> says whether the winner does. Below <code>threshold</code>, when the winner is incomplete, or when two readings tie, <code>ask</code> holds the competing frames, for a question back instead of a guess.</p>
 <p><code>riskCoverage(rows)</code> turns <code>[{ confidence, correct }]</code> into the risk–coverage curve: for each threshold, the share answered and the share of those that are wrong. <code>tools/bench-ensemble.mjs</code> measures the readers alone and together on PSys2's form pairs.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.tell(&#x27;@cow k.animal name=cow sound=moo  @v core.word text=make text=makes means=sound&#x27;);
@@ -1068,7 +1075,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.103.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.104.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

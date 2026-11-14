@@ -11,11 +11,11 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { join } from 'node:path';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
-// PSys2's own world files are read from PSys2 at the commit in psys2.pin (the one the
+// PSys2's own world files are read from PSys2 at its commit in repos.pin (the one the
 // matrices were built against), not kept here.
 const { psys2Dir } = await import('../../tools/worlds.mjs');
 export const WORLDS_DIR = psys2Dir() ? join(psys2Dir(), 'worlds') : null;
-if (!WORLDS_DIR && import.meta.url === `file://${process.argv[1]}`) { console.error('PSys2 at the commit in psys2.pin cannot be read here (offline)'); process.exit(2); }
+if (!WORLDS_DIR && import.meta.url === `file://${process.argv[1]}`) { console.error('PSys2 at its commit in repos.pin cannot be read here (offline)'); process.exit(2); }
 const lib = await import(process.env.SOPWORLD_BUNDLE ? '../../docs/sopworld.mjs' : '../../src/index.mjs');
 const { World, parse } = lib;
 

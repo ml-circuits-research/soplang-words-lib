@@ -961,6 +961,32 @@ print(cat.shardsOf('cup'), cat.plan(cat.shardsOf('cup')), cat.intoSync(new World
 ["k.t/a"] ["k.t/schema.sop","k.t/a.sop"] true
 ```
 
+
+### createCatalogs(list, options?)
+
+Several knowledge repositories at once, in an order of precedence: `list` is
+`[{ name, index, vocab, read, cache? }]` (each as `createCatalog`; `options.lemma` is
+shared), and the first catalog wins. `shardsOf(word)` gives `"<name>:<shard>"` from every
+catalog that has the word. `into(world, word)` tells them catalog by catalog (`intoSync` when every `read` answers at once). Each wire
+keeps its catalog in its source (`core.source="<name>: <source>"`). A wire that another
+catalog already told, under the same id or as a fact of the same type about the same
+`name`, is told only if it has the same values. If not, it is reported in `conflicts`
+(`{ id, kept, dropped, path, keys }`) and the first catalog's version stays. `std.know.fill`
+and typed needs then read what was kept.
+
+```js run
+const files = (shard) => ({ 'k.f/schema.sop': '@s core.slot of=k.f key=name id=true', 'k.f/s.sop': shard });
+const cat = (name, shard) => ({ name, index: { worlds: [{ id: 'k.f', schema: 'k.f/schema.sop', shards: [{ id: 'k.f/s', path: 'k.f/s.sop' }] }] },
+  vocab: { sofa: ['k.f/s'] }, read: bundleReader({ files: files(shard) }) });
+const cats = createCatalogs([cat('one', '@a k.f name=sofa w=200'), cat('two', '@b k.f name=sofa w=210')]);
+const w = new World();
+const r = cats.intoSync(w, 'sofa');
+print(r.conflicts.map((c) => [c.id, c.kept, c.dropped, c.keys]), w.ofType('k.f').map((x) => x.attrs.w[0]));
+```
+
+```output
+[["b","one","two",["w"]]] ["200"]
+```
 ### turn(world, readings, options?)
 
 One request, end to end. `readings` are the candidate readings of one message, best

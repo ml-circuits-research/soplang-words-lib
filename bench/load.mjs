@@ -1,6 +1,6 @@
 // R17.5: load cost at scale. The schemas of eight knowledge worlds, then 50 shards told one
 // after another into one world: the hand-written CC0 shards (`sources: hand-core`) of the
-// published worlds (sop-knowledge-worlds at the commit in worlds.pin, read in place),
+// published worlds (sop-knowledge-worlds at its commit in repos.pin, read in place),
 // then the first 19 again, each in a namespace of its own (so they are new wires, not
 // merges). Time and heap per shard, and whether it grows with what is already loaded.
 // `node --expose-gc bench/load.mjs` (add `bundle` for docs/sopworld.mjs). With

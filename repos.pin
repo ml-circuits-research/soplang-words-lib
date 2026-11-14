@@ -1,0 +1,5 @@
+# The repositories the tests and benches read, each at a pinned commit (reviewer 04:40, 07:15).
+# One line each: name, kind (knowledge or application), URL, commit. tools/worlds.mjs reads it.
+# Several knowledge repositories may be listed; they are read in this order (first wins).
+sop-knowledge-worlds knowledge https://github.com/ml-circuits-research/sop-knowledge-worlds.git a9581808b3d87ca157224a9c90053c4acd0ae667
+psys2 application https://github.com/ml-circuits-research/psys2.git 45ac4bff5e7e896a0defae72057ca099dff2d950

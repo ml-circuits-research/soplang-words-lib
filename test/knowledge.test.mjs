@@ -1,5 +1,5 @@
 // Loading knowledge by lookup (Round 24, A1): a catalog (index + vocabulary) over the published
-// knowledge worlds (sop-knowledge-worlds at the commit in worlds.pin, read in place; skipped offline); shards read once through the host's reader, schemas first; an offline
+// knowledge worlds (sop-knowledge-worlds at its commit in repos.pin, read in place; skipped offline); shards read once through the host's reader, schemas first; an offline
 // bundle read by the same code.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';

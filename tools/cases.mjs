@@ -10,7 +10,7 @@ import { worldText } from './worlds.mjs';
 
 const dir = new URL('../cases/', import.meta.url);
 // A case names the published worlds it needs (`world`: read from sop-knowledge-worlds at the
-// commit in worlds.pin) and carries any other wires itself (`wires`: only what it needs).
+// commit in repos.pin) and carries any other wires itself (`wires`: only what it needs).
 // std.acts is always loaded. A case whose world cannot be had (offline) is skipped.
 const cases = readdirSync(dir).filter((f) => f.endsWith('.cases.json')).flatMap((f) => JSON.parse(readFileSync(new URL(f, dir), 'utf8')));
 

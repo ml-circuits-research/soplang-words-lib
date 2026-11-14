@@ -4102,3 +4102,28 @@ rebuilt (`docs/version.md`: sopworld 0.42.0).
   the tests do not cover in that shape, and it needs the recorded answers. PSys2's worlds
   and specs are no longer kept; they are read at psys2.pin. If the reviewer prefers, the
   whole folder goes in one commit, with the gate line.
+
+## Reviewer 06:55 and 07:15 — answers closed; several catalogs; repos.pin — release 0.43.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/cases.mjs`: 55 / 55. Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.43.0).
+
+- questions.md: Q30–Q35 moved to Closed, with the reviewer's answers in one line each. No
+  question is open.
+- Q30, checked: `std.schema.effect of= act= action=` (0.28) already is "a world's own
+  effect of one act on one kind". `action` is any registered action. reference.md now
+  says so; `on.<act>` is not added.
+- 07:15 item 2: `createCatalogs` in src/knowledge.mjs.
+  - Precedence: the first catalog wins.
+  - The source says `<catalog>: <source>`.
+  - Conflicts by id, or by type + name: reported, and the first version kept.
+  - `into` / `intoSync`.
+  - test/catalogs.test.mjs (2 tests): two overlapping catalogs; the order decides; one
+    sofa with another width is reported; std.know.fill fills from the version kept, with
+    its catalog in the source.
+  - Typed needs read what is loaded, so they follow too.
+- 07:15 item 3: repos.pin, one line per repository with its kind and commit.
+  tools/worlds.mjs adds `knowledgeDirs()`. worlds.pin and psys2.pin are removed.
+- Next: Round 27 (the five agent skills, parameterised by repositories), after the
+  current round's open items (Q30 order, Q33 order).

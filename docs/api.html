@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="ca64ec83cd9f">
+<meta name="source-hash" content="f35b9d582a57">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.42.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.43.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -361,6 +361,16 @@ I can&#x27;t change the size of an eye: an eye has no size. An eye has colour.</
 const cat = createCatalog({ index, vocab: { cup: [&#x27;k.t/a&#x27;] }, read: bundleReader({ files: { &#x27;k.t/schema.sop&#x27;: &#x27;@k core.slot of=k.thing key=name id=true&#x27;, &#x27;k.t/a.sop&#x27;: &#x27;@c k.thing name=cup&#x27; } }) });
 print(cat.shardsOf(&#x27;cup&#x27;), cat.plan(cat.shardsOf(&#x27;cup&#x27;)), cat.intoSync(new World(), &#x27;cup&#x27;).ok);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;k.t/a&quot;] [&quot;k.t/schema.sop&quot;,&quot;k.t/a.sop&quot;] true</code></pre></figure>
+<h3 id="createcatalogslist-options">createCatalogs(list, options?)</h3>
+<p>Several knowledge repositories at once, in an order of precedence: <code>list</code> is <code>[{ name, index, vocab, read, cache? }]</code> (each as <code>createCatalog</code>; <code>options.lemma</code> is shared), and the first catalog wins. <code>shardsOf(word)</code> gives <code>"&lt;name&gt;:&lt;shard&gt;"</code> from every catalog that has the word. <code>into(world, word)</code> tells them catalog by catalog (<code>intoSync</code> when every <code>read</code> answers at once). Each wire keeps its catalog in its source (<code>core.source="&lt;name&gt;: &lt;source&gt;"</code>). A wire that another catalog already told, under the same id or as a fact of the same type about the same <code>name</code>, is told only if it has the same values. If not, it is reported in <code>conflicts</code> (<code>{ id, kept, dropped, path, keys }</code>) and the first catalog's version stays. <code>std.know.fill</code> and typed needs then read what was kept.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const files = (shard) =&gt; ({ &#x27;k.f/schema.sop&#x27;: &#x27;@s core.slot of=k.f key=name id=true&#x27;, &#x27;k.f/s.sop&#x27;: shard });
+const cat = (name, shard) =&gt; ({ name, index: { worlds: [{ id: &#x27;k.f&#x27;, schema: &#x27;k.f/schema.sop&#x27;, shards: [{ id: &#x27;k.f/s&#x27;, path: &#x27;k.f/s.sop&#x27; }] }] },
+  vocab: { sofa: [&#x27;k.f/s&#x27;] }, read: bundleReader({ files: files(shard) }) });
+const cats = createCatalogs([cat(&#x27;one&#x27;, &#x27;@a k.f name=sofa w=200&#x27;), cat(&#x27;two&#x27;, &#x27;@b k.f name=sofa w=210&#x27;)]);
+const w = new World();
+const r = cats.intoSync(w, &#x27;sofa&#x27;);
+print(r.conflicts.map((c) =&gt; [c.id, c.kept, c.dropped, c.keys]), w.ofType(&#x27;k.f&#x27;).map((x) =&gt; x.attrs.w[0]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;b&quot;,&quot;one&quot;,&quot;two&quot;,[&quot;w&quot;]]] [&quot;200&quot;]</code></pre></figure>
 <h3 id="turnworld-readings-options">turn(world, readings, options?)</h3>
 <p>One request, end to end. <code>readings</code> are the candidate readings of one message, best first: each a request <code>{ action, args }</code>, a list of requests (one sentence), or <code>{ requests }</code>. Each is tried on a fork (nothing changes); the first the world takes is applied as one sentence (all or nothing, one undo step) and the result has <code>status: 'done'</code>, <code>reading</code> (its index), <code>results</code>, <code>diff</code>, <code>why</code> (the chain of each changed value), <code>guesses</code> (values filled by tiers, with their source) and <code>replies</code> (from <code>actReply</code>, or <code>options.reply</code>). Otherwise a graded fallback: <code>ask</code> (a reading only lacks an argument: <code>question</code>, <code>missing</code>), <code>elsewhere</code> (the kind is known but the act or the attribute is not here: the reply says what it can do and where), <code>unknown</code> (the best guess named in a <code>question</code>). Every result but <code>nothing</code> has <code>replies</code> (for <code>ask</code> and <code>unknown</code>, the question), and lists the readings <code>dropped</code> with the reason.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
@@ -714,7 +724,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.42.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.43.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

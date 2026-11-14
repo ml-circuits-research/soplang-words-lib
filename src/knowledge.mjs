@@ -7,6 +7,9 @@
 // so does the lemma of a word (the host passes `lemma`; no language is built in).
 // `bundleReader` reads an offline bundle written by tools/build-bundle.mjs (shard texts by
 // path, the same format), so the same catalog code works with no network.
+// `createCatalogs` reads several catalogs at once, in an order of precedence (there will
+// be more knowledge repositories than one).
+import { parse, serialize } from './parser.mjs';
 
 /**
  * @param {{ index: { worlds: { id: string, schema?: string, depends?: string[], shards?: { id: string, path: string }[] }[] },
@@ -103,6 +106,17 @@ export function createCatalog({ index, vocab = {}, read, cache = new Map(), lemm
       }
       return res;
     },
+    /** The text of one path, read at once (a file, a bundle) and kept in the cache. */
+    textSync(p) {
+      let t = cache.get(p);
+      if (t === undefined) {
+        t = read(p);
+        if (t && typeof t.then === 'function') throw new Error('sopworld: a sync read is needed here; use into');
+        if (t === null || t === undefined) throw new Error(`sopworld: catalog: nothing at ${p}`);
+        cache.set(p, String(t));
+      }
+      return String(t);
+    },
     /** The shard ids of a world in the index (to build a bundle of a whole world). */
     shardsOfWorld: (id) => (worlds.get(id)?.shards || []).map((s) => s.id),
     worlds: () => [...worlds.keys()],
@@ -113,4 +127,75 @@ export function createCatalog({ index, vocab = {}, read, cache = new Map(), lemm
 export function bundleReader(bundle) {
   const files = bundle?.files || {};
   return (path) => (Object.hasOwn(files, path) ? files[path] : null);
+}
+
+/**
+ * Several catalogs at once, in an order of precedence: `[{ name, index, vocab, read, cache? }]`,
+ * the first wins. A word brings the shards of every catalog that has it. Each wire keeps its
+ * catalog in its source (`core.source="<name>: <source>"`). A wire with an id that another
+ * catalog already told, with other values, is not told: the conflict is reported
+ * (`conflicts: [{ id, kept, dropped, keys }]`) and the first catalog's version stays.
+ */
+export function createCatalogs(list, { lemma } = {}) {
+  const cats = list.map((c) => ({ name: c.name, cat: createCatalog({ ...c, ...(lemma && !c.lemma ? { lemma } : {}) }) }));
+  if (new Set(cats.map((c) => c.name)).size !== cats.length || cats.some((c) => !c.name)) throw new Error('sopworld: createCatalogs needs a distinct name for each catalog');
+  const owner = new WeakMap(); // World -> Map(wire id -> { catalog, attrs })
+  const done = new WeakMap(); // World -> Set of "<catalog>:<path>" told
+  const tag = (name, w) => { const src = w.attrs['core.source']?.[0]; return { ...w, attrs: { ...w.attrs, 'core.source': [JSON.stringify(`${name}: ${src ? String(src).replace(/^"|"$/g, '') : 'no source'}`)] } }; };
+  const same = (a, b) => JSON.stringify(Object.entries(a).filter(([k]) => k !== 'core.source').sort()) === JSON.stringify(Object.entries(b).filter(([k]) => k !== 'core.source').sort());
+  function tellText(world, name, path, text, res) {
+    const own = owner.get(world) || owner.set(world, new Map()).get(world);
+    const keep = [];
+    for (const w of parse(text)) { // bounded: the wires of one file
+      if (w.pattern) { keep.push(w); continue; }
+      const nameKey = w.attrs.name ? `${w.type}|${w.attrs.name[0]}` : null; // the same thing under another id: a fact of the same type about the same name
+      const before = own.get(w.id) ?? (nameKey ? own.get(nameKey) : undefined);
+      if (before && before.catalog !== name) {
+        if (!same(before.attrs, w.attrs)) res.conflicts.push({ id: w.id, kept: before.catalog, dropped: name, path, keys: [...new Set([...Object.keys(before.attrs), ...Object.keys(w.attrs)])].filter((k) => k !== 'core.source' && JSON.stringify(before.attrs[k]) !== JSON.stringify(w.attrs[k])) });
+        continue; // the catalog that comes first keeps its version
+      }
+      if (!before) { own.set(w.id, { catalog: name, attrs: w.attrs }); if (nameKey) own.set(nameKey, { catalog: name, attrs: w.attrs }); }
+      keep.push(tag(name, w));
+    }
+    if (!keep.length) return true;
+    const r = world.tell(serialize(keep));
+    if (!r.ok) { res.ok = false; res.violations.push(...r.violations.map((v) => ({ ...v, path, catalog: name }))); return false; }
+    return true;
+  }
+  return {
+    catalogs: () => cats.map((c) => c.name),
+    /** The shards that hold a word, in every catalog: ["<catalog>:<shard>"], by precedence. */
+    shardsOf: (word) => cats.flatMap((c) => c.cat.shardsOf(word).map((s) => `${c.name}:${s}`)),
+    /** Tell what a word needs from every catalog that has it, in order. */
+    async into(world, word) {
+      const res = { word, shards: [], told: [], ok: true, violations: [], conflicts: [] };
+      const seen = done.get(world) || done.set(world, new Set()).get(world);
+      for (const c of cats) { // bounded: the catalogs
+        const shards = c.cat.shardsOf(word);
+        res.shards.push(...shards.map((s) => `${c.name}:${s}`));
+        for (const [i, p] of c.cat.plan(shards).entries()) {
+          if (seen.has(`${c.name}:${p}`)) continue;
+          const text = (await c.cat.fetch(word))[i]?.text;
+          if (!tellText(world, c.name, p, text, res)) return res;
+          seen.add(`${c.name}:${p}`); res.told.push(`${c.name}:${p}`);
+        }
+      }
+      return res;
+    },
+    /** As `into`, for catalogs whose `read` answers at once: no promise. */
+    intoSync(world, word) {
+      const res = { word, shards: [], told: [], ok: true, violations: [], conflicts: [] };
+      const seen = done.get(world) || done.set(world, new Set()).get(world);
+      for (const c of cats) { // bounded: the catalogs
+        const shards = c.cat.shardsOf(word);
+        res.shards.push(...shards.map((s) => `${c.name}:${s}`));
+        for (const p of c.cat.plan(shards)) {
+          if (seen.has(`${c.name}:${p}`)) continue;
+          if (!tellText(world, c.name, p, c.cat.textSync(p), res)) return res;
+          seen.add(`${c.name}:${p}`); res.told.push(`${c.name}:${p}`);
+        }
+      }
+      return res;
+    },
+  };
 }

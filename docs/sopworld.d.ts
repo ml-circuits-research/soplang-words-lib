@@ -470,11 +470,19 @@ export function createCatalog(options: { index: { worlds: { id: string; schema?:
   fetch(word: string): Promise<{ path: string; text: string }[]>;
   into(world: World, word: string): Promise<{ word: string; shards: string[]; told: string[]; ok: boolean; violations: Violation[] }>;
   intoSync(world: World, word: string): { word: string; shards: string[]; told: string[]; ok: boolean; violations: Violation[] };
+  textSync(path: string): string;
   shardsOfWorld(id: string): string[];
   worlds(): string[];
 };
 /** a read(path) over an offline bundle written by tools/build-bundle.mjs */
 export function bundleReader(bundle: { files: Record<string, string> }): (path: string) => string | null;
+/** Several catalogs at once, the first wins; each fact keeps its catalog in its source; conflicts reported. */
+export function createCatalogs(list: { name: string; index: object; vocab?: Record<string, string[]>; read: (path: string) => string | null | Promise<string | null>; cache?: object; lemma?: (word: string) => string[] }[], options?: { lemma?: (word: string) => string[] }): {
+  catalogs(): string[];
+  shardsOf(word: string): string[];
+  into(world: World, word: string): Promise<{ word: string; shards: string[]; told: string[]; ok: boolean; violations: object[]; conflicts: { id: string; kept: string; dropped: string; path: string; keys: string[] }[] }>;
+  intoSync(world: World, word: string): { word: string; shards: string[]; told: string[]; ok: boolean; violations: object[]; conflicts: { id: string; kept: string; dropped: string; path: string; keys: string[] }[] };
+};
 
 /** one request pipeline: dry-run the readings, apply the first the world takes (one sentence, one undo step), or fall back (ask, elsewhere, a named guess) */
 export function turn(world: World, readings: ({ action: string; args?: Record<string, unknown> } | { action: string; args?: Record<string, unknown> }[] | { requests: { action: string; args?: Record<string, unknown> }[] })[], options?: { reply?: (world: World, request: object, result: object) => string; load?: (need: { of: string; type: string; from?: string }, world: World) => void }): {

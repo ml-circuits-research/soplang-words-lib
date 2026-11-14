@@ -4,7 +4,7 @@ A small sample from PSys2 (https://github.com/ml-circuits-research/psys2, same o
 
 PSys2's own files are **not kept here** (reviewer 04:40): its specifications and the six
 worlds the sample uses (`core`, `kids.common`, `lang.common`, `kids.shop`, `kids.arith`,
-`kids.tasks`) are read from PSys2 at the commit in `psys2.pin` (45ac4bf, the one the
+`kids.tasks`) are read from PSys2 at the commit in `repos.pin` (45ac4bf, the one the
 matrices were built against), through `tools/worlds.mjs` (a checkout in `.cache/psys2`,
 fetched on first use; the tests are skipped offline).
 

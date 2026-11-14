@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.43.0
+
+Reviewer 07:15 (there will be several knowledge repositories) and 06:55 (answers).
+
+### New
+- `createCatalogs([{ name, index, vocab, read }], { lemma })` reads several catalogs at
+  once, in an order of precedence (first wins). Each fact keeps its catalog in its source.
+  A thing two catalogs define differently, by id or by type and name, is reported in
+  `conflicts` and the first version stays. It has `into` and `intoSync`.
+- `createCatalog(...).textSync(path)`.
+
+### Changed
+- `repos.pin` replaces `worlds.pin` and `psys2.pin`: one line per repository (name, kind,
+  URL, commit). Knowledge repositories are listed in order of precedence.
+  `tools/worlds.mjs` adds `knowledgeDirs()`. A checkout given by environment is now
+  `$<NAME>_DIR` (for example `$SOP_KNOWLEDGE_WORLDS_DIR`).
+
+### Docs
+- `std.schema.effect` is a world's own effect of one act on one kind too. No `on.<act>`
+  is added (Q30).
+
 ## 0.42.0
 
 Docs only (reviewer 06:00, the owner's question): one name for each kind of world.

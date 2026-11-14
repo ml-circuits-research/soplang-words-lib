@@ -11,13 +11,13 @@ export { rank, RANKING, veto } from './rank.mjs';
 export { aggregates } from './builtins.mjs';
 export { PatternIndex } from './patterns.mjs';
 export { schemaCard, schemaExamples, actReply, schemaGrid, gridTests } from './schema-words.mjs';
-export { createCatalog, bundleReader } from './knowledge.mjs';
+export { createCatalog, createCatalogs, bundleReader } from './knowledge.mjs';
 export { turn, route, turnFlow } from './turn.mjs';
 export { parseText, grammarOf, nounPhrase, grammarView, viewDiff } from './grammar.mjs';
 export { resolve } from './resolve.mjs';
 export { needsOf } from './std.mjs';
 export { ledgerAppend, ledgerGroups, ledgerKey, stageOf, STAGES } from './ledger.mjs';
-export const version = '0.42.0';
+export const version = '0.43.0';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)
  * tools/build.mjs fills in `hash`, a fingerprint of the bundled sources, and `date`,

@@ -8,8 +8,9 @@
 // a template with agreement. Nothing in this file knows a language.
 //
 // Facts (default type names; a language world may rename them in `types`):
-//   m.class name= parent=? drop=? alt=<from>><to> (rep.)   a paradigm class
-//   m.ending class= suffix= alt=yes? <feature>=<value>...    one cell: features -> suffix ("_" = none)
+//   m.class name= parent=? drop=? alt=<from>><to>[@vowel|@end] (rep.)   a paradigm class
+//   m.ending class= suffix= alt=yes|<list>? <feature>=<value>...  one cell: features -> suffix ("_" = none)
+//   m.vowel text=                                            the vowels, for alternations at the last vowel
 //   m.irregular lemma= form= <feature>=<value>...            consulted first
 //   m.fold from= to=                                         a spelling variant (diacritics folding)
 //   m.split text=                                            a clitic joiner ("-")
@@ -23,12 +24,13 @@ const featOf = (attrs) => Object.fromEntries(Object.entries(attrs).filter(([k]) 
 
 /** The morphology a language world declares, compiled once: classes with their inherited cells, a suffix index, folds. */
 export function morphOf(world, { types = {} } = {}) {
-  const T = { cls: 'm.class', ending: 'm.ending', irregular: 'm.irregular', fold: 'm.fold', split: 'm.split', template: 'm.template', ...types };
+  const T = { cls: 'm.class', ending: 'm.ending', irregular: 'm.irregular', fold: 'm.fold', split: 'm.split', template: 'm.template', vowel: 'm.vowel', ...types };
   const decl = new Map(world.ofType(T.cls).map((c) => [unq(c.attrs.name[0]), c]));
   const own = new Map(); // class -> Map(cellKey -> { suffix, alt, feat })
   for (const e of world.ofType(T.ending)) {
     const cls = unq(e.attrs.class[0]), feat = featOf(e.attrs), suf = unq(e.attrs.suffix?.[0] ?? '_');
-    (own.get(cls) || own.set(cls, new Map()).get(cls)).set(cellKey(feat), { suffix: suf === '_' ? '' : suf, alt: e.attrs.alt?.[0] === 'yes', feat });
+    const alt = e.attrs.alt ? (e.attrs.alt.length === 1 && unq(e.attrs.alt[0]) === 'yes' ? true : e.attrs.alt.map(altOf)) : false; // yes: the class's list; or the cell's own list
+    (own.get(cls) || own.set(cls, new Map()).get(cls)).set(cellKey(feat), { suffix: suf === '_' ? '' : suf, alt, feat });
   }
   const classes = new Map();
   const build = (name, trail = new Set()) => { // bounded: each class once; a cycle is cut
@@ -39,7 +41,7 @@ export function morphOf(world, { types = {} } = {}) {
     const parent = c?.attrs.parent ? build(unq(c.attrs.parent[0]), trail) : null;
     const cells = new Map(parent ? parent.cells : []);
     for (const [k, v] of own.get(name) || []) cells.set(k, v); // a class = its parent + overrides
-    const alts = c?.attrs.alt ? c.attrs.alt.map((a) => unq(a).split('>')) : parent?.alts || [];
+    const alts = c?.attrs.alt ? c.attrs.alt.map(altOf) : parent?.alts || [];
     const out = { name, drop: c?.attrs.drop ? unq(c.attrs.drop[0]) : parent?.drop ?? '', alts, cells };
     classes.set(name, out);
     return out;
@@ -50,8 +52,9 @@ export function morphOf(world, { types = {} } = {}) {
   const irregular = world.ofType(T.irregular).map((x) => ({ lemma: unq(x.attrs.lemma[0]), form: unq(x.attrs.form[0]), feat: featOf(x.attrs) }));
   const folds = world.ofType(T.fold).map((x) => [unq(x.attrs.from[0]), unq(x.attrs.to[0])]);
   const splits = world.ofType(T.split).flatMap((x) => (x.attrs.text || []).map(unq));
+  const vowels = world.ofType(T.vowel).flatMap((x) => (x.attrs.text || []).map(unq)).join('') || 'aeiou';
   const templates = world.ofType(T.template).map((x) => ({ act: unq(x.attrs.act?.[0] ?? ''), shape: x.attrs.shape ? unq(x.attrs.shape[0]) : null, text: unq(x.attrs.text[0]) }));
-  return { classes, index, irregular, folds, splits, templates };
+  return { classes, index, irregular, folds, splits, templates, vowels };
 }
 
 /** Spelling folded (diacritics and old variants to their plain form), by the language world's folds. */
@@ -62,14 +65,23 @@ export function fold(m, text) {
 }
 
 /** Apply (or undo) a class's alternations to the last place in the stem where they fit. */
-function alternate(stem, alts, back = false) {
-  for (const [from, to] of alts) { // bounded: the alternations of one class
+// An alternation is `from>to`, optionally anchored: `@vowel` (at the stem's last vowel, by the
+// language world's `m.vowel text=` facts), `@end` (at the end of the stem); unanchored, at
+// its last occurrence. A cell applies its list in order (several places at once: a>ă@vowel
+// then t>ț@end); analysis undoes them in the reverse order.
+function alternate(stem, alts, back = false, vowels = 'aeiou') {
+  const list = back ? [...alts].reverse() : alts;
+  for (const [from, to, anchor] of list) { // bounded: the alternations of one cell
     const [a, b] = back ? [to, from] : [from, to];
-    const at = stem.lastIndexOf(a);
-    if (at >= 0) return stem.slice(0, at) + b + stem.slice(at + a.length);
+    let at = -1;
+    if (anchor === 'end') at = stem.endsWith(a) ? stem.length - a.length : -1;
+    else if (anchor === 'vowel') { let v = -1; for (let i = stem.length - 1; i >= 0 && v < 0; i--) if (vowels.includes(stem[i]) || (back && b.includes(stem[i]))) v = i; at = v >= 0 && stem.startsWith(a, v) ? v : -1; } // bounded: the letters
+    else at = stem.lastIndexOf(a);
+    if (at >= 0) stem = stem.slice(0, at) + b + stem.slice(at + a.length);
   }
   return stem;
 }
+const altOf = (t) => { const [pair, anchor] = unq(t).split('@'); const [from, to] = pair.split('>'); return [from, to, anchor || null]; };
 const same = (a, b) => Object.keys(a).length === Object.keys(b).length && Object.entries(a).every(([k, v]) => b[k] === v);
 
 /** A form: the irregular one if declared, else the class's stem rule and the cell's ending. null when the class has no such cell. */
@@ -80,7 +92,7 @@ export function generate(m, lemma, cls, feat) {
   const cell = c?.cells.get(cellKey(feat));
   if (!cell) return null;
   let stem = c.drop && lemma.endsWith(c.drop) ? lemma.slice(0, lemma.length - c.drop.length) : lemma;
-  if (cell.alt) stem = alternate(stem, c.alts);
+  if (cell.alt) stem = alternate(stem, cell.alt === true ? c.alts : cell.alt, false, m.vowels);
   return stem + cell.suffix;
 }
 
@@ -100,7 +112,7 @@ export function analyse(m, form, { dictionary } = {}) {
     for (const { cls, cell } of m.index.get(suffix) || []) {
       const c = m.classes.get(cls);
       let stem = plain.slice(0, plain.length - n);
-      if (cell.alt) stem = alternate(stem, c.alts.map(([a, b]) => [fold(m, a), fold(m, b)]), true);
+      if (cell.alt) stem = alternate(stem, (cell.alt === true ? c.alts : cell.alt).map(([a, b, at]) => [fold(m, a), fold(m, b), at]), true, fold(m, m.vowels));
       const lemmaPlain = stem + fold(m, c.drop);
       const entries = dictionary ? dictionary.byFolded(lemmaPlain).filter((e) => e.class === cls) : [{ lemma: lemmaPlain, class: cls }];
       for (const e of entries) {

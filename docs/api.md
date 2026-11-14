@@ -1327,7 +1327,9 @@ language and run in both directions; nothing here knows a language.
 A language world declares (type names can be changed with `morphOf(world, { types })`):
 - paradigm classes: `m.class name= parent=? drop=? alt=<from>><to>`. A class inherits its
   parent's cells and overrides some; `drop` is what the lemma loses to give the stem;
-  `alt` is a stem alternation.
+  `alt` is a stem alternation, `from>to`, optionally anchored with `@vowel` (the stem's
+  last vowel, from `m.vowel text=`) or `@end`. A cell may give its own ordered list
+  (`alt=a>ă@vowel alt=t>ț@end`: several places at once) or `alt=yes` (the class's list).
 - cells: `m.ending class= suffix= alt=yes? <feature>=<value>...`, where `suffix=_` means
   none.
 - `m.irregular lemma= form= <features>` (consulted first), `m.fold from= to=` (spelling

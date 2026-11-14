@@ -71,3 +71,15 @@ test('morph: realise a template with agreement (gender through unification) from
   assert.equal(realise(m, t, { thing: 'bak', colour: 'rum' }, { dictionary: d, base: { num: 'sg' } }), 'am facut bak rum');
   assert.equal(realise(m, '{thing:num=pl,def=yes}', { thing: 'pōta' }, { dictionary: d }), 'pōtele');
 });
+
+test('morph: several alternations in one cell, anchored to the last vowel or the stem end (Q37.1)', () => {
+  const w = new World();
+  w.tell(`@v m.vowel text=aeiouy
+@c m.class name=nx drop=e
+@e1 m.ending class=nx num=sg suffix=e
+@e2 m.ending class=nx num=pl suffix=y alt=a>o@vowel alt=t>s@end`);
+  const m = morphOf(w);
+  assert.equal(generate(m, 'karte', 'nx', { num: 'pl' }), 'korsy', 'two places at once: a>o at the last vowel, t>s at the end');
+  assert.equal(generate(m, 'mase', 'nx', { num: 'pl' }), 'mosy', 'the end anchor does not fire when the stem does not end with t');
+  assert.ok(analyse(m, 'korsy').some((r) => r.lemma === 'karte' && r.features.num === 'pl'), 'and back');
+});

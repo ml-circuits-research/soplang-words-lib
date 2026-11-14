@@ -4321,3 +4321,16 @@ rebuilt (`docs/version.md`: sopworld 0.52.0).
   - Round 28 items 6–9;
   - Round 29 (`std.plan`, with a design note);
   - Round 27 (skills).
+
+## Q37.1 — ordered, anchored alternations in std.morph — release 0.53.0
+
+`/tmp/check.sh`: # pass 407 # fail 0 # pass 407 # fail 0 # pass 406 # fail 0 — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 0.53.0).
+
+- src/morph.mjs:
+  - alternations `from>to@vowel|@end`;
+  - a cell's own ordered list (or `alt=yes` for the class's list);
+  - `m.vowel text=`;
+  - analysis undoes them in the reverse order.
+- test/morph.test.mjs, 5 tests now: karte → korsy (two places at once) and back, and mase →
+  mosy (the end anchor does not fire). The data is invented, nothing Romanian.

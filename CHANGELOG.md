@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.53.0
+
+Q37.1: Romanian-like stems change in two places at once.
+
+### New
+- `std.morph` alternations can be anchored (`@vowel`: the stem's last vowel, from `m.vowel
+  text=`; `@end`: the stem end). A cell can give its own ordered list (`alt=a>o@vowel
+  alt=t>s@end`). Analysis undoes them in the reverse order.
+
 ## 0.52.0
 
 Round 30, first part: `std.morph`, compact morphology for language worlds.

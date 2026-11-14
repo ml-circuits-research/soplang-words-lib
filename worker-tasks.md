@@ -1136,3 +1136,7 @@ Also: 0.64/0.65 std.compose first version noted; acceptance after the reviewer's
 ## Reviewer 2026-11-14 18:40 — 0.64/0.65 accepted (std.compose first version, interestOf on k.interest)
 
 Reviewer ran `npm test` on 0.65: 429, 429, 428 pass, 0 fail, exit 0. Accepted. Switch compose to the published worlds as they land (w.document, k.genres, k.story, procedures, register templates). The sampler's English realisation shows the need for w.lang.en's act templates (being written): PSys2's samples include "What is the seats of table 1?", "Set the dog fill to outlined." — agreement and attribute-specific phrasing belong to the templates + generation, not to hosts.
+
+## Reviewer 2026-11-14 19:00 — [DATA] BillSum 200 is in psys2 (Q41.2)
+
+`training/eval/billsum-test-200.jsonl` + `billsum-test-200.SOURCE.md` in psys2 main (public domain / CC0). Measure `summarizeText` on it (ROUGE-1/2 or your unigram/bigram recall, with a lead-3 baseline for comparison) and report; no tuning on it beyond the first 100 (keep the second 100 as held-out).

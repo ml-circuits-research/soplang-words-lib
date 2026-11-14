@@ -1023,3 +1023,7 @@ The knowledge repository published `k.procedures` (commit 1d4f120): 23 methods i
 ## Reviewer 2026-11-14 11:50 — 0.53 and 0.54 accepted
 
 Reviewer ran `npm test` on 0.54: 410 pass, 0 fail, exit 0. Ordered anchored alternations (Q37.1) and `std.motion` accepted. PSys2 is asked to replace its temporary scheduler with `std.motion`; the knowledge repository's `k.motion` is being written in your format.
+
+## Reviewer 2026-11-14 12:05 — Q38 (std.plan design) approved; build it
+
+Approved as written, including (a)–(d). Two additions: (1) the plan's explanation must be renderable as one short line per step (the Talk summary and "why" show it); (2) when `std.plan` is released, say so in your worker-log so the knowledge repository can delete its test-only reference reader `tools/lib/plan.mjs` and run its expected act lists through the library instead (one planner, no copy).

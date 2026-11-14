@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld What the library can do</title>
-<meta name="source-hash" content="ed6545562e78">
+<meta name="source-hash" content="ace8d7df7b9e">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,14 +12,15 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.41.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.42.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="capabilities.html" aria-current="page">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
 <h1>What the library can do</h1>
 <p class="lead">By job, not by API. Each job has a paragraph, an example that runs (every example on this page is run in CI and must print what is shown), the module and the version it came in, and its limits. Where a job is not done yet, it says so. API details: <a href="api.html">api</a>, <a href="reference.html">reference</a>; how worlds combine: <a href="patterns.html">patterns</a>.</p>
+<p>Three kinds of worlds are named throughout (see the <a href="glossary.html#the-three-kinds-of-worlds">glossary</a>): a <strong>world schema</strong> says what a kind of world is, a <strong>knowledge world</strong> holds facts true for everyone, and a <strong>live world</strong> is one running instance of a schema in a session, reading knowledge worlds. Each job below says which kind it works on.</p>
 <h2 id="describe-a-world">Describe a world</h2>
-<p><em>In core: <code>core.type</code>, <code>core.slot</code>; since 0.1.</em></p>
+<p><em>In core: <code>core.type</code>, <code>core.slot</code>; since 0.1.</em> <em>Works on: a world schema (its types and slots).</em></p>
 <p>Kinds of things are types; their attributes are slots with kinds, value lists, ranges, defaults and questions to ask when they are missing. Everything told is checked against them at once. <strong>Limits:</strong> one value per key unless the slot says <code>many</code>; a missing required key is an open question, not a refusal.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@k1 core.slot of=room key=name id=true
@@ -31,7 +32,7 @@ print(w.open().map((o) =&gt; o.ask));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true domain
 [&quot;What is it for?&quot;]</code></pre></figure>
 <h2 id="state-facts-and-rules">State facts and rules</h2>
-<p><em>In core: <code>core.rule</code>, <code>core.deny</code>; since 0.1.</em></p>
+<p><em>In core: <code>core.rule</code>, <code>core.deny</code>; since 0.1.</em> <em>Works on: any world: a world schema's rules, a knowledge world's facts, a live world's state.</em></p>
 <p>Rules derive wires from wires; a conclusion goes when what it rests on goes. Denies refuse a change that breaks them; soft denies only advise. <strong>Limits:</strong> no rule may negate or aggregate what its own conclusions produce (stratified).</p>
 <p>A rule joins two things through a reference by naming the other pattern (<code>@r line order=$o qty=?q</code> with <code>@o order ...</code>): a variable (<code>order=?x</code>) would join nothing.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
@@ -46,7 +47,7 @@ print(w.ofType(&#x27;person&#x27;).length);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;yes&quot;] undefined
 1</code></pre></figure>
 <h2 id="ask-and-explain">Ask and explain</h2>
-<p><em>In <code>world.query</code>, <code>world.why</code>; since 0.1.</em></p>
+<p><em>In <code>world.query</code>, <code>world.why</code>; since 0.1.</em> <em>Works on: any world; <code>why</code> on a live world.</em></p>
 <p><code>query</code> answers with a status (<code>yes</code>, <code>no</code>, <code>unknown</code>, <code>supported</code>, ...) and what the answer rests on; <code>why</code> gives the chain behind a wire or a value, back to what was told (the rule, the act, the tier, the source).</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@b box h=?h
@@ -57,7 +58,7 @@ w.tell(&#x27;@a box h=90&#x27;);
 print(w.query({ about: &#x27;a&#x27;, seek: &#x27;y&#x27; }).value, w.why(&#x27;a&#x27;, &#x27;y&#x27;).steps.map((s) =&gt; [s.id, s.how, s.rule ?? null]));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>10 [[&quot;a&quot;,&quot;rule&quot;,&quot;r&quot;],[&quot;a&quot;,&quot;told&quot;,null]]</code></pre></figure>
 <h2 id="act-undo-groups">Act, undo, groups</h2>
-<p><em>In <code>world.act</code>, <code>world.undo</code>; since 0.5.</em></p>
+<p><em>In <code>world.act</code>, <code>world.undo</code>; since 0.5.</em> <em>Works on: a live world.</em></p>
 <p>Actions change the world in one transaction (declared in SOP Lang, or a host function); several requests of one sentence go together or not at all and are one undo step; every action returns its difference. <strong>Limits:</strong> a collection replaced with <code>world.sync</code> is not given back by <code>undo</code> (take a <code>mark()</code>).</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@k core.slot of=item key=name id=true
@@ -72,7 +73,7 @@ print(w.get(&#x27;a&#x27;).attrs.place, w.get(&#x27;b&#x27;).attrs.place);</code
 <figure class="code"><figcaption>prints</figcaption><pre><code>true [{&quot;id&quot;:&quot;a&quot;,&quot;key&quot;:&quot;place&quot;,&quot;from&quot;:&quot;table&quot;,&quot;to&quot;:&quot;shelf&quot;,&quot;toTier&quot;:&quot;told&quot;}]
 [&quot;table&quot;] [&quot;table&quot;]</code></pre></figure>
 <h2 id="worlds-that-do-things-as-data-refuse-with-alternatives">Worlds that do things, as data; refuse with alternatives</h2>
-<p><em>In <code>std.schema</code>, <code>std.acts</code>; since 0.18.</em></p>
+<p><em>In <code>std.schema</code>, <code>std.acts</code>; since 0.18.</em> <em>Works on: a world schema (<code>std.schema</code>) and the live world it runs (<code>std.acts</code>).</em></p>
 <p>A world is a schema (<code>std.schema</code>): kinds, attributes, which acts apply. The acts (<code>std.acts</code>: make, remove, change, place, connect, group, pick, ask, copy, send, save, load, undo, redo, show, teach, forget) are the same everywhere; a new world needs no rule. A refusal says what is allowed and where.  <strong>Limits:</strong> <code>place</code> writes a position key; relations are std.relations' job.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@acts core.use world=std.acts
@@ -85,7 +86,7 @@ const r = w.act({ action: &#x27;change&#x27;, args: { thing: &#x27;chair&#x27;, 
 print(r.violations[0].why, r.violations[0].reason.attrs, r.violations[0].reason.allowed);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>a chair has no size [&quot;colour&quot;] [&quot;make&quot;,&quot;change&quot;]</code></pre></figure>
 <h2 id="drive-a-world-whose-state-is-not-wires">Drive a world whose state is not wires</h2>
-<p><em>In <code>std.schema.effect</code>; since 0.28.</em></p>
+<p><em>In <code>std.schema.effect</code>; since 0.28.</em> <em>Works on: a live world whose state is partly the host's.</em></p>
 <p>One act on one kind can be given to the host (a drawing board, a diagram engine, a face): the act still checks the schema, its result and difference come back like any act's, and a refused sentence undoes the effects done before the refusal. <strong>Limits:</strong> <code>world.undo</code> of an effect act takes back its wires only; the host keeps its own history.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const board = [];
 const w = new World({ actions: { draw: (ctx, args) =&gt; { board.push(args.kind); return { thing: `s${board.length}`, diff: { added: [`s${board.length}`] }, undo: () =&gt; board.pop() }; } } });
@@ -97,7 +98,7 @@ w.load(`@acts core.use world=std.acts
 print(w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;circle&#x27; } }).diff.effects, w.act([{ action: &#x27;make&#x27;, args: { kind: &#x27;circle&#x27; } }, { action: &#x27;make&#x27;, args: { kind: &#x27;kite&#x27; } }]).ok, board);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;added&quot;:[&quot;s1&quot;]}] false [&quot;circle&quot;]</code></pre></figure>
 <h2 id="fill-gaps-from-other-worlds">Fill gaps from other worlds</h2>
-<p><em>In <code>std.fill</code>, <code>std.know</code>; since 0.17.</em></p>
+<p><em>In <code>std.fill</code>, <code>std.know</code>; since 0.17.</em> <em>Works on: a live world, filled from knowledge worlds.</em></p>
 <p>When a request leaves a key out, other modules offer values in named tiers (<code>std.fill</code>: user, focus, scene, taught, knowledge, default); the best tier wins, the source is kept, a tie is advice. <code>std.know</code> offers from a knowledge catalog.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@u core.use world=std.fill
@@ -114,7 +115,7 @@ const n = w.ofType(&#x27;std.fill.need&#x27;)[0];
 print(n.attrs.value, n.attrs.tier);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;table&quot;] [&quot;knowledge&quot;]</code></pre></figure>
 <h2 id="keep-focus-in-a-dialogue">Keep focus in a dialogue</h2>
-<p><em>In <code>std.focus</code>; since 0.17.</em></p>
+<p><em>In <code>std.focus</code>; since 0.17.</em> <em>Works on: a live world.</em></p>
 <p><code>std.focus</code> keeps what a dialogue is about after each turn (thing, action, place, world); a request that leaves out its thing or action is completed from the turn before, and earlier turns keep theirs. <strong>Limits:</strong> a value chosen by std.fill is not a mention.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@u core.use world=std.focus
@@ -131,7 +132,7 @@ w.tell(&#x27;@q1 req thing=cup&#x27;); w.tell(&#x27;@q2 req colour=red&#x27;);
 print(w.ofType(&#x27;std.fill.need&#x27;)[0].attrs.value);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;cup&quot;]</code></pre></figure>
 <h2 id="relate-and-place-things">Relate and place things</h2>
-<p><em>In <code>std.relations</code>, <code>std.boxes</code>; since 0.16.</em></p>
+<p><em>In <code>std.relations</code>, <code>std.boxes</code>; since 0.16.</em> <em>Works on: a live world.</em></p>
 <p><code>std.relations</code>: on, in, next to, above, in front of, kept: when the other thing moves, the place follows; rows; the first; one per place. <code>std.boxes</code> has the geometry functions. <strong>Limits:</strong> boxes only; a row assumes equal widths.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(&#x27;@u core.use world=std.relations&#x27;);
@@ -141,7 +142,7 @@ w.revise(&#x27;ta&#x27;, { x: 50 });
 print(w.get(&#x27;b&#x27;).attrs.x, w.get(&#x27;b&#x27;).attrs.y);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;90&quot;] [&quot;70&quot;]</code></pre></figure>
 <h2 id="share-things-between-views-teach-facts">Share things between views; teach facts</h2>
-<p><em>In <code>std.schema</code> views, <code>show</code>, <code>teach</code>, <code>complete</code>; since 0.21.</em></p>
+<p><em>In <code>std.schema</code> views, <code>show</code>, <code>teach</code>, <code>complete</code>; since 0.21.</em> <em>Works on: a live world and its views; taught facts join it at the tier <code>taught</code>.</em></p>
 <p>Several views read the same things; a view shows some aspects; showing a thing that lacks one is refused with the reason. Facts the user teaches sit at their own tier and say who taught them; the act <code>complete</code> applies defaults learnt later to things already made. <strong>Limits:</strong> one value per key for all views (a view restyles in its renderer).</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@acts core.use world=std.acts
@@ -154,7 +155,7 @@ w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;table&#x27; } });
 print(w.act({ action: &#x27;show&#x27;, args: { thing: &#x27;table&#x27;, view: &#x27;map&#x27; } }).violations[0].why);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>a table has no place on Earth</code></pre></figure>
 <h2 id="generate-cards-examples-replies-a-coverage-grid-and-tests">Generate cards, examples, replies, a coverage grid and tests</h2>
-<p><em>In <code>schemaCard</code>, <code>schemaExamples</code>, <code>actReply</code>, <code>schemaGrid</code>, <code>gridTests</code>; since 0.19.</em></p>
+<p><em>In <code>schemaCard</code>, <code>schemaExamples</code>, <code>actReply</code>, <code>schemaGrid</code>, <code>gridTests</code>; since 0.19.</em> <em>Works on: a world schema (cards, examples, grid, tests); a live world (replies).</em></p>
 <p>From a schema: the card of a world (kinds, attributes, acts, words), example sentences per act with their requests, the plain-English reply for a done act or a refusal, a coverage grid (every world × kind × act case run, with its expected difference; the holes are the cases not done) and a node:test file from the grid. <strong>Limits:</strong> English only (hosts translate).</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@acts core.use world=std.acts
@@ -166,7 +167,7 @@ const req = { action: &#x27;make&#x27;, args: { kind: &#x27;eye&#x27; } };
 print(schemaExamples(w).map((e) =&gt; e.text), actReply(w, req, w.act(req)));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;make an eye&quot;,&quot;make the colour of the eye blue&quot;] I made an eye (eye1).</code></pre></figure>
 <h2 id="drop-readings-the-present-state-would-refuse">Drop readings the present state would refuse</h2>
-<p><em>In <code>world.score</code>; since 0.13.</em></p>
+<p><em>In <code>world.score</code>; since 0.13.</em> <em>Works on: a live world.</em></p>
 <p><code>score</code> judges candidate readings of one sentence without applying anything: which would be refused and why, which lack something and what to ask.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@g game name=hangman state=running
@@ -176,14 +177,14 @@ const r = w.score([{ action: &#x27;guess&#x27;, args: { l: &#x27;a&#x27; } }]).c
 print(r.ok, r.violations[0].why);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>false nothing matches game name=hangman state=running</code></pre></figure>
 <h2 id="measure-reuse">Measure reuse</h2>
-<p><em>In <code>tools/reuse.mjs</code>, option <code>advise</code>; since 0.21.</em></p>
+<p><em>In <code>tools/reuse.mjs</code>, option <code>advise</code>; since 0.21.</em> <em>Works on: world schemas.</em></p>
 <p><code>tools/reuse.mjs</code> finds candidates for shared modules across worlds (types and rules of the same shape, shared words, parameterised worlds) and a reuse number per world; the option <code>advise</code> gives the same advice to an author at load.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World({ advise: true, library: { shapes: &#x27;@s core.module name=shapes\n@b1 core.slot of=shapes.box key=x kind=number\n@b2 core.slot of=shapes.box key=y kind=number&#x27; } });
 w.load(&#x27;@m core.module name=app imports=shapes\n@a1 core.slot of=card key=x kind=number\n@a2 core.slot of=card key=y kind=number&#x27;);
 print(w.warnings[0].why);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>kind card here has the shape of shapes.box in module shapes: import it?</code></pre></figure>
 <h2 id="load-knowledge-by-lookup">Load knowledge by lookup</h2>
-<p><em>In <code>createCatalog</code>, <code>bundleReader</code>; since 0.23.</em></p>
+<p><em>In <code>createCatalog</code>, <code>bundleReader</code>; since 0.23.</em> <em>Works on: knowledge worlds, loaded into a live world.</em></p>
 <p>A catalog (an index of worlds with their schemas, dependencies and shards, and a vocabulary from words to shards) finds what a word needs, reads each shard once through the host's <code>read</code> (a file, <code>fetch</code>, a bundle), caches it, and tells it into a world with the schemas first. <code>tools/build-bundle.mjs</code> writes an offline bundle for a list of words that <code>bundleReader</code> reads with the same code. <strong>Limits:</strong> the lemma of a word is the host's (<code>lemma</code> option); the library knows no language.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const index = { worlds: [{ id: &#x27;k.things&#x27;, schema: &#x27;k.things/schema.sop&#x27;, shards: [{ id: &#x27;k.things/s1&#x27;, path: &#x27;k.things/s1.sop&#x27; }] }] };
 const files = { &#x27;k.things/schema.sop&#x27;: &#x27;@k core.slot of=k.thing key=name id=true&#x27;, &#x27;k.things/s1.sop&#x27;: &#x27;@cup k.thing name=cup usual=table&#x27; };
@@ -192,7 +193,7 @@ const w = new World();
 print(cat.intoSync(w, &#x27;cup&#x27;).told, w.get(&#x27;cup&#x27;).attrs.usual);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;k.things/schema.sop&quot;,&quot;k.things/s1.sop&quot;] [&quot;table&quot;]</code></pre></figure>
 <h2 id="handle-one-request-end-to-end">Handle one request end to end</h2>
-<p><em>In <code>turn</code>; since 0.24.</em></p>
+<p><em>In <code>turn</code>; since 0.24.</em> <em>Works on: a live world.</em></p>
 <p><code>turn</code> takes the candidate readings of one message, tries each on a fork, applies the first the world takes as one sentence, and gives back the difference, the why of each changed value, the guesses it made and the replies; when none is taken, a graded fallback: one question, "not here but there", or the best guess named. The host reads text into readings and renders. <strong>Limits:</strong> the readings are the host's; replies are plain English unless the host passes <code>reply</code>.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@acts core.use world=std.acts
@@ -205,7 +206,7 @@ const t = turn(w, [{ action: &#x27;change&#x27;, args: { thing: &#x27;chair&#x27
 print(t.replies, t.why[0].steps[0].action);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;I changed the colour of the chair (chair1) from blue to red.&quot;] change</code></pre></figure>
 <h2 id="change-the-path-of-a-request-by-telling-facts">Change the path of a request by telling facts</h2>
-<p><em>In <code>std.turn</code>, <code>turnFlow</code>; since 0.26.</em></p>
+<p><em>In <code>std.turn</code>, <code>turnFlow</code>; since 0.26.</em> <em>Works on: a live world (its pipeline is a world schema of its own, <code>std.turn</code>).</em></p>
 <p>The stages of <code>turn</code> are declared with <code>std.turn</code>: an application adds a stage (a confirmation before removing many things, a permission check), gives a stage a second provider ranked by tier (a second reader), or skips one, by telling wires; <code>turnFlow</code> runs the declared path and gives a trace of every stage taken. <strong>Limits:</strong> what a stage does is a function; candidates are tried one after the other, not in parallel.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@acts core.use world=std.acts
@@ -218,7 +219,7 @@ const t = turnFlow(w, [{ action: &#x27;make&#x27;, args: { kind: &#x27;sofa&#x27
 print(t.status, t.reading, t.replies);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>done 1 [&quot;I made a chair (chair1).&quot;]</code></pre></figure>
 <h2 id="choose-a-world-for-a-request">Choose a world for a request</h2>
-<p><em>In <code>route</code>; since 0.24.</em></p>
+<p><em>In <code>route</code>; since 0.24.</em> <em>Works on: world schemas (which one a request is for).</em></p>
 <p><code>route</code> scores the worlds of the schemas for a request by their cards, the thing it names, a dry run, and a signal of the host's own (an encoder's score), best first with the reasons. <strong>Limits:</strong> no reading of text: the request comes from the host.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.load(`@acts core.use world=std.acts
@@ -228,13 +229,13 @@ w.load(`@acts core.use world=std.acts
 print(route(w, { action: &#x27;make&#x27;, args: { kind: &#x27;rose&#x27; } }));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;world&quot;:&quot;garden&quot;,&quot;score&quot;:3,&quot;why&quot;:[&quot;has rose&quot;,&quot;allows make&quot;]}]</code></pre></figure>
 <h2 id="tools-for-authors">Tools for authors</h2>
-<p><em>In <code>tools/validate.mjs</code>, <code>tools/ledger.mjs</code>, <code>ledgerGroups</code>; since 0.25.</em></p>
+<p><em>In <code>tools/validate.mjs</code>, <code>tools/ledger.mjs</code>, <code>ledgerGroups</code>; since 0.25.</em> <em>Works on: world schemas and knowledge worlds.</em></p>
 <p>Validate a world in one command (what is refused, what is noted, the grid's holes); keep a failure ledger (append-only, grouped by the pipeline stage where a case failed and by cause signals the host plugs in); find reuse; measure with the benches in <code>bench/</code>. <strong>Limits:</strong> the cause signals and the replay of the sources are the host's.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const g = ledgerGroups([{ text: &#x27;remove eyeglasses&#x27;, source: &#x27;logs&#x27;, stage: &#x27;routing&#x27;, class: &#x27;kind&#x27; }, { text: &#x27;delete the box&#x27;, source: &#x27;logs&#x27;, stage: &#x27;routing&#x27;, class: &#x27;kind&#x27; }]);
 print(g.map((x) =&gt; [x.key, x.count]), stageOf({ status: &#x27;ask&#x27; }));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;routing / kind / other&quot;,2]] filling</code></pre></figure>
-<h2 id="read-noun-phrases-with-a-grammar-world">Read noun phrases with a grammar world</h2>
-<p><em>In <code>parseText</code>, <code>nounPhrase</code>; since 0.29.</em></p>
+<h2 id="read-noun-phrases-with-a-languages-knowledge-world">Read noun phrases with a language's knowledge world</h2>
+<p><em>In <code>parseText</code>, <code>nounPhrase</code>; since 0.29.</em> <em>Works on: a knowledge world about a language (the grammar); <code>resolve</code> then reads a live world.</em></p>
 <p>A language is a world of facts (its lexicon, its rules, its coordinating words); the library's parser reads text with it into noun phrases with determiners, numbers, modifiers and a prepositional phrase, and coordinations, every parse best first. <strong>Limits:</strong> noun phrases only for now (verbs and frames next); the grammar of a real language lives in sop-knowledge-worlds, not here.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.tell(`@a g.word text=ko lemma=cup cat=N  @b g.word text=mi lemma=red cat=Adj  @r g.rule lhs=NP rhs=N rhs=Adj*`);
@@ -247,7 +248,7 @@ print(nounPhrase(parseText(w, &#x27;ko mi&#x27;, { start: &#x27;NP&#x27; })[0].t
 <div class="table"><table><thead><tr><th>PSys2 package</th><th>here</th><th>PSys2 lines it replaces</th><th>refused (stays in the host)</th><th>since</th></tr></thead><tbody><tr><td>knowledge-loader</td><td><code>createCatalog</code>, <code>bundleReader</code>, <code>tools/build-bundle.mjs</code></td><td>254 (catalog 105, cache 52, source 20, bundle loader 20, bundle generator 57)</td><td>English lemma rules (the host passes <code>lemma</code>), decoding k.objects parts for drawing, the avatar's faces, the evaluation-set generator; taught facts are the act <code>teach</code></td><td>since 0.23</td></tr><tr><td>turn-pipeline</td><td><code>turn</code> (dry run on a fork, all or nothing, diff, why, guesses, replies, graded fallback)</td><td>the dry-run protocol, all-or-nothing holds and graded fallback (estimated 120 + 350 of its 900 general lines)</td><td>the reading of English, the per-turn tick budget wiring (the library has its own budgets), translation, the encoder accept rule</td><td>since 0.24</td></tr><tr><td>meta.worlds</td><td><code>route</code> (cards, referents, a dry run, a host signal)</td><td>its routing rules (the cards stay generated by the host)</td><td>the tab registry and the generated cards of one application</td><td>since 0.24</td></tr><tr><td>failure-ledger</td><td><code>ledgerAppend</code>, <code>ledgerGroups</code>, <code>stageOf</code>, <code>tools/ledger.mjs</code></td><td>the format, append and counting (of its 160 generator lines)</td><td>its cause-signal list and the replay of its own evaluation scripts</td><td>since 0.25</td></tr><tr><td>acts, session.things, session.dialogue, common.sense, space</td><td>compared (questions.md Q30): already covered by std.schema, std.acts, views, std.focus, <code>turn</code>, <code>createCatalog</code>; missing: a per-kind act hook, space selection and layouts, overlap enforcement, a turn log, pieces</td><td>—</td><td>English forms and readers, its tabs' words, facts (to sop-knowledge-worlds)</td><td>—</td></tr></tbody></table></div>
 <p class="source">Generated from <code>docs/capabilities.md</code>.</p>
 </main>
-<footer>sopworld 0.41.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.42.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

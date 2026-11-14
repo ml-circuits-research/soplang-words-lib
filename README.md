@@ -5,6 +5,13 @@ Self-consistent micro-worlds for SOP Lang circuits. A world holds fact wires and
 keeps the two in agreement: it derives what follows, completes what is missing, asks for
 what it cannot decide, and refuses what is not allowed.
 
+Three kinds of worlds, one name each ([glossary](docs/glossary.md#the-three-kinds-of-worlds)):
+a **world schema** (what a kind of world is: things, attributes, acts, limits; reusable,
+published as `w.*` in sop-knowledge-worlds), a **knowledge world** (facts true for
+everyone, `k.*`), and a **live world** (one running instance of a schema in a session,
+with its things, focus and history). The library holds mechanisms only: the `std.*`
+modules that a world schema is written with and a live world runs on.
+
 - One file, no dependencies, the same in Node 18+ and in browsers.
 - Deduction, abduction, induction, logical completion, search with pluggable solvers,
   revisable defaults, incremental retraction, composition of matrices, persistence, events.
@@ -42,7 +49,7 @@ what it cannot decide, and refuses what is not allowed.
 | Change the path of a request by telling facts | `std.turn`, `turnFlow` | [example](docs/capabilities.md#change-the-path-of-a-request-by-telling-facts) | 0.26 |
 | Choose a world for a request | `route` | [example](docs/capabilities.md#choose-a-world-for-a-request) | 0.24 |
 | Tools for authors | `tools/validate.mjs`, `tools/ledger.mjs`, `ledgerGroups` | [example](docs/capabilities.md#tools-for-authors) | 0.25 |
-| Read noun phrases with a grammar world | `parseText`, `nounPhrase` | [example](docs/capabilities.md#read-noun-phrases-with-a-grammar-world) | 0.29 |
+| Read noun phrases with a language's knowledge world | `parseText`, `nounPhrase` | [example](docs/capabilities.md#read-noun-phrases-with-a-languages-knowledge-world) | 0.29 |
 <!-- /capabilities -->
 
 ## Use

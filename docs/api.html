@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="e4a9c20c7ed0">
+<meta name="source-hash" content="ca64ec83cd9f">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.41.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.42.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -418,8 +418,8 @@ const t = turnFlow(w, [{ action: &#x27;remove&#x27;, args: { thing: &#x27;chair&
 print(t.status, t.question, t.trace.map((x) =&gt; x.stage));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>ask Remove all 2 chairs? [&quot;read&quot;,&quot;dryrun&quot;,&quot;confirm&quot;]</code></pre></figure>
 <h3 id="parsetextworld-text-options-grammarofworld-options-nounphrasenode-cats">parseText(world, text, options?), grammarOf(world, options?), nounPhrase(node, cats?)</h3>
-<p>The language-free part of reading: a grammar world holds the language as facts — <code>g.word text= lemma= cat=</code> (more keys are features), <code>g.rule lhs= rhs= ...</code> (in order; <code>X?</code> optional, <code>X*</code> any number, <code>X+</code> one or more), <code>g.coord word=</code> — and <code>parseText</code> reads text with them: every complete parse of <code>start</code> (default <code>S</code>), best first (fewer nodes, then the higher coordination), at most <code>max</code> (8). A node is <code>{ cat, span: [i, j], rule?, word?, lemma?, feat?, children?, coord? }</code>; <code>rule</code> is the id of the rule that built it.</p>
-<p>A grammar world with names of its own says them in the options (they are the same for <code>grammarOf</code>): <code>types: { rule, word, coord }</code> renames the three fact types; <code>classes: { DET: 'lang.det', ... }</code> makes each wire of a closed class a word of that category (its <code>text</code>, its <code>value</code> as lemma, its other keys as features); <code>lexicon: { word: { cat, lemma? } }</code> is the host's open classes (nouns, adjectives: the grammar owns none); <code>digits: 'NUM'</code> reads digits as that category. In a rule, a lower-case or quoted part is a literal word, <code>[all|each]</code> is one of several, a rule with <code>status=hole</code> is skipped, and <code>head=</code> names the part the phrase is about. A text with <code>_</code> (<code>next_to</code>) is a word of several parts, read as one token; <code>'s</code> is a token of its own. A left-recursive rule (<code>NP -&gt; NP PP</code>) grows the phrases found so far.</p>
+<p>The language-free part of reading: a grammar (a knowledge world about a language) holds the language as facts — <code>g.word text= lemma= cat=</code> (more keys are features), <code>g.rule lhs= rhs= ...</code> (in order; <code>X?</code> optional, <code>X*</code> any number, <code>X+</code> one or more), <code>g.coord word=</code> — and <code>parseText</code> reads text with them: every complete parse of <code>start</code> (default <code>S</code>), best first (fewer nodes, then the higher coordination), at most <code>max</code> (8). A node is <code>{ cat, span: [i, j], rule?, word?, lemma?, feat?, children?, coord? }</code>; <code>rule</code> is the id of the rule that built it.</p>
+<p>A grammar with names of its own says them in the options (they are the same for <code>grammarOf</code>): <code>types: { rule, word, coord }</code> renames the three fact types; <code>classes: { DET: 'lang.det', ... }</code> makes each wire of a closed class a word of that category (its <code>text</code>, its <code>value</code> as lemma, its other keys as features); <code>lexicon: { word: { cat, lemma? } }</code> is the host's open classes (nouns, adjectives: the grammar owns none); <code>digits: 'NUM'</code> reads digits as that category. In a rule, a lower-case or quoted part is a literal word, <code>[all|each]</code> is one of several, a rule with <code>status=hole</code> is skipped, and <code>head=</code> names the part the phrase is about. A text with <code>_</code> (<code>next_to</code>) is a word of several parts, read as one token; <code>'s</code> is a token of its own. A left-recursive rule (<code>NP -&gt; NP PP</code>) grows the phrases found so far.</p>
 <p>The result also says <code>tokens</code>, <code>unknown</code> (the words no lexicon entry, literal or digit read: reported, never judged) and, past <code>budget</code> steps (20000), <code>truncated: true</code> with what was complete by then: it never throws. <code>nounPhrase(node, cats)</code> reads a noun phrase as <code>{ span, rule, quant, det, num, ord, name, pron, mods, head, lemma, pp, parts }</code> (a coordination as <code>{ coord: [...] }</code>; <code>parts</code> are the phrases inside it of the same category, such as the owner in "the house's door"); the category names are the grammar's (<code>cats</code>). Verbs and argument frames are next (questions.md Q32).</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.tell(`@a g.word text=two lemma=2 cat=Num  @b g.word text=red lemma=red cat=Adj  @c g.word text=cups lemma=cup cat=N
@@ -714,7 +714,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.41.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.42.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

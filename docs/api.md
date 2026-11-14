@@ -1095,14 +1095,14 @@ ask Remove all 2 chairs? ["read","dryrun","confirm"]
 
 ### parseText(world, text, options?), grammarOf(world, options?), nounPhrase(node, cats?)
 
-The language-free part of reading: a grammar world holds the language as facts —
+The language-free part of reading: a grammar (a knowledge world about a language) holds the language as facts —
 `g.word text= lemma= cat=` (more keys are features), `g.rule lhs= rhs= ...` (in order; `X?`
 optional, `X*` any number, `X+` one or more), `g.coord word=` — and `parseText` reads text
 with them: every complete parse of `start` (default `S`), best first (fewer nodes, then
 the higher coordination), at most `max` (8). A node is `{ cat, span: [i, j], rule?, word?,
 lemma?, feat?, children?, coord? }`; `rule` is the id of the rule that built it.
 
-A grammar world with names of its own says them in the options (they are the same for
+A grammar with names of its own says them in the options (they are the same for
 `grammarOf`): `types: { rule, word, coord }` renames the three fact types; `classes: { DET:
 'lang.det', ... }` makes each wire of a closed class a word of that category (its `text`,
 its `value` as lemma, its other keys as features); `lexicon: { word: { cat, lemma? } }` is

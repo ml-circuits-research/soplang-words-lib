@@ -5,9 +5,15 @@ page is run in CI and must print what is shown), the module and the version it c
 and its limits. Where a job is not done yet, it says so. API details:
 [api](api.md), [reference](reference.md); how worlds combine: [patterns](patterns.md).
 
+Three kinds of worlds are named throughout (see the [glossary](glossary.md#the-three-kinds-of-worlds)): a **world schema**
+says what a kind of world is, a **knowledge world** holds facts true for everyone, and a
+**live world** is one running instance of a schema in a session, reading knowledge
+worlds. Each job below says which kind it works on.
+
 ## Describe a world
 
 *In core: `core.type`, `core.slot`; since 0.1.*
+*Works on: a world schema (its types and slots).*
 
 Kinds of things are types; their attributes are slots with kinds, value lists, ranges,
 defaults and questions to ask when they are missing. Everything told is checked against
@@ -32,6 +38,7 @@ true domain
 ## State facts and rules
 
 *In core: `core.rule`, `core.deny`; since 0.1.*
+*Works on: any world: a world schema's rules, a knowledge world's facts, a live world's state.*
 
 Rules derive wires from wires; a conclusion goes when what it rests on goes. Denies
 refuse a change that breaks them; soft denies only advise. **Limits:**
@@ -61,6 +68,7 @@ print(w.ofType('person').length);
 ## Ask and explain
 
 *In `world.query`, `world.why`; since 0.1.*
+*Works on: any world; `why` on a live world.*
 
 `query` answers with a status (`yes`, `no`, `unknown`, `supported`, ...) and what the
 answer rests on; `why` gives the chain behind a wire or a value, back to what was told
@@ -83,6 +91,7 @@ print(w.query({ about: 'a', seek: 'y' }).value, w.why('a', 'y').steps.map((s) =>
 ## Act, undo, groups
 
 *In `world.act`, `world.undo`; since 0.5.*
+*Works on: a live world.*
 
 Actions change the world in one transaction (declared in SOP Lang, or a host function);
 several requests of one sentence go together or not at all and are one undo step; every
@@ -110,6 +119,7 @@ true [{"id":"a","key":"place","from":"table","to":"shelf","toTier":"told"}]
 ## Worlds that do things, as data; refuse with alternatives
 
 *In `std.schema`, `std.acts`; since 0.18.*
+*Works on: a world schema (`std.schema`) and the live world it runs (`std.acts`).*
 
 A world is a schema (`std.schema`): kinds, attributes, which acts apply. The acts
 (`std.acts`: make, remove, change, place, connect, group, pick, ask, copy, send, save,
@@ -136,6 +146,7 @@ a chair has no size ["colour"] ["make","change"]
 ## Drive a world whose state is not wires
 
 *In `std.schema.effect`; since 0.28.*
+*Works on: a live world whose state is partly the host's.*
 
 One act on one kind can be given to the host (a drawing board, a diagram engine, a face):
 the act still checks the schema, its result and difference come back like any act's, and
@@ -160,6 +171,7 @@ print(w.act({ action: 'make', args: { kind: 'circle' } }).diff.effects, w.act([{
 ## Fill gaps from other worlds
 
 *In `std.fill`, `std.know`; since 0.17.*
+*Works on: a live world, filled from knowledge worlds.*
 
 When a request leaves a key out, other modules offer values in named tiers (`std.fill`:
 user, focus, scene, taught, knowledge, default); the best tier wins, the source is kept,
@@ -188,6 +200,7 @@ print(n.attrs.value, n.attrs.tier);
 ## Keep focus in a dialogue
 
 *In `std.focus`; since 0.17.*
+*Works on: a live world.*
 
 `std.focus` keeps what a dialogue is about after each turn (thing, action, place, world);
 a request that leaves out its thing or action is completed from the turn before, and
@@ -217,6 +230,7 @@ print(w.ofType('std.fill.need')[0].attrs.value);
 ## Relate and place things
 
 *In `std.relations`, `std.boxes`; since 0.16.*
+*Works on: a live world.*
 
 `std.relations`: on, in, next to, above, in front of, kept: when the other thing moves,
 the place follows; rows; the first; one per place. `std.boxes` has the geometry
@@ -238,6 +252,7 @@ print(w.get('b').attrs.x, w.get('b').attrs.y);
 ## Share things between views; teach facts
 
 *In `std.schema` views, `show`, `teach`, `complete`; since 0.21.*
+*Works on: a live world and its views; taught facts join it at the tier `taught`.*
 
 Several views read the same things; a view shows some aspects; showing a thing that lacks
 one is refused with the reason. Facts the user teaches sit at their own tier and say who
@@ -264,6 +279,7 @@ a table has no place on Earth
 ## Generate cards, examples, replies, a coverage grid and tests
 
 *In `schemaCard`, `schemaExamples`, `actReply`, `schemaGrid`, `gridTests`; since 0.19.*
+*Works on: a world schema (cards, examples, grid, tests); a live world (replies).*
 
 From a schema: the card of a world (kinds, attributes, acts, words), example sentences per
 act with their requests, the plain-English reply for a done act or a refusal, a coverage
@@ -289,6 +305,7 @@ print(schemaExamples(w).map((e) => e.text), actReply(w, req, w.act(req)));
 ## Drop readings the present state would refuse
 
 *In `world.score`; since 0.13.*
+*Works on: a live world.*
 
 `score` judges candidate readings of one sentence without applying anything: which would
 be refused and why, which lack something and what to ask.
@@ -309,6 +326,7 @@ false nothing matches game name=hangman state=running
 ## Measure reuse
 
 *In `tools/reuse.mjs`, option `advise`; since 0.21.*
+*Works on: world schemas.*
 
 `tools/reuse.mjs` finds candidates for shared modules across worlds (types and rules of
 the same shape, shared words, parameterised worlds) and a reuse number per world; the
@@ -327,6 +345,7 @@ kind card here has the shape of shapes.box in module shapes: import it?
 ## Load knowledge by lookup
 
 *In `createCatalog`, `bundleReader`; since 0.23.*
+*Works on: knowledge worlds, loaded into a live world.*
 
 A catalog (an index of worlds with their schemas, dependencies and shards, and a
 vocabulary from words to shards) finds what a word needs, reads each shard once through
@@ -350,6 +369,7 @@ print(cat.intoSync(w, 'cup').told, w.get('cup').attrs.usual);
 ## Handle one request end to end
 
 *In `turn`; since 0.24.*
+*Works on: a live world.*
 
 `turn` takes the candidate readings of one message, tries each on a fork, applies the
 first the world takes as one sentence, and gives back the difference, the why of each
@@ -377,6 +397,7 @@ print(t.replies, t.why[0].steps[0].action);
 ## Change the path of a request by telling facts
 
 *In `std.turn`, `turnFlow`; since 0.26.*
+*Works on: a live world (its pipeline is a world schema of its own, `std.turn`).*
 
 The stages of `turn` are declared with `std.turn`: an application adds a stage (a
 confirmation before removing many things, a permission check), gives a stage a second
@@ -403,6 +424,7 @@ done 1 ["I made a chair (chair1)."]
 ## Choose a world for a request
 
 *In `route`; since 0.24.*
+*Works on: world schemas (which one a request is for).*
 
 `route` scores the worlds of the schemas for a request by their cards, the thing it
 names, a dry run, and a signal of the host's own (an encoder's score), best first with
@@ -424,6 +446,7 @@ print(route(w, { action: 'make', args: { kind: 'rose' } }));
 ## Tools for authors
 
 *In `tools/validate.mjs`, `tools/ledger.mjs`, `ledgerGroups`; since 0.25.*
+*Works on: world schemas and knowledge worlds.*
 
 Validate a world in one command (what is refused, what is noted, the grid's holes); keep
 a failure ledger (append-only, grouped by the pipeline stage where a case failed and by
@@ -439,9 +462,10 @@ print(g.map((x) => [x.key, x.count]), stageOf({ status: 'ask' }));
 [["routing / kind / other",2]] filling
 ```
 
-## Read noun phrases with a grammar world
+## Read noun phrases with a language's knowledge world
 
 *In `parseText`, `nounPhrase`; since 0.29.*
+*Works on: a knowledge world about a language (the grammar); `resolve` then reads a live world.*
 
 A language is a world of facts (its lexicon, its rules, its coordinating words); the
 library's parser reads text with it into noun phrases with determiners, numbers,

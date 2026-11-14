@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Quickstart</title>
-<meta name="source-hash" content="ab26c67a2f1b">
+<meta name="source-hash" content="cd4fa0f6b006">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,12 +12,12 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.41.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.42.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html" aria-current="page">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
 <h1>Quickstart: a new application in an hour</h1>
-<p class="lead">A small room planner: a schema, three acts, knowledge by lookup, replies, and one request handled end to end. Every block on this page runs in CI against the library. A page about what each job can do is <a href="capabilities.html">capabilities</a>; what a host supplies is the <a href="host-contract.html">host contract</a>.</p>
+<p class="lead">A small room planner: a world schema, three acts, a knowledge world read by lookup, replies, and one request handled end to end: by the last step it is a live world (the three kinds are in the <a href="glossary.html#the-three-kinds-of-worlds">glossary</a>). Every block on this page runs in CI against the library. A page about what each job can do is <a href="capabilities.html">capabilities</a>; what a host supplies is the <a href="host-contract.html">host contract</a>.</p>
 <h2 id="1-install-and-load">1. Install and load</h2>
 <p>Zero dependencies: <code>npm install sopworld</code>, or copy <code>docs/sopworld.mjs</code> (one file, Node and browsers). <code>import { World, turn, createCatalog, bundleReader } from 'sopworld';</code></p>
 <h2 id="2-describe-the-world-as-data">2. Describe the world as data</h2>
@@ -73,7 +73,7 @@ Did you mean to make spaceship? (no world here has a spaceship)</code></pre></fi
 <ul><li>Test the schema: <code>schemaGrid(world)</code> runs every world × kind × act case; <code>gridTests</code> writes a test file from it; <code>node tools/validate.mjs &lt;files&gt;</code> in one command.</li><li>Share things between views, teach facts, keep a dialogue's focus, relate things: <a href="capabilities.html">capabilities</a>.</li><li>Every standard module: <a href="modules.html">modules</a>. How worlds combine: <a href="patterns.html">patterns</a>.</li></ul>
 <p class="source">Generated from <code>docs/quickstart.md</code>.</p>
 </main>
-<footer>sopworld 0.41.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.42.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

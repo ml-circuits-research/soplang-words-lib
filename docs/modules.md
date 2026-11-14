@@ -5,6 +5,10 @@ opt-in), and the services written in JavaScript that work with them. For each: w
 for, what it loads, its types, actions and tiers, and what it costs (the bench that
 measures it). Details and examples: [reference](reference.md), [capabilities](capabilities.md).
 
+Modules are mechanisms, not worlds (see the [glossary](glossary.md#the-three-kinds-of-worlds)). `std.schema` is how a
+**world schema** is written; `std.know` and the catalog read **knowledge worlds**;
+`std.acts`, `std.fill`, `std.focus`, `std.relations` and `std.turn` run a **live world**.
+
 ## Modules of SOP Lang
 
 | Module | Purpose | Loads | Types | Actions, functions | Tiers | Cost |

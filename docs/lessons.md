@@ -96,5 +96,5 @@ short (docs/reuse-reports/apps.md). Four are fixed (0.32–0.35); two are open.
 PSys2's two resolvers became one host function. Its semantics were exact sentences:
 "a choice is asked, never both and never the last", and "a bare number takes the kind of
 the part before". Each one became a line of `resolve` and an assertion in its test, with
-the language left to the grammar world (which coordinator means a choice, which word
+the language left to the grammar, a knowledge world (which coordinator means a choice, which word
 means "other"). Reading a host's tests is the fastest way to know what to build.

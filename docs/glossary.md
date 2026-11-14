@@ -13,7 +13,7 @@ code and in the messages of the library.
 | **template** | A matrix wire that describes a wire to make or to complete. Named by `then=`, `set=`, `add=`. |
 | **variable** | `?name` in value position: a value to be found by matching. |
 | **reference** | `$id` in value position: another wire. |
-| **world** | A set of facts kept consistent with a matrix. The object the library gives you. |
+| **world** | A set of facts kept consistent with a matrix: the object the library gives you (`new World()`). What it holds is one of the three kinds of worlds below, usually a live world. |
 | **state** | Everything a world holds at one moment. Also: a value that changes over time (see *fluent*). |
 | **fork** | A second world that starts as a copy of the first. Also called a *scenario* when it is used to try something. |
 | **mark** | A point in the life of a world that it can be rewound to. |
@@ -61,6 +61,38 @@ code and in the messages of the library.
 | **module** | A matrix kept in the library under a name and loaded with `core.use`. |
 | **build** | The single file made from the sources; it knows its version and fingerprint. |
 
+## The three kinds of worlds
+
+One name per kind, used in every document and in the repositories around the library
+(sop-knowledge-worlds, the applications). In Romanian: *schema lumii*, *lume de
+cunoaștere*, *lume vie*.
+
+| Kind | What it is | Example | Where it lives |
+| --- | --- | --- | --- |
+| **world schema** | What a kind of world is: its kinds of things, their attributes and value types, the acts that apply, limits, rules and the words for them. No particular things. Reusable. | a seating plan: tables, seats and guests, at most 50 tables, `make`, `change`, `connect` | sop-knowledge-worlds, as `w.*` (`w.seating`, `w.timeline`, `w.list`); written with `std.schema` |
+| **knowledge world** | Facts about the world at large, true for everyone, with no session state. | animals, places, colours, units; `w.lang.en` is a knowledge world about a language | sop-knowledge-worlds, as `k.*` (and `w.lang.en`); read with `createCatalog`, `std.know` |
+| **live world** | One running instance of a world schema in a session: the things the user made, their current values, the focus, the history and undo. Temporary and particular. It follows its schema and reads knowledge worlds. | the plan for Saturday's dinner: table 1 is round, Ann sits at seat 2, undo gives back the table just removed | the application's session, in one `World` object |
+
+How they relate: **a live world = world schemas + the knowledge worlds it reads + session
+state.** A host loads one or more world schemas (`core.use`, or the published text) and
+what it needs of the knowledge worlds (`createCatalog`, `std.schema.needs`) into a
+`World`. The acts of the user then make it a live world. A **view** is how an application
+shows a live world (a tab, a floor plan, a map): it shows some aspects of the same things
+(`std.schema.view`) and may have attributes of its own (`state=`).
+
+**Library modules** (`std.*`: `std.schema`, `std.acts`, `std.fill`, `std.focus`,
+`std.relations`, `std.know`, `std.turn`; and the grammar reader) are mechanisms, not
+worlds. A world schema is written with them, and a live world runs on them.
+
+Which kind each part of the API works on:
+
+| Works on | API |
+| --- | --- |
+| a world schema | `std.schema` wires, `schemaCard`, `schemaExamples`, `schemaGrid`, `gridTests`, `world.schema(type)` |
+| a knowledge world | `createCatalog`, `bundleReader`, `std.know` (`std.know.fill`), `grammarOf`, `parseText`, `grammarView` (the grammar is a knowledge world about a language), `ask` on a fact by name |
+| a live world | `act` and the acts of `std.acts`, `turn`, `turnFlow`, `route`, `resolve`, `why`, `undo` / `redo`, `fork`, `std.focus`, `std.fill`, `needsOf` (what a live world still needs loaded) |
+| any world | `tell`, `load`, `ask`, `query`, `check`, `complete`, `snapshot` |
+
 ## Words that were used for the same thing
 
 The code, the specification and the pages used to differ in these places. The left
@@ -77,3 +109,6 @@ column is no longer used.
 | "question" (for an open key) and "open key" | "open key"; a *question* is the `core.question` wire made for one | documents |
 | violation kind `syntax` (a fact with a variable) | `variable` | violation (0.6); `SopError` is the only syntax error |
 | `fns` for actions and producers | `actions`, `producers` | options (0.6) |
+| "schema world", "schema" (for a reusable world), "world template" | **world schema** | documents (0.42) |
+| "knowledge base", "catalog world", "knowledge" (as a world) | **knowledge world**; the *catalog* is the index that loads one | documents (0.42) |
+| "session world", "the user's world", "instance" | **live world** | documents (0.42) |

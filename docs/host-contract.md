@@ -4,6 +4,11 @@ What an application (the host) supplies, and what it must not rebuild because th
 does it. A host that keeps to this writes reading and rendering only. The jobs themselves
 are in [capabilities](capabilities.md); a worked start is the [quickstart](quickstart.md).
 
+In the terms of the [glossary](glossary.md#the-three-kinds-of-worlds): the host chooses the **world schemas** (its own or
+published `w.*`), loads what it needs of the **knowledge worlds** (`k.*`), and keeps one
+**live world** per session in a `World` object. It reads text into requests and renders
+replies and views; the live world does the rest.
+
 ## What the host supplies
 
 | The host supplies | How it reaches the library | Why it is the host's |

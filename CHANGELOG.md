@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.42.0
+
+Docs only (reviewer 06:00, the owner's question): one name for each kind of world.
+
+### Docs
+- glossary.md, "The three kinds of worlds": **world schema**, **knowledge world** and
+  **live world**, with examples, where each lives, how they relate (a live world = world
+  schemas + the knowledge worlds it reads + session state), views and library modules,
+  which kind each part of the API works on, and the old words they replace.
+- README, capabilities (each job says which kind it works on), quickstart, host contract
+  and modules use the names. "Grammar world" is now "a grammar, a knowledge world about
+  a language".
+
 ## 0.41.0
 
 The reviewer's 04:40 rule: the library holds no particular worlds. No change in `src/`.

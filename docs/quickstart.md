@@ -1,7 +1,8 @@
 # Quickstart: a new application in an hour
 
-A small room planner: a schema, three acts, knowledge by lookup, replies, and one
-request handled end to end. Every block on this page runs in CI against the library. A
+A small room planner: a world schema, three acts, a knowledge world read by lookup,
+replies, and one request handled end to end: by the last step it is a live world (the
+three kinds are in the [glossary](glossary.md#the-three-kinds-of-worlds)). Every block on this page runs in CI against the library. A
 page about what each job can do is [capabilities](capabilities.md); what a host supplies
 is the [host contract](host-contract.md).
 

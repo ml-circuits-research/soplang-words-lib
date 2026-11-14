@@ -4076,3 +4076,29 @@ over its .sop files (wires):
   the largest file, examples/worlds.mjs, holds seven separate worlds of 10 to 25 lines.
 - AGENTS.md rule 6 states the rule. questions.md Q35 holds the 4 proposals for
   sop-knowledge-worlds.
+
+## Reviewer 06:00 — names for the kinds of worlds; what compat/ still holds — release 0.42.0
+
+`/tmp/check.sh`: # pass 384 # fail 0 # pass 384 # fail 0 # pass 383 # fail 0 — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/capability-table.mjs`: 19 jobs. Version, CHANGELOG, docs
+rebuilt (`docs/version.md`: sopworld 0.42.0).
+
+- Names adopted as proposed (world schema, knowledge world, live world; views; modules
+  are mechanisms). I found no clearer terms, so nothing went to questions.md.
+  - glossary.md: a new section, with examples, a "where it lives" column, the relation,
+    and an API table (which kind each function works on). Three rows in "Words that were
+    used for the same thing" retire the old words.
+  - The library's `world` stays the name of the object, which usually holds a live world.
+  - Each of the 19 jobs in capabilities.md has a "Works on" line. README, quickstart,
+    host-contract and modules each got a short paragraph.
+- compat/ (`du -sh`: 896K):
+  - cases/ (800K): PSys2's answers recorded by running it, three `.jsonl` files.
+  - matrices/ (48K), run.mjs, mapping.sop and tests: the library's own rebuild of three
+    sample worlds, and the pilot.
+  - tools/dump-cases.mjs (8K).
+
+  Why it stays: `node compat/psys2/run.mjs` is the pilot of the gate. It is the one
+  end-to-end regression over real dialogues (rules, states, aggregates, abduction) that
+  the tests do not cover in that shape, and it needs the recorded answers. PSys2's worlds
+  and specs are no longer kept; they are read at psys2.pin. If the reviewer prefers, the
+  whole folder goes in one commit, with the gate line.

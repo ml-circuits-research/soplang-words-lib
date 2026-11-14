@@ -23,7 +23,7 @@ export function grammarOf(world, { types = {}, classes = {}, lexicon = {}, digit
   for (const w of world.ofType(T.word)) for (const t of w.attrs.text || []) addWord(t, { cat: w.attrs.cat[0], lemma: w.attrs.lemma?.[0] ?? unq(t).toLowerCase(), feat: Object.fromEntries(Object.entries(w.attrs).filter(([k]) => !['text', 'lemma', 'cat'].includes(k) && !k.startsWith('core.')).map(([k, v]) => [k, v[0]])) });
   for (const [cat, type] of Object.entries(classes)) for (const w of world.ofType(type)) for (const t of w.attrs.text || []) addWord(t, { cat, lemma: unq(w.attrs.value?.[0] ?? t).toLowerCase(), feat: Object.fromEntries(Object.entries(w.attrs).filter(([k]) => !['text', 'in', 'note', 'doc'].includes(k) && !k.startsWith('core.')).map(([k, v]) => [k, v[0]])) });
   for (const [word, es] of Object.entries(lexicon)) for (const e of [].concat(es)) addWord(word, { cat: e.cat, lemma: e.lemma ?? word.toLowerCase(), feat: e.feat || {} });
-  for (const w of world.ofType(T.coord)) for (const t of w.attrs.word || []) coord.add(unq(t).toLowerCase());
+  for (const w of world.ofType(T.coord)) for (const t of [...(w.attrs.word || []), ...(w.attrs.text || [])]) coord.add(unq(t).toLowerCase()); // word= or text= (a language world's coord.sep)
   const add = (lhs, rhs) => (rules.get(lhs) || rules.set(lhs, []).get(lhs)).push(rhs);
   for (const w of world.ofType(T.rule)) {
     if (w.attrs.status?.[0] === 'hole') continue; // a rule the grammar marks as not yet read
@@ -131,7 +131,7 @@ export function parseText(world, text, { start = 'S', max = 8, budget = 20000, .
 
 /** A noun phrase node read as roles: { det, num, mods, head, lemma, span, pp? } (categories named by the grammar: `cats`). */
 export function nounPhrase(node, cats = {}) { // bounded: the depth of the tree
-  const C = { det: 'Det', num: 'Num', mod: 'Adj', head: 'N', pp: 'PP', ord: 'Ord', name: 'Name', pron: 'Pron', quant: 'Quant', ...cats };
+  const C = { det: 'Det', num: 'Num', mod: 'Adj', head: 'N', pp: 'PP', ord: 'Ord', name: 'Name', pron: 'Pron', quant: 'Quant', neg: 'Neg', ...cats };
   if (node.coord) return { coord: node.coord.map((n) => nounPhrase(n, cats)), span: node.span, ...(node.conj ? { conj: node.conj } : {}) };
   // a coordination inside the phrase ("tables 1 and 2", "red and blue cups"): distributed, one phrase per part
   const inner = (n) => (n !== node && (n.cat === node.cat || n.cat === C.pp) ? null : n.coord && n !== node ? n : (n.children || []).map(inner).find(Boolean) || null); // bounded: the depth of the tree; not into a PP or a phrase of the same category
@@ -143,7 +143,9 @@ export function nounPhrase(node, cats = {}) { // bounded: the depth of the tree
   const kids = node.children || [];
   // a phrase built on a phrase of its own category (NP -> NP PP, NP -> NP of NP): the first is the base
   // ... unless the rule names another head (NP -> NP 's N: the N)
-  const base = kids[0]?.cat === node.cat && (!node.head || node.head.startsWith(node.cat)) ? nounPhrase(kids[0], cats) : null;
+  // (or, when the rule names the phrase as its head, the child of the same category wherever it is: NEG NP)
+  const baseAt = node.head && node.head.startsWith(node.cat) ? kids.findIndex((c) => c.cat === node.cat) : kids[0]?.cat === node.cat && !node.head ? 0 : -1;
+  const base = baseAt >= 0 ? nounPhrase(kids[baseAt], cats) : null;
   const leaves = [], pps = [], parts = [];
   let link = null;
   const walk = (n, top) => { // bounded: the depth of the tree
@@ -152,7 +154,7 @@ export function nounPhrase(node, cats = {}) { // bounded: the depth of the tree
     if (n.word) { if (n.cat.startsWith('=') && !top) link = n.word; leaves.push(n); }
     for (const c of n.children || []) walk(c, n === node && c === kids[0]);
   };
-  for (const [k, c] of kids.entries()) { if (base && k === 0) continue; walk(c, k === 0); }
+  for (const [k, c] of kids.entries()) { if (base && k === baseAt) continue; walk(c, k === 0); }
   if (!kids.length) walk(node, true);
   const of = (cat) => leaves.filter((l) => l.cat === cat), first = (cat) => of(cat)[0];
   const quant = leaves.find((l) => (l.cat === C.quant || l.cat.startsWith('=')) && l.span[0] === node.span[0]); // a quantifier: a category the grammar names (cats.quant), or a literal word
@@ -160,11 +162,12 @@ export function nounPhrase(node, cats = {}) { // bounded: the depth of the tree
   const own = { span: node.span, ...(node.rule ? { rule: node.rule } : {}),
     ...(quant ? { quant: quant.word } : {}), ...(first(C.det) ? { det: first(C.det).lemma } : {}), ...(first(C.num) ? { num: first(C.num).lemma, ...(head && first(C.num).span[0] > head.span[0] ? { numAfter: true } : {}) } : {}),
     ...(first(C.ord) ? { ord: first(C.ord).lemma } : {}), ...(first(C.name) ? { name: first(C.name).word } : {}), ...(first(C.pron) ? { pron: first(C.pron).lemma } : {}),
-    mods: of(C.mod).map((l) => l.lemma), ...(head ? { head: head.word, lemma: head.lemma } : {}),
+    mods: of(C.mod).map((l) => l.lemma), ...(of(C.neg).length ? { negated: true } : {}), ...(head ? { head: head.word, lemma: head.lemma } : {}),
     ...(pps.length ? { pp: pps.map((p) => { const inner = (p.children || []).find((c) => c.cat === node.cat); return { span: p.span, words: leavesOf(p), ...(inner ? { np: nounPhrase(inner, cats) } : {}) }; }) } : {}), ...(parts.length ? { parts } : {}) };
   if (!base) return own;
   const allPp = [...(base.pp || []), ...(own.pp || [])], allParts = [...(base.parts || []), ...(own.parts || [])];
-  return { ...base, span: node.span, ...(node.rule ? { rule: node.rule } : {}), ...(allPp.length ? { pp: allPp } : {}), ...(allParts.length ? { parts: allParts } : {}) };
+  const mods = [...(base.mods || []), ...(own.mods || [])]; // a relative clause after the noun ("that is red") folds into the modifiers
+  return { ...base, span: node.span, ...(node.rule ? { rule: node.rule } : {}), mods, ...(own.negated ? { negated: true } : {}), ...(allPp.length ? { pp: allPp } : {}), ...(allParts.length ? { parts: allParts } : {}) };
 }
 const leavesOf = (n) => (n.word ? [n.word] : (n.children || n.coord || []).flatMap(leavesOf));
 

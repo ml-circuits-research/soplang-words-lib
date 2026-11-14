@@ -100,3 +100,24 @@ test('resolve (section 8): a choice is asked; a part without its noun borrows on
   assert.deepEqual([r('1 of the red tables').ask, r('1 of the red tables').which], [true, ['table1', 'table3']], 'else asked');
   assert.deepEqual(r('the other red table', { focus: ['table1'] }).ids, ['table3'], 'the other one: of the kind, not the focus');
 });
+
+test('resolve (Round 28 item 6): a relative clause folds into modifiers; a negation lead; a bare name; failure classes; focus for pronouns only; coordinators from text=', () => {
+  const w = new World();
+  w.tell(`@d x.det text=the  @rp x.relpron text=that  @cop x.cop text=is  @n x.neg text=not
+@r1 x.rule lhs=NP rhs=DET? rhs=MOD* rhs=N head=N
+@r2 x.rule lhs=NP rhs=NP rhs=RELPRON rhs=COP rhs=MOD head=NP
+@r3 x.rule lhs=NP rhs=NEG rhs=NP head=NP
+@r4 x.rule lhs=NP rhs=NAME
+@c x.coordsep text=and
+@t1 std.schema.thing kind=table colour=red  @t2 std.schema.thing kind=table colour=blue  @t3 std.schema.thing kind=table colour=red
+@g1 std.schema.thing kind=guest name=ann`);
+  const o = { grammar: { types: { rule: 'x.rule', coord: 'x.coordsep' }, classes: { DET: 'x.det', RELPRON: 'x.relpron', COP: 'x.cop', NEG: 'x.neg' },
+    lexicon: { table: { cat: 'N' }, red: { cat: 'MOD' }, blue: { cat: 'MOD' }, ann: { cat: 'NAME' } } }, cats: { det: 'DET', mod: 'MOD', head: 'N', name: 'NAME', neg: 'NEG' } };
+  const r = (s, x = {}) => resolve(w, s, { ...o, ...x });
+  assert.deepEqual(r('the table that is blue').ids, ['t2'], 'the relative clause is a modifier');
+  assert.deepEqual(r('not the blue table').which, ['t1', 't3'], 'the negation keeps the others (two: asked which)');
+  assert.deepEqual([r('ann').ids, r('ann').tier], [['g1'], 'user'], 'a bare name reads (NP -> NAME) as the one thing of that name');
+  assert.deepEqual([r('the chair').failure, r('the red table').failure, r('the table', { focus: ['t2'], focusFor: 'pronoun' }).failure], ['unknown-word', 'ambiguous', 'ambiguous']);
+  assert.deepEqual(r('the table', { focus: ['t2'] }).ids, ['t2'], 'with the focus for any phrase');
+  assert.deepEqual(r('the red table and the blue table').failure, 'ambiguous', 'coordinators read from text= facts');
+});

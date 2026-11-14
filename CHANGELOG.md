@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.57.0
+
+Round 28 item 6: the grammar and `resolve` read what every host needed.
+
+### New
+- `resolve` gives a `failure` class (unknown-word, unread, unknown-kind, none, no-number,
+  no-focus, ambiguous) and the option `focusFor: 'pronoun'`. It reads a negation lead
+  (`cats.neg`) as the complement within the kind, and a bare name as one thing.
+- `nounPhrase` folds a relative clause after the noun into the modifiers. When a rule
+  names the phrase as its head, the base is the child of the same category wherever it is
+  (`NEG NP`). It marks `negated`.
+- Coordinating words are read from `text=` as well as `word=`.
+
 ## 0.56.0
 
 Reviewer 12:45: one motion format. The knowledge repository's `k.motion` is read by the

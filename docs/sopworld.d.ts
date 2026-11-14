@@ -524,7 +524,7 @@ export function grammarView(world: World, type: string, view?: string): string[]
 /** Which words two views disagree on. */
 export function viewDiff(world: World, type: string, a: string, b: string): { only: Record<string, string[]>; both: string[] };
 /** The things a noun phrase names, and how sure: tier user / scene / focus / slip; or why not. */
-export function resolve(world: World, phrase: string | object, options?: { grammar?: object; cats?: Record<string, string>; focus?: string | string[]; inside?: string }): { ids: string[]; tier?: 'user' | 'scene' | 'focus' | 'slip'; how?: string[]; why?: string; which?: string[]; kind?: string; unknown?: { word: string; at: number }[] };
+export function resolve(world: World, phrase: string | object, options?: { grammar?: object; cats?: Record<string, string>; focus?: string | string[]; inside?: string; focusFor?: 'any' | 'pronoun' }): { ids: string[]; tier?: 'user' | 'scene' | 'focus' | 'slip'; how?: string[]; why?: string; which?: string[]; kind?: string; unknown?: { word: string; at: number }[]; failure?: 'unknown-word' | 'unread' | 'unknown-kind' | 'none' | 'no-number' | 'no-focus' | 'ambiguous'; ask?: boolean; guess?: { word: string; ids: string[] } };
 /** The typed needs of a world or view (std.schema.needs), each with whether it is loaded. */
 export function needsOf(world: World, scope?: { world?: string; view?: string }): { of: string; type: string; from?: string; loaded: boolean }[];
 

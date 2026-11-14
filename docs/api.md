@@ -1248,6 +1248,18 @@ the whole set when the count covers it, else asked. A modifier that `core.word` 
 pronoun also carries `guess: { word, ids }`, for the host's "I took it to mean ..."
 sentence.
 
+Since 0.57:
+- A result that is not one reading carries `failure`: `unknown-word`, `unread`,
+  `unknown-kind`, `none` (nothing fits), `no-number`, `no-focus` or `ambiguous` (also
+  `ask: true`).
+- A negation lead (the grammar's `cats.neg`, as in "not the blue table") keeps the things
+  of the kind the modifiers do not pick.
+- A relative clause after the noun ("the table that is red": a rule `NP -> NP RELPRON
+  COP MOD`) folds into the modifiers.
+- A bare name (`NP -> NAME`) is the one thing of that name.
+- `focusFor: 'pronoun'` keeps the focus for pronouns only.
+- Coordinating words are read from `word=` or `text=`.
+
 Returns `{ ids, tier, how }`: `tier` is `user` (the words picked), `scene` (the only one of
 its kind), `focus` (the focus chose among several) or `slip` (the least sure in a
 coordination wins); `how` lists the steps, so a reply can say what it assumed. When it

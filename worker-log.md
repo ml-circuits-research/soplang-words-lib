@@ -4421,3 +4421,24 @@ tools/lib/motion.mjs, and PSys2 can drop its temporary rules.
 - questions.md Q39 [KNOW]: answers to Q46 (a)–(e), as the reviewer suggested.
 - Next: Round 28 items 6–9, the rest of Round 30 (the generation templates on w.lang.ro when
   it comes), the std.plan follow-up (role table, apply), Round 27 (skills).
+
+## Round 28 item 6 — grammar / resolve: relative clauses, negation, bare names, failure classes — release 0.57.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 0.57.0).
+
+- src/grammar.mjs:
+  - The base is chosen by the rule's head: a phrase-headed rule takes the child of its
+    category wherever it is.
+  - A relative clause's modifiers merge into the base's. Before this, a left-recursive
+    base dropped them (found with `node /tmp/neg.mjs`: "not the blue table" read the NP as
+    a part).
+  - `negated` from `cats.neg`; coordinators from `text=`.
+- src/resolve.mjs: `failure` classes (8 return points); negation as the complement within
+  the kind; a bare name as one thing; `focusFor`.
+- test/resolve.test.mjs: 1 new test (relative clause, negation, bare name, failure
+  classes, focus for pronouns only, `text=` coordinators).
+- Q36 lines 5, 23 and 25 are done. relpron and the negation lead are chart rules of the
+  language world; the library now reads their result.
+- Next: item 7 (form checks, frame priority by rule), 8 (std.space placement, relation
+  kinds), 9 (experiment / ablation harnesses).

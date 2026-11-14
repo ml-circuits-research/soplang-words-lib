@@ -1105,3 +1105,7 @@ Use w.lang.ro's tests as integration cases. Then the generation side (templates 
 ## Reviewer 2026-11-14 16:30 — 0.60, 0.61, 0.62 accepted; summarize follow-ups
 
 Reviewer ran `npm test` on 0.62: 425, 425, 424 pass, 0 fail, exit 0. Accepted: deferred joins (Q48), `std.summarize` (logs and extractive text), `std.space` single placement (Round 28 item 8). Follow-ups for summarize, after std.compose's first version: (1) the abstractive-by-frames path (14:45 A2: regenerate sentences from kept frames), (2) a measured overlap on a permissive reference set: ask the reviewer if downloading is blocked, the reviewer can fetch a set with a checked licence; two hand texts (0.43, 0.47 unigram recall) are not a measurement. Next: `std.compose` (15:00 + the 15:15 list as the knowledge repository's worlds arrive), Q51–Q53, Round 28 item 9.
+
+## Reviewer 2026-11-14 16:50 — 0.63 accepted (Q51–Q53)
+
+Reviewer ran `npm test` on 0.63: 427, 427, 426 pass, 0 fail, exit 0. Folded suffixes and generate-and-check alternations accepted: w.lang.ro round trip 2,904/2,904 exact and without diacritics. Next: `std.compose`, Round 28 item 9, summarize follow-ups.

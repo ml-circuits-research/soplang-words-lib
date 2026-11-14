@@ -4019,3 +4019,16 @@ clean; tsc clean. `node tools/cases.mjs`: 45 / 45. Version, CHANGELOG, docs rebu
 - test/resolve.test.mjs: 5 tests, 1 of them new (section 8). The grammar coordination
   test still passes (no distribution into a PP).
 - docs/lessons.md: "A host's resolver is the specification".
+
+## Corpus from PSys2: ui.avatar grid — 45 → 61
+
+`/tmp/check.sh`: # pass 384 # fail 0 # pass 384 # fail 0 # pass 383 # fail 0 — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/cases.mjs`: 61 / 61 (acting 51, replying 7). Baseline 61.
+No source change.
+
+- ui.avatar grid (`python3 -c` count): 3 kinds (hair_back, shoulders, neck) × 6 acts.
+  cases/schemas/face.sop is written as data from PSys2's `worlds/ui.avatar/schema.sop`:
+  colour, and size 0.6..1.5 with default 1.
+- 16 cases, all passing on the first run:
+  - make, change (size bigger: 1 → 1.1), remove, place, and ask (number 1) for each kind;
+  - size 2 refused.

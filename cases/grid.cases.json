@@ -1059,5 +1059,433 @@
     }
    }
   ]
+ },
+ {
+  "id": "grid.face.make.hair_back",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (make, hair_back) expects 'the state of the world changes'",
+  "schema": "face",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "hair_back"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "hair_back",
+     "colour": "brown"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.face.change.hair_back",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (change, hair_back) expects 'the state of the world changes'",
+  "schema": "face",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "hair_back"
+    }
+   },
+   {
+    "act": "change",
+    "args": {
+     "thing": "hair_back1",
+     "attr": "size",
+     "by": "more"
+    },
+    "expect": {
+     "ok": true,
+     "changed": [
+      {
+       "id": "hair_back1",
+       "key": "size",
+       "to": "1.1"
+      }
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.face.remove.hair_back",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (remove, hair_back) expects 'the state of the world changes'",
+  "schema": "face",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "hair_back"
+    }
+   },
+   {
+    "act": "remove",
+    "args": {
+     "thing": "hair_back1"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.face.place.hair_back",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (place, hair_back) expects 'the state of the world changes'",
+  "schema": "face",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "hair_back"
+    }
+   },
+   {
+    "act": "place",
+    "args": {
+     "thing": "hair_back1",
+     "x": 40
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.face.ask.hair_back",
+  "stage": "replying",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (ask, hair_back) expects 'an answer that is not a refusal'",
+  "schema": "face",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "hair_back"
+    }
+   },
+   {
+    "act": "ask",
+    "args": {
+     "thing": "hair_back1",
+     "attr": "size"
+    },
+    "expect": {
+     "ok": true,
+     "result": {
+      "shape": "number",
+      "number": 1
+     }
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.face.make.shoulders",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (make, shoulders) expects 'the state of the world changes'",
+  "schema": "face",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "shoulders"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "shoulders",
+     "colour": "brown"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.face.change.shoulders",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (change, shoulders) expects 'the state of the world changes'",
+  "schema": "face",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "shoulders"
+    }
+   },
+   {
+    "act": "change",
+    "args": {
+     "thing": "shoulders1",
+     "attr": "size",
+     "by": "more"
+    },
+    "expect": {
+     "ok": true,
+     "changed": [
+      {
+       "id": "shoulders1",
+       "key": "size",
+       "to": "1.1"
+      }
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.face.remove.shoulders",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (remove, shoulders) expects 'the state of the world changes'",
+  "schema": "face",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "shoulders"
+    }
+   },
+   {
+    "act": "remove",
+    "args": {
+     "thing": "shoulders1"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.face.place.shoulders",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (place, shoulders) expects 'the state of the world changes'",
+  "schema": "face",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "shoulders"
+    }
+   },
+   {
+    "act": "place",
+    "args": {
+     "thing": "shoulders1",
+     "x": 40
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.face.ask.shoulders",
+  "stage": "replying",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (ask, shoulders) expects 'an answer that is not a refusal'",
+  "schema": "face",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "shoulders"
+    }
+   },
+   {
+    "act": "ask",
+    "args": {
+     "thing": "shoulders1",
+     "attr": "size"
+    },
+    "expect": {
+     "ok": true,
+     "result": {
+      "shape": "number",
+      "number": 1
+     }
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.face.make.neck",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (make, neck) expects 'the state of the world changes'",
+  "schema": "face",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "neck"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "neck",
+     "colour": "brown"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.face.change.neck",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (change, neck) expects 'the state of the world changes'",
+  "schema": "face",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "neck"
+    }
+   },
+   {
+    "act": "change",
+    "args": {
+     "thing": "neck1",
+     "attr": "size",
+     "by": "more"
+    },
+    "expect": {
+     "ok": true,
+     "changed": [
+      {
+       "id": "neck1",
+       "key": "size",
+       "to": "1.1"
+      }
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.face.remove.neck",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (remove, neck) expects 'the state of the world changes'",
+  "schema": "face",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "neck"
+    }
+   },
+   {
+    "act": "remove",
+    "args": {
+     "thing": "neck1"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.face.place.neck",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (place, neck) expects 'the state of the world changes'",
+  "schema": "face",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "neck"
+    }
+   },
+   {
+    "act": "place",
+    "args": {
+     "thing": "neck1",
+     "x": 40
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.face.ask.neck",
+  "stage": "replying",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (ask, neck) expects 'an answer that is not a refusal'",
+  "schema": "face",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "neck"
+    }
+   },
+   {
+    "act": "ask",
+    "args": {
+     "thing": "neck1",
+     "attr": "size"
+    },
+    "expect": {
+     "ok": true,
+     "result": {
+      "shape": "number",
+      "number": 1
+     }
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.face.change.too-big",
+  "stage": "acting",
+  "source": "PSys2 ui.avatar schema: size is 0.6..1.5",
+  "schema": "face",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "neck"
+    }
+   },
+   {
+    "act": "change",
+    "args": {
+     "thing": "neck1",
+     "attr": "size",
+     "value": 2
+    },
+    "expect": {
+     "ok": false,
+     "why": "at most 1.5"
+    }
+   }
+  ]
  }
 ]

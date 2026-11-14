@@ -1662,6 +1662,33 @@ print(compose(w, 'owl', { genre: 'note' }).parts.map((p) => [p.part, p.relation 
 [["head","",["owl"]],["point","k.home",["b"]],["point","k.diet",["a"]]]
 ```
 
+### learnRules(world, cases, options?)
+
+Induction from cases (abstraction round, item 4). Cases `[{ text, frame }]` that share a
+frame (`ask` of a key) and a length are anti-unified by the library's own `induce` into
+one reading rule:
+- the words that differ become variables;
+- a variable that fills the frame is lifted to the kind of the thing it names, by a
+  pattern on that thing's fact.
+
+Each rule is judged on a fork of the world: on its training cases, on the `heldOut` cases,
+and on the valid cousins of its cases (`cousins(case)`, for example `cousins` of this
+library). It is `admitted` only when every training case passes and the held-out share is
+at least `admit` (default 1). The result is `[{ text, support, train, heldOut, admitted,
+why? }]`. Nothing is told to the world: a rule is text to review.
+
+```js run
+const w = new World();
+w.tell('@cow k.animal name=cow sound=moo  @duck k.animal name=duck sound=quack  @hen k.animal name=hen sound=cluck');
+const C = (t, o) => ({ text: t, frame: { is: 'ask', key: 'sound', of: { id: o } } });
+const [r] = learnRules(w, [C('cow sound', 'cow'), C('duck sound', 'duck')], { heldOut: [C('hen sound', 'hen')] });
+print(r.admitted, r.heldOut);
+```
+
+```output
+true {"pass":1,"of":1}
+```
+
 ### normalise(world, text, options?) and alternationsOf(world, type?)
 
 Alternations as general rules, written once (abstraction round, item 2). These are rules

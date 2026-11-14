@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.76.0
+
+Abstraction round, item 4 (questions.md Q54): induction from cases.
+
+### New
+- `learnRules(world, cases, { heldOut, cousins, admit, min })`:
+  - cases sharing a frame are anti-unified by `induce` into a reading rule, the filler
+    lifted to its kind;
+  - each rule is judged on a fork, on its training cases, held-out cases and cousins;
+  - it is admitted only when all its training cases pass and the held-out share holds.
+
 ## 0.75.0
 
 Abstraction round, item 2 (questions.md Q54): alternations as general rules, written once.

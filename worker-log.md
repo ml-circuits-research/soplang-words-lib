@@ -4748,3 +4748,19 @@ Gates: npm test 440 / 440 / 439 pass, 0 fail; pilot identical; psys2=0; scan cle
 - Gates: npm test 443 / 443 / 442 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - [KNOW] ask: the alternations as facts of w.lang.en in this format (passive, wrappers, wh-fronting, dative, ellipsis). Then the variant frames in w.lang.en can be counted and removed, measured on paraphrases-rt.
 - Next: Q54 item 4 (induction from cases with cousins as the held-out test).
+
+## 0.76.0: induction from cases (Q54 item 4)
+
+`learnRules` uses the library's `induce`; the filler is lifted to the kind of its fact, and each rule is judged on a fork. test/learn.test.mjs (toy world):
+
+**Admitted**
+- Training: "what sound does a cow / duck make" give a rule `utter … t5=?v0`, with `k.animal name=?v0` → `ask key=sound of=?v0`.
+- train 2/2; held-out (1 case plus the valid cousins at degree ≤ 4) all pass.
+
+**Refused**
+- Training: "what sound does a cow make" and "what noise does a duck make". The key word becomes a variable, so the rule is over-general.
+- train 2/2, but held-out "what legs does a hen make" is 0/1 (the rule reads sound).
+
+Gates: npm test 445 / 445 / 444 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+
+Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-question focus), then the 21:00 small decisions.

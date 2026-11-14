@@ -638,3 +638,5 @@ export function nearWords(world: World, word: string, options?: { senses?: (word
 export function normalise(world: World, text: string, options?: { rules?: { name: string; from: string; to: string; mode?: string }[]; type?: string; lemma?: (word: string) => string[]; max?: number }): { text: string; applied: string[]; mode?: string };
 /** The alternation rules a world holds. */
 export function alternationsOf(world: World, type?: string): { name: string; from: string; to: string; mode?: string }[];
+/** Reading rules induced from cases (anti-unification), judged on held-out cases and cousins. */
+export function learnRules(world: World, cases: { text: string; frame: object }[], options?: { heldOut?: { text: string; frame: object }[]; cousins?: (kase: object) => object[]; admit?: number; min?: number }): { text?: string; support?: string[]; train?: { pass: number; of: number }; heldOut?: { pass: number; of: number }; admitted: boolean; why?: string }[];

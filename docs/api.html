@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="3ea1c2ed6172">
+<meta name="source-hash" content="e4911212f051">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.75.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.76.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -606,6 +606,16 @@ w.tell(`@g k.genres.genre name=note  @m1 k.genres.move name=open takes=topic  @m
   @owl k.animal name=owl  @a k.diet about=owl eats=mice  @b k.home about=owl lives=barn`);
 print(compose(w, &#x27;owl&#x27;, { genre: &#x27;note&#x27; }).parts.map((p) =&gt; [p.part, p.relation ?? &#x27;&#x27;, p.moves.map((m) =&gt; m.cites)]));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;head&quot;,&quot;&quot;,[&quot;owl&quot;]],[&quot;point&quot;,&quot;k.home&quot;,[&quot;b&quot;]],[&quot;point&quot;,&quot;k.diet&quot;,[&quot;a&quot;]]]</code></pre></figure>
+<h3 id="learnrulesworld-cases-options">learnRules(world, cases, options?)</h3>
+<p>Induction from cases (abstraction round, item 4). Cases <code>[{ text, frame }]</code> that share a frame (<code>ask</code> of a key) and a length are anti-unified by the library's own <code>induce</code> into one reading rule:</p>
+<ul><li>the words that differ become variables;</li><li>a variable that fills the frame is lifted to the kind of the thing it names, by a pattern on that thing's fact.</li></ul>
+<p>Each rule is judged on a fork of the world: on its training cases, on the <code>heldOut</code> cases, and on the valid cousins of its cases (<code>cousins(case)</code>, for example <code>cousins</code> of this library). It is <code>admitted</code> only when every training case passes and the held-out share is at least <code>admit</code> (default 1). The result is <code>[{ text, support, train, heldOut, admitted, why? }]</code>. Nothing is told to the world: a rule is text to review.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(&#x27;@cow k.animal name=cow sound=moo  @duck k.animal name=duck sound=quack  @hen k.animal name=hen sound=cluck&#x27;);
+const C = (t, o) =&gt; ({ text: t, frame: { is: &#x27;ask&#x27;, key: &#x27;sound&#x27;, of: { id: o } } });
+const [r] = learnRules(w, [C(&#x27;cow sound&#x27;, &#x27;cow&#x27;), C(&#x27;duck sound&#x27;, &#x27;duck&#x27;)], { heldOut: [C(&#x27;hen sound&#x27;, &#x27;hen&#x27;)] });
+print(r.admitted, r.heldOut);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true {&quot;pass&quot;:1,&quot;of&quot;:1}</code></pre></figure>
 <h3 id="normaliseworld-text-options-and-alternationsofworld-type">normalise(world, text, options?) and alternationsOf(world, type?)</h3>
 <p>Alternations as general rules, written once (abstraction round, item 2). These are rules of the language world (<code>w.lang.en.alternation name= from= to= mode=</code>):</p>
 <ul><li>passive;</li><li>wrappers: "could you", "I want you to", "please";</li><li>question vs command;</li><li>dative shift.</li></ul>
@@ -960,7 +970,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.75.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.76.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

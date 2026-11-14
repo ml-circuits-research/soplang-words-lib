@@ -1543,10 +1543,11 @@ Summaries with no model (std.summarize). `actsOf` reads a world's history into a
 by act and kind, generalises siblings up the chain of kinds (`parentOf`, as std.know or a
 planner gives it: cat, dog and horse become 3 animals), keeps failures, and orders by
 salience (changes, repetition, recency, failure). It gives frames for the language world
-to render: `line` keeps 1, `paragraph` 3, `bullets` all. `summarizeText(text, { n, stop,
-redundancy })` is extractive. It scores sentences by centrality (the content words they
+to render: `line` keeps 1, `paragraph` 3, `bullets` all. `summarizeText(text, { n, words, stop,
+redundancy })` is extractive. A sentence ends at a stop before a capital, a quote or a
+parenthesis, but not after an abbreviation ("Sec. 219"). It scores sentences by centrality (the content words they
 share with the others), information (numbers, names) and position, drops a sentence that
-repeats a kept one, and keeps the top `n` in their order. The content words are found
+repeats a kept one, and keeps the top `n` (or sentences up to a budget of `words`) in their order. The content words are found
 without a language (`stop`, or the words most sentences share). `overlap` is unigram
 recall against a reference.
 

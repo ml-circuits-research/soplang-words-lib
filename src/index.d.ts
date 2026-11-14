@@ -585,7 +585,7 @@ export function actsOf(world: World): { act: string; kind: string | null; things
 /** Aggregate a log of acts into frames, generalised up the chain of kinds, by salience. */
 export function summarizeLog(entries: { act: string; kind?: string | null; failed?: boolean; changed?: number }[], options?: { parentOf?: (kind: string) => string | null; length?: 'line' | 'paragraph' | 'bullets' }): { act: string; kind: string | null; count: number; kinds?: string[]; failed?: boolean; salience: number }[];
 /** An extractive summary of a text. */
-export function summarizeText(text: string, options?: { n?: number; stop?: string[]; redundancy?: number }): { sentences: { text: string; score: number; at: number }[]; picked: string[] };
+export function summarizeText(text: string, options?: { n?: number; words?: number; stop?: string[]; redundancy?: number }): { sentences: { text: string; score: number; at: number }[]; picked: string[] };
 /** Unigram recall of a summary against a reference. */
 export function overlap(summary: string, reference: string, options?: { stop?: string[] }): number;
 /** std.space: the spot for one thing (relative to a thing, in a region, or a default spot), avoiding overlaps. */

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="6b43a543adea">
+<meta name="source-hash" content="266d9af168ac">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.65.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.66.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -567,7 +567,7 @@ print([...new Set(sample(w, { mode: &#x27;actions&#x27;, prefer: { thing: &#x27;
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;make&quot;,&quot;make&quot;]
 [&quot;change&quot;,&quot;remove&quot;]</code></pre></figure>
 <h3 id="actsofworld-summarizelogentries-options-summarizetexttext-options-overlapsummary-reference">actsOf(world), summarizeLog(entries, options?), summarizeText(text, options?), overlap(summary, reference)</h3>
-<p>Summaries with no model (std.summarize). <code>actsOf</code> reads a world's history into acts, <code>[{ act, kind, things, step }]</code>. <code>summarizeLog(entries, { parentOf, length })</code> aggregates by act and kind, generalises siblings up the chain of kinds (<code>parentOf</code>, as std.know or a planner gives it: cat, dog and horse become 3 animals), keeps failures, and orders by salience (changes, repetition, recency, failure). It gives frames for the language world to render: <code>line</code> keeps 1, <code>paragraph</code> 3, <code>bullets</code> all. <code>summarizeText(text, { n, stop, redundancy })</code> is extractive. It scores sentences by centrality (the content words they share with the others), information (numbers, names) and position, drops a sentence that repeats a kept one, and keeps the top <code>n</code> in their order. The content words are found without a language (<code>stop</code>, or the words most sentences share). <code>overlap</code> is unigram recall against a reference.</p>
+<p>Summaries with no model (std.summarize). <code>actsOf</code> reads a world's history into acts, <code>[{ act, kind, things, step }]</code>. <code>summarizeLog(entries, { parentOf, length })</code> aggregates by act and kind, generalises siblings up the chain of kinds (<code>parentOf</code>, as std.know or a planner gives it: cat, dog and horse become 3 animals), keeps failures, and orders by salience (changes, repetition, recency, failure). It gives frames for the language world to render: <code>line</code> keeps 1, <code>paragraph</code> 3, <code>bullets</code> all. <code>summarizeText(text, { n, words, stop, redundancy })</code> is extractive. A sentence ends at a stop before a capital, a quote or a parenthesis, but not after an abbreviation ("Sec. 219"). It scores sentences by centrality (the content words they share with the others), information (numbers, names) and position, drops a sentence that repeats a kept one, and keeps the top <code>n</code> (or sentences up to a budget of <code>words</code>) in their order. The content words are found without a language (<code>stop</code>, or the words most sentences share). <code>overlap</code> is unigram recall against a reference.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const parentOf = (k) =&gt; ([&#x27;cat&#x27;, &#x27;dog&#x27;].includes(k) ? &#x27;animal&#x27; : null);
 print(summarizeLog([{ act: &#x27;make&#x27;, kind: &#x27;cat&#x27; }, { act: &#x27;make&#x27;, kind: &#x27;dog&#x27; }, { act: &#x27;remove&#x27;, kind: &#x27;tree&#x27; }], { parentOf, length: &#x27;bullets&#x27; }).map((f) =&gt; [f.act, f.kind, f.count]));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;make&quot;,&quot;animal&quot;,2],[&quot;remove&quot;,&quot;tree&quot;,1]]</code></pre></figure>
@@ -863,7 +863,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.65.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.66.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

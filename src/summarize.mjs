@@ -53,16 +53,31 @@ export function summarizeLog(entries, { parentOf = () => null, length = 'paragra
   return length === 'line' ? frames.slice(0, 1) : length === 'paragraph' ? frames.slice(0, 3) : frames;
 }
 
-const sentencesOf = (text) => String(text).replace(/\s+/g, ' ').match(/[^.!?]+[.!?]*/g)?.map((s) => s.trim()).filter(Boolean) || [];
+// Sentences: a stop ends one only before a capital, a quote or a parenthesis, and not after an
+// abbreviation (a short capitalised word or initials: "Sec. 219", "U.S.C.", "Stat. 4835", "Mr. Smith").
+const ABBR = /(?:^|[\s(])(?:\p{Lu}[\p{Ll}]{0,3}|\p{L}(?:\.\p{L})+|[ivxlc]+|e\.g|i\.e|etc|vs|No|Nos)\.$/u;
+function sentencesOf(text) {
+  const t = String(text).replace(/\s+/g, ' ').trim(), out = [];
+  let start = 0;
+  for (const m of t.matchAll(/[.!?]+(?=\s+["'(\p{Lu}]|$)/gu)) {
+    const end = m.index + m[0].length, piece = t.slice(start, end);
+    if (m[0] === '.' && ABBR.test(piece) && end < t.length) continue;
+    if (piece.trim()) out.push(piece.trim());
+    start = end;
+  }
+  if (t.slice(start).trim()) out.push(t.slice(start).trim());
+  return out;
+}
 const wordsOf = (s) => s.toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
 
 /**
  * An extractive summary of a text: { sentences: [{ text, score, at }], picked }. Options:
- * `n` (sentences kept; default a third, at least 1), `stop` (words that are not content;
+ * `n` (sentences kept; default a third, at least 1), `words` (a length budget in words instead:
+ * sentences are kept until it is reached), `stop` (words that are not content;
  * default: the words more than half the sentences share), `redundancy` (the overlap above
  * which a sentence repeats a kept one, default 0.6).
  */
-export function summarizeText(text, { n, stop, redundancy = 0.6 } = {}) {
+export function summarizeText(text, { n, words, stop, redundancy = 0.6 } = {}) {
   const sents = sentencesOf(text);
   if (!sents.length) return { sentences: [], picked: [] };
   const bags = sents.map((s) => new Set(wordsOf(s)));
@@ -80,7 +95,7 @@ export function summarizeText(text, { n, stop, redundancy = 0.6 } = {}) {
   const want = n ?? Math.max(1, Math.round(sents.length / 3));
   const picked = [];
   for (const c of [...scored].sort((a, b) => b.score - a.score || a.at - b.at)) { // bounded: the sentences
-    if (picked.length >= want) break;
+    if (words ? picked.reduce((x, p) => x + wordsOf(p.text).length, 0) >= words : picked.length >= want) break;
     const dup = picked.some((p) => { const a = content[p.at], b = content[c.at]; const inter = [...a].filter((w) => b.has(w)).length; return inter / Math.max(1, Math.min(a.size, b.size)) > redundancy; });
     if (!dup) picked.push(c);
   }

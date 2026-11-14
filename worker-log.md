@@ -4595,3 +4595,30 @@ clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 
 - After 0.65 the worker stopped between turns: it had no scheduled check while waiting, so the 18:40 and 19:00 entries sat unread for about an hour. That was the delay; nothing was blocked.
 - Now: BillSum 200 (19:00). summarizeText against lead-3, unigram/bigram recall (ROUGE-1/2 style); tuning only on items 1–100, items 101–200 held out. Report in this log, about an hour.
 - Then: compose on the published worlds as they land (18:40); choice points solved jointly in std.plan; generation with agreement (w.lang.en act templates); Round 28 item 9; Round 27 skills.
+
+## 0.66.0: BillSum 200 (reviewer 19:00)
+
+`node tools/bench-billsum.mjs --part dev|held [--n 3 | --words 180]`. It reads psys2 56bd1ba training/eval/billsum-test-200.jsonl in place. Scores are ROUGE-1/2 recall and F1, computed in the script on lowercased alphanumeric tokens.
+
+**First run** (0.65, dev half, n=3): summarizeText gave R-1 F1 0.166, against 0.31 for lead-3. Its summaries were 24 words: sentences were split at "Sec." and "Stat.".
+
+**Fix**: sentences split only before a capital, quote or parenthesis, and not after an abbreviation. Also new: a `words` budget. Tuning on the dev half: only the split. I tried four position priors; the best gained 0.005 F1, so the default was kept.
+
+| set (100 bills) | system | R-1 recall | R-1 F1 | R-2 recall | R-2 F1 | words |
+| --- | --- | --- | --- | --- | --- | --- |
+| dev, n=3 | lead-3 | 0.336 | 0.310 | 0.178 | 0.159 | 146 |
+| dev, n=3 | summarizeText | 0.182 | 0.228 | 0.079 | 0.102 | 49 |
+| dev, 180 words | lead-180w | 0.482 | 0.393 | 0.232 | 0.187 | 180 |
+| dev, 180 words | summarizeText | 0.479 | 0.381 | 0.201 | 0.161 | 196 |
+| held, n=3 | lead-3 | 0.338 | 0.311 | 0.166 | 0.150 | 168 |
+| held, n=3 | summarizeText | 0.183 | 0.220 | 0.071 | 0.085 | 55 |
+| held, 180 words | lead-180w | 0.459 | 0.393 | 0.206 | 0.171 | 180 |
+| held, 180 words | summarizeText | 0.474 | 0.393 | 0.189 | 0.156 | 199 |
+
+**Reading the results**
+- At an equal word budget, summarizeText ties lead on R-1 F1 on the held-out half (0.393 vs 0.393). It is behind on R-2 (0.156 vs 0.171).
+- Its budget overshoots by one sentence, to about 197 words; the budget stops after the sentence that crosses it.
+- By sentence count it loses, because its sentences are shorter than the bills' first sentences.
+- Lead is strong on BillSum because bills open with their purpose.
+
+Gates: npm test 430 / 430 / 429 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.66.0
+
+Measured on BillSum (reviewer 19:00): `tools/bench-billsum.mjs`, read in place from psys2.
+
+### Changed
+- `summarizeText` splits sentences only before a capital, a quote or a parenthesis, and not
+  after an abbreviation ("Sec. 219", "U.S.C.", "Stat. 4835"). Legal text was being cut into
+  fragments.
+
+### New
+- `summarizeText(text, { words })`: a length budget in words instead of a sentence count.
+
 ## 0.65.0
 
 Interest by the published `k.interest` (knowledge repository f7d2790, now pinned; reviewer 17:10).

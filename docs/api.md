@@ -1662,6 +1662,34 @@ print(compose(w, 'owl', { genre: 'note' }).parts.map((p) => [p.part, p.relation 
 [["head","",["owl"]],["point","k.home",["b"]],["point","k.diet",["a"]]]
 ```
 
+### cousins(world, case, options?), kindChain(world, id) and judgeFix(answer, case, cousins)
+
+A case is never single (abstraction round, item 0). `cousins` goes up from a case `{ frame,
+text? }` (a frame of `readByTypes`) along a dimension, then down to other members. The
+dimensions:
+- `filler`: up the chain of kinds (`kind`, `class`, `is`, `is_a`, then the type), and down
+  to the other things below. The degree is how far up the case and the other thing must go
+  to meet: 1 = siblings, 2 = first cousins, and so on.
+- `key`: the other keys of the same holder.
+
+A cousin is valid when it is legal in the world (it has an answer), when its wording, made
+by substituting the filler, reads back to the same frame, and when it is not a `known`
+case. Each cousin is tagged with its degree and the dimensions changed. `judgeFix(answer,
+case, cousins)` judges a fix both ways: on the case alone and on its valid cousins by
+degree. Judged that way, a fix that passes only its case shows a share of 0.
+
+```js run
+const w = new World();
+w.tell(`@cow k.animal name=cow kind=bovine sound=moo  @yak k.animal name=yak kind=bovine sound=grunt
+  @sheep k.animal name=sheep kind=ovine sound=baa  @bovine k.kind name=bovine is_a=ruminant  @ovine k.kind name=ovine is_a=ruminant`);
+const kase = { text: 'cow sound', frame: readByTypes(w, 'cow sound').best };
+print(cousins(w, kase).filter((c) => c.valid).map((c) => [c.degree, c.text]));
+```
+
+```output
+[[1,"yak sound"],[2,"sheep sound"]]
+```
+
 ### readByTypes(world, text, options?) and typedLexicon(world)
 
 Type-driven reading (abstraction round, item 1). Each content word is typed through the

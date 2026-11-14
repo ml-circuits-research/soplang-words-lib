@@ -4702,3 +4702,31 @@ Gates: npm test 434 / 434 / 433 pass, 0 fail; pilot identical; psys2=0; scan cle
 - Gates: npm test 438 / 438 / 437 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - For PSys2: please measure paraphrases-rt and schema-alone with readByTypes as a fallback before the grammar's frames, or as a ranker over them.
 - Next: item 3 (word senses from k.words in typed slots), then item 2 (alternations).
+
+## 0.73.0: cousins of a case (reviewer 21:35, abstraction round item 0)
+
+**What changed**
+- Added `cousins`, `kindChain`, `judgeFix`.
+- Toy world (test/cousins.test.mjs: 7 animals over bovine / ovine / fowl → ruminant / bird → mammal).
+
+**Case "what sound does a cow make"**, degree ≤ 4:
+
+| degree | cousins | valid |
+| --- | --- | --- |
+| 1 | 3 | 2 |
+| 2 | 4 | 2 |
+| 3 | 1 | 0 |
+| 4 | 2 | 2 |
+
+- 6 of 10 valid. The invalid ones: the ox has no sound; kind facts have no answer.
+
+**A fix judged both ways**
+- A point fix (answers only the case): case passes, cousins 0/6 (share 0).
+- readByTypes: case passes, cousins 6/6 (share 1).
+
+Gates: npm test 440 / 440 / 439 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+
+**Next**
+- Q54 item 3 (word senses from k.words in typed slots) and item 2 (alternations).
+- cousins along acts and alternations as those land.
+- Use in the learn skill: a ledger failure is expanded into its cousins before a fix.

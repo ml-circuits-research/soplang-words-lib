@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.73.0
+
+Cousins of a case (reviewer 21:35, owner 14:58: abstraction round, item 0).
+
+### New
+- `cousins(world, case, { degree, dims, known, read, n, seed })`:
+  - up the chain of kinds (or along the holder's keys), then down to other members;
+  - each cousin tagged with its degree and the dimensions changed;
+  - valid only when it has an answer, reads back to the same frame and is not known.
+- `kindChain(world, id)`.
+- `judgeFix(answer, case, cousins)`: a fix judged on the case and on its cousins by degree.
+
 ## 0.72.0
 
 Abstraction round, item 1 (reviewer 21:00; design note in questions.md Q54): type-driven

@@ -807,6 +807,29 @@ print(readByTypes(w, 'which animal makes woof', { question: ['which'] }).best.an
 ["dog"]
 ```
 
+## Judge a fix on the cousins of its case
+
+*In `cousins`, `kindChain`, `judgeFix`; since 0.73.*
+*Works on: worlds with kinds (kind, class, is, is_a) and facts with keys.*
+
+A failing case is expanded into its siblings and cousins (up the kinds, then down to other
+members), valid ones only. A fix is then judged on the case and on its cousins by degree,
+which measures how general it is.
+**Limits:** the dimensions are fillers and keys. The others (act families, alternations,
+world structure kinds) come with the items of Q54. A cousin's wording is the case's text
+with the filler replaced, until generation is used.
+
+```js run
+const w = new World();
+w.tell('@cow k.animal name=cow kind=bovine sound=moo  @yak k.animal name=yak kind=bovine sound=grunt');
+const kase = { text: 'cow sound', frame: readByTypes(w, 'cow sound').best };
+print(judgeFix((t) => (t === 'cow sound' ? ['moo'] : null), kase, cousins(w, kase)).share);
+```
+
+```output
+0
+```
+
 ## Building blocks
 
 *In the core exports; since 0.1 (each as listed).*

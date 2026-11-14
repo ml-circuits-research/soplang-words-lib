@@ -626,3 +626,9 @@ export function discourseTemplates(world: World, type?: string): { id: string; m
 export function readByTypes(world: World, text: string, options?: { question?: string[]; skip?: string[]; lemma?: (word: string) => string[] }): { frames: { frame: object; score: number; words: string[] }[]; best: { is: string; key?: string; of?: object; value?: string; kind?: string; act?: string; args?: Record<string, string>; answer?: string[] } | null; ambiguous?: boolean; unread: string[] };
 /** The world's own typed lexicon: word -> senses (thing, kind, attr, value, act, word). */
 export function typedLexicon(world: World): Map<string, object[]>;
+/** The cousins of a case: up along kinds or keys, down to other members, only the valid ones. */
+export function cousins(world: World, kase: { frame: object; text?: string }, options?: { degree?: number; dims?: string[]; known?: (string | object)[]; read?: object; n?: number; seed?: number }): { frame: object; text?: string; degree: number; dims: string[]; valid: boolean; why?: string }[];
+/** The chain of kinds of a thing, nearest first. */
+export function kindChain(world: World, id: string, depth?: number): string[][];
+/** A fix judged on the case alone and on its valid cousins by degree. */
+export function judgeFix(answer: (text: string | undefined, frame: object) => unknown, kase: { frame: object; text?: string }, cousins: object[]): { case: boolean; byDegree: Record<string, { pass: number; of: number }>; share: number | null };

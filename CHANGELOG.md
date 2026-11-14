@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.49.0
+
+Round 28 item 5: what every host's knowledge reader needed.
+
+### New
+- `bundleThenRead(bundle, read)`: a bundled subset first, then the catalog, with
+  `reachable()`.
+- `listOf(world, type, slot, value)`: the loaded facts of a type.
+- `std.schema.world ... bundle=<name>` and `loadBundles(world, bundles)`: a world-level
+  bundle, told once.
+
+### Fixed
+- A catalog finds a word form its vocabulary lacks through a loaded `core.word` (`ants`
+  means `ant`), and looks each word up once. A schema shard whose id is its own path is
+  read once (now tested).
+
 ## 0.48.0
 
 Round 28 item 4: the undo contract.

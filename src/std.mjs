@@ -847,6 +847,8 @@ ${calcs.join('\n')}
 @k.view.name core.slot of=std.schema.view key=name id=true
 @k.view.shows core.slot of=std.schema.view key=shows many=true
 @k.view.state core.slot of=std.schema.view key=state
+@k.world.bundle core.slot of=std.schema.world key=bundle many=true
+@k.bundled.name core.slot of=std.schema.bundled key=name id=true
 @k.needs.of core.slot of=std.schema.needs key=of required=true
 @k.needs.type core.slot of=std.schema.needs key=type required=true
 @k.needs.from core.slot of=std.schema.needs key=from

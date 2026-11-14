@@ -967,6 +967,29 @@ print(cat.shardsOf('cup'), cat.plan(cat.shardsOf('cup')), cat.intoSync(new World
 ```
 
 
+### bundleThenRead(bundle, read), listOf(world, type, slot?, value?), loadBundles(world, bundles)
+
+Knowledge readers every host needs. `bundleThenRead` is a `read(path)` for a catalog that
+answers from a bundled subset at once and asks `read` for the rest, so the first paint
+needs no network; `.reachable()` says whether the catalog answered the last time.
+`listOf` gives the names (or ids) of the loaded wires of a type, optionally those whose
+`slot` has `value`. `loadBundles` tells `bundles[name]` once into a world for each
+`std.schema.world ... bundle=<name>` (a world-level bundle) and returns the names told.
+A catalog also looks a word up once, and finds a form its vocabulary lacks through a loaded
+`core.word` (`ants` means `ant`) when given the world (`into`, `intoSync`).
+
+```js run
+const read = bundleThenRead({ files: { 'a.sop': '@ant k.animal name=ant legs=6' } }, () => null);
+const w = new World();
+w.load('@z std.schema.world name=zoo bundle=insects');
+loadBundles(w, { insects: read('a.sop') + '\n@bee k.animal name=bee legs=6 flies=yes' });
+print(listOf(w, 'k.animal'), listOf(w, 'k.animal', 'flies', 'yes'), read('b.sop'), read.reachable());
+```
+
+```output
+["ant","bee"] ["bee"] null false
+```
+
 ### createCatalogs(list, options?)
 
 Several knowledge repositories at once, in an order of precedence: `list` is

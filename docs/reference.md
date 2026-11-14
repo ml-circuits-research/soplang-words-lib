@@ -1656,7 +1656,7 @@ say the rest. The acts are the same for every world; a new schema needs no rule.
 
 | Type | Keys | Meaning |
 | --- | --- | --- |
-| `std.schema.world` | `name`, `doc` | a world |
+| `std.schema.world` | `name`, `doc`, `bundle` (rep.) | a world; `bundle=<name>`: `loadBundles` tells that bundle into it once (recorded as `std.schema.bundled name=`) |
 | `std.schema.kind` | `of` (a type), `world` (rep.), `acts` (rep.) | a kind of one or more worlds, and the acts that apply to it: `make`, `remove`, `change`, `place`, `connect`, `group`, `pick`, `ask`, `copy`, `send`, `save`, `load`, `undo`, `redo` |
 | `std.schema.kinds` | `world`, `from` (a type), `key` (default `name`), `acts`, `stand_in` (a type) | any kind that a wire of `from` names (`k.object name=cup`): such things are `std.schema.thing` and take any attribute; see std.know for `stand_in` |
 | `std.schema.limit` | `of`, `max` | at most so many things of a kind (rules: a count and a deny) |

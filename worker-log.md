@@ -4229,3 +4229,23 @@ clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 
   gate's `git grep` does not see untracked files, so the gate now uses
   `grep -rli psys2 src/`, which gives 0 after the fix.
 - Next: item 5 (`std.knowledge`), then 08:45 (tiers through merges).
+
+## Round 28 item 5 — knowledge readers (std.knowledge) — release 0.49.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 0.49.0).
+
+- src/knowledge.mjs:
+  - `shardsOf` is memoised per word.
+  - Given the world (`into` / `intoSync`), a form the vocabulary lacks is looked up
+    through a loaded `core.word`.
+  - `bundleThenRead` (reachable), `listOf`, `loadBundles`.
+  - src/std.mjs: `std.schema.world bundle=` and `std.schema.bundled`.
+- test/std-knowledge.test.mjs (2 tests):
+  - "ants" is found through `core.word`; the schema-as-shard plan is read once; 2 reads
+    in all;
+  - offline / online reads, reachable(), a world bundle told once, listOf.
+- Taken differently from the lesson: "index a shard once" is the cache of texts (read
+  once) plus the memoised lookup. Telling a shard still parses it once per world; the
+  facts' own index by type and value is the world's, so there is no second index.
+- Next: 08:45 (the per-value tier through merges), then items 6–9, then Round 27.

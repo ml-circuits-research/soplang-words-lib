@@ -28,7 +28,16 @@ export function createCatalog({ index, vocab = {}, read, cache = new Map(), lemm
   /** The forms to look a word up by: the word, lower case, and what the host's lemma gives. */
   const forms = (word) => [...new Set([String(word), String(word).toLowerCase(), ...lemma(String(word).toLowerCase())])];
   /** The shard ids that hold a word (nothing is read). */
-  const shardsOf = (word) => [...new Set(forms(word).flatMap((f) => vocab[f] || []))];
+  const memo = new Map(); // word -> its shard ids: a lookup is made once (the vocabulary does not change)
+  const shardsOf = (word, world) => {
+    const key = String(word);
+    if (!memo.has(key)) memo.set(key, [...new Set(forms(word).flatMap((f) => vocab[f] || []))]);
+    const found = memo.get(key);
+    if (found.length || !world) return found;
+    // a form the vocabulary lacks but a loaded core.word maps to a word it has ("ants" means "ant")
+    const means = world.ofType('core.word').filter((w) => (w.attrs.text || []).some((t) => String(t).replace(/^"|"$/g, '').toLowerCase() === key.toLowerCase())).flatMap((w) => w.attrs.means || []);
+    return [...new Set(means.flatMap((m) => forms(String(m).replace(/^"|"$/g, '')).flatMap((f) => vocab[f] || [])))];
+  };
   const worldOf = (shard) => String(shard).split('/')[0];
   const pathFor = (shard) => pathOf.get(shard) ?? (/\.sop$/.test(shard) ? shard : `${shard}.sop`);
 
@@ -73,7 +82,7 @@ export function createCatalog({ index, vocab = {}, read, cache = new Map(), lemm
      * Returns { shards, told: [paths told now], ok, violations }.
      */
     async into(world, word) {
-      const shards = shardsOf(word);
+      const shards = shardsOf(word, world);
       const done = told.get(world) || told.set(world, new Set()).get(world);
       const res = { word, shards, told: [], ok: true, violations: [] };
       for (const p of plan(shards)) {
@@ -87,7 +96,7 @@ export function createCatalog({ index, vocab = {}, read, cache = new Map(), lemm
     },
     /** As `into`, for a host whose `read` answers at once (a file, a bundle): no promise. */
     intoSync(world, word) {
-      const shards = shardsOf(word);
+      const shards = shardsOf(word, world);
       const done = told.get(world) || told.set(world, new Set()).get(world);
       const res = { word, shards, told: [], ok: true, violations: [] };
       for (const p of plan(shards)) {
@@ -198,4 +207,45 @@ export function createCatalogs(list, { lemma } = {}) {
       return res;
     },
   };
+}
+
+/**
+ * A bundled subset first, then the catalog (a first paint with no network): a `read(path)`
+ * that answers from the bundle at once and asks `read` for the rest. `reachable()` says
+ * whether the catalog answered the last time it was asked (true until it fails).
+ */
+export function bundleThenRead(bundle, read) {
+  const local = bundleReader(bundle);
+  let ok = true;
+  const r = (path) => {
+    const t = local(path);
+    if (t !== null) return t;
+    try {
+      const v = read(path);
+      if (v && typeof v.then === 'function') return v.then((x) => { ok = x !== null && x !== undefined; return x; }, (e) => { ok = false; throw e; });
+      ok = v !== null && v !== undefined;
+      return v;
+    } catch (e) { ok = false; throw e; }
+  };
+  r.reachable = () => ok;
+  return r;
+}
+
+/** The loaded wires of a type, optionally those whose `slot` has `value`: the names (or ids) in order. */
+export function listOf(world, type, slot, value) {
+  const bare = (v) => String(v).replace(/^"|"$/g, '').replace(/^\$/, '');
+  return world.ofType(type).filter((w) => slot === undefined || (w.attrs[slot] || []).some((v) => bare(v) === bare(value))).map((w) => (w.attrs.name ? bare(w.attrs.name[0]) : w.id));
+}
+
+/** A world-level bundle: every `std.schema.world ... bundle=<name>` gets `bundles[name]` told once. Returns the names told. */
+export function loadBundles(world, bundles) {
+  const told = [];
+  for (const wd of world.ofType('std.schema.world')) for (const name of wd.attrs.bundle || []) { // bounded: the declared worlds
+    const key = `_bundle_${String(name).replace(/\W/g, '_')}`;
+    if (world.has(key) || bundles[name] === undefined) continue;
+    const r = world.tell(`${bundles[name]}\n@${key} std.schema.bundled name=${name}`);
+    if (r.ok === false) return { ok: false, told, violations: r.violations, bundle: name };
+    told.push(String(name));
+  }
+  return { ok: true, told };
 }

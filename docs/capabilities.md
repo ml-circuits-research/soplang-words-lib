@@ -347,14 +347,16 @@ kind card here has the shape of shapes.box in module shapes: import it?
 
 ## Load knowledge by lookup
 
-*In `createCatalog`, `bundleReader`; since 0.23.*
+*In `createCatalog`, `bundleReader`, `bundleThenRead`, `listOf`, `loadBundles`; since 0.23.*
 *Works on: knowledge worlds, loaded into a live world.*
 
 A catalog (an index of worlds with their schemas, dependencies and shards, and a
 vocabulary from words to shards) finds what a word needs, reads each shard once through
 the host's `read` (a file, `fetch`, a bundle), caches it, and tells it into a world with
 the schemas first. `tools/build-bundle.mjs` writes an offline bundle for a list of words
-that `bundleReader` reads with the same code. **Limits:** the lemma of a
+that `bundleReader` reads with the same code. `bundleThenRead` (0.49) answers from a
+bundled subset first and the catalog after, with `reachable()`; `listOf` lists loaded
+facts of a type; `loadBundles` tells a world's declared bundle once. **Limits:** the lemma of a
 word is the host's (`lemma` option); the library knows no language.
 
 ```js run

@@ -538,3 +538,9 @@ export function actWords(world: World, extra?: string[]): Set<string>;
 export function dialogueTurn(world: World, text: string, options?: { cues?: Record<string, string>; acts?: string[]; last?: { action: string; args?: Record<string, unknown> }; asked?: boolean }): { kind: 'why' | 'correction' | 'continuation' | 'list' | 'ellipsis' | 'answer' | 'request'; rest: string; cue?: string; act?: string; items?: string[]; first?: string };
 /** What each turn of a dialogue mentions, in order. */
 export function focusLog(world: World, dialogue?: string): { turn: string; in?: string; pos: number; mentions: { kind: string; value: string }[] }[];
+/** A read over a bundled subset first, then the catalog's read; .reachable() after a miss. */
+export function bundleThenRead(bundle: { files: Record<string, string> }, read: (path: string) => string | null | Promise<string | null>): ((path: string) => string | null | Promise<string | null>) & { reachable(): boolean };
+/** The names (or ids) of the loaded wires of a type, optionally with slot = value. */
+export function listOf(world: World, type: string, slot?: string, value?: string): string[];
+/** World-level bundles: std.schema.world bundle=<name> gets bundles[name] told once. */
+export function loadBundles(world: World, bundles: Record<string, string>): { ok: boolean; told: string[]; violations?: object[]; bundle?: string };

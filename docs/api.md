@@ -1850,7 +1850,9 @@ dimension }`, by default kind / class / is / is_a as `kind`) names them, and
 `ancestorsOf(world, id, { depth, edges })` walks them breadth first. Cousins are
 deduplicated by frame and stratified per degree and dimension (`n` each). The automatic
 tester `tools/cousins-test.mjs` takes one example and a host and gives a table per degree ×
-dimension, naming the pattern of breaks. The skill `skills/expand-and-test-case` hands the
+dimension, naming the pattern of breaks. With `split` and `oracle` it judges every clause
+of a compound text: the host's answer to the whole text must hold the world's answer to
+each clause, so answering one half fails. The skill `skills/expand-and-test-case` hands the
 failures to `learnRules`. `judgeFix(answer,
 case, cousins)` judges a fix both ways: on the case alone and on its valid cousins by
 degree. Judged that way, a fix that passes only its case shows a share of 0.

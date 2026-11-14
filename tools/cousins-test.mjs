@@ -17,16 +17,25 @@ import { cousins, judgeFix } from '../src/index.mjs';
  * world's. Options go to cousins (degree, dims, edges, read, known, n, seed).
  */
 export function cousinsTest(world, example, host, options = {}) {
-  const list = cousins(world, example, { degree: 3, ...options }).filter((c) => c.valid);
-  const table = {};
   const same = (a, b) => JSON.stringify([].concat(a ?? [])) === JSON.stringify([].concat(b ?? []));
+  const list = cousins(world, example, { degree: 3, ...options }).filter((c) => c.valid);
+  // every clause judged (reviewer 23:05 item 4): a compound text passes only when the host's answer to it
+  // holds the world's answer to each of its clauses (`split(text) -> [clauses]`, `oracle(clause) -> answer`)
+  const { split, oracle } = options;
+  const judgeText = (text, expected, frame) => {
+    const parts = split && text ? split(text) : [text];
+    if (parts.length <= 1 || !oracle) { let a; try { a = host(text, frame); } catch { a = undefined; } return same(a, expected); }
+    let a; try { a = host(text, frame); } catch { a = undefined; }
+    const got = new Set([].concat(a ?? []).flat().map(String));
+    return parts.every((p) => [].concat(oracle(p) ?? [null]).every((x) => got.has(String(x)))); // the host's answer to the whole text holds every clause's answer
+  };
+  const table = {};
   for (const c of list) {
     const k = `${c.degree}|${c.dims[0]}`, row = (table[k] ||= { pass: 0, of: 0, fails: [] });
     row.of++;
-    let a; try { a = host(c.text, c.frame); } catch { a = undefined; }
-    if (same(a, c.frame.answer)) row.pass++; else row.fails.push(c.text ?? JSON.stringify(c.frame));
+    if (judgeText(c.text, c.frame.answer, c.frame)) row.pass++; else row.fails.push(c.text ?? JSON.stringify(c.frame));
   }
-  const judged = judgeFix(host, example, list);
+  const judged = judgeFix((t, f) => (judgeText(t, f.answer, f) ? f.answer : null), example, list);
   // the pattern: the dimensions that hold and the ones that break name the missing generalisation
   const byDim = {};
   for (const [k, r] of Object.entries(table)) { const dim = k.split('|')[1]; const d = (byDim[dim] ||= { pass: 0, of: 0 }); d.pass += r.pass; d.of += r.of; }

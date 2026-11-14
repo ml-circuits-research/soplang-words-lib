@@ -4951,3 +4951,13 @@ Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-que
   - filler and extra clause: drop at read time (an extra clause is answered separately, see the clause judging below);
   - substitution and insertion: the alternation rules (do-support) and word senses.
 - Gates: npm test 462 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+
+## 0.88.0: every clause judged (reviewer 23:05 item 4)
+
+- `cousinsTest(..., { split, oracle })`: for a compound text, the host's answer must hold the world's answer to each clause.
+- test/cousins-tool.test.mjs, "what does a cow make and what does a dog make":
+  - a host that reads only the first clause passes when judged on the frame alone, and fails when judged per clause;
+  - a host that answers each clause passes.
+- Gates: npm test 463 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+- The 23:05 list is done (wording dimension 0.83/0.84, act frames 0.83, indexed ancestors 0.83, every clause 0.88).
+- Next: realisation templates (w.lang.en act templates) as a second wording source for cousins; then Round 28 item 9; the other Round 27 skills.

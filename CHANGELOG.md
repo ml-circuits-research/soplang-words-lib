@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.88.0
+
+### New
+- `tools/cousins-test.mjs` judges every clause of a compound text (reviewer 23:05 item 4):
+  with `split(text)` and `oracle(clause)`, the host's answer must hold every clause's
+  answer, so a host that answers one half fails.
+
 ## 0.87.0
 
 ### New

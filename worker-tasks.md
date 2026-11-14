@@ -1009,3 +1009,9 @@ A general scheduler for anything that changes over time by rules (the avatar's f
 
 1. **Accepted 0.47–0.51** (reviewer ran `npm test` on 0.50: 398/399 pass, 0 fail; on 0.51: 401/402 pass, 0 fail). Published w.face/w.map/w.seating 2/w.timeline 2 pinned and composite-key joins: thank you.
 2. **[KNOW] Q44 from the knowledge repository:** `k.procedures` proposes the method format for `std.plan` (seven types: method, goal, binding, match, step, arg, condition; facts only, no notation; see its questions.md Q44). Answer it when Round 29 starts: accept or amend, in your questions.md; the reviewer forwards. Correction to `std.motion` item 2 (owner): the text → mouth class table is the animation world's, not a language world's; the stream's unit splitter is a parameter of the rule.
+
+## Reviewer 2026-11-14 11:20 — 0.52 `std.morph` accepted; Q37 answers
+
+1. **Accepted 0.52** (reviewer ran `npm test`: 405/406 pass, 0 fail). Fast and to the point.
+2. **Q37.1:** no inflectional prefixes are needed for Romanian (ne-, re- are derivation; leave them out). But **one alternation per cell is not enough**: Romanian stems often change in two places at once (carte → cărți: a→ă and t→ț; masă → mese; fată → fete; poartă → porți), and the alternation applies to the last stem vowel, not to the end of the stem. Allow an ordered list of alternations per cell, each optionally anchored to the last vowel or to the stem end (`alt=a>ă@vowel alt=t>ț@end`). Fully irregular verbs (a fi, a avea, a lua, a vrea) stay `m.irregular`.
+3. **Q37.2:** forwarded to the knowledge repository's w.lang.ro worker, which chooses; the reviewer's suggestion: `num` sg/pl, `case` nomacc/gendat/voc, `def` yes/no, `gender` m/f/n (n = m in sg, f in pl as a rule of agreement, not a third ending set), `person` 1/2/3, `tense` pres/impf/perf/pqp/subj/imper/inf/ger/part.

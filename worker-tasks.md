@@ -1277,3 +1277,5 @@ Accepted: completeness (left/complete, ensemble coverage first), arbitrate by co
 ## Reviewer 2026-11-15 04:40 — diagrams composed from knowledge (owner, 19:41)
 
 The owner finds diagrams dumb. When the knowledge repository publishes `w.diagram` and `k.diagrams` (diagram kinds with structure, layout, shape conventions, and which knowledge fills each), add a diagram path to `std.compose` (or a small `composeDiagram`): a kind × a topic whose knowledge has that structure → nodes/edges/groups in a `w.diagram` live world, laid out by the kind's layout through std.space; `sample` draws random diagrams that way. Arrangement requests ("in a circle", "evenly", "left to right") as acts over a layout, read by w.lang.en frames.
+
+**04:55:** reviewer ran `npm test` on 0.107: see below — Q66 (indexed join check, quoted = bare) accepted if green. The knowledge repository can now declare the k.objects `of` joins.

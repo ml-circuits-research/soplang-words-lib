@@ -733,6 +733,26 @@ print(sample(w, { mode: 'one', seed: 1 }).frames[0].args);
 {"kind":"owl"}
 ```
 
+## Summarise a log or a text
+
+*In `actsOf`, `summarizeLog`, `summarizeText`, `overlap`; since 0.61.*
+*Works on: a live world's history; any text.*
+
+A history of acts becomes a few frames: acts and kinds counted, siblings generalised up
+the chain of kinds, failures kept, the most salient first, for the language world to
+render. A text gets an extractive summary by centrality, information and position, with
+nothing said twice and every sentence from the source. **Limits:** text summaries are
+extractive; regenerating sentences from frames waits for the language worlds'
+generation; the reference set is small and written for the tests.
+
+```js run
+print(summarizeText('Owls hunt at night. Their eyes are large. An owl can turn its head about 270 degrees. Some owls live in barns.', { n: 1 }).picked);
+```
+
+```output
+["Owls hunt at night."]
+```
+
 ## Building blocks
 
 *In the core exports; since 0.1 (each as listed).*

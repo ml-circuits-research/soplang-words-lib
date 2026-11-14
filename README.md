@@ -62,6 +62,7 @@ contain and where code lives: [docs/kinds-of-worlds.md](docs/kinds-of-worlds.md)
 | Change states over time by rules | `motionPlan`, `motionRun`, `readMotion`, `planMotionFacts`, `splitText` | [example](docs/capabilities.md#change-states-over-time-by-rules) | 0.54 |
 | Reach a goal by methods that are knowledge | `planner`, `factStore`, `PlanLive`, `readMethods`, `PLAN_LIMITS` | [example](docs/capabilities.md#reach-a-goal-by-methods-that-are-knowledge) | 0.55 |
 | Suggest random commands that work | `sample`, `diversity` | [example](docs/capabilities.md#suggest-random-commands-that-work) | 0.59 |
+| Summarise a log or a text | `actsOf`, `summarizeLog`, `summarizeText`, `overlap` | [example](docs/capabilities.md#summarise-a-log-or-a-text) | 0.61 |
 <!-- /capabilities -->
 
 ## Use

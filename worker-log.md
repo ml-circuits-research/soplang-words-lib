@@ -4503,3 +4503,31 @@ clean; tsc clean. `node tools/cases.mjs`: 61 / 61. Version, CHANGELOG, docs rebu
   open, then reported, then closed when the target arrives; targets first: refused).
 - The user asked for an estimate (10:33); answered by message: about 6–7 hours for
   summarize, compose, Round 28 items 8–9, the plan follow-up and Round 27.
+
+## Reviewer 14:45 A — std.summarize — release 0.61.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/capability-table.mjs`: 31 jobs. Version, CHANGELOG, docs
+rebuilt (`docs/version.md`: sopworld 0.61.0).
+
+- src/summarize.mjs:
+  - `actsOf`: the log grouped by step with `by`; the kinds come from the told wires,
+    removals included.
+  - `summarizeLog`: aggregation, sibling generalisation through `parentOf`, failures,
+    salience.
+  - `summarizeText`: extractive (centrality, information, position, redundancy); stop words
+    found without a language.
+  - `overlap`.
+- test/summarize.test.mjs (2 tests):
+  - a zoo's log → 3 animals made, a failed dragon, one cat removed;
+  - two texts written for the test (CC0), each against its reference; the repetition
+    dropped; every kept sentence is from the source.
+- Measured (`node -e` over the two texts, n=2): overlap 0.429 (village) and 0.471 (owls).
+  No public set was used. A permissive set with references needs downloading, and the
+  network here only reaches package registries and GitHub; the test set is the 2 written
+  texts.
+- Not done yet: abstractive output by frames (reading each sentence with `resolve`, then
+  generating), because it waits for the language worlds' generation (Round 30 item 6).
+- std.compose: `git ls-tree` of the knowledge repository's main shows no k.genres, k.story,
+  k.interest or w.document yet. Per the reviewer (15:00 and 15:15: build when a world uses
+  it), compose waits for them; I go to Round 28 items 8–9 meanwhile.

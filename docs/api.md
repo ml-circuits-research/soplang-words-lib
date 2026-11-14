@@ -1536,6 +1536,29 @@ print([...new Set(sample(w, { mode: 'actions', prefer: { thing: 'shape1' }, seed
 ["change","remove"]
 ```
 
+### actsOf(world), summarizeLog(entries, options?), summarizeText(text, options?), overlap(summary, reference)
+
+Summaries with no model (std.summarize). `actsOf` reads a world's history into acts,
+`[{ act, kind, things, step }]`. `summarizeLog(entries, { parentOf, length })` aggregates
+by act and kind, generalises siblings up the chain of kinds (`parentOf`, as std.know or a
+planner gives it: cat, dog and horse become 3 animals), keeps failures, and orders by
+salience (changes, repetition, recency, failure). It gives frames for the language world
+to render: `line` keeps 1, `paragraph` 3, `bullets` all. `summarizeText(text, { n, stop,
+redundancy })` is extractive. It scores sentences by centrality (the content words they
+share with the others), information (numbers, names) and position, drops a sentence that
+repeats a kept one, and keeps the top `n` in their order. The content words are found
+without a language (`stop`, or the words most sentences share). `overlap` is unigram
+recall against a reference.
+
+```js run
+const parentOf = (k) => (['cat', 'dog'].includes(k) ? 'animal' : null);
+print(summarizeLog([{ act: 'make', kind: 'cat' }, { act: 'make', kind: 'dog' }, { act: 'remove', kind: 'tree' }], { parentOf, length: 'bullets' }).map((f) => [f.act, f.kind, f.count]));
+```
+
+```output
+[["make","animal",2],["remove","tree",1]]
+```
+
 ### arbitrate(world, request, options?)
 
 The arbitration contract: one verdict per declared world for one request. `own`: the

@@ -580,3 +580,11 @@ export function grammarCheck(world: World, options?: { lemma?: (word: string) =>
 export function sample(world: World, options?: { seed?: number; n?: number; mode?: 'one' | 'few' | 'actions'; prefer?: { world?: string; thing?: string }; seen?: { action: string; args?: Record<string, unknown> }[]; realise?: (frame: object) => string; read?: (text: string) => { action: string; args: Record<string, unknown> } | null }): { frames: { action: string; args: Record<string, unknown>; world?: string; why: string }[]; tried: number; kept: number; roundTrip?: number };
 /** Distinct acts, kinds and attributes of frames. */
 export function diversity(frames: { action: string; args: Record<string, unknown> }[]): { frames: number; acts: number; kinds: number; attrs: number };
+/** std.summarize: the acts of a world's history. */
+export function actsOf(world: World): { act: string; kind: string | null; things: string[]; step: string }[];
+/** Aggregate a log of acts into frames, generalised up the chain of kinds, by salience. */
+export function summarizeLog(entries: { act: string; kind?: string | null; failed?: boolean; changed?: number }[], options?: { parentOf?: (kind: string) => string | null; length?: 'line' | 'paragraph' | 'bullets' }): { act: string; kind: string | null; count: number; kinds?: string[]; failed?: boolean; salience: number }[];
+/** An extractive summary of a text. */
+export function summarizeText(text: string, options?: { n?: number; stop?: string[]; redundancy?: number }): { sentences: { text: string; score: number; at: number }[]; picked: string[] };
+/** Unigram recall of a summary against a reference. */
+export function overlap(summary: string, reference: string, options?: { stop?: string[] }): number;

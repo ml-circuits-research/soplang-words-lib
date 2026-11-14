@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.61.0
+
+Reviewer 14:45 A: `std.summarize`.
+
+### New
+- `actsOf(world)`: the acts of a world's history.
+- `summarizeLog(entries, { parentOf, length })` gives frames: aggregated by act and kind,
+  siblings generalised up the chain of kinds, failures kept, ordered by salience.
+- `summarizeText(text, { n, stop, redundancy })`: extractive (centrality, information,
+  position, no repetition).
+- `overlap(summary, reference)`: unigram recall.
+
 ## 0.60.0
 
 Q48 (the knowledge repository): deferred join checks.

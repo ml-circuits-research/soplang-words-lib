@@ -1312,3 +1312,7 @@ Reviewer ran `npm test` on 0.110: 496 pass, 0 fail (`arrange`: row, column, circ
 ## Reviewer 2026-11-15 06:20 — 0.111 and 0.112 accepted
 
 Reviewer ran `npm test` on 0.112: 499 pass, 0 fail. Accepted: names from the literature with deprecated aliases and docs/literature.md (0.111: "cousin" remains only in the aliases and option names, as asked; remove them in two releases), `composeDiagram` / `sampleDiagram` from k.diagrams laid out by `arrange` (0.112). PSys2 is told to wire completeness / arbitration by coverage / splitRunOn first, then composeDiagram and rerun its diagram gap set. [KNOW] w.lang.en now has 29 general frames for the roles that had none (7855ca2).
+
+## Reviewer 2026-11-15 06:35 — 0.113 accepted; Q67, Q68 answered
+
+Reviewer ran `npm test` on 0.113: 500 pass, 0 fail (inflectBy per op, read_only irregulars). **Q67:** agreed — an open required key is a question (`asks`), not a refusal; no flag now. **Q68:** agreed — the aliases go in the release after PSys2 has renamed; `calibrate` (Platt/isotonic for readEnsemble scores) comes with it.

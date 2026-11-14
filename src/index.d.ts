@@ -395,7 +395,7 @@ export class World {
   asOf<T>(at: number, fn: (world: World) => T, options?: Budgeted): T | undefined;
   seqOf(id: string): number | undefined;
   compare(idA: string, idB: string): number;
-  act(request: { action: string; args?: Record<string, string | number | string[]> } | Wire | string, options?: Budgeted): ActResult;
+  act(request: { action: string; args?: Record<string, string | number | string[]> } | Wire | string, options?: Budgeted & { message?: string }): ActResult;
   /** the requests of one sentence, all or nothing: one step for undo; `failed` is the index of the request that was not done */
   act(requests: ({ action: string; args?: Record<string, string | number | string[]> } | Wire | string)[], options?: Budgeted): { ok: boolean; status: ActResult['status']; results: ActResult[]; failed?: number; missing?: ActResult['missing']; violations: Violation[] };
   trial<T>(fn: (world: World) => T, options?: Budgeted): T | undefined;

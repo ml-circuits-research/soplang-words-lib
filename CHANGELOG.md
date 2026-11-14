@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.48.0
+
+Round 28 item 4: the undo contract.
+
+### New
+- `world.act(request, { message })`: requests tagged with the same message are one undo
+  (and redo) step together, across several calls and sentences. Without a tag, one
+  request or one sentence is one step, as before.
+
 ## 0.47.0
 
 Round 28 item 3: `std.dialogue`.

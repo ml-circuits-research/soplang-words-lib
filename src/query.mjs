@@ -701,6 +701,13 @@ export const querying = {
    * world is left as it was. A required argument that is missing is reported, not guessed.
    */
   act(request, opts = {}) {
+    // the undo contract: one request (or one sentence) is one undo step; requests that carry
+    // the same `message` tag are one step together, however many calls they took
+    if (opts.message !== undefined) {
+      const outer = this._step;
+      this._step = `m:${opts.message}`;
+      try { return this.act(request, { ...opts, message: undefined }); } finally { this._step = outer; }
+    }
     if (Array.isArray(request)) return this._guard(opts, () => this._actAll(request), (v) => ({ ok: false, status: 'budget', results: [], violations: [v] }));
     return this._guard(opts, () => this._act(request), (v) => ({ ok: false, status: 'budget', violations: [v] }));
   },
@@ -713,8 +720,8 @@ export const querying = {
   _actAll(requests) {
     const mark = this._begin(true);
     const effects = this._effectUndo, inSentence = this._inSentence; this._effectUndo = []; this._inSentence = true; // the undo of each domain effect done in this sentence
-    const step = `s${this.seq}`;
     const outer = this._step;
+    const step = outer && String(outer).startsWith('m:') ? outer : `s${this.seq}`; // inside a tagged message: the message's step
     this._step = step;
     const results = [];
     let failed = -1;

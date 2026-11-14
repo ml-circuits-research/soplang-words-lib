@@ -4213,3 +4213,19 @@ rebuilt (`docs/version.md`: sopworld 0.47.0).
 - The docs test caught `kind: 'correction'` as an unknown violation kind (it scans src
   for `kind: '...'`). Turn kinds are now built through a helper.
 - Next: item 4 (the undo contract), item 5 (`std.knowledge`), 08:45 (tiers through merges).
+
+## Round 28 item 4 — the undo contract (a whole-message tag) — release 0.48.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 0.48.0).
+
+- src/query.mjs: `act(request, { message })`. Requests with the same tag share one undo
+  step (`m:<tag>`), including inside a sentence. Without a tag, nothing changes: one
+  request or one sentence is one step.
+- test/undo-contract.test.mjs (1 test): four calls of one message are one undo and one
+  redo. The request before the message is a step of its own.
+- api.md: "The undo contract". index.d.ts: `message` on act's options.
+- Fault: 0.47.0 shipped "PSys2" in a comment of src/dialogue.mjs (the second time). The
+  gate's `git grep` does not see untracked files, so the gate now uses
+  `grep -rli psys2 src/`, which gives 0 after the fix.
+- Next: item 5 (`std.knowledge`), then 08:45 (tiers through merges).

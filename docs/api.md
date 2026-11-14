@@ -418,6 +418,11 @@ Runs an [action](reference.md#coreaction). `request` is `{ action, args }`, a
 violations }` with status `done`, `missing` (arguments to ask for), `refused`, `error`
 (the host function threw), `unsupported` (no such action) or `budget`.
 
+**The undo contract.** One request is one undo step, and so is one sentence (an array of
+requests, all or nothing). Requests that carry the same `options.message` tag are one step
+together, however many calls they took, so a host that runs the clauses of one message
+one by one undoes them with one `undo`. Tags must be unique per message.
+
 A host function gets `(ctx, args)`. `ctx.tell(input, { now })` queues a statement and
 returns `{ ok: true, queued: true }`; the queue is propagated and validated together at
 the first read (`ctx.find`, `ctx.val`, `ctx.vals`, `ctx.get`, `ctx.query`, `ctx.ask`,

@@ -1,4 +1,4 @@
-// The dialogue (Round 28 item 3, from PSys2's lessons): the kind of each turn, from cue
+// The dialogue (Round 28 item 3, from a host's lessons): the kind of each turn, from cue
 // phrases the host names and from the act words of the world, so a host keeps no turn-kind
 // code of its own. Language-free: the cues are facts (`std.dialogue.cue kind= text=`, or a
 // language world's types mapped in `options.cues`), the act words come from the matrix.

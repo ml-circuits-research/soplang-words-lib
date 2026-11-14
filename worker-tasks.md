@@ -861,3 +861,18 @@ Accepted: `resolve`, room planner and timetable (the docs held: good), corpus 35
 ## Reviewer 2026-11-14 03:30 — 0.36.0–0.38.0 validated (380 tests, 0 fail)
 
 Accepted: `make` lists the required keys it leaves open (both 02:45 defects in the corpus), acts on the view itself (`std.schema.view state=`), `ask` over any attribute and relation of schemas and knowledge worlds with the answer's shape. Fast and on target. PSys2 is told to vendor 0.38 for its geo.map pilot. Next: typed needs and views carrying their needs (item 2 of 03:10), then `std-grammar.md` section 8 from PSys2's hand-over (one noun-phrase reading over the facts), then the corpus growth from PSys2. Keep the lessons page current.
+
+## Reviewer 2026-11-14 04:40 — the library must not hold particular worlds (owner's question)
+
+The owner looked at this repository and asked whether the library is building particular worlds that belong in sop-knowledge-worlds. Reviewer's check: `src/` holds no particular knowledge (good). But there are copies and look-alikes outside `src/`:
+- `compat/psys2/` (1.2 MB, last changed 11-10): copies of PSys2's kids.* worlds, matrices, lang.common, core;
+- `bench/fixtures/knowledge/`: copies of sop-knowledge-worlds shards (k.objects, k.animals, k.food, k.space, k.time, ...);
+- `cases/schemas/`: face, seating, timeline, map written again "after PSys2's worlds", while `w.seating`, `w.timeline`, `w.list` are published in sop-knowledge-worlds in your own `std.schema` format;
+- `examples/` and `examples/second-app/`: toy applications (recipes, rooms, timetable, warehouse, twin, workflow).
+**Rule from now on:** the library holds mechanisms, tests and minimal toy examples only. Particular worlds and knowledge live in sop-knowledge-worlds (or in an application); the library may *read* them for integration tests and benchmarks, never keep its own versions.
+1. **Integration tests read the published worlds, pinned:** a test helper that fetches (or reads from a pinned checkout in `node_modules` / a git submodule-like folder fetched at test time from GitHub, which this box reaches) sop-knowledge-worlds at a pinned commit; `cases/schemas/seating|timeline` are replaced by `w.seating`, `w.timeline` from there; a face and a map schema, if they are reusable, are proposed to that repository instead of kept here (write the proposal; the reviewer forwards it).
+2. **`bench/fixtures/knowledge/`**: read the same pinned checkout instead of copies; delete the copies.
+3. **`compat/psys2/`**: PSys2 now vendors the library and runs its own world tests; delete the copies unless a test truly needs them, and then say which and why (and read from PSys2 at a pinned commit instead).
+4. **Examples stay toys**: each example world under ~60 lines, clearly invented, named as an example; any example that grows into something reusable goes to sop-knowledge-worlds as a `w.*` schema.
+5. **The case corpus stays language-free and minimal**: a case carries only the wires it needs; when it needs a real world, it names the published world and commit, not a copy.
+Report wires and bytes removed, and what now comes from where. AGENTS.md gets the rule.

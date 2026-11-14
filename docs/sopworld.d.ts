@@ -440,6 +440,7 @@ export function readValue(token: string): Value;
 export function writeValue(value: Value): string;
 export function tokenize(text: string, options?: { lenient?: boolean }): { t: string; line: number; column: number; offset: number }[];
 export function str(value: string): string;
+export function valueText(value: unknown): string;
 export function quote(text: string): string;
 export function induce(examples: { when: string | Wire[]; then?: string | Wire[] }[], options?: { name?: string; kind?: 'rule' | 'deny'; why?: string; tolerant?: boolean; distinct?: boolean; negatives?: { when: string | Wire[] }[]; budget?: Budget }): { text: string | null; budget?: BudgetViolation; skipped: { index: number; why: string }[]; calcs: object[]; tests: object[]; coversNegative: number[]; variables: number; examples: number };
 export function adopt(world: World, explanation: Explanation): { ok: boolean; results: Result[] };

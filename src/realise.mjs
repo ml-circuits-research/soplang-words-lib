@@ -9,11 +9,13 @@
 import { inflectBy, articleFor } from './morph.mjs';
 import { choose } from './rank.mjs';
 import { phraseOf } from './say.mjs';
+import { seeded } from './random.mjs';
+import { valueText } from './parser.mjs';
 
-const bare = (v) => String(v).replace(/^"|"$/g, '').replace(/^\$/, '');
+const bare = (v) => valueText(v).replace(/^\$/, '');
 const META = new Set(['name', 'about', 'kind', 'class', 'is', 'source', 'own', 'cite', 'derived']);
 
-function rng(seed) { let x = seed >>> 0; return () => { x = (x + 0x6d2b79f5) >>> 0; let t = Math.imul(x ^ (x >>> 15), 1 | x); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const rng = seeded;
 
 /** The discourse templates a world holds: [{ id, move, register, slots, text }]. */
 export function discourseTemplates(world, type = 'w.lang.en.discourse') {

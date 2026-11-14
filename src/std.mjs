@@ -4,7 +4,7 @@
 // built-ins (min, max, add, abs, round, clamp, between, sign, lt, ...), the aggregates
 // (count, sum, min, max, argmin, argmax, collect) or core.rank already do.
 
-import { parse } from './parser.mjs';
+import { parse, valueText } from './parser.mjs';
 import { quantity } from './builtins.mjs';
 const num = (v) => Number(v);
 const out = (x) => (Number.isFinite(x) ? String(+x.toFixed(10)) : undefined);
@@ -151,7 +151,7 @@ function viewThing(ctx, args) {
  * knowledge facts alike, with the shape of the answer: `number` (with its unit), `value`,
  * `list`, `yes/no`.
  */
-const bare = (v) => String(v).replace(/^\$/, '').replace(/^"|"$/g, '');
+const bare = (v) => valueText(String(v).replace(/^\$/, ''));
 function shapeOf(vs) {
   if (!vs || !vs.length) return { shape: 'none' };
   if (vs.length > 1) return { shape: 'list', values: vs.map(bare) };
@@ -218,8 +218,7 @@ function valuesFor(w, things, attr, spec, seed) {
   }
   const pool = (t) => slot(t)?.enum || slot(t)?.range;
   if (things.some((t) => !pool(t))) return { why: `the ${attr} of ${art(things.find((t) => !pool(t)).attrs.kind[0])} has no list of values to choose from` };
-  let h = seed; // deterministic for a given world state: the same request gives the same choice again
-  const next = (n) => { h = (h * 1103515245 + 12345) % 2147483648; return h % n; };
+  const rnd = seeded(seed), next = (n) => below(rnd, n); // deterministic for a given world state: the same request gives the same choice again
   if (s === 'random') return { values: things.map((t) => { const p = pool(t); return p[next(p.length)]; }) };
   // different: as many different values as there are things, each other than its present one where possible
   const used = new Set();
@@ -279,7 +278,7 @@ const ACTIONS = {
     const k = ks.find((x) => x.acts.includes('make'));
     if (!k) return refuse(w, 'make', kind, `${art(kind)} cannot be made here`);
     const attrs = { kind, world: k.world }, defaults = {};
-    for (const s of attrsOf(w, k.type)) { const sl = slotOf(w, k.type, s); if (sl.default !== undefined) defaults[s] = String(sl.default).replace(/^"|"$/g, ''); }
+    for (const s of attrsOf(w, k.type)) { const sl = slotOf(w, k.type, s); if (sl.default !== undefined) defaults[s] = valueText(sl.default); }
     for (const [key, v] of Object.entries(args)) {
       if (RESERVED.has(key) || key === 'id' || v === undefined) continue;
       if (!k.open && !attrsOf(w, k.type).includes(key)) return refuse(w, 'make', kind, `${art(kind)} has no ${key}`, { attr: key });
@@ -300,7 +299,7 @@ const ACTIONS = {
       if (!n.attrs.value) continue;
       const key = n.attrs.key[0];
       if (!k.open && !attrsOf(w, k.type).includes(key)) continue;
-      filled.push({ key, value: n.attrs.value[0], tier: n.attrs.tier?.[0], source: n.attrs.source?.[0] !== undefined ? String(n.attrs.source[0]).replace(/^"|"$/g, '') : undefined });
+      filled.push({ key, value: n.attrs.value[0], tier: n.attrs.tier?.[0], source: n.attrs.source?.[0] !== undefined ? valueText(n.attrs.source[0]) : undefined });
     }
     // std.know.fill from=<catalog type> match=<its key that names the kind> key=<key> (rep.): the catalog's value at tier knowledge
     const sure = new Set(filled.filter((f) => f.tier !== 'default').map((f) => f.key));
@@ -312,14 +311,14 @@ const ACTIONS = {
         if (attrs[key] !== undefined || sure.has(key) || fact.attrs[key] === undefined) continue;
         if (!k.open && !attrsOf(w, k.type).includes(key)) continue;
         const at = filled.findIndex((f) => f.key === key);
-        const f = { key, value: fact.attrs[key][0], tier: 'knowledge', source: fact.attrs['core.source']?.[0] !== undefined ? String(fact.attrs['core.source'][0]).replace(/^"|"$/g, '') : fact.id };
+        const f = { key, value: fact.attrs[key][0], tier: 'knowledge', source: fact.attrs['core.source']?.[0] !== undefined ? valueText(fact.attrs['core.source'][0]) : fact.id };
         if (at >= 0) filled[at] = f; else filled.push(f);
         sure.add(key);
       }
     }
     if (filled.length) { const p = w.applyPatch({ sets: filled.map((f) => ({ id, key: f.key, value: f.value })) }, { tier: 'default' }); if (p.ok === false) return p; }
     // a required key nobody gave or filled: an open question, said in the result with the slot's ask
-    const asks = k.open ? [] : [...(w._compiled().slots.get(k.type)?.values() || [])].filter((sl) => sl.required && !w.get(id)?.attrs[sl.key]?.length).map((sl) => ({ key: sl.key, ...(sl.ask ? { ask: String(sl.ask).replace(/^"|"$/g, '') } : {}) }));
+    const asks = k.open ? [] : [...(w._compiled().slots.get(k.type)?.values() || [])].filter((sl) => sl.required && !w.get(id)?.attrs[sl.key]?.length).map((sl) => ({ key: sl.key, ...(sl.ask ? { ask: valueText(sl.ask) } : {}) }));
     return { act: 'make', thing: id, ...(filled.length ? { filled } : {}), ...(asks.length ? { asks } : {}), ...(k.standIn ? { standIn: k.standIn } : {}) };
   }),
   acts_remove: (ctx, args) => pre('remove', ctx, args, (w) => {
@@ -441,7 +440,7 @@ const ACTIONS = {
       if (lack !== undefined && String(one(args.thing)) === '*') { skipped.push(t.id); continue; } // every thing in a view: those the view does not show are left out, and said
       if (lack !== undefined) {
         const asp = w.ofType('std.schema.aspect').find((a) => a.attrs.name[0] === lack);
-        return refuse(w, 'show', k, `${art(k)} has no ${asp?.attrs.doc ? String(asp.attrs.doc[0]).replace(/^"|"$/g, '') : lack}`, { view: view.attrs.name[0], aspect: lack, has: [...has] });
+        return refuse(w, 'show', k, `${art(k)} has no ${asp?.attrs.doc ? valueText(asp.attrs.doc[0]) : lack}`, { view: view.attrs.name[0], aspect: lack, has: [...has] });
       }
       const keys = shows.flatMap((a) => w.ofType('std.schema.aspect').find((x) => x.attrs.name[0] === a)?.attrs.keys || []);
       out.push({ id: t.id, kind: k, values: Object.fromEntries(keys.map((key) => [key, t.attrs[key]?.[0] ?? null])) });
@@ -475,7 +474,7 @@ const ACTIONS = {
       for (const n of ctx.find('std.fill.need', { for: ref(t.id) })) {
         const key = n.attrs.key[0];
         if (!n.attrs.value || t.attrs[key] || (k && !k.open && !attrsOf(w, k.type).includes(key))) continue;
-        filled.push({ thing: t.id, key, value: n.attrs.value[0], tier: n.attrs.tier?.[0], source: n.attrs.source?.[0] !== undefined ? String(n.attrs.source[0]).replace(/^"|"$/g, '') : undefined });
+        filled.push({ thing: t.id, key, value: n.attrs.value[0], tier: n.attrs.tier?.[0], source: n.attrs.source?.[0] !== undefined ? valueText(n.attrs.source[0]) : undefined });
       }
     }
     if (filled.length) { const p = w.applyPatch({ sets: filled.map((f) => ({ id: f.thing, key: f.key, value: f.value })) }, { tier: 'default' }); if (p.ok === false) return p; }
@@ -626,13 +625,7 @@ ${['overlaps', 'contains_box', 'box_distance'].map((f) => ['x1', 'y1', 'w1', 'h1
 @k.at.rank core.slot of=std.fill.at_rank key=rank id=true
 
 # the tiers, best first: what the user said, the dialogue focus, the scene, what the user taught, knowledge, a default
-@user std.fill.tier name=user rank=1
-@focus std.fill.tier name=focus rank=2
-@scene std.fill.tier name=scene rank=3
-@taught std.fill.tier name=taught rank=3.5
-@knowledge std.fill.tier name=knowledge rank=4
-@default std.fill.tier name=default rank=5
-
+${FILL_TIERS}
 # an offer takes the rank of its tier
 @o std.fill.offer tier=?t
 @tr std.fill.tier name=?t rank=?r
@@ -689,49 +682,7 @@ ${['overlaps', 'contains_box', 'box_distance'].map((f) => ['x1', 'y1', 'w1', 'h1
   // cheapest assumptions, specificity, priors, then a seeded order. `choose` (JS) reads them; a host or a
   // knowledge world may declare kinds of its own.
   'std.decide': {
-    text: String.raw`
-@k.crit.of core.slot of=std.decide.criterion key=of required=true id=true
-@k.crit.n core.slot of=std.decide.criterion key=n required=true id=true kind=integer min=1
-@k.crit.name core.slot of=std.decide.criterion key=name required=true
-@k.crit.measure core.slot of=std.decide.criterion key=measure required=true
-@k.crit.dir core.slot of=std.decide.criterion key=dir required=true enum=hard enum=min enum=max
-@k.crit.about core.slot of=std.decide.criterion key=about
-@std.decide.c.reading.1 std.decide.criterion of=reading n=1 name=consistent measure=violations dir=hard about="consistent with the world, types fit"
-@std.decide.c.reading.2 std.decide.criterion of=reading n=2 name=coverage measure=unread dir=min about="nothing said left unread"
-@std.decide.c.reading.3 std.decide.criterion of=reading n=3 name=roles measure=missing dir=min about="every role filled"
-@std.decide.c.reading.4 std.decide.criterion of=reading n=4 name=cost measure=cost dir=min about="the fewest and cheapest assumptions (defaults, near words, operators, guesses)"
-@std.decide.c.reading.5 std.decide.criterion of=reading n=5 name=specificity measure=specificity dir=max about="the more specific rule or frame"
-@std.decide.c.reading.6 std.decide.criterion of=reading n=6 name=prior measure=prior dir=max about="typicality, interest, focus"
-@std.decide.c.template.1 std.decide.criterion of=template n=1 name=fills measure=unfilled dir=hard about="every slot filled"
-@std.decide.c.template.2 std.decide.criterion of=template n=2 name=fresh measure=used dir=min about="not said before in the text"
-@std.decide.c.template.3 std.decide.criterion of=template n=3 name=specificity measure=specificity dir=max about="the template with more slots says more"
-@std.decide.c.template.4 std.decide.criterion of=template n=4 name=prior measure=prior dir=max
-@std.decide.c.word.1 std.decide.criterion of=word n=1 name=fits measure=misfit dir=hard about="of the slot's type"
-@std.decide.c.word.2 std.decide.criterion of=word n=2 name=cost measure=cost dir=min about="synonym 1, kind 2, further kinds 3"
-@std.decide.c.word.3 std.decide.criterion of=word n=3 name=prior measure=prior dir=max about="frequency"
-@std.decide.c.rule.1 std.decide.criterion of=rule n=1 name=matches measure=misfit dir=hard
-@std.decide.c.rule.2 std.decide.criterion of=rule n=2 name=specificity measure=specificity dir=max about="more literal words"
-@std.decide.c.rule.3 std.decide.criterion of=rule n=3 name=order measure=n dir=min about="the order the language world tells"
-@std.decide.c.parse.1 std.decide.criterion of=parse n=1 name=priority measure=prio dir=max about="the grammar rule's priority"
-@std.decide.c.parse.2 std.decide.criterion of=parse n=2 name=specificity measure=lits dir=max about="more literal words"
-@std.decide.c.parse.3 std.decide.criterion of=parse n=3 name=size measure=size dir=min about="the smaller tree"
-@std.decide.c.parse.4 std.decide.criterion of=parse n=4 name=depth measure=depth dir=min
-@std.decide.c.score.1 std.decide.criterion of=score n=1 name=consistent measure=consistent dir=hard about="the order world.score ranks readings in (RANKING)"
-@std.decide.c.score.2 std.decide.criterion of=score n=2 name=referents measure=referents dir=min
-@std.decide.c.score.3 std.decide.criterion of=score n=3 name=lacks measure=lacks dir=min
-@std.decide.c.score.4 std.decide.criterion of=score n=4 name=words measure=words dir=min
-@std.decide.c.score.5 std.decide.criterion of=score n=5 name=assumes measure=assumes dir=min
-@std.decide.c.ensemble.1 std.decide.criterion of=ensemble n=1 name=coverage measure=unread dir=min about="content words left unconsumed by its best reader: an incomplete reading loses first (reviewer 03:20)"
-@std.decide.c.ensemble.2 std.decide.criterion of=ensemble n=2 name=agreement measure=agreement dir=max about="how many readers proposed it"
-@std.decide.c.world.1 std.decide.criterion of=world n=1 name=coverage measure=coverage dir=max about="the words of the request the world's reading consumes (reviewer 03:20)"
-@std.decide.c.world.2 std.decide.criterion of=world n=2 name=tab measure=active dir=max about="the open tab owns a tie"
-@std.decide.c.world.3 std.decide.criterion of=world n=3 name=priority measure=priority dir=max
-@std.decide.c.ensemble.3 std.decide.criterion of=ensemble n=3 name=cost measure=cost dir=min about="the assumptions of its cheapest reader"
-@std.decide.c.ensemble.4 std.decide.criterion of=ensemble n=4 name=specificity measure=specificity dir=max
-@std.decide.c.fact.1 std.decide.criterion of=fact n=1 name=unsaid measure=said dir=hard
-@std.decide.c.fact.2 std.decide.criterion of=fact n=2 name=about_topic measure=aboutTopic dir=max about="a fact about the topic itself before one that only names it among its values"
-@std.decide.c.fact.3 std.decide.criterion of=fact n=3 name=interest measure=interest dir=max about="k.interest"
-`,
+    text: DECIDE_TEXT,
     fns: {},
   },
   'std.focus': {
@@ -1094,5 +1045,6 @@ ${['place', 'size', 'colour'].map((k) => `@gap.${k} std.schema.thing kind=?kind 
 };
 
 // std.decide's criteria are data; choose (rank.mjs) reads them from here when a world has none of its own
-import { setStdCriteria } from './rank.mjs';
-setStdCriteria(parse(STD['std.decide'].text).filter((w) => w.type === 'std.decide.criterion').map((w) => w.attrs));
+import { seeded, below } from './random.mjs';
+import { DECIDE_TEXT } from './decide.mjs';
+import { FILL_TIERS } from './fill-tiers.mjs';

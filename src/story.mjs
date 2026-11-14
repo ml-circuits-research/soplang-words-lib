@@ -7,8 +7,9 @@
 // works_at, k.scenes has, k.story.goal and k.story.obstacle). A host may replace or add relations.
 
 import { solveChoices } from './plan.mjs';
+import { valueText } from './parser.mjs';
 
-const tok = (v) => String(v).replace(/^"|"$/g, '');
+const tok = (v) => valueText(v);
 const vals = (w, k) => (w.attrs[k] || []).map(tok);
 const one = (w, k) => vals(w, k)[0];
 

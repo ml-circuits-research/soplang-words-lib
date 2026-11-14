@@ -6,8 +6,10 @@
 // the frame). Every spot avoids overlapping the other boxes when it can, and says so when
 // it cannot. A relation kind (spatial, containment, flow) is declared in a schema
 // (`std.schema.relation name= kind= inverse=?`); `relationsOf` lists them.
+import { seeded } from './random.mjs';
+import { valueText } from './parser.mjs';
 
-const num = (t, d) => { const n = Number(String(t ?? '').replace(/^"|"$/g, '')); return Number.isFinite(n) ? n : d; };
+const num = (t, d) => { const n = Number(valueText(t)); return Number.isFinite(n) ? n : d; };
 const overlaps = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
 /** The boxes of the things: [{ id, kind, x, y, w, h }] (things without x and y are left out). */
@@ -116,7 +118,7 @@ export function arrange(nodes, layout = 'row', { edges = [], frame = { x: 0, y: 
     out.set(c.id, { x: cx - c.w / 2, y: cy - c.h / 2, w: c.w, h: c.h });
     for (const [id, b] of arrange(rest, 'circle', { frame, gap })) out.set(id, b);
   } else if (layout === 'scatter') { // spread out: seeded places, apart where the frame allows
-    let x = seed >>> 0 || 1; const r = () => { x = (x * 1103515245 + 12345) >>> 0; return x / 4294967296; };
+    const r = seeded(seed);
     const placed = [];
     for (const n of ns) {
       let best = null;
@@ -139,7 +141,7 @@ export function arrange(nodes, layout = 'row', { edges = [], frame = { x: 0, y: 
  */
 export function arrangementOf(world, text, { lang = 'w.lang.en' } = {}) {
   const t = ` ${String(text).toLowerCase().replace(/[^\p{L}\p{N}-]+/gu, ' ').trim()} `;
-  const b = (v) => (v === undefined ? null : String(v).replace(/^"|"$/g, ''));
+  const b = (v) => (v === undefined ? null : valueText(v));
   let best = null;
   for (const a of world.ofType(`${lang}.arrangement`)) {
     const p = b(a.attrs.text[0]).toLowerCase();

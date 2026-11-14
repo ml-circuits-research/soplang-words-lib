@@ -8,12 +8,14 @@
 // says so, never a placeholder.
 
 import { arrange } from './space.mjs';
+import { seeded } from './random.mjs';
+import { valueText } from './parser.mjs';
 
-const bare = (v) => String(v ?? '').replace(/^"|"$/g, '').replace(/^\$/, '');
+const bare = (v) => valueText(v).replace(/^\$/, '');
 const low = (v) => bare(v).toLowerCase();
 const val = (v) => (typeof v === 'number' ? String(v) : /^[A-Za-z_][\w.:-]*$/.test(String(v)) ? String(v) : JSON.stringify(String(v)));
 const FORWARD = new Set(['next', 'then', 'to', 'leads_to', 'before']); // keys whose value comes after the fact
-const rnd = (seed) => { let x = seed >>> 0 || 1; return () => { x = (x * 1103515245 + 12345) >>> 0; return x / 4294967296; }; };
+const rnd = seeded;
 
 /** The diagram kinds a world holds: [{ name, form, layout: [], edges, roles: [], fills: [] }]. */
 export function diagramKinds(world) {

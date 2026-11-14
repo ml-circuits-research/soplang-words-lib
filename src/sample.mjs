@@ -10,13 +10,12 @@
 // one), the history (undo needs a step). Weights: `prefer` (a world, a thing), recency (the
 // newest things and the world of the open view), novelty (acts, kinds and attributes used
 // less in this session, from the history of acts and `options.seen`), and chance.
+import { seeded } from './random.mjs';
+import { valueText } from './parser.mjs';
 
-const bare = (v) => String(v).replace(/^"|"$/g, '').replace(/^\$/, '');
+const bare = (v) => valueText(v).replace(/^\$/, '');
 
-function rng(seed) {
-  let x = seed >>> 0;
-  return () => { x = (x + 0x6d2b79f5) >>> 0; let t = Math.imul(x ^ (x >>> 15), 1 | x); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-}
+const rng = seeded;
 const pickW = (rand, items) => { // weighted choice: [{ item, w }]
   const total = items.reduce((s, x) => s + x.w, 0);
   if (!items.length || total <= 0) return undefined;

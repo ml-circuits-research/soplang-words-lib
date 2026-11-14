@@ -6,8 +6,10 @@
 import { World } from './world.mjs';
 import { typedLexicon } from './readtypes.mjs';
 import { interestOf } from './compose.mjs';
+import { seeded } from './random.mjs';
+import { valueText } from './parser.mjs';
 
-const bare = (v) => String(v).replace(/^"|"$/g, '').replace(/^\$/, '');
+const bare = (v) => valueText(v).replace(/^\$/, '');
 const norm = (s) => String(s).toLowerCase().replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
 
 /** The k.genres genre a document type names (hyphens, underscores, spaces, and the genre's words), or null (LIB-5). */
@@ -40,7 +42,7 @@ export function topicIndex(world, { types, min = 2 } = {}) {
 
 /** `count` topics drawn by interest (LIB-5): a seeded weighted draw over topicIndex, the weight the facts and their best interest. */
 export function randomTopics(world, { seed = 1, count = 3, ...opts } = {}) {
-  let x = seed >>> 0; const rnd = () => { x = (x + 0x6d2b79f5) >>> 0; let t = Math.imul(x ^ (x >>> 15), 1 | x); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const rnd = seeded(seed);
   const idx = topicIndex(world, opts);
   const about = (n) => [...world.wires.values()].filter((w) => !w.type.startsWith('core.') && Object.entries(w.attrs).some(([k, vs]) => k !== 'name' && vs.some((v) => bare(v) === n)));
   const weighted = idx.map((t) => { const best = Math.max(0, ...about(t.topic).slice(0, 20).map((f) => interestOf(world, f, { topic: t.topic }).score)); return { t, k: Math.pow(rnd(), 1 / (t.facts * (1 + best))) }; });

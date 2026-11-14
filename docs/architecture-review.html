@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sopworld Architecture review, 2026-11-15 (worker)</title>
+<meta name="source-hash" content="ea6906cab8bd">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.119.0</small></a>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html" aria-current="page">Architecture review</a><a href="playground.html">Playground</a></nav>
+</header>
+<main>
+<h1>Architecture review, 2026-11-15 (worker)</h1>
+<p class="lead">The worker's own review (reviewer 09:50) next to the review agent's 49 findings (<code>reviews/architecture-review-2026-11-15-reviewer.md</code>). Each finding is fixed in a release with the test that would have caught it, or answered in <code>questions.md</code> with the evidence.</p>
+<h2 id="r1-the-serious-findings-01190">R1: the serious findings (0.119.0)</h2>
+<div class="table"><table><thead><tr><th>finding</th><th>fix</th><th>test</th></tr></thead><tbody><tr><td>1. caches keyed on the wire count</td><td><code>memoPerWorld</code> keyed on <code>world.version</code> for every per-world cache</td><td>revise, then read again</td></tr><tr><td>2. a float LCG with collapsed low bits, 12 generators</td><td>one <code>seeded</code> generator (mulberry32)</td><td>a two-value draw gives both values over four seeds</td></tr><tr><td>3. about 50 local quote strippers</td><td><code>valueText</code> on <code>str</code></td><td>escaped quotes and newlines</td></tr><tr><td>4. <code>choose</code>'s criteria by an import side effect</td><td>std.decide's criteria are data imported by rank</td><td><code>choose</code> imported alone ranks by them</td></tr><tr><td>5. two tier orders</td><td>one tier list, read by std.fill and by resolve</td><td>the module's tiers, slip last</td></tr><tr><td>6. <code>exact</code> voted as a second reader</td><td>default voices <code>types</code> and <code>canonical</code></td><td>the default voices</td></tr></tbody></table></div>
+<h2 id="next">Next</h2>
+<p>R2 (one way per job, the <code>Reader</code> contract with unread spans and mood), R3 (knowledge and application out of src/), R4 (API conventions), R5 (docs, tests, dead code), then the 09:20 items L3, L2, L4 on the R2 contract.</p>
+<p class="source">Generated from <code>docs/architecture-review-2026-11-15.md</code>.</p>
+</main>
+<footer>sopworld 0.119.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+
+</body>
+</html>

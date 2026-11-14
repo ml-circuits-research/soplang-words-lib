@@ -12,9 +12,10 @@
 // In the literature: resolveEllipsis is ellipsis and fragment resolution (Fernández, Ginzburg and Lappin 2007); docs/literature.md.
 import { actWords } from './segment.mjs';
 import { typedLexicon } from './readtypes.mjs';
+import { valueText } from './parser.mjs';
 
 const as = (kind, o) => ({ kind, ...o }); // a turn kind (not a violation)
-const unq = (t) => String(t).replace(/^"|"$/g, '').replace(/_/g, ' ').toLowerCase();
+const unq = (t) => valueText(t).replace(/_/g, ' ').toLowerCase();
 
 /**
  * The kind of one turn: { kind, rest, cue?, act?, first? }. `rest` is the text after the cue
@@ -74,7 +75,7 @@ export function focusLog(world, dialogue) {
 export function resolveEllipsis(world, text, previous, { pronouns = ['it', 'them', 'that', 'this'], skip = [], lang = 'w.lang.en', dirKey = 'dir', more = ['more', 'further', 'even', 'again', 'still'], small = ['bit', 'little', 'slightly'], positions = { first: 1, last: -1, middle: 'middle', centre: 'middle', center: 'middle' }, fold = (x) => x } = {}) {
   if (!previous?.act) return null;
   const lex = typedLexicon(world), S = new Set(skip.map((x) => fold(x.toLowerCase()))), P = new Set(pronouns.map((x) => x.toLowerCase()));
-  const bare = (v) => String(v ?? '').replace(/^"|"$/g, '');
+  const bare = (v) => valueText(v);
   const clauses = String(text).toLowerCase().split(/[,;]+/).map((c) => (c.match(/[\p{L}\p{N}_'-]+/gu) || []).map(fold).filter((t) => !S.has(t))).filter((c) => c.length);
   const negs = new Set(world.ofType(`${lang}.neg`).flatMap((n) => (n.attrs.text || []).map((t) => fold(bare(t)))));
   const kept = clauses.length > 1 ? clauses.filter((c) => !c.some((t) => negs.has(t))) : clauses; // "not the first one, the middle one": the clause without a negation

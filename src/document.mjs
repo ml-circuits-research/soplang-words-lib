@@ -3,7 +3,8 @@
 // with their move and the ids of the wires they state. Written through the acts of std.acts, so
 // the schema's checks and denies hold; read back in order by readDocument (for summaries).
 
-const bare = (v) => String(v).replace(/^"|"$/g, '').replace(/^\$/, '');
+import { valueText } from './parser.mjs';
+const bare = (v) => valueText(v).replace(/^\$/, '');
 
 /**
  * Writes `composition` (compose's result with a genre) into `world`, which uses `w.document`.

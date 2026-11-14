@@ -4,8 +4,10 @@
 // templates) come from the language world's facts; the few glue words are options with English defaults.
 
 import { inflectBy, articleFor, morphOf, realise } from './morph.mjs';
+import { memoPerWorld } from './memo.mjs';
+import { valueText } from './parser.mjs';
 
-const bare = (v) => String(v).replace(/^"|"$/g, '').replace(/^\$/, '');
+const bare = (v) => valueText(v).replace(/^\$/, '');
 const spaced = (s) => String(s).replace(/_/g, ' ');
 const META = new Set(['name', 'about', 'thing', 'source', 'own', 'cite', 'derived', 'named', 'drawing', 'sense']);
 const TYPE_KEYS = new Set(['class', 'kind', 'is', 'is_a']);
@@ -51,7 +53,6 @@ export function clauseOf(world, fact, { parts = 3, lang = 'w.lang.en', names, qu
   return said.length ? `${np(subject)} ${said.join(', ')}` : null;
 }
 
-const morphCache = new WeakMap();
 /**
  * The sentence of an act (LIB-3): the language world's act template whose slots are exactly the roles given
  * (`${lang}.template act= text=`, the most specific first), filled by std.morph `realise`, `{role:num=pl}` in
@@ -64,8 +65,7 @@ export function actSentence(world, act, roles, { mode = null, lang = 'w.lang.en'
     .filter((t) => t.act === act && (mode == null || t.mode == null || t.mode === mode)).filter((t) => { const s = slotsOf(t.text); return s.length === given.length && s.every((x) => given.includes(x)); });
   const t = ts.sort((x, y) => slotsOf(y.text).length - slotsOf(x.text).length)[0];
   if (!t) return null;
-  let m = morphCache.get(world);
-  if (!m) { m = morphOf(world, { types: { template: `${lang}.template` } }); morphCache.set(world, m); }
+  const m = memoPerWorld(world, `morph|${lang}`, () => morphOf(world, { types: { template: `${lang}.template` } }));
   const r = Object.fromEntries(given.map((k) => [k, spaced(String(roles[k]))]));
   for (const x of t.text.matchAll(/\{(\w+):num=pl\}/g)) r[x[1]] = r[x[1]].split(' ').map((w, i, all) => (i === all.length - 1 ? inflectBy(world, w, 'plural', { types: { rule: `${lang}.inflect`, irregular: `${lang}.irregular` } }) : w)).join(' ');
   const text = t.text.replace(/\{(\w+):num=pl\}/g, '{$1}');
@@ -93,15 +93,13 @@ export function renderFrames(frames, { world, say, failed, max = 3, words = {} }
   return `${s}.`;
 }
 
-const narrCache = new WeakMap();
 /** The narration of a world's keys (k.attributes.narration type= key= narrate= salience= form=): Map('type|key' -> { narrate, salience, form }). */
 export function narrationOf(world) {
-  let m = narrCache.get(world);
-  if (m && m.size0 === world.wires.size) return m.map;
-  const map = new Map();
-  for (const n of world.ofType('k.attributes.narration')) map.set(`${bare(n.attrs.type[0])}|${bare(n.attrs.key[0])}`, { narrate: bare(n.attrs.narrate?.[0] ?? 'yes') === 'yes', salience: Number(bare(n.attrs.salience?.[0] ?? 0.5)), form: n.attrs.form ? bare(n.attrs.form[0]) : null });
-  narrCache.set(world, { size0: world.wires.size, map });
-  return map;
+  return memoPerWorld(world, 'narration', () => {
+    const map = new Map();
+    for (const n of world.ofType('k.attributes.narration')) map.set(`${bare(n.attrs.type[0])}|${bare(n.attrs.key[0])}`, { narrate: bare(n.attrs.narrate?.[0] ?? 'yes') === 'yes', salience: Number(bare(n.attrs.salience?.[0] ?? 0.5)), form: n.attrs.form ? bare(n.attrs.form[0]) : null });
+    return map;
+  });
 }
 
 /**

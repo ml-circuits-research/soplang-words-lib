@@ -1,4 +1,6 @@
 import { choose } from './rank.mjs';
+import { memoPerWorld } from './memo.mjs';
+import { valueText } from './parser.mjs';
 // Type-driven reading (abstraction round, item 1; questions.md Q54): a question or a request is read
 // by the TYPES of its content words, not by one fixed word order. Each content word is typed
 // through the world itself: a thing (a fact's name), a kind (a type, or a kind / class value), an
@@ -7,14 +9,12 @@ import { choose } from './rank.mjs';
 // most once; word order and function words only rank them. So "what sound does a cow make", "a
 // cow makes which sound" and "cow sound?" are one frame: the attribute `sound` of the thing `cow`.
 
-const bare = (v) => String(v).replace(/^"|"$/g, '').replace(/^\$/, '');
-const cache = new WeakMap();
+const bare = (v) => valueText(v).replace(/^\$/, '');
 const LANG = ['k.words.', 'w.lang.', 'k.genres.', 'k.interest.'];
 
 /** The world's own lexicon: word -> [{ cat: thing | kind | attr | act, ... }]. Memoised per world. */
-export function typedLexicon(world) {
-  const hit = cache.get(world);
-  if (hit && hit.size === world.wires.size) return hit.lex;
+export function typedLexicon(world) { return memoPerWorld(world, 'typedLexicon', () => lexiconOf(world)); }
+function lexiconOf(world) {
   const lex = new Map(), add = (word, e) => { const k = String(word).toLowerCase().replace(/_/g, ' '); (lex.get(k) || lex.set(k, []).get(k)).push(e); };
   const holders = new Map(); // key -> types that carry it
   for (const w of world.wires.values()) {
@@ -36,7 +36,6 @@ export function typedLexicon(world) {
   if (actions) for (const a of actions.keys()) add(bare(a), { cat: 'act', act: bare(a) });
   const types = comp?.types; // a core.word for a declared type names that kind
   for (const w of world.ofType('core.word')) for (const m of w.attrs.means || []) for (const t of w.attrs.text || []) { add(bare(t), actions?.has(bare(m)) || actions?.has(m) ? { cat: 'act', act: bare(m) } : types?.has(bare(m)) && !bare(m).startsWith('core.') ? { cat: 'kind', type: bare(m) } : { cat: 'word', means: bare(m) }); if (holders.has(bare(m))) add(bare(t), { cat: 'attr', key: bare(m), holders: [...holders.get(bare(m))], verb: true }); } // a word the world declares: an act's, or one it knows; a verb that means a key asks for it (says: sound)
-  cache.set(world, { size: world.wires.size, lex });
   return lex;
 }
 
@@ -47,7 +46,6 @@ export function typedLexicon(world) {
  * best, ambiguous?, unread: [words] }. A frame: { is: 'ask', key, of: { id } | { kind } , answer }
  * or { is: 'act', act, args: { role: id } }.
  */
-const senseIndex = new WeakMap();
 /**
  * The near words of a word through word senses (k.words.sense: word, synonym, is_a, kind_of), as
  * [{ word, cost, via }]: synonyms 1 (both ways), the nearest kind (is_a) 2, further kinds 3.
@@ -56,12 +54,11 @@ const senseIndex = new WeakMap();
 export function nearWords(world, word, { senses } = {}) {
   let get = senses;
   if (!get) {
-    let ix = senseIndex.get(world);
-    if (!ix || ix.n !== world.wires.size) {
-      ix = { n: world.wires.size, by: new Map() };
-      for (const w of world.ofType('k.words.sense')) for (const k of ['word', 'synonym']) for (const v of w.attrs[k] || []) { const t = bare(v).toLowerCase(); (ix.by.get(t) || ix.by.set(t, []).get(t)).push(w); }
-      senseIndex.set(world, ix);
-    }
+    const ix = memoPerWorld(world, 'senseIndex', () => {
+      const by = new Map();
+      for (const w of world.ofType('k.words.sense')) for (const k of ['word', 'synonym']) for (const v of w.attrs[k] || []) { const t = bare(v).toLowerCase(); (by.get(t) || by.set(t, []).get(t)).push(w); }
+      return { by };
+    });
     get = (t) => ix.by.get(t) || [];
   }
   const out = new Map(), put = (w, cost, via) => { const t = bare(w).toLowerCase(); if (t !== word && (!out.has(t) || out.get(t).cost > cost)) out.set(t, { word: t, cost, via }); };

@@ -10,7 +10,8 @@
 // never cuts. The act words are the names of the world's actions and the `core.word`
 // texts that mean one, plus `options.acts`.
 
-const unq = (t) => String(t).replace(/^"|"$/g, '').replace(/_/g, ' ').toLowerCase();
+import { valueText } from './parser.mjs';
+const unq = (t) => valueText(t).replace(/_/g, ' ').toLowerCase();
 
 /** The words that start an act: action names, core.word texts that mean an action, and the host's. */
 export function actWords(world, extra = []) {

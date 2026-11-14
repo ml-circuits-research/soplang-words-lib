@@ -247,6 +247,11 @@ export function str(v) {
   return decode(v, true) ?? v.slice(1, -1);
 }
 
+/** The text of a value: a quoted string with its escapes decoded (as `str`), anything else as it is; '' for none. */
+export function valueText(v) {
+  return v === undefined || v === null ? '' : String(str(String(v)));
+}
+
 /**
  * Free text as a string value, in the canonical spelling: the escapes of JSON, used only
  * where needed (`"`, `\`, and control characters; everything else as it is).

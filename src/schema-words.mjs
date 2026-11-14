@@ -3,7 +3,7 @@
 // per act, and the reply for a done act or a refusal, made from the act's result (`diff`,
 // `reason`). One generator, in plain English; hosts translate.
 
-import { str } from './parser.mjs';
+import { str, valueText } from './parser.mjs';
 
 const RESERVED = new Set(['kind', 'world']);
 const unq = (v) => (typeof v === 'string' && v[0] === '"' ? str(v) : v);
@@ -155,7 +155,7 @@ export function schemaGrid(w, name, { per = 2 } = {}) {
     const r = f.act(e.request);
     const expect = r.ok
       ? { ok: true, added: [...new Set((r.diff?.added || []).filter((a) => a.tier === 'told').map((a) => a.type))], removed: (r.diff?.removed || []).filter((x) => !String(x.id).includes('_std.')).length, changed: [...new Set((r.diff?.changed || []).map((c) => c.key))] }
-      : { ok: false, status: r.status, why: String(r.violations?.[0]?.why ?? r.missing?.[0]?.key ?? r.status).replace(/^"|"$/g, '') };
+      : { ok: false, status: r.status, why: valueText(r.violations?.[0]?.why ?? r.missing?.[0]?.key ?? r.status) };
     return { ...e, expect };
   });
 }

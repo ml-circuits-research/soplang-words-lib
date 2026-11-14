@@ -1,5 +1,6 @@
 import { readByTypes, typedLexicon } from './readtypes.mjs';
 import { choose } from './rank.mjs';
+import { valueText } from './parser.mjs';
 // Alternations as general rules, once (abstraction round item 2, Q54): passive, wrappers ("could
 // you", "I want you to", "please"), wh-fronting, question vs command, dative shift. A language world
 // writes each frame once in canonical form; these rules bring a variant back to it at read time.
@@ -8,7 +9,7 @@ import { choose } from './rank.mjs';
 // the shortest first); `{x:base}` in `to` gives a word's base form (the world's lemma, else the word
 // without -ed / -s).
 
-const bare = (v) => String(v).replace(/^"|"$/g, '');
+const bare = (v) => valueText(v);
 
 /** The alternation rules a world holds: [{ name, from, to, mode? }]. */
 export function alternationsOf(world, type = 'w.lang.en.alternation') {

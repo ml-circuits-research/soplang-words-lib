@@ -14,11 +14,11 @@ const read = { question: ['what', 'does', 'tell', 'me'], skip: ['a', 'the', 'and
 
 test('readEnsemble: voices agree → high confidence; a near word only one reader takes → lower confidence', () => {
   const a = readEnsemble(w, 'what sound does a cow make', { read });
-  assert.deepEqual([a.frame.key, a.frame.of.id, a.confidence, a.voices.sort()], ['sound', 'cow', 1, ['canonical', 'exact', 'types']]);
+  assert.deepEqual([a.frame.key, a.frame.of.id, a.confidence, a.voices.sort()], ['sound', 'cow', 1, ['canonical', 'types']]);
   assert.equal(a.ask, undefined);
   const b = readEnsemble(w, 'what noise does a cow make', { read });
   assert.equal(b.frame.key, 'sound');
-  assert.ok(b.confidence < 1 && !b.voices.includes('exact'), 'the exact reader does not take the synonym');
+  assert.ok(b.voices.includes('types'), 'the typed reader takes the synonym through word senses');
 });
 
 test('readEnsemble: below the threshold, a question back with the competing readings; a host voice joins', () => {

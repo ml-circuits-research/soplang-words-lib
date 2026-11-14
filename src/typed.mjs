@@ -10,8 +10,9 @@
 
 import { World } from './world.mjs';
 import { typedLexicon } from './readtypes.mjs';
+import { valueText } from './parser.mjs';
 
-const bare = (v) => String(v ?? '').replace(/^"|"$/g, '').replace(/^\$/, '');
+const bare = (v) => valueText(v).replace(/^\$/, '');
 const atom = (v) => (typeof v === "number" || /^-?\d+(\.\d+)?$/.test(String(v)) || /^[A-Za-z_][\w.:-]*$/.test(String(v)) ? String(v) : JSON.stringify(String(v)));
 const TITLE = /^(title|aka|name|label|called|nickname|caption|heading)$/, TEXT = /^(text|note|notes|message|content|body|description|blurb|comment|doc|summary)$/;
 

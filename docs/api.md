@@ -2403,8 +2403,9 @@ print(resolveEllipsis(w, 'and still up', { act: 'place', args: { thing: 'c1', pl
 
 Several readers, one confidence (reviewer 02:30). Readers run as parallel voices, not a
 fallback chain. Each is `(world, text) -> [{ frame, unread?, cost?, specificity? }]`. The
-library's own are `types` (readByTypes), `canonical` (readCanonical) and `exact` (no near
-words), and a host adds its own voices. The candidate frames are pooled with features:
+library's own are `types` (readByTypes) and `canonical` (readCanonical, the language world's
+normalisation before the typed reader). A run of one reader with other options is not a second
+vote; a host adds independent readers (readFrames, parseText, patternReader) as its own voices. The candidate frames are pooled with features:
 - `agreement`: the readers that proposed the frame, weighted by `weights` (default 1 each;
   learnt from cases, for example each reader's precision on a training half);
 - words left unread;
@@ -2436,7 +2437,7 @@ print(r.frame.answer, r.confidence, r.voices.length);
 ```
 
 ```output
-["moo"] 1 3
+["moo"] 1 2
 ```
 
 ### joinList(items, options?), clauseOf(world, fact, options?), actSentence(world, act, roles, options?) and renderFrames(frames, options?)
@@ -3089,10 +3090,11 @@ print(serialize(ws, { canonical: true }));
 
 ```
 
-### str(value), quote(text), readValue(token), writeValue(value)
+### str(value), valueText(value), quote(text), readValue(token), writeValue(value)
 
 `str` gives the text of a string token (escapes decoded) and returns any other value
-unchanged; `quote` gives the string token of a text, in the canonical spelling (the
+unchanged; `valueText` is the same as text, with '' for no value, and is how every module of
+the library reads a value's text; `quote` gives the string token of a text, in the canonical spelling (the
 escapes of JSON). `readValue` gives a token as data, `{ kind, v }` with kind `atom`,
 `string`, `ref` or `var`; `writeValue` is its inverse (and throws for another kind).
 They are what a host with its own parser needs to hand over wires.

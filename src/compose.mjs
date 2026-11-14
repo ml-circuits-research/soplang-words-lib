@@ -18,19 +18,19 @@ import { readStory, storyPlan } from './story.mjs';
 import { discourseRealiser } from './realise.mjs';
 import { choose } from './rank.mjs';
 import { narrationOf } from './say.mjs';
+import { seeded } from './random.mjs';
+import { memoPerWorld } from './memo.mjs';
+import { valueText } from './parser.mjs';
 
-const bare = (v) => String(v).replace(/^"|"$/g, '').replace(/^\$/, '');
+const bare = (v) => valueText(v).replace(/^\$/, '');
 const isNum = (v) => /^-?\d+(\.\d+)?[a-z%]*$/i.test(bare(v));
 
-function rng(seed) {
-  let x = seed >>> 0;
-  return () => { x = (x + 0x6d2b79f5) >>> 0; let t = Math.imul(x ^ (x >>> 15), 1 | x); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-}
+const rng = seeded;
 
 // ---- interest: the k.interest arithmetic (appraisals, features with shapes and weight ranges) over
 // measures this library computes from facts. score = novelty x coping x relevance - penalty.
 
-const num = (v) => Number(String(v).replace(/^"|"$/g, '').replace(/[a-z%]+$/i, ''));
+const num = (v) => Number(valueText(v).replace(/[a-z%]+$/i, ''));
 const one = (f, k) => (f.attrs[k] ? bare(f.attrs[k][0]) : undefined);
 /** The share of a feature's shape at a measured value (the reference arithmetic of k.interest). */
 export function shapeShare(f, x) {
@@ -41,19 +41,16 @@ export function shapeShare(f, x) {
   if (f.shape === 'peak') return x <= s || x >= e ? 0 : x <= p ? (x - s) / (p - s) : (e - x) / (e - p);
   return 0;
 }
-const modelCache = new WeakMap();
 /** The interest model a world holds (k.interest.appraisal and k.interest.feature), or null. */
-export function interestModel(world) {
-  if (modelCache.has(world)) return modelCache.get(world);
+export function interestModel(world) { return memoPerWorld(world, 'interestModel', () => interestModelOf(world)); }
+function interestModelOf(world) {
   const appraisals = world.ofType('k.interest.appraisal').map((a) => ({ name: one(a, 'name'), combine: one(a, 'combine'), base: Number(one(a, 'base') ?? 0) }));
   const features = world.ofType('k.interest.feature').map((f) => ({
     name: one(f, 'name'), appraisal: one(f, 'appraisal'), measure: one(f, 'measure'), shape: one(f, 'shape'),
     start_at: f.attrs.start_at ? Number(one(f, 'start_at')) : undefined, peak_at: f.attrs.peak_at ? Number(one(f, 'peak_at')) : undefined, full_at: Number(one(f, 'full_at')),
     weight_min: Number(one(f, 'weight_min')), weight_max: Number(one(f, 'weight_max')),
   }));
-  const m = appraisals.length && features.length ? { appraisals, features } : null;
-  modelCache.set(world, m);
-  return m;
+  return appraisals.length && features.length ? { appraisals, features } : null;
 }
 
 const SKIP = new Set(['name', 'about', 'kind', 'class', 'is', 'source', 'own', 'cite', 'derived']);
@@ -61,10 +58,8 @@ const keysOf = (f) => Object.keys(f.attrs).filter((k) => !k.startsWith('core.') 
 /** What a fact is about: its `about`, else its `name`. */
 export const subjectOf = (f) => one(f, 'about') ?? one(f, 'name');
 const worldOf = (type) => type.split('.').slice(0, 2).join('.');
-const graphCache = new WeakMap();
-function graph(world) { // names -> facts that name them, and the names a fact links
-  let g = graphCache.get(world);
-  if (g) return g;
+function graph(world) { return memoPerWorld(world, 'compose.graph', () => graphOf(world)); }
+function graphOf(world) { // names -> facts that name them, and the names a fact links
   const byName = new Map(), links = new Map();
   for (const w of world.wires.values()) {
     if (w.type.startsWith('core.') || w.type.startsWith('k.interest') || w.type.startsWith('k.genres')) continue;
@@ -78,8 +73,7 @@ function graph(world) { // names -> facts that name them, and the names a fact l
   }
   const adj = new Map(); // name graph: a fact joins its subject to every name it gives
   for (const w of world.wires.values()) { const ns = [...(links.get(w.id) || [])]; for (const x of ns) for (const y of ns) if (x !== y) (adj.get(x) || adj.set(x, new Set()).get(x)).add(y); }
-  g = { byName, links, adj }; graphCache.set(world, g);
-  return g;
+  return { byName, links, adj };
 }
 function joins(world, from, to, max = 6) { // the fewest joins between two names (bounded)
   if (from === to) return 0;
@@ -168,7 +162,7 @@ const memo = new WeakMap(); // world -> Map(key -> { at, result }): a host that 
 export function compose(world, topic, options = {}) {
   const { realise, measures, story } = options;
   if (realise || measures || story || options.memo === false) return composeOnce(world, topic, options);
-  const key = JSON.stringify([topic, options.genre ?? null, options.size ?? null, options.seed ?? 1, options.quiet ?? null]), at = `${world.stamp ?? ''}|${world.wires.size}`;
+  const key = JSON.stringify([topic, options.genre ?? null, options.size ?? null, options.seed ?? 1, options.quiet ?? null]), at = world.version; // a change of any value composes again
   const m = memo.get(world) || memo.set(world, new Map()).get(world), hit = m.get(key);
   if (hit && hit.at === at) return hit.result;
   const result = composeOnce(world, topic, options);

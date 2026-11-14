@@ -26,7 +26,7 @@ export function learnRules(world, cases, { heldOut = [], related: relatedOf, adm
     const name = `learned_${++g}`;
     // the filler as the text names it (the thing's name, not its id), so the word, the fact's name and the
     // frame's holder are one variable when induce anti-unifies (reviewer 00:05: the id was taken as the token)
-    const nameOf = (id) => String(world.get(id)?.attrs.name?.[0] ?? id).replace(/^"|"$/g, '').toLowerCase();
+    const nameOf = (id) => valueText(world.get(id)?.attrs.name?.[0] ?? id).toLowerCase();
     const examples = group.map((c) => {
       const thing = world.get(c.frame.of.id), nm = nameOf(c.frame.of.id);
       return { when: `${enc(c.text)}\n@f ${thing.type} name=${nm}`, then: `@r ask key=${c.frame.key} of=${nm}` };
@@ -60,6 +60,7 @@ export function learnRules(world, cases, { heldOut = [], related: relatedOf, adm
 
 const toksOf = (t) => String(t).toLowerCase().replace(/[?!.,]+/g, ' ').match(/[\p{L}\p{N}_'-]+/gu) || [];
 import { typedLexicon } from './readtypes.mjs';
+import { valueText } from './parser.mjs';
 /**
  * Delexicalisation (as in task-oriented dialogue and NLG): content words lifted to their type before aligning
  * (reviewer 00:05): through the world's typed lexicon

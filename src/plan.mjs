@@ -14,6 +14,7 @@
 // ([{ type, keys }]) or the store's `std.know.chain of= key=` facts.
 // In the literature: hierarchical task network (HTN) planning, as in SHOP2 (Nau et al. 2003); docs/literature.md.
 import { parse } from './parser.mjs';
+import { seeded } from './random.mjs';
 
 const tok = (t) => (typeof t === 'string' && t.startsWith('"') ? JSON.parse(t) : t);
 const num = (t) => (t === undefined ? undefined : Number(tok(t)));
@@ -420,8 +421,7 @@ export function readMethods(k, prefix = 'k.procedures') {
  * { why, nodes, deepest } when no assignment satisfies the constraints.
  */
 export function solveChoices(vars, { domain, ok = () => true, weight = () => 1, seed = 1, limit = 20000 } = {}) {
-  let x = seed >>> 0;
-  const rnd = () => { x = (x + 0x6d2b79f5) >>> 0; let t = Math.imul(x ^ (x >>> 15), 1 | x); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const rnd = seeded(seed);
   const order = (v, cands, partial) => { // weighted draw without replacement: key u^(1/w) (Efraimidis-Spirakis)
     return cands.map((c) => { const w = Math.max(0, weight(v, c, partial)); return [c, w > 0 ? Math.pow(rnd(), 1 / w) : -1]; })
       .filter(([, k]) => k >= 0).sort((a, b) => b[1] - a[1]).map(([c]) => c);

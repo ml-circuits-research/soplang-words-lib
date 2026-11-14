@@ -18,7 +18,7 @@
 // The wire types and key names used for questions, answers and requests are a vocabulary
 // that the host can change: new World({ vocabulary: { status: 'core.status', ... } }).
 
-import { parse, str, cloneWire } from './parser.mjs';
+import { parse, str, cloneWire, valueText } from './parser.mjs';
 import { abduce } from './abduce.mjs';
 import { rank, RANKING, rankingOf, vetoOf } from './rank.mjs';
 import { EMPTY, walk, unify, hasVar } from './unify.mjs';
@@ -497,7 +497,7 @@ export const querying = {
     const type = question.type || wires[0]?.type;
     const key = seek && type ? c.shortKey(type, seek) : seek;
     const slot = key && type ? c.slotOf(type, key) : undefined;
-    const ask = slot?.ask ? slot.ask.replace(/^"|"$/g, '') : undefined;
+    const ask = slot?.ask ? valueText(slot.ask) : undefined;
     let r, suppositionOf = null;
 
     if (mode === 'check') return this._check(question, { record, suppose });
@@ -779,7 +779,7 @@ export const querying = {
   _actNamed(action, name, args, id) {
     const lacking = action.required.filter((k) => args[k] === undefined);
     if (lacking.length) {
-      return { ok: false, status: 'missing', missing: lacking.map((k) => ({ action: name, key: k, ask: (first({ attrs: action.ask }, `ask.${k}`) || '').replace(/^"|"$/g, '') || undefined })), violations: [] };
+      return { ok: false, status: 'missing', missing: lacking.map((k) => ({ action: name, key: k, ask: valueText(first({ attrs: action.ask }, `ask.${k}`)) || undefined })), violations: [] };
     }
     if (action.rule) return this._actDeclared(action, name, args);
     // an action that works on the world's history (undo, redo, load) runs outside a transaction

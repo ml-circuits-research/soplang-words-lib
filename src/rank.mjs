@@ -2,7 +2,10 @@
 // reorder it or add its own criteria, and every place in the ranking is explained: a
 // reading that lost says on which criterion, and against which reading.
 // In the literature: std.decide's ordered criteria relate to weighted abduction (Hobbs et al. 1993); learnRanking to learning to rank (Liu 2009); docs/literature.md.
+import { seeded } from './random.mjs';
+import { parse, valueText } from './parser.mjs';
 
+import { DECIDE_TEXT } from './decide.mjs';
 const settled = (r) => (r.referents || []).filter((x) => !(x.unique || x.fits?.length === 1));
 const leftOver = (r) => (r.words ? r.words.unused.length + r.words.unresolved.length : 0);
 
@@ -111,12 +114,12 @@ export function veto(result, options) { return vetoOf(result, options); }
  * lost on.
  */
 export function choose(world, kind, candidates, { criteria, seed = 1 } = {}) {
-  const q = (v) => String(v).replace(/^"|"$/g, '');
+  const q = (v) => valueText(v);
   const own = (world?.ofType?.('std.decide.criterion') ?? []).map((c) => c.attrs);
   const facts = own.some((a) => q(a.of[0]) === kind) ? own : defaultCriteria(); // the world's criteria for this kind, else std.decide's own facts
   const C = criteria ?? facts.filter((a) => q(a.of[0]) === kind)
     .map((a) => ({ name: q(a.name[0]), measure: q(a.measure[0]), dir: q(a.dir[0]), n: Number(q(a.n[0])) })).sort((a, b) => a.n - b.n);
-  let x = seed >>> 0; const tie = candidates.map(() => { x = (x * 1103515245 + 12345) >>> 0; return x; });
+  const rnd = seeded(seed ?? 1), tie = candidates.map(() => rnd());
   const val = (c, m) => { const v = typeof m === 'function' ? m(c) : c?.[m]; return v === true ? 1 : v === false || v === undefined || v === null ? 0 : Array.isArray(v) ? v.length : Number(v) || 0; };
   const crit = [...C.map((c) => ({ name: c.name, measure: (r) => { const v = val(r, c.measure); return c.dir === 'max' ? -v : c.dir === 'hard' ? (v ? 1 : 0) : v; }, say: (r) => `${c.name} ${val(r, c.measure)}` })),
     ...(seed === null ? [] : [{ name: 'seed', measure: (r) => tie[r.index], say: () => 'seeded order' }])]; // seed null: ties keep the given order
@@ -126,20 +129,18 @@ export function choose(world, kind, candidates, { criteria, seed = 1 } = {}) {
 }
 
 let STD_CRITERIA = null;
-/** The criteria std.decide declares (its module's facts, parsed once): one source, the data. */
+/** std.decide's own criteria, read once from its data (src/decide.mjs): the same whatever was imported first. */
 function defaultCriteria() {
-  if (STD_CRITERIA) return STD_CRITERIA;
-  STD_CRITERIA = [];
-  return STD_CRITERIA; // filled by setStdCriteria from std.mjs (no import cycle)
+  if (!STD_CRITERIA) STD_CRITERIA = parse(DECIDE_TEXT).filter((w) => w.type === 'std.decide.criterion').map((w) => w.attrs);
+  return STD_CRITERIA;
 }
-export function setStdCriteria(attrsList) { STD_CRITERIA = attrsList; }
 
 /**
  * The criteria world.score ranks readings by, in the order std.decide (kind `score`) or the world declares:
  * the measures stay RANKING's (they read a reading's structure), the order and the choice are data.
  */
 export function rankingOf(world) {
-  const q = (v) => String(v).replace(/^"|"$/g, '');
+  const q = (v) => valueText(v);
   const own = (world?.ofType?.('std.decide.criterion') ?? []).map((c) => c.attrs).filter((a) => q(a.of[0]) === 'score');
   const facts = own.length ? own : defaultCriteria().filter((a) => q(a.of[0]) === 'score');
   const names = facts.map((a) => [Number(q(a.n[0])), q(a.name[0])]).sort((x, y) => x[0] - y[0]).map(([, n]) => n);

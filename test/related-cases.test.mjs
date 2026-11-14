@@ -52,6 +52,6 @@ test('relatedCases along the wording: the same frame in other constructions (alt
     @cow k.animal name=cow sound=moo`);
   const kase = { text: 'tell me the sound of the cow', frame: { is: 'ask', key: 'sound', of: { id: 'cow' }, answer: ['moo'] } };
   const cs = relatedCases(v, kase, { axes: ['wording'], alternations: alternationsOf(v), read: { skip: ['tell', 'me', 'the', 'of'] } });
-  assert.deepEqual(cs.map((c) => [c.text, c.via, c.valid]), [['could you tell me the sound of the cow', 'could_you', true], ['please tell me the sound of the cow', 'please', true]]);
+  assert.deepEqual(cs.map((c) => [c.text, c.via, c.valid]).sort(), [['could you tell me the sound of the cow', 'could_you', true], ['please tell me the sound of the cow', 'please', true]]);
   assert.ok(cs.every((c) => normalise(v, c.text).text === kase.text), 'each comes back to the case by the rules');
 });

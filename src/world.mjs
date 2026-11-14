@@ -4,7 +4,7 @@
 // the chase, validation and the withdrawal of wires, values and rule firings.
 // Completion lives in complete.mjs, retraction and assumption revision in revise.mjs.
 
-import { parse, format, cloneWire, quote, str } from './parser.mjs';
+import { parse, format, cloneWire, quote, str, valueText } from './parser.mjs';
 import { EMPTY, walk, unify, hasVar, isVar, bound } from './unify.mjs';
 import { builtins, quantity, aggregates, canonical, jsonValue, canonicalJson, jsonAt } from './builtins.mjs';
 import { cdcl } from './solve.mjs';
@@ -1365,7 +1365,7 @@ export class World {
       if (w.attrs.derived?.[0] === 'true') {
         const c = this._compiled(), ids = new Set([...(c.slots.get(w.type)?.values() || [])].filter((sl) => sl.identity).map((sl) => sl.key));
         tierOf = Object.fromEntries(Object.keys(w.attrs).filter((k) => !ids.has(k) && k !== 'derived' && !k.startsWith('core.')).map((k) => [k, 'derived']));
-        const src = String(w.attrs['core.source']?.[0] ?? '').replace(/^"|"$/g, '');
+        const src = valueText(w.attrs['core.source']?.[0]);
         rule = /^rule\s+(\S+)/.exec(src)?.[1] ?? null;
       }
       const same = this._findByIdentity(w.type, w.attrs, this._nsOf(w.id));

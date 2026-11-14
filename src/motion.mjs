@@ -15,15 +15,13 @@
 // expression mouth); other keys go on (blinking still happens). A new event of the same rule
 // cancels what was left of the earlier one. `ease` returns the keys to base after that long.
 // In the literature: rule-based scheduling of nonverbal behaviour, as in the Behavior Markup Language (Kopp et al. 2006); docs/literature.md.
+import { seeded } from './random.mjs';
+import { valueText } from './parser.mjs';
 
-const unq = (t) => String(t).replace(/^"|"$/g, '');
+const unq = (t) => valueText(t);
 const range = (r) => { const [a, b] = unq(r ?? '0').split('-').map(Number); return [a, Number.isFinite(b) ? b : a]; };
 
-/** A seeded generator (mulberry32): the same seed gives the same plan. */
-function rng(seed) {
-  let x = seed >>> 0;
-  return () => { x = (x + 0x6d2b79f5) >>> 0; let t = Math.imul(x ^ (x >>> 15), 1 | x); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-}
+const rng = seeded; // the library's one seeded generator: the same seed gives the same plan
 
 function rulesOf(world, T) {
   const steps = world.ofType(T.step).map((s) => ({ rule: unq(s.attrs.rule[0]), n: Number(s.attrs.n?.[0] ?? 0), key: unq(s.attrs.key[0]), value: s.attrs.value ? unq(s.attrs.value[0]) : null, dur: range(s.attrs.dur?.[0]), per: s.attrs.per?.[0] === 'unit' }));

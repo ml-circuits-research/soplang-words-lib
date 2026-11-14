@@ -5411,3 +5411,16 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   the same as the hand one alone (UniMorph rows have no senses, so no new meaning; crocodil, capră,
   rață are in neither). Senses for the real turns' nouns remain Q69 for the knowledge repository.
 - Gate: npm test 509 pass / 0 fail; test:full 509 / 509 / 506, 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.119.0 — R1: the architecture review's six serious findings (reviewer 10:10)
+
+- memoPerWorld (src/memo.mjs) for typedLexicon, senseIndex, narrationOf, namedIn, interestModel, the compose
+  graph and memo, the template morphology; one seeded generator (src/random.mjs) for 12 sites; valueText for
+  ~50 quote strippers (28 files); std.decide criteria as data (src/decide.mjs); tiers in src/fill-tiers.mjs
+  (slip rank 6) read by resolve; defaultReaders = types, canonical.
+- test/architecture-r1.test.mjs: 5 tests (choose imported alone; revise then read; two-value draw over seeds
+  1, 3, 12345, 99991; escapes; default voices).
+- Seeded orders changed: two tests made order-free (related-cases wording; the generalisation pattern now
+  names axes sorted).
+- docs/architecture-review-2026-11-15.md: the worker's review page (R1 table, next).
+- Gate: npm test 514 pass / 0 fail; test:full 514 / 514 / 511, 0 fail; pilot same; psys2=0; scan clean; tsc ok.

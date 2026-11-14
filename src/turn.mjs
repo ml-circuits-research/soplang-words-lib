@@ -9,6 +9,7 @@ import { choose } from './rank.mjs';
 // plain-English reply of actReply, which `reply` replaces.
 
 import { actReply } from './schema-words.mjs';
+import { valueText } from './parser.mjs';
 
 const asList = (r) => (Array.isArray(r) ? r : r?.requests ? r.requests : [r]);
 const whatOf = (req) => `${req.action}${req.args?.kind ? ` ${req.args.kind}` : req.args?.thing ? ` ${String(req.args.thing).replace(/^\$/, '')}` : ''}`;
@@ -62,7 +63,7 @@ export function fallbackOf(world, tried, reply = actReply) {
   const best = tried[0];
   if (!best) return { status: 'nothing', replies: [], dropped: [] };
   const req = best.requests[best.failed ?? 0];
-  const why = best.violation?.why ? String(best.violation.why).replace(/^"|"$/g, '') : 'it was refused';
+  const why = best.violation?.why ? valueText(best.violation.why) : 'it was refused';
   const question = `Did you mean to ${whatOf(req)}? (${why})`;
   return { status: 'unknown', reading: best.index, guess: req, question, replies: [question], dropped: tried };
 }
@@ -92,7 +93,7 @@ export function route(world, request, { scores = {} } = {}) {
     if (thing?.attrs.world?.includes(name)) { score += 2; why.push(`${thing.id} is here`); }
     if (k) {
       const r = world.fork().act({ action: request.action, args: request.action === 'make' ? { ...args, world: name } : args });
-      if (!r.ok) { score -= 2; why.push(`refused: ${String(r.violations?.[0]?.why ?? r.status).replace(/^"|"$/g, '')}`); }
+      if (!r.ok) { score -= 2; why.push(`refused: ${valueText(r.violations?.[0]?.why ?? r.status)}`); }
     }
     if (scores[name] !== undefined) { score += Number(scores[name]); why.push(`host ${scores[name]}`); }
     out.push({ world: name, score, why });
@@ -130,7 +131,7 @@ export function arbitrate(world, request, { pass = 'exact', resolves, words, cov
     const say = (verdict, why) => verdicts.push({ world: name, verdict: verdict === 'refuse' && pass !== 'exact' ? 'decline' : verdict, why });
     if (!(k.attrs.acts || []).includes(request.action)) { say('refuse', `${kind ?? 'the view'} cannot be ${request.action === 'make' ? 'made' : request.action + 'd'} here`); continue; }
     const r = world.fork().act({ action: request.action, args: request.action === 'make' ? { ...args, world: name } : args });
-    if (!r.ok) { say('refuse', String(r.violations?.[0]?.why ?? r.status).replace(/^"|"$/g, '')); continue; }
+    if (!r.ok) { say('refuse', valueText(r.violations?.[0]?.why ?? r.status)); continue; }
     verdicts.push({ world: name, verdict: 'own', why: decl ? `has ${kind}` : open ? `takes any ${open.attrs.from[0]}: ${kind}` : `its view has ${args.attr}` });
   }
   let owners = verdicts.filter((v) => v.verdict === 'own').map((v) => v.world);
@@ -215,7 +216,7 @@ const BUILTIN_PROVIDERS = {
     const r = ctx.world.fork().act(ctx.candidate);
     ctx.tried.push({ index: ctx.index, requests: ctx.candidate, ok: r.ok, status: r.status, failed: r.failed, missing: r.missing, violation: r.violations?.[0] });
     if (r.ok) return r;
-    ctx.why = String(r.violations?.[0]?.why ?? r.status).replace(/^"|"$/g, '');
+    ctx.why = valueText(r.violations?.[0]?.why ?? r.status);
     return undefined;
   },
   apply: (ctx) => { const r = ctx.world.act(ctx.candidate); if (!r.ok) { ctx.why = 'the world changed'; return undefined; } return r; },

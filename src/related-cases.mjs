@@ -9,18 +9,19 @@
 
 import { readByTypes, nearWords } from './readtypes.mjs';
 import { realiseFrame, paraphrasesOf } from './say.mjs';
+import { seeded } from './random.mjs';
+import { memoPerWorld } from './memo.mjs';
+import { valueText } from './parser.mjs';
 
-const bare = (v) => String(v).replace(/^"|"$/g, '').replace(/^\$/, '');
+const bare = (v) => valueText(v).replace(/^\$/, '');
 const UP = ['kind', 'class', 'is', 'is_a'];
-const nameIx = new WeakMap(); // world -> { size, by: Map(name -> [facts]) }: one pass over the wires per change, not one per thing
-function namedIn(world) {
-  let ix = nameIx.get(world);
-  if (!ix || ix.size !== world.wires.size) {
-    ix = { size: world.wires.size, by: new Map() };
-    for (const x of world.wires.values()) for (const n of x.attrs.name || []) { const k = bare(n); (ix.by.get(k) || ix.by.set(k, []).get(k)).push(x); }
-    nameIx.set(world, ix);
-  }
-  return (n) => ix.by.get(n) || [];
+function namedIn(world) { // one pass over the wires per change of the world, not one per thing
+  const by = memoPerWorld(world, 'namedIn', () => {
+    const m = new Map();
+    for (const x of world.wires.values()) for (const n of x.attrs.name || []) { const k = bare(n); (m.get(k) || m.set(k, []).get(k)).push(x); }
+    return m;
+  });
+  return (n) => by.get(n) || [];
 }
 
 /** The chain of kinds of a thing, nearest first: [[level 1 kinds], [level 2], ...] (bounded by depth). */
@@ -151,7 +152,7 @@ export function relatedCases(world, kase, { distance = 2, axes = ['filler', 'key
     }
     c.valid = true;
   }
-  let x = seed >>> 0; const rnd = () => { x = (x * 1103515245 + 12345) >>> 0; return x / 4294967296; };
+  const rnd = seeded(seed);
   const byDist = new Map();
   for (const c of out.map((c) => [c, rnd()]).sort((a, b) => Number(b[0].valid) - Number(a[0].valid) || a[0].distance - b[0].distance || a[1] - b[1]).map(([c]) => c)) {
     const k = `${c.distance}|${c.axes[0]}`; const list = byDist.get(k) || byDist.set(k, []).get(k); if (list.length < n) list.push(c); // stratified per distance and axis

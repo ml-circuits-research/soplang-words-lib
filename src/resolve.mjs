@@ -4,12 +4,16 @@
 // language-free: kinds and values are named by the matrix and by core.word.
 //
 // Returns { ids, tier, how } or { ids: [], why, which? }. The tier says how sure the
-// reading is, with std.fill's names: `user` (the words pick the things), `scene` (one of
-// that kind exists), `focus` (the dialogue's focus picked it), `slip` (a word one letter
+// reading is, with std.fill's names and order (src/fill-tiers.mjs): `user` (the words pick the things),
+// `focus` (the dialogue's focus picked it), `scene` (one of that kind exists), `slip` (a word one letter
 // away from a kind); `how` lists each step taken, so a reply can say what was assumed.
 import { parseText, nounPhrase } from './grammar.mjs';
+import { parse } from './parser.mjs';
+import { FILL_TIERS } from './fill-tiers.mjs';
 
 const ref = (id) => '$' + String(id).replace(/^\$/, '');
+const OWN_TIERS = parse(FILL_TIERS).map((w) => w.attrs);
+const tierOrder = (world) => { const ts = world.ofType?.('std.fill.tier').map((w) => w.attrs); return (ts?.length ? ts : OWN_TIERS).slice().sort((a, b) => Number(a.rank[0]) - Number(b.rank[0])).map((a) => String(a.name[0])); };
 const THING = 'std.schema.thing';
 
 /** The kind or value a word means: core.word text= means= (of= narrows to a key), else itself. */
@@ -66,7 +70,7 @@ export function resolve(world, phrase, { grammar = {}, cats, focus, inside, focu
     const parts = items.map((c) => resolve(world, c, { cats, focus, inside, focusFor }));
     const bad = parts.find((r) => r.why);
     if (bad) return bad;
-    const order = ['user', 'scene', 'focus', 'slip'];
+    const order = tierOrder(world); // std.fill's tiers, from the world's std.fill.tier facts, else std.fill's own
     const ids = [...new Set(parts.flatMap((r) => r.ids))];
     const choice = np.conj !== undefined && world.ofType(grammar.types?.coord ?? 'g.coord').some((x) => (x.attrs.word || []).includes(np.conj) && x.attrs.kind?.[0] === 'choice');
     if (choice) return { ids: [], why: `which: ${ids.join(' or ')}?`, ask: true, which: ids, how: parts.flatMap((r) => r.how) }; // a choice is asked, never both, never the last

@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.119.0
+
+The architecture review's serious findings (reviewer 10:10, R1), each with a test
+(test/architecture-r1.test.mjs).
+
+### Fixed
+- Per-world caches (the typed lexicon, the sense index, narration, names, the interest model,
+  the name graph, compose's memo, the morphology of templates) are keyed on `world.version`
+  through one `memoPerWorld` (src/memo.mjs): a revised value is read again, not the old one.
+- One seeded generator (src/random.mjs, mulberry32) replaces twelve copies; the LCG whose low bits
+  collapsed in floating point is gone, so "random" over two values gives both.
+- `valueText(v)` (exported, on `str`) replaces about 50 local quote strippers: escaped quotes and
+  newlines in values are read right.
+- `choose` reads std.decide's own criteria from data (src/decide.mjs), not from a side effect of
+  importing std.mjs.
+- std.fill's tiers have one home (src/fill-tiers.mjs, with `slip` as a tier); `resolve` reads the
+  order from it (user, focus, scene, slip) instead of its own.
+- The default ensemble voices are `types` and `canonical`: `exact` was readByTypes again and
+  voted twice.
+
+### Changed
+- Seeded orders differ from before (the generator changed): relatedCases' sampling,
+  composeDiagram's fill order, scatter, choose's ties.
+
 ## 0.118.0
 
 From the reviewer's 09:20 entry, L1 (word problems of real turns), and 09:00 (read both Romanian

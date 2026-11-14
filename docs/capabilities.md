@@ -978,7 +978,7 @@ them directly. Each is in [api](api.md) or [reference](reference.md) with its ex
 
 | Export | What it is for | Since |
 | --- | --- | --- |
-| `parse`, `serialize`, `tokenize`, `quote`, `str`, `readValue`, `writeValue`, `SopError` | read and write SOP Lang text and values (`str`: a value token as plain text) | 0.1 |
+| `parse`, `serialize`, `tokenize`, `quote`, `str`, `valueText`, `readValue`, `writeValue`, `SopError` | read and write SOP Lang text and values (`str`: a value token as plain text) | 0.1 |
 | `unify`, `walk`, `PatternIndex` | match patterns against wires | 0.1 |
 | `builtins`, `quantity` | the standard function pack; numbers with units | 0.1 |
 | `solvers`, `Problem`, `Sat`, `toDimacs`, `toASP` | search: pluggable solvers and exports for outside ones | 0.3 |

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="8d8ed47bb741">
+<meta name="source-hash" content="dff2d606bff5">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,8 +12,8 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.118.0</small></a>
-  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="playground.html">Playground</a></nav>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.119.0</small></a>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
 <h1>API: every public name, with what it takes and returns</h1>
@@ -821,7 +821,7 @@ w.tell(&#x27;@c1 shape name=cat&#x27;);
 print(resolveEllipsis(w, &#x27;and still up&#x27;, { act: &#x27;place&#x27;, args: { thing: &#x27;c1&#x27;, place: &#x27;down&#x27; } }, { skip: [&#x27;and&#x27;, &#x27;still&#x27;] }).args);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;thing&quot;:&quot;c1&quot;,&quot;place&quot;:&quot;up&quot;}</code></pre></figure>
 <h3 id="readensembleworld-text-options-defaultreadersread-canonical-riskcoveragerows-and-calibraterows-options">readEnsemble(world, text, options?), defaultReaders(read?, canonical?), riskCoverage(rows) and calibrate(rows, options?)</h3>
-<p>Several readers, one confidence (reviewer 02:30). Readers run as parallel voices, not a fallback chain. Each is <code>(world, text) -&gt; [{ frame, unread?, cost?, specificity? }]</code>. The library's own are <code>types</code> (readByTypes), <code>canonical</code> (readCanonical) and <code>exact</code> (no near words), and a host adds its own voices. The candidate frames are pooled with features:</p>
+<p>Several readers, one confidence (reviewer 02:30). Readers run as parallel voices, not a fallback chain. Each is <code>(world, text) -&gt; [{ frame, unread?, cost?, specificity? }]</code>. The library's own are <code>types</code> (readByTypes) and <code>canonical</code> (readCanonical, the language world's normalisation before the typed reader). A run of one reader with other options is not a second vote; a host adds independent readers (readFrames, parseText, patternReader) as its own voices. The candidate frames are pooled with features:</p>
 <ul><li><code>agreement</code>: the readers that proposed the frame, weighted by <code>weights</code> (default 1 each; learnt from cases, for example each reader's precision on a training half);</li><li>words left unread;</li><li>the cost of assumptions;</li><li>specificity.</li></ul>
 <p>std.decide (kind <code>ensemble</code>) combines them. The result is <code>{ frame, confidence, voices, candidates, ranked, ask? }</code>, where <code>confidence</code> is the weighted share of the readers that proposed the winner. Coverage comes first: a reading that leaves content words unconsumed loses to one that consumes them all, and <code>complete</code> says whether the winner does. Below <code>threshold</code>, when the winner is incomplete, or when two readings tie, <code>ask</code> holds the competing frames, for a question back instead of a guess.</p>
 <p><code>riskCoverage(rows)</code> turns <code>[{ confidence, correct }]</code> into the risk–coverage curve: for each threshold, the share answered and the share of those that are wrong. <code>tools/bench-ensemble.mjs</code> measures the readers alone and together on PSys2's form pairs.</p>
@@ -830,7 +830,7 @@ print(resolveEllipsis(w, &#x27;and still up&#x27;, { act: &#x27;place&#x27;, arg
 w.tell(&#x27;@cow k.animal name=cow sound=moo  @v core.word text=make text=makes means=sound&#x27;);
 const r = readEnsemble(w, &#x27;what sound does a cow make&#x27;, { read: { question: [&#x27;what&#x27;, &#x27;does&#x27;], skip: [&#x27;a&#x27;] } });
 print(r.frame.answer, r.confidence, r.voices.length);</code></pre></figure>
-<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;moo&quot;] 1 3</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;moo&quot;] 1 2</code></pre></figure>
 <h3 id="joinlistitems-options-clauseofworld-fact-options-actsentenceworld-act-roles-options-and-renderframesframes-options">joinList(items, options?), clauseOf(world, fact, options?), actSentence(world, act, roles, options?) and renderFrames(frames, options?)</h3>
 <p>Saying things from facts (PSys2's handover LIB-1 to LIB-4). The words of the language come from the language world's facts: prepositions, auxiliaries, articles, plurals and the act templates. The few glue words are options with English defaults.</p>
 <ul><li><code>joinList(['a', 'b', 'c'])</code> gives "a, b and c" (options <code>and</code>, <code>sep</code>).</li><li><code>clauseOf(world, fact)</code> gives one clause for a fact, or null without a subject. Verb-like keys come first (an auxiliary, an act of k.actions), then a preposition ("is on the table"), a type ("is a bird"), a yes/no ("is not landlocked"), a count ("has 2 legs"), and any other key as a noun ("has a capital of lima"); at most <code>parts</code> (3). Joins to other worlds and <code>quiet</code> keys are left out, and <code>names</code> are said without "the".</li><li><code>actSentence(world, act, roles)</code> uses the act template (<code>w.lang.en.template</code>) whose slots are exactly the roles given, the most specific first. <code>{x:num=pl}</code> gives the plural, a/an follows the next word, and the sentence is capitalised; null when none fits.</li><li><code>renderFrames(frames, { world, say, failed, max })</code> says summarizeLog's frames as one sentence ("You asked me to add 3 trees and remove a house, plus 2 other changes; 1 request was not understood.").</li></ul>
@@ -1069,8 +1069,8 @@ print(serialize(ws, { canonical: true }));</code></pre></figure>
     price=2
 @b item
 </code></pre></figure>
-<h3 id="strvalue-quotetext-readvaluetoken-writevaluevalue">str(value), quote(text), readValue(token), writeValue(value)</h3>
-<p><code>str</code> gives the text of a string token (escapes decoded) and returns any other value unchanged; <code>quote</code> gives the string token of a text, in the canonical spelling (the escapes of JSON). <code>readValue</code> gives a token as data, <code>{ kind, v }</code> with kind <code>atom</code>, <code>string</code>, <code>ref</code> or <code>var</code>; <code>writeValue</code> is its inverse (and throws for another kind). They are what a host with its own parser needs to hand over wires.</p>
+<h3 id="strvalue-valuetextvalue-quotetext-readvaluetoken-writevaluevalue">str(value), valueText(value), quote(text), readValue(token), writeValue(value)</h3>
+<p><code>str</code> gives the text of a string token (escapes decoded) and returns any other value unchanged; <code>valueText</code> is the same as text, with '' for no value, and is how every module of the library reads a value's text; <code>quote</code> gives the string token of a text, in the canonical spelling (the escapes of JSON). <code>readValue</code> gives a token as data, <code>{ kind, v }</code> with kind <code>atom</code>, <code>string</code>, <code>ref</code> or <code>var</code>; <code>writeValue</code> is its inverse (and throws for another kind). They are what a host with its own parser needs to hand over wires.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>print(str(&#x27;&quot;a \\&quot;b\\&quot;\\n&quot;&#x27;) === &#x27;a &quot;b&quot;\n&#x27;, quote(&#x27;a &quot;b&quot;\n&#x27;), str(&#x27;5kg&#x27;));
 print(readValue(&#x27;&quot;red pen&quot;&#x27;), readValue(&#x27;$a&#x27;), writeValue({ kind: &#x27;var&#x27;, v: &#x27;x&#x27; }));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true &quot;a \&quot;b\&quot;\n&quot; 5kg
@@ -1124,7 +1124,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.118.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.119.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

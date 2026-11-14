@@ -16,8 +16,9 @@
 //   m.split text=                                            a clitic joiner ("-")
 //   m.template act= shape=? text=                           a realisation template: {role}, {role:f=v,..}, {role@other}
 import { unify, walk, EMPTY } from './unify.mjs';
+import { valueText } from './parser.mjs';
 
-const unq = (t) => String(t).replace(/^"|"$/g, '');
+const unq = (t) => valueText(t);
 const RESERVED = new Set(['class', 'suffix', 'alt', 'lemma', 'form', 'name', 'parent', 'drop', 'from', 'to', 'text', 'act', 'shape', 'core.source', 'doc', 'note', 'read_only']);
 const cellKey = (feat) => Object.keys(feat).sort().map((k) => `${k}=${feat[k]}`).join('.');
 const featOf = (attrs) => Object.fromEntries(Object.entries(attrs).filter(([k]) => !RESERVED.has(k) && !k.startsWith('core.')).map(([k, v]) => [k, unq(v[0])]));
@@ -222,7 +223,7 @@ export const templateFor = (m, act, shape = null) => m.templates.find((t) => t.a
 // before a word by the sound it begins with. Language-free: the rules, irregulars, articles and
 // onsets are the language world's facts.
 
-const q = (v) => String(v).replace(/^"|"$/g, '');
+const q = (v) => valueText(v);
 const one1 = (w, k) => (w.attrs[k] ? q(w.attrs[k][0]) : undefined);
 const KNOWN_RULE_KEYS = new Set(['op', 'order', 'suffix', 'after', 'unless_suffix', 'min_length', 'replace', 'add', 'drop', 'set']);
 

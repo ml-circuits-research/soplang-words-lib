@@ -10,12 +10,16 @@ import { readCanonical } from './alternate.mjs';
 
 const keyOf = (f) => (f ? JSON.stringify({ is: f.is, key: f.key, of: f.of, value: f.value, kind: f.kind, act: f.act, args: f.args }) : null);
 
-/** The library's own voices: types (readByTypes), canonical (readCanonical, first clause), exact (no near words). */
+/**
+ * The library's own voices: types (readByTypes) and canonical (readCanonical: the language world's normalisation
+ * first, then the typed reader). A voice that is another reader's run with other options (readByTypes without near
+ * words) is not a second vote (architecture review finding 6); a host adds independent readers (readFrames,
+ * parseText, patternReader) as voices of its own.
+ */
 export function defaultReaders(read = {}, canonical = {}) {
   return {
     types: (w, t) => { const r = readByTypes(w, t, read); return r.best ? [{ frame: r.best, unread: r.unread.length + r.left.length, cost: (r.near || []).reduce((s, x) => s + x.cost, 0), specificity: r.frames[0]?.words?.length ?? 0 }] : []; },
     canonical: (w, t) => readCanonical(w, t, { ...canonical, read }).filter((c) => c.frame).slice(0, 1).map((c) => ({ frame: c.frame, unread: c.unread.length, cost: (c.near || []).reduce((s, x) => s + x.cost, 0) + c.applied.length * 0.5, specificity: 0 })),
-    exact: (w, t) => { const r = readByTypes(w, t, { ...read, near: 0 }); return r.best && !r.unread.length ? [{ frame: r.best, unread: 0, cost: 0, specificity: r.frames[0]?.words?.length ?? 0 }] : []; },
   };
 }
 

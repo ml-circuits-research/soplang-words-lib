@@ -5,6 +5,7 @@
 // In the literature: supertagging (Bangalore and Joshi 1999), word classes (Brown et al. 1992), cascaded finite-state chunking (Abney 1996); docs/literature.md.
 
 import { typedLexicon } from './readtypes.mjs';
+import { valueText } from './parser.mjs';
 
 /**
  * The signature of a token as levels [fine, middle, coarse]. Options: `closed` (words that stay literal: the
@@ -88,7 +89,7 @@ export function patternReader(world, cases, { level = 1, ...options } = {}) {
     const [slots, n] = [...m].sort((a, b) => b[1] - a[1])[0], [keyAt, ofAt] = slots.split(',').map(Number);
     const key = keyOfChunk(cs[keyAt]), of = thingOf(cs[ofAt]);
     if (!key || !of) return [];
-    const answer = (w.get(of)?.attrs[key] || []).map((v) => String(v).replace(/^"|"$/g, ''));
+    const answer = (w.get(of)?.attrs[key] || []).map((v) => valueText(v));
     return [{ frame: { is: 'ask', key, of: { id: of }, answer }, unread: 0, cost: 0, specificity: n }];
   };
 }

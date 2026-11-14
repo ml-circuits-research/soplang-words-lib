@@ -10,8 +10,9 @@
 // stands for (`en=`), and each role's words with their lemma, sense and reference word.
 
 import { analyse, fold, splitClitics } from './morph.mjs';
+import { valueText } from './parser.mjs';
 
-const bare = (v) => String(v ?? '').replace(/^"|"$/g, '');
+const bare = (v) => valueText(v);
 
 /** The sense of a lemma as { act?, en?, pos? }: a verb fact of an act (k.actions.verb) by id, else the id's own shape (`<prefix>.<word>.<pos>.<n>`). */
 export function senseOf(world, id) {

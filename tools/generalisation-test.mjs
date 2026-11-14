@@ -39,7 +39,7 @@ export function generalisationTest(world, example, host, options = {}) {
   // the pattern: the axes that hold and the ones that break name the missing generalisation
   const byAxis = {};
   for (const [k, r] of Object.entries(table)) { const axis = k.split('|')[1]; const d = (byAxis[axis] ||= { pass: 0, of: 0 }); d.pass += r.pass; d.of += r.of; }
-  const holds = Object.entries(byAxis).filter(([, d]) => d.pass === d.of).map(([k]) => k), breaks = Object.entries(byAxis).filter(([, d]) => d.pass < d.of).map(([k]) => k);
+  const holds = Object.entries(byAxis).filter(([, d]) => d.pass === d.of).map(([k]) => k).sort(), breaks = Object.entries(byAxis).filter(([, d]) => d.pass < d.of).map(([k]) => k).sort(); // named in one order, whatever the sampling order
   const pattern = [];
   if (!judged.case) pattern.push('the example itself fails: fix it first');
   if (breaks.length) pattern.push(`passes when ${holds.join(', ') || 'nothing'} changes, fails when ${breaks.join(', ')} changes: a gap along ${breaks.join(', ')}`);

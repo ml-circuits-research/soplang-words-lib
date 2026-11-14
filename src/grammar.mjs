@@ -1,5 +1,6 @@
 import { choose } from './rank.mjs';
 import { normalise } from './alternate.mjs';
+import { valueText } from './parser.mjs';
 // std.grammar (Round 26 B, smallest version): language-free machinery that applies a
 // grammar world to text. The world holds the language as facts — `g.word text= lemma= cat=`
 // (the lexicon), `g.rule lhs= rhs= ...` (categories in order; `X?` optional, `X*` any
@@ -20,7 +21,7 @@ import { normalise } from './alternate.mjs';
 export function grammarOf(world, { types = {}, classes = {}, lexicon = {}, digits } = {}) {
   const T = { rule: 'g.rule', word: 'g.word', coord: 'g.coord', ...types };
   const lex = new Map(), rules = new Map(), coord = new Set();
-  const unq = (t) => String(t).replace(/^"|"$/g, '').replace(/_/g, ' '); // next_to is the words next to
+  const unq = (t) => valueText(t).replace(/_/g, ' '); // next_to is the words next to
   const addWord = (text, e) => { const t = unq(text).toLowerCase(); (lex.get(t) || lex.set(t, []).get(t)).push(e); };
   for (const w of world.ofType(T.word)) for (const t of w.attrs.text || []) addWord(t, { cat: w.attrs.cat[0], lemma: w.attrs.lemma?.[0] ?? unq(t).toLowerCase(), feat: Object.fromEntries(Object.entries(w.attrs).filter(([k]) => !['text', 'lemma', 'cat'].includes(k) && !k.startsWith('core.')).map(([k, v]) => [k, v[0]])) });
   for (const [cat, type] of Object.entries(classes)) for (const w of world.ofType(type)) for (const t of w.attrs.text || []) addWord(t, { cat, lemma: unq(w.attrs.value?.[0] ?? t).toLowerCase(), feat: Object.fromEntries(Object.entries(w.attrs).filter(([k]) => !['text', 'in', 'note', 'doc'].includes(k) && !k.startsWith('core.')).map(([k, v]) => [k, v[0]])) });
@@ -188,7 +189,7 @@ const leavesOf = (n) => (n.word ? [n.word] : (n.children || n.coord || []).flatM
  * unifies them; `viewDiff` says which words two views disagree on.
  */
 export function grammarView(world, type, view) {
-  const unq = (t) => String(t).replace(/^"|"$/g, '').replace(/_/g, ' ');
+  const unq = (t) => valueText(t).replace(/_/g, ' ');
   return [...new Set(world.ofType(type).filter((w) => view === undefined || (w.attrs.in || []).includes(view)).flatMap((w) => (w.attrs.text || []).map(unq)))].sort();
 }
 export function viewDiff(world, type, a, b) {
@@ -209,7 +210,7 @@ export function grammarCheck(world, { lemma, maxWords, ...grammar } = {}) {
   for (const [word, es] of g.lex) for (const e of es) (catsOf.get(e.cat) || catsOf.set(e.cat, new Set()).get(e.cat)).add(word);
   const issues = [], is = (kind) => ({ kind }); // a kind of issue of a grammar (not a violation)
   for (const w of world.ofType(T.rule)) { // bounded: the rules, then their parts
-    const parts = (w.attrs.rhs || []).map((x) => String(x).replace(/^"|"$/g, ''));
+    const parts = (w.attrs.rhs || []).map((x) => valueText(x));
     for (let i = 0; i + 1 < parts.length; i++) {
       const m = /^(.+)\?$/.exec(parts[i]);
       if (!m) continue;

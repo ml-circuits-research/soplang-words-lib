@@ -53,10 +53,28 @@ export function learnRules(world, cases, { heldOut = [], cousins: cousinsOf, adm
 // sentences.
 
 const toksOf = (t) => String(t).toLowerCase().replace(/[?!.,]+/g, ' ').match(/[\p{L}\p{N}_'-]+/gu) || [];
+import { typedLexicon } from './readtypes.mjs';
+/**
+ * Content words lifted to their type before aligning (reviewer 00:05): through the world's typed lexicon
+ * a thing becomes <its type>, a kind <kind>, an attribute <attr>, a number <num>;
+ * function words stay. So "hey a cow makes which sound" and "hey a dog makes which noise" align as one.
+ */
+export function liftTokens(world, text, { senses } = {}) {
+  const lex = typedLexicon(world);
+  return toksOf(text).map((t) => {
+    if (/^\d+([.,]\d+)?$/.test(t)) return '<num>';
+    const f = [t, t.replace(/s$/, ''), t.replace(/es$/, '')].find((x) => lex.has(x));
+    const ss = f ? lex.get(f) : (senses?.(t) ?? []);
+    const s0 = ss.find((x) => x.cat === 'thing') ?? ss.find((x) => x.cat === 'attr') ?? ss.find((x) => x.cat === 'kind'); // values are not lifted: function words are values of some facts
+    if (!s0) return t;
+    return s0.cat === 'thing' ? `<${s0.type}>` : `<${s0.cat}>`;
+  });
+}
+const tok2 = (world, t) => (world ? liftTokens(world, t) : toksOf(t));
 
 /** The operator of one pair: { from, to } with {x1}.. for the shared runs, or null when nothing is shared. */
-export function formOperator(canonical, variant, { min = 1 } = {}) {
-  const a = toksOf(canonical), b = toksOf(variant);
+export function formOperator(canonical, variant, { min = 1, world } = {}) {
+  const a = tok2(world, canonical), b = tok2(world, variant);
   const A = a.map(() => null), B = b.map(() => null);
   let v = 0;
   for (;;) { // bounded: each pass marks a run; at most the tokens
@@ -84,21 +102,22 @@ export function formOperator(canonical, variant, { min = 1 } = {}) {
  * support, heldOut: { pass, of }, admitted }], coverage: { pairs, at80, at95 } } where at80 / at95 are how
  * many operators (most frequent first) cover 80 % / 95 % of the pairs.
  */
-export function learnFormOperators(pairs, { heldOut = [], normalise: norm } = {}) {
+export function learnFormOperators(pairs, { heldOut = [], normalise: norm, world } = {}) {
   const clusters = new Map();
   let none = 0;
   for (const p of pairs) {
-    const op = formOperator(p.canonical, p.variant);
+    const op = formOperator(p.canonical, p.variant, { world });
     if (!op || op.from === op.to) { none++; continue; }
     const k = `${op.from} => ${op.to}`;
     (clusters.get(k) || clusters.set(k, { ...op, support: [] }).get(k)).support.push(p.variant);
   }
   const ops = [...clusters.values()].sort((x, y) => y.support.length - x.support.length);
-  const apply = norm ?? ((rule, text) => applyRule(rule, text));
   ops.forEach((o, i) => {
     o.name = `op${i + 1}`;
-    const mine = heldOut.filter((h) => apply(o, h.variant) !== null && toksOf(apply(o, h.variant)).join(' ') !== toksOf(h.variant).join(' '));
-    const pass = mine.filter((h) => toksOf(apply(o, h.variant)).join(' ') === toksOf(h.canonical).join(' ')).length;
+    const T = (x) => (world ? liftTokens(world, x) : toksOf(x)).join(' ');
+    const all = (x) => (norm ? [norm(o, x)].filter((y) => y != null) : applyRuleAll(o, world ? liftTokens(world, x).join(' ') : x));
+    const mine = heldOut.filter((h) => all(h.variant).length && !all(h.variant).includes(T(h.variant)));
+    const pass = mine.filter((h) => all(h.variant).includes(T(h.canonical))).length; // one of its readings gives the canonical sentence
     o.heldOut = { pass, of: mine.length };
     o.admitted = o.support.length >= 2 || (mine.length > 0 && pass === mine.length);
   });
@@ -108,16 +127,19 @@ export function learnFormOperators(pairs, { heldOut = [], normalise: norm } = {}
   return { operators: ops, coverage: { pairs: total, operators: ops.length, at80, at95 }, unaligned: none };
 }
 
-function applyRule(rule, text) { // the rule once on the text, or null when it does not match
-  const toks = toksOf(text), pat = rule.from.split(' ');
+function applyRule(rule, text) { return applyRuleAll(rule, text)[0] ?? null; } // the first reading
+
+function applyRuleAll(rule, text) { // every way the rule applies (adjacent variables split differently), bounded by the tokens
+  const toks = /</.test(text) ? String(text).trim().split(/\s+/) : toksOf(text), pat = rule.from.split(' '), outs = []; // a lifted text is its tokens already
   const go = (i, k, env) => { // bounded: the pattern and the tokens
-    if (k === pat.length) return i === toks.length ? env : null;
+    if (outs.length > 50) return;
+    if (k === pat.length) { if (i === toks.length) outs.push(rule.to.split(' ').flatMap((t) => { const m = /^\{(x\d+)\}$/.exec(t); return m ? env[m[1]] : [t]; }).join(' ')); return; }
     const m = /^\{(x\d+)\}$/.exec(pat[k]);
-    if (m) { for (let j = i + 1; j <= toks.length; j++) { const r = go(j, k + 1, { ...env, [m[1]]: toks.slice(i, j) }); if (r) return r; } return null; }
-    return toks[i] === pat[k] ? go(i + 1, k + 1, env) : null;
+    if (m) { for (let j = i + 1; j <= toks.length; j++) go(j, k + 1, { ...env, [m[1]]: toks.slice(i, j) }); return; }
+    if (toks[i] === pat[k]) go(i + 1, k + 1, env);
   };
-  const env = go(0, 0, {});
-  return env ? rule.to.split(' ').flatMap((t) => { const m = /^\{(x\d+)\}$/.exec(t); return m ? env[m[1]] : [t]; }).join(' ') : null;
+  go(0, 0, {});
+  return [...new Set(outs)];
 }
 
 /**
@@ -125,8 +147,8 @@ function applyRule(rule, text) { // the rule once on the text, or null when it d
  * alignment of the words, and each hunk where they differ as one edit { del: variant words, ins:
  * canonical words, at: start | end | inside }. A filler is a hunk with nothing inserted.
  */
-export function formEdits(canonical, variant) {
-  const a = toksOf(canonical), b = toksOf(variant);
+export function formEdits(canonical, variant, { world } = {}) {
+  const a = tok2(world, canonical), b = tok2(world, variant);
   const L = Array.from({ length: b.length + 1 }, () => new Array(a.length + 1).fill(0));
   for (let i = b.length - 1; i >= 0; i--) for (let j = a.length - 1; j >= 0; j--) L[i][j] = b[i] === a[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]); // bounded: the two sentences
   const edits = [];
@@ -144,10 +166,10 @@ export function formEdits(canonical, variant) {
  * Atomic form operators: the edits of every pair clustered (the same edit is one operator), with how many
  * operators cover 80 % / 95 % of the edits, and of the pairs fully (every edit of the pair covered).
  */
-export function learnFormEdits(pairs) {
+export function learnFormEdits(pairs, { world } = {}) {
   const clusters = new Map(), per = [];
   for (const p of pairs) {
-    const es = formEdits(p.canonical, p.variant).map((e) => `${e.at}: "${e.del}" -> "${e.ins}"`);
+    const es = formEdits(p.canonical, p.variant, { world }).map((e) => `${e.at}: "${e.del}" -> "${e.ins}"`);
     per.push(es);
     for (const k of es) clusters.set(k, (clusters.get(k) || 0) + 1);
   }

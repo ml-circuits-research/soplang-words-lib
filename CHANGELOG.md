@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.89.0
+
+Typed form operators (reviewer 00:05 item 1: content words stayed constants).
+
+### New
+- `liftTokens(world, text)`: content words lifted to their types (a thing to `<type>`,
+  `<kind>`, `<attr>`, `<num>`); function words stay.
+- `{ world }` on `formOperator`, `learnFormOperators`, `formEdits` and `learnFormEdits`:
+  the alignment runs on the lifted words.
+
+### Changed
+- A held-out pair passes when one of the operator's readings gives its canonical sentence.
+
+### Measured
+On PSys2's pairs, typed by k.animals and a few names and items: whole-pair operators 179
+→ 84 (80 % of the pairs by 28), held-out applications passing 140/1992 → 224/2253; atomic
+operators 350 → 165, 80 % of the edits by 14, every edit of 80 % of the pairs by 21.
+
 ## 0.88.0
 
 ### New

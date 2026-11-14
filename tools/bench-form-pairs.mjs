@@ -22,3 +22,13 @@ const { learnFormEdits } = await import('../src/index.mjs');
 const e = learnFormEdits(same);
 console.log(`\nfamilies: ${JSON.stringify(e.families)}`); console.log(`atomic edits: ${e.edits} in ${e.operators.length} operators; 80 % of the edits by ${e.coverage.at80}, 95 % by ${e.coverage.at95}; every edit of 80 % of the pairs by ${e.coverage.pairsAt80}, of 95 % by ${e.coverage.pairsAt95}`);
 for (const o of e.operators.slice(0, 20)) console.log(`${String(o.count).padStart(4)}  ${o.edit}`);
+// typed: content words lifted to their type through a catalog world (k.animals names and keys, numbers)
+const { catalogWorld } = await import('./worlds.mjs');
+const cw = await catalogWorld({ 'k.animals': ['k.animals.animal'] });
+cw.tell('@p1 k.person name=ana  @p2 k.person name=ben  @p3 k.person name=tom  @p4 k.person name=leo  @i1 k.item name=pencil  @i2 k.item name=sticker  @i3 k.item name=apple  @i4 k.item name=crayon  @i5 k.item name=cookie');
+const rt = learnFormOperators(train, { heldOut: held, world: cw });
+console.log(`\ntyped whole-pair operators: ${rt.coverage.operators} for ${rt.coverage.pairs} pairs; 80 % by ${rt.coverage.at80}, 95 % by ${rt.coverage.at95}; admitted ${rt.operators.filter((o) => o.admitted).length}; held-out applications passing ${rt.operators.reduce((s, o) => s + o.heldOut.pass, 0)}/${rt.operators.reduce((s, o) => s + o.heldOut.of, 0)}`);
+for (const o of rt.operators.slice(0, 8)) console.log(`${String(o.support.length).padStart(3)}  ${o.from}  =>  ${o.to}   held ${o.heldOut.pass}/${o.heldOut.of}`);
+const et = learnFormEdits(same, { world: cw });
+console.log(`typed atomic: ${et.edits} edits in ${et.operators.length} operators; 80 % by ${et.coverage.at80}, 95 % by ${et.coverage.at95}; pairs 80 % by ${et.coverage.pairsAt80}, 95 % by ${et.coverage.pairsAt95}; ${JSON.stringify(et.families)}`);
+for (const o of et.operators.slice(0, 12)) console.log(`${String(o.count).padStart(4)}  ${o.edit}`);

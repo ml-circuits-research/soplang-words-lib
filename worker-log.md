@@ -4961,3 +4961,23 @@ Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-que
 - Gates: npm test 463 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - The 23:05 list is done (wording dimension 0.83/0.84, act frames 0.83, indexed ancestors 0.83, every clause 0.88).
 - Next: realisation templates (w.lang.en act templates) as a second wording source for cousins; then Round 28 item 9; the other Round 27 skills.
+
+## 0.89.0: typed form operators (reviewer 00:05 item 1)
+
+- `liftTokens` lifts content words to their types (`<type>`, `<kind>`, `<attr>`, `<num>`) before aligning; `{ world }` on the four form learners.
+- `node tools/bench-form-pairs.mjs` on the 565 same-meaning pairs, typed by k.animals plus 5 names and 5 items:
+
+| measure | untyped | typed |
+| --- | --- | --- |
+| whole-pair operators (learn 283, hold 282) | 179 | 84 |
+| pairs covered at 80 % / 95 % | 123 / 165 | 28 / 70 |
+| held-out applications passing | 140/1992 | 224/2253 |
+| atomic edits | 1,556 | 1,515 |
+| atomic operators | 350 | 165 |
+| edits covered at 80 % / 95 % | 70 / 273 | 14 / 90 |
+| every edit of 80 % / 95 % of the pairs | 219 / 322 | 21 / 131 |
+
+- Typed families: extra clause 549, substitution 328, filler 301, insertion 229, deletion 96, inflection 12.
+- The owner's hypothesis holds at the atomic level: 14 operators cover 80 % of the edits.
+- Gates: npm test 464 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+- Next: reviewer 00:05 item 2 (learnRules: tie the name slot to the token; reject a rule that fails its own training cases), then item 3 (composition quality).

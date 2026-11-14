@@ -1758,7 +1758,7 @@ print(r.admitted, r.heldOut);
 true {"pass":1,"of":1}
 ```
 
-### learnFormOperators(pairs, options?), formOperator(canonical, variant), formEdits(canonical, variant), learnFormEdits(pairs) and familyOf(edit)
+### learnFormOperators(pairs, options?), formOperator(canonical, variant), formEdits(canonical, variant), learnFormEdits(pairs), familyOf(edit) and liftTokens(world, text)
 
 Form operators from aligned pairs (owner 16:12): a request is content × form × context,
 and the form varies by few operators. `formOperator` takes a canonical sentence and a
@@ -1782,6 +1782,15 @@ the words, and each hunk where they differ, `{ del, ins, at: start | inside | en
 of the edits, and of the pairs fully (`pairsAt80`, `pairsAt95`). Each edit also gets a
 family by its shape alone, with no language: filler, extra clause, insertion, deletion,
 inflection or substitution (`familyOf(edit)`); `families` counts them.
+
+**Typed** (`{ world }` on all four): content words are lifted to their types through the
+world's typed lexicon before aligning (`liftTokens(world, text)`):
+- a thing becomes `<its type>`;
+- a kind becomes `<kind>`, an attribute `<attr>`, a number `<num>`;
+- function words stay.
+So pairs about different things and attributes give one operator. A held-out pair passes
+when one of the operator's readings gives its canonical sentence (adjacent variables may
+split in several ways).
 `tools/bench-form-pairs.mjs` runs both on PSys2's `form-pairs.jsonl`.
 
 ```js run

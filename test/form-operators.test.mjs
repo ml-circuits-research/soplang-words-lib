@@ -44,3 +44,16 @@ test('formEdits / learnFormEdits: a variant that combines operators splits into 
   assert.deepEqual(r.families, { filler: 5 });
   assert.deepEqual(r.coverage, { at80: 2, at95: 3, pairsAt80: 3, pairsAt95: 3 });
 });
+
+test('typed form operators: content words lifted to their types before aligning, so pairs about different things are one operator', async () => {
+  const { World, liftTokens } = await import('../tools/lib-under-test.mjs');
+  const w = new World();
+  w.tell('@cow k.animal name=cow sound=moo noise=moo  @dog k.animal name=dog sound=woof call=woof  @cat k.animal name=cat sound=meow cry=meow');
+  assert.deepEqual(liftTokens(w, 'Hey, what sound does a cow make? 3'), ['hey', 'what', '<attr>', 'does', 'a', '<k.animal>', 'make', '<num>']);
+  const P = (c, v) => ({ canonical: c, variant: v });
+  const pairs = [P('what sound does a cow make', 'hey a cow makes which noise'), P('what sound does a dog make', 'hey a dog makes which call')]; // the substituted word differs: constants without types
+  assert.equal(learnFormOperators(pairs).coverage.operators, 2, 'untyped: one operator per example');
+  const typed = learnFormOperators(pairs, { world: w, heldOut: [P('what sound does a cat make', 'hey a cat makes which cry')] });
+  assert.equal(typed.coverage.operators, 1, 'typed: one operator');
+  assert.deepEqual(typed.operators[0].heldOut, { pass: 1, of: 1 });
+});

@@ -651,12 +651,14 @@ export function inflectBy(world: World, word: string, op?: string, options?: { t
 /** The article before a word, by the sound it begins with (onsets, else its first letter). */
 export function articleFor(world: World, word: string, options?: { types?: { det?: string; onset?: string }; vowels?: string }): string | null;
 /** The form operator of an aligned pair: the shared runs become variables. */
-export function formOperator(canonical: string, variant: string, options?: { min?: number }): { from: string; to: string } | null;
+export function formOperator(canonical: string, variant: string, options?: { min?: number; world?: World }): { from: string; to: string } | null;
 /** Form operators learnt from aligned pairs, clustered, checked on held-out pairs, with their coverage. */
-export function learnFormOperators(pairs: { canonical: string; variant: string }[], options?: { heldOut?: { canonical: string; variant: string }[]; normalise?: (rule: object, text: string) => string | null }): { operators: { name: string; from: string; to: string; support: string[]; heldOut: { pass: number; of: number }; admitted: boolean }[]; coverage: { pairs: number; operators: number; at80: number | null; at95: number | null }; unaligned: number };
+export function learnFormOperators(pairs: { canonical: string; variant: string }[], options?: { world?: World; heldOut?: { canonical: string; variant: string }[]; normalise?: (rule: object, text: string) => string | null }): { operators: { name: string; from: string; to: string; support: string[]; heldOut: { pass: number; of: number }; admitted: boolean }[]; coverage: { pairs: number; operators: number; at80: number | null; at95: number | null }; unaligned: number };
 /** The atomic edits of an aligned pair: each hunk where the words differ. */
-export function formEdits(canonical: string, variant: string): { del: string; ins: string; at: 'start' | 'inside' | 'end' }[];
+export function formEdits(canonical: string, variant: string, options?: { world?: World }): { del: string; ins: string; at: 'start' | 'inside' | 'end' }[];
 /** Atomic edits clustered into operators, with their coverage of the edits and of the pairs. */
-export function learnFormEdits(pairs: { canonical: string; variant: string }[]): { operators: { edit: string; count: number; family: string }[]; edits: number; families: Record<string, number>; coverage: { at80: number; at95: number; pairsAt80: number; pairsAt95: number } };
+export function learnFormEdits(pairs: { canonical: string; variant: string }[], options?: { world?: World }): { operators: { edit: string; count: number; family: string }[]; edits: number; families: Record<string, number>; coverage: { at80: number; at95: number; pairsAt80: number; pairsAt95: number } };
 /** The family of an edit by its shape alone: filler, extra clause, insertion, deletion, inflection, substitution. */
 export function familyOf(edit: string): string;
+/** Content words lifted to their types through the world's typed lexicon; function words stay. */
+export function liftTokens(world: World, text: string, options?: { senses?: (word: string) => object[] }): string[];

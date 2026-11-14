@@ -17,11 +17,16 @@ const whatOf = (req) => `${req.action}${req.args?.kind ? ` ${req.args.kind}` : r
  * @param {Array} readings each a request `{ action, args }`, a list of them (one sentence), or `{ requests }`; best first
  * @param {{ reply?: (world, request, result) => string }} options
  */
-export function turn(world, readings, { reply = actReply } = {}) {
-  const tried = [];
+export function turn(world, readings, { reply = actReply, load } = {}) {
+  const tried = [], loaded = [];
   for (let i = 0; i < readings.length; i++) { // bounded: the readings given
     const reqs = asList(readings[i]);
-    const r = world.fork().act(reqs); // a dry run: the fork is thrown away
+    let r = world.fork().act(reqs); // a dry run: the fork is thrown away
+    const needs = r.violations?.[0]?.reason?.needs;
+    if (!r.ok && needs?.length && load) { // typed needs: the host loads what the world says it needs, once, then the dry run again
+      for (const n of needs) { load(n, world); loaded.push(n); }
+      r = world.fork().act(reqs);
+    }
     tried.push({ index: i, requests: reqs, ok: r.ok, status: r.status, failed: r.failed, missing: r.missing, violation: r.violations?.[0] });
     if (r.ok) {
       const done = world.act(reqs);
@@ -32,7 +37,7 @@ export function turn(world, readings, { reply = actReply } = {}) {
       const guesses = results.flatMap((x) => x.result?.filled || []).map((f) => ({ ...f }));
       const replies = results.map((x, j) => reply(world, reqs[j], x));
       if (guesses.length) replies.push(`I guessed ${guesses.map((g) => `${g.key} ${g.value} (${g.tier}${g.source ? `, ${g.source}` : ''})`).join(', ')}.`);
-      return { status: 'done', reading: i, results, diff: { added: results.flatMap((x) => x.diff?.added || []), removed: results.flatMap((x) => x.diff?.removed || []), changed }, why, guesses, replies, dropped: tried.slice(0, -1) };
+      return { status: 'done', reading: i, ...(loaded.length ? { loaded } : {}), results, diff: { added: results.flatMap((x) => x.diff?.added || []), removed: results.flatMap((x) => x.diff?.removed || []), changed }, why, guesses, replies, dropped: tried.slice(0, -1) };
     }
   }
   return fallbackOf(world, tried, reply);

@@ -88,7 +88,31 @@ function shrinksBelow(w, t, key, value) {
 const allows = (w, t, act) => kindsOf(w, t.attrs.kind[0]).some((k) => k.acts.includes(act));
 const wireText = (id, type, attrs) => `@${id} ${type}` + Object.entries(attrs).flatMap(([k, vs]) => [].concat(vs).map((v) => ` ${k}=${/^[\w.$:+\-#]+$/.test(String(v)) ? v : JSON.stringify(String(v))}`)).join('');
 const fresh = (w, kind) => { const base = kind.replace(/\W/g, '_'); let n = 1; while (w.has(base + n)) n++; return base + n; }; // bounded: the wires of the world
-const pre = (act, ctx, args, body) => { const w = ctx.world; return body(w); };
+const pre = (act, ctx, args, body) => { // an act on a world (or view) whose needs are not loaded is refused with them, so the host loads and retries
+  const w = ctx.world;
+  if (w.byType.get('std.schema.needs')?.size) {
+    const unmet = needsOf(w, scopeOf(w, args)).filter((n) => !n.loaded);
+    if (unmet.length) return { ok: false, why: `needs ${unmet.map((n) => `${n.type}${n.from ? ` from ${n.from}` : ''}`).join(', ')} loaded first`, reason: { act, needs: unmet } };
+  }
+  return body(w);
+};
+/** The world and view an act is about: from its kind, its thing, its view. */
+function scopeOf(w, args) {
+  const view = args.view !== undefined ? String(one(args.view)) : undefined;
+  let world = args.world !== undefined ? String(one(args.world)) : undefined;
+  if (!world && args.kind !== undefined) world = kindsOf(w, String(one(args.kind)))[0]?.world;
+  if (!world && args.thing !== undefined) { const t = w.get(String(one(args.thing)).replace(/^\$/, '')); world = t?.attrs.world?.[0] ?? (t ? undefined : kindsOf(w, String(one(args.thing)))[0]?.world); }
+  return { world, view };
+}
+/**
+ * Typed needs (reviewer 03:10 item 2): `std.schema.needs of=<world or view> type=<type>
+ * from=<knowledge world>?`: what must be loaded before acting there. Returns
+ * [{ of, type, from, loaded }] for a scope ({ world, view }, either), or all of them.
+ */
+export function needsOf(w, { world, view } = {}) {
+  return w.ofType('std.schema.needs').filter((n) => (world === undefined && view === undefined) || n.attrs.of[0] === world || n.attrs.of[0] === view)
+    .map((n) => ({ of: n.attrs.of[0], type: n.attrs.type[0], ...(n.attrs.from ? { from: n.attrs.from[0] } : {}), loaded: (w.byType.get(n.attrs.type[0])?.size || 0) > 0 }));
+}
 
 /** Composition (Round 23): a thing inside another is one with a key that refers to it (`of=$face2`). */
 const within = (t, inside) => !inside || Object.values(t.attrs).some((vs) => vs.includes(ref(inside.id)));
@@ -809,6 +833,9 @@ ${calcs.join('\n')}
 @k.view.name core.slot of=std.schema.view key=name id=true
 @k.view.shows core.slot of=std.schema.view key=shows many=true
 @k.view.state core.slot of=std.schema.view key=state
+@k.needs.of core.slot of=std.schema.needs key=of required=true
+@k.needs.type core.slot of=std.schema.needs key=type required=true
+@k.needs.from core.slot of=std.schema.needs key=from
 @k.eff.of core.slot of=std.schema.effect key=of required=true
 @k.eff.act core.slot of=std.schema.effect key=act required=true
 @k.eff.action core.slot of=std.schema.effect key=action required=true

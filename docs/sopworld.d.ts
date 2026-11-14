@@ -477,7 +477,7 @@ export function createCatalog(options: { index: { worlds: { id: string; schema?:
 export function bundleReader(bundle: { files: Record<string, string> }): (path: string) => string | null;
 
 /** one request pipeline: dry-run the readings, apply the first the world takes (one sentence, one undo step), or fall back (ask, elsewhere, a named guess) */
-export function turn(world: World, readings: ({ action: string; args?: Record<string, unknown> } | { action: string; args?: Record<string, unknown> }[] | { requests: { action: string; args?: Record<string, unknown> }[] })[], options?: { reply?: (world: World, request: object, result: object) => string }): {
+export function turn(world: World, readings: ({ action: string; args?: Record<string, unknown> } | { action: string; args?: Record<string, unknown> }[] | { requests: { action: string; args?: Record<string, unknown> }[] })[], options?: { reply?: (world: World, request: object, result: object) => string; load?: (need: { of: string; type: string; from?: string }, world: World) => void }): {
   status: 'done' | 'ask' | 'elsewhere' | 'unknown' | 'nothing'; reading?: number; results?: object[]; diff?: { added: object[]; removed: object[]; changed: object[] };
   why?: { id: string; key: string; steps: object[] }[]; guesses?: object[]; replies?: string[]; question?: string; missing?: object[]; reason?: object; guess?: object; dropped: object[];
 };
@@ -517,3 +517,5 @@ export function grammarView(world: World, type: string, view?: string): string[]
 export function viewDiff(world: World, type: string, a: string, b: string): { only: Record<string, string[]>; both: string[] };
 /** The things a noun phrase names, and how sure: tier user / scene / focus / slip; or why not. */
 export function resolve(world: World, phrase: string | object, options?: { grammar?: object; cats?: Record<string, string>; focus?: string | string[]; inside?: string }): { ids: string[]; tier?: 'user' | 'scene' | 'focus' | 'slip'; how?: string[]; why?: string; which?: string[]; kind?: string; unknown?: { word: string; at: number }[] };
+/** The typed needs of a world or view (std.schema.needs), each with whether it is loaded. */
+export function needsOf(world: World, scope?: { world?: string; view?: string }): { of: string; type: string; from?: string; loaded: boolean }[];

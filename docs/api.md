@@ -1201,6 +1201,29 @@ print(resolve(w, 'the desk', { ...opt, focus: ['t1'] }).tier);
 focus
 ```
 
+### needsOf(world, scope?)
+
+The typed needs of a world or a view (`std.schema.needs of= type= from=`), each with
+whether it is loaded (some wire of its `type` exists): `[{ of, type, from, loaded }]`, for
+`{ world }`, `{ view }`, or all. An act there is refused while a need is not loaded
+(`reason.needs`); `turn(world, readings, { load })` calls `load(need, world)` for each and
+dry-runs again, and says what it `loaded`.
+
+```js run
+const w = new World();
+w.load(`@acts core.use world=std.acts  @home std.schema.world name=home
+  @t core.type of=lamp extends=std.schema.thing  @k std.schema.kind of=lamp world=home acts=make
+  @n std.schema.needs of=home type=k.furniture`);
+print(needsOf(w, { world: 'home' }), w.act({ action: 'make', args: { kind: 'lamp' } }).violations[0].why);
+const t = turn(w, [{ action: 'make', args: { kind: 'lamp' } }], { load: (need, world) => world.tell(`@f ${need.type} name=lamp`) });
+print(t.status, t.loaded.map((n) => n.type));
+```
+
+```output
+[{"of":"home","type":"k.furniture","loaded":false}] needs k.furniture loaded first
+done ["k.furniture"]
+```
+
 ### rank(scored, criteria?) and RANKING
 
 Orders scored readings best first and explains every place. `RANKING` is the default

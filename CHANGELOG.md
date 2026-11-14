@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.39.0
+
+Reviewer 03:10 item 2: typed needs.
+
+### New
+- `std.schema.needs of=<world or view> type= from=?`: what must be loaded before acting
+  there. Such an act is refused with `reason.needs` while no wire of the type exists.
+- `needsOf(world, { world?, view? })` lists the needs and whether each is loaded.
+- `turn(world, readings, { load })` calls `load(need, world)` for each unmet need, runs
+  the dry run again and says what it `loaded`. `std.know.fill` then finds the catalog
+  loaded.
+
 ## 0.38.0
 
 Reviewer 03:10 item 3: `ask` over any attribute and any relation, of a schema or a

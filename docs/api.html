@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="6c6380e10de7">
+<meta name="source-hash" content="4be333954e55">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.38.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.39.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -455,6 +455,17 @@ print(resolve(w, &#x27;the blue desk and the lamp&#x27;, opt));
 print(resolve(w, &#x27;the desk&#x27;, { ...opt, focus: [&#x27;t1&#x27;] }).tier);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;ids&quot;:[&quot;t2&quot;,&quot;l&quot;],&quot;tier&quot;:&quot;scene&quot;,&quot;how&quot;:[&quot;\&quot;desk\&quot; means table&quot;,&quot;blue: 1 left&quot;]}
 focus</code></pre></figure>
+<h3 id="needsofworld-scope">needsOf(world, scope?)</h3>
+<p>The typed needs of a world or a view (<code>std.schema.needs of= type= from=</code>), each with whether it is loaded (some wire of its <code>type</code> exists): <code>[{ of, type, from, loaded }]</code>, for <code>{ world }</code>, <code>{ view }</code>, or all. An act there is refused while a need is not loaded (<code>reason.needs</code>); <code>turn(world, readings, { load })</code> calls <code>load(need, world)</code> for each and dry-runs again, and says what it <code>loaded</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@acts core.use world=std.acts  @home std.schema.world name=home
+  @t core.type of=lamp extends=std.schema.thing  @k std.schema.kind of=lamp world=home acts=make
+  @n std.schema.needs of=home type=k.furniture`);
+print(needsOf(w, { world: &#x27;home&#x27; }), w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;lamp&#x27; } }).violations[0].why);
+const t = turn(w, [{ action: &#x27;make&#x27;, args: { kind: &#x27;lamp&#x27; } }], { load: (need, world) =&gt; world.tell(`@f ${need.type} name=lamp`) });
+print(t.status, t.loaded.map((n) =&gt; n.type));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;of&quot;:&quot;home&quot;,&quot;type&quot;:&quot;k.furniture&quot;,&quot;loaded&quot;:false}] needs k.furniture loaded first
+done [&quot;k.furniture&quot;]</code></pre></figure>
 <h3 id="rankscored-criteria-and-ranking">rank(scored, criteria?) and RANKING</h3>
 <p>Orders scored readings best first and explains every place. <code>RANKING</code> is the default list of criteria, each <code>{ name, measure, say }</code> (lower <code>measure</code> is better): <code>consistent</code>, <code>referents</code> (how many are left ambiguous), <code>lacks</code>, <code>words</code> (words of the frame left out), <code>assumes</code>; ties keep the given order. Returns <code>{ order, ranked }</code>; <code>ranked[i]</code> is <code>{ index, place, why, lostTo, on }</code>: the first says what it satisfies, any other names the first criterion on which the winner is better and what each is on it, a tie says so. A host may put its own criteria before, after or instead of these.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
@@ -702,7 +713,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.38.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.39.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

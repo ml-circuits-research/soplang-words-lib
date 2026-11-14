@@ -3960,3 +3960,20 @@ replying; the tool now checks `expect.result`). Version, CHANGELOG, docs rebuilt
   - count → 4.
 - test/ask-shapes.test.mjs: 2 tests (knowledge, schema). reference.md: the ask row.
 - Next: item 2 (typed needs), item 5 (the corpus by stage from PSys2).
+
+## Reviewer 03:10 item 2 — typed needs — done; release 0.39.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/cases.mjs`: 39 / 39. Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.39.0).
+
+- src/std.mjs: `std.schema.needs of= type= from=`. Every act goes through `pre`, which
+  now refuses an act whose world or view (from its kind, thing or view) has an unmet need,
+  with `reason.needs`. Export `needsOf`.
+- src/turn.mjs: option `load(need, world)`. When the dry run is refused for needs, the
+  host loads them once and the dry run runs again. The result says `loaded`.
+- test/needs.test.mjs: 2 tests.
+  - The act is refused until the catalog is loaded. After that, `std.know.fill` fills w=200.
+  - `turn` with a loader is done; without one it is not done.
+- api.md: needsOf (runnable). reference.md: the std.schema.needs row.
+- Next: 03:10 item 5 (corpus by stage from PSys2's newer cases.jsonl).

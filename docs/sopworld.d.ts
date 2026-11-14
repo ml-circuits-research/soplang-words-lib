@@ -618,3 +618,7 @@ export const STORY_RELATIONS: Record<string, Function>;
 export function writeDocument(world: World, composition: object, options?: { title?: string; language?: string; realise?: (frame: object, register?: object) => string; slides?: boolean; facts?: (frame: object) => string[] }): { document?: string; made?: string[]; refused?: object[]; why?: string };
 /** A w.document document read back in order, with the sources of each sentence. */
 export function readDocument(world: World, id: string): { title?: string; genre?: string; parts?: { part?: string; title?: string; sentences: { text: string; move?: string; facts: string[] }[] }[]; why?: string };
+/** A realiser of composition frames through a language world's discourse templates. */
+export function discourseRealiser(world: World, options?: { seed?: number; type?: string; clause?: (fact: object, world?: World) => string | null; np?: (name: string) => string; inflect?: (word: string, features: Record<string, string>) => string; fill?: (slot: string, frame: object, context: object) => string | null | undefined }): (frame: object, register: string | { name: string } | null, context?: object) => { text: string; template: string } | null;
+/** The discourse templates a world holds. */
+export function discourseTemplates(world: World, type?: string): { id: string; move: string; register: string; slots: string[]; text: string }[];

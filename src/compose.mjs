@@ -14,6 +14,7 @@
 
 import { solveChoices } from './plan.mjs';
 import { readStory, storyPlan } from './story.mjs';
+import { discourseRealiser } from './realise.mjs';
 
 const bare = (v) => String(v).replace(/^"|"$/g, '').replace(/^\$/, '');
 const isNum = (v) => /^-?\d+(\.\d+)?[a-z%]*$/i.test(bare(v));
@@ -212,7 +213,10 @@ export function compose(world, topic, { genre, size, seed = 1, realise, measures
 const TAKES_FACT = new Set(['fact', 'facts', 'question']);
 function composeGenre(world, topic, g, { size = {}, seed = 1, realise, measures, story } = {}) {
   const genre = one(g, 'name');
-  let plan = story, storyKb = null, storyWhy = null, storyNote = null; // a story plan (k.story), made when a story move needs one
+  let plan = story, storyKb = null, storyWhy = null, storyNote = null;
+  // the sentences: the host's realiser, else the language world's discourse templates when it has them
+  const R = realise ?? (world.ofType('w.lang.en.discourse').length ? discourseRealiser(world, { seed }) : null);
+  const say = (frame, ctx) => { if (!R) return; const r = R(frame, register, ctx); if (typeof r === 'string') frame.text = r; else if (r) { frame.text = r.text; frame.template = r.template; } }; // a story plan (k.story), made when a story move needs one
   const storyFrames = (part, move) => {
     if (!storyKb) storyKb = readStory(world);
     if (!plan && !storyWhy) {
@@ -250,7 +254,10 @@ function composeGenre(world, topic, g, { size = {}, seed = 1, realise, measures,
   const active = (partial, part, t) => { const v = `times:${part}`; return !(v in partial) || t < partial[v]; };
   const fillable = (move, facts) => { const k = takes[move]; return k === 'facts' || move === 'compare' ? facts.length >= 2 : TAKES_FACT.has(k) ? facts.length >= 1 : true; };
   let strict = true;
+  const minNeed = (p) => { let need = 0; const steps = stepsOf(p); for (const n of new Set(steps.map((st) => Number(one(st, 'n'))))) need += Math.min(...steps.filter((st) => Number(one(st, 'n')) === n).map((st) => (TAKES_FACT.has(takes[one(st, 'move')]) ? Number(one(st, 'min')) : 0))); return need; };
+  const fitting = Object.fromEntries(repeat.map((p) => [one(p, 'name'), groupNames.filter((gname) => groups.get(gname).length >= minNeed(p)).length]));
   const ok = (partial) => {
+    if (strict) for (const p of repeat) { const t = partial[`times:${one(p, 'name')}`]; if (t !== undefined && t > Math.max(Number(one(p, 'min')), fitting[one(p, 'name')])) return false; } // no more repeats than relations that can fill them
     const used = Object.entries(partial).filter(([k, v]) => k.startsWith('rel:') && v !== null && active(partial, meta[k].part, meta[k].t)).map(([, v]) => v);
     if (new Set(used).size !== used.length) return false; // no relation twice
     for (const [k, v] of Object.entries(partial)) {
@@ -283,7 +290,7 @@ function composeGenre(world, topic, g, { size = {}, seed = 1, realise, measures,
     const best = Math.max(0, ...facts.map((f) => interestOf(world, f, { topic, measures: measures?.(f) }).by[c === 'surprising fact' ? 'sibling_contrast' : 'on_topic'] ?? 0));
     return 1 + best;
   };
-  let sol = solveChoices(vars, { domain: (v) => dom[v], ok, weight, seed }), relaxed = null;
+  let sol = solveChoices(vars, { domain: (v) => dom[v], ok, weight, seed, limit: 100000 }), relaxed = null;
   if (sol.why) { relaxed = `no layout gives every step its minimum facts (${sol.why}, at ${sol.deepest}): steps may go short`; strict = false; sol = solveChoices(vars, { domain: (v) => dom[v], ok, weight, seed }); }
   if (sol.why) return { genre, topic, why: `${sol.why} (at ${sol.deepest})` };
   const choice = Object.fromEntries(Object.entries(sol.values).filter(([k, v]) => !(k in meta) || active(sol.values, meta[k].part, meta[k].t)));
@@ -291,7 +298,7 @@ function composeGenre(world, topic, g, { size = {}, seed = 1, realise, measures,
   const pickFact = (pool) => pool.filter((f) => !said.has(f.id)).map((f) => [f, interest(f)]).filter(([, x]) => x > -0.5).sort((a, b) => b[1] - a[1])[0]?.[0];
   const fill = (extra) => { // the steps' minimum sentences; `extra` more go to steps in order, up to their maximum, while facts last
     said.clear();
-    const short = [], out = [], claims = [];
+    const short = [], out = [], claims = [], toldEls = new Set();
     for (const p of parts) {
       const pname = one(p, 'name'), times = Number(one(p, 'max')) > 1 ? choice[`times:${pname}`] : Number(one(p, 'min')) || 1;
       for (let t = 0; t < times; t++) {
@@ -316,7 +323,8 @@ function composeGenre(world, topic, g, { size = {}, seed = 1, realise, measures,
               said.add(f.id); frame.cites = f.id; frame.fact = { type: f.type, attrs: Object.fromEntries(Object.entries(f.attrs).filter(([key]) => !key.startsWith('core.')).map(([key, vs]) => [key, vs.map(bare)])) };
               if (rel && !moves.some((m) => m.cites)) claims.push(f.id); // the first fact of a repeated part: its claim
             } else if (k === 'story') { if (told) Object.assign(frame, told[c]); else short.push(`${inst} ${move}: ${storyWhy ?? 'story moves are filled by k.story'}`); }
-            if (realise) frame.text = realise(frame, register);
+            say(frame, { topic, story: plan, outline: relations, told: toldEls, claims, goalAct: (g) => storyKb?.goals.find((x) => x.name === g)?.act });
+            if (frame.element) toldEls.add(frame.element);
             moves.push(frame);
           }
         }
@@ -328,6 +336,8 @@ function composeGenre(world, topic, g, { size = {}, seed = 1, realise, measures,
   let r = fill(0);
   if (size.sentences > r.sentences) r = fill(size.sentences - r.sentences);
   const out = r.out, short = [...(relaxed ? [relaxed] : []), ...(storyNote ? [storyNote] : []), ...new Set(r.short)];
+  const silent = R ? out.flatMap((p) => p.moves.filter((m) => !m.text).map((m) => m.move)) : [];
+  if (silent.length) short.push(`${silent.length} sentences have no template that fits: ${[...new Set(silent)].join(', ')}`);
   if (size.sentences && r.sentences !== size.sentences) short.push(r.sentences < size.sentences ? `${r.sentences} of ${size.sentences} sentences: the knowledge has no more` : `${r.sentences} sentences: the genre's minimum is above ${size.sentences}`);
   return { genre, register, topic, seed, parts: out, ...(plan ? { story: plan } : {}), choices: choice, nodes: sol.nodes, ...(short.length ? { short } : {}) };
 }

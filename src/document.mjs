@@ -36,7 +36,7 @@ export function writeDocument(world, composition, { title, language, realise, sl
     if (!parent) return;
     p.moves.forEach((f, k) => { // bounded: the sentences of a part
       const text = f.text ?? realise?.(f, composition.register) ?? `[${f.move}] ${[f.cites, f.recalls, f.value, ...(f.outline || [])].filter(Boolean).join(' ') || composition.topic}`;
-      act('w.document.sentence', { ...parent, n: k + 1, text, move: f.move, fact: factsOf(f) });
+      act('w.document.sentence', { ...parent, n: k + 1, text, move: f.move, template: f.template, fact: factsOf(f) });
     });
   });
   return { document: doc, made, refused };

@@ -4680,3 +4680,16 @@ Gates: npm test 434 / 434 / 433 pass, 0 fail; pilot identical; psys2=0; scan cle
 - `check(undefined, { strict: true })` refuses what is still open. `world.closeType(type)` declares a type complete; after it, a missing target is refused. Forks keep it.
 - The composite-key case (smile is a mouth variant, not an eyes one) is now open until closeType, then refused.
 - Gates: npm test 435 / 435 / 434 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+
+## 0.71.0: composition pins, realisation through discourse templates (reviewer 20:45)
+
+- repos.pin: knowledge → 179fc1c (w.lang.en discourse templates b22ef9b, act templates cb5d6dd, typical ranges 4448b9e).
+- `discourseRealiser`: penguin presentation and girl story, seed 2, on the published templates.
+  - Story: 11 of 13 sentences realised, for example "Between the girl and the friend lay a river.", "Then the sailor came by with a sailboat.", "With the sailboat, the girl could sail past the river at last."
+  - The 2 sentences with no fitting template are listed in short: the protagonist's needs a trait slot, and no state-goal template names the target.
+  - Clauses of facts use the default word join ("the penguin height 1.1m"); a host clause() from its language world is the way to fix them.
+- BillSum with the budget never exceeded, 180 words:
+  - dev: R-1 F1 0.382, R-2 0.159, 166 words (lead 0.393, 0.187).
+  - held: R-1 F1 0.399, R-2 0.161, 172 words (lead 0.393, 0.171).
+- Gates: npm test 436 / 436 / 435 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+- Next (21:00, top priority): the abstraction round, starting with the design note in questions.md.

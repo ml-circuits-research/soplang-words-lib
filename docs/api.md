@@ -1547,7 +1547,8 @@ to render: `line` keeps 1, `paragraph` 3, `bullets` all. `summarizeText(text, { 
 redundancy })` is extractive. A sentence ends at a stop before a capital, a quote or a
 parenthesis, but not after an abbreviation ("Sec. 219"). It scores sentences by centrality (the content words they
 share with the others), information (numbers, names) and position, drops a sentence that
-repeats a kept one, and keeps the top `n` (or sentences up to a budget of `words`) in their order. The content words are found
+repeats a kept one, and keeps the top `n` in their order. With a budget of `words` instead, it keeps
+sentences while they fit, never going over the budget. The content words are found
 without a language (`stop`, or the words most sentences share). `overlap` is unigram
 recall against a reference.
 
@@ -1659,6 +1660,36 @@ print(compose(w, 'owl', { genre: 'note' }).parts.map((p) => [p.part, p.relation 
 
 ```output
 [["head","",["owl"]],["point","k.home",["b"]],["point","k.diet",["a"]]]
+```
+
+### discourseRealiser(world, options?) and discourseTemplates(world, type?)
+
+Sentences for composition frames from a language world's discourse templates
+(`w.lang.en.discourse`: a move, a register, a text with `{slots}`). The realiser picks, by
+seed, a template of the frame's move and register whose slots it can all fill. It fills
+them from the frame, the fact it cites, the story plan and the outline.
+- A story sentence tells its own element, and only elements told before it.
+- A move about the topic says the first claim.
+- No sentence is used twice while another fits.
+- What has no fitting template stays without text; `compose` lists it in `short`.
+
+How a fact becomes a clause and a name a noun phrase is the language's, so the host gives
+`clause(fact)`, `np(name)` and `inflect(word, features)`. The defaults only join words
+("the penguin eats fish"). A host's own `fill(slot, frame, context)` is tried first.
+`compose` uses this realiser when the world holds the templates and no `realise` is given.
+Each frame then records its `template`, which `writeDocument` keeps.
+
+```js run
+const w = new World();
+w.tell(`@t core.type of=w.lang.en.discourse  @t1 core.slot of=w.lang.en.discourse key=move kind=atom kind=string
+  @t2 core.slot of=w.lang.en.discourse key=register kind=atom kind=string  @t3 core.slot of=w.lang.en.discourse key=slot kind=atom many=true
+  @t4 core.slot of=w.lang.en.discourse key=text kind=atom kind=string
+  @a w.lang.en.discourse move="introduce topic" register=presentation slot=topic text="Today we talk about {topic}."`);
+print(discourseRealiser(w)({ move: 'introduce topic' }, 'presentation', { topic: 'owl' }).text);
+```
+
+```output
+Today we talk about the owl.
 ```
 
 ### writeDocument(world, composition, options?) and readDocument(world, id)

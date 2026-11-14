@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="dad7e214261e">
+<meta name="source-hash" content="1ee7009e7a32">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.70.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.71.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -567,7 +567,7 @@ print([...new Set(sample(w, { mode: &#x27;actions&#x27;, prefer: { thing: &#x27;
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;make&quot;,&quot;make&quot;]
 [&quot;change&quot;,&quot;remove&quot;]</code></pre></figure>
 <h3 id="actsofworld-summarizelogentries-options-summarizetexttext-options-overlapsummary-reference">actsOf(world), summarizeLog(entries, options?), summarizeText(text, options?), overlap(summary, reference)</h3>
-<p>Summaries with no model (std.summarize). <code>actsOf</code> reads a world's history into acts, <code>[{ act, kind, things, step }]</code>. <code>summarizeLog(entries, { parentOf, length })</code> aggregates by act and kind, generalises siblings up the chain of kinds (<code>parentOf</code>, as std.know or a planner gives it: cat, dog and horse become 3 animals), keeps failures, and orders by salience (changes, repetition, recency, failure). It gives frames for the language world to render: <code>line</code> keeps 1, <code>paragraph</code> 3, <code>bullets</code> all. <code>summarizeText(text, { n, words, stop, redundancy })</code> is extractive. A sentence ends at a stop before a capital, a quote or a parenthesis, but not after an abbreviation ("Sec. 219"). It scores sentences by centrality (the content words they share with the others), information (numbers, names) and position, drops a sentence that repeats a kept one, and keeps the top <code>n</code> (or sentences up to a budget of <code>words</code>) in their order. The content words are found without a language (<code>stop</code>, or the words most sentences share). <code>overlap</code> is unigram recall against a reference.</p>
+<p>Summaries with no model (std.summarize). <code>actsOf</code> reads a world's history into acts, <code>[{ act, kind, things, step }]</code>. <code>summarizeLog(entries, { parentOf, length })</code> aggregates by act and kind, generalises siblings up the chain of kinds (<code>parentOf</code>, as std.know or a planner gives it: cat, dog and horse become 3 animals), keeps failures, and orders by salience (changes, repetition, recency, failure). It gives frames for the language world to render: <code>line</code> keeps 1, <code>paragraph</code> 3, <code>bullets</code> all. <code>summarizeText(text, { n, words, stop, redundancy })</code> is extractive. A sentence ends at a stop before a capital, a quote or a parenthesis, but not after an abbreviation ("Sec. 219"). It scores sentences by centrality (the content words they share with the others), information (numbers, names) and position, drops a sentence that repeats a kept one, and keeps the top <code>n</code> in their order. With a budget of <code>words</code> instead, it keeps sentences while they fit, never going over the budget. The content words are found without a language (<code>stop</code>, or the words most sentences share). <code>overlap</code> is unigram recall against a reference.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const parentOf = (k) =&gt; ([&#x27;cat&#x27;, &#x27;dog&#x27;].includes(k) ? &#x27;animal&#x27; : null);
 print(summarizeLog([{ act: &#x27;make&#x27;, kind: &#x27;cat&#x27; }, { act: &#x27;make&#x27;, kind: &#x27;dog&#x27; }, { act: &#x27;remove&#x27;, kind: &#x27;tree&#x27; }], { parentOf, length: &#x27;bullets&#x27; }).map((f) =&gt; [f.act, f.kind, f.count]));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;make&quot;,&quot;animal&quot;,2],[&quot;remove&quot;,&quot;tree&quot;,1]]</code></pre></figure>
@@ -606,6 +606,17 @@ w.tell(`@g k.genres.genre name=note  @m1 k.genres.move name=open takes=topic  @m
   @owl k.animal name=owl  @a k.diet about=owl eats=mice  @b k.home about=owl lives=barn`);
 print(compose(w, &#x27;owl&#x27;, { genre: &#x27;note&#x27; }).parts.map((p) =&gt; [p.part, p.relation ?? &#x27;&#x27;, p.moves.map((m) =&gt; m.cites)]));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;head&quot;,&quot;&quot;,[&quot;owl&quot;]],[&quot;point&quot;,&quot;k.home&quot;,[&quot;b&quot;]],[&quot;point&quot;,&quot;k.diet&quot;,[&quot;a&quot;]]]</code></pre></figure>
+<h3 id="discourserealiserworld-options-and-discoursetemplatesworld-type">discourseRealiser(world, options?) and discourseTemplates(world, type?)</h3>
+<p>Sentences for composition frames from a language world's discourse templates (<code>w.lang.en.discourse</code>: a move, a register, a text with <code>{slots}</code>). The realiser picks, by seed, a template of the frame's move and register whose slots it can all fill. It fills them from the frame, the fact it cites, the story plan and the outline.</p>
+<ul><li>A story sentence tells its own element, and only elements told before it.</li><li>A move about the topic says the first claim.</li><li>No sentence is used twice while another fits.</li><li>What has no fitting template stays without text; <code>compose</code> lists it in <code>short</code>.</li></ul>
+<p>How a fact becomes a clause and a name a noun phrase is the language's, so the host gives <code>clause(fact)</code>, <code>np(name)</code> and <code>inflect(word, features)</code>. The defaults only join words ("the penguin eats fish"). A host's own <code>fill(slot, frame, context)</code> is tried first. <code>compose</code> uses this realiser when the world holds the templates and no <code>realise</code> is given. Each frame then records its <code>template</code>, which <code>writeDocument</code> keeps.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(`@t core.type of=w.lang.en.discourse  @t1 core.slot of=w.lang.en.discourse key=move kind=atom kind=string
+  @t2 core.slot of=w.lang.en.discourse key=register kind=atom kind=string  @t3 core.slot of=w.lang.en.discourse key=slot kind=atom many=true
+  @t4 core.slot of=w.lang.en.discourse key=text kind=atom kind=string
+  @a w.lang.en.discourse move=&quot;introduce topic&quot; register=presentation slot=topic text=&quot;Today we talk about {topic}.&quot;`);
+print(discourseRealiser(w)({ move: &#x27;introduce topic&#x27; }, &#x27;presentation&#x27;, { topic: &#x27;owl&#x27; }).text);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>Today we talk about the owl.</code></pre></figure>
 <h3 id="writedocumentworld-composition-options-and-readdocumentworld-id">writeDocument(world, composition, options?) and readDocument(world, id)</h3>
 <p><code>writeDocument</code> writes a composition by a genre as a <code>w.document</code> live world. The world must use the knowledge repository's <code>w.document</code> schema. Each part becomes a slide, when the genre's unit is slide, or a chapter with a paragraph. Each frame becomes a sentence with its <code>move</code> and <code>fact</code> (the ids of the wires it states). Everything is written through the acts of std.acts, so the schema's checks hold, and what was refused is listed.</p>
 <p>The text of a sentence is the frame's own <code>text</code>, else <code>realise(frame, register)</code>. With neither, it is a placeholder that says the move. Other options: <code>title</code>, <code>language</code>, <code>slides</code>, and <code>facts(frame)</code>, which by default gives the cited wire or a wire named as the story element's value. <code>readDocument</code> reads a document back in order, <code>{ title, genre, parts: [{ part, title, sentences: [{ text, move, facts }] }] }</code>, for a summary or a check.</p>
@@ -912,7 +923,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.70.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.71.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

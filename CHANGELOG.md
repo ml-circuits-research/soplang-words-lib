@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.71.0
+
+The composition pins (reviewer 20:45): the knowledge repository at 179fc1c, with w.lang.en's
+discourse and act templates and the typical ranges of k.attributes.
+
+### New
+- `discourseRealiser(world, { seed, clause, np, inflect, fill })` and
+  `discourseTemplates(world)`. A template is picked by move and register when all its slots
+  fill. A story sentence tells its own element and only elements told before. No sentence
+  is used twice while another fits. The template is recorded on the frame.
+- `compose` realises through the templates when the world holds them. Sentences with no
+  fitting template are listed in `short`. `writeDocument` keeps each sentence's
+  `template`.
+
+### Changed
+- `summarizeText(text, { words })` never goes over the budget: a sentence that crosses it
+  is skipped, and a shorter one may fit (reviewer 20:45). BillSum, held-out half, 180
+  words: R-1 F1 0.399 against lead's 0.393, R-2 F1 0.161 against 0.171, 172 words on
+  average.
+- `compose` by a genre prunes more repeats than there are relations to fill them, and its
+  search limit is 100,000 nodes.
+
 ## 0.70.0
 
 Q49 (reviewer 19:20): a `by=` join stays open per value, not per type.

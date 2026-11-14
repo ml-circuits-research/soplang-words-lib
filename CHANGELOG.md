@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.83.0
+
+What PSys2's first cousins tables asked for (reviewer 23:05).
+
+### New
+- Cousins along the **wording**: the same frame in other constructions, from the language
+  world's alternation rules run backwards (`cousins(..., { alternations })`, dimension
+  `wording`).
+- `readByTypes` act frames: the kind to make, the thing to act on, and values of a closed
+  set by their key. Act sentences were read as a one-word `find`.
+
+### Changed
+- `ancestorsOf` and `kindChain` index the facts by name once per change; they scanned
+  every wire per thing.
+- `cousins`' default dimensions are filler, key and wording (wording gives nothing without
+  `alternations`).
+
 ## 0.82.0
 
 std.plan reads choice points (reviewer 21:55, Q57 of the knowledge repository): one

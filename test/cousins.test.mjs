@@ -42,3 +42,16 @@ test('cousins over a layered graph: several parents on several dimensions, each 
   const cs = cousins(v, kase, { degree: 2, edges: { kind: 'kind', is_a: 'kind', role: 'role' } }).filter((c) => c.valid && c.dims[0] !== 'key');
   assert.deepEqual(cs.map((c) => [c.frame.of.id, c.degree, c.dims[0]]).sort(), [['pig', 1, 'role'], ['yak', 1, 'kind']]);
 });
+
+test('cousins along the wording: the same frame in other constructions (alternation rules backwards), so a tester can say "fails when the construction changes"', async () => {
+  const { normalise, alternationsOf } = await import('../tools/lib-under-test.mjs');
+  const v = new World();
+  v.tell(`@t core.type of=w.lang.en.alternation  @t1 core.slot of=w.lang.en.alternation key=name kind=atom kind=string
+    @t2 core.slot of=w.lang.en.alternation key=from kind=atom kind=string  @t3 core.slot of=w.lang.en.alternation key=to kind=atom kind=string
+    @a1 w.lang.en.alternation name=could_you from="[could|can] you {x}" to="{x}"  @a2 w.lang.en.alternation name=please from="please {x}" to="{x}"
+    @cow k.animal name=cow sound=moo`);
+  const kase = { text: 'tell me the sound of the cow', frame: { is: 'ask', key: 'sound', of: { id: 'cow' }, answer: ['moo'] } };
+  const cs = cousins(v, kase, { dims: ['wording'], alternations: alternationsOf(v), read: { skip: ['tell', 'me', 'the', 'of'] } });
+  assert.deepEqual(cs.map((c) => [c.text, c.via, c.valid]), [['could you tell me the sound of the cow', 'could_you', true], ['please tell me the sound of the cow', 'please', true]]);
+  assert.ok(cs.every((c) => normalise(v, c.text).text === kase.text), 'each comes back to the case by the rules');
+});

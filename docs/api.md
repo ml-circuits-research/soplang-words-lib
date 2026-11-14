@@ -1798,6 +1798,9 @@ dimensions:
   to the other things below. The degree is how far up the case and the other thing must go
   to meet: 1 = siblings, 2 = first cousins, and so on.
 - `key`: the other keys of the same holder.
+- `wording`: the same frame in other constructions. The language world's alternation rules
+  (`alternations`, from `alternationsOf`) are run backwards: "could you …", "please …".
+  With these, the tester can say "fails when the construction changes".
 
 A cousin is valid when it is legal in the world (it has an answer), when its wording, made
 by substituting the filler, reads back to the same frame, and when it is not a `known`
@@ -1840,7 +1843,9 @@ The candidate frames are the relations, inverse relations and acts whose argumen
 words fill, each word used once:
 - `ask`: the `key` of a thing or kind, with its `answer`;
 - `find`: the holders of a kind with `key=value`;
-- `act`: an act with its arguments, by type.
+- `act`: an act with typed arguments: the kind to make (a type), the thing to act on (a
+  name), and values of a closed set by their key (`make a blue shape` → `{ kind: 'shape',
+  colour: 'blue' }`).
 
 Word order and function words only rank the frames, so paraphrases in any order read to one
 frame. Options: `question` (words that make a question), `skip` (words passed over),

@@ -25,7 +25,9 @@ export function typedLexicon(world) {
   }
   for (const [k, ts] of holders) if (!['kind', 'class', 'is', 'about'].includes(k)) add(k, { cat: 'attr', key: k, holders: [...ts] });
   for (const t of new Set([...world.wires.values()].map((w) => w.type))) if (!t.startsWith('core.') && !t.startsWith('std.') && !LANG.some((p) => t.startsWith(p))) add(t.split('.').pop(), { cat: 'kind', type: t });
-  const actions = world._compiled?.().actions;
+  const comp = world._compiled?.();
+  for (const [type, slots] of comp?.slots?.own ?? []) for (const sl of slots.values()) for (const e of sl.enum || []) add(bare(e), { cat: 'value', key: sl.key, type, schema: true }); // a closed set's values name what they are
+  const actions = comp?.actions;
   if (actions) for (const a of actions.keys()) add(bare(a), { cat: 'act', act: bare(a) });
   for (const w of world.ofType('core.word')) for (const m of w.attrs.means || []) for (const t of w.attrs.text || []) { add(bare(t), actions?.has(bare(m)) || actions?.has(m) ? { cat: 'act', act: bare(m) } : { cat: 'word', means: bare(m) }); if (holders.has(bare(m))) add(bare(t), { cat: 'attr', key: bare(m), holders: [...holders.get(bare(m))], verb: true }); } // a word the world declares: an act's, or one it knows; a verb that means a key asks for it (says: sound)
   cache.set(world, { size: world.wires.size, lex });
@@ -114,19 +116,22 @@ export function readByTypes(world, text, { question = [], skip = [], lemma, sens
       frames.push({ frame: { is: 'find', key: v.s.key, value: v.w.text, ...(k ? { kind: k.s.kind ?? k.s.type } : {}), answer: holders.map((x) => x.id) }, score: +(2 + (isQuestion ? 1 : 0) + (k ? 0.5 : 0) - left).toFixed(3), words: [...used].map((w) => w.text) });
     }
   }
-  // acts: an act word and the things whose types fit its arguments
+  // acts: an act word with typed arguments (act frames, reviewer 23:05): the kind to make (a type), the thing
+  // to act on (a name), and the values of the kind's or thing's slots (a value of a closed set, by its key)
   for (const a of acts) {
-    const spec = world._compiled?.().actions.get(a.s.act) ?? world._compiled?.().actions.get(`"${a.s.act}"`);
-    const roles = spec?.args ? Object.entries(spec.args) : [];
     const args = {}, used = new Set([a.w]);
-    for (const [role, r] of roles) { // bounded: the roles of the act
-      const fit = things.find(({ w, s }) => !used.has(w) && s.cat === 'thing' && (!r?.type || r.type === s.type || (r.refs || []).includes(s.type)));
-      if (fit) { args[role] = fit.s.id; used.add(fit.w); }
+    const kind = things.find(({ w, s }) => !used.has(w) && s.cat === 'kind' && s.type);
+    const thing = things.find(({ w, s }) => !used.has(w) && s.cat === 'thing');
+    if (a.s.act === 'make' || !thing) { if (kind) { args.kind = kind.s.type; used.add(kind.w); } }
+    if (a.s.act !== 'make' && thing) { args.thing = thing.s.id; used.add(thing.w); }
+    const holder = args.kind ?? (args.thing && world.get(args.thing)?.type);
+    for (const v of words.flatMap((w) => w.senses.filter((s) => s.cat === 'value' && s.schema).map((s) => ({ w, s })))) {
+      if (used.has(v.w) || (holder && v.s.type !== holder && !(world._compiled?.().isA?.(holder, v.s.type)))) continue;
+      args[v.s.key] = v.w.text; used.add(v.w);
     }
-    const left = words.filter((w) => !used.has(w)).length;
-    frames.push({ frame: { is: 'act', act: a.s.act, args }, score: +(1 + Object.keys(args).length + (isQuestion ? 0 : 0.5) - left).toFixed(3), words: [...used].map((w) => w.text) });
+    const left = words.filter((w) => !used.has(w) && !w.senses.some((s) => s.cat === 'word')).length;
+    frames.push({ frame: { is: 'act', act: a.s.act, args }, score: +(1 + Object.keys(args).length + (isQuestion ? 0 : 1) - left).toFixed(3), words: [...used].map((w) => w.text) });
   }
-  for (const fr of frames) { const c = words.filter((w) => w.near && fr.words.includes(w.text)).reduce((x, w) => x + w.near.cost, 0); fr.score = +(fr.score - c * 0.2).toFixed(3); } // a near word costs
   frames.sort((x, y) => y.score - x.score);
   const best = frames[0] ?? null;
   const ambiguous = frames.length > 1 && frames[1].score === best.score && JSON.stringify(frames[1].frame) !== JSON.stringify(best.frame);

@@ -9,12 +9,22 @@ import { readByTypes } from './readtypes.mjs';
 
 const bare = (v) => String(v).replace(/^"|"$/g, '').replace(/^\$/, '');
 const UP = ['kind', 'class', 'is', 'is_a'];
+const nameIx = new WeakMap(); // world -> { size, by: Map(name -> [facts]) }: one pass over the wires per change, not one per thing
+function namedIn(world) {
+  let ix = nameIx.get(world);
+  if (!ix || ix.size !== world.wires.size) {
+    ix = { size: world.wires.size, by: new Map() };
+    for (const x of world.wires.values()) for (const n of x.attrs.name || []) { const k = bare(n); (ix.by.get(k) || ix.by.set(k, []).get(k)).push(x); }
+    nameIx.set(world, ix);
+  }
+  return (n) => ix.by.get(n) || [];
+}
 
 /** The chain of kinds of a thing, nearest first: [[level 1 kinds], [level 2], ...] (bounded by depth). */
 export function kindChain(world, id, depth = 4) {
   const w = world.get(id);
   if (!w) return [];
-  const named = (n) => [...world.wires.values()].filter((x) => (x.attrs.name || []).some((y) => bare(y) === n));
+  const named = namedIn(world);
   const parents = (names) => [...new Set(names.flatMap((n) => named(n).flatMap((x) => UP.flatMap((k) => (x.attrs[k] || []).map(bare)))))];
   const first = [...new Set(UP.flatMap((k) => (w.attrs[k] || []).map(bare)))];
   const levels = [first.length ? first : [w.type]];
@@ -33,7 +43,7 @@ export function kindChain(world, id, depth = 4) {
  */
 export function ancestorsOf(world, id, { depth = 3, edges } = {}) {
   const E = edges ?? { kind: 'kind', class: 'kind', is: 'kind', is_a: 'kind' };
-  const named = (n) => [...world.wires.values()].filter((x) => (x.attrs.name || []).some((y) => bare(y) === n));
+  const named = namedIn(world);
   const w = world.get(id);
   const out = new Map();
   if (!w) return out;
@@ -62,7 +72,7 @@ export function ancestorsOf(world, id, { depth = 3, edges } = {}) {
  * cases), `read` (options for readByTypes), `n` (at most, per degree), `seed`.
  * Returns [{ frame, text?, degree, dims, valid, why? }], valid ones first.
  */
-export function cousins(world, kase, { degree = 2, dims = ['filler', 'key'], known = [], read = {}, n = 50, seed = 1, edges } = {}) {
+export function cousins(world, kase, { degree = 2, dims = ['filler', 'key', 'wording'], known = [], read = {}, n = 50, seed = 1, edges, alternations } = {}) {
   const f = kase.frame, out = [];
   const knownSet = new Set(known.map((k) => (typeof k === 'string' ? k : JSON.stringify(k))));
   const answerOf = (holderId, key) => (world.get(holderId)?.attrs[key] || []).map(bare);
@@ -93,11 +103,23 @@ export function cousins(world, kase, { degree = 2, dims = ['filler', 'key'], kno
       out.push(c);
     }
   }
+  if (dims.includes('wording') && kase.text && alternations?.length) { // the same frame in other constructions (alternation rules run backwards)
+    const toks = String(kase.text).toLowerCase().replace(/[?!.]+\s*$/, '').match(/[\p{L}\p{N}_'-]+/gu) || [];
+    const seen = new Set([toks.join(' ')]);
+    for (const r of alternations) {
+      const env = matchPattern(r.to.split(/\s+/), toks);
+      if (!env) continue;
+      const text = r.from.split(/\s+/).map((t) => { const m = /^\{([a-z_]+)\}$/.exec(t); if (m) return (env[m[1]] || []).join(' '); const a = /^\[(.*)\]$/.exec(t); return a ? a[1].split('|')[0] : t; }).join(' ');
+      if (!text || seen.has(text)) continue;
+      seen.add(text);
+      out.push({ frame: { ...f }, text, degree: 1, dims: ['wording'], via: r.name });
+    }
+  }
   for (const c of out) { // valid: legal (an answer), read back to the same frame, not known
     if (!c.frame.answer?.length) { c.valid = false; c.why = 'no answer in the world'; continue; }
     if (knownSet.has(JSON.stringify(c.frame)) || (c.text && knownSet.has(c.text))) { c.valid = false; c.why = 'already a case'; continue; }
     if (c.text) {
-      if (c.text === kase.text) { c.valid = false; c.why = 'the wording did not change'; continue; }
+      if (c.text === kase.text && c.dims[0] !== 'wording') { c.valid = false; c.why = 'the wording did not change'; continue; }
       const back = readByTypes(world, c.text, read).best;
       if (JSON.stringify(back) !== JSON.stringify(c.frame)) { c.valid = false; c.why = `reads back as ${JSON.stringify(back)}`; continue; }
     }
@@ -126,4 +148,12 @@ export function judgeFix(answer, kase, list) {
     if (ok) { d.pass++; pass++; }
   }
   return { case: same(answer(kase.text, kase.frame), kase.frame.answer), byDegree, share: of ? +(pass / of).toFixed(3) : null };
+}
+
+function matchPattern(pat, toks, i = 0, env = {}, k = 0) { // bounded: the pattern and the tokens
+  if (k === pat.length) return i === toks.length ? env : null;
+  const sp = /^\{([a-z_]+)(?::base)?\}$/.exec(pat[k]);
+  if (sp) { for (let j = i + 1; j <= toks.length; j++) { const r = matchPattern(pat, toks, j, { ...env, [sp[1]]: toks.slice(i, j) }, k + 1); if (r) return r; } return null; }
+  const alts = /^\[(.*)\]$/.exec(pat[k]) ? pat[k].slice(1, -1).split('|') : [pat[k]];
+  return i < toks.length && alts.includes(toks[i]) ? matchPattern(pat, toks, i + 1, env, k + 1) : null;
 }

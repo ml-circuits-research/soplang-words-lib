@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="4f39b2288911">
+<meta name="source-hash" content="f7c558477f74">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.82.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.83.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -650,7 +650,7 @@ print(normalise(w, &#x27;Could you please open the door?&#x27;));</code></pre></
 <figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;text&quot;:&quot;open the door&quot;,&quot;applied&quot;:[&quot;could_you&quot;,&quot;please&quot;],&quot;mode&quot;:&quot;request&quot;}</code></pre></figure>
 <h3 id="cousinsworld-case-options-ancestorsofworld-id-options-kindchainworld-id-and-judgefixanswer-case-cousins">cousins(world, case, options?), ancestorsOf(world, id, options?), kindChain(world, id) and judgeFix(answer, case, cousins)</h3>
 <p>A case is never single (abstraction round, item 0). <code>cousins</code> goes up from a case <code>{ frame, text? }</code> (a frame of <code>readByTypes</code>) along a dimension, then down to other members. The dimensions:</p>
-<ul><li><code>filler</code>: up the chain of kinds (<code>kind</code>, <code>class</code>, <code>is</code>, <code>is_a</code>, then the type), and down to the other things below. The degree is how far up the case and the other thing must go to meet: 1 = siblings, 2 = first cousins, and so on.</li><li><code>key</code>: the other keys of the same holder.</li></ul>
+<ul><li><code>filler</code>: up the chain of kinds (<code>kind</code>, <code>class</code>, <code>is</code>, <code>is_a</code>, then the type), and down to the other things below. The degree is how far up the case and the other thing must go to meet: 1 = siblings, 2 = first cousins, and so on.</li><li><code>key</code>: the other keys of the same holder.</li><li><code>wording</code>: the same frame in other constructions. The language world's alternation rules (<code>alternations</code>, from <code>alternationsOf</code>) are run backwards: "could you …", "please …". With these, the tester can say "fails when the construction changes".</li></ul>
 <p>A cousin is valid when it is legal in the world (it has an answer), when its wording, made by substituting the filler, reads back to the same frame, and when it is not a <code>known</code> case. Each cousin is tagged with its degree and the dimensions changed.</p>
 <p>The graph is layered: a thing has several parents on several dimensions. <code>edges</code> (<code>{ key: dimension }</code>, by default kind / class / is / is_a as <code>kind</code>) names them, and <code>ancestorsOf(world, id, { depth, edges })</code> walks them breadth first. Cousins are deduplicated by frame and stratified per degree and dimension (<code>n</code> each). The automatic tester <code>tools/cousins-test.mjs</code> takes one example and a host and gives a table per degree × dimension, naming the pattern of breaks. The skill <code>skills/expand-and-test-case</code> hands the failures to <code>learnRules</code>. <code>judgeFix(answer, case, cousins)</code> judges a fix both ways: on the case alone and on its valid cousins by degree. Judged that way, a fix that passes only its case shows a share of 0.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
@@ -663,7 +663,7 @@ print(cousins(w, kase).filter((c) =&gt; c.valid).map((c) =&gt; [c.degree, c.text
 <p>Type-driven reading (abstraction round, item 1). Each content word is typed through the world itself:</p>
 <ul><li>a thing: a fact's name;</li><li>a kind: a type, or a <code>kind</code>, <code>class</code> or <code>is</code> value;</li><li>an attribute: a key that facts carry;</li><li>a value: a key's value;</li><li>an act: a word of an action;</li><li>a known word: a <code>core.word</code>. A verb that means a key asks for that key.</li></ul>
 <p>The candidate frames are the relations, inverse relations and acts whose argument types the words fill, each word used once:</p>
-<ul><li><code>ask</code>: the <code>key</code> of a thing or kind, with its <code>answer</code>;</li><li><code>find</code>: the holders of a kind with <code>key=value</code>;</li><li><code>act</code>: an act with its arguments, by type.</li></ul>
+<ul><li><code>ask</code>: the <code>key</code> of a thing or kind, with its <code>answer</code>;</li><li><code>find</code>: the holders of a kind with <code>key=value</code>;</li><li><code>act</code>: an act with typed arguments: the kind to make (a type), the thing to act on (a name), and values of a closed set by their key (<code>make a blue shape</code> → <code>{ kind: 'shape', colour: 'blue' }</code>).</li></ul>
 <p>Word order and function words only rank the frames, so paraphrases in any order read to one frame. Options: <code>question</code> (words that make a question), <code>skip</code> (words passed over), <code>lemma</code>. Words the world does not know are listed in <code>unread</code>. <code>typedLexicon</code> is the lexicon, memoised per world. The language's own facts (k.words, w.lang, k.genres, k.interest) are not content.</p>
 <p>Lexical generalisation (item 3): <code>nearWords(world, word, { senses })</code> gives a word's near words through word senses (<code>k.words.sense</code>: word, synonym, is_a, kind_of):</p>
 <ul><li>a synonym costs 1, both ways;</li><li>the nearest kind (<code>is_a</code>) costs 2;</li><li>further kinds cost 3 or more.</li></ul>
@@ -1000,7 +1000,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.82.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.83.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

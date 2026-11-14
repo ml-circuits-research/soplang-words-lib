@@ -42,3 +42,14 @@ test('readByTypes, lexical generalisation: an unknown word read as its nearest k
   assert.deepEqual(readByTypes(v, 'drake sound?', { ...O, near: 1 }).unread, ['drake'], 'a cost above the bound: not read');
   assert.equal(readByTypes(v, 'drake sound?', O).best.of.id, 'duck');
 });
+
+test('readByTypes, act frames: the act with typed arguments (the kind to make, the thing to act on, values of a closed set by their key)', () => {
+  const v = new World();
+  v.load('@acts core.use world=std.acts\n@art std.schema.world name=art doc=x\n@t core.type of=shape extends=std.schema.thing\n@s1 core.slot of=shape key=colour enum=red enum=blue\n@k std.schema.kind of=shape world=art acts=make acts=remove acts=change');
+  v.tell('@c1 shape name=circle colour=red');
+  const R = (t) => readByTypes(v, t, { skip: ['a', 'the', 'to', 'it'] }).best;
+  assert.deepEqual(R('make a blue shape'), { is: 'act', act: 'make', args: { kind: 'shape', colour: 'blue' } });
+  assert.deepEqual(R('a blue shape, make it'), R('make a blue shape'), 'any order');
+  assert.deepEqual(R('remove the circle'), { is: 'act', act: 'remove', args: { thing: 'c1' } });
+  assert.deepEqual(R('change the circle to blue'), { is: 'act', act: 'change', args: { thing: 'c1', colour: 'blue' } });
+});

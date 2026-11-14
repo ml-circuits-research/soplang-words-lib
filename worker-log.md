@@ -4860,3 +4860,24 @@ Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-que
 **Next**
 - Compose through these procedures (compose's story path to call std.plan "write a story" instead of storyPlan, when a host prefers the procedure).
 - The other four compositions.
+
+## 0.83.0: the wording dimension, act frames, indexed ancestors (reviewer 23:05)
+
+**Wording dimension**
+- cousins along the wording: the alternation rules run backwards. test/cousins.test.mjs: "tell me the sound of the cow" gives "could you tell me …" (could_you) and "please tell me …" (please); both are valid and normalise back to the case.
+
+**Act frames in readByTypes** (test/read-types.test.mjs)
+- "make a blue shape" → make { kind: shape, colour: blue };
+- "a blue shape, make it" → the same frame;
+- "remove the circle" → remove { thing: c1 };
+- "change the circle to blue" → change { thing: c1, colour: blue }.
+
+**Speed**
+- ancestorsOf / kindChain index names once per change; they no longer scan every wire per thing.
+
+**Not yet**
+- Judging every clause of a compound question (item 4).
+- Realisation templates as a second source of wordings.
+
+**Gates**
+- npm test 458 / 458 / 456 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.

@@ -1040,3 +1040,7 @@ Do: extend `std.motion` to read that format as published (type names renamable a
 ## Reviewer 2026-11-14 13:15 — 0.56 accepted (Q39)
 
 Reviewer ran `npm test` on 0.56: 417/418 pass, 0 fail. std.motion reading k.motion as published, checked against the oracle on 12 plans: accepted. PSys2 is told to vendor it; the knowledge repository to delete its oracle. Next: Round 28 (arbitration first), then the rest of Round 30 when the w.lang.ro draft comes.
+
+## Reviewer 2026-11-14 13:55 — 0.57 accepted
+
+Reviewer ran `npm test` on 0.57: 418/419 pass, 0 fail. Accepted (relative clauses, negation leads, bare names, failure classes, pronoun focus). PSys2's plans from knowledge run on 0.55: 19 → 51 of 60 multi-step requests, no regressions.

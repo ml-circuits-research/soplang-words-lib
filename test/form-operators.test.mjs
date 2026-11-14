@@ -40,6 +40,7 @@ test('formEdits / learnFormEdits: a variant that combines operators splits into 
   assert.deepEqual(formEdits('what sound does a cow make', 'um what sound a cow makes'), [{ del: 'um', ins: '', at: 'start' }, { del: '', ins: 'does', at: 'inside' }, { del: 'makes', ins: 'make', at: 'end' }]);
   const P = (c, v) => ({ canonical: c, variant: v });
   const r = learnFormEdits([P('open the door', 'um open the door'), P('add a cat', 'um add a cat'), P('add a cat', 'hey add a cat'), P('save it', 'um save it please')]);
-  assert.deepEqual(r.operators.slice(0, 1), [{ edit: 'start: "um" -> ""', count: 3 }]);
+  assert.deepEqual(r.operators.slice(0, 1), [{ edit: 'start: "um" -> ""', count: 3, family: 'filler' }]);
+  assert.deepEqual(r.families, { filler: 5 });
   assert.deepEqual(r.coverage, { at80: 2, at95: 3, pairsAt80: 3, pairsAt95: 3 });
 });

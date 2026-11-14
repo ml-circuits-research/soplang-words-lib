@@ -657,4 +657,6 @@ export function learnFormOperators(pairs: { canonical: string; variant: string }
 /** The atomic edits of an aligned pair: each hunk where the words differ. */
 export function formEdits(canonical: string, variant: string): { del: string; ins: string; at: 'start' | 'inside' | 'end' }[];
 /** Atomic edits clustered into operators, with their coverage of the edits and of the pairs. */
-export function learnFormEdits(pairs: { canonical: string; variant: string }[]): { operators: { edit: string; count: number }[]; edits: number; coverage: { at80: number; at95: number; pairsAt80: number; pairsAt95: number } };
+export function learnFormEdits(pairs: { canonical: string; variant: string }[]): { operators: { edit: string; count: number; family: string }[]; edits: number; families: Record<string, number>; coverage: { at80: number; at95: number; pairsAt80: number; pairsAt95: number } };
+/** The family of an edit by its shape alone: filler, extra clause, insertion, deletion, inflection, substitution. */
+export function familyOf(edit: string): string;

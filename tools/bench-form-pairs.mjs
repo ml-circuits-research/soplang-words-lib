@@ -20,5 +20,5 @@ console.log(`admitted ${admitted.length}; held-out pairs normalised back by some
 for (const o of r.operators.slice(0, 15)) console.log(`${String(o.support.length).padStart(3)}  ${o.from}  =>  ${o.to}   held ${o.heldOut.pass}/${o.heldOut.of}`);
 const { learnFormEdits } = await import('../src/index.mjs');
 const e = learnFormEdits(same);
-console.log(`\natomic edits: ${e.edits} in ${e.operators.length} operators; 80 % of the edits by ${e.coverage.at80}, 95 % by ${e.coverage.at95}; every edit of 80 % of the pairs by ${e.coverage.pairsAt80}, of 95 % by ${e.coverage.pairsAt95}`);
+console.log(`\nfamilies: ${JSON.stringify(e.families)}`); console.log(`atomic edits: ${e.edits} in ${e.operators.length} operators; 80 % of the edits by ${e.coverage.at80}, 95 % by ${e.coverage.at95}; every edit of 80 % of the pairs by ${e.coverage.pairsAt80}, of 95 % by ${e.coverage.pairsAt95}`);
 for (const o of e.operators.slice(0, 20)) console.log(`${String(o.count).padStart(4)}  ${o.edit}`);

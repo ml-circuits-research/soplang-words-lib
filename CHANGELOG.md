@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.87.0
+
+### New
+- `familyOf(edit)` and `learnFormEdits(...).families`: an edit's family by its shape alone
+  (filler, extra clause, insertion, deletion, inflection, substitution). On PSys2's 565
+  same-meaning pairs: extra clause 545, substitution 451, filler 301, insertion 164,
+  deletion 81, inflection 14.
+
 ## 0.86.0
 
 Form operators measured on PSys2's aligned pairs (reviewer 23:45).

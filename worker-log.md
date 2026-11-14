@@ -4942,3 +4942,12 @@ Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-que
 
 **Gates**
 - npm test 462 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+
+## 0.87.0: edit families
+
+- `familyOf` classifies an edit by its shape alone. On PSys2's 565 same-meaning pairs (1,556 edits, `node tools/bench-form-pairs.mjs`): extra clause 545, substitution 451, filler 301, insertion 164, deletion 81, inflection 14.
+- So 6 families cover all edits. The literal operators are many because the extra clauses and substitutions carry different words.
+- Next, per family, a generator and its inverse for reading:
+  - filler and extra clause: drop at read time (an extra clause is answered separately, see the clause judging below);
+  - substitution and insertion: the alternation rules (do-support) and word senses.
+- Gates: npm test 462 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.

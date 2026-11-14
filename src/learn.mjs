@@ -151,12 +151,27 @@ export function learnFormEdits(pairs) {
     per.push(es);
     for (const k of es) clusters.set(k, (clusters.get(k) || 0) + 1);
   }
-  const ops = [...clusters].sort((x, y) => y[1] - x[1]).map(([edit, count]) => ({ edit, count }));
+  const ops = [...clusters].sort((x, y) => y[1] - x[1]).map(([edit, count]) => ({ edit, count, family: familyOf(edit) }));
   const total = ops.reduce((s, o) => s + o.count, 0);
+  const families = {}; for (const o of ops) families[o.family] = (families[o.family] || 0) + o.count;
   const cover = (share) => { let acc = 0; for (let k = 0; k < ops.length; k++) { acc += ops[k].count; if (acc >= share * total) return k + 1; } return ops.length; };
   const pairsCover = (share) => { // the fewest top operators that explain every edit of `share` of the pairs
     for (let k = 1; k <= ops.length; k++) { const top = new Set(ops.slice(0, k).map((o) => o.edit)); if (per.filter((es) => es.every((e) => top.has(e))).length >= share * per.length) return k; }
     return ops.length;
   };
-  return { operators: ops, edits: total, coverage: { at80: cover(0.8), at95: cover(0.95), pairsAt80: pairsCover(0.8), pairsAt95: pairsCover(0.95) } };
+  return { operators: ops, edits: total, families: Object.fromEntries(Object.entries(families).sort((a, b) => b[1] - a[1])), coverage: { at80: cover(0.8), at95: cover(0.95), pairsAt80: pairsCover(0.8), pairsAt95: pairsCover(0.95) } };
+}
+
+/** The family of an edit by its shape alone (no language): filler, extra clause, insertion, deletion, inflection, substitution. */
+export function familyOf(edit) {
+  const m = /^(\w+): "(.*)" -> "(.*)"$/.exec(edit);
+  if (!m) return 'other';
+  const [, at, del, ins] = m, d = del ? del.split(' ') : [], n = ins ? ins.split(' ') : [];
+  if (!n.length && d.length <= 2 && at !== 'inside') return 'filler';
+  if (!n.length && d.length >= 3) return 'extra clause';
+  if (!d.length) return 'insertion';
+  if (!n.length) return 'deletion';
+  if (d.length === 1 && n.length === 1) { const [x, y] = [d[0], n[0]]; let k = 0; while (k < Math.min(x.length, y.length) && x[k] === y[k]) k++; if (k >= Math.min(x.length, y.length) - 2 && k >= 3) return 'inflection'; } // bounded: the shorter word
+  if (d.length >= 3 && n.length <= 2) return 'extra clause';
+  return 'substitution';
 }

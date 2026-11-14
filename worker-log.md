@@ -4460,3 +4460,30 @@ clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 
 - Q36 lines 2, 3 and 24 are done. "An optional open slot backs off": the chart has no greedy
   match, and the check reports where a generated pattern would swallow a word.
 - Next: item 8 (std.space single placement, relation kinds), item 9 (harnesses).
+
+## Reviewer 14:15 — std.sample — release 0.59.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/capability-table.mjs`: 30 jobs. Version, CHANGELOG, docs
+rebuilt (`docs/version.md`: sopworld 0.59.0).
+
+- src/sample.mjs: `sample` and `diversity`. What a frame is built from:
+  - the acts per kind; the things there (only legal acts); undo when the log has an act;
+  - slot values from an enum, a range with its step, or a join to knowledge (`type= by=`);
+  - catalog kinds (`std.schema.kinds from=`).
+
+  Weights: prefer, recency, novelty (the log's acts and `seen`), chance. Each frame passes
+  a dry run, and the round-trip filter with the host's `realise` / `read`. Modes one, few,
+  actions.
+- test/sample.test.mjs (2 tests): legal in the state, seeded, catalog kinds, legal values,
+  buttons for a selected thing, a dice, novelty, the round-trip filter (and a lossy reader
+  dropping the frames).
+- Measured with `node /tmp/div.mjs`: a toy world with 2 schemas (shapes, a 3-animal
+  catalog) and 2 things; seed 11, n=100 with a round-trip realiser:
+  `{"frames":25,"acts":5,"kinds":6,"attrs":2,"tried":2000,"roundTrip":1}`. Only 25 distinct
+  frames exist under the 20-tries cap: the toy world has few things and values, and
+  duplicates are not kept.
+- Not done yet: the sentences come from the host's realiser until Round 30 item 6 (language
+  world templates) lands; `place` is not suggested.
+- Next: std.summarize and std.compose (14:45), Round 28 items 8–9, the std.plan follow-up,
+  Round 27.

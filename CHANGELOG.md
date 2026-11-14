@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.59.0
+
+Reviewer 14:15 (owner): `std.sample`, random but relevant commands.
+
+### New
+- `sample(world, { seed, n, mode, prefer, seen, realise, read })` gives frames legal in
+  the current state.
+  - The acts per kind, the slot values (enum, range, joins), the catalog kinds, the things
+    there and undo when there is a step.
+  - Weights: prefer, recency, novelty and chance. It is seeded.
+  - Every frame works on a dry run; a round-trip filter applies with the host's realiser
+    and reader.
+  - Modes: one, few, actions.
+- `diversity(frames)`.
+
 ## 0.58.0
 
 Round 28 item 7: form checks, and frame priority by rule.

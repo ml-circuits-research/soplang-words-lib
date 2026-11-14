@@ -1505,6 +1505,37 @@ print(planMotionFacts(readMotion(w), { end: 7000, base: { eyes: 'open' } }).chan
 [[0,"open"],[3000,"closed"],[3150,"open"],[6150,"closed"],[6300,"open"]]
 ```
 
+### sample(world, options?) and diversity(frames)
+
+Random but relevant commands, legal in the current state: frames (`{ action, args, world,
+why }`, language-free). The parts come from the worlds:
+- the acts each kind allows (`std.schema.kind`);
+- the slots' enums, ranges and joins to knowledge (`type=T by=k`);
+- the open kinds of a catalog (`std.schema.kinds from=`);
+- the things there (remove, change and ask need one) and the history (undo needs a step).
+
+Weights: `prefer` (a world, a thing), recency (newer things), novelty (acts and kinds used
+less in this session: the history of acts and `options.seen`), and chance. It is seeded.
+Every frame works (a dry run). With `realise(frame) → text` and `read(text) → frame` (the
+host's language world), only frames that read back are kept; `roundTrip` gives the rate.
+Modes: `one` (a dice), `few` (3 or 4), `actions` (the acts that fit `prefer.thing`, for
+buttons). `diversity` counts the distinct acts, kinds and attributes.
+
+```js run
+const w = new World();
+w.load(`@acts core.use world=std.acts  @art std.schema.world name=art
+  @t core.type of=shape extends=std.schema.thing closed=true  @s core.slot of=shape key=colour enum=red enum=blue
+  @k std.schema.kind of=shape world=art acts=make acts=change acts=remove`);
+print(sample(w, { seed: 1, n: 2 }).frames.map((f) => f.action));
+w.act({ action: 'make', args: { kind: 'shape' } });
+print([...new Set(sample(w, { mode: 'actions', prefer: { thing: 'shape1' }, seed: 2 }).frames.map((f) => f.action))].sort());
+```
+
+```output
+["make","make"]
+["change","remove"]
+```
+
 ### arbitrate(world, request, options?)
 
 The arbitration contract: one verdict per declared world for one request. `own`: the

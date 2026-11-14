@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="fba3c6affd57">
+<meta name="source-hash" content="a3527fb95ef7">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.58.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.59.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -553,6 +553,19 @@ w.tell(`@l k.motion.layer name=idle priority=1 key=eyes about=x
   @v k.motion.set rule=blink step=1 key=eyes value=closed`);
 print(planMotionFacts(readMotion(w), { end: 7000, base: { eyes: &#x27;open&#x27; } }).changes.map((c) =&gt; [c.t, c.value]));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[[0,&quot;open&quot;],[3000,&quot;closed&quot;],[3150,&quot;open&quot;],[6150,&quot;closed&quot;],[6300,&quot;open&quot;]]</code></pre></figure>
+<h3 id="sampleworld-options-and-diversityframes">sample(world, options?) and diversity(frames)</h3>
+<p>Random but relevant commands, legal in the current state: frames (<code>{ action, args, world, why }</code>, language-free). The parts come from the worlds:</p>
+<ul><li>the acts each kind allows (<code>std.schema.kind</code>);</li><li>the slots' enums, ranges and joins to knowledge (<code>type=T by=k</code>);</li><li>the open kinds of a catalog (<code>std.schema.kinds from=</code>);</li><li>the things there (remove, change and ask need one) and the history (undo needs a step).</li></ul>
+<p>Weights: <code>prefer</code> (a world, a thing), recency (newer things), novelty (acts and kinds used less in this session: the history of acts and <code>options.seen</code>), and chance. It is seeded. Every frame works (a dry run). With <code>realise(frame) → text</code> and <code>read(text) → frame</code> (the host's language world), only frames that read back are kept; <code>roundTrip</code> gives the rate. Modes: <code>one</code> (a dice), <code>few</code> (3 or 4), <code>actions</code> (the acts that fit <code>prefer.thing</code>, for buttons). <code>diversity</code> counts the distinct acts, kinds and attributes.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@acts core.use world=std.acts  @art std.schema.world name=art
+  @t core.type of=shape extends=std.schema.thing closed=true  @s core.slot of=shape key=colour enum=red enum=blue
+  @k std.schema.kind of=shape world=art acts=make acts=change acts=remove`);
+print(sample(w, { seed: 1, n: 2 }).frames.map((f) =&gt; f.action));
+w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;shape&#x27; } });
+print([...new Set(sample(w, { mode: &#x27;actions&#x27;, prefer: { thing: &#x27;shape1&#x27; }, seed: 2 }).frames.map((f) =&gt; f.action))].sort());</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;make&quot;,&quot;make&quot;]
+[&quot;change&quot;,&quot;remove&quot;]</code></pre></figure>
 <h3 id="arbitrateworld-request-options">arbitrate(world, request, options?)</h3>
 <p>The arbitration contract: one verdict per declared world for one request. <code>own</code>: the world has the kind (or the thing, or a view whose state has the attribute), allows the act, and its dry run takes it. <code>decline</code>: it has no use for the kind, so it declines the verb; this rule is the library's, not the host's. <code>refuse</code>: it has the kind, but the act is not allowed or the dry run refuses. A refusal is given only in the <code>exact</code> pass; in a <code>spelling</code> or <code>view</code> pass (<code>options.pass</code>) it stays a decline. When several worlds own, <code>options.resolves(world, words)</code> (a host hook, with <code>options.words</code>) keeps the ones whose things hold the words. Returns <code>{ verdicts: [{ world, verdict, why }], owner, ambiguous?, pass }</code>.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
@@ -819,7 +832,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.58.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.59.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

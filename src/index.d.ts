@@ -576,3 +576,7 @@ export function planMotionFacts(motion: object, options?: { events?: { t: number
 export function splitText(splitter: object, text: string): { char: string; group: string; class: string; min: number; max: number }[];
 /** Checks of a grammar: an optional part that shares words with the next, words the lemma changes away, entries too long. */
 export function grammarCheck(world: World, options?: { lemma?: (word: string) => string | string[]; maxWords?: number } & GrammarOptions): { kind: 'optional-shares-words' | 'lemmatised-away' | 'too-many-words'; rule?: string; word?: string; [k: string]: unknown }[];
+/** std.sample: random but relevant frames, legal in the current state, seeded. */
+export function sample(world: World, options?: { seed?: number; n?: number; mode?: 'one' | 'few' | 'actions'; prefer?: { world?: string; thing?: string }; seen?: { action: string; args?: Record<string, unknown> }[]; realise?: (frame: object) => string; read?: (text: string) => { action: string; args: Record<string, unknown> } | null }): { frames: { action: string; args: Record<string, unknown>; world?: string; why: string }[]; tried: number; kept: number; roundTrip?: number };
+/** Distinct acts, kinds and attributes of frames. */
+export function diversity(frames: { action: string; args: Record<string, unknown> }[]): { frames: number; acts: number; kinds: number; attrs: number };

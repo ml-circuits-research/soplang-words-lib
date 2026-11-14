@@ -711,6 +711,28 @@ print(planner(store).plan({ act: 'make', roles: { kind: 'cup' } }, new PlanLive(
 x
 ```
 
+## Suggest random commands that work
+
+*In `sample`, `diversity`; since 0.59.*
+*Works on: a live world, its world schemas and the knowledge they join.*
+
+Randomness as a mechanism, with no example lists: small commands chosen from what the
+worlds allow in the current state, with values legal for their slots and kinds from the
+catalogs the worlds join. Recency and novelty weigh in, it is seeded, and every
+suggestion is checked by a dry run (and, with the host's language world, by reading it
+back). **Limits:** `place` is not suggested (it needs a space the host knows); the
+sentences come from the host's realiser until the generation templates of Round 30 land.
+
+```js run
+const w = new World();
+w.load('@acts core.use world=std.acts  @zoo std.schema.world name=zoo  @any std.schema.kinds world=zoo from=k.animal acts=make  @a k.animal name=owl');
+print(sample(w, { mode: 'one', seed: 1 }).frames[0].args);
+```
+
+```output
+{"kind":"owl"}
+```
+
 ## Building blocks
 
 *In the core exports; since 0.1 (each as listed).*

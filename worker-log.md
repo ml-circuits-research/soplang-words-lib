@@ -3977,3 +3977,18 @@ clean; tsc clean. `node tools/cases.mjs`: 39 / 39. Version, CHANGELOG, docs rebu
   - `turn` with a loader is done; without one it is not done.
 - api.md: needsOf (runnable). reference.md: the std.schema.needs row.
 - Next: 03:10 item 5 (corpus by stage from PSys2's newer cases.jsonl).
+
+## Reviewer 03:10 item 5 — corpus from PSys2: plan.timeline grid — 39 → 45
+
+`/tmp/check.sh`: # pass 383 # fail 0 # pass 383 # fail 0 # pass 382 # fail 0 — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/cases.mjs`: 45 / 45 (acting 38, replying 4). Baseline 45.
+No source change, so no release.
+
+- PSys2's cases.jsonl now has 8812 lines (`wc -l`). plan.timeline grid: 5 (act, moment)
+  pairs (`python3 -c` count above), the same expectations as seating.
+- cases/schemas/timeline.sop is written as data from PSys2's `worlds/plan.timeline/schema.sop`
+  (one kind, moment, with when 0..3000 and default 1; its acts; at most 60).
+- 6 cases: the 5 pairs plus when=4000 refused. All passed on the first run, with no
+  library change.
+- Next: art.draw, data.charts, diagram.sketch, ui.avatar (the larger grid worlds; their
+  schemas first).

@@ -839,5 +839,225 @@
     }
    }
   ]
+ },
+ {
+  "id": "grid.timeline.make.moment",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.timeline grid: (make, moment) expects 'the state of the world changes'",
+  "schema": "timeline",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "moment",
+     "name": "birthday",
+     "when": 12
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "moment",
+     "name": "holiday",
+     "when": 200
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "moment",
+     "name": "exam"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.timeline.change.moment",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.timeline grid: (change, moment) expects 'the state of the world changes'",
+  "schema": "timeline",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "moment",
+     "name": "birthday",
+     "when": 12
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "moment",
+     "name": "holiday",
+     "when": 200
+    }
+   },
+   {
+    "act": "change",
+    "args": {
+     "thing": "moment1",
+     "attr": "when",
+     "by": "more"
+    },
+    "expect": {
+     "ok": true,
+     "changed": [
+      {
+       "id": "moment1",
+       "key": "when",
+       "from": "12",
+       "to": "13"
+      }
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.timeline.copy.moment",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.timeline grid: (copy, moment) expects 'the state of the world changes'",
+  "schema": "timeline",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "moment",
+     "name": "birthday",
+     "when": 12
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "moment",
+     "name": "holiday",
+     "when": 200
+    }
+   },
+   {
+    "act": "copy",
+    "args": {
+     "thing": "moment1"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.timeline.remove.moment",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.timeline grid: (remove, moment) expects 'the state of the world changes'",
+  "schema": "timeline",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "moment",
+     "name": "birthday",
+     "when": 12
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "moment",
+     "name": "holiday",
+     "when": 200
+    }
+   },
+   {
+    "act": "remove",
+    "args": {
+     "thing": "moment2"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.timeline.ask.moment",
+  "stage": "replying",
+  "source": "PSys2 training/eval/cases.jsonl, plan.timeline grid: (ask, moment) expects 'an answer that is not a refusal'",
+  "schema": "timeline",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "moment",
+     "name": "birthday",
+     "when": 12
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "moment",
+     "name": "holiday",
+     "when": 200
+    }
+   },
+   {
+    "act": "ask",
+    "args": {
+     "thing": "moment1",
+     "attr": "when"
+    },
+    "expect": {
+     "ok": true,
+     "result": {
+      "shape": "number",
+      "number": 12
+     }
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.timeline.change.out-of-range",
+  "stage": "acting",
+  "source": "PSys2 plan.timeline schema: when is 0..3000",
+  "schema": "timeline",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "moment",
+     "name": "birthday",
+     "when": 12
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "moment",
+     "name": "holiday",
+     "when": 200
+    }
+   },
+   {
+    "act": "change",
+    "args": {
+     "thing": "moment1",
+     "attr": "when",
+     "value": 4000
+    },
+    "expect": {
+     "ok": false,
+     "why": "at most 3000"
+    }
+   }
+  ]
  }
 ]

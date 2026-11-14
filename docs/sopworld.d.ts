@@ -622,3 +622,7 @@ export function readDocument(world: World, id: string): { title?: string; genre?
 export function discourseRealiser(world: World, options?: { seed?: number; type?: string; clause?: (fact: object, world?: World) => string | null; np?: (name: string) => string; inflect?: (word: string, features: Record<string, string>) => string; fill?: (slot: string, frame: object, context: object) => string | null | undefined }): (frame: object, register: string | { name: string } | null, context?: object) => { text: string; template: string } | null;
 /** The discourse templates a world holds. */
 export function discourseTemplates(world: World, type?: string): { id: string; move: string; register: string; slots: string[]; text: string }[];
+/** Type-driven reading: frames from the types of the content words, word order only ranks. */
+export function readByTypes(world: World, text: string, options?: { question?: string[]; skip?: string[]; lemma?: (word: string) => string[] }): { frames: { frame: object; score: number; words: string[] }[]; best: { is: string; key?: string; of?: object; value?: string; kind?: string; act?: string; args?: Record<string, string>; answer?: string[] } | null; ambiguous?: boolean; unread: string[] };
+/** The world's own typed lexicon: word -> senses (thing, kind, attr, value, act, word). */
+export function typedLexicon(world: World): Map<string, object[]>;

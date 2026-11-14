@@ -4693,3 +4693,12 @@ Gates: npm test 434 / 434 / 433 pass, 0 fail; pilot identical; psys2=0; scan cle
   - held: R-1 F1 0.399, R-2 0.161, 172 words (lead 0.393, 0.171).
 - Gates: npm test 436 / 436 / 435 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Next (21:00, top priority): the abstraction round, starting with the design note in questions.md.
+
+## 0.72.0: type-driven reading (abstraction round item 1, Q54)
+
+- `readByTypes`: test/read-types.test.mjs, 13 paraphrases in 3 sets read to their set's frame, 13/13. The sets differ in word order and verbs: "what sound does a cow make", "a cow makes which sound", "cow sound?", "what does a cow say", "which animal says woof", "woof is the sound of which animal".
+- Before: the grammar path needs one frame per construction; on this toy world with no grammar, 0 of these read.
+- Unread words are listed ("zebra").
+- Gates: npm test 438 / 438 / 437 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+- For PSys2: please measure paraphrases-rt and schema-alone with readByTypes as a fallback before the grammar's frames, or as a ranker over them.
+- Next: item 3 (word senses from k.words in typed slots), then item 2 (alternations).

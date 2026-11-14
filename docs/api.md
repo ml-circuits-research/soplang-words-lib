@@ -1662,6 +1662,39 @@ print(compose(w, 'owl', { genre: 'note' }).parts.map((p) => [p.part, p.relation 
 [["head","",["owl"]],["point","k.home",["b"]],["point","k.diet",["a"]]]
 ```
 
+### readByTypes(world, text, options?) and typedLexicon(world)
+
+Type-driven reading (abstraction round, item 1). Each content word is typed through the
+world itself:
+- a thing: a fact's name;
+- a kind: a type, or a `kind`, `class` or `is` value;
+- an attribute: a key that facts carry;
+- a value: a key's value;
+- an act: a word of an action;
+- a known word: a `core.word`. A verb that means a key asks for that key.
+
+The candidate frames are the relations, inverse relations and acts whose argument types the
+words fill, each word used once:
+- `ask`: the `key` of a thing or kind, with its `answer`;
+- `find`: the holders of a kind with `key=value`;
+- `act`: an act with its arguments, by type.
+
+Word order and function words only rank the frames, so paraphrases in any order read to one
+frame. Options: `question` (words that make a question), `skip` (words passed over),
+`lemma`. Words the world does not know are listed in `unread`. `typedLexicon` is the
+lexicon, memoised per world.
+
+```js run
+const w = new World();
+w.tell('@cow k.animal name=cow sound=moo  @s core.word text=make text=makes means=sound');
+const O = { question: ['what', 'which', 'does'], skip: ['a', 'the', 'of'] };
+print(['what sound does a cow make', 'a cow makes which sound', 'cow sound?'].map((t) => readByTypes(w, t, O).best.answer[0]));
+```
+
+```output
+["moo","moo","moo"]
+```
+
 ### discourseRealiser(world, options?) and discourseTemplates(world, type?)
 
 Sentences for composition frames from a language world's discourse templates

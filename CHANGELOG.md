@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.72.0
+
+Abstraction round, item 1 (reviewer 21:00; design note in questions.md Q54): type-driven
+reading.
+
+### New
+- `readByTypes(world, text, { question, skip, lemma })`: content words typed through the
+  world's own facts (thing, kind, attribute, value, act, known word). The frames are `ask`
+  (a key of a thing or kind), `find` (holders with key=value) and `act` (arguments by
+  type). Word order only ranks, and unread words are listed.
+- `typedLexicon(world)`.
+
 ## 0.71.0
 
 The composition pins (reviewer 20:45): the knowledge repository at 179fc1c, with w.lang.en's

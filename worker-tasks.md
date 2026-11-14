@@ -1279,3 +1279,13 @@ Accepted: completeness (left/complete, ensemble coverage first), arbitrate by co
 The owner finds diagrams dumb. When the knowledge repository publishes `w.diagram` and `k.diagrams` (diagram kinds with structure, layout, shape conventions, and which knowledge fills each), add a diagram path to `std.compose` (or a small `composeDiagram`): a kind × a topic whose knowledge has that structure → nodes/edges/groups in a `w.diagram` live world, laid out by the kind's layout through std.space; `sample` draws random diagrams that way. Arrangement requests ("in a circle", "evenly", "left to right") as acts over a layout, read by w.lang.en frames.
 
 **04:55:** reviewer ran `npm test` on 0.107: see below — Q66 (indexed join check, quoted = bare) accepted if green. The knowledge repository can now declare the k.objects `of` joins.
+
+## Reviewer 2026-11-15 05:10 — NAMES: "cousins" is a metaphor; rename to established terms (owner, 20:05: risky for long-term maintenance)
+
+The family metaphor (siblings, cousins, degree) helped the design, but code and docs should use the terms of the testing and NLP literature, where this is **perturbation / metamorphic testing** (CheckList, Ribeiro et al. 2020: invariance and directional tests; contrast sets, Gardner et al. 2020): cases derived from one case along named axes. Rename, with the old names kept as deprecated aliases for two releases, then removed:
+- `cousins(world, case, { degree, dims })` → **`relatedCases(world, case, { distance, axes })`**; a result's `degree` → `distance`, `dims` → `axes` (kind, aspect, act family, alternation, form operator, structure).
+- `judgeFix` → **`judgeOnRelated`**; `cousinsTest` / `tools/cousins-test.mjs` → **`generalisationTest`** / `tools/generalisation-test.mjs`; `cousinsOf` → `relatedOf`; src/cousins.mjs → src/related-cases.mjs; test files likewise.
+- Skill `expand-and-test-case` stays (its name already says what it does); update its text.
+- `kindChain` / `ancestorsOf` / `familyOf` / `formEdits` / `liftTokens` are fine.
+- Docs: one paragraph in docs/decisions.md or a new docs/generalisation.md: "related cases at distance d along axes", with the literature, the owner's original picture (up the abstraction graph, then down), and the measure (a fix judged on held-out related cases). Search the repository for "cousin" afterwards: only the deprecation notes and the CHANGELOG history may keep it.
+PSys2 and the knowledge repository rename their uses when the release is out (PSys2: scripts/cousins.mjs, the `cousinsReal` curve series → `relatedReal`).

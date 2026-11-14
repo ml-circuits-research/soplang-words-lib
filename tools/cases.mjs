@@ -6,9 +6,12 @@
 //   node tools/cases.mjs [--json] [--failures]
 import { readFileSync, readdirSync } from 'node:fs';
 import { World, turn, route } from '../src/index.mjs';
+import { worldText } from './worlds.mjs';
 
 const dir = new URL('../cases/', import.meta.url);
-const schemas = Object.fromEntries(readdirSync(new URL('schemas/', dir)).filter((f) => f.endsWith('.sop')).map((f) => [f.slice(0, -4), readFileSync(new URL(`schemas/${f}`, dir), 'utf8')]));
+// A case names the published worlds it needs (`world`: read from sop-knowledge-worlds at the
+// commit in worlds.pin) and carries any other wires itself (`wires`: only what it needs).
+// std.acts is always loaded. A case whose world cannot be had (offline) is skipped.
 const cases = readdirSync(dir).filter((f) => f.endsWith('.cases.json')).flatMap((f) => JSON.parse(readFileSync(new URL(f, dir), 'utf8')));
 
 /** Does one step's result meet what is expected? Returns null or the reason it does not. */
@@ -35,9 +38,11 @@ export function runCases() {
   const out = [];
   for (const c of cases) { // bounded: the corpus
     let fail = null;
+    const texts = [].concat(c.world || []).map((n) => worldText(n));
+    if (texts.some((t) => t === null)) { out.push({ id: c.id, stage: c.stage, source: c.source, ok: true, skipped: 'the published worlds cannot be read here' }); continue; }
     try {
       const w = new World();
-      w.load(schemas[c.schema]);
+      w.load(['@acts core.use world=std.acts', ...texts, c.wires || ''].join('\n'));
       for (const [i, s] of c.steps.entries()) {
         let r, kind = 'act';
         if (s.why) { r = w.why(...s.why); kind = 'why'; } else if (s.route) { r = route(w, s.route); kind = 'route'; } else if (s.turn) { r = turn(w, s.turn); kind = 'turn'; } else r = w.act({ action: s.act, args: s.args });
@@ -49,7 +54,7 @@ export function runCases() {
   }
   const byStage = {};
   for (const r of out) { const s = (byStage[r.stage] ||= { pass: 0, fail: 0 }); r.ok ? s.pass++ : s.fail++; }
-  return { total: out.length, pass: out.filter((r) => r.ok).length, byStage, results: out };
+  return { total: out.length, pass: out.filter((r) => r.ok).length, skipped: out.filter((r) => r.skipped).length, byStage, results: out };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

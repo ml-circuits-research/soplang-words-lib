@@ -11,9 +11,9 @@ const make = (...extra) => { const w = new World(); w.load(['@acts core.use worl
 test('knowledge fills what a made thing lacks: the usual place, size and colour, with the source', () => {
   const w = make();
   const r = w.act({ action: 'make', args: { kind: 'fish' } });
-  assert.deepEqual(r.result.filled, [{ key: 'place', value: 'water', tier: 'knowledge', source: 'hand-core 1' }, { key: 'size', value: 'small', tier: 'knowledge', source: 'hand-core 1' }]);
+  assert.deepEqual(r.result.filled, [{ key: 'place', value: 'water', tier: 'knowledge', source: 'example' }, { key: 'size', value: 'small', tier: 'knowledge', source: 'example' }]);
   assert.deepEqual([w.get('fish1').attrs.place, w.tier('fish1', 'place')], [['water'], 'default'], 'an assumption, weaker than what is told');
-  assert.deepEqual(w.act({ action: 'make', args: { kind: 'robot' } }).result.filled, [{ key: 'colour', value: 'grey', tier: 'knowledge', source: 'hand-core 1' }]);
+  assert.deepEqual(w.act({ action: 'make', args: { kind: 'robot' } }).result.filled, [{ key: 'colour', value: 'grey', tier: 'knowledge', source: 'example' }]);
   // what the request says wins; a value changed later stays
   const sun = w.act({ action: 'make', args: { kind: 'sun', size: 'tiny' } });
   assert.deepEqual([w.get(sun.result.thing).attrs.size, w.get(sun.result.thing).attrs.place], [['tiny'], ['sky']]);

@@ -3,128 +3,127 @@
   "id": "acts.make.one",
   "stage": "acting",
   "source": "handover/acts executor",
-  "schema": "seating",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "table"
+     "kind": "w.seating.table"
     },
     "expect": {
      "ok": true,
      "added": [
-      "table1"
+      "w_seating_table1"
      ]
     }
    }
-  ]
+  ],
+  "world": "w.seating"
  },
  {
   "id": "acts.make.amount",
   "stage": "acting",
   "source": "handover/acts executor: make 2 tables",
-  "schema": "seating",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "table",
+     "kind": "w.seating.table",
      "amount": 2
     },
     "expect": {
      "ok": true,
      "added": [
-      "table1",
-      "table2"
+      "w_seating_table1",
+      "w_seating_table2"
      ]
     }
    }
-  ]
+  ],
+  "world": "w.seating"
  },
  {
   "id": "acts.make.into",
   "stage": "acting",
   "source": "handover/acts executor: a guest at table 1",
-  "schema": "seating",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "table"
+     "kind": "box"
     }
    },
    {
     "act": "make",
     "args": {
-     "kind": "guest",
+     "kind": "item",
      "name": "ann",
-     "at": "$table1"
+     "in": "$box1"
     },
     "expect": {
      "ok": true,
      "added": [
-      "guest1"
+      "item1"
      ]
     }
    }
-  ]
+  ],
+  "wires": "@box core.type of=box extends=std.schema.thing closed=true\n@toy std.schema.world name=toy doc=\"an invented example\"\n@item core.type of=item extends=std.schema.thing closed=true\n@item.name core.slot of=item key=name required=true\n@item.in core.slot of=item key=in type=box\n@k.box std.schema.kind of=box world=toy acts=make acts=change acts=ask\n@k.item std.schema.kind of=item world=toy acts=make acts=ask"
  },
  {
   "id": "acts.change.value",
   "stage": "acting",
   "source": "handover/acts executor: table 2 blue",
-  "schema": "seating",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "table"
+     "kind": "w.seating.table"
     }
    },
    {
     "act": "make",
     "args": {
-     "kind": "table"
+     "kind": "w.seating.table"
     }
    },
    {
     "act": "change",
     "args": {
-     "thing": "table2",
-     "attr": "colour",
-     "value": "blue"
+     "thing": "w_seating_table2",
+     "attr": "shape",
+     "value": "square"
     },
     "expect": {
      "ok": true,
      "changed": [
       {
-       "id": "table2",
-       "key": "colour",
-       "from": "white",
-       "to": "blue"
+       "id": "w_seating_table2",
+       "key": "shape",
+       "from": "round",
+       "to": "square"
       }
      ]
     }
    }
-  ]
+  ],
+  "world": "w.seating"
  },
  {
   "id": "acts.change.more",
   "stage": "acting",
   "source": "handover/acts executor: 2 more seats",
-  "schema": "seating",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "table"
+     "kind": "box"
     }
    },
    {
     "act": "change",
     "args": {
-     "thing": "table1",
-     "attr": "seats",
+     "thing": "box1",
+     "attr": "room",
      "by": "more",
      "amount": 2
     },
@@ -132,45 +131,45 @@
      "ok": true,
      "changed": [
       {
-       "id": "table1",
-       "key": "seats",
+       "id": "box1",
+       "key": "room",
        "from": "4",
        "to": "6"
       }
      ]
     }
    }
-  ]
+  ],
+  "wires": "@box core.type of=box extends=std.schema.thing closed=true\n@toy std.schema.world name=toy doc=\"an invented example\"\n@box.room core.slot of=box key=room kind=integer min=1 max=12 step=1 default=4\n@k.box std.schema.kind of=box world=toy acts=make acts=change acts=ask"
  },
  {
   "id": "acts.remove.set.undo",
   "stage": "acting",
   "source": "handover/acts executor: remove all the tables, one undo step",
-  "schema": "seating",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "table"
+     "kind": "w.seating.table"
     }
    },
    {
     "act": "make",
     "args": {
-     "kind": "table"
+     "kind": "w.seating.table"
     }
    },
    {
     "act": "make",
     "args": {
-     "kind": "guest",
+     "kind": "w.seating.guest",
      "name": "ann"
     }
    },
    {
     "act": "remove",
     "args": {
-     "thing": "table",
+     "thing": "w.seating.table",
      "set": "all"
     },
     "expect": {
@@ -184,22 +183,22 @@
     "expect": {
      "ok": true,
      "count": {
-      "table": 2
+      "w.seating.table": 2
      }
     }
    }
-  ]
+  ],
+  "world": "w.seating"
  },
  {
   "id": "acts.redo.ends",
   "stage": "acting",
   "source": "handover/acts executor: a new act ends the redo",
-  "schema": "seating",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "table"
+     "kind": "w.seating.table"
     }
    },
    {
@@ -209,7 +208,7 @@
    {
     "act": "make",
     "args": {
-     "kind": "table"
+     "kind": "w.seating.table"
     }
    },
    {
@@ -219,50 +218,50 @@
      "ok": false
     }
    }
-  ]
+  ],
+  "world": "w.seating"
  },
  {
   "id": "acts.limit.max",
   "stage": "acting",
-  "source": "handover/acts executor: at most 8 tables",
-  "schema": "seating",
+  "source": "handover/acts executor: at most 8 boxs",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "table",
+     "kind": "box",
      "amount": 8
     }
    },
    {
     "act": "make",
     "args": {
-     "kind": "table"
+     "kind": "box"
     },
     "expect": {
      "ok": false,
-     "why": "at most 8 table"
+     "why": "at most 8 box"
     }
    }
-  ]
+  ],
+  "wires": "@box core.type of=box extends=std.schema.thing closed=true\n@toy std.schema.world name=toy doc=\"an invented example\"\n@k.box std.schema.kind of=box world=toy acts=make acts=change acts=ask\n@lim std.schema.limit of=box max=8"
  },
  {
   "id": "acts.limit.range",
   "stage": "acting",
   "source": "handover/acts executor: seats from 1 to 12",
-  "schema": "seating",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "table"
+     "kind": "box"
     }
    },
    {
     "act": "change",
     "args": {
-     "thing": "table1",
-     "attr": "seats",
+     "thing": "box1",
+     "attr": "room",
      "value": 99
     },
     "expect": {
@@ -270,174 +269,174 @@
      "kind": "domain"
     }
    }
-  ]
+  ],
+  "wires": "@box core.type of=box extends=std.schema.thing closed=true\n@toy std.schema.world name=toy doc=\"an invented example\"\n@box.room core.slot of=box key=room kind=integer min=1 max=12 step=1 default=4\n@k.box std.schema.kind of=box world=toy acts=make acts=change acts=ask"
  },
  {
   "id": "acts.limit.capacity",
   "stage": "acting",
   "source": "handover/acts executor: room for 0 more guests",
-  "schema": "seating",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "table"
+     "kind": "box"
     }
    },
    {
     "act": "change",
     "args": {
-     "thing": "table1",
-     "attr": "seats",
+     "thing": "box1",
+     "attr": "room",
      "value": 2
     }
    },
    {
     "act": "make",
     "args": {
-     "kind": "guest",
+     "kind": "item",
      "name": "a",
-     "at": "$table1"
+     "in": "$box1"
     }
    },
    {
     "act": "make",
     "args": {
-     "kind": "guest",
+     "kind": "item",
      "name": "b",
-     "at": "$table1"
+     "in": "$box1"
     }
    },
    {
     "act": "make",
     "args": {
-     "kind": "guest",
+     "kind": "item",
      "name": "c",
-     "at": "$table1"
+     "in": "$box1"
     },
     "expect": {
      "ok": false
     }
    }
-  ]
+  ],
+  "wires": "@box core.type of=box extends=std.schema.thing closed=true\n@toy std.schema.world name=toy doc=\"an invented example\"\n@box.room core.slot of=box key=room kind=integer min=1 max=12 step=1 default=4\n@item core.type of=item extends=std.schema.thing closed=true\n@item.name core.slot of=item key=name required=true\n@item.in core.slot of=item key=in type=box\n@k.box std.schema.kind of=box world=toy acts=make acts=change acts=ask\n@k.item std.schema.kind of=item world=toy acts=make acts=ask\n@cap std.schema.capacity of=box key=room holds=item via=in"
  },
  {
   "id": "acts.limit.capacity.shrink",
   "stage": "acting",
   "source": "handover/acts executor: a table with 2 guests cannot have 1 seat",
-  "schema": "seating",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "table"
+     "kind": "box"
     }
    },
    {
     "act": "make",
     "args": {
-     "kind": "guest",
+     "kind": "item",
      "name": "a",
-     "at": "$table1"
+     "in": "$box1"
     }
    },
    {
     "act": "make",
     "args": {
-     "kind": "guest",
+     "kind": "item",
      "name": "b",
-     "at": "$table1"
+     "in": "$box1"
     }
    },
    {
     "act": "change",
     "args": {
-     "thing": "table1",
-     "attr": "seats",
+     "thing": "box1",
+     "attr": "room",
      "value": 1
     },
     "expect": {
      "ok": false
     }
    }
-  ]
+  ],
+  "wires": "@box core.type of=box extends=std.schema.thing closed=true\n@toy std.schema.world name=toy doc=\"an invented example\"\n@box.room core.slot of=box key=room kind=integer min=1 max=12 step=1 default=4\n@item core.type of=item extends=std.schema.thing closed=true\n@item.name core.slot of=item key=name required=true\n@item.in core.slot of=item key=in type=box\n@k.box std.schema.kind of=box world=toy acts=make acts=change acts=ask\n@k.item std.schema.kind of=item world=toy acts=make acts=ask\n@cap std.schema.capacity of=box key=room holds=item via=in"
  },
  {
   "id": "acts.why.act",
   "stage": "replying",
   "source": "handover/acts executor: why is table 1 blue",
-  "schema": "seating",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "table"
+     "kind": "w.seating.table"
     }
    },
    {
     "act": "change",
     "args": {
-     "thing": "table1",
-     "attr": "colour",
-     "value": "blue"
+     "thing": "w_seating_table1",
+     "attr": "shape",
+     "value": "square"
     }
    },
    {
     "why": [
-     "table1",
-     "colour"
+     "w_seating_table1",
+     "shape"
     ],
     "expect": {
      "how": "action",
      "action": "change"
     }
    }
-  ]
+  ],
+  "world": "w.seating"
  },
  {
   "id": "acts.why.default",
   "stage": "replying",
   "source": "handover/acts executor: white because it is the default",
-  "schema": "seating",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "table"
+     "kind": "w.seating.table"
     }
    },
    {
     "why": [
-     "table1",
-     "colour"
+     "w_seating_table1",
+     "shape"
     ],
     "expect": {
      "how": "default"
     }
    }
-  ]
+  ],
+  "world": "w.seating"
  },
  {
   "id": "acts.copy.group.save",
   "stage": "acting",
   "source": "handover/acts executor: copy, group, save and load",
-  "schema": "seating",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "table"
+     "kind": "w.seating.table"
     }
    },
    {
     "act": "copy",
     "args": {
-     "thing": "table1"
+     "thing": "w_seating_table1"
     },
     "expect": {
      "ok": true,
      "added": [
-      "table2"
+      "w_seating_table2"
      ]
     }
    },
@@ -453,7 +452,7 @@
    {
     "act": "remove",
     "args": {
-     "thing": "table2"
+     "thing": "w_seating_table2"
     }
    },
    {
@@ -464,36 +463,36 @@
     "expect": {
      "ok": true,
      "count": {
-      "table": 2
+      "w.seating.table": 2
      }
     }
    }
-  ]
+  ],
+  "world": "w.seating"
  },
  {
   "id": "route.kind",
   "stage": "routing",
   "source": "sopworld",
-  "schema": "seating",
   "steps": [
    {
     "route": {
      "action": "make",
      "args": {
-      "kind": "guest"
+      "kind": "w.seating.guest"
      }
     },
     "expect": {
-     "world": "seating"
+     "world": "w.seating"
     }
    }
-  ]
+  ],
+  "world": "w.seating"
  },
  {
   "id": "route.none",
   "stage": "routing",
   "source": "sopworld",
-  "schema": "seating",
   "steps": [
    {
     "turn": [
@@ -508,13 +507,13 @@
      "status": "unknown"
     }
    }
-  ]
+  ],
+  "world": "w.seating"
  },
  {
   "id": "fill.ask",
   "stage": "filling",
   "source": "sopworld",
-  "schema": "seating",
   "steps": [
    {
     "turn": [
@@ -529,58 +528,58 @@
      "status": "ask"
     }
    }
-  ]
+  ],
+  "world": "w.seating"
  },
  {
   "id": "defect.make.required",
   "stage": "acting",
   "source": "reviewer 02:45 (knowledge repo on 0.26.0): make without a required attribute",
-  "schema": "seating",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "guest"
+     "kind": "w.seating.guest"
     },
     "expect": {
      "ok": true,
      "added": [
-      "guest1"
+      "w_seating_guest1"
      ],
      "asks": [
       "name"
      ]
     }
    }
-  ]
+  ],
+  "world": "w.seating"
  },
  {
   "id": "defect.undo.after.remove",
   "stage": "acting",
   "source": "reviewer 02:45 (knowledge repo on 0.26.0): undo right after remove",
-  "schema": "seating",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "table"
+     "kind": "w.seating.table"
     }
    },
    {
     "act": "make",
     "args": {
-     "kind": "table"
+     "kind": "w.seating.table"
     }
    },
    {
     "act": "remove",
     "args": {
-     "thing": "table1"
+     "thing": "w_seating_table1"
     },
     "expect": {
      "ok": true,
      "count": {
-      "table": 1
+      "w.seating.table": 1
      }
     }
    },
@@ -590,17 +589,17 @@
     "expect": {
      "ok": true,
      "count": {
-      "table": 2
+      "w.seating.table": 2
      }
     }
    }
-  ]
+  ],
+  "world": "w.seating"
  },
  {
   "id": "view.zoom.implicit",
   "stage": "acting",
   "source": "reviewer 03:10 item 1: \"zoom in\" names no thing; the view's state has zoom",
-  "schema": "map",
   "steps": [
    {
     "act": "change",
@@ -644,48 +643,48 @@
      "why": "at most 10"
     }
    }
-  ]
+  ],
+  "wires": "@geo std.schema.world name=geo\n@t.m core.type of=map.state extends=std.schema.thing closed=true\n@s.z core.slot of=map.state key=zoom kind=integer min=1 max=10 step=1 default=3\n@s.l core.slot of=map.state key=layer enum=borders enum=rivers enum=none default=none\n@k.m std.schema.kind of=map.state world=geo acts=change acts=ask\n@v std.schema.view name=map state=map.state"
  },
  {
   "id": "ask.which.rel",
   "stage": "replying",
   "source": "reviewer 03:10 item 3: who sits at table 1; does guest1 sit at table1",
-  "schema": "seating",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "table"
+     "kind": "box"
     }
    },
    {
     "act": "make",
     "args": {
-     "kind": "guest",
+     "kind": "item",
      "name": "ann",
-     "at": "$table1"
+     "in": "$box1"
     }
    },
    {
     "act": "make",
     "args": {
-     "kind": "guest",
+     "kind": "item",
      "name": "bob"
     }
    },
    {
     "act": "ask",
     "args": {
-     "kind": "guest",
-     "rel": "at",
-     "of": "table1"
+     "kind": "item",
+     "rel": "in",
+     "of": "box1"
     },
     "expect": {
      "ok": true,
      "result": {
       "shape": "list",
       "things": [
-       "guest1"
+       "item1"
       ]
      }
     }
@@ -693,9 +692,9 @@
    {
     "act": "ask",
     "args": {
-     "thing": "guest1",
-     "rel": "at",
-     "of": "table1"
+     "thing": "item1",
+     "rel": "in",
+     "of": "box1"
     },
     "expect": {
      "ok": true,
@@ -705,6 +704,7 @@
      }
     }
    }
-  ]
+  ],
+  "wires": "@box core.type of=box extends=std.schema.thing closed=true\n@toy std.schema.world name=toy doc=\"an invented example\"\n@item core.type of=item extends=std.schema.thing closed=true\n@item.name core.slot of=item key=name required=true\n@item.in core.slot of=item key=in type=box\n@k.box std.schema.kind of=box world=toy acts=make acts=change acts=ask\n@k.item std.schema.kind of=item world=toy acts=make acts=ask"
  }
 ]

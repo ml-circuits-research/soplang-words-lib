@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { World } from '../tools/lib-under-test.mjs';
 
-const GEO = `@k.geo.fr k.geo.country name=france population=68000000people borders=spain borders=germany core.source="hand-core"
+const GEO = `@k.geo.fr k.geo.country name=france population=68000000people borders=spain borders=germany core.source="example"
 @k.geo.es k.geo.country name=spain population=48000000people borders=france borders=portugal
 @k.geo.de k.geo.country name=germany borders=france
 @k.geo.pt k.geo.country name=portugal borders=spain`;
@@ -15,7 +15,7 @@ test('ask: which things relate to one (either way round), how many, a number wit
   assert.deepEqual(ask({ kind: 'k.geo.country', rel: 'borders', of: 'france' }).names, ['spain', 'germany'], '"which countries border France"');
   assert.deepEqual(ask({ kind: 'k.geo.country', rel: 'borders', of: 'portugal' }).names, ['spain'], 'portugal lists spain; spain lists portugal: either way');
   const pop = ask({ thing: 'france', attr: 'population' });
-  assert.deepEqual([pop.shape, pop.number, pop.unit, pop.source], ['number', 68000000, 'people', 'hand-core'], '"how many people live in France"');
+  assert.deepEqual([pop.shape, pop.number, pop.unit, pop.source], ['number', 68000000, 'people', 'example'], '"how many people live in France"');
   assert.deepEqual([ask({ thing: 'spain', rel: 'borders', of: 'germany' }).answer, ask({ thing: 'portugal', rel: 'borders', of: 'spain' }).answer], [false, true], '"does Spain border Germany"');
   assert.deepEqual([ask({ kind: 'k.geo.country', count: true }).shape, ask({ kind: 'k.geo.country', count: true }).number], ['number', 4]);
   assert.equal(ask({ thing: 'germany', attr: 'population' }).shape, 'none');

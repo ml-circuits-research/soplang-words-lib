@@ -8,12 +8,15 @@ import { join } from 'node:path';
 import { World, parse } from '../../tools/lib-under-test.mjs';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
-const dir = join(here, 'worlds');
+// PSys2's legends, read from PSys2 at the commit in psys2.pin: the six the sample worlds use
+import { psys2Dir } from '../../tools/worlds.mjs';
+const dir = psys2Dir() ? join(psys2Dir(), 'worlds') : null;
+const SAMPLE = ['core', 'kids.common', 'lang.common', 'kids.shop', 'kids.arith', 'kids.tasks'];
 
-/** A world with mapping.sop and every legend of compat/psys2/worlds, loaded in import order. */
+/** A world with mapping.sop and the legends of the sample (PSys2 at psys2.pin), loaded in import order. */
 export function loadLegends(options = {}) {
   const texts = new Map(); // namespace -> { text, imports, world }
-  for (const name of readdirSync(dir)) {
+  for (const name of SAMPLE) {
     const file = join(dir, name, 'legend.sop');
     if (!existsSync(file)) continue;
     const text = readFileSync(file, 'utf8');

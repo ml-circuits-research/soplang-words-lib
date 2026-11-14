@@ -1,1 +1,1 @@
-{ "total": 61, "pass": 61, "note": "the corpus only grows; a release may not pass fewer than this without saying why in worker-log" }
+{ "total": 55, "pass": 55, "note": "the corpus only grows; a release may not pass fewer than this without saying why in worker-log. 61 -> 55 on 2026-11-14 (reviewer 04:40): the cases now run on the published w.seating and w.timeline; 5 seating pairs those worlds do not allow and 1 range of PSys2's own timeline were dropped (proposed to sop-knowledge-worlds, questions.md Q35)" }

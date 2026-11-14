@@ -42,7 +42,7 @@ test('turn: graded fallback — one question; not here but there; the best guess
 test('turn: a value filled from knowledge is said as a guess', () => {
   const w = zooWorld();
   const t = turn(w, [{ action: 'make', args: { kind: 'fish' } }]);
-  assert.deepEqual(t.replies, ['I made a fish (fish1).', 'I guessed place water (knowledge, hand-core 1), size small (knowledge, hand-core 1).']);
+  assert.deepEqual(t.replies, ['I made a fish (fish1).', 'I guessed place water (knowledge, example), size small (knowledge, example).']);
 });
 
 test('route: worlds scored by their cards, the thing named, a dry run, and the host\'s own signal', async () => {

@@ -2,12 +2,15 @@
 
 A small sample from PSys2 (https://github.com/ml-circuits-research/psys2, same owner, copied with permission), the first large user of this library. It is test material for the *compatibility suite* only: the library does not import from it and it is not in the npm package.
 
+PSys2's own files are **not kept here** (reviewer 04:40): its specifications and the six
+worlds the sample uses (`core`, `kids.common`, `lang.common`, `kids.shop`, `kids.arith`,
+`kids.tasks`) are read from PSys2 at the commit in `psys2.pin` (45ac4bf, the one the
+matrices were built against), through `tools/worlds.mjs` (a checkout in `.cache/psys2`,
+fetched on first use; the tests are skipped offline).
+
 | Path | What it is |
 | --- | --- |
-| `specs/` | PSys2's specifications of its SOP Lang dialect, its legends and its interpreter (questions, answers, result envelope). |
-| `worlds/{core,kids.common,lang.common}` | The shared legends the three sample worlds import. |
-| `worlds/{kids.shop,kids.arith,kids.tasks}` | Three small worlds: legend, knowledge base, operation declarations, the JavaScript that computes their answers today, reply templates, tests. |
-| `cases/<world>.cases.jsonl` | For each test, in run order: `input`, `session` (same session = one dialogue), `expect`, `expectStatus`, the `wires` PSys2 added for the turn (facts, events, questions, requests, and PSys2's own `core.answer` wires) and `psys2.answers` (status, value, values, text, via, from, reason). 147, 217 and 232 cases. |
+| `cases/<world>.cases.jsonl` | For each test, in run order: `input`, `session`, `expect`, `expectStatus`, the `wires` PSys2 added for the turn. These are PSys2's answers recorded by running it, which PSys2 does not keep, so they stay here as the test data of the compatibility check. |
 | `tools/dump-cases.mjs` | The script that produced the cases (runs inside a PSys2 checkout). |
 
 ## What is built on it

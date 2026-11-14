@@ -4032,3 +4032,47 @@ No source change.
 - 16 cases, all passing on the first run:
   - make, change (size bigger: 1 → 1.1), remove, place, and ask (number 1) for each kind;
   - size 2 refused.
+
+## Reviewer 04:40 — the library holds no particular worlds — done; release 0.41.0
+
+`/tmp/check.sh`: — pilot identical (now read from PSys2 at
+psys2.pin); psys2 grep empty; scan-loops clean; tsc clean. `node tools/cases.mjs`:
+55 / 55. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 0.41.0).
+
+Removed. Counted with `git ls-tree -r -l HEAD <dir>` (bytes and files) and `grep -cE '^@'`
+over its .sop files (wires):
+
+| what | files | bytes | wires | now comes from |
+| --- | --- | --- | --- | --- |
+| compat/psys2/worlds | 26 | 189724 | 1022 | PSys2 at psys2.pin 45ac4bf. All 26 files match it blob for blob; I found the commit by comparing `git hash-object` over the last 400 commits. |
+| compat/psys2/specs | 3 | 21989 | 0 | PSys2 at the same commit (specs/, same blobs) |
+| bench/fixtures/knowledge | 40 | 414432 | 3008 | sop-knowledge-worlds at worlds.pin a958180: its index, and the hand-core shards for bench/load.mjs (52 now, against 31 copied) |
+| cases/schemas | 4 | 4143 | 49 | w.seating and w.timeline (published); face and map carried inline by the few cases that need them |
+| total | 73 | 630288 | 4079 | |
+
+- tools/worlds.mjs: `checkout(name)`, `worldsDir()`, `psys2Dir()`, `worldText(name)`. It
+  uses `$SOPWORLDS_DIR` / `$PSYS2_DIR` or `.cache/` (gitignored), cloned or fetched at
+  the pin. Offline it returns null and the tests skip. Pins: worlds.pin, psys2.pin.
+- Cases: 61 → 55, said in cases/baseline.json.
+  - acts.cases: 13 of the 23 run on w.seating (kinds and ids renamed; colour became
+    shape). 10 carry a few invented "box / item" wires (capacity, limit, range, a guest
+    in a box, ask over a relation, the map view), only what each needs.
+  - grid seating: 13 pairs on w.seating. The 5 pairs it does not allow were dropped
+    (Q35.1).
+  - grid timeline: 5 on w.timeline (events). PSys2's range case was dropped (Q35.2).
+  - grid face: 16 cases, each with a one-kind world inline (Q35.3).
+- test/knowledge.test.mjs reads the published index.json. The published schemas now
+  import other worlds (k.commonsense imports k.kinds, ...), so the assertions check the
+  plan's shape (schemas first, a dependency before its user, the shard last) instead of
+  a fixed list. bench/load.mjs loads the schemas in the index's dependency order.
+- compat/psys2 keeps:
+  - its own work: mapping.sop, the matrices, run.mjs, the tests;
+  - the recorded PSys2 answers (cases/*.jsonl, about 800 KB). PSys2 does not keep them,
+    and the pilot needs them; this is the one consumer test data kept, as AGENTS.md rule 5
+    allows. If the pilot is to go too, it is one `git rm`, and the gate's
+    "pilot identical" line goes with it.
+- Examples: the few facts in examples, tests and quickstart were tagged "hand-core 1", the
+  knowledge repo's source tag. They are now tagged "example". Each example world is small;
+  the largest file, examples/worlds.mjs, holds seven separate worlds of 10 to 25 lines.
+- AGENTS.md rule 6 states the rule. questions.md Q35 holds the 4 proposals for
+  sop-knowledge-worlds.

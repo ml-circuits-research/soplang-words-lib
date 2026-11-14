@@ -16,8 +16,8 @@ export const zoo = String.raw`
 @picture std.schema.view name=picture shows=place shows=label
 @chart std.schema.view name=chart shows=size shows=label
 @list std.schema.view name=list shows=label shows=size shows=place
-@k.horse k.commonsense.thing name=horse at=field size=large core.source="hand-core 1"
-@k.pony k.commonsense.thing name=pony core.source="hand-core 1"
+@k.horse k.commonsense.thing name=horse at=field size=large core.source="example"
+@k.pony k.commonsense.thing name=pony core.source="example"
 `;
 
 export function makeWorld() {

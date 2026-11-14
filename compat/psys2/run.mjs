@@ -11,12 +11,17 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { join } from 'node:path';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
+// PSys2's own world files are read from PSys2 at the commit in psys2.pin (the one the
+// matrices were built against), not kept here.
+const { psys2Dir } = await import('../../tools/worlds.mjs');
+export const WORLDS_DIR = psys2Dir() ? join(psys2Dir(), 'worlds') : null;
+if (!WORLDS_DIR && import.meta.url === `file://${process.argv[1]}`) { console.error('PSys2 at the commit in psys2.pin cannot be read here (offline)'); process.exit(2); }
 const lib = await import(process.env.SOPWORLD_BUNDLE ? '../../docs/sopworld.mjs' : '../../src/index.mjs');
 const { World, parse } = lib;
 
 export const WORLDS = ['kids.shop', 'kids.arith', 'kids.tasks'];
 const read = (...p) => readFileSync(join(here, ...p), 'utf8');
-const legend = (name) => read('worlds', name, 'legend.sop');
+const legend = (name) => readFileSync(join(WORLDS_DIR, name, 'legend.sop'), 'utf8');
 const heads = (text) => parse(text).find((x) => x.type === 'core.legend');
 
 /** A fresh world for one session: mapping, the legends in import order, the knowledge base, the matrix. */
@@ -26,7 +31,7 @@ export async function build(name) {
   const host = existsSync(join(dir, 'fns.mjs')) ? await import(pathToFileURL(join(dir, 'fns.mjs')).href) : {};
   const order = [];
   const visit = (ns) => { // bounded: each legend once
-    if (order.includes(ns) || !existsSync(join(here, 'worlds', ns, 'legend.sop'))) return;
+    if (order.includes(ns) || !existsSync(join(WORLDS_DIR, ns, 'legend.sop'))) return;
     order.push(ns); // placeholder against import cycles
     for (const i of heads(legend(ns))?.attrs.imports || []) visit(i);
     order.splice(order.indexOf(ns), 1);
@@ -34,7 +39,7 @@ export async function build(name) {
   };
   visit(name);
   const texts = [read('mapping.sop'), ...order.map(legend)];
-  if (existsSync(join(here, 'worlds', name, 'kb.sop'))) texts.push(read('worlds', name, 'kb.sop'));
+  if (existsSync(join(WORLDS_DIR, name, 'kb.sop'))) texts.push(readFileSync(join(WORLDS_DIR, name, 'kb.sop'), 'utf8'));
   // PSys2 keeps the user as a built-in agent of every session
   texts.push('@e.user core.agent');
   texts.push(read('matrices', name, 'matrix.sop'));
@@ -113,7 +118,7 @@ export function size(name) {
   const dir = join(here, 'matrices', name);
   const matrix = codeLines(read('matrices', name, 'matrix.sop'), '#');
   const fns = existsSync(join(dir, 'fns.mjs')) ? codeLines(read('matrices', name, 'fns.mjs'), '//') : 0;
-  return { matrix, fns, ops: read('worlds', name, 'ops.mjs').split('\n').length - 1, opsCode: codeLines(read('worlds', name, 'ops.mjs'), '//') };
+  return { matrix, fns, ops: readFileSync(join(WORLDS_DIR, name, 'ops.mjs'), 'utf8').split('\n').length - 1, opsCode: codeLines(readFileSync(join(WORLDS_DIR, name, 'ops.mjs'), 'utf8'), '//') };
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

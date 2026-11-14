@@ -67,7 +67,7 @@ two-file bundle stands in for sop-knowledge-worlds.
 ```js run
 const files = {
   'k.commonsense/schema.sop': '@k1 core.slot of=k.commonsense.thing key=name id=true\n@k2 core.slot of=k.commonsense.thing key=at many=true\n@k3 core.slot of=k.commonsense.thing key=size',
-  'k.commonsense/shards/home.sop': '@sofa k.commonsense.thing name=sofa at=living_room size=large core.source="hand-core 1"',
+  'k.commonsense/shards/home.sop': '@sofa k.commonsense.thing name=sofa at=living_room size=large core.source="example"',
 };
 const index = { worlds: [{ id: 'k.commonsense', schema: 'k.commonsense/schema.sop', shards: [{ id: 'k.commonsense/shards/home', path: 'k.commonsense/shards/home.sop' }] }] };
 const cat = createCatalog({ index, vocab: { sofa: ['k.commonsense/shards/home'] }, read: bundleReader({ files }) });
@@ -78,7 +78,7 @@ print(r.result.filled.map((f) => `${f.key}=${f.value} (${f.source})`));
 ```
 
 ```output
-["place=living_room (hand-core 1)","size=large (hand-core 1)"]
+["place=living_room (example)","size=large (example)"]
 ```
 
 ## 5. One request end to end, with a reply

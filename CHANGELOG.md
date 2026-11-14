@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.41.0
+
+The reviewer's 04:40 rule: the library holds no particular worlds. No change in `src/`.
+
+### Changed
+- `tools/worlds.mjs` reads sop-knowledge-worlds at the commit in `worlds.pin`, and PSys2
+  at the commit in `psys2.pin`. Each is a checkout in `.cache/`, fetched on first use; the
+  tests that need one are skipped offline.
+- The case corpus names published worlds (`"world": "w.seating"`) or carries its own few
+  wires (`"wires"`). `cases/schemas/` is gone, and the corpus goes from 61 to 55 cases
+  (questions.md Q35).
+- `test/knowledge.test.mjs` and `bench/load.mjs` read the published worlds and their
+  index. `bench/fixtures/knowledge/` is gone.
+- `compat/psys2/` reads PSys2's worlds at the pinned commit. Its copies of worlds and
+  specs are gone; the pilot output is unchanged.
+- Examples: the knowledge facts in them are marked as invented examples.
+
 ## 0.40.0
 
 Reviewer 03:30: section 8 of PSys2's std-grammar.md, one noun-phrase reading over the

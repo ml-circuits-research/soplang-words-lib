@@ -170,6 +170,29 @@ A side finding for docs/reuse-reports/apps.md: "no X twice in one Y" needs no
 reference, but I missed it).
 Not blocking.
 
+## Q35 (reviewer 04:40): proposals to sop-knowledge-worlds, from the cases that left this repository
+
+For the reviewer to forward. The corpus now runs on the published `w.seating` and
+`w.timeline` (at worlds.pin a958180). These are the things that do not hold there, or
+that are not published:
+1. **w.seating, acts PSys2's plan.seating grid expects to change the world.** The table
+   lacks `connect`, `group` and `place`; the guest lacks `copy` and `place`. 5 grid cases
+   were dropped for this. If w.seating adds them, the cases come back as they were.
+   - The guest is seated through `seat` (a seat refers to its table), so a guest "at a
+     table" needs a seat first. `place guest at=<seat>` already works through the library's
+     place-into-a-thing (0.33): `place` would only need to be listed in the guest's acts.
+2. **w.timeline: a range for `at`.** PSys2's timeline bounds its moments to 0..3000.
+   `w.timeline.event.at` has none. Optional: the timeline's `from` / `to` could be checked
+   by a deny ("an event is inside its timeline"). One case was dropped.
+3. **A face (w.face)**, if reusable. PSys2's ui.avatar has 16 parts, each with colour and
+   size (0.6..1.5, default 1, step 0.1) and a place. 16 cases carry a one-kind version
+   inline until a published world has it. k.faces holds the knowledge (the parts'
+   shapes); a `w.face` schema in std.schema format would be its acting world.
+4. **A map view (w.map or in k.geo)**, if reusable. `std.schema.view name=map
+   state=map.state` with zoom 1..10 and layer (borders, rivers, none) is what PSys2's
+   geo.map pilot needs (0.37). One case carries it inline.
+Not blocking.
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

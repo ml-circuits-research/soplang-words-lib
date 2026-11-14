@@ -7,7 +7,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = new URL('../', import.meta.url).pathname;
-const files = [...readdirSync(join(root, 'examples')).map((f) => join(root, 'examples', f)).flatMap((p) => (statSync(p).isDirectory() ? readdirSync(p).map((f) => join(p, f)) : [p])), ...readdirSync(join(root, 'cases/schemas')).map((f) => join(root, 'cases/schemas', f))];
+const files = [...readdirSync(join(root, 'examples')).map((f) => join(root, 'examples', f)).flatMap((p) => (statSync(p).isDirectory() ? readdirSync(p).map((f) => join(p, f)) : [p]))];
 const LOADS = { 'std.acts': ['std.schema'], 'std.focus': ['std.fill'], 'std.know': ['std.fill'] };
 const pairs = new Map();
 for (const f of files) { // bounded: the files

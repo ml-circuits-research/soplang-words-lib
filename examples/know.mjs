@@ -1,14 +1,14 @@
 // Knowledge as a filler (Round 21): a drawing world that takes any kind the knowledge
 // catalog names; a thing made without a place, a size or a colour gets the usual ones from
 // the catalog's facts, with their source; a kind the catalog cannot draw is drawn as its
-// stand-in. The knowledge wires below are copied unchanged from sop-knowledge-worlds
-// (hand-written, `sources: hand-core`, license CC0-1.0). `node examples/know.mjs`
+// stand-in. The knowledge wires below are an invented example in the format of
+// sop-knowledge-worlds (the real facts live there, not here). `node examples/know.mjs`
 import { World } from '../src/index.mjs';
 
 export const knowledge = String.raw`
-@k.commonsense.fish k.commonsense.thing name=fish at=water can=swim used_for=food size=small core.source="hand-core 1"
-@k.commonsense.sun k.commonsense.thing name=sun at=sky made_of=gas size=huge usually_count=1 core.source="hand-core 1"
-@k.objects.robot.body k.objects.part of=robot name=body shape=rectangle x=25 y=34 w=50 h=38 z=2 colour=grey centered=true core.source="hand-core 1"
+@k.commonsense.fish k.commonsense.thing name=fish at=water can=swim used_for=food size=small core.source="example"
+@k.commonsense.sun k.commonsense.thing name=sun at=sky made_of=gas size=huge usually_count=1 core.source="example"
+@k.objects.robot.body k.objects.part of=robot name=body shape=rectangle x=25 y=34 w=50 h=38 z=2 colour=grey centered=true core.source="example"
 `;
 
 // the drawing world: any kind the catalog names, as data

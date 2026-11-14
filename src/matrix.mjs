@@ -22,7 +22,7 @@ export const SCHEMA_TYPES = new Set([
  * The reference (docs/reference.md) is checked against this table.
  */
 export const GRAMMAR = {
-  'core.slot': ['of', 'key', 'required', 'many', 'id', 'prefix', 'kind', 'type', 'enum', 'default', 'ask', 'min', 'max', 'step', 'soft', 'combine', 'why', 'to', 'unique'],
+  'core.slot': ['of', 'key', 'required', 'many', 'id', 'prefix', 'kind', 'type', 'enum', 'default', 'ask', 'min', 'max', 'step', 'soft', 'combine', 'why', 'to', 'unique', 'excludes', 'by'],
   'core.type': ['of', 'extends', 'closed', 'complete', 'transient', 'shared', 'unique'],
   'core.namespace': ['prefix', 'open'],
   'core.schema.map': ['from', 'as'], // and one attribute per field it maps
@@ -136,6 +136,7 @@ export function compileMatrix(world) {
     closed: new Set(), abducible: new Map(), abducibleKeys: new Map(), errors: [],
     types: new Map(),    // declared type name -> the wire that declares it
     parent: new Map(),   // type -> the type it extends
+    mixins: new Map(),   // type -> the slot groups it also extends (extends= after the first)
     maps: new Map(),     // foreign wire type -> how it declares a slot, a type or a module
     modules: new Map(),  // module name -> { wire, imports } for modules that declare themselves
     openPrefixes: ['core.'], // keys with these prefixes are always allowed and never shortened
@@ -277,6 +278,8 @@ export function compileMatrix(world) {
         soft: get('soft') === 'true', // a value outside min/max is accepted and kept as an issue
         why: get('why'), // the reason to give when a value is refused
         unique: get('unique') === 'true', // no two wires of the type share a value
+        excludes: w.attrs.excludes || [], // keys a wire with this key may not also have (x_about excludes x)
+        by: get('by'), // type=T by=k: the value names a T wire by its k (a join to another world; open while T is not loaded)
       };
       if (s.combine && !['intersect', 'override'].includes(s.combine)) c.errors.push(`${w.id}: combine must be intersect or override`);
       // kind=ref to=T: the value is a reference to a wire of type T, and retracting that wire is refused
@@ -315,6 +318,8 @@ export function compileMatrix(world) {
       const unique = f ? (f.unique ? field(f.unique, w, true).flatMap((v) => v.split(',')).filter(Boolean) : []) : w.attrs.unique || [];
       if (unique.length) (c.uniqueSets.get(name) || c.uniqueSets.set(name, []).get(name)).push(unique.map((k) => c.shortKey?.(name, k) ?? k));
       if (ext && ext !== name) c.parent.set(name, ext);
+      // more extends= after the first: slot groups (mixins), read after the type's own line
+      if (!f) { const more = (w.attrs.extends || []).slice(1).filter((x) => x !== name); if (more.length) c.mixins.set(name, more); }
     } else if (map?.as === 'module' || w.type === 'core.module') {
       const native = w.type === 'core.module';
       const name = native ? first(w, 'name') || w.id : field(map.fields.name || 'id', w);
@@ -408,8 +413,9 @@ export function compileMatrix(world) {
     let l = lineages.get(type);
     if (!l) {
       l = [type];
+      lineages.set(type, l); // set first: a cycle through a mixin stops here
       for (let t = c.parent.get(type); t && !l.includes(t); t = c.parent.get(t)) l.push(t);
-      lineages.set(type, l);
+      if (c.mixins.size) for (const t of l.slice()) for (const m of c.mixins.get(t) || []) for (const x of c.lineage(m)) if (!l.includes(x)) l.push(x); // bounded: the declared types
     }
     return l;
   };

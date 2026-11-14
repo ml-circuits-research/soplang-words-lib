@@ -136,6 +136,40 @@ the library). What that took, all general (no English in src):
   translation, reading number words.
 Not blocking.
 
+## Q34 (reviewer 02:00, from the knowledge repository): slot groups, a rule over two keys, joins
+
+Built in 0.34.0 (test/slots-q34.test.mjs, reference.md). The recommendation is to add no
+new construct; the three needs became small extensions of existing ones:
+1. **Slot groups: `extends` is repeatable.** The first `extends` is the parent, as before.
+   Each further one is a slot group (a mixin): its slots, and patterns over it, apply after
+   the type's own line, and the nearest declaration wins. So `@card core.type of=card
+   extends=box extends=named` takes `w` from box and `name` from named, and a card is a
+   `named` for rules. Before this, a second `extends` was silently ignored (checked:
+   `required` of the second parent was never asked). This is better than a new construct,
+   because a group of slots is a type with no wires of its own, and types already compose.
+2. **A rule over two keys: `excludes=` on the slot.** For example: `@xa core.slot of=pic
+   key=x_about excludes=x`. A wire with both keys is refused (violation `excludes`, "has x
+   and x_about together"). This is not a rule over key names by pattern. The pair is
+   declared where the approximate key is declared, so a world that has the pair says so in
+   one line and the three denies go away. A naming convention (`*_about`) stays a
+   convention, and the reuse detector can suggest the line.
+3. **Provenance and joins.**
+   - `named`: keep it the worlds' own key. `core.source` already says where a fact came
+     from. `named=model` says something about the thing (who named it), not about the fact,
+     so it is not core. If the 14 worlds want one declaration, a shared slot group (item 1)
+     does it: `@k.named core.type of=k.named` with the slot, and `extends=k.named` in each
+     world.
+   - The join: `type=T by=<key>` on a slot. The value is an atom (`drawing=horse`) naming
+     a `T` wire by that key. It stays open while no loaded world declares `T`. Once one
+     does, it is checked, and so is loading that world: loading `k.objects` without a
+     `horse` is refused and names the dangling wire. `kind=ref to=T` stays for references
+     by id (`$x`), where retracting the target is refused.
+
+A side finding for docs/reuse-reports/apps.md: "no X twice in one Y" needs no
+`std.schema.unique`. `core.type ... unique=teacher,at` already says it (it was in the
+reference, but I missed it).
+Not blocking.
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.34.0
+
+The knowledge repository's three questions (reviewer 02:00, questions.md Q34).
+
+### New
+- `core.type ... extends=A extends=B`: more `extends` after the first are slot groups
+  (mixins). Their slots and patterns apply after the type's own line.
+- `core.slot ... excludes=<key>` (rep.): a wire may not have both keys (violation
+  `excludes`).
+- `core.slot ... type=T by=<key>`: a join by a key value to a `T` wire. It is open until a
+  loaded world declares `T`, then checked, including when that world is loaded.
+
+### Changed (migration)
+- A second `extends` on a type used to be ignored; it now takes effect. A matrix that
+  carried one by mistake gets those slots: remove it to keep the old behaviour.
+
 ## 0.33.0
 
 The reviewer's 01:20 item 4: the case corpus grows from PSys2's corpus. Its plan.seating

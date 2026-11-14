@@ -3870,3 +3870,24 @@ clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 
 - Next: the other grid worlds (art.draw, data.charts, diagram.sketch, ui.avatar,
   plan.timeline) need their schemas as data first. `std.schema.unique` and
   `std.know.fill` (docs/reuse-reports/apps.md).
+
+## Reviewer 02:00 — Q34: slot groups, excludes, joins by a key — done; release 0.34.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/cases.mjs`: 35 / 35. Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.34.0).
+
+- I checked first with `node /tmp/q34.mjs`:
+  - a single `extends` passes its slots on (`card w=abc` is refused);
+  - a second `extends` was ignored (`card w=3` without the second parent's `name` passed,
+    and nothing was asked);
+  - `type=` to an undeclared type refuses every value.
+- src/matrix.mjs: `mixins`. The lineage is now the type's own line, then each mixin's line.
+  Slots `excludes` and `by`.
+- src/world.mjs: the `by` join check (open while the type is undeclared) and the
+  `excludes` violation.
+- test/slots-q34.test.mjs: 3 tests. reference.md and semantics.md tables updated.
+- questions.md Q34: the answers. No new construct. `named` stays the worlds' own key
+  (a shared slot group can declare it once).
+- I found that `core.type unique=a,b` already does "no X twice in one Y". The
+  `std.schema.unique` proposal is withdrawn (docs/reuse-reports/apps.md).

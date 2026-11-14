@@ -56,11 +56,11 @@ That is 7 cooperating pairs.
    did not say that the two are different. **Fixed:** a sentence in api.md,
    `world.complete`.
 
-## A generality to take next
+## A generality to take next — it already existed
 
 The rule "no X twice in one Y" is written three times in the timetable (teacher, group,
-room per period), and three times in `examples/scheduling.mjs` (room per time, person per
-time). Each time it is four wires: two patterns, a `neq` check and a deny. It is the same
-shape as `std.schema.capacity` with a capacity of one. A declaration such as
-`std.schema.unique of=lesson keys=teacher keys=at` would say it in one line. This is the
-top rule shape in `docs/reuse-reports/examples.md` too (row 1, score 0.90).
+room per period) and three times in `examples/scheduling.mjs`. It needs no new module:
+`core.type of=lesson unique=teacher,at unique=group,at unique=room,at` already says it
+(reference.md, core.type `unique`). The timetable keeps its denies for their reasons
+("the teacher has another lesson then"). The docs gap is that the capabilities page and
+the scheduling example never show `unique=` on a type.

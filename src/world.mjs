@@ -2220,7 +2220,8 @@ export class World {
           if (c.closed.has(w.type) && !c.isOpenKey(k)) res.violations.push({ kind: 'unknown-key', id, key: k });
         } else {
           const own = (v, x) => (s.why ? this._slotWhy(s, w, k, x, v) : v); // a reason the slot gives itself
-          if (!s.many && w.attrs[k].length > 1) res.violations.push(own({ kind: 'cardinality', id, key: k }, w.attrs[k][1]));
+          for (const x of s.excludes) if (w.attrs[x]?.length) res.violations.push(own({ kind: 'excludes', id, key: k, value: x, why: `has ${x} and ${k} together` }, w.attrs[k][0]));
+        if (!s.many && w.attrs[k].length > 1) res.violations.push(own({ kind: 'cardinality', id, key: k }, w.attrs[k][1]));
           for (const v of w.attrs[k]) {
             if (s.min || s.max) {
               const q = quantity(v);
@@ -2229,6 +2230,10 @@ export class World {
               else if (bad) res.violations.push(own({ kind: 'domain', id, key: k, value: v, why: bad }, v));
             }
             if (s.enum && !s.enum.includes(v) && !s.enum.some((e) => this._same(w.type, k, e, v))) res.violations.push(own({ kind: 'domain', id, key: k, value: v, allowed: s.enum }, v));
+            if (s.by && s.type) { // a join by a key: checked once a world declares the type, open before
+              if (c.types.has(s.type) && !(this.byType.get(s.type) ? [...this.byType.get(s.type)] : []).some((tid) => this.wires.get(tid)?.attrs[s.by]?.includes(v))) res.violations.push(own({ kind: 'domain', id, key: k, value: v, why: `must be the ${s.by} of a ${s.type} wire` }, v));
+              continue;
+            }
             if (s.type && !s.kinds.length) {
               const target = v[0] === '$' ? this.wires.get(v.slice(1)) : null;
               const types = s.refs.length ? s.refs : [s.type];

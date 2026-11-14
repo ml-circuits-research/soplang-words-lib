@@ -39,6 +39,8 @@ One key of one type: what it may hold, and whether it must be there.
 | `why` | string | none | | the reason to give when a value is refused; `?value`, `?key`, `?id`, `?type`, and filters as in [core.deny](#coredeny) |
 | `to` | type | none | | with `kind=ref`: the value must refer to a wire of this type |
 | `unique` | flag | false | | no two wires of the type (in one namespace) have the same value |
+| `excludes` | key | none | yes | a wire with this key may not also have that one (`x_about excludes=x`: never the exact number and the approximate one) |
+| `by` | key | none | | with `type=T`: the value names a `T` wire by its value for this key (`drawing=horse`, `type=k.objects.object by=name`); checked once a loaded world declares `T`, open before |
 
 Kinds: `integer`, `number` (integer or decimal), `boolean` (`true`, `false`), `string`
 (quoted), `atom` (a name), `quantity.<name>` (a number with a unit), `time.<name>`
@@ -139,7 +141,7 @@ A type: what it extends, whether its keys and its instances are all known.
 | Attribute | Value | Default | Rep. | Meaning |
 | --- | --- | --- | --- | --- |
 | `of` | type | required | | the type declared |
-| `extends` | type | none | | its parent |
+| `extends` | type | none | yes | its parent; more `extends` are slot groups (mixins): their slots and patterns apply too, after the type's own line |
 | `closed` | flag | false | | wires of the type accept only declared keys |
 | `complete` | flag | false | | the world knows every wire of the type |
 | `transient` | flag | false | | state that is looked at, not edited (a selection, a cursor): `undo` passes over it |

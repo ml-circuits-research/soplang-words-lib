@@ -2,7 +2,7 @@
 // session and roles re-read by type, slot-type assignment over patterns, judging a reply and tabulating.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { World, genreOf, topicIndex, randomTopics, typedWorldOf, readRolesByTypes, assignBySlotTypes, judgeReply, tabulate, tableText } from '../tools/lib-under-test.mjs';
+import { World, genreOf, topicIndex, randomTopics, typedWorldFor, readText, judgeReply, tabulate, tableText } from '../tools/lib-under-test.mjs';
 import { worldsDir, worldText } from '../tools/worlds.mjs';
 
 test('genreOf, topicIndex, randomTopics', { skip: !worldsDir() && 'offline' }, () => {
@@ -18,20 +18,11 @@ test('genreOf, topicIndex, randomTopics', { skip: !worldsDir() && 'offline' }, (
   assert.deepEqual(randomTopics(w, { types: ['k.country'], min: 1, count: 2, seed: 3 }), randomTopics(w, { types: ['k.country'], min: 1, count: 2, seed: 3 }), 'seeded');
 });
 
-test('typedWorldOf and readRolesByTypes: all words placed or nothing', () => {
-  const w = typedWorldOf([{ id: 'c1', label: 'circle', kind: 'shape', attrs: { colour: 'red' } }, { id: 't1', label: 'tree', kind: 'shape' }], { values: { colour: ['red', 'blue', 'green'] } });
-  assert.deepEqual(readRolesByTypes(w, 'the circle blue', ['thing', 'value'], { skip: ['the'] }), { thing: 'c1', value: 'blue' });
-  assert.deepEqual(readRolesByTypes(w, 'colour of the tree green', ['thing', 'attribute', 'value'], { skip: ['of', 'the'] }), { attribute: 'colour', thing: 't1', value: 'green' });
-  assert.equal(readRolesByTypes(w, 'the circle very blue', ['thing', 'value'], { skip: ['the'] }), null, 'a word left: nothing');
-});
-
-test('assignBySlotTypes: exactly one assignment is a reading; an anchor is required', () => {
-  const P = [{ name: 'colour', slots: [{ name: 'thing', type: 'thing' }, { name: 'value', type: 'colour' }], literals: ['make', 'the'], anchor: ['make'] },
-    { name: 'two', slots: [{ name: 'a', type: 'thing' }, { name: 'b', type: 'thing' }], literals: ['and'] }];
-  const L = { thing: new Set(['circle', 'tree']), colour: new Set(['red', 'blue']) };
-  assert.deepEqual(assignBySlotTypes(P, ['make', 'the', 'circle', 'red'], L), [{ pattern: 'colour', assignment: { thing: 'circle', value: 'red' } }]);
-  assert.deepEqual(assignBySlotTypes(P, ['circle', 'and', 'tree'], L), [], 'two assignments of the same types: no reading');
-  assert.deepEqual(assignBySlotTypes(P, ['the', 'circle', 'red'], L), [], 'no anchor');
+test('the session\'s things typed (typedWorldFor) and re-read under the Reader contract: every word placed, or not complete', () => {
+  const t = typedWorldFor({ kinds: [{ type: 'shape', keys: [{ key: 'colour', enum: ['red', 'blue', 'green'] }] }] }, null, { things: [{ id: 'c1', label: 'circle', kind: 'shape', attrs: { colour: 'red' } }, { id: 't1', label: 'tree', kind: 'shape' }] });
+  const r = readText(t.world, 'the colour of the circle', { question: ['what'], skip: ['the', 'of'] });
+  assert.deepEqual([r.complete, r.best.key, r.best.of.id], [true, 'colour', 'c1']);
+  assert.equal(readText(t.world, 'the colour of the circle very', { skip: ['the', 'of'] }).complete, false, 'a word left: not complete');
 });
 
 test('judgeReply, tabulate, tableText', () => {

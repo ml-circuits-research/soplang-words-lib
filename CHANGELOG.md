@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.121.0
+
+R2, second part: one way per job for typed worlds and role reading (PSys2 does not use the
+removed functions: `git grep` on its tree).
+
+### Removed
+- `typedWorldOf` (use `typedWorldFor(schema, knowledge, { things })`), `readRolesByTypes` and
+  `assignBySlotTypes` (use `readByTypes` with `readText`, whose `complete` is false when a word
+  is left, and `fitsSlot` for a slot's type).
+
+### Changed
+- `typedWorldFor` names its own wires `typed.<n>`, so a session's thing may be called `t1`.
+
 ## 0.120.0
 
 R2, first part (reviewer 10:10, 10:35): one Reader contract.

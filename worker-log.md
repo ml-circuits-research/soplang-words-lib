@@ -5433,3 +5433,10 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Repairs: only respellings (via spelling); readByTypes' sense generalisations are a cost, not a repair.
 - fitsSlot refuses "", an article alone, a single letter.
 - Gate: npm test 515 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.121.0 — R2 part 2: typed worlds and role reading, one way each
+
+- `git -C .cache/psys2 grep` (origin/HEAD, vendor aside): PSys2 has its own typedWorldOf in src/dialog/typed-reader.mjs
+  and calls none of the library's typedWorldOf / readRolesByTypes / assignBySlotTypes; removed without a deprecation.
+- typedWorldFor's own wires are `typed.<n>` (a session thing `t1` clashed with them).
+- Gate: npm test 514 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

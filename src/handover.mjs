@@ -50,67 +50,6 @@ export function randomTopics(world, { seed = 1, count = 3, ...opts } = {}) {
 }
 
 /**
- * A typed world from a session's things (LIB-6): [{ id, label, kind, attrs: { key: value } }] become wires
- * (`<kind> name=<label> key=value`); `values` ({ key: [values] }) the values an attribute can take, as
- * `x.value key= value=` facts, so readByTypes and readRolesByTypes can type them.
- */
-export function typedWorldOf(things, { values = {} } = {}) {
-  const w = new World();
-  const q = (v) => (/^[\w.-]+$/.test(String(v)) ? String(v) : JSON.stringify(String(v)));
-  const lines = things.map((t) => `@${String(t.id).replace(/[^\w.-]/g, '_')} ${t.kind ?? 'thing'} name=${q(t.label ?? t.id)}${Object.entries(t.attrs ?? {}).map(([k, v]) => [].concat(v).map((x) => ` ${k}=${q(x)}`).join('')).join('')}`);
-  for (const [k, vs] of Object.entries(values)) vs.forEach((v, i) => lines.push(`@x.value.${k}.${i} x.value key=${q(k)} value=${q(v)}`));
-  w.tell(lines.join('\n'));
-  return w;
-}
-
-/**
- * The free roles of a refused reading re-read by type (LIB-6): `roles` names what is missing ('thing', 'value',
- * 'attribute'); every content word of `text` must be placed (function words in `skip` ignored), a thing by its
- * label, an attribute by its key, a value among the values of the attribute (or of any). Returns { thing,
- * value, attribute } with the ids and words placed, or null when a word is left or a role stays empty.
- */
-export function readRolesByTypes(world, text, roles, { skip = [] } = {}) {
-  const lex = typedLexicon(world), S = new Set(skip.map((x) => x.toLowerCase()));
-  const toks = (String(text).toLowerCase().match(/[\p{L}\p{N}_'-]+/gu) || []).filter((t) => !S.has(t));
-  const valueFacts = world.ofType('x.value').map((f) => ({ key: bare(f.attrs.key[0]), value: bare(f.attrs.value[0]).toLowerCase() }));
-  const out = {}, used = new Set();
-  const find = (cat) => toks.findIndex((t, i) => !used.has(i) && (lex.get(t) || lex.get(t.replace(/s$/, '')) || []).some((s) => s.cat === cat));
-  if (roles.includes('attribute')) { const i = find('attr'); if (i >= 0) { used.add(i); out.attribute = (lex.get(toks[i]) || lex.get(toks[i].replace(/s$/, ''))).find((s) => s.cat === 'attr').key; } }
-  if (roles.includes('thing')) { const i = find('thing'); if (i >= 0) { used.add(i); out.thing = (lex.get(toks[i]) || lex.get(toks[i].replace(/s$/, ''))).find((s) => s.cat === 'thing').id; } }
-  if (roles.includes('value')) {
-    const i = toks.findIndex((t, j) => !used.has(j) && valueFacts.some((v) => v.value === t && (!out.attribute || v.key === out.attribute)));
-    if (i >= 0) { used.add(i); out.value = toks[i]; if (!out.attribute && roles.includes('attribute')) out.attribute = valueFacts.find((v) => v.value === toks[i]).key; }
-  }
-  if (roles.some((r) => out[r] === undefined) || used.size !== toks.length) return null; // all or nothing
-  return out;
-}
-
-/**
- * Every assignment of the content tokens to the typed slots of each pattern (LIB-7). `patterns`: [{ name,
- * slots: [{ name, type }], literals: [words], anchor?: [words] }]; `lexicons`: { type: Set(words) }. A pattern
- * reads the tokens when each token is a literal of it or fills one slot by type, every slot is filled, an anchor
- * (if any) is present, and exactly one assignment exists. Returns [{ pattern, assignment: { slot: word } }].
- */
-export function assignBySlotTypes(patterns, tokens, lexicons) {
-  const out = [];
-  for (const p of patterns) { // bounded: the patterns
-    const lit = new Set((p.literals || []).map((x) => x.toLowerCase()));
-    if (p.anchor?.length && !tokens.some((t) => p.anchor.includes(t))) continue;
-    const content = tokens.filter((t) => !lit.has(t));
-    const found = [];
-    const go = (k, left, asg) => { // bounded: the slots and the content tokens
-      if (found.length > 1) return;
-      if (k === p.slots.length) { if (!left.length) found.push({ ...asg }); return; }
-      const s = p.slots[k];
-      left.forEach((t, i) => { if (lexicons[s.type]?.has(t)) go(k + 1, left.filter((_, j) => j !== i), { ...asg, [s.name]: t }); });
-    };
-    go(0, content, {});
-    if (found.length === 1) out.push({ pattern: p.name, assignment: found[0] });
-  }
-  return out;
-}
-
-/**
  * A host's reply judged against a related case (LIB-8): every expected value appears in the reply text (a number also
  * as its word, `numberWords`), and a question changes nothing (`before` equals `after` when given).
  */

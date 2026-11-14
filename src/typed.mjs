@@ -50,18 +50,18 @@ export function typedWorldFor(schema, knowledge = null, { max = 5000, text = {},
   let n = 0;
   for (const k of d.kinds || []) {
     counts.kinds++;
-    lines.push(`@t${++n} core.type of=${k.type}`);
-    for (const w of k.words || []) { lines.push(`@t${++n} core.word text=${atom(w)} means=${k.type}`); counts.words++; }
+    lines.push(`@typed.${++n} core.type of=${k.type}`);
+    for (const w of k.words || []) { lines.push(`@typed.${++n} core.word text=${atom(w)} means=${k.type}`); counts.words++; }
     for (const s of k.keys || []) {
       counts.keys++;
       const kind = s.value === 'number' || s.value === 'integer' ? s.value : null;
-      const parts = [`@t${++n} core.slot of=${k.type} key=${s.key}`];
+      const parts = [`@typed.${++n} core.slot of=${k.type} key=${s.key}`];
       if (s.many) parts.push('many=true');
       if (kind) parts.push(`kind=${kind}`);
       for (const e of s.enum || []) parts.push(`enum=${atom(e)}`);
       lines.push(parts.join(' '));
-      lines.push(`@t${++n} k.kinds.relation type=${k.type} key=${s.key}${s.join ? ` object_type=${s.join.type}` : ''}`); // a key is an attribute of its kind before any fact carries it
-      for (const w of s.words || []) { lines.push(`@t${++n} core.word text=${atom(w)} means=${s.key}`); counts.words++; }
+      lines.push(`@typed.${++n} k.kinds.relation type=${k.type} key=${s.key}${s.join ? ` object_type=${s.join.type}` : ''}`); // a key is an attribute of its kind before any fact carries it
+      for (const w of s.words || []) { lines.push(`@typed.${++n} core.word text=${atom(w)} means=${s.key}`); counts.words++; }
       let sig;
       if (s.join) { sig = { expects: 'thing', of: s.join.type, by: s.join.by ?? 'name' }; joined.set(s.join.type, s.join.by ?? 'name'); }
       else if (s.enum?.length) { sig = { expects: 'value', values: s.enum.map(String) }; counts.values += s.enum.length; }
@@ -71,8 +71,8 @@ export function typedWorldFor(schema, knowledge = null, { max = 5000, text = {},
     }
   }
   // a kind whose name joins a knowledge type: the knowledge's things are things of this kind, so they carry its keys
-  for (const k of d.kinds || []) { const nj = (k.keys || []).find((x) => x.key === 'name' && x.join); if (nj) for (const s of k.keys) if (s.key !== 'name') lines.push(`@t${++n} k.kinds.relation type=${nj.join.type} key=${s.key}`); }
-  for (const w of [...(d.words || []), ...words]) { lines.push(`@t${++n} core.word text=${atom(w.text)} means=${atom(w.means)}`); counts.words++; }
+  for (const k of d.kinds || []) { const nj = (k.keys || []).find((x) => x.key === 'name' && x.join); if (nj) for (const s of k.keys) if (s.key !== 'name') lines.push(`@typed.${++n} k.kinds.relation type=${nj.join.type} key=${s.key}`); }
+  for (const w of [...(d.words || []), ...words]) { lines.push(`@typed.${++n} core.word text=${atom(w.text)} means=${atom(w.means)}`); counts.words++; }
   if (knowledge) for (const [type, by] of joined) { // the things of each joined type, by the key the join names them by
     let i = 0;
     for (const f of knowledge.ofType(type)) { // bounded: max per type
@@ -80,7 +80,7 @@ export function typedWorldFor(schema, knowledge = null, { max = 5000, text = {},
       const names = (f.attrs[by] || f.attrs.name || []).map(bare);
       if (!names.length) continue;
       const kinds = ['kind', 'class', 'is'].flatMap((k) => (f.attrs[k] || []).map((v) => ` ${k}=${atom(bare(v))}`)).join('');
-      for (const nm of names) { lines.push(`@t${++n} ${type} name=${atom(nm)}${kinds}`); counts.things++; }
+      for (const nm of names) { lines.push(`@typed.${++n} ${type} name=${atom(nm)}${kinds}`); counts.things++; }
       i++;
     }
   }

@@ -35,14 +35,14 @@ export { experiment, ablation } from './experiment.mjs';
 export { readEnsemble, defaultReaders, riskCoverage, calibrate } from './ensemble.mjs';
 export { signatureOf, chunk, minePatterns, patternReader } from './signature.mjs';
 export { joinList, clauseOf, actSentence, renderFrames, phraseOf, narrationOf, realiseFrame, paraphrasesOf } from './say.mjs';
-export { genreOf, topicIndex, randomTopics, typedWorldOf, readRolesByTypes, assignBySlotTypes, judgeReply, tabulate, tableText } from './handover.mjs';
+export { genreOf, topicIndex, randomTopics, judgeReply, tabulate, tableText } from './handover.mjs';
 export { learnRules, learnFormOperators, formOperator, formEdits, learnFormEdits, familyOf, delexicalise } from './learn.mjs';
 export { alignWorlds } from './align.mjs';
 export { storyState } from './story-focus.mjs';
 export { planner, factStore, PlanLive, readMethods, PLAN_LIMITS, solveChoices } from './plan.mjs';
 export { inflectBy, articleFor, morphOf, generate, analyse, fold, splitClitics, dictionary, realise, templateFor } from './morph.mjs';
 export { ledgerAppend, ledgerGroups, ledgerKey, stageOf, STAGES } from './ledger.mjs';
-export const version = '0.120.0';
+export const version = '0.121.0';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)
  * tools/build.mjs fills in `hash`, a fingerprint of the bundled sources, and `date`,

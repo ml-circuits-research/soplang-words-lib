@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="508eaf0ffeb0">
+<meta name="source-hash" content="1b8ff50b230a">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.120.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.121.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -859,9 +859,9 @@ print(phraseOf(w, box).text, &#x27;|&#x27;, phraseOf(w, box, { key: &#x27;secret
 w.tell(&#x27;@a w.lang.en.part frame=q at=1 is=word word=&quot;what is&quot;\n@b w.lang.en.part frame=q at=2 is=det optional=yes\n@c w.lang.en.part frame=q at=3 is=role role=attribute\n@d w.lang.en.part frame=q at=4 is=word word=of\n@e w.lang.en.part frame=q at=5 is=role role=thing&#x27;);
 print(realiseFrame(w, &#x27;q&#x27;, { attribute: &#x27;sound&#x27;, thing: &#x27;cow&#x27; }));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>what is the sound of cow</code></pre></figure>
-<h3 id="genreof-topicindex-randomtopics-typedworldof-readrolesbytypes-assignbyslottypes-judgereply-tabulate-and-tabletext">genreOf, topicIndex, randomTopics, typedWorldOf, readRolesByTypes, assignBySlotTypes, judgeReply, tabulate and tableText</h3>
+<h3 id="genreof-topicindex-randomtopics-judgereply-tabulate-and-tabletext">genreOf, topicIndex, randomTopics, judgeReply, tabulate and tableText</h3>
 <p>General host code taken into the library (handover LIB-5 to LIB-8):</p>
-<ul><li><code>genreOf(world, type)</code> gives the k.genres genre a document type names (hyphens, underscores, spaces, or the genre's words), or null.</li><li><code>topicIndex(world, { types, min })</code> lists the topics a world can compose about: names that at least <code>min</code> (2) other facts name. <code>randomTopics(world, { seed, count })</code> draws topics by interest, seeded.</li><li><code>typedWorldOf(things, { values })</code> builds a typed world from a session's things <code>[{ id, label, kind, attrs }]</code> and the values each attribute can take.</li><li><code>readRolesByTypes(world, text, roles, { skip })</code> re-reads the free roles of a refused reading by type: a thing by its label, an attribute by its key, a value among the attribute's values. Every content word must be placed, else the result is null.</li><li><code>assignBySlotTypes(patterns, tokens, lexicons)</code> gives every assignment of content tokens to a pattern's typed slots. A reading needs exactly one assignment, every token a literal or a slot filler, and the anchor present.</li><li><code>judgeReply(reply, expected, { numberWords, before, after })</code> judges a reply text: every expected value is said (a number also as its word), and a question changes nothing. <code>tabulate(results)</code> and <code>tableText(table)</code> give a distance × axis table (results <code>{ distance, axis | axes, pass }</code>).</li></ul>
+<ul><li><code>genreOf(world, type)</code> gives the k.genres genre a document type names (hyphens, underscores, spaces, or the genre's words), or null.</li><li><code>topicIndex(world, { types, min })</code> lists the topics a world can compose about: names that at least <code>min</code> (2) other facts name. <code>randomTopics(world, { seed, count })</code> draws topics by interest, seeded.</li><li>A session's things are typed by <code>typedWorldFor(schema, knowledge, { things })</code> and re-read under the Reader contract (<code>readText</code>: a reading with a word left is not complete).</li><li><code>judgeReply(reply, expected, { numberWords, before, after })</code> judges a reply text: every expected value is said (a number also as its word), and a question changes nothing. <code>tabulate(results)</code> and <code>tableText(table)</code> give a distance × axis table (results <code>{ distance, axis | axes, pass }</code>).</li></ul>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>print(judgeReply(&#x27;A spider has eight legs.&#x27;, [&#x27;8&#x27;], { numberWords: { 8: &#x27;eight&#x27; } }), tableText(tabulate([{ distance: 1, axis: &#x27;kind&#x27;, pass: true }])));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true distance 1  kind       1/1  100 %</code></pre></figure>
 <h3 id="experimentcells-run-options-and-ablationcells-run-configs-options">experiment(cells, run, options?) and ablation(cells, run, configs, options?)</h3>
@@ -1133,7 +1133,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.120.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.121.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

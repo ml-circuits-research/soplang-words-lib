@@ -19,7 +19,7 @@ const schema = {
 test('typedWorldFor: joined things, closed sets, numbers and free text get types; fitsSlot refuses what does not fit', () => {
   const t = typedWorldFor(schema, know, { things: [{ id: 'p1', label: 'player', kind: 'ex.player', attrs: { tempo: 90 } }] });
   assert.deepEqual(t.counts, { kinds: 1, keys: 6, things: 3, values: 2, words: 5 });
-  assert.deepEqual(fitsSlot(t, 'ex.player', 'instrument', 'the violin'), { ok: true, as: 'thing', id: 't20', value: 'violin' });
+  assert.deepEqual(fitsSlot(t, 'ex.player', 'instrument', 'the violin'), { ok: true, as: 'thing', id: 'typed.20', value: 'violin' });
   assert.match(fitsSlot(t, 'ex.player', 'instrument', 'makes a cow').why, /no instrument called "makes a cow"/);
   assert.equal(fitsSlot(t, 'ex.player', 'tempo', '120').value, 120);
   assert.equal(fitsSlot(t, 'ex.player', 'tempo', 'fast').ok, false);

@@ -2541,7 +2541,7 @@ print(realiseFrame(w, 'q', { attribute: 'sound', thing: 'cow' }));
 what is the sound of cow
 ```
 
-### genreOf, topicIndex, randomTopics, typedWorldOf, readRolesByTypes, assignBySlotTypes, judgeReply, tabulate and tableText
+### genreOf, topicIndex, randomTopics, judgeReply, tabulate and tableText
 
 General host code taken into the library (handover LIB-5 to LIB-8):
 - `genreOf(world, type)` gives the k.genres genre a document type names (hyphens,
@@ -2549,14 +2549,8 @@ General host code taken into the library (handover LIB-5 to LIB-8):
 - `topicIndex(world, { types, min })` lists the topics a world can compose about: names
   that at least `min` (2) other facts name. `randomTopics(world, { seed, count })` draws
   topics by interest, seeded.
-- `typedWorldOf(things, { values })` builds a typed world from a session's things
-  `[{ id, label, kind, attrs }]` and the values each attribute can take.
-- `readRolesByTypes(world, text, roles, { skip })` re-reads the free roles of a refused
-  reading by type: a thing by its label, an attribute by its key, a value among the
-  attribute's values. Every content word must be placed, else the result is null.
-- `assignBySlotTypes(patterns, tokens, lexicons)` gives every assignment of content tokens
-  to a pattern's typed slots. A reading needs exactly one assignment, every token a literal
-  or a slot filler, and the anchor present.
+- A session's things are typed by `typedWorldFor(schema, knowledge, { things })` and re-read
+  under the Reader contract (`readText`: a reading with a word left is not complete).
 - `judgeReply(reply, expected, { numberWords, before, after })` judges a reply text: every
   expected value is said (a number also as its word), and a question changes nothing.
   `tabulate(results)` and `tableText(table)` give a distance × axis table (results `{ distance, axis | axes, pass }`).

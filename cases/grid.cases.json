@@ -986,18 +986,18 @@
  {
   "id": "grid.face.make.hair_back",
   "stage": "acting",
-  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (make, hair_back) expects 'the state of the world changes'; the face is carried inline until a published world has it (proposal: questions.md Q35)",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (make, hair_back) expects 'the state of the world changes'; read on the published w.face",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "hair_back"
+     "kind": "w.face.hair_back"
     }
    },
    {
     "act": "make",
     "args": {
-     "kind": "hair_back",
+     "kind": "w.face.hair_back",
      "colour": "brown"
     },
     "expect": {
@@ -1006,23 +1006,23 @@
     }
    }
   ],
-  "wires": "@face std.schema.world name=face doc=\"an example: a part of a face\"\n@t core.type of=hair_back extends=std.schema.thing closed=true\n@s core.slot of=hair_back key=size kind=number min=0.6 max=1.5 step=0.1 default=1\n@c core.slot of=hair_back key=colour\n@k std.schema.kind of=hair_back world=face acts=make acts=make"
+  "world": "w.face"
  },
  {
   "id": "grid.face.change.hair_back",
   "stage": "acting",
-  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (change, hair_back) expects 'the state of the world changes'; the face is carried inline until a published world has it (proposal: questions.md Q35)",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (change, hair_back) expects 'the state of the world changes'; read on the published w.face",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "hair_back"
+     "kind": "w.face.hair_back"
     }
    },
    {
     "act": "change",
     "args": {
-     "thing": "hair_back1",
+     "thing": "w_face_hair_back1",
      "attr": "size",
      "by": "more"
     },
@@ -1030,7 +1030,7 @@
      "ok": true,
      "changed": [
       {
-       "id": "hair_back1",
+       "id": "w_face_hair_back1",
        "key": "size",
        "to": "1.1"
       }
@@ -1038,23 +1038,23 @@
     }
    }
   ],
-  "wires": "@face std.schema.world name=face doc=\"an example: a part of a face\"\n@t core.type of=hair_back extends=std.schema.thing closed=true\n@s core.slot of=hair_back key=size kind=number min=0.6 max=1.5 step=0.1 default=1\n@k std.schema.kind of=hair_back world=face acts=make acts=change"
+  "world": "w.face"
  },
  {
   "id": "grid.face.remove.hair_back",
   "stage": "acting",
-  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (remove, hair_back) expects 'the state of the world changes'; the face is carried inline until a published world has it (proposal: questions.md Q35)",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (remove, hair_back) expects 'the state of the world changes'; read on the published w.face",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "hair_back"
+     "kind": "w.face.hair_back"
     }
    },
    {
     "act": "remove",
     "args": {
-     "thing": "hair_back1"
+     "thing": "w_face_hair_back1"
     },
     "expect": {
      "ok": true,
@@ -1062,23 +1062,23 @@
     }
    }
   ],
-  "wires": "@face std.schema.world name=face doc=\"an example: a part of a face\"\n@t core.type of=hair_back extends=std.schema.thing closed=true\n@s core.slot of=hair_back key=size kind=number min=0.6 max=1.5 step=0.1 default=1\n@k std.schema.kind of=hair_back world=face acts=make acts=remove"
+  "world": "w.face"
  },
  {
   "id": "grid.face.place.hair_back",
   "stage": "acting",
-  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (place, hair_back) expects 'the state of the world changes'; the face is carried inline until a published world has it (proposal: questions.md Q35)",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (place, hair_back) expects 'the state of the world changes'; read on the published w.face",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "hair_back"
+     "kind": "w.face.hair_back"
     }
    },
    {
     "act": "place",
     "args": {
-     "thing": "hair_back1",
+     "thing": "w_face_hair_back1",
      "x": 40
     },
     "expect": {
@@ -1087,23 +1087,23 @@
     }
    }
   ],
-  "wires": "@face std.schema.world name=face doc=\"an example: a part of a face\"\n@t core.type of=hair_back extends=std.schema.thing closed=true\n@s core.slot of=hair_back key=size kind=number min=0.6 max=1.5 step=0.1 default=1\n@x core.slot of=hair_back key=x kind=number\n@k std.schema.kind of=hair_back world=face acts=make acts=change"
+  "world": "w.face"
  },
  {
   "id": "grid.face.ask.hair_back",
   "stage": "replying",
-  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (ask, hair_back) expects 'an answer that is not a refusal'; the face is carried inline until a published world has it (proposal: questions.md Q35)",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (ask, hair_back) expects 'an answer that is not a refusal'; read on the published w.face",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "hair_back"
+     "kind": "w.face.hair_back"
     }
    },
    {
     "act": "ask",
     "args": {
-     "thing": "hair_back1",
+     "thing": "w_face_hair_back1",
      "attr": "size"
     },
     "expect": {
@@ -1115,23 +1115,23 @@
     }
    }
   ],
-  "wires": "@face std.schema.world name=face doc=\"an example: a part of a face\"\n@t core.type of=hair_back extends=std.schema.thing closed=true\n@s core.slot of=hair_back key=size kind=number min=0.6 max=1.5 step=0.1 default=1\n@k std.schema.kind of=hair_back world=face acts=make acts=ask"
+  "world": "w.face"
  },
  {
   "id": "grid.face.make.shoulders",
   "stage": "acting",
-  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (make, shoulders) expects 'the state of the world changes'; the face is carried inline until a published world has it (proposal: questions.md Q35)",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (make, shoulders) expects 'the state of the world changes'; read on the published w.face",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "shoulders"
+     "kind": "w.face.shoulders"
     }
    },
    {
     "act": "make",
     "args": {
-     "kind": "shoulders",
+     "kind": "w.face.shoulders",
      "colour": "brown"
     },
     "expect": {
@@ -1140,23 +1140,23 @@
     }
    }
   ],
-  "wires": "@face std.schema.world name=face doc=\"an example: a part of a face\"\n@t core.type of=shoulders extends=std.schema.thing closed=true\n@s core.slot of=shoulders key=size kind=number min=0.6 max=1.5 step=0.1 default=1\n@c core.slot of=shoulders key=colour\n@k std.schema.kind of=shoulders world=face acts=make acts=make"
+  "world": "w.face"
  },
  {
   "id": "grid.face.change.shoulders",
   "stage": "acting",
-  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (change, shoulders) expects 'the state of the world changes'; the face is carried inline until a published world has it (proposal: questions.md Q35)",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (change, shoulders) expects 'the state of the world changes'; read on the published w.face",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "shoulders"
+     "kind": "w.face.shoulders"
     }
    },
    {
     "act": "change",
     "args": {
-     "thing": "shoulders1",
+     "thing": "w_face_shoulders1",
      "attr": "size",
      "by": "more"
     },
@@ -1164,7 +1164,7 @@
      "ok": true,
      "changed": [
       {
-       "id": "shoulders1",
+       "id": "w_face_shoulders1",
        "key": "size",
        "to": "1.1"
       }
@@ -1172,23 +1172,23 @@
     }
    }
   ],
-  "wires": "@face std.schema.world name=face doc=\"an example: a part of a face\"\n@t core.type of=shoulders extends=std.schema.thing closed=true\n@s core.slot of=shoulders key=size kind=number min=0.6 max=1.5 step=0.1 default=1\n@k std.schema.kind of=shoulders world=face acts=make acts=change"
+  "world": "w.face"
  },
  {
   "id": "grid.face.remove.shoulders",
   "stage": "acting",
-  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (remove, shoulders) expects 'the state of the world changes'; the face is carried inline until a published world has it (proposal: questions.md Q35)",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (remove, shoulders) expects 'the state of the world changes'; read on the published w.face",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "shoulders"
+     "kind": "w.face.shoulders"
     }
    },
    {
     "act": "remove",
     "args": {
-     "thing": "shoulders1"
+     "thing": "w_face_shoulders1"
     },
     "expect": {
      "ok": true,
@@ -1196,23 +1196,23 @@
     }
    }
   ],
-  "wires": "@face std.schema.world name=face doc=\"an example: a part of a face\"\n@t core.type of=shoulders extends=std.schema.thing closed=true\n@s core.slot of=shoulders key=size kind=number min=0.6 max=1.5 step=0.1 default=1\n@k std.schema.kind of=shoulders world=face acts=make acts=remove"
+  "world": "w.face"
  },
  {
   "id": "grid.face.place.shoulders",
   "stage": "acting",
-  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (place, shoulders) expects 'the state of the world changes'; the face is carried inline until a published world has it (proposal: questions.md Q35)",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (place, shoulders) expects 'the state of the world changes'; read on the published w.face",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "shoulders"
+     "kind": "w.face.shoulders"
     }
    },
    {
     "act": "place",
     "args": {
-     "thing": "shoulders1",
+     "thing": "w_face_shoulders1",
      "x": 40
     },
     "expect": {
@@ -1221,23 +1221,23 @@
     }
    }
   ],
-  "wires": "@face std.schema.world name=face doc=\"an example: a part of a face\"\n@t core.type of=shoulders extends=std.schema.thing closed=true\n@s core.slot of=shoulders key=size kind=number min=0.6 max=1.5 step=0.1 default=1\n@x core.slot of=shoulders key=x kind=number\n@k std.schema.kind of=shoulders world=face acts=make acts=change"
+  "world": "w.face"
  },
  {
   "id": "grid.face.ask.shoulders",
   "stage": "replying",
-  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (ask, shoulders) expects 'an answer that is not a refusal'; the face is carried inline until a published world has it (proposal: questions.md Q35)",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (ask, shoulders) expects 'an answer that is not a refusal'; read on the published w.face",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "shoulders"
+     "kind": "w.face.shoulders"
     }
    },
    {
     "act": "ask",
     "args": {
-     "thing": "shoulders1",
+     "thing": "w_face_shoulders1",
      "attr": "size"
     },
     "expect": {
@@ -1249,23 +1249,23 @@
     }
    }
   ],
-  "wires": "@face std.schema.world name=face doc=\"an example: a part of a face\"\n@t core.type of=shoulders extends=std.schema.thing closed=true\n@s core.slot of=shoulders key=size kind=number min=0.6 max=1.5 step=0.1 default=1\n@k std.schema.kind of=shoulders world=face acts=make acts=ask"
+  "world": "w.face"
  },
  {
   "id": "grid.face.make.neck",
   "stage": "acting",
-  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (make, neck) expects 'the state of the world changes'; the face is carried inline until a published world has it (proposal: questions.md Q35)",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (make, neck) expects 'the state of the world changes'; read on the published w.face",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "neck"
+     "kind": "w.face.neck"
     }
    },
    {
     "act": "make",
     "args": {
-     "kind": "neck",
+     "kind": "w.face.neck",
      "colour": "brown"
     },
     "expect": {
@@ -1274,23 +1274,23 @@
     }
    }
   ],
-  "wires": "@face std.schema.world name=face doc=\"an example: a part of a face\"\n@t core.type of=neck extends=std.schema.thing closed=true\n@s core.slot of=neck key=size kind=number min=0.6 max=1.5 step=0.1 default=1\n@c core.slot of=neck key=colour\n@k std.schema.kind of=neck world=face acts=make acts=make"
+  "world": "w.face"
  },
  {
   "id": "grid.face.change.neck",
   "stage": "acting",
-  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (change, neck) expects 'the state of the world changes'; the face is carried inline until a published world has it (proposal: questions.md Q35)",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (change, neck) expects 'the state of the world changes'; read on the published w.face",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "neck"
+     "kind": "w.face.neck"
     }
    },
    {
     "act": "change",
     "args": {
-     "thing": "neck1",
+     "thing": "w_face_neck1",
      "attr": "size",
      "by": "more"
     },
@@ -1298,7 +1298,7 @@
      "ok": true,
      "changed": [
       {
-       "id": "neck1",
+       "id": "w_face_neck1",
        "key": "size",
        "to": "1.1"
       }
@@ -1306,23 +1306,23 @@
     }
    }
   ],
-  "wires": "@face std.schema.world name=face doc=\"an example: a part of a face\"\n@t core.type of=neck extends=std.schema.thing closed=true\n@s core.slot of=neck key=size kind=number min=0.6 max=1.5 step=0.1 default=1\n@k std.schema.kind of=neck world=face acts=make acts=change"
+  "world": "w.face"
  },
  {
   "id": "grid.face.remove.neck",
   "stage": "acting",
-  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (remove, neck) expects 'the state of the world changes'; the face is carried inline until a published world has it (proposal: questions.md Q35)",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (remove, neck) expects 'the state of the world changes'; read on the published w.face",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "neck"
+     "kind": "w.face.neck"
     }
    },
    {
     "act": "remove",
     "args": {
-     "thing": "neck1"
+     "thing": "w_face_neck1"
     },
     "expect": {
      "ok": true,
@@ -1330,23 +1330,23 @@
     }
    }
   ],
-  "wires": "@face std.schema.world name=face doc=\"an example: a part of a face\"\n@t core.type of=neck extends=std.schema.thing closed=true\n@s core.slot of=neck key=size kind=number min=0.6 max=1.5 step=0.1 default=1\n@k std.schema.kind of=neck world=face acts=make acts=remove"
+  "world": "w.face"
  },
  {
   "id": "grid.face.place.neck",
   "stage": "acting",
-  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (place, neck) expects 'the state of the world changes'; the face is carried inline until a published world has it (proposal: questions.md Q35)",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (place, neck) expects 'the state of the world changes'; read on the published w.face",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "neck"
+     "kind": "w.face.neck"
     }
    },
    {
     "act": "place",
     "args": {
-     "thing": "neck1",
+     "thing": "w_face_neck1",
      "x": 40
     },
     "expect": {
@@ -1355,23 +1355,23 @@
     }
    }
   ],
-  "wires": "@face std.schema.world name=face doc=\"an example: a part of a face\"\n@t core.type of=neck extends=std.schema.thing closed=true\n@s core.slot of=neck key=size kind=number min=0.6 max=1.5 step=0.1 default=1\n@x core.slot of=neck key=x kind=number\n@k std.schema.kind of=neck world=face acts=make acts=change"
+  "world": "w.face"
  },
  {
   "id": "grid.face.ask.neck",
   "stage": "replying",
-  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (ask, neck) expects 'an answer that is not a refusal'; the face is carried inline until a published world has it (proposal: questions.md Q35)",
+  "source": "PSys2 training/eval/cases.jsonl, ui.avatar grid: (ask, neck) expects 'an answer that is not a refusal'; read on the published w.face",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "neck"
+     "kind": "w.face.neck"
     }
    },
    {
     "act": "ask",
     "args": {
-     "thing": "neck1",
+     "thing": "w_face_neck1",
      "attr": "size"
     },
     "expect": {
@@ -1383,23 +1383,23 @@
     }
    }
   ],
-  "wires": "@face std.schema.world name=face doc=\"an example: a part of a face\"\n@t core.type of=neck extends=std.schema.thing closed=true\n@s core.slot of=neck key=size kind=number min=0.6 max=1.5 step=0.1 default=1\n@k std.schema.kind of=neck world=face acts=make acts=ask"
+  "world": "w.face"
  },
  {
   "id": "grid.face.change.too-big",
   "stage": "acting",
-  "source": "PSys2 ui.avatar schema: size is 0.6..1.5; the face is carried inline until a published world has it (proposal: questions.md Q35)",
+  "source": "PSys2 ui.avatar schema: size is 0.6..1.5; read on the published w.face",
   "steps": [
    {
     "act": "make",
     "args": {
-     "kind": "neck"
+     "kind": "w.face.neck"
     }
    },
    {
     "act": "change",
     "args": {
-     "thing": "neck1",
+     "thing": "w_face_neck1",
      "attr": "size",
      "value": 2
     },
@@ -1409,6 +1409,343 @@
     }
    }
   ],
-  "wires": "@face std.schema.world name=face doc=\"an example: a part of a face\"\n@t core.type of=neck extends=std.schema.thing closed=true\n@s core.slot of=neck key=size kind=number min=0.6 max=1.5 step=0.1 default=1\n@k std.schema.kind of=neck world=face acts=make acts=change"
+  "world": "w.face"
+ },
+ {
+  "id": "grid.seating.connect.table",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (connect, table) expects 'the state of the world changes'; read on the published w.seating (2)",
+  "world": "w.seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.table",
+     "name": "family",
+     "seats": 4
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.table",
+     "name": "friends",
+     "seats": 6
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.seat",
+     "table": "$w_seating_table1",
+     "n": 1
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.guest",
+     "name": "ann",
+     "seat": "$w_seating_seat1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.guest",
+     "name": "bob"
+    }
+   },
+   {
+    "act": "connect",
+    "args": {
+     "a": "w_seating_table1",
+     "b": "w_seating_table2"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.group.table",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (group, table) expects 'the state of the world changes'; read on the published w.seating (2)",
+  "world": "w.seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.table",
+     "name": "family",
+     "seats": 4
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.table",
+     "name": "friends",
+     "seats": 6
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.seat",
+     "table": "$w_seating_table1",
+     "n": 1
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.guest",
+     "name": "ann",
+     "seat": "$w_seating_seat1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.guest",
+     "name": "bob"
+    }
+   },
+   {
+    "act": "group",
+    "args": {
+     "things": [
+      "w_seating_table1",
+      "w_seating_table2"
+     ]
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.place.table",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (place, table) expects 'the state of the world changes'; read on the published w.seating (2)",
+  "world": "w.seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.table",
+     "name": "family",
+     "seats": 4
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.table",
+     "name": "friends",
+     "seats": 6
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.seat",
+     "table": "$w_seating_table1",
+     "n": 1
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.guest",
+     "name": "ann",
+     "seat": "$w_seating_seat1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.guest",
+     "name": "bob"
+    }
+   },
+   {
+    "act": "place",
+    "args": {
+     "thing": "w_seating_table2",
+     "x": 300
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.copy.guest",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (copy, guest) expects 'the state of the world changes'; read on the published w.seating (2)",
+  "world": "w.seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.table",
+     "name": "family",
+     "seats": 4
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.table",
+     "name": "friends",
+     "seats": 6
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.seat",
+     "table": "$w_seating_table1",
+     "n": 1
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.guest",
+     "name": "ann",
+     "seat": "$w_seating_seat1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.guest",
+     "name": "bob"
+    }
+   },
+   {
+    "act": "copy",
+    "args": {
+     "thing": "w_seating_guest1"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.seating.place.guest",
+  "stage": "acting",
+  "source": "PSys2 training/eval/cases.jsonl, plan.seating grid: (place, guest) expects 'the state of the world changes'; read on the published w.seating (2)",
+  "world": "w.seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.table",
+     "name": "family",
+     "seats": 4
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.table",
+     "name": "friends",
+     "seats": 6
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.seat",
+     "table": "$w_seating_table1",
+     "n": 1
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.guest",
+     "name": "ann",
+     "seat": "$w_seating_seat1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.seating.guest",
+     "name": "bob"
+    }
+   },
+   {
+    "act": "place",
+    "args": {
+     "thing": "w_seating_guest2",
+     "at": "$w_seating_seat1"
+    },
+    "expect": {
+     "ok": true,
+     "changes": true
+    }
+   }
+  ]
+ },
+ {
+  "id": "grid.timeline.change.out-of-range",
+  "stage": "acting",
+  "source": "PSys2 plan.timeline: a moment's time is bounded; w.timeline (2) bounds at to -10000..10000",
+  "world": "w.timeline",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.timeline.timeline",
+     "name": "school year",
+     "unit": "day"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.timeline.event",
+     "title": "birthday",
+     "at": 12,
+     "timeline": "$w_timeline_timeline1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "w.timeline.event",
+     "title": "holiday",
+     "at": 200,
+     "timeline": "$w_timeline_timeline1"
+    }
+   },
+   {
+    "act": "change",
+    "args": {
+     "thing": "w_timeline_event1",
+     "attr": "at",
+     "value": 20000
+    },
+    "expect": {
+     "ok": false,
+     "why": "at most 10000"
+    }
+   }
+  ]
  }
 ]

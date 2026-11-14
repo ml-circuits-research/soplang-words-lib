@@ -19,7 +19,7 @@ export { needsOf } from './std.mjs';
 export { segment, actWords } from './segment.mjs';
 export { dialogueTurn, focusLog } from './dialogue.mjs';
 export { ledgerAppend, ledgerGroups, ledgerKey, stageOf, STAGES } from './ledger.mjs';
-export const version = '0.50.0';
+export const version = '0.51.0';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)
  * tools/build.mjs fills in `hash`, a fingerprint of the bundled sources, and `date`,

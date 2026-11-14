@@ -2245,7 +2245,8 @@ export class World {
             }
             if (s.enum && !s.enum.includes(v) && !s.enum.some((e) => this._same(w.type, k, e, v))) res.violations.push(own({ kind: 'domain', id, key: k, value: v, allowed: s.enum }, v));
             if (s.by && s.type) { // a join by a key: checked once a world declares the type, open before
-              if (c.types.has(s.type) && !(this.byType.get(s.type) ? [...this.byType.get(s.type)] : []).some((tid) => this.wires.get(tid)?.attrs[s.by]?.includes(v))) res.violations.push(own({ kind: 'domain', id, key: k, value: v, why: `must be the ${s.by} of a ${s.type} wire` }, v));
+              const fits = (t) => t?.attrs[s.by]?.includes(v) && s.match.every(([mine, theirs]) => (w.attrs[mine] || []).some((x) => (t.attrs[theirs || mine] || []).includes(x))); // a composite key: by= and every match=own:target
+              if (c.types.has(s.type) && !(this.byType.get(s.type) ? [...this.byType.get(s.type)] : []).some((tid) => fits(this.wires.get(tid)))) res.violations.push(own({ kind: 'domain', id, key: k, value: v, why: `must be the ${s.by}${s.match.length ? ` (with ${s.match.map(([a, b]) => b || a).join(', ')})` : ''} of a ${s.type} wire` }, v));
               continue;
             }
             if (s.type && !s.kinds.length) {

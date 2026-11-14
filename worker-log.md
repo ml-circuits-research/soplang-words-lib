@@ -4265,3 +4265,29 @@ clean; tsc clean. `node tools/cases.mjs`: 55 / 55. Version, CHANGELOG, docs rebu
 - test/derived-merge.test.mjs: 2 tests, one per order. One wire; lives is derived, colour
   and name told; why names `k.animal.inherit`.
 - Next: Round 28 items 6–9, then Round 27 (skills and skills/README.md).
+
+## Reviewer 09:55 — published w.face / w.map / w.seating 2 / w.timeline 2; composite joins; what copy keeps — release 0.51.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/cases.mjs`: 61 / 61 (acting 49, replying 9). Version,
+CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 0.51.0).
+
+- repos.pin is now at 2b5505e620c9.
+  - The 16 face cases read w.face (kinds `w.face.<part>`), and the map-view case reads
+    w.map (state thing `view_w_map`).
+  - The 5 seating pairs (table connect, group, place; guest copy, place) and PSys2's
+    out-of-range timeline case are back: the published worlds allow them now.
+  - `python3 -c` count: 47 cases name a published world, 7 carry toy wires (the
+    box/item mechanics). The baseline is back to 61.
+- Composite joins: `by=name match=kind:slot` (match is repeatable). Test: smile is a mouth
+  variant, so eyes=smile is refused.
+- copy: references to other things of the live world are left unset and listed in
+  `unset`; `copy=keep` keeps one. A knowledge join (`by=`) is kept. Test: a copied guest
+  has no seat, but keeps its name and its `copy=keep` slot. So "two guests are not on one
+  seat" can now be a deny.
+- Next, in the reviewer's order:
+  - Round 28 items 6–9;
+  - Round 30 (`std.morph`: paradigms, analyse and generate, spelling folding, dictionary
+    adapter, realisation), together with the std.grammar block of 09:25;
+  - Round 29 (`std.plan`), with a design note first;
+  - Round 27 (skills).

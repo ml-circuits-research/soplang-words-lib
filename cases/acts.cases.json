@@ -599,7 +599,7 @@
  {
   "id": "view.zoom.implicit",
   "stage": "acting",
-  "source": "reviewer 03:10 item 1: \"zoom in\" names no thing; the view's state has zoom",
+  "source": "reviewer 03:10 item 1: \"zoom in\" names no thing; the view's state has zoom; read on the published w.map",
   "steps": [
    {
     "act": "change",
@@ -610,7 +610,7 @@
     "expect": {
      "ok": true,
      "added": [
-      "view_map"
+      "view_w_map"
      ]
     }
    },
@@ -624,7 +624,7 @@
      "ok": true,
      "changed": [
       {
-       "id": "view_map",
+       "id": "view_w_map",
        "key": "layer",
        "from": "none",
        "to": "borders"
@@ -644,7 +644,7 @@
     }
    }
   ],
-  "wires": "@geo std.schema.world name=geo\n@t.m core.type of=map.state extends=std.schema.thing closed=true\n@s.z core.slot of=map.state key=zoom kind=integer min=1 max=10 step=1 default=3\n@s.l core.slot of=map.state key=layer enum=borders enum=rivers enum=none default=none\n@k.m std.schema.kind of=map.state world=geo acts=change acts=ask\n@v std.schema.view name=map state=map.state"
+  "world": "w.map"
  },
  {
   "id": "ask.which.rel",

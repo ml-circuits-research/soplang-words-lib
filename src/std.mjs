@@ -492,8 +492,17 @@ const ACTIONS = {
     if (!t) return refuse(w, 'copy', kind, why, which ? { which } : {});
     if (!allows(w, t, 'copy')) return refuse(w, 'copy', t.attrs.kind[0], `${art(t.attrs.kind[0])} cannot be copied here`);
     const id = fresh(w, t.attrs.kind[0]);
-    ctx.tell(wireText(id, t.type, t.attrs), { now: true });
-    return { act: 'copy', thing: id, from: t.id };
+    // what a copy keeps: every value, except a reference to another thing of the live world
+    // (a seat, a container), which is left unset unless its slot says copy=keep
+    const c = w._compiled(), attrs = { ...t.attrs }, unset = [];
+    for (const k of Object.keys(attrs)) {
+      const sl = c.slotOf(t.type, k);
+      if (!sl?.type || sl.by || sl.attrs?.copy?.[0] === 'keep') continue;
+      if (!c.isA(sl.type, 'std.schema.thing')) continue;
+      delete attrs[k]; unset.push(k);
+    }
+    ctx.tell(wireText(id, t.type, attrs), { now: true });
+    return { act: 'copy', thing: id, from: t.id, ...(unset.length ? { unset } : {}) };
   }),
 };
 

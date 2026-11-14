@@ -37,3 +37,24 @@ test('by: a join by a key to another world, open until a world declares the type
   assert.ok(w.tell('@p2 pic drawing=horse').ok);
   assert.equal(w.tell('@p3 pic drawing=pegasus').violations[0].why, 'must be the name of a k.objects.object wire');
 });
+
+test('by with match: a join by a composite key (a variant named within its slot)', () => {
+  const w = new World();
+  w.load(`@vt core.type of=k.variant  @vn core.slot of=k.variant key=name  @vs core.slot of=k.variant key=slot
+@p core.slot of=part key=variant type=k.variant by=name match=kind:slot  @pk core.slot of=part key=kind`);
+  w.tell('@v1 k.variant name=smile slot=mouth  @v2 k.variant name=round slot=eyes');
+  assert.ok(w.tell('@m part kind=mouth variant=smile').ok);
+  assert.equal(w.tell('@e part kind=eyes variant=smile').violations[0].why, 'must be the name (with slot) of a k.variant wire', 'smile is a mouth variant, not an eyes one');
+});
+
+test('copy: a reference to another thing is left unset (a copied guest has no seat), unless its slot says copy=keep', () => {
+  const w = new World();
+  w.load(`@acts core.use world=std.acts  @x std.schema.world name=x
+@st core.type of=seat extends=std.schema.thing  @gt core.type of=guest extends=std.schema.thing
+@gs core.slot of=guest key=seat type=seat  @gn core.slot of=guest key=name  @gp core.slot of=guest key=party type=seat copy=keep
+@k1 std.schema.kind of=seat world=x acts=make  @k2 std.schema.kind of=guest world=x acts=make acts=copy`);
+  w.act({ action: 'make', args: { kind: 'seat' } });
+  w.act({ action: 'make', args: { kind: 'guest', name: 'ann', seat: '$seat1', party: '$seat1' } });
+  const r = w.act({ action: 'copy', args: { thing: 'guest1' } });
+  assert.deepEqual([r.result.unset, w.get('guest2').attrs.seat, w.get('guest2').attrs.name, w.get('guest2').attrs.party], [['seat'], undefined, ['ann'], ['$seat1']]);
+});

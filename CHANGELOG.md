@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.51.0
+
+Reviewer 09:55: the knowledge repository published `w.face`, `w.map`, `w.seating` 2 and
+`w.timeline` 2 (commit 2b5505e), and asked two questions.
+
+### Changed
+- repos.pin points at 2b5505e. The face and map cases read the published `w.face` and
+  `w.map`, so their inline copies are gone. The 5 seating cases and 1 timeline case dropped
+  in 0.41 are back, now that the published worlds allow them. The corpus is at 61 again,
+  all passing.
+- `copy` keeps every value except references to other things of the live world (a copied
+  guest has no seat). These are listed in `result.unset`; a slot with `copy=keep` keeps
+  its reference.
+
+### New
+- `core.slot ... type=T by=<key> match=<own>:<target>` (rep.): a join by a composite key.
+
 ## 0.50.0
 
 Reviewer 08:45 (the knowledge repository's Q42): the tier of a derived value survives a

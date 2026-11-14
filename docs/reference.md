@@ -41,6 +41,8 @@ One key of one type: what it may hold, and whether it must be there.
 | `unique` | flag | false | | no two wires of the type (in one namespace) have the same value |
 | `excludes` | key | none | yes | a wire with this key may not also have that one (`x_about excludes=x`: never the exact number and the approximate one) |
 | `by` | key | none | | with `type=T`: the value names a `T` wire by its value for this key (`drawing=horse`, `type=k.objects.object by=name`); checked once a loaded world declares `T`, open before |
+| `match` | `own:target` | none | yes | with `by`: more keys of the join; the target must also have this wire's `own` value under `target` (a variant named within its slot: `by=name match=kind:slot`) |
+| `copy` | `keep` | none | | with a `type=` to a thing of the live world: the act `copy` keeps this reference (by default a copy leaves references to other things unset) |
 
 Kinds: `integer`, `number` (integer or decimal), `boolean` (`true`, `false`), `string`
 (quoted), `atom` (a name), `quantity.<name>` (a number with a unit), `time.<name>`
@@ -1682,7 +1684,7 @@ world that is not declared.
 | `group`, `ungroup` | `things`, `name`?; `group` | a `std.acts.group` with its members; takes it apart |
 | `pick` | `kind`, attributes, `nth`? | the things that fit (`result.things`); changes nothing |
 | `ask` | `thing` (or a view's state, or a knowledge fact by its `name`), `attr`? or `rel` and `of`?; or `kind` with `rel` + `of`, `attr` + `value`, `count`? | its attributes, or one value with `why` and its `shape`: `number` (with `unit`), `value`, `list`, `none`; with `rel`: the values (`list`) or, with `of`, whether one relates to the other either way round (`yes/no`, `answer`); with `kind`: which things (`list`, `things`, `names`, `count`) or how many (`number`) |
-| `copy` | `thing` | a new thing with the same attributes |
+| `copy` | `thing` | a new thing with the same attributes; it keeps every value except references to other things of the live world (left unset and listed in `result.unset`, unless the slot says `copy=keep`) |
 | `send` | `thing`, `to` | to another world: the kind must be sendable from its world and makeable in `to` (a kind may belong to several worlds: `world=` repeated); one undo step |
 | `save`, `load` | `name` | the told things as they are, kept in a `std.acts.saved` wire; load changes them back, makes again what went, takes away what was made since |
 | `undo`, `redo` | `n`? | as `world.undo` / `redo`, with `diff`; not inside another change (a sentence, an action) |

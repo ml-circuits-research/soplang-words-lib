@@ -1027,3 +1027,7 @@ Reviewer ran `npm test` on 0.54: 410 pass, 0 fail, exit 0. Ordered anchored alte
 ## Reviewer 2026-11-14 12:05 — Q38 (std.plan design) approved; build it
 
 Approved as written, including (a)–(d). Two additions: (1) the plan's explanation must be renderable as one short line per step (the Talk summary and "why" show it); (2) when `std.plan` is released, say so in your worker-log so the knowledge repository can delete its test-only reference reader `tools/lib/plan.mjs` and run its expected act lists through the library instead (one planner, no copy).
+
+## Reviewer 2026-11-14 12:25 — 0.55 `std.plan` accepted
+
+Reviewer ran `npm test` on 0.55: 415/416 pass, 0 fail. Accepted. PSys2 is asked to vendor it for multi-step requests; the knowledge repository to delete its reference reader. Next: Round 28 (arbitration first), the rest of Round 30 (generation templates with agreement on the first w.lang.ro draft when it comes).

@@ -6,6 +6,94 @@ written with each question and in `worker-log.md`. A question is deleted from th
 once the worker is satisfied with the answer; closed ones are listed at the end in one
 line each so the history is not lost.
 
+## Q54 (reviewer 21:00, owner 14:45): design note for the abstraction round
+
+The diagnosis is accepted: reading follows surface forms, knowledge comes after reading, and
+`induce` / `abduce` are not used on language or on the case corpus. Below, each item with
+what it builds, where, and the measure that must move. PSys2 measures the four curves
+(paraphrases-rt, schema-alone, grid, held-out) before and after each item. In this
+repository the gate stays: npm test, pilot identical, corpus 61/61. Each item ships alone,
+with its "before" number taken first.
+
+**1. Type-driven reading** (`resolve`, `std.grammar`: new `readByTypes(world, text, { lexicon, acts })`).
+- Content words are typed through the lexicon and resolve: a thing of a kind, an attribute,
+  an act, a value with a unit, a question word.
+- The candidate frames are every act or relation whose argument types the typed words can
+  fill:
+  - k.actions roles with their types;
+  - schema slots (kind, ref type);
+  - knowledge relations with their argument types ("sound of animal": a key whose holder
+    type is animal).
+- Assignment is a `solveChoices` problem: words to roles, each word at most once, types
+  must fit.
+- Word order, prepositions and function words only weight the candidates (Q-word plus
+  copula: a question; an imperative verb first: a command), so "what sound does a cow make",
+  "a cow makes which sound" and "cow sound?" give one frame.
+- An unread word is said, never dropped silently.
+- **Measure:**
+  - PSys2 paraphrases-rt meaning kept, 16.5 % → up;
+  - schema-alone, about 51 % → up;
+  - here, a new case set of 30 paraphrase triples (cow / sound kind) over toy schemas.
+
+**2. Alternations once** (`std.grammar`: `alternations` as data in the language world:
+`w.lang.en.alternation name=passive from=... to=...`; the library applies them).
+- Passive, wh-fronting, question vs command, wrappers ("could you", "I want you to",
+  "please"), dative shift and ellipsis are rules over a canonical frame's parse.
+- The grammar derives every variant of every frame at load (bounded) or matches them at
+  read time by normalising the input to canonical order.
+- I start with the read-time normaliser: it is cheaper and needs no growth in rules.
+- A language world then writes each frame once.
+- **Measure:** the number of frame rules in w.lang.en that are variants of another, which
+  should drop once they can be removed, with paraphrases-rt no lower.
+- **Ask to the knowledge side:** the alternations as facts of w.lang.en. Until they are
+  published, I keep a toy set in the tests.
+
+**3. Lexical generalisation at read time** (`resolve` tier `near`).
+- A word unknown in a typed slot goes to the nearest sense in k.words of the slot's type:
+  synonym (cost 1), hypernym or hyponym (2), derivation (2).
+- The cost ranks the candidates; above a bound, the word is not read and the reply asks.
+- **Measure:** paraphrases-rt on the subset whose paraphrase replaces a word, and wrong
+  reads (precision), which must not rise.
+
+**4. Induction from cases** (`learnRules(rows, { induce, heldOut })`, new in `tools/` first,
+then std).
+- Ledger rows and corpus cases that share an act are grouped.
+- `induce` anti-unifies their successful readings (text spans → frame) into a general rule,
+  and fillers are lifted to their common kind (k.kinds chain).
+- The rule is proposed with its support.
+- It is admitted only if the held-out half does not drop and the training half rises.
+- **Measure:** the PSys2 learning curve with mechanisms frozen and only induced rules
+  added. The point is rules that come from data, not hand fixes.
+- This is the "learn" step the Round 27 skills call.
+
+**5. Transfer by analogy between worlds** (`alignWorlds(a, b)`).
+- Two schemas are aligned by structure:
+  - items assigned to slots under constraints (seating, timeline, layout);
+  - containers with ordered parts (drawing, document, diagram).
+- Types are matched by their slot signatures (kinds, refs, many, constraints), with a
+  `solveChoices` assignment that maximises the matched slots.
+- A default, rule, procedure or question form of one world is then **offered** to the
+  aligned one, with the map and a measurement, never told silently.
+- **Measure:** on PSys2's worlds, the proposals accepted by the held-out curve, against the
+  proposals made.
+
+**6. Story-then-question focus** (18:20 item 1). `dialogue`'s focus log carries the
+entities of a story told before a question, and resolve's `focusFor` reads them. **Measure:**
+PSys2's story-question set.
+
+**Also from the 21:00 list (decisions):**
+- one summariser: docr.summary's needs go into std.summarize;
+- compose's world may be a composite (session worlds plus catalog, async allowed);
+- compose deterministic by seed and memoisable;
+- `summarizeLog({ failed: 'separate' })`;
+- one frame renderer for summarize, compose and sample, through the language world's act
+  templates;
+- `std.schema.kind ... needs=text`, so sample skips makes it cannot fill.
+
+**Order:** 1, 3 (they share the typed slots), 2, 4, 5, 6. The small decisions go in
+between. **Choice taken while waiting:** start item 1 on toy schemas with the cow / sound
+example and the existing resolve tiers.
+
 ## Q36 (reviewer 07:40, Round 28): PSys2's [LIB] lessons, one answer each
 
 Read in place (PSys2 questions.md, Q12 of 2026-11-14 04:30, and item 4 of "w.lang.en vs the

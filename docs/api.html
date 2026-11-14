@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="8183473db8e1">
+<meta name="source-hash" content="e0e70ea6e52d">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.95.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.96.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -769,6 +769,15 @@ const t = turn(w, [{ action: &#x27;make&#x27;, args: { kind: &#x27;lamp&#x27; } 
 print(t.status, t.loaded.map((n) =&gt; n.type));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;of&quot;:&quot;home&quot;,&quot;type&quot;:&quot;k.furniture&quot;,&quot;loaded&quot;:false}] needs k.furniture loaded first
 done [&quot;k.furniture&quot;]</code></pre></figure>
+<h3 id="experimentcells-run-options-and-ablationcells-run-configs-options">experiment(cells, run, options?) and ablation(cells, run, configs, options?)</h3>
+<p>Experiment and ablation harnesses (Round 28 item 9). <code>experiment</code> runs cells <code>[{ id, input, expect, set?, class? }]</code> through <code>run(input, config)</code>. Each result becomes a ledger row: <code>{ source, text, cell, config, set, pass, got, expect, stage? }</code>. The options are <code>judge(got, expect, cell)</code> (default: equal as JSON), <code>stage(got, cell)</code>, and <code>name</code> and <code>config</code>.</p>
+<p><code>ablation</code> runs every configuration on every set. It returns:</p>
+<ul><li><code>rows</code>;</li><li>a <code>table</code> (<code>{ config: { set: { pass, of } } }</code>);</li><li><code>buys</code>: per configuration against the <code>baseline</code>, the cells it gains and loses;</li><li><code>causes</code>: per configuration, its failures grouped by cause (<code>signals</code>, as <code>ledgerGroups</code> takes them).</li></ul>
+<p>What a mechanism buys is measured by turning it off.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const cells = [{ id: &#x27;a&#x27;, input: 2, expect: 4 }, { id: &#x27;b&#x27;, input: 3, expect: 9 }];
+const r = ablation(cells, (x, cfg) =&gt; (cfg.square ? x * x : x + x), { add: {}, square: { square: true } });
+print(r.table, r.buys.square);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;add&quot;:{&quot;all&quot;:{&quot;pass&quot;:1,&quot;of&quot;:2}},&quot;square&quot;:{&quot;all&quot;:{&quot;pass&quot;:2,&quot;of&quot;:2}}} {&quot;gains&quot;:[&quot;b&quot;],&quot;losses&quot;:[]}</code></pre></figure>
 <h3 id="chooseworld-kind-candidates-options-rankingofworld-and-calibrateworld-kind-cases-options">choose(world, kind, candidates, options?), rankingOf(world) and calibrate(world, kind, cases, options?)</h3>
 <p>One way to choose (reviewer 01:00). The candidates of a choice point are ordered by the criteria declared for its kind, as data: <code>std.decide.criterion of=&lt;kind&gt; n= name= measure= dir=hard|min|max</code>, from the world, else std.decide's own facts. A criterion reads a field of the candidate (<code>measure</code>; missing counts as 0): <code>hard</code> loses on anything but 0, while <code>min</code> and <code>max</code> compare. Ties end in a seeded order. The result is <code>{ best, order, ranked, criteria }</code>, where each loser carries <code>lostTo</code>, <code>on</code> and <code>why</code>. The kinds std.decide declares are <code>reading</code>, <code>template</code>, <code>word</code>, <code>rule</code>, <code>fact</code>, <code>parse</code> and <code>score</code>, and <code>criteria</code> gives a list directly. <code>seed: null</code> keeps the given order on ties. <code>rankingOf(world)</code> gives <code>RANKING</code>'s measures in the order of kind <code>score</code>, which <code>world.score</code> uses.</p>
 <p><code>calibrate(world, kind, cases, { heldOut })</code> learns the order of a kind's criteria from cases <code>[{ candidates, expected }]</code>. Every order (at most 7!) is tried on the training cases. The best is proposed as std.decide facts, and admitted only when the held-out cases do not drop. The criteria are tuned on data, not in code. The map of all choice points is in docs/decisions.md.</p>
@@ -1029,7 +1038,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.95.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.96.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

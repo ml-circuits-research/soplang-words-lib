@@ -5079,3 +5079,14 @@ Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-que
   - learnt order (prior before cost): 6/6 train, 3/3 held-out; admitted.
 - For PSys2: it can calibrate kind `reading` on its ledger, with each row's candidate readings and the right one.
 - Gates (5th release): test:full 472 / 472 / 470 pass, 0 fail; npm test 472; pilot identical; psys2=0; scan clean; tsc ok.
+
+## 0.96.0: experiment and ablation harnesses (Round 28 item 9)
+
+- `experiment` turns cells into ledger rows. `ablation` runs configurations × sets and reports a table, what each configuration buys, and causes.
+- test/experiment.test.mjs, with readByTypes and canonicalise as the host and their steps turned on and off:
+  - none: plain 1/1, lexical 0/1, noise 0/1;
+  - near words gain the synonym cell; fillers gain the filler cell; all gain both;
+  - none's 2 failures group as "reading / unread word".
+- Round 28 is complete (items 1–9).
+- Gates: npm test 474 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok. README: 36 jobs.
+- Next: arbitrate through choose; the other Round 27 skills (read a new world, wire a knowledge world, measure a curve, release a version).

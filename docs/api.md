@@ -2166,6 +2166,33 @@ print(t.status, t.loaded.map((n) => n.type));
 done ["k.furniture"]
 ```
 
+### experiment(cells, run, options?) and ablation(cells, run, configs, options?)
+
+Experiment and ablation harnesses (Round 28 item 9). `experiment` runs cells `[{ id,
+input, expect, set?, class? }]` through `run(input, config)`. Each result becomes a ledger
+row: `{ source, text, cell, config, set, pass, got, expect, stage? }`. The options are
+`judge(got, expect, cell)` (default: equal as JSON), `stage(got, cell)`, and `name` and
+`config`.
+
+`ablation` runs every configuration on every set. It returns:
+- `rows`;
+- a `table` (`{ config: { set: { pass, of } } }`);
+- `buys`: per configuration against the `baseline`, the cells it gains and loses;
+- `causes`: per configuration, its failures grouped by cause (`signals`, as `ledgerGroups`
+  takes them).
+
+What a mechanism buys is measured by turning it off.
+
+```js run
+const cells = [{ id: 'a', input: 2, expect: 4 }, { id: 'b', input: 3, expect: 9 }];
+const r = ablation(cells, (x, cfg) => (cfg.square ? x * x : x + x), { add: {}, square: { square: true } });
+print(r.table, r.buys.square);
+```
+
+```output
+{"add":{"all":{"pass":1,"of":2}},"square":{"all":{"pass":2,"of":2}}} {"gains":["b"],"losses":[]}
+```
+
 ### choose(world, kind, candidates, options?), rankingOf(world) and calibrate(world, kind, cases, options?)
 
 One way to choose (reviewer 01:00). The candidates of a choice point are ordered by the

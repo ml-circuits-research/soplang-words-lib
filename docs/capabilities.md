@@ -862,6 +862,26 @@ print(alignWorlds(a, b).map);
 {"seat":"slot"}
 ```
 
+## Measure what a mechanism buys
+
+*In `experiment`, `ablation`; since 0.96.*
+*Works on: any host function and a set of cells with expectations.*
+
+Cells with expectations become ledger rows. An ablation runs every configuration on every
+set and reports a table, the cells each mechanism gains or loses against the baseline, and
+the failures grouped by cause.
+**Limits:** the host's `run` and `judge` decide what a pass is. The rows are in memory: a
+host appends them to its ledger with `ledgerAppend`.
+
+```js run
+const cells = [{ id: 'a', input: 'Um yes', expect: 'yes' }];
+print(ablation(cells, (t, c) => (c.strip ? t.replace(/^um /i, '') : t), { plain: {}, strip: { strip: true } }).buys.strip.gains);
+```
+
+```output
+["a"]
+```
+
 ## Building blocks
 
 *In the core exports; since 0.1 (each as listed).*

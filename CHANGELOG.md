@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.96.0
+
+Round 28 item 9: the experiment and ablation harnesses.
+
+### New
+- `experiment(cells, run, { config, name, judge, stage })`: cells with expectations → ledger
+  rows.
+- `ablation(cells, run, configs, { baseline, signals })`: configurations × sets → a table,
+  what each configuration buys against the baseline, and failures grouped by cause.
+
 ## 0.95.0
 
 ### New

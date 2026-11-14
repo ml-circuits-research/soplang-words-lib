@@ -67,6 +67,7 @@ contain and where code lives: [docs/kinds-of-worlds.md](docs/kinds-of-worlds.md)
 | Read a question by the types of its words | `readByTypes`, `typedLexicon`, `nearWords`, `normalise`, `alternationsOf`, `wordClassesOf`, `canonicalise`, `readCanonical`, `fillersFrom`, `storyState` | [example](docs/capabilities.md#read-a-question-by-the-types-of-its-words) | 0.72 |
 | Judge a fix on the cousins of its case | `cousins`, `ancestorsOf`, `kindChain`, `judgeFix`, `learnRules`, `learnFormOperators`, `formOperator`, `formEdits`, `learnFormEdits`, `familyOf`, `liftTokens` | [example](docs/capabilities.md#judge-a-fix-on-the-cousins-of-its-case) | 0.73 |
 | Align two worlds by structure | `alignWorlds` | [example](docs/capabilities.md#align-two-worlds-by-structure) | 0.77 |
+| Measure what a mechanism buys | `experiment`, `ablation` | [example](docs/capabilities.md#measure-what-a-mechanism-buys) | 0.96 |
 <!-- /capabilities -->
 
 ## Use

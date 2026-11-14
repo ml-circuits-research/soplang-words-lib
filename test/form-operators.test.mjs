@@ -34,3 +34,12 @@ test('cousins under form operators: each operator (learnt, noise, synonym) tagge
   const r = cousinsTest(w, kase, host, { dims: ['wording'], operators, read: O });
   assert.match(r.pattern[0], /fails when .*form:op2.*changes|fails when .*form:synonym/);
 });
+
+test('formEdits / learnFormEdits: a variant that combines operators splits into atomic edits, clustered with their coverage', async () => {
+  const { formEdits, learnFormEdits } = await import('../tools/lib-under-test.mjs');
+  assert.deepEqual(formEdits('what sound does a cow make', 'um what sound a cow makes'), [{ del: 'um', ins: '', at: 'start' }, { del: '', ins: 'does', at: 'inside' }, { del: 'makes', ins: 'make', at: 'end' }]);
+  const P = (c, v) => ({ canonical: c, variant: v });
+  const r = learnFormEdits([P('open the door', 'um open the door'), P('add a cat', 'um add a cat'), P('add a cat', 'hey add a cat'), P('save it', 'um save it please')]);
+  assert.deepEqual(r.operators.slice(0, 1), [{ edit: 'start: "um" -> ""', count: 3 }]);
+  assert.deepEqual(r.coverage, { at80: 2, at95: 3, pairsAt80: 3, pairsAt95: 3 });
+});

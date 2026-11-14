@@ -119,3 +119,44 @@ function applyRule(rule, text) { // the rule once on the text, or null when it d
   const env = go(0, 0, {});
   return env ? rule.to.split(' ').flatMap((t) => { const m = /^\{(x\d+)\}$/.exec(t); return m ? env[m[1]] : [t]; }).join(' ') : null;
 }
+
+/**
+ * The atomic edits of an aligned pair (reviewer 23:45: real variants combine several operators): an LCS
+ * alignment of the words, and each hunk where they differ as one edit { del: variant words, ins:
+ * canonical words, at: start | end | inside }. A filler is a hunk with nothing inserted.
+ */
+export function formEdits(canonical, variant) {
+  const a = toksOf(canonical), b = toksOf(variant);
+  const L = Array.from({ length: b.length + 1 }, () => new Array(a.length + 1).fill(0));
+  for (let i = b.length - 1; i >= 0; i--) for (let j = a.length - 1; j >= 0; j--) L[i][j] = b[i] === a[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]); // bounded: the two sentences
+  const edits = [];
+  let i = 0, j = 0, del = [], ins = [], start = 0;
+  const flush = () => { if (del.length || ins.length) edits.push({ del: del.join(' '), ins: ins.join(' '), at: start === 0 ? 'start' : i >= b.length && j >= a.length ? 'end' : 'inside' }); del = []; ins = []; };
+  while (i < b.length || j < a.length) { // bounded: each step consumes a word
+    if (i < b.length && j < a.length && b[i] === a[j]) { flush(); i++; j++; start = i; continue; }
+    if (j >= a.length || (i < b.length && L[i + 1][j] >= L[i][j + 1])) del.push(b[i++]); else ins.push(a[j++]);
+  }
+  flush();
+  return edits;
+}
+
+/**
+ * Atomic form operators: the edits of every pair clustered (the same edit is one operator), with how many
+ * operators cover 80 % / 95 % of the edits, and of the pairs fully (every edit of the pair covered).
+ */
+export function learnFormEdits(pairs) {
+  const clusters = new Map(), per = [];
+  for (const p of pairs) {
+    const es = formEdits(p.canonical, p.variant).map((e) => `${e.at}: "${e.del}" -> "${e.ins}"`);
+    per.push(es);
+    for (const k of es) clusters.set(k, (clusters.get(k) || 0) + 1);
+  }
+  const ops = [...clusters].sort((x, y) => y[1] - x[1]).map(([edit, count]) => ({ edit, count }));
+  const total = ops.reduce((s, o) => s + o.count, 0);
+  const cover = (share) => { let acc = 0; for (let k = 0; k < ops.length; k++) { acc += ops[k].count; if (acc >= share * total) return k + 1; } return ops.length; };
+  const pairsCover = (share) => { // the fewest top operators that explain every edit of `share` of the pairs
+    for (let k = 1; k <= ops.length; k++) { const top = new Set(ops.slice(0, k).map((o) => o.edit)); if (per.filter((es) => es.every((e) => top.has(e))).length >= share * per.length) return k; }
+    return ops.length;
+  };
+  return { operators: ops, edits: total, coverage: { at80: cover(0.8), at95: cover(0.95), pairsAt80: pairsCover(0.8), pairsAt95: pairsCover(0.95) } };
+}

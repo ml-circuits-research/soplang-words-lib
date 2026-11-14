@@ -4913,3 +4913,32 @@ Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-que
   - kids.shop compat 1.6 s
 - AGENTS.md still says "npm test green on the sources and on the built file". The reviewer may want to change it to "npm test per release, test:full every 5th"; I have not edited AGENTS.md.
 - Gates (new npm test): 461 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+
+## 0.86.0: form operators on PSys2's form pairs (reviewer 23:45)
+
+`node tools/bench-form-pairs.mjs` reads psys2 dbf72b0 training/eval/form-pairs.jsonl in place. Of 626 pairs, 565 have same_meaning=true: paraphrases-rt 85, owner-log 4, cousins 476.
+
+**Whole-pair operators (learnFormOperators)**
+- Learnt on 283 pairs, 282 held out: 179 operators, 9 admitted.
+- 80 % of the pairs need 123 operators, 95 % need 165.
+- Real variants combine several operators (filler + alternation + extra clause), so whole-pair rules are mostly unique.
+
+**Atomic edits (formEdits / learnFormEdits)**, all 565 pairs
+- 1,556 edits in 350 operators.
+- 80 % of the edits are covered by 70 operators, 95 % by 273. Every edit of 80 % of the pairs needs 219 operators, of 95 % 322.
+- The top edits:
+  - fillers: "um" 174, "hey" 115;
+  - the alternation makes→does … make: 121 + 59 + 68 + 54;
+  - extra questions as noise: "is egypt in africa" 116, plus 58 each for the arithmetic and calendar ones;
+  - article drop "a": 58.
+
+**Reading**
+- The operator families are few: fillers, do-support / fronting, compound with an extra question, articles, number words.
+- The literal edits are many because the extra clauses differ in content. Clustering by family needs a span type (filler word vs whole clause vs function word), the next step.
+
+**Data notes for PSys2**
+- Some pairs marked same_meaning=true change content (noise → legs; spider have → whale make): the cousins generator's own pairs.
+- Please check that these rows are not counted as same-meaning.
+
+**Gates**
+- npm test 462 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.

@@ -654,3 +654,7 @@ export function articleFor(world: World, word: string, options?: { types?: { det
 export function formOperator(canonical: string, variant: string, options?: { min?: number }): { from: string; to: string } | null;
 /** Form operators learnt from aligned pairs, clustered, checked on held-out pairs, with their coverage. */
 export function learnFormOperators(pairs: { canonical: string; variant: string }[], options?: { heldOut?: { canonical: string; variant: string }[]; normalise?: (rule: object, text: string) => string | null }): { operators: { name: string; from: string; to: string; support: string[]; heldOut: { pass: number; of: number }; admitted: boolean }[]; coverage: { pairs: number; operators: number; at80: number | null; at95: number | null }; unaligned: number };
+/** The atomic edits of an aligned pair: each hunk where the words differ. */
+export function formEdits(canonical: string, variant: string): { del: string; ins: string; at: 'start' | 'inside' | 'end' }[];
+/** Atomic edits clustered into operators, with their coverage of the edits and of the pairs. */
+export function learnFormEdits(pairs: { canonical: string; variant: string }[]): { operators: { edit: string; count: number }[]; edits: number; coverage: { at80: number; at95: number; pairsAt80: number; pairsAt95: number } };

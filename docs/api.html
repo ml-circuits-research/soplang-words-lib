@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="4b24bf67ca5f">
+<meta name="source-hash" content="40e0a5995f43">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.85.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.86.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -635,9 +635,10 @@ const C = (t, o) =&gt; ({ text: t, frame: { is: &#x27;ask&#x27;, key: &#x27;soun
 const [r] = learnRules(w, [C(&#x27;cow sound&#x27;, &#x27;cow&#x27;), C(&#x27;duck sound&#x27;, &#x27;duck&#x27;)], { heldOut: [C(&#x27;hen sound&#x27;, &#x27;hen&#x27;)] });
 print(r.admitted, r.heldOut);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true {&quot;pass&quot;:1,&quot;of&quot;:1}</code></pre></figure>
-<h3 id="learnformoperatorspairs-options-and-formoperatorcanonical-variant">learnFormOperators(pairs, options?) and formOperator(canonical, variant)</h3>
+<h3 id="learnformoperatorspairs-options-formoperatorcanonical-variant-formeditscanonical-variant-and-learnformeditspairs">learnFormOperators(pairs, options?), formOperator(canonical, variant), formEdits(canonical, variant) and learnFormEdits(pairs)</h3>
 <p>Form operators from aligned pairs (owner 16:12): a request is content × form × context, and the form varies by few operators. <code>formOperator</code> takes a canonical sentence and a variant with the same meaning. The shared runs of words become variables, and what is left is the operator: <code>{ from, to }</code> in the language world's alternation format (<code>could you {x1}</code> → <code>{x1}</code>; <code>{x1} is opened by {x2}</code> → <code>{x2} opens {x1}</code>).</p>
 <p><code>learnFormOperators([{ canonical, variant }], { heldOut })</code> clusters the operators of the pairs; the same rule is one operator. Each operator is checked on held-out pairs: it must bring the variant back to its canonical sentence. It is admitted with two supports or with held-out passes. The result is <code>{ operators: [{ name, from, to, support, heldOut, admitted }], coverage: { pairs, operators, at80, at95 }, unaligned }</code>, where <code>at80</code> and <code>at95</code> count how many operators, most frequent first, cover 80 % and 95 % of the pairs. An operator is both a generator (for <code>cousins</code>) and, read forwards, a normalisation rule (for <code>normalise</code>).</p>
+<p>Real variants combine several operators, such as a filler, an alternation and an extra clause. <code>formEdits(canonical, variant)</code> splits a pair into atomic edits: an alignment of the words, and each hunk where they differ, <code>{ del, ins, at: start | inside | end }</code>. <code>learnFormEdits(pairs)</code> clusters them and counts how many operators cover 80 % and 95 % of the edits, and of the pairs fully (<code>pairsAt80</code>, <code>pairsAt95</code>). <code>tools/bench-form-pairs.mjs</code> runs both on PSys2's <code>form-pairs.jsonl</code>.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const r = learnFormOperators([{ canonical: &#x27;open the door&#x27;, variant: &#x27;could you open the door&#x27; }, { canonical: &#x27;add a cat&#x27;, variant: &#x27;could you add a cat&#x27; }]);
 print(r.operators[0].from, r.coverage);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>could you {x1} {&quot;pairs&quot;:2,&quot;operators&quot;:1,&quot;at80&quot;:1,&quot;at95&quot;:1}</code></pre></figure>
@@ -1007,7 +1008,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.85.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.86.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

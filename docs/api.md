@@ -1758,7 +1758,7 @@ print(r.admitted, r.heldOut);
 true {"pass":1,"of":1}
 ```
 
-### learnFormOperators(pairs, options?) and formOperator(canonical, variant)
+### learnFormOperators(pairs, options?), formOperator(canonical, variant), formEdits(canonical, variant) and learnFormEdits(pairs)
 
 Form operators from aligned pairs (owner 16:12): a request is content × form × context,
 and the form varies by few operators. `formOperator` takes a canonical sentence and a
@@ -1774,6 +1774,13 @@ held-out passes. The result is `{ operators: [{ name, from, to, support, heldOut
 how many operators, most frequent first, cover 80 % and 95 % of the pairs. An operator is
 both a generator (for `cousins`) and, read forwards, a normalisation rule (for
 `normalise`).
+
+Real variants combine several operators, such as a filler, an alternation and an extra
+clause. `formEdits(canonical, variant)` splits a pair into atomic edits: an alignment of
+the words, and each hunk where they differ, `{ del, ins, at: start | inside | end }`.
+`learnFormEdits(pairs)` clusters them and counts how many operators cover 80 % and 95 %
+of the edits, and of the pairs fully (`pairsAt80`, `pairsAt95`).
+`tools/bench-form-pairs.mjs` runs both on PSys2's `form-pairs.jsonl`.
 
 ```js run
 const r = learnFormOperators([{ canonical: 'open the door', variant: 'could you open the door' }, { canonical: 'add a cat', variant: 'could you add a cat' }]);

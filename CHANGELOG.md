@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.86.0
+
+Form operators measured on PSys2's aligned pairs (reviewer 23:45).
+
+### New
+- `formEdits(canonical, variant)`: a pair split into atomic edits (an alignment of the
+  words; each hunk where they differ).
+- `learnFormEdits(pairs)`: the edits clustered, with their coverage of the edits and of
+  the pairs.
+- `tools/bench-form-pairs.mjs`: both learners on psys2's `training/eval/form-pairs.jsonl`,
+  read in place.
+
 ## 0.85.0
 
 Test speed (reviewer 23:45, owner 16:35).

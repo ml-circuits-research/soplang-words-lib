@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.97.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.98.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html" aria-current="page">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -32,7 +32,7 @@
 <div class="table"><table><thead><tr><th>Was</th><th>Is</th><th>Where it changed</th></tr></thead><tbody><tr><td><code>core.test</code></td><td><code>core.check</code></td><td>wire type; the old name is still read when a rule links it with <code>if=</code></td></tr><tr><td><code>world.schema</code> (the Map of matrix wires)</td><td><code>world.matrix</code></td><td>property; <code>world.schema(type)</code> now describes a type</td></tr><tr><td>"schema wire", "schema" (for rules and denies too)</td><td>"matrix wire", "matrix"</td><td>documents; <em>schema</em> is kept for slots and types (<code>world.schema(type)</code>, <code>core.schema.map</code>) and as the violation kind <code>schema</code> for an error in the matrix</td></tr><tr><td>"pattern wire <code>?id</code>"</td><td>"pattern", written <code>@id</code></td><td>the language (0.6)</td></tr><tr><td>"test" (a condition in a rule)</td><td>"check"</td><td>documents</td></tr><tr><td>"instance" (layer of fact wires)</td><td>"facts"</td><td>documents</td></tr><tr><td>"question" (for an open key) and "open key"</td><td>"open key"; a <em>question</em> is the <code>core.question</code> wire made for one</td><td>documents</td></tr><tr><td>violation kind <code>syntax</code> (a fact with a variable)</td><td><code>variable</code></td><td>violation (0.6); <code>SopError</code> is the only syntax error</td></tr><tr><td><code>fns</code> for actions and producers</td><td><code>actions</code>, <code>producers</code></td><td>options (0.6)</td></tr><tr><td>"schema world", "schema" (for a reusable world), "world template"</td><td><strong>world schema</strong></td><td>documents (0.42)</td></tr><tr><td>"knowledge base", "catalog world", "knowledge" (as a world)</td><td><strong>knowledge world</strong>; the <em>catalog</em> is the index that loads one</td><td>documents (0.42)</td></tr><tr><td>"session world", "the user's world", "instance"</td><td><strong>live world</strong></td><td>documents (0.42)</td></tr></tbody></table></div>
 <p class="source">Generated from <code>docs/glossary.md</code>.</p>
 </main>
-<footer>sopworld 0.97.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.98.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

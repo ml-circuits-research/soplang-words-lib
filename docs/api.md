@@ -2166,6 +2166,38 @@ print(t.status, t.loaded.map((n) => n.type));
 done ["k.furniture"]
 ```
 
+### readEnsemble(world, text, options?), defaultReaders(read?, canonical?) and riskCoverage(rows)
+
+Several readers, one confidence (reviewer 02:30). Readers run as parallel voices, not a
+fallback chain. Each is `(world, text) -> [{ frame, unread?, cost?, specificity? }]`. The
+library's own are `types` (readByTypes), `canonical` (readCanonical) and `exact` (no near
+words), and a host adds its own voices. The candidate frames are pooled with features:
+- `agreement`: the readers that proposed the frame, weighted by `weights` (default 1 each;
+  learnt from cases, for example each reader's precision on a training half);
+- words left unread;
+- the cost of assumptions;
+- specificity.
+
+std.decide (kind `ensemble`) combines them. The result is `{ frame, confidence, voices,
+candidates, ranked, ask? }`, where `confidence` is the weighted share of the readers that
+proposed the winner. Below `threshold`, or when two readings tie, `ask` holds the competing
+frames, for a question back instead of a guess.
+
+`riskCoverage(rows)` turns `[{ confidence, correct }]` into the risk–coverage curve: for
+each threshold, the share answered and the share of those that are wrong.
+`tools/bench-ensemble.mjs` measures the readers alone and together on PSys2's form pairs.
+
+```js run
+const w = new World();
+w.tell('@cow k.animal name=cow sound=moo  @v core.word text=make text=makes means=sound');
+const r = readEnsemble(w, 'what sound does a cow make', { read: { question: ['what', 'does'], skip: ['a'] } });
+print(r.frame.answer, r.confidence, r.voices.length);
+```
+
+```output
+["moo"] 1 3
+```
+
 ### experiment(cells, run, options?) and ablation(cells, run, configs, options?)
 
 Experiment and ablation harnesses (Round 28 item 9). `experiment` runs cells `[{ id,

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.98.0
+
+Several readers, one confidence (reviewer 02:30, owner 18:18).
+
+### New
+- `readEnsemble(world, text, { readers, weights, threshold })`: readers as parallel voices,
+  pooled, combined by std.decide (kind `ensemble`), with a confidence; `ask` when below the
+  threshold or tied.
+- `defaultReaders(read, canonical)`: `types`, `canonical`, `exact`.
+- `riskCoverage(rows)`.
+- `tools/bench-ensemble.mjs`.
+
 ## 0.97.0
 
 Round 27: the agent skills.

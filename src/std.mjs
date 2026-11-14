@@ -721,6 +721,10 @@ ${['overlaps', 'contains_box', 'box_distance'].map((f) => ['x1', 'y1', 'w1', 'h1
 @std.decide.c.score.3 std.decide.criterion of=score n=3 name=lacks measure=lacks dir=min
 @std.decide.c.score.4 std.decide.criterion of=score n=4 name=words measure=words dir=min
 @std.decide.c.score.5 std.decide.criterion of=score n=5 name=assumes measure=assumes dir=min
+@std.decide.c.ensemble.1 std.decide.criterion of=ensemble n=1 name=agreement measure=agreement dir=max about="how many readers proposed it"
+@std.decide.c.ensemble.2 std.decide.criterion of=ensemble n=2 name=coverage measure=unread dir=min about="words left unread by its best reader"
+@std.decide.c.ensemble.3 std.decide.criterion of=ensemble n=3 name=cost measure=cost dir=min about="the assumptions of its cheapest reader"
+@std.decide.c.ensemble.4 std.decide.criterion of=ensemble n=4 name=specificity measure=specificity dir=max
 @std.decide.c.fact.1 std.decide.criterion of=fact n=1 name=unsaid measure=said dir=hard
 @std.decide.c.fact.2 std.decide.criterion of=fact n=2 name=interest measure=interest dir=max about="k.interest"
 `,

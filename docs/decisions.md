@@ -38,6 +38,7 @@ tuned in code.
 | The world that takes a request (`arbitrate`) | worlds | own / decline / refuse, then the world's rank | own method; to move to kind `world` |
 | A template of a sentence (`discourseRealiser`) | templates of the move and register whose slots fill | **`choose`**, kind `template`: fills, fresh, specificity, prior, seed | **done (0.92)** |
 | A near word (`readByTypes` `near`) | words through k.words senses | **`choose`**, kind `word`: fits, cost, prior | **done (0.92)** |
+| The reading of several readers (`readEnsemble`) | frames pooled from the readers | **`choose`**, kind `ensemble`: agreement (weighted), coverage, cost, specificity; a confidence, a question back below the threshold | **done (0.98)** |
 | A frame of a question (`readByTypes`) | ask / find / act frames | **`choose`**, kind `reading`: words left unread, the cost of near words, specificity, the score as prior | **done (0.93)** |
 | An alternation rule (`normalise`) | rules that match | **`choose`**, kind `rule`: matches, specificity (literal words), then the order told (`n`); `byRule: 'order'` keeps the order alone | **done (0.93)**; 35/35 published cases unchanged |
 | A grammar parse (`parseText`) | parses | **`choose`**, kind `parse`: priority, literal words, size, depth; ties keep a stable order | **done (0.94)** |

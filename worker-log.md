@@ -5121,3 +5121,29 @@ Gates: npm test 474 pass, 0 fail; pilot identical; psys2=0 in src; scan clean; t
   - and constraints as facts: `k.kinds.structure.constraint structure= name= on= kind=capacity|distinct|order`.
   
   With these, alignWorlds can map a world type to a role by signature and check the constraints. Without them it aligns by slot signatures only, as in 0.77. A map from a world's types to structure roles (`k.kinds.structure_of type= structure= role=`) would let worlds declare it outright.
+
+## 0.98.0: several readers, one confidence (reviewer 02:30)
+
+`readEnsemble` runs readers as parallel voices (types, canonical, exact; hosts add their own), pools their frames, and combines them with choose kind ensemble (weighted agreement, coverage, cost, specificity). It returns a confidence, and `ask` below the threshold or on a tie. `riskCoverage` gives the risk–coverage curve.
+
+**`node tools/bench-ensemble.mjs`**: psys2's 565 pairs against k.animals; 500 variants have a gold reading (the world's reading of the canonical sentence).
+
+| reader | coverage | precision |
+| --- | --- | --- |
+| types | 99.6 % | 51.0 % |
+| canonical | 99.6 % | 57.6 % |
+| exact | 15.0 % | 18.7 % |
+| ensemble (equal weights) | 99.6 % | 51.0 % |
+| all three agree | 3.0 % | 93.3 % |
+
+- Risk–coverage: at confidence 1, coverage 0.03 and risk 0.067; at ≥ 0.667, coverage 1 and risk 0.49.
+- Weights learnt on a training half (types 0.552, canonical 0.628, exact 0.189): held-out precision 46.8 % → 46.8 %, unchanged.
+
+**Reading the numbers**
+- The voices are not independent: types and exact are both readByTypes, so their agreement outvotes canonical, which is the better reader alone.
+- Agreement is a good confidence signal when the readers are independent: 93 % precision when all agree, but 3 % coverage.
+- The independent voices that would make the ensemble pay are the grammar/frames reader, the pattern reader (02:15) and PSys2's neural dispatcher.
+- Next: calibrate the ensemble criteria and weights with `calibrate` on PSys2's ledger once its voices join.
+
+**Gates**
+- npm test 476 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.

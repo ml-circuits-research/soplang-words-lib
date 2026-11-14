@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="e0e70ea6e52d">
+<meta name="source-hash" content="7cc1c3009bed">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.97.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.98.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -769,6 +769,16 @@ const t = turn(w, [{ action: &#x27;make&#x27;, args: { kind: &#x27;lamp&#x27; } 
 print(t.status, t.loaded.map((n) =&gt; n.type));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;of&quot;:&quot;home&quot;,&quot;type&quot;:&quot;k.furniture&quot;,&quot;loaded&quot;:false}] needs k.furniture loaded first
 done [&quot;k.furniture&quot;]</code></pre></figure>
+<h3 id="readensembleworld-text-options-defaultreadersread-canonical-and-riskcoveragerows">readEnsemble(world, text, options?), defaultReaders(read?, canonical?) and riskCoverage(rows)</h3>
+<p>Several readers, one confidence (reviewer 02:30). Readers run as parallel voices, not a fallback chain. Each is <code>(world, text) -&gt; [{ frame, unread?, cost?, specificity? }]</code>. The library's own are <code>types</code> (readByTypes), <code>canonical</code> (readCanonical) and <code>exact</code> (no near words), and a host adds its own voices. The candidate frames are pooled with features:</p>
+<ul><li><code>agreement</code>: the readers that proposed the frame, weighted by <code>weights</code> (default 1 each; learnt from cases, for example each reader's precision on a training half);</li><li>words left unread;</li><li>the cost of assumptions;</li><li>specificity.</li></ul>
+<p>std.decide (kind <code>ensemble</code>) combines them. The result is <code>{ frame, confidence, voices, candidates, ranked, ask? }</code>, where <code>confidence</code> is the weighted share of the readers that proposed the winner. Below <code>threshold</code>, or when two readings tie, <code>ask</code> holds the competing frames, for a question back instead of a guess.</p>
+<p><code>riskCoverage(rows)</code> turns <code>[{ confidence, correct }]</code> into the risk–coverage curve: for each threshold, the share answered and the share of those that are wrong. <code>tools/bench-ensemble.mjs</code> measures the readers alone and together on PSys2's form pairs.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(&#x27;@cow k.animal name=cow sound=moo  @v core.word text=make text=makes means=sound&#x27;);
+const r = readEnsemble(w, &#x27;what sound does a cow make&#x27;, { read: { question: [&#x27;what&#x27;, &#x27;does&#x27;], skip: [&#x27;a&#x27;] } });
+print(r.frame.answer, r.confidence, r.voices.length);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;moo&quot;] 1 3</code></pre></figure>
 <h3 id="experimentcells-run-options-and-ablationcells-run-configs-options">experiment(cells, run, options?) and ablation(cells, run, configs, options?)</h3>
 <p>Experiment and ablation harnesses (Round 28 item 9). <code>experiment</code> runs cells <code>[{ id, input, expect, set?, class? }]</code> through <code>run(input, config)</code>. Each result becomes a ledger row: <code>{ source, text, cell, config, set, pass, got, expect, stage? }</code>. The options are <code>judge(got, expect, cell)</code> (default: equal as JSON), <code>stage(got, cell)</code>, and <code>name</code> and <code>config</code>.</p>
 <p><code>ablation</code> runs every configuration on every set. It returns:</p>
@@ -1038,7 +1048,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.97.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.98.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

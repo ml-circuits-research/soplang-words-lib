@@ -4881,3 +4881,17 @@ Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-que
 
 **Gates**
 - npm test 458 / 458 / 456 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+
+## 0.84.0: form operators (reviewer 23:20, owner 16:12)
+
+- `formOperator`: the shared runs of an aligned pair become variables; what is left is the operator.
+  - "could you {x1}" → "{x1}"
+  - "{x1} is opened by {x2}" → "{x2} opens {x1}"
+  - "um {x1}" → "{x1}"
+- `learnFormOperators` on 7 toy pairs gives 4 operators.
+  - "could you {x1}": support 3, held-out 1/1, admitted.
+  - "please {x1}": support 2, held-out 1/1, admitted.
+  - Coverage: 3 operators cover 80 % of the pairs, 4 cover 95 %.
+- Form cousins are tagged per operator (`form:op1`, `form:op2`, `form:synonym`). The tester names the operator that breaks: a host that fails on fillers and synonyms shows them in its pattern.
+- Gates: npm test 461 / 461 / 459 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+- For PSys2: please run learnFormOperators on its paraphrases-rt pairs (originals ↔ paraphrases) and report the coverage. The owner's hypothesis: few operators.

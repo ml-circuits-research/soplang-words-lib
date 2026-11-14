@@ -813,14 +813,16 @@ print(readByTypes(w, 'which animal makes woof', { question: ['which'] }).best.an
 
 ## Judge a fix on the cousins of its case
 
-*In `cousins`, `ancestorsOf`, `kindChain`, `judgeFix`, `learnRules`; since 0.73.*
+*In `cousins`, `ancestorsOf`, `kindChain`, `judgeFix`, `learnRules`, `learnFormOperators`, `formOperator`; since 0.73.*
 *Works on: worlds with kinds (kind, class, is, is_a) and facts with keys.*
 
 A failing case is expanded into its siblings and cousins (up the kinds, then down to other
 members), valid ones only. A fix is then judged on the case and on its cousins by degree,
 which measures how general it is. `learnRules` induces reading rules from cases (the
 library's `induce`, fillers lifted to their kind) and admits them only on held-out cases
-and cousins.
+and cousins. `learnFormOperators` extracts the few operators of form (wrappers, fillers,
+passive) from aligned pairs and counts how many cover 80 % and 95 % of them. Each is a
+cousin generator and a normalisation rule.
 **Limits:** the dimensions are fillers and keys. The others (act families, alternations,
 world structure kinds) come with the items of Q54. A cousin's wording is the case's text
 with the filler replaced, until generation is used.

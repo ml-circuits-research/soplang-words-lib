@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.84.0
+
+Form siblings: learn the operators, not the cases (reviewer 23:20, owner 16:12).
+
+### New
+- `formOperator(canonical, variant)`: the operator of an aligned pair, in the alternation
+  format.
+- `learnFormOperators(pairs, { heldOut })`: operators clustered, checked on held-out pairs,
+  with the inventory's coverage (how many cover 80 % and 95 %).
+- `cousins(..., { operators, senses })`: form cousins tagged per operator (`form:<name>`),
+  and `form:synonym` through word senses.
+
+### Changed
+- The `wording` cousins are tagged `form:<operator>` (they were `wording`).
+- Span names in alternation rules may have digits (`{x1}`).
+
 ## 0.83.0
 
 What PSys2's first cousins tables asked for (reviewer 23:05).

@@ -16,7 +16,7 @@ export function alternationsOf(world, type = 'w.lang.en.alternation') {
 function match(pat, toks, i, env, k) { // bounded: the pattern and the tokens
   if (k === pat.length) return i === toks.length ? env : null;
   const p = pat[k];
-  const span = /^\{([a-z_]+)\}$/.exec(p);
+  const span = /^\{([a-z_0-9]+)\}$/.exec(p);
   if (span) {
     for (let j = i + 1; j <= toks.length; j++) { const r = match(pat, toks, j, { ...env, [span[1]]: toks.slice(i, j) }, k + 1); if (r) return r; }
     return null;
@@ -41,7 +41,7 @@ export function normalise(world, text, { rules, type, lemma, max = 6 } = {}) {
     if (!hit) break;
     const out = [];
     for (const t of hit.r.to.split(/\s+/)) {
-      const m = /^\{([a-z_]+)(?::(base))?\}$/.exec(t);
+      const m = /^\{([a-z_0-9]+)(?::(base))?\}$/.exec(t);
       if (m) out.push(...(m[2] ? [base(hit.env[m[1]][0]), ...hit.env[m[1]].slice(1)] : hit.env[m[1]])); else out.push(t);
     }
     if (out.join(' ') === toks.join(' ')) break;

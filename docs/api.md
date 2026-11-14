@@ -1758,6 +1758,32 @@ print(r.admitted, r.heldOut);
 true {"pass":1,"of":1}
 ```
 
+### learnFormOperators(pairs, options?) and formOperator(canonical, variant)
+
+Form operators from aligned pairs (owner 16:12): a request is content × form × context,
+and the form varies by few operators. `formOperator` takes a canonical sentence and a
+variant with the same meaning. The shared runs of words become variables, and what is
+left is the operator: `{ from, to }` in the language world's alternation format
+(`could you {x1}` → `{x1}`; `{x1} is opened by {x2}` → `{x2} opens {x1}`).
+
+`learnFormOperators([{ canonical, variant }], { heldOut })` clusters the operators of the
+pairs; the same rule is one operator. Each operator is checked on held-out pairs: it must
+bring the variant back to its canonical sentence. It is admitted with two supports or with
+held-out passes. The result is `{ operators: [{ name, from, to, support, heldOut, admitted
+}], coverage: { pairs, operators, at80, at95 }, unaligned }`, where `at80` and `at95` count
+how many operators, most frequent first, cover 80 % and 95 % of the pairs. An operator is
+both a generator (for `cousins`) and, read forwards, a normalisation rule (for
+`normalise`).
+
+```js run
+const r = learnFormOperators([{ canonical: 'open the door', variant: 'could you open the door' }, { canonical: 'add a cat', variant: 'could you add a cat' }]);
+print(r.operators[0].from, r.coverage);
+```
+
+```output
+could you {x1} {"pairs":2,"operators":1,"at80":1,"at95":1}
+```
+
 ### normalise(world, text, options?) and alternationsOf(world, type?)
 
 Alternations as general rules, written once (abstraction round, item 2). These are rules
@@ -1798,9 +1824,13 @@ dimensions:
   to the other things below. The degree is how far up the case and the other thing must go
   to meet: 1 = siblings, 2 = first cousins, and so on.
 - `key`: the other keys of the same holder.
-- `wording`: the same frame in other constructions. The language world's alternation rules
-  (`alternations`, from `alternationsOf`) are run backwards: "could you …", "please …".
-  With these, the tester can say "fails when the construction changes".
+- `wording`: the same frame in other forms. Each form operator is run backwards and tagged
+  `form:<name>`:
+  - the language world's alternations (`alternations`, from `alternationsOf`);
+  - noise or learnt operators (`operators`, for example from `learnFormOperators`);
+  - a word for its synonym through word senses (`form:synonym`).
+
+  With these, the tester can say "fails under operator X".
 
 A cousin is valid when it is legal in the world (it has an answer), when its wording, made
 by substituting the filler, reads back to the same frame, and when it is not a `known`

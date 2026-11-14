@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="f7c558477f74">
+<meta name="source-hash" content="4b24bf67ca5f">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.83.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.84.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -635,6 +635,12 @@ const C = (t, o) =&gt; ({ text: t, frame: { is: &#x27;ask&#x27;, key: &#x27;soun
 const [r] = learnRules(w, [C(&#x27;cow sound&#x27;, &#x27;cow&#x27;), C(&#x27;duck sound&#x27;, &#x27;duck&#x27;)], { heldOut: [C(&#x27;hen sound&#x27;, &#x27;hen&#x27;)] });
 print(r.admitted, r.heldOut);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true {&quot;pass&quot;:1,&quot;of&quot;:1}</code></pre></figure>
+<h3 id="learnformoperatorspairs-options-and-formoperatorcanonical-variant">learnFormOperators(pairs, options?) and formOperator(canonical, variant)</h3>
+<p>Form operators from aligned pairs (owner 16:12): a request is content × form × context, and the form varies by few operators. <code>formOperator</code> takes a canonical sentence and a variant with the same meaning. The shared runs of words become variables, and what is left is the operator: <code>{ from, to }</code> in the language world's alternation format (<code>could you {x1}</code> → <code>{x1}</code>; <code>{x1} is opened by {x2}</code> → <code>{x2} opens {x1}</code>).</p>
+<p><code>learnFormOperators([{ canonical, variant }], { heldOut })</code> clusters the operators of the pairs; the same rule is one operator. Each operator is checked on held-out pairs: it must bring the variant back to its canonical sentence. It is admitted with two supports or with held-out passes. The result is <code>{ operators: [{ name, from, to, support, heldOut, admitted }], coverage: { pairs, operators, at80, at95 }, unaligned }</code>, where <code>at80</code> and <code>at95</code> count how many operators, most frequent first, cover 80 % and 95 % of the pairs. An operator is both a generator (for <code>cousins</code>) and, read forwards, a normalisation rule (for <code>normalise</code>).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const r = learnFormOperators([{ canonical: &#x27;open the door&#x27;, variant: &#x27;could you open the door&#x27; }, { canonical: &#x27;add a cat&#x27;, variant: &#x27;could you add a cat&#x27; }]);
+print(r.operators[0].from, r.coverage);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>could you {x1} {&quot;pairs&quot;:2,&quot;operators&quot;:1,&quot;at80&quot;:1,&quot;at95&quot;:1}</code></pre></figure>
 <h3 id="normaliseworld-text-options-and-alternationsofworld-type">normalise(world, text, options?) and alternationsOf(world, type?)</h3>
 <p>Alternations as general rules, written once (abstraction round, item 2). These are rules of the language world (<code>w.lang.en.alternation name= from= to= mode=</code>):</p>
 <ul><li>passive;</li><li>wrappers: "could you", "I want you to", "please";</li><li>question vs command;</li><li>dative shift.</li></ul>
@@ -650,7 +656,8 @@ print(normalise(w, &#x27;Could you please open the door?&#x27;));</code></pre></
 <figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;text&quot;:&quot;open the door&quot;,&quot;applied&quot;:[&quot;could_you&quot;,&quot;please&quot;],&quot;mode&quot;:&quot;request&quot;}</code></pre></figure>
 <h3 id="cousinsworld-case-options-ancestorsofworld-id-options-kindchainworld-id-and-judgefixanswer-case-cousins">cousins(world, case, options?), ancestorsOf(world, id, options?), kindChain(world, id) and judgeFix(answer, case, cousins)</h3>
 <p>A case is never single (abstraction round, item 0). <code>cousins</code> goes up from a case <code>{ frame, text? }</code> (a frame of <code>readByTypes</code>) along a dimension, then down to other members. The dimensions:</p>
-<ul><li><code>filler</code>: up the chain of kinds (<code>kind</code>, <code>class</code>, <code>is</code>, <code>is_a</code>, then the type), and down to the other things below. The degree is how far up the case and the other thing must go to meet: 1 = siblings, 2 = first cousins, and so on.</li><li><code>key</code>: the other keys of the same holder.</li><li><code>wording</code>: the same frame in other constructions. The language world's alternation rules (<code>alternations</code>, from <code>alternationsOf</code>) are run backwards: "could you …", "please …". With these, the tester can say "fails when the construction changes".</li></ul>
+<ul><li><code>filler</code>: up the chain of kinds (<code>kind</code>, <code>class</code>, <code>is</code>, <code>is_a</code>, then the type), and down to the other things below. The degree is how far up the case and the other thing must go to meet: 1 = siblings, 2 = first cousins, and so on.</li><li><code>key</code>: the other keys of the same holder.</li><li><code>wording</code>: the same frame in other forms. Each form operator is run backwards and tagged <code>form:&lt;name&gt;</code>: - the language world's alternations (<code>alternations</code>, from <code>alternationsOf</code>); - noise or learnt operators (<code>operators</code>, for example from <code>learnFormOperators</code>); - a word for its synonym through word senses (<code>form:synonym</code>).</li></ul>
+<p>With these, the tester can say "fails under operator X".</p>
 <p>A cousin is valid when it is legal in the world (it has an answer), when its wording, made by substituting the filler, reads back to the same frame, and when it is not a <code>known</code> case. Each cousin is tagged with its degree and the dimensions changed.</p>
 <p>The graph is layered: a thing has several parents on several dimensions. <code>edges</code> (<code>{ key: dimension }</code>, by default kind / class / is / is_a as <code>kind</code>) names them, and <code>ancestorsOf(world, id, { depth, edges })</code> walks them breadth first. Cousins are deduplicated by frame and stratified per degree and dimension (<code>n</code> each). The automatic tester <code>tools/cousins-test.mjs</code> takes one example and a host and gives a table per degree × dimension, naming the pattern of breaks. The skill <code>skills/expand-and-test-case</code> hands the failures to <code>learnRules</code>. <code>judgeFix(answer, case, cousins)</code> judges a fix both ways: on the case alone and on its valid cousins by degree. Judged that way, a fix that passes only its case shows a share of 0.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
@@ -1000,7 +1007,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.83.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.84.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

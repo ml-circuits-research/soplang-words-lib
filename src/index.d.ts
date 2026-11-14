@@ -627,7 +627,7 @@ export function readByTypes(world: World, text: string, options?: { question?: s
 /** The world's own typed lexicon: word -> senses (thing, kind, attr, value, act, word). */
 export function typedLexicon(world: World): Map<string, object[]>;
 /** The cousins of a case: up along kinds or keys, down to other members, only the valid ones. */
-export function cousins(world: World, kase: { frame: object; text?: string }, options?: { alternations?: { name: string; from: string; to: string }[]; edges?: Record<string, string>; degree?: number; dims?: string[]; known?: (string | object)[]; read?: object; n?: number; seed?: number }): { frame: object; text?: string; degree: number; dims: string[]; via?: string; valid: boolean; why?: string }[];
+export function cousins(world: World, kase: { frame: object; text?: string }, options?: { operators?: { name: string; from: string; to: string }[]; senses?: (word: string) => Wire[]; alternations?: { name: string; from: string; to: string }[]; edges?: Record<string, string>; degree?: number; dims?: string[]; known?: (string | object)[]; read?: object; n?: number; seed?: number }): { frame: object; text?: string; degree: number; dims: string[]; via?: string; valid: boolean; why?: string }[];
 /** The ancestors of a thing in the layered graph of abstraction: name -> { level, dim }. */
 export function ancestorsOf(world: World, id: string, options?: { depth?: number; edges?: Record<string, string> }): Map<string, { level: number; dim: string }>;
 /** The chain of kinds of a thing, nearest first. */
@@ -650,3 +650,7 @@ export function storyState(text: string, options?: { verbs?: Record<string, 'set
 export function inflectBy(world: World, word: string, op?: string, options?: { types?: { rule?: string; irregular?: string }; vowels?: string }): string;
 /** The article before a word, by the sound it begins with (onsets, else its first letter). */
 export function articleFor(world: World, word: string, options?: { types?: { det?: string; onset?: string }; vowels?: string }): string | null;
+/** The form operator of an aligned pair: the shared runs become variables. */
+export function formOperator(canonical: string, variant: string, options?: { min?: number }): { from: string; to: string } | null;
+/** Form operators learnt from aligned pairs, clustered, checked on held-out pairs, with their coverage. */
+export function learnFormOperators(pairs: { canonical: string; variant: string }[], options?: { heldOut?: { canonical: string; variant: string }[]; normalise?: (rule: object, text: string) => string | null }): { operators: { name: string; from: string; to: string; support: string[]; heldOut: { pass: number; of: number }; admitted: boolean }[]; coverage: { pairs: number; operators: number; at80: number | null; at95: number | null }; unaligned: number };

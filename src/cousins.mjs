@@ -5,7 +5,7 @@
 // and not a case already known. Degree 1 = siblings (same kind), 2 = first cousins (the kinds share
 // a parent), and so on.
 
-import { readByTypes } from './readtypes.mjs';
+import { readByTypes, nearWords } from './readtypes.mjs';
 
 const bare = (v) => String(v).replace(/^"|"$/g, '').replace(/^\$/, '');
 const UP = ['kind', 'class', 'is', 'is_a'];
@@ -72,7 +72,7 @@ export function ancestorsOf(world, id, { depth = 3, edges } = {}) {
  * cases), `read` (options for readByTypes), `n` (at most, per degree), `seed`.
  * Returns [{ frame, text?, degree, dims, valid, why? }], valid ones first.
  */
-export function cousins(world, kase, { degree = 2, dims = ['filler', 'key', 'wording'], known = [], read = {}, n = 50, seed = 1, edges, alternations } = {}) {
+export function cousins(world, kase, { degree = 2, dims = ['filler', 'key', 'wording'], known = [], read = {}, n = 50, seed = 1, edges, alternations, operators, senses } = {}) {
   const f = kase.frame, out = [];
   const knownSet = new Set(known.map((k) => (typeof k === 'string' ? k : JSON.stringify(k))));
   const answerOf = (holderId, key) => (world.get(holderId)?.attrs[key] || []).map(bare);
@@ -103,23 +103,29 @@ export function cousins(world, kase, { degree = 2, dims = ['filler', 'key', 'wor
       out.push(c);
     }
   }
-  if (dims.includes('wording') && kase.text && alternations?.length) { // the same frame in other constructions (alternation rules run backwards)
+  const forms = [...(alternations || []), ...(operators || [])];
+  if (dims.includes('wording') && kase.text && forms.length) { // the same frame in other forms: each operator (alternations, noise, learnt) run backwards, tagged by its name
     const toks = String(kase.text).toLowerCase().replace(/[?!.]+\s*$/, '').match(/[\p{L}\p{N}_'-]+/gu) || [];
     const seen = new Set([toks.join(' ')]);
-    for (const r of alternations) {
+    for (const r of forms) {
       const env = matchPattern(r.to.split(/\s+/), toks);
       if (!env) continue;
-      const text = r.from.split(/\s+/).map((t) => { const m = /^\{([a-z_]+)\}$/.exec(t); if (m) return (env[m[1]] || []).join(' '); const a = /^\[(.*)\]$/.exec(t); return a ? a[1].split('|')[0] : t; }).join(' ');
+      const text = r.from.split(/\s+/).map((t) => { const m = /^\{([a-z_0-9]+)\}$/.exec(t); if (m) return (env[m[1]] || []).join(' '); const a = /^\[(.*)\]$/.exec(t); return a ? a[1].split('|')[0] : t; }).join(' ');
       if (!text || seen.has(text)) continue;
       seen.add(text);
-      out.push({ frame: { ...f }, text, degree: 1, dims: ['wording'], via: r.name });
+      out.push({ frame: { ...f }, text, degree: 1, dims: [`form:${r.name}`], via: r.name });
+    }
+    for (let i = 0; i < toks.length; i++) for (const nw of nearWords(world, toks[i], { senses }).filter((x) => x.cost === 1 && !x.word.includes(' '))) { // lexical: a word for its synonym
+      const text = [...toks.slice(0, i), nw.word, ...toks.slice(i + 1)].join(' ');
+      if (seen.has(text)) continue; seen.add(text);
+      out.push({ frame: { ...f }, text, degree: 1, dims: ['form:synonym'], via: `${toks[i]} → ${nw.word}` });
     }
   }
   for (const c of out) { // valid: legal (an answer), read back to the same frame, not known
     if (!c.frame.answer?.length) { c.valid = false; c.why = 'no answer in the world'; continue; }
     if (knownSet.has(JSON.stringify(c.frame)) || (c.text && knownSet.has(c.text))) { c.valid = false; c.why = 'already a case'; continue; }
     if (c.text) {
-      if (c.text === kase.text && c.dims[0] !== 'wording') { c.valid = false; c.why = 'the wording did not change'; continue; }
+      if (c.text === kase.text) { c.valid = false; c.why = 'the wording did not change'; continue; }
       const back = readByTypes(world, c.text, read).best;
       if (JSON.stringify(back) !== JSON.stringify(c.frame)) { c.valid = false; c.why = `reads back as ${JSON.stringify(back)}`; continue; }
     }
@@ -152,7 +158,7 @@ export function judgeFix(answer, kase, list) {
 
 function matchPattern(pat, toks, i = 0, env = {}, k = 0) { // bounded: the pattern and the tokens
   if (k === pat.length) return i === toks.length ? env : null;
-  const sp = /^\{([a-z_]+)(?::base)?\}$/.exec(pat[k]);
+  const sp = /^\{([a-z_0-9]+)(?::base)?\}$/.exec(pat[k]);
   if (sp) { for (let j = i + 1; j <= toks.length; j++) { const r = matchPattern(pat, toks, j, { ...env, [sp[1]]: toks.slice(i, j) }, k + 1); if (r) return r; } return null; }
   const alts = /^\[(.*)\]$/.exec(pat[k]) ? pat[k].slice(1, -1).split('|') : [pat[k]];
   return i < toks.length && alts.includes(toks[i]) ? matchPattern(pat, toks, i + 1, env, k + 1) : null;

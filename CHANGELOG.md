@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.101.0
+
+Clause splitting of run-on, noisy requests (reviewer 02:50: the bottleneck PSys2 measured).
+
+### New
+- `splitRunOn(world, text, { openers, splitters, fillers, read, reader, unreadCost })`: the
+  cut whose clauses read best (dynamic programming over punctuation, openers and splitters).
+  A clause no reader takes is kept apart and reported.
+- `tools/bench-runon.mjs`: on PSys2's 500 pairs with a gold reading, whole-sentence reading
+  50.2 % → clause by clause 57.2 %.
+
 ## 0.100.0
 
 ### New

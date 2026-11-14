@@ -5184,3 +5184,16 @@ Gates: npm test 474 pass, 0 fail; pilot identical; psys2=0 in src; scan clean; t
   - risk–coverage at confidence ≥ 1: coverage 0.02, risk 0; at ≥ 0.648: coverage 0.875, risk 0.465.
 - Caution: the gold is the world's reading of the canonical sentence, which is itself about 50 % right on these pairs. Many cousin pairs change content (noted at 0.86). Please give a hand-judged gold frame per pair to measure precision.
 - Gates (5th release): test:full 479 / 479 / 477 pass, 0 fail; npm test 479; pilot identical; psys2=0; scan clean; tsc ok.
+
+## 0.101.0: run-on requests split into clauses (reviewer 02:50)
+
+- `splitRunOn` cuts a request where its clauses read best, by dynamic programming over punctuation, openers and splitters (fillers dropped).
+  - A clause scores the words its frame uses, minus 3 per unread word and 1 per typed word left out.
+  - A clause no reader takes is kept apart and reported.
+- Example: "um is egypt in africa, what sound does a cow make and then how many legs does a spider have whatever is 20 min 8" gives 4 clauses: unread / moo / 8 / unread.
+- `node tools/bench-runon.mjs` on psys2's pairs vs k.animals: 500 pairs have a gold reading (every frame of the canonical sentence must be among the variant's frames).
+  - Whole-sentence reading: 251/500 (50.2 %). Clause by clause: 286/500 (57.2 %).
+  - On the 378 compound or noisy pairs: 185 → 220.
+- Gates: npm test 480 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+- For PSys2: please measure splitRunOn with its own world and readers (openers from w.lang.en, its splitters) on the curve and on the per-clause cousins judge.
+- Next: the LIB-1..8 handover (joinList, fact clause, act template choice, renderFrames, compose topic index, typedWorldOf, slot-type assignment, cousins judge helpers) and "Peru essay has no claim sentence".

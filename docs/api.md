@@ -1841,7 +1841,7 @@ print(normalise(w, 'Could you please open the door?'));
 {"text":"open the door","applied":["could_you","please"],"mode":"request"}
 ```
 
-### canonicalise(world, text, options?), readCanonical(world, text, options?), fillersFrom(edits) and wordClassesOf(world)
+### canonicalise(world, text, options?), readCanonical(world, text, options?), splitRunOn(world, text, options?), fillersFrom(edits) and wordClassesOf(world)
 
 The inverse of the form operators at read time (reviewer 00:40), as one pipeline step:
 1. the text is cut into clauses at the `splitters` (an extra clause becomes a clause of its
@@ -1854,6 +1854,16 @@ The inverse of the form operators at read time (reviewer 00:40), as one pipeline
 also reads each clause by types: `[{ text, mode?, applied, frame, unread, near? }]`. The
 fillers and splitters are data: the host's, or learnt (`fillersFrom(learnFormEdits(...))`
 gives the words of the filler family).
+
+`splitRunOn(world, text, { openers, splitters, fillers, read, reader, unreadCost })` cuts
+run-on, noisy requests into clauses (reviewer 02:50). The cut points are punctuation, the
+`openers` (words that open a clause, such as question words) and the `splitters` (which are
+dropped); fillers are dropped first. Among all cuts, the one whose clauses read best wins,
+by dynamic programming over the cut points. A clause scores the words its frame uses, minus
+`unreadCost` (3) per unread word and 1 per typed word its frame leaves out. A clause no
+reader takes stays a clause of its own, and is reported rather than merged into a readable
+one. The result is `[{ text, frame, unread }]` in order. `tools/bench-runon.mjs` measures it
+on PSys2's pairs.
 
 `normalise` takes, among the rules that match, the more specific one (more literal words),
 then the one told first (`n`), through `choose` (kind `rule`); `byRule: 'order'` keeps the

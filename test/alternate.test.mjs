@@ -67,3 +67,13 @@ test('readCanonical: a compound, padded, wrapped request read clause by clause b
   assert.deepEqual(r.map((c) => [c.frame?.key, c.frame?.answer]), [['sound', ['moo']], ['legs', ['4']]]);
   assert.equal(r[0].mode, 'request');
 });
+
+test('splitRunOn: a run-on, noisy request cut where the clauses read best; a clause no reader takes is kept apart and said', async () => {
+  const { splitRunOn } = await import('../tools/lib-under-test.mjs');
+  const w = new World();
+  w.tell('@cow k.animal name=cow sound=moo legs=4  @spider k.animal name=spider legs=8  @m core.word text=make text=makes means=sound  @h core.word text=have means=legs');
+  const O = { openers: ['what', 'how', 'is', 'whatever'], splitters: ['and then'], fillers: ['um'], read: { question: ['what', 'how', 'many', 'does'], skip: ['a', 'in'] } };
+  const r = splitRunOn(w, 'um is egypt in africa, what sound does a cow make and then how many legs does a spider have whatever is 20 min 8', O);
+  assert.deepEqual(r.map((c) => [c.text, c.frame?.answer ?? null]), [['is egypt in africa', null], ['what sound does a cow make', ['moo']], ['how many legs does a spider have', ['8']], ['whatever is 20 min 8', null]]);
+  assert.deepEqual(splitRunOn(w, 'what sound does a cow make', O).length, 1, 'one clause stays one');
+});

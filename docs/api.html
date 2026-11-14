@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="e2b56b8c8bf3">
+<meta name="source-hash" content="454cb0cd272d">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.100.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.101.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -658,10 +658,11 @@ w.tell(`@t core.type of=w.lang.en.alternation  @t1 core.slot of=w.lang.en.altern
   @b w.lang.en.alternation name=please from=&quot;please {x}&quot; to=&quot;{x}&quot; mode=request`);
 print(normalise(w, &#x27;Could you please open the door?&#x27;));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;text&quot;:&quot;open the door&quot;,&quot;applied&quot;:[&quot;could_you&quot;,&quot;please&quot;],&quot;mode&quot;:&quot;request&quot;}</code></pre></figure>
-<h3 id="canonicaliseworld-text-options-readcanonicalworld-text-options-fillersfromedits-and-wordclassesofworld">canonicalise(world, text, options?), readCanonical(world, text, options?), fillersFrom(edits) and wordClassesOf(world)</h3>
+<h3 id="canonicaliseworld-text-options-readcanonicalworld-text-options-splitrunonworld-text-options-fillersfromedits-and-wordclassesofworld">canonicalise(world, text, options?), readCanonical(world, text, options?), splitRunOn(world, text, options?), fillersFrom(edits) and wordClassesOf(world)</h3>
 <p>The inverse of the form operators at read time (reviewer 00:40), as one pipeline step:</p>
 <ol><li>the text is cut into clauses at the <code>splitters</code> (an extra clause becomes a clause of its own);</li><li>the <code>fillers</code> are dropped at the start and end of each clause;</li><li>each clause is brought to its canonical form by the alternation rules (<code>normalise</code>).</li><li>Substitutions are read afterwards through word senses (<code>readByTypes</code>' <code>near</code>).</li></ol>
 <p><code>canonicalise</code> returns <code>{ clauses: [{ text, applied, mode? }], dropped }</code>. <code>readCanonical</code> also reads each clause by types: <code>[{ text, mode?, applied, frame, unread, near? }]</code>. The fillers and splitters are data: the host's, or learnt (<code>fillersFrom(learnFormEdits(...))</code> gives the words of the filler family).</p>
+<p><code>splitRunOn(world, text, { openers, splitters, fillers, read, reader, unreadCost })</code> cuts run-on, noisy requests into clauses (reviewer 02:50). The cut points are punctuation, the <code>openers</code> (words that open a clause, such as question words) and the <code>splitters</code> (which are dropped); fillers are dropped first. Among all cuts, the one whose clauses read best wins, by dynamic programming over the cut points. A clause scores the words its frame uses, minus <code>unreadCost</code> (3) per unread word and 1 per typed word its frame leaves out. A clause no reader takes stays a clause of its own, and is reported rather than merged into a readable one. The result is <code>[{ text, frame, unread }]</code> in order. <code>tools/bench-runon.mjs</code> measures it on PSys2's pairs.</p>
 <p><code>normalise</code> takes, among the rules that match, the more specific one (more literal words), then the one told first (<code>n</code>), through <code>choose</code> (kind <code>rule</code>); <code>byRule: 'order'</code> keeps the order alone. The innermost rule's mode wins: "can you tell me where …" is a question. A pattern may name a word class, <code>{q:wh}</code>, from <code>w.lang.en.word_class name= word=...</code> (<code>wordClassesOf</code>), instead of one fact per alternative. On the published w.lang.en (368 rules), its 35 test sentences give the canonical text, the rules applied and the mode, 35 of 35.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.tell(`@t core.type of=w.lang.en.alternation  @t1 core.slot of=w.lang.en.alternation key=name kind=atom kind=string
@@ -1057,7 +1058,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.100.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.101.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

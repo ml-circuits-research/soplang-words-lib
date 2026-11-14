@@ -694,3 +694,5 @@ export function chunk(world: World, text: string, options?: { closed?: string[] 
 export function minePatterns(world: World, sentences: string[], options?: { level?: 0 | 1 | 2; closed?: string[] }): { patterns: { pattern: string; count: number; example: string }[]; sentences: number; at80: number; at95: number };
 /** A reader learnt from mined patterns: a voice for readEnsemble. */
 export function patternReader(world: World, cases: { text: string; frame: object }[], options?: { level?: 0 | 1 | 2; closed?: string[] }): (world: World, text: string) => { frame: object; unread: number; cost: number; specificity: number }[];
+/** Run-on, noisy requests cut into clauses where they read best. */
+export function splitRunOn(world: World, text: string, options?: { openers?: string[]; splitters?: string[]; fillers?: string[]; read?: object; reader?: (world: World, text: string) => { best: object | null; unread?: string[]; frames?: object[] }; unreadCost?: number }): { text: string; frame: object | null; unread: string[] }[];

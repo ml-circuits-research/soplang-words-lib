@@ -1,4 +1,4 @@
-import { readByTypes } from './readtypes.mjs';
+import { readByTypes, typedLexicon } from './readtypes.mjs';
 import { choose } from './rank.mjs';
 // Alternations as general rules, once (abstraction round item 2, Q54): passive, wrappers ("could
 // you", "I want you to", "please"), wh-fronting, question vs command, dative shift. A language world
@@ -103,4 +103,47 @@ export function fillersFrom(edits) {
 export function readCanonical(world, text, { read = {}, ...opts } = {}) {
   const { clauses } = canonicalise(world, text, opts);
   return clauses.map((c) => { const r = readByTypes(world, c.text, read); return { text: c.text, applied: c.applied, ...(c.mode ? { mode: c.mode } : {}), frame: r.best, unread: r.unread, ...(r.near ? { near: r.near } : {}) }; });
+}
+
+/**
+ * Run-on, noisy requests cut into clauses (reviewer 02:50: the bottleneck): the cut points are punctuation,
+ * the `openers` (words that open a clause: question words, a language world's class) and the `splitters`
+ * (dropped); among all cuts, the one whose clauses read best wins (dynamic programming over the cut points:
+ * each clause scores its words read minus `unreadCost` (3) per word left unread; a clause with no reading
+ * scores nothing, so it stays a clause of its own, said, and is not merged into a readable one). Fillers are dropped first. Returns [{ text, frame, unread }], one per clause, in order.
+ * Options: `openers`, `splitters`, `fillers`, `read` (readByTypes options), `reader(world, text) -> { best, unread }`.
+ */
+export function splitRunOn(world, text, { openers = [], splitters = [], fillers = [], read = {}, reader, unreadCost = 3 } = {}) {
+  const R = reader ?? ((w, t) => readByTypes(w, t, read));
+  const O = new Set(openers.map((x) => x.toLowerCase())), F = new Set(fillers.map((x) => x.toLowerCase()));
+  const S = splitters.map((x) => x.toLowerCase().split(/\s+/)).sort((a, b) => b.length - a.length);
+  const raw = String(text).match(/[\p{L}\p{N}_'-]+|[.,;:?!]/gu) || [];
+  const toks = [], cutBefore = new Set([0]);
+  for (let i = 0; i < raw.length; i++) { // bounded: the tokens
+    const t = raw[i].toLowerCase();
+    if (/^[.,;:?!]$/.test(t)) { cutBefore.add(toks.length); continue; }
+    const sp = S.find((s) => s.every((x, k) => (raw[i + k] || '').toLowerCase() === x));
+    if (sp) { cutBefore.add(toks.length); i += sp.length - 1; continue; }
+    if (F.has(t)) continue;
+    if (O.has(t)) cutBefore.add(toks.length);
+    toks.push(t);
+  }
+  const cuts = [...cutBefore].filter((c) => c < toks.length).sort((a, b) => a - b);
+  const memo = new Map();
+  const lex = typedLexicon(world), typed = (x) => lex.has(x) || lex.has(x.replace(/s$/, ''));
+  const score = (i, j) => { // a clause: the words its frame uses, minus unreadCost per unread word, minus 1 per typed word its frame leaves out
+    const t = toks.slice(i, j).join(' '), r = R(world, t), u = r?.unread?.length ?? 0;
+    if (!r?.best) return { s: -0.1, frame: null, unread: toks.slice(i, j), text: t }; // no reader takes it: said on its own, not merged
+    const used = new Set(r.frames?.[0]?.words ?? []), left = toks.slice(i, j).filter((x) => typed(x) && !used.has(x) && !used.has(x.replace(/s$/, ''))).length;
+    return { s: used.size - unreadCost * u - left - 0.1, frame: r.best, unread: r.unread ?? [], text: t };
+  }; // a clause no reader takes costs nothing more than a cut: it is said, not merged into another
+  const best = (k) => { // bounded: memoised over the cut points (the best cut of the tokens from cuts[k])
+    if (k >= cuts.length) return { s: 0, parts: [] };
+    if (memo.has(k)) return memo.get(k);
+    let top = null;
+    for (let m = k + 1; m <= cuts.length; m++) { const j = m < cuts.length ? cuts[m] : toks.length; const here = score(cuts[k], j), rest = best(m); const s = here.s + rest.s; if (!top || s > top.s) top = { s, parts: [here, ...rest.parts] }; }
+    memo.set(k, top);
+    return top;
+  };
+  return best(0).parts.map(({ text: t, frame, unread }) => ({ text: t, frame, unread }));
 }

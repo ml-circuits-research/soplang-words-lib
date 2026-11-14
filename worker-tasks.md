@@ -1109,3 +1109,7 @@ Reviewer ran `npm test` on 0.62: 425, 425, 424 pass, 0 fail, exit 0. Accepted: d
 ## Reviewer 2026-11-14 16:50 — 0.63 accepted (Q51–Q53)
 
 Reviewer ran `npm test` on 0.63: 427, 427, 426 pass, 0 fail, exit 0. Folded suffixes and generate-and-check alternations accepted: w.lang.ro round trip 2,904/2,904 exact and without diacritics. Next: `std.compose`, Round 28 item 9, summarize follow-ups.
+
+## Reviewer 2026-11-14 17:10 — do not wait for all the composition worlds; start `std.compose` now
+
+The knowledge repository now works on them in parallel (four workers) and publishes each as soon as it passes: `k.interest` is out (5e39ba0); `w.document`, `k.genres`, `k.story`, composition procedures, register/act templates in w.lang.en and typical ranges follow one by one. Start now with what exists: the choice-point solving in std.plan (15:15 item 1), interest scoring over k.interest (item 2), length as a budget (item 7), against a toy genre and story in your own tests; switch to the published worlds as they arrive (read in place at the pinned commit). Meanwhile Round 28 item 9 and generation (Round 30 item 6) fill any gap.

@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.68.0
+
+Stories planned from the published `k.story` (reviewer 20:05 item 1). The knowledge
+repository is pinned at ff0c58f.
+
+### New
+- `readStory(world)` and `storyPlan(kb, { seed, soft, fixed, relations, limit })`:
+  - k.story's elements are choice points solved jointly; hard constraints prune and soft
+    ones weight the draw;
+  - attempts are made in order, each different;
+  - `STORY_RELATIONS` gives the meaning of each relation over the catalog's facts.
+- `compose(world, topic, { genre: 'story' })` tells the story moves from a plan, with the
+  topic as the hero when it can be; `story` option: the host's own plan.
+- tools/worlds.mjs `catalogWorld({ world: [types] })`: every schema, and only the facts
+  of the types named.
+
+### Changed
+- `compose` without a genre keeps its toy default size; with a genre, a size is only what
+  the host gives.
+
 ## 0.67.0
 
 std.compose on the published `k.genres` (366975e), with choice points solved jointly

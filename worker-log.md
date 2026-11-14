@@ -4643,3 +4643,23 @@ Gates: npm test 432 / 432 / 431 pass, 0 fail; pilot identical; psys2=0; scan cle
 - Story moves by k.story through solveChoices: elements as variables, the hard constraints over the catalog worlds.
 - w.document as output when it is published.
 - Then Q49, the std.sample catalog option, 18:20.
+
+## 0.68.0: stories from the published k.story (reviewer 20:05 item 1)
+
+**What changed**
+- repos.pin: knowledge 3a0f522 → ff0c58f (k.story with the corpus check, w.document).
+- `readStory` and `storyPlan`: k.story's 11 elements are choice points solved jointly. The domains come from `fills` (setting 61, protagonist 384, target 2,487, means 2,211, actions 187). The 17 hard constraints prune and the 4 soft ones weight the draw.
+- The relations are in a table, STORY_RELATIONS.
+
+**Oracle**
+- The knowledge repository's own `checkPlan` (tools/story-core.mjs, imported in place).
+- 30 seeds: 0 hard constraints broken. "Ending reaches the goal" held in ≥ 24/30; the test asserts this, and uniform sampling holds it about 1 in 100.
+- A plan takes about 30–200 ms and 500–60,000 nodes. The catalog world loads in about 0.5 s.
+
+**Sample** (seed 2, topic girl): castle; the girl wants to reach a place (fairground); a wall blocks it; she pushes, jumps, shouts; a cowboy has a rope; give; climb; she reaches the fairground.
+
+Gates: npm test 434 / 434 / 433 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+
+**Next**
+- w.document as compose's output (published at 6414cd9).
+- Then Q49, the std.sample catalog option, the 18:20 reading mechanisms.

@@ -59,5 +59,5 @@ test('compose by the published k.genres: parts in order, choices solved jointly,
   const b = compose(w, 'penguin', { genre: 'presentation', size: { sentences: 30 } });
   assert.ok(b.parts.at(-2).moves.every((m) => m.recalls), 'nothing new left: the summary restates the claims');
   assert.match(b.short.at(-1), /of 30 sentences/);
-  assert.match(compose(w, 'penguin', { genre: 'story' }).short[0], /filled by k.story/);
+  assert.match(compose(w, 'penguin', { genre: 'story' }).short[0], /k.story/);
 });

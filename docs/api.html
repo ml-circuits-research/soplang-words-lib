@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="29f9e8f22c7a">
+<meta name="source-hash" content="7c77ae4be31f">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.67.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.68.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -606,6 +606,16 @@ w.tell(`@g k.genres.genre name=note  @m1 k.genres.move name=open takes=topic  @m
   @owl k.animal name=owl  @a k.diet about=owl eats=mice  @b k.home about=owl lives=barn`);
 print(compose(w, &#x27;owl&#x27;, { genre: &#x27;note&#x27; }).parts.map((p) =&gt; [p.part, p.relation ?? &#x27;&#x27;, p.moves.map((m) =&gt; m.cites)]));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;head&quot;,&quot;&quot;,[&quot;owl&quot;]],[&quot;point&quot;,&quot;k.home&quot;,[&quot;b&quot;]],[&quot;point&quot;,&quot;k.diet&quot;,[&quot;a&quot;]]]</code></pre></figure>
+<h3 id="readstoryworld-storyplankb-options-and-story_relations">readStory(world), storyPlan(kb, options?) and STORY_RELATIONS</h3>
+<p>Story plans from the knowledge repository's <code>k.story</code>. Each element (setting, protagonist, goal, target, obstacle, attempts, helper, means, turning point, resolution, ending) is a choice point. Its domain is the names of the facts of the types it is filled from (<code>fills</code>). The constraints (<code>element relation other</code>) are read as facts: hard ones prune, soft ones weight the draw (<code>soft</code>, default 30). <code>solveChoices</code> solves them jointly.</p>
+<ul><li>Elements the constraints link to what is already decided are decided first; the host's <code>fixed</code> choices come before everything.</li><li>An element that occurs several times (attempt, 0 to 3) is made in order, each different.</li><li><code>STORY_RELATIONS</code> says what each relation means over the catalog's facts. It is the one table that knows their shapes; a host adds to it or replaces it with <code>relations</code>.</li></ul>
+<p><code>readStory(world)</code> gathers what a plan reads from a world holding <code>k.story</code> and the catalog worlds it names.</p>
+<p>The result is <code>{ plan: { element: value or [values] }, soft: [names held], nodes }</code>, or <code>{ why, at }</code>. With a story genre, <code>compose</code> tells each story move from a plan: the elements of that part and move, one sentence each. The topic is the protagonist when it can be; otherwise another hero is chosen and <code>short</code> says so. The plan is in <code>story</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const kb = { elements: [{ name: &#x27;hero&#x27;, n: 1, min: 1, max: 1 }, { name: &#x27;friend&#x27;, n: 2, min: 1, max: 1 }],
+  constraints: [{ name: &#x27;two&#x27;, element: &#x27;friend&#x27;, relation: &#x27;differs&#x27;, other: &#x27;hero&#x27;, strength: &#x27;hard&#x27; }],
+  domains: { hero: [&#x27;cat&#x27;], friend: [&#x27;cat&#x27;, &#x27;owl&#x27;] } };
+print(storyPlan(kb).plan);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;hero&quot;:&quot;cat&quot;,&quot;friend&quot;:&quot;owl&quot;}</code></pre></figure>
 <h3 id="solvechoicesvars--domain-ok-weight-seed-limit-">solveChoices(vars, { domain, ok, weight, seed, limit })</h3>
 <p>Choice points solved jointly (std.plan). Variables are decided in order. <code>domain(v, partial)</code> gives the candidates of a variable, given the choices made before it. <code>ok(partial)</code> checks the hard constraints, and false prunes the branch. <code>weight</code> orders the candidates by a seeded weighted draw, so the first solution found is a weighted sample; weight 0 is never drawn. The search is bounded by <code>limit</code> nodes. The result is <code>{ values, nodes }</code>, or <code>{ why, nodes, deepest }</code> with the variable that could not be filled.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const distinct = (p) =&gt; new Set(Object.values(p)).size === Object.keys(p).length;
@@ -881,7 +891,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.67.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.68.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

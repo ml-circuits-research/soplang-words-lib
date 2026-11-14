@@ -65,3 +65,25 @@ export function publishedWorlds() {
     shards: existsSync(`${root}${id}/shards`) ? readdirSync(`${root}${id}/shards`).filter((f) => f.endsWith('.sop')).sort().map((f) => ({ id: `${id}/shards/${f.slice(0, -4)}`, text: readFileSync(`${root}${id}/shards/${f}`, 'utf8') })) : [],
   }));
 }
+
+/**
+ * A World with every schema of the first knowledge repository and, of the worlds named, only the
+ * facts of the types named (a 46 MB world is read for its object names alone). `facts`:
+ * { world: [types] }. Returns the World, or null offline.
+ */
+export async function catalogWorld(facts) {
+  const dir = worldsDir();
+  if (!dir) return null;
+  const { World } = await import('../src/index.mjs');
+  const D = `${dir}docs/worlds/`, w = new World();
+  const schemas = readdirSync(D).filter((d) => /^[kw]\./.test(d) && existsSync(`${D}${d}/schema.sop`)).map((d) => readFileSync(`${D}${d}/schema.sop`, 'utf8')).join('\n');
+  if (!w.tell(schemas).ok) throw new Error('the schemas of the knowledge repository do not load together');
+  for (const [name, types] of Object.entries(facts)) {
+    const lines = [];
+    const walk = (d) => { for (const f of readdirSync(d, { withFileTypes: true })) { if (f.isDirectory()) walk(`${d}${f.name}/`); else if (f.name.endsWith('.sop') && f.name !== 'schema.sop') for (const l of readFileSync(d + f.name, 'utf8').split('\n')) if (types.some((t) => l.includes(` ${t} `))) lines.push(l); } };
+    walk(`${D}${name}/`);
+    const r = w.tell(lines.join('\n'));
+    if (!r.ok) throw new Error(`${name}: ${JSON.stringify(r.violations?.slice(0, 1))}`);
+  }
+  return w;
+}

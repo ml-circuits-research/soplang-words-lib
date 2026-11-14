@@ -595,7 +595,7 @@ export function boxesOf(world: World, options?: { except?: string }): { id: stri
 /** The relation kinds a schema declares. */
 export function relationsOf(world: World, kind?: string): { name: string; kind: string; inverse?: string }[];
 /** std.compose: a composition of a genre about a topic, from knowledge, as frames citing their wires. */
-export function compose(world: World, topic: string, options?: { genre?: string; size?: { chapters?: number; sections?: number; sentences?: number; repeats?: number }; seed?: number; realise?: (frame: object) => string; measures?: (fact: Wire) => Record<string, number> }): { genre?: string | null; topic?: string; register?: object | null; parts?: { part: string; heading?: string; layout?: string; relation?: string; moves: object[] }[]; choices?: Record<string, unknown>; nodes?: number; chapters?: { title: string; interest: number; sections: { interest: number; sentences: { move: string; fact: object; about: string; cites: string; text?: string }[] }[] }[]; short?: string[]; why?: string };
+export function compose(world: World, topic: string, options?: { genre?: string; size?: { chapters?: number; sections?: number; sentences?: number; repeats?: number }; seed?: number; realise?: (frame: object) => string; measures?: (fact: Wire) => Record<string, number>; story?: object }): { genre?: string | null; topic?: string; register?: object | null; parts?: { part: string; heading?: string; layout?: string; relation?: string; moves: object[] }[]; choices?: Record<string, unknown>; nodes?: number; chapters?: { title: string; interest: number; sections: { interest: number; sentences: { move: string; fact: object; about: string; cites: string; text?: string }[] }[] }[]; short?: string[]; why?: string };
 /** The interest of a fact by the world's k.interest: novelty x coping x relevance - penalty, explained by feature. */
 export function interestOf(world: World, fact: Wire, options?: { topic?: string; said?: Set<string>; moves?: { move: string; type: string }[]; move?: string; since?: number; session?: Set<string>; measures?: Record<string, number>; draw?: number; model?: object }): { score: number; value: Record<string, number>; by: Record<string, number>; measured: Record<string, number>; why?: string };
 /** The k.interest measures computed from facts and from the text being written. */
@@ -606,3 +606,9 @@ export function shapeShare(feature: { shape: string; start_at?: number; peak_at?
 export function interestModel(world: World): { appraisals: object[]; features: object[] } | null;
 /** Choice points solved jointly: a seeded weighted sample among the assignments the constraints allow. */
 export function solveChoices(vars: string[], options: { domain: (v: string, partial: Record<string, unknown>) => unknown[]; ok?: (partial: Record<string, unknown>, v?: string) => boolean; weight?: (v: string, value: unknown, partial: Record<string, unknown>) => number; seed?: number; limit?: number }): { values?: Record<string, unknown>; nodes: number; why?: string; deepest?: string | null };
+/** The facts a story plan reads, from a world holding k.story and the catalog worlds it names. */
+export function readStory(world: World): object;
+/** A story plan: k.story's elements solved jointly under its constraints. */
+export function storyPlan(kb: object, options?: { seed?: number; soft?: number; fixed?: Record<string, string | string[]>; relations?: Record<string, Function>; limit?: number }): { plan?: Record<string, string | string[]>; soft?: string[]; nodes?: number; why?: string; at?: string | null };
+/** What each relation of k.story means over the catalog's facts. */
+export const STORY_RELATIONS: Record<string, Function>;

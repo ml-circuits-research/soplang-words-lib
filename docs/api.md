@@ -1661,6 +1661,37 @@ print(compose(w, 'owl', { genre: 'note' }).parts.map((p) => [p.part, p.relation 
 [["head","",["owl"]],["point","k.home",["b"]],["point","k.diet",["a"]]]
 ```
 
+### readStory(world), storyPlan(kb, options?) and STORY_RELATIONS
+
+Story plans from the knowledge repository's `k.story`. Each element (setting, protagonist,
+goal, target, obstacle, attempts, helper, means, turning point, resolution, ending) is a
+choice point. Its domain is the names of the facts of the types it is filled from
+(`fills`). The constraints (`element relation other`) are read as facts: hard ones prune,
+soft ones weight the draw (`soft`, default 30). `solveChoices` solves them jointly.
+- Elements the constraints link to what is already decided are decided first; the host's
+  `fixed` choices come before everything.
+- An element that occurs several times (attempt, 0 to 3) is made in order, each different.
+- `STORY_RELATIONS` says what each relation means over the catalog's facts. It is the one
+  table that knows their shapes; a host adds to it or replaces it with `relations`.
+`readStory(world)` gathers what a plan reads from a world holding `k.story` and the
+catalog worlds it names.
+
+The result is `{ plan: { element: value or [values] }, soft: [names held], nodes }`, or
+`{ why, at }`. With a story genre, `compose` tells each story move from a plan: the
+elements of that part and move, one sentence each. The topic is the protagonist when it
+can be; otherwise another hero is chosen and `short` says so. The plan is in `story`.
+
+```js run
+const kb = { elements: [{ name: 'hero', n: 1, min: 1, max: 1 }, { name: 'friend', n: 2, min: 1, max: 1 }],
+  constraints: [{ name: 'two', element: 'friend', relation: 'differs', other: 'hero', strength: 'hard' }],
+  domains: { hero: ['cat'], friend: ['cat', 'owl'] } };
+print(storyPlan(kb).plan);
+```
+
+```output
+{"hero":"cat","friend":"owl"}
+```
+
 ### solveChoices(vars, { domain, ok, weight, seed, limit })
 
 Choice points solved jointly (std.plan). Variables are decided in order. `domain(v,

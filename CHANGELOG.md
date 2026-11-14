@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.37.0
+
+Reviewer 03:10 item 1, from a map pilot: acts on the view itself.
+
+### New
+- `std.schema.view ... state=<type>`: the view's own attributes (zoom, the layer shown)
+  live on one thing of that kind, made on first use with its defaults at the tier
+  `default`. `change` and `ask` take the view's name as the thing, or no thing when only
+  that view's state has the attribute ("zoom in").
+
+### Changed
+- `change` and `ask` no longer require `thing` in their action declaration. Without one
+  and with no view that fits, they refuse ("change what? (colour)").
+
 ## 0.36.0
 
 The two defects the knowledge repository saw on 0.26.0 (reviewer 02:45). Both are now in

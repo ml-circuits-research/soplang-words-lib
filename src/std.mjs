@@ -97,6 +97,30 @@ function inOf(w, args) {
   const r = thingOf(w, args.in, args.in_nth);
   return r.thing ? { id: r.thing.id } : { why: r.why, kind: r.kind, ...(r.which ? { which: r.which } : {}) };
 }
+/**
+ * Acts on a view itself (zoom, centre, the layer shown): `std.schema.view ... state=<type>`
+ * names a kind whose one thing is the view's state, made on first use with its slot
+ * defaults. A request names it by the view's name, or not at all: an attribute only the
+ * state of one view has is about that view ("zoom in").
+ */
+function viewThing(ctx, args) {
+  const w = ctx.world, named = args.thing !== undefined ? String(one(args.thing)).replace(/^\$/, '') : undefined;
+  if (named !== undefined && (w.get(named)?.attrs.kind || w.ofType('std.schema.thing').some((t) => t.attrs.kind?.[0] === named))) return args;
+  const views = w.ofType('std.schema.view').filter((v) => v.attrs.state && (named !== undefined ? v.attrs.name[0] === named : args.attr !== undefined && attrsOf(w, v.attrs.state[0]).includes(String(one(args.attr)))));
+  if (views.length !== 1) return args;
+  const type = views[0].attrs.state[0];
+  let t = w.ofType(type).find((x) => x.attrs.kind?.[0] === type);
+  if (!t) {
+    const k = kindsOf(w, type)[0];
+    const defaults = Object.fromEntries([...(w._compiled().slots.get(type)?.values() || [])].filter((sl) => sl.default !== undefined).map((sl) => [sl.key, sl.default]));
+    const id = `view_${views[0].attrs.name[0]}`.replace(/\W/g, '_');
+    const r = ctx.tell(wireText(id, type, { kind: type, ...(k ? { world: k.world } : {}) }), { now: true });
+    if (r.ok === false) return args;
+    if (Object.keys(defaults).length) w.applyPatch({ sets: Object.entries(defaults).map(([key, value]) => ({ id, key, value })) }, { tier: 'default' }); // the view's defaults: assumptions, as make writes them
+    t = w.get(id);
+  }
+  return { ...args, thing: t.id };
+}
 /** The things a set names: each / all of a kind, the first or the last (Round 21). */
 function setOf(w, args) {
   const kind = String(one(args.thing)).replace(/^\$/, '');
@@ -240,7 +264,7 @@ const ACTIONS = {
     ctx.retract(t.id);
     return { act: 'remove', thing: t.id };
   }),
-  acts_change: (ctx, args) => (args.set !== undefined || /^(random|different|same as )/.test(String(one(args.value ?? ''))) ? changeMany(ctx, args) : changeOne(ctx, args)), // with `in`: inside a container
+  acts_change: (ctx, a) => { const args = viewThing(ctx, a); if (args.thing === undefined) return { ok: false, why: `change what? (${one(args.attr)})` }; return (args.set !== undefined || /^(random|different|same as )/.test(String(one(args.value ?? ''))) ? changeMany(ctx, args) : changeOne(ctx, args)); }, // with `in`: inside a container; no thing: the view whose state has the attribute
   acts_change_one: (ctx, args) => pre('change', ctx, args, (w) => {
     const { thing: t, why, kind, which } = thingOf(w, args.thing, args.nth, inOf(w, args));
     if (!t) return refuse(w, 'change', kind, why, which ? { which } : {});
@@ -303,7 +327,9 @@ const ACTIONS = {
     if (args.nth !== undefined) { const n = Number(one(args.nth)); all = [n < 0 ? all[all.length + n] : all[n - 1]].filter(Boolean); }
     return { act: 'pick', things: all.map((t) => t.id) };
   }),
-  acts_ask: (ctx, args) => pre('ask', ctx, args, (w) => {
+  acts_ask: (ctx, a) => pre('ask', ctx, a, (w) => {
+    const args = viewThing(ctx, a);
+    if (args.thing === undefined) return { ok: false, why: 'ask about what?' };
     const { thing: t, why, kind, which } = thingOf(w, args.thing, args.nth, inOf(w, args));
     if (!t) return refuse(w, 'ask', kind, why, which ? { which } : {});
     if (args.attr === undefined) return { act: 'ask', thing: t.id, attrs: Object.fromEntries(Object.entries(t.attrs).map(([k, v]) => [k, v.length === 1 ? v[0] : [...v]])) };
@@ -727,6 +753,7 @@ ${calcs.join('\n')}
 @k.kinds.aspects core.slot of=std.schema.kinds key=aspects many=true
 @k.view.name core.slot of=std.schema.view key=name id=true
 @k.view.shows core.slot of=std.schema.view key=shows many=true
+@k.view.state core.slot of=std.schema.view key=state
 @k.eff.of core.slot of=std.schema.effect key=of required=true
 @k.eff.act core.slot of=std.schema.effect key=act required=true
 @k.eff.action core.slot of=std.schema.effect key=action required=true
@@ -770,13 +797,13 @@ ${calcs.join('\n')}
 @k.group.member core.slot of=std.acts.group key=member many=true
 @make core.action name=make fn=acts_make required=kind
 @remove core.action name=remove fn=acts_remove required=thing
-@change core.action name=change fn=acts_change required=thing required=attr
+@change core.action name=change fn=acts_change required=attr
 @place core.action name=place fn=acts_place required=thing
 @connect core.action name=connect fn=acts_connect required=a required=b
 @group core.action name=group fn=acts_group required=things
 @ungroup core.action name=ungroup fn=acts_ungroup required=group
 @pick core.action name=pick fn=acts_pick required=kind
-@ask core.action name=ask fn=acts_ask required=thing
+@ask core.action name=ask fn=acts_ask
 @copy core.action name=copy fn=acts_copy required=thing
 @send core.action name=send fn=acts_send required=thing required=to
 @show core.action name=show fn=acts_show required=thing required=view

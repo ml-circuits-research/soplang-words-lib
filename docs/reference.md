@@ -1672,13 +1672,13 @@ world that is not declared.
 | --- | --- | --- |
 | `make` | `kind`, `world`?, `id`?, `amount`?, attributes | a new thing (or `amount` of them) with the attributes given and the slot defaults at the tier `default`; a required key left open stays an open question, listed in `result.asks` (`key`, and the slot's `ask`) |
 | `remove` | `thing` | takes it away, with its links |
-| `change` | `thing`, `attr`, `value`, or `by` (`more`/`less`) and `amount`? | sets an attribute; more or less by the slot's `step` (else 1) |
+| `change` | `thing` (or a view's state, below), `attr`, `value`, or `by` (`more`/`less`) and `amount`? | sets an attribute; more or less by the slot's `step` (else 1) |
 | (sets and values) | `set`: `each`, `all`, `first`, `last` (with `thing` a kind); `value`: `random`, `different`, `same as <thing>` | `change` and `remove` act on the whole set in one undo step; `random` picks from the slot's values, `different` gives each thing another value and none the same, `same as` copies another thing's value |
 | `place` | `thing`, then `at` (a thing), `x`, or `rel` and `ref` | sets where it is: into a thing (the key whose slot refers to that thing's type, as a guest `at` a table), at `x`, or `at=<rel>:<ref>` |
 | `connect` | `a`, `b`, `rel`? | a `std.acts.link` |
 | `group`, `ungroup` | `things`, `name`?; `group` | a `std.acts.group` with its members; takes it apart |
 | `pick` | `kind`, attributes, `nth`? | the things that fit (`result.things`); changes nothing |
-| `ask` | `thing`, `attr`? | its attributes, or one value with `why` |
+| `ask` | `thing` (or a view's state), `attr`? | its attributes, or one value with `why` |
 | `copy` | `thing` | a new thing with the same attributes |
 | `send` | `thing`, `to` | to another world: the kind must be sendable from its world and makeable in `to` (a kind may belong to several worlds: `world=` repeated); one undo step |
 | `save`, `load` | `name` | the told things as they are, kept in a `std.acts.saved` wire; load changes them back, makes again what went, takes away what was made since |
@@ -1695,7 +1695,14 @@ same wires, so an act in one is seen in the others, with one history. The act `s
 (`thing` or a kind with `set`; `thing=*` for every thing; `view`) gives each thing's
 values of the view's keys and records `std.acts.shown view= thing=`; a thing that lacks an
 aspect is refused with the aspect's `doc` ("a table has no place on Earth") and the
-aspects it has. **Taught facts:** `teach` (`fact`: knowledge wires as SOP Lang, `by`)
+aspects it has (with `thing=*`, such things are left out and listed in `skipped`).
+**Acts on the view itself:** `std.schema.view ... state=<type>` names a kind (declared
+with `std.schema.kind` and its acts) whose one thing, `view_<name>`, holds the view's own
+attributes (zoom, centre, the layer shown). It is made on first use, with its slot
+defaults at the tier `default`. `change` and `ask` take the view's name as the `thing`,
+or no thing at all when only the state of one view has the attribute ("zoom in": `change
+attr=zoom by=more`). Without a thing and with no such view, the act is refused ("change
+what? (colour)"). **Taught facts:** `teach` (`fact`: knowledge wires as SOP Lang, `by`)
 tells them at the tier `taught` (declared by std.know, right below `told`) with
 `core.source="taught by <who>"` and a `std.know.taught fact= by= at=` wire; std.know offers
 them at the std.fill tier `taught` (rank 3.5: below what was just said and the scene,

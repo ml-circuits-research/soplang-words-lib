@@ -3920,3 +3920,23 @@ clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 
   cases/acts.cases.json. `tools/cases.mjs` now checks `expect.asks`. With the old
   src/std.mjs: 36 / 37 (`asks: [] ≠ ["name"]`); with the fix: 37 / 37. Baseline 37.
 - Next: 03:10 items 1–3 (acts on the view, typed needs, ask over attributes and relations).
+
+## Reviewer 03:10 item 1 — acts on the view itself — done; release 0.37.0
+
+`/tmp/check.sh`: # pass 379 # fail 0 # pass 379 # fail 0 # pass 378 # fail 0 — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/cases.mjs`: 38 / 38 (new: `view.zoom.implicit`,
+cases/schemas/map.sop). Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld
+0.37.0).
+
+- src/std.mjs: `std.schema.view state=<type>`. `viewThing` resolves the thing for
+  change and ask: the view's name, or no thing when one view's state has the attribute.
+  The state thing `view_<name>` is made on first use, with its slot defaults at the tier
+  `default`. `change` and `ask` no longer require `thing`; without one, they refuse
+  ("change what? (colour)").
+- `node /tmp/view.mjs`:
+  - "zoom in" goes from the default 3 to 4;
+  - "show the borders" sets the layer;
+  - zoom 12 is refused ("must be at most 10");
+  - undo gives back layer none.
+- test/view-acts.test.mjs (1 test); reference.md (views paragraph, change and ask rows).
+- Next: items 2 (typed needs) and 3 (ask over attributes and relations).

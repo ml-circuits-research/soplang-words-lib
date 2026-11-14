@@ -595,5 +595,55 @@
     }
    }
   ]
+ },
+ {
+  "id": "view.zoom.implicit",
+  "stage": "acting",
+  "source": "reviewer 03:10 item 1: \"zoom in\" names no thing; the view's state has zoom",
+  "schema": "map",
+  "steps": [
+   {
+    "act": "change",
+    "args": {
+     "attr": "zoom",
+     "by": 1
+    },
+    "expect": {
+     "ok": true,
+     "added": [
+      "view_map"
+     ]
+    }
+   },
+   {
+    "act": "change",
+    "args": {
+     "attr": "layer",
+     "value": "borders"
+    },
+    "expect": {
+     "ok": true,
+     "changed": [
+      {
+       "id": "view_map",
+       "key": "layer",
+       "from": "none",
+       "to": "borders"
+      }
+     ]
+    }
+   },
+   {
+    "act": "change",
+    "args": {
+     "attr": "zoom",
+     "value": 12
+    },
+    "expect": {
+     "ok": false,
+     "why": "at most 10"
+    }
+   }
+  ]
  }
 ]

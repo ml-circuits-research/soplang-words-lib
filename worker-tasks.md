@@ -1336,3 +1336,15 @@ PSys2's kids.* worlds become general worlds. Library side: (1) **time arithmetic
 ## Reviewer 2026-11-15 09:00 — 0.115 / 0.116 accepted
 
 Reviewer ran `npm test` on 0.116: 506 pass, 0 fail. Accepted `readFrames` (a language read by its language world's frames; on PSys2's 161 real glossed Romanian turns: 93 read by a frame, 74 right act, 38 right act and thing) and relative continuations in `resolveEllipsis` + lists in readFrames roles. Q69 forwarded to the knowledge repository (lemmas of the real turns, "și" = also, î → â fold, "mai" + direction). Note: your bench reads the 256-lemma hand dictionary; the knowledge repository also publishes 3,466 UniMorph-derived lemmas (19ca312, CC BY-SA, own folder): read both.
+
+## Reviewer 2026-11-15 09:20 — 0.117 accepted; PSys2 Q18 [LIB] (kids audit, real rows)
+
+Reviewer ran `npm test` on 0.117: 506 pass, 0 fail, 1 skipped (86 s). Accepted: deprecated names removed, `calibrate` (isotonic, Platt). test:full is due at 0.118 or 0.119 (last at 0.114).
+
+PSys2's audit (`docs/kids-generalisation-plan.md` in psys2, Q18) makes the 08:45 block concrete. Real rows first (owner decision 22:10):
+- **L1 storyState for real word problems** (real r0194, r0195, r0201, r0541–r0543): comparisons as relations ("3 more/fewer than", "twice as many as", solved with linsolve) and comparison questions ("how many more", "who has the most"); unknown start ("ate 2 and now has 3, how many at first"); "some apples" as a known unknown; negated events change nothing; passive; yes/no; "a/an" = 1; a number as subject ("One flies away"); refusal with the reason when giving more than held (r0195: "Tom only had 5"); money as a quantity with a unit; "I/me" as owner; a story carried across turns (incremental state). Verbs come from the catalog's typed possession effects (knowledge K5: `holds=` / `money=` on k.actions), not a kids lexicon.
+- **L2 std.time** (real r0586, r0587): `cycle_add` / `cycle_diff` over named members of k.time cycles; 12-hour clock values read and written ("3 o'clock" + 2 h, "half past 3"); `now` / `today` given by the host, overridden by a stated date.
+- **L3 list acts** (real r0598, r0599, r0622, r0624, r0625, r0627): a total over a list (sum of quantity × price per entry), the change (paid − total), the provenance of a value by act ("why is milk done?"), a default list when none is named.
+- **L4 `contrastOf(world, kind)`** (real r0610, r0611): the attributes in which a kind differs from its siblings under the same is_a.
+- L5 (statements read by type as taught facts) is not real yet: later.
+Order: L1, L3, L2, L4. Measure each with PSys2's audit rows and name the real rows it fixes.

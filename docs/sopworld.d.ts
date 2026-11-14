@@ -555,3 +555,7 @@ export interface Dictionary { lookup(lemma: string): { lemma: string; class: str
 export function dictionary(options: { read: (prefix: string) => string | null; prefix?: number; fold?: (s: string) => string }): Dictionary;
 export function realise(m: Morph, template: string, roles: Record<string, string>, options?: { dictionary?: Dictionary; base?: Record<string, string>; agree?: string[] }): string | null;
 export function templateFor(m: Morph, act: string, shape?: string | null): string | null;
+/** std.motion: the change points of states over time, from rules and events (pure, seeded). */
+export function motionPlan(world: World, events?: { t: number; type: string; fields?: Record<string, unknown>; stream?: string }[], options?: { seed?: number; until?: number; splitters?: Record<string, (text: string) => string[]>; types?: Record<string, string> }): { t: number; key: string; value: string }[];
+/** Play a plan through the host's clock; returns cancel(). */
+export function motionRun(plan: { t: number; key: string; value: string }[], apply: (key: string, value: string, t: number) => void, clock?: { setTimeout(f: () => void, t: number): unknown; clearTimeout(h: unknown): void }): () => void;

@@ -664,6 +664,28 @@ print(generate(m, 'bak', 'n1', { num: 'pl' }), analyse(m, 'beki').some((r) => r.
 beki true
 ```
 
+## Change states over time by rules
+
+*In `motionPlan`, `motionRun`; since 0.54.*
+*Works on: a live world's view (a face, a drawing, a diagram) and the rules a world schema gives it.*
+
+Rules as data: on an event (with a condition on its fields), or repeated idly, a sequence
+of steps sets keys of a state for durations. Priorities hold a key, and a new event
+cancels the rest of the earlier one. A step can play one state per unit of a stream (the
+generic form of lip sync). The plan is pure and seeded; the host plays it. **Limits:** the
+steps of one rule run in sequence (no parallel branches inside a rule); durations are
+whole milliseconds.
+
+```js run
+const w = new World();
+w.tell('@b mo.base key=eyes value=open  @r mo.rule name=blink repeat=3000-3000  @s mo.step rule=blink n=1 key=eyes value=closed dur=150');
+print(motionPlan(w, [], { until: 7000 }).map((p) => [p.t, p.value]));
+```
+
+```output
+[[0,"open"],[3000,"closed"],[3150,"open"],[6000,"closed"],[6150,"open"]]
+```
+
 ## Building blocks
 
 *In the core exports; since 0.1 (each as listed).*

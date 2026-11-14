@@ -1366,6 +1366,36 @@ print(generate(m, 'kata', 'n2', { num: 'pl' }), analyse(m, 'kate', { dictionary:
 kate [["kata","pl"]] made kata ruma
 ```
 
+### motionPlan(world, events, options?) and motionRun(plan, apply, clock?)
+
+States over time from rules (std.motion), for anything that changes by rules: a face that
+blinks and talks, a drawing that moves, a diagram that highlights its steps. The rules
+are facts:
+- `mo.base key= value=`;
+- `mo.rule name= on=<event>? when.<field>=<v>? priority=<n>? repeat=<min>-<max>? ease=<ms>?
+  split=<splitter>? else=<value>?`;
+- `mo.step rule= n= key= value=? dur=<min>-<max> per=unit?`;
+- `mo.class rule= unit= value=` (a unit of a stream to a state).
+
+`motionPlan` is pure and seeded: the same seed gives the same plan, `[{ t, key, value }]`
+from 0 to `until`. `events` are `[{ t, type, fields?, stream? }]`. On a key, a higher
+priority wins over a lower one while both hold it; other keys go on. A new event of the
+same rule cancels what was left of the earlier one, and `ease` returns the keys to base. A
+`per=unit` step plays one state per unit of the event's stream; the unit splitter is the
+rule's parameter (`options.splitters`), supplied by the host or the animation world.
+`motionRun` plays a plan through the host's clock and returns `cancel()`.
+
+```js run
+const w = new World();
+w.tell(`@b mo.base key=light value=red  @r mo.rule name=go on=button
+  @s1 mo.step rule=go n=1 key=light value=green dur=3000  @s2 mo.step rule=go n=2 key=light value=amber dur=1000`);
+print(motionPlan(w, [{ t: 500, type: 'button' }], { until: 6000 }).map((p) => [p.t, p.value]));
+```
+
+```output
+[[0,"red"],[500,"green"],[3500,"amber"],[4500,"red"]]
+```
+
 ### arbitrate(world, request, options?)
 
 The arbitration contract: one verdict per declared world for one request. `own`: the

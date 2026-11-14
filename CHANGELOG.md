@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.54.0
+
+Reviewer 10:50: `std.motion`, states over time from rules (the face animates by rules).
+
+### New
+- Rules as facts: `mo.base`, `mo.rule` (an event with conditions, or an idle repeat;
+  priority; ease back), `mo.step` (a key, a value, a duration range; `per=unit` of a
+  stream) and `mo.class` (unit → state).
+- `motionPlan(world, events, { seed, until, splitters })` is pure and seeded, with
+  priorities and cancel on a new event. The unit splitter is a parameter of the rule.
+- `motionRun(plan, apply, clock)` plays the plan through the host's clock, with cancel.
+
 ## 0.53.0
 
 Q37.1: Romanian-like stems change in two places at once.

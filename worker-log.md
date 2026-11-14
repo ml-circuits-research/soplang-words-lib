@@ -4334,3 +4334,22 @@ clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 
   - analysis undoes them in the reverse order.
 - test/morph.test.mjs, 5 tests now: karte → korsy (two places at once) and back, and mase →
   mosy (the end anchor does not fire). The data is invented, nothing Romanian.
+
+## Reviewer 10:50 — std.motion — release 0.54.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/capability-table.mjs`: 28 jobs. Version, CHANGELOG, docs
+rebuilt (`docs/version.md`: sopworld 0.54.0).
+
+- src/motion.mjs:
+  - `motionPlan`: rules as facts, a seeded generator (mulberry32), holds per key with
+    priority (the latest firing wins among equals), cancel on a new event of the same
+    rule, ease back to base, `per=unit` steps with a class table.
+  - The unit splitter is the rule's parameter, as the owner corrected (11:05).
+  - `motionRun` takes the host clock and returns cancel.
+- test/motion.test.mjs, 4 tests:
+  - a traffic light;
+  - seed determinism, idle blinking, a condition on the event's fields;
+  - talk over smile while blinking goes on, and a second say cancelling the first;
+  - run and cancel.
+- Next: Q44 answers and the std.plan design note (Round 29), then std.plan.

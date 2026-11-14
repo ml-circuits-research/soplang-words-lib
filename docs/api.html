@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="25fd12e408e2">
+<meta name="source-hash" content="a98bbcecb191">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.53.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.54.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -507,6 +507,15 @@ const d = dictionary({ read: (p) =&gt; ({ k: &#x27;kata\tn2\tf&#x27;, r: &#x27;r
 print(generate(m, &#x27;kata&#x27;, &#x27;n2&#x27;, { num: &#x27;pl&#x27; }), analyse(m, &#x27;kate&#x27;, { dictionary: d }).map((x) =&gt; [x.lemma, x.features.num]),
   realise(m, templateFor(m, &#x27;make&#x27;), { thing: &#x27;kata&#x27;, colour: &#x27;rum&#x27; }, { dictionary: d, base: { num: &#x27;sg&#x27; } }));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>kate [[&quot;kata&quot;,&quot;pl&quot;]] made kata ruma</code></pre></figure>
+<h3 id="motionplanworld-events-options-and-motionrunplan-apply-clock">motionPlan(world, events, options?) and motionRun(plan, apply, clock?)</h3>
+<p>States over time from rules (std.motion), for anything that changes by rules: a face that blinks and talks, a drawing that moves, a diagram that highlights its steps. The rules are facts:</p>
+<ul><li><code>mo.base key= value=</code>;</li><li><code>mo.rule name= on=&lt;event&gt;? when.&lt;field&gt;=&lt;v&gt;? priority=&lt;n&gt;? repeat=&lt;min&gt;-&lt;max&gt;? ease=&lt;ms&gt;? split=&lt;splitter&gt;? else=&lt;value&gt;?</code>;</li><li><code>mo.step rule= n= key= value=? dur=&lt;min&gt;-&lt;max&gt; per=unit?</code>;</li><li><code>mo.class rule= unit= value=</code> (a unit of a stream to a state).</li></ul>
+<p><code>motionPlan</code> is pure and seeded: the same seed gives the same plan, <code>[{ t, key, value }]</code> from 0 to <code>until</code>. <code>events</code> are <code>[{ t, type, fields?, stream? }]</code>. On a key, a higher priority wins over a lower one while both hold it; other keys go on. A new event of the same rule cancels what was left of the earlier one, and <code>ease</code> returns the keys to base. A <code>per=unit</code> step plays one state per unit of the event's stream; the unit splitter is the rule's parameter (<code>options.splitters</code>), supplied by the host or the animation world. <code>motionRun</code> plays a plan through the host's clock and returns <code>cancel()</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(`@b mo.base key=light value=red  @r mo.rule name=go on=button
+  @s1 mo.step rule=go n=1 key=light value=green dur=3000  @s2 mo.step rule=go n=2 key=light value=amber dur=1000`);
+print(motionPlan(w, [{ t: 500, type: &#x27;button&#x27; }], { until: 6000 }).map((p) =&gt; [p.t, p.value]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[[0,&quot;red&quot;],[500,&quot;green&quot;],[3500,&quot;amber&quot;],[4500,&quot;red&quot;]]</code></pre></figure>
 <h3 id="arbitrateworld-request-options">arbitrate(world, request, options?)</h3>
 <p>The arbitration contract: one verdict per declared world for one request. <code>own</code>: the world has the kind (or the thing, or a view whose state has the attribute), allows the act, and its dry run takes it. <code>decline</code>: it has no use for the kind, so it declines the verb; this rule is the library's, not the host's. <code>refuse</code>: it has the kind, but the act is not allowed or the dry run refuses. A refusal is given only in the <code>exact</code> pass; in a <code>spelling</code> or <code>view</code> pass (<code>options.pass</code>) it stays a decline. When several worlds own, <code>options.resolves(world, words)</code> (a host hook, with <code>options.words</code>) keeps the ones whose things hold the words. Returns <code>{ verdicts: [{ world, verdict, why }], owner, ambiguous?, pass }</code>.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
@@ -773,7 +782,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.53.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.54.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

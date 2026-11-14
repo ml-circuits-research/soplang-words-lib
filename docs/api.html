@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="6c665768a7ab">
+<meta name="source-hash" content="0ac2decb707e">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.77.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.78.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -606,6 +606,13 @@ w.tell(`@g k.genres.genre name=note  @m1 k.genres.move name=open takes=topic  @m
   @owl k.animal name=owl  @a k.diet about=owl eats=mice  @b k.home about=owl lives=barn`);
 print(compose(w, &#x27;owl&#x27;, { genre: &#x27;note&#x27; }).parts.map((p) =&gt; [p.part, p.relation ?? &#x27;&#x27;, p.moves.map((m) =&gt; m.cites)]));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;head&quot;,&quot;&quot;,[&quot;owl&quot;]],[&quot;point&quot;,&quot;k.home&quot;,[&quot;b&quot;]],[&quot;point&quot;,&quot;k.diet&quot;,[&quot;a&quot;]]]</code></pre></figure>
+<h3 id="storystatetext-options">storyState(text, options?)</h3>
+<p>A story, then a question (abstraction round, item 6). The referents of a story and its arithmetic frame stay in focus, and a following question is read against them.</p>
+<ul><li>Each sentence changes the quantity an owner holds: a name, or a pronoun for the last owner; a number; an item.</li><li>The verb's effect is data: <code>verbs</code> maps a word to <code>set</code>, <code>add</code>, <code>remove</code> or <code>give</code>, and <code>give</code> moves the quantity to the other name.</li><li>A question asks what an owner holds, or all owners together (<code>all</code>).</li><li><code>numbers</code>, <code>pronouns</code>, <code>question</code> and <code>skip</code> come from the host or its language world.</li></ul>
+<p>The result is <code>{ state, steps, answers: [{ question, answer, owner?, item, why }], unread }</code>. A sentence it cannot read is listed, never guessed.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const EN = { verbs: { has: &#x27;set&#x27;, buys: &#x27;add&#x27; }, pronouns: [&#x27;she&#x27;], question: [&#x27;how&#x27;, &#x27;many&#x27;], skip: [&#x27;more&#x27;, &#x27;does&#x27;] };
+print(storyState(&#x27;Ana has 3 apples. She buys 2 more apples. How many apples does Ana have?&#x27;, EN).answers[0].answer);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>5</code></pre></figure>
 <h3 id="alignworldsa-b-options">alignWorlds(a, b, options?)</h3>
 <p>Transfer by analogy between worlds (abstraction round, item 5). Two world schemas are aligned by structure:</p>
 <ul><li>A type's signature is its slots: a reference or a kind, many or one, a closed set.</li><li>Types are paired by the share of their slots that match (at least <code>min</code>, default 0.5). A pairing whose references point to types that pair as well comes first.</li><li>Slots inside a pair are matched by signature.</li></ul>
@@ -979,7 +986,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.77.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.78.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

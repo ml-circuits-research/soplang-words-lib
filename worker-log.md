@@ -4772,3 +4772,17 @@ Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-que
   - Offers: the default of day.slots (from table.seats=4); slot.day required (from seat.table). Not told: slot.day is still not required in b.
 - Gates: npm test 446 / 446 / 445 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Next: Q54 item 6 (story-then-question focus), then the 21:00 small decisions (summarizeLog failed: 'separate', compose deterministic by seed / memoisable, needs=text).
+
+## 0.78.0: a story then a question (Q54 item 6, reviewer 18:20 item 1)
+
+- `storyState` keeps the story's owners, quantities and the last owner (pronouns) in focus. The verb effects are data (set / add / remove / give).
+- test/story-focus.test.mjs, toy English table, 6 cases:
+  - 3+2=5;
+  - five−two=3, with the pronoun;
+  - a gift moves 1 pear;
+  - a later "has" sets;
+  - "they … together" = 5;
+  - an unreadable sentence is listed and the question says there is no owner in focus.
+- Gates: npm test 447 / 447 / 446 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+- [KNOW] ask: the verb effects (set / add / remove / give) as facts of w.lang.en (or k.actions), so hosts pass no table.
+- The Q54 items 0–6 are all in a first version. Next: the 21:00 small decisions (summarizeLog failed: 'separate', compose deterministic and memoisable, needs=text for sample), then Round 28 item 9 and Round 27 skills (the learn skill calls cousins + learnRules).

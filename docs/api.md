@@ -1662,6 +1662,29 @@ print(compose(w, 'owl', { genre: 'note' }).parts.map((p) => [p.part, p.relation 
 [["head","",["owl"]],["point","k.home",["b"]],["point","k.diet",["a"]]]
 ```
 
+### storyState(text, options?)
+
+A story, then a question (abstraction round, item 6). The referents of a story and its
+arithmetic frame stay in focus, and a following question is read against them.
+- Each sentence changes the quantity an owner holds: a name, or a pronoun for the last
+  owner; a number; an item.
+- The verb's effect is data: `verbs` maps a word to `set`, `add`, `remove` or `give`, and
+  `give` moves the quantity to the other name.
+- A question asks what an owner holds, or all owners together (`all`).
+- `numbers`, `pronouns`, `question` and `skip` come from the host or its language world.
+
+The result is `{ state, steps, answers: [{ question, answer, owner?, item, why }],
+unread }`. A sentence it cannot read is listed, never guessed.
+
+```js run
+const EN = { verbs: { has: 'set', buys: 'add' }, pronouns: ['she'], question: ['how', 'many'], skip: ['more', 'does'] };
+print(storyState('Ana has 3 apples. She buys 2 more apples. How many apples does Ana have?', EN).answers[0].answer);
+```
+
+```output
+5
+```
+
 ### alignWorlds(a, b, options?)
 
 Transfer by analogy between worlds (abstraction round, item 5). Two world schemas are

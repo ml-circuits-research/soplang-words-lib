@@ -64,7 +64,7 @@ contain and where code lives: [docs/kinds-of-worlds.md](docs/kinds-of-worlds.md)
 | Suggest random commands that work | `sample`, `diversity` | [example](docs/capabilities.md#suggest-random-commands-that-work) | 0.59 |
 | Summarise a log or a text | `actsOf`, `summarizeLog`, `summarizeText`, `overlap` | [example](docs/capabilities.md#summarise-a-log-or-a-text) | 0.61 |
 | Compose a text from knowledge | `compose`, `discourseRealiser`, `discourseTemplates`, `writeDocument`, `readDocument`, `solveChoices`, `readStory`, `storyPlan`, `STORY_RELATIONS`, `interestOf`, `measuresOf`, `shapeShare`, `interestModel` | [example](docs/capabilities.md#compose-a-text-from-knowledge) | 0.64 |
-| Read a question by the types of its words | `readByTypes`, `typedLexicon`, `nearWords`, `normalise`, `alternationsOf` | [example](docs/capabilities.md#read-a-question-by-the-types-of-its-words) | 0.72 |
+| Read a question by the types of its words | `readByTypes`, `typedLexicon`, `nearWords`, `normalise`, `alternationsOf`, `storyState` | [example](docs/capabilities.md#read-a-question-by-the-types-of-its-words) | 0.72 |
 | Judge a fix on the cousins of its case | `cousins`, `kindChain`, `judgeFix`, `learnRules` | [example](docs/capabilities.md#judge-a-fix-on-the-cousins-of-its-case) | 0.73 |
 | Align two worlds by structure | `alignWorlds` | [example](docs/capabilities.md#align-two-worlds-by-structure) | 0.77 |
 <!-- /capabilities -->

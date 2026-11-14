@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.78.0
+
+Abstraction round, item 6 (questions.md Q54; reviewer 18:20 item 1): a story then a
+question.
+
+### New
+- `storyState(text, { verbs, numbers, pronouns, question, all, skip })`:
+  - the quantities owners hold follow the story, with verb effects as data (set, add,
+    remove, give);
+  - pronouns keep the last owner in focus;
+  - the question is answered from that state, for one owner or for all together;
+  - sentences it cannot read are listed.
+
 ## 0.77.0
 
 Abstraction round, item 5 (questions.md Q54): transfer by analogy between worlds.

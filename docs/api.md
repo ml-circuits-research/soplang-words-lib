@@ -1611,6 +1611,25 @@ print(placeFor(w, { w: 10, h: 10 }, { rel: 'right_of', ref: 'box1' }), placeFor(
 {"x":62,"y":45,"how":"right_of"} {"x":0,"y":0,"how":"default"}
 ```
 
+### arrange(nodes, layout, options?)
+
+Many things laid out at once, for a diagram kind's layout or an arrangement request ("in a
+circle", "evenly", "left to right"). `nodes` are `{ id, w?, h? }` (10 x 10 by default). The
+layouts: `row` (left to right), `column` (top to bottom), `circle` (clockwise from the top),
+`grid` (evenly), and `layers`, which puts each node one layer after its furthest source in
+`edges` ([[from, to]]), layers left to right, or top to bottom with `direction: 'down'`. A
+cycle is cut at the edge that closes it, walking from the nodes in their order. Options
+`frame` (0 0 100 100) and `gap` (2). It returns a Map from id to `{ x, y, w, h }`.
+
+```js run
+const at = arrange([{ id: 'a' }, { id: 'b' }, { id: 'c' }], 'layers', { edges: [['a', 'b'], ['a', 'c']] });
+print([...at].map(([id, b]) => `${id} ${Math.round(b.x)},${Math.round(b.y)}`).join('; '));
+```
+
+```output
+a 20,45; b 70,27; c 70,63
+```
+
 ### compose(world, topic, options?) and interestOf(world, fact, options?)
 
 A composition of a genre about a topic, from knowledge, with no model (std.compose, first

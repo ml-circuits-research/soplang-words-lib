@@ -61,3 +61,54 @@ export function placeFor(world, { w = 10, h = 10 } = {}, at = {}, { frame = { x:
 export function relationsOf(world, kind) {
   return world.ofType('std.schema.relation').map((r) => ({ name: r.attrs.name[0], kind: r.attrs.kind?.[0] ?? 'spatial', ...(r.attrs.inverse ? { inverse: r.attrs.inverse[0] } : {}) })).filter((r) => kind === undefined || r.kind === kind);
 }
+
+/**
+ * Many things laid out at once (reviewer 04:40: a diagram kind's layout; an arrangement request such
+ * as "in a circle", "evenly", "left to right"). `nodes` [{ id, w?, h? }] (size default 10 x 10),
+ * `layout` one of: row (left to right), column (top to bottom), circle, grid (evenly), layers (by
+ * `edges` [[from, to]]: each node one layer after its furthest source, layers left to right, or top to
+ * bottom with `direction: 'down'`). Options `frame` { x, y, w, h } (default 0 0 100 100), `gap`
+ * (default 2). Returns Map(id -> { x, y, w, h }), each box inside the frame when the frame holds them.
+ */
+export function arrange(nodes, layout = 'row', { edges = [], frame = { x: 0, y: 0, w: 100, h: 100 }, gap = 2, direction = 'right' } = {}) {
+  const ns = nodes.map((n) => ({ id: n.id, w: n.w ?? 10, h: n.h ?? 10 })), out = new Map(), N = ns.length;
+  if (!N) return out;
+  const cx = frame.x + frame.w / 2, cy = frame.y + frame.h / 2;
+  const line = (list, along, x0, y0, len) => { // spread evenly along one axis, centred across the other
+    const total = list.reduce((s, n) => s + (along === 'x' ? n.w : n.h), 0), space = Math.max(gap, (len - total) / (list.length + 1));
+    let p = (along === 'x' ? x0 : y0) + space;
+    for (const n of list) { if (along === 'x') { out.set(n.id, { x: p, y: y0 - n.h / 2, w: n.w, h: n.h }); p += n.w + space; } else { out.set(n.id, { x: x0 - n.w / 2, y: p, w: n.w, h: n.h }); p += n.h + space; } }
+  };
+  if (layout === 'row') line(ns, 'x', frame.x, cy, frame.w);
+  else if (layout === 'column') line(ns, 'y', cx, frame.y, frame.h);
+  else if (layout === 'circle') {
+    const big = Math.max(...ns.map((n) => Math.max(n.w, n.h)));
+    const r = Math.max(0, Math.min(frame.w, frame.h) / 2 - big / 2 - gap);
+    ns.forEach((n, i) => { const a = -Math.PI / 2 + (2 * Math.PI * i) / N; out.set(n.id, { x: cx + r * Math.cos(a) - n.w / 2, y: cy + r * Math.sin(a) - n.h / 2, w: n.w, h: n.h }); });
+  } else if (layout === 'grid') {
+    const cols = Math.ceil(Math.sqrt(N * frame.w / frame.h)), rows = Math.ceil(N / cols), cw = frame.w / cols, ch = frame.h / rows;
+    ns.forEach((n, i) => { const c = i % cols, r = Math.floor(i / cols); out.set(n.id, { x: frame.x + c * cw + (cw - n.w) / 2, y: frame.y + r * ch + (ch - n.h) / 2, w: n.w, h: n.h }); });
+  } else if (layout === 'layers') {
+    const ids = new Set(ns.map((n) => n.id)), out1 = new Map(ns.map((n) => [n.id, []])), into = new Map(ns.map((n) => [n.id, []]));
+    for (const [a, b] of edges) if (ids.has(a) && ids.has(b) && a !== b) out1.get(a).push(b);
+    const state = new Map(); // a cycle is cut at the edge that closes it, walking from the nodes in their order
+    const walk = (id) => { state.set(id, 1); for (const b of out1.get(id)) { if (state.get(b) === 1) continue; into.get(b).push(id); if (!state.has(b)) walk(b); } state.set(id, 2); }; // bounded: each node once
+    for (const n of ns) if (!state.has(n.id)) walk(n.id);
+    const layer = new Map();
+    const depth = (id) => { // bounded: each node once, over the edges left (no cycle)
+      if (layer.has(id)) return layer.get(id);
+      const d = Math.max(-1, ...into.get(id).map(depth)) + 1;
+      layer.set(id, d); return d;
+    };
+    ns.forEach((n) => depth(n.id));
+    const L = Math.max(...layer.values()) + 1, groups = Array.from({ length: L }, () => []);
+    for (const n of ns) groups[layer.get(n.id)].push(n);
+    const down = direction === 'down', step = (down ? frame.h : frame.w) / L;
+    groups.forEach((g, k) => {
+      const mid = (down ? frame.y : frame.x) + step * (k + 0.5);
+      line(g, down ? 'x' : 'y', down ? frame.x : mid, down ? mid : frame.y, down ? frame.w : frame.h);
+      for (const n of g) { const b = out.get(n.id); if (down) b.y = mid - n.h / 2; else b.x = mid - n.w / 2; }
+    });
+  } else throw new Error(`sopworld: arrange: unknown layout ${layout}`);
+  return out;
+}

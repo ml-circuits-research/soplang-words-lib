@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.110.0
+
+Ahead of the reviewer's 04:40 entry (diagrams composed from knowledge; `k.diagrams` and
+`w.diagram` are not published yet).
+
+### New
+- `arrange(nodes, layout, { edges, frame, gap, direction })` lays out many things at once: row,
+  column, circle, grid, and layers by edges (cycles cut where they close).
+
 ## 0.109.0
 
 From the reviewer's 04:05 entry ([KNOW] Q66, part 2).

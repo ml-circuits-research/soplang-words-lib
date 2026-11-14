@@ -2,7 +2,7 @@
 // in a region, or a default spot, avoiding overlaps; relations declared with their kind.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { World, placeFor, relationsOf } from '../tools/lib-under-test.mjs';
+import { World, placeFor, relationsOf, arrange } from '../tools/lib-under-test.mjs';
 
 const W = `@acts core.use world=std.acts  @pic std.schema.world name=pic
 @t core.type of=box extends=std.schema.thing closed=true
@@ -32,4 +32,18 @@ test('space: relation kinds are declared; connect refuses a relation the schema 
   w.act({ action: 'make', args: { kind: 'box' } }); w.act({ action: 'make', args: { kind: 'box' } });
   assert.ok(w.act({ action: 'connect', args: { a: 'box1', b: 'box2', rel: 'feeds' } }).ok);
   assert.match(w.act({ action: 'connect', args: { a: 'box1', b: 'box2', rel: 'loves' } }).violations[0].why, /no relation loves/);
+});
+
+test('arrange: row, column, circle, grid and layers by edges, inside the frame', () => {
+  const ns = ['a', 'b', 'c', 'd'].map((id) => ({ id }));
+  const at = (m) => Object.fromEntries([...m].map(([k, b]) => [k, [Math.round(b.x), Math.round(b.y)]]));
+  assert.deepEqual(at(arrange(ns, 'row')), { a: [12, 45], b: [34, 45], c: [56, 45], d: [78, 45] }, 'left to right, evenly spaced');
+  assert.deepEqual(at(arrange(ns, 'column')).c, [45, 56]);
+  assert.deepEqual(at(arrange(ns, 'circle')), { a: [45, 2], b: [88, 45], c: [45, 88], d: [2, 45] }, 'clockwise from the top');
+  assert.deepEqual(at(arrange(ns, 'grid')), { a: [20, 20], b: [70, 20], c: [20, 70], d: [70, 70] });
+  const diamond = [['a', 'b'], ['a', 'c'], ['b', 'd'], ['c', 'd']];
+  assert.deepEqual(at(arrange(ns, 'layers', { edges: diamond })), { a: [12, 45], b: [45, 27], c: [45, 63], d: [78, 45] });
+  assert.deepEqual(at(arrange(ns, 'layers', { edges: [...diamond, ['d', 'a']], direction: 'down' })).a, [45, 12], 'a cycle is cut where it closes: a stays first');
+  for (const l of ['row', 'column', 'circle', 'grid', 'layers']) for (const b of arrange(ns, l).values()) assert.ok(b.x >= 0 && b.y >= 0 && b.x + b.w <= 100 && b.y + b.h <= 100, `${l} inside the frame`);
+  assert.throws(() => arrange(ns, 'spiral'), /unknown layout/);
 });

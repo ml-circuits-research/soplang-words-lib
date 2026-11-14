@@ -232,7 +232,7 @@ print(w.ofType('std.fill.need')[0].attrs.value);
 
 ## Relate and place things
 
-*In `std.relations`, `std.boxes`, `placeFor`, `boxesOf`, `relationsOf`; since 0.16.*
+*In `std.relations`, `std.boxes`, `placeFor`, `arrange`, `boxesOf`, `relationsOf`; since 0.16.*
 *Works on: a live world.*
 
 `std.relations`: on, in, next to, above, in front of, kept: when the other thing moves,

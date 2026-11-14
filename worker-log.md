@@ -5298,3 +5298,11 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   (atom text: /^[A-Za-z_][\w.:-]*$/); blob keys stay exact; "Deep Snow" stays a string.
 - /tmp/kq.mjs: `ask('@q chapter n=?n title=Rain')` -> c1 (told as "Rain"); `title="Snow"` -> c2 (told bare).
 - Gate: npm test 496 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.110.0 — arrange: layouts for diagrams (ahead of 04:40)
+
+- `arrange(nodes, layout)`: row, column, circle, grid, layers (edges; cycles cut where they close).
+  /tmp/ar.mjs on 4 nodes: circle a(45,2) b(88,45) c(45,88) d(2,45); diamond layers a|b,c|d.
+- k.diagrams / w.diagram still unpublished (knowledge d3aaed2); composeDiagram and reading
+  arrangement requests through w.lang.en frames wait for them.
+- Gate: npm test 497 pass / 0 fail; test:full 497 / 497 / 495, 0 fail; pilot same; psys2=0; scan clean; tsc ok.

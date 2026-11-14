@@ -518,7 +518,7 @@ export function turnFlow(world: World, readings: object[], options?: { providers
 export interface GrammarOptions { types?: { rule?: string; word?: string; coord?: string }; classes?: Record<string, string>; lexicon?: Record<string, { cat: string; lemma?: string; feat?: Record<string, unknown> } | { cat: string; lemma?: string; feat?: Record<string, unknown> }[]>; digits?: string }
 export function grammarOf(world: World, options?: GrammarOptions): { lex: Map<string, { cat: string; lemma: string; feat: Record<string, unknown> }[]>; rules: Map<string, string[][]>; coord: Set<string>; multi: string[]; digits?: string };
 /** text parsed with a grammar world: every complete parse of `start`, best first */
-export function parseText(world: World, text: string, options?: { start?: string; max?: number; budget?: number } & GrammarOptions): { tree: object; size: number }[] & { tokens: string[]; unknown?: { word: string; at: number }[]; truncated?: true; steps?: number };
+export function parseText(world: World, text: string, options?: { start?: string; max?: number; budget?: number; alternations?: boolean | object } & GrammarOptions): { tree: object; size: number }[] & { tokens: string[]; unknown?: { word: string; at: number }[]; truncated?: true; steps?: number; applied?: string[]; normalised?: string; mode?: string };
 /** a noun phrase node read as roles */
 export function nounPhrase(node: object, cats?: { det?: string; num?: string; mod?: string; head?: string; pp?: string; ord?: string; name?: string; pron?: string }): { span: [number, number]; rule?: string; quant?: string; det?: string; num?: string; ord?: string; name?: string; pron?: string; mods?: string[]; head?: string; lemma?: string; pp?: object[]; parts?: object[]; coord?: object[] };
 /** The words of a view: `text` of the wires of `type` whose `in=` names it. */
@@ -634,3 +634,7 @@ export function kindChain(world: World, id: string, depth?: number): string[][];
 export function judgeFix(answer: (text: string | undefined, frame: object) => unknown, kase: { frame: object; text?: string }, cousins: object[]): { case: boolean; byDegree: Record<string, { pass: number; of: number }>; share: number | null };
 /** The near words of a word through word senses (k.words.sense): synonyms 1, kinds 2 and more. */
 export function nearWords(world: World, word: string, options?: { senses?: (word: string) => Wire[] }): { word: string; cost: number; via: string }[];
+/** The canonical form of a text by the language world's alternation rules. */
+export function normalise(world: World, text: string, options?: { rules?: { name: string; from: string; to: string; mode?: string }[]; type?: string; lemma?: (word: string) => string[]; max?: number }): { text: string; applied: string[]; mode?: string };
+/** The alternation rules a world holds. */
+export function alternationsOf(world: World, type?: string): { name: string; from: string; to: string; mode?: string }[];

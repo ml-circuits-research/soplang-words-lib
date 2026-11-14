@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.75.0
+
+Abstraction round, item 2 (questions.md Q54): alternations as general rules, written once.
+
+### New
+- `normalise(world, text, { rules, type, lemma, max })` and `alternationsOf(world)`: the
+  language world's alternation rules (`w.lang.en.alternation name= from= to= mode=`)
+  bring a variant back to its canonical form, and the result names the rules applied.
+- `parseText(..., { alternations })` normalises first; the parses carry `applied`,
+  `normalised` and `mode`.
+
 ## 0.74.0
 
 Abstraction round, item 3 (questions.md Q54): lexical generalisation at read time.

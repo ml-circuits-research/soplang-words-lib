@@ -786,7 +786,7 @@ print(compose(w, 'owl', { size: { chapters: 1, sections: 1, sentences: 2 } }).ch
 
 ## Read a question by the types of its words
 
-*In `readByTypes`, `typedLexicon`, `nearWords`; since 0.72.*
+*In `readByTypes`, `typedLexicon`, `nearWords`, `normalise`, `alternationsOf`; since 0.72.*
 *Works on: any world with facts (names, keys, values) and acts.*
 
 "what sound does a cow make", "a cow makes which sound" and "cow sound?" read to one frame,
@@ -794,8 +794,10 @@ the attribute `sound` of the thing `cow`, because the words are typed through th
 own facts and order only ranks. Inverse questions ("which animal says moo") and acts with
 arguments by type are read too.
 An unknown word is read as its nearest known word through k.words senses (a synonym,
-a kind), with a cost. **Limits:** a first version. Alternations as rules and induced rules
-are the next items of the abstraction round (questions.md Q54).
+a kind), with a cost. Variants (passive, "could you", "please", dative shift) are brought
+back to the canonical form by the language world's alternation rules, written once.
+**Limits:** a first version. The alternation rules are a toy set until the language world
+publishes them; induced rules are the next item (questions.md Q54).
 
 ```js run
 const w = new World();

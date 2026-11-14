@@ -1662,6 +1662,37 @@ print(compose(w, 'owl', { genre: 'note' }).parts.map((p) => [p.part, p.relation 
 [["head","",["owl"]],["point","k.home",["b"]],["point","k.diet",["a"]]]
 ```
 
+### normalise(world, text, options?) and alternationsOf(world, type?)
+
+Alternations as general rules, written once (abstraction round, item 2). These are rules
+of the language world (`w.lang.en.alternation name= from= to= mode=`):
+- passive;
+- wrappers: "could you", "I want you to", "please";
+- question vs command;
+- dative shift.
+
+They bring a variant back to its canonical form, applied in order to a bounded fixpoint.
+
+A pattern is made of words, `[a|b]` alternatives and `{x}` spans (shortest first). In
+`to`, `{x:base}` gives a word's base form: the world's lemma, else the word without -ed or
+-s. The result is `{ text, applied: [names], mode? }`. With `{ alternations: true }` (or the
+same options), `parseText` normalises first, so one grammar rule for the canonical frame
+reads every variant. The parses then carry `applied`, `normalised` and `mode`.
+
+```js run
+const w = new World();
+w.tell(`@t core.type of=w.lang.en.alternation  @t1 core.slot of=w.lang.en.alternation key=name kind=atom kind=string
+  @t2 core.slot of=w.lang.en.alternation key=from kind=atom kind=string  @t3 core.slot of=w.lang.en.alternation key=to kind=atom kind=string
+  @t4 core.slot of=w.lang.en.alternation key=mode kind=atom kind=string
+  @a w.lang.en.alternation name=could_you from="[could|can] you {x}" to="{x}" mode=request
+  @b w.lang.en.alternation name=please from="please {x}" to="{x}" mode=request`);
+print(normalise(w, 'Could you please open the door?'));
+```
+
+```output
+{"text":"open the door","applied":["could_you","please"],"mode":"request"}
+```
+
 ### cousins(world, case, options?), kindChain(world, id) and judgeFix(answer, case, cousins)
 
 A case is never single (abstraction round, item 0). `cousins` goes up from a case `{ frame,

@@ -4739,3 +4739,12 @@ Gates: npm test 440 / 440 / 439 pass, 0 fail; pilot identical; psys2=0; scan cle
   - "drake sound?" with near=1 leaves drake unread; with the default it reads as duck.
 - Gates: npm test 441 / 441 / 440 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Next: Q54 item 2 (alternations: a read-time normaliser plus alternations as language-world facts).
+
+## 0.75.0: alternations as rules, once (Q54 item 2)
+
+- `normalise` / `alternationsOf` work over language-world facts (`w.lang.en.alternation name= from= to= mode=`, the proposed format). `parseText({ alternations })` normalises first.
+- test/alternate.test.mjs, 5 toy rules: 4 wrapper variants of "open the door" come back to it ("can you please …" applies could_you then please, mode request); passive "the door was opened by the cat" → "the cat open the door"; dative "give the ball to the dog" → "give the dog the ball".
+- With a single grammar rule S → V NP, "could you open the door" gives 0 parses without alternations and parses with them.
+- Gates: npm test 443 / 443 / 442 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+- [KNOW] ask: the alternations as facts of w.lang.en in this format (passive, wrappers, wh-fronting, dative, ellipsis). Then the variant frames in w.lang.en can be counted and removed, measured on paraphrases-rt.
+- Next: Q54 item 4 (induction from cases with cousins as the held-out test).

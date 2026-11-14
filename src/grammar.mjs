@@ -1,3 +1,4 @@
+import { normalise } from './alternate.mjs';
 // std.grammar (Round 26 B, smallest version): language-free machinery that applies a
 // grammar world to text. The world holds the language as facts — `g.word text= lemma= cat=`
 // (the lexicon), `g.rule lhs= rhs= ...` (categories in order; `X?` optional, `X*` any
@@ -64,7 +65,9 @@ function tokenize(text, g) {
  * step budget, `truncated: true` and what was complete by then (it never throws);
  * a node is { cat, span: [i, j], word?, lemma?, feat?, children?, coord? }.
  */
-export function parseText(world, text, { start = 'S', max = 8, budget = 20000, ...grammar } = {}) {
+export function parseText(world, text, { start = 'S', max = 8, budget = 20000, alternations, ...grammar } = {}) {
+  let applied = null, mode = null; // the alternation rules of the language world bring a variant to its canonical form first
+  if (alternations) { const n = normalise(world, text, alternations === true ? {} : alternations); if (n.applied.length) { text = n.text; applied = n.applied; mode = n.mode ?? null; } }
   const g = grammarOf(world, grammar), tok = tokenize(text, g);
   const memo = new Map();
   let steps = 0;
@@ -132,7 +135,7 @@ export function parseText(world, text, { start = 'S', max = 8, budget = 20000, .
   const parses = full.filter((p) => { const k = JSON.stringify(p.tree); if (seen.has(k)) return false; seen.add(k); return true; })
     .sort((a, b) => b.prio - a.prio || b.lits - a.lits || a.size - b.size || a.depth - b.depth || JSON.stringify(a.tree).localeCompare(JSON.stringify(b.tree))).slice(0, max).map(({ depth, prio: _p, lits: _l, ...p }) => p);
   // no noun is owned: a word the lexicon does not have is reported, not judged
-  return Object.assign(parses, { tokens: tok, ...(unknown.length ? { unknown } : {}), ...(over ? { truncated: true, steps } : {}) });
+  return Object.assign(parses, { tokens: tok, ...(unknown.length ? { unknown } : {}), ...(over ? { truncated: true, steps } : {}), ...(applied ? { applied, normalised: text } : {}), ...(mode ? { mode } : {}) });
 }
 
 /** A noun phrase node read as roles: { det, num, mods, head, lemma, span, pp? } (categories named by the grammar: `cats`). */
@@ -217,3 +220,4 @@ export function grammarCheck(world, { lemma, maxWords, ...grammar } = {}) {
   if (maxWords) for (const word of g.lex.keys()) if (word.split(/\s+/).length > maxWords) issues.push({ ...is('too-many-words'), word, words: word.split(/\s+/).length });
   return issues;
 }
+

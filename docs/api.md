@@ -1319,6 +1319,51 @@ print(dialogueTurn(w, 'no wait, a blue one', { last }), dialogueTurn(w, 'a squar
 {"kind":"correction","rest":"a blue one","cue":"no wait","act":"make"} list
 ```
 
+### morphOf, generate, analyse, fold, splitClitics, dictionary, realise, templateFor
+
+Morphology for language worlds (std.morph). The primitives are the same for every
+language and run in both directions; nothing here knows a language.
+
+A language world declares (type names can be changed with `morphOf(world, { types })`):
+- paradigm classes: `m.class name= parent=? drop=? alt=<from>><to>`. A class inherits its
+  parent's cells and overrides some; `drop` is what the lemma loses to give the stem;
+  `alt` is a stem alternation.
+- cells: `m.ending class= suffix= alt=yes? <feature>=<value>...`, where `suffix=_` means
+  none.
+- `m.irregular lemma= form= <features>` (consulted first), `m.fold from= to=` (spelling
+  variants, such as diacritics), `m.split text=` (clitic joiners) and `m.template act=
+  shape=? text=` (realisation).
+
+The functions:
+- `morphOf(world)` compiles these once, with a suffix index.
+- `generate(m, lemma, class, features)` gives a form.
+- `analyse(m, form, { dictionary })` gives `[{ lemma, class, features, form, exact }]`.
+  It looks up the suffix index and checks each candidate by generating it again, so no
+  form list is stored. With a dictionary it keeps only lemmas the dictionary has, in their
+  class, and a folded spelling finds the lemma with its diacritics.
+- `dictionary({ read, prefix, fold })` is the external lexicon: one row per lemma,
+  `lemma<TAB>class<TAB>gender?<TAB>sense?`, split into files by the first `prefix` letters
+  and read lazily, one file when a word needs it.
+- `realise(m, template, roles, { dictionary, base })` fills `{role}`, `{role:f=v,...}`
+  (that cell) and `{role@other}` (agreement with another role through unification of their
+  feature bundles).
+- `splitClitics(m, word)` splits a word at the clitic joiners.
+
+```js run
+const w = new World();
+w.tell(`@c m.class name=n2 drop=a  @e1 m.ending class=n2 num=sg suffix=a  @e2 m.ending class=n2 num=pl suffix=e
+  @c2 m.class name=a1  @a1 m.ending class=a1 gender=f num=sg suffix=a  @a2 m.ending class=a1 gender=m num=sg suffix=_
+  @t m.template act=make text="made {thing:num=sg} {colour@thing}"`);
+const m = morphOf(w);
+const d = dictionary({ read: (p) => ({ k: 'kata\tn2\tf', r: 'rum\ta1' })[p] ?? null });
+print(generate(m, 'kata', 'n2', { num: 'pl' }), analyse(m, 'kate', { dictionary: d }).map((x) => [x.lemma, x.features.num]),
+  realise(m, templateFor(m, 'make'), { thing: 'kata', colour: 'rum' }, { dictionary: d, base: { num: 'sg' } }));
+```
+
+```output
+kate [["kata","pl"]] made kata ruma
+```
+
 ### arbitrate(world, request, options?)
 
 The arbitration contract: one verdict per declared world for one request. `own`: the

@@ -544,3 +544,14 @@ export function bundleThenRead(bundle: { files: Record<string, string> }, read: 
 export function listOf(world: World, type: string, slot?: string, value?: string): string[];
 /** World-level bundles: std.schema.world bundle=<name> gets bundles[name] told once. */
 export function loadBundles(world: World, bundles: Record<string, string>): { ok: boolean; told: string[]; violations?: object[]; bundle?: string };
+/** std.morph: the morphology a language world declares, compiled (classes with inherited cells, a suffix index, folds). */
+export interface Morph { classes: Map<string, { name: string; drop: string; alts: string[][]; cells: Map<string, { suffix: string; alt: boolean; feat: Record<string, string> }> }>; index: Map<string, object[]>; irregular: object[]; folds: string[][]; splits: string[]; templates: { act: string; shape: string | null; text: string }[] }
+export function morphOf(world: World, options?: { types?: { cls?: string; ending?: string; irregular?: string; fold?: string; split?: string; template?: string } }): Morph;
+export function generate(m: Morph, lemma: string, cls: string, features: Record<string, string>): string | null;
+export function analyse(m: Morph, form: string, options?: { dictionary?: Dictionary }): { lemma: string; class: string | null; features: Record<string, string>; form: string; exact: boolean }[];
+export function fold(m: Morph, text: string): string;
+export function splitClitics(m: Morph, word: string): string[];
+export interface Dictionary { lookup(lemma: string): { lemma: string; class: string; gender?: string; sense?: string } | null; byFolded(plain: string): { lemma: string; class: string; gender?: string; sense?: string }[]; loaded(): string[] }
+export function dictionary(options: { read: (prefix: string) => string | null; prefix?: number; fold?: (s: string) => string }): Dictionary;
+export function realise(m: Morph, template: string, roles: Record<string, string>, options?: { dictionary?: Dictionary; base?: Record<string, string>; agree?: string[] }): string | null;
+export function templateFor(m: Morph, act: string, shape?: string | null): string | null;

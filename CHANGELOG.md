@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.52.0
+
+Round 30, first part: `std.morph`, compact morphology for language worlds.
+
+### New
+- A language world declares the following, for any language:
+  - paradigm classes (`m.class name= parent= drop= alt=`);
+  - cells (`m.ending class= suffix= <features>`);
+  - irregulars, spelling folds, clitic joiners and realisation templates.
+- `morphOf`, `generate`, `analyse` (a suffix index, each reading checked by generating it
+  again, no form lists), `fold`, `splitClitics`.
+- `dictionary` (the external lexicon: one row per lemma, prefix-split, lazy).
+- `realise` and `templateFor` (templates with agreement through unification).
+- Tests on an invented language: the round trip holds for every class and cell (16).
+
 ## 0.51.0
 
 Reviewer 09:55: the knowledge repository published `w.face`, `w.map`, `w.seating` 2 and

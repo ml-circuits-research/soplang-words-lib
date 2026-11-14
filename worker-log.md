@@ -4291,3 +4291,33 @@ CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 0.51.0).
     adapter, realisation), together with the std.grammar block of 09:25;
   - Round 29 (`std.plan`), with a design note first;
   - Round 27 (skills).
+
+## Round 30, first part — std.morph (paradigms both ways, folds, dictionary adapter, realisation) — release 0.52.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/capability-table.mjs`: 27 jobs. Version, CHANGELOG, docs
+rebuilt (`docs/version.md`: sopworld 0.52.0).
+
+- src/morph.mjs:
+  - `morphOf` compiles classes (inheritance and overrides, drop, alternations), a flat
+    suffix index, irregulars, folds, splits and templates.
+  - `generate`, and `analyse`: a suffix lookup, alternations undone, each candidate checked
+    by generating it again, dictionary-filtered, folded spellings ranked after exact ones.
+  - `fold`, `splitClitics`, `dictionary` (prefix files read once each).
+  - `realise`, with agreement through `unify`, and `templateFor`.
+- test/morph.test.mjs (4 tests, invented "Toyish"):
+  - the round trip holds for all 16 cells of 4 classes;
+  - "potsi" is read as "pōtsi" with only the `p` file of the dictionary read;
+  - the irregular "oameni";
+  - "kata ruma" / "bak rum" agree in gender.
+- Not done yet in Round 30:
+  - agreement inside the parser (grammar rules with feature constraints);
+  - the measurements on w.lang.ro (not published: `ls` of the pinned docs/worlds shows only
+    w.lang.en);
+  - the English replies moved onto templates (09:25 item 2).
+  questions.md Q37 [KNOW] gives the notation to the w.lang.ro worker.
+- Next:
+  - the parser-level agreement and the generation block of 09:25;
+  - Round 28 items 6–9;
+  - Round 29 (`std.plan`, with a design note);
+  - Round 27 (skills).

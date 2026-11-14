@@ -640,6 +640,30 @@ print(segment(w, 'from now on, make blue boxes and remove the red one').map((c) 
 ["from now on, make blue boxes","remove the red one"]
 ```
 
+## Inflect and analyse the words of any language
+
+*In `morphOf`, `generate`, `analyse`, `fold`, `splitClitics`, `dictionary`, `realise`, `templateFor`; since 0.52.*
+*Works on: a language's knowledge world (its paradigm classes, folds and templates) and its external dictionary.*
+
+A language world is compact rules plus a dictionary: paradigm classes (a stem rule and the
+endings per feature cell, inheritance with overrides, alternations), irregulars, spelling
+folds, clitic joiners and realisation templates. The library generates and analyses forms
+with the same declarations (a suffix index, no form lists) and realises a template with
+agreement. **Limits:** one suffix per cell (no prefixes or infixes yet); syntax-level
+agreement in the parser is still to come; `w.lang.ro` is not published yet, so the
+Romanian measurements wait.
+
+```js run
+const w = new World();
+w.tell('@c m.class name=n1 alt=a>e  @e1 m.ending class=n1 num=sg suffix=_  @e2 m.ending class=n1 num=pl suffix=i alt=yes');
+const m = morphOf(w);
+print(generate(m, 'bak', 'n1', { num: 'pl' }), analyse(m, 'beki').some((r) => r.lemma === 'bak'));
+```
+
+```output
+beki true
+```
+
 ## Building blocks
 
 *In the core exports; since 0.1 (each as listed).*

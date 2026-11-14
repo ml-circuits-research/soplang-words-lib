@@ -76,6 +76,30 @@ the library, with the version), or **refuse** (with the reason).
     from a literal), coordination as a list, "other" from the focus.
 Not blocking.
 
+## Q37 [KNOW] (Round 30): the morphology notation the library reads, for w.lang.ro
+
+For the reviewer to forward to the knowledge repository's w.lang.ro worker. The library
+reads this notation since 0.52 (src/morph.mjs, test/morph.test.mjs with an invented
+language). The type names can be renamed by the language world (`morphOf(world, { types })`),
+so w.lang.ro may use `w.lang.ro.class` and so on.
+- `m.class name=<class> parent=<class>? drop=<what the lemma loses to give the stem>?
+  alt=<from>><to> (rep.)`. A class inherits its parent's cells and overrides some.
+- `m.ending class= suffix= alt=yes? <feature>=<value>...`. One cell: the features (num,
+  def, case, gender, person, tense: any names) and the suffix (`_` = none). `alt=yes`
+  applies the class's alternation to the stem.
+- `m.irregular lemma= form= <features>` (consulted first), `m.fold from= to=` (ă→a, â→a,
+  î→i, ș→s, ț→t, and the cedilla forms), `m.split text="-"`, `m.template act= shape=?
+  text=` (slots `{role}`, `{role:f=v,...}`, `{role@other}` for agreement).
+- The dictionary is not SOP Lang: one row per lemma, `lemma<TAB>class<TAB>gender?<TAB>sense?`
+  (sense = a k.words or k.actions sense id), sorted, split into files by the first letter
+  of the folded lemma, read lazily. A header comment gives the source and licence.
+Questions for the worker:
+1. Are prefixes or stem changes outside the stem's last alternation needed for the first
+   draft? The notation has only suffixes and one alternation per class cell.
+2. Which feature names, and which values, will w.lang.ro use (so the templates and
+   agreement can name them)?
+Not blocking.
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

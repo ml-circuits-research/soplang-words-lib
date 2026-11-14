@@ -92,7 +92,7 @@ export function canonicalise(world, text, { fillers = [], splitters = [], ...opt
 
 /** The filler words of learnt edits (learnFormEdits): the deleted words of its `filler` family. */
 export function fillersFrom(edits) {
-  return [...new Set((edits.operators || []).filter((o) => o.family === 'filler').map((o) => /"(.*)" ->/.exec(o.edit)?.[1]).filter(Boolean).flatMap((x) => x.split(' ')))];
+  return [...new Set((edits.operators || []).filter((o) => o.family === 'filler').map((o) => /"(.*)" ->/.exec(o.edit)?.[1]).filter(Boolean).flatMap((x) => x.split(' ')).filter((x) => !x.startsWith('<')))]; // words, not lifted types
 }
 
 /**

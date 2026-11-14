@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.97.0
+
+Round 27: the agent skills.
+
+### New
+- `skills/learn-world-from-examples`, `skills/improve-world-from-failures`,
+  `skills/learn-language-rules`, `skills/consolidate` and `skills/audit-knowledge`, with
+  expand-and-test-case. Each has a `SKILL.md` and a dry run on real material
+  (`scripts/dry-run.mjs`); `skills/README.md` describes the cycle.
+
+### Changed
+- `fillersFrom` keeps words only (lifted types such as `<attr>` are left out).
+
 ## 0.96.0
 
 Round 28 item 9: the experiment and ablation harnesses.

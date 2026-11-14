@@ -5090,3 +5090,21 @@ Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-que
 - Round 28 is complete (items 1–9).
 - Gates: npm test 474 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok. README: 36 jobs.
 - Next: arbitrate through choose; the other Round 27 skills (read a new world, wire a knowledge world, measure a curve, release a version).
+
+## 0.97.0: Round 27 skills (all six, each with a dry run on real material)
+
+Dry runs printed today:
+- **learn-world-from-examples**: 12 animals of k.animals give proposed slots (habitat many, diet as a closed set, eats many, baby required, …). 8/8 requests built from key × name are read with an answer.
+- **improve-world-from-failures**: of psys2's 565 form pairs read against k.animals, the world reads 500 canonical sentences, and 246 variants are read differently.
+  - The failures group as: combined/filler 131 → language world (filler); extra clause 75 + 36 → splitter; insertion 3 → alternation; substitution 1 → k.words.
+- **learn-language-rules**: 84 typed operators. 3 are general and admitted (held-out ≥ 80 %, ≤ 3 literal words), printed as proposed w.lang.en.alternation facts. Phrase-like operators are refused.
+- **consolidate**: held-out half frozen (250 of 500).
+  - Before: paraphrases-rt 9/10, cousins 107/238.
+  - After canonicalise (learnt fillers + 4 splitters): 10/10 and 120/238.
+  - 130 vs 116 on held-out, 14 gains, 0 losses → keep.
+- **audit-knowledge**: 149 model-labelled animal numbers against 2 sourced animal ranges (log scale): 8 are more than 5 log-widths out, listed to check (elephant, giraffe, python, crocodile …: plausible, to confirm against sources).
+- **expand-and-test-case** (0.80): `node tools/cousins-test.mjs`.
+
+Also: fillersFrom now leaves lifted types out (it gave "<attr>").
+
+Gates: npm test 474 pass, 0 fail; pilot identical; psys2=0 in src; scan clean; tsc ok. README: 37 jobs.

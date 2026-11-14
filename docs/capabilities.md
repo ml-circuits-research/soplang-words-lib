@@ -882,6 +882,17 @@ print(ablation(cells, (t, c) => (c.strip ? t.replace(/^um /i, '') : t), { plain:
 ["a"]
 ```
 
+## Learn worlds from use (agent skills)
+
+*In `skills/`; since 0.97.*
+*Works on: an application, its failures and held-out rows, and the knowledge repositories in `repos.pin`.*
+
+Six skills turn the library's tools into steps an agent follows. They learn a world from
+examples, improve it from failures, learn language rules, consolidate, audit knowledge, and
+expand and test a case. Each has a dry run on real material, listed in skills/README.md.
+**Limits:** the dry runs read psys2's form pairs and the pinned catalog. A host's own run
+needs its adapter: the reader and the answers.
+
 ## Building blocks
 
 *In the core exports; since 0.1 (each as listed).*

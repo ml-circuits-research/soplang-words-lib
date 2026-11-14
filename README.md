@@ -68,6 +68,7 @@ contain and where code lives: [docs/kinds-of-worlds.md](docs/kinds-of-worlds.md)
 | Judge a fix on the cousins of its case | `cousins`, `ancestorsOf`, `kindChain`, `judgeFix`, `learnRules`, `learnFormOperators`, `formOperator`, `formEdits`, `learnFormEdits`, `familyOf`, `liftTokens` | [example](docs/capabilities.md#judge-a-fix-on-the-cousins-of-its-case) | 0.73 |
 | Align two worlds by structure | `alignWorlds` | [example](docs/capabilities.md#align-two-worlds-by-structure) | 0.77 |
 | Measure what a mechanism buys | `experiment`, `ablation` | [example](docs/capabilities.md#measure-what-a-mechanism-buys) | 0.96 |
+| Learn worlds from use (agent skills) | `skills/` | [example](docs/capabilities.md#learn-worlds-from-use-agent-skills) | 0.97 |
 <!-- /capabilities -->
 
 ## Use
@@ -96,6 +97,12 @@ w.tell('@b1 body mass=2kg  @f1 force on=$b1 magnitude=10N  @a1 acceleration of=$
 w.get('a1').attrs.magnitude;   // ['5N/kg'], filled by newton2
 w.explain('a1');               // ... from b1 and f1
 ```
+
+## Skills
+
+Six agent skills for learning worlds from use, each with a dry run on real material:
+learn a world from examples, improve it from failures, learn language rules, consolidate,
+audit knowledge, and expand and test a case. See [skills/README.md](skills/README.md).
 
 ## Develop
 

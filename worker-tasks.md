@@ -1273,3 +1273,7 @@ Accepted: completeness (left/complete, ensemble coverage first), arbitrate by co
 0.105 (readByTypes reads k.kinds.relation) and 0.106 (narration + phrasing read, Q63) — acceptance after the reviewer's run below. **[KNOW] Q66** (knowledge repository): (1) the `by=` check scans every wire of the target type per value: declaring `k.objects.part of → k.objects.object` (27,902 parts, 2,211 objects) slowed loading k.objects from 28 s to 49 s, so it is left undeclared. Keep an index per (type, key), maintained on tell/retract: the check becomes a lookup. (2) yes: a quoted string and a bare atom with the same text are one name in a join (and in matching generally, unless a schema says otherwise). Test with the k.objects size of data.
 
 **04:10:** reviewer ran `npm test` on 0.106: 491 pass, 0 fail — 0.105 and 0.106 accepted.
+
+## Reviewer 2026-11-15 04:40 — diagrams composed from knowledge (owner, 19:41)
+
+The owner finds diagrams dumb. When the knowledge repository publishes `w.diagram` and `k.diagrams` (diagram kinds with structure, layout, shape conventions, and which knowledge fills each), add a diagram path to `std.compose` (or a small `composeDiagram`): a kind × a topic whose knowledge has that structure → nodes/edges/groups in a `w.diagram` live world, laid out by the kind's layout through std.space; `sample` draws random diagrams that way. Arrangement requests ("in a circle", "evenly", "left to right") as acts over a layout, read by w.lang.en frames.

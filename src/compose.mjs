@@ -301,17 +301,23 @@ function composeGenre(world, topic, g, { size = {}, seed = 1, realise, measures,
   };
   const weight = (v, c, partial) => {
     if (v.startsWith('times:')) return groupNames.length >= c ? 2 : 1; // as many repeats as there are relations
-    if (v.startsWith('rel:')) return c === null ? 0.01 : 1 + Math.max(0, ...groups.get(c).map(interest));
+    if (v.startsWith('rel:')) return c === null ? 0.01 : (groups.get(c).some((f) => bare(f.attrs.about?.[0] ?? f.attrs.name?.[0] ?? '') === topic) ? 10 : 1) * (1 + Math.max(0, ...groups.get(c).map(interest))); // relations about the topic itself first
     const rel = partial[`rel:${meta[v].part}#${meta[v].t}`], facts = rel ? groups.get(rel) : about;
     const best = Math.max(0, ...facts.map((f) => interestOf(world, f, { topic, measures: measures?.(f) }).by[c === 'surprising fact' ? 'sibling_contrast' : 'on_topic'] ?? 0));
     return 1 + best;
   };
   let sol = solveChoices(vars, { domain: (v) => dom[v], ok, weight, seed, limit: 100000 }), relaxed = null;
   if (sol.why) { relaxed = `no layout gives every step its minimum facts (${sol.why}, at ${sol.deepest}): steps may go short`; strict = false; sol = solveChoices(vars, { domain: (v) => dom[v], ok, weight, seed }); }
-  if (sol.why) return { genre, topic, why: `${sol.why} (at ${sol.deepest})` };
+  if (sol.why) { // no layout within the search: the plainest one (each repeated part its minimum, relations by interest, the first alternative), said
+    relaxed = `no layout found (${sol.why}, at ${sol.deepest}): the plainest one is used`;
+    const values = {}; let gi = 0;
+    for (const v of vars) values[v] = v.startsWith('times:') ? dom[v][dom[v].length - 1] : v.startsWith('rel:') ? (groupNames[gi++] ?? null) : dom[v][0];
+    sol = { values, nodes: sol.nodes };
+  }
   const choice = Object.fromEntries(Object.entries(sol.values).filter(([k, v]) => !(k in meta) || active(sol.values, meta[k].part, meta[k].t)));
   const relations = parts.filter((x) => Number(one(x, 'max')) > 1).flatMap((x) => Array.from({ length: choice[`times:${one(x, 'name')}`] }, (_, i) => choice[`rel:${one(x, 'name')}#${i}`])).filter(Boolean);
-  const pickFact = (pool) => choose(world, 'fact', pool.filter((f) => !said.has(f.id)).map((f) => ({ f, said: 0, interest: interest(f) })).filter((x) => x.interest > -0.5), { seed }).best?.f; // one way to choose (std.decide, kind fact): unsaid, then interest
+  const aboutTopic = (f) => (bare(f.attrs.about?.[0] ?? f.attrs.name?.[0] ?? '') === topic ? 1 : 0); // the topic is the fact's subject, not only one of its values (an essay about Peru claimed facts about Lima)
+  const pickFact = (pool) => choose(world, 'fact', pool.filter((f) => !said.has(f.id)).map((f) => ({ f, said: 0, aboutTopic: aboutTopic(f), interest: interest(f) })).filter((x) => x.interest > -0.5), { seed }).best?.f; // one way to choose (std.decide, kind fact): unsaid, about the topic, then interest
   const fill = (extra) => { // the steps' minimum sentences; `extra` more go to steps in order, up to their maximum, while facts last
     said.clear();
     const short = [], out = [], claims = [], toldEls = new Set();
@@ -335,10 +341,12 @@ function composeGenre(world, topic, g, { size = {}, seed = 1, realise, measures,
             else if (recall) { if (!claims[c]) break; frame.recalls = claims[c]; }
             else if (TAKES_FACT.has(k)) {
               const CONTRAST = /counter|rebut/.test(move); // a counterargument needs a real contrast (reviewer 00:05): a fact that differs from what its siblings say
-            const f = CONTRAST ? (pool.concat(rel ? [] : about)).filter((x) => !said.has(x.id)).find((x) => (interestOf(world, x, { topic }).measured.sibling_contrast ?? 0) > 0) : pickFact(pool) ?? (rel ? undefined : pickFact(about));
+            const ownLeft = (xs) => xs.some((x) => !said.has(x.id) && aboutTopic(x)); // a claim is about the topic: when the relation has none left, a fact about the topic from elsewhere
+            const from = ownLeft(pool) ? pool : pool.concat(about.filter((x) => aboutTopic(x)));
+            const f = CONTRAST ? (pool.concat(rel ? [] : about)).filter((x) => !said.has(x.id)).find((x) => (interestOf(world, x, { topic }).measured.sibling_contrast ?? 0) > 0) : pickFact(from) ?? (rel ? undefined : pickFact(about));
             if (!f && CONTRAST) { short.push(`${inst} ${move}: no fact contrasts with the rest, the move is left out`); break; }
               if (!f) { if (lo > 0) short.push(`${inst} ${move}: no fact left`); break; }
-              said.add(f.id); frame.cites = f.id; frame.fact = { type: f.type, attrs: Object.fromEntries(Object.entries(f.attrs).filter(([key]) => !key.startsWith('core.') && !QUIET.has(key)).map(([key, vs]) => [key, vs.map(bare)])) };
+              said.add(f.id); frame.cites = f.id; frame.subject = bare(f.attrs.about?.[0] ?? f.attrs.name?.[0] ?? ''); frame.fact = { type: f.type, attrs: Object.fromEntries(Object.entries(f.attrs).filter(([key]) => !key.startsWith('core.') && !QUIET.has(key)).map(([key, vs]) => [key, vs.map(bare)])) };
               if (rel && !moves.some((m) => m.cites)) claims.push(f.id); // the first fact of a repeated part: its claim
             } else if (k === 'story') { if (told) Object.assign(frame, told[c]); else short.push(`${inst} ${move}: ${storyWhy ?? 'story moves are filled by k.story'}`); }
             say(frame, { topic, story: plan, outline: relations, told: toldEls, claims, goalAct: (g) => storyKb?.goals.find((x) => x.name === g)?.act });

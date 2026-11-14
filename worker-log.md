@@ -5197,3 +5197,30 @@ Gates: npm test 474 pass, 0 fail; pilot identical; psys2=0 in src; scan clean; t
 - Gates: npm test 480 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - For PSys2: please measure splitRunOn with its own world and readers (openers from w.lang.en, its splitters) on the curve and on the per-clause cousins judge.
 - Next: the LIB-1..8 handover (joinList, fact clause, act template choice, renderFrames, compose topic index, typedWorldOf, slot-type assignment, cousins judge helpers) and "Peru essay has no claim sentence".
+
+## 0.102.0: handover LIB-1..4 and the Peru essay (reviewer 02:50)
+
+**LIB-1..4**, written here from PSys2's description in its questions.md (its code is AGPL; nothing copied).
+- `joinList`, `clauseOf`, `actSentence`, `renderFrames` read the language world's facts.
+- test/say.test.mjs on the published w.lang.en:
+  - "the penguin eats fish, is a bird, has 2 legs";
+  - "peru is not landlocked, has a capital of lima";
+  - "Add 3 tables."; "Add an owl.";
+  - "You asked me to add 3 trees and remove a house; 1 request was not understood."
+
+**The Peru essay**
+- Claims come from facts about the topic itself (std.decide fact: about_topic).
+- Relations about the topic are laid out first, and a claim takes a fact about the topic from another relation when its own has none.
+- Frames carry `subject`.
+- A failed layout search now uses the plainest layout and says so, instead of returning `{ why }` (the cause of PSys2's textgen failure from 0.90).
+- test/compose.test.mjs: every claim's subject is peru.
+
+**Gates**
+- The gate caught consumer names in two new src comments (psys2=2 → 0).
+- npm test 483 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+
+**Next**
+- LIB-5 genreOf / topicIndex / randomTopics.
+- LIB-6 typedWorldOf and readRolesByTypes.
+- LIB-7 assignBySlotTypes.
+- LIB-8 judgeReply / tabulate / tableText.

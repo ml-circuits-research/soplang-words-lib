@@ -696,3 +696,11 @@ export function minePatterns(world: World, sentences: string[], options?: { leve
 export function patternReader(world: World, cases: { text: string; frame: object }[], options?: { level?: 0 | 1 | 2; closed?: string[] }): (world: World, text: string) => { frame: object; unread: number; cost: number; specificity: number }[];
 /** Run-on, noisy requests cut into clauses where they read best. */
 export function splitRunOn(world: World, text: string, options?: { openers?: string[]; splitters?: string[]; fillers?: string[]; read?: object; reader?: (world: World, text: string) => { best: object | null; unread?: string[]; frames?: object[] }; unreadCost?: number }): { text: string; frame: object | null; unread: string[] }[];
+/** "a, b and c". */
+export function joinList(items: string[], options?: { and?: string; sep?: string }): string;
+/** A fact as one clause, from the language world's facts; null without a subject. */
+export function clauseOf(world: World, fact: { type: string; attrs: Record<string, string[]> }, options?: { parts?: number; lang?: string; names?: Set<string>; quiet?: string[]; words?: Record<string, string> }): string | null;
+/** The sentence of an act from the language world's act template whose slots equal the roles. */
+export function actSentence(world: World, act: string, roles: Record<string, unknown>, options?: { mode?: string | null; lang?: string }): string | null;
+/** summarizeLog's frames as one sentence. */
+export function renderFrames(frames: object[], options?: { world?: World; say?: (frame: object) => string; failed?: number | object[]; max?: number; words?: Record<string, string> }): string;

@@ -726,7 +726,8 @@ ${['overlaps', 'contains_box', 'box_distance'].map((f) => ['x1', 'y1', 'w1', 'h1
 @std.decide.c.ensemble.3 std.decide.criterion of=ensemble n=3 name=cost measure=cost dir=min about="the assumptions of its cheapest reader"
 @std.decide.c.ensemble.4 std.decide.criterion of=ensemble n=4 name=specificity measure=specificity dir=max
 @std.decide.c.fact.1 std.decide.criterion of=fact n=1 name=unsaid measure=said dir=hard
-@std.decide.c.fact.2 std.decide.criterion of=fact n=2 name=interest measure=interest dir=max about="k.interest"
+@std.decide.c.fact.2 std.decide.criterion of=fact n=2 name=about_topic measure=aboutTopic dir=max about="a fact about the topic itself before one that only names it among its values"
+@std.decide.c.fact.3 std.decide.criterion of=fact n=3 name=interest measure=interest dir=max about="k.interest"
 `,
     fns: {},
   },

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="454cb0cd272d">
+<meta name="source-hash" content="5a4687c2483a">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.101.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.102.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -600,7 +600,7 @@ print(interestOf(w, w.get(&#x27;p&#x27;)).by, interestOf(w, w.get(&#x27;r1&#x27;
 <p>When the world holds the knowledge repository's <code>k.genres</code> and <code>genre</code> names one of its genres, <code>compose</code> lays the text out by it:</p>
 <ul><li>parts in order, each repeated between <code>min</code> and <code>max</code> times;</li><li>the steps of each part in order; several steps at one place are alternatives;</li><li>sentences per step: the minimum, and more while <code>size.sentences</code> and the facts allow;</li><li>every frame carries the step's tense (else the part's, else the register's); the register (person, tense, sentence lengths in words) is in <code>register</code>.</li></ul>
 <p>The choice points are solved jointly with <code>solveChoices</code>: how many times a repeated part occurs, which relation each occurrence takes, and the move at each place with alternatives. The constraints: no relation twice; a relation holds the facts its steps need at their minimum (when no layout allows that, it is relaxed and said in <code>short</code>); a compare move needs two facts. Interest weights the draw. Then the sentences are filled.</p>
-<ul><li><code>takes=topic</code> cites the topic.</li><li><code>outline</code> lists the relations of the repeated parts.</li><li><code>fact</code>, <code>facts</code> and <code>question</code> take a fact by interest, never one twice.</li><li>A <code>facts</code> move after the repeated parts (a summary) restates their claims (<code>recalls</code>).</li><li><code>story</code> moves are left to <code>k.story</code>.</li><li>A counterargument (or a rebuttal) needs a real contrast: a fact that differs from what its siblings say. Without one the move is left out, and <code>short</code> says so.</li><li>Keys in <code>quiet</code> (and keys the knowledge marks <code>k.attributes.key name= narrate=no</code>) are never narrated.</li><li>No sentence is said twice in a document.</li></ul>
+<ul><li><code>takes=topic</code> cites the topic.</li><li><code>outline</code> lists the relations of the repeated parts.</li><li><code>fact</code>, <code>facts</code> and <code>question</code> take a fact by interest, never one twice.</li><li>A <code>facts</code> move after the repeated parts (a summary) restates their claims (<code>recalls</code>).</li><li><code>story</code> moves are left to <code>k.story</code>.</li><li>A counterargument (or a rebuttal) needs a real contrast: a fact that differs from what its siblings say. Without one the move is left out, and <code>short</code> says so.</li><li>Keys in <code>quiet</code> (and keys the knowledge marks <code>k.attributes.key name= narrate=no</code>) are never narrated.</li><li>No sentence is said twice in a document.</li><li>Claims come from facts about the topic itself (its name or <code>about</code>) before facts that only name it among their values, and relations about the topic are laid out first. Each frame carries its <code>subject</code>. When no layout is found within the search, the plainest one is used and said in <code>short</code>; the composition no longer fails with <code>why</code>.</li></ul>
 <p>The result is <code>{ genre, register, topic, parts: [{ part, heading?, layout?, relation?, moves: [frame] }], choices, nodes, short? }</code>. A small genre written in the k.genres format, made up for this example:</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.tell(`@g k.genres.genre name=note  @m1 k.genres.move name=open takes=topic  @m2 k.genres.move name=tell takes=fact
@@ -789,6 +789,11 @@ w.tell(&#x27;@cow k.animal name=cow sound=moo  @v core.word text=make text=makes
 const r = readEnsemble(w, &#x27;what sound does a cow make&#x27;, { read: { question: [&#x27;what&#x27;, &#x27;does&#x27;], skip: [&#x27;a&#x27;] } });
 print(r.frame.answer, r.confidence, r.voices.length);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;moo&quot;] 1 3</code></pre></figure>
+<h3 id="joinlistitems-options-clauseofworld-fact-options-actsentenceworld-act-roles-options-and-renderframesframes-options">joinList(items, options?), clauseOf(world, fact, options?), actSentence(world, act, roles, options?) and renderFrames(frames, options?)</h3>
+<p>Saying things from facts (PSys2's handover LIB-1 to LIB-4). The words of the language come from the language world's facts: prepositions, auxiliaries, articles, plurals and the act templates. The few glue words are options with English defaults.</p>
+<ul><li><code>joinList(['a', 'b', 'c'])</code> gives "a, b and c" (options <code>and</code>, <code>sep</code>).</li><li><code>clauseOf(world, fact)</code> gives one clause for a fact, or null without a subject. Verb-like keys come first (an auxiliary, an act of k.actions), then a preposition ("is on the table"), a type ("is a bird"), a yes/no ("is not landlocked"), a count ("has 2 legs"), and any other key as a noun ("has a capital of lima"); at most <code>parts</code> (3). Joins to other worlds and <code>quiet</code> keys are left out, and <code>names</code> are said without "the".</li><li><code>actSentence(world, act, roles)</code> uses the act template (<code>w.lang.en.template</code>) whose slots are exactly the roles given, the most specific first. <code>{x:num=pl}</code> gives the plural, a/an follows the next word, and the sentence is capitalised; null when none fits.</li><li><code>renderFrames(frames, { world, say, failed, max })</code> says summarizeLog's frames as one sentence ("You asked me to add 3 trees and remove a house, plus 2 other changes; 1 request was not understood.").</li></ul>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>print(joinList([&#x27;a cat&#x27;, &#x27;a dog&#x27;, &#x27;an owl&#x27;]), renderFrames([{ act: &#x27;add&#x27;, kind: &#x27;tree&#x27;, count: 3 }]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>a cat, a dog and an owl You asked me to add 3 trees.</code></pre></figure>
 <h3 id="experimentcells-run-options-and-ablationcells-run-configs-options">experiment(cells, run, options?) and ablation(cells, run, configs, options?)</h3>
 <p>Experiment and ablation harnesses (Round 28 item 9). <code>experiment</code> runs cells <code>[{ id, input, expect, set?, class? }]</code> through <code>run(input, config)</code>. Each result becomes a ledger row: <code>{ source, text, cell, config, set, pass, got, expect, stage? }</code>. The options are <code>judge(got, expect, cell)</code> (default: equal as JSON), <code>stage(got, cell)</code>, and <code>name</code> and <code>config</code>.</p>
 <p><code>ablation</code> runs every configuration on every set. It returns:</p>
@@ -1058,7 +1063,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.101.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.102.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

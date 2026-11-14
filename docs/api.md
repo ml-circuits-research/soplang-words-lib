@@ -1671,6 +1671,10 @@ compare move needs two facts. Interest weights the draw. Then the sentences are 
 - Keys in `quiet` (and keys the knowledge marks `k.attributes.key name= narrate=no`) are
   never narrated.
 - No sentence is said twice in a document.
+- Claims come from facts about the topic itself (its name or `about`) before facts that
+  only name it among their values, and relations about the topic are laid out first. Each
+  frame carries its `subject`. When no layout is found within the search, the plainest one
+  is used and said in `short`; the composition no longer fails with `why`.
 The result is `{ genre, register, topic, parts: [{ part, heading?, layout?, relation?,
 moves: [frame] }], choices, nodes, short? }`. A small genre written in the k.genres
 format, made up for this example:
@@ -2238,6 +2242,32 @@ print(r.frame.answer, r.confidence, r.voices.length);
 
 ```output
 ["moo"] 1 3
+```
+
+### joinList(items, options?), clauseOf(world, fact, options?), actSentence(world, act, roles, options?) and renderFrames(frames, options?)
+
+Saying things from facts (PSys2's handover LIB-1 to LIB-4). The words of the language come
+from the language world's facts: prepositions, auxiliaries, articles, plurals and the act
+templates. The few glue words are options with English defaults.
+- `joinList(['a', 'b', 'c'])` gives "a, b and c" (options `and`, `sep`).
+- `clauseOf(world, fact)` gives one clause for a fact, or null without a subject. Verb-like
+  keys come first (an auxiliary, an act of k.actions), then a preposition ("is on the
+  table"), a type ("is a bird"), a yes/no ("is not landlocked"), a count ("has 2 legs"), and
+  any other key as a noun ("has a capital of lima"); at most `parts` (3). Joins to other
+  worlds and `quiet` keys are left out, and `names` are said without "the".
+- `actSentence(world, act, roles)` uses the act template (`w.lang.en.template`) whose slots
+  are exactly the roles given, the most specific first. `{x:num=pl}` gives the plural, a/an
+  follows the next word, and the sentence is capitalised; null when none fits.
+- `renderFrames(frames, { world, say, failed, max })` says summarizeLog's frames as one
+  sentence ("You asked me to add 3 trees and remove a house, plus 2 other changes; 1
+  request was not understood.").
+
+```js run
+print(joinList(['a cat', 'a dog', 'an owl']), renderFrames([{ act: 'add', kind: 'tree', count: 3 }]));
+```
+
+```output
+a cat, a dog and an owl You asked me to add 3 trees.
 ```
 
 ### experiment(cells, run, options?) and ablation(cells, run, configs, options?)

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.102.0
+
+PSys2's handover LIB-1 to LIB-4, and its Peru essay report (reviewer 02:50).
+
+### New
+- `joinList`, `clauseOf(world, fact)`, `actSentence(world, act, roles)` and
+  `renderFrames(frames)`: lists, a fact as a clause, an act's sentence from the act
+  templates, and summarizeLog's frames as one sentence, from the language world's facts.
+
+### Changed
+- `compose`:
+  - claims come from facts about the topic itself first (std.decide kind `fact` gains
+    `about_topic`), and relations about the topic are laid out first;
+  - frames carry `subject`;
+  - when no layout is found within the search, the plainest one is used and said in
+    `short`; there is no `{ why }` any more.
+
 ## 0.101.0
 
 Clause splitting of run-on, noisy requests (reviewer 02:50: the bottleneck PSys2 measured).

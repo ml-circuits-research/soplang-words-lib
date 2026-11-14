@@ -82,3 +82,12 @@ test('compose quality (reviewer 00:05): quiet keys never narrated, a counterargu
   const said = e.parts.flatMap((p) => p.moves).filter((m) => m.text).map((m) => m.text.toLowerCase());
   assert.equal(new Set(said).size, said.length, 'no sentence twice');
 });
+
+test('compose prefers facts about the topic itself for its claims (PSys2: an essay about Peru claimed facts about Lima)', { skip: !worldsDir() && 'offline' }, () => {
+  const w = load(); w.tell(worldText('k.genres'));
+  w.tell(`@peru k.country name=peru capital=lima  @pe1 k.fact about=peru area=1285216  @pe2 k.fact about=peru language=spanish  @pe3 k.fact about=peru export=copper
+    @lima k.city name=lima country=peru population=10000000  @b1 k.border name=bolivia borders=peru  @b2 k.border name=chile borders=peru`);
+  const e = compose(w, 'peru', { genre: 'essay' });
+  const claims = e.parts.flatMap((p) => p.moves).filter((m) => m.move === 'state claim');
+  assert.ok(claims.length && claims.every((m) => m.subject === 'peru'), JSON.stringify(e.parts.map((p) => [p.part, p.moves.map((m) => m.move + '=' + (m.subject ?? ''))])));
+});

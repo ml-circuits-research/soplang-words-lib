@@ -842,3 +842,9 @@ Accepted: `std.grammar` reading PSys2's lang.en facts in place. The knowledge re
 2. **A rule over key names**: "never the exact number and the approximate one" (`x` and `x_about`) is written as the same `core.deny` in three worlds and as a convention in all; a rule that ranges over pairs of keys by a naming pattern, or a slot property (`approx_of=x`) that the library checks.
 3. **Provenance and join keys**: `named=model` is declared in 14 worlds and `drawing=` (a join to `k.objects`) in 8, each as a plain atom; should `named` be a core key like `core.source`, and should a join be `kind=ref to=<type>` checked when the target world is loaded (and left open when it is not)?
 Then continue: `resolve()`, the two small applications, the corpus from PSys2.
+
+## Reviewer 2026-11-14 02:45 — two defects seen by the knowledge repository on 0.26.0 (check on 0.30.0)
+
+1. `make` accepts a thing without a `required` attribute (it should refuse with the question to ask, or leave an open question, consistently with `core.slot required=true ask=`).
+2. `undo` right after `remove` undoes the step before it instead of the remove.
+Add both to the case corpus first (they are exactly what the corpus is for), fix, release.

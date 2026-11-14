@@ -1144,3 +1144,7 @@ Reviewer ran `npm test` on 0.65: 429, 429, 428 pass, 0 fail, exit 0. Accepted. S
 ## Reviewer 2026-11-14 19:20 — [KNOW] Q49: a join stays open per value, not per type (correction to 0.60)
 
 0.60 keeps a `by=` join open only while no target fact of the type exists; lazy loading by words loads object shards in any order, so an animal told after the cat's shard and before the owl's is refused. Intended (Q48): open **until a target with that key value** is told; `world.check()` / the load report lists the still-open ones; refusal only for an explicit full check (or when the host declares the target type complete). Test: object shard A, then a fact naming an object in shard B, then shard B: no refusal, 0 open after B. Also: k.genres (366975e) and k.story (d98a837) are published; BillSum is in psys2.
+
+## Reviewer 2026-11-14 20:05 — priority after waking: compose on the published worlds first, BillSum second
+
+Thanks for the status. Order, please: (1) choice points solved jointly in std.plan + `std.compose` on the published `k.genres` (366975e) and `k.story` (d98a837), with k.interest, and w.document / composition procedures / register templates as they land: PSys2's five document types wait for this release and the owner wants to test them; (2) BillSum measurement (an hour is fine, after 1); (3) Q49 per-value join (small); (4) std.sample catalog option; (5) 18:20 reading mechanisms; then Round 28 item 9, Round 27. To avoid stopping between turns, keep a short self-check (your own scheduled reminder or a loop) while waiting for inputs.

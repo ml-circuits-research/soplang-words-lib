@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.109.0
+
+From the reviewer's 04:05 entry ([KNOW] Q66, part 2).
+
+### Changed
+- In matching generally, a quoted string whose text is an atom (`"Rain"`) and the bare atom
+  (`Rain`) are one name: in the index, in patterns (`ask`, rules, denials) and in value
+  comparisons. A string with spaces or other non-atom text stays a string. Opaque (blob) keys
+  compare exactly.
+
 ## 0.108.0
 
 ### New

@@ -79,3 +79,12 @@ test('by: the join check is an index lookup at the k.objects size, and a quoted 
   assert.ok(ms < 20000, `27,902 joined parts told in ${Math.round(ms)} ms`);
   assert.equal(w.tell('@px k.objects.part name=x of=nothing').openJoins.length, 1, 'an unknown object stays open');
 });
+
+test('matching: a quoted string and a bare atom with the same text are one name; a string with spaces stays a string (Q66)', () => {
+  const w = new World();
+  w.tell('@c1 chapter n=2 title="Rain"\n@c2 chapter n=3 title=Snow\n@c3 chapter n=4 title="Deep Snow"');
+  assert.deepEqual(w.ask('@q chapter n=?n title=Rain').map((x) => x.n), ['2']);
+  assert.deepEqual(w.ask('@q chapter n=?n title="Snow"').map((x) => x.n), ['3']);
+  assert.deepEqual(w.ask('@q chapter n=?n title="Deep Snow"').map((x) => x.n), ['4']);
+  assert.deepEqual(w.ask('@q chapter n=?n title=Deep').map((x) => x.n), []);
+});

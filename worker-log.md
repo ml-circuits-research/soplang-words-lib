@@ -5291,3 +5291,10 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   "the cow sound".
 - 04:40 (diagrams): k.diagrams / w.diagram not yet published at knowledge d3aaed2; waiting.
 - Gate: npm test 495 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.109.0 — Q66 part 2: quoted = bare in matching generally
+
+- `_iv` (index key), the pattern candidate lookup and `_unifyValue` read `"atom"` as `atom`
+  (atom text: /^[A-Za-z_][\w.:-]*$/); blob keys stay exact; "Deep Snow" stays a string.
+- /tmp/kq.mjs: `ask('@q chapter n=?n title=Rain')` -> c1 (told as "Rain"); `title="Snow"` -> c2 (told bare).
+- Gate: npm test 496 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

@@ -22,6 +22,8 @@ import { abduce } from './abduce.mjs';
 import { layer, CHECK } from './cow.mjs';
 
 const first = (w, k) => w.attrs[k]?.[0];
+const ATOMIC = /^[A-Za-z_][\w.:-]*$/; // the text of a bare atom
+const unquoteAtom = (v) => (v.length > 2 && v[0] === '"' && v[v.length - 1] === '"' && ATOMIC.test(v.slice(1, -1)) ? v.slice(1, -1) : v); // a quoted string with an atom's text is that atom (Q66)
 const K = (type, key, value) => `${type}\u0001${key}\u0001${value}`;
 // the keys through which a matrix wire names its patterns and templates
 const NAMES = {
@@ -995,13 +997,15 @@ export class World {
   _iv(type, key, value) {
     const c = this._compiled();
     if (c.jsonKeys.size && c.json(type, key)) { const v = jsonValue(value); return v === undefined ? value : canonicalJson(v); }
-    return c.numKeys.size && c.numeric(type, key) ? canonical(value) : value;
+    if (c.numKeys.size && c.numeric(type, key)) return canonical(value);
+    return typeof value === 'string' ? unquoteAtom(value) : value; // a quoted string and a bare atom with the same text are one name (Q66)
   }
 
   /** Are two values of a key the same value? */
   _same(type, key, a, b) {
     if (a === b) return true;
     const c = this._compiled();
+    if (!(c.blobKeys.size && c.blob(type, key)) && this._iv(type, key, a) === this._iv(type, key, b)) return true; // quoted = bare (Q66)
     if (c.blobKeys.size && c.blob(type, key)) return false; // opaque values are the same only when equal
     if (c.jsonKeys.size && c.json(type, key)) { const x = jsonValue(a), y = jsonValue(b); return x !== undefined && y !== undefined && canonicalJson(x) === canonicalJson(y); }
     return c.numKeys.size > 0 && c.numeric(type, key) && canonical(a) === canonical(b);
@@ -1531,7 +1535,7 @@ export class World {
     const t = unify(pv, have, s);
     if (t) return t;
     const c = this._c;
-    if (!c || !c.numKeys.size || !c.numeric(type, key)) return null;
+    if (!c || !c.numKeys.size || !c.numeric(type, key)) { const want = walk(pv, s); return typeof want === 'string' && typeof have === 'string' && !hasVar(want) && unquoteAtom(want) === unquoteAtom(have) && !(c?.blobKeys.size && c.blob(type, key)) ? s : null; } // quoted = bare (Q66)
     const want = walk(pv, s);
     return !hasVar(want) && canonical(want) === canonical(have) ? s : null;
   }
@@ -1574,7 +1578,7 @@ export class World {
       for (const v of p.attrs[k]) {
         const t = walk(v, s);
         if (hasVar(t)) continue;
-        let set = this.index.get(K(p.type, k, t));
+        let set = this.index.get(K(p.type, k, typeof t === 'string' ? unquoteAtom(t) : t)); // the index holds a quoted atom under its bare text (Q66)
         if (numbers && c.numKeys.has(k)) {
           // a key that holds numbers in this type or in a subtype: those wires are under the canonical spelling
           const ct = canonical(t);

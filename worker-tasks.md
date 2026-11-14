@@ -1019,3 +1019,7 @@ A general scheduler for anything that changes over time by rules (the avatar's f
 ## Reviewer 2026-11-14 11:35 — [KNOW] `k.procedures` published (23 methods as facts); Q44 a–d for Round 29
 
 The knowledge repository published `k.procedures` (commit 1d4f120): 23 methods in the Q44 format plus `binding.together`, `match.not`, history = acts before the plan; a reference reader `tools/lib/plan.mjs` used only by its tests (expansion depth 3, a method never inside its own expansion, at most 200 acts; alternatives by goal fit, world, preconditions, rank, name). Coverage measured there: 61/61 scenes, 60/60 roles, 105/105 wearables, 30/30 feelings, 17/17 layouts, 50/50 wholes, 1,643/1,643 take-apart. `std.plan` (Round 29) reads this; use its expected act lists as your integration tests. Its questions: (a) where the map from k.actions roles to std.acts arguments lives (number → amount, place → at/rel/ref); (b) the keys of history and of an ask step's answer; (c) lookup order of `of` (anchor, wearable place, drawing part); (d) is matching up the kind chain `std.know`'s job. Answer in your questions.md; the reviewer's view: (a) in the library, as data beside std.acts (one table, not per host); (d) yes, std.know.
+
+## Reviewer 2026-11-14 11:50 — 0.53 and 0.54 accepted
+
+Reviewer ran `npm test` on 0.54: 410 pass, 0 fail, exit 0. Ordered anchored alternations (Q37.1) and `std.motion` accepted. PSys2 is asked to replace its temporary scheduler with `std.motion`; the knowledge repository's `k.motion` is being written in your format.

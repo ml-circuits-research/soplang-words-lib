@@ -1,42 +1,43 @@
-// The reader core on descriptions written for pattern generation (R12.3): a neutral shop with
-// an operation word, argument words with forms, number words and unit words.
+// One Reader contract (reviewer 10:10 R2; 10:35 asks): candidates with their unread words, repairs, cost and
+// specificity; completeness computed from them; the mood read before the act.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { World } from '../tools/lib-under-test.mjs';
-import { shop, items, words } from '../examples/reader.mjs';
+import { World, readText, moodOf, READERS, typedWorldFor, fitsSlot } from '../tools/lib-under-test.mjs';
 
-const make = () => { const w = new World(); w.load(shop); w.tell(items); w.tell(words); return w; };
-const parts = (c) => (c.parts || [c]).map((p) => [p.wires, p.refer?.r1?.where.name]);
+const w = new World();
+w.tell('@cow animal name=cow sound=moo legs=4  @v core.word text=make text=makes means=sound');
+const O = { question: ['what'], skip: ['does', 'a', 'please'] };
 
-test('reader: words written for pattern generation load cleanly and read "buy two pens and one ink" as two lines', () => {
-  const w = make();
-  assert.deepEqual([w.ofType('core.word').length, w.warnings], [14, []]);
-  const r = w.interpret([
-    [{ verb: 'buy', args: ['two', 'pens'] }, { args: ['one', 'ink'] }],
-    [{ verb: 'buy', args: ['two', 'pens', 'one', 'ink'] }],
-  ]);
-  const s = w.score(r.candidates);
-  const top = r.candidates[s.order[0]];
-  assert.deepEqual(parts(top), [['@new1 line qty=2 item=$r1', 'pen'], ['@new2 line qty=1 item=$r1', 'ink']]);
-  // the second frame took the verb of the first, and its words replaced the first's
-  assert.deepEqual([top.parts[1].inherited, top.parts[1].replaced], [{ words: [], verb: 'buy' }, ['two', 'pens']]);
-  assert.deepEqual([s.candidates[s.order[1]].on, w.veto(s).answer], ['words', true]);
-  assert.equal(w.ofType('line').length, 0, 'nothing told');
+test('readText: one shape for every reader; words left unread make a reading incomplete (the real case of 23:50)', () => {
+  const r = readText(w, 'what sound does a cow make', O);
+  assert.deepEqual([r.complete, r.mood, r.best.key, r.unread], [true, 'question', 'sound', []]);
+  const h = readText(w, 'what sound does a cow make in the shape of a house', O);
+  assert.equal(h.complete, false, 'words the reading did not use are never taken as arguments');
+  assert.deepEqual(h.unread, ['in', 'the', 'shape', 'of', 'house']);
+  assert.match(h.why, /words not read/);
+  assert.deepEqual(Object.keys(READERS).sort(), ['canonical', 'frames', 'types']);
+  const host = readText(w, 'anything', { reader: () => [{ frame: { is: 'act', act: 'make' }, unread: ['x'] }, { frame: { is: 'act', act: 'show' }, unread: [] }] });
+  assert.equal(host.best.act, 'show', 'a host reader under the contract; fewer words unread first');
 });
 
-test('reader: forms, units, numbers and synonyms; a typo; loose words; examples read back', () => {
-  const w = make();
-  const top = (r) => { const s = w.score(r.candidates); return r.candidates[s.order[0]]; };
-  assert.deepEqual(parts(top(w.interpret({ verb: 'purchase', args: ['pair', 'cartons', 'biros'] }))), [['@new line qty=2 unit=box item=$r1', 'pen']]);
-  assert.deepEqual(parts(top(w.interpret({ verb: 'get', args: ['three', 'boxes', 'inks'] }))), [['@new line qty=3 unit=box item=$r1', 'ink']]);
-  const typo = top(w.interpret({ verb: 'buy', args: ['a', 'pnes'] }));
-  assert.deepEqual([parts(typo), typo.assumes], [[['@new line qty=1 item=$r1', 'pen']], [{ word: 'pnes', read: 'pens' }]]);
-  assert.deepEqual(parts(top(w.interpret({ words: ['pens', 'two', 'buy'] }))), [['@new line item=$r1 qty=2', 'pen']]);
-  // every generated example reads back to a candidate of its own tool
-  const ex = w.examples({ statement: '{verb} {qty} {unit} {item}' }, { all: true, per: 2 });
-  assert.deepEqual(ex.map((e) => e.text), ['buy one piece pen', 'buy one box pen', 'purchase one piece pen', 'purchase one box pen', 'price pen?', 'price ink?']);
-  for (const e of ex) {
-    const cands = w.interpret(e.frame).candidates;
-    assert.ok(cands.some((c) => (e.expect.question ? JSON.stringify(c.question) === JSON.stringify(e.expect.question) : c.wires?.split(' ')[1] === e.expect.type)), e.text);
-  }
+test('moodOf: a first-person declarative is a statement, an article or a letter alone is a fragment', () => {
+  assert.equal(moodOf(w, 'I have two kids'), 'statement');
+  assert.equal(moodOf(w, 'my name is Ana'), 'statement');
+  assert.equal(moodOf(w, 'Tom has 5 apples'), 'statement');
+  assert.equal(moodOf(w, 'how many kids do I have'), 'question');
+  assert.equal(moodOf(w, 'draw a house'), 'imperative');
+  assert.equal(moodOf(w, 'the'), 'fragment');
+  assert.equal(moodOf(w, 'b'), 'fragment');
+  const st = readText(w, 'anything', { reader: () => [{ frame: { is: 'act', act: 'make' }, unread: [] }] });
+  assert.equal(st.complete, true);
+  const s2 = readText(w, 'I like cats', { reader: () => [{ frame: { is: 'act', act: 'make' }, unread: [] }] });
+  assert.deepEqual([s2.complete, s2.why], [false, 'a statement, not a request'], 'an act frame needs an imperative or a question');
+});
+
+test('fitsSlot: an empty value, an article alone or a single letter is never a slot value', () => {
+  const t = typedWorldFor({ kinds: [{ type: 'ex.p', keys: [{ key: 'owner' }, { key: 'note' }] }] });
+  assert.equal(fitsSlot(t, 'ex.p', 'note', '').ok, false);
+  assert.equal(fitsSlot(t, 'ex.p', 'owner', 'the').ok, false);
+  assert.equal(fitsSlot(t, 'ex.p', 'owner', 'b').ok, false);
+  assert.equal(fitsSlot(t, 'ex.p', 'owner', 'Bo').ok, true);
 });

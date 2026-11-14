@@ -5424,3 +5424,12 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   names axes sorted).
 - docs/architecture-review-2026-11-15.md: the worker's review page (R1 table, next).
 - Gate: npm test 514 pass / 0 fail; test:full 514 / 514 / 511, 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.120.0 — R2 part 1: one Reader contract (reviewer 10:10, 10:35)
+
+- src/reader.mjs: readText / READERS (types, frames, canonical) / moodOf. /tmp/rd.mjs: "what sound does a cow
+  make" complete; "... in the shape of a house" incomplete, unread "in the shape of house" (the library half
+  of the real case of 23:50); "I have two kids", "Tom has 5 apples" statement; "the", "b" fragment.
+- Repairs: only respellings (via spelling); readByTypes' sense generalisations are a cost, not a repair.
+- fitsSlot refuses "", an article alone, a single letter.
+- Gate: npm test 515 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

@@ -598,6 +598,11 @@ export function schemaOf(world: World): SchemaDescription;
 export function typedWorldFor(schema: World | SchemaDescription, knowledge?: World | null, options?: { max?: number; text?: Record<string, 'name' | 'title' | 'text'>; words?: { text: string; means: string }[]; things?: { id: string; label?: string; kind: string; attrs?: Record<string, unknown> }[] }): TypedWorld;
 export function fitsSlot(typed: TypedWorld, type: string, key: string, text: string, options?: { skip?: string[]; lemma?: (word: string) => string[] }): { ok: boolean; as?: string; id?: string; value?: unknown; why?: string };
 export function freeTextType(key: string, given?: string): string;
+export interface ReaderCandidate { frame: object; unread: string[]; repaired?: { from: string; to: string }[]; cost?: number; specificity?: number }
+export type Reader = (world: World, text: string, options?: object) => ReaderCandidate[];
+export const READERS: { types: Reader; frames: Reader; canonical: Reader };
+export function moodOf(world: World | null, text: string, options?: { lang?: string; acts?: (word: string) => boolean }): 'question' | 'imperative' | 'statement' | 'fragment';
+export function readText(world: World, text: string, options?: { reader?: 'types' | 'frames' | 'canonical' | Reader; lang?: string; actWords?: string[]; [option: string]: unknown }): { candidates: ReaderCandidate[]; best: object | null; unread: string[]; repaired: { from: string; to: string }[]; mood: string; complete: boolean; why?: string };
 export function senseOf(world: World, id: string | null | undefined): { act?: string; en?: string; pos?: string };
 export function readFrames(world: World, text: string, options?: { lang?: string; morph?: object; dictionary?: object; senses?: (id: string) => { act?: string; en?: string; pos?: string }; max?: number }): { best: { frame: string; en: string; act: string; mode: string | null; roles: Record<string, { text: string; words?: object[]; en?: string; value?: number; rel?: string; item?: string }>; verb?: object; score: number } | null; frames: object[]; tokens: string[] };
 export function arrangementOf(world: World, text: string, options?: { lang?: string }): { text: string; layout: string | null; relation: string | null; direction: string | null; reverse: boolean; diagramLayout: string | null; as: string | null } | null;

@@ -95,7 +95,8 @@ export function typedWorldFor(schema, knowledge = null, { max = 5000, text = {},
  * Does `text` fit the slot `type|key` of a typed world (typedWorldFor's result)? A joined slot takes the
  * name of one of its things; a closed set one of its values; a number a number; a name or a title takes
  * words that are not a question, an act, an attribute or a relation word of the world (so a relation read as a value is
- * refused), a title any words; a text takes anything. Returns { ok, as, id?, value?, why? }. `skip`: words to pass over
+ * refused), a title any words; a text takes anything but nothing. An empty value, an article alone or a single
+ * letter is never a name, a title or a thing. Returns { ok, as, id?, value?, why? }. `skip`: words to pass over
  * (articles); `lemma(word) -> [forms]`.
  */
 export function fitsSlot(typed, type, key, text, { skip = ['a', 'an', 'the'], lemma } = {}) {
@@ -105,6 +106,9 @@ export function fitsSlot(typed, type, key, text, { skip = ['a', 'an', 'the'], le
   const toks = (low.match(/[\p{L}\p{N}_'-]+/gu) || []).filter((t) => !skip.includes(t));
   const forms = (t) => [t, ...(lemma ? lemma(t) : []), t.replace(/s$/, '')];
   const lex = typed.lexicon;
+  if (!raw) return { ok: false, as: sig.expects, why: `${key} needs a value` }; // an empty slot value is never a value
+  if (sig.expects !== 'number' && sig.expects !== 'text' && toks.length === 0) return { ok: false, as: sig.expects, why: `"${raw}" is a fragment, not a ${sig.expects === 'thing' ? sig.of.split('.').pop() : sig.expects}` }; // only an article
+  if ((sig.expects === 'name' || sig.expects === 'title') && toks.length === 1 && /^\p{L}$/u.test(toks[0])) return { ok: false, as: sig.expects, why: `"${raw}" is a single letter, a fragment` };
   if (sig.expects === 'text') return { ok: true, as: 'text', value: raw };
   if (sig.expects === 'number') return /^-?\d+(\.\d+)?$/.test(toks.join('')) ? { ok: true, as: 'number', value: Number(toks.join('')) } : { ok: false, as: 'number', why: `${key} takes a number, not "${raw}"` };
   if (sig.expects === 'value') { const v = sig.values.find((x) => x.toLowerCase() === toks.join(' ') || x.toLowerCase().replace(/_/g, ' ') === toks.join(' ')); return v ? { ok: true, as: 'value', value: v } : { ok: false, as: 'value', why: `${key} is one of ${sig.values.slice(0, 6).join(', ')}${sig.values.length > 6 ? ', ...' : ''}, not "${raw}"` }; }

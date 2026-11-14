@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.120.0
+
+R2, first part (reviewer 10:10, 10:35): one Reader contract.
+
+### New
+- `readText(world, text, { reader })` and `READERS` (types, frames, canonical, or a host's
+  function): candidates `{ frame, unread, repaired, cost, specificity }` ranked one way; the
+  result says `unread`, `repaired`, `mood` and `complete` (no word left, no respelling, a frame
+  that fits the mood), with `why` when not.
+- `moodOf(world, text)`: question, imperative, statement (a first-person subject, a name and an
+  auxiliary), fragment (an article or a letter alone), from the language world's words.
+
+### Changed
+- `fitsSlot` refuses an empty value, an article alone and a single letter.
+
 ## 0.119.0
 
 The architecture review's serious findings (reviewer 10:10, R1), each with a test

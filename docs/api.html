@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="dff2d606bff5">
+<meta name="source-hash" content="508eaf0ffeb0">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.119.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.120.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -716,6 +716,15 @@ w.tell(`@cow k.animal name=cow kind=bovine sound=moo  @yak k.animal name=yak kin
 const kase = { text: &#x27;cow sound&#x27;, frame: readByTypes(w, &#x27;cow sound&#x27;).best };
 print(relatedCases(w, kase).filter((c) =&gt; c.valid).map((c) =&gt; [c.distance, c.text]));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[[1,&quot;yak sound&quot;],[2,&quot;sheep sound&quot;]]</code></pre></figure>
+<h3 id="readtextworld-text-options-moodofworld-text-options-and-readers">readText(world, text, options?), moodOf(world, text, options?) and READERS</h3>
+<p>One Reader contract for every reader, so a host, an ensemble or a learner can swap them, and completeness is computed from data, never claimed by a pattern. <code>readText(world, text, { reader, lang, ... })</code> runs a reader (a name of <code>READERS</code>: <code>types</code>, <code>frames</code>, <code>canonical</code>; or a function <code>(world, text, opts) -&gt; [{ frame, unread, repaired?, cost?, specificity? }]</code>) and ranks its candidates: fewer words unread, then fewer repairs, then lower cost, then more specific. It returns <code>{ candidates, best, unread, repaired, mood, complete, why? }</code>:</p>
+<ul><li><code>unread</code> are the words the best reading did not use; a reading with words left is not complete, and those words are never arguments;</li><li><code>repaired</code> are respellings (a reader's <code>via: 'spelling'</code>); a repaired reading is not complete;</li><li><code>mood</code> is read before the act by <code>moodOf</code>: <code>question</code> (a final ?, a question word or an auxiliary first), <code>statement</code> (a first-person subject first, or a name and an auxiliary: "I have two kids", "Tom has 5 apples"), <code>fragment</code> (nothing, an article or a letter alone), else <code>imperative</code>. An act frame needs an imperative or a question.</li></ul>
+<p>The mood words come from the language world (<code>&lt;lang&gt;.wh</code>, <code>&lt;lang&gt;.aux</code>, <code>&lt;lang&gt;.pron person=1</code>, <code>&lt;lang&gt;.det</code>), with English defaults for a world that has none.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(&#x27;@cow animal name=cow sound=moo  @v core.word text=makes means=sound&#x27;);
+const r = readText(w, &#x27;what sound makes a cow in the shape of a house&#x27;, { question: [&#x27;what&#x27;], skip: [&#x27;a&#x27;] });
+print(r.complete, r.unread.join(&#x27; &#x27;), moodOf(w, &#x27;I have two kids&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>false in the shape of house statement</code></pre></figure>
 <h3 id="readbytypesworld-text-options-typedlexiconworld-and-nearwordsworld-word-options">readByTypes(world, text, options?), typedLexicon(world) and nearWords(world, word, options?)</h3>
 <p>Type-driven reading (abstraction round, item 1). Each content word is typed through the world itself:</p>
 <ul><li>a thing: a fact's name;</li><li>a kind: a type, or a <code>kind</code>, <code>class</code> or <code>is</code> value;</li><li>an attribute: a key that facts carry, or a relation the knowledge declares (<code>k.kinds.relation type= key=</code>). A question about a declared relation with no value yet is understood, and its frame says <code>known: false</code> with an empty answer;</li><li>a value: a key's value;</li><li>an act: a word of an action;</li><li>a known word: a <code>core.word</code>. A verb that means a key asks for that key.</li></ul>
@@ -1124,7 +1133,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.119.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.120.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

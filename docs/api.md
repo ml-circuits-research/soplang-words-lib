@@ -2086,6 +2086,36 @@ print(relatedCases(w, kase).filter((c) => c.valid).map((c) => [c.distance, c.tex
 [[1,"yak sound"],[2,"sheep sound"]]
 ```
 
+### readText(world, text, options?), moodOf(world, text, options?) and READERS
+
+One Reader contract for every reader, so a host, an ensemble or a learner can swap them, and
+completeness is computed from data, never claimed by a pattern. `readText(world, text, { reader,
+lang, ... })` runs a reader (a name of `READERS`: `types`, `frames`, `canonical`; or a function
+`(world, text, opts) -> [{ frame, unread, repaired?, cost?, specificity? }]`) and ranks its
+candidates: fewer words unread, then fewer repairs, then lower cost, then more specific. It
+returns `{ candidates, best, unread, repaired, mood, complete, why? }`:
+- `unread` are the words the best reading did not use; a reading with words left is not
+  complete, and those words are never arguments;
+- `repaired` are respellings (a reader's `via: 'spelling'`); a repaired reading is not complete;
+- `mood` is read before the act by `moodOf`: `question` (a final ?, a question word or an
+  auxiliary first), `statement` (a first-person subject first, or a name and an auxiliary:
+  "I have two kids", "Tom has 5 apples"), `fragment` (nothing, an article or a letter alone),
+  else `imperative`. An act frame needs an imperative or a question.
+
+The mood words come from the language world (`<lang>.wh`, `<lang>.aux`, `<lang>.pron
+person=1`, `<lang>.det`), with English defaults for a world that has none.
+
+```js run
+const w = new World();
+w.tell('@cow animal name=cow sound=moo  @v core.word text=makes means=sound');
+const r = readText(w, 'what sound makes a cow in the shape of a house', { question: ['what'], skip: ['a'] });
+print(r.complete, r.unread.join(' '), moodOf(w, 'I have two kids'));
+```
+
+```output
+false in the shape of house statement
+```
+
 ### readByTypes(world, text, options?), typedLexicon(world) and nearWords(world, word, options?)
 
 Type-driven reading (abstraction round, item 1). Each content word is typed through the

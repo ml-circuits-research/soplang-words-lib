@@ -18,7 +18,7 @@ export function typedLexicon(world) {
   const lex = new Map(), add = (word, e) => { const k = String(word).toLowerCase().replace(/_/g, ' '); (lex.get(k) || lex.set(k, []).get(k)).push(e); };
   const holders = new Map(); // key -> types that carry it
   for (const w of world.wires.values()) {
-    if (w.type.startsWith('core.') || w.type.startsWith('std.') || LANG.some((p) => w.type.startsWith(p))) continue; // the language's own facts are not content
+    if (w.type.startsWith('core.') || w.type.startsWith('std.') || w.type === 'k.kinds.relation' || LANG.some((p) => w.type.startsWith(p))) continue; // the language's own facts, and the declarations of relations, are not content
     for (const n of w.attrs.name || []) add(bare(n), { cat: 'thing', id: w.id, type: w.type });
     for (const k of ['kind', 'class', 'is']) for (const v of w.attrs[k] || []) add(bare(v), { cat: 'kind', kind: bare(v), key: k });
     for (const k of Object.keys(w.attrs)) if (!k.startsWith('core.') && k !== 'name') (holders.get(k) || holders.set(k, new Set()).get(k)).add(w.type);
@@ -26,13 +26,16 @@ export function typedLexicon(world) {
   }
   for (const [k, ts] of holders) if (!['kind', 'class', 'is', 'about'].includes(k)) add(k, { cat: 'attr', key: k, holders: [...ts] });
   // relations the knowledge declares (k.kinds.relation type= key=): a key is an attribute of its type even before any fact says it
-  for (const r of world.ofType('k.kinds.relation')) { const k = bare(r.attrs.key?.[0] ?? ''), t = bare(r.attrs.type?.[0] ?? ''); if (k && !holders.has(k)) add(k, { cat: 'attr', key: k, holders: [t], declared: true }); }
-  for (const t of new Set([...world.wires.values()].map((w) => w.type))) if (!t.startsWith('core.') && !t.startsWith('std.') && !LANG.some((p) => t.startsWith(p))) add(t.split('.').pop(), { cat: 'kind', type: t });
+  const declared = new Map();
+  for (const r of world.ofType('k.kinds.relation')) { const k = bare(r.attrs.key?.[0] ?? ''), t = bare(r.attrs.type?.[0] ?? ''); if (k && t) (declared.get(k) || declared.set(k, new Set()).get(k)).add(t); }
+  for (const [k, ts] of declared) { if (!holders.has(k)) { add(k, { cat: 'attr', key: k, holders: [...ts], declared: true }); holders.set(k, new Set(ts)); } else for (const t of ts) holders.get(k).add(t); }
+  for (const t of new Set([...world.wires.values()].map((w) => w.type))) if (!t.startsWith('core.') && !t.startsWith('std.') && t !== 'k.kinds.relation' && !LANG.some((p) => t.startsWith(p))) add(t.split('.').pop(), { cat: 'kind', type: t });
   const comp = world._compiled?.();
   for (const [type, slots] of comp?.slots?.own ?? []) for (const sl of slots.values()) for (const e of sl.enum || []) add(bare(e), { cat: 'value', key: sl.key, type, schema: true }); // a closed set's values name what they are
   const actions = comp?.actions;
   if (actions) for (const a of actions.keys()) add(bare(a), { cat: 'act', act: bare(a) });
-  for (const w of world.ofType('core.word')) for (const m of w.attrs.means || []) for (const t of w.attrs.text || []) { add(bare(t), actions?.has(bare(m)) || actions?.has(m) ? { cat: 'act', act: bare(m) } : { cat: 'word', means: bare(m) }); if (holders.has(bare(m))) add(bare(t), { cat: 'attr', key: bare(m), holders: [...holders.get(bare(m))], verb: true }); } // a word the world declares: an act's, or one it knows; a verb that means a key asks for it (says: sound)
+  const types = comp?.types; // a core.word for a declared type names that kind
+  for (const w of world.ofType('core.word')) for (const m of w.attrs.means || []) for (const t of w.attrs.text || []) { add(bare(t), actions?.has(bare(m)) || actions?.has(m) ? { cat: 'act', act: bare(m) } : types?.has(bare(m)) && !bare(m).startsWith('core.') ? { cat: 'kind', type: bare(m) } : { cat: 'word', means: bare(m) }); if (holders.has(bare(m))) add(bare(t), { cat: 'attr', key: bare(m), holders: [...holders.get(bare(m))], verb: true }); } // a word the world declares: an act's, or one it knows; a verb that means a key asks for it (says: sound)
   cache.set(world, { size: world.wires.size, lex });
   return lex;
 }

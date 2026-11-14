@@ -120,7 +120,7 @@ export function judgeReply(reply, expected, { numberWords = {}, before, after, q
   return true;
 }
 
-/** Results [{ distance, axis, pass }] as a table { 'distance|axis': { pass, of } } (LIB-8; `degree`, `dim`, `dims` are the deprecated names, until 0.114.0). */
+/** Results [{ distance, axis, pass }] as a table { 'distance|axis': { pass, of } } (LIB-8; `degree`, `dim`, `dims` are the deprecated names, until the host has renamed). */
 export function tabulate(results) {
   const t = {};
   for (const r of results) { const k = `${r.distance ?? r.degree}|${r.axis ?? r.axes?.[0] ?? r.dim ?? r.dims?.[0] ?? '-'}`; const row = (t[k] ||= { pass: 0, of: 0 }); row.of++; if (r.pass) row.pass++; }

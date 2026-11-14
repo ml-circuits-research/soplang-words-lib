@@ -1674,6 +1674,43 @@ print(composeDiagram(w, { kind: 'tree', topic: 'food' }).nodes.map((n) => `${n.l
 food:root fruit:item bread:item apple:item
 ```
 
+### typedWorldFor(schema, knowledge, options?), schemaOf(world), fitsSlot(typed, type, key, text, options?) and freeTextType(key)
+
+The typed readers (`readByTypes`, completeness, arbitration by coverage, `resolveEllipsis`,
+`readEnsemble`) type words through a world's facts. A world made of patterns and a matrix has
+none, so `typedWorldFor` builds the typed world it needs, at build time per world and at
+runtime with the session's things. `schema` is a World (`schemaOf` reads its core.type,
+core.slot and core.word) or a plain description, so a host with its own format maps it once:
+`{ kinds: [{ type, words, keys: [{ key, value, many, enum, join: { type, by }, text, words }] }],
+words: [{ text, means }] }`. The typed world holds:
+- each kind with its words, and each key as a declared relation (`k.kinds.relation`), so a
+  key is an attribute before any fact carries it, with its words;
+- the values of closed sets;
+- the things of each knowledge type a slot joins (`knowledge`, up to `max` per type, 5000),
+  named by the join's key; when a kind's `name` joins a knowledge type, those things carry
+  the kind's keys;
+- the session's `things` (`[{ id, label, kind, attrs }]`).
+
+It returns `{ world, slots, lexicon, counts }`. `slots` maps `type|key` to what the slot
+expects: `thing` (of a joined type), `value` (a closed set or a yes/no), `number`, or, for a
+free-text slot, `name`, `title` or `text` (`freeTextType(key)` guesses from the key; `text`
+names it). `fitsSlot(typed, type, key, text)` says whether words fit a slot. A joined slot
+takes the name of one of its things, and a closed set one of its values. A name takes words
+that are not a question, an act, an attribute or a relation word of the world, so "makes a
+cow" is not a name. A title takes any words, and a text anything. The result is
+`{ ok, as, id?, value?, why? }`.
+
+```js run
+const know = new World();
+know.tell('@i k.ex.instrument name=violin');
+const t = typedWorldFor({ kinds: [{ type: 'ex.player', keys: [{ key: 'instrument', join: { type: 'k.ex.instrument', by: 'name' } }] }] }, know);
+print(fitsSlot(t, 'ex.player', 'instrument', 'the violin').ok, fitsSlot(t, 'ex.player', 'instrument', 'makes a cow').why);
+```
+
+```output
+true there is no instrument called "makes a cow"
+```
+
 ### compose(world, topic, options?) and interestOf(world, fact, options?)
 
 A composition of a genre about a topic, from knowledge, with no model (std.compose, first

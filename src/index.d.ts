@@ -591,6 +591,12 @@ export function summarizeText(text: string, options?: { n?: number; words?: numb
 /** Unigram recall of a summary against a reference. */
 export function overlap(summary: string, reference: string, options?: { stop?: string[] }): number;
 /** std.space: the spot for one thing (relative to a thing, in a region, or a default spot), avoiding overlaps. */
+export interface SchemaDescription { kinds: { type: string; words?: string[]; keys?: { key: string; value?: string | null; many?: boolean; enum?: string[]; join?: { type: string; by?: string | null } | null; text?: string; words?: string[] }[] }[]; words?: { text: string; means: string }[] }
+export interface TypedWorld { world: World; slots: Map<string, { expects: 'thing' | 'value' | 'number' | 'name' | 'title' | 'text'; of?: string; by?: string; values?: string[] }>; lexicon: Map<string, object[]>; counts: { kinds: number; keys: number; things: number; values: number; words: number } }
+export function schemaOf(world: World): SchemaDescription;
+export function typedWorldFor(schema: World | SchemaDescription, knowledge?: World | null, options?: { max?: number; text?: Record<string, 'name' | 'title' | 'text'>; words?: { text: string; means: string }[]; things?: { id: string; label?: string; kind: string; attrs?: Record<string, unknown> }[] }): TypedWorld;
+export function fitsSlot(typed: TypedWorld, type: string, key: string, text: string, options?: { skip?: string[]; lemma?: (word: string) => string[] }): { ok: boolean; as?: string; id?: string; value?: unknown; why?: string };
+export function freeTextType(key: string, given?: string): string;
 export function arrangementOf(world: World, text: string, options?: { lang?: string }): { text: string; layout: string | null; relation: string | null; direction: string | null; reverse: boolean; diagramLayout: string | null; as: string | null } | null;
 export interface DiagramResult { kind: string; form: string; layout: string; topic: string; fill: string; text: string; nodes: { id: string; label: string; role: string; shape: string | null; x: number; y: number }[]; edges: { from: string; to: string }[]; groups: { id: string; label: string; members: string[] }[]; told?: object }
 export function composeDiagram(world: World, options: { kind: string; topic: string; seed?: number; max?: number; id?: string; frame?: { x: number; y: number; w: number; h: number }; into?: World; layout?: string }): DiagramResult | { why: string };

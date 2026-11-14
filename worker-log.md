@@ -5356,3 +5356,16 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - `git -C .cache/psys2 grep` on origin/HEAD: PSys2 still calls lib.cousins (scripts/learn-rules.mjs:48,
   scripts/lib/cousins-host.mjs:52) and lib.liftTokens (src/dialog/form-operators.mjs:39). Aliases stay
   until PSys2 renames (questions.md Q68).
+
+## 0.114.0 — typed worlds from schema + knowledge (reviewer 06:55, PSys2 Q16); PSys2 Q17 diagram items
+
+- `typedWorldFor` / `schemaOf` / `fitsSlot` / `freeTextType` (src/typed.mjs). Toy test: "makes a cow" refused
+  for a joined instrument slot and for a name slot; numbers, closed sets, titles, texts typed;
+  "what is the speed of the player" reads tempo of the session thing.
+- compat/psys2/typed: PSys2 kids.animals legend at 45ac4bf + k.animals → typed world; "the owl" fits
+  name, "makes a cow" does not; "owl legs" reads legs before any fact carries it.
+- typedLexicon: core.word for a type -> kind; declared relations merged per key; k.kinds.relation not content.
+- composeDiagram: w/h on nodes; exact topic match; no-topic fills answer only their type (PSys2 Q17 5-7).
+- Not done yet from 06:55: why storyState does not take the 23 word problems (needs PSys2's rows).
+- Deprecated names: stay until PSys2 renames (Q68).
+- Gate: npm test 504 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

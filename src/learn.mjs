@@ -205,5 +205,5 @@ export function familyOf(edit) {
   return 'substitution';
 }
 
-/** @deprecated since 0.111.0, removed in 0.114.0: `delexicalise`. */
+/** @deprecated since 0.111.0, removed once the host has renamed: `delexicalise`. */
 export const liftTokens = (...a) => delexicalise(...a);

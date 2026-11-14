@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.114.0
+
+From the reviewer's 06:55 entry (a host's Q16: runtime worlds are not typed) and the host's
+Q17 diagram items.
+
+### New
+- `typedWorldFor(schema, knowledge, { things, text, max })`: the typed world a pattern/matrix
+  world needs: kinds and keys with their words (keys as declared relations), closed sets, the
+  joined knowledge's things, the session's things, a type for every free-text slot. `schemaOf`
+  reads a World's schema as the description it takes.
+- `fitsSlot(typed, type, key, text)`: whether words fit a slot (a joined thing, a value, a
+  number, a name that is not a question, an act or a relation word, a title, a text).
+- compat/psys2/typed: a PSys2 legend (kids.animals) made a typed world with k.animals.
+
+### Changed
+- `typedLexicon`: a `core.word` for a declared type names that kind; declared relations of
+  several types all count as holders; `k.kinds.relation` facts are not content.
+- `composeDiagram`: nodes carry their box (`w`, `h`); a topic matches a fill's topic key
+  exactly (no word inside a longer value); a fill with no topic key answers only a topic that
+  names its type, so `sampleDiagram` no longer names a story element a topic.
+
+The deprecated names of 0.111.0 stay until the host has renamed them.
+
 ## 0.113.0
 
 From the knowledge repository's 06:00 items.

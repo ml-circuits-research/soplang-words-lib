@@ -17,7 +17,7 @@ import { relatedCases, judgeOnRelated } from '../src/index.mjs';
  * the world's. Options go to relatedCases (distance, axes, edges, read, known, n, seed).
  */
 export function generalisationTest(world, example, host, { degree, dims, ...options } = {}) {
-  if (degree !== undefined) options.distance = degree; // the deprecated names (until 0.114.0)
+  if (degree !== undefined) options.distance = degree; // the deprecated names (until the host has renamed)
   if (dims) options.axes = dims;
   const same = (a, b) => JSON.stringify([].concat(a ?? [])) === JSON.stringify([].concat(b ?? []));
   const list = relatedCases(world, example, { distance: 3, ...options }).filter((c) => c.valid);
@@ -56,7 +56,7 @@ export function printTable(r) {
   return [...lines, ...r.pattern].join('\n');
 }
 
-/** @deprecated since 0.111.0, removed in 0.114.0: `generalisationTest`. */
+/** @deprecated since 0.111.0, removed once the host has renamed: `generalisationTest`. */
 export const cousinsTest = (...a) => generalisationTest(...a);
 
 if (import.meta.url === `file://${process.argv[1]}`) {

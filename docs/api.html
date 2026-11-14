@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="a4a20d0c0813">
+<meta name="source-hash" content="de4660ec9394">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.113.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.114.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -601,6 +601,15 @@ w.tell(`@k k.diagrams.kind name=tree form=tree layout=top_down edges=undirected 
 @a ex.sort name=fruit is_a=food  @b ex.sort name=apple is_a=fruit  @c ex.sort name=bread is_a=food`);
 print(composeDiagram(w, { kind: &#x27;tree&#x27;, topic: &#x27;food&#x27; }).nodes.map((n) =&gt; `${n.label}:${n.role}`).join(&#x27; &#x27;));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>food:root fruit:item bread:item apple:item</code></pre></figure>
+<h3 id="typedworldforschema-knowledge-options-schemaofworld-fitsslottyped-type-key-text-options-and-freetexttypekey">typedWorldFor(schema, knowledge, options?), schemaOf(world), fitsSlot(typed, type, key, text, options?) and freeTextType(key)</h3>
+<p>The typed readers (<code>readByTypes</code>, completeness, arbitration by coverage, <code>resolveEllipsis</code>, <code>readEnsemble</code>) type words through a world's facts. A world made of patterns and a matrix has none, so <code>typedWorldFor</code> builds the typed world it needs, at build time per world and at runtime with the session's things. <code>schema</code> is a World (<code>schemaOf</code> reads its core.type, core.slot and core.word) or a plain description, so a host with its own format maps it once: <code>{ kinds: [{ type, words, keys: [{ key, value, many, enum, join: { type, by }, text, words }] }], words: [{ text, means }] }</code>. The typed world holds:</p>
+<ul><li>each kind with its words, and each key as a declared relation (<code>k.kinds.relation</code>), so a key is an attribute before any fact carries it, with its words;</li><li>the values of closed sets;</li><li>the things of each knowledge type a slot joins (<code>knowledge</code>, up to <code>max</code> per type, 5000), named by the join's key; when a kind's <code>name</code> joins a knowledge type, those things carry the kind's keys;</li><li>the session's <code>things</code> (<code>[{ id, label, kind, attrs }]</code>).</li></ul>
+<p>It returns <code>{ world, slots, lexicon, counts }</code>. <code>slots</code> maps <code>type|key</code> to what the slot expects: <code>thing</code> (of a joined type), <code>value</code> (a closed set or a yes/no), <code>number</code>, or, for a free-text slot, <code>name</code>, <code>title</code> or <code>text</code> (<code>freeTextType(key)</code> guesses from the key; <code>text</code> names it). <code>fitsSlot(typed, type, key, text)</code> says whether words fit a slot. A joined slot takes the name of one of its things, and a closed set one of its values. A name takes words that are not a question, an act, an attribute or a relation word of the world, so "makes a cow" is not a name. A title takes any words, and a text anything. The result is <code>{ ok, as, id?, value?, why? }</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const know = new World();
+know.tell(&#x27;@i k.ex.instrument name=violin&#x27;);
+const t = typedWorldFor({ kinds: [{ type: &#x27;ex.player&#x27;, keys: [{ key: &#x27;instrument&#x27;, join: { type: &#x27;k.ex.instrument&#x27;, by: &#x27;name&#x27; } }] }] }, know);
+print(fitsSlot(t, &#x27;ex.player&#x27;, &#x27;instrument&#x27;, &#x27;the violin&#x27;).ok, fitsSlot(t, &#x27;ex.player&#x27;, &#x27;instrument&#x27;, &#x27;makes a cow&#x27;).why);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true there is no instrument called &quot;makes a cow&quot;</code></pre></figure>
 <h3 id="composeworld-topic-options-and-interestofworld-fact-options">compose(world, topic, options?) and interestOf(world, fact, options?)</h3>
 <p>A composition of a genre about a topic, from knowledge, with no model (std.compose, first version). The genre gives the moves of a section (<code>k.genres.genre name= move=...</code>): the first opens, the last closes, the middle ones take turns. The outline is the topic's relations: the facts that name it, grouped by type. Relations that can fill a chapter come first, then the most interesting. Every sentence cites its wire, and no fact is used twice. The size <code>{ chapters, sections, sentences }</code> is a budget set before selection; what the knowledge cannot fill is listed in <code>short</code>. The output is frames (<code>{ move, fact, about, cites }</code>) for the language world to realise (<code>realise(frame)</code>).</p>
 <p><code>interestOf</code> is the arithmetic of the world's <code>k.interest</code> (published by the knowledge repository): each feature adds <code>weight × share</code> to its appraisal, by its shape over a measure, and the score is novelty × coping × relevance − penalty. A weight is the middle of its range, or drawn inside it with <code>draw: seed</code>. The library computes the measures it can from facts (<code>measuresOf</code>): world and topic distance by joins of names, contrast with siblings, distance from the typical range, extremes, numbers with units, animacy, obviousness, said before, the same move again, items since the last point. The host gives the rest, or overrides any, in <code>measures</code>. Without a <code>k.interest</code> model the score is 0, with <code>why</code>.</p>
@@ -1110,7 +1119,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>false object</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.113.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.114.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

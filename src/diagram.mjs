@@ -29,13 +29,14 @@ function kindOf(world, kind) {
   return ks.find((x) => low(x.name) === k) ?? ks.find((x) => x.form === k) ?? ks.find((x) => low(x.name).replace(/ diagram$/, '') === k) ?? null;
 }
 
-// the facts of a fill about a topic: a value of the topic key equal to the topic, else containing it as words
+// the facts of a fill about a topic: a value of the topic key equal to the topic (a word inside a longer
+// value is not enough: "make" is not "make a thing on the anchor"); a fill with no topic key is about the
+// set its type holds, so it answers only a topic that names that type
 function about(world, fill, topic) {
   const facts = world.ofType(fill.type);
-  if (!fill.topic) return facts;
-  const t = low(topic), has = (f) => (f.attrs[fill.topic] || []).map(low);
-  const exact = facts.filter((f) => has(f).includes(t));
-  return exact.length ? exact : facts.filter((f) => has(f).some((v) => new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(v)));
+  const t = low(topic);
+  if (!fill.topic) { const tail = fill.type.split('.').pop().replace(/_/g, ' '); return [tail, `${tail}s`, fill.type].includes(t) ? facts : []; }
+  return facts.filter((f) => (f.attrs[fill.topic] || []).map(low).includes(t));
 }
 
 // nodes and edges from one fill: { nodes: [label], edges: [[from, to]], groups: Map(group -> [labels]), root }
@@ -140,7 +141,7 @@ export function composeDiagram(world, { kind, topic, seed = 1, max = 12, id = 'd
     for (const b of boxes) if (!at.has(b.id)) at.set(b.id, { x: frame.x, y: frame.y, w: b.w, h: b.h });
   } else if (layout === 'free') at = arrange(boxes, 'scatter', { frame, seed });
   else at = arrange(boxes, layout === 'grid' ? 'grid' : E.length ? 'layers' : 'grid', { edges: E, frame });
-  const nodes = s.nodes.map((l, i) => { const role = roleOf(l, i, s.nodes.length), b = at.get(ids.get(l)); return { id: ids.get(l), label: l, role, shape: shapes.get(role) ?? null, x: +b.x.toFixed(1), y: +b.y.toFixed(1) }; });
+  const nodes = s.nodes.map((l, i) => { const role = roleOf(l, i, s.nodes.length), b = at.get(ids.get(l)); return { id: ids.get(l), label: l, role, shape: shapes.get(role) ?? null, x: +b.x.toFixed(1), y: +b.y.toFixed(1), w: +b.w.toFixed(1), h: +b.h.toFixed(1) }; }); // with its box, for a host that scales a layer wider than the frame
   const groups = [...s.groups].map(([g, ms], i) => ({ id: `${id}.g${i + 1}`, label: g, members: ms.map((m) => ids.get(m)).filter(Boolean) }));
   const edges = k.edges === 'none' ? [] : E.map(([a, b]) => ({ from: a, to: b }));
   const lines = [`@${id} w.diagram.diagram title=${val(`${k.name} of ${topic}`)} form=${k.form} layout=${layout} topic=${val(topic)}`];
@@ -168,7 +169,8 @@ export function diagramTopics(world, kind, { min = 3, max = 12, limit = 30 } = {
   for (const f of k.fills) {
     const facts = world.ofType(f.type);
     const cands = new Set();
-    for (const x of facts) for (const v of (f.topic ? x.attrs[f.topic] : x.attrs.name) || []) { cands.add(bare(v)); if (cands.size >= limit * 4) break; }
+    if (!f.topic && f.gives !== 'edges') { cands.add(f.type.split('.').pop()); } // a fill about its whole set: its type is the one topic
+    else for (const x of facts) for (const v of (f.topic ? x.attrs[f.topic] : x.attrs.name) || []) { cands.add(bare(v)); if (cands.size >= limit * 4) break; }
     for (const t of cands) {
       if (out.has(t)) continue;
       const s = structureOf(world, f, t, { max });

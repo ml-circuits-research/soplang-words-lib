@@ -845,6 +845,27 @@ print(judgeOnRelated((t) => (t === 'cow sound' ? ['moo'] : null), kase, relatedC
 0
 ```
 
+## Build the typed world of a world
+
+*In `typedWorldFor`, `schemaOf`, `fitsSlot`, `freeTextType`; since 0.114.*
+*Works on: a world's schema (a World, or a host's description of its kinds and keys) and the knowledge its slots join.*
+
+The typed readers need typed facts. A world made of patterns and a matrix gets them from its
+schema and the knowledge it joins: kinds and keys with their words, closed sets, the joined
+things, the session's things, and a type for every free-text slot. A slot then refuses words
+that do not fit it, such as a relation read as an instrument's name.
+**Limits:** a free-text slot's type is guessed from its key unless the host names it; a join
+must be named by the schema or the host.
+
+```js run
+const t = typedWorldFor({ kinds: [{ type: 'ex.room', keys: [{ key: 'light', enum: ['on', 'off'] }] }] });
+print(fitsSlot(t, 'ex.room', 'light', 'dim').ok);
+```
+
+```output
+false
+```
+
 ## Compose a diagram from knowledge
 
 *In `composeDiagram`, `sampleDiagram`, `diagramTopics`, `diagramKinds`, `arrangementOf`; since 0.112.*

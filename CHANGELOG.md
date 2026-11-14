@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.64.0
+
+std.compose, first version (reviewer 14:45 B, 15:00), on a toy catalog in the formats
+proposed in questions.md Q41.
+
+### New
+- `compose(world, topic, { genre, size, seed, realise })`:
+  - the genre's moves; an outline from the topic's relations, those that can fill a
+    chapter first, then by interest;
+  - every sentence cites its wire, and no fact is used twice;
+  - the size is a budget, and `short` says what the knowledge lacked.
+- `interestOf(world, fact, ...)`: the features number, link, distance, rare and new, with
+  weights from `k.interest.feature`, each score explained.
+
 ## 0.63.0
 
 The knowledge repository's Q51–Q53 on the first `w.lang.ro` draft.

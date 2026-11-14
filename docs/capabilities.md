@@ -757,6 +757,28 @@ print(summarizeText('Owls hunt at night. Their eyes are large. An owl can turn i
 ["Owls hunt at night."]
 ```
 
+## Compose a text from knowledge
+
+*In `compose`, `interestOf`; since 0.64.*
+*Works on: knowledge worlds (facts about a topic, genres, interest features).*
+
+A composition with the moves of a genre: an outline from the topic's relations across the
+worlds, chosen by interest (features as data, each score explained), facts that each cite
+their wire and never repeat, and an exact size or a list of what the knowledge lacked.
+**Limits:** a first version on a toy catalog. The genre's procedure as a plan, choices
+solved jointly, story constraints and register wait for the knowledge repository's
+`k.genres`, `k.story` and `k.interest`; the sentences come from the host's realiser.
+
+```js run
+const w = new World();
+w.tell('@owl k.animal name=owl  @f1 k.fact about=owl eggs=4');
+print(compose(w, 'owl', { size: { chapters: 1, sections: 1, sentences: 2 } }).chapters[0].sections[0].sentences.map((x) => x.cites));
+```
+
+```output
+["owl","f1"]
+```
+
 ## Building blocks
 
 *In the core exports; since 0.1 (each as listed).*

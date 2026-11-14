@@ -1588,6 +1588,32 @@ print(placeFor(w, { w: 10, h: 10 }, { rel: 'right_of', ref: 'box1' }), placeFor(
 {"x":62,"y":45,"how":"right_of"} {"x":0,"y":0,"how":"default"}
 ```
 
+### compose(world, topic, options?) and interestOf(world, fact, options?)
+
+A composition of a genre about a topic, from knowledge, with no model (std.compose, first
+version). The genre gives the moves of a section (`k.genres.genre name= move=...`): the
+first opens, the last closes, the middle ones take turns. The outline is the topic's
+relations: the facts that name it, grouped by type. Relations that can fill a chapter come
+first, then the most interesting. Facts are chosen by `interestOf`: features `number`,
+`link` (a value names another fact), `distance` (another world), `rare` and `new`, with
+weights from `k.interest.feature name= weight=` and every score explained by feature.
+Every sentence cites its wire, and no fact is used twice. The size `{ chapters, sections,
+sentences }` is a budget set before selection; what the knowledge cannot fill is listed in
+`short`. The output is frames (`{ move, fact, about, cites }`) for the language world to
+realise (`realise(frame)`).
+
+```js run
+const w = new World();
+w.tell(`@owl k.animal name=owl lives=barn  @barn k.place name=barn
+  @f1 k.fact about=owl head_turn=270deg  @f2 k.fact about=owl what=night_hunter  @f3 k.fact about=owl eggs=4`);
+const c = compose(w, 'owl', { size: { chapters: 1, sections: 1, sentences: 3 } });
+print(c.chapters[0].sections[0].sentences.map((x) => [x.move, x.cites]));
+```
+
+```output
+[["introduce","owl"],["fact","f1"],["conclude","f3"]]
+```
+
 ### arbitrate(world, request, options?)
 
 The arbitration contract: one verdict per declared world for one request. `own`: the

@@ -4574,3 +4574,10 @@ clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 
 - Next: Round 28 item 9 (harnesses), the std.plan follow-up, generation (Round 30 item 6:
   English replies on templates), Round 27. std.compose waits for k.genres / k.story /
   k.interest.
+
+## 0.64.0: std.compose, first version
+
+- `compose(world, topic, { genre, size, seed, realise })` and `interestOf`, on a toy catalog in the Q41 formats (test/compose.test.mjs, invented, 11 lines).
+- Toy run (owl, presentation, 2×1×3): chapter 1 k.fact [introduce owl, fact f2, conclude f4…], every sentence cites its wire, no fact twice; a 5×2×4 size lists what was short.
+- Gates: npm test 430 / 430 / 429 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok. README: 32 jobs.
+- Waiting on the knowledge repository for k.genres, k.story, k.interest (Q41) to wire the real worlds and the genre-as-plan step.

@@ -5368,4 +5368,4 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - composeDiagram: w/h on nodes; exact topic match; no-topic fills answer only their type (PSys2 Q17 5-7).
 - Not done yet from 06:55: why storyState does not take the 23 word problems (needs PSys2's rows).
 - Deprecated names: stay until PSys2 renames (Q68).
-- Gate: npm test 504 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+- Gate: npm test 504 pass / 0 fail; test:full 504 / 504 / 501, 0 fail; pilot same; psys2=0; scan clean; tsc ok.

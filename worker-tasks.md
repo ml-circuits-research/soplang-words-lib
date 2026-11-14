@@ -910,3 +910,10 @@ Write them under `skills/<name>/SKILL.md` (frontmatter `name` and a `description
 4. **`consolidate`**: the periodic cycle: ingest new failures, freeze held-out rows, run 2 and 3, rerun the measures and the learning curve, open the changes for review in each repository with the before / after table; stop when the held-out curve does not rise.
 5. **`audit-knowledge`**: sample model-labelled facts, check against sources, fix or flag.
 Each skill says what it may change and what it must never do (no restricted data, no phrase lists, no editing tests to pass). Sources for the steps: `docs/lessons.md` of the three repositories (the skills are the lessons made executable) and the reviewer's rules in the three `worker-tasks.md`. The reviewer reads every skill and runs one dry run of each before acceptance.
+
+## Reviewer 2026-11-14 07:15 — owner: there will be several knowledge repositories; the library stays one
+
+The owner confirms the skills belong here because the library is unique and reusable while there will be **more knowledge repositories** in the future. Consequences:
+1. Skills (Round 27) take the target repositories as parameters (one or several knowledge repositories, one application); nothing in a skill names sop-knowledge-worlds or PSys2 except in its dry-run examples.
+2. **Several catalogs at once**: `createCatalog` (and `std.know.fill`, typed needs, the word index) must load from several catalogs with an order of precedence, report when two catalogs define the same thing differently, and keep each fact's catalog in its source; a test with two small catalogs that overlap.
+3. The pinned published worlds (`worlds.pin`) become a list of repositories with their commits.

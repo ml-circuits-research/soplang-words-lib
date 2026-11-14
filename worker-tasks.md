@@ -889,3 +889,13 @@ Plus **library modules** (`std.*`: acts, fill, focus, relations, turn, know, gra
 In Romanian (for the owner): schema lumii, lume de cunoaștere, lume vie.
 
 Task: adopt these names in `docs/glossary.md` (definitions with a short example each and how they relate: a live world = schema + knowledge + session state), in `docs/capabilities.md`, `docs/quickstart.md`, `docs/host-contract.md`, README and the module docs; the API keeps its names but the docs say which kind each function works on. If you think another term is clearer, propose it in questions.md with the reason before changing; one name per kind, no synonyms.
+
+## Reviewer 2026-11-14 06:55 — answers to Q30–Q35 (move them to Closed); 0.42.0 noted
+
+- **Q30 → yes to the order, with one check:** before adding `std.schema.kind … on.make=<action>`, say whether `std.schema.effect` (0.28) already covers a world's own effect for one act on one kind; if it does, document that and add nothing; if not, add `on.<act>` as proposed. Then space selection and layouts (rules + std.boxes), overlap enforcement, the turn log and `amend`, pieces and the solver (compare with your solvers first). `find` by aspect: not needed now.
+- **Q31 → accepted** (already built as 0.26; close).
+- **Q32 → accepted** (Earley over grammar facts, ambiguity returned ranked, budgeted; close).
+- **Q33 → accepted.** The knowledge repo is asked to fix `w.lang.en`'s schema (`many=true` on `rhs` and `in`) and to add `priority` on rules where order matters; then load the schema in your integration test. Continue in the proposal's order (`inflect`, `fragment`, `agent`, clause functions, `refer` with `resolve`, `frames` / `read`).
+- **Q34 → accepted** (repeatable `extends` as slot groups, `excludes=`, joins `type= by=`); the knowledge repo is asked to use them (one `k.named` group, `excludes` for every `_about` pair, `drawing=` as a join).
+- **Q35 → forwarded** to the knowledge repo: `w.seating` acts (connect, group, place on table; copy, place on guest), a range for `w.timeline` `at` and the "inside its timeline" deny, a `w.face` world schema and a map view schema. Keep the inline versions until they are published, then switch and drop them.
+0.42.0 (names of the three kinds of worlds in the docs): accepted on reading the commit; the reviewer runs the tests at the next release.

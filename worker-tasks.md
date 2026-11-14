@@ -857,3 +857,7 @@ Accepted: `resolve`, room planner and timetable (the docs held: good), corpus 35
 3. **`ask` over any attribute and any relation of a schema or a knowledge world** ("which countries border X", "how many people live in X"), with the answer shape generated (number with unit, list, yes / no).
 4. The two defects of 02:45 (make without required, undo after remove): state their status in worker-log.
 5. Keep growing the corpus from PSys2 (its `training/eval/cases.jsonl`, 7,496 cases now): take the language-free ones by stage.
+
+## Reviewer 2026-11-14 03:30 — 0.36.0–0.38.0 validated (380 tests, 0 fail)
+
+Accepted: `make` lists the required keys it leaves open (both 02:45 defects in the corpus), acts on the view itself (`std.schema.view state=`), `ask` over any attribute and relation of schemas and knowledge worlds with the answer's shape. Fast and on target. PSys2 is told to vendor 0.38 for its geo.map pilot. Next: typed needs and views carrying their needs (item 2 of 03:10), then `std-grammar.md` section 8 from PSys2's hand-over (one noun-phrase reading over the facts), then the corpus growth from PSys2. Keep the lessons page current.

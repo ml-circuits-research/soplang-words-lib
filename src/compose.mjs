@@ -165,18 +165,18 @@ const memo = new WeakMap(); // world -> Map(key -> { at, result }): a host that 
 export function compose(world, topic, options = {}) {
   const { realise, measures, story } = options;
   if (realise || measures || story || options.memo === false) return composeOnce(world, topic, options);
-  const key = JSON.stringify([topic, options.genre ?? null, options.size ?? null, options.seed ?? 1]), at = `${world.stamp ?? ''}|${world.wires.size}`;
+  const key = JSON.stringify([topic, options.genre ?? null, options.size ?? null, options.seed ?? 1, options.quiet ?? null]), at = `${world.stamp ?? ''}|${world.wires.size}`;
   const m = memo.get(world) || memo.set(world, new Map()).get(world), hit = m.get(key);
   if (hit && hit.at === at) return hit.result;
   const result = composeOnce(world, topic, options);
   m.set(key, { at, result });
   return result;
 }
-function composeOnce(world, topic, { genre, size, seed = 1, realise, measures, story } = {}) {
+function composeOnce(world, topic, { genre, size, seed = 1, realise, measures, story, quiet } = {}) {
   const rand = rng(seed);
   const g = genre ? world.ofType('k.genres.genre').find((x) => bare(x.attrs.name[0]) === genre) : null;
   if (genre && !g) return { why: `there is no genre ${genre}` };
-  if (g && world.ofType('k.genres.part').some((p) => one(p, 'genre') === genre)) return composeGenre(world, topic, g, { size: size ?? {}, seed, realise, measures, story });
+  if (g && world.ofType('k.genres.part').some((p) => one(p, 'genre') === genre)) return composeGenre(world, topic, g, { size: size ?? {}, seed, realise, measures, story, quiet });
   size ??= { chapters: 2, sections: 1, sentences: 3 };
   const moves = g ? g.attrs.move.map(bare) : ['introduce', 'fact', 'fact', 'conclude'];
   const subject = [...world.wires.values()].find((w) => !w.type.startsWith('core.') && (w.attrs.name || []).some((n) => bare(n) === topic));
@@ -222,7 +222,10 @@ function composeOnce(world, topic, { genre, size, seed = 1, realise, measures, s
 // points solved jointly (solveChoices): no relation twice, each move fillable from what is left,
 // weighted by interest; then the sentences are filled by interest, never a fact twice.
 const TAKES_FACT = new Set(['fact', 'facts', 'question']);
-function composeGenre(world, topic, g, { size = {}, seed = 1, realise, measures, story } = {}) {
+function composeGenre(world, topic, g, { size = {}, seed = 1, realise, measures, story, quiet = [] } = {}) {
+  // keys never narrated (codes, ids): the host's `quiet`, and the knowledge's own marks (`k.attributes.key name= narrate=no`)
+  const QUIET = new Set([...quiet, ...world.ofType('k.attributes.key').filter((k) => /^(no|false)$/.test(String(k.attrs.narrate?.[0] ?? ''))).map((k) => bare(k.attrs.name[0]))]);
+  const META_KEYS = new Set(['name', 'about', 'kind', 'class', 'is', 'source', 'own', 'cite', 'derived']);
   const genre = one(g, 'name');
   let plan = story, storyKb = null, storyWhy = null, storyNote = null;
   // the sentences: the host's realiser, else the language world's discourse templates when it has them
@@ -246,7 +249,8 @@ function composeGenre(world, topic, g, { size = {}, seed = 1, realise, measures,
   const stepsOf = (p) => world.ofType('k.genres.step').filter((st) => one(st, 'genre') === genre && one(st, 'part') === one(p, 'name'));
   const subject = [...world.wires.values()].find((w) => !w.type.startsWith('core.') && !w.type.startsWith('k.genres') && !w.type.startsWith('k.interest') && one(w, 'name') === topic);
   const about = [...world.wires.values()].filter((w) => !w.type.startsWith('core.') && !w.type.startsWith('k.genres') && !w.type.startsWith('k.interest') && w !== subject
-    && Object.values(w.attrs).some((vs) => vs.some((v) => bare(v) === topic)));
+    && Object.values(w.attrs).some((vs) => vs.some((v) => bare(v) === topic))
+    && Object.keys(w.attrs).some((k) => !k.startsWith('core.') && !META_KEYS.has(k) && !QUIET.has(k) && !(w.attrs[k] || []).some((v) => bare(v) === topic))); // a fact with something to say beyond quiet keys
   const groups = new Map();
   for (const f of about) (groups.get(f.type) || groups.set(f.type, []).get(f.type)).push(f);
   const said = new Set(), interest = (f) => interestOf(world, f, { topic, said, measures: measures?.(f) }).score;
@@ -329,9 +333,11 @@ function composeGenre(world, topic, g, { size = {}, seed = 1, realise, measures,
             else if (k === 'outline') frame.outline = relations;
             else if (recall) { if (!claims[c]) break; frame.recalls = claims[c]; }
             else if (TAKES_FACT.has(k)) {
-              const f = pickFact(pool) ?? (rel ? undefined : pickFact(about));
+              const CONTRAST = /counter|rebut/.test(move); // a counterargument needs a real contrast (reviewer 00:05): a fact that differs from what its siblings say
+            const f = CONTRAST ? (pool.concat(rel ? [] : about)).filter((x) => !said.has(x.id)).find((x) => (interestOf(world, x, { topic }).measured.sibling_contrast ?? 0) > 0) : pickFact(pool) ?? (rel ? undefined : pickFact(about));
+            if (!f && CONTRAST) { short.push(`${inst} ${move}: no fact contrasts with the rest, the move is left out`); break; }
               if (!f) { if (lo > 0) short.push(`${inst} ${move}: no fact left`); break; }
-              said.add(f.id); frame.cites = f.id; frame.fact = { type: f.type, attrs: Object.fromEntries(Object.entries(f.attrs).filter(([key]) => !key.startsWith('core.')).map(([key, vs]) => [key, vs.map(bare)])) };
+              said.add(f.id); frame.cites = f.id; frame.fact = { type: f.type, attrs: Object.fromEntries(Object.entries(f.attrs).filter(([key]) => !key.startsWith('core.') && !QUIET.has(key)).map(([key, vs]) => [key, vs.map(bare)])) };
               if (rel && !moves.some((m) => m.cites)) claims.push(f.id); // the first fact of a repeated part: its claim
             } else if (k === 'story') { if (told) Object.assign(frame, told[c]); else short.push(`${inst} ${move}: ${storyWhy ?? 'story moves are filled by k.story'}`); }
             say(frame, { topic, story: plan, outline: relations, told: toldEls, claims, goalAct: (g) => storyKb?.goals.find((x) => x.name === g)?.act });
@@ -347,6 +353,7 @@ function composeGenre(world, topic, g, { size = {}, seed = 1, realise, measures,
   let r = fill(0);
   if (size.sentences > r.sentences) r = fill(size.sentences - r.sentences);
   const out = r.out, short = [...(relaxed ? [relaxed] : []), ...(storyNote ? [storyNote] : []), ...new Set(r.short)];
+  { const seenText = new Set(); let dropped = 0; for (const p of out) p.moves = p.moves.filter((m) => { if (!m.text) return true; const k = m.text.toLowerCase(); if (seenText.has(k)) { dropped++; return false; } seenText.add(k); return true; }); if (dropped) short.push(`${dropped} sentences said twice were left out`); } // no sentence twice in a document
   const silent = R ? out.flatMap((p) => p.moves.filter((m) => !m.text).map((m) => m.move)) : [];
   if (silent.length) short.push(`${silent.length} sentences have no template that fits: ${[...new Set(silent)].join(', ')}`);
   if (size.sentences && r.sentences !== size.sentences) short.push(r.sentences < size.sentences ? `${r.sentences} of ${size.sentences} sentences: the knowledge has no more` : `${r.sentences} sentences: the genre's minimum is above ${size.sentences}`);

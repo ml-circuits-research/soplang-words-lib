@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.90.0
+
+PSys2's first real runs (reviewer 00:05 items 2 and 3).
+
+### Changed
+- `learnRules`:
+  - the filler is the thing's name, not its id, so the word, the fact name and the holder
+    are one variable;
+  - a rule is judged on its own training cases first and refused there if one fails.
+- `compose` by a genre:
+  - no sentence twice in a document;
+  - a counterargument or rebuttal only with a real contrast (a fact that differs from its
+    siblings), else the move is left out and said;
+  - keys in `quiet` (and those marked `k.attributes.key narrate=no`) are never narrated.
+
 ## 0.89.0
 
 Typed form operators (reviewer 00:05 item 1: content words stayed constants).

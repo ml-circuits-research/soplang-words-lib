@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="a23db0fe8cfc">
+<meta name="source-hash" content="5ddd3024b2d5">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.89.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.90.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -600,7 +600,7 @@ print(interestOf(w, w.get(&#x27;p&#x27;)).by, interestOf(w, w.get(&#x27;r1&#x27;
 <p>When the world holds the knowledge repository's <code>k.genres</code> and <code>genre</code> names one of its genres, <code>compose</code> lays the text out by it:</p>
 <ul><li>parts in order, each repeated between <code>min</code> and <code>max</code> times;</li><li>the steps of each part in order; several steps at one place are alternatives;</li><li>sentences per step: the minimum, and more while <code>size.sentences</code> and the facts allow;</li><li>every frame carries the step's tense (else the part's, else the register's); the register (person, tense, sentence lengths in words) is in <code>register</code>.</li></ul>
 <p>The choice points are solved jointly with <code>solveChoices</code>: how many times a repeated part occurs, which relation each occurrence takes, and the move at each place with alternatives. The constraints: no relation twice; a relation holds the facts its steps need at their minimum (when no layout allows that, it is relaxed and said in <code>short</code>); a compare move needs two facts. Interest weights the draw. Then the sentences are filled.</p>
-<ul><li><code>takes=topic</code> cites the topic.</li><li><code>outline</code> lists the relations of the repeated parts.</li><li><code>fact</code>, <code>facts</code> and <code>question</code> take a fact by interest, never one twice.</li><li>A <code>facts</code> move after the repeated parts (a summary) restates their claims (<code>recalls</code>).</li><li><code>story</code> moves are left to <code>k.story</code>.</li></ul>
+<ul><li><code>takes=topic</code> cites the topic.</li><li><code>outline</code> lists the relations of the repeated parts.</li><li><code>fact</code>, <code>facts</code> and <code>question</code> take a fact by interest, never one twice.</li><li>A <code>facts</code> move after the repeated parts (a summary) restates their claims (<code>recalls</code>).</li><li><code>story</code> moves are left to <code>k.story</code>.</li><li>A counterargument (or a rebuttal) needs a real contrast: a fact that differs from what its siblings say. Without one the move is left out, and <code>short</code> says so.</li><li>Keys in <code>quiet</code> (and keys the knowledge marks <code>k.attributes.key name= narrate=no</code>) are never narrated.</li><li>No sentence is said twice in a document.</li></ul>
 <p>The result is <code>{ genre, register, topic, parts: [{ part, heading?, layout?, relation?, moves: [frame] }], choices, nodes, short? }</code>. A small genre written in the k.genres format, made up for this example:</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.tell(`@g k.genres.genre name=note  @m1 k.genres.move name=open takes=topic  @m2 k.genres.move name=tell takes=fact
@@ -628,7 +628,7 @@ print(r.map, r.offers[0].what);</code></pre></figure>
 <h3 id="learnrulesworld-cases-options">learnRules(world, cases, options?)</h3>
 <p>Induction from cases (abstraction round, item 4). Cases <code>[{ text, frame }]</code> that share a frame (<code>ask</code> of a key) and a length are anti-unified by the library's own <code>induce</code> into one reading rule:</p>
 <ul><li>the words that differ become variables;</li><li>a variable that fills the frame is lifted to the kind of the thing it names, by a pattern on that thing's fact.</li></ul>
-<p>Each rule is judged on a fork of the world: on its training cases, on the <code>heldOut</code> cases, and on the valid cousins of its cases (<code>cousins(case)</code>, for example <code>cousins</code> of this library). It is <code>admitted</code> only when every training case passes and the held-out share is at least <code>admit</code> (default 1). The result is <code>[{ text, support, train, heldOut, admitted, why? }]</code>. Nothing is told to the world: a rule is text to review.</p>
+<p>The filler is taken as the text names it (the thing's name, not its id), so the word, the fact's name and the frame's holder are one variable. Each rule is judged on a fork of the world: first on its training cases (a rule that fails one is refused there), then on the <code>heldOut</code> cases, and on the valid cousins of its cases (<code>cousins(case)</code>, for example <code>cousins</code> of this library). It is <code>admitted</code> only when every training case passes and the held-out share is at least <code>admit</code> (default 1). The result is <code>[{ text, support, train, heldOut, admitted, why? }]</code>. Nothing is told to the world: a rule is text to review.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.tell(&#x27;@cow k.animal name=cow sound=moo  @duck k.animal name=duck sound=quack  @hen k.animal name=hen sound=cluck&#x27;);
 const C = (t, o) =&gt; ({ text: t, frame: { is: &#x27;ask&#x27;, key: &#x27;sound&#x27;, of: { id: o } } });
@@ -1011,7 +1011,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.89.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.90.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

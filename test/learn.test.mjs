@@ -29,3 +29,12 @@ test('learnRules: an over-general rule (the key word made a variable) is refused
   assert.equal(r.train.pass, 2);
   assert.deepEqual([r.admitted, r.why], [false, 'held-out 0/1']);
 });
+
+test('learnRules ties the word, the fact name and the holder when the id is not the name (reviewer 00:05), and refuses a rule that fails its own cases', () => {
+  const v = new World();
+  v.tell('@k.animals.animal.cow k.animals.animal name=cow sound=moo  @k.animals.animal.duck k.animals.animal name=duck sound=quack  @k.animals.animal.hen k.animals.animal name=hen sound=cluck');
+  const C = (t, o) => ({ text: t, frame: { is: 'ask', key: 'sound', of: { id: `k.animals.animal.${o}` } } });
+  const [r] = learnRules(v, [C('what sound does a cow make', 'cow'), C('what sound does a duck make', 'duck')], { heldOut: [C('what sound does a hen make', 'hen')] });
+  assert.match(r.text, /t5=\?v0[\s\S]*name=\?v0[\s\S]*of=\?v0/, 'one variable for the word, the name and the holder');
+  assert.deepEqual([r.train, r.heldOut, r.admitted], [{ pass: 2, of: 2 }, { pass: 1, of: 1 }, true]);
+});

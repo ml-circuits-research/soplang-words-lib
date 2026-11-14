@@ -1666,6 +1666,11 @@ compare move needs two facts. Interest weights the draw. Then the sentences are 
 - `fact`, `facts` and `question` take a fact by interest, never one twice.
 - A `facts` move after the repeated parts (a summary) restates their claims (`recalls`).
 - `story` moves are left to `k.story`.
+- A counterargument (or a rebuttal) needs a real contrast: a fact that differs from what its
+  siblings say. Without one the move is left out, and `short` says so.
+- Keys in `quiet` (and keys the knowledge marks `k.attributes.key name= narrate=no`) are
+  never narrated.
+- No sentence is said twice in a document.
 The result is `{ genre, register, topic, parts: [{ part, heading?, layout?, relation?,
 moves: [frame] }], choices, nodes, short? }`. A small genre written in the k.genres
 format, made up for this example:
@@ -1740,7 +1745,10 @@ one reading rule:
 - a variable that fills the frame is lifted to the kind of the thing it names, by a
   pattern on that thing's fact.
 
-Each rule is judged on a fork of the world: on its training cases, on the `heldOut` cases,
+The filler is taken as the text names it (the thing's name, not its id), so the word, the
+fact's name and the frame's holder are one variable. Each rule is judged on a fork of the
+world: first on its training cases (a rule that fails one is refused there), then on the
+`heldOut` cases,
 and on the valid cousins of its cases (`cousins(case)`, for example `cousins` of this
 library). It is `admitted` only when every training case passes and the held-out share is
 at least `admit` (default 1). The result is `[{ text, support, train, heldOut, admitted,

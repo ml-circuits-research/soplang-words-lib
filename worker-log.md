@@ -4981,3 +4981,23 @@ Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-que
 - The owner's hypothesis holds at the atomic level: 14 operators cover 80 % of the edits.
 - Gates: npm test 464 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Next: reviewer 00:05 item 2 (learnRules: tie the name slot to the token; reject a rule that fails its own training cases), then item 3 (composition quality).
+
+## 0.90.0: learnRules and composition quality (reviewer 00:05 items 2, 3)
+
+**learnRules**
+- The filler is the thing's name, not its id, so the word, the fact name and the holder are one variable.
+- test/learn.test.mjs, ids like k.animals.animal.cow: the rule has `t5=?v0` … `name=?v0` … `of=?v0`; train 2/2, held-out 1/1, admitted.
+- A rule that fails its own training cases is refused before the held-out run.
+- Likely cause of PSys2's "matches all 286 animals, 0/37 own cases": its holder id was taken as the name token. Please re-run learnRules with 0.90.
+
+**compose**
+- No sentence twice in a document.
+- A counterargument or rebuttal needs a real contrast (sibling_contrast > 0), else it is left out with a note.
+- `quiet` keys, and keys the knowledge marks `k.attributes.key narrate=no`, are never narrated.
+- test/compose.test.mjs: a Chad essay with code / code2 quiet; the counterargument left out with a note; no sentence twice.
+
+**Not yet**
+- Attribute-specific realisation ("Its capital is N'Djamena") needs w.lang.en templates per attribute ([KNOW]). Until then the host's clause() gives it.
+
+**Gates** (5th release, so test:full)
+- test:full 466 / 466 / 464 pass, 0 fail; npm test 466; pilot identical; psys2=0; scan clean; tsc ok.

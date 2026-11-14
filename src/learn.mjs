@@ -23,9 +23,12 @@ export function learnRules(world, cases, { heldOut = [], cousins: cousinsOf, adm
   for (const [key, group] of groups) {
     if (group.length < min) continue;
     const name = `learned_${++g}`;
+    // the filler as the text names it (the thing's name, not its id), so the word, the fact's name and the
+    // frame's holder are one variable when induce anti-unifies (reviewer 00:05: the id was taken as the token)
+    const nameOf = (id) => String(world.get(id)?.attrs.name?.[0] ?? id).replace(/^"|"$/g, '').toLowerCase();
     const examples = group.map((c) => {
-      const thing = world.get(c.frame.of.id);
-      return { when: `${enc(c.text)}\n@f ${thing.type} name=${c.frame.of.id}`, then: `@r ask key=${c.frame.key} of=${c.frame.of.id}` };
+      const thing = world.get(c.frame.of.id), nm = nameOf(c.frame.of.id);
+      return { when: `${enc(c.text)}\n@f ${thing.type} name=${nm}`, then: `@r ask key=${c.frame.key} of=${nm}` };
     });
     let r;
     try { r = induce(examples, { name }); } catch (e) { out.push({ group: key, why: String(e.message || e), admitted: false }); continue; }
@@ -36,9 +39,11 @@ export function learnRules(world, cases, { heldOut = [], cousins: cousinsOf, adm
       const rows = f.ask('ask key=?k of=?o');
       return rows.length === 1 ? { key: rows[0].k, of: rows[0].o } : null;
     };
-    const judge = (list) => { let pass = 0; for (const c of list) { const a = answer(c.text); if (a && a.key === c.frame.key && a.of === (c.frame.of.id)) pass++; } return { pass, of: list.length }; };
+    const judge = (list) => { let pass = 0; for (const c of list) { const a = answer(c.text); if (a && a.key === c.frame.key && a.of === nameOf(c.frame.of.id)) pass++; } return { pass, of: list.length }; };
+    const train = judge(group);
+    if (train.pass < train.of) { out.push({ text: r.text, support: group.map((c) => c.text), train, heldOut: { pass: 0, of: 0 }, admitted: false, why: 'a training case fails' }); continue; } // its own cases first
     const held = [...heldOut.filter((c) => enc(c.text).split(" ").length === enc(group[0].text).split(" ").length), ...(cousinsOf ? group.flatMap((c) => cousinsOf(c).filter((x) => x.valid && x.text)) : [])];
-    const train = judge(group), ho = judge(held);
+    const ho = judge(held);
     const share = ho.of ? ho.pass / ho.of : 1;
     out.push({ text: r.text, support: group.map((c) => c.text), train, heldOut: ho, admitted: train.pass === train.of && share >= admit, ...(train.pass < train.of ? { why: 'a training case fails' } : share < admit ? { why: `held-out ${ho.pass}/${ho.of}` } : {}) });
   }

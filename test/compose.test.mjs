@@ -70,3 +70,15 @@ test('compose: deterministic by seed and memoised until the world changes (PSys2
   w.tell('@z1 k.diet about=penguin eats=squid');
   assert.notEqual(compose(w, 'penguin', { genre: 'presentation', seed: 3 }), a, 'a change in the world: computed again');
 });
+
+test('compose quality (reviewer 00:05): quiet keys never narrated, a counterargument only with a real contrast, no sentence twice', { skip: !worldsDir() && 'offline' }, () => {
+  const w = load(); w.tell(worldText('k.genres'));
+  w.tell(`@chad k.country name=chad capital=ndjamena code=TCD code2=TD  @c1 k.place about=chad region=sahel  @c2 k.place about=chad lake=chad_lake
+    @c3 k.trade about=chad export=oil  @c4 k.trade about=chad export=cotton`);
+  const e = compose(w, 'chad', { genre: 'essay', quiet: ['code', 'code2'] });
+  const facts = e.parts.flatMap((p) => p.moves).filter((m) => m.fact);
+  assert.ok(facts.every((m) => !('code' in m.fact.attrs) && !('code2' in m.fact.attrs)), 'quiet keys are not narrated');
+  assert.ok(e.short?.some((x) => /no fact contrasts/.test(x)), 'no contrast among these facts: the counterargument is left out, and said');
+  const said = e.parts.flatMap((p) => p.moves).filter((m) => m.text).map((m) => m.text.toLowerCase());
+  assert.equal(new Set(said).size, said.length, 'no sentence twice');
+});

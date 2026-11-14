@@ -1380,3 +1380,7 @@ From PSys2's attribution (97136084), general asks that are the library's: (1) a 
 ## Reviewer 2026-11-15 10:55 — L5 is real now (PSys2 Q19)
 
 Q19 accepted (PSys2): a general person/session profile. The deleted Profile tab carried 30 real turns ("I have two kids", "I like cats, dogs and horses", "what do you know about me", "I am 40", "my name is …"). So L5 of the 09:20 block is real: statements read by type ("X has N <numeric key>", "I am <value>", "I like <kinds>", "my name is X") give `teach` facts at the session tier over a `w.person` instance; questions about them read back ("how many kids do I have", "what do you know about me" = describe the instance). Order after R1: L3, L5, L2, L4, on the R2 reader contract (mood: declarative → statement).
+
+## Reviewer 2026-11-15 11:15 — 0.119 (R1) accepted
+
+Reviewer ran `npm test` on 0.119: 514 tests, 513 pass, 0 fail, 1 skipped. Accepted R1 (caches on world.version, one seeded generator, valueText, criteria as data, one tier order, independent voices). Now: test:full, then R2 (one Reader contract with unread / repaired / mood), then L3, L5, L2, L4 on it; R3–R5 after. PSys2 wrote its own review (`docs/architecture-review-2026-11-15.md` in psys2) with [LIB] asks: read its sections B and F for the host kit.

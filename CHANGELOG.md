@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.50.0
+
+Reviewer 08:45 (the knowledge repository's Q42): the tier of a derived value survives a
+merge.
+
+### New
+- A told fact marked `derived=true` with `core.source="rule <id>"` (what a knowledge world
+  ships for its rules' results) has its values at the tier `derived`, value by value; its
+  identity keys stay told. Merged with a told fact of the same identity, in either order,
+  each value keeps its own tier. `why` gives `how: 'rule'`, the rule's id, and
+  `shipped: true`.
+
 ## 0.49.0
 
 Round 28 item 5: what every host's knowledge reader needed.

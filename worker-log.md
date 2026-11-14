@@ -4249,3 +4249,19 @@ clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 
   once) plus the memoised lookup. Telling a shard still parses it once per world; the
   facts' own index by type and value is the world's, so there is no second index.
 - Next: 08:45 (the per-value tier through merges), then items 6–9, then Round 27.
+
+## Reviewer 08:45 — the tier of a derived value through merges — release 0.50.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/cases.mjs`: 55 / 55. Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.50.0).
+
+- Checked first with `node /tmp/tm.mjs`: per-key tiers given as `tell(text, { tier: { key }
+  })` already survive a merge, in both orders (derived / told). What was missing was the
+  reading of the knowledge repository's mark.
+- src/world.mjs: a told wire with `derived=true` gets every non-identity key at the tier
+  `derived` (`keyTiers`). The rule from `core.source="rule <id>"` is kept per key
+  (`keyRules`, undoable on merge). `why` reports `how: 'rule'`, `rule`, `shipped: true`.
+- test/derived-merge.test.mjs: 2 tests, one per order. One wire; lives is derived, colour
+  and name told; why names `k.animal.inherit`.
+- Next: Round 28 items 6–9, then Round 27 (skills and skills/README.md).

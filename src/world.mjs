@@ -320,6 +320,7 @@ export class World {
       else if (fill || w.meta.told) step.how = 'told';
       else { step.how = 'rule'; step.rule = w.meta.via; from = w.meta.from || []; }
       if (step.how === 'rule' && c.rules.some((r) => r.id === step.rule && r.aggregate && !r.when.length)) step.how = 'aggregate';
+      if (step.how === 'told' && k && w.meta.keyRules?.[k] && step.tier === 'derived') { step.how = 'rule'; step.rule = w.meta.keyRules[k]; step.shipped = true; } // a value a rule derived elsewhere and shipped as data
       if (step.how === 'told') { const e = statement(w.id, fill ? k : undefined); if (e?.by) { step.how = 'action'; step.action = e.by; } }
       if (k && step.tier === 'default' && (step.how === 'told' || step.how === 'action')) step.how = 'default'; // a default an act set (the act stays named)
       if (k === 'value' && w.type === 'std.fill.need' && w.attrs.value) step.choice = { key: w.attrs.key[0], value: w.attrs.value[0], tier: w.attrs.tier?.[0], source: w.attrs.source?.[0] };
@@ -1339,13 +1340,23 @@ export class World {
       }
       w.attrs = attrs;
       facts.push(w.id);
+      // a fact a rule derived, shipped as data (`derived=true core.source="rule <id>"`): its values
+      // are derived, value by value, so a merge with told values keeps each value's origin
+      let tierOf = res._tier, rule = null;
+      if (w.attrs.derived?.[0] === 'true') {
+        const c = this._compiled(), ids = new Set([...(c.slots.get(w.type)?.values() || [])].filter((sl) => sl.identity).map((sl) => sl.key));
+        tierOf = Object.fromEntries(Object.keys(w.attrs).filter((k) => !ids.has(k) && k !== 'derived' && !k.startsWith('core.')).map((k) => [k, 'derived']));
+        const src = String(w.attrs['core.source']?.[0] ?? '').replace(/^"|"$/g, '');
+        rule = /^rule\s+(\S+)/.exec(src)?.[1] ?? null;
+      }
       const same = this._findByIdentity(w.type, w.attrs, this._nsOf(w.id));
       if (same) {
         if (same.type !== w.type && this._compiled().isA(w.type, same.type)) this._retype(same, w.type); // the subtype came second
         this._advance(w); // a statement about a wire that is already there happens at the place it declares
-        if (res._tier && typeof res._tier === 'object') {
-          for (const k of Object.keys(w.attrs)) this._merge(same, { [k]: w.attrs[k] }, { via: 'core.tell', from: [], tier: res._tier[k] }, res);
-        } else this._merge(same, w.attrs, { via: 'core.tell', from: [], tier: res._tier }, res);
+        if (tierOf && typeof tierOf === 'object') {
+          for (const k of Object.keys(w.attrs)) this._merge(same, { [k]: w.attrs[k] }, { via: 'core.tell', from: [], tier: tierOf[k] }, res);
+        } else this._merge(same, w.attrs, { via: 'core.tell', from: [], tier: tierOf }, res);
+        if (rule) { const kr = same.meta.keyRules; same.meta.keyRules = { ...(kr || {}), ...Object.fromEntries(Object.keys(tierOf).map((k) => [k, rule])) }; this._do(() => { same.meta.keyRules = kr; }); }
         this.alias.set(w.id, same.id);
         this._do(() => this.alias.delete(w.id));
         this._event({ op: 'merge', id: w.id, into: same.id });
@@ -1353,10 +1364,11 @@ export class World {
       } else {
         const seq = this._event({ op: 'tell', id: w.id, wire: format(w) });
         let tiers = {};
-        if (res._tier && typeof res._tier === 'object') {
-          const own = Object.fromEntries(Object.entries(res._tier).filter(([k]) => w.attrs[this._compiled().shortKey(w.type, k)]).map(([k, t]) => [this._compiled().shortKey(w.type, k), t]));
+        if (tierOf && typeof tierOf === 'object') {
+          const own = Object.fromEntries(Object.entries(tierOf).filter(([k]) => w.attrs[this._compiled().shortKey(w.type, k)]).map(([k, t]) => [this._compiled().shortKey(w.type, k), t]));
           if (Object.keys(own).length) tiers = { keyTiers: own };
-        } else if (res._tier) tiers = { tier: res._tier };
+        } else if (tierOf) tiers = { tier: tierOf };
+        if (rule) tiers.keyRules = Object.fromEntries(Object.keys(tierOf).map((k) => [k, rule]));
         this._addWire(w, { seq, told: true, depth: 0, ...tiers }, res);
         res.added.push(w.id);
       }

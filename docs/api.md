@@ -163,7 +163,10 @@ print(World.diff(a, b).added.map((x) => x.id));
 
 States wires: facts, matrix wires, or both. Options: `dry` (evaluate and undo), `strict`,
 `tier` (default `told`; a tier name for the whole statement, or `{ key: tier }` for some
-keys, which are then assumptions that `assumptions()` lists and a told value replaces),
+keys, which are then assumptions that `assumptions()` lists and a told value replaces;
+a fact marked `derived=true` with `core.source="rule <id>"`, as a knowledge world ships what
+its rules derive, has its values at the tier `derived`, value by value, so a merge with told
+values of the same identity keeps each value's origin, and `why` names the rule),
 `ns` (the facts go in that [namespace](language.md#12-scope): `b1` becomes `ns::b1`, a
 reference without a namespace points into it), `budget`. Returns a change result. Cost: O(matches the new
 wires take part in) for the chase, plus validation of the touched wires; telling matrix

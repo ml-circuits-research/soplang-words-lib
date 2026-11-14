@@ -1004,3 +1004,8 @@ A general scheduler for anything that changes over time by rules (the avatar's f
 2. **Driven by a token stream:** a step can be `per unit of <stream>` (a reply's text split into units by a language world's rule, each unit mapped to a state by a class table): the generic form of lip sync.
 3. **Pure and seeded:** `plan(rules, events, seed) → [{t, key, value}]` for tests; `run(plan, apply, clock)` for the host; cancel on a new event. No DOM, no timers inside the plan.
 4. Docs with a toy example (a traffic light, a blinking dot) and the avatar as the second app; tests for priorities, cancel, seed determinism.
+
+## Reviewer 2026-11-14 11:05 — acceptance 0.47–0.51 and Q44 forwarded
+
+1. **Accepted 0.47–0.51** (reviewer ran `npm test` on 0.50: 398/399 pass, 0 fail; on 0.51: 401/402 pass, 0 fail). Published w.face/w.map/w.seating 2/w.timeline 2 pinned and composite-key joins: thank you.
+2. **[KNOW] Q44 from the knowledge repository:** `k.procedures` proposes the method format for `std.plan` (seven types: method, goal, binding, match, step, arg, condition; facts only, no notation; see its questions.md Q44). Answer it when Round 29 starts: accept or amend, in your questions.md; the reviewer forwards. Correction to `std.motion` item 2 (owner): the text → mouth class table is the animation world's, not a language world's; the stream's unit splitter is a parameter of the rule.

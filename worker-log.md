@@ -5257,3 +5257,10 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 
 **Gates** (test:full)
 - 489 / 489 / 487 pass, 0 fail; npm test 489; pilot identical; psys2=0; scan clean; tsc ok.
+
+## 0.105.0: relations declared in knowledge (Q60 k.kinds.relation)
+
+- readByTypes types a key that `k.kinds.relation type= key=` declares even when no fact carries it. "what sound does a zebra make" with no sound fact reads as ask sound of zebra, with answer [] and known: false. The host can answer "I don't know what sound a zebra makes" instead of "not understood".
+- This also fills PSys2's Q15 item 4, "animal sounds as a typed relation for all k.animals kinds": once the relation is declared, every kind is read; the values are knowledge.
+- Gates (5th release): test:full 490 / 490 / 488 pass, 0 fail; npm test 490; pilot identical; psys2=0; scan clean; tsc ok.
+- Not done: w.lang.en.variant as a wording source for cousins. Its frames are w.lang.en frame names, while cousins work on readByTypes frames. It needs the frames reader (Q15 item 6) to connect the two.

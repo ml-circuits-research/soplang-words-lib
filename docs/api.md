@@ -1941,7 +1941,9 @@ Type-driven reading (abstraction round, item 1). Each content word is typed thro
 world itself:
 - a thing: a fact's name;
 - a kind: a type, or a `kind`, `class` or `is` value;
-- an attribute: a key that facts carry;
+- an attribute: a key that facts carry, or a relation the knowledge declares
+  (`k.kinds.relation type= key=`). A question about a declared relation with no value yet
+  is understood, and its frame says `known: false` with an empty answer;
 - a value: a key's value;
 - an act: a word of an action;
 - a known word: a `core.word`. A verb that means a key asks for that key.

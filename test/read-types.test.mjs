@@ -53,3 +53,10 @@ test('readByTypes, act frames: the act with typed arguments (the kind to make, t
   assert.deepEqual(R('remove the circle'), { is: 'act', act: 'remove', args: { thing: 'c1' } });
   assert.deepEqual(R('change the circle to blue'), { is: 'act', act: 'change', args: { thing: 'c1', colour: 'blue' } });
 });
+
+test('readByTypes reads a relation the knowledge declares (k.kinds.relation) even when no fact gives its value: understood, answer unknown', () => {
+  const v = new World();
+  v.tell('@r core.type of=k.kinds.relation  @r1 core.slot of=k.kinds.relation key=type  @r2 core.slot of=k.kinds.relation key=key  @rel k.kinds.relation type=k.animal key=sound  @zebra k.animal name=zebra legs=4');
+  const r = readByTypes(v, 'what sound does a zebra make', { question: ['what', 'does'], skip: ['a', 'make'] });
+  assert.deepEqual(r.best, { is: 'ask', key: 'sound', of: { id: 'zebra' }, answer: [], known: false });
+});

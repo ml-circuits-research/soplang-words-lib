@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.105.0
+
+### New
+- `readByTypes` types the relations the knowledge declares (`k.kinds.relation type= key=`,
+  Q60): a question about one with no value yet is read, with `known: false` and an empty
+  answer, instead of not at all.
+
 ## 0.104.0
 
 From PSys2's Q15 (reviewer 03:20).

@@ -25,6 +25,8 @@ export function typedLexicon(world) {
     for (const [k, vs] of Object.entries(w.attrs)) if (!k.startsWith('core.') && !['name', 'kind', 'class', 'is', 'about'].includes(k)) for (const v of vs) if (!/^-?\d/.test(bare(v)) && v[0] !== '$') add(bare(v), { cat: 'value', key: k, id: w.id, type: w.type });
   }
   for (const [k, ts] of holders) if (!['kind', 'class', 'is', 'about'].includes(k)) add(k, { cat: 'attr', key: k, holders: [...ts] });
+  // relations the knowledge declares (k.kinds.relation type= key=): a key is an attribute of its type even before any fact says it
+  for (const r of world.ofType('k.kinds.relation')) { const k = bare(r.attrs.key?.[0] ?? ''), t = bare(r.attrs.type?.[0] ?? ''); if (k && !holders.has(k)) add(k, { cat: 'attr', key: k, holders: [t], declared: true }); }
   for (const t of new Set([...world.wires.values()].map((w) => w.type))) if (!t.startsWith('core.') && !t.startsWith('std.') && !LANG.some((p) => t.startsWith(p))) add(t.split('.').pop(), { cat: 'kind', type: t });
   const comp = world._compiled?.();
   for (const [type, slots] of comp?.slots?.own ?? []) for (const sl of slots.values()) for (const e of sl.enum || []) add(bare(e), { cat: 'value', key: sl.key, type, schema: true }); // a closed set's values name what they are
@@ -99,11 +101,12 @@ export function readByTypes(world, text, { question = [], skip = [], lemma, sens
     if (a.w === h.w) continue;
     const holderFacts = h.s.cat === 'thing' ? [world.get(h.s.id)] : [...world.wires.values()].filter((x) => (h.s.type && x.type === h.s.type) || (h.s.kind && (x.attrs[h.s.key] || []).some((v) => bare(v) === h.s.kind)));
     const carry = holderFacts.filter((x) => x?.attrs[a.s.key]);
-    if (!carry.length) continue;
+    const declared = !carry.length && a.s.declared && holderFacts.some((x) => a.s.holders.includes(x?.type)); // a relation the knowledge declares for this kind, with no value yet
+    if (!carry.length && !declared) continue;
     const used = new Set([a.w, h.w]);
     const left = words.filter((w) => !used.has(w) && !w.senses.some((s) => s.cat === 'act' || s.cat === 'word')).length; // words the frame leaves unread (a verb like "make" or "have" is the relation's)
     const near = 1 / (1 + Math.abs(a.w.at - h.w.at)); // order only ranks
-    frames.push({ frame: { is: 'ask', key: a.s.key, of: h.s.cat === 'thing' ? { id: h.s.id } : { kind: h.s.kind ?? h.s.type }, answer: carry.flatMap((x) => (x.attrs[a.s.key] || []).map(bare)) },
+    frames.push({ frame: { is: 'ask', key: a.s.key, of: h.s.cat === 'thing' ? { id: h.s.id } : { kind: h.s.kind ?? h.s.type }, answer: carry.flatMap((x) => (x.attrs[a.s.key] || []).map(bare)), ...(declared ? { known: false } : {}) },
       score: +(2 + (isQuestion ? 1 : 0) + (h.s.cat === 'thing' ? 0.5 : 0) - left + near * 0.1).toFixed(3), left, words: [h.w.text, a.w.text] });
   }
   // the inverse: a value and a kind of holder (which animal says moo): the holders of that kind with it

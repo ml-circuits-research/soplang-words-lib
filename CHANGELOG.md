@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.118.0
+
+From the reviewer's 09:20 entry, L1 (word problems of real turns), and 09:00 (read both Romanian
+dictionaries).
+
+### Changed
+- `storyState`: the subject is a name, a pronoun, I, or a number ("One flies away"); a clause
+  with no subject keeps the last owner; "a"/"an" = 1; a negated event changes nothing; giving
+  more than is held is refused with the reason (`refused`); an unknown start solved by a later
+  "has" ("ate 2 and now has 3"); comparisons ("3 more than", "twice as many as"); questions of
+  how many at first, how many more than, who has the most; `prior` carries a story across
+  turns. Real rows it reads: PSys2 r0194, r0195, r0201, r0541-r0543.
+- `dictionary({ read })`: `read` may be a list of readers, one dictionary over several sources.
+- tools/bench-ro-frames.mjs reads the hand dictionary and the UniMorph-derived one.
+
 ## 0.117.0
 
 PSys2 has renamed its uses (reviewer 06:35, Q68): the deprecated names of 0.111.0 go.

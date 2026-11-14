@@ -103,3 +103,9 @@ test('morph: a read_only irregular is analysed, never generated; inflectBy takes
   assert.equal(inflectBy(w, 'good', 'comparative', T), 'better');
   assert.equal(inflectBy(w, 'burn', 'past', T), 'burned', 'variant=yes is read, not written');
 });
+
+test('morph: a dictionary over several readers: one dictionary, the first reader wins for a lemma in both', () => {
+  const d = dictionary({ read: [(p) => (p === 'c' ? 'casă\tf.ă\tf\tk.words.house.noun.1' : ''), (p) => (p === 'c' ? 'casă\tf.ă\tf\nculoare\tf.e\tf' : '')] });
+  assert.equal(d.lookup('casă').sense, 'k.words.house.noun.1');
+  assert.equal(d.lookup('culoare').class, 'f.e');
+});

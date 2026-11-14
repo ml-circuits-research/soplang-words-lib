@@ -154,13 +154,15 @@ export function splitClitics(m, word) {
 /**
  * An external dictionary, compact and lazy: one row per lemma, `lemma<TAB>class<TAB>gender?<TAB>sense?`
  * (`#` starts a comment), split into files by the first `prefix` letters of the folded lemma.
- * `read(prefix)` gives a file's text (or null); each file is read once, when a word needs it.
+ * `read(prefix)` gives a file's text (or null); each file is read once, when a word needs it. `read` may be a
+ * list of readers (several dictionaries of one language, read in place): their rows are one dictionary, and for
+ * a lemma in more than one, the first reader's row wins.
  */
 export function dictionary({ read, prefix = 1, fold: f = (s) => s }) {
   const files = new Map(); // prefix -> { rows, byLemma, byPlain }
   const load = (p) => {
     if (!files.has(p)) {
-      const rows = String(read(p) ?? '').split('\n').filter((l) => l.trim() && !l.startsWith('#')).map((l) => { const [lemma, cls, gender, sense] = l.split('\t'); return { lemma, class: cls, ...(gender ? { gender } : {}), ...(sense ? { sense } : {}) }; });
+      const rows = [].concat(read).map((r) => String(r(p) ?? '')).join('\n').split('\n').filter((l) => l.trim() && !l.startsWith('#')).map((l) => { const [lemma, cls, gender, sense] = l.split('\t'); return { lemma, class: cls, ...(gender ? { gender } : {}), ...(sense ? { sense } : {}) }; });
       const byLemma = new Map(), byPlain = new Map();
       for (const e of rows) { if (!byLemma.has(e.lemma)) byLemma.set(e.lemma, e); const k = f(e.lemma); (byPlain.get(k) || byPlain.set(k, []).get(k)).push(e); }
       files.set(p, { rows, byLemma, byPlain });

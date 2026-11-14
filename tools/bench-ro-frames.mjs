@@ -2,7 +2,7 @@
 // the owner meant (glossed by hand), compared on MEANING: the act, and the thing named. The English gloss
 // gives the reference act through its verb (k.actions.verb text= act=) and its content words; the Romanian
 // reading gives the act of its frame and the reference words of its roles (through the lemmas' senses).
-//   node tools/bench-ro-frames.mjs [--rows]
+//   node tools/bench-ro-frames.mjs [--rows] [--hand]   (--hand: the hand dictionary alone)
 import { execFileSync } from 'node:child_process';
 import { readFileSync, existsSync } from 'node:fs';
 import { morphOf, dictionary, fold, readFrames } from '../src/index.mjs';
@@ -18,8 +18,9 @@ const ro = show('training/eval/ro-en-meaning/real-ro.tsv').split('\n').filter(Bo
 const T = ['class', 'ending', 'irregular', 'vowel', 'fold', 'split', 'template', 'det', 'pron', 'prep', 'numeral', 'particle', 'frame', 'part', 'phrase', 'lex'].map((x) => `w.lang.ro.${x}`);
 const w = await catalogWorld({ 'w.lang.ro': T, 'k.actions': ['k.actions.verb'] });
 const m = morphOf(w, { types: { cls: 'w.lang.ro.class', ending: 'w.lang.ro.ending', irregular: 'w.lang.ro.irregular', fold: 'w.lang.ro.fold', split: 'w.lang.ro.split', template: 'w.lang.ro.template', vowel: 'w.lang.ro.vowel' } });
-const D = `${worldsDir()}docs/worlds/w.lang.ro/dictionary/`;
-const d = dictionary({ read: (l) => (existsSync(`${D}${l}.tsv`) ? readFileSync(`${D}${l}.tsv`, 'utf8') : ''), fold: (s) => fold(m, s) });
+const file = (dir) => (l) => (existsSync(`${worldsDir()}docs/worlds/w.lang.ro/${dir}/${l}.tsv`) ? readFileSync(`${worldsDir()}docs/worlds/w.lang.ro/${dir}/${l}.tsv`, 'utf8') : '');
+const twoDicts = !process.argv.includes('--hand'); // the hand dictionary (with senses) first, then the UniMorph-derived lemmas (morphology only)
+const d = dictionary({ read: twoDicts ? [file('dictionary'), file('dictionary-unimorph')] : file('dictionary'), fold: (s) => fold(m, s) });
 
 // the reference meaning of an English gloss: the act of its first verb that k.actions knows, and its content words
 const verbs = new Map(); for (const v of w.ofType('k.actions.verb')) { const t = String(v.attrs.text[0]).replace(/^"|"$/g, ''); if (!verbs.has(t)) verbs.set(t, String(v.attrs.act[0]).replace(/^"|"$/g, '')); }

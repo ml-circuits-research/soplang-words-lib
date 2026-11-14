@@ -554,7 +554,7 @@ export function analyse(m: Morph, form: string, options?: { dictionary?: Diction
 export function fold(m: Morph, text: string): string;
 export function splitClitics(m: Morph, word: string): string[];
 export interface Dictionary { lookup(lemma: string): { lemma: string; class: string; gender?: string; sense?: string } | null; byFolded(plain: string): { lemma: string; class: string; gender?: string; sense?: string }[]; loaded(): string[] }
-export function dictionary(options: { read: (prefix: string) => string | null; prefix?: number; fold?: (s: string) => string }): Dictionary;
+export function dictionary(options: { read: ((prefix: string) => string | null) | ((prefix: string) => string | null)[]; prefix?: number; fold?: (s: string) => string }): Dictionary;
 export function realise(m: Morph, template: string, roles: Record<string, string>, options?: { dictionary?: Dictionary; base?: Record<string, string>; agree?: string[] }): string | null;
 export function templateFor(m: Morph, act: string, shape?: string | null): string | null;
 /** std.motion: the change points of states over time, from rules and events (pure, seeded). */
@@ -660,7 +660,7 @@ export function learnRules(world: World, cases: { text: string; frame: object }[
 /** Two world schemas aligned by structure; what one has and the other lacks is offered. */
 export function alignWorlds(a: World, b: World, options?: { min?: number }): { map: Record<string, string>; slots: Record<string, Record<string, string>>; score: number; offers: { to: { type: string; key: string }; what: string; value: unknown; from: { type: string; key: string } }[] };
 /** A story then a question: quantities held by owners follow the story; the question is read against them. */
-export function storyState(text: string, options?: { verbs?: Record<string, 'set' | 'add' | 'remove' | 'give'>; numbers?: Record<string, number>; pronouns?: string[]; question?: string[]; all?: string[]; skip?: string[] }): { state: Record<string, Record<string, number>>; steps: object[]; answers: { question: string; answer: number | null; owner?: string; item: string; why: string }[]; unread: string[] };
+export function storyState(text: string, options?: { self?: string[]; one?: string[]; negations?: string[]; more?: string[]; fewer?: string[]; times?: Record<string, number>; than?: string[]; start?: string[]; most?: string[]; least?: string[]; prior?: object; verbs?: Record<string, 'set' | 'add' | 'remove' | 'give'>; numbers?: Record<string, number>; pronouns?: string[]; question?: string[]; all?: string[]; skip?: string[] }): { state: Record<string, Record<string, number>>; steps: object[]; answers: { question: string; answer: number | string | null; owner?: string; item: string; why: string }[]; refused: { sentence: string; why: string }[]; unread: string[]; starts: Record<string, number>; unknown: Record<string, boolean>; focus: { owner: string | null; item: string | null } };
 /** A word changed by a language world's ordered suffix rules, irregular forms first. */
 export function inflectBy(world: World, word: string, op?: string, options?: { types?: { rule?: string; irregular?: string; form?: string }; vowels?: string }): string;
 /** The article before a word, by the sound it begins with (onsets, else its first letter). */

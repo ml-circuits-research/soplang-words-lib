@@ -5398,3 +5398,16 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   0.1713 -> 0.1338 (p(0.5) 0.27, p(0.9) 0.82, 14 steps); Platt 0.1713 -> 0.1412 (p(0.5) 0.25, p(0.9) 0.78).
 - `git grep -i cousin` outside CHANGELOG/logs/glossary history: none.
 - Gate: npm test 507 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.118.0 — L1 word problems of real turns (reviewer 09:20); two Romanian dictionaries (09:00)
+
+- storyState rewritten (src/story-focus.mjs). /tmp/ss.mjs: r0194 -> 3 (was 15: "He" lost to "Ana" as
+  subject); r0195 -> 5 with refused "Tom only had 5 apples" (was 5 with Ana at -8); r0201 -> 9 (was 10);
+  r0541-r0543 as three turns with `prior` -> 9; "ate 2 and now has 3 ... at first" -> 5; "3 more than" -> 7;
+  "twice as many ... how many more" -> 4; "who has the most" -> Ana; negated -> unchanged; "I buy a pen" -> 4.
+- Verbs are still data from the host: k.actions has no typed possession effects yet (knowledge K5 not
+  published at the pin); a reader of them comes when it is.
+- dictionary({ read: [...] }): bench-ro-frames with hand + UniMorph dictionaries: 93 / 74 / 38 of 161,
+  the same as the hand one alone (UniMorph rows have no senses, so no new meaning; crocodil, capră,
+  rață are in neither). Senses for the real turns' nouns remain Q69 for the knowledge repository.
+- Gate: npm test 509 pass / 0 fail; test:full 509 / 509 / 506, 0 fail; pilot same; psys2=0; scan clean; tsc ok.

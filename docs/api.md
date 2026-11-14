@@ -1381,7 +1381,9 @@ The functions:
   class, and a folded spelling finds the lemma with its diacritics.
 - `dictionary({ read, prefix, fold })` is the external lexicon: one row per lemma,
   `lemma<TAB>class<TAB>gender?<TAB>sense?`, split into files by the first `prefix` letters
-  and read lazily, one file when a word needs it.
+  and read lazily, one file when a word needs it. `read` may be a list of readers (several
+  dictionaries of one language, read in place, never merged into a copy): their rows are one
+  dictionary, and the first reader's row wins for a lemma in both.
 - `realise(m, template, roles, { dictionary, base })` fills `{role}`, `{role:f=v,...}`
   (that cell) and `{role@other}` (agreement with another role through unification of their
   feature bundles).
@@ -1827,17 +1829,28 @@ print(compose(w, 'owl', { genre: 'note' }).parts.map((p) => [p.part, p.relation 
 
 ### storyState(text, options?)
 
-A story, then a question (abstraction round, item 6). The referents of a story and its
-arithmetic frame stay in focus, and a following question is read against them.
-- Each sentence changes the quantity an owner holds: a name, or a pronoun for the last
-  owner; a number; an item.
-- The verb's effect is data: `verbs` maps a word to `set`, `add`, `remove` or `give`, and
-  `give` moves the quantity to the other name.
-- A question asks what an owner holds, or all owners together (`all`).
-- `numbers`, `pronouns`, `question` and `skip` come from the host or its language world.
+A story, then a question (abstraction round, item 6; word problems of real turns). The referents
+of a story and its arithmetic stay in focus, and a following question is read against them.
+- Each sentence changes what an owner holds. The subject is a name, a pronoun (the last owner),
+  a word of `self` (I, me: the owner "I"), or a number ("One flies away": that many of the last
+  item, of the last owner). A clause with no subject ("and now has 3") keeps the last owner.
+- A number, or a word of `one` (a, an) for 1, then the item. The verb's effect is data:
+  `verbs` maps a word to `set`, `add`, `remove` or `give`; a give moves the quantity to the
+  other name.
+- A sentence with a negation changes nothing. Giving or losing more than is held is refused,
+  with the reason in `refused` ("Tom only had 5 apples").
+- A change before anything is known makes the start unknown; a later `set` solves it ("ate 2
+  and now has 3": 5 at first). A comparison sets one owner from another ("3 more than", "2
+  fewer than", "twice as many as").
+- Questions: how many an owner holds, or all together (`all`); how many at first (`start`);
+  how many more or fewer one holds than another; who holds the most or the least.
+- `prior` (an earlier result) carries the story across turns.
+- The words (`numbers`, `pronouns`, `question`, `skip`, `self`, `one`, `negations`, `more`,
+  `fewer`, `times`, `than`, `start`, `most`, `least`) come from the host or its language world;
+  the defaults beyond the first four are English.
 
-The result is `{ state, steps, answers: [{ question, answer, owner?, item, why }],
-unread }`. A sentence it cannot read is listed, never guessed.
+The result is `{ state, steps, answers: [{ question, answer, owner?, item, why }], refused,
+unread, starts, unknown, focus }`. A sentence it cannot read is listed, never guessed.
 
 ```js run
 const EN = { verbs: { has: 'set', buys: 'add' }, pronouns: ['she'], question: ['how', 'many'], skip: ['more', 'does'] };

@@ -876,3 +876,16 @@ The owner looked at this repository and asked whether the library is building pa
 4. **Examples stay toys**: each example world under ~60 lines, clearly invented, named as an example; any example that grows into something reusable goes to sop-knowledge-worlds as a `w.*` schema.
 5. **The case corpus stays language-free and minimal**: a case carries only the wires it needs; when it needs a real world, it names the published world and commit, not a copy.
 Report wires and bytes removed, and what now comes from where. AGENTS.md gets the rule.
+
+## Reviewer 2026-11-14 06:00 — 0.41.0 validated (381 pass, 0 fail); NAMES for the kinds of worlds in the library docs (owner)
+
+Accepted: no particular worlds in the library, published worlds read at a pinned commit (about 10,500 lines removed). `compat/` still holds 896 KB: say in worker-log what remains and why, or remove it.
+
+**Names for the three kinds of worlds (owner asked; reviewer proposal, to be used in every repository and in the library docs):**
+1. **world schema** — what a kind of world is: its kinds of things, attributes, value types, acts, limits, rules and the words for them; no particular things. Reusable; lives in sop-knowledge-worlds as `w.*` (seating plan, timeline, list, and the schemas of the demo tabs once general). In the library: `std.schema`.
+2. **knowledge world** — facts about the world at large (animals, places, colours, English grammar), true for everyone, no session state; lives in sop-knowledge-worlds as `k.*` (and `w.lang.en` is a knowledge world about a language).
+3. **live world** — one running instance of a world schema in a session: the things the user made, their current values, the focus, the history and undo, temporary and particular; it reads knowledge worlds and follows its schema. A tab shows a live world through a **view**.
+Plus **library modules** (`std.*`: acts, fill, focus, relations, turn, know, grammar): mechanisms, not worlds.
+In Romanian (for the owner): schema lumii, lume de cunoaștere, lume vie.
+
+Task: adopt these names in `docs/glossary.md` (definitions with a short example each and how they relate: a live world = schema + knowledge + session state), in `docs/capabilities.md`, `docs/quickstart.md`, `docs/host-contract.md`, README and the module docs; the API keeps its names but the docs say which kind each function works on. If you think another term is clearer, propose it in questions.md with the reason before changing; one name per kind, no synonyms.

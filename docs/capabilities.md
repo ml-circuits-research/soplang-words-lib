@@ -616,6 +616,26 @@ print(r.conflicts.length, w.ofType('k.f').map((x) => x.attrs.w[0]));
 1 ["200"]
 ```
 
+## Cut a message into clauses
+
+*In `segment`, `actWords`; since 0.46.*
+*Works on: a language's knowledge world (its joiners and frame leads) and the live world's acts.*
+
+One segmenter that knows the act forms: a joiner cuts where an act word follows it, lists
+and coordinations stay whole, a run of joiners is one, and a comma after a frame lead stays.
+Hosts need no clause encoder. **Limits:** "it" in the second clause is resolved later (by
+`resolve` and the focus), not here; corrections ("no wait") are `std.dialogue`'s.
+
+```js run
+const w = new World();
+w.load('@acts core.use world=std.acts  @j g.joiner text=and card_cut=yes  @f g.frame_lead text="from now on"  @k g.joiner text="," card_cut=yes');
+print(segment(w, 'from now on, make blue boxes and remove the red one').map((c) => c.text));
+```
+
+```output
+["from now on, make blue boxes","remove the red one"]
+```
+
 ## Building blocks
 
 *In the core exports; since 0.1 (each as listed).*

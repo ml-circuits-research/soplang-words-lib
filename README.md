@@ -57,6 +57,7 @@ contain and where code lives: [docs/kinds-of-worlds.md](docs/kinds-of-worlds.md)
 | Act on a view itself | `std.schema.view state=` | [example](docs/capabilities.md#act-on-a-view-itself) | 0.37 |
 | Ask over attributes and relations | `std.acts` (`ask`) | [example](docs/capabilities.md#ask-over-attributes-and-relations) | 0.38 |
 | Read several knowledge repositories | `createCatalogs` | [example](docs/capabilities.md#read-several-knowledge-repositories) | 0.43 |
+| Cut a message into clauses | `segment`, `actWords` | [example](docs/capabilities.md#cut-a-message-into-clauses) | 0.46 |
 <!-- /capabilities -->
 
 ## Use

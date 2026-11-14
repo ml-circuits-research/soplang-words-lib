@@ -530,3 +530,7 @@ export function needsOf(world: World, scope?: { world?: string; view?: string })
 
 /** The arbitration contract: own / decline / refuse per declared world for one request. */
 export function arbitrate(world: World, request: { action: string; args?: Record<string, unknown> }, options?: { pass?: 'exact' | 'spelling' | 'view'; resolves?: (world: string, words: string[]) => boolean; words?: string[] }): { verdicts: { world: string; verdict: 'own' | 'decline' | 'refuse'; why: string }[]; owner: string | null; ambiguous?: string[]; pass: string };
+/** One segmenter that knows the act forms: clauses, one act each. */
+export function segment(world: World, text: string, options?: { types?: { joiner?: string; frameLead?: string }; acts?: string[] }): { text: string; from: number; to: number; joiner?: string }[];
+/** The words that start an act: action names, core.word texts that mean one, and extra. */
+export function actWords(world: World, extra?: string[]): Set<string>;

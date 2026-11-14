@@ -16,8 +16,9 @@ export { turn, route, turnFlow, arbitrate } from './turn.mjs';
 export { parseText, grammarOf, nounPhrase, grammarView, viewDiff } from './grammar.mjs';
 export { resolve } from './resolve.mjs';
 export { needsOf } from './std.mjs';
+export { segment, actWords } from './segment.mjs';
 export { ledgerAppend, ledgerGroups, ledgerKey, stageOf, STAGES } from './ledger.mjs';
-export const version = '0.45.0';
+export const version = '0.46.0';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)
  * tools/build.mjs fills in `hash`, a fingerprint of the bundled sources, and `date`,

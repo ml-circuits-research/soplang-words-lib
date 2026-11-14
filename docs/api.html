@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="44fc6b87cb94">
+<meta name="source-hash" content="3b49c80ab641">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.45.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.46.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -466,6 +466,13 @@ print(resolve(w, &#x27;the blue desk and the lamp&#x27;, opt));
 print(resolve(w, &#x27;the desk&#x27;, { ...opt, focus: [&#x27;t1&#x27;] }).tier);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;ids&quot;:[&quot;t2&quot;,&quot;l&quot;],&quot;tier&quot;:&quot;scene&quot;,&quot;how&quot;:[&quot;\&quot;desk\&quot; means table&quot;,&quot;blue: 1 left&quot;]}
 focus</code></pre></figure>
+<h3 id="segmentworld-text-options-and-actwordsworld-extra">segment(world, text, options?) and actWords(world, extra?)</h3>
+<p>One segmenter that knows the act forms: a message cut into clauses, one act each. A joiner (<code>options.types.joiner</code>, default <code>g.joiner</code>: wires with <code>text</code>, <code>cut</code>, <code>card_cut</code>) cuts only when an act word starts what follows it. So "add a box and connect it to the shelf" is two clauses, while "make a cup, a plate and a bowl" and "ann, bob and cy" stay one. A run of joiners is one ("and then"). A comma right after a frame lead (<code>options.types.frameLead</code>, default <code>g.frame_lead</code>: "from now on,") never cuts. <code>actWords</code> gives the act words: the matrix's action names, the <code>core.word</code> texts that mean one, and <code>extra</code> (<code>options.acts</code>). Returns <code>[{ text, from, to, joiner? }]</code> (token positions). No language is built in: the joiners and leads are a language world's facts.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@acts core.use world=std.acts  @j g.joiner text=and cut=yes card_cut=yes  @c g.joiner text=&quot;,&quot; cut=yes card_cut=yes
+  @v core.word text=add means=make`);
+print(segment(w, &#x27;add a box and connect it to the shelf&#x27;).map((c) =&gt; c.text), segment(w, &#x27;make a cup, a plate and a bowl&#x27;).length);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;add a box&quot;,&quot;connect it to the shelf&quot;] 1</code></pre></figure>
 <h3 id="arbitrateworld-request-options">arbitrate(world, request, options?)</h3>
 <p>The arbitration contract: one verdict per declared world for one request. <code>own</code>: the world has the kind (or the thing, or a view whose state has the attribute), allows the act, and its dry run takes it. <code>decline</code>: it has no use for the kind, so it declines the verb; this rule is the library's, not the host's. <code>refuse</code>: it has the kind, but the act is not allowed or the dry run refuses. A refusal is given only in the <code>exact</code> pass; in a <code>spelling</code> or <code>view</code> pass (<code>options.pass</code>) it stays a decline. When several worlds own, <code>options.resolves(world, words)</code> (a host hook, with <code>options.words</code>) keeps the ones whose things hold the words. Returns <code>{ verdicts: [{ world, verdict, why }], owner, ambiguous?, pass }</code>.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
@@ -732,7 +739,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.45.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.46.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

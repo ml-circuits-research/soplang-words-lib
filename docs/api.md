@@ -1238,6 +1238,29 @@ print(resolve(w, 'the desk', { ...opt, focus: ['t1'] }).tier);
 focus
 ```
 
+### segment(world, text, options?) and actWords(world, extra?)
+
+One segmenter that knows the act forms: a message cut into clauses, one act each. A
+joiner (`options.types.joiner`, default `g.joiner`: wires with `text`, `cut`, `card_cut`)
+cuts only when an act word starts what follows it. So "add a box and connect it to the
+shelf" is two clauses, while "make a cup, a plate and a bowl" and "ann, bob and cy" stay
+one. A run of joiners is one ("and then"). A comma right after a frame lead
+(`options.types.frameLead`, default `g.frame_lead`: "from now on,") never cuts.
+`actWords` gives the act words: the matrix's action names, the `core.word` texts that mean
+one, and `extra` (`options.acts`). Returns `[{ text, from, to, joiner? }]` (token
+positions). No language is built in: the joiners and leads are a language world's facts.
+
+```js run
+const w = new World();
+w.load(`@acts core.use world=std.acts  @j g.joiner text=and cut=yes card_cut=yes  @c g.joiner text="," cut=yes card_cut=yes
+  @v core.word text=add means=make`);
+print(segment(w, 'add a box and connect it to the shelf').map((c) => c.text), segment(w, 'make a cup, a plate and a bowl').length);
+```
+
+```output
+["add a box","connect it to the shelf"] 1
+```
+
 ### arbitrate(world, request, options?)
 
 The arbitration contract: one verdict per declared world for one request. `own`: the

@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.46.0
+
+Round 28 item 2: one segmenter that knows the act forms.
+
+### New
+- `segment(world, text, { types, acts })` cuts a message into clauses, one act each:
+  - a joiner cuts only where an act word follows it;
+  - lists and coordinations stay whole;
+  - a run of joiners is one;
+  - a comma after a frame lead never cuts.
+  The joiners and frame leads are a language world's facts (it reads the published
+  `w.lang.en` clause facts).
+- `actWords(world, extra)`: the action names, the `core.word` texts that mean one, and
+  the host's.
+
 ## 0.45.0
 
 Round 28 item 1 (from PSys2's lessons): the arbitration contract.

@@ -4172,3 +4172,23 @@ clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 
   - After that, all 14 parse. "all the tables" lost its quantifier; `cats.quant: 'QALL'`
     reads it now (lesson 25).
 - Next: Round 28 items 2 (one segmenter that knows the act forms) and 3 (`std.dialogue`).
+
+## Round 28 item 2 — one segmenter that knows the act forms — release 0.46.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/capability-table.mjs`: 26 jobs. Version, CHANGELOG, docs
+rebuilt (`docs/version.md`: sopworld 0.46.0).
+
+- src/segment.mjs: `segment` and `actWords`.
+  - A joiner cuts only where an act word follows it. This is "add X and connect A to it":
+    the act forms decide, not commas.
+  - A run of joiners is one; a comma right after a frame lead stays.
+  - Act words come from the compiled matrix's actions plus `core.word` synonyms. My first
+    try read `ofType('core.action')` and found 0 actions, because module actions live in
+    the compiled matrix.
+- test/segment.test.mjs: 2 tests.
+  - Toy facts: add/connect cut; a list and a name list kept whole; "and then" as one
+    joiner; a frame lead's comma.
+  - The published w.lang.en clauses.sop (joiners and frame leads read as they are).
+- Next: item 3 (`std.dialogue`), item 4 (the undo contract), item 5 (`std.knowledge`),
+  then 08:45 (the per-value tier through merges).

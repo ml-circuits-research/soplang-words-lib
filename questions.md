@@ -351,3 +351,11 @@ refuses it. So a w.diagram edge made without `to` comes back with `asks: [{ key:
 the host asks the user. If the knowledge repository wants refusal for some types, the proposal
 is a slot flag (`core.slot ... required=true ask_first=no`) that turns the question into a
 refusal; not done until the reviewer says so.
+
+## Q68: when to remove the deprecated names of 0.111
+
+The plan was removal in 0.114.0, but PSys2 at its HEAD still calls `lib.cousins` (scripts/learn-rules.mjs,
+scripts/lib/cousins-host.mjs) and `lib.liftTokens` (src/dialog/form-operators.mjs). Choice taken: the
+aliases stay until PSys2 has renamed (checked with `git grep` on its HEAD before each release), then go in
+the next release; `calibrate` as score calibration (Platt / isotonic for readEnsemble) comes in that same
+release, since the name is taken until then.

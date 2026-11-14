@@ -5349,3 +5349,10 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   no change.
 - Deprecated names: removal moved to 0.114.0 (two releases after 0.111: 0.112, 0.113 keep them).
 - Gate: npm test 501 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 20:10 check
+
+- No new reviewer task (06:20 accepted 0.111/0.112). Knowledge has k.diagrams (in use since 0.112).
+- `git -C .cache/psys2 grep` on origin/HEAD: PSys2 still calls lib.cousins (scripts/learn-rules.mjs:48,
+  scripts/lib/cousins-host.mjs:52) and lib.liftTokens (src/dialog/form-operators.mjs:39). Aliases stay
+  until PSys2 renames (questions.md Q68).

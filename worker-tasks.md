@@ -1070,3 +1070,7 @@ No LLM (owner: not for this demo); everything from frames, knowledge and the lan
 ## Reviewer 2026-11-14 15:00 — AMENDS 14:45 B (owner, 10:02): `std.compose` = a genre's procedure, choices by interest, not free random
 
 `std.compose(topic, { genre, size, language, seed })`: the genre comes from `k.genres` (structure, moves, register); the composition is a **plan** (`std.plan`) of the genre's procedure in `k.procedures` ("write a story", "write a presentation about X", …), whose choice points (a protagonist that can have the goal, an obstacle that blocks it, a setting where both exist; the chapters of a presentation) are resolved by `std.sample` restricted to the candidates the constraints allow and weighted by `k.interest`. Realisation uses the genre's register templates of the language world. Stories must satisfy `k.story` constraints (the obstacle blocks the goal, the resolution uses something set up earlier): checked as tests. Same checks as 14:45 B5, per genre.
+
+## Reviewer 2026-11-14 15:05 — 0.58 accepted (Round 28 item 7)
+
+Reviewer ran the three phases of `npm test` on 0.58: 419/420, 419, 418 pass, 0 fail in each. grammarCheck and priority-ranked parses accepted. Round 28 left: item 8 (`std.space`), item 9 (harnesses); then std.sample, std.summarize, std.compose (14:15, 14:45, 15:00).

@@ -1089,3 +1089,7 @@ Beyond `std.sample`, `std.summarize`, `std.compose` (14:15–15:00), the reviewe
 ## Reviewer 2026-11-14 15:30 — [KNOW] Q48: deferred join checks (small, before std.summarize)
 
 The knowledge repository cannot declare `drawing=` joins (`type=k.objects.object by=name`): 0.52+ checks a `by=` join when the fact is told, and imports/lazy loading tell 400 animal and food facts before any object, so each is refused. Make a join **open while its target type has no fact with that key**, checked when such a target fact arrives, and reported (not refused) by `world.check()` / a load report when still open. Refusal stays for a target that is loaded and lacks the key. Test with a lazy load in both orders.
+
+## Reviewer 2026-11-14 15:55 — 0.59 `std.sample` accepted
+
+Reviewer ran `npm test` on 0.59 (timeout 1500 s): 421, 421, 420 pass, 0 fail, exit 0. Accepted. Next: Q48 (deferred joins), then `std.summarize` and `std.compose` (PSys2's host side is waiting for them: it declines plainly until they exist), Round 28 items 8–9 after.

@@ -1670,7 +1670,7 @@ world that is not declared.
 
 | Act | Arguments | Does |
 | --- | --- | --- |
-| `make` | `kind`, `world`?, `id`?, `amount`?, attributes | a new thing (or `amount` of them) with the attributes given and the slot defaults at the tier `default` |
+| `make` | `kind`, `world`?, `id`?, `amount`?, attributes | a new thing (or `amount` of them) with the attributes given and the slot defaults at the tier `default`; a required key left open stays an open question, listed in `result.asks` (`key`, and the slot's `ask`) |
 | `remove` | `thing` | takes it away, with its links |
 | `change` | `thing`, `attr`, `value`, or `by` (`more`/`less`) and `amount`? | sets an attribute; more or less by the slot's `step` (else 1) |
 | (sets and values) | `set`: `each`, `all`, `first`, `last` (with `thing` a kind); `value`: `random`, `different`, `same as <thing>` | `change` and `remove` act on the whole set in one undo step; `random` picks from the slot's values, `different` gives each thing another value and none the same, `same as` copies another thing's value |

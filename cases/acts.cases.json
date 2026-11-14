@@ -1,52 +1,599 @@
 [
- {"id": "acts.make.one", "stage": "acting", "source": "handover/acts executor", "schema": "seating", "steps": [
-   {"act": "make", "args": {"kind": "table"}, "expect": {"ok": true, "added": ["table1"]}}]},
- {"id": "acts.make.amount", "stage": "acting", "source": "handover/acts executor: make 2 tables", "schema": "seating", "steps": [
-   {"act": "make", "args": {"kind": "table", "amount": 2}, "expect": {"ok": true, "added": ["table1", "table2"]}}]},
- {"id": "acts.make.into", "stage": "acting", "source": "handover/acts executor: a guest at table 1", "schema": "seating", "steps": [
-   {"act": "make", "args": {"kind": "table"}},
-   {"act": "make", "args": {"kind": "guest", "name": "ann", "at": "$table1"}, "expect": {"ok": true, "added": ["guest1"]}}]},
- {"id": "acts.change.value", "stage": "acting", "source": "handover/acts executor: table 2 blue", "schema": "seating", "steps": [
-   {"act": "make", "args": {"kind": "table"}}, {"act": "make", "args": {"kind": "table"}},
-   {"act": "change", "args": {"thing": "table2", "attr": "colour", "value": "blue"}, "expect": {"ok": true, "changed": [{"id": "table2", "key": "colour", "from": "white", "to": "blue"}]}}]},
- {"id": "acts.change.more", "stage": "acting", "source": "handover/acts executor: 2 more seats", "schema": "seating", "steps": [
-   {"act": "make", "args": {"kind": "table"}},
-   {"act": "change", "args": {"thing": "table1", "attr": "seats", "by": "more", "amount": 2}, "expect": {"ok": true, "changed": [{"id": "table1", "key": "seats", "from": "4", "to": "6"}]}}]},
- {"id": "acts.remove.set.undo", "stage": "acting", "source": "handover/acts executor: remove all the tables, one undo step", "schema": "seating", "steps": [
-   {"act": "make", "args": {"kind": "table"}}, {"act": "make", "args": {"kind": "table"}}, {"act": "make", "args": {"kind": "guest", "name": "ann"}},
-   {"act": "remove", "args": {"thing": "table", "set": "all"}, "expect": {"ok": true, "removed": 2}},
-   {"act": "undo", "args": {}, "expect": {"ok": true, "count": {"table": 2}}}]},
- {"id": "acts.redo.ends", "stage": "acting", "source": "handover/acts executor: a new act ends the redo", "schema": "seating", "steps": [
-   {"act": "make", "args": {"kind": "table"}}, {"act": "undo", "args": {}}, {"act": "make", "args": {"kind": "table"}},
-   {"act": "redo", "args": {}, "expect": {"ok": false}}]},
- {"id": "acts.limit.max", "stage": "acting", "source": "handover/acts executor: at most 8 tables", "schema": "seating", "steps": [
-   {"act": "make", "args": {"kind": "table", "amount": 8}},
-   {"act": "make", "args": {"kind": "table"}, "expect": {"ok": false, "why": "at most 8 table"}}]},
- {"id": "acts.limit.range", "stage": "acting", "source": "handover/acts executor: seats from 1 to 12", "schema": "seating", "steps": [
-   {"act": "make", "args": {"kind": "table"}},
-   {"act": "change", "args": {"thing": "table1", "attr": "seats", "value": 99}, "expect": {"ok": false, "kind": "domain"}}]},
- {"id": "acts.limit.capacity", "stage": "acting", "source": "handover/acts executor: room for 0 more guests", "schema": "seating", "steps": [
-   {"act": "make", "args": {"kind": "table"}}, {"act": "change", "args": {"thing": "table1", "attr": "seats", "value": 2}},
-   {"act": "make", "args": {"kind": "guest", "name": "a", "at": "$table1"}}, {"act": "make", "args": {"kind": "guest", "name": "b", "at": "$table1"}},
-   {"act": "make", "args": {"kind": "guest", "name": "c", "at": "$table1"}, "expect": {"ok": false}}]},
- {"id": "acts.limit.capacity.shrink", "stage": "acting", "source": "handover/acts executor: a table with 2 guests cannot have 1 seat", "schema": "seating", "steps": [
-   {"act": "make", "args": {"kind": "table"}},
-   {"act": "make", "args": {"kind": "guest", "name": "a", "at": "$table1"}}, {"act": "make", "args": {"kind": "guest", "name": "b", "at": "$table1"}},
-   {"act": "change", "args": {"thing": "table1", "attr": "seats", "value": 1}, "expect": {"ok": false}}]},
- {"id": "acts.why.act", "stage": "replying", "source": "handover/acts executor: why is table 1 blue", "schema": "seating", "steps": [
-   {"act": "make", "args": {"kind": "table"}}, {"act": "change", "args": {"thing": "table1", "attr": "colour", "value": "blue"}},
-   {"why": ["table1", "colour"], "expect": {"how": "action", "action": "change"}}]},
- {"id": "acts.why.default", "stage": "replying", "source": "handover/acts executor: white because it is the default", "schema": "seating", "steps": [
-   {"act": "make", "args": {"kind": "table"}},
-   {"why": ["table1", "colour"], "expect": {"how": "default"}}]},
- {"id": "acts.copy.group.save", "stage": "acting", "source": "handover/acts executor: copy, group, save and load", "schema": "seating", "steps": [
-   {"act": "make", "args": {"kind": "table"}}, {"act": "copy", "args": {"thing": "table1"}, "expect": {"ok": true, "added": ["table2"]}},
-   {"act": "save", "args": {"name": "two"}, "expect": {"ok": true}}, {"act": "remove", "args": {"thing": "table2"}},
-   {"act": "load", "args": {"name": "two"}, "expect": {"ok": true, "count": {"table": 2}}}]},
- {"id": "route.kind", "stage": "routing", "source": "sopworld", "schema": "seating", "steps": [
-   {"route": {"action": "make", "args": {"kind": "guest"}}, "expect": {"world": "seating"}}]},
- {"id": "route.none", "stage": "routing", "source": "sopworld", "schema": "seating", "steps": [
-   {"turn": [{"action": "make", "args": {"kind": "dragon"}}], "expect": {"status": "unknown"}}]},
- {"id": "fill.ask", "stage": "filling", "source": "sopworld", "schema": "seating", "steps": [
-   {"turn": [{"action": "change", "args": {"thing": "x"}}], "expect": {"status": "ask"}}]}
+ {
+  "id": "acts.make.one",
+  "stage": "acting",
+  "source": "handover/acts executor",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    },
+    "expect": {
+     "ok": true,
+     "added": [
+      "table1"
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "id": "acts.make.amount",
+  "stage": "acting",
+  "source": "handover/acts executor: make 2 tables",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table",
+     "amount": 2
+    },
+    "expect": {
+     "ok": true,
+     "added": [
+      "table1",
+      "table2"
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "id": "acts.make.into",
+  "stage": "acting",
+  "source": "handover/acts executor: a guest at table 1",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann",
+     "at": "$table1"
+    },
+    "expect": {
+     "ok": true,
+     "added": [
+      "guest1"
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "id": "acts.change.value",
+  "stage": "acting",
+  "source": "handover/acts executor: table 2 blue",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "change",
+    "args": {
+     "thing": "table2",
+     "attr": "colour",
+     "value": "blue"
+    },
+    "expect": {
+     "ok": true,
+     "changed": [
+      {
+       "id": "table2",
+       "key": "colour",
+       "from": "white",
+       "to": "blue"
+      }
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "id": "acts.change.more",
+  "stage": "acting",
+  "source": "handover/acts executor: 2 more seats",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "change",
+    "args": {
+     "thing": "table1",
+     "attr": "seats",
+     "by": "more",
+     "amount": 2
+    },
+    "expect": {
+     "ok": true,
+     "changed": [
+      {
+       "id": "table1",
+       "key": "seats",
+       "from": "4",
+       "to": "6"
+      }
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "id": "acts.remove.set.undo",
+  "stage": "acting",
+  "source": "handover/acts executor: remove all the tables, one undo step",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "ann"
+    }
+   },
+   {
+    "act": "remove",
+    "args": {
+     "thing": "table",
+     "set": "all"
+    },
+    "expect": {
+     "ok": true,
+     "removed": 2
+    }
+   },
+   {
+    "act": "undo",
+    "args": {},
+    "expect": {
+     "ok": true,
+     "count": {
+      "table": 2
+     }
+    }
+   }
+  ]
+ },
+ {
+  "id": "acts.redo.ends",
+  "stage": "acting",
+  "source": "handover/acts executor: a new act ends the redo",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "undo",
+    "args": {}
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "redo",
+    "args": {},
+    "expect": {
+     "ok": false
+    }
+   }
+  ]
+ },
+ {
+  "id": "acts.limit.max",
+  "stage": "acting",
+  "source": "handover/acts executor: at most 8 tables",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table",
+     "amount": 8
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    },
+    "expect": {
+     "ok": false,
+     "why": "at most 8 table"
+    }
+   }
+  ]
+ },
+ {
+  "id": "acts.limit.range",
+  "stage": "acting",
+  "source": "handover/acts executor: seats from 1 to 12",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "change",
+    "args": {
+     "thing": "table1",
+     "attr": "seats",
+     "value": 99
+    },
+    "expect": {
+     "ok": false,
+     "kind": "domain"
+    }
+   }
+  ]
+ },
+ {
+  "id": "acts.limit.capacity",
+  "stage": "acting",
+  "source": "handover/acts executor: room for 0 more guests",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "change",
+    "args": {
+     "thing": "table1",
+     "attr": "seats",
+     "value": 2
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "a",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "b",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "c",
+     "at": "$table1"
+    },
+    "expect": {
+     "ok": false
+    }
+   }
+  ]
+ },
+ {
+  "id": "acts.limit.capacity.shrink",
+  "stage": "acting",
+  "source": "handover/acts executor: a table with 2 guests cannot have 1 seat",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "a",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest",
+     "name": "b",
+     "at": "$table1"
+    }
+   },
+   {
+    "act": "change",
+    "args": {
+     "thing": "table1",
+     "attr": "seats",
+     "value": 1
+    },
+    "expect": {
+     "ok": false
+    }
+   }
+  ]
+ },
+ {
+  "id": "acts.why.act",
+  "stage": "replying",
+  "source": "handover/acts executor: why is table 1 blue",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "change",
+    "args": {
+     "thing": "table1",
+     "attr": "colour",
+     "value": "blue"
+    }
+   },
+   {
+    "why": [
+     "table1",
+     "colour"
+    ],
+    "expect": {
+     "how": "action",
+     "action": "change"
+    }
+   }
+  ]
+ },
+ {
+  "id": "acts.why.default",
+  "stage": "replying",
+  "source": "handover/acts executor: white because it is the default",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "why": [
+     "table1",
+     "colour"
+    ],
+    "expect": {
+     "how": "default"
+    }
+   }
+  ]
+ },
+ {
+  "id": "acts.copy.group.save",
+  "stage": "acting",
+  "source": "handover/acts executor: copy, group, save and load",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "copy",
+    "args": {
+     "thing": "table1"
+    },
+    "expect": {
+     "ok": true,
+     "added": [
+      "table2"
+     ]
+    }
+   },
+   {
+    "act": "save",
+    "args": {
+     "name": "two"
+    },
+    "expect": {
+     "ok": true
+    }
+   },
+   {
+    "act": "remove",
+    "args": {
+     "thing": "table2"
+    }
+   },
+   {
+    "act": "load",
+    "args": {
+     "name": "two"
+    },
+    "expect": {
+     "ok": true,
+     "count": {
+      "table": 2
+     }
+    }
+   }
+  ]
+ },
+ {
+  "id": "route.kind",
+  "stage": "routing",
+  "source": "sopworld",
+  "schema": "seating",
+  "steps": [
+   {
+    "route": {
+     "action": "make",
+     "args": {
+      "kind": "guest"
+     }
+    },
+    "expect": {
+     "world": "seating"
+    }
+   }
+  ]
+ },
+ {
+  "id": "route.none",
+  "stage": "routing",
+  "source": "sopworld",
+  "schema": "seating",
+  "steps": [
+   {
+    "turn": [
+     {
+      "action": "make",
+      "args": {
+       "kind": "dragon"
+      }
+     }
+    ],
+    "expect": {
+     "status": "unknown"
+    }
+   }
+  ]
+ },
+ {
+  "id": "fill.ask",
+  "stage": "filling",
+  "source": "sopworld",
+  "schema": "seating",
+  "steps": [
+   {
+    "turn": [
+     {
+      "action": "change",
+      "args": {
+       "thing": "x"
+      }
+     }
+    ],
+    "expect": {
+     "status": "ask"
+    }
+   }
+  ]
+ },
+ {
+  "id": "defect.make.required",
+  "stage": "acting",
+  "source": "reviewer 02:45 (knowledge repo on 0.26.0): make without a required attribute",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "guest"
+    },
+    "expect": {
+     "ok": true,
+     "added": [
+      "guest1"
+     ],
+     "asks": [
+      "name"
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "id": "defect.undo.after.remove",
+  "stage": "acting",
+  "source": "reviewer 02:45 (knowledge repo on 0.26.0): undo right after remove",
+  "schema": "seating",
+  "steps": [
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "make",
+    "args": {
+     "kind": "table"
+    }
+   },
+   {
+    "act": "remove",
+    "args": {
+     "thing": "table1"
+    },
+    "expect": {
+     "ok": true,
+     "count": {
+      "table": 1
+     }
+    }
+   },
+   {
+    "act": "undo",
+    "args": {},
+    "expect": {
+     "ok": true,
+     "count": {
+      "table": 2
+     }
+    }
+   }
+  ]
+ }
 ]

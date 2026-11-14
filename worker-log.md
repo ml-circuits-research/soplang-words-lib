@@ -3904,3 +3904,19 @@ clean; tsc clean. `node tools/cases.mjs`: 35 / 35. Version, CHANGELOG, docs rebu
 - examples/second-app/rooms.mjs: the 3 keys × 9 generated rules (27 wires) became one line.
   test/apps.test.mjs checks `filled` (key, tier knowledge, source "shop list").
 - reference.md std.know: "Any catalog, any key". docs/reuse-reports/apps.md: gap 3 done.
+
+## Reviewer 02:45 / 03:10 item 4 — the two defects: status — release 0.36.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 0.36.0).
+
+- Reproduced with `node /tmp/def.mjs` on 0.35.0:
+  1. `make kind=guest` without `name` gave ok, and `open()` showed the open question
+     `guest1.name`, but the result said nothing. **Fixed:** `result.asks` lists it, with
+     the slot's `ask`.
+  2. `undo` right after `remove` gave back `table1`. **Not reproduced** on 0.35.0: it was
+     fixed in 0.26 (retractions logged, one undo step per act). It is now guarded by a case.
+- Corpus first: cases `defect.make.required` and `defect.undo.after.remove` in
+  cases/acts.cases.json. `tools/cases.mjs` now checks `expect.asks`. With the old
+  src/std.mjs: 36 / 37 (`asks: [] ≠ ["name"]`); with the fix: 37 / 37. Baseline 37.
+- Next: 03:10 items 1–3 (acts on the view, typed needs, ask over attributes and relations).

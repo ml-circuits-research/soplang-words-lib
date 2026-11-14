@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.36.0
+
+The two defects the knowledge repository saw on 0.26.0 (reviewer 02:45). Both are now in
+the case corpus (37 cases).
+
+### Fixed
+- `make` without a `required` attribute already left an open question, but did not say
+  so. Its result now lists `asks` (`key`, and the slot's `ask`).
+- `undo` right after `remove` gives the thing back. This was already so since 0.26
+  (retractions are logged statements, each act is one undo step). The case now guards it.
+
 ## 0.35.0
 
 ### New

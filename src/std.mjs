@@ -221,7 +221,9 @@ const ACTIONS = {
       }
     }
     if (filled.length) { const p = w.applyPatch({ sets: filled.map((f) => ({ id, key: f.key, value: f.value })) }, { tier: 'default' }); if (p.ok === false) return p; }
-    return { act: 'make', thing: id, ...(filled.length ? { filled } : {}), ...(k.standIn ? { standIn: k.standIn } : {}) };
+    // a required key nobody gave or filled: an open question, said in the result with the slot's ask
+    const asks = k.open ? [] : [...(w._compiled().slots.get(k.type)?.values() || [])].filter((sl) => sl.required && !w.get(id)?.attrs[sl.key]?.length).map((sl) => ({ key: sl.key, ...(sl.ask ? { ask: String(sl.ask).replace(/^"|"$/g, '') } : {}) }));
+    return { act: 'make', thing: id, ...(filled.length ? { filled } : {}), ...(asks.length ? { asks } : {}), ...(k.standIn ? { standIn: k.standIn } : {}) };
   }),
   acts_remove: (ctx, args) => pre('remove', ctx, args, (w) => {
     if (args.set !== undefined) { // each / all / the first / the last of a kind

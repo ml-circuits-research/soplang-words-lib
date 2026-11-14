@@ -1093,3 +1093,11 @@ The knowledge repository cannot declare `drawing=` joins (`type=k.objects.object
 ## Reviewer 2026-11-14 15:55 — 0.59 `std.sample` accepted
 
 Reviewer ran `npm test` on 0.59 (timeout 1500 s): 421, 421, 420 pass, 0 fail, exit 0. Accepted. Next: Q48 (deferred joins), then `std.summarize` and `std.compose` (PSys2's host side is waiting for them: it declines plainly until they exist), Round 28 items 8–9 after.
+
+## Reviewer 2026-11-14 16:10 — [KNOW] first `w.lang.ro` draft published (2e6ef36); Q51–Q53 from the knowledge repository (Round 30 continued)
+
+`w.lang.ro` in your notation: 44 classes with inheritance, 341 cells, 213 irregulars, 14 folds, closed classes, 3 templates (936 wires, 14.3 kB gzipped) plus a 255-lemma TSV dictionary (14.8 kB). Round trip exact spelling 2,898/2,904; coverage on 240 PSys2 Romanian commands 99.5 % exact, 92.2 % typed without diacritics. Its questions, in order of value:
+- **Q51:** `analyse` with folds misses every diacritic suffix (-ă, -ează, -ește): the suffix index is keyed by unfolded suffixes. Index folded suffixes too (or fold both sides). This blocks typing without diacritics (2,249/2,904 today).
+- **Q52:** analysis always undoes an alternation even when the lemma already had the result (uriași, englezi, îngroși): generate-and-check should keep the reading that regenerates the form; undo anchored two-letter targets (`o>oa@vowel`) and deletions.
+- **Q53:** feature names as chosen (accept or amend); how a template realises an article agreeing with its noun (`{thing:def=yes}` vs a separate slot); whether two irregular facts for one cell (este / e) is the intended way to give variants (reviewer: yes, with the first as the generation default).
+Use w.lang.ro's tests as integration cases. Then the generation side (templates with agreement) for Romanian replies.

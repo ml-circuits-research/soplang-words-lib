@@ -1053,3 +1053,16 @@ The owner wants randomness as a general world: no hard-coded example lists anywh
 3. **Realisation:** each frame is rendered in the session's language world by `std.grammar` generation (templates per act, Round 30 item 6). **Round-trip filter:** a sample is kept only if reading the sentence back gives the same frame and a dry run of the act is not refused. So every suggestion is understood and works.
 4. Modes: `one` (a dice), `few` (3–4 examples for a context), `actions` (the acts relevant to a selected or recent thing, for buttons).
 5. Tests and docs with the toy apps; report the round-trip rate and diversity (distinct acts, kinds, attributes per 100 samples).
+
+## Reviewer 2026-11-14 14:45 — two new mechanisms (owner, 09:53): `std.summarize` and `std.compose`; order: std.sample (14:15), then these two
+
+No LLM (owner: not for this demo); everything from frames, knowledge and the language worlds, measured.
+**A. `std.summarize` — summarise any text or log.**
+1. *Logs of acts* (a session's turns, a world's history): aggregate by act, world and kind, generalise up the kind chain of k.kinds when several siblings occur (cat, dog, horse → three animals), keep counts, numbers and what was taught or failed, order by salience (how much state changed, recency, repetition); output frames, rendered by the language world (`std.grammar` generation). Length is a parameter (one line / a paragraph / bullets).
+2. *Any text*: segment (std.segment), read each sentence into frames where the grammar can (`resolve`), score sentences by centrality (shared referents and content words across sentences), position and information (numbers, names), drop redundancy (same frame twice), and produce either the top sentences (extractive) or regenerated sentences from the kept frames (abstractive by frames). Report on a small set of texts with reference summaries (choose a permissive set, licence checked) using an overlap measure, plus "every output sentence reads back" and "no fact not in the source".
+**B. `std.compose` — write an essay/composition that combines worlds in an interesting way.**
+1. Input: a topic (or none: random via std.sample), a size (chapters, subchapters per chapter, words or sentences per section), a language world, a seed.
+2. *Outline from knowledge*: chapters from the topic's relations across worlds (its kinds, parts, places, times, uses, numbers, the worlds it links to), chosen by an **interest** score read from the knowledge world `k.interest` (the knowledge repository writes it: novelty, contrast, surprising links between distant worlds, concrete numbers, questions, comparisons…).
+3. *Content selection and order*: facts from the catalog per section, each true by the knowledge (cited as the wires they come from); transitions and coherence by focus (std.dialogue's focus log: pronouns, "the other"), no fact twice.
+4. *Realisation*: rhetorical moves (introduce, compare, surprising fact, example, question, conclude) as templates of the language world; sizes respected exactly.
+5. Checks as tests: every sentence reads back by the grammar, every claim traces to a wire, the requested shape holds, repetition below a bound, interest score reported per section. Docs with a toy catalog.

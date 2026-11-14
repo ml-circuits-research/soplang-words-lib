@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.70.0
+
+Q49 (reviewer 19:20): a `by=` join stays open per value, not per type.
+
+### Changed
+- A join by a key stays open until a target with that value is told, so lazy loading may
+  tell shards in any order. Before, it was refused once any target of the type existed.
+  A tell lists the joins it left open (`openJoins`), and `check()` reports them as
+  `open-join` issues, with `type` and `value`.
+  Migration: to keep the old refusal, declare the target type complete with
+  `world.closeType(type)`, or run `check(undefined, { strict: true })`.
+
+### New
+- `world.closeType(type)`, kept by forks.
+- `check(undefined, { strict: true })`.
+
 ## 0.69.0
 
 A composition written as the published `w.document` world schema (reviewer 20:05 item 1).

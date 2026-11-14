@@ -26,22 +26,21 @@ test('excludes: never the exact value and the approximate one together', () => {
   assert.deepEqual([r.violations[0].kind, r.violations[0].why], ['excludes', 'has x and x_about together']);
 });
 
-test('by: a join by a key to another world, open until a fact of the target type has the key (Q48: deferred, both orders)', () => {
+test('by: a join by a key stays open per value until a target with that value is told (Q48, Q49: shards in any order)', () => {
   const objects = '@o core.type of=k.objects.object  @on core.slot of=k.objects.object key=name';
   const w = new World();
   w.load('@d core.slot of=pic key=drawing type=k.objects.object by=name\n' + objects);
-  assert.ok(w.tell('@p1 pic drawing=unicorn').ok, 'the type is declared but has no object yet: open (a lazy load)');
-  assert.ok(w.tell('@h k.objects.object name=horse').ok, 'an object arrives: the earlier reference is not refused');
-  assert.deepEqual(w.check().issues.filter((i) => i.kind === 'open-join').map((i) => [i.id, i.key]), [['p1', 'drawing']], 'still open: reported by check()');
-  assert.ok(w.tell('@p2 pic drawing=horse').ok);
-  assert.equal(w.tell('@p3 pic drawing=pegasus').violations[0].why, 'must be the name of a k.objects.object wire', 'targets loaded, the key missing: refused');
-  w.tell('@u k.objects.object name=unicorn');
-  assert.deepEqual(w.check().issues.filter((i) => i.kind === 'open-join'), [], 'closed when its target arrives');
-  const v = new World(); // the other order: targets first
-  v.load('@d core.slot of=pic key=drawing type=k.objects.object by=name\n' + objects);
-  v.tell('@h k.objects.object name=horse');
-  assert.ok(v.tell('@p pic drawing=horse').ok);
-  assert.equal(v.tell('@q pic drawing=unicorn').ok, false);
+  assert.ok(w.tell('@h k.objects.object name=horse').ok, 'object shard A');
+  const r = w.tell('@p1 pic drawing=unicorn');
+  assert.ok(r.ok, 'a fact naming an object of shard B, before shard B: not refused');
+  assert.deepEqual((r.openJoins || []).map((j) => [j.id, j.value]), [['p1', 'unicorn']], 'the tell reports it open');
+  assert.deepEqual(w.check().issues.filter((i) => i.kind === 'open-join').map((i) => [i.id, i.key, i.value]), [['p1', 'drawing', 'unicorn']], 'still open: reported by check()');
+  assert.equal(w.check(undefined, { strict: true }).ok, false, 'a strict check refuses what is still open');
+  assert.ok(w.tell('@u k.objects.object name=unicorn').ok, 'shard B');
+  assert.deepEqual(w.check().issues.filter((i) => i.kind === 'open-join'), [], '0 open after shard B');
+  assert.ok(w.check(undefined, { strict: true }).ok);
+  assert.deepEqual(w.closeType('k.objects.object'), [], 'declared complete, nothing open');
+  assert.equal(w.tell('@p3 pic drawing=pegasus').violations[0].why, 'must be the name of a k.objects.object wire', 'a complete type: refused');
 });
 
 test('by with match: a join by a composite key (a variant named within its slot)', () => {
@@ -50,7 +49,9 @@ test('by with match: a join by a composite key (a variant named within its slot)
 @p core.slot of=part key=variant type=k.variant by=name match=kind:slot  @pk core.slot of=part key=kind`);
   w.tell('@v1 k.variant name=smile slot=mouth  @v2 k.variant name=round slot=eyes');
   assert.ok(w.tell('@m part kind=mouth variant=smile').ok);
-  assert.equal(w.tell('@e part kind=eyes variant=smile').violations[0].why, 'must be the name (with slot) of a k.variant wire', 'smile is a mouth variant, not an eyes one');
+  assert.deepEqual(w.tell('@e part kind=eyes variant=smile').openJoins.map((j) => j.value), ['smile'], 'smile is a mouth variant, not an eyes one: open until an eyes smile is told');
+  w.closeType('k.variant');
+  assert.equal(w.tell('@e2 part kind=eyes variant=smile').violations[0].why, 'must be the name (with slot) of a k.variant wire', 'the variants complete: refused');
 });
 
 test('copy: a reference to another thing is left unset (a copied guest has no seat), unless its slot says copy=keep', () => {

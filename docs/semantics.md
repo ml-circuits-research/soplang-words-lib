@@ -529,7 +529,7 @@ registers ([reference](reference.md#coredeny)).
 | `domain` | a value does not fit the kind, type, enum or bounds of its slot | any change |
 | `cardinality` | several values under a key that is not `many` | any change |
 | `excludes` | a wire has a key and a key its slot `excludes` | any change |
-| `open-join` | an issue, never a refusal: a `by=` join made earlier whose target is still missing while targets with the key are loaded | `world.check()` |
+| `open-join` | an issue: a `by=` join whose target with that value is not told yet (shards load in any order); refused only by `check(undefined, { strict: true })` or after `world.closeType(type)` | `world.check()`, a tell's `openJoins` |
 | `unknown-key` | a key that a closed type does not declare | any change |
 | `dangling-ref` | a reference to a wire that does not exist; a retraction of a wire a `kind=ref` slot refers to | any change, `retract` |
 | `unique` | a value (or a set of values) that another wire of the type already has | any change |

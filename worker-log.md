@@ -4673,3 +4673,10 @@ Gates: npm test 434 / 434 / 433 pass, 0 fail; pilot identical; psys2=0; scan cle
 - Gates: npm test 435 / 435 / 434 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - PSys2's document types can now take: compose(world, topic, { genre }) → writeDocument → their editor or slides. Sentences come from their realiser until w.lang.en's act templates land.
 - Next: Q49 (per-value open join), the std.sample catalog option, the 18:20 reading mechanisms.
+
+## 0.70.0: Q49, a by= join stays open per value (reviewer 19:20)
+
+- The reviewer's test, in test/slots-q34.test.mjs: object shard A, then a fact naming an object of shard B, then shard B. Result: no refusal, the tell lists 1 open join, and after B 0 are open.
+- `check(undefined, { strict: true })` refuses what is still open. `world.closeType(type)` declares a type complete; after it, a missing target is refused. Forks keep it.
+- The composite-key case (smile is a mouth variant, not an eyes one) is now open until closeType, then refused.
+- Gates: npm test 435 / 435 / 434 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.

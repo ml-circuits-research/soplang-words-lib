@@ -2021,10 +2021,31 @@ print(w.describe().types, w.diff(f).changed);
 {"item":{"count":1,"instances":["pen"]}} [{"id":"pen","key":"price","from":"2","fromTier":"told","to":"4","toTier":"told"}]
 ```
 
+### world.closeType(type)
+
+Declares a type complete: all its facts are told. A `by=` join to that type stays open per
+value until a target with that value is told, whatever order the shards are loaded in.
+Each tell lists the joins it left open in `openJoins`; `check()` reports them as
+`open-join` issues, and `check(undefined, { strict: true })` refuses them. After
+`closeType`, a join to the type that finds no target is refused. It returns the joins
+still open to the type when it was closed.
+
+```js run
+const w = new World();
+w.load('@d core.slot of=pic key=drawing type=k.objects.object by=name  @o core.type of=k.objects.object  @on core.slot of=k.objects.object key=name');
+w.tell('@h k.objects.object name=horse');
+print(w.tell('@p pic drawing=unicorn').openJoins.length, w.closeType('k.objects.object').length, w.tell('@q pic drawing=pegasus').ok);
+```
+
+```output
+1 1 false
+```
+
 ### world.check(patch?, options?)
 
 With a patch: what `applyPatch(patch)` would return, without changing anything. Without
-one: validates the whole world and returns `{ ok, violations, issues }`.
+one: validates the whole world and returns `{ ok, violations, issues }`; with `{ strict:
+true }` a join still open is refused too.
 
 With `{ query }` or `{ ask }` (a question for `query`, patterns for `ask`) the patch is
 applied in a transaction that is then undone, and the result also has `answer` (what

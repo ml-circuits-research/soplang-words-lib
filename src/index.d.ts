@@ -371,7 +371,9 @@ export class World {
   /** with query/ask: also answer on the world with the patch (answer, rows); nothing changes */
   check(patch: Patch, options?: Budgeted & { strict?: boolean; query?: Question | Wire | string; ask?: string | Wire[] }): Result & { answer?: QueryResult; rows?: Record<string, string>[] };
   /** without a patch: validate the whole world; every violation, and the standing issues */
-  check(): { ok: boolean; violations: Violation[]; issues: { id: string; rule?: string; about: string[]; key?: string; why?: string }[] };
+  check(patch?: undefined, options?: { strict?: boolean }): { ok: boolean; violations: Violation[]; issues: { id: string; rule?: string; about: string[]; key?: string; kind?: string; type?: string; value?: string; why?: string }[] };
+  /** Declares a type complete: a by= join to it that finds no target is refused from now on. Returns the joins still open to it. */
+  closeType(type: string): { id: string; key?: string; kind?: string; type?: string; value?: string; why?: string }[];
   /** check wires from somewhere else against a matrix */
   static audit(wires: string | Wire[], matrix?: string | Wire[], options?: WorldOptions): { ok: boolean; violations: Violation[]; issues: object[]; world: World };
   /** apply several changes that must hold together: all or nothing */

@@ -559,8 +559,18 @@ export class World {
    * in one scratch transaction, the rules run once, the result is validated once, and
    * everything is undone. No state in between is judged.
    */
+  /**
+   * Declares a type complete (all its facts are told), so a join by a key to it that finds no
+   * target is refused from now on (before: it stays open, Q49). Returns the joins still open to it.
+   */
+  closeType(type) {
+    const open = this.check().issues.filter((i) => i.kind === 'open-join' && i.type === type);
+    (this._closedTypes ||= new Set()).add(type);
+    return open;
+  }
+
   check(patch, opts = {}) {
-    if (patch === undefined || patch === null) return this._guard(opts, () => this._audit(), (v) => ({ ok: false, violations: [v], issues: [] }));
+    if (patch === undefined || patch === null) return this._guard(opts, () => this._audit(opts), (v) => ({ ok: false, violations: [v], issues: [] }));
     const refuseImpure = ([r, impure]) => (impure ? { ...r, ok: false, violations: [...(r.violations || []), { kind: 'impure', fn: impure, why: `${impure} is not declared pure=true, so it does not run on a change that is only checked` }] } : r);
     if (opts.query || opts.ask) {
       // evaluate on the world with the patch, and answer questions there; nothing stays
@@ -582,8 +592,9 @@ export class World {
    * not only what the last change touched. Returns { ok, violations, issues }, where
    * issues are the standing soft violations (they do not make ok false).
    */
-  _audit() {
+  _audit(opts = {}) {
     const res = this._result();
+    if (opts.strict) res._strict = true; // a full check: an open join is refused
     const mark = this._begin(false);
     try {
       for (const id of this.wires.keys()) res._touched.add(id);
@@ -596,7 +607,7 @@ export class World {
       this._rollback(mark);
     }
     const issues = this.ofType('core.issue').map((i) => ({ id: i.id, rule: (i.attrs.rule || [])[0]?.slice(1), about: (i.attrs.about || []).map((v) => v.slice(1)), ...(i.attrs.key ? { key: i.attrs.key[0] } : {}), why: i.attrs.why ? str(i.attrs.why[0]) : undefined }));
-    for (const j of res.openJoins || []) issues.push({ id: j.id, key: j.key, kind: 'open-join', why: `${j.value} is not yet the ${j.by} of a ${j.type} wire` }); // reported, not refused
+    for (const j of res.openJoins || []) issues.push({ id: j.id, key: j.key, kind: 'open-join', type: j.type, value: j.value, why: `${j.value} is not yet the ${j.by} of a ${j.type} wire` }); // reported, not refused
     return { ok: !res.violations.length, violations: res.violations, issues };
   }
 
@@ -825,6 +836,8 @@ export class World {
     // a change that was accepted with something wrong on record (a soft constraint) says so
     const issues = res.derived.map((id) => this.wires.get(id)).filter((w) => w && w.type === 'core.issue');
     if (issues.length) out.issues = issues.map((i) => this._issueOf(i));
+    const open = (res.openJoins || []).filter((j) => res.added.includes(j.id)); // joins this change left open (Q49)
+    if (open.length) out.openJoins = open.map(({ id, key, value, type, by }) => ({ id, key, value, type, by }));
     return out;
   }
 
@@ -2248,12 +2261,12 @@ export class World {
             if (s.enum && !s.enum.includes(v) && !s.enum.some((e) => this._same(w.type, k, e, v))) res.violations.push(own({ kind: 'domain', id, key: k, value: v, allowed: s.enum }, v));
             if (s.by && s.type) { // a join by a key: checked once a world declares the type, open before
               const fits = (t) => t?.attrs[s.by]?.includes(v) && s.match.every(([mine, theirs]) => (w.attrs[mine] || []).some((x) => (t.attrs[theirs || mine] || []).includes(x))); // a composite key: by= and every match=own:target
-              // open while no fact of the target type has the key (a lazy load tells the referring facts first);
-              // refused when this statement makes the reference and the targets are there without it;
-              // a reference made earlier that is still open is reported by check(), not refused
+              // open until a target with that key value is told (Q49: lazy loading tells shards in any order);
+              // reported by check() and the tell's `open`; refused only by a strict check, or once the host
+              // has declared the target type complete (world.complete(type))
               const targets = this.byType.get(s.type) ? [...this.byType.get(s.type)].map((tid) => this.wires.get(tid)) : [];
-              if (!targets.some((t) => t?.attrs[s.by]?.length) || targets.some(fits)) continue;
-              if (res._audit || !res.added.includes(id)) { (res.openJoins || (res.openJoins = [])).push({ kind: 'open-join', id, key: k, value: v, type: s.type, by: s.by }); continue; }
+              if (targets.some(fits)) continue;
+              if (!res._strict && !this._closedTypes?.has(s.type)) { (res.openJoins || (res.openJoins = [])).push({ kind: 'open-join', id, key: k, value: v, type: s.type, by: s.by }); continue; }
               res.violations.push(own({ kind: 'domain', id, key: k, value: v, why: `must be the ${s.by}${s.match.length ? ` (with ${s.match.map(([a, b]) => b || a).join(', ')})` : ''} of a ${s.type} wire` }, v));
               continue;
             }

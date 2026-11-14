@@ -342,6 +342,7 @@ export const revision = {
     copy.fns = { ...this.fns }; copy.actions = { ...this.actions }; copy.producers = { ...this.producers };
     if (this.filters) copy.filters = { ...this.filters };
     copy.context = { ...(this.context || {}) }; // every context hook: a dry run sees what the real run sees
+    if (this._closedTypes) copy._closedTypes = new Set(this._closedTypes); // the types the host declared complete
     if (this.lemma) copy.lemma = this.lemma;
     copy._shared = share;
     copy._emitted = copy.events.length;

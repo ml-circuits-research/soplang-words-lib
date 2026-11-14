@@ -40,7 +40,7 @@ One key of one type: what it may hold, and whether it must be there.
 | `to` | type | none | | with `kind=ref`: the value must refer to a wire of this type |
 | `unique` | flag | false | | no two wires of the type (in one namespace) have the same value |
 | `excludes` | key | none | yes | a wire with this key may not also have that one (`x_about excludes=x`: never the exact number and the approximate one) |
-| `by` | key | none | | with `type=T`: the value names a `T` wire by its value for this key (`drawing=horse`, `type=k.objects.object by=name`). It stays open while no `T` fact has the key (a lazy load tells the referring facts first). It is refused when the statement making the reference finds the targets loaded without that value. A reference made earlier that is still open is reported by `world.check()` as an `open-join` issue, not refused |
+| `by` | key | none | | with `type=T`: the value names a `T` wire by its value for this key (`drawing=horse`, `type=k.objects.object by=name`). It stays open until a `T` fact with that value is told, whatever order the shards come in. The tell lists it in `openJoins`, and `world.check()` reports it as an `open-join` issue. It is refused only by a strict check or once the host declares `T` complete (`world.closeType(T)`) |
 | `match` | `own:target` | none | yes | with `by`: more keys of the join; the target must also have this wire's `own` value under `target` (a variant named within its slot: `by=name match=kind:slot`) |
 | `copy` | `keep` | none | | with a `type=` to a thing of the live world: the act `copy` keeps this reference (by default a copy leaves references to other things unset) |
 

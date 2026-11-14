@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="f87d44634d36">
+<meta name="source-hash" content="dad7e214261e">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.69.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.70.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -749,8 +749,15 @@ const f = w.fork();
 f.revise(&#x27;pen&#x27;, &#x27;price&#x27;, 4);
 print(w.describe().types, w.diff(f).changed);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;item&quot;:{&quot;count&quot;:1,&quot;instances&quot;:[&quot;pen&quot;]}} [{&quot;id&quot;:&quot;pen&quot;,&quot;key&quot;:&quot;price&quot;,&quot;from&quot;:&quot;2&quot;,&quot;fromTier&quot;:&quot;told&quot;,&quot;to&quot;:&quot;4&quot;,&quot;toTier&quot;:&quot;told&quot;}]</code></pre></figure>
+<h3 id="worldclosetypetype">world.closeType(type)</h3>
+<p>Declares a type complete: all its facts are told. A <code>by=</code> join to that type stays open per value until a target with that value is told, whatever order the shards are loaded in. Each tell lists the joins it left open in <code>openJoins</code>; <code>check()</code> reports them as <code>open-join</code> issues, and <code>check(undefined, { strict: true })</code> refuses them. After <code>closeType</code>, a join to the type that finds no target is refused. It returns the joins still open to the type when it was closed.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(&#x27;@d core.slot of=pic key=drawing type=k.objects.object by=name  @o core.type of=k.objects.object  @on core.slot of=k.objects.object key=name&#x27;);
+w.tell(&#x27;@h k.objects.object name=horse&#x27;);
+print(w.tell(&#x27;@p pic drawing=unicorn&#x27;).openJoins.length, w.closeType(&#x27;k.objects.object&#x27;).length, w.tell(&#x27;@q pic drawing=pegasus&#x27;).ok);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>1 1 false</code></pre></figure>
 <h3 id="worldcheckpatch-options">world.check(patch?, options?)</h3>
-<p>With a patch: what <code>applyPatch(patch)</code> would return, without changing anything. Without one: validates the whole world and returns <code>{ ok, violations, issues }</code>.</p>
+<p>With a patch: what <code>applyPatch(patch)</code> would return, without changing anything. Without one: validates the whole world and returns <code>{ ok, violations, issues }</code>; with <code>{ strict: true }</code> a join still open is refused too.</p>
 <p>With <code>{ query }</code> or <code>{ ask }</code> (a question for <code>query</code>, patterns for <code>ask</code>) the patch is applied in a transaction that is then undone, and the result also has <code>answer</code> (what <code>query</code> gives on the world with the patch) or <code>rows</code> (what <code>ask</code> gives there). The same from the other side: <code>query(q, { given: patch })</code> and <code>ask(patterns, { given: patch })</code> answer on the world as it would be with the patch; a patch the world refuses gives the status <code>refused</code> with the violations. Nothing changes. The questions are asked in the patch's namespace (<code>ns</code>, or the world's). A patch may also be SOP text: its wires.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
 w.tell(&#x27;@pen item name=pen price=2&#x27;);
@@ -905,7 +912,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.69.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.70.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

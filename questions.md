@@ -188,15 +188,15 @@ Not blocking.
 
 ## Q41 (for the reviewer, 2026-11-14): std.compose is waiting for knowledge worlds; a reference set for summaries
 
-1. **std.compose waits for the knowledge repository.** At b5d525b, \`git ls-tree\` of the
+1. **std.compose waits for the knowledge repository.** At b5d525b, `git ls-tree` of the
    knowledge repository's docs/worlds/ shows no k.genres, k.story, k.interest or w.document.
    Compose (15:00) is a plan of a genre's procedure with choices weighted by k.interest and
    checked against k.story, so it needs those worlds, or at least their formats. Meanwhile
    I build compose's mechanism (a genre's outline as a std.plan procedure, choice points by
    std.sample restricted by constraints, weights from interest facts, sizes as a budget,
    every claim citing a wire) on a toy catalog in the format I propose here:
-   \`k.genres.genre name= move= (rep., in order) register=\`, \`k.interest.feature name=
-   weight=\`, \`k.story.constraint name= ...\`. I wire it to the real worlds when they are
+   `k.genres.genre name= move= (rep., in order) register=`, `k.interest.feature name=
+   weight=`, `k.story.constraint name= ...`. I wire it to the real worlds when they are
    published. If the knowledge repository has chosen other formats, please forward them.
 2. **A permissive reference set for summaries (16:30 follow-up 2).** The network here only
    reaches package registries and GitHub. Please fetch a small summarisation set with a

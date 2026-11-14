@@ -813,7 +813,7 @@ print(readByTypes(w, 'which animal makes woof', { question: ['which'] }).best.an
 
 ## Judge a fix on the cousins of its case
 
-*In `cousins`, `kindChain`, `judgeFix`, `learnRules`; since 0.73.*
+*In `cousins`, `ancestorsOf`, `kindChain`, `judgeFix`, `learnRules`; since 0.73.*
 *Works on: worlds with kinds (kind, class, is, is_a) and facts with keys.*
 
 A failing case is expanded into its siblings and cousins (up the kinds, then down to other

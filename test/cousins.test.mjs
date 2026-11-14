@@ -16,7 +16,7 @@ const text = 'what sound does a cow make', kase = { text, frame: readByTypes(w, 
 test('cousins: siblings at degree 1, cousins further up, only the valid ones (an answer, read back to the same frame, not known)', () => {
   assert.deepEqual(kindChain(w, 'cow'), [['bovine'], ['ruminant'], ['mammal'], ['k.animal']]);
   const cs = cousins(w, kase, { degree: 4, read: O, known: ['what sound does a goat make'] });
-  const valid = (d) => cs.filter((c) => c.valid && c.degree === d && c.dims[0] === 'filler').map((c) => c.frame.of.id).sort();
+  const valid = (d) => cs.filter((c) => c.valid && c.degree === d && c.dims[0] !== 'key').map((c) => c.frame.of.id).sort();
   assert.deepEqual(valid(1), ['yak'], 'siblings: the other bovines');
   assert.deepEqual(valid(2), ['sheep'], 'first cousins: other ruminants; the goat is a known case');
   assert.deepEqual(valid(4), ['duck', 'hen'], 'distant: other animals');
@@ -32,4 +32,13 @@ test('judgeFix: a point fix passes the case and fails its cousins; a general rea
   assert.equal(p.case, true); assert.equal(p.share, 0);
   assert.equal(g.case, true); assert.equal(g.share, 1);
   assert.deepEqual(Object.keys(g.byDegree).sort(), ['1', '2', '4']);
+});
+
+test('cousins over a layered graph: several parents on several dimensions, each cousin tagged with the dimension it came by', () => {
+  const v = new World();
+  v.tell(`@cow k.animal name=cow kind=bovine role=farm_animal sound=moo  @yak k.animal name=yak kind=bovine role=wild sound=grunt
+    @pig k.animal name=pig kind=suid role=farm_animal sound=oink  @bovine k.kind name=bovine is_a=ruminant  @suid k.kind name=suid is_a=pig_family`);
+  const kase = { text: 'cow sound', frame: readByTypes(v, 'cow sound').best };
+  const cs = cousins(v, kase, { degree: 2, edges: { kind: 'kind', is_a: 'kind', role: 'role' } }).filter((c) => c.valid && c.dims[0] !== 'key');
+  assert.deepEqual(cs.map((c) => [c.frame.of.id, c.degree, c.dims[0]]).sort(), [['pig', 1, 'role'], ['yak', 1, 'kind']]);
 });

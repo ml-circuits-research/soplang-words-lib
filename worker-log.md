@@ -4795,3 +4795,28 @@ Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-que
 - The gate caught a consumer name in a new src comment before commit (psys2=1 → 0).
 - Gates: npm test 450 / 450 / 449 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Next: the one-summariser ask (docr.summary into std.summarize; I need its interface from the reviewer); Round 28 item 9; Round 27 skills (the learn skill uses cousins + learnRules).
+
+## 0.80.0: cousins on the layered graph, the automatic tester, the skill (reviewer 21:55, 22:30)
+
+**What changed**
+- `ancestorsOf`: several parents on several dimensions (`edges`).
+- `cousins` tags each cousin with the dimension it came by, deduplicates by frame, and stratifies per degree × dimension.
+- test/cousins.test.mjs: a cow with kind=bovine and role=farm_animal gives yak (degree 1, kind) and pig (degree 1, role).
+
+**`tools/cousins-test.mjs`** (example → cousins with expected answers → host → table)
+- `node tools/cousins-test.mjs` on the toy farm world:
+  - a host that knows only cows: share 0; it breaks along key, kind and role;
+  - readByTypes: share 1.
+- test/cousins-tool.test.mjs.
+
+**Skill**
+- skills/expand-and-test-case/SKILL.md (with a dry run) and skills/README.md.
+
+**Gates**
+- npm test 453 / 453 / 451 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+- The COW run counts 2 fewer than the others (it was 1 fewer); 0 fail.
+
+**Next**
+- Dimensions for act families, alternation families and structure kinds as the knowledge repository publishes those edges.
+- [KNOW] Q54: realisation of English plurals and a/an through std.morph (w.lang.en `det before=` and `onset`).
+- Q57: solveChoices keys (binding.choose, choose_min, about, match.differs, soft, n).

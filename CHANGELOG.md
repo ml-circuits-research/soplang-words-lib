@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.80.0
+
+Cousins along the layered graph, the automatic tester and the skill (reviewer 21:55,
+22:30).
+
+### New
+- `ancestorsOf(world, id, { depth, edges })`: several parents on several dimensions (`edges`
+  names them), walked breadth first.
+- `cousins(..., { edges })`: each cousin is tagged with the dimension it came by,
+  deduplicated by frame, and stratified per degree and dimension.
+- `tools/cousins-test.mjs`: one example and a host give a table per degree × dimension and
+  the pattern of breaks named; `node tools/cousins-test.mjs` is a dry run.
+- `skills/expand-and-test-case/SKILL.md` and `skills/README.md` (Round 27): expand, test,
+  then force a rule with `learnRules`.
+
+### Changed
+- `cousins`' filler dimension is named by the edge it came by (`kind`, `type`, or the
+  host's), no longer `filler`. The option `dims: ['filler', 'key']` still selects it.
+
 ## 0.79.0
 
 PSys2's decisions from the reviewer's 21:00 list.

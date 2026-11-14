@@ -1773,7 +1773,7 @@ print(normalise(w, 'Could you please open the door?'));
 {"text":"open the door","applied":["could_you","please"],"mode":"request"}
 ```
 
-### cousins(world, case, options?), kindChain(world, id) and judgeFix(answer, case, cousins)
+### cousins(world, case, options?), ancestorsOf(world, id, options?), kindChain(world, id) and judgeFix(answer, case, cousins)
 
 A case is never single (abstraction round, item 0). `cousins` goes up from a case `{ frame,
 text? }` (a frame of `readByTypes`) along a dimension, then down to other members. The
@@ -1785,7 +1785,15 @@ dimensions:
 
 A cousin is valid when it is legal in the world (it has an answer), when its wording, made
 by substituting the filler, reads back to the same frame, and when it is not a `known`
-case. Each cousin is tagged with its degree and the dimensions changed. `judgeFix(answer,
+case. Each cousin is tagged with its degree and the dimensions changed.
+
+The graph is layered: a thing has several parents on several dimensions. `edges` (`{ key:
+dimension }`, by default kind / class / is / is_a as `kind`) names them, and
+`ancestorsOf(world, id, { depth, edges })` walks them breadth first. Cousins are
+deduplicated by frame and stratified per degree and dimension (`n` each). The automatic
+tester `tools/cousins-test.mjs` takes one example and a host and gives a table per degree ×
+dimension, naming the pattern of breaks. The skill `skills/expand-and-test-case` hands the
+failures to `learnRules`. `judgeFix(answer,
 case, cousins)` judges a fix both ways: on the case alone and on its valid cousins by
 degree. Judged that way, a fix that passes only its case shows a share of 0.
 

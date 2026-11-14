@@ -627,7 +627,9 @@ export function readByTypes(world: World, text: string, options?: { question?: s
 /** The world's own typed lexicon: word -> senses (thing, kind, attr, value, act, word). */
 export function typedLexicon(world: World): Map<string, object[]>;
 /** The cousins of a case: up along kinds or keys, down to other members, only the valid ones. */
-export function cousins(world: World, kase: { frame: object; text?: string }, options?: { degree?: number; dims?: string[]; known?: (string | object)[]; read?: object; n?: number; seed?: number }): { frame: object; text?: string; degree: number; dims: string[]; valid: boolean; why?: string }[];
+export function cousins(world: World, kase: { frame: object; text?: string }, options?: { edges?: Record<string, string>; degree?: number; dims?: string[]; known?: (string | object)[]; read?: object; n?: number; seed?: number }): { frame: object; text?: string; degree: number; dims: string[]; via?: string; valid: boolean; why?: string }[];
+/** The ancestors of a thing in the layered graph of abstraction: name -> { level, dim }. */
+export function ancestorsOf(world: World, id: string, options?: { depth?: number; edges?: Record<string, string> }): Map<string, { level: number; dim: string }>;
 /** The chain of kinds of a thing, nearest first. */
 export function kindChain(world: World, id: string, depth?: number): string[][];
 /** A fix judged on the case alone and on its valid cousins by degree. */

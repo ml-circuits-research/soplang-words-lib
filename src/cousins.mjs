@@ -24,35 +24,69 @@ export function kindChain(world, id, depth = 4) {
 }
 
 /**
+ * The ancestors of a thing in the layered graph of abstraction (owner 15:03: several parents on
+ * several dimensions): Map(name -> { level, dim }), breadth first, up to `depth` layers. The
+ * edges are the keys of `edges` ({ key: dimension }; by default kind / class / is / is_a are
+ * the dimension `kind`) on the thing's fact and on the facts named by its parents; a node with
+ * no parent goes up to its fact's type (dimension `type`). `dim` is the dimension of the first
+ * step from the thing.
+ */
+export function ancestorsOf(world, id, { depth = 3, edges } = {}) {
+  const E = edges ?? { kind: 'kind', class: 'kind', is: 'kind', is_a: 'kind' };
+  const named = (n) => [...world.wires.values()].filter((x) => (x.attrs.name || []).some((y) => bare(y) === n));
+  const w = world.get(id);
+  const out = new Map();
+  if (!w) return out;
+  const up = (facts) => facts.flatMap((f) => Object.entries(E).flatMap(([k, dim]) => (f.attrs[k] || []).map((v) => ({ p: bare(v), dim }))));
+  let front = up([w]).map((e) => ({ ...e, from: e.dim }));
+  if (!front.length) front = [{ p: w.type, dim: 'type', from: 'type' }];
+  for (let level = 1; level <= depth && front.length; level++) { // bounded: depth layers
+    const next = [];
+    for (const { p, from } of front) {
+      if (out.has(p)) continue;
+      out.set(p, { level, dim: from });
+      const facts = named(p);
+      const ps = up(facts);
+      if (ps.length) next.push(...ps.map((e) => ({ p: e.p, from })));
+      else if (facts.length && !out.has(facts[0].type)) next.push({ p: facts[0].type, from });
+    }
+    front = next;
+  }
+  if (![...out.keys()].includes(w.type)) out.set(w.type, { level: Math.max(0, ...[...out.values()].map((x) => x.level)) + 1, dim: 'type' });
+  return out;
+}
+
+/**
  * The cousins of a case `{ frame, text? }` (a frame of readByTypes: ask / find / act). Options:
  * `degree` (the highest, default 2), `dims` (['filler', 'key']), `known` (frames or texts already
  * cases), `read` (options for readByTypes), `n` (at most, per degree), `seed`.
  * Returns [{ frame, text?, degree, dims, valid, why? }], valid ones first.
  */
-export function cousins(world, kase, { degree = 2, dims = ['filler', 'key'], known = [], read = {}, n = 50, seed = 1 } = {}) {
+export function cousins(world, kase, { degree = 2, dims = ['filler', 'key'], known = [], read = {}, n = 50, seed = 1, edges } = {}) {
   const f = kase.frame, out = [];
   const knownSet = new Set(known.map((k) => (typeof k === 'string' ? k : JSON.stringify(k))));
   const answerOf = (holderId, key) => (world.get(holderId)?.attrs[key] || []).map(bare);
   const nameOf = (id) => bare(world.get(id)?.attrs.name?.[0] ?? id);
   const holderId = f.of?.id;
   if (dims.includes('filler') && holderId) {
-    const chain = kindChain(world, holderId, degree + 1);
+    const mine = ancestorsOf(world, holderId, { depth: degree + 1, edges });
+    const seen = new Set();
     const things = [...world.wires.values()].filter((x) => !x.type.startsWith('core.') && x.attrs.name && x.id !== holderId);
-    for (const t of things) {
-      // the degree: the first level at which the two chains meet
-      const other = kindChain(world, t.id, degree + 1);
-      let d = 0; // up i levels from the case and j from the other to a kind they share: degree max(i, j)
-      for (let i = 0; i < chain.length; i++) for (let j = 0; j < other.length; j++) if (other[j].some((x) => chain[i].includes(x))) { const m = Math.max(i, j) + 1; if (!d || m < d) d = m; }
-      if (!d || d > degree) continue;
+    for (const t of things) { // bounded: the things, each once
+      const theirs = ancestorsOf(world, t.id, { depth: degree + 1, edges });
+      let best = null; // the nearest shared ancestor: degree max(up from the case, up from the other)
+      for (const [a, x] of mine) { const y = theirs.get(a); if (!y) continue; const d = Math.max(x.level, y.level); if (!best || d < best.d) best = { d, dim: x.dim, via: a }; }
+      if (!best || best.d > degree) continue;
       const frame = { ...f, of: { id: t.id }, answer: answerOf(t.id, f.key) };
-      const c = { frame, degree: d, dims: ['filler'] };
+      const k = JSON.stringify(frame); if (seen.has(k)) continue; seen.add(k); // deduplicated by frame
+      const c = { frame, degree: best.d, dims: [best.dim], via: best.via };
       if (kase.text) c.text = kase.text.replace(new RegExp(`\\b${nameOf(holderId)}(s?)\\b`, 'i'), `${nameOf(t.id)}$1`);
       out.push(c);
     }
   }
   if (dims.includes('key') && f.key && holderId) {
     const h = world.get(holderId);
-    for (const k of Object.keys(h.attrs).filter((x) => !x.startsWith('core.') && !['name', ...UP, 'about'].includes(x) && x !== f.key)) {
+    for (const k of Object.keys(h.attrs).filter((x) => !x.startsWith('core.') && !['name', ...UP, 'about', ...Object.keys(edges ?? {})].includes(x) && x !== f.key)) {
       const frame = { ...f, key: k, answer: answerOf(holderId, k) };
       const c = { frame, degree: 1, dims: ['key'] };
       if (kase.text) c.text = kase.text.replace(new RegExp(`\\b${f.key}(s?)\\b`, 'i'), `${k}$1`);
@@ -72,7 +106,7 @@ export function cousins(world, kase, { degree = 2, dims = ['filler', 'key'], kno
   let x = seed >>> 0; const rnd = () => { x = (x * 1103515245 + 12345) >>> 0; return x / 4294967296; };
   const byDeg = new Map();
   for (const c of out.map((c) => [c, rnd()]).sort((a, b) => Number(b[0].valid) - Number(a[0].valid) || a[0].degree - b[0].degree || a[1] - b[1]).map(([c]) => c)) {
-    const k = `${c.degree}`; const list = byDeg.get(k) || byDeg.set(k, []).get(k); if (list.length < n) list.push(c);
+    const k = `${c.degree}|${c.dims[0]}`; const list = byDeg.get(k) || byDeg.set(k, []).get(k); if (list.length < n) list.push(c); // stratified per degree and dimension
   }
   return [...byDeg.values()].flat().sort((a, b) => Number(b.valid) - Number(a.valid) || a.degree - b.degree);
 }

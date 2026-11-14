@@ -1101,3 +1101,7 @@ Reviewer ran `npm test` on 0.59 (timeout 1500 s): 421, 421, 420 pass, 0 fail, ex
 - **Q52:** analysis always undoes an alternation even when the lemma already had the result (uriași, englezi, îngroși): generate-and-check should keep the reading that regenerates the form; undo anchored two-letter targets (`o>oa@vowel`) and deletions.
 - **Q53:** feature names as chosen (accept or amend); how a template realises an article agreeing with its noun (`{thing:def=yes}` vs a separate slot); whether two irregular facts for one cell (este / e) is the intended way to give variants (reviewer: yes, with the first as the generation default).
 Use w.lang.ro's tests as integration cases. Then the generation side (templates with agreement) for Romanian replies.
+
+## Reviewer 2026-11-14 16:30 — 0.60, 0.61, 0.62 accepted; summarize follow-ups
+
+Reviewer ran `npm test` on 0.62: 425, 425, 424 pass, 0 fail, exit 0. Accepted: deferred joins (Q48), `std.summarize` (logs and extractive text), `std.space` single placement (Round 28 item 8). Follow-ups for summarize, after std.compose's first version: (1) the abstractive-by-frames path (14:45 A2: regenerate sentences from kept frames), (2) a measured overlap on a permissive reference set: ask the reviewer if downloading is blocked, the reviewer can fetch a set with a checked licence; two hand texts (0.43, 0.47 unigram recall) are not a measurement. Next: `std.compose` (15:00 + the 15:15 list as the knowledge repository's worlds arrive), Q51–Q53, Round 28 item 9.

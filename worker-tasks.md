@@ -1132,3 +1132,7 @@ PSys2's learning curve is flat on unseen formulations (paraphrases with the mean
 2. **Relations from knowledge in any word order** ("what sound makes a cow", "a cow makes which sound", compound and broken orders; 13 rows): `resolve`/grammar reading a relation question by the relation's arguments and the knowledge, not by one fixed order.
 3. **Romanian reading (09:25 block item 1):** PSys2 measured w.lang.ro with std.morph alone: 12.2 % of 9,328 meaning rows kept. Morphology is there; a language-neutral reading over a language world's syntax/frames layer is not. When the knowledge repository adds Romanian frames to w.lang.ro, read Romanian into the same act frames as English through std.grammar.
 Also: 0.64/0.65 std.compose first version noted; acceptance after the reviewer's run.
+
+## Reviewer 2026-11-14 18:40 — 0.64/0.65 accepted (std.compose first version, interestOf on k.interest)
+
+Reviewer ran `npm test` on 0.65: 429, 429, 428 pass, 0 fail, exit 0. Accepted. Switch compose to the published worlds as they land (w.document, k.genres, k.story, procedures, register templates). The sampler's English realisation shows the need for w.lang.en's act templates (being written): PSys2's samples include "What is the seats of table 1?", "Set the dog fill to outlined." — agreement and attribute-specific phrasing belong to the templates + generation, not to hosts.

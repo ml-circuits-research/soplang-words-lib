@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="78012d90dc00">
+<meta name="source-hash" content="5177d2c05a2d">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.92.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.93.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -662,7 +662,7 @@ print(normalise(w, &#x27;Could you please open the door?&#x27;));</code></pre></
 <p>The inverse of the form operators at read time (reviewer 00:40), as one pipeline step:</p>
 <ol><li>the text is cut into clauses at the <code>splitters</code> (an extra clause becomes a clause of its own);</li><li>the <code>fillers</code> are dropped at the start and end of each clause;</li><li>each clause is brought to its canonical form by the alternation rules (<code>normalise</code>).</li><li>Substitutions are read afterwards through word senses (<code>readByTypes</code>' <code>near</code>).</li></ol>
 <p><code>canonicalise</code> returns <code>{ clauses: [{ text, applied, mode? }], dropped }</code>. <code>readCanonical</code> also reads each clause by types: <code>[{ text, mode?, applied, frame, unread, near? }]</code>. The fillers and splitters are data: the host's, or learnt (<code>fillersFrom(learnFormEdits(...))</code> gives the words of the filler family).</p>
-<p><code>normalise</code> tries the rules in the order the language world tells (<code>n</code>). The innermost rule's mode wins: "can you tell me where …" is a question. A pattern may name a word class, <code>{q:wh}</code>, from <code>w.lang.en.word_class name= word=...</code> (<code>wordClassesOf</code>), instead of one fact per alternative. On the published w.lang.en (368 rules), its 35 test sentences give the canonical text, the rules applied and the mode, 35 of 35.</p>
+<p><code>normalise</code> takes, among the rules that match, the more specific one (more literal words), then the one told first (<code>n</code>), through <code>choose</code> (kind <code>rule</code>); <code>byRule: 'order'</code> keeps the order alone. The innermost rule's mode wins: "can you tell me where …" is a question. A pattern may name a word class, <code>{q:wh}</code>, from <code>w.lang.en.word_class name= word=...</code> (<code>wordClassesOf</code>), instead of one fact per alternative. On the published w.lang.en (368 rules), its 35 test sentences give the canonical text, the rules applied and the mode, 35 of 35.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.tell(`@t core.type of=w.lang.en.alternation  @t1 core.slot of=w.lang.en.alternation key=name kind=atom kind=string
   @t2 core.slot of=w.lang.en.alternation key=from kind=atom kind=string  @t3 core.slot of=w.lang.en.alternation key=to kind=atom kind=string
@@ -1028,7 +1028,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.92.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.93.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

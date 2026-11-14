@@ -104,7 +104,7 @@ export function readByTypes(world, text, { question = [], skip = [], lemma, sens
     const left = words.filter((w) => !used.has(w) && !w.senses.some((s) => s.cat === 'act' || s.cat === 'word')).length; // words the frame leaves unread (a verb like "make" or "have" is the relation's)
     const near = 1 / (1 + Math.abs(a.w.at - h.w.at)); // order only ranks
     frames.push({ frame: { is: 'ask', key: a.s.key, of: h.s.cat === 'thing' ? { id: h.s.id } : { kind: h.s.kind ?? h.s.type }, answer: carry.flatMap((x) => (x.attrs[a.s.key] || []).map(bare)) },
-      score: +(2 + (isQuestion ? 1 : 0) + (h.s.cat === 'thing' ? 0.5 : 0) - left + near * 0.1).toFixed(3), words: [h.w.text, a.w.text] });
+      score: +(2 + (isQuestion ? 1 : 0) + (h.s.cat === 'thing' ? 0.5 : 0) - left + near * 0.1).toFixed(3), left, words: [h.w.text, a.w.text] });
   }
   // the inverse: a value and a kind of holder (which animal says moo): the holders of that kind with it
   const values = words.flatMap((w) => w.senses.filter((s) => s.cat === 'value').map((s) => ({ w, s })));
@@ -115,7 +115,7 @@ export function readByTypes(world, text, { question = [], skip = [], lemma, sens
       const holders = [...world.wires.values()].filter((x) => (x.attrs[v.s.key] || []).some((y) => bare(y).toLowerCase() === v.w.text) && (!k || (k.s.type && x.type === k.s.type) || (k.s.kind && (x.attrs[k.s.key] || []).some((y) => bare(y) === k.s.kind))));
       if (!holders.length) continue;
       const used = new Set([v.w, k?.w].filter(Boolean)), left = words.filter((w) => !used.has(w) && !w.senses.some((s) => s.cat === 'act' || s.cat === 'word')).length;
-      frames.push({ frame: { is: 'find', key: v.s.key, value: v.w.text, ...(k ? { kind: k.s.kind ?? k.s.type } : {}), answer: holders.map((x) => x.id) }, score: +(2 + (isQuestion ? 1 : 0) + (k ? 0.5 : 0) - left).toFixed(3), words: [...used].map((w) => w.text) });
+      frames.push({ frame: { is: 'find', key: v.s.key, value: v.w.text, ...(k ? { kind: k.s.kind ?? k.s.type } : {}), answer: holders.map((x) => x.id) }, score: +(2 + (isQuestion ? 1 : 0) + (k ? 0.5 : 0) - left).toFixed(3), left, words: [...used].map((w) => w.text) });
     }
   }
   // acts: an act word with typed arguments (act frames, reviewer 23:05): the kind to make (a type), the thing
@@ -132,9 +132,13 @@ export function readByTypes(world, text, { question = [], skip = [], lemma, sens
       args[v.s.key] = v.w.text; used.add(v.w);
     }
     const left = words.filter((w) => !used.has(w) && !w.senses.some((s) => s.cat === 'word')).length;
-    frames.push({ frame: { is: 'act', act: a.s.act, args }, score: +(1 + Object.keys(args).length + (isQuestion ? 0 : 1) - left).toFixed(3), words: [...used].map((w) => w.text) });
+    frames.push({ frame: { is: 'act', act: a.s.act, args }, score: +(1 + Object.keys(args).length + (isQuestion ? 0 : 1) - left).toFixed(3), left, words: [...used].map((w) => w.text) });
   }
-  frames.sort((x, y) => y.score - x.score);
+  for (const fr of frames) { fr.cost = words.filter((w) => w.near && fr.words.includes(w.text)).reduce((x, w) => x + w.near.cost, 0); fr.score = +(fr.score - fr.cost * 0.2).toFixed(3); } // a near word costs
+  // one way to choose (std.decide, kind reading): coverage (words left unread), the cost of near words, specificity, then the score as prior
+  const ordered = choose(world, 'reading', frames.map((f) => ({ f, violations: 0, unread: f.left ?? 0, missing: 0, cost: f.cost, specificity: f.words.length, prior: f.score }))).order.map((x) => x.f);
+  frames.splice(0, frames.length, ...ordered);
+  for (const f of frames) delete f.left;
   const best = frames[0] ?? null;
   const ambiguous = frames.length > 1 && frames[1].score === best.score && JSON.stringify(frames[1].frame) !== JSON.stringify(best.frame);
   return { frames, best: best?.frame ?? null, ...(ambiguous ? { ambiguous: true } : {}), unread, ...(nearUsed.length ? { near: nearUsed } : {}) };

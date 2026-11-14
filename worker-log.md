@@ -5054,3 +5054,12 @@ Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-que
 
 **Gates**
 - npm test 471 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
+
+## 0.93.0: three more choice points through choose
+
+- readByTypes frames go through kind reading. The cost of near words is counted again; it was lost in 0.83 when the act frames replaced that block.
+- normalise rules go through kind rule (specificity, then n). The 35 published cases are still 35/35 (canonical, applied, mode).
+- compose facts go through kind fact.
+- docs/decisions.md is updated.
+  - Still to move: parseText parses, arbitrate, RANKING read from data, calibration on the corpus.
+- Gates: npm test 471 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.

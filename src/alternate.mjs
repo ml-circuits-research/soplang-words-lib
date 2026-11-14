@@ -1,4 +1,5 @@
 import { readByTypes } from './readtypes.mjs';
+import { choose } from './rank.mjs';
 // Alternations as general rules, once (abstraction round item 2, Q54): passive, wrappers ("could
 // you", "I want you to", "please"), wh-fronting, question vs command, dative shift. A language world
 // writes each frame once in canonical form; these rules bring a variant back to it at read time.
@@ -38,7 +39,7 @@ function match(pat, toks, i, env, k, classes) { // bounded: the pattern and the 
  * The canonical form of `text` by the alternation rules: { text, applied: [names], mode? }.
  * Options: `rules` (default: the world's), `type`, `lemma(word) -> [forms]`, `max` (applications).
  */
-export function normalise(world, text, { rules, type, lemma, max = 6, classes } = {}) {
+export function normalise(world, text, { rules, type, lemma, max = 6, classes, byRule } = {}) {
   const R = rules ?? alternationsOf(world, type);
   const C = classes ?? wordClassesOf(world, type ? `${type.split('.').slice(0, -1).join('.')}.word_class` : undefined);
   const base = (w) => (lemma ?? world.lemma)?.(w)?.[0] ?? w.replace(/ied$/, 'y').replace(/(?<=[^aeiou][aeiou]?[^aeiou])ed$/, '').replace(/ed$/, 'e').replace(/s$/, '');
@@ -47,7 +48,9 @@ export function normalise(world, text, { rules, type, lemma, max = 6, classes } 
   let mode;
   for (let n = 0; n < max; n++) { // bounded: max applications
     let hit = null;
-    for (const r of R) { const env = match(r.from.split(/\s+/), toks, 0, {}, 0, C); if (env) { hit = { r, env }; break; } }
+    const hits = [];
+    for (const r of R) { const env = match(r.from.split(/\s+/), toks, 0, {}, 0, C); if (env) hits.push({ r, env, misfit: 0, specificity: r.from.split(/\s+/).filter((t) => !t.startsWith('{')).length, n: r.n ?? 0 }); } // bounded: the rules
+    if (hits.length) hit = byRule === 'order' ? hits[0] : choose(world, 'rule', hits).best; // one way to choose (std.decide, kind rule): the more specific rule, then the order told
     if (!hit) break;
     const out = [];
     for (const t of hit.r.to.split(/\s+/)) {

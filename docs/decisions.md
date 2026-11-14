@@ -36,10 +36,10 @@ tuned in code.
 | The world that takes a request (`arbitrate`) | worlds | own / decline / refuse, then the world's rank | own method; to move to kind `world` |
 | A template of a sentence (`discourseRealiser`) | templates of the move and register whose slots fill | **`choose`**, kind `template`: fills, fresh, specificity, prior, seed | **done (0.92)** |
 | A near word (`readByTypes` `near`) | words through k.words senses | **`choose`**, kind `word`: fits, cost, prior | **done (0.92)** |
-| A frame of a question (`readByTypes`) | ask / find / act frames | a score: coverage, then question fit, then nearness | to move to kind `reading` |
-| An alternation rule (`normalise`) | rules that match | the order told (`n`, Q58) | to move to kind `rule`: matches, specificity, order |
+| A frame of a question (`readByTypes`) | ask / find / act frames | **`choose`**, kind `reading`: words left unread, the cost of near words, specificity, the score as prior | **done (0.93)** |
+| An alternation rule (`normalise`) | rules that match | **`choose`**, kind `rule`: matches, specificity (literal words), then the order told (`n`); `byRule: 'order'` keeps the order alone | **done (0.93)**; 35/35 published cases unchanged |
 | A grammar parse (`parseText`) | parses | rule `priority`, then literal count, then size | to move to kind `reading` |
-| A fact for a move (`compose`) | facts about the topic | interest (k.interest), never one twice | to move to kind `fact`: unsaid, interest |
+| A fact for a move (`compose`) | facts about the topic | **`choose`**, kind `fact`: unsaid, interest (k.interest) | **done (0.93)** |
 | A choice point of a procedure (`std.plan`, `solveChoices`) | assignments | hard matches prune, soft matches weight a seeded draw | a weighted draw by design (variety), within hard constraints |
 | A frame to sample (`sample`) | legal frames | novelty weights, seeded | a weighted draw by design (variety) |
 | A story element (`storyPlan`) | catalog facts | hard constraints prune, soft ones weight a seeded draw | a weighted draw by design |

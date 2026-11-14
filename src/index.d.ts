@@ -637,7 +637,7 @@ export function judgeFix(answer: (text: string | undefined, frame: object) => un
 /** The near words of a word through word senses (k.words.sense): synonyms 1, kinds 2 and more. */
 export function nearWords(world: World, word: string, options?: { senses?: (word: string) => Wire[] }): { word: string; cost: number; via: string }[];
 /** The canonical form of a text by the language world's alternation rules. */
-export function normalise(world: World, text: string, options?: { rules?: { name: string; from: string; to: string; mode?: string }[]; type?: string; lemma?: (word: string) => string[]; max?: number }): { text: string; applied: string[]; mode?: string };
+export function normalise(world: World, text: string, options?: { byRule?: 'order'; classes?: Map<string, Set<string>>; rules?: { name: string; from: string; to: string; mode?: string }[]; type?: string; lemma?: (word: string) => string[]; max?: number }): { text: string; applied: string[]; mode?: string };
 /** The alternation rules a world holds. */
 export function alternationsOf(world: World, type?: string): { name: string; from: string; to: string; mode?: string }[];
 /** Reading rules induced from cases (anti-unification), judged on held-out cases and cousins. */

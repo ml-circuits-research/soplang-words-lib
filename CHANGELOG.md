@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.93.0
+
+Three more choice points through `choose` (docs/decisions.md).
+
+### Changed
+- `readByTypes` frames: kind `reading` (words left unread, the cost of near words,
+  specificity, the score as prior). The cost of near words is counted again; it had been
+  lost in 0.83.
+- `normalise` rules: kind `rule` (specificity, then the order told). `byRule: 'order'`
+  keeps the order alone. The 35 published test sentences are unchanged.
+- `compose` facts: kind `fact` (unsaid, interest).
+
 ## 0.92.0
 
 One way to choose (reviewer 01:00, owner 17:16).

@@ -15,6 +15,7 @@
 import { solveChoices } from './plan.mjs';
 import { readStory, storyPlan } from './story.mjs';
 import { discourseRealiser } from './realise.mjs';
+import { choose } from './rank.mjs';
 
 const bare = (v) => String(v).replace(/^"|"$/g, '').replace(/^\$/, '');
 const isNum = (v) => /^-?\d+(\.\d+)?[a-z%]*$/i.test(bare(v));
@@ -310,7 +311,7 @@ function composeGenre(world, topic, g, { size = {}, seed = 1, realise, measures,
   if (sol.why) return { genre, topic, why: `${sol.why} (at ${sol.deepest})` };
   const choice = Object.fromEntries(Object.entries(sol.values).filter(([k, v]) => !(k in meta) || active(sol.values, meta[k].part, meta[k].t)));
   const relations = parts.filter((x) => Number(one(x, 'max')) > 1).flatMap((x) => Array.from({ length: choice[`times:${one(x, 'name')}`] }, (_, i) => choice[`rel:${one(x, 'name')}#${i}`])).filter(Boolean);
-  const pickFact = (pool) => pool.filter((f) => !said.has(f.id)).map((f) => [f, interest(f)]).filter(([, x]) => x > -0.5).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const pickFact = (pool) => choose(world, 'fact', pool.filter((f) => !said.has(f.id)).map((f) => ({ f, said: 0, interest: interest(f) })).filter((x) => x.interest > -0.5), { seed }).best?.f; // one way to choose (std.decide, kind fact): unsaid, then interest
   const fill = (extra) => { // the steps' minimum sentences; `extra` more go to steps in order, up to their maximum, while facts last
     said.clear();
     const short = [], out = [], claims = [], toldEls = new Set();

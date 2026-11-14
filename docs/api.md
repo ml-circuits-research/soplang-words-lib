@@ -1855,7 +1855,9 @@ also reads each clause by types: `[{ text, mode?, applied, frame, unread, near? 
 fillers and splitters are data: the host's, or learnt (`fillersFrom(learnFormEdits(...))`
 gives the words of the filler family).
 
-`normalise` tries the rules in the order the language world tells (`n`). The innermost
+`normalise` takes, among the rules that match, the more specific one (more literal words),
+then the one told first (`n`), through `choose` (kind `rule`); `byRule: 'order'` keeps the
+order alone. The innermost
 rule's mode wins: "can you tell me where …" is a question. A pattern may name a word class,
 `{q:wh}`, from `w.lang.en.word_class name= word=...` (`wordClassesOf`), instead of one fact
 per alternative. On the published w.lang.en (368 rules), its 35 test sentences give the

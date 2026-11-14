@@ -996,3 +996,11 @@ The owner wants to try translation by grammar worlds: Romanian (`w.lang.ro`, bei
 6. **Realisation templates per act and answer shape** in the language world (09:25 item 2): slots filled from roles, forms chosen by agreement, word order a property of the language world.
 7. **Acceptance, measured:** round trip `analyse(generate(x))` contains x for every class and cell; the toy language plus the first `w.lang.ro` draft from the knowledge repository; report wires per language world before and after the notation, dictionary bytes, and the share of words in the Romanian sets analysed correctly. Nothing Romanian in the library itself: the notation and the toy language only.
 8. Coordinate the notation with the knowledge repository's `w.lang.ro` worker through questions.md ([KNOW] tag); the reviewer forwards.
+
+## Reviewer 2026-11-14 10:50 — `std.motion`: states over time from rules (owner, 06:32: the avatar animates by rules); small, before Round 29
+
+A general scheduler for anything that changes over time by rules (the avatar's face first; later a drawing that moves, a diagram that highlights steps, the Motion of a timeline):
+1. **Rules as data:** `on <event> [when <condition on the event's fields>] → a sequence of steps`; a step sets keys of a state (a slot to a variant, a number) for a duration given as a range; `repeat every <range>` for idle behaviour (blinking); priorities so a talking mouth overrides an expression mouth but blinking still happens; `ease back to base after <duration>`.
+2. **Driven by a token stream:** a step can be `per unit of <stream>` (a reply's text split into units by a language world's rule, each unit mapped to a state by a class table): the generic form of lip sync.
+3. **Pure and seeded:** `plan(rules, events, seed) → [{t, key, value}]` for tests; `run(plan, apply, clock)` for the host; cancel on a new event. No DOM, no timers inside the plan.
+4. Docs with a toy example (a traffic light, a blinking dot) and the avatar as the second app; tests for priorities, cancel, seed determinism.

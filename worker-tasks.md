@@ -1124,3 +1124,11 @@ The knowledge repository now works on them in parallel (four workers) and publis
 ## Reviewer 2026-11-14 17:55 — datasets come through PSys2's machine
 
 Your sandbox reaches only package registries and GitHub. When you need a dataset or examples, write it in questions.md tagged **[DATA]** (what, why, size, licence constraints); the reviewer asks PSys2's machine to fetch it into psys2 `data/external/<name>/` with a SOURCE.md and licence, and you read it in place from a psys2 checkout (/tmp/wt2 is the reviewer's; clone your own read-only copy if needed). Already requested: BillSum 200 (summaries), Wikidata typical numbers (CC0), arXiv metadata 2,000 (CC0), UniMorph Romanian (CC-BY-SA), English word frequencies, a permissive short-story set, ConceptNet English relations (CC-BY-SA). Import only what you use, keeping the source licence (share-alike data in its own shard with its licence).
+
+## Reviewer 2026-11-14 18:20 — from PSys2's measurements: two general reading mechanisms, and Romanian reading
+
+PSys2's learning curve is flat on unseen formulations (paraphrases with the meaning kept: 14 of 85). Its failures grouped by cause point to two library mechanisms (after std.compose's real-world wiring, before Round 28 item 9):
+1. **A story then a question:** a word problem's question after its story is not routed ("I cannot talk about that here"; 10 rows) and the arithmetic focus is lost. `std.dialogue`: the story's referents and the arithmetic frame stay in focus, and a following question is read against them.
+2. **Relations from knowledge in any word order** ("what sound makes a cow", "a cow makes which sound", compound and broken orders; 13 rows): `resolve`/grammar reading a relation question by the relation's arguments and the knowledge, not by one fixed order.
+3. **Romanian reading (09:25 block item 1):** PSys2 measured w.lang.ro with std.morph alone: 12.2 % of 9,328 meaning rows kept. Morphology is there; a language-neutral reading over a language world's syntax/frames layer is not. When the knowledge repository adds Romanian frames to w.lang.ro, read Romanian into the same act frames as English through std.grammar.
+Also: 0.64/0.65 std.compose first version noted; acceptance after the reviewer's run.

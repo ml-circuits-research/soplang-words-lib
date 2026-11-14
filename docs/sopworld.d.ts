@@ -568,3 +568,9 @@ export interface PlanResult { method?: string; methods: string[]; acts: object[]
 export function planner(store: FactStore, options?: { chain?: { type: string; keys: string[] }[]; prefix?: string; roles?: string }): { methods: object[]; isA(a: string, b: string): boolean; plan(goal: { act: string; roles?: Record<string, unknown> }, live?: PlanLive): PlanResult };
 export function readMethods(store: FactStore, prefix?: string): object[];
 export const PLAN_LIMITS: { acts: number; depth: number };
+/** The full motion format (k.motion) as plain objects. */
+export function readMotion(world: World, options?: { style?: string; prefix?: string }): { layers: Map<string, object>; rules: object[]; visemes: Map<string, string>; splitters: Map<string, object>; events: string[]; fields: object[]; steps: object[]; whens: object[]; keys: string[] };
+/** Plan the full motion format: segments, emitted events, the state at a time, the change points. */
+export function planMotionFacts(motion: object, options?: { events?: { t: number; name: string; fields?: Record<string, unknown> }[]; seed?: number; end?: number; base?: Record<string, string>; features?: (key: string, value: string) => Record<string, string[]>; aliases?: Record<string, string>; splitters?: Record<string, (text: string) => object[]>; keys?: string[] }): { segments: object[]; instances: object[]; emitted: { t: number; name: string; fields: object }[]; stateAt(t: number): Record<string, string>; changes: { t: number; key: string; value: string | null; rule: string | null }[] };
+/** The units of a text by a splitter of the facts. */
+export function splitText(splitter: object, text: string): { char: string; group: string; class: string; min: number; max: number }[];

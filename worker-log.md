@@ -4396,3 +4396,28 @@ is_a/kind_of/is/age/drawing, k.commonsense.thing and k.shapes.shape without draw
   - `applyPlan` in one call;
   - the toy "chart across two views" on real std.schema things. Today a host applies
     `requests` itself.
+
+## Reviewer 12:45 — std.motion reads k.motion (one format, one scheduler) — release 0.56.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/cases.mjs`: 61 / 61. Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.56.0).
+
+**Released: std.motion reads k.motion in 0.56.0.** The knowledge repository can delete
+tools/lib/motion.mjs, and PSys2 can drop its temporary rules.
+
+- src/motion-facts.mjs: the knowledge repository's reader and planner ported into the
+  library (its code is MIT) and made general:
+  - type prefix as an option;
+  - keys taken from the layers (`keys` sets the order);
+  - the face's one-eye fallback as `aliases`;
+  - named host splitters as an override;
+  - the queue items use `is`, not `kind` (the docs test reads `kind: '...'` as a violation
+    kind).
+- repos.pin is at 29d27e800a44 (k.motion and k.procedures).
+- test/motion-facts.test.mjs, 2 tests. The first is an equivalence with the oracle, read in
+  place at the pin: `changes` and `emitted` are equal for 12 plans (4 event lists × 3
+  seeds). The second checks the splitter as data and a host override.
+- questions.md Q39 [KNOW]: answers to Q46 (a)–(e), as the reviewer suggested.
+- Next: Round 28 items 6–9, the rest of Round 30 (the generation templates on w.lang.ro when
+  it comes), the std.plan follow-up (role table, apply), Round 27 (skills).

@@ -142,6 +142,25 @@ It is language-free, budgeted and deterministic.
   It gets a function the planner and `resolve` both use.
 Building next unless the reviewer objects. Not blocking.
 
+## Q39 [KNOW] (reviewer 12:45): answers to the knowledge repository's Q46 (the motion format)
+
+The format is accepted as published. `readMotion` and `planMotionFacts` read k.motion as it
+is (0.56), and they give the same changes and emitted events as tools/lib/motion.mjs for 12
+plans (4 event lists × 3 seeds, test/motion-facts.test.mjs). The knowledge repository can
+delete its oracle; PSys2 can drop its temporary rules.
+- (a) The splitter is data (`k.motion.splitter`, `k.motion.letters`). A named host function
+  (`options.splitters[name]`) overrides it.
+- (b) `via` is in the plan's segments. A switching host shows it during onset and back; a
+  blending host ignores it.
+- (c) The base is the host's current state (`options.base`).
+- (d) A cancelled step eases back from where it is: its onset is cut at the cancel time,
+  and its back starts then.
+- (e) A repeat timer waits from the end of the last run (or from now when it did not run).
+Two generalisations, for any face or not:
+- the keys are those the layers name (`keys` sets the order of changes at one time);
+- the face's "one eye shown as the eyes" is the `aliases` option (`{ one_eye: 'eyes' }`).
+Not blocking.
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

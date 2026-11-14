@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.56.0
+
+Reviewer 12:45: one motion format. The knowledge repository's `k.motion` is read by the
+library.
+
+### New
+- `readMotion(world, { prefix, style })` and `planMotionFacts(motion, { events, seed, end,
+  base, features, aliases, splitters, keys })` cover the whole format: layers and
+  priorities, during / not_during, until, emits, conditions on fields and features,
+  onset / hold / back, hold_until, with, via, and splitters with letter classes as facts.
+- `splitText(splitter, text)`.
+- On 12 plans the library gives the same result as the knowledge repository's oracle,
+  which can now be deleted. `mo.*` stays as the minimal form.
+
+### Changed
+- repos.pin is at the knowledge commit 29d27e8, which has k.motion and k.procedures.
+
 ## 0.55.0
 
 Round 29: `std.plan`, goals reached by methods that are knowledge.

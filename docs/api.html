@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="5a967b7639b1">
+<meta name="source-hash" content="0a27119e035b">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.55.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.56.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -530,6 +530,19 @@ const store = factStore([{ id: &#x27;k.procedures&#x27;, schemaText: schema, sha
 const r = planner(store).plan({ act: &#x27;make&#x27;, roles: { kind: &#x27;sock&#x27; } }, new PlanLive({ store }));
 print(r.method, r.lines, r.requests[0]);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>pair [&quot;make kind=sock&quot;,&quot;make kind=sock&quot;] {&quot;action&quot;:&quot;make&quot;,&quot;args&quot;:{&quot;kind&quot;:&quot;sock&quot;}}</code></pre></figure>
+<h3 id="readmotionworld-options-planmotionfactsmotion-options-splittextsplitter-text">readMotion(world, options?), planMotionFacts(motion, options?), splitText(splitter, text)</h3>
+<p>The full motion format, as the knowledge repository publishes it in <code>k.motion</code> (one format, one scheduler). <code>readMotion(world, { prefix, style })</code> reads the facts. The type names sit under <code>prefix</code> (default <code>k.motion</code>); <code>style</code> chooses the visemes. The facts are:</p>
+<ul><li>layers with priorities over keys;</li><li>rules: <code>on</code> an event, or <code>repeat</code> (min, max) with a <code>chance</code>; <code>during</code> / <code>not_during</code> other layers; <code>until</code> events that cancel them; <code>emits</code> an event when done;</li><li>conditions on the event's fields, or on a feature of the shown value;</li><li>steps with onset, hold and back ranges, <code>hold_until</code> an event, <code>with</code> another step, <code>per</code> a field of the event split by a splitter;</li><li>sets with an optional <code>via</code>, visemes, and splitters with letter classes.</li></ul>
+<p><code>planMotionFacts(motion, { events, seed, end, base, features, aliases, splitters, keys })</code> is pure and seeded. It returns <code>{ segments, instances, emitted, stateAt(t), changes }</code>:</p>
+<ul><li><code>segments</code> have onset and back ramps, for hosts that blend, and <code>via</code>, for hosts that only switch;</li><li><code>changes</code> are the switch points;</li><li><code>base</code> is the host's current state.</li></ul>
+<p>A cancelled step eases back from where it is, and a repeat waits from the end of its last run. A named host function in <code>splitters</code> overrides a splitter of the facts. <code>splitText</code> applies a splitter. <code>motionRun</code> plays <code>changes</code> like any plan. The <code>mo.*</code> form (<code>motionPlan</code>) stays as the minimal one.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(`@l k.motion.layer name=idle priority=1 key=eyes about=x
+  @r k.motion.rule name=blink about=x layer=idle repeat_min=3000 repeat_max=3000
+  @s k.motion.step rule=blink n=1 about=x onset_min=0 onset_max=0 hold_min=150 hold_max=150 back_min=0 back_max=0
+  @v k.motion.set rule=blink step=1 key=eyes value=closed`);
+print(planMotionFacts(readMotion(w), { end: 7000, base: { eyes: &#x27;open&#x27; } }).changes.map((c) =&gt; [c.t, c.value]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[[0,&quot;open&quot;],[3000,&quot;closed&quot;],[3150,&quot;open&quot;],[6150,&quot;closed&quot;],[6300,&quot;open&quot;]]</code></pre></figure>
 <h3 id="arbitrateworld-request-options">arbitrate(world, request, options?)</h3>
 <p>The arbitration contract: one verdict per declared world for one request. <code>own</code>: the world has the kind (or the thing, or a view whose state has the attribute), allows the act, and its dry run takes it. <code>decline</code>: it has no use for the kind, so it declines the verb; this rule is the library's, not the host's. <code>refuse</code>: it has the kind, but the act is not allowed or the dry run refuses. A refusal is given only in the <code>exact</code> pass; in a <code>spelling</code> or <code>view</code> pass (<code>options.pass</code>) it stays a decline. When several worlds own, <code>options.resolves(world, words)</code> (a host hook, with <code>options.words</code>) keeps the ones whose things hold the words. Returns <code>{ verdicts: [{ world, verdict, why }], owner, ambiguous?, pass }</code>.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
@@ -796,7 +809,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.55.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.56.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

@@ -59,7 +59,7 @@ contain and where code lives: [docs/kinds-of-worlds.md](docs/kinds-of-worlds.md)
 | Read several knowledge repositories | `createCatalogs` | [example](docs/capabilities.md#read-several-knowledge-repositories) | 0.43 |
 | Cut a message into clauses | `segment`, `actWords` | [example](docs/capabilities.md#cut-a-message-into-clauses) | 0.46 |
 | Inflect and analyse the words of any language | `morphOf`, `generate`, `analyse`, `fold`, `splitClitics`, `dictionary`, `realise`, `templateFor` | [example](docs/capabilities.md#inflect-and-analyse-the-words-of-any-language) | 0.52 |
-| Change states over time by rules | `motionPlan`, `motionRun` | [example](docs/capabilities.md#change-states-over-time-by-rules) | 0.54 |
+| Change states over time by rules | `motionPlan`, `motionRun`, `readMotion`, `planMotionFacts`, `splitText` | [example](docs/capabilities.md#change-states-over-time-by-rules) | 0.54 |
 | Reach a goal by methods that are knowledge | `planner`, `factStore`, `PlanLive`, `readMethods`, `PLAN_LIMITS` | [example](docs/capabilities.md#reach-a-goal-by-methods-that-are-knowledge) | 0.55 |
 <!-- /capabilities -->
 

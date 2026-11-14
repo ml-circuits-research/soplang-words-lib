@@ -1432,6 +1432,44 @@ print(r.method, r.lines, r.requests[0]);
 pair ["make kind=sock","make kind=sock"] {"action":"make","args":{"kind":"sock"}}
 ```
 
+### readMotion(world, options?), planMotionFacts(motion, options?), splitText(splitter, text)
+
+The full motion format, as the knowledge repository publishes it in `k.motion` (one
+format, one scheduler). `readMotion(world, { prefix, style })` reads the facts. The type
+names sit under `prefix` (default `k.motion`); `style` chooses the visemes. The facts are:
+- layers with priorities over keys;
+- rules: `on` an event, or `repeat` (min, max) with a `chance`; `during` / `not_during`
+  other layers; `until` events that cancel them; `emits` an event when done;
+- conditions on the event's fields, or on a feature of the shown value;
+- steps with onset, hold and back ranges, `hold_until` an event, `with` another step,
+  `per` a field of the event split by a splitter;
+- sets with an optional `via`, visemes, and splitters with letter classes.
+
+`planMotionFacts(motion, { events, seed, end, base, features, aliases, splitters, keys })`
+is pure and seeded. It returns `{ segments, instances, emitted, stateAt(t), changes }`:
+- `segments` have onset and back ramps, for hosts that blend, and `via`, for hosts that
+  only switch;
+- `changes` are the switch points;
+- `base` is the host's current state.
+
+A cancelled step eases back from where it is, and a repeat waits from the end of its last
+run. A named host function in `splitters` overrides a splitter of the facts.
+`splitText` applies a splitter. `motionRun` plays `changes` like any plan. The `mo.*` form
+(`motionPlan`) stays as the minimal one.
+
+```js run
+const w = new World();
+w.tell(`@l k.motion.layer name=idle priority=1 key=eyes about=x
+  @r k.motion.rule name=blink about=x layer=idle repeat_min=3000 repeat_max=3000
+  @s k.motion.step rule=blink n=1 about=x onset_min=0 onset_max=0 hold_min=150 hold_max=150 back_min=0 back_max=0
+  @v k.motion.set rule=blink step=1 key=eyes value=closed`);
+print(planMotionFacts(readMotion(w), { end: 7000, base: { eyes: 'open' } }).changes.map((c) => [c.t, c.value]));
+```
+
+```output
+[[0,"open"],[3000,"closed"],[3150,"open"],[6150,"closed"],[6300,"open"]]
+```
+
 ### arbitrate(world, request, options?)
 
 The arbitration contract: one verdict per declared world for one request. `own`: the

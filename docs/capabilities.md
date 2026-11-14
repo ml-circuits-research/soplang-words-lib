@@ -666,13 +666,15 @@ beki true
 
 ## Change states over time by rules
 
-*In `motionPlan`, `motionRun`; since 0.54.*
+*In `motionPlan`, `motionRun`, `readMotion`, `planMotionFacts`, `splitText`; since 0.54.*
 *Works on: a live world's view (a face, a drawing, a diagram) and the rules a world schema gives it.*
 
 Rules as data: on an event (with a condition on its fields), or repeated idly, a sequence
 of steps sets keys of a state for durations. Priorities hold a key, and a new event
 cancels the rest of the earlier one. A step can play one state per unit of a stream (the
-generic form of lip sync). The plan is pure and seeded; the host plays it. **Limits:** the
+generic form of lip sync). The plan is pure and seeded; the host plays it. Since 0.56 the
+library also reads the knowledge repository's full format (`k.motion`: layers, during,
+until, emits, holds until an event, conditions on features, via, splitters as facts). **Limits:** the
 steps of one rule run in sequence (no parallel branches inside a rule); durations are
 whole milliseconds.
 

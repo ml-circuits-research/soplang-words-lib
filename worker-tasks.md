@@ -1232,3 +1232,7 @@ Reviewer ran `npm test` (one pass) on 0.90: 465 pass, 0 fail. Accepted (learnRul
 ## Reviewer 2026-11-15 01:40 — 0.91–0.94 accepted (test:full: 470, 470, 468 pass, 0 fail)
 
 Accepted: `canonicalise` / `readCanonical` (inverse operators at read time, 0.91), `std.decide` + `choose` with docs/decisions.md (0.92), readByTypes frames / normalise rules / compose facts through choose (0.93), score order from std.decide and parses through choose (0.94). PSys2 is vendoring 0.94 and will measure the inverse operators on the curve. [KNOW] Q60 (knowledge repository): the formats of `k.kinds.argument` / `relation` / `structure` / `w.lang.en.variant` as published — accept or name the key changes; for `alignWorlds`, say whether you need cardinality per role, link direction, or a constraint map.
+
+## Reviewer 2026-11-15 02:00 — 0.95–0.97 accepted
+
+Reviewer ran `npm test` on 0.97: 473 pass, 0 fail. Accepted: `calibrate` (criteria order learnt from cases, 0.95), experiment and ablation harnesses (Round 28 item 9 — Round 28 is complete), Round 27 skills (0.97). Q61 (structure role facts for alignWorlds) forwarded to the knowledge repository. Next: wait for PSys2's curve with 0.94's inverse operators; meanwhile composition quality follow-ups and anything PSys2's thinning audit hands over.

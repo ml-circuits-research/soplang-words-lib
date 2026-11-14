@@ -55,12 +55,3 @@ test('relatedCases along the wording: the same frame in other constructions (alt
   assert.deepEqual(cs.map((c) => [c.text, c.via, c.valid]), [['could you tell me the sound of the cow', 'could_you', true], ['please tell me the sound of the cow', 'please', true]]);
   assert.ok(cs.every((c) => normalise(v, c.text).text === kase.text), 'each comes back to the case by the rules');
 });
-
-test('the deprecated names (until the host has renamed): cousins, judgeFix keep working with degree and dims', async () => {
-  const L = await import('../tools/lib-under-test.mjs');
-  const cs = L.cousins(w, kase, { degree: 4, read: O });
-  const rs = relatedCases(w, kase, { distance: 4, read: O });
-  assert.deepEqual(cs.map((c) => [c.degree, c.dims[0], c.valid]), rs.map((c) => [c.distance, c.axes[0], c.valid]));
-  assert.deepEqual(L.judgeFix(() => null, kase, cs).byDegree, judgeOnRelated(() => null, kase, rs).byDistance);
-  for (const [old, now] of [['liftTokens', 'delexicalise'], ['continueAct', 'resolveEllipsis'], ['variantsOf', 'paraphrasesOf'], ['calibrate', 'learnRanking']]) assert.equal(typeof L[old], 'function', `${old} is still there as ${now}`);
-});

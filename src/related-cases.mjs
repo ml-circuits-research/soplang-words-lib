@@ -183,14 +183,3 @@ function matchPattern(pat, toks, i = 0, env = {}, k = 0) { // bounded: the patte
   const alts = /^\[(.*)\]$/.exec(pat[k]) ? pat[k].slice(1, -1).split('|') : [pat[k]];
   return i < toks.length && alts.includes(toks[i]) ? matchPattern(pat, toks, i + 1, env, k + 1) : null;
 }
-
-/** @deprecated since 0.111.0, removed once the host has renamed: `relatedCases` (`degree` is `distance`, `dims` is `axes`). */
-export function cousins(world, kase, { degree, dims, ...options } = {}) {
-  return relatedCases(world, kase, { ...options, ...(degree !== undefined ? { distance: degree } : {}), ...(dims ? { axes: dims } : {}) }).map((c) => ({ ...c, degree: c.distance, dims: c.axes }));
-}
-
-/** @deprecated since 0.111.0, removed once the host has renamed: `judgeOnRelated` (`byDegree` is `byDistance`). */
-export function judgeFix(answer, kase, list) {
-  const r = judgeOnRelated(answer, kase, list.map((c) => (c.distance === undefined ? { ...c, distance: c.degree } : c)));
-  return { ...r, byDegree: r.byDistance };
-}

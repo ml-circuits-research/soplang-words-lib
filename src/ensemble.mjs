@@ -62,3 +62,54 @@ export function riskCoverage(rows) {
   const ts = [...new Set(rows.map((r) => r.confidence))].sort((a, b) => b - a);
   return ts.map((t) => { const ans = rows.filter((r) => r.confidence >= t); return { threshold: t, coverage: +(ans.length / Math.max(1, rows.length)).toFixed(3), risk: +(ans.filter((r) => !r.correct).length / Math.max(1, ans.length)).toFixed(3) }; });
 }
+
+/**
+ * Probability calibration of a reader's confidence (the literature's calibration: Platt 1999, Zadrozny and
+ * Elkan 2002): rows [{ confidence, correct }] → { method, p(score) -> probability, params?, steps?, brier: {
+ * before, after } }. `method`: 'isotonic' (default: pool-adjacent-violators, a non-decreasing step function,
+ * interpolated between steps) or 'platt' (a logistic curve 1 / (1 + exp(a·s + b)), fit by Newton's method on
+ * the log loss with Platt's smoothed targets). Fit on held-out rows, not the rows the reader was tuned on.
+ */
+export function calibrate(rows, { method = 'isotonic', iterations = 100 } = {}) {
+  const pts = rows.map((r) => ({ s: Number(r.confidence ?? r.score), y: r.correct ? 1 : 0 })).filter((r) => Number.isFinite(r.s));
+  if (!pts.length) return { method, p: () => null, brier: { before: null, after: null } };
+  const brier = (f) => +(pts.reduce((t, r) => t + (f(r.s) - r.y) ** 2, 0) / pts.length).toFixed(4);
+  const clip = (x) => Math.min(1, Math.max(0, x));
+  let p, extra;
+  if (method === 'platt') {
+    const pos = pts.filter((r) => r.y).length, neg = pts.length - pos;
+    const tp = (pos + 1) / (pos + 2), tn = 1 / (neg + 2); // Platt's targets: no 0 or 1, so the fit does not run off
+    let a = 0, b = Math.log((neg + 1) / (pos + 1));
+    for (let it = 0; it < iterations; it++) { // bounded: iterations
+      let ga = 0, gb = 0, haa = 0, hab = 0, hbb = 0;
+      for (const r of pts) { const t = r.y ? tp : tn, q = 1 / (1 + Math.exp(a * r.s + b)), d = t - q, w = q * (1 - q); ga += r.s * d; gb += d; haa += r.s * r.s * w; hab += r.s * w; hbb += w; }
+      const det = haa * hbb - hab * hab;
+      if (Math.abs(det) < 1e-12) break;
+      const da = (hbb * ga - hab * gb) / det, db = (haa * gb - hab * ga) / det;
+      a -= da; b -= db;
+      if (Math.abs(da) + Math.abs(db) < 1e-9) break;
+    }
+    p = (s) => 1 / (1 + Math.exp(a * Number(s) + b));
+    extra = { params: { a: +a.toFixed(6), b: +b.toFixed(6) } };
+  } else {
+    const sorted = pts.slice().sort((x, y) => x.s - y.s);
+    const blocks = []; // pool adjacent violators: blocks of { lo, hi, sum, n }, means non-decreasing
+    for (const r of sorted) { // bounded: each row joins once, each merge removes a block
+      blocks.push({ lo: r.s, hi: r.s, sum: r.y, n: 1 });
+      while (blocks.length > 1 && blocks[blocks.length - 2].sum / blocks[blocks.length - 2].n >= blocks[blocks.length - 1].sum / blocks[blocks.length - 1].n) { // bounded: each pass removes a block
+        const t = blocks.pop(), u = blocks[blocks.length - 1]; u.hi = t.hi; u.sum += t.sum; u.n += t.n; }
+    }
+    const steps = blocks.map((k) => ({ lo: k.lo, hi: k.hi, p: +(k.sum / k.n).toFixed(4), n: k.n }));
+    p = (s) => {
+      s = Number(s);
+      if (s <= steps[0].hi) return steps[0].p;
+      for (let i = 1; i < steps.length; i++) { // bounded: the steps
+        if (s <= steps[i].lo) { const a = steps[i - 1], c = steps[i]; return clip(a.p + ((c.p - a.p) * (s - a.hi)) / Math.max(1e-12, c.lo - a.hi)); }
+        if (s <= steps[i].hi) return steps[i].p;
+      }
+      return steps[steps.length - 1].p;
+    };
+    extra = { steps };
+  }
+  return { method, p, ...extra, brier: { before: brier((s) => clip(s)), after: brier(p) } };
+}

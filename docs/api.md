@@ -2386,7 +2386,7 @@ print(resolveEllipsis(w, 'and still up', { act: 'place', args: { thing: 'c1', pl
 {"thing":"c1","place":"up"}
 ```
 
-### readEnsemble(world, text, options?), defaultReaders(read?, canonical?) and riskCoverage(rows)
+### readEnsemble(world, text, options?), defaultReaders(read?, canonical?), riskCoverage(rows) and calibrate(rows, options?)
 
 Several readers, one confidence (reviewer 02:30). Readers run as parallel voices, not a
 fallback chain. Each is `(world, text) -> [{ frame, unread?, cost?, specificity? }]`. The
@@ -2408,6 +2408,12 @@ competing frames, for a question back instead of a guess.
 `riskCoverage(rows)` turns `[{ confidence, correct }]` into the risk–coverage curve: for
 each threshold, the share answered and the share of those that are wrong.
 `tools/bench-ensemble.mjs` measures the readers alone and together on PSys2's form pairs.
+
+`calibrate(rows, { method })` maps a reader's confidence to a probability of being right, from
+held-out rows `[{ confidence, correct }]`: `isotonic` (the default: pool-adjacent-violators, a
+non-decreasing step function, interpolated between steps) or `platt` (a logistic curve fit on
+the log loss with Platt's smoothed targets). It returns `{ method, p(score), steps | params,
+brier: { before, after } }`, so a confidence threshold can be set as a probability.
 
 ```js run
 const w = new World();
@@ -2509,10 +2515,10 @@ General host code taken into the library (handover LIB-5 to LIB-8):
   or a slot filler, and the anchor present.
 - `judgeReply(reply, expected, { numberWords, before, after })` judges a reply text: every
   expected value is said (a number also as its word), and a question changes nothing.
-  `tabulate(results)` and `tableText(table)` give a degree × dimension table.
+  `tabulate(results)` and `tableText(table)` give a distance × axis table (results `{ distance, axis | axes, pass }`).
 
 ```js run
-print(judgeReply('A spider has eight legs.', ['8'], { numberWords: { 8: 'eight' } }), tableText(tabulate([{ degree: 1, dim: 'kind', pass: true }])));
+print(judgeReply('A spider has eight legs.', ['8'], { numberWords: { 8: 'eight' } }), tableText(tabulate([{ distance: 1, axis: 'kind', pass: true }])));
 ```
 
 ```output
@@ -3219,24 +3225,3 @@ print(typeof version, Object.keys(build));
 string ["version","hash","date"]
 ```
 
-### Deprecated names: cousins, judgeFix, liftTokens, continueAct, variantsOf and calibrate
-
-Names that the literature has better terms for (docs/literature.md). They still work, as the
-new functions under their old names, for two more releases, and are then removed:
-- `cousins(world, case, { degree, dims })` is `relatedCases` with `distance` and `axes`; each
-  result also carries `degree` and `dims`.
-- `judgeFix` is `judgeOnRelated`; its result also carries `byDegree`.
-- `liftTokens` is `delexicalise`, `continueAct` is `resolveEllipsis`, `variantsOf` is
-  `paraphrasesOf`, and `calibrate` is `learnRanking`. The name `calibrate` will then be used
-  for what the literature means by it: mapping scores to probabilities.
-- In `tools/generalisation-test.mjs`, `cousinsTest` is `generalisationTest`; `learnRules`
-  takes `cousins` as the old name of `related`; `tabulate` reads `degree` and `dim` as
-  `distance` and `axis`.
-
-```js run
-print(cousins === relatedCases, typeof cousins(new World(), { frame: {} }));
-```
-
-```output
-false object
-```

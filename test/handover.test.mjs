@@ -38,7 +38,7 @@ test('judgeReply, tabulate, tableText', () => {
   assert.equal(judgeReply('A spider has eight legs.', ['8'], { numberWords: { 8: 'eight' } }), true);
   assert.equal(judgeReply('A spider has legs.', ['8']), false);
   assert.equal(judgeReply('It says moo.', ['moo'], { before: { n: 1 }, after: { n: 2 } }), false, 'a question changed the state');
-  const t = tabulate([{ distance: 1, axis: 'kind', pass: true }, { distance: 1, axis: 'kind', pass: false }, { degree: 2, dims: ['form:op1'], pass: true }]);
+  const t = tabulate([{ distance: 1, axis: 'kind', pass: true }, { distance: 1, axis: 'kind', pass: false }, { distance: 2, axes: ['form:op1'], pass: true }]);
   assert.deepEqual(t, { '1|kind': { pass: 1, of: 2 }, '2|form:op1': { pass: 1, of: 1 } });
   assert.match(tableText(t), /distance 1  kind\s+1\/2  50 %/);
 });

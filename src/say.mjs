@@ -165,6 +165,3 @@ export function realiseFrame(world, frame, roles = {}, { lang = 'w.lang.en', pic
 export function paraphrasesOf(world, { lang = 'w.lang.en' } = {}) {
   return new Map(world.ofType(`${lang}.variant`).map((v) => [bare(v.attrs.frame[0]), { alternation: bare(v.attrs.alternation?.[0] ?? ''), canonical: (v.attrs.canonical || []).map(bare) }]));
 }
-
-/** @deprecated since 0.111.0, removed once the host has renamed: `paraphrasesOf`. */
-export const variantsOf = (...a) => paraphrasesOf(...a);

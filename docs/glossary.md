@@ -129,7 +129,7 @@ column is no longer used.
 | "schema world", "schema" (for a reusable world), "world template" | **world schema** | documents (0.42) |
 | "knowledge base", "catalog world", "knowledge" (as a world) | **knowledge world**; the *catalog* is the index that loads one | documents (0.42) |
 | "session world", "the user's world", "instance" | **live world** | documents (0.42) |
-| `cousins`, `degree`, `dims` | `relatedCases`, `distance`, `axes` | functions; perturbation along axes (docs/generalisation.md); the old names are deprecated aliases for two releases |
-| `judgeFix`, `cousinsTest`, `tools/cousins-test.mjs` | `judgeOnRelated`, `generalisationTest`, `tools/generalisation-test.mjs` | functions and tool; deprecated aliases for two releases |
-| `liftTokens`, `continueAct`, `variantsOf` | `delexicalise`, `resolveEllipsis`, `paraphrasesOf` | functions; deprecated aliases for two releases |
-| `calibrate` (learns a criteria order) | `learnRanking` | function; `calibrate` is to mean mapping scores to probabilities |
+| `cousins`, `degree`, `dims` | `relatedCases`, `distance`, `axes` | functions; perturbation along axes (docs/generalisation.md) |
+| `judgeFix`, `cousinsTest`, `tools/cousins-test.mjs` | `judgeOnRelated`, `generalisationTest`, `tools/generalisation-test.mjs` | functions and tool |
+| `liftTokens`, `continueAct`, `variantsOf` | `delexicalise`, `resolveEllipsis`, `paraphrasesOf` | functions |
+| `calibrate` (learns a criteria order) | `learnRanking` | function; `calibrate` now maps a confidence to a probability |

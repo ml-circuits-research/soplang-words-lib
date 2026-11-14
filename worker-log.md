@@ -5387,3 +5387,14 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   "even more" -> the same direction. Romanian "și mai la stânga" with w.lang.ro's acts.dir -> la stânga.
 - readFrames: roles cut into items at commas and "and" (bench numbers unchanged: 93 / 74 / 38 of 161).
 - Gate: npm test 507 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.117.0 — deprecated names removed (PSys2 renamed, Q68); calibrate as probability calibration
+
+- `git -C .cache/psys2 grep` on origin/HEAD (9f62006c), scripts/ src/ docs/webchat/lib tests (vendor aside):
+  the old names only in comments and a local variable; PSys2 calls the new APIs.
+- Removed cousins, judgeFix, liftTokens, continueAct, variantsOf, the old calibrate, cousinsTest,
+  degree/dims in generalisationTest and tabulate, learnRules `cousins`.
+- New `calibrate(rows, { method })`: /tmp/cal.mjs, 200 rows right with probability s²: isotonic Brier
+  0.1713 -> 0.1338 (p(0.5) 0.27, p(0.9) 0.82, 14 steps); Platt 0.1713 -> 0.1412 (p(0.5) 0.25, p(0.9) 0.78).
+- `git grep -i cousin` outside CHANGELOG/logs/glossary history: none.
+- Gate: npm test 507 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

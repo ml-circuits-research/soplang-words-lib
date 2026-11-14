@@ -656,7 +656,7 @@ export function normalise(world: World, text: string, options?: { byRule?: 'orde
 /** The alternation rules a world holds. */
 export function alternationsOf(world: World, type?: string): { name: string; from: string; to: string; mode?: string }[];
 /** Reading rules induced from cases (anti-unification), judged on held-out cases and related cases. */
-export function learnRules(world: World, cases: { text: string; frame: object }[], options?: { heldOut?: { text: string; frame: object }[]; related?: (kase: object) => object[]; cousins?: (kase: object) => object[]; admit?: number; min?: number }): { text?: string; support?: string[]; train?: { pass: number; of: number }; heldOut?: { pass: number; of: number }; admitted: boolean; why?: string }[];
+export function learnRules(world: World, cases: { text: string; frame: object }[], options?: { heldOut?: { text: string; frame: object }[]; related?: (kase: object) => object[]; admit?: number; min?: number }): { text?: string; support?: string[]; train?: { pass: number; of: number }; heldOut?: { pass: number; of: number }; admitted: boolean; why?: string }[];
 /** Two world schemas aligned by structure; what one has and the other lacks is offered. */
 export function alignWorlds(a: World, b: World, options?: { min?: number }): { map: Record<string, string>; slots: Record<string, Record<string, string>>; score: number; offers: { to: { type: string; key: string }; what: string; value: unknown; from: { type: string; key: string } }[] };
 /** A story then a question: quantities held by owners follow the story; the question is read against them. */
@@ -700,6 +700,7 @@ export function readEnsemble(world: World, text: string, options?: { readers?: R
 /** The library's own reading voices. */
 export function defaultReaders(read?: object, canonical?: object): Record<string, (world: World, text: string) => object[]>;
 /** The risk–coverage curve of a reader with a confidence. */
+export function calibrate(rows: { confidence: number; correct: boolean }[], options?: { method?: 'isotonic' | 'platt'; iterations?: number }): { method: string; p: (score: number) => number | null; steps?: { lo: number; hi: number; p: number; n: number }[]; params?: { a: number; b: number }; brier: { before: number | null; after: number | null } };
 export function riskCoverage(rows: { confidence: number; correct: boolean }[]): { threshold: number; coverage: number; risk: number }[];
 /** A word's type signature at three levels: [fine, middle, coarse]. */
 export function signatureOf(world: World, token: string, options?: { closed?: string[]; lemma?: (w: string) => string[] }): [string, string, string];
@@ -743,17 +744,3 @@ export function tabulate(results: { degree: number; dim?: string; dims?: string[
 export function tableText(table: Record<string, { pass: number; of: number }>): string;
 /** A verbless continuation: the previous act reused with the roles the message gives. */
 export function resolveEllipsis(world: World, text: string, previous: { act: string; args: Record<string, unknown> }, options?: { pronouns?: string[]; skip?: string[]; lang?: string; dirKey?: string; more?: string[]; small?: string[]; positions?: Record<string, number | 'middle'>; fold?: (word: string) => string }): { act: string; args: Record<string, unknown>; reused: true; changed: string[]; relative?: { more?: boolean; small?: boolean } } | null;
-
-// Deprecated names (kept for two releases).
-/** @deprecated `delexicalise`. */
-export const liftTokens: typeof delexicalise;
-/** @deprecated `learnRanking`. */
-export const calibrate: typeof learnRanking;
-/** @deprecated `paraphrasesOf`. */
-export const variantsOf: typeof paraphrasesOf;
-/** @deprecated `resolveEllipsis`. */
-export const continueAct: typeof resolveEllipsis;
-/** @deprecated `relatedCases` (`degree` is `distance`, `dims` is `axes`). */
-export function cousins(world: World, kase: { frame: object; text?: string; langFrame?: string; roles?: Record<string, string | string[]> }, options?: Record<string, unknown> & { degree?: number; dims?: string[] }): { frame: object; text?: string; degree: number; dims: string[]; distance: number; axes: string[]; via?: string; valid: boolean; why?: string }[];
-/** @deprecated `judgeOnRelated` (`byDegree` is `byDistance`). */
-export function judgeFix(answer: (text: string | undefined, frame: object) => unknown, kase: { frame: object; text?: string }, related: object[]): { case: boolean; byDegree: Record<string, { pass: number; of: number }>; byDistance: Record<string, { pass: number; of: number }>; share: number | null };

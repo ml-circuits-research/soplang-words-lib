@@ -168,6 +168,3 @@ export function learnRanking(world, kind, cases, { heldOut = [] } = {}) {
   const facts = best.map((c, i) => `@std.decide.c.${kind}.cal${i + 1} std.decide.criterion of=${kind} n=${i + 1} name=${c.name} measure=${c.measure} dir=${c.dir}`).join('\n');
   return { current: base.map((c) => c.name), best: best.map((c) => c.name), admitted, train, heldOut: ho, facts };
 }
-
-/** @deprecated since 0.111.0, removed once the host has renamed: `learnRanking` (the name calibrate is kept for mapping scores to probabilities). */
-export const calibrate = (...a) => learnRanking(...a);

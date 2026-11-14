@@ -16,9 +16,7 @@ import { relatedCases, judgeOnRelated } from '../src/index.mjs';
  * `host(text, frame) -> answer` is the system under test; a related case passes when its answer equals
  * the world's. Options go to relatedCases (distance, axes, edges, read, known, n, seed).
  */
-export function generalisationTest(world, example, host, { degree, dims, ...options } = {}) {
-  if (degree !== undefined) options.distance = degree; // the deprecated names (until the host has renamed)
-  if (dims) options.axes = dims;
+export function generalisationTest(world, example, host, options = {}) {
   const same = (a, b) => JSON.stringify([].concat(a ?? [])) === JSON.stringify([].concat(b ?? []));
   const list = relatedCases(world, example, { distance: 3, ...options }).filter((c) => c.valid);
   // every clause judged (reviewer 23:05 item 4): a compound text passes only when the host's answer to it
@@ -55,9 +53,6 @@ export function printTable(r) {
   for (const k of Object.keys(r.table).sort()) { const [d, axis] = k.split('|'), t = r.table[k]; lines.push(`distance ${d}  ${axis.padEnd(6)} ${t.pass}/${t.of}${t.fails.length ? `   fails: ${t.fails.slice(0, 3).join('; ')}` : ''}`); }
   return [...lines, ...r.pattern].join('\n');
 }
-
-/** @deprecated since 0.111.0, removed once the host has renamed: `generalisationTest`. */
-export const cousinsTest = (...a) => generalisationTest(...a);
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const { World, readByTypes } = await import('../src/index.mjs');

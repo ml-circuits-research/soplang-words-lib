@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.117.0
+
+PSys2 has renamed its uses (reviewer 06:35, Q68): the deprecated names of 0.111.0 go.
+
+### Removed
+- `cousins`, `judgeFix`, `liftTokens`, `continueAct`, `variantsOf`, the old `calibrate` (now
+  `relatedCases`, `judgeOnRelated`, `delexicalise`, `resolveEllipsis`, `paraphrasesOf`,
+  `learnRanking`); `cousinsTest` in tools/generalisation-test.mjs; `degree` / `dims` in
+  `generalisationTest` and `tabulate`; the `cousins` option of `learnRules`.
+
+### New
+- `calibrate(rows, { method: 'isotonic' | 'platt' })`: a reader's confidence mapped to a
+  probability of being right, fit on held-out rows (Platt 1999; Zadrozny and Elkan 2002), with
+  the Brier score before and after.
+
 ## 0.116.0
 
 From the reviewer's 08:15 entry, item 2 (relative continuations in real turns).

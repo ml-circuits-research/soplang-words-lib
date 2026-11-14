@@ -110,6 +110,3 @@ export function resolveEllipsis(world, text, previous, { pronouns = ['it', 'them
   if (!changed.length) return null;
   return { act: previous.act, args, reused: true, changed, ...(Object.keys(relative).length ? { relative } : {}) };
 }
-
-/** @deprecated since 0.111.0, removed once the host has renamed: `resolveEllipsis`. */
-export const continueAct = (...a) => resolveEllipsis(...a);

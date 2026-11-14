@@ -12,11 +12,11 @@ const enc = (text) => '@u utter ' + String(text).toLowerCase().replace(/[?!.]+\s
 
 /**
  * Proposals of reading rules from `cases` ([{ text, frame }] with frame { is: 'ask', key, of: { id } }).
- * Options: `heldOut` (more cases, not used to induce), `related(case) -> [related cases]` (`cousins` is its deprecated name) (valid ones are
+ * Options: `heldOut` (more cases, not used to induce), `related(case) -> [related cases]` (valid ones are
  * held out too), `admit` (the least held-out share, default 1), `min` (cases per rule, default 2).
  * Returns [{ text, support, train: { pass, of }, heldOut: { pass, of }, admitted, why? }].
  */
-export function learnRules(world, cases, { heldOut = [], related: relatedOf, cousins: cousinsOf = relatedOf, admit = 1, min = 2 } = {}) {
+export function learnRules(world, cases, { heldOut = [], related: relatedOf, admit = 1, min = 2 } = {}) {
   const groups = new Map();
   for (const c of cases) { const n = enc(c.text).split(' ').length; const k = `${c.frame.is}|${c.frame.key}|${n}`; (groups.get(k) || groups.set(k, []).get(k)).push(c); }
   const out = [];
@@ -43,7 +43,7 @@ export function learnRules(world, cases, { heldOut = [], related: relatedOf, cou
     const judge = (list) => { let pass = 0; for (const c of list) { const a = answer(c.text); if (a && a.key === c.frame.key && a.of === nameOf(c.frame.of.id)) pass++; } return { pass, of: list.length }; };
     const train = judge(group);
     if (train.pass < train.of) { out.push({ text: r.text, support: group.map((c) => c.text), train, heldOut: { pass: 0, of: 0 }, admitted: false, why: 'a training case fails' }); continue; } // its own cases first
-    const held = [...heldOut.filter((c) => enc(c.text).split(" ").length === enc(group[0].text).split(" ").length), ...(cousinsOf ? group.flatMap((c) => cousinsOf(c).filter((x) => x.valid && x.text)) : [])];
+    const held = [...heldOut.filter((c) => enc(c.text).split(" ").length === enc(group[0].text).split(" ").length), ...(relatedOf ? group.flatMap((c) => relatedOf(c).filter((x) => x.valid && x.text)) : [])];
     const ho = judge(held);
     const share = ho.of ? ho.pass / ho.of : 1;
     out.push({ text: r.text, support: group.map((c) => c.text), train, heldOut: ho, admitted: train.pass === train.of && share >= admit, ...(train.pass < train.of ? { why: 'a training case fails' } : share < admit ? { why: `held-out ${ho.pass}/${ho.of}` } : {}) });
@@ -204,6 +204,3 @@ export function familyOf(edit) {
   if (d.length >= 3 && n.length <= 2) return 'extra clause';
   return 'substitution';
 }
-
-/** @deprecated since 0.111.0, removed once the host has renamed: `delexicalise`. */
-export const liftTokens = (...a) => delexicalise(...a);

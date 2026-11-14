@@ -2,7 +2,7 @@
 // combines, a confidence, a question back below the threshold, and a risk–coverage curve. A toy world.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { World, readEnsemble, riskCoverage } from '../tools/lib-under-test.mjs';
+import { World, readEnsemble, riskCoverage, calibrate } from '../tools/lib-under-test.mjs';
 
 const w = new World();
 w.tell(`@t core.type of=w.lang.en.alternation  @t1 core.slot of=w.lang.en.alternation key=name kind=atom kind=string
@@ -27,4 +27,13 @@ test('readEnsemble: below the threshold, a question back with the competing read
   assert.ok(r.ask?.length === 2, 'two readings tie, each with one voice: ask');
   const rows = [{ confidence: 1, correct: true }, { confidence: 1, correct: true }, { confidence: 0.67, correct: true }, { confidence: 0.33, correct: false }];
   assert.deepEqual(riskCoverage(rows), [{ threshold: 1, coverage: 0.5, risk: 0 }, { threshold: 0.67, coverage: 0.75, risk: 0 }, { threshold: 0.33, coverage: 1, risk: 0.25 }]);
+});
+
+test('calibrate: a reader\'s confidence mapped to a probability, isotonic and Platt, on held-out rows', () => {
+  const rows = []; for (let i = 0; i < 200; i++) { const s = i / 200; rows.push({ confidence: s, correct: ((i * 7919) % 100) / 100 < s * s }); } // the truth: right with probability s²
+  const iso = calibrate(rows), platt = calibrate(rows, { method: 'platt' });
+  for (const c of [iso, platt]) assert.ok(c.brier.after < c.brier.before, `${c.method}: ${JSON.stringify(c.brier)}`);
+  assert.ok(Math.abs(iso.p(0.5) - 0.25) < 0.1 && Math.abs(platt.p(0.9) - 0.81) < 0.1);
+  assert.ok(iso.steps.every((x, i, a) => !i || a[i - 1].p <= x.p), 'isotonic: never decreasing');
+  assert.equal(calibrate([]).p(0.5), null);
 });

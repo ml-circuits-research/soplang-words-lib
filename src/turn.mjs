@@ -100,6 +100,41 @@ export function route(world, request, { scores = {} } = {}) {
 }
 
 /**
+ * The arbitration contract (reviewer 07:40, item 1): for one request, each declared world
+ * gives one of three verdicts. `own`: it has the kind (or the thing, or a view whose state
+ * has the attribute), allows the act, and its dry run takes it. `decline`: it has no use for
+ * the kind, so it declines the verb (the act verb claim); this rule is the library's. `refuse`:
+ * it has the kind, but the act is not allowed or its dry run is refused. A refusal is given
+ * only in the `exact` pass; in a `spelling` or `view` pass (the host trying variants) it
+ * stays a decline, so a variant never turns into a refusal. `resolves(world, words)` is an
+ * optional host hook: when several worlds own, the one whose things hold the words wins.
+ * Returns { verdicts: [{ world, verdict, why }], owner: world | null, ambiguous?: [worlds], pass }.
+ */
+export function arbitrate(world, request, { pass = 'exact', resolves, words } = {}) {
+  const args = request.args || {};
+  const thingId = args.thing !== undefined ? String(args.thing).replace(/^\$/, '') : null;
+  const thing = thingId ? world.get(thingId) : null;
+  const kind = args.kind ?? thing?.attrs.kind?.[0] ?? thingId;
+  const verdicts = [];
+  for (const wd of world.ofType('std.schema.world')) { // bounded: the declared worlds
+    const name = wd.attrs.name[0];
+    const decl = kind !== null && kind !== undefined ? world.ofType('std.schema.kind').find((k) => k.attrs.of[0] === kind && k.attrs.world.includes(name)) : null;
+    const open = !decl && kind ? world.ofType('std.schema.kinds').find((k) => k.attrs.world[0] === name && world.ofType(k.attrs.from[0]).some((x) => x.attrs[k.attrs.key?.[0] || 'name']?.includes(kind))) : null;
+    const viewState = !kind && args.attr !== undefined ? world.ofType('std.schema.view').find((v) => v.attrs.state && world.ofType('std.schema.kind').some((k) => k.attrs.of[0] === v.attrs.state[0] && k.attrs.world.includes(name)) && (world._compiled().slots.get(v.attrs.state[0])?.has(String(args.attr)))) : null;
+    const k = decl || open || (viewState ? world.ofType('std.schema.kind').find((x) => x.attrs.of[0] === viewState.attrs.state[0]) : null);
+    if (!k || (thing && thing.attrs.world && !thing.attrs.world.includes(name))) { verdicts.push({ world: name, verdict: 'decline', why: kind ? `no use for ${kind}` : 'nothing here takes it' }); continue; }
+    const say = (verdict, why) => verdicts.push({ world: name, verdict: verdict === 'refuse' && pass !== 'exact' ? 'decline' : verdict, why });
+    if (!(k.attrs.acts || []).includes(request.action)) { say('refuse', `${kind ?? 'the view'} cannot be ${request.action === 'make' ? 'made' : request.action + 'd'} here`); continue; }
+    const r = world.fork().act({ action: request.action, args: request.action === 'make' ? { ...args, world: name } : args });
+    if (!r.ok) { say('refuse', String(r.violations?.[0]?.why ?? r.status).replace(/^"|"$/g, '')); continue; }
+    verdicts.push({ world: name, verdict: 'own', why: decl ? `has ${kind}` : open ? `takes any ${open.attrs.from[0]}: ${kind}` : `its view has ${args.attr}` });
+  }
+  let owners = verdicts.filter((v) => v.verdict === 'own').map((v) => v.world);
+  if (owners.length > 1 && resolves && words) { const held = owners.filter((n) => resolves(n, words)); if (held.length) owners = held; }
+  return { verdicts, owner: owners.length === 1 ? owners[0] : null, ...(owners.length > 1 ? { ambiguous: owners } : {}), pass };
+}
+
+/**
  * The request pipeline as data (Round 25): runs the stages a world declares with std.turn
  * (`core.use world=std.turn`): the order of the `after` chain, providers by tier, what an
  * empty stage does. The providers are functions `(ctx) => value | undefined`; the library

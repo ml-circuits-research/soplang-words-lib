@@ -70,18 +70,21 @@ test('grammar: a grammar world with its own names — classes as categories, lit
 });
 
 // PSys2's English grammar hand-over (CC0), read in place: the integration test asked for by the reviewer (01:20)
-const HANDOVER = new URL('../../ml-circuits-research/psys2/handover/lang.en/', import.meta.url);
-test('grammar: the lang.en hand-over facts read in place parse every noun-phrase example they give', { skip: !existsSync(HANDOVER) && 'the hand-over is not checked out next to the library' }, () => {
+// now published as w.lang.en in the knowledge repository (read at its commit in repos.pin)
+import { worldsDir } from '../tools/worlds.mjs';
+const LANG = worldsDir() ? new URL(`file://${worldsDir()}docs/worlds/w.lang.en/`) : null;
+test('grammar: the published w.lang.en facts parse every noun-phrase example they give', { skip: !LANG && 'the knowledge repository cannot be read here' }, () => {
   const w = new World();
-  for (const f of ['np', 'determiners', 'numbers', 'prepositions', 'pronouns']) assert.ok(w.tell(readFileSync(new URL(`shards/${f}.sop`, HANDOVER), 'utf8')).ok, f);
+  assert.ok(w.tell(readFileSync(new URL('schema.sop', LANG), 'utf8')).ok, 'its schema loads now (Q33: fixed in the knowledge repository)');
+  for (const f of ['grammar', 'determiners', 'numbers', 'prepositions', 'pronouns']) assert.ok(w.tell(readFileSync(new URL(`shards/${f}.sop`, LANG), 'utf8')).ok, f);
   const lexicon = Object.fromEntries('house star table circle door guest crocodile'.split(' ').map((x) => [x, { cat: 'N' }]));
   Object.assign(lexicon, { tables: { cat: 'N', lemma: 'table' }, legs: { cat: 'N', lemma: 'leg' }, eyes: { cat: 'N', lemma: 'eye' }, big: { cat: 'MOD' }, red: { cat: 'MOD' }, ann: { cat: 'NAME' } });
-  const opts = { start: 'NP', digits: 'NUM', types: { rule: 'lang.en.rule' }, classes: { DET: 'lang.en.det', NUM: 'lang.en.numeral', ORD: 'lang.en.ordinal', PREP: 'lang.en.prep', PRON: 'lang.en.pron' }, lexicon };
+  const opts = { start: 'NP', digits: 'NUM', types: { rule: 'w.lang.en.rule', word: 'w.lang.en.word' }, classes: { DET: 'w.lang.en.det', NUM: 'w.lang.en.numeral', ORD: 'w.lang.en.ordinal', PREP: 'w.lang.en.prep', PRON: 'w.lang.en.pron' }, lexicon };
   const cases = { 'the big red house': 'house', '3 red tables': 'table', 'table 2': 'table', 'guest Ann': 'guest', 'the third table': 'table', 'the last circle': 'circle', 'all the tables': 'table', 'each guest': 'guest', 'both eyes': 'eye', 'everything': undefined, 'the legs of the crocodile': 'leg', "the house's door": 'door', 'the star next to the house': 'star', 'it': undefined };
   for (const [s, lemma] of Object.entries(cases)) {
     const p = parseText(w, s, opts);
     assert.ok(p.length, `parses: ${s}`);
-    assert.equal(nounPhrase(p[0].tree, { det: 'DET', num: 'NUM', mod: 'MOD', head: 'N', pp: 'PP', ord: 'ORD', name: 'NAME', pron: 'PRON' }).lemma, lemma, s);
+    assert.equal(nounPhrase(p[0].tree, { det: 'DET', num: 'NUM', mod: 'MOD', head: 'N', pp: 'PP', ord: 'ORD', name: 'NAME', pron: 'PRON', quant: 'QALL' }).lemma, lemma, s);
   }
 });
 

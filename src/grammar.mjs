@@ -131,7 +131,7 @@ export function parseText(world, text, { start = 'S', max = 8, budget = 20000, .
 
 /** A noun phrase node read as roles: { det, num, mods, head, lemma, span, pp? } (categories named by the grammar: `cats`). */
 export function nounPhrase(node, cats = {}) { // bounded: the depth of the tree
-  const C = { det: 'Det', num: 'Num', mod: 'Adj', head: 'N', pp: 'PP', ord: 'Ord', name: 'Name', pron: 'Pron', ...cats };
+  const C = { det: 'Det', num: 'Num', mod: 'Adj', head: 'N', pp: 'PP', ord: 'Ord', name: 'Name', pron: 'Pron', quant: 'Quant', ...cats };
   if (node.coord) return { coord: node.coord.map((n) => nounPhrase(n, cats)), span: node.span, ...(node.conj ? { conj: node.conj } : {}) };
   // a coordination inside the phrase ("tables 1 and 2", "red and blue cups"): distributed, one phrase per part
   const inner = (n) => (n !== node && (n.cat === node.cat || n.cat === C.pp) ? null : n.coord && n !== node ? n : (n.children || []).map(inner).find(Boolean) || null); // bounded: the depth of the tree; not into a PP or a phrase of the same category
@@ -155,7 +155,7 @@ export function nounPhrase(node, cats = {}) { // bounded: the depth of the tree
   for (const [k, c] of kids.entries()) { if (base && k === 0) continue; walk(c, k === 0); }
   if (!kids.length) walk(node, true);
   const of = (cat) => leaves.filter((l) => l.cat === cat), first = (cat) => of(cat)[0];
-  const quant = leaves.find((l) => l.cat.startsWith('=') && l.span[0] === node.span[0]);
+  const quant = leaves.find((l) => (l.cat === C.quant || l.cat.startsWith('=')) && l.span[0] === node.span[0]); // a quantifier: a category the grammar names (cats.quant), or a literal word
   const head = of(C.head).pop();
   const own = { span: node.span, ...(node.rule ? { rule: node.rule } : {}),
     ...(quant ? { quant: quant.word } : {}), ...(first(C.det) ? { det: first(C.det).lemma } : {}), ...(first(C.num) ? { num: first(C.num).lemma, ...(head && first(C.num).span[0] > head.span[0] ? { numAfter: true } : {}) } : {}),

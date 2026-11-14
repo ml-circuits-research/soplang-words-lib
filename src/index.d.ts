@@ -527,3 +527,6 @@ export function viewDiff(world: World, type: string, a: string, b: string): { on
 export function resolve(world: World, phrase: string | object, options?: { grammar?: object; cats?: Record<string, string>; focus?: string | string[]; inside?: string }): { ids: string[]; tier?: 'user' | 'scene' | 'focus' | 'slip'; how?: string[]; why?: string; which?: string[]; kind?: string; unknown?: { word: string; at: number }[] };
 /** The typed needs of a world or view (std.schema.needs), each with whether it is loaded. */
 export function needsOf(world: World, scope?: { world?: string; view?: string }): { of: string; type: string; from?: string; loaded: boolean }[];
+
+/** The arbitration contract: own / decline / refuse per declared world for one request. */
+export function arbitrate(world: World, request: { action: string; args?: Record<string, unknown> }, options?: { pass?: 'exact' | 'spelling' | 'view'; resolves?: (world: string, words: string[]) => boolean; words?: string[] }): { verdicts: { world: string; verdict: 'own' | 'decline' | 'refuse'; why: string }[]; owner: string | null; ambiguous?: string[]; pass: string };

@@ -424,12 +424,15 @@ done 1 ["I made a chair (chair1)."]
 
 ## Choose a world for a request
 
-*In `route`; since 0.24.*
+*In `route`, `arbitrate`; since 0.24.*
 *Works on: world schemas (which one a request is for).*
 
 `route` scores the worlds of the schemas for a request by their cards, the thing it
 names, a dry run, and a signal of the host's own (an encoder's score), best first with
-the reasons. **Limits:** no reading of text: the request comes from the host.
+the reasons. `arbitrate` (0.45) gives each world a verdict instead: `own`, `decline` (it has
+no use for the kind: the library's rule) or `refuse` (it has the kind but not the act, or
+its dry run refuses; only in the exact pass), with a `resolves` hook for ties.
+**Limits:** no reading of text: the request comes from the host.
 
 ```js run
 const w = new World();

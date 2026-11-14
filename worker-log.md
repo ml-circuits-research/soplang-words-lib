@@ -4147,3 +4147,28 @@ docs/kinds-of-worlds.md`: 4 runnable examples, 0 problems. Version, CHANGELOG, d
 - B (skills/README.md) comes with Round 27.
 - Next: Round 28, items 1–3 (arbitration contract, segmenter, std.dialogue). First, read
   PSys2's [LIB] lessons in place and answer per line in questions.md.
+
+## Round 28 item 1 — arbitration contract; Q36 answers per line; w.lang.en from the knowledge repo — release 0.45.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 0.45.0).
+
+- questions.md Q36 answers PSys2's [LIB] lines, read in place: 25 answers, each take,
+  have or refuse. Already in the library: needs, views and show, undo per sentence, grid
+  tests, partitive / other / choice / asked, view diff. Refused: lexicon words in a
+  spelling vocabulary, because spelling stays the host's. The rest go to items 2–9.
+- src/turn.mjs: `arbitrate`.
+  - Verdicts own / decline / refuse. The decline rule (the act verb claim) is the
+    library's.
+  - The `pass` (exact / spelling / view): only the exact pass refuses.
+  - A `resolves` hook for ties.
+  - test/arbitrate.test.mjs: 2 tests. One checks every kind's `make`: no world owns
+    another world's kind.
+- PSys2 deleted its handover/lang.en. The two integration tests now read the published
+  w.lang.en from the pinned knowledge checkout, and its schema now loads. Its types are
+  renamed (`w.lang.en.rule`, `w.lang.en.word`, ...).
+  - First run (`node /tmp/le3.mjs`): 10 of 14 examples parsed. The 4 others were
+    quantifiers and the possessive, whose words are `w.lang.en.word` facts (`types.word`).
+  - After that, all 14 parse. "all the tables" lost its quantifier; `cats.quant: 'QALL'`
+    reads it now (lesson 25).
+- Next: Round 28 items 2 (one segmenter that knows the act forms) and 3 (`std.dialogue`).

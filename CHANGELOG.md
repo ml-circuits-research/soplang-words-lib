@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.45.0
+
+Round 28 item 1 (from PSys2's lessons): the arbitration contract.
+
+### New
+- `arbitrate(world, request, { pass, resolves, words })` gives one verdict per declared
+  world: `own`, `decline` or `refuse`.
+  - The decline rule is the library's: a world with no use for the kind declines the verb.
+  - A refusal is given only in the exact pass; a variant pass never refuses.
+  - The `resolves` hook breaks a tie between owners.
+  - The verdict is returned as data, so no wrapper can erase it.
+- `nounPhrase` reads a quantifier from a category the grammar names (`cats.quant`, such as
+  `QALL`), not only from a literal word (PSys2's lesson 25).
+
+### Changed
+- The grammar integration tests read the published `w.lang.en` (knowledge repository, at
+  its commit in repos.pin) with its schema, instead of PSys2's hand-over, which PSys2 has
+  deleted.
+
 ## 0.44.0
 
 Docs (reviewer 07:25, A and C). No change in `src/`.

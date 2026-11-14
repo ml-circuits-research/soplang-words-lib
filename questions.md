@@ -6,6 +6,76 @@ written with each question and in `worker-log.md`. A question is deleted from th
 once the worker is satisfied with the answer; closed ones are listed at the end in one
 line each so the history is not lost.
 
+## Q36 (reviewer 07:40, Round 28): PSys2's [LIB] lessons, one answer each
+
+Read in place (PSys2 questions.md, Q12 of 2026-11-14 04:30, and item 4 of "w.lang.en vs the
+hand-over"). Each line: **take** (with the round 28 item it goes in), **have** (already in
+the library, with the version), or **refuse** (with the reason).
+1. Evidence rule for a referent's world (the world whose things hold the words, ranked as
+   scene): **take**, the `resolves` hook of `arbitrate` (0.45); and `resolve` already ranks
+   `scene`.
+2. A frame naming the world's own words beats generic act forms, by rule and not by numbers:
+   **take** (item 7). "What is X" for a named thing of the open view: **take**, with
+   item 3 (std.dialogue) and the focus.
+3. Form compiler checks (an optional slot before a required one; lemmatised lexicon words;
+   `words(n)`): **take** (item 7). These are PSys2's pattern compiler; the library's
+   counterpart is the grammar reader and `schemaExamples`, where the checks will go.
+4. Facts lookup first (views, inflect, fragment, agent), then the algorithms, then the chart,
+   and `grammar.diff`: **have** views and diff (`grammarView`, `viewDiff`, 0.30) and the
+   chart (0.29–0.30). **take** inflect, fragment and agent (item 6, in Q33's order).
+5. `relpron`, `partitive`, `other`, `choice` and the negation lead as chart rules, with
+   "asked instead of guessed" as a result kind: **have** partitive, other, choice and
+   asked (`ask: true`, 0.40). **take** relpron and the negation lead as chart rules, and the
+   failure class as a field (item 6).
+6. An arbitration contract (claim, decline, focus) and a test that no schema world takes
+   another world's sentence: **take, built** (`arbitrate`, 0.45).
+7. One undo step for several acts of one sentence: **have** (`act([...])`, 0.26).
+   Generated-world tests (a world reads its own canonical examples): **have** (`gridTests`,
+   0.27).
+8. Index a shard once and memoise lookups within a turn: **take** (item 5).
+9. One segmenter that knows the act forms: **take** (item 2).
+10. A relation kind (spatial, containment, flow) declared in a schema: **take** (item 8).
+11. Views, aspects and `show` in a things module: **have** (`std.schema.view`, `show`, 0.21).
+    The experiment harness as a library tool: **take** (item 9).
+12. The act verb claim: **take, built** (the decline rule of `arbitrate`, 0.45).
+13. "Bundled subset then catalog" with `reachable()` and a synchronous first read, and the
+    two reader bugs (a word form only as `core.word`; a schema shard id that is its own
+    path): **take** (item 5). A sync read already exists (`intoSync`, 0.23).
+14. The segmenter as the cut point (so hosts need no encoder); the ablation harness:
+    **take** (items 2 and 9).
+15. Turn kinds and the focus log as `std.dialogue`; a modal world sees a turn first:
+    **take** (item 3).
+16. A fork copies every context hook, tested once: **take** (item 3). Forks already copy
+    functions, actions, producers and filters (0.26). The test will cover them all.
+17. `std.space` single placement (to a thing, to a region, a default spot): **take**
+    (item 8).
+18. `listOf(type, slot, value)` over a loaded catalog, and a world-level `bundle=`: **take**
+    (item 5).
+19. An undo contract per request, with an optional whole-message tag: **take** (item 4).
+20. A three-valued verdict, a `resolves(words)` hook, and a verdict a wrapper may not erase
+    (tested once): **take, built** (`arbitrate` returns the verdict itself, 0.45). A
+    decline must not become a refusal on spelling variants or one-world views: **built**
+    (`pass`).
+21. Typed lexicons for form slots (a switch accepts only booleans), cuts at a frame lead
+    inside a rest slot, a hook that asks and takes the next bare sentence as its answer,
+    and lexicon words in the spelling vocabulary: **take** in items 2 and 3. The spelling
+    vocabulary is **refused**: spelling stays the host's, by the rule of std-grammar.md
+    section 7.
+22. `needs` as a declared, typed list, and a view's declaration and needs as one object:
+    **have** (`std.schema.needs`, 0.39, takes a view's name).
+23. `resolve` reads a bare name (NP -> NAME), takes coordinators from `coord.sep`-like
+    facts, reports the failure class as a field, and has a focus option "only for a
+    pronoun": **take** (item 6). The first two are the grammar's own options (`types`,
+    `classes`), so they need only a test.
+24. An optional open slot backs off when the next element would fail: **take** (item 7).
+    Attribute words and relation verbs as different kinds in `std.schema`: **take**
+    (item 8, with relation kinds).
+25. Reading the whole catalog grammar changed 14 of 6,972 results: a quantifier found only
+    as a literal, a coordination read as its first part, "the other table" as the focus.
+    **take** (item 6): quantifier categories as categories (`quant` from a class, not only
+    from a literal), coordination as a list, "other" from the focus.
+Not blocking.
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

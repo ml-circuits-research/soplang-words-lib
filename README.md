@@ -48,7 +48,7 @@ contain and where code lives: [docs/kinds-of-worlds.md](docs/kinds-of-worlds.md)
 | Load knowledge by lookup | `createCatalog`, `bundleReader` | [example](docs/capabilities.md#load-knowledge-by-lookup) | 0.23 |
 | Handle one request end to end | `turn` | [example](docs/capabilities.md#handle-one-request-end-to-end) | 0.24 |
 | Change the path of a request by telling facts | `std.turn`, `turnFlow` | [example](docs/capabilities.md#change-the-path-of-a-request-by-telling-facts) | 0.26 |
-| Choose a world for a request | `route` | [example](docs/capabilities.md#choose-a-world-for-a-request) | 0.24 |
+| Choose a world for a request | `route`, `arbitrate` | [example](docs/capabilities.md#choose-a-world-for-a-request) | 0.24 |
 | Tools for authors | `tools/validate.mjs`, `tools/ledger.mjs`, `ledgerGroups` | [example](docs/capabilities.md#tools-for-authors) | 0.25 |
 | Read noun phrases with a language's knowledge world | `parseText`, `nounPhrase` | [example](docs/capabilities.md#read-noun-phrases-with-a-languages-knowledge-world) | 0.29 |
 | Resolve what a phrase refers to | `resolve` | [example](docs/capabilities.md#resolve-what-a-phrase-refers-to) | 0.31 |

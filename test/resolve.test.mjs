@@ -33,7 +33,7 @@ function scene() {
 @w2 core.word text=crimson means=red of=color`);
   const lexicon = Object.fromEntries('table tables desk guest guests lamp lmap red blue green crimson other them ann bob'.split(' ').map((x) => [x, { cat: /^(red|blue|green|crimson|other)$/.test(x) ? 'MOD' : /^(ann|bob)$/.test(x) ? 'NAME' : 'N', lemma: x.replace(/s$/, '') }]));
   const grammar = { digits: 'NUM', types: { rule: 'x.rule', coord: 'x.coord' }, classes: { DET: 'x.det', ORD: 'x.ord', PRON: 'x.pron', PREP: 'x.prep' }, lexicon };
-  const cats = { det: 'DET', num: 'NUM', mod: 'MOD', head: 'N', pp: 'PP', ord: 'ORD', name: 'NAME', pron: 'PRON' };
+  const cats = { det: 'DET', num: 'NUM', mod: 'MOD', head: 'N', pp: 'PP', ord: 'ORD', name: 'NAME', pron: 'PRON', quant: 'QALL' };
   return { w, r: (s, o = {}) => resolve(w, s, { grammar, cats, ...o }) };
 }
 
@@ -73,14 +73,16 @@ test('resolve: coordination is the union; a relation narrows by the thing it nam
 
 // with PSys2's English facts (CC0, read in place; skipped when not checked out next to the library)
 import { existsSync, readFileSync } from 'node:fs';
-const HANDOVER = new URL('../../ml-circuits-research/psys2/handover/lang.en/', import.meta.url);
-test('resolve: with the lang.en hand-over grammar, read in place', { skip: !existsSync(HANDOVER) && 'the hand-over is not checked out next to the library' }, () => {
+// now published as w.lang.en in the knowledge repository (read at its commit in repos.pin)
+import { worldsDir } from '../tools/worlds.mjs';
+const LANG = worldsDir() ? new URL(`file://${worldsDir()}docs/worlds/w.lang.en/`) : null;
+test('resolve: with the published w.lang.en grammar', { skip: !LANG && 'the knowledge repository cannot be read here' }, () => {
   const w = new World();
-  for (const f of ['np', 'determiners', 'numbers', 'prepositions', 'pronouns']) w.tell(readFileSync(new URL(`shards/${f}.sop`, HANDOVER), 'utf8'));
+  for (const f of ['grammar', 'determiners', 'numbers', 'prepositions', 'pronouns']) w.tell(readFileSync(new URL(`shards/${f}.sop`, LANG), 'utf8'));
   w.tell('@table1 std.schema.thing kind=table color=red  @table2 std.schema.thing kind=table color=blue  @star1 std.schema.thing kind=star near=$table2  @star2 std.schema.thing kind=star');
   const lexicon = { table: { cat: 'N' }, tables: { cat: 'N', lemma: 'table' }, star: { cat: 'N' }, red: { cat: 'MOD' }, blue: { cat: 'MOD' } };
-  const grammar = { digits: 'NUM', types: { rule: 'lang.en.rule' }, classes: { DET: 'lang.en.det', NUM: 'lang.en.numeral', ORD: 'lang.en.ordinal', PREP: 'lang.en.prep', PRON: 'lang.en.pron' }, lexicon };
-  const cats = { det: 'DET', num: 'NUM', mod: 'MOD', head: 'N', pp: 'PP', ord: 'ORD', name: 'NAME', pron: 'PRON' };
+  const grammar = { digits: 'NUM', types: { rule: 'w.lang.en.rule', word: 'w.lang.en.word' }, classes: { DET: 'w.lang.en.det', NUM: 'w.lang.en.numeral', ORD: 'w.lang.en.ordinal', PREP: 'w.lang.en.prep', PRON: 'w.lang.en.pron' }, lexicon };
+  const cats = { det: 'DET', num: 'NUM', mod: 'MOD', head: 'N', pp: 'PP', ord: 'ORD', name: 'NAME', pron: 'PRON', quant: 'QALL' };
   const r = (s, o = {}) => resolve(w, s, { grammar, cats, ...o });
   assert.deepEqual(r('the last table').ids, ['table2']);
   assert.deepEqual(r('table 1').ids, ['table1']);

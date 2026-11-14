@@ -1238,6 +1238,29 @@ print(resolve(w, 'the desk', { ...opt, focus: ['t1'] }).tier);
 focus
 ```
 
+### arbitrate(world, request, options?)
+
+The arbitration contract: one verdict per declared world for one request. `own`: the
+world has the kind (or the thing, or a view whose state has the attribute), allows the
+act, and its dry run takes it. `decline`: it has no use for the kind, so it declines the
+verb; this rule is the library's, not the host's. `refuse`: it has the kind, but the act
+is not allowed or the dry run refuses. A refusal is given only in the `exact` pass; in a
+`spelling` or `view` pass (`options.pass`) it stays a decline. When several worlds own,
+`options.resolves(world, words)` (a host hook, with `options.words`) keeps the ones whose
+things hold the words. Returns `{ verdicts: [{ world, verdict, why }], owner, ambiguous?, pass }`.
+
+```js run
+const w = new World();
+w.load(`@acts core.use world=std.acts  @a std.schema.world name=kitchen  @b std.schema.world name=garden
+  @t core.type of=pot extends=std.schema.thing  @k std.schema.kind of=pot world=kitchen acts=make`);
+const r = arbitrate(w, { action: 'make', args: { kind: 'pot' } });
+print(r.verdicts.map((v) => [v.world, v.verdict]), r.owner, arbitrate(w, { action: 'remove', args: { kind: 'pot' } }).verdicts[0].verdict);
+```
+
+```output
+[["kitchen","own"],["garden","decline"]] kitchen refuse
+```
+
 ### needsOf(world, scope?)
 
 The typed needs of a world or a view (`std.schema.needs of= type= from=`), each with

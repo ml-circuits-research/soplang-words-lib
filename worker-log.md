@@ -4551,3 +4551,26 @@ clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 
   relation name.
 - Next: item 9 (experiment and ablation harnesses), then the std.plan follow-up, Round 27.
   std.compose waits for k.genres / k.story / k.interest.
+
+## Reviewer 16:10 — w.lang.ro draft: Q51 / Q52 fixed, Q53 answered — release 0.63.0
+
+`/tmp/check.sh`: # pass 428 # fail 0 # pass 428 # fail 0 # pass 427 # fail 0 — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 0.63.0).
+
+- repos.pin is at b5d525b43ae1 (w.lang.ro).
+- Measured with `node /tmp/ro.mjs` (255 lemmas, 44 classes, 2,904 cells; the dictionary read
+  from the pinned checkout): exact 2904, folded 2904, nothing missing. The knowledge
+  repository had 2,898 and 2,249 on 0.52.
+- src/morph.mjs:
+  - the suffix index keyed by folded suffixes (Q51);
+  - `unalternate`, generate-and-check over every candidate stem (Q52);
+  - dictionary maps. The same run took 15.4 s and now takes 3.0 s (`time`).
+- test/lang-ro.test.mjs: 2 tests (the round trip both ways over every cell; 4 replies from
+  w.lang.ro's templates with agreement).
+- test/motion-facts.test.mjs: the knowledge repository deleted its motion oracle, as
+  agreed, so the equivalence test now reads it from commit 29d27e8 in the same checkout.
+  It runs again (2 pass, 0 skipped).
+- questions.md Q40 [KNOW]: the answers to Q51–Q53.
+- Next: Round 28 item 9 (harnesses), the std.plan follow-up, generation (Round 30 item 6:
+  English replies on templates), Round 27. std.compose waits for k.genres / k.story /
+  k.interest.

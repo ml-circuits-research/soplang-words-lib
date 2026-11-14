@@ -7,9 +7,22 @@ import { existsSync } from 'node:fs';
 import { World, readMotion, planMotionFacts, splitText } from '../tools/lib-under-test.mjs';
 import { worldText, worldsDir } from '../tools/worlds.mjs';
 
+// The oracle was deleted once the library read k.motion (one scheduler, no copy): it is read
+// from the commit where it last was (29d27e8), in the same checkout.
+import { execFileSync } from 'node:child_process';
+import { writeFileSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 const dir = worldsDir();
-const oraclePath = dir ? `${dir}tools/lib/motion.mjs` : null;
-const skip = (!oraclePath || !existsSync(oraclePath)) && 'the knowledge repository (with its motion oracle) cannot be read here';
+let oraclePath = null;
+if (dir) {
+  try {
+    const text = execFileSync('git', ['-C', dir, 'show', '29d27e800a44db48c71aca3ca541f73757cc42c0:tools/lib/motion.mjs'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    oraclePath = `${mkdtempSync(`${tmpdir()}/oracle-`)}/motion.mjs`;
+    writeFileSync(oraclePath, text);
+  } catch { oraclePath = null; }
+}
+const skip = !oraclePath && 'the knowledge repository (with its motion oracle) cannot be read here';
+const skipMotion = !dir && 'the knowledge repository cannot be read here';
 const BASE = { mouth: 'neutral', eyebrows: 'neutral', eyes: 'open' };
 const features = (key, value) => (key === 'eyes' && value === 'closed' ? { shape: ['closed'] } : {});
 
@@ -36,7 +49,7 @@ test('k.motion: the library plans what the oracle plans (changes and emitted eve
   assert.equal(compared, 12);
 });
 
-test('k.motion: the splitter is data; a named host function overrides it (Q46 a)', { skip }, () => {
+test('k.motion: the splitter is data; a named host function overrides it (Q46 a)', { skip: skipMotion }, () => {
   const w = new World(); w.tell(worldText('k.motion'));
   const m = readMotion(w);
   const name = [...m.splitters.keys()][0];

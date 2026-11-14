@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.63.0
+
+The knowledge repository's Q51–Q53 on the first `w.lang.ro` draft.
+
+### Fixed
+- `analyse` finds forms typed without diacritics: the suffix index is keyed by folded
+  suffixes (Q51).
+- `analyse` no longer always undoes an alternation. It tries every stem the alternation
+  list could have come from (unchanged, each place of the target, each place of a deleted
+  letter) and keeps those that regenerate the form (Q52).
+- `dictionary` looks lemmas up in maps, about five times faster on the w.lang.ro round
+  trip.
+
+### Tests
+- `test/lang-ro.test.mjs` reads the published `w.lang.ro`. Its round trip holds for 2,904
+  of 2,904 cells, in exact spelling and typed without diacritics, and its reply templates
+  agree in gender.
+
 ## 0.62.0
 
 Round 28 item 8: single placement and relation kinds.

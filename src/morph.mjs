@@ -47,10 +47,11 @@ export function morphOf(world, { types = {} } = {}) {
     return out;
   };
   for (const name of new Set([...decl.keys(), ...own.keys()])) build(name);
-  const index = new Map(); // suffix -> [{ cls, key, cell }]: the suffix trie, flat
-  for (const c of classes.values()) for (const [key, cell] of c.cells) (index.get(cell.suffix) || index.set(cell.suffix, []).get(cell.suffix)).push({ cls: c.name, key, cell });
   const irregular = world.ofType(T.irregular).map((x) => ({ lemma: unq(x.attrs.lemma[0]), form: unq(x.attrs.form[0]), feat: featOf(x.attrs) }));
   const folds = world.ofType(T.fold).map((x) => [unq(x.attrs.from[0]), unq(x.attrs.to[0])]);
+  const plainOf = (t) => { let r = t; for (const [a, b] of folds) r = r.split(a).join(b); return r; }; // bounded: the folds
+  const index = new Map(); // folded suffix -> [{ cls, key, cell }]: the suffix trie, flat; folded so a form typed without diacritics finds it
+  for (const c of classes.values()) for (const [key, cell] of c.cells) { const k = plainOf(cell.suffix); (index.get(k) || index.set(k, []).get(k)).push({ cls: c.name, key, cell }); }
   const splits = world.ofType(T.split).flatMap((x) => (x.attrs.text || []).map(unq));
   const vowels = world.ofType(T.vowel).flatMap((x) => (x.attrs.text || []).map(unq)).join('') || 'aeiou';
   const templates = world.ofType(T.template).map((x) => ({ act: unq(x.attrs.act?.[0] ?? ''), shape: x.attrs.shape ? unq(x.attrs.shape[0]) : null, text: unq(x.attrs.text[0]) }));
@@ -80,6 +81,24 @@ function alternate(stem, alts, back = false, vowels = 'aeiou') {
     if (at >= 0) stem = stem.slice(0, at) + b + stem.slice(at + a.length);
   }
   return stem;
+}
+/**
+ * Every stem an alternation list could have come from, walking it back (the reverse order):
+ * the stem as it is (the lemma may already have the result), and each place the target
+ * occurs (or, for a deletion, each place the source may have been). Generate-and-check
+ * keeps the readings that give the form again.
+ */
+function unalternate(stem, alts) {
+  let out = [stem];
+  for (const [from, to] of [...alts].reverse()) { // bounded: the alternations of one cell, then the stem's letters
+    const next = new Set(out);
+    for (const s of out) {
+      if (to === '') { for (let i = 0; i <= s.length; i++) next.add(s.slice(0, i) + from + s.slice(i)); continue; }
+      for (let i = s.indexOf(to); i >= 0; i = s.indexOf(to, i + 1)) next.add(s.slice(0, i) + from + s.slice(i + to.length));
+    }
+    out = [...next];
+  }
+  return out;
 }
 const altOf = (t) => { const [pair, anchor] = unq(t).split('@'); const [from, to] = pair.split('>'); return [from, to, anchor || null]; };
 const same = (a, b) => Object.keys(a).length === Object.keys(b).length && Object.entries(a).every(([k, v]) => b[k] === v);
@@ -111,13 +130,15 @@ export function analyse(m, form, { dictionary } = {}) {
     const suffix = plain.slice(plain.length - n);
     for (const { cls, cell } of m.index.get(suffix) || []) {
       const c = m.classes.get(cls);
-      let stem = plain.slice(0, plain.length - n);
-      if (cell.alt) stem = alternate(stem, (cell.alt === true ? c.alts : cell.alt).map(([a, b, at]) => [fold(m, a), fold(m, b), at]), true, fold(m, m.vowels));
-      const lemmaPlain = stem + fold(m, c.drop);
-      const entries = dictionary ? dictionary.byFolded(lemmaPlain).filter((e) => e.class === cls) : [{ lemma: lemmaPlain, class: cls }];
-      for (const e of entries) {
-        const g = generate(m, e.lemma, cls, cell.feat);
-        if (g !== null && fold(m, g) === plain) push({ lemma: e.lemma, class: cls, features: cell.feat, form: g, exact: g === form });
+      const base = plain.slice(0, plain.length - n);
+      const stems = cell.alt ? unalternate(base, (cell.alt === true ? c.alts : cell.alt).map(([a, b]) => [fold(m, a), fold(m, b)])) : [base];
+      for (const stem of stems) {
+        const lemmaPlain = stem + fold(m, c.drop);
+        const entries = dictionary ? dictionary.byFolded(lemmaPlain).filter((e) => e.class === cls) : [{ lemma: lemmaPlain, class: cls }];
+        for (const e of entries) {
+          const g = generate(m, e.lemma, cls, cell.feat);
+          if (g !== null && fold(m, g) === plain) push({ lemma: e.lemma, class: cls, features: cell.feat, form: g, exact: g === form }); // generate-and-check
+        }
       }
     }
   }
@@ -136,18 +157,20 @@ export function splitClitics(m, word) {
  * `read(prefix)` gives a file's text (or null); each file is read once, when a word needs it.
  */
 export function dictionary({ read, prefix = 1, fold: f = (s) => s }) {
-  const files = new Map(); // prefix -> rows
+  const files = new Map(); // prefix -> { rows, byLemma, byPlain }
   const load = (p) => {
     if (!files.has(p)) {
       const rows = String(read(p) ?? '').split('\n').filter((l) => l.trim() && !l.startsWith('#')).map((l) => { const [lemma, cls, gender, sense] = l.split('\t'); return { lemma, class: cls, ...(gender ? { gender } : {}), ...(sense ? { sense } : {}) }; });
-      files.set(p, rows);
+      const byLemma = new Map(), byPlain = new Map();
+      for (const e of rows) { if (!byLemma.has(e.lemma)) byLemma.set(e.lemma, e); const k = f(e.lemma); (byPlain.get(k) || byPlain.set(k, []).get(k)).push(e); }
+      files.set(p, { rows, byLemma, byPlain });
     }
     return files.get(p);
   };
   const key = (lemma) => f(lemma).slice(0, prefix);
   return {
-    lookup: (lemma) => load(key(lemma)).find((e) => e.lemma === lemma) ?? null,
-    byFolded: (plain) => load(plain.slice(0, prefix)).filter((e) => f(e.lemma) === plain),
+    lookup: (lemma) => load(key(lemma)).byLemma.get(lemma) ?? null,
+    byFolded: (plain) => load(plain.slice(0, prefix)).byPlain.get(plain) ?? [],
     loaded: () => [...files.keys()],
   };
 }

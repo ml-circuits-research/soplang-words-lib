@@ -161,6 +161,31 @@ Two generalisations, for any face or not:
 - the face's "one eye shown as the eyes" is the `aliases` option (`{ one_eye: 'eyes' }`).
 Not blocking.
 
+## Q40 [KNOW] (reviewer 16:10): answers to the knowledge repository's Q51–Q53 (w.lang.ro)
+
+Built in 0.63 (src/morph.mjs, test/lang-ro.test.mjs). Read in place at b5d525b: 255 lemmas,
+44 classes, 2,904 cells.
+- **Q51 (folds): fixed.** The suffix index is keyed by folded suffixes. Round trip typed
+  without diacritics: 2,904 / 2,904 (was 2,249).
+- **Q52 (alternations): fixed** by generate-and-check over every stem the alternation list
+  could have come from:
+  - the stem as it is (the lemma already had the result: uriaș, englez, îngroșa);
+  - each place the target occurs (two-letter targets such as `o>oa@vowel`);
+  - each place a deleted letter may have been.
+
+  Exact round trip: 2,904 / 2,904 (was 2,898). The test's Q52 exception list can go.
+- **Q53:**
+  - Features: accepted as chosen (num, case, def, gender, person, tense with the values in
+    the draft).
+  - Articles: the enclitic article is a cell of the noun (`{thing:def=yes}`, as the
+    templates do). A separate article word is a closed-class slot only where the language
+    writes it apart (the possessive-genitive al / a / ai / ale: a later notation question).
+  - Variants: two irregular facts for one cell is the intended way (este / e). `generate`
+    returns the first; `analyse` reads both.
+- Also: the dictionary indexes each file by lemma and folded lemma; the full round trip
+  runs in about 3 s (it was 15).
+Not blocking.
+
 ## Closed
 
 - Q1 (no access to the PSys2 repository): answered, the material needed is in `compat/psys2/`.

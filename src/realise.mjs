@@ -7,6 +7,7 @@
 
 import { inflectBy, articleFor } from './morph.mjs';
 import { choose } from './rank.mjs';
+import { phraseOf } from './say.mjs';
 
 const bare = (v) => String(v).replace(/^"|"$/g, '').replace(/^\$/, '');
 const META = new Set(['name', 'about', 'kind', 'class', 'is', 'source', 'own', 'cite', 'derived']);
@@ -34,7 +35,8 @@ export function discourseRealiser(world, { seed = 1, type, clause, np, inflect, 
   let topicNow = null; // a fact with no about or name is about the topic it names
   const subjectOf = (f) => f && (f.attrs.about?.[0] ?? f.attrs.name?.[0] ?? topicNow);
   const keyOf = (f) => f && Object.keys(f.attrs).find((k) => !META.has(k) && !k.startsWith('core.') && !f.attrs[k].includes(topicNow));
-  const CLAUSE = clause ?? ((f) => { const k = keyOf(f); return k ? `${NP(subjectOf(f))} ${k.replace(/_/g, ' ')} ${f.attrs[k].join(' and ')}` : null; });
+  const phrased = world.ofType(`${(type ?? 'w.lang.en.discourse').split('.').slice(0, 2).join('.')}.phrasing`).length > 0; // the language world's phrasings of facts (Q63), when it has them
+  const CLAUSE = clause ?? ((f) => { if (phrased && f) { const p = phraseOf(world, { ...f, attrs: { ...f.attrs, ...(f.attrs.name || f.attrs.about ? {} : { about: [topicNow] }) } }); if (p) return p.text; } const k = keyOf(f); return k ? `${NP(subjectOf(f))} ${k.replace(/_/g, ' ')} ${f.attrs[k].join(' and ')}` : null; });
   const filler = (slot, frame, ctx) => {
     if (fill) { const v = fill(slot, frame, ctx); if (v !== undefined) return v; }
     const f = frame.fact;

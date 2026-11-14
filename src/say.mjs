@@ -36,7 +36,8 @@ export function clauseOf(world, fact, { parts = 3, lang = 'w.lang.en', names, qu
   const np = (n) => (named.has(bare(n)) ? spaced(bare(n)) : `${W.the} ${spaced(bare(n))}`);
   const art = (w) => articleFor(world, w, { types: { det: `${lang}.det`, onset: `${lang}.onset` } }) ?? 'a';
   const verbLike = (k) => aux.has(k) || (k.endsWith('not') && aux.has(k.slice(0, -3))) || acts.has(k) || acts.has(k.replace(/es$/, '')) || acts.has(k.replace(/s$/, ''));
-  const keys = Object.keys(a).filter((k) => !META.has(k) && !k.startsWith('core.') && !quiet.includes(k) && !joins.has(`${fact.type}:${k}`) && a[k]?.length);
+  const N = narrationOf(world);
+  const keys = Object.keys(a).filter((k) => !META.has(k) && !k.startsWith('core.') && !quiet.includes(k) && N.get(`${fact.type}|${k}`)?.narrate !== false && !joins.has(`${fact.type}:${k}`) && a[k]?.length);
   const say = (k) => {
     const vs = a[k].map((v) => spaced(bare(v)));
     if (verbLike(k)) return `${spaced(k)} ${joinList(vs)}`;
@@ -90,4 +91,42 @@ export function renderFrames(frames, { world, say, failed, max = 3, words = {} }
   if (rest) s += `, ${W.plus} ${rest} ${rest === 1 ? W.other : W.others}`;
   if (nFailed) s += `; ${nFailed} ${nFailed === 1 ? W.failedOne : W.failedMany}`;
   return `${s}.`;
+}
+
+const narrCache = new WeakMap();
+/** The narration of a world's keys (k.attributes.narration type= key= narrate= salience= form=): Map('type|key' -> { narrate, salience, form }). */
+export function narrationOf(world) {
+  let m = narrCache.get(world);
+  if (m && m.size0 === world.wires.size) return m.map;
+  const map = new Map();
+  for (const n of world.ofType('k.attributes.narration')) map.set(`${bare(n.attrs.type[0])}|${bare(n.attrs.key[0])}`, { narrate: bare(n.attrs.narrate?.[0] ?? 'yes') === 'yes', salience: Number(bare(n.attrs.salience?.[0] ?? 0.5)), form: n.attrs.form ? bare(n.attrs.form[0]) : null });
+  narrCache.set(world, { size0: world.wires.size, map });
+  return map;
+}
+
+/**
+ * A fact said by the language world's phrasings (reviewer 03:45, [KNOW] Q63): the most salient key the
+ * knowledge narrates (`k.attributes.narration`; keys marked narrate=no are never said), phrased by the
+ * phrasing of that key (`${lang}.phrasing key= of=`, the type's own first) or of its form (`form=` with
+ * `polarity=` for yes/no states). `{thing}` is the subject's noun phrase, `{value}` the values joined, `{key}`
+ * the key; a/an follows the next word. Returns { text (no final stop), key, phrasing } or null.
+ */
+export function phraseOf(world, fact, { lang = 'w.lang.en', names, key: wanted } = {}) {
+  const a = fact?.attrs ?? {}, subject = a.name?.[0] ?? a.about?.[0];
+  if (subject === undefined) return null;
+  const N = narrationOf(world), info = (k) => N.get(`${fact.type}|${k}`);
+  const keys = Object.keys(a).filter((k) => !META.has(k) && !k.startsWith('core.') && a[k]?.length && (info(k)?.narrate ?? true) && (!wanted || k === wanted));
+  if (!keys.length) return null;
+  const k = keys.sort((x, y) => (info(y)?.salience ?? 0.5) - (info(x)?.salience ?? 0.5))[0];
+  const P = world.ofType(`${lang}.phrasing`).map((p) => ({ name: bare(p.attrs.name[0]), key: p.attrs.key ? bare(p.attrs.key[0]) : null, of: p.attrs.of ? bare(p.attrs.of[0]) : null, form: p.attrs.form ? bare(p.attrs.form[0]) : null, polarity: p.attrs.polarity ? bare(p.attrs.polarity[0]) : null, text: bare(p.attrs.text[0]) }));
+  const vs = a[k].map((v) => spaced(bare(v)));
+  const yesNo = vs.length === 1 && /^(yes|no|true|false)$/.test(vs[0]) ? (/^(yes|true)$/.test(vs[0]) ? 'yes' : 'no') : null;
+  const form = info(k)?.form ?? (yesNo ? 'state' : vs.every((v) => /^\d+(\.\d+)?$/.test(v)) ? (/s$/.test(k) ? 'count' : 'measure') : 'relation');
+  const p = P.find((x) => x.key === k && x.of === fact.type) ?? P.find((x) => x.key === k && !x.of) ?? P.find((x) => !x.key && x.form === form && (x.polarity === null || x.polarity === yesNo));
+  if (!p) return null;
+  const named = names ?? new Set();
+  const thing = named.has(bare(subject)) ? spaced(bare(subject)) : `the ${spaced(bare(subject))}`;
+  let text = p.text.replace(/\{thing\}/g, thing).replace(/\{value\}/g, joinList(vs)).replace(/\{key\}/g, spaced(k)).replace(/[.]\s*$/, '');
+  text = text.replace(/\b(a|an) ([A-Za-z][\w-]*)/g, (m, x, w) => `${articleFor(world, w, { types: { det: `${lang}.det`, onset: `${lang}.onset` } }) ?? x} ${w}`);
+  return { text, key: k, phrasing: p.name };
 }

@@ -2296,6 +2296,31 @@ print(joinList(['a cat', 'a dog', 'an owl']), renderFrames([{ act: 'add', kind: 
 a cat, a dog and an owl You asked me to add 3 trees.
 ```
 
+### phraseOf(world, fact, options?) and narrationOf(world)
+
+What to say about a fact, and how, both read from the worlds (Q63). The knowledge says which
+keys are narrated (`k.attributes.narration type= key= narrate=yes|no salience= form=`); the
+language world says how a key or a form is phrased (`w.lang.en.phrasing key= of= form=
+polarity= text=`).
+- `narrationOf(world)` gives a Map from `type|key` to `{ narrate, salience, form }`.
+- `phraseOf(world, fact, { key, names, lang })` says the most salient narrated key (or `key`)
+  with the phrasing of that key for the fact's type, then of that key for any type, then of its
+  form; `{thing}`, `{value}` and `{key}` are filled and a/an follows the next word. It returns
+  `{ text, key, phrasing }`, or null when the key is not narrated or nothing phrases it.
+- `compose` and `clauseOf` leave out keys marked narrate=no, and `discourseRealiser` says
+  facts with the language world's phrasings when it has them.
+
+```js run
+const w = new World();
+w.tell('@n1 k.attributes.narration type=t key=secret narrate=no\n@p1 w.lang.en.phrasing name=key.any.likes key=likes text="{thing} likes {value}."');
+const box = { type: 't', attrs: { name: ['box'], secret: ['x'], likes: ['tea', 'cake'] } };
+print(phraseOf(w, box).text, '|', phraseOf(w, box, { key: 'secret' }));
+```
+
+```output
+the box likes tea and cake | null
+```
+
 ### genreOf, topicIndex, randomTopics, typedWorldOf, readRolesByTypes, assignBySlotTypes, judgeReply, tabulate and tableText
 
 General host code taken into the library (handover LIB-5 to LIB-8):

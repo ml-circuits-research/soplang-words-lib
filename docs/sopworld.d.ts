@@ -699,6 +699,8 @@ export function splitRunOn(world: World, text: string, options?: { openers?: str
 /** "a, b and c". */
 export function joinList(items: string[], options?: { and?: string; sep?: string }): string;
 /** A fact as one clause, from the language world's facts; null without a subject. */
+export function narrationOf(world: World): Map<string, { narrate: boolean; salience: number; form: string | null }>;
+export function phraseOf(world: World, fact: { type: string; attrs: Record<string, string[]> }, options?: { key?: string; lang?: string; names?: Set<string> }): { text: string; key: string; phrasing: string } | null;
 export function clauseOf(world: World, fact: { type: string; attrs: Record<string, string[]> }, options?: { parts?: number; lang?: string; names?: Set<string>; quiet?: string[]; words?: Record<string, string> }): string | null;
 /** The sentence of an act from the language world's act template whose slots equal the roles. */
 export function actSentence(world: World, act: string, roles: Record<string, unknown>, options?: { mode?: string | null; lang?: string }): string | null;

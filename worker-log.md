@@ -5264,3 +5264,11 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - This also fills PSys2's Q15 item 4, "animal sounds as a typed relation for all k.animals kinds": once the relation is declared, every kind is read; the values are knowledge.
 - Gates (5th release): test:full 490 / 490 / 488 pass, 0 fail; npm test 490; pilot identical; psys2=0; scan clean; tsc ok.
 - Not done: w.lang.en.variant as a wording source for cousins. Its frames are w.lang.en frame names, while cousins work on readByTypes frames. It needs the frames reader (Q15 item 6) to connect the two.
+
+## 0.106.0 — Q63: narration and phrasing read from the worlds
+
+- repos.pin knowledge -> 284e15a (has 593e141). `narrationOf` reads 986 `k.attributes.narration` facts.
+- `phraseOf` on the published owl: "the owl lives in the forest", "the owl eats mice and insects",
+  "the young of the owl is an owlet"; `drawing` (narrate=no) -> null.
+- compose / clauseOf drop narrate=no keys; discourseRealiser uses `w.lang.en.phrasing` when present.
+- Gate: npm test 492 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

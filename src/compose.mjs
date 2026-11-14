@@ -16,6 +16,7 @@ import { solveChoices } from './plan.mjs';
 import { readStory, storyPlan } from './story.mjs';
 import { discourseRealiser } from './realise.mjs';
 import { choose } from './rank.mjs';
+import { narrationOf } from './say.mjs';
 
 const bare = (v) => String(v).replace(/^"|"$/g, '').replace(/^\$/, '');
 const isNum = (v) => /^-?\d+(\.\d+)?[a-z%]*$/i.test(bare(v));
@@ -227,6 +228,7 @@ function composeGenre(world, topic, g, { size = {}, seed = 1, realise, measures,
   // keys never narrated (codes, ids): the host's `quiet`, and the knowledge's own marks (`k.attributes.key name= narrate=no`)
   const QUIET = new Set([...quiet, ...world.ofType('k.attributes.key').filter((k) => /^(no|false)$/.test(String(k.attrs.narrate?.[0] ?? ''))).map((k) => bare(k.attrs.name[0]))]);
   const META_KEYS = new Set(['name', 'about', 'kind', 'class', 'is', 'source', 'own', 'cite', 'derived']);
+  const NARR = narrationOf(world), quietFor = (type, k) => QUIET.has(k) || NARR.get(`${type}|${k}`)?.narrate === false; // keys the knowledge does not narrate (k.attributes.narration narrate=no, Q63)
   const genre = one(g, 'name');
   let plan = story, storyKb = null, storyWhy = null, storyNote = null;
   // the sentences: the host's realiser, else the language world's discourse templates when it has them
@@ -251,7 +253,7 @@ function composeGenre(world, topic, g, { size = {}, seed = 1, realise, measures,
   const subject = [...world.wires.values()].find((w) => !w.type.startsWith('core.') && !w.type.startsWith('k.genres') && !w.type.startsWith('k.interest') && one(w, 'name') === topic);
   const about = [...world.wires.values()].filter((w) => !w.type.startsWith('core.') && !w.type.startsWith('k.genres') && !w.type.startsWith('k.interest') && w !== subject
     && Object.values(w.attrs).some((vs) => vs.some((v) => bare(v) === topic))
-    && Object.keys(w.attrs).some((k) => !k.startsWith('core.') && !META_KEYS.has(k) && !QUIET.has(k) && !(w.attrs[k] || []).some((v) => bare(v) === topic))); // a fact with something to say beyond quiet keys
+    && Object.keys(w.attrs).some((k) => !k.startsWith('core.') && !META_KEYS.has(k) && !quietFor(w.type, k) && !(w.attrs[k] || []).some((v) => bare(v) === topic))); // a fact with something to say beyond quiet keys
   const groups = new Map();
   for (const f of about) (groups.get(f.type) || groups.set(f.type, []).get(f.type)).push(f);
   const said = new Set(), interest = (f) => interestOf(world, f, { topic, said, measures: measures?.(f) }).score;
@@ -346,7 +348,7 @@ function composeGenre(world, topic, g, { size = {}, seed = 1, realise, measures,
             const f = CONTRAST ? (pool.concat(rel ? [] : about)).filter((x) => !said.has(x.id)).find((x) => (interestOf(world, x, { topic }).measured.sibling_contrast ?? 0) > 0) : pickFact(from) ?? (rel ? undefined : pickFact(about));
             if (!f && CONTRAST) { short.push(`${inst} ${move}: no fact contrasts with the rest, the move is left out`); break; }
               if (!f) { if (lo > 0) short.push(`${inst} ${move}: no fact left`); break; }
-              said.add(f.id); frame.cites = f.id; frame.subject = bare(f.attrs.about?.[0] ?? f.attrs.name?.[0] ?? ''); frame.fact = { type: f.type, attrs: Object.fromEntries(Object.entries(f.attrs).filter(([key]) => !key.startsWith('core.') && !QUIET.has(key)).map(([key, vs]) => [key, vs.map(bare)])) };
+              said.add(f.id); frame.cites = f.id; frame.subject = bare(f.attrs.about?.[0] ?? f.attrs.name?.[0] ?? ''); frame.fact = { type: f.type, attrs: Object.fromEntries(Object.entries(f.attrs).filter(([key]) => !key.startsWith('core.') && !quietFor(f.type, key)).map(([key, vs]) => [key, vs.map(bare)])) };
               if (rel && !moves.some((m) => m.cites)) claims.push(f.id); // the first fact of a repeated part: its claim
             } else if (k === 'story') { if (told) Object.assign(frame, told[c]); else short.push(`${inst} ${move}: ${storyWhy ?? 'story moves are filled by k.story'}`); }
             say(frame, { topic, story: plan, outline: relations, told: toldEls, claims, goalAct: (g) => storyKb?.goals.find((x) => x.name === g)?.act });

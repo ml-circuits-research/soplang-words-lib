@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.106.0
+
+From the reviewer's 03:45 entry ([KNOW] Q63). The knowledge pin moves to 284e15a, which has
+`k.attributes.narration` and `w.lang.en.phrasing` (593e141).
+
+### New
+- `narrationOf(world)` reads which keys the knowledge narrates, with salience and form.
+- `phraseOf(world, fact)` says a fact with the language world's phrasing of its key or form.
+
+### Changed
+- `compose` and `clauseOf` leave out keys marked narrate=no.
+- `discourseRealiser` says facts with `w.lang.en.phrasing` when the world has it; no
+  host-side phrasing is used then.
+
 ## 0.105.0
 
 ### New

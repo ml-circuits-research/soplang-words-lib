@@ -5339,3 +5339,13 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - `sampleDiagram` seeds 1..4: flowchart of "a person of a role", network of Austria, tree of aircraft,
   flowchart of "make a thing on the anchor of another".
 - Gate: npm test 500 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.113.0 — knowledge 06:00 items
+
+- (1) `inflectBy` irregulars per op. /tmp/ib.mjs on published w.lang.en: fish past -> fished (was fish),
+  fish plural -> fish, go past -> went, go ing -> going, good comparative -> better, mice singular -> mouse.
+- (2) std.morph `m.irregular ... read_only=yes`: analysed, never generated (test morph.test.mjs).
+- (3) `make` with a missing required key: answered in questions.md Q67 (asks, open(), strict check);
+  no change.
+- Deprecated names: removal moved to 0.114.0 (two releases after 0.111: 0.112, 0.113 keep them).
+- Gate: npm test 501 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

@@ -56,7 +56,7 @@ test('relatedCases along the wording: the same frame in other constructions (alt
   assert.ok(cs.every((c) => normalise(v, c.text).text === kase.text), 'each comes back to the case by the rules');
 });
 
-test('the deprecated names (until 0.113.0): cousins, judgeFix keep working with degree and dims', async () => {
+test('the deprecated names (until 0.114.0): cousins, judgeFix keep working with degree and dims', async () => {
   const L = await import('../tools/lib-under-test.mjs');
   const cs = L.cousins(w, kase, { degree: 4, read: O });
   const rs = relatedCases(w, kase, { distance: 4, read: O });

@@ -84,5 +84,5 @@ export function resolveEllipsis(world, text, previous, { pronouns = ['it', 'them
   return changed.length ? { act: previous.act, args, reused: true, changed } : null;
 }
 
-/** @deprecated since 0.111.0, removed in 0.113.0: `resolveEllipsis`. */
+/** @deprecated since 0.111.0, removed in 0.114.0: `resolveEllipsis`. */
 export const continueAct = (...a) => resolveEllipsis(...a);

@@ -1367,7 +1367,8 @@ A language world declares (type names can be changed with `morphOf(world, { type
   (`alt=a>ă@vowel alt=t>ț@end`: several places at once) or `alt=yes` (the class's list).
 - cells: `m.ending class= suffix= alt=yes? <feature>=<value>...`, where `suffix=_` means
   none.
-- `m.irregular lemma= form= <features>` (consulted first), `m.fold from= to=` (spelling
+- `m.irregular lemma= form= <features> read_only=yes?` (consulted first; a `read_only`
+  form is analysed but never generated), `m.fold from= to=` (spelling
   variants, such as diacritics), `m.split text=` (clitic joiners) and `m.template act=
   shape=? text=` (realisation).
 
@@ -2056,11 +2057,14 @@ print(['what sound does a cow make', 'a cow makes which sound', 'cow sound?'].ma
 
 Plurals and articles from a language world's facts (std.morph). `inflectBy` changes a word
 by ordered suffix rules (`op= order= suffix= after=consonant|vowel unless_suffix=
-min_length= replace= | add= drop=`), with irregular forms first (`singular= plural=
-read_only=`). A rule with keys it does not know is not applied. `articleFor` gives the
+min_length= replace= | add= drop=`), with irregular forms first. The pairs `singular=
+plural= read_only=` serve the plural and singular ops only, each in its own direction. The
+forms `lemma= form= vform=|degree=|num=` serve the op's cell (past, ing, comparative and so
+on); one marked `read_only=yes` or `variant=yes` is never written. A rule with keys it does
+not know is not applied. `articleFor` gives the
 determiner whose `before=` is the sound the word begins with, by the longest `onset`
 (`begins= sound=`) that matches, else by its first letter. The types default to
-w.lang.en's (`w.lang.en.inflect`, `.irregular`, `.det`, `.onset`). `discourseRealiser`
+w.lang.en's (`w.lang.en.inflect`, `.irregular`, `.irregular_form`, `.det`, `.onset`). `discourseRealiser`
 uses both when the language world has them: `{kind:num=pl}` gives the plural, and "a" or
 "an" takes its form from the next word.
 

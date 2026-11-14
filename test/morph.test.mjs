@@ -83,3 +83,23 @@ test('morph: several alternations in one cell, anchored to the last vowel or the
   assert.equal(generate(m, 'mase', 'nx', { num: 'pl' }), 'mosy', 'the end anchor does not fire when the stem does not end with t');
   assert.ok(analyse(m, 'korsy').some((r) => r.lemma === 'karte' && r.features.num === 'pl'), 'and back');
 });
+
+test('morph: a read_only irregular is analysed, never generated; inflectBy takes irregulars per op (knowledge 06:00)', async () => {
+  const { inflectBy } = await import('../tools/lib-under-test.mjs');
+  const w = new World();
+  w.tell(`@c m.class name=v  @e1 m.ending class=v suffix=ed vform=past  @e2 m.ending class=v suffix=_ vform=base
+@i m.irregular lemma=dream form=dreamt vform=past read_only=yes
+@p ex.irr singular=fish plural=fish  @q ex.irr singular=mouse plural=mice
+@g ex.form lemma=go form=went vform=past  @h ex.form lemma=good form=better degree=comparative  @k ex.form lemma=burn form=burnt vform=past variant=yes
+@r ex.rule op=past order=1 add=ed`);
+  const m = morphOf(w);
+  assert.equal(generate(m, 'dream', 'v', { vform: 'past' }), 'dreamed', 'the reading-only form is not written');
+  assert.ok(analyse(m, 'dreamt').some((a) => a.lemma === 'dream'), 'but it is read');
+  const T = { types: { rule: 'ex.rule', irregular: 'ex.irr', form: 'ex.form' } };
+  assert.equal(inflectBy(w, 'fish', 'past', T), 'fished', 'a plural irregular does not answer a past');
+  assert.equal(inflectBy(w, 'fish', 'plural', T), 'fish');
+  assert.equal(inflectBy(w, 'mice', 'singular', T), 'mouse');
+  assert.equal(inflectBy(w, 'go', 'past', T), 'went');
+  assert.equal(inflectBy(w, 'good', 'comparative', T), 'better');
+  assert.equal(inflectBy(w, 'burn', 'past', T), 'burned', 'variant=yes is read, not written');
+});

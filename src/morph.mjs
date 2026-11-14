@@ -11,14 +11,14 @@
 //   m.class name= parent=? drop=? alt=<from>><to>[@vowel|@end] (rep.)   a paradigm class
 //   m.ending class= suffix= alt=yes|<list>? <feature>=<value>...  one cell: features -> suffix ("_" = none)
 //   m.vowel text=                                            the vowels, for alternations at the last vowel
-//   m.irregular lemma= form= <feature>=<value>...            consulted first
+//   m.irregular lemma= form= <feature>=<value>... read_only=yes?  consulted first; read_only: read, never generated
 //   m.fold from= to=                                         a spelling variant (diacritics folding)
 //   m.split text=                                            a clitic joiner ("-")
 //   m.template act= shape=? text=                           a realisation template: {role}, {role:f=v,..}, {role@other}
 import { unify, walk, EMPTY } from './unify.mjs';
 
 const unq = (t) => String(t).replace(/^"|"$/g, '');
-const RESERVED = new Set(['class', 'suffix', 'alt', 'lemma', 'form', 'name', 'parent', 'drop', 'from', 'to', 'text', 'act', 'shape', 'core.source', 'doc', 'note']);
+const RESERVED = new Set(['class', 'suffix', 'alt', 'lemma', 'form', 'name', 'parent', 'drop', 'from', 'to', 'text', 'act', 'shape', 'core.source', 'doc', 'note', 'read_only']);
 const cellKey = (feat) => Object.keys(feat).sort().map((k) => `${k}=${feat[k]}`).join('.');
 const featOf = (attrs) => Object.fromEntries(Object.entries(attrs).filter(([k]) => !RESERVED.has(k) && !k.startsWith('core.')).map(([k, v]) => [k, unq(v[0])]));
 
@@ -47,7 +47,7 @@ export function morphOf(world, { types = {} } = {}) {
     return out;
   };
   for (const name of new Set([...decl.keys(), ...own.keys()])) build(name);
-  const irregular = world.ofType(T.irregular).map((x) => ({ lemma: unq(x.attrs.lemma[0]), form: unq(x.attrs.form[0]), feat: featOf(x.attrs) }));
+  const irregular = world.ofType(T.irregular).map((x) => ({ lemma: unq(x.attrs.lemma[0]), form: unq(x.attrs.form[0]), feat: featOf(x.attrs), readOnly: unq(x.attrs.read_only?.[0] ?? '') === 'yes' }));
   const folds = world.ofType(T.fold).map((x) => [unq(x.attrs.from[0]), unq(x.attrs.to[0])]);
   const plainOf = (t) => { let r = t; for (const [a, b] of folds) r = r.split(a).join(b); return r; }; // bounded: the folds
   const index = new Map(); // folded suffix -> [{ cls, key, cell }]: the suffix trie, flat; folded so a form typed without diacritics finds it
@@ -105,7 +105,7 @@ const same = (a, b) => Object.keys(a).length === Object.keys(b).length && Object
 
 /** A form: the irregular one if declared, else the class's stem rule and the cell's ending. null when the class has no such cell. */
 export function generate(m, lemma, cls, feat) {
-  const irr = m.irregular.find((x) => x.lemma === lemma && same(x.feat, feat));
+  const irr = m.irregular.find((x) => x.lemma === lemma && !x.readOnly && same(x.feat, feat)); // a reading-only form is analysed, never generated
   if (irr) return irr.form;
   const c = m.classes.get(cls);
   const cell = c?.cells.get(cellKey(feat));
@@ -227,16 +227,24 @@ const KNOWN_RULE_KEYS = new Set(['op', 'order', 'suffix', 'after', 'unless_suffi
 /**
  * A word changed by ordered suffix rules (`<rule type> op= order= suffix=... after=consonant|vowel
  * unless_suffix= min_length= replace= | add= drop=`), irregular forms first (`<irregular type>
- * singular= plural= read_only=`). A rule with keys it does not know is not applied (said in
- * `skipped`). Types default to w.lang.en's: { rule: 'w.lang.en.inflect', irregular: 'w.lang.en.irregular' }.
+ * singular= plural= read_only=`, used for plural and singular only, each in its own direction; and `<form type> lemma=
+ * form= vform=|degree=|num=` for the op's cell, read_only=yes or variant=yes never written). A rule with keys it does
+ * not know is not applied (said in `skipped`). Types default to w.lang.en's: { rule: 'w.lang.en.inflect',
+ * irregular: 'w.lang.en.irregular', form: 'w.lang.en.irregular_form' }.
  * Returns the form (lower case), or the word when no rule applies.
  */
 export function inflectBy(world, word, op = 'plural', { types = {}, vowels } = {}) {
-  const T = { rule: 'w.lang.en.inflect', irregular: 'w.lang.en.irregular', ...types };
+  const T = { rule: 'w.lang.en.inflect', irregular: 'w.lang.en.irregular', form: 'w.lang.en.irregular_form', ...types };
   const w = String(word).toLowerCase();
-  const from = op === 'plural' ? 'singular' : 'plural', to = op === 'plural' ? 'plural' : 'singular';
-  const irr = world.ofType(T.irregular).find((x) => one1(x, from) === w && (op !== 'plural' || one1(x, 'read_only') !== 'yes'));
-  if (irr) return one1(irr, to);
+  const writes = (x) => one1(x, 'read_only') !== 'yes' && one1(x, 'variant') !== 'yes'; // a reading-only form is never written
+  if (op === 'plural' || op === 'singular') { // irregulars per op: the pair singular/plural is read in the op's direction only
+    const from = op === 'plural' ? 'singular' : 'plural';
+    const irr = world.ofType(T.irregular).find((x) => one1(x, from) === w && (op === 'singular' || writes(x)));
+    if (irr) return one1(irr, op);
+  }
+  const cell = op === 'plural' ? ['num', 'pl'] : op === 'singular' ? ['num', 'sg'] : ['comparative', 'superlative'].includes(op) ? ['degree', op] : ['vform', op];
+  const form = world.ofType(T.form).find((x) => one1(x, 'lemma') === w && one1(x, cell[0]) === cell[1] && writes(x)); // the cell's irregular form (`<form type> lemma= form= vform=|degree=|num=`)
+  if (form) return one1(form, 'form');
   const V = new RegExp(`[${vowels ?? 'aeiou'}]$`);
   const rules = world.ofType(T.rule).filter((r) => one1(r, 'op') === op && Object.keys(r.attrs).every((k) => k.startsWith('core.') || KNOWN_RULE_KEYS.has(k))).sort((a, b) => Number(one1(a, 'order')) - Number(one1(b, 'order')));
   for (const r of rules) { // bounded: the rules

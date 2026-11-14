@@ -166,5 +166,5 @@ export function paraphrasesOf(world, { lang = 'w.lang.en' } = {}) {
   return new Map(world.ofType(`${lang}.variant`).map((v) => [bare(v.attrs.frame[0]), { alternation: bare(v.attrs.alternation?.[0] ?? ''), canonical: (v.attrs.canonical || []).map(bare) }]));
 }
 
-/** @deprecated since 0.111.0, removed in 0.113.0: `paraphrasesOf`. */
+/** @deprecated since 0.111.0, removed in 0.114.0: `paraphrasesOf`. */
 export const variantsOf = (...a) => paraphrasesOf(...a);

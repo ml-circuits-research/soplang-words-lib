@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.113.0
+
+From the knowledge repository's 06:00 items.
+
+### Fixed
+- `inflectBy` takes irregulars per op: the singular/plural pairs only for plural and singular,
+  each in its direction (`inflectBy('fish', 'past')` is "fished", not "fish"), and
+  `w.lang.en.irregular_form lemma= form= vform=|degree=|num=` for the op's cell ("went",
+  "better"); forms marked `read_only=yes` or `variant=yes` are never written.
+
+### New
+- std.morph: `m.irregular ... read_only=yes`: a form that is analysed but never generated.
+
+The deprecated names of 0.111.0 stay in this release and go in 0.114.0.
+
 ## 0.112.0
 
 From the reviewer's 04:40 and 05:45 entries (diagrams composed from knowledge). The knowledge
@@ -14,11 +29,12 @@ pin moves to 7c7738f (k.diagrams, w.diagram, arrangement phrases in w.lang.en).
 - `arrangementOf(world, text)`: an arrangement request read by `w.lang.en.arrangement` phrases.
 - `arrange` gains `radial`, `scatter` and `reverse`.
 
+
 ## 0.111.0
 
 From the reviewer's 05:10 and 05:25 entries (names against the literature).
 
-### Renamed (old names kept as deprecated aliases until 0.113.0)
+### Renamed (old names kept as deprecated aliases through 0.113, removed in 0.114.0)
 - `cousins(world, case, { degree, dims })` → `relatedCases(world, case, { distance, axes })`;
   results carry `distance` and `axes`. `judgeFix` → `judgeOnRelated` (`byDistance`).
 - `tools/cousins-test.mjs` → `tools/generalisation-test.mjs`, `cousinsTest` →

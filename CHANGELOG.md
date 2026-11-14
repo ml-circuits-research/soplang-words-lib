@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.55.0
+
+Round 29: `std.plan`, goals reached by methods that are knowledge.
+
+### New
+- `factStore(worlds)`, `planner(store, { chain, prefix, roles })`, `PlanLive`,
+  `readMethods` and `PLAN_LIMITS` read the published `k.procedures` (the Q44 format).
+  - Alternatives are chosen by fit, world, preconditions, rank and name.
+  - Decomposition goes to depth 3, never into the same method, with at most 200 acts.
+  - Roles come from the goal, earlier steps, the live world, history and knowledge, with
+    the chain of kinds.
+  - Each step explains itself in one short line (`explain`).
+  - The result also gives `requests`, `asks`, and `refused` with the alternatives tried.
+- An integration test runs the knowledge repository's expected act lists (swing, family
+  photo, set a table, take apart, build from parts, chart, report, face of a role,
+  feeling, map, asks), read in place. A toy method runs offline.
+
 ## 0.54.0
 
 Reviewer 10:50: `std.motion`, states over time from rules (the face animates by rules).

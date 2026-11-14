@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld What the library can do</title>
-<meta name="source-hash" content="fd8979ffaf72">
+<meta name="source-hash" content="be563628eec3">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.54.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.55.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html" aria-current="page">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -316,6 +316,12 @@ print(generate(m, &#x27;bak&#x27;, &#x27;n1&#x27;, { num: &#x27;pl&#x27; }), ana
 w.tell(&#x27;@b mo.base key=eyes value=open  @r mo.rule name=blink repeat=3000-3000  @s mo.step rule=blink n=1 key=eyes value=closed dur=150&#x27;);
 print(motionPlan(w, [], { until: 7000 }).map((p) =&gt; [p.t, p.value]));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[[0,&quot;open&quot;],[3000,&quot;closed&quot;],[3150,&quot;open&quot;],[6000,&quot;closed&quot;],[6150,&quot;open&quot;]]</code></pre></figure>
+<h2 id="reach-a-goal-by-methods-that-are-knowledge">Reach a goal by methods that are knowledge</h2>
+<p><em>In <code>planner</code>, <code>factStore</code>, <code>PlanLive</code>, <code>readMethods</code>, <code>PLAN_LIMITS</code>; since 0.55.</em> <em>Works on: a knowledge world of methods (<code>k.procedures</code>) and a live world.</em></p>
+<p>Complex and planned actions come from knowledge and orchestration, not from code in live worlds. A goal ("a person sitting on a swing", "set a table for four") is reached by the methods of a knowledge world. The planner chooses among alternatives by fit, world, preconditions and rank. It decomposes steps into further methods, fills roles from the goal, earlier steps, the live world, history and knowledge, and explains each step in one line. <strong>Limits:</strong> depth 3, 200 acts. The requests are named by k.actions roles: the table that maps them onto std.acts arguments (Q44 a) and a one-call apply come next, so for now the host applies <code>requests</code> with that mapping.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const store = factStore([{ id: &#x27;k.procedures&#x27;, schemaText: &#x27;@s core.slot of=k.procedures.method key=name id=true&#x27;, shards: [{ text: &#x27;@m k.procedures.method name=x about=y act=make&#x27; }] }, { id: &#x27;k.actions&#x27;, schemaText: &#x27;&#x27;, shards: [] }]);
+print(planner(store).plan({ act: &#x27;make&#x27;, roles: { kind: &#x27;cup&#x27; } }, new PlanLive({ store })).method);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>x</code></pre></figure>
 <h2 id="building-blocks">Building blocks</h2>
 <p><em>In the core exports; since 0.1 (each as listed).</em> <em>Works on: any world.</em></p>
 <p>The functions and constants the jobs above are made of, for hosts and tools that need them directly. Each is in <a href="api.html">api</a> or <a href="reference.html">reference</a> with its example.</p>
@@ -330,7 +336,7 @@ print(serialize([w1]).trim(), quantity(&#x27;2kg&#x27;), STAGES.length &gt; 3);<
 <div class="table"><table><thead><tr><th>PSys2 package</th><th>here</th><th>PSys2 lines it replaces</th><th>refused (stays in the host)</th><th>since</th></tr></thead><tbody><tr><td>knowledge-loader</td><td><code>createCatalog</code>, <code>bundleReader</code>, <code>tools/build-bundle.mjs</code></td><td>254 (catalog 105, cache 52, source 20, bundle loader 20, bundle generator 57)</td><td>English lemma rules (the host passes <code>lemma</code>), decoding k.objects parts for drawing, the avatar's faces, the evaluation-set generator; taught facts are the act <code>teach</code></td><td>since 0.23</td></tr><tr><td>turn-pipeline</td><td><code>turn</code> (dry run on a fork, all or nothing, diff, why, guesses, replies, graded fallback)</td><td>the dry-run protocol, all-or-nothing holds and graded fallback (estimated 120 + 350 of its 900 general lines)</td><td>the reading of English, the per-turn tick budget wiring (the library has its own budgets), translation, the encoder accept rule</td><td>since 0.24</td></tr><tr><td>meta.worlds</td><td><code>route</code> (cards, referents, a dry run, a host signal)</td><td>its routing rules (the cards stay generated by the host)</td><td>the tab registry and the generated cards of one application</td><td>since 0.24</td></tr><tr><td>failure-ledger</td><td><code>ledgerAppend</code>, <code>ledgerGroups</code>, <code>stageOf</code>, <code>tools/ledger.mjs</code></td><td>the format, append and counting (of its 160 generator lines)</td><td>its cause-signal list and the replay of its own evaluation scripts</td><td>since 0.25</td></tr><tr><td>acts, session.things, session.dialogue, common.sense, space</td><td>compared (questions.md Q30): already covered by std.schema, std.acts, views, std.focus, <code>turn</code>, <code>createCatalog</code>; missing: a per-kind act hook, space selection and layouts, overlap enforcement, a turn log, pieces</td><td>—</td><td>English forms and readers, its tabs' words, facts (to sop-knowledge-worlds)</td><td>—</td></tr></tbody></table></div>
 <p class="source">Generated from <code>docs/capabilities.md</code>.</p>
 </main>
-<footer>sopworld 0.54.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.55.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

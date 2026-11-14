@@ -1396,6 +1396,42 @@ print(motionPlan(w, [{ t: 500, type: 'button' }], { until: 6000 }).map((p) => [p
 [[0,"red"],[500,"green"],[3500,"amber"],[4500,"red"]]
 ```
 
+### planner(store, options?), factStore(worlds), PlanLive, readMethods, PLAN_LIMITS
+
+std.plan: goals reached by methods that are knowledge (`k.procedures`, in the format of the
+knowledge repository's Q44), decomposed into acts over a live world. `factStore(worlds)`
+reads published worlds (`[{ id, schemaText, shards: [{ text }] }]`) into facts merged by
+identity, read lazily per type. `planner(store, { chain, prefix, roles })` reads the methods
+(`readMethods`). `chain` is `[{ type, keys }]`, what "is a kind of" is, or the store's
+`std.know.chain of= key=` facts. `plan(goal, live)` takes a goal `{ act, roles }` and a
+`PlanLive` (a working copy of the live world: things, history, the world schema's kinds).
+
+The plan returns:
+- `method`, `methods` (every method used, in order);
+- `lines` (one per act), `explain` (one short line per step: the method, what the step
+  is for, the act);
+- `requests` (role-named requests for std.acts), `skipped`, `effects`;
+- or `asks` (a needed role missing), or `refused` with `tried` (each alternative and why
+  it failed); `truncated` past `PLAN_LIMITS`.
+
+Alternatives are chosen by goal fit, world, preconditions, then rank, then name.
+Decomposition goes to depth 3, never into the same method, with at most 200 acts.
+
+```js run
+const ids = { method: ['name'], goal: ['method', 'role'], binding: ['method', 'name'], step: ['method', 'n'], arg: ['method', 'step', 'role'] };
+const schema = Object.entries(ids).flatMap(([t, keys]) => keys.map((k, i) => `@${t}${i} core.slot of=k.procedures.${t} key=${k} id=true`)).join('\n');
+const facts = `@m k.procedures.method name=pair about="two of a kind" act=make  @g k.procedures.goal method=pair role=kind
+  @b k.procedures.binding method=pair name=k goal=kind  @s1 k.procedures.step method=pair n=1 act=make  @a1 k.procedures.arg method=pair step=1 role=kind binding=k
+  @s2 k.procedures.step method=pair n=2 act=make after=1  @a2 k.procedures.arg method=pair step=2 role=kind binding=k`;
+const store = factStore([{ id: 'k.procedures', schemaText: schema, shards: [{ text: facts }] }, { id: 'k.actions', schemaText: '', shards: [] }]);
+const r = planner(store).plan({ act: 'make', roles: { kind: 'sock' } }, new PlanLive({ store }));
+print(r.method, r.lines, r.requests[0]);
+```
+
+```output
+pair ["make kind=sock","make kind=sock"] {"action":"make","args":{"kind":"sock"}}
+```
+
 ### arbitrate(world, request, options?)
 
 The arbitration contract: one verdict per declared world for one request. `own`: the

@@ -54,3 +54,14 @@ export function worldText(name) {
   if (existsSync(base + 'shards')) for (const f of readdirSync(base + 'shards').filter((x) => x.endsWith('.sop')).sort()) parts.push(readFileSync(base + 'shards/' + f, 'utf8'));
   return parts.join('\n');
 }
+
+/** Every published world of the first knowledge repository, as [{ id, schemaText, shards: [{ id, text }] }] (for factStore). */
+export function publishedWorlds() {
+  const dir = worldsDir();
+  if (!dir) return null;
+  const root = `${dir}docs/worlds/`;
+  return readdirSync(root).filter((d) => /^[kw]\./.test(d) && existsSync(`${root}${d}/schema.sop`)).sort().map((id) => ({
+    id, schemaText: readFileSync(`${root}${id}/schema.sop`, 'utf8'),
+    shards: existsSync(`${root}${id}/shards`) ? readdirSync(`${root}${id}/shards`).filter((f) => f.endsWith('.sop')).sort().map((f) => ({ id: `${id}/shards/${f.slice(0, -4)}`, text: readFileSync(`${root}${id}/shards/${f}`, 'utf8') })) : [],
+  }));
+}

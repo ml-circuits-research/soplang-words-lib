@@ -4364,3 +4364,35 @@ rebuilt (`docs/version.md`: sopworld 0.54.0).
   std.know's.
 - Next: build std.plan against the knowledge repository's expected act lists (pin 1d4f120 or
   later).
+
+## Round 29 — std.plan released — release 0.55.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/cases.mjs`: 61 / 61. `node tools/capability-table.mjs`:
+29 jobs. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 0.55.0).
+
+**For the knowledge repository (reviewer 12:05 item 2): std.plan is released in 0.55.0.**
+`planner(factStore(worlds), { chain }).plan(goal, new PlanLive({ store, world, things,
+history }))` gives the same `method`, `methods`, `lines`, `effects`, `asks`, `refused`
+and `tried` as tools/lib/plan.mjs. That repository can delete its reference reader and run
+its expected act lists through the library. Its kind chain is the `chain` option (in
+test/plan-procedures.test.mjs: k.people.kind and k.people.role with
+is_a/kind_of/is/age/drawing, k.commonsense.thing and k.shapes.shape without drawing), or
+`std.know.chain of= key=` facts published once.
+
+- src/plan.mjs: a port of the reference reader's semantics into the library, made general:
+  - the fact store over any published worlds;
+  - the chain of kinds as data, the method prefix and the roles type as options;
+  - the plain kinds of a world schema read from the store;
+  - `truncated` instead of a throw past 200 acts;
+  - `explain` (one line per step, with the step's `about`) and role-named `requests`.
+- repos.pin is at 5ae9e0f02b07 (it has k.procedures). The corpus is unchanged: 61 / 61.
+- test/plan-procedures.test.mjs: 5 tests.
+  - 4 read the published worlds in place: 22 goals copied from the knowledge repository's
+    tests/k.procedures.test.mjs, all with the expected method and lines on the first run.
+  - 1 runs offline: a toy method in the same format, with an existing swing used.
+- Not done yet:
+  - the role table k.actions role → std.acts argument (Q44 a);
+  - `applyPlan` in one call;
+  - the toy "chart across two views" on real std.schema things. Today a host applies
+    `requests` itself.

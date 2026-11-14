@@ -686,6 +686,29 @@ print(motionPlan(w, [], { until: 7000 }).map((p) => [p.t, p.value]));
 [[0,"open"],[3000,"closed"],[3150,"open"],[6000,"closed"],[6150,"open"]]
 ```
 
+## Reach a goal by methods that are knowledge
+
+*In `planner`, `factStore`, `PlanLive`, `readMethods`, `PLAN_LIMITS`; since 0.55.*
+*Works on: a knowledge world of methods (`k.procedures`) and a live world.*
+
+Complex and planned actions come from knowledge and orchestration, not from code in live
+worlds. A goal ("a person sitting on a swing", "set a table for four") is reached by
+the methods of a knowledge world. The planner chooses among alternatives by fit, world,
+preconditions and rank. It decomposes steps into further methods, fills roles from the
+goal, earlier steps, the live world, history and knowledge, and explains each step in
+one line. **Limits:** depth 3, 200 acts. The requests are named by k.actions roles: the
+table that maps them onto std.acts arguments (Q44 a) and a one-call apply come next, so
+for now the host applies `requests` with that mapping.
+
+```js run
+const store = factStore([{ id: 'k.procedures', schemaText: '@s core.slot of=k.procedures.method key=name id=true', shards: [{ text: '@m k.procedures.method name=x about=y act=make' }] }, { id: 'k.actions', schemaText: '', shards: [] }]);
+print(planner(store).plan({ act: 'make', roles: { kind: 'cup' } }, new PlanLive({ store })).method);
+```
+
+```output
+x
+```
+
 ## Building blocks
 
 *In the core exports; since 0.1 (each as listed).*

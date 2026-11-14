@@ -559,3 +559,12 @@ export function templateFor(m: Morph, act: string, shape?: string | null): strin
 export function motionPlan(world: World, events?: { t: number; type: string; fields?: Record<string, unknown>; stream?: string }[], options?: { seed?: number; until?: number; splitters?: Record<string, (text: string) => string[]>; types?: Record<string, string> }): { t: number; key: string; value: string }[];
 /** Play a plan through the host's clock; returns cancel(). */
 export function motionRun(plan: { t: number; key: string; value: string }[], apply: (key: string, value: string, t: number) => void, clock?: { setTimeout(f: () => void, t: number): unknown; clearTimeout(h: unknown): void }): () => void;
+/** std.plan: a fact store over published worlds (facts merged by identity, lazy per type). */
+export interface FactStore { facts(type: string): { type: string; attrs: Record<string, string[]>; n: number }[]; index(type: string, key: string): Map<string, object[]>; kindsOf(world: string): Record<string, string> | null }
+export function factStore(worlds: { id: string; schemaText: string; shards: { text: string }[] }[]): FactStore;
+/** A working copy of a live world for planning. */
+export class PlanLive { constructor(options?: { world?: string | null; things?: { id: string; kind: string; attrs?: Record<string, unknown>; members?: string[] }[]; history?: object[]; kinds?: Record<string, string> | null; store?: FactStore | null }); world: string | null; things: Map<string, object>; history: object[] }
+export interface PlanResult { method?: string; methods: string[]; acts: object[]; lines: string[]; explain: string[]; requests: { action: string; args: Record<string, unknown> }[]; skipped: string[]; effects: object[]; asks: string[]; refused?: boolean; tried?: { method: string; why: string }[]; truncated?: boolean }
+export function planner(store: FactStore, options?: { chain?: { type: string; keys: string[] }[]; prefix?: string; roles?: string }): { methods: object[]; isA(a: string, b: string): boolean; plan(goal: { act: string; roles?: Record<string, unknown> }, live?: PlanLive): PlanResult };
+export function readMethods(store: FactStore, prefix?: string): object[];
+export const PLAN_LIMITS: { acts: number; depth: number };

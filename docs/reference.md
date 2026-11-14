@@ -1755,6 +1755,13 @@ kind takes only its own attributes. `std.schema.kinds stand_in=<type>`: a kind t
 does not name but a stand-in wire does (`name=unicorn drawing=horse`) is made with
 `drawn_as`. `examples/know.mjs` uses wires copied from sop-knowledge-worlds (CC0).
 
+**Any catalog, any key.** `std.know.fill from=<type> match=<key> key=<key> ...` (`match`
+defaults to `name`): when `make` leaves one of those keys out, the `from` wire whose
+`match` names the kind gives it, at tier `knowledge` with its `core.source` (or its id).
+A choice std.fill made at a better tier wins. One line replaces the rules a world would
+otherwise write per key (`examples/second-app/rooms.mjs`: `w`, `d` and `price` of a piece
+from `k.furniture`).
+
 ## std.turn: the request pipeline as data
 
 `core.use world=std.turn`; run by `turnFlow`. A stage: `std.turn.stage name= after=

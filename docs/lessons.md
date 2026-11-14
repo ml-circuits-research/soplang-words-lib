@@ -89,4 +89,4 @@ with a tier for each answer.
 
 The room planner and the timetable reused acts, boxes, fill, views, denies and the solver
 without code in between. They also found six places where the docs or the library stopped
-short (docs/reuse-reports/apps.md). Three are fixed; three are open.
+short (docs/reuse-reports/apps.md). Four are fixed (0.32–0.35); two are open.

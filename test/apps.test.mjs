@@ -13,6 +13,7 @@ test('room planner: the usual size from the catalog; a piece stays in its room a
   const sofa = w.act({ action: 'make', args: { kind: 'sofa', in: '$room1', x: 0, y: 0 } });
   assert.deepEqual([w.get('sofa1').attrs.w, w.get('sofa1').attrs.d], [['200'], ['90']], 'knowledge fills what the request left out');
   assert.ok(sofa.ok);
+  assert.deepEqual(sofa.result.filled.map((f) => [f.key, f.tier, f.source]), [['w', 'knowledge', 'shop list'], ['d', 'knowledge', 'shop list'], ['price', 'knowledge', 'shop list']], 'one std.know.fill line: any catalog, any key, with the source');
   assert.equal(w.act({ action: 'make', args: { kind: 'desk', in: '$room1', x: 100, y: 50 } }).violations[0].why, 'it would stand on another piece');
   assert.equal(w.act({ action: 'make', args: { kind: 'bed', in: '$room1', x: 300, y: 100 } }).violations[0].why, 'it does not fit in the room there');
   const couch = resolve(w, 'the couch', rooms.words);

@@ -205,6 +205,21 @@ const ACTIONS = {
       if (!k.open && !attrsOf(w, k.type).includes(key)) continue;
       filled.push({ key, value: n.attrs.value[0], tier: n.attrs.tier?.[0], source: n.attrs.source?.[0] !== undefined ? String(n.attrs.source[0]).replace(/^"|"$/g, '') : undefined });
     }
+    // std.know.fill from=<catalog type> match=<its key that names the kind> key=<key> (rep.): the catalog's value at tier knowledge
+    const sure = new Set(filled.filter((f) => f.tier !== 'default').map((f) => f.key));
+    for (const d of w.ofType('std.know.fill')) { // bounded: the declarations, then one catalog type's wires
+      const match = d.attrs.match?.[0] ?? 'name';
+      const fact = w.ofType(d.attrs.from[0]).find((x) => x.attrs[match]?.includes(kind));
+      if (!fact) continue;
+      for (const key of d.attrs.key || []) {
+        if (attrs[key] !== undefined || sure.has(key) || fact.attrs[key] === undefined) continue;
+        if (!k.open && !attrsOf(w, k.type).includes(key)) continue;
+        const at = filled.findIndex((f) => f.key === key);
+        const f = { key, value: fact.attrs[key][0], tier: 'knowledge', source: fact.attrs['core.source']?.[0] !== undefined ? String(fact.attrs['core.source'][0]).replace(/^"|"$/g, '') : fact.id };
+        if (at >= 0) filled[at] = f; else filled.push(f);
+        sure.add(key);
+      }
+    }
     if (filled.length) { const p = w.applyPatch({ sets: filled.map((f) => ({ id, key: f.key, value: f.value })) }, { tier: 'default' }); if (p.ok === false) return p; }
     return { act: 'make', thing: id, ...(filled.length ? { filled } : {}), ...(k.standIn ? { standIn: k.standIn } : {}) };
   }),
@@ -791,6 +806,9 @@ ${['place', 'size', 'colour'].map((k) => `@gap.${k} std.schema.thing kind=?kind 
 
 # the tier of a fact: taught (told by the user with the act teach), else knowledge
 @k.taught.fact core.slot of=std.know.taught key=fact id=true
+@k.kf.from core.slot of=std.know.fill key=from required=true
+@k.kf.match core.slot of=std.know.fill key=match
+@k.kf.key core.slot of=std.know.fill key=key many=true required=true
 @taught core.tier name=taught below=told
 @kf k.commonsense.thing name=?x
 @kt std.know.taught fact=$kf

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.35.0
+
+### New
+- `std.know.fill from=<type> match=<key> key=<key> ...`: knowledge fills any key from any
+  catalog when `make` leaves it out. It uses tier `knowledge` and the fact's source, and a
+  better tier still wins. In the room planner, 27 generated rules became one line.
+
 ## 0.34.0
 
 The knowledge repository's three questions (reviewer 02:00, questions.md Q34).

@@ -43,7 +43,8 @@ That is 7 cooperating pairs.
    `colour` from `k.commonsense.thing`. Any other key (`w`, `d`, `price`) needs nine lines of
    `std.fill` rules per key; the app generates them with a template loop. Proposed:
    `std.know.fill from=<type> match=<key> key=<key>` (rep.), so that one line per catalog
-   and key does what the loop does. Open, next.
+   and key does what the loop does. **Done in 0.35.0:** the room planner's 27 generated
+   rules became one line.
 4. **Values of open kinds are strings.** A piece made through `std.schema.kinds` has no
    slots, so `x=0` is stored as `"0"`. The boxes functions read numbers from strings, so
    nothing breaks, but `show` returns strings. A `std.schema.kinds` with slot kinds (or

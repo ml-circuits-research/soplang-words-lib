@@ -1,7 +1,7 @@
 // A third application written from the documentation alone (01:20 item 3): a room planner.
 // Space (std.boxes: a piece must stay inside its room, two pieces may not overlap),
-// knowledge (the usual size of a piece from a catalog, as std.fill offers at tier
-// `knowledge`), views (a floor plan view and a shopping view of the same pieces), and
+// knowledge (the usual size of a piece from a catalog: one std.know.fill line), views
+// (a floor plan view and a shopping view of the same pieces), and
 // requests through `act` and `resolve`. Built from docs/quickstart.md, docs/capabilities.md,
 // docs/reference.md and docs/api.md; where they were not enough is listed in
 // docs/reuse-reports/apps.md. `node examples/second-app/rooms.mjs`
@@ -10,7 +10,7 @@ import { World, resolve } from '../../src/index.mjs';
 export const ROOMS = String.raw`
 @acts core.use world=std.acts
 @boxes core.use world=std.boxes
-@fill core.use world=std.fill
+@know core.use world=std.know
 @home std.schema.world name=home doc="rooms and the furniture in them"
 @t.room core.type of=room extends=std.schema.thing closed=true
 @s.room.w core.slot of=room key=w kind=number min=50 required=true
@@ -23,15 +23,7 @@ export const ROOMS = String.raw`
 @v.buy std.schema.view name=shopping shows=buy
 
 # the usual size and price of a piece, from the catalog, when the request leaves them out
-${['w', 'd', 'price'].map((k) => `@gap.${k} std.schema.thing kind=?kind core.absent=${k}
-@cat.${k} k.furniture name=?kind
-@need.${k} std.fill.need for=$gap.${k} key=${k}
-@ask.${k} core.rule when=$gap.${k} when=$cat.${k} then=$need.${k}
-@t.${k} std.schema.thing kind=?kind
-@n.${k} std.fill.need for=$t.${k} key=${k}
-@usual.${k} k.furniture name=?kind ${k}=?v core.source=?src
-@o.${k} std.fill.offer for=$n.${k} value=?v tier=knowledge source=?src
-@r.${k} core.rule when=$t.${k} when=$n.${k} when=$usual.${k} then=$o.${k}`).join('\n')}
+@kf std.know.fill from=k.furniture match=name key=w key=d key=price
 
 # a piece stays inside its room
 @rm room w=?rw d=?rd

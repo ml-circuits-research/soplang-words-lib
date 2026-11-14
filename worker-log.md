@@ -3891,3 +3891,16 @@ clean; tsc clean. `node tools/cases.mjs`: 35 / 35. Version, CHANGELOG, docs rebu
   (a shared slot group can declare it once).
 - I found that `core.type unique=a,b` already does "no X twice in one Y". The
   `std.schema.unique` proposal is withdrawn (docs/reuse-reports/apps.md).
+
+## std.know.fill: knowledge for any catalog key — done; release 0.35.0
+
+`/tmp/check.sh`: — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/cases.mjs`: 35 / 35. Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.35.0).
+
+- src/std.mjs: `make` reads `std.know.fill from= match= key=`. For keys left out, and not
+  chosen by std.fill at a better tier, it takes the catalog value at tier `knowledge` with
+  its source. std.know declares the slots.
+- examples/second-app/rooms.mjs: the 3 keys × 9 generated rules (27 wires) became one line.
+  test/apps.test.mjs checks `filled` (key, tier knowledge, source "shop list").
+- reference.md std.know: "Any catalog, any key". docs/reuse-reports/apps.md: gap 3 done.

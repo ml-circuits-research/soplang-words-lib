@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="ea536cb19782">
+<meta name="source-hash" content="4a9b2cdfaf97">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.34.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.35.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html" aria-current="page">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -671,6 +671,7 @@ print(r.diff.changed, w.act({ action: &#x27;remove&#x27;, args: { thing: &#x27;e
 <figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;id&quot;:&quot;eye1&quot;,&quot;key&quot;:&quot;colour&quot;,&quot;from&quot;:&quot;brown&quot;,&quot;to&quot;:&quot;blue&quot;,&quot;toTier&quot;:&quot;told&quot;}] [&quot;make&quot;,&quot;change&quot;]</code></pre></figure>
 <h2 id="stdknow-knowledge-as-a-filler">std.know: knowledge as a filler</h2>
 <p><code>core.use world=std.know</code> (it loads std.fill). A thing of a schema (<code>std.schema.thing</code>) that has no <code>place</code>, <code>size</code> or <code>colour</code> needs one, and the facts of a knowledge catalog offer them at the tier <code>knowledge</code>, with the fact's <code>core.source</code> as the source: the usual place and size (<code>k.commonsense.thing name= at= size=</code>), the colour of the body (<code>k.objects.part of= name=body colour=</code>; a body of several colours is a tie, so advice and no choice). Other modules may offer at better tiers (the user, the focus). The act <code>make</code> applies what std.fill chose as defaults (tier <code>default</code>: an assumption, weaker than what is told) and lists them in <code>result.filled</code> (<code>key</code>, <code>value</code>, <code>tier</code>, <code>source</code>); a closed kind takes only its own attributes. <code>std.schema.kinds stand_in=&lt;type&gt;</code>: a kind the catalog does not name but a stand-in wire does (<code>name=unicorn drawing=horse</code>) is made with <code>drawn_as</code>. <code>examples/know.mjs</code> uses wires copied from sop-knowledge-worlds (CC0).</p>
+<p><strong>Any catalog, any key.</strong> <code>std.know.fill from=&lt;type&gt; match=&lt;key&gt; key=&lt;key&gt; ...</code> (<code>match</code> defaults to <code>name</code>): when <code>make</code> leaves one of those keys out, the <code>from</code> wire whose <code>match</code> names the kind gives it, at tier <code>knowledge</code> with its <code>core.source</code> (or its id). A choice std.fill made at a better tier wins. One line replaces the rules a world would otherwise write per key (<code>examples/second-app/rooms.mjs</code>: <code>w</code>, <code>d</code> and <code>price</code> of a piece from <code>k.furniture</code>).</p>
 <h2 id="stdturn-the-request-pipeline-as-data">std.turn: the request pipeline as data</h2>
 <p><code>core.use world=std.turn</code>; run by <code>turnFlow</code>. A stage: <code>std.turn.stage name= after= before= per=candidate on_empty= skip_if= only= when=exhausted</code>; a provider: <code>std.turn.provider stage= name= tier=</code>. The order is the <code>after</code> chain from the stage that follows nothing (equal places by name); a stage with <code>before=</code> goes right before that one. Stages with <code>per=candidate</code> run for each candidate reading in turn; when one yields nothing, <code>on_empty</code> says what follows: <code>next</code> (the next candidate), <code>ask</code> (return the question it set), <code>fail</code>. <code>skip_if=&lt;key&gt;</code>: skipped when a request of the candidate has that argument (the message named the world, say); <code>only=&lt;action&gt;</code>: run only for those actions. <code>when=exhausted</code>: run when no candidate was taken (the graded fallback). Providers of one stage are tried by tier: the first that yields wins; a reader's candidates add up. <strong>The default:</strong> read (given) → dryrun → apply → reply per candidate; fallback when exhausted. <strong>Advice:</strong> a stage nobody provides, or placed after or before an undeclared stage, is a soft issue (<code>world.check().issues</code>). <strong>Fixed:</strong> apply is one sentence (one undo step, all or nothing), budgets per call, the same input and state give the same path, a trace of every stage taken.</p>
 <h2 id="functions">Functions</h2>
@@ -722,7 +723,7 @@ print(builtins.time_add([&#x27;10:40&#x27;, &#x27;35min&#x27;]), builtins.div([&
 11:15 3 true tuesday</code></pre></figure>
 <p class="source">Generated from <code>docs/reference.md</code>.</p>
 </main>
-<footer>sopworld 0.34.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.35.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

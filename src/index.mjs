@@ -17,7 +17,7 @@ export { parseText, grammarOf, nounPhrase, grammarView, viewDiff } from './gramm
 export { resolve } from './resolve.mjs';
 export { needsOf } from './std.mjs';
 export { ledgerAppend, ledgerGroups, ledgerKey, stageOf, STAGES } from './ledger.mjs';
-export const version = '0.43.0';
+export const version = '0.44.0';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)
  * tools/build.mjs fills in `hash`, a fingerprint of the bundled sources, and `date`,

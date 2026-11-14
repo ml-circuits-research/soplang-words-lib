@@ -10,7 +10,8 @@ a **world schema** (what a kind of world is: things, attributes, acts, limits; r
 published as `w.*` in sop-knowledge-worlds), a **knowledge world** (facts true for
 everyone, `k.*`), and a **live world** (one running instance of a schema in a session,
 with its things, focus and history). The library holds mechanisms only: the `std.*`
-modules that a world schema is written with and a live world runs on.
+modules that a world schema is written with and a live world runs on. What each kind may
+contain and where code lives: [docs/kinds-of-worlds.md](docs/kinds-of-worlds.md).
 
 - One file, no dependencies, the same in Node 18+ and in browsers.
 - Deduction, abduction, induction, logical completion, search with pluggable solvers,
@@ -50,6 +51,12 @@ modules that a world schema is written with and a live world runs on.
 | Choose a world for a request | `route` | [example](docs/capabilities.md#choose-a-world-for-a-request) | 0.24 |
 | Tools for authors | `tools/validate.mjs`, `tools/ledger.mjs`, `ledgerGroups` | [example](docs/capabilities.md#tools-for-authors) | 0.25 |
 | Read noun phrases with a language's knowledge world | `parseText`, `nounPhrase` | [example](docs/capabilities.md#read-noun-phrases-with-a-languages-knowledge-world) | 0.29 |
+| Resolve what a phrase refers to | `resolve` | [example](docs/capabilities.md#resolve-what-a-phrase-refers-to) | 0.31 |
+| Fill any key from a catalog | `std.know` (`std.know.fill`) | [example](docs/capabilities.md#fill-any-key-from-a-catalog) | 0.35 |
+| Say what must be loaded first | `std.schema.needs`, `needsOf`, `turn({ load })` | [example](docs/capabilities.md#say-what-must-be-loaded-first) | 0.39 |
+| Act on a view itself | `std.schema.view state=` | [example](docs/capabilities.md#act-on-a-view-itself) | 0.37 |
+| Ask over attributes and relations | `std.acts` (`ask`) | [example](docs/capabilities.md#ask-over-attributes-and-relations) | 0.38 |
+| Read several knowledge repositories | `createCatalogs` | [example](docs/capabilities.md#read-several-knowledge-repositories) | 0.43 |
 <!-- /capabilities -->
 
 ## Use

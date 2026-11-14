@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld What the library can do</title>
-<meta name="source-hash" content="ace8d7df7b9e">
+<meta name="source-hash" content="49a26a038652">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,13 +12,13 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.43.0</small></a>
-  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="integration.html">Integration</a><a href="capabilities.html" aria-current="page">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.44.0</small></a>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html" aria-current="page">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
 <h1>What the library can do</h1>
 <p class="lead">By job, not by API. Each job has a paragraph, an example that runs (every example on this page is run in CI and must print what is shown), the module and the version it came in, and its limits. Where a job is not done yet, it says so. API details: <a href="api.html">api</a>, <a href="reference.html">reference</a>; how worlds combine: <a href="patterns.html">patterns</a>.</p>
-<p>Three kinds of worlds are named throughout (see the <a href="glossary.html#the-three-kinds-of-worlds">glossary</a>): a <strong>world schema</strong> says what a kind of world is, a <strong>knowledge world</strong> holds facts true for everyone, and a <strong>live world</strong> is one running instance of a schema in a session, reading knowledge worlds. Each job below says which kind it works on.</p>
+<p>Three kinds of worlds are named throughout (see the <a href="glossary.html#the-three-kinds-of-worlds">glossary</a>): a <strong>world schema</strong> says what a kind of world is, a <strong>knowledge world</strong> holds facts true for everyone, and a <strong>live world</strong> is one running instance of a schema in a session, reading knowledge worlds. Each job below says which kind it works on; what each kind may contain and where code lives is on <a href="kinds-of-worlds.html">kinds of worlds</a>.</p>
 <h2 id="describe-a-world">Describe a world</h2>
 <p><em>In core: <code>core.type</code>, <code>core.slot</code>; since 0.1.</em> <em>Works on: a world schema (its types and slots).</em></p>
 <p>Kinds of things are types; their attributes are slots with kinds, value lists, ranges, defaults and questions to ask when they are missing. Everything told is checked against them at once. <strong>Limits:</strong> one value per key unless the slot says <code>many</code>; a missing required key is an open question, not a refusal.</p>
@@ -241,6 +241,66 @@ print(g.map((x) =&gt; [x.key, x.count]), stageOf({ status: &#x27;ask&#x27; }));<
 w.tell(`@a g.word text=ko lemma=cup cat=N  @b g.word text=mi lemma=red cat=Adj  @r g.rule lhs=NP rhs=N rhs=Adj*`);
 print(nounPhrase(parseText(w, &#x27;ko mi&#x27;, { start: &#x27;NP&#x27; })[0].tree));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;span&quot;:[0,2],&quot;rule&quot;:&quot;r&quot;,&quot;mods&quot;:[&quot;red&quot;],&quot;head&quot;:&quot;ko&quot;,&quot;lemma&quot;:&quot;cup&quot;}</code></pre></figure>
+<h2 id="resolve-what-a-phrase-refers-to">Resolve what a phrase refers to</h2>
+<p><em>In <code>resolve</code>; since 0.31.</em> <em>Works on: a live world, with a grammar (a knowledge world about a language).</em></p>
+<p>The things a noun phrase names, and how sure the reading is (<code>user</code>, <code>scene</code>, <code>focus</code>, <code>slip</code>), with each step in <code>how</code>. It handles synonyms through <code>core.word</code>, modifiers, names, ordinals, numbers, sets, coordination (a choice is asked), relations, pronouns and the focus, "the other one", and parts of a set. <strong>Limits:</strong> time phrases wait for an order in time; the words come from the grammar and <code>core.word</code>, so there is no language here.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(`@d x.det text=the  @r x.rule lhs=NP rhs=DET? rhs=MOD* rhs=N
+  @t1 std.schema.thing kind=cup colour=red  @t2 std.schema.thing kind=cup colour=blue`);
+const opt = { grammar: { types: { rule: &#x27;x.rule&#x27; }, classes: { DET: &#x27;x.det&#x27; }, lexicon: { cup: { cat: &#x27;N&#x27; }, blue: { cat: &#x27;MOD&#x27; } } }, cats: { det: &#x27;DET&#x27;, mod: &#x27;MOD&#x27;, head: &#x27;N&#x27; } };
+print(resolve(w, &#x27;the blue cup&#x27;, opt).ids, resolve(w, &#x27;the cup&#x27;, opt).which);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;t2&quot;] [&quot;t1&quot;,&quot;t2&quot;]</code></pre></figure>
+<h2 id="fill-any-key-from-a-catalog">Fill any key from a catalog</h2>
+<p><em>In <code>std.know</code> (<code>std.know.fill</code>); since 0.35.</em> <em>Works on: a live world, filled from knowledge worlds.</em></p>
+<p>One line says which keys a catalog type gives when <code>make</code> leaves them out: <code>std.know.fill from=&lt;type&gt; match=&lt;key&gt; key=&lt;key&gt; ...</code>. The value comes at tier <code>knowledge</code> with its source, and a choice at a better tier wins. <strong>Limits:</strong> only on <code>make</code>; <code>complete</code> applies what std.fill chose later.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@acts core.use world=std.acts  @know core.use world=std.know  @home std.schema.world name=home
+  @any std.schema.kinds world=home from=k.furniture acts=make  @kf std.know.fill from=k.furniture key=w`);
+w.tell(&#x27;@f k.furniture name=sofa w=200 core.source=&quot;shop list&quot;&#x27;);
+print(w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;sofa&#x27; } }).result.filled);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;key&quot;:&quot;w&quot;,&quot;value&quot;:&quot;200&quot;,&quot;tier&quot;:&quot;knowledge&quot;,&quot;source&quot;:&quot;shop list&quot;}]</code></pre></figure>
+<h2 id="say-what-must-be-loaded-first">Say what must be loaded first</h2>
+<p><em>In <code>std.schema.needs</code>, <code>needsOf</code>, <code>turn({ load })</code>; since 0.39.</em> <em>Works on: a live world and the world schemas or views it follows.</em></p>
+<p>A world or a view says which types it needs loaded before acting. An act there is refused with the list until they are; <code>turn</code> asks the host to load them and dry-runs again. <strong>Limits:</strong> "loaded" means some wire of the type exists; what to load is the host's.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@acts core.use world=std.acts  @home std.schema.world name=home
+  @t core.type of=lamp extends=std.schema.thing  @k std.schema.kind of=lamp world=home acts=make
+  @n std.schema.needs of=home type=k.furniture`);
+print(needsOf(w), w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;lamp&#x27; } }).violations[0].why);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;of&quot;:&quot;home&quot;,&quot;type&quot;:&quot;k.furniture&quot;,&quot;loaded&quot;:false}] needs k.furniture loaded first</code></pre></figure>
+<h2 id="act-on-a-view-itself">Act on a view itself</h2>
+<p><em>In <code>std.schema.view state=</code>; since 0.37.</em> <em>Works on: a live world's view.</em></p>
+<p>A view's own attributes (zoom, the layer shown) live on one thing of a declared kind, made on first use with its defaults. "Zoom in" names no thing: the view whose state has the attribute is meant. <strong>Limits:</strong> one state thing per view.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@acts core.use world=std.acts  @geo std.schema.world name=geo
+  @t core.type of=map.state extends=std.schema.thing  @z core.slot of=map.state key=zoom kind=integer min=1 max=10 step=1 default=3
+  @k std.schema.kind of=map.state world=geo acts=change  @v std.schema.view name=map state=map.state`);
+print(w.act({ action: &#x27;change&#x27;, args: { attr: &#x27;zoom&#x27;, by: 1 } }).result.value);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>4</code></pre></figure>
+<h2 id="ask-over-attributes-and-relations">Ask over attributes and relations</h2>
+<p><em>In <code>std.acts</code> (<code>ask</code>); since 0.38.</em> <em>Works on: a live world and the knowledge worlds loaded in it.</em></p>
+<p><code>ask</code> answers with the shape of the answer: a number with its unit, a value, a list, or yes / no. It takes a thing or a knowledge fact by name, a relation either way round, "which" and "how many" of a kind. <strong>Limits:</strong> one relation per question; no chains.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(&#x27;@acts core.use world=std.acts&#x27;);
+w.tell(&#x27;@fr k.country name=france population=68000000people borders=spain  @es k.country name=spain borders=france&#x27;);
+const ask = (args) =&gt; w.act({ action: &#x27;ask&#x27;, args }).result;
+print(ask({ thing: &#x27;france&#x27;, attr: &#x27;population&#x27; }).unit, ask({ kind: &#x27;k.country&#x27;, rel: &#x27;borders&#x27;, of: &#x27;france&#x27; }).names, ask({ thing: &#x27;spain&#x27;, rel: &#x27;borders&#x27;, of: &#x27;france&#x27; }).answer);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>people [&quot;spain&quot;] true</code></pre></figure>
+<h2 id="read-several-knowledge-repositories">Read several knowledge repositories</h2>
+<p><em>In <code>createCatalogs</code>; since 0.43.</em> <em>Works on: knowledge worlds from several repositories, loaded into a live world.</em></p>
+<p>Several catalogs in an order of precedence. Each fact keeps its catalog in its source, and a thing two catalogs define differently is reported while the first version stays. <strong>Limits:</strong> a conflict is found by id, or by type and <code>name</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const cat = (name, text) =&gt; ({ name, index: { worlds: [{ id: &#x27;k.f&#x27;, shards: [{ id: &#x27;k.f/s&#x27;, path: &#x27;k.f/s.sop&#x27; }] }] }, vocab: { sofa: [&#x27;k.f/s&#x27;] }, read: bundleReader({ files: { &#x27;k.f/s.sop&#x27;: text } }) });
+const w = new World();
+const r = createCatalogs([cat(&#x27;one&#x27;, &#x27;@a k.f name=sofa w=200&#x27;), cat(&#x27;two&#x27;, &#x27;@b k.f name=sofa w=210&#x27;)]).intoSync(w, &#x27;sofa&#x27;);
+print(r.conflicts.length, w.ofType(&#x27;k.f&#x27;).map((x) =&gt; x.attrs.w[0]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>1 [&quot;200&quot;]</code></pre></figure>
+<h2 id="building-blocks">Building blocks</h2>
+<p><em>In the core exports; since 0.1 (each as listed).</em> <em>Works on: any world.</em></p>
+<p>The functions and constants the jobs above are made of, for hosts and tools that need them directly. Each is in <a href="api.html">api</a> or <a href="reference.html">reference</a> with its example.</p>
+<div class="table"><table><thead><tr><th>Export</th><th>What it is for</th><th>Since</th></tr></thead><tbody><tr><td><code>parse</code>, <code>serialize</code>, <code>tokenize</code>, <code>quote</code>, <code>str</code>, <code>readValue</code>, <code>writeValue</code>, <code>SopError</code></td><td>read and write SOP Lang text and values (<code>str</code>: a value token as plain text)</td><td>0.1</td></tr><tr><td><code>unify</code>, <code>walk</code>, <code>PatternIndex</code></td><td>match patterns against wires</td><td>0.1</td></tr><tr><td><code>builtins</code>, <code>quantity</code></td><td>the standard function pack; numbers with units</td><td>0.1</td></tr><tr><td><code>solvers</code>, <code>Problem</code>, <code>Sat</code>, <code>toDimacs</code>, <code>toASP</code></td><td>search: pluggable solvers and exports for outside ones</td><td>0.3</td></tr><tr><td><code>abduce</code>, <code>adopt</code></td><td>what would have to be true; taking one explanation</td><td>0.4</td></tr><tr><td><code>induce</code>, <code>induceRule</code>, <code>induceSlots</code></td><td>rules and slots from examples</td><td>0.5</td></tr><tr><td><code>aggregates</code>, <code>rank</code>, <code>RANKING</code>, <code>veto</code></td><td>aggregates; ranking readings with reasons; vetoes</td><td>0.13</td></tr><tr><td><code>GRAMMAR</code>, <code>MODIFIERS</code>, <code>SCHEMA_TYPES</code></td><td>what each matrix wire type reads (the reference is checked against them)</td><td>0.6</td></tr><tr><td><code>grammarOf</code>, <code>grammarView</code>, <code>viewDiff</code></td><td>the grammar a world holds; the views of a closed class and where two differ</td><td>0.29, 0.30</td></tr><tr><td><code>ledgerAppend</code>, <code>ledgerGroups</code>, <code>ledgerKey</code>, <code>stageOf</code>, <code>STAGES</code></td><td>the failure ledger: rows, groups, keys, pipeline stages</td><td>0.25</td></tr><tr><td><code>needsOf</code></td><td>the typed needs of a world or view</td><td>0.39</td></tr></tbody></table></div>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const [w1] = parse(&#x27;@cup thing size=2kg&#x27;);
+print(serialize([w1]).trim(), quantity(&#x27;2kg&#x27;), STAGES.length &gt; 3);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>@cup thing size=2kg {&quot;n&quot;:2,&quot;unit&quot;:&quot;kg&quot;} true</code></pre></figure>
 <h2 id="not-done-yet">Not done yet</h2>
 <ul><li><strong>The other PSys2 hand-over packages</strong> (acts, space, session.things, session.dialogue, common.sense) are compared with std.acts, std.relations, the views and std.focus as they are taken; until then those jobs are done by the modules above, with their limits.</li></ul>
 <h2 id="taken-over-from-psys2">Taken over from PSys2</h2>
@@ -248,7 +308,7 @@ print(nounPhrase(parseText(w, &#x27;ko mi&#x27;, { start: &#x27;NP&#x27; })[0].t
 <div class="table"><table><thead><tr><th>PSys2 package</th><th>here</th><th>PSys2 lines it replaces</th><th>refused (stays in the host)</th><th>since</th></tr></thead><tbody><tr><td>knowledge-loader</td><td><code>createCatalog</code>, <code>bundleReader</code>, <code>tools/build-bundle.mjs</code></td><td>254 (catalog 105, cache 52, source 20, bundle loader 20, bundle generator 57)</td><td>English lemma rules (the host passes <code>lemma</code>), decoding k.objects parts for drawing, the avatar's faces, the evaluation-set generator; taught facts are the act <code>teach</code></td><td>since 0.23</td></tr><tr><td>turn-pipeline</td><td><code>turn</code> (dry run on a fork, all or nothing, diff, why, guesses, replies, graded fallback)</td><td>the dry-run protocol, all-or-nothing holds and graded fallback (estimated 120 + 350 of its 900 general lines)</td><td>the reading of English, the per-turn tick budget wiring (the library has its own budgets), translation, the encoder accept rule</td><td>since 0.24</td></tr><tr><td>meta.worlds</td><td><code>route</code> (cards, referents, a dry run, a host signal)</td><td>its routing rules (the cards stay generated by the host)</td><td>the tab registry and the generated cards of one application</td><td>since 0.24</td></tr><tr><td>failure-ledger</td><td><code>ledgerAppend</code>, <code>ledgerGroups</code>, <code>stageOf</code>, <code>tools/ledger.mjs</code></td><td>the format, append and counting (of its 160 generator lines)</td><td>its cause-signal list and the replay of its own evaluation scripts</td><td>since 0.25</td></tr><tr><td>acts, session.things, session.dialogue, common.sense, space</td><td>compared (questions.md Q30): already covered by std.schema, std.acts, views, std.focus, <code>turn</code>, <code>createCatalog</code>; missing: a per-kind act hook, space selection and layouts, overlap enforcement, a turn log, pieces</td><td>—</td><td>English forms and readers, its tabs' words, facts (to sop-knowledge-worlds)</td><td>—</td></tr></tbody></table></div>
 <p class="source">Generated from <code>docs/capabilities.md</code>.</p>
 </main>
-<footer>sopworld 0.43.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.44.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

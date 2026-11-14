@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sopworld The kinds of worlds, and where code lives</title>
+<meta name="source-hash" content="081baad6b823">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.44.0</small></a>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html" aria-current="page">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
+</header>
+<main>
+<h1>The kinds of worlds, and where code lives</h1>
+<p class="lead">There are three kinds of worlds, plus the library's modules (the names are defined in the <a href="glossary.html#the-three-kinds-of-worlds">glossary</a>). This page says what each kind may contain, how they combine at run time, and where a piece of code belongs. Every example runs in CI.</p>
+<figure class="code"><pre><code>  world schemas (w.*)      knowledge worlds (k.*)        session state
+  kinds, slots, acts,      facts, constraints,           things made, values,
+  limits, rules, words     derivation rules, sources     focus, history
+         \                         |                          /
+          \__________ loaded into one World object ___________/
+                                   |
+                              LIVE WORLD  &lt;-- turn(world, readings): read -&gt; dry run
+                                   |          (a fork) -&gt; apply (one sentence) -&gt; reply
+                                 views          effects connect the application&#x27;s tools</code></pre></figure>
+<h2 id="1-world-schema">1. World schema</h2>
+<p>A world schema says what a kind of world is. It may contain:</p>
+<ul><li>kinds of things (<code>core.type ... extends=std.schema.thing</code>) and their attributes: slots with value types, ranges, steps, defaults and the question to ask when one is open;</li><li>slot groups (several <code>extends</code>), <code>excludes=</code> pairs and joins to another world (<code>type=T by=name</code>);</li><li>count limits (<code>std.schema.limit</code>) and capacities (<code>std.schema.capacity</code>);</li><li>which acts apply to which kind (<code>std.schema.kind ... acts=</code>), the aspects and views;</li><li>rules and denies, and the words for all of it (<code>core.word</code>).</li></ul>
+<p>It names the functions it uses and does not contain them. Pure functions come from the standard pack (<code>builtins</code>: arithmetic, comparisons, boxes, dates and the rest; listed in the <a href="reference.html">reference</a>). Effects are implemented by the application and declared in the schema (<code>std.schema.effect of= act= action=</code>). A world schema holds no particular things and no code.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@acts core.use world=std.acts
+@plan std.schema.world name=plan doc=&quot;an example: boxes on shelves&quot;
+@t.shelf core.type of=shelf extends=std.schema.thing closed=true
+@s.shelf.slots core.slot of=shelf key=slots kind=integer min=1 max=6 default=3
+@t.box core.type of=box extends=std.schema.thing closed=true
+@s.box.name core.slot of=box key=name required=true ask=&quot;What is the box called?&quot;
+@s.box.on core.slot of=box key=on type=shelf
+@k.shelf std.schema.kind of=shelf world=plan acts=make acts=change
+@k.box std.schema.kind of=box world=plan acts=make acts=place acts=remove
+@cap std.schema.capacity of=shelf key=slots holds=box via=on
+@w.box core.word text=crate means=box`);
+print(w.ofType(&#x27;std.schema.kind&#x27;).map((k) =&gt; [k.attrs.of[0], k.attrs.acts]));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;shelf&quot;,[&quot;make&quot;,&quot;change&quot;]],[&quot;box&quot;,[&quot;make&quot;,&quot;place&quot;,&quot;remove&quot;]]]</code></pre></figure>
+<h2 id="2-knowledge-world">2. Knowledge world</h2>
+<p>A knowledge world holds facts about the world at large, true for everyone. It may contain:</p>
+<ul><li>facts (<code>k.animal name=fish lives=water</code>);</li><li>constraints (slots, <code>excludes</code>, joins);</li><li>rules that derive more facts: habitat to usual place, carried things go with their carrier, "is a kind of" chains;</li><li>the provenance of every fact (<code>core.source</code>), including facts labelled by a model.</li></ul>
+<p>It has no session state and no code. When a rule needs a computation the pack lacks, ask for a function in the library (a general one goes into the standard pack); do not embed code in the world.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(`@k1 core.slot of=k.animal key=name id=true
+@fish k.animal name=fish lives=water core.source=&quot;example&quot;
+@trout k.animal name=trout is_a=fish core.source=&quot;example&quot;
+@p1 k.animal name=?x is_a=?y
+@p2 k.animal name=?y lives=?h
+@t k.animal core.on=$p1 lives=?h
+@inherit core.rule when=$p1 when=$p2 then=$t`);
+print(w.get(&#x27;trout&#x27;).attrs.lives, w.tier(&#x27;trout&#x27;, &#x27;lives&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;water&quot;] derived</code></pre></figure>
+<h2 id="3-live-world">3. Live world</h2>
+<p>A live world is an instance of world schemas in a session. It holds the state (the things made and their values), the focus, the history and undo, and the views that show it. It inherits the constraints and rules of its schemas and reads knowledge worlds by lookup (<code>createCatalog</code>, <code>createCatalogs</code>, <code>std.know.fill</code>, <code>std.schema.needs</code>). The application's tools (renderers, engines, editors) are attached through effects.</p>
+<p>The library keeps state and view consistent. Every act returns the difference it made to the state (<code>diff</code>), which is what the view re-renders, and an effect's difference comes back in <code>diff.effects</code>. What is rendered is the state, never something kept beside it.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(`@acts core.use world=std.acts  @desk std.schema.world name=desk
+@t core.type of=note extends=std.schema.thing closed=true  @s core.slot of=note key=text
+@k std.schema.kind of=note world=desk acts=make acts=change acts=remove`);
+const made = w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;note&#x27;, text: &#x27;buy milk&#x27; } });
+const changed = w.act({ action: &#x27;change&#x27;, args: { thing: &#x27;note1&#x27;, attr: &#x27;text&#x27;, value: &#x27;buy bread&#x27; } });
+w.act({ action: &#x27;undo&#x27;, args: {} });
+print(made.diff.added.map((a) =&gt; a.id), changed.diff.changed.map((c) =&gt; [c.key, c.to]), w.get(&#x27;note1&#x27;).attrs.text);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;note1&quot;] [[&quot;text&quot;,&quot;buy bread&quot;]] [&quot;\&quot;buy milk\&quot;&quot;]</code></pre></figure>
+<h2 id="4-library-modules">4. Library modules</h2>
+<p>The <code>std.*</code> modules are mechanisms, not worlds. Each serves one kind:</p>
+<div class="table"><table><thead><tr><th>Module</th><th>Serves</th></tr></thead><tbody><tr><td><code>std.schema</code></td><td>writing a world schema</td></tr><tr><td><code>std.know</code>, <code>createCatalog</code>, <code>createCatalogs</code></td><td>reading knowledge worlds into a live world</td></tr><tr><td><code>std.acts</code>, <code>std.fill</code>, <code>std.focus</code>, <code>std.relations</code>, <code>std.turn</code> (<code>turn</code>, <code>turnFlow</code>)</td><td>running a live world</td></tr><tr><td>the grammar reader (<code>grammarOf</code>, <code>parseText</code>, <code>nounPhrase</code>), <code>resolve</code></td><td>reading a language's knowledge world, then a live world</td></tr><tr><td><code>std.numbers</code>, <code>std.order</code>, <code>std.boxes</code>, <code>builtins</code></td><td>pure functions any world names</td></tr></tbody></table></div>
+<h2 id="5-where-code-lives">5. Where code lives</h2>
+<p>World schemas and knowledge worlds stay SOP Lang only, so any application can reuse them. A general function goes into the library's standard pack. A specific tool stays in the application and is connected through a declared effect. Three examples:</p>
+<div class="table"><table><thead><tr><th>A need</th><th>Where it ends up</th></tr></thead><tbody><tr><td>"two boxes must not overlap"</td><td>the pack already has <code>overlaps</code>; the world schema writes a deny that names it</td></tr><tr><td>"the median of the scores"</td><td>a general computation: <code>median</code> in <code>std.numbers</code>, named by any world</td></tr><tr><td>"draw the face on the canvas"</td><td>the application's renderer, connected by <code>std.schema.effect of=face act=change action=draw</code></td></tr></tbody></table></div>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.register(&#x27;action&#x27;, &#x27;draw&#x27;, (ctx, args, at) =&gt; ({ diff: { drawn: at.thing }, undo: () =&gt; {} }));
+w.load(`@acts core.use world=std.acts  @f std.schema.world name=face
+@t core.type of=eye extends=std.schema.thing closed=true  @s core.slot of=eye key=colour
+@k std.schema.kind of=eye world=face acts=make acts=change
+@e std.schema.effect of=eye act=change action=draw`);
+w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;eye&#x27; } });
+print(w.act({ action: &#x27;change&#x27;, args: { thing: &#x27;eye1&#x27;, attr: &#x27;colour&#x27;, value: &#x27;green&#x27; } }).diff.effects);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;drawn&quot;:&quot;eye1&quot;}]</code></pre></figure>
+<p class="source">Generated from <code>docs/kinds-of-worlds.md</code>.</p>
+</main>
+<footer>sopworld 0.44.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+
+</body>
+</html>

@@ -73,6 +73,8 @@ cunoaștere*, *lume vie*.
 | **knowledge world** | Facts about the world at large, true for everyone, with no session state. | animals, places, colours, units; `w.lang.en` is a knowledge world about a language | sop-knowledge-worlds, as `k.*` (and `w.lang.en`); read with `createCatalog`, `std.know` |
 | **live world** | One running instance of a world schema in a session: the things the user made, their current values, the focus, the history and undo. Temporary and particular. It follows its schema and reads knowledge worlds. | the plan for Saturday's dinner: table 1 is round, Ann sits at seat 2, undo gives back the table just removed | the application's session, in one `World` object |
 
+What each kind may contain, and where code lives: [kinds of worlds](kinds-of-worlds.md).
+
 How they relate: **a live world = world schemas + the knowledge worlds it reads + session
 state.** A host loads one or more world schemas (`core.use`, or the published text) and
 what it needs of the knowledge worlds (`createCatalog`, `std.schema.needs`) into a

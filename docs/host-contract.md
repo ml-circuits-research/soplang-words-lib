@@ -7,7 +7,8 @@ are in [capabilities](capabilities.md); a worked start is the [quickstart](quick
 In the terms of the [glossary](glossary.md#the-three-kinds-of-worlds): the host chooses the **world schemas** (its own or
 published `w.*`), loads what it needs of the **knowledge worlds** (`k.*`), and keeps one
 **live world** per session in a `World` object. It reads text into requests and renders
-replies and views; the live world does the rest.
+replies and views; the live world does the rest. Where the host's own code belongs (an
+effect, not the world) is on [kinds of worlds](kinds-of-worlds.md#5-where-code-lives).
 
 ## What the host supplies
 

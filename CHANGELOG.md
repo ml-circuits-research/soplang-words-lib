@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.44.0
+
+Docs (reviewer 07:25, A and C). No change in `src/`.
+
+### Docs
+- `docs/kinds-of-worlds.md`: what a world schema, a knowledge world and a live world may
+  each contain, which module serves which, and where code lives (three examples). It has a
+  run-time diagram and four runnable examples. Linked from README, the glossary,
+  capabilities, quickstart and the host contract.
+- capabilities.md is complete: six new jobs (resolve, filling any key from a catalog,
+  typed needs, acts on a view, ask over relations, several knowledge repositories) and a
+  "Building blocks" table for the remaining exports. 25 jobs.
+- A test fails when an export of the library has no entry in capabilities or the
+  reference.
+
 ## 0.43.0
 
 Reviewer 07:15 (there will be several knowledge repositories) and 06:55 (answers).

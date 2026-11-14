@@ -158,7 +158,7 @@ import { existsSync } from 'node:fs';
 
 test('docs: every HTML page is generated from the current text of its markdown file', () => {
   const root = new URL('../', import.meta.url);
-  const sources = { 'index.html': 'SPEC.md', 'language.html': 'docs/language.md', 'reference.html': 'docs/reference.md', 'semantics.html': 'docs/semantics.md', 'api.html': 'docs/api.md', 'glossary.html': 'docs/glossary.md', 'integration.html': 'docs/integration.md', 'capabilities.html': 'docs/capabilities.md', 'quickstart.html': 'docs/quickstart.md', 'modules.html': 'docs/modules.md', 'patterns.html': 'docs/patterns.md', 'host-contract.html': 'docs/host-contract.md', 'lessons.html': 'docs/lessons.md' };
+  const sources = { 'index.html': 'SPEC.md', 'language.html': 'docs/language.md', 'reference.html': 'docs/reference.md', 'semantics.html': 'docs/semantics.md', 'api.html': 'docs/api.md', 'glossary.html': 'docs/glossary.md', 'kinds-of-worlds.html': 'docs/kinds-of-worlds.md', 'integration.html': 'docs/integration.md', 'capabilities.html': 'docs/capabilities.md', 'quickstart.html': 'docs/quickstart.md', 'modules.html': 'docs/modules.md', 'patterns.html': 'docs/patterns.md', 'host-contract.html': 'docs/host-contract.md', 'lessons.html': 'docs/lessons.md' };
   for (const [page, source] of Object.entries(sources)) {
     const hash = createHash('sha256').update(readFileSync(new URL(source, root))).digest('hex').slice(0, 12);
     const html = readFileSync(new URL(`docs/${page}`, root), 'utf8');
@@ -215,4 +215,12 @@ test('docs: the capability table of README.md is generated from docs/capabilitie
   const { execFileSync } = await import('node:child_process');
   const out = execFileSync(process.execPath, [new URL('../tools/capability-table.mjs', import.meta.url).pathname, '--check'], { encoding: 'utf8' });
   assert.match(out, /up to date/);
+});
+
+test('docs: every export of the library has an entry in capabilities or the reference (reviewer 07:25 C)', async () => {
+  const lib = await import('../src/index.mjs');
+  const cap = readFileSync(new URL('../docs/capabilities.md', import.meta.url), 'utf8');
+  const ref = readFileSync(new URL('../docs/reference.md', import.meta.url), 'utf8');
+  const missing = Object.keys(lib).filter((k) => !new RegExp(`\\b${k}\\b`).test(cap) && !new RegExp(`\\b${k}\\b`).test(ref));
+  assert.deepEqual(missing, [], 'exports with no entry');
 });

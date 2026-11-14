@@ -4127,3 +4127,23 @@ clean; tsc clean. `node tools/cases.mjs`: 55 / 55. Version, CHANGELOG, docs rebu
   tools/worlds.mjs adds `knowledgeDirs()`. worlds.pin and psys2.pin are removed.
 - Next: Round 27 (the five agent skills, parameterised by repositories), after the
   current round's open items (Q30 order, Q33 order).
+
+## Reviewer 07:25 A and C — kinds-of-worlds page; complete capabilities with a coverage test — release 0.44.0
+
+`/tmp/check.sh`: # pass 387 # fail 0 # pass 387 # fail 0 # pass 386 # fail 0 — pilot identical; psys2 grep empty; scan-loops
+clean; tsc clean. `node tools/capability-table.mjs`: 25 jobs. `node tools/doc-examples.mjs
+docs/kinds-of-worlds.md`: 4 runnable examples, 0 problems. Version, CHANGELOG, docs rebuilt
+(`docs/version.md`: sopworld 0.44.0).
+
+- A: docs/kinds-of-worlds.md covers points 1–6. Points 1, 2, 3 and 5 have a runnable
+  example: a world schema with a capacity, a knowledge rule (is_a carries lives), a live
+  world's diff and undo, and an effect that draws. Point 4 is a table, point 6 a text
+  diagram. The page is registered in tools/build_docs.py and the docs test, and linked
+  from README, glossary, capabilities, quickstart and host-contract.
+- C: before the change, a `node -e` over the exports found 25 in neither capabilities
+  nor the reference, and 37 missing from capabilities. Now there are 6 new jobs and a
+  "Building blocks" table. New test: every export is named in capabilities or the
+  reference. It caught one more (`str`).
+- B (skills/README.md) comes with Round 27.
+- Next: Round 28, items 1–3 (arbitration contract, segmenter, std.dialogue). First, read
+  PSys2's [LIB] lessons in place and answer per line in questions.md.

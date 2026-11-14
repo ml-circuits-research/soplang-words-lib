@@ -2,7 +2,8 @@
 
 A small room planner: a world schema, three acts, a knowledge world read by lookup,
 replies, and one request handled end to end: by the last step it is a live world (the
-three kinds are in the [glossary](glossary.md#the-three-kinds-of-worlds)). Every block on this page runs in CI against the library. A
+three kinds are in the [glossary](glossary.md#the-three-kinds-of-worlds), and what each
+may contain in [kinds of worlds](kinds-of-worlds.md)). Every block on this page runs in CI against the library. A
 page about what each job can do is [capabilities](capabilities.md); what a host supplies
 is the [host contract](host-contract.md).
 

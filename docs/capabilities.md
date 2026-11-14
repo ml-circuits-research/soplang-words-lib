@@ -8,7 +8,8 @@ and its limits. Where a job is not done yet, it says so. API details:
 Three kinds of worlds are named throughout (see the [glossary](glossary.md#the-three-kinds-of-worlds)): a **world schema**
 says what a kind of world is, a **knowledge world** holds facts true for everyone, and a
 **live world** is one running instance of a schema in a session, reading knowledge
-worlds. Each job below says which kind it works on.
+worlds. Each job below says which kind it works on; what each kind may contain and where
+code lives is on [kinds of worlds](kinds-of-worlds.md).
 
 ## Describe a world
 
@@ -481,6 +482,166 @@ print(nounPhrase(parseText(w, 'ko mi', { start: 'NP' })[0].tree));
 
 ```output
 {"span":[0,2],"rule":"r","mods":["red"],"head":"ko","lemma":"cup"}
+```
+
+## Resolve what a phrase refers to
+
+*In `resolve`; since 0.31.*
+*Works on: a live world, with a grammar (a knowledge world about a language).*
+
+The things a noun phrase names, and how sure the reading is (`user`, `scene`, `focus`,
+`slip`), with each step in `how`. It handles synonyms through `core.word`, modifiers,
+names, ordinals, numbers, sets, coordination (a choice is asked), relations, pronouns and
+the focus, "the other one", and parts of a set. **Limits:** time phrases wait for an order
+in time; the words come from the grammar and `core.word`, so there is no language here.
+
+```js run
+const w = new World();
+w.tell(`@d x.det text=the  @r x.rule lhs=NP rhs=DET? rhs=MOD* rhs=N
+  @t1 std.schema.thing kind=cup colour=red  @t2 std.schema.thing kind=cup colour=blue`);
+const opt = { grammar: { types: { rule: 'x.rule' }, classes: { DET: 'x.det' }, lexicon: { cup: { cat: 'N' }, blue: { cat: 'MOD' } } }, cats: { det: 'DET', mod: 'MOD', head: 'N' } };
+print(resolve(w, 'the blue cup', opt).ids, resolve(w, 'the cup', opt).which);
+```
+
+```output
+["t2"] ["t1","t2"]
+```
+
+## Fill any key from a catalog
+
+*In `std.know` (`std.know.fill`); since 0.35.*
+*Works on: a live world, filled from knowledge worlds.*
+
+One line says which keys a catalog type gives when `make` leaves them out:
+`std.know.fill from=<type> match=<key> key=<key> ...`. The value comes at tier `knowledge`
+with its source, and a choice at a better tier wins. **Limits:** only on `make`;
+`complete` applies what std.fill chose later.
+
+```js run
+const w = new World();
+w.load(`@acts core.use world=std.acts  @know core.use world=std.know  @home std.schema.world name=home
+  @any std.schema.kinds world=home from=k.furniture acts=make  @kf std.know.fill from=k.furniture key=w`);
+w.tell('@f k.furniture name=sofa w=200 core.source="shop list"');
+print(w.act({ action: 'make', args: { kind: 'sofa' } }).result.filled);
+```
+
+```output
+[{"key":"w","value":"200","tier":"knowledge","source":"shop list"}]
+```
+
+## Say what must be loaded first
+
+*In `std.schema.needs`, `needsOf`, `turn({ load })`; since 0.39.*
+*Works on: a live world and the world schemas or views it follows.*
+
+A world or a view says which types it needs loaded before acting. An act there is
+refused with the list until they are; `turn` asks the host to load them and dry-runs
+again. **Limits:** "loaded" means some wire of the type exists; what to load is the
+host's.
+
+```js run
+const w = new World();
+w.load(`@acts core.use world=std.acts  @home std.schema.world name=home
+  @t core.type of=lamp extends=std.schema.thing  @k std.schema.kind of=lamp world=home acts=make
+  @n std.schema.needs of=home type=k.furniture`);
+print(needsOf(w), w.act({ action: 'make', args: { kind: 'lamp' } }).violations[0].why);
+```
+
+```output
+[{"of":"home","type":"k.furniture","loaded":false}] needs k.furniture loaded first
+```
+
+## Act on a view itself
+
+*In `std.schema.view state=`; since 0.37.*
+*Works on: a live world's view.*
+
+A view's own attributes (zoom, the layer shown) live on one thing of a declared kind,
+made on first use with its defaults. "Zoom in" names no thing: the view whose state has
+the attribute is meant. **Limits:** one state thing per view.
+
+```js run
+const w = new World();
+w.load(`@acts core.use world=std.acts  @geo std.schema.world name=geo
+  @t core.type of=map.state extends=std.schema.thing  @z core.slot of=map.state key=zoom kind=integer min=1 max=10 step=1 default=3
+  @k std.schema.kind of=map.state world=geo acts=change  @v std.schema.view name=map state=map.state`);
+print(w.act({ action: 'change', args: { attr: 'zoom', by: 1 } }).result.value);
+```
+
+```output
+4
+```
+
+## Ask over attributes and relations
+
+*In `std.acts` (`ask`); since 0.38.*
+*Works on: a live world and the knowledge worlds loaded in it.*
+
+`ask` answers with the shape of the answer: a number with its unit, a value, a list, or
+yes / no. It takes a thing or a knowledge fact by name, a relation either way round,
+"which" and "how many" of a kind. **Limits:** one relation per question; no chains.
+
+```js run
+const w = new World();
+w.load('@acts core.use world=std.acts');
+w.tell('@fr k.country name=france population=68000000people borders=spain  @es k.country name=spain borders=france');
+const ask = (args) => w.act({ action: 'ask', args }).result;
+print(ask({ thing: 'france', attr: 'population' }).unit, ask({ kind: 'k.country', rel: 'borders', of: 'france' }).names, ask({ thing: 'spain', rel: 'borders', of: 'france' }).answer);
+```
+
+```output
+people ["spain"] true
+```
+
+## Read several knowledge repositories
+
+*In `createCatalogs`; since 0.43.*
+*Works on: knowledge worlds from several repositories, loaded into a live world.*
+
+Several catalogs in an order of precedence. Each fact keeps its catalog in its source,
+and a thing two catalogs define differently is reported while the first version stays.
+**Limits:** a conflict is found by id, or by type and `name`.
+
+```js run
+const cat = (name, text) => ({ name, index: { worlds: [{ id: 'k.f', shards: [{ id: 'k.f/s', path: 'k.f/s.sop' }] }] }, vocab: { sofa: ['k.f/s'] }, read: bundleReader({ files: { 'k.f/s.sop': text } }) });
+const w = new World();
+const r = createCatalogs([cat('one', '@a k.f name=sofa w=200'), cat('two', '@b k.f name=sofa w=210')]).intoSync(w, 'sofa');
+print(r.conflicts.length, w.ofType('k.f').map((x) => x.attrs.w[0]));
+```
+
+```output
+1 ["200"]
+```
+
+## Building blocks
+
+*In the core exports; since 0.1 (each as listed).*
+*Works on: any world.*
+
+The functions and constants the jobs above are made of, for hosts and tools that need
+them directly. Each is in [api](api.md) or [reference](reference.md) with its example.
+
+| Export | What it is for | Since |
+| --- | --- | --- |
+| `parse`, `serialize`, `tokenize`, `quote`, `str`, `readValue`, `writeValue`, `SopError` | read and write SOP Lang text and values (`str`: a value token as plain text) | 0.1 |
+| `unify`, `walk`, `PatternIndex` | match patterns against wires | 0.1 |
+| `builtins`, `quantity` | the standard function pack; numbers with units | 0.1 |
+| `solvers`, `Problem`, `Sat`, `toDimacs`, `toASP` | search: pluggable solvers and exports for outside ones | 0.3 |
+| `abduce`, `adopt` | what would have to be true; taking one explanation | 0.4 |
+| `induce`, `induceRule`, `induceSlots` | rules and slots from examples | 0.5 |
+| `aggregates`, `rank`, `RANKING`, `veto` | aggregates; ranking readings with reasons; vetoes | 0.13 |
+| `GRAMMAR`, `MODIFIERS`, `SCHEMA_TYPES` | what each matrix wire type reads (the reference is checked against them) | 0.6 |
+| `grammarOf`, `grammarView`, `viewDiff` | the grammar a world holds; the views of a closed class and where two differ | 0.29, 0.30 |
+| `ledgerAppend`, `ledgerGroups`, `ledgerKey`, `stageOf`, `STAGES` | the failure ledger: rows, groups, keys, pipeline stages | 0.25 |
+| `needsOf` | the typed needs of a world or view | 0.39 |
+
+```js run
+const [w1] = parse('@cup thing size=2kg');
+print(serialize([w1]).trim(), quantity('2kg'), STAGES.length > 3);
+```
+
+```output
+@cup thing size=2kg {"n":2,"unit":"kg"} true
 ```
 
 ## Not done yet

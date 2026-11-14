@@ -4581,3 +4581,11 @@ clean; tsc clean. Version, CHANGELOG, docs rebuilt (`docs/version.md`: sopworld 
 - Toy run (owl, presentation, 2×1×3): chapter 1 k.fact [introduce owl, fact f2, conclude f4…], every sentence cites its wire, no fact twice; a 5×2×4 size lists what was short.
 - Gates: npm test 430 / 430 / 429 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok. README: 32 jobs.
 - Waiting on the knowledge repository for k.genres, k.story, k.interest (Q41) to wire the real worlds and the genre-as-plan step.
+
+## 0.65.0: interest by the published k.interest (reviewer 17:10)
+
+- repos.pin: sop-knowledge-worlds b5d525b → f7d2790 (k.interest at 5e39ba0: 4 appraisals, 21 features loaded).
+- `interestOf` follows k.interest's arithmetic over `measuresOf` (10 measures computed from facts; the rest from the host).
+- Toy catalog with the published model: penguin (fly=no among 4 flying birds) 0.43 > elephant 5,000 kg ~0.42 > dog is a mammal (derived) −0.32; the same order as k.interest's integration case. Said again: score < 0, never chosen.
+- Gates: npm test 430 / 430 / 429 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok. README: 32 jobs.
+- Next: choice points solved jointly in std.plan (15:15 item 1), then k.genres / k.story as they are published; Round 28 item 9 and generation meanwhile.

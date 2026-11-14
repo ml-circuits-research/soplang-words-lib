@@ -23,11 +23,11 @@ export { readMotion, planMotionFacts, splitText } from './motion-facts.mjs';
 export { sample, diversity } from './sample.mjs';
 export { placeFor, boxesOf, relationsOf } from './space.mjs';
 export { actsOf, summarizeLog, summarizeText, overlap } from './summarize.mjs';
-export { compose, interestOf } from './compose.mjs';
+export { compose, interestOf, measuresOf, shapeShare, interestModel } from './compose.mjs';
 export { planner, factStore, PlanLive, readMethods, PLAN_LIMITS } from './plan.mjs';
 export { morphOf, generate, analyse, fold, splitClitics, dictionary, realise, templateFor } from './morph.mjs';
 export { ledgerAppend, ledgerGroups, ledgerKey, stageOf, STAGES } from './ledger.mjs';
-export const version = '0.64.0';
+export const version = '0.65.0';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)
  * tools/build.mjs fills in `hash`, a fingerprint of the bundled sources, and `date`,

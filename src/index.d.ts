@@ -595,6 +595,12 @@ export function boxesOf(world: World, options?: { except?: string }): { id: stri
 /** The relation kinds a schema declares. */
 export function relationsOf(world: World, kind?: string): { name: string; kind: string; inverse?: string }[];
 /** std.compose: a composition of a genre about a topic, from knowledge, as frames citing their wires. */
-export function compose(world: World, topic: string, options?: { genre?: string; size?: { chapters: number; sections: number; sentences: number }; seed?: number; realise?: (frame: object) => string }): { genre?: string | null; topic?: string; chapters?: { title: string; interest: number; sections: { interest: number; sentences: { move: string; fact: object; about: string; cites: string; text?: string }[] }[] }[]; short?: string[]; why?: string };
-/** The interest of a fact, by feature (weights from k.interest.feature). */
-export function interestOf(world: World, fact: Wire, options?: { topicType?: string; topic?: string; used?: Set<string>; weights?: Record<string, number> }): { score: number; by: Record<string, number> };
+export function compose(world: World, topic: string, options?: { genre?: string; size?: { chapters: number; sections: number; sentences: number }; seed?: number; realise?: (frame: object) => string; measures?: (fact: Wire) => Record<string, number> }): { genre?: string | null; topic?: string; chapters?: { title: string; interest: number; sections: { interest: number; sentences: { move: string; fact: object; about: string; cites: string; text?: string }[] }[] }[]; short?: string[]; why?: string };
+/** The interest of a fact by the world's k.interest: novelty x coping x relevance - penalty, explained by feature. */
+export function interestOf(world: World, fact: Wire, options?: { topic?: string; said?: Set<string>; moves?: { move: string; type: string }[]; move?: string; since?: number; session?: Set<string>; measures?: Record<string, number>; draw?: number; model?: object }): { score: number; value: Record<string, number>; by: Record<string, number>; measured: Record<string, number>; why?: string };
+/** The k.interest measures computed from facts and from the text being written. */
+export function measuresOf(world: World, fact: Wire, state?: object): Record<string, number>;
+/** The share of a k.interest feature's shape at a measured value. */
+export function shapeShare(feature: { shape: string; start_at?: number; peak_at?: number; full_at: number }, x: number): number;
+/** The interest model a world holds, or null. */
+export function interestModel(world: World): { appraisals: object[]; features: object[] } | null;

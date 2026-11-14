@@ -1,42 +1,45 @@
-// std.compose, first version (reviewer 14:45 B, 15:00): a composition of a genre about a topic
-// from a toy catalog (invented, in the formats proposed in questions.md Q41): the outline from
-// the topic's relations, chosen by interest; every sentence cites a wire; no fact twice; the
-// requested shape exact, or what was short said.
+// std.compose (reviewer 14:45 B, 15:00, 17:10): a composition of a genre about a topic. The interest
+// model is the published k.interest, read at the pinned commit; the catalog is a toy, invented here
+// (birds that fly and one that does not, animal weights, a derived fact). The order k.interest's own
+// integration case asks for must come out: the exception > the far number > the obvious.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { World, compose, interestOf } from '../tools/lib-under-test.mjs';
+import { worldText, worldsDir } from '../tools/worlds.mjs';
 
-const CATALOG = `@owl k.animal name=owl lives=barn eats=mouse
-@mouse k.animal name=mouse lives=field
-@barn k.place name=barn built=1702
-@f1 k.fact about=owl what=night_hunter
-@f2 k.fact about=owl head_turn=270deg
-@f3 k.fact about=owl what=silent_flight
-@f4 k.fact about=owl eggs=4
-@s1 k.story_link a=owl b=moon shared=night
-@g1 k.genres.genre name=presentation move=introduce move=fact move=compare move=conclude
-@i1 k.interest.feature name=number weight=2  @i2 k.interest.feature name=link weight=1.5  @i3 k.interest.feature name=distance weight=1`;
+const CATALOG = `@robin k.animal name=robin kind=bird fly=yes  @crow k.animal name=crow kind=bird fly=yes
+@gull k.animal name=gull kind=bird fly=yes  @owl k.animal name=owl kind=bird fly=yes lives=barn
+@penguin k.animal name=penguin kind=bird fly=no lives=antarctica  @p1 k.diet about=penguin eats=fish
+@w1 k.weight about=cat kg=4  @w2 k.weight about=dog kg=30  @w3 k.weight about=sheep kg=80  @w4 k.weight about=pig kg=150
+@w5 k.weight about=elephant kg=5000  @w6 k.weight about=horse kg=500
+@dog k.animal name=dog kind=mammal  @m1 k.kind_of about=dog kind=mammal derived=true
+@barn k.place name=barn  @antarctica k.place name=antarctica
+@g1 k.genres.genre name=presentation move=introduce move=fact move=compare move=conclude`;
+const load = () => { const w = new World(); assert.ok(w.tell(worldText('k.interest')).ok); assert.ok(w.tell(CATALOG).ok); return w; };
 
-test("compose: the shape asked, each sentence citing its wire, no fact twice, the genre's moves in order", () => {
-  const w = new World(); w.tell(CATALOG);
-  const c = compose(w, 'owl', { genre: 'presentation', size: { chapters: 2, sections: 1, sentences: 3 }, seed: 1 });
-  assert.equal(c.chapters.length, 2);
-  const all = c.chapters.flatMap((ch) => ch.sections.flatMap((s) => s.sentences));
-  assert.ok(all.every((x) => w.get(x.cites)), 'every claim traces to a wire');
-  assert.equal(new Set(all.map((x) => x.cites)).size, all.length, 'no fact twice');
-  const first = c.chapters[0].sections[0].sentences;
-  assert.deepEqual(first.map((x) => x.move), ['introduce', 'fact', 'conclude']);
-  assert.equal(first[0].cites, 'owl', 'the topic itself opens');
-  assert.equal(c.chapters[0].title, 'k.fact', 'the most interesting relation first (numbers weigh 2)');
+test('interest: the published k.interest over computed measures puts the exception over the far number over the obvious', { skip: !worldsDir() && 'offline' }, () => {
+  const w = load();
+  const [p, e, d] = ['penguin', 'w5', 'm1'].map((id) => interestOf(w, w.get(id), { topic: id === 'w5' ? 'elephant' : id === 'm1' ? 'dog' : 'penguin' }));
+  assert.ok(p.by.sibling_contrast > 0, 'a bird that does not fly: contrast with its siblings');
+  assert.ok(e.by.far_number > 0 && e.by.extreme > 0, '5,000 kg: far outside the range, and the largest');
+  assert.ok(d.by.obvious > 0, 'a derived fact is what the reader assumes');
+  assert.ok(p.score > e.score && e.score > d.score, `${p.score} > ${e.score} > ${d.score}`);
+  const again = interestOf(w, w.get('penguin'), { topic: 'penguin', said: new Set(['penguin']) });
+  assert.ok(again.score < 0, 'said before: never chosen');
+  const drawn = interestOf(w, w.get('penguin'), { topic: 'penguin', draw: 7 });
+  assert.ok(drawn.score > 0 && drawn.score !== p.score, 'weights drawn inside their ranges with a seed');
+  assert.match(interestOf(new World(), w.get('penguin')).why, /no k.interest/);
 });
 
-test('compose: interest explained by feature; a size the knowledge cannot fill is said; realised by the host', () => {
-  const w = new World(); w.tell(CATALOG);
-  assert.deepEqual(interestOf(w, w.get('f2'), { topicType: 'k.animal' }).by.number, 2);
-  assert.equal(interestOf(w, w.get('owl'), { topicType: 'k.animal', topic: 'owl' }).by.link, 1.5, 'barn and mouse are names of other facts: links');
-  const big = compose(w, 'owl', { size: { chapters: 5, sections: 2, sentences: 4 } });
-  assert.ok(big.short?.length > 0, 'short of knowledge: said, not padded');
-  const r = compose(w, 'owl', { size: { chapters: 1, sections: 1, sentences: 2 }, realise: (f) => `${f.move}: ${f.cites}` });
-  assert.ok(r.chapters[0].sections[0].sentences.every((x) => x.text.startsWith(x.move)));
-  assert.match(compose(w, 'owl', { genre: 'sonnet' }).why, /no genre sonnet/);
+test("compose: the shape asked, each sentence citing its wire, no fact twice, the genre's moves; short said; realised by the host", { skip: !worldsDir() && 'offline' }, () => {
+  const w = load();
+  const c = compose(w, 'penguin', { genre: 'presentation', size: { chapters: 1, sections: 1, sentences: 2 } });
+  const s = c.chapters[0].sections[0].sentences;
+  assert.deepEqual(s.map((x) => x.move), ['introduce', 'conclude']);
+  assert.ok(s.every((x) => w.get(x.cites)), 'every claim traces to a wire');
+  assert.equal(new Set(s.map((x) => x.cites)).size, s.length, 'no fact twice');
+  assert.ok(compose(w, 'penguin', { size: { chapters: 4, sections: 2, sentences: 4 } }).short?.length > 0, 'short of knowledge: said, not padded');
+  const r = compose(w, 'elephant', { size: { chapters: 1, sections: 1, sentences: 1 }, realise: (f) => `${f.move}: ${f.cites}` });
+  assert.equal(r.chapters[0].sections[0].sentences[0].text, 'introduce: w5');
+  assert.match(compose(w, 'penguin', { genre: 'sonnet' }).why, /no genre sonnet/);
 });

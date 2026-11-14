@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="c4088c9bffc2">
+<meta name="source-hash" content="6b43a543adea">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.64.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.65.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -583,13 +583,20 @@ w.act({ action: &#x27;make&#x27;, args: { kind: &#x27;box&#x27;, x: 40, y: 40, w
 print(placeFor(w, { w: 10, h: 10 }, { rel: &#x27;right_of&#x27;, ref: &#x27;box1&#x27; }), placeFor(w, { w: 10, h: 10 }));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;x&quot;:62,&quot;y&quot;:45,&quot;how&quot;:&quot;right_of&quot;} {&quot;x&quot;:0,&quot;y&quot;:0,&quot;how&quot;:&quot;default&quot;}</code></pre></figure>
 <h3 id="composeworld-topic-options-and-interestofworld-fact-options">compose(world, topic, options?) and interestOf(world, fact, options?)</h3>
-<p>A composition of a genre about a topic, from knowledge, with no model (std.compose, first version). The genre gives the moves of a section (<code>k.genres.genre name= move=...</code>): the first opens, the last closes, the middle ones take turns. The outline is the topic's relations: the facts that name it, grouped by type. Relations that can fill a chapter come first, then the most interesting. Facts are chosen by <code>interestOf</code>: features <code>number</code>, <code>link</code> (a value names another fact), <code>distance</code> (another world), <code>rare</code> and <code>new</code>, with weights from <code>k.interest.feature name= weight=</code> and every score explained by feature. Every sentence cites its wire, and no fact is used twice. The size <code>{ chapters, sections, sentences }</code> is a budget set before selection; what the knowledge cannot fill is listed in <code>short</code>. The output is frames (<code>{ move, fact, about, cites }</code>) for the language world to realise (<code>realise(frame)</code>).</p>
+<p>A composition of a genre about a topic, from knowledge, with no model (std.compose, first version). The genre gives the moves of a section (<code>k.genres.genre name= move=...</code>): the first opens, the last closes, the middle ones take turns. The outline is the topic's relations: the facts that name it, grouped by type. Relations that can fill a chapter come first, then the most interesting. Every sentence cites its wire, and no fact is used twice. The size <code>{ chapters, sections, sentences }</code> is a budget set before selection; what the knowledge cannot fill is listed in <code>short</code>. The output is frames (<code>{ move, fact, about, cites }</code>) for the language world to realise (<code>realise(frame)</code>).</p>
+<p><code>interestOf</code> is the arithmetic of the world's <code>k.interest</code> (published by the knowledge repository): each feature adds <code>weight × share</code> to its appraisal, by its shape over a measure, and the score is novelty × coping × relevance − penalty. A weight is the middle of its range, or drawn inside it with <code>draw: seed</code>. The library computes the measures it can from facts (<code>measuresOf</code>): world and topic distance by joins of names, contrast with siblings, distance from the typical range, extremes, numbers with units, animacy, obviousness, said before, the same move again, items since the last point. The host gives the rest, or overrides any, in <code>measures</code>. Without a <code>k.interest</code> model the score is 0, with <code>why</code>.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
-w.tell(`@owl k.animal name=owl lives=barn  @barn k.place name=barn
-  @f1 k.fact about=owl head_turn=270deg  @f2 k.fact about=owl what=night_hunter  @f3 k.fact about=owl eggs=4`);
-const c = compose(w, &#x27;owl&#x27;, { size: { chapters: 1, sections: 1, sentences: 3 } });
-print(c.chapters[0].sections[0].sentences.map((x) =&gt; [x.move, x.cites]));</code></pre></figure>
-<figure class="code"><figcaption>prints</figcaption><pre><code>[[&quot;introduce&quot;,&quot;owl&quot;],[&quot;fact&quot;,&quot;f1&quot;],[&quot;conclude&quot;,&quot;f3&quot;]]</code></pre></figure>
+w.tell(`@a k.interest.appraisal name=novelty combine=multiply base=0
+  @b k.interest.appraisal name=penalty combine=subtract base=0
+  @f k.interest.feature name=sibling_contrast appraisal=novelty measure=sibling_contrast shape=rising start_at=0.5 full_at=0.9 weight_min=0.4 weight_max=0.6
+  @r1 k.animal name=robin kind=bird fly=yes  @r2 k.animal name=crow kind=bird fly=yes
+  @r3 k.animal name=gull kind=bird fly=yes  @p k.animal name=penguin kind=bird fly=no`);
+print(interestOf(w, w.get(&#x27;p&#x27;)).by, interestOf(w, w.get(&#x27;r1&#x27;)).score);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;sibling_contrast&quot;:0.5} 0</code></pre></figure>
+<h3 id="measuresofworld-fact-state-shapesharefeature-x-and-interestmodelworld">measuresOf(world, fact, state?), shapeShare(feature, x) and interestModel(world)</h3>
+<p>The parts of <code>interestOf</code>. <code>measuresOf</code> gives the measures the library computes from facts and the text being written (<code>state</code>: <code>topic</code>, <code>said</code>, <code>moves</code>, <code>move</code>, <code>since</code>, <code>session</code>, <code>measures</code>). <code>shapeShare</code> is the share of a feature's shape (rising, falling, peak, step) at a value. <code>interestModel</code> reads the world's <code>k.interest.appraisal</code> and <code>k.interest.feature</code> facts, or gives null.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>print(shapeShare({ shape: &#x27;peak&#x27;, start_at: 0, peak_at: 0.5, full_at: 1 }, 0.25), interestModel(new World()));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>0.5 null</code></pre></figure>
 <h3 id="arbitrateworld-request-options">arbitrate(world, request, options?)</h3>
 <p>The arbitration contract: one verdict per declared world for one request. <code>own</code>: the world has the kind (or the thing, or a view whose state has the attribute), allows the act, and its dry run takes it. <code>decline</code>: it has no use for the kind, so it declines the verb; this rule is the library's, not the host's. <code>refuse</code>: it has the kind, but the act is not allowed or the dry run refuses. A refusal is given only in the <code>exact</code> pass; in a <code>spelling</code> or <code>view</code> pass (<code>options.pass</code>) it stays a decline. When several worlds own, <code>options.resolves(world, words)</code> (a host hook, with <code>options.words</code>) keeps the ones whose things hold the words. Returns <code>{ verdicts: [{ world, verdict, why }], owner, ambiguous?, pass }</code>.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
@@ -856,7 +863,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.64.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.65.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

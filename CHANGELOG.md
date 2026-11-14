@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.65.0
+
+Interest by the published `k.interest` (knowledge repository f7d2790, now pinned; reviewer 17:10).
+
+### Changed
+- `interestOf(world, fact, options)` follows `k.interest`'s arithmetic: each feature adds
+  weight × share (by its shape) to its appraisal; the score is novelty × coping ×
+  relevance − penalty. It returns `{ score, value, by, measured }`, and `why` without a model.
+  Migration: the 0.64 features `number`, `link`, `distance`, `rare` and `new` and the
+  options `topicType` and `used` are gone. Load `k.interest` and pass `topic` and `said`.
+- `compose` scores by it, never repeats a fact (penalty 1), and accepts `measures(fact)`
+  for the measures the host computes.
+
+### New
+- `measuresOf(world, fact, state)`: the measures computed from facts (world and topic
+  distance, sibling contrast, range distance, sibling rank, number with unit, animacy,
+  obviousness, said before, same move run, items without point).
+- `shapeShare`, `interestModel`.
+
 ## 0.64.0
 
 std.compose, first version (reviewer 14:45 B, 15:00), on a toy catalog in the formats

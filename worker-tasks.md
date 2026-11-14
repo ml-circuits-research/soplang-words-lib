@@ -1044,3 +1044,12 @@ Reviewer ran `npm test` on 0.56: 417/418 pass, 0 fail. std.motion reading k.moti
 ## Reviewer 2026-11-14 13:55 — 0.57 accepted
 
 Reviewer ran `npm test` on 0.57: 418/419 pass, 0 fail. Accepted (relative clauses, negation leads, bare names, failure classes, pronoun focus). PSys2's plans from knowledge run on 0.55: 19 → 51 of 60 multi-step requests, no regressions.
+
+## Reviewer 2026-11-14 14:15 — `std.sample`: random but relevant commands from knowledge and constraints (owner, 09:42); next after Round 28 item 1
+
+The owner wants randomness as a general world: no hard-coded example lists anywhere; small commands generated at random, constrained by what the worlds allow. A library mechanism, the same for any host and language:
+1. **`sample(context, { seed, n, prefer })` → frames** (act + roles, language-free): choose a compatible world (the open view's schema, or one of the recently used ones), an act legal on that schema **in the current state** (preconditions hold: remove/move only existing things, undo only when there is something to undo), objects and attributes from the knowledge the schema joins (drawable kinds from k.objects, colours legal for the attribute from k.values, places from k.geo for a map, guests and seats for seating), values legal for the slot (types, ranges, `excludes`, denies).
+2. **Weights as data:** recency (things and worlds seen recently in the session), novelty (acts, kinds and attributes rarely used so far boosted: "less usual things from the worlds"), plain randomness; seeded and reproducible.
+3. **Realisation:** each frame is rendered in the session's language world by `std.grammar` generation (templates per act, Round 30 item 6). **Round-trip filter:** a sample is kept only if reading the sentence back gives the same frame and a dry run of the act is not refused. So every suggestion is understood and works.
+4. Modes: `one` (a dice), `few` (3–4 examples for a context), `actions` (the acts relevant to a selected or recent thing, for buttons).
+5. Tests and docs with the toy apps; report the round-trip rate and diversity (distinct acts, kinds, attributes per 100 samples).

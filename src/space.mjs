@@ -65,13 +65,15 @@ export function relationsOf(world, kind) {
 /**
  * Many things laid out at once (reviewer 04:40: a diagram kind's layout; an arrangement request such
  * as "in a circle", "evenly", "left to right"). `nodes` [{ id, w?, h? }] (size default 10 x 10),
- * `layout` one of: row (left to right), column (top to bottom), circle, grid (evenly), layers (by
+ * `layout` one of: row (left to right), column (top to bottom), circle, grid (evenly), radial (the
+ * first node in the middle), scatter (seeded, spread apart), layers (by
  * `edges` [[from, to]]: each node one layer after its furthest source, layers left to right, or top to
  * bottom with `direction: 'down'`). Options `frame` { x, y, w, h } (default 0 0 100 100), `gap`
- * (default 2). Returns Map(id -> { x, y, w, h }), each box inside the frame when the frame holds them.
+ * (default 2), `reverse` (right to left, bottom to top, anticlockwise), `seed` (scatter). Returns Map(id -> { x, y, w, h }), each box inside the frame when the frame holds them.
  */
-export function arrange(nodes, layout = 'row', { edges = [], frame = { x: 0, y: 0, w: 100, h: 100 }, gap = 2, direction = 'right' } = {}) {
+export function arrange(nodes, layout = 'row', { edges = [], frame = { x: 0, y: 0, w: 100, h: 100 }, gap = 2, direction = 'right', reverse = false, seed = 1 } = {}) {
   const ns = nodes.map((n) => ({ id: n.id, w: n.w ?? 10, h: n.h ?? 10 })), out = new Map(), N = ns.length;
+  if (reverse) ns.reverse(); // right to left, bottom to top, anticlockwise
   if (!N) return out;
   const cx = frame.x + frame.w / 2, cy = frame.y + frame.h / 2;
   const line = (list, along, x0, y0, len) => { // spread evenly along one axis, centred across the other
@@ -109,6 +111,46 @@ export function arrange(nodes, layout = 'row', { edges = [], frame = { x: 0, y: 
       line(g, down ? 'x' : 'y', down ? frame.x : mid, down ? mid : frame.y, down ? frame.w : frame.h);
       for (const n of g) { const b = out.get(n.id); if (down) b.y = mid - n.h / 2; else b.x = mid - n.w / 2; }
     });
+  } else if (layout === 'radial') { // the first node in the middle, the others round it
+    const [c, ...rest] = ns;
+    out.set(c.id, { x: cx - c.w / 2, y: cy - c.h / 2, w: c.w, h: c.h });
+    for (const [id, b] of arrange(rest, 'circle', { frame, gap })) out.set(id, b);
+  } else if (layout === 'scatter') { // spread out: seeded places, apart where the frame allows
+    let x = seed >>> 0 || 1; const r = () => { x = (x * 1103515245 + 12345) >>> 0; return x / 4294967296; };
+    const placed = [];
+    for (const n of ns) {
+      let best = null;
+      for (let t = 0; t < 20; t++) { // bounded: 20 tries, the one farthest from the others kept
+        const b = { x: frame.x + r() * Math.max(0, frame.w - n.w), y: frame.y + r() * Math.max(0, frame.h - n.h), w: n.w, h: n.h };
+        const d = placed.length ? Math.min(...placed.map((p) => Math.hypot(p.x - b.x, p.y - b.y))) : Infinity;
+        if (!best || d > best.d) best = { b, d };
+      }
+      placed.push(best.b); out.set(n.id, best.b);
+    }
   } else throw new Error(`sopworld: arrange: unknown layout ${layout}`);
   return out;
+}
+
+/**
+ * An arrangement request read by the language world's phrases (`w.lang.en.arrangement text= layout=
+ * relation= direction= inverse= diagram_layout=`): the longest phrase in the text. Returns { text, layout
+ * (the k.layouts arrangement), relation, direction, reverse, diagramLayout, as (the `arrange` layout) } or
+ * null when the text names no arrangement.
+ */
+export function arrangementOf(world, text, { lang = 'w.lang.en' } = {}) {
+  const t = ` ${String(text).toLowerCase().replace(/[^\p{L}\p{N}-]+/gu, ' ').trim()} `;
+  const b = (v) => (v === undefined ? null : String(v).replace(/^"|"$/g, ''));
+  let best = null;
+  for (const a of world.ofType(`${lang}.arrangement`)) {
+    const p = b(a.attrs.text[0]).toLowerCase();
+    if (t.includes(` ${p} `) && (!best || p.length > best.text.length)) best = { text: p, a };
+  }
+  if (!best) return null;
+  const at = best.a.attrs, layout = b(at.layout?.[0]), direction = b(at.direction?.[0]);
+  const AS = { ring: 'circle', row: 'row', column: 'column', grid: 'grid', tree: 'layers', flow: 'row', radial: 'radial', scatter: 'scatter', stack: 'column' };
+  return {
+    text: best.text, layout, relation: b(at.relation?.[0]), direction,
+    reverse: b(at.inverse?.[0]) === 'yes' || ['right_to_left', 'bottom_to_top', 'anticlockwise'].includes(direction),
+    diagramLayout: b(at.diagram_layout?.[0]), as: AS[layout] ?? null,
+  };
 }

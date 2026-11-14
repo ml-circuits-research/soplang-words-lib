@@ -5323,3 +5323,19 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   score calibration for readEnsemble.
 - `node tools/generalisation-test.mjs`: toy host knowing only cows: related 3, share 0.
 - Gate: npm test 498 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.112.0 — diagrams composed from knowledge (reviewer 04:40, 05:45)
+
+- repos.pin knowledge -> 7c7738f (k.diagrams, w.diagram, w.lang.en.arrangement).
+- `composeDiagram` reads k.diagrams kinds/fills/shapes; /tmp/dg.mjs on the published knowledge (load 980 ms):
+  cycle of seasons (spring, summer, autumn, winter; 4 edges, circular), cycle of water cycle (4 stages),
+  tree of animal (12 nodes), tree of France (cities), timeline of year (12 months), mind map of bee
+  (centre + 6 parts), Venn of animal (3 groups × 4), flowchart of "write a story" (2 steps), network of
+  France (9 countries, 14 edges), pipeline of essay (4 parts). flowchart of tea -> why: no procedure
+  in the knowledge (1 of 12 with no diagram).
+- Wires told into a world with the w.diagram schema: ok, 0 violations (/tmp/dg2.mjs, 4 diagrams, 37 nodes).
+- `arrangementOf` reads the 58 arrangement phrases ("in a circle" -> circle/circular; "from right to
+  left" -> row, reverse). `arrange` gains radial, scatter, reverse.
+- `sampleDiagram` seeds 1..4: flowchart of "a person of a role", network of Austria, tree of aircraft,
+  flowchart of "make a thing on the anchor of another".
+- Gate: npm test 500 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

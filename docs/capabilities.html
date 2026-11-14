@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld What the library can do</title>
-<meta name="source-hash" content="bbb8aae99a16">
+<meta name="source-hash" content="a10f51c55abc">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.111.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.112.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html" aria-current="page">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -356,6 +356,16 @@ w.tell(&#x27;@cow k.animal name=cow kind=bovine sound=moo  @yak k.animal name=ya
 const kase = { text: &#x27;cow sound&#x27;, frame: readByTypes(w, &#x27;cow sound&#x27;).best };
 print(judgeOnRelated((t) =&gt; (t === &#x27;cow sound&#x27; ? [&#x27;moo&#x27;] : null), kase, relatedCases(w, kase)).share);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>0</code></pre></figure>
+<h2 id="compose-a-diagram-from-knowledge">Compose a diagram from knowledge</h2>
+<p><em>In <code>composeDiagram</code>, <code>sampleDiagram</code>, <code>diagramTopics</code>, <code>diagramKinds</code>, <code>arrangementOf</code>; since 0.112.</em> <em>Works on: k.diagrams (kinds, fills, shapes) and the knowledge its fills name; w.diagram for the result.</em></p>
+<p>A diagram kind × a topic whose knowledge has the kind's structure: a cycle of the seasons from their <code>next=</code> facts, a tree of kinds from <code>is_a=</code>, a mind map of a bee from its parts, a Venn diagram of the kinds under a kind, a network of a country's neighbours. The nodes, edges and groups are w.diagram wires, shaped by k.diagrams shapes and laid out by the kind's layout with <code>arrange</code>. An arrangement request ("in a circle", "from right to left") is read by the language world's phrases and changes the layout. <code>sampleDiagram</code> draws a random kind × topic. <strong>Limits:</strong> a topic with no knowledge of the kind's structure gets a reason, not a diagram (a flowchart of making tea needs a procedure for it). A tree goes down breadth first, up to <code>max</code> nodes.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(`@k k.diagrams.kind name=cycle form=cycle layout=circular edges=directed role=stage
+@f k.diagrams.fill kind=cycle type=ex.stage key=next gives=edges topic=cycle
+@a ex.stage name=egg cycle=moth next=larva  @b ex.stage name=larva cycle=moth next=moth
+@c ex.stage name=moth cycle=moth next=egg`);
+print(composeDiagram(w, { kind: &#x27;cycle&#x27;, topic: &#x27;moth&#x27; }).edges.length);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>3</code></pre></figure>
 <h2 id="align-two-worlds-by-structure">Align two worlds by structure</h2>
 <p><em>In <code>alignWorlds</code>; since 0.77.</em> <em>Works on: any two world schemas.</em></p>
 <p>A seating world and a timeline world align: table to day, seat to slot, guest to event. Types are paired by the shape of their slots and references, not by their names. What one has and the other lacks (a default, a closed set of choices, a required slot) is offered with the map, never told. <strong>Limits:</strong> the offers are defaults, choices and required slots. Rules, procedures and question forms come next. The pairing is greedy (the best pairs first).</p>
@@ -386,7 +396,7 @@ print(serialize([w1]).trim(), quantity(&#x27;2kg&#x27;), STAGES.length &gt; 3);<
 <div class="table"><table><thead><tr><th>PSys2 package</th><th>here</th><th>PSys2 lines it replaces</th><th>refused (stays in the host)</th><th>since</th></tr></thead><tbody><tr><td>knowledge-loader</td><td><code>createCatalog</code>, <code>bundleReader</code>, <code>tools/build-bundle.mjs</code></td><td>254 (catalog 105, cache 52, source 20, bundle loader 20, bundle generator 57)</td><td>English lemma rules (the host passes <code>lemma</code>), decoding k.objects parts for drawing, the avatar's faces, the evaluation-set generator; taught facts are the act <code>teach</code></td><td>since 0.23</td></tr><tr><td>turn-pipeline</td><td><code>turn</code> (dry run on a fork, all or nothing, diff, why, guesses, replies, graded fallback)</td><td>the dry-run protocol, all-or-nothing holds and graded fallback (estimated 120 + 350 of its 900 general lines)</td><td>the reading of English, the per-turn tick budget wiring (the library has its own budgets), translation, the encoder accept rule</td><td>since 0.24</td></tr><tr><td>meta.worlds</td><td><code>route</code> (cards, referents, a dry run, a host signal)</td><td>its routing rules (the cards stay generated by the host)</td><td>the tab registry and the generated cards of one application</td><td>since 0.24</td></tr><tr><td>failure-ledger</td><td><code>ledgerAppend</code>, <code>ledgerGroups</code>, <code>stageOf</code>, <code>tools/ledger.mjs</code></td><td>the format, append and counting (of its 160 generator lines)</td><td>its cause-signal list and the replay of its own evaluation scripts</td><td>since 0.25</td></tr><tr><td>acts, session.things, session.dialogue, common.sense, space</td><td>compared (questions.md Q30): already covered by std.schema, std.acts, views, std.focus, <code>turn</code>, <code>createCatalog</code>; missing: a per-kind act hook, space selection and layouts, overlap enforcement, a turn log, pieces</td><td>—</td><td>English forms and readers, its tabs' words, facts (to sop-knowledge-worlds)</td><td>—</td></tr></tbody></table></div>
 <p class="source">Generated from <code>docs/capabilities.md</code>.</p>
 </main>
-<footer>sopworld 0.111.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.112.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

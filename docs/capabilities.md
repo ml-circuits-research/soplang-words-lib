@@ -845,6 +845,34 @@ print(judgeOnRelated((t) => (t === 'cow sound' ? ['moo'] : null), kase, relatedC
 0
 ```
 
+## Compose a diagram from knowledge
+
+*In `composeDiagram`, `sampleDiagram`, `diagramTopics`, `diagramKinds`, `arrangementOf`; since 0.112.*
+*Works on: k.diagrams (kinds, fills, shapes) and the knowledge its fills name; w.diagram for the result.*
+
+A diagram kind × a topic whose knowledge has the kind's structure: a cycle of the seasons from
+their `next=` facts, a tree of kinds from `is_a=`, a mind map of a bee from its parts, a Venn
+diagram of the kinds under a kind, a network of a country's neighbours. The nodes, edges and
+groups are w.diagram wires, shaped by k.diagrams shapes and laid out by the kind's layout with
+`arrange`. An arrangement request ("in a circle", "from right to left") is read by the language
+world's phrases and changes the layout. `sampleDiagram` draws a random kind × topic.
+**Limits:** a topic with no knowledge of the kind's structure gets a reason, not a diagram (a
+flowchart of making tea needs a procedure for it). A tree goes down breadth first, up to `max`
+nodes.
+
+```js run
+const w = new World();
+w.tell(`@k k.diagrams.kind name=cycle form=cycle layout=circular edges=directed role=stage
+@f k.diagrams.fill kind=cycle type=ex.stage key=next gives=edges topic=cycle
+@a ex.stage name=egg cycle=moth next=larva  @b ex.stage name=larva cycle=moth next=moth
+@c ex.stage name=moth cycle=moth next=egg`);
+print(composeDiagram(w, { kind: 'cycle', topic: 'moth' }).edges.length);
+```
+
+```output
+3
+```
+
 ## Align two worlds by structure
 
 *In `alignWorlds`; since 0.77.*

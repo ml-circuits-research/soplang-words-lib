@@ -1611,15 +1611,22 @@ print(placeFor(w, { w: 10, h: 10 }, { rel: 'right_of', ref: 'box1' }), placeFor(
 {"x":62,"y":45,"how":"right_of"} {"x":0,"y":0,"how":"default"}
 ```
 
-### arrange(nodes, layout, options?)
+### arrange(nodes, layout, options?) and arrangementOf(world, text, options?)
 
 Many things laid out at once, for a diagram kind's layout or an arrangement request ("in a
 circle", "evenly", "left to right"). `nodes` are `{ id, w?, h? }` (10 x 10 by default). The
 layouts: `row` (left to right), `column` (top to bottom), `circle` (clockwise from the top),
 `grid` (evenly), and `layers`, which puts each node one layer after its furthest source in
 `edges` ([[from, to]]), layers left to right, or top to bottom with `direction: 'down'`. A
-cycle is cut at the edge that closes it, walking from the nodes in their order. Options
-`frame` (0 0 100 100) and `gap` (2). It returns a Map from id to `{ x, y, w, h }`.
+cycle is cut at the edge that closes it, walking from the nodes in their order. `radial`
+puts the first node in the middle and the others round it; `scatter` spreads them apart at
+seeded places. Options `frame` (0 0 100 100), `gap` (2), `reverse` (right to left, bottom to
+top, anticlockwise) and `seed`. It returns a Map from id to `{ x, y, w, h }`.
+
+`arrangementOf(world, text)` reads an arrangement request by the language world's phrases
+(`w.lang.en.arrangement text= layout= relation= direction= inverse= diagram_layout=`): the
+longest phrase in the text gives `{ text, layout, relation, direction, reverse, diagramLayout,
+as }`, where `as` is the `arrange` layout. It returns null when the text names none.
 
 ```js run
 const at = arrange([{ id: 'a' }, { id: 'b' }, { id: 'c' }], 'layers', { edges: [['a', 'b'], ['a', 'c']] });
@@ -1628,6 +1635,42 @@ print([...at].map(([id, b]) => `${id} ${Math.round(b.x)},${Math.round(b.y)}`).jo
 
 ```output
 a 20,45; b 70,27; c 70,63
+```
+
+### composeDiagram(world, options), sampleDiagram(world, options?), diagramTopics(world, kind, options?) and diagramKinds(world)
+
+A diagram from knowledge. A kind (`k.diagrams.kind name= form= layout= edges= role=`) says what
+it shows and how it is laid out. Its fills (`k.diagrams.fill kind= type= key= gives= topic=`)
+say which knowledge has that structure: the facts of `type` about the topic (through the key
+`topic=`), read along `key`:
+- `gives=edges`: a tree breadth first when the topic is a value of the key (`is_a`); an edge to
+  each value of the topic's own fact (its parts, its neighbours); otherwise the facts about the
+  topic joined by the key (`next=` points on, `after=` points back, by name or number).
+- `gives=order`: the facts about the topic in the order of the key, one after the other (a
+  cycle comes round).
+- `gives=members`: the kinds under the topic as groups, with their members.
+- `gives=values`: the topic in the middle and the values round it.
+
+`composeDiagram(world, { kind, topic, seed, max, id, frame, into, layout })` tries the fills in
+a seeded order and keeps the first with two nodes or more. It returns `{ kind, form, layout,
+topic, fill, text, nodes, edges, groups }`, where `text` holds the w.diagram wires
+(`w.diagram.diagram`, `.node` with role, shape from `k.diagrams.shape`, n, x, y and parent,
+`.edge`, `.group`), laid out with `arrange` by the kind's layout or the `layout` asked for. With
+no knowledge of the structure for the topic it returns `{ why }`. `into` is a world to tell the
+wires into. `diagramTopics(world, kind)` lists topics with enough nodes, most first;
+`sampleDiagram(world, { seed })` draws a kind × a topic; `diagramKinds(world)` lists the kinds
+with their fills.
+
+```js run
+const w = new World();
+w.tell(`@k k.diagrams.kind name=tree form=tree layout=top_down edges=undirected role=root role=item
+@f k.diagrams.fill kind=tree type=ex.sort key=is_a gives=edges topic=is_a
+@a ex.sort name=fruit is_a=food  @b ex.sort name=apple is_a=fruit  @c ex.sort name=bread is_a=food`);
+print(composeDiagram(w, { kind: 'tree', topic: 'food' }).nodes.map((n) => `${n.label}:${n.role}`).join(' '));
+```
+
+```output
+food:root fruit:item bread:item apple:item
 ```
 
 ### compose(world, topic, options?) and interestOf(world, fact, options?)

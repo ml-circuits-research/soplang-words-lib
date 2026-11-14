@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.112.0
+
+From the reviewer's 04:40 and 05:45 entries (diagrams composed from knowledge). The knowledge
+pin moves to 7c7738f (k.diagrams, w.diagram, arrangement phrases in w.lang.en).
+
+### New
+- `composeDiagram(world, { kind, topic })`: a k.diagrams kind × a topic whose knowledge has the
+  kind's structure (its fills: edges, order, members, values) → w.diagram wires (nodes with
+  role and shape, edges, groups) laid out by the kind's layout with `arrange`; `{ why }` when no
+  knowledge fits, never placeholder nodes.
+- `sampleDiagram`, `diagramTopics`, `diagramKinds`: random diagrams as kind × topic.
+- `arrangementOf(world, text)`: an arrangement request read by `w.lang.en.arrangement` phrases.
+- `arrange` gains `radial`, `scatter` and `reverse`.
+
 ## 0.111.0
 
 From the reviewer's 05:10 and 05:25 entries (names against the literature).

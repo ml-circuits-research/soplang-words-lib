@@ -100,7 +100,9 @@ w.explain('a1');               // ... from b1 and f1
 
 ```
 npm run build          # src/*.mjs -> docs/sopworld.mjs, docs/sopworld.js, docs/sopworld.d.ts
-npm test               # build, then the suite on the sources and again on the built file
+npm test               # build, then the suite on the sources (the gate per release)
+npm run test:full      # the suite three times: sources, the built file, copy-on-write checks (every 5th release)
+npm run test:slow      # the 10 slowest tests with their seconds
 npm run test:browser   # self-test and playground in headless Chrome (needs Playwright)
 npm run examples       # ten runnable demonstrations
 npm run bench          # micro-benchmarks

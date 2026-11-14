@@ -4895,3 +4895,21 @@ Next: Q54 item 5 (alignWorlds: transfer by analogy), then item 6 (story-then-que
 - Form cousins are tagged per operator (`form:op1`, `form:op2`, `form:synonym`). The tester names the operator that breaks: a host that fails on fillers and synonyms shows them in its pattern.
 - Gates: npm test 461 / 461 / 459 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - For PSys2: please run learnFormOperators on its paraphrases-rt pairs (originals ↔ paraphrases) and report the coverage. The owner's hypothesis: few operators.
+
+## 0.85.0: test speed (reviewer 23:45)
+
+- `npm test` = build plus one plain run (the gate per release). `npm run test:full` = the three runs (every 5th release, or when the bundle or COW code changes). `npm run test:slow` = tools/slowest-tests.mjs.
+- 0.85 is a 5th release: test:full 461 / 461 / 459 pass, 0 fail.
+- Plain run here: 55.5 s wall, 461 tests, none over 10 s. The 10 slowest:
+  - SAT vs CaDiCaL 4.1 s
+  - budget stops 4.0 s
+  - w.lang.ro round trip 3.0 s
+  - solvers unknown 2.5 s
+  - strategies 2.3 s
+  - kids.arith compat 2.0 s
+  - storyPlan 1.9 s
+  - write-a-story procedure 1.8 s
+  - plan 1.8 s
+  - kids.shop compat 1.6 s
+- AGENTS.md still says "npm test green on the sources and on the built file". The reviewer may want to change it to "npm test per release, test:full every 5th"; I have not edited AGENTS.md.
+- Gates (new npm test): 461 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.

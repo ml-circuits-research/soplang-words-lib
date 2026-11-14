@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.85.0
+
+Test speed (reviewer 23:45, owner 16:35).
+
+### Changed
+- `npm test` = build, then one run on the sources: the gate per release.
+- `npm run test:full` = the three runs (sources, the built file, copy-on-write checks):
+  every 5th release, or when the build or the copy-on-write code changes.
+- `npm run test:slow` (`tools/slowest-tests.mjs`): the 10 slowest tests with their
+  seconds; it fails when one takes over 10 s.
+
 ## 0.84.0
 
 Form siblings: learn the operators, not the cases (reviewer 23:20, owner 16:12).

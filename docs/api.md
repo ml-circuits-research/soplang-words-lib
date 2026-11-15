@@ -1404,36 +1404,6 @@ print(generate(m, 'kata', 'n2', { num: 'pl' }), analyse(m, 'kate', { dictionary:
 kate [["kata","pl"]] made kata ruma
 ```
 
-### motionPlan(world, events, options?) and motionRun(plan, apply, clock?)
-
-States over time from rules (std.motion), for anything that changes by rules: a face that
-blinks and talks, a drawing that moves, a diagram that highlights its steps. The rules
-are facts:
-- `mo.base key= value=`;
-- `mo.rule name= on=<event>? when.<field>=<v>? priority=<n>? repeat=<min>-<max>? ease=<ms>?
-  split=<splitter>? else=<value>?`;
-- `mo.step rule= n= key= value=? dur=<min>-<max> per=unit?`;
-- `mo.class rule= unit= value=` (a unit of a stream to a state).
-
-`motionPlan` is pure and seeded: the same seed gives the same plan, `[{ t, key, value }]`
-from 0 to `until`. `events` are `[{ t, type, fields?, stream? }]`. On a key, a higher
-priority wins over a lower one while both hold it; other keys go on. A new event of the
-same rule cancels what was left of the earlier one, and `ease` returns the keys to base. A
-`per=unit` step plays one state per unit of the event's stream; the unit splitter is the
-rule's parameter (`options.splitters`), supplied by the host or the animation world.
-`motionRun` plays a plan through the host's clock and returns `cancel()`.
-
-```js run
-const w = new World();
-w.tell(`@b mo.base key=light value=red  @r mo.rule name=go on=button
-  @s1 mo.step rule=go n=1 key=light value=green dur=3000  @s2 mo.step rule=go n=2 key=light value=amber dur=1000`);
-print(motionPlan(w, [{ t: 500, type: 'button' }], { until: 6000 }).map((p) => [p.t, p.value]));
-```
-
-```output
-[[0,"red"],[500,"green"],[3500,"amber"],[4500,"red"]]
-```
-
 ### planner(store, options?), factStore(worlds), PlanLive, readMethods, PLAN_LIMITS
 
 std.plan: goals reached by methods that are knowledge (`k.procedures`, in the format of the
@@ -1486,7 +1456,7 @@ print(r.method, r.lines, r.requests[0]);
 pair ["make kind=sock","make kind=sock"] {"action":"make","args":{"kind":"sock"}}
 ```
 
-### readMotion(world, options?), planMotionFacts(motion, options?), splitText(splitter, text)
+### readMotion(world, options?), planMotionFacts(motion, options?), splitText(splitter, text) and motionRun(plan, apply, clock?)
 
 The full motion format, as the knowledge repository publishes it in `k.motion` (one
 format, one scheduler). `readMotion(world, { prefix, style })` reads the facts. The type
@@ -1508,8 +1478,9 @@ is pure and seeded. It returns `{ segments, instances, emitted, stateAt(t), chan
 
 A cancelled step eases back from where it is, and a repeat waits from the end of its last
 run. A named host function in `splitters` overrides a splitter of the facts.
-`splitText` applies a splitter. `motionRun` plays `changes` like any plan. The `mo.*` form
-(`motionPlan`) stays as the minimal one.
+`splitText` applies a splitter. `motionRun(changes, apply, clock)` plays the change points
+through the host's clock (`{ setTimeout, clearTimeout }`) and returns `cancel()`. This is the
+library's one motion scheduler.
 
 ```js run
 const w = new World();

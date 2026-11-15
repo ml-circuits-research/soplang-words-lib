@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="1b8ff50b230a">
+<meta name="source-hash" content="190d73e6ee73">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.121.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.122.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -517,15 +517,6 @@ const d = dictionary({ read: (p) =&gt; ({ k: &#x27;kata\tn2\tf&#x27;, r: &#x27;r
 print(generate(m, &#x27;kata&#x27;, &#x27;n2&#x27;, { num: &#x27;pl&#x27; }), analyse(m, &#x27;kate&#x27;, { dictionary: d }).map((x) =&gt; [x.lemma, x.features.num]),
   realise(m, templateFor(m, &#x27;make&#x27;), { thing: &#x27;kata&#x27;, colour: &#x27;rum&#x27; }, { dictionary: d, base: { num: &#x27;sg&#x27; } }));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>kate [[&quot;kata&quot;,&quot;pl&quot;]] made kata ruma</code></pre></figure>
-<h3 id="motionplanworld-events-options-and-motionrunplan-apply-clock">motionPlan(world, events, options?) and motionRun(plan, apply, clock?)</h3>
-<p>States over time from rules (std.motion), for anything that changes by rules: a face that blinks and talks, a drawing that moves, a diagram that highlights its steps. The rules are facts:</p>
-<ul><li><code>mo.base key= value=</code>;</li><li><code>mo.rule name= on=&lt;event&gt;? when.&lt;field&gt;=&lt;v&gt;? priority=&lt;n&gt;? repeat=&lt;min&gt;-&lt;max&gt;? ease=&lt;ms&gt;? split=&lt;splitter&gt;? else=&lt;value&gt;?</code>;</li><li><code>mo.step rule= n= key= value=? dur=&lt;min&gt;-&lt;max&gt; per=unit?</code>;</li><li><code>mo.class rule= unit= value=</code> (a unit of a stream to a state).</li></ul>
-<p><code>motionPlan</code> is pure and seeded: the same seed gives the same plan, <code>[{ t, key, value }]</code> from 0 to <code>until</code>. <code>events</code> are <code>[{ t, type, fields?, stream? }]</code>. On a key, a higher priority wins over a lower one while both hold it; other keys go on. A new event of the same rule cancels what was left of the earlier one, and <code>ease</code> returns the keys to base. A <code>per=unit</code> step plays one state per unit of the event's stream; the unit splitter is the rule's parameter (<code>options.splitters</code>), supplied by the host or the animation world. <code>motionRun</code> plays a plan through the host's clock and returns <code>cancel()</code>.</p>
-<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
-w.tell(`@b mo.base key=light value=red  @r mo.rule name=go on=button
-  @s1 mo.step rule=go n=1 key=light value=green dur=3000  @s2 mo.step rule=go n=2 key=light value=amber dur=1000`);
-print(motionPlan(w, [{ t: 500, type: &#x27;button&#x27; }], { until: 6000 }).map((p) =&gt; [p.t, p.value]));</code></pre></figure>
-<figure class="code"><figcaption>prints</figcaption><pre><code>[[0,&quot;red&quot;],[500,&quot;green&quot;],[3500,&quot;amber&quot;],[4500,&quot;red&quot;]]</code></pre></figure>
 <h3 id="plannerstore-options-factstoreworlds-planlive-readmethods-plan_limits">planner(store, options?), factStore(worlds), PlanLive, readMethods, PLAN_LIMITS</h3>
 <p>std.plan: goals reached by methods that are knowledge (<code>k.procedures</code>, in the format of the knowledge repository's Q44), decomposed into acts over a live world. <code>factStore(worlds)</code> reads published worlds (<code>[{ id, schemaText, shards: [{ text }] }]</code>) into facts merged by identity, read lazily per type. <code>planner(store, { chain, prefix, roles })</code> reads the methods (<code>readMethods</code>). <code>chain</code> is <code>[{ type, keys }]</code>, what "is a kind of" is, or the store's <code>std.know.chain of= key=</code> facts. <code>plan(goal, live)</code> takes a goal <code>{ act, roles }</code> and a <code>PlanLive</code> (a working copy of the live world: things, history, the world schema's kinds).</p>
 <p>The plan returns:</p>
@@ -542,12 +533,12 @@ const store = factStore([{ id: &#x27;k.procedures&#x27;, schemaText: schema, sha
 const r = planner(store).plan({ act: &#x27;make&#x27;, roles: { kind: &#x27;sock&#x27; } }, new PlanLive({ store }));
 print(r.method, r.lines, r.requests[0]);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>pair [&quot;make kind=sock&quot;,&quot;make kind=sock&quot;] {&quot;action&quot;:&quot;make&quot;,&quot;args&quot;:{&quot;kind&quot;:&quot;sock&quot;}}</code></pre></figure>
-<h3 id="readmotionworld-options-planmotionfactsmotion-options-splittextsplitter-text">readMotion(world, options?), planMotionFacts(motion, options?), splitText(splitter, text)</h3>
+<h3 id="readmotionworld-options-planmotionfactsmotion-options-splittextsplitter-text-and-motionrunplan-apply-clock">readMotion(world, options?), planMotionFacts(motion, options?), splitText(splitter, text) and motionRun(plan, apply, clock?)</h3>
 <p>The full motion format, as the knowledge repository publishes it in <code>k.motion</code> (one format, one scheduler). <code>readMotion(world, { prefix, style })</code> reads the facts. The type names sit under <code>prefix</code> (default <code>k.motion</code>); <code>style</code> chooses the visemes. The facts are:</p>
 <ul><li>layers with priorities over keys;</li><li>rules: <code>on</code> an event, or <code>repeat</code> (min, max) with a <code>chance</code>; <code>during</code> / <code>not_during</code> other layers; <code>until</code> events that cancel them; <code>emits</code> an event when done;</li><li>conditions on the event's fields, or on a feature of the shown value;</li><li>steps with onset, hold and back ranges, <code>hold_until</code> an event, <code>with</code> another step, <code>per</code> a field of the event split by a splitter;</li><li>sets with an optional <code>via</code>, visemes, and splitters with letter classes.</li></ul>
 <p><code>planMotionFacts(motion, { events, seed, end, base, features, aliases, splitters, keys })</code> is pure and seeded. It returns <code>{ segments, instances, emitted, stateAt(t), changes }</code>:</p>
 <ul><li><code>segments</code> have onset and back ramps, for hosts that blend, and <code>via</code>, for hosts that only switch;</li><li><code>changes</code> are the switch points;</li><li><code>base</code> is the host's current state.</li></ul>
-<p>A cancelled step eases back from where it is, and a repeat waits from the end of its last run. A named host function in <code>splitters</code> overrides a splitter of the facts. <code>splitText</code> applies a splitter. <code>motionRun</code> plays <code>changes</code> like any plan. The <code>mo.*</code> form (<code>motionPlan</code>) stays as the minimal one.</p>
+<p>A cancelled step eases back from where it is, and a repeat waits from the end of its last run. A named host function in <code>splitters</code> overrides a splitter of the facts. <code>splitText</code> applies a splitter. <code>motionRun(changes, apply, clock)</code> plays the change points through the host's clock (<code>{ setTimeout, clearTimeout }</code>) and returns <code>cancel()</code>. This is the library's one motion scheduler.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.tell(`@l k.motion.layer name=idle priority=1 key=eyes about=x
   @r k.motion.rule name=blink about=x layer=idle repeat_min=3000 repeat_max=3000
@@ -1133,7 +1124,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.121.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.122.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

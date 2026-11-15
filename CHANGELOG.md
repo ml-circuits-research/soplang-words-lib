@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.122.0
+
+R2, third part: one motion scheduler (architecture review finding 9).
+
+### Removed
+- `motionPlan` and its minimal `mo.*` format: the scheduler is `planMotionFacts` over the
+  knowledge repository's `k.motion` (PSys2's avatar already calls `readMotion` and
+  `planMotionFacts`, never `motionPlan`). `motionRun` stays, in src/motion-facts.mjs.
+
 ## 0.121.0
 
 R2, second part: one way per job for typed worlds and role reading (PSys2 does not use the

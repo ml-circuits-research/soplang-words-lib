@@ -670,26 +670,29 @@ beki true
 
 ## Change states over time by rules
 
-*In `motionPlan`, `motionRun`, `readMotion`, `planMotionFacts`, `splitText`; since 0.54.*
+*In `readMotion`, `planMotionFacts`, `splitText`, `motionRun`; since 0.54.*
 *Works on: a live world's view (a face, a drawing, a diagram) and the rules a world schema gives it.*
 
 Rules as data: on an event (with a condition on its fields), or repeated idly, a sequence
 of steps sets keys of a state for durations. Priorities hold a key, and a new event
 cancels the rest of the earlier one. A step can play one state per unit of a stream (the
-generic form of lip sync). The plan is pure and seeded; the host plays it. Since 0.56 the
-library also reads the knowledge repository's full format (`k.motion`: layers, during,
-until, emits, holds until an event, conditions on features, via, splitters as facts). **Limits:** the
+generic form of lip sync). The plan is pure and seeded; the host plays it. The rules are the
+knowledge repository's format (`k.motion`: layers, during, until, emits, holds until an event,
+conditions on features, via, splitters as facts). **Limits:** the
 steps of one rule run in sequence (no parallel branches inside a rule); durations are
 whole milliseconds.
 
 ```js run
 const w = new World();
-w.tell('@b mo.base key=eyes value=open  @r mo.rule name=blink repeat=3000-3000  @s mo.step rule=blink n=1 key=eyes value=closed dur=150');
-print(motionPlan(w, [], { until: 7000 }).map((p) => [p.t, p.value]));
+w.tell(`@l k.motion.layer name=idle priority=1 key=eyes about=x
+  @r k.motion.rule name=blink about=x layer=idle repeat_min=3000 repeat_max=3000
+  @s k.motion.step rule=blink n=1 about=x onset_min=0 onset_max=0 hold_min=150 hold_max=150 back_min=0 back_max=0
+  @v k.motion.set rule=blink step=1 key=eyes value=closed`);
+print(planMotionFacts(readMotion(w), { end: 7000, base: { eyes: 'open' } }).changes.map((c) => [c.t, c.value]));
 ```
 
 ```output
-[[0,"open"],[3000,"closed"],[3150,"open"],[6000,"closed"],[6150,"open"]]
+[[0,"open"],[3000,"closed"],[3150,"open"],[6150,"closed"],[6300,"open"]]
 ```
 
 ## Reach a goal by methods that are knowledge

@@ -5,7 +5,9 @@
 // event's fields or on a feature of the shown value, onset / hold / back ranges, `hold_until`,
 // `via` (for hosts that only switch), steps `with` another, a splitter and letter classes as
 // facts. Pure and seeded: `planMotionFacts` gives segments, change points and emitted events;
-// the host plays the change points (`motionRun`) or draws the ramps from the segments.
+// the host plays the change points (`motionRun`) or draws the ramps from the segments. The
+// one motion scheduler of the library (architecture review finding 9: the minimal `mo.*` form
+// and its own scheduler are gone).
 // Answers to Q46: the splitter is data, with a named host function as an override; `via` is in
 // the plan; the base is the host's current state; a cancelled step eases back from where it
 // is; a repeat waits from the end of its last run.
@@ -196,4 +198,10 @@ export function planMotionFacts(motion, { events = [], seed = 1, end = 10000, ba
     prev = now;
   }
   return { segments, instances, emitted, stateAt, changes, top };
+}
+
+/** Play a plan through the host's clock (`{ setTimeout, clearTimeout }`): apply(key, value) at each point. Returns cancel(). */
+export function motionRun(plan, apply, clock = globalThis) {
+  const timers = plan.map((p) => clock.setTimeout(() => apply(p.key, p.value, p.t), p.t));
+  return () => { for (const h of timers) clock.clearTimeout(h); };
 }

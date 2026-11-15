@@ -5440,3 +5440,10 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   and calls none of the library's typedWorldOf / readRolesByTypes / assignBySlotTypes; removed without a deprecation.
 - typedWorldFor's own wires are `typed.<n>` (a session thing `t1` clashed with them).
 - Gate: npm test 514 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.122.0 — R2 part 3: one motion scheduler
+
+- PSys2 (origin/HEAD) worlds/ui.avatar/motion.mjs calls readMotion + planMotionFacts only; `git grep motionPlan` on
+  its tree (vendor aside): none. motionPlan and the mo.* format removed; motionRun moved to motion-facts.mjs, with
+  a test of its own.
+- Gate: npm test 511 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

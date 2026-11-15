@@ -60,3 +60,12 @@ test('k.motion: the splitter is data; a named host function overrides it (Q46 a)
   const plan = planMotionFacts(m, { events: [{ t: 0, name: talk.on, fields: { outcome: 'done', [field]: 'ab' } }], end: 3000, base: BASE, splitters: { [name]: () => [{ char: 'x', group: 'x', class: [...m.visemes.keys()][0], min: 50, max: 50 }] } });
   assert.ok(plan.segments.some((s) => s.char === 'x'), 'the host function was used instead of the facts');
 });
+
+test('motionRun plays the change points through the host clock and can be cancelled', async () => {
+  const { motionRun } = await import('../tools/lib-under-test.mjs');
+  const seen = [], timers = [];
+  const clock = { setTimeout: (f, t) => { timers.push({ f, t }); return timers.length - 1; }, clearTimeout: (h) => { timers[h] = null; } };
+  const cancel = motionRun([{ t: 0, key: 'eyes', value: 'open' }, { t: 150, key: 'eyes', value: 'closed' }], (k, v, t) => seen.push([t, v]), clock);
+  timers[0].f(); cancel();
+  assert.deepEqual([seen, timers[1]], [[[0, 'open']], null]);
+});

@@ -1672,6 +1672,15 @@ say the rest. The acts are the same for every world; a new schema needs no rule.
 Every thing has `kind` and `world`. Checked at load: an act not in the list, a kind of a
 world that is not declared.
 
+**The tool binding** (`core.use world=std.tool`, 0.152) is data `runPlan` executes (api.md, runPlan):
+
+| Wire | Keys | Meaning |
+| --- | --- | --- |
+| `std.tool.op` | `name`, `world`, `param` (many), `effect` (makes, removes, changes), `doc` | an operation of the world's tool |
+| `std.tool.param` | `op`, `name`, `type`, `accepts` (many), `scale`, `by`, `order`, `min`, `max`, `required` | a typed parameter and the values the tool takes; others are translated by knowledge (nearest grade, kind lineage, range) |
+| `std.tool.bind` | `act`, `of` (many), `op`, `arg` (many, `<param><-<source>\|...`), `needs`, `makes`, `removes`, `changes` | a plan step of that act and kind runs that op, each argument from its sources, after its preconditions |
+| `std.tool.custom` | `name`, `world`, `kind` (constraint, search), `in`, `out`, `fails`, `doc` | a named custom constraint or search the tool provides, with its signature |
+
 **The acts** are actions (`world.act({ action, args })`, or several as one sentence with
 `act([...])`). `thing` is an id, or a kind when there is one thing of it (else `nth`, from
 1, or -1 for the last; otherwise the refusal lists `which`).

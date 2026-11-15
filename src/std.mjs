@@ -908,6 +908,44 @@ ${calcs.join('\n')}
 `.replace(/ACTENUM/g, 'enum=make enum=remove enum=change enum=place enum=connect enum=group enum=pick enum=ask enum=copy enum=send enum=save enum=load enum=undo enum=redo enum=show enum=teach enum=forget enum=complete'),
     fns: {},
   },
+  // 0.152: tool binding as wires (owner 2026-11-15 19:27). A world declares its tool's operations and their typed
+  // parameters, binds each act of a plan to one of them with the source of every argument, and names its custom
+  // constraints and searches with their signatures; runPlan (tool.mjs) executes it. No rule: the shapes only.
+  'std.tool': {
+    text: String.raw`
+@k.top.name core.slot of=std.tool.op key=name id=true required=true
+@k.top.world core.slot of=std.tool.op key=world
+@k.top.param core.slot of=std.tool.op key=param many=true
+@k.top.effect core.slot of=std.tool.op key=effect many=true enum=makes enum=removes enum=changes
+@k.top.doc core.slot of=std.tool.op key=doc kind=string
+@k.tpa.op core.slot of=std.tool.param key=op id=true required=true
+@k.tpa.name core.slot of=std.tool.param key=name id=true required=true
+@k.tpa.type core.slot of=std.tool.param key=type
+@k.tpa.accepts core.slot of=std.tool.param key=accepts many=true
+@k.tpa.scale core.slot of=std.tool.param key=scale
+@k.tpa.by core.slot of=std.tool.param key=by
+@k.tpa.order core.slot of=std.tool.param key=order
+@k.tpa.min core.slot of=std.tool.param key=min kind=number
+@k.tpa.max core.slot of=std.tool.param key=max kind=number
+@k.tpa.required core.slot of=std.tool.param key=required enum=yes enum=no
+@k.tb.act core.slot of=std.tool.bind key=act required=true
+@k.tb.of core.slot of=std.tool.bind key=of many=true
+@k.tb.op core.slot of=std.tool.bind key=op required=true
+@k.tb.arg core.slot of=std.tool.bind key=arg many=true
+@k.tb.needs core.slot of=std.tool.bind key=needs many=true
+@k.tb.makes core.slot of=std.tool.bind key=makes many=true
+@k.tb.removes core.slot of=std.tool.bind key=removes many=true
+@k.tb.changes core.slot of=std.tool.bind key=changes many=true
+@k.tc.name core.slot of=std.tool.custom key=name id=true required=true
+@k.tc.world core.slot of=std.tool.custom key=world
+@k.tc.kind core.slot of=std.tool.custom key=kind enum=constraint enum=search default=constraint
+@k.tc.in core.slot of=std.tool.custom key=in many=true
+@k.tc.out core.slot of=std.tool.custom key=out
+@k.tc.fails core.slot of=std.tool.custom key=fails
+@k.tc.doc core.slot of=std.tool.custom key=doc kind=string
+`,
+    fns: {},
+  },
   // Round 20: the acts, the same for every world declared with std.schema. Each is one
   // generic action: what a world says is data, so a new schema needs no rule. An act that
   // does not apply says what the thing's kind allows and which world allows the act.

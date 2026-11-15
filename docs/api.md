@@ -2108,7 +2108,11 @@ a tick budget (`options.ticks`, default `REASONING.ticks`); `options.reason: fal
 rejected: [{ place, label, why, hard }], cannot: [{ why, words }], bounds, reasoning: { candidates, depth, ticks,
 exhausted, induced, soft, derived, chosen }, seed, sources }`: when no candidate survives, `ok` is false and
 `cannot` says why. Nothing is changed.
-`runPlan(live, plan, { replace })` runs the steps through `act` (`{ step: i }` names what step i made),
+0.152: a general kind said ("books", not makeable itself) is a mix of its makeable subkinds by the world's lineage, and a
+kind not wanted excludes its subkinds too; coordinated kinds ("two novels and a comic") keep each count with the kind
+it stands before (a kind with no number is one); "3 necklaces" (a count of the whole) plans that many wholes; the
+conditional expectations and the kept structure of a count revision are described under `expectedValue` below.
+`runPlan(live, plan, { replace })` (`runWorldPlan`) runs the steps through `act` (`{ step: i }` names what step i made),
 after removing the things of `replace` (the last result: a revision replaces it); it returns `{ ok, made,
 failed, result: { things, items, count, kinds, whole, layout, links } }`.
 
@@ -2232,6 +2236,118 @@ print(sayRequest(q, outcome, { language: words, lang: 'ex' }).text);
 
 ```output
 I made a heap. I took 6 for the count. Not at the top: a heap has no place here.
+```
+
+### runPlan(plan, bindings, primitives, opts?), toolBindings(live, opts?), toolTimeline(), toolSession(live, primitives, opts?), toolCapabilities(live, bindings?), askWorld(question, request, opts?), nearestAccepted(value, param, opts?), readView(view), stateDiff(before, after), mirrorState(live, view), runWorldPlan(live, plan, options?), TOOL_ARG_SOURCES, WORLD_QUESTIONS
+
+Tool binding as wires (0.152; owner 2026-11-15: the glue between a live world and the generic mechanisms is
+declarative, only the tool's concrete actions are code). A world declares its tool in the `std.tool` module
+(`core.use world=std.tool`):
+
+| Wire | Keys |
+| --- | --- |
+| `std.tool.op` | `name` (id), `world`, `param` (many), `effect` (makes, removes, changes), `doc` |
+| `std.tool.param` | `op`, `name` (id together), `type` (`kind`, `integer`, `number`, or a scale type: rows with an order), `accepts` (many: the values the tool takes), `scale`, `by` (the key naming a grade; default the type's id slot), `order` (default `order`), `min`, `max`, `required` |
+| `std.tool.bind` | `act`, `of` (many: the kinds, by lineage; none = any), `op`, `arg` (many: `<param><-<source>|<source>...`), `needs` (many: `exists(arg)`, `absent(arg)`, or a declared constraint `name(arg, ...)`), `makes`, `removes`, `changes` |
+| `std.tool.custom` | `name` (id), `world`, `kind` (constraint or search), `in` (many), `out`, `fails` (the reply name said when a constraint fails), `doc` |
+
+The sources of an argument (`TOOL_ARG_SOURCES`) are `step.<key>` (the plan step's value; `step.count`: how many
+steps of the same values one call takes, which groups them; `step.things`: the ids of the things they act on),
+`request.<on>` / `request.attribute.<a>` (the constraint said), `plan.<role>`, `custom.<name>` (a declared search,
+called with the arguments so far and the view), `value.<atom>` (a literal of the wires) and `expect`; a conditional
+expectation is always the last source. Filled in that order (said, revised, the plan's values with their
+provenance, expected), each value is translated by `nearestAccepted` when the parameter does not take it as said:
+a number into its range; a kind to the nearest accepted kind of its lineage (`kindLineage`: what `std.schema.drawn
+kind= as=` says it is drawn as, its core.type parents, the catalog's k.kinds.parent, then an accepted kind of which it
+is the parent); a grade to the nearest accepted grade of the ordered scale (k.expect.scale: tiny -> small, huge ->
+big; ties in the order of `accepts`). Every value not said is in `assumed` with its source (`translated` with `was`
+and `by`).
+
+`runPlan(plan, bindings, primitives, opts)` resolves the binding of each step (by act and the nearest kind of the
+lineage), fills and translates the arguments, checks the preconditions, calls the primitive (`primitives[op](args)`;
+`false` or `{ ok: false, code, reply, roles }` refuses), reads the view before and after (`opts.view`, default
+`primitives.view`: things `{ id, kind, ...attrs }` or facts `{ thing, attribute, value }`) and checks the effect
+(`makes=` something added). The plan is all or nothing: a failing step takes back the steps before it. It owns the
+timeline (`opts.timeline`, `toolTimeline()`): one plan is one entry; with `replace` (a revision) the last entry is
+undone first and the plan takes its place; `{ act: 'undo' }` / `{ act: 'redo' }` move it; a plan with `question`
+is no step. Undo uses `primitives.snapshot()` / `restore(s)` when the tool has them, else the inverse of the
+entry's diff through the bindings (remove what was added, make again what was removed, set back what changed).
+Returns `{ ok, diff: { added, removed, changed }, same, replaced, calls, assumed, translated, failed?, result, step }`;
+`diff` leaves out a thing taken away and one like it put back, so a revision that asks for what is there gives
+`same` and an empty diff. With a World first, `runPlan(live, plan, { replace })` is `runWorldPlan`: the steps through
+the world's own `act`, as before.
+
+`toolBindings(live)` reads and checks the declarations (`problems`: an op, a parameter, a source or a custom
+function named and not declared, a required parameter without a source). `toolCapabilities(live, bindings)`: the acts
+a world offers (honoured and bound) with their kinds and keys. `askWorld(question, request, { live, bindings, view })`
+says facts of the live world for the questions of `WORLD_QUESTIONS`: `capabilities` (the declarations) and `state`
+(the things of the kinds asked, by lineage, counted per kind: `state.count`, `state.empty`). `mirrorState(live, view)`
+tells the tool's things into a fork of the declarations so that the planner's reasoning (induction, places, deny
+rules) sees them. `toolSession(live, primitives, { language, catalog, revisions })` is the door with no code per
+world: read, a question (a reaction of the language world named in `WORLD_QUESTIONS`), undo / redo (the acts), revise,
+plan (on the mirrored state, with the last plan in the dialogue), run, say. `sayRequest` speaks from the run's diff
+(`done.add`, `done.remove`, `done.change`, `done.undo`, `why.nothing` with the reason's reply, `nothing.same`), from
+`outcome.capabilities` (`can`, `can.say`) and `outcome.answer` (askWorld's facts).
+
+```js run
+const w = new World();
+w.load(`@acts core.use world=std.acts
+@tool core.use world=std.tool
+@w std.schema.world name=box
+@t.ball core.type of=ball extends=std.schema.thing closed=true
+@s.size core.slot of=ball key=size enum=tiny enum=small enum=big
+@k std.schema.kind of=ball world=box acts=make acts=remove
+@h std.schema.honours world=box act=make on=count on=size of=ball
+@g1 ex.scale step=tiny order=1
+@g2 ex.scale step=small order=2
+@g3 ex.scale step=big order=3
+@o std.tool.op name=put param=n param=size effect=makes
+@p std.tool.param op=put name=size type=ex.scale by=step accepts=small accepts=big
+@o2 std.tool.op name=take param=ids effect=removes
+@b std.tool.bind act=make of=ball op=put arg=n<-step.count arg=size<-step.size makes=thing
+@b2 std.tool.bind act=remove op=take arg=ids<-step.things removes=ids`);
+let balls = [], next = 1;
+const tool = { put: ({ n, size }) => { for (let i = 0; i < n; i++) balls.push({ id: `x${next++}`, kind: 'ball', size }); }, take: ({ ids }) => { balls = balls.filter((b) => !ids.includes(b.id)); }, view: () => balls.map((b) => ({ ...b })) };
+const timeline = toolTimeline();
+const plan = planRequest(w, { act: 'make', target: 'ball', text: '3 tiny balls', unread: [], constraints: [{ on: 'count', want: 'yes', number: 3, words: '3' }, { on: 'size', want: 'yes', value: 'tiny', words: 'tiny' }] });
+const r = runPlan(plan, toolBindings(w), tool, { timeline, live: w });
+print(r.calls.map((c) => [c.op, c.args]), r.translated, r.diff.added.length);
+print(runPlan({ act: 'undo' }, toolBindings(w), tool, { timeline }).ok, balls.length);
+```
+
+```output
+[["put",{"n":3,"size":"small"}]] [{"key":"size","was":"tiny","value":"small","by":"ex.scale"}] 3
+true 0
+```
+
+### kindLineage(kind, opts?), expectedValue(kind, key, known?, opts?), cutToCount(items, links, n), fillToCount(kinds, n, opts?), notAllOneKind(kinds, pool?)
+
+Knowledge a planner and a binding share (src/expect.mjs). `kindLineage` is the kind and its parents, nearest first
+(see above). `expectedValue` reads conditional expectations, rows `k.expect.when of= key= value= [min= max=
+typical=] if.<key>=<v> if.<key>.min= if.<key>.max=` of the live world (source `world`) then of the catalog (`expect`):
+those whose `of` is in the kind's lineage and whose conditions hold on what is `known` (the thing's other values,
+`kind`, `size`, `count`, `role`); several values of one if-key are alternatives. The most specific wins: the most
+condition keys, then the nearest kind, then the world before the catalog. `planRequest` fills from them every slot
+key nothing else filled, per item, twice (one default may condition another), with the item's role in the plan's
+links (start, branch, leaf, middle); a value of the whole's count and layout before the slot's default; and an
+expectation whose conditions hold here before an induced value. In `assumed` with `because`. The structure
+operators: `cutToCount` keeps the first n items breadth first along the links (what stays is connected),
+`fillToCount` adds kinds in the proportions there are, `notAllOneKind` makes every second item of a second kind.
+`planRequest` uses them for a revision that changes only the count of the last plan (`dialogue.lastPlan`): the plan
+is the last one cut or filled (`structure`), checked like any candidate.
+
+```js run
+const w = new World();
+w.load(`@t.book core.type of=book\n@t.atlas core.type of=atlas extends=book
+@x1 k.expect.when of=book key=end value=left
+@x2 k.expect.when of=book key=end value=right if.size=big if.size=huge`);
+print(expectedValue('atlas', 'end', { size: 'huge' }, { live: w }).value, expectedValue('atlas', 'end', {}, { live: w }).value, kindLineage('atlas', { live: w }));
+print(cutToCount([0, 1, 2, 3], [{ a: 0, b: 1 }, { a: 1, b: 2 }, { a: 0, b: 3 }], 2).keep, fillToCount(['a', 'a', 'b'], 6), notAllOneKind(['a', 'a'], ['a', 'b']));
+```
+
+```output
+right left ["atlas","book"]
+[0,1] ["a","b","a"] ["a","b"]
 ```
 
 ### clauses(world, text, options) and cutPoints(world, options?)

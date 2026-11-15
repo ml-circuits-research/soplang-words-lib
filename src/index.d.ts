@@ -633,9 +633,9 @@ export interface RequestConstraint { on: 'kind' | 'count' | 'size' | 'extent' | 
 /** A live w.request: what one message asked. `facts` (not enumerable) is the host's flat shape. */
 export interface Request { act: string | null; mode?: string | null; target: string | null; refers: 'kind' | 'thing' | 'last' | null; text: string; constraints: RequestConstraint[]; reactions: { value: string; step?: string; cue: string; words: string }[]; unread: string[]; unreadAt?: { text: string; n: number }[]; used?: string[]; revises?: string | null; readonly facts: { key: string; value?: unknown; neg?: boolean; all?: boolean; n?: number; min?: number; max?: number; unit?: string; step?: string; of?: string; attribute?: string }[] }
 /** The state of a dialogue a revision reads. */
-export interface RequestDialogue { last: Request | null; result?: { count?: number; kinds?: Record<string, number>; things?: string[]; layout?: string | null } | null; previous?: Request | null; seed?: number; previousSeed?: number; previousVary?: boolean; revisions?: unknown; lastRun?: { made: string[] } | null; corrections?: { on: string; step?: string; value?: unknown }[] }
+export interface RequestDialogue { last: Request | null; result?: { count?: number; kinds?: Record<string, number>; things?: string[]; layout?: string | null } | null; previous?: Request | null; seed?: number; previousSeed?: number; previousVary?: boolean; revisions?: unknown; lastRun?: { made: string[] } | null; corrections?: { on: string; step?: string; value?: unknown }[]; lastPlan?: RequestPlan | null }
 /** A plan of a request: the acts with their roles filled, what was assumed, what is not honoured. */
-export interface RequestPlan { ok: boolean; act: string | null; target: string | null; roles: Record<string, unknown>; steps: { action: string; args: Record<string, unknown>; item?: boolean; link?: boolean }[]; assumed: { key: string; value: unknown; from: string }[]; notHonoured: { on: string; words: string; why: string; code: string; value?: unknown }[]; seed: number; sources: string[]; bounds?: { count: [number, number] | null; not: string[] }; rejected?: { place: string | null; label: string; why: string[]; hard: boolean }[]; cannot?: { why: string; words?: string }[]; reasoning?: { candidates: number; depth: number; ticks: number; exhausted: boolean; induced: { of: string; n: number; pattern: Record<string, unknown> }[]; soft: string[]; derived: number; chosen?: string } | null }
+export interface RequestPlan { ok: boolean; act: string | null; target: string | null; roles: Record<string, unknown>; steps: { action: string; args: Record<string, unknown>; item?: boolean; link?: boolean }[]; assumed: { key: string; value: unknown; from: string; because?: string }[]; structure?: "cut" | "fill"; notHonoured: { on: string; words: string; why: string; code: string; value?: unknown }[]; seed: number; sources: string[]; bounds?: { count: [number, number] | null; not: string[] }; rejected?: { place: string | null; label: string; why: string[]; hard: boolean }[]; cannot?: { why: string; words?: string }[]; reasoning?: { candidates: number; depth: number; ticks: number; exhausted: boolean; induced: { of: string; n: number; pattern: Record<string, unknown> }[]; soft: string[]; derived: number; chosen?: string } | null }
 /** The order in which a gap is filled. */
 export const REQUEST_SOURCES: readonly string[];
 /** The constraint keys of w.request. */
@@ -652,10 +652,60 @@ export function reviseRequest(dialogue: RequestDialogue | null, request: Request
 export function capabilitiesOf(live: World): { honours: { act: string; on: Set<string>; of: string[] }[]; kinds: Map<string, Set<string>> };
 /** Plan a request from the world's declared capabilities, filling every gap from the sources in order. */
 export function planRequest(live: World, request: Request, opts?: { catalog?: unknown; dialogue?: RequestDialogue | Partial<RequestDialogue> | null; sources?: readonly string[]; seed?: number; vary?: boolean; replace?: string[]; ticks?: number; candidates?: number; reason?: boolean }): RequestPlan;
-/** Run a plan's steps through act; the things of `replace` are removed first. */
-export function runPlan(live: World, plan: RequestPlan, options?: { replace?: string[] }): { ok: boolean; made: string[]; failed?: { step: object; why: string }; result: { things: string[]; items: string[]; count: number; kinds: Record<string, number>; whole: string | null; layout: string | null; links: number } };
+/** Run a plan's steps through the world's own act; the things of `replace` are removed first. */
+export function runWorldPlan(live: World, plan: RequestPlan, options?: { replace?: string[] }): WorldRun;
+export interface WorldRun { ok: boolean; made: string[]; failed?: { step: object; why: string }; result: { things: string[]; items: string[]; count: number; kinds: Record<string, number>; whole: string | null; layout: string | null; links: number } }
+/** A thing of a tool's view. */
+export interface ViewThing { id: string; kind: string | undefined; attrs: Record<string, unknown> }
+/** What changed between two views. */
+export interface StateDiff { added: ViewThing[]; removed: ViewThing[]; changed: { id: string; kind: string | undefined; key: string; from: unknown; to: unknown }[] }
+/** A tool parameter as declared by std.tool.param. */
+export interface ToolParam { op?: string; name?: string; type?: string; accepts?: string[]; scale?: string; by?: string; order?: string; min?: number; max?: number; required?: boolean }
+/** The std.tool.* declarations of a world. */
+export interface ToolBindings { ops: Map<string, { name: string; world?: string; params: string[]; effects: string[]; doc?: string }>; params: Map<string, Map<string, ToolParam>>; binds: { i: number; act: string; of: string[]; op: string; args: { name: string; sources: string[] }[]; needs: { name: string; args: string[] }[]; makes: string[]; removes: string[]; changes: string[] }[]; customs: Map<string, { name: string; kind: string; in: string[]; out?: string; fails?: string }>; problems: { bind: number; why: string; code: string }[]; catalog: unknown[] }
+/** A timeline of plan runs: one entry per plan (a revision replaces the last). */
+export interface ToolTimeline { done: object[]; undone: object[] }
+/** The tool's operations by op name, its custom constraints and searches, its view and (optionally) snapshot / restore. */
+export type ToolPrimitives = Record<string, ((args: Record<string, unknown>, view?: ViewThing[] | Record<string, unknown>[]) => unknown)> & { view?: () => unknown; snapshot?: () => unknown; restore?: (s: unknown) => void };
+/** The result of a plan run through a tool binding. */
+export interface ToolRun { ok: boolean; diff: StateDiff; same?: boolean; replaced: string[]; calls: { op: string; args: Record<string, unknown>; steps: number[] }[]; assumed: { key: string; value: unknown; from: string; was?: unknown; by?: string; because?: string; op?: string }[]; translated: { key: string; was: unknown; value: unknown; by: string }[]; failed?: { code: string; reply: string | null; roles: Record<string, unknown>; because?: object[]; op?: string; detail?: string }; result: { things: string[]; items: string[]; count: number; kinds: Record<string, number>; whole: string | null; layout: string | null; links: number; present: number }; step: string; question?: string; undo?: boolean; redo?: boolean; entry?: object }
+/** Run a plan: through a world's own act (a World first), or through its tool binding (primitives, view, timeline). */
+export function runPlan(live: World, plan: RequestPlan, options?: { replace?: string[] }): WorldRun;
+export function runPlan(plan: RequestPlan | { act: 'undo' | 'redo' } | { act?: string; question: string; ok?: boolean; steps?: unknown[] }, bindings: ToolBindings | null, primitives: ToolPrimitives, opts?: { view?: unknown; timeline?: ToolTimeline | null; replace?: boolean; request?: Request | null; live?: World | null; catalog?: unknown }): ToolRun;
+/** The source forms of a binding argument. */
+export const TOOL_ARG_SOURCES: readonly string[];
+/** The questions the door answers with facts of the live world. */
+export const WORLD_QUESTIONS: readonly string[];
+/** The std.tool.* declarations of a world, checked. */
+export function toolBindings(live: World, opts?: { catalog?: unknown }): ToolBindings;
+/** A new timeline. */
+export function toolTimeline(): ToolTimeline;
+/** The acts a tool world offers (honoured and bound). */
+export function toolCapabilities(live: World, bindings?: ToolBindings | null): { act: string; kinds: string[]; on: string[]; op: string }[];
+/** A value as a parameter takes it, translated by knowledge (range, kind lineage, ordered scale). */
+export function nearestAccepted(value: unknown, param: ToolParam | undefined, opts?: { live?: World | null; catalog?: unknown }): { value?: unknown; translated?: boolean; was?: unknown; by?: string; refused?: boolean; values?: string[] };
+/** A tool's state as a Map of things. */
+export function readView(view: unknown): Map<string, ViewThing>;
+/** What changed between two views. */
+export function stateDiff(before: unknown, after: unknown): StateDiff;
+/** The tool's state told into a fork of the declarations. */
+export function mirrorState(live: World, view: unknown): { world: World; skipped: string[] };
+/** Facts of the live world for a question (capabilities, state), as reply facts. */
+export function askWorld(question: string, request: Request | null, opts?: { live?: World | null; bindings?: ToolBindings | null; view?: unknown; catalog?: unknown }): { facts: { reply: string; roles: Record<string, unknown> }[]; capabilities?: { act: string; kinds: string[]; on: string[]; op: string }[] };
+/** A session over a tool world: read, revise, plan, run, say, with no code per world. */
+export function toolSession(live: World, primitives: ToolPrimitives, opts?: { language?: World | null; catalog?: unknown; revisions?: unknown; lang?: string; seed?: number; mirror?: boolean; bindings?: ToolBindings | null }): { say(text: string): { request: Request; revision: object | null; plan: RequestPlan | null; run: ToolRun | null; reply: { facts: object[]; text: string; missing: string[] } }; timeline: ToolTimeline; dialogue: RequestDialogue; bindings: ToolBindings };
+/** A kind and its parents (the world's lineage, the catalog's k.kinds.parent; with `drawn`, what it is drawn as first). */
+export function kindLineage(kind: string, opts?: { live?: World | null; catalog?: unknown; drawn?: boolean }): string[];
+/** The value a conditional expectation (k.expect.when) gives a key of a thing of a kind. */
+export function expectedValue(kind: string, key: string, known?: Record<string, unknown>, opts?: { live?: World | null; catalog?: unknown; sources?: string[]; lineage?: string[] | null }): { value: unknown; min?: number; max?: number; typical?: number; from: string; because: string[]; of?: string } | null;
+/** The first n items of a structure, kept connected (breadth first along the links). */
+export function cutToCount<T>(items: T[], links: { a: T; b: T }[], n: number): { keep: T[]; drop: T[]; links: { a: T; b: T }[] };
+/** The kinds to add to reach n, in the proportions there are. */
+export function fillToCount(kinds: string[], n: number, opts?: { pool?: string[] | null; notAll?: boolean }): string[];
+/** The kinds with a second kind of the pool when all are one. */
+export function notAllOneKind(kinds: string[], pool?: string[]): string[];
 /** The reply of a request as reply facts and their text. */
-export function sayRequest(request: Request, outcome?: Partial<RequestPlan> & { run?: { result: object } | null; revised?: boolean; reply?: string | null }, opts?: string | { language?: World | null; lang?: string; dictionary?: unknown }): { facts: { reply: string; roles: Record<string, unknown>; from?: string; code?: string }[]; text: string; missing: string[] };
+export function sayRequest(request: Request, outcome?: Partial<RequestPlan> & { run?: { result: object } | ToolRun | null; revised?: boolean; reply?: string | null; capabilities?: { act: string; kinds: string[]; on: string[] }[]; answer?: { reply: string; roles: Record<string, unknown> }[] }, opts?: string | { language?: World | null; lang?: string; dictionary?: unknown }): { facts: { reply: string; roles: Record<string, unknown>; from?: string; code?: string }[]; text: string; missing: string[] };
 /** The world as facts: (thing, attribute, value) and (thing, relation, thing), indexed, kept per world version. */
 export interface FactView { version: number; depth: number; readonly size: number; thing(id: string): { id: string; type: string; kinds: string[]; attrs: Map<string, unknown[]>; rels: { relation: string; to: string | null; value?: unknown; joins?: { type: string; by: string } }[] } | undefined; ids(): string[]; ofKind(kind: string): string[]; values(id: string, key: string): unknown[]; related(id: string, relation?: string): (string | null)[]; inbound(id: string, relation?: string): string[]; attributes(id?: string): { thing: string; attribute: string; value: unknown }[]; relations(id?: string): { thing: string; relation: string; to: string | null }[] }
 /** The bounds of the reasoning cycle of planRequest. */

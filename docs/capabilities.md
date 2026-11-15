@@ -901,6 +901,33 @@ print(p.steps.length, p.notHonoured.map((x) => `${x.words}: ${x.why}`));
 2 ["red: this world does not take attribute for make"]
 ```
 
+## Bind a live world to its tool by wires, and run its plans with a timeline
+
+*In `runPlan`, `runWorldPlan`, `toolBindings`, `toolTimeline`, `toolSession`, `toolCapabilities`, `askWorld`, `nearestAccepted`, `readView`, `stateDiff`, `mirrorState`, `TOOL_ARG_SOURCES`, `WORLD_QUESTIONS`, `kindLineage`, `expectedValue`, `cutToCount`, `fillToCount`, `notAllOneKind`; since 0.152.*
+*Works on: any live world that declares `std.tool.op` / `std.tool.param` / `std.tool.bind` (and `std.tool.custom`), the published k.expect.scale, w.lang.en cues and replies.*
+
+The link between a live world and the generic mechanisms is wires: a world declares its tool's operations with their
+typed parameters and accepted values, binds each act of a plan to one of them with the source of every argument, and
+names its custom constraints and searches. The library fills the arguments (said, revised, the plan's values,
+conditional expectations `k.expect.when`), translates what the tool does not take by knowledge (the nearest grade of
+k.expect.scale, the nearest kind of the lineage or what `std.schema.drawn` says), checks preconditions, calls the
+primitive, reads the view before and after and says the diff ("I added 2 atlases", "Nothing changed. That is what is
+there already."). It keeps the timeline: one plan is one undo step, a revision replaces it, a question is no step. A
+question about the world ("what can you do here?", "how many novels?") is answered from its declarations and its view.
+`examples/tool-app.mjs` declares two invented worlds (books on a shelf, beads on a necklace) by wires and a few
+primitives, and runs them through `toolSession` with no code per world; `test/tool.test.mjs` runs properties over both.
+
+```js run
+const p = { name: 'size', type: 'ex.scale', by: 'step', accepts: ['small', 'big'] };
+const scale = new World();
+scale.load('@a ex.scale step=tiny order=1\n@b ex.scale step=small order=2\n@c ex.scale step=big order=3\n@d ex.scale step=huge order=4');
+print(nearestAccepted('tiny', p, { catalog: [scale] }).value, nearestAccepted('huge', p, { catalog: [scale] }).value);
+```
+
+```output
+small big
+```
+
 ## Reason a little on the state of a live world before acting
 
 *In `planRequest` (its reasoning cycle), `factsOf`, `kindFactsOf`, `deduceState`, `induceStyle`, `induceCorrections`, `REASONING`, `KIND_FACTS`, `REASON_RULES`; since 0.150.*

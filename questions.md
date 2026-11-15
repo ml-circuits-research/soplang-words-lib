@@ -517,3 +517,21 @@ The skills were rewritten to the owner's direction (worker-log, "Skills rewritte
    honours extent/layout for shapes that have no such slot; notes honours size with no slot; remove/change/connect
    have no honours). Should the example worlds be corrected, or kept as they are as teaching material?
 **Choice taken while waiting:** the example worlds and src/ are unchanged; the skills and their dry runs are in use.
+
+## Q87 (worker, 0.152.0 tool binding) — open points
+1. **Catalog proposals** (I cannot write sop-knowledge-worlds): the cues `ask.capabilities` / `ask.state` (reaction
+   values `capabilities`, `state`) and the replies `can`, `can.say`, `state.count`, `state.empty`, `nothing.same` are in
+   `examples/tool-app.mjs` PROPOSED_EN, told into the language world by the example and the tests; please publish them
+   in w.lang.en. Also the shape `k.expect.when` (today read untyped from the world and the catalog; no schema).
+2. **Primitive call style**: one object of named arguments (`add({ kind, n, size })`), not positional. Say if PSys2 wants positional.
+3. **Plans of remove / change** are bound and used by undo, but `planRequest` still plans only make (and connect);
+   "remove the comics", "paint them blue" need a planner step over the view (a reference resolver on the mirrored state).
+4. A no-op revision ("in red" after the same) is detected after the fact (redo alike, `same`), and the tool did undo +
+   redo with new ids; a pre-check of the revised request against the last would avoid the calls.
+5. An unread noun where the kind stands ("add 2 dictionaries") still falls back to the dialogue's target (existing
+   planner policy: the act is never guessed over unread words, the target is). Should an unread content word block the
+   target fallback, like the act?
+6. Induction over the mirrored state (3 red novels -> the next books red) is the designed source order (induced > world >
+   expect); an unconditional kind expectation (an atlas is big) loses to it, a conditional one whose conditions hold wins.
+7. The lint for live-world JS (reviewer item 7, skills/lib/smells.mjs) is not extended here; the tool-world property
+   checks a primitive's source names no declared kind and reads no request.

@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.152.0
+
+Tool binding as wires, executed by the library (owner 2026-11-15 19:27: the glue between a live world and the generic
+mechanisms is declarative; only tool primitives, the view and declared custom constraints / searches are code).
+
+### New
+- std module `std.tool`: `std.tool.op`, `std.tool.param` (type, accepts, scale, range), `std.tool.bind` (act, of,
+  op, `arg=<param><-<source>|...`, needs, makes / removes / changes), `std.tool.custom` (constraint or search, with
+  its signature and the reply it fails with). `toolBindings(live)` reads and checks them.
+- `runPlan(plan, bindings, primitives, { view, timeline, replace, request, live, catalog })`: binding by act and kind
+  lineage, arguments filled (said, revised, plan values with provenance, `k.expect.when`) and translated by knowledge
+  (`nearestAccepted`: nearest grade of an ordered scale, kind lineage and std.schema.drawn, range), preconditions
+  (exists, absent, declared constraints), the primitive called, the effect checked on the view; all or nothing; the
+  result is a diff (`stateDiff`; a thing redone alike is no change: `same`). It owns the timeline (`toolTimeline`):
+  one plan = one entry, a revision replaces it, undo / redo by the tool's snapshot or by the inverse of the diff
+  through the bindings, a question is no step. `runPlan(live, plan, opts)` with a World is unchanged (`runWorldPlan`).
+- `toolSession(live, primitives, opts)`: the door with no code per world (read, question, undo / redo, revise, plan on
+  the mirrored state (`mirrorState`), run, say). `toolCapabilities`, `askWorld`, `WORLD_QUESTIONS` (capabilities,
+  state): questions answered as facts of the declarations and of the view.
+- src/expect.mjs: `kindLineage`, `expectedValue` (conditional expectations `k.expect.when ... if.<key>=`, the most
+  specific first), the structure operators `cutToCount`, `fillToCount`, `notAllOneKind`.
+- `examples/tool-app.mjs`: two invented tool worlds declared only by wires (books on a shelf: three primitives;
+  beads on a necklace), and the w.lang.en cues / replies proposed for the catalog (Q87). test/tool.test.mjs (7).
+
+### Changed
+- `planRequest`: a general kind is a mix of its makeable subkinds, and a kind not wanted excludes its subkinds;
+  coordinated kinds keep their counts; a count of the whole plans that many wholes; `k.expect.when` fills open slot
+  keys per item (with the item's role in the links), the whole's count and layout; an expectation whose conditions
+  hold here comes before an induced value; a revision that changes only the count keeps the last plan's structure
+  (`plan.structure` cut / fill).
+- `sayRequest`: speaks a tool run from its diff (`done.add`, `done.remove`, `done.change`, `done.undo`,
+  `why.nothing` + the reason, `nothing.same`), `outcome.capabilities` (`can`, `can.say`), `outcome.answer`.
+
 ## 0.151.0
 
 A contextual spell repair (psys2 Q39), generic and deterministic.

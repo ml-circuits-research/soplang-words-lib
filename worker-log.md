@@ -5853,3 +5853,27 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   learn-language-rules (all pairs): 143 operators, 22 admitted, 1 passes the smell review, 21 refused.
   learn-world-from-examples 8/8, no smell; audit-knowledge unchanged; node tools/generalisation-test.mjs share 1.
 - Library code untouched (src/ unchanged). Docs: README Skills, docs/capabilities.md (rebuilt). Question: Q86.
+
+## 0.152.0 tool binding as wires (reviewer 2026-11-16 03:10, owner order; coordinator: coordinated kinds, state questions)
+- Wire shapes (std module `std.tool`): `std.tool.op name= world= param= effect=`, `std.tool.param op= name= type=
+  accepts= scale= by= order= min= max= required=`, `std.tool.bind act= of= op= arg=<param><-<source>|... needs=
+  makes= removes= changes=` (sources: step.<key>, step.count, step.things, request.<on>[.<attr>], plan.<role>,
+  custom.<name>, value.<atom>, expect), `std.tool.custom name= kind=constraint|search in= out= fails=`. Conditional
+  defaults: `k.expect.when of= key= value= [min max typical] if.<key>=<v> if.<key>.min/.max=` (proposed for k.expect, Q87).
+- src/tool.mjs: toolBindings, runPlan (World first = runWorldPlan as before; else plan, bindings, primitives, opts),
+  nearestAccepted, readView, stateDiff, toolTimeline (snapshot/restore or inverse of the diff through the bindings),
+  mirrorState, toolCapabilities, askWorld (capabilities, state), toolSession. src/expect.mjs: kindLineage,
+  expectedValue, cutToCount, fillToCount, notAllOneKind. planRequest: general kind -> subkinds (and negation of a
+  general kind), coordinated counts, count of the whole -> that many wholes, k.expect.when per item (role from links),
+  count / layout, conditional expectation before induced, kept structure on a count revision. sayRequest from the diff.
+- Proof: examples/tool-app.mjs, `node examples/tool-app.mjs`: shelf (3 primitives + view, wires only): "add 3 tiny red
+  novels" -> 3 small (tiny->small); "add 4 books, not comics" -> 2 novels + 2 atlases; "too many" -> revision replaces,
+  structure cut to 2 ("I removed the novel. I removed the atlas."); "undo" -> 3 novels; "what can you do here?" ->
+  "I can make: novels, atlases, comics. When I make, you can say the kind, count, size, attribute."; "add 2 huge
+  atlases" -> big/right; "add two novels and a comic" -> 2 + 1; "how many novels?" -> "There are 5 novels."; "in red"
+  -> "Nothing changed. That is what is there already." Necklace (whole + links): cut 6 -> 4 keeps a chain of 3 ties,
+  fill back to 6, the first bead gold by role.
+- Tests: `node --test test/tool.test.mjs` 7 pass (14 tool-world properties); npm test 564 tests, 562 pass, 0 fail,
+  1 skipped; SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs" 564 / 562 / 0; npm run test:compat 11 / 0;
+  node tools/scan-loops.mjs src clean; doc examples api.md 138, capabilities.md 47, 0 problems.
+- Open points: questions.md Q87.

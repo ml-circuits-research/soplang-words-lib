@@ -47,6 +47,16 @@ something gets an honest, named refusal, not a guess.
    and joins them by key, or through declared delegation. Never a silent merge, never one world reading
    another's internals.
 
+10. **A tool is bound by wires (0.152).** When the world's state lives in a tool (a board, an editor), declare the
+   tool in `std.tool` (`core.use world=std.tool`): `std.tool.op` with its parameters, `std.tool.param` with
+   `type=` and `accepts=` (the values the tool takes; others are translated by knowledge: the nearest grade of
+   k.expect.scale, the nearest kind of the lineage or `std.schema.drawn`), `std.tool.bind act= of= op=
+   arg=<param><-<source>` with `needs=` / `makes=`, and `std.tool.custom` for a constraint or search no wire can
+   say. Defaults are `k.expect.when of= key= value= if.<key>=` rows, never code. The tool's JS holds only
+   primitives (typed, no request, no words, no defaults, no kind literals), the view (its state as facts) and the
+   declared custom functions; `toolSession` is the door. `examples/tool-app.mjs` is the pattern; the properties
+   of `test/tool.test.mjs` check a primitive names no kind of the world.
+
 ## Check it
 
 - `coverageOf(world)` (`skills/lib/declarations.mjs`):

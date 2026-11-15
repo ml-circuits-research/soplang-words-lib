@@ -3,7 +3,8 @@
 //   readRequest(world, text, ctx)            -> a live w.request: act, target, constraints, reactions, unread
 //   reviseRequest(dialogue, request, opts)   -> a new request, or the last one revised by w.dialogue.revision data
 //   planRequest(live, request, opts)         -> the acts with their roles filled, what was assumed, what is not honoured
-//   runPlan(live, plan, opts)                -> the acts run through `act` (the last result replaced when asked)
+//   runWorldPlan(live, plan, opts)           -> the acts run through `act` (the last result replaced when asked);
+//                                               runPlan (tool.mjs) runs a plan through a world's own acts or its tool binding
 //   sayRequest(request, outcome, opts)       -> reply facts (made, assumed, not_honoured, unread) and their text
 //
 // Everything a world can do is read from its declarations: `std.schema.honours act= on= of=` (the constraints an act
@@ -19,6 +20,7 @@ import { seeded, below } from './random.mjs';
 import { choose } from './rank.mjs';
 import { repairWords } from './spell.mjs';
 import { factsOf, kindFactsOf, deduceState, induceStyle, induceCorrections, REASONING } from './reason.mjs';
+import { rowsOf, kindLineage, expectedValue, cutToCount, fillToCount, notAllOneKind } from './expect.mjs';
 
 /**
  * The order in which a gap is filled: what the user said, the dialogue state, what is induced from this world's state
@@ -35,13 +37,6 @@ const STEPS = ['tiny', 'small', 'default', 'big', 'huge']; // the enum of k.expe
 
 // ---- facts from any source: a World, a factStore, an array of either --------------------------------------------
 const V = (v) => (typeof v === 'string' ? valueText(v) : v);
-function rowsOf(src, type) {
-  if (!src) return [];
-  if (Array.isArray(src)) return src.flatMap((s) => rowsOf(s, type)); // bounded: the sources given
-  if (Array.isArray(type)) return type.flatMap((t) => rowsOf(src, t)); // bounded: the types given
-  const facts = typeof src.ofType === 'function' ? src.ofType(type) : typeof src.facts === 'function' ? src.facts(type) : [];
-  return facts.map((f) => { const o = {}; for (const [k, vs] of Object.entries(f.attrs)) if (k !== 'core.source') o[k] = [].concat(vs).map(V); return o; });
-}
 const first = (o, k) => o?.[k]?.[0];
 const num = (x) => (x === undefined || x === null || x === '' ? undefined : Number(x));
 const plain = (t) => String(t).replace(/^\$/, '').split('.').pop().replace(/_/g, ' ');
@@ -535,7 +530,7 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   const notAll = C('kind').filter((c) => c.want === 'not_all');
   const withs = C('with');
   for (const c of wantK) if (!makeable(c.value) && !parts.some((p) => first(p, 'part') === c.value) && c.value !== target) notHonoured.push({ on: 'kind', words: c.words ?? c.value, why: `there is no ${c.value} here`, code: 'no_kind', value: c.value });
-  let pool, poolFrom = 'said', mode;
+  let pool, poolFrom = 'said', mode, general = false;
   if (shaped) {
     mode = 'shapes';
     pool = wantK.map((c) => c.value).filter(makeable);
@@ -546,23 +541,32 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   } else {
     mode = 'kind';
     pool = [...new Set([...(makeable(target) ? [target] : []), ...wantK.map((c) => c.value).filter(makeable)])];
+    if (!pool.length) { // a general kind ("books"): its makeable subkinds, by the world's lineage, in the order declared
+      const sub = [...cap.kinds.keys()].filter((k) => makeable(k) && k !== target && kindLineage(k, { live }).includes(target));
+      if (sub.length) { pool = sub; general = true; poolFrom = 'world'; }
+    }
   }
   // exclusions that would leave nothing to make give way, the oldest first, and are named
   const exclusions = C('kind').filter((c) => c.want === 'no');
-  while (pool.length && !pool.some((k) => !noK.has(k)) && exclusions.length) { // bounded: the exclusions
+  const out1 = (k) => noK.has(k) || kindLineage(k, { live }).some((p) => noK.has(p)); // not wanted, itself or as a kind of a kind not wanted
+  while (pool.length && !pool.some((k) => !out1(k)) && exclusions.length) { // bounded: the exclusions
     const c = exclusions.shift();
-    if (pool.includes(c.value) && noK.has(c.value)) { noK.delete(c.value); nameIt0(c, 'nothing would be left to make', 'nothing_left'); }
+    if (pool.some((k) => k === c.value || kindLineage(k, { live }).includes(c.value)) && noK.has(c.value)) { noK.delete(c.value); nameIt0(c, 'nothing would be left to make', 'nothing_left'); }
   }
-  pool = pool.filter((k) => !noK.has(k));
+  pool = pool.filter((k) => !out1(k));
   if (!pool.length && !whole) {
     if (!notHonoured.some((n) => n.code === 'no_kind')) notHonoured.push({ on: 'kind', words: target, why: `there is no ${target} here`, code: 'no_kind', value: target });
     return out;
   }
 
   // the count: said (a number, a range, an amount), else the expectation scaled by the size, else one
-  const countC = C('count').find((c) => !c.of || c.of === unit || c.of === target || pool.includes(c.of)) ?? null;
+  const wholeC = whole ? C('count').find((c) => c.of === target && c.of !== unit && c.number > 1 && !c.bound) ?? null : null; // "3 necklaces": that many wholes, each planned alike
+  const countC = C('count').find((c) => c !== wholeC && (!c.of || c.of === unit || c.of === target || pool.includes(c.of))) ?? null;
   let lo, hi, typ, countFrom;
   const baseMin = mk ? num(first(mk, 'min')) : 1, baseMax = mk ? num(first(mk, 'max')) : 1, baseTyp = mk ? num(first(mk, 'typical')) : 1;
+  const whenCtx = { live, catalog: has('expect') ? catalog : [], sources: ['world', 'expect'].filter(has) };
+  const saidKnown = { ...(sizeC || sizeI ? { size: sizeStep } : {}), ...Object.fromEntries(C('attribute').filter((c) => c.want === 'yes').map((c) => [c.attribute ?? 'colour', c.value])) };
+  const countWhen = (() => { const e = expectedValue(target, 'count', saidKnown, whenCtx); return e && (e.min !== undefined || e.typical !== undefined || e.max !== undefined) ? e : null; })();
   if (lengthC?.unit && mk && lengthC.unit === unit && lengthC.number !== undefined) { lo = hi = typ = lengthC.number; countFrom = 'said'; }
   else if (countC) {
     countFrom = 'said';
@@ -574,17 +578,26 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
     else lo = hi = typ = countC.number;
   } else if (wantK.some((c) => c.plural) && mode === 'kind') {
     const a = amounts('some') ?? amounts('few'); lo = num(first(a, 'min')) ?? 2; hi = num(first(a, 'max')) ?? 4; typ = num(first(a, 'typical')) ?? lo; countFrom = a ? 'expect' : 'sampled';
+  } else if (countWhen) { // a conditional expectation of the count (k.expect.when key=count min= max= typical= if.size=...)
+    lo = countWhen.min ?? countWhen.typical ?? 1; hi = Math.max(lo, countWhen.max ?? lo); typ = Math.min(hi, Math.max(lo, countWhen.typical ?? lo)); countFrom = countWhen.from;
   } else {
     lo = Math.max(1, Math.round(baseMin * cf)); hi = Math.max(lo, Math.round(baseMax * cf)); typ = Math.min(hi, Math.max(lo, Math.round(baseTyp * cf))); countFrom = mk ? mkFrom : 'world';
   }
   let n = random ? pick(rnd, lo, hi, true) : Math.min(hi, Math.max(lo, typ));
+  // coordinated kinds ("two novels and a comic"): each count stays with the kind it stands before; a kind said with
+  // no number is one
+  const coordinated = (mode === 'shapes' || mode === 'kind') && wantK.filter((c) => pool.includes(c.value)).length >= 2 && C('count').some((c) => c.of && c.number !== undefined && !c.bound && pool.includes(c.of))
+    ? wantK.filter((c, i, a) => pool.includes(c.value) && a.findIndex((x) => x.value === c.value) === i).map((c) => ({ kind: c.value, n: C('count').find((x) => x.of === c.value && x.number !== undefined && !x.bound)?.number ?? 1 }))
+    : null;
+  if (coordinated) { n = coordinated.reduce((a, x) => a + x.n, 0); lo = hi = typ = n; countFrom = 'said'; }
   const saidCount = countFrom === 'said' ? [lo, hi] : null;
   if (random && !countC) countFrom = 'sampled';
   if (mode === 'shapes' && notAll.length && n < 2) n = 2;
 
   const items = []; // { kind, part }
   let kindsFrom = poolFrom;
-  if (mode === 'shapes' || mode === 'kind') {
+  if (coordinated) for (const x of coordinated) for (let i = 0; i < x.n; i++) items.push({ kind: x.kind }); // bounded: the counts said
+  else if (mode === 'shapes' || mode === 'kind') {
     let k;
     const kmin = mk ? num(first(mk, 'kinds_min')) ?? 1 : 1, kmax = mk ? num(first(mk, 'kinds_max')) ?? kmin : 1;
     if (wantK.length) k = pool.length;
@@ -592,6 +605,7 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
     else k = kmin;
     if (notAll.length || C('kind').some((c) => c.want === 'not_all' && !c.value)) k = Math.max(k, 2);
     if (mode === 'kind' && !wantK.length && !notAll.length) k = 1;
+    if (general && !wantK.some((c) => c.value !== target)) k = pool.length; // a general kind is a mix of its subkinds
     k = Math.max(1, Math.min(k, pool.length, n));
     if (notAll.length && pool.length < 2) notHonoured.push({ on: 'kind', words: notAll[0].words, why: 'there is only one kind here', code: 'one_kind' });
     let chosen = random ? shuffle(rnd, pool).slice(0, k) : pool.slice(0, k);
@@ -679,6 +693,7 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
       if (s === 'induced' && hints.layout && !hints.drop?.has('layout') && (!enumL || enumL.includes(hints.layout))) { value = hints.layout; lf = 'induced'; }
       if (s === 'world' && !value && mkFrom === 'world' && first(mk, 'layout') && (!enumL || enumL.includes(first(mk, 'layout')))) { value = first(mk, 'layout'); lf = 'world'; }
       if (s === 'expect' && !value && mk && mkFrom === 'expect' && first(mk, 'layout') && (!enumL || enumL.includes(first(mk, 'layout')))) { value = first(mk, 'layout'); lf = 'expect'; }
+      if ((s === 'world' || s === 'expect') && !value) { const e = expectedValue(target, 'layout', { count: n, ...saidKnown }, { ...whenCtx, sources: [s] }); if (e?.value !== undefined && (!enumL || enumL.includes(e.value))) { value = e.value; lf = s; } } // a conditional expectation before the slot's default
       if (s === 'world' && !value && layoutSlot?.default) { value = V(layoutSlot.default); lf = 'world'; }
       if (s === 'sampled' && !value && enumL && random) { value = enumL[below(rnd, enumL.length)]; lf = 'sampled'; }
       if (value) break;
@@ -692,15 +707,16 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   // attribute values the dialogue state gives (the last request's), for the keys this request leaves open
   if (has('dialogue') && opts.dialogue?.last) for (const c of opts.dialogue.last.constraints ?? []) if (c.on === 'attribute' && c.want === 'yes' && keys.has('attribute') && !C('attribute').some((x) => x.attribute === c.attribute) && itemArgs[c.attribute] === undefined && wholeArgs[c.attribute] === undefined) { if (placeRole(c.attribute, c.value) === 'put') assumed.push({ key: c.attribute, value: c.value, from: 'dialogue' }); }
   // the common pattern of this world's things of the kinds made (anti-unification), for the keys still open
+  const inducedKeys = new Set();
   if (has('induced') && hints.attrs) for (const [key, value] of Object.entries(hints.attrs)) {
     if (hints.drop?.has(key) || itemArgs[key] !== undefined || C('attribute').some((x) => x.attribute === key)) continue;
     if (key === 'size' ? (!keys.has('size') || sizeC || sizeI) : !keys.has('attribute')) continue;
-    if (placeRole(key, value, { onWhole: false }) === 'put') assumed.push({ key, value, from: 'induced' });
+    if (placeRole(key, value, { onWhole: false }) === 'put') { assumed.push({ key, value, from: 'induced' }); inducedKeys.add(key); }
   }
 
   if (countFrom !== 'said') assumed.push({ key: 'count', value: n, from: countFrom });
   const kindsUsed = [...new Set(items.map((it) => it.kind))];
-  if (!wantK.length && kindsUsed.length && (mode !== 'kind' || kindsUsed[0] !== target)) assumed.push({ key: 'kinds', value: kindsUsed.join(', '), from: kindsFrom });
+  if ((!wantK.length || general) && kindsUsed.length && (mode !== 'kind' || kindsUsed[0] !== target)) assumed.push({ key: 'kinds', value: kindsUsed.join(', '), from: kindsFrom });
 
   // the steps: the whole, its items (in it where they can be), the links
   const steps = [];
@@ -711,7 +727,43 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   const layout = wholeArgs.layout;
   if (links && items.every((it) => can(it.kind, 'connect'))) for (let i = 1; i <= links && i < items.length; i++) steps.push({ action: 'connect', args: { a: { step: first0 + (layout === 'tree' ? Math.floor((i - 1) / 2) : i - 1) }, b: { step: first0 + i } }, link: true }); // bounded: the items
   else if (links) for (const c of withs) if (linkPart && c.value === first(linkPart, 'part')) nameIt(c, `the ${kindsUsed.join(', ')} cannot be connected here`, 'not_allowed');
+  // conditional expectations (k.expect.when) for the keys a slot takes and nothing filled: per item (its kind, its other
+  // values, its role in the links: start, branch, leaf, middle) and on the whole; two passes, so one default can
+  // condition another (an atlas is big, a big book goes at the right)
+  const roleOf = new Map();
+  { const lk = steps.filter((x) => x.link), into = new Map(), outOf = new Map();
+    for (const l of lk) { outOf.set(l.args.a.step, (outOf.get(l.args.a.step) ?? 0) + 1); into.set(l.args.b.step, (into.get(l.args.b.step) ?? 0) + 1); }
+    if (lk.length) steps.forEach((x, i) => { if (!x.item) return; const a = into.get(i) ?? 0, b = outOf.get(i) ?? 0; roleOf.set(i, !a ? 'start' : b > 1 ? 'branch' : !b ? 'leaf' : 'middle'); }); }
+  const whenSeen = new Map();
+  const fillWhen = (x, slots, known0, keysOpen) => {
+    for (let pass = 0; pass < 2; pass++) for (const key of keysOpen) { // bounded: two passes over the slots of one kind
+      const induced = inducedKeys.has(key) && x.args[key] === itemArgs[key]; // an induced value gives way to an expectation whose conditions hold here
+      if (x.args[key] !== undefined && !induced) continue;
+      const { [key]: _, ...others } = x.args;
+      const e = expectedValue(x.args.kind, key, { ...known0, ...(induced ? others : x.args) }, whenCtx);
+      if (!e || e.value === undefined || (induced && !e.because.length)) continue;
+      if (induced && e.value === x.args[key]) continue;
+      const s0 = slots.get(key);
+      if (s0?.enum && !s0.enum.map(V).includes(e.value)) continue;
+      x.args[key] = e.value;
+      const k1 = `${key}=${e.value}`;
+      if (!whenSeen.has(k1)) { const a = { key, value: e.value, from: e.from, ...(e.because.length ? { because: e.because.join(', ') } : {}) }; whenSeen.set(k1, a); assumed.push(a); }
+    }
+  };
+  const skipKey = new Set(['kind', 'world', 'in', 'id']);
+  steps.forEach((x, i) => {
+    if (x.link) return;
+    const slots = slotsOf(live, x.args.kind);
+    const open = [...slots.keys()].filter((k) => !skipKey.has(k) && !slots.get(k)?.refs?.length);
+    fillWhen(x, slots, { count: n, ...saidKnown, ...(roleOf.has(i) ? { role: roleOf.get(i) } : {}) }, open);
+  });
+  for (const key of inducedKeys) if (!steps.some((x) => x.item && x.args[key] === itemArgs[key])) { const i = assumed.findIndex((a) => a.key === key && a.from === 'induced'); if (i >= 0) assumed.splice(i, 1); } // an induced value no item kept
+  if (whole) Object.assign(wholeArgs, Object.fromEntries(Object.entries(steps[0].args).filter(([k]) => k !== 'kind')));
   out.roles = { count: n, kinds: kindsUsed, size: sizeStep, ...wholeArgs, ...itemArgs, links: steps.filter((s) => s.link).length, mode };
+  if (wholeC) { // the steps of one whole, again for each further whole, their step references moved along
+    const one = steps.length, shift = (v, k) => (v && typeof v === 'object' && 'step' in v ? { step: v.step + k * one } : v);
+    for (let k = 1; k < wholeC.number; k++) for (let i = 0; i < one; i++) steps.push({ ...steps[i], args: Object.fromEntries(Object.entries(steps[i].args).map(([a, v]) => [a, shift(v, k)])) }); // bounded: the wholes said times the steps of one
+  }
   out.steps = steps;
   out.ok = items.length > 0;
   out.bounds = { count: saidCount, not: [...noK] }; // what deduction checks the made items against
@@ -720,6 +772,61 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
 
 const NO_HINTS = Object.freeze({ attrs: null, layout: null, sizeStep: null, place: null, drop: null });
 const strip = (id) => String(id).replace(/^\$/, '');
+
+/**
+ * A revision that changes only the count of the last plan (`dialogue.lastPlan`, the same target, every other honoured
+ * constraint the same) keeps its structure: the last plan cut to n (cutToCount: breadth first along its links, so what
+ * stays is connected) or filled up to n (fillToCount: the kinds in the proportions there are, each new item linked as
+ * the plan links its items), "not all of one kind" kept (notAllOneKind). The result is checked like any candidate (run
+ * on a fork, deduced); null when it does not apply or breaks a hard constraint.
+ */
+function keptStructure(live, request, opts) {
+  const lastPlan = opts.dialogue?.lastPlan, last = opts.dialogue?.last;
+  if (!lastPlan?.ok || !last || request.revisedFrom === undefined || !lastPlan.steps?.length) return null;
+  const target = request.refers === 'last' ? (request.target ?? last.target) : request.target;
+  if ((target ?? lastPlan.target) !== lastPlan.target) return null;
+  const cap = capabilitiesOf(live);
+  const keys = new Set(cap.honours.filter((h) => h.act === lastPlan.act && (!h.of.length || h.of.includes(lastPlan.target))).flatMap((h) => [...h.on]));
+  const norm = (cs) => cs.filter((c) => c.on !== 'count' && keys.has(c.on)).map((c) => JSON.stringify([c.on, c.want ?? 'yes', c.value ?? null, c.attribute ?? null, c.number ?? null, c.min ?? null, c.max ?? null, c.amount ?? null])).sort();
+  if (JSON.stringify(norm(request.constraints)) !== JSON.stringify(norm(last.constraints))) return null;
+  const cc = request.constraints.find((c) => c.on === 'count' && !c.of), c0 = last.constraints.find((c) => c.on === 'count' && !c.of);
+  if (!cc || cc.number === undefined || (c0 && c0.number === cc.number)) return null;
+  const items = lastPlan.steps.map((s, i) => (s.item ? i : -1)).filter((i) => i >= 0);
+  const n = cc.number;
+  if (n === items.length || n < 1) return null;
+  const links = lastPlan.steps.filter((s) => s.link).map((s) => ({ a: s.args.a.step, b: s.args.b.step }));
+  const head = lastPlan.steps.filter((s) => !s.item && !s.link); // the whole, made first
+  let itemSteps, linkPairs;
+  if (n < items.length) {
+    const cut = cutToCount(items, links, n);
+    itemSteps = cut.keep.map((i) => lastPlan.steps[i]);
+    linkPairs = cut.links.map((l) => [cut.keep.indexOf(l.a), cut.keep.indexOf(l.b)]);
+  } else {
+    const kinds = items.map((i) => lastPlan.steps[i].args.kind);
+    const notAll = request.constraints.some((c) => c.on === 'kind' && c.want === 'not_all');
+    const add = fillToCount(kinds, n, { pool: lastPlan.roles?.kinds ?? null, notAll });
+    itemSteps = [...items.map((i) => lastPlan.steps[i]), ...add.map((k) => ({ ...(items.map((i) => lastPlan.steps[i]).findLast((s) => s.args.kind === k) ?? lastPlan.steps[items[0]]), args: { ...(items.map((i) => lastPlan.steps[i]).findLast((s) => s.args.kind === k) ?? lastPlan.steps[items[0]]).args, kind: k } }))];
+    linkPairs = links.map((l) => [items.indexOf(l.a), items.indexOf(l.b)]);
+    if (links.length) for (let i = items.length; i < n; i++) linkPairs.push([lastPlan.roles?.layout === 'tree' ? Math.floor((i - 1) / 2) : i - 1, i]); // bounded: the items added
+  }
+  if (request.constraints.some((c) => c.on === 'kind' && c.want === 'not_all')) {
+    const ks = notAllOneKind(itemSteps.map((s) => s.args.kind), lastPlan.roles?.kinds ?? []);
+    itemSteps = itemSteps.map((s, i) => (s.args.kind === ks[i] ? s : { ...s, args: { ...s.args, kind: ks[i] } }));
+  }
+  const h = head.length;
+  const steps = [...head.map((s) => ({ ...s, args: { ...s.args } })), ...itemSteps.map((s) => ({ ...s, args: { ...s.args } })), ...linkPairs.map(([a, b]) => ({ action: 'connect', args: { a: { step: h + a }, b: { step: h + b } }, link: true }))];
+  const kinds = [...new Set(itemSteps.map((s) => s.args.kind))];
+  const plan = { ...lastPlan, steps, roles: { ...lastPlan.roles, count: itemSteps.length, kinds, links: linkPairs.length }, assumed: [], notHonoured: [], rejected: [], cannot: [], bounds: { ...(lastPlan.bounds ?? {}), count: [n, n] }, structure: n < items.length ? 'cut' : 'fill', seed: opts.seed ?? lastPlan.seed };
+  if (typeof live?.fork === 'function' && typeof live?._compiled === 'function' && opts.reason !== false) { // the same check as any candidate
+    const fork = live.fork();
+    const run = runWorldPlan(fork, plan, { replace: opts.replace ?? [] });
+    if (!run.ok) return null;
+    const check = deduceState(factsOf(fork), run.made, { kindFacts: kindFactsOf([].concat(opts.catalog ?? [])), bounds: { ...plan.bounds, items: run.result.items } });
+    if (check.hard.length) return null;
+    plan.reasoning = { candidates: 1, depth: REASONING.depth, ticks: plan.steps.length + 1, exhausted: false, induced: [], soft: check.soft.map((x) => x.why), derived: check.derived.length, chosen: `kept the structure (${plan.structure} to ${n})` };
+  }
+  return plan;
+}
 
 /**
  * Plan a request in a live world from its declared capabilities, filling every gap from the sources in order
@@ -748,6 +855,8 @@ const strip = (id) => String(id).replace(/^\$/, '');
  */
 export function planRequest(live, request, opts = {}) {
   const sources = opts.sources ?? REQUEST_SOURCES;
+  const kept = keptStructure(live, request, opts);
+  if (kept) return kept;
   const base = planOnce(live, request, opts, NO_HINTS);
   if (!base.ok || opts.reason === false || typeof live?.fork !== 'function' || typeof live?._compiled !== 'function') return { ...base, rejected: [], cannot: [], reasoning: null };
   const budget = { ticks: opts.ticks ?? REASONING.ticks, used: 0 };
@@ -804,7 +913,7 @@ export function planRequest(live, request, opts = {}) {
   const simulate = (plan) => {
     budget.used += plan.steps.length + 1;
     const fork = live.fork();
-    const run = runPlan(fork, plan, { replace: [...except] });
+    const run = runWorldPlan(fork, plan, { replace: [...except] });
     if (!run.ok) return { hard: [{ rule: 'schema', thing: null, why: String(run.failed?.why ?? 'the world refused it') }], soft: [], derived: [] };
     const fv = factsOf(fork);
     return deduceState(fv, run.made, { kindFacts, budget, required, bounds: { ...plan.bounds, items: run.result.items }, placeable: (id) => !!refSlot && (fv.thing(id)?.kinds ?? []).some((k) => itemKinds.includes(k)) });
@@ -846,7 +955,7 @@ export function planRequest(live, request, opts = {}) {
  * `replace` (the things of the last result), those are removed first: a revision replaces, it does not pile on.
  * Returns { ok, made, failed, result: { things, count, kinds, whole, layout } }.
  */
-export function runPlan(live, plan, { replace = [] } = {}) {
+export function runWorldPlan(live, plan, { replace = [] } = {}) {
   for (const id of replace) if (live.get(String(id).replace(/^\$/, ''))) live.act({ action: 'remove', args: { thing: `$${String(id).replace(/^\$/, '')}` } }); // bounded: the things of the last result
   const made = [], ids = [];
   const resolve = (v) => (v && typeof v === 'object' && 'step' in v ? `$${ids[v.step]}` : v);
@@ -866,6 +975,8 @@ export function runPlan(live, plan, { replace = [] } = {}) {
   }
 }
 
+const pluralIn = (language, lang, w) => { if (!language) return w; try { return inflectBy(language, w, 'plural', { types: { rule: `${lang}.inflect`, irregular: `${lang}.irregular` } }) ?? w; } catch { return w; } };
+
 /**
  * The reply of a request as reply facts, each a w.lang.* reply name with its roles: done.revise, done.make (what was
  * made), assumed (each default used), not_honoured (each constraint the world did not honour), unread (the words no
@@ -878,15 +989,41 @@ export function sayRequest(request, outcome = {}, opts = {}) {
   const facts = [];
   if (outcome.reply) facts.push({ reply: outcome.reply, roles: {} });
   if (outcome.revised) facts.push({ reply: 'done.revise', roles: {} });
-  const run = outcome.run?.result ?? null;
+  // what this world can do (toolCapabilities): one fact per act, its kinds in the language's plural
+  for (const c of outcome.capabilities ?? []) {
+    facts.push({ reply: 'can', roles: { act: c.act, kinds: c.kinds.map((k) => pluralIn(o.language, lang, plain(k))).join(', ') } });
+    if (c.on?.length) facts.push({ reply: 'can.say', roles: { act: c.act, keys: c.on.join(', ') } });
+  }
+  for (const f of outcome.answer ?? []) facts.push({ reply: f.reply, roles: { ...f.roles, ...(f.roles.kind ? { kind: plain(f.roles.kind) } : {}) } }); // facts of the live world (askWorld)
+  const tool = outcome.run?.diff ? outcome.run : null; // a run through a tool binding: the reply is the diff of the view
+  const run = tool ? null : outcome.run?.result ?? null;
+  if (tool) {
+    const d = tool.diff, replaced = new Set(); // the diff has the things a revision redid alike taken out already
+    const byKind = (list) => { const m = new Map(); for (const t of list) m.set(t.kind, (m.get(t.kind) ?? 0) + 1); return [...m]; };
+    if (tool.undo || tool.redo) { if (tool.ok) facts.push({ reply: tool.undo ? 'done.undo' : 'done.redo', roles: {} }); }
+    else {
+      for (const [kind, n] of byKind(d.added)) facts.push({ reply: 'done.add', roles: { kind: plain(kind), number: n } });
+      for (const [kind, n] of byKind(d.removed.filter((t) => !replaced.has(t.id)))) facts.push({ reply: 'done.remove', roles: { thing: plain(kind), number: n } });
+      const ch = new Map(); for (const x of d.changed) { const k = `${x.kind}|${x.key}|${x.to}`; const e = ch.get(k) ?? { kind: x.kind, value: x.to, n: 0 }; e.n++; ch.set(k, e); }
+      for (const e of ch.values()) facts.push({ reply: 'done.change', roles: { thing: plain(e.kind), number: e.n, value: String(e.value) } });
+    }
+    const nothing = !d.added.length && !d.removed.length && !d.changed.length;
+    if (nothing && !tool.question && !(tool.ok && (tool.undo || tool.redo))) {
+      facts.push({ reply: 'why.nothing', roles: {} });
+      if (tool.failed?.reply) facts.push({ reply: tool.failed.reply, roles: tool.failed.roles ?? {}, code: tool.failed.code });
+      else if (tool.same) facts.push({ reply: 'nothing.same', roles: {}, code: 'same' }); // a revision that asks for what is there
+    }
+  }
   if (run) {
     if (run.whole) facts.push({ reply: 'done.make', roles: { kind: plain(outcome.target), number: 1 } });
     else for (const [kind, n] of Object.entries(run.kinds)) { const v = outcome.roles?.colour; facts.push({ reply: v ? 'done.make.value' : 'done.make', roles: { kind: plain(kind), number: n, ...(v ? { value: v } : {}) } }); }
   }
-  for (const a of outcome.assumed ?? []) if (a.key !== 'target' || !run?.whole) facts.push({ reply: 'assumed', roles: { key: a.key, value: String(a.value) }, from: a.from });
+  const assumed = [...(outcome.assumed ?? [])];
+  for (const a of tool?.ok ? tool.assumed ?? [] : []) if (a.from === 'translated' || !assumed.some((x) => String(x.value) === String(a.value))) assumed.push(a); // what the binding filled or translated beyond the plan
+  for (const a of tool && (!tool.ok || tool.same) ? [] : assumed) if (a.key !== 'target' || !run?.whole) facts.push({ reply: 'assumed', roles: { key: a.key, value: String(a.value) }, from: a.from });
   for (const nh of outcome.notHonoured ?? []) facts.push({ reply: 'not_honoured', roles: { words: nh.words, why: nh.why }, code: nh.code });
   for (const c of outcome.cannot ?? []) facts.push({ reply: 'not_honoured', roles: { words: c.words ?? request?.text ?? '', why: c.why }, code: 'cannot' });
-  if (request?.unread?.length && (run || outcome.revised)) facts.push({ reply: 'unread', roles: { words: request.unread.map((w) => `"${w}"`).join(', ') } });
+  if (request?.unread?.length && (run || outcome.revised || (tool && !tool.question))) facts.push({ reply: 'unread', roles: { words: request.unread.map((w) => `"${w}"`).join(', ') } });
   const missing = [];
   const texts = o.language ? facts.map((f) => { const t = replyFrom(o.language, f.reply, f.roles, { lang, dictionary: o.dictionary }); if (t == null) missing.push(f.reply); return t; }).filter(Boolean) : [];
   return { facts, text: texts.join(' '), missing: [...new Set(missing)] };

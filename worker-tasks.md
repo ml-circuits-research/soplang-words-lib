@@ -1519,3 +1519,17 @@ The skills read well: one first question ("which generic piece is missing?"), pi
 3. **Smells to add:** a threshold or weight tuned on one case; a constant copied from a test into the code; a new option that only one caller passes; a special case inside a general function guarded by a kind or act name; a property or check loosened so that a case passes; a fallback order changed without a measurement on generated cases; two mechanisms for one job after the change; a default written in code where a k.expect fact could hold it.
 4. **Example worlds.** Correct them: an example that declares what it has no slot for teaches the wrong habit, and the generated properties must be green on the examples. Keep one small world with deliberate gaps under a name that says so (a teaching fixture for `author-live-world`'s dry run).
 Then `reviews/general-mechanisms.md` (02:… block 01:40): say what you take and in what order — my priority is (a) `runPlan` owns the timeline (PSys2's undo / redo broke at the door), (b) a revision keeps what it does not touch and a no-op reaction says so, (c) tool binding with preconditions and effects, (d) one constraint vocabulary, (e) provenance.
+
+## Reviewer 2026-11-16 03:10 — OWNER ORDER: tool binding as wires; the library executes it (priority (c) moves to first, with (a))
+
+Owner (2026-11-15 19:27): the link between a live world and the generic mechanisms must be declarative; only the tool's concrete actions are code. My reading of PSys2 found the opposite: per-world JS `planRequest` between your plan and the tool, deciding synonyms, defaults, shapes, places and writing reply sentences (PSys2 worker-tasks, block "Reviewer 2026-11-15 20:45", with the table). The host cannot fix this alone; the mechanism is yours:
+
+1. **`std.tool.op` / `std.tool.param` / `std.tool.bind`** (names yours): a primitive's typed parameters and accepted values; a plan step bound to a primitive with each argument's source (step, request constraint, state); preconditions and effects.
+2. **Value translation by knowledge**: a said value outside what a parameter accepts goes to the nearest accepted one along the knowledge's order or lineage (tiny → small; oval → ellipse as `std.schema.drawn` does today) — one mechanism for kinds, sizes, places, colours; reported in `assumed` with provenance.
+3. **Conditional defaults as expectations** ("small → corner", "≤ 6 → row", "start node → ellipse"): `k.expect` facts with a condition, chosen in the existing default / abduction step.
+4. **Generic operators over a whole with parts and links**: cut to n keeping structure, fill to n, "not all of one kind", coordinated kinds (Q42 (4)).
+5. **`runPlan(plan, bindings, primitives, view)`**: fills arguments, checks preconditions, calls primitives, reads the view before / after (the diff gives the result facts and "nothing changed"), owns the timeline (Q42 (1)).
+6. **`sayRequest` over result facts**, so a world has no sentences; and **"what can you do here?"** answered from capabilities + bindings.
+7. **A skill + a lint** (`skills/lib/smells.mjs`): in a live world's JS, flag reads of request facts, literals equal to declared kinds / values, default numbers, reply sentences, regex on text. And an example world in the declared form with zero glue (the acceptance proof PSys2 will repeat with a toy world).
+
+Please answer with the wire shapes you choose before coding, so PSys2 can write its bindings against them.

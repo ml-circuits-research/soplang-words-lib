@@ -876,7 +876,8 @@ make
 
 An application loads its worlds and reads each message: "make a shopping list", "add 2 apples to
 my shopping list" act; "make a purple dragon" is not understood and the reply names "purple" and
-"dragon"; "I have two kids" is a statement, not a request. Every role a frame fills is used or named: "add a
+"dragon"; "I have two kids" is a statement, not a request. Each world runs in its own World (w.tasks reads the
+w.list it imports), and a world with no kind of its own is refused. Every role a frame fills is used or named: "add a
 guest called Ann at table 1" on w.seating says "A guest has no place at a table." instead of naming her "ann at table 1". Only complete readings act, and a turn
 changes only the world it addresses. A session keeps the open question: "make a list" asks "What name?" and
 "groceries" names it; "There is no party list yet. Shall I make it?" is answered by yes; undo and redo step the

@@ -5562,3 +5562,18 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   make/remove/change). Item 2 (composed from the language world's templates, Romanian mirror) waits for reply facts
   (Q73); the next release does items 3 and 4.
 - Gate: see commit; npm test 523 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.133.0 — reviewer 14:45 items 3 and 4: one World per world, refusal
+
+- `loadWorldSet` builds one World per world (std.acts + the import closure + its own text); w.tasks imports w.list:
+  `imports ['w.list']`, `kinds ['w.tasks.task']`. Three worlds (w.list, w.tasks, w.seating) give three Worlds; a table
+  lives in w.seating only.
+- Turn scope over three worlds (test/kit.test.mjs): 6 turns across w.seating and w.list, every change inside the owner;
+  a host `reply` that also makes a list in w.list during a w.seating turn is seen (`changed` has a w.list entry and
+  `turnScope(set, 'w.seating')` refuses it). Session worlds are named by the host (`session: ['w.list']`).
+- Timeline across worlds: "add a guest called Ann", "remove Ann", "undo" → the undo goes to w.seating (Ann is back).
+- Refusal: a world with no kind of its own ("w.none declares no kind of its own"), a wire of an undeclared type
+  (PSys2's acts.schema dialect: "types nothing declares: acts.schema.slot"), imports in a circle ("w.a -> w.b -> w.a").
+- Gate: npm test 525 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+- Not done: references across worlds (a w.tasks task naming a w.list list holds `$id` of another World; not checked
+  there); passive worlds; effects for the page (item 5).

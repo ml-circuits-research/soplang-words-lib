@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.133.0
+
+One World per world, and refusal of what does not load (reviewer 14:45 items 3 and 4; the owner's isolation decision).
+
+### Changed (breaking for the kit)
+- `loadWorldSet` loads each world into its own World: `set.worlds.get(name).world`, with `imports` (a world reads the
+  worlds it imports, explicitly) and `kinds` (only its own). `set.live` is gone; `set.schema` holds every schema in
+  one read-only World for words and slots.
+- A turn runs in the world that owns the kind (or holds the thing); `changed` lists `{ world, type }` for every
+  world, so a stray change to a second world is seen.
+- `turnScope(set, owner)` is a predicate over those changes: the owner and the session worlds the host names
+  (`loadWorldSet(..., { session })`).
+- The set keeps one timeline across worlds: undo / redo go to the world the last step touched.
+
+### New
+- `loadWorldSet` refuses a world that declares no kind of its own, holds wires of types nothing declares, or imports
+  in a circle.
+
 ## 0.132.0
 
 The kit's readings are trusted (reviewer 14:45 item 1, PSys2 Q24 probe B), and its replies carry no ids.

@@ -1,14 +1,15 @@
 // The host kit (reviewer 13:15 item 5, 13:50: Q72 approved): what every application needs to run worlds, so a
-// second application is a few lines, not 96 host files. `loadWorldSet` loads the worlds an application uses into
-// one live world (with std.acts) and keeps each world's typed world; `readTurn` reads one message under the
-// Reader contract with a language world's frames, binds the frame to a request, lets `arbitrate` choose the world
+// second application is a few lines, not 96 host files. `loadWorldSet` loads each world an application uses into
+// its own World (with std.acts and the worlds it imports) and keeps one typed world; `readTurn` reads one message under the
+// Reader contract with a language world's frames, binds the frame to a request, chooses the world that owns the kind
 // (the open tab only as the host's criterion), and acts only on a complete reading: otherwise it asks, or says
 // which words it did not understand. A turn changes only the world it addresses and the session.
 
 import { World } from './world.mjs';
 import { readFrames } from './frames.mjs';
 import { moodOf } from './reader.mjs';
-import { arbitrate, turn } from './turn.mjs';
+import { turn } from './turn.mjs';
+import { choose } from './rank.mjs';
 import { typedWorldFor, schemaOf, fitsSlot } from './typed.mjs';
 import { typedLexicon } from './readtypes.mjs';
 import { valueText } from './parser.mjs';
@@ -16,28 +17,74 @@ import { memoPerWorld } from './memo.mjs';
 import { morphOf, realise, articleFor, inflectBy } from './morph.mjs';
 
 /**
- * Load the worlds an application uses. `loader(name) -> text` (a file, a fetch, a bundle). Options: `names` (the
- * world schemas: w.list, w.tasks, ...), `language` (a World holding the language world's frames, parts, phrases,
- * closed words: the reader's), `knowledge` (a World the worlds' slots join, for the typed worlds), `bindings`
- * ({ needs: { kind, thing?, place?, amount?, placeKind?, placeKey? } }: how a frame's `needs` class maps onto a
- * world's entry kind and keys, until the language world says it), `verbs` ({ lemma: act }; default from the
- * language world's k.actions.verb facts when present). Returns the set: { live, language, worlds (name -> { kinds }), typed,
- * bindings, verbs }.
+ * Load the worlds an application uses, one World per world (reviewer 14:45 item 3; the owner's isolation decision):
+ * `loader(name) -> text` (a file, a fetch, a bundle). Options: `names` (the world schemas: w.list, w.tasks, ...);
+ * `language` (a World holding the language world's frames, parts, phrases, closed words: the reader's); `knowledge` (a
+ * World the worlds' slots join, for the typed world); `bindings` ({ needs: { kind, thing?, place?, amount?,
+ * placeKind?, placeKey? } }: how a frame's `needs` class maps onto a world's entry kind and keys, until the language
+ * world says it); `verbs` ({ lemma: act }; default from the language world's k.actions.verb facts); `session` (the
+ * names of the worlds any turn may change, the host's). A world reads the worlds it imports (`core.module imports=`:
+ * their types, explicitly), and owns only the kinds it declares. A world that declares no kind of its own, or holds a
+ * wire of a type nothing declares, is refused (item 4). Returns the set: { worlds (name -> { name, kinds, imports,
+ * world }), schema (every schema in one read-only World: words and slots), language, typed, bindings, verbs, session,
+ * steps }.
  */
-export function loadWorldSet(loader, { names = [], language = null, knowledge = null, bindings = {}, verbs } = {}) {
-  const live = new World();
-  const texts = names.map((n) => ({ name: n, text: loader(n) }));
-  const missing = texts.filter((t) => t.text == null).map((t) => t.name);
+export function loadWorldSet(loader, { names = [], language = null, knowledge = null, bindings = {}, verbs, session = [] } = {}) {
+  const texts = new Map();
+  const textOf = (n) => { if (!texts.has(n)) texts.set(n, loader(n) ?? null); return texts.get(n); };
+  const missing = names.filter((n) => textOf(n) == null);
   if (missing.length) throw new Error(`sopworld: loadWorldSet: no text for ${missing.join(', ')}`);
-  const r = live.load(['@acts core.use world=std.acts', ...texts.map((t) => t.text)].join('\n'));
-  if (r.ok === false) throw new Error(`sopworld: loadWorldSet: ${JSON.stringify(r.violations?.[0])}`);
-  const typed = typedWorldFor(schemaOf(live), knowledge); // one typed world for the set: worlds import each other (w.tasks imports w.list)
-  const worlds = new Map(texts.map((t) => [t.name, { name: t.name, kinds: live.ofType('std.schema.kind').filter((k) => (k.attrs.world || []).map(valueText).includes(t.name)).map((k) => valueText(k.attrs.of[0])) }]));
+  const importsOf = (n) => { const m = String(textOf(n) ?? '').match(/^@\S+\s+core\.module\b([^\n]*)/m); return m ? [...m[1].matchAll(/\bimports=(\S+)/g)].map((x) => x[1]) : []; };
+  const closure = (n, seen = []) => { // bounded: each world once; a cycle is refused
+    if (seen.includes(n)) throw new Error(`sopworld: loadWorldSet: imports go round: ${[...seen, n].join(' -> ')}`);
+    return [...new Set([...importsOf(n).flatMap((d) => (textOf(d) == null ? [] : closure(d, [...seen, n]))), n])];
+  };
+  const worlds = new Map();
+  for (const name of names) { // bounded: the worlds named
+    const order = closure(name);
+    const world = new World();
+    const r = world.load(['@acts core.use world=std.acts', ...order.map(textOf)].join('\n'));
+    if (r.ok === false) throw new Error(`sopworld: loadWorldSet: ${name}: ${JSON.stringify(r.violations?.[0])}`);
+    const types = world._compiled().types;
+    const unknown = [...new Set([...world.wires.values()].map((w) => w.type).filter((t) => !types.has(t) && !/^(core|std)\./.test(t)))];
+    if (unknown.length) throw new Error(`sopworld: loadWorldSet: ${name} holds wires of types nothing declares: ${unknown.slice(0, 5).join(', ')}`);
+    const kinds = world.ofType('std.schema.kind').filter((k) => (k.attrs.world || []).map(valueText).includes(name)).map((k) => valueText(k.attrs.of[0]));
+    if (!kinds.length) throw new Error(`sopworld: loadWorldSet: ${name} declares no kind of its own (std.schema.kind world=${name})`);
+    worlds.set(name, { name, kinds, imports: order.filter((x) => x !== name), world });
+  }
+  const schema = new World(); // the schemas in one World, read only: the words, the slots, the typed world
+  const all = [...new Set(names.flatMap((n) => closure(n)))];
+  const rs = schema.load(['@acts core.use world=std.acts', ...all.map(textOf)].join('\n'));
+  if (rs.ok === false) throw new Error(`sopworld: loadWorldSet: ${JSON.stringify(rs.violations?.[0])}`);
+  const typed = typedWorldFor(schemaOf(schema), knowledge);
   const V = verbs ?? Object.fromEntries((language?.ofType('k.actions.verb') ?? []).map((v) => [valueText(v.attrs.text?.[0]).toLowerCase(), valueText(v.attrs.act?.[0])]));
-  return { live, language, worlds, typed, bindings, verbs: V };
+  return { worlds, schema, language, typed, bindings, verbs: V, session: new Set(session), steps: [], redo: [] };
 }
 
-const SESSION = new Set(['std.', 'core.', '_std']);
+/** The things of a type in every world of the set (a type's things live in the world that owns its kind). */
+function thingsOf(set, type) {
+  return [...set.worlds.values()].flatMap((w) => w.world.ofType(type));
+}
+/** A thing by id and the world that holds it. */
+function findThing(set, id) {
+  const bare = String(id).replace(/^\$/, '');
+  for (const w of set.worlds.values()) { const x = w.world.get(bare); if (x) return { thing: x, world: w.name }; } // bounded: the worlds
+  return null;
+}
+/** One step of the set's timeline back or forward: the world the last step touched undoes it. */
+function stepTimeline(set, act, n = 1) {
+  let k = 0;
+  for (; k < n; k++) { // bounded: n
+    const from = act === 'undo' ? set.steps : set.redo, to = act === 'undo' ? set.redo : set.steps;
+    const step = from[from.length - 1];
+    if (!step) break;
+    const w = set.worlds.get(step.world)?.world;
+    const r = act === 'undo' ? w.undo(1) : w.redo(1);
+    if (r.ok === false) break;
+    to.push(from.pop());
+  }
+  return { ok: k > 0, n: k };
+}
 
 /**
  * One message, one turn. `context`: { lang ('w.lang.en'), active (the open tab's world), criteria (the host's
@@ -55,7 +102,7 @@ export function readTurn(set, text, context = {}) {
   const r = readFrames(L, text, { lang, morph, dictionary, senses: (id) => (id && verbOf(id) ? { act: verbOf(id), en: id } : {}) });
   const tokens = r.tokens;
   if (!r.best) {
-    const known = typedLexicon(set.live);
+    const known = typedLexicon(set.schema);
     const unread = tokens.filter((t) => !known.has(t));
     return { status: 'not-understood', reading: { frame: null, unread: unread.length ? unread : tokens, mood, complete: false }, reply: `I did not understand ${(unread.length ? unread : tokens).map((t) => `"${t}"`).join(', ')}.` };
   }
@@ -74,7 +121,7 @@ export function readTurn(set, text, context = {}) {
   if (b.confirm) return { status: 'ask', reading, reply: `There is no ${b.confirm.args[b.confirm.key]} ${label(b.confirm.args.kind)} yet. Shall I make it?`, asks: [{ key: b.confirm.place, value: b.confirm.args[b.confirm.key], confirm: { action: 'make', args: b.confirm.args } }] };
   if (!reading.complete) return { status: 'not-understood', reading, reply: b.placeless ? `${b.placeless}.` : b.unread.length ? `I did not understand ${b.unread.map((w) => `"${w}"`).join(', ')}.` : b.why };
   if (b.timeline) { // undo / redo: a step of the live world's timeline
-    const n = b.timeline.n ?? 1, res = b.timeline.act === 'undo' ? set.live.undo(n) : set.live.redo(n);
+    const n = b.timeline.n ?? 1, res = stepTimeline(set, b.timeline.act, n);
     return { status: res.ok ? 'done' : 'refused', reading, request: { action: b.timeline.act, args: { n } }, reply: sayAct(set, b.timeline.act, { ok: res.ok, n }, context) };
   }
   const request = b.request;
@@ -86,24 +133,30 @@ export function readTurn(set, text, context = {}) {
 
 const SAID = new Set(['make', 'remove', 'change']); // acts whose reply is a sentence of what was done; questions keep the answer
 
-/** Run a bound request: arbitrate the world, one turn (one step), a reply with no ids. */
+/** Run a bound request: the world that owns the kind (or holds the thing), one turn (one step), a reply with no ids. */
 function runRequest(set, request, reading, context = {}) {
   const { lang = 'w.lang.en', active, criteria } = context;
-  const owners = arbitrate(set.live, request, { active, criteria });
-  if (!owners.owner) return { status: owners.ambiguous ? 'ask' : 'refused', reading, request, reply: owners.ambiguous ? `In which: ${owners.ambiguous.join(' or ')}?` : (owners.verdicts.find((v) => v.verdict === 'refuse')?.why ?? 'No world here takes that.'), ...(owners.ambiguous ? { asks: [{ key: 'world', values: owners.ambiguous }] } : {}) };
-  const before = new Set([...set.live.wires.keys()]);
-  const thingType = request.args.thing ? set.live.get(String(request.args.thing).replace(/^\$/, ''))?.type : null; // said after it may be gone
-  const t = turn(set.live, [request], context.reply ? { reply: context.reply } : {});
-  const changed = [...set.live.wires.values()].filter((w) => !before.has(w.id)).map((w) => w.type);
+  const held = request.args.thing ? findThing(set, request.args.thing) : null;
+  const owners = held ? [held.world] : [...set.worlds.values()].filter((w) => w.kinds.includes(request.args.kind)).map((w) => w.name);
+  const pick = owners.length === 1 ? owners[0] : owners.includes(active) ? active : (criteria && owners.length > 1 ? choose(null, 'world', owners.map((o) => ({ world: o, active: o === active })), { seed: null, criteria }).best?.world : null); // the host's criteria (the open tab a measure)
+  if (!pick) return { status: owners.length ? 'ask' : 'refused', reading, request, reply: owners.length ? `In which: ${owners.join(' or ')}?` : 'No world here takes that.', ...(owners.length ? { asks: [{ key: 'world', values: owners }] } : {}) };
+  const owner = { owner: pick };
+  const before = new Map([...set.worlds.values()].map((w) => [w.name, new Set(w.world.wires.keys())]));
+  const thingType = held?.thing.type ?? null; // said after it may be gone
+  const target = set.worlds.get(pick).world;
+  const t = turn(target, [request], context.reply ? { reply: context.reply } : {});
+  const changed = [...set.worlds.values()].flatMap((w) => { const was = before.get(w.name); return [...w.world.wires.values()].filter((x) => !was.has(x.id)).map((x) => ({ world: w.name, type: x.type })).concat([...was].filter((id) => !w.world.wires.has(id)).map((id) => ({ world: w.name, type: 'removed', id }))); }); // every world: a stray change to another world is seen
+  if (t.status === 'done') { set.steps.push({ world: pick }); set.redo.length = 0; }
   const result = t.results?.[0]?.result;
   const reply = t.status === 'done' && SAID.has(request.action) ? sayAct(set, request.action, { request, result, thingType }, context) : labelled(set, (t.replies || []).join(' ') || t.question || '');
-  return { status: t.status === 'done' ? 'done' : t.status, reading, request, owner: owners.owner, reply, changed };
+  const owners_ = owner;
+  return { status: t.status === 'done' ? 'done' : t.status, reading, request, owner: owners_.owner, reply, changed };
 }
 
 /** The required keys of the kind a make request names that it does not give (and no default fills). */
 function requiredOpen(set, request) {
   if (request.action !== 'make' || !request.args.kind) return [];
-  const slots = set.live._compiled().slots.get(request.args.kind);
+  const slots = set.schema._compiled().slots.get(request.args.kind);
   if (!slots) return [];
   return [...slots.values()].filter((sl) => sl.required && sl.default === undefined && request.args[sl.key] === undefined && sl.key !== 'kind').map((sl) => ({ key: sl.key, ...(sl.ask ? { ask: valueText(sl.ask) } : {}), request }));
 }
@@ -114,14 +167,14 @@ function requiredOpen(set, request) {
  */
 export function referentOf(set, words) {
   const toks = String(words).toLowerCase().split(/\s+/).filter(Boolean);
-  const lex = typedLexicon(set.live);
+  const lex = typedLexicon(set.schema);
   let kind = null, rest = toks;
   for (let i = 0; i < toks.length && !kind; i++) { // bounded: the words
     const k = [toks[i], toks[i].replace(/s$/, '')].flatMap((w) => lex.get(w) || []).find((e) => e.cat === 'kind')?.type;
     if (k) { kind = k; rest = toks.filter((_, j) => j !== i); }
   }
   const name = rest.join(' ');
-  const things = kind ? set.live.ofType(kind) : [...set.worlds.values()].flatMap((w) => w.kinds).flatMap((t) => set.live.ofType(t));
+  const things = kind ? thingsOf(set, kind) : [...set.worlds.values()].flatMap((w) => w.kinds.flatMap((t) => w.world.ofType(t)));
   if (!name) return kind && things.length ? { thing: things[things.length - 1], type: kind } : null;
   const hit = things.find((x) => Object.entries(x.attrs).some(([k, vs]) => !k.startsWith('core.') && k !== 'kind' && k !== 'world' && vs.some((v) => valueText(v).toLowerCase() === name)));
   if (hit) return { thing: hit, type: hit.type };
@@ -152,10 +205,10 @@ function bindFrame(set, f, { lang, text = '' }) {
     kind = b.kind;
     if (b.thing && words('thing')) { args[b.thing] = words('thing'); used.add('thing'); }
     if (b.amount && roles.amount?.value !== undefined) { args[b.amount] = roles.amount.value; used.add('amount'); }
-    if (b.place && !words('place') && b.placeKind) { const ps = set.live.ofType(b.placeKind); if (ps.length) args[b.place] = `$${ps[ps.length - 1].id}`; } // no place said: the one made last
+    if (b.place && !words('place') && b.placeKind) { const ps = thingsOf(set, b.placeKind); if (ps.length) args[b.place] = `$${ps[ps.length - 1].id}`; } // no place said: the one made last
     if (b.place && words('place')) {
       const name = words('place').toLowerCase(), key = [].concat(b.placeKey ?? ['name'])[0];
-      const target = set.live.ofType(b.placeKind).find((x) => [].concat(b.placeKey ?? ['name']).some((k) => valueText(x.attrs[k]?.[0]).toLowerCase() === name));
+      const target = thingsOf(set, b.placeKind).find((x) => [].concat(b.placeKey ?? ['name']).some((k) => valueText(x.attrs[k]?.[0]).toLowerCase() === name));
       used.add('place'); used.add('rel');
       if (!target) return { confirm: { place: b.place, key, args: { kind: b.placeKind, [key]: name } }, unread: [] };
       args[b.place] = `$${target.id}`;
@@ -163,7 +216,7 @@ function bindFrame(set, f, { lang, text = '' }) {
   } else {
     const kindWords = all('thing');
     if (!kindWords.length) return { unread: Object.keys(roles).flatMap(all) };
-    const lex = typedLexicon(set.live);
+    const lex = typedLexicon(set.schema);
     const head = kindWords[kindWords.length - 1];
     kind = [kindWords.join(' '), head, head.replace(/s$/, '')].flatMap((w) => lex.get(w) || []).find((e) => e.cat === 'kind')?.type ?? null;
     if (!kind && f.act !== 'make') { // a thing of the world, not a kind: remove Ann, remove table 1
@@ -175,7 +228,7 @@ function bindFrame(set, f, { lang, text = '' }) {
     }
     if (!kind) { const un = kindWords.filter((w) => !lex.has(w)); return { unread: un.length ? un : kindWords, why: un.length ? undefined : `There is no ${kindWords.join(' ')} here.` }; }
     used.add('thing');
-    const slots = set.live._compiled().slots.get(kind) || new Map();
+    const slots = set.schema._compiled().slots.get(kind) || new Map();
     for (const w of kindWords.slice(0, -1)) { // words before the kind's word that are values of its closed sets: "a round table" -> shape=round
       const hit = [...slots].find(([, sl]) => (sl.enum || []).map((e) => valueText(e).toLowerCase()).includes(w));
       if (hit) args[hit[0]] = w; else unread.push(w);
@@ -204,7 +257,7 @@ function bindFrame(set, f, { lang, text = '' }) {
  */
 function sayAct(set, act, { request, result, ok = true, n, thingType } = {}, context = {}) {
   const lang = context.lang ?? 'w.lang.en', L = set.language;
-  const kindType = request?.args?.kind ?? thingType ?? (result?.thing ? set.live.get(result.thing)?.type : null) ?? (request?.args?.thing ? set.live.get(String(request.args.thing).replace(/^\$/, ''))?.type : null);
+  const kindType = request?.args?.kind ?? thingType ?? (result?.thing ? findThing(set, result.thing)?.thing.type : null) ?? (request?.args?.thing ? findThing(set, request.args.thing)?.thing.type : null);
   const count = Array.isArray(result?.things) ? result.things.length : Number(request?.args?.amount ?? 1);
   const word = kindType ? labelOf(set, kindType) : null;
   const roles = { kind: word, amount: count > 1 ? count : undefined, n: n > 1 ? n : undefined };
@@ -221,11 +274,11 @@ function sayAct(set, act, { request, result, ok = true, n, thingType } = {}, con
 }
 
 /** Types in a library sentence said by their words. */
-const labelled = (set, text) => text.replace(/\b([a-z]+(?:\.[a-z_]+)+)\b/g, (m) => (set.live._compiled().types.has(m) ? labelOf(set, m) : m));
+const labelled = (set, text) => text.replace(/\b([a-z]+(?:\.[a-z_]+)+)\b/g, (m) => (set.schema._compiled().types.has(m) ? labelOf(set, m) : m));
 
 /** A type said by its word (core.word means=): "w.list.list" -> "list". */
 function labelOf(set, type) {
-  return valueText(set.live.ofType('core.word').find((w) => (w.attrs.means || []).map(valueText).includes(type))?.attrs.text?.[0] ?? String(type).split('.').pop());
+  return valueText(set.schema.ofType('core.word').find((w) => (w.attrs.means || []).map(valueText).includes(type))?.attrs.text?.[0] ?? String(type).split('.').pop());
 }
 
 /**
@@ -248,10 +301,9 @@ export function replyFrom(language, act, roles, { lang = 'w.lang.en', type, dict
   return out ? out.charAt(0).toUpperCase() + out.slice(1) : null;
 }
 
-/** The types a world owns (its kinds) and the session's: a turn that addressed `owner` may change only these. */
+/** What a turn addressed to `owner` may change: that world and the session worlds the host named (`changed` entries). */
 export function turnScope(set, owner) {
-  const own = new Set(set.worlds.get(owner)?.kinds ?? []);
-  return (type) => own.has(type) || [...SESSION].some((p) => type.startsWith(p));
+  return (entry) => entry.world === owner || set.session.has(entry.world);
 }
 
 /**
@@ -279,7 +331,7 @@ export function openSession(set, context = {}) {
     const t = norm(text);
     for (const act of ['undo', 'redo']) { // bounded: two timeline acts
       if (!timeline[act].has(t)) continue;
-      const r = act === 'undo' ? set.live.undo(1) : set.live.redo(1);
+      const r = stepTimeline(set, act, 1);
       const reply = r.ok ? (replyFrom(L, act, {}, { lang, type: context.replies, dictionary: context.replyDictionary }) ?? (act === 'undo' ? 'I took the last step back.' : 'I put it back.')) : (act === 'undo' ? 'There is nothing to undo.' : 'There is nothing to redo.');
       return done({ status: r.ok ? 'done' : 'refused', text, reading: { act, unread: [], mood: 'imperative', complete: true }, reply });
     }
@@ -288,8 +340,8 @@ export function openSession(set, context = {}) {
       const pol = polarity.get(t);
       if (pol === 'no') return done({ status: 'done', text, reading: { act: 'answer', unread: [], complete: true }, reply: 'All right.' });
       if (pol === 'yes') {
-        const made = turn(set.live, [p.confirm]);
-        if (made.status !== 'done') return done({ status: made.status, text, reading: { act: 'answer', unread: [], complete: true }, reply: (made.replies || []).join(' ') });
+        const made = runRequest(set, p.confirm, { act: 'make', unread: [], complete: true }, context);
+        if (made.status !== 'done') return done({ ...made, text });
         const again = readTurn(set, p.text, context);
         return done({ ...again, text: p.text, reply: `${sayAct(set, 'make', { request: p.confirm }, context)} ${again.reply}`.trim() });
       }

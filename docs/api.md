@@ -1793,9 +1793,14 @@ print(contrastOf(w, 'circle').contrasts[0]);
 ### loadWorldSet(loader, options), readTurn(set, text, context?), referentOf(set, words) and turnScope(set, owner)
 
 The host kit: what an application needs to run worlds. `loadWorldSet(loader, { names,
-language, knowledge, bindings, verbs })` loads the world schemas `names` (`loader(name) -> text`)
-into one live world with std.acts, builds the set's typed world, and keeps the language world
-(its frames, parts, phrases, closed words and `k.actions.verb` facts) as the reader. `bindings`
+language, knowledge, bindings, verbs, session })` loads each world schema of `names`
+(`loader(name) -> text`) into its own World with std.acts: `set.worlds.get(name)` is `{ name,
+kinds, imports, world }`. A world reads the worlds it imports (`core.module imports=`), and owns
+only the kinds it declares. A world that declares no kind of its own, holds a wire of a type
+nothing declares, or imports in a circle is refused. `set.schema` holds every schema in one
+read-only World (words, slots, the typed world). The language world (its frames, parts, phrases,
+closed words and `k.actions.verb` facts) is the reader; `session` names the worlds any turn may
+change. `bindings`
 maps a frame's `needs` class onto a world's entry kind and keys (`{ entries: { kind, thing,
 amount, place, placeKind, placeKey } }`) until the language world says it.
 
@@ -1815,8 +1820,10 @@ world's reply fact for the act, else a short sentence with the kind said by its 
 article and its plural by the language world ("I made 2 tables.").
 
 `referentOf(set, words)` finds the thing words name: "table 1" (a kind's word and a name or
-number of one of its things, else the n-th made), "Ann" (a thing whose value it is). `turnScope(set, owner)` tells whether a type is one a turn addressed to `owner`
-may change (its kinds and the session's). `examples/lists-app.mjs` is a second application on
+number of one of its things, else the n-th made), "Ann" (a thing whose value it is). `turnScope(set, owner)` tells whether a change (`{ world, type }`, as `readTurn`
+returns them for every world) is one a turn addressed to `owner` may make: that world and the
+session worlds. A turn runs in the world that owns the kind or holds the thing, and is one step of
+the set's timeline: `undo` goes to the world the last step touched. `examples/lists-app.mjs` is a second application on
 the kit alone (w.list and w.tasks with a text loop).
 
 ```js

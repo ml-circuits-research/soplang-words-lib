@@ -1746,6 +1746,46 @@ print(tellStatement(w, 'I have two kids', { type: 'ex.person' }).facts, w.get('m
 [{"key":"children","value":2}] ["2"]
 ```
 
+### cycleOf, cycleAdd, cycleDiff, statedDay, readClock and writeClock
+
+Cycles over the members the knowledge declares (`k.time.ordered name= cycle= n=`: weekdays,
+months, seasons, parts of the day, stages): `cycleOf(world, member, { type, cycle })` gives
+`{ cycle, members, at }`; `cycleAdd(world, member, steps)` the member that many steps round
+(negative: before); `cycleDiff(world, from, to)` the steps forward from one to the other.
+`statedDay(world, text, { cycle, today })` reads a day the user states ("today is Friday"), which
+overrides the host's today. `readClock(text, { words })` reads a time of day on the 12-hour clock
+into minutes after midnight ("3 o'clock", "half past 3", "quarter to 4", "10 past 6", "3:30 pm",
+"noon"), and `writeClock(minutes, { ampm, words })` writes it back. The clock words default to
+English. Facts such as a weekday's `weekend` or a month's season are read like any key.
+
+```js run
+const w = new World();
+w.tell('@a ex.day name=Mon cycle=wk n=1  @b ex.day name=Tue cycle=wk n=2');
+print(cycleAdd(w, 'Tue', 1, { type: 'ex.day' }), writeClock(readClock("3 o'clock") + 120));
+```
+
+```output
+Mon 5 o'clock
+```
+
+### contrastOf(world, kind, options?)
+
+How a kind differs from its siblings ("how is a circle different from other shapes"): the facts
+named for the kind are merged, its siblings are the things of the same type that share a parent
+(`kind`, `class`, `is`, `is_a`, `kind_of`), and a key contrasts when few siblings hold the kind's
+value. It returns `{ kind, type, parents, siblings, contrasts: [{ key, value, share, others }] }`,
+rarest first (std.decide kind `contrast`), or `{ why }`. Options: `type`, `up`, `skip`, `max`.
+
+```js run
+const w = new World();
+w.tell('@c sh name=circle kind=flat corners=0  @s sh name=square kind=flat corners=4  @t sh name=triangle kind=flat corners=3');
+print(contrastOf(w, 'circle').contrasts[0]);
+```
+
+```output
+{"key":"corners","value":"0","share":0,"others":{"3":1,"4":1}}
+```
+
 ### compose(world, topic, options?) and interestOf(world, fact, options?)
 
 A composition of a genre about a topic, from knowledge, with no model (std.compose, first

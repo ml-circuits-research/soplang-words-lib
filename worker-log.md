@@ -5489,3 +5489,14 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - The library's version of PSys2's host-side foreign-reading rules (11:35): readText's mood/complete/unread;
   PSys2 can delete foreign-reading.mjs when its acceptance cases pass on readText (not measured here).
 - Gate: npm test 513 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.128.0 — L2 cycles and clock, L4 contrast (real turns r0586/r0587, r0610/r0611)
+
+- src/cycles.mjs: /tmp/cy.mjs on published k.time: Friday+1 Saturday, Friday+3 Monday, Monday-1 Sunday,
+  Wednesday->Friday 2, December+2 February, winter+1 spring; statedDay("I should tell you, today is Friday") Friday,
+  tomorrow Saturday; readClock "3 o'clock" 180, "half past 3" 210, "quarter to 4" 225, "3:30 pm" 930; +2 h "5 o'clock".
+- src/contrast.mjs: /tmp/ct.mjs on k.shapes: circle vs 22 flat siblings: corners=0 (0.14), sides=0 (0.23), round=true
+  (0.32); square: sides=4, corners=4, equal_sides=true (0.27 each).
+- 13:15 (PSys2 Q20-Q22) read: items 1-3 go with R3/R4, 4 (outline path) with L4's follow-up, 5 (host kit) as a
+  design question first.
+- Gate: npm test 515 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

@@ -609,6 +609,13 @@ export function readStatement(world: World, text: string, options?: { type?: str
 export function tellStatement(world: World, text: string, options?: { type?: string; subject?: string; tier?: string; [option: string]: unknown }): { mood: string; facts: { key: string; value?: unknown; values?: string[] }[]; unread: string[]; why?: string; told?: object };
 export function describeThing(world: World, id: string): { key: string; values: string[] }[];
 export function readAboutSelf(world: World, text: string, options?: { subject?: string; self?: string[]; [option: string]: unknown }): ReturnType<typeof readByTypes>;
+export function cycleOf(world: World, member: string, options?: { type?: string; cycle?: string }): { cycle: string; members: string[]; at: number } | null;
+export function cycleAdd(world: World, member: string, steps: number, options?: { type?: string; cycle?: string }): string | null;
+export function cycleDiff(world: World, from: string, to: string, options?: { type?: string; cycle?: string }): number | null;
+export function statedDay(world: World, text: string, options?: { cycle?: string; today?: string[]; type?: string }): string | null;
+export function readClock(text: string, options?: { words?: object }): number | null;
+export function writeClock(minutes: number, options?: { ampm?: boolean; words?: object }): string;
+export function contrastOf(world: World, kind: string, options?: { type?: string; up?: string[]; skip?: Set<string>; max?: number }): { kind?: string; type?: string; parents?: string[]; siblings?: string[]; contrasts?: { key: string; value: string; share: number; others: Record<string, number> }[]; why?: string };
 export function arrangementOf(world: World, text: string, options?: { lang?: string }): { text: string; layout: string | null; relation: string | null; direction: string | null; reverse: boolean; diagramLayout: string | null; as: string | null } | null;
 export interface DiagramResult { kind: string; form: string; layout: string; topic: string; fill: string; text: string; nodes: { id: string; label: string; role: string; shape: string | null; x: number; y: number }[]; edges: { from: string; to: string }[]; groups: { id: string; label: string; members: string[] }[]; told?: object }
 export function composeDiagram(world: World, options: { kind: string; topic: string; seed?: number; max?: number; id?: string; frame?: { x: number; y: number; w: number; h: number }; into?: World; layout?: string }): DiagramResult | { why: string };

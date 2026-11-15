@@ -869,6 +869,27 @@ print(readFrames(w, 'zap a tree', { lang: 'ex' }).best.act);
 make
 ```
 
+## Step round a cycle, read a clock, say what sets a kind apart
+
+*In `cycleOf`, `cycleAdd`, `cycleDiff`, `statedDay`, `readClock`, `writeClock`, `contrastOf`; since 0.128.*
+*Works on: k.time's ordered members (weekdays, months, seasons, parts of the day), any kinds with parents (k.shapes).*
+
+"Today is Friday", then "what day is tomorrow" (Saturday); "how many days until Friday"; "3
+o'clock plus 2 hours" (5 o'clock); "how is a circle different from other shapes" (no corners and
+no sides, round). Cycles are arithmetic over the knowledge's members, not a calendar in code.
+**Limits:** no dates and no time zones; the clock words are English until the language world has
+them.
+
+```js run
+const w = new World();
+w.tell('@a ex.day name=Thu cycle=wk n=1  @b ex.day name=Fri cycle=wk n=2  @c ex.day name=Sat cycle=wk n=3');
+print(cycleAdd(w, statedDay(w, 'today is Fri', { cycle: 'wk', type: 'ex.day' }), 1, { type: 'ex.day' }));
+```
+
+```output
+Sat
+```
+
 ## Learn about the user from what they say
 
 *In `readStatement`, `tellStatement`, `describeThing`, `readAboutSelf`; since 0.127.*

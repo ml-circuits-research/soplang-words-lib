@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.128.0
+
+L2 and L4 of the reviewer's 09:20 block (real turns r0586/r0587, r0610/r0611).
+
+### New
+- `cycleOf`, `cycleAdd`, `cycleDiff` over k.time's ordered members; `statedDay` ("today is
+  Friday" overrides the host's today); `readClock` / `writeClock` on the 12-hour clock.
+- `contrastOf(world, kind)`: the keys where a kind's value is rare among its siblings (std.decide
+  kind `contrast`).
+
 ## 0.127.0
 
 L5 of the reviewer's 09:20 block (10:55: real turns of PSys2's Profile tab).

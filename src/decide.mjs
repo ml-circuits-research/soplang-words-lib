@@ -46,4 +46,5 @@ export const DECIDE_TEXT = String.raw`
 @std.decide.c.related.1 std.decide.criterion of=related n=1 name=valid measure=valid dir=max about="a related case the world answers and reads back first (relatedCases)"
 @std.decide.c.related.2 std.decide.criterion of=related n=2 name=distance measure=distance dir=min
 @std.decide.c.alignment.1 std.decide.criterion of=alignment n=1 name=fit measure=fit dir=max about="the share of slots that match, references to paired types counting a quarter more (alignWorlds)"
+@std.decide.c.contrast.1 std.decide.criterion of=contrast n=1 name=rare measure=share dir=min about="the kind's value fewest of its siblings hold (contrastOf)"
 `;

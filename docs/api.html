@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="2b91f046e352">
+<meta name="source-hash" content="f65fe8589feb">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.127.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.128.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -610,6 +610,18 @@ print(listSums(w, &#x27;l&#x27;, { itemType: &#x27;ent&#x27; }).change);</code><
 w.load(&#x27;@p core.type of=ex.person  @k core.slot of=ex.person key=children kind=integer  @w core.word text=kids means=children&#x27;);
 print(tellStatement(w, &#x27;I have two kids&#x27;, { type: &#x27;ex.person&#x27; }).facts, w.get(&#x27;me&#x27;).attrs.children);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;key&quot;:&quot;children&quot;,&quot;value&quot;:2}] [&quot;2&quot;]</code></pre></figure>
+<h3 id="cycleof-cycleadd-cyclediff-statedday-readclock-and-writeclock">cycleOf, cycleAdd, cycleDiff, statedDay, readClock and writeClock</h3>
+<p>Cycles over the members the knowledge declares (<code>k.time.ordered name= cycle= n=</code>: weekdays, months, seasons, parts of the day, stages): <code>cycleOf(world, member, { type, cycle })</code> gives <code>{ cycle, members, at }</code>; <code>cycleAdd(world, member, steps)</code> the member that many steps round (negative: before); <code>cycleDiff(world, from, to)</code> the steps forward from one to the other. <code>statedDay(world, text, { cycle, today })</code> reads a day the user states ("today is Friday"), which overrides the host's today. <code>readClock(text, { words })</code> reads a time of day on the 12-hour clock into minutes after midnight ("3 o'clock", "half past 3", "quarter to 4", "10 past 6", "3:30 pm", "noon"), and <code>writeClock(minutes, { ampm, words })</code> writes it back. The clock words default to English. Facts such as a weekday's <code>weekend</code> or a month's season are read like any key.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(&#x27;@a ex.day name=Mon cycle=wk n=1  @b ex.day name=Tue cycle=wk n=2&#x27;);
+print(cycleAdd(w, &#x27;Tue&#x27;, 1, { type: &#x27;ex.day&#x27; }), writeClock(readClock(&quot;3 o&#x27;clock&quot;) + 120));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>Mon 5 o&#x27;clock</code></pre></figure>
+<h3 id="contrastofworld-kind-options">contrastOf(world, kind, options?)</h3>
+<p>How a kind differs from its siblings ("how is a circle different from other shapes"): the facts named for the kind are merged, its siblings are the things of the same type that share a parent (<code>kind</code>, <code>class</code>, <code>is</code>, <code>is_a</code>, <code>kind_of</code>), and a key contrasts when few siblings hold the kind's value. It returns <code>{ kind, type, parents, siblings, contrasts: [{ key, value, share, others }] }</code>, rarest first (std.decide kind <code>contrast</code>), or <code>{ why }</code>. Options: <code>type</code>, <code>up</code>, <code>skip</code>, <code>max</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(&#x27;@c sh name=circle kind=flat corners=0  @s sh name=square kind=flat corners=4  @t sh name=triangle kind=flat corners=3&#x27;);
+print(contrastOf(w, &#x27;circle&#x27;).contrasts[0]);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;key&quot;:&quot;corners&quot;,&quot;value&quot;:&quot;0&quot;,&quot;share&quot;:0,&quot;others&quot;:{&quot;3&quot;:1,&quot;4&quot;:1}}</code></pre></figure>
 <h3 id="composeworld-topic-options-and-interestofworld-fact-options">compose(world, topic, options?) and interestOf(world, fact, options?)</h3>
 <p>A composition of a genre about a topic, from knowledge, with no model (std.compose, first version). The genre gives the moves of a section (<code>k.genres.genre name= move=...</code>): the first opens, the last closes, the middle ones take turns. The outline is the topic's relations: the facts that name it, grouped by type. Relations that can fill a chapter come first, then the most interesting. Every sentence cites its wire, and no fact is used twice. The size <code>{ chapters, sections, sentences }</code> is a budget set before selection; what the knowledge cannot fill is listed in <code>short</code>. The output is frames (<code>{ move, fact, about, cites }</code>) for the language world to realise (<code>realise(frame)</code>).</p>
 <p><code>interestOf</code> is the arithmetic of the world's <code>k.interest</code> (published by the knowledge repository): each feature adds <code>weight × share</code> to its appraisal, by its shape over a measure, and the score is novelty × coping × relevance − penalty. A weight is the middle of its range, or drawn inside it with <code>draw: seed</code>. The library computes the measures it can from facts (<code>measuresOf</code>): world and topic distance by joins of names, contrast with siblings, distance from the typical range, extremes, numbers with units, animacy, obviousness, said before, the same move again, items since the last point. The host gives the rest, or overrides any, in <code>measures</code>. Without a <code>k.interest</code> model the score is 0, with <code>why</code>.</p>
@@ -1125,7 +1137,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.127.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.128.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

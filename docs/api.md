@@ -1565,7 +1565,7 @@ print(placeFor(w, { w: 10, h: 10 }, { rel: 'right_of', ref: 'box1' }), placeFor(
 {"x":62,"y":45,"how":"right_of"} {"x":0,"y":0,"how":"default"}
 ```
 
-### arrange(nodes, layout, options?) and arrangementOf(world, text, options?)
+### arrange(nodes, layout, options?), arrangementOf(world, text, options?) and outlineOf(parts)
 
 Many things laid out at once, for a diagram kind's layout or an arrangement request ("in a
 circle", "evenly", "left to right"). `nodes` are `{ id, w?, h? }` (10 x 10 by default). The
@@ -1576,6 +1576,10 @@ cycle is cut at the edge that closes it, walking from the nodes in their order. 
 puts the first node in the middle and the others round it; `scatter` spreads them apart at
 seeded places. Options `frame` (0 0 100 100), `gap` (2), `reverse` (right to left, bottom to
 top, anticlockwise) and `seed`. It returns a Map from id to `{ x, y, w, h }`.
+
+`path` places the nodes evenly along `points` (closed unless `closed: false`); `outlineOf(parts)`
+gives such a path: the convex hull of parts' boxes, for things in the shape of a thing ("a
+diagram in the shape of a house").
 
 `arrangementOf(world, text)` reads an arrangement request by the language world's phrases
 (`w.lang.en.arrangement text= layout= relation= direction= inverse= diagram_layout=`): the

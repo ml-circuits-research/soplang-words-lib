@@ -68,12 +68,13 @@ export function relationsOf(world, kind) {
  * Many things laid out at once (reviewer 04:40: a diagram kind's layout; an arrangement request such
  * as "in a circle", "evenly", "left to right"). `nodes` [{ id, w?, h? }] (size default 10 x 10),
  * `layout` one of: row (left to right), column (top to bottom), circle, grid (evenly), radial (the
- * first node in the middle), scatter (seeded, spread apart), layers (by
+ * first node in the middle), scatter (seeded, spread apart), path (evenly along `points`, an outline when
+ * `closed`: outlineOf gives one), layers (by
  * `edges` [[from, to]]: each node one layer after its furthest source, layers left to right, or top to
  * bottom with `direction: 'down'`). Options `frame` { x, y, w, h } (default 0 0 100 100), `gap`
  * (default 2), `reverse` (right to left, bottom to top, anticlockwise), `seed` (scatter). Returns Map(id -> { x, y, w, h }), each box inside the frame when the frame holds them.
  */
-export function arrange(nodes, layout = 'row', { edges = [], frame = { x: 0, y: 0, w: 100, h: 100 }, gap = 2, direction = 'right', reverse = false, seed = 1 } = {}) {
+export function arrange(nodes, layout = 'row', { edges = [], frame = { x: 0, y: 0, w: 100, h: 100 }, gap = 2, direction = 'right', reverse = false, seed = 1, points, closed = true } = {}) {
   const ns = nodes.map((n) => ({ id: n.id, w: n.w ?? 10, h: n.h ?? 10 })), out = new Map(), N = ns.length;
   if (reverse) ns.reverse(); // right to left, bottom to top, anticlockwise
   if (!N) return out;
@@ -129,6 +130,18 @@ export function arrange(nodes, layout = 'row', { edges = [], frame = { x: 0, y: 
       }
       placed.push(best.b); out.set(n.id, best.b);
     }
+  } else if (layout === 'path') { // along a polyline (an outline: outlineOf), evenly by length; `closed` joins the last point to the first
+    const pts = (points || []).map((p) => (Array.isArray(p) ? { x: p[0], y: p[1] } : p));
+    if (pts.length < 2) throw new Error('sopworld: arrange: a path needs two points or more');
+    const segs = [];
+    for (let i = 0; i < pts.length - (closed ? 0 : 1); i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; segs.push({ a, b, len: Math.hypot(b.x - a.x, b.y - a.y) }); }
+    const total = segs.reduce((t, g) => t + g.len, 0), step = total / (closed ? N : Math.max(1, N - 1));
+    ns.forEach((n, k) => { // bounded: the nodes, each walks the segments once
+      let d = k * step, g = segs[0];
+      for (g of segs) { if (d <= g.len || g === segs[segs.length - 1]) break; d -= g.len; }
+      const f = g.len ? Math.min(1, d / g.len) : 0, x = g.a.x + (g.b.x - g.a.x) * f, y = g.a.y + (g.b.y - g.a.y) * f;
+      out.set(n.id, { x: x - n.w / 2, y: y - n.h / 2, w: n.w, h: n.h });
+    });
   } else throw new Error(`sopworld: arrange: unknown layout ${layout}`);
   return out;
 }
@@ -155,4 +168,21 @@ export function arrangementOf(world, text, { lang = 'w.lang.en' } = {}) {
     reverse: b(at.inverse?.[0]) === 'yes' || ['right_to_left', 'bottom_to_top', 'anticlockwise'].includes(direction),
     diagramLayout: b(at.diagram_layout?.[0]), as: AS[layout] ?? null,
   };
+}
+
+/**
+ * The outline of a thing drawn from parts (a host's real case: "a diagram in the shape of a house"): the convex
+ * hull of the parts' boxes [{ x, y, w, h }] as points in order, counter-clockwise from the lowest-left one
+ * (Andrew's monotone chain). A path for `arrange(nodes, 'path', { points })`.
+ */
+export function outlineOf(parts) {
+  const pts = [];
+  for (const p of parts) for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) pts.push({ x: p.x + dx * (p.w ?? 0), y: p.y + dy * (p.h ?? 0) });
+  const P = [...new Map(pts.map((p) => [`${p.x},${p.y}`, p])).values()].sort((a, b) => a.x - b.x || a.y - b.y);
+  if (P.length < 3) return P;
+  const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  const lower = [], upper = [];
+  for (const p of P) { while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop(); lower.push(p); } // bounded: each point pushed and popped once
+  for (const p of [...P].reverse()) { while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop(); upper.push(p); } // bounded: the same
+  return [...lower.slice(0, -1), ...upper.slice(0, -1)];
 }

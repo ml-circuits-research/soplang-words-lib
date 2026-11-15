@@ -47,3 +47,14 @@ test('arrange: row, column, circle, grid and layers by edges, inside the frame',
   for (const l of ['row', 'column', 'circle', 'grid', 'layers']) for (const b of arrange(ns, l).values()) assert.ok(b.x >= 0 && b.y >= 0 && b.x + b.w <= 100 && b.y + b.h <= 100, `${l} inside the frame`);
   assert.throws(() => arrange(ns, 'spiral'), /unknown layout/);
 });
+
+test('outlineOf and arrange along a path: things in the shape of a house (a host\'s real case)', async () => {
+  const { outlineOf } = await import('../tools/lib-under-test.mjs');
+  const house = [{ x: 20, y: 50, w: 60, h: 40 }, { x: 30, y: 20, w: 40, h: 30 }]; // walls, roof
+  const o = outlineOf(house);
+  assert.deepEqual(o, [{ x: 20, y: 50 }, { x: 30, y: 20 }, { x: 70, y: 20 }, { x: 80, y: 50 }, { x: 80, y: 90 }, { x: 20, y: 90 }]);
+  const at = arrange(['a', 'b', 'c', 'd'].map((id) => ({ id, w: 4, h: 4 })), 'path', { points: o });
+  assert.deepEqual([at.get('a').x + 2, at.get('a').y + 2], [20, 50], 'the first on the first point');
+  for (const b of at.values()) assert.ok(b.x + 2 >= 20 && b.x + 2 <= 80 && b.y + 2 >= 20 && b.y + 2 <= 90, 'on the outline');
+  assert.throws(() => arrange([{ id: 'a' }], 'path', { points: [[0, 0]] }), /two points/);
+});

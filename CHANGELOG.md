@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.129.0
+
+From the reviewer's 13:15 entry, item 4 (PSys2 Q21: the owner's real case "a diagram in the shape
+of a house", done host-side with a hull until now).
+
+### New
+- `outlineOf(parts)`: the convex hull of parts' boxes, as a path.
+- `arrange(nodes, 'path', { points, closed })`: nodes evenly along a path.
+
 ## 0.128.0
 
 L2 and L4 of the reviewer's 09:20 block (real turns r0586/r0587, r0610/r0611).

@@ -20,7 +20,7 @@ export { segment, actWords } from './segment.mjs';
 export { dialogueTurn, focusLog, resolveEllipsis } from './dialogue.mjs';
 export { readMotion, planMotionFacts, splitText, motionRun } from './motion-facts.mjs';
 export { sample, diversity } from './sample.mjs';
-export { placeFor, boxesOf, relationsOf, arrange, arrangementOf } from './space.mjs';
+export { placeFor, boxesOf, relationsOf, arrange, arrangementOf, outlineOf } from './space.mjs';
 export { composeDiagram, sampleDiagram, diagramTopics, diagramKinds } from './diagram.mjs';
 export { actsOf, summarizeLog, summarizeText, overlap } from './summarize.mjs';
 export { compose, interestOf, measuresOf, shapeShare, interestModel } from './compose.mjs';
@@ -41,7 +41,7 @@ export { storyState } from './story-focus.mjs';
 export { planner, factStore, PlanLive, readMethods, PLAN_LIMITS, solveChoices } from './plan.mjs';
 export { inflectBy, articleFor, morphOf, generate, analyse, fold, splitClitics, dictionary, realise, templateFor } from './morph.mjs';
 export { ledgerAppend, ledgerGroups, ledgerKey, stageOf, STAGES } from './ledger.mjs';
-export const version = '0.128.0';
+export const version = '0.129.0';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)
  * tools/build.mjs fills in `hash`, a fingerprint of the bundled sources, and `date`,

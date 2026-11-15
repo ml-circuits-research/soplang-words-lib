@@ -5500,3 +5500,11 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - 13:15 (PSys2 Q20-Q22) read: items 1-3 go with R3/R4, 4 (outline path) with L4's follow-up, 5 (host kit) as a
   design question first.
 - Gate: npm test 515 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.129.0 — outlineOf and arrange 'path' (reviewer 13:15 item 4); Q72 host kit proposal
+
+- outlineOf (convex hull of part boxes) + arrange(..., 'path', { points, closed }): a house of walls 20,50,60x40 and
+  roof 30,20,40x30 -> outline of 6 points; 6 nodes placed along it (first on the first point).
+- Concave outlines (the knowledge repository is deriving drawings' outlines) not done: the convex hull only.
+- Q72 in questions.md: loadWorldSet / readTurn / session API proposed, not built (13:15: design first).
+- Gate: npm test 516 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

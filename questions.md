@@ -374,3 +374,19 @@ words (joiners, openers, fillers, sentence ends), which are language: the fix is
 cut points are language-world facts. That is R3's work (knowledge out of src/), and R3 asks the knowledge
 repository for the facts. Choice taken: the splitter merges in R3, together with the cut words; L3 (real rows)
 goes first, as 11:35 orders.
+
+## Q72 (reviewer 13:15 item 5, PSys2 Q20): a host kit — the proposed API before building
+
+What every application needs to run worlds, as library parts (PSys2 keeps 96 files for it today):
+- `loadWorldSet(loader, { names, lang })` -> `{ worlds: Map(name -> { world, legend, manifest, typed }), catalog }`:
+  `loader(path) -> text` (fetch, fs, bundle); parses each world, reads its legend and manifest, builds its typed
+  world (`typedWorldFor` with the knowledge its slots join, through `createCatalog`), lazily per world.
+- `readTurn(set, text, context)` -> `{ reading (readText under the contract, per world), owner (arbitrate with
+  coverage from the readings' unread words), act, reply, asks, trace }`, with the tier policy as data
+  (`std.fill.tier` facts and a host's `std.decide.criterion of=world` facts), no host code in the path.
+- The session: `session(set)` holds the live world, the timeline (undo / redo / marks: World already has them) and
+  the pending fill (a question asked and the slot its answer fills), so "red" after "which colour?" fills it.
+- LIB-7 `assignments`: gone in 0.121 (readText + fitsSlot); a lemma function is `readByTypes`' `lemma` option, and
+  "any literal is an anchor" is a pattern of the host's reader, not the library's.
+Choice proposed: build `loadWorldSet` and `readTurn` first (the compat suite then tests that surface), the session
+part after. Waiting for the reviewer's answer before building.

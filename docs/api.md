@@ -2016,6 +2016,13 @@ plural forms of the kind words are the language world's inflection (a plural equ
 plural); the spelling rule is used only for a language world with no inflection. A kind after a singular indefinite
 determiner of the language (`definite=no number=sg`: "a boat") with no number gets a count constraint 1 of that kind,
 `origin: 'said'`, `det: true` (never named as not honoured): one is said, not assumed.
+A kind after the quantifier of the whole set (the language's `${lang}.partitive mode=all`: "all the fish", "all birds")
+gets `all: true` and `plural: true` whatever its form, so an act on things takes every thing of the kind (0.156).
+A clause of the speaker (a subject pronoun of person 1, `${lang}.pron case=subject person=1`) whose verb is not an act
+is a statement, not a request or a fragment: `statement: true`, its verb in `unread`. A wish word (`${lang}.skip
+class=desire`) asks for something only after a modal (`${lang}.aux modal=`: "I would like a cat") or before an
+introduced thing (a determiner, a number, "all": "I want a cat"); before a bare kind ("I like cats", "I love comics")
+it is a statement (0.156).
 `requestWires(request, { id })` writes the request as w.request wires (request, constraints, unread).
 
 ```js run
@@ -2058,6 +2065,14 @@ definite reference ("a sun" after "draw a fish") continues the dialogue's focus:
 request with the last act (`actFrom: 'dialogue'`; the `w.dialogue.revision reaction=continue` rows when the language
 has them, else does=inherit on=act, nothing replaced); a reaction's `step` rows apply only on the keys the turn
 names when it names one ("bigger" steps the size, the count stays), on all its rows otherwise.
+A revision changes only what it names (0.156): a count step whose turn names kinds of the last result ("fewer cats"
+after "three cats and a dog", "less trees" after a forest) steps those kinds' counts alone, every other kind of the
+result keeps its count (a count constraint `of` each kind), the target, the whole and the sizes stay (the reaction's
+other steps are dropped); a count step with no kind after a result counted by kind steps every kind by the scale's
+factor, none below one, the total by at least one. After an act on the things that are there (`dialogue.lastPlan`
+a reference plan: "make the house red"), a turn of new values only ("make it smaller", "on the left") is a new
+request with the same act on the last things (`refers: 'last'`), not a remake; and an act said on things there with
+a size cue that is also a reaction ("make the house bigger") is the change sense of make, a request of its own.
 `dialogue`: `{ last, result: { count, kinds }, previous, seed, previousSeed }`. Returns `{ sort:
 'request' | 'reaction', reaction, does, request, replace, seed, vary, reply, undo }` (`vary`: plan it varied;
 `reply`: a reply name of the revision, such as sorry or welcome).
@@ -2098,6 +2113,17 @@ place, topic and length, each put on a slot of the whole or of every item where 
 `options.vary`, a redo) samples with `options.seed` inside the range, never its minimum. The act may be left
 out when nothing is unread: the dialogue's, else the only act the world declares for the thing named; an
 unread word where the act stands is never guessed over.
+A general whole with no expectation of its own ("a random picture", "a picture with a lake": the target has no
+`k.expect.make`, its subkinds by the world's lineage do) is planned as one of those subkind wholes with its parts:
+those whose parts hold every kind said with it (by lineage and `std.schema.drawn`), among them those a
+`std.tool.bind act=make` names when the world declares bindings, sampled by the seed; the subkind is in `assumed`
+(`{ key: 'kind', value, from: 'sampled', of }`) (0.156). Kinds counted each by a number of their own ("3 circles" of a
+picture's shapes, or a revision's counts by kind) are planned with those counts, inside a whole too. An act on things
+whose place is said by a thing of the view ("into the water", "next to the pond": the newest thing of that kind, by
+lineage and `std.schema.drawn`) gives each step `region: '$<id>'` and `relation` (the cue's relation, "in", "next
+to"), for a binding to take as `step.region` / `step.relation` (0.156). A size said as a step ("make the house
+bigger") gives each step `stepped: { size: { from, dir } }`, so that `nearestAccepted` translates past the size the
+thing has, in the step's direction, when the tool takes no grade in between.
 
 Around that plan runs one bounded reasoning cycle on the state of the live world (owner 2026-11-15), the same for
 every world, a generate-and-test with constraints:
@@ -2280,7 +2306,10 @@ is left out; a reply fact with an unfilled role is dropped, and no text contains
 revision of a whole (`outcome.revised`, a run with a `whole`) says the whole's net state, the parts by kind from the
 run's result, as one `done.whole` fact (roles `whole`, `parts`: "The necklace now has 5 rounds, 4 squares.") instead of
 the operations that re-laid it; operations (`done.add`, `done.remove`, `done.change`) remain for acts on individual
-things. The English sentence is a default of the library until the language world publishes `done.whole`. Returns `{ facts, text, missing }` (`missing`: the reply names the language world lacks).
+things. The English sentence is a default of the library until the language world publishes `done.whole`. The whole
+is said before its parts (`done.add` / `done.remove` of the thing the plan made first, or of things of the whole's
+kind, come first: "I added a forest. I added 6 trees."); a reference plan (`outcome.reference`) never says
+`done.revise` (0.156). Returns `{ facts, text, missing }` (`missing`: the reply names the language world lacks).
 
 ```js run
 const words = new World();
@@ -2310,7 +2339,7 @@ declarative, only the tool's concrete actions are code). A world declares its to
 | `std.tool.arg` | `bind` (`$` the binding), `param`, `from` (many: the sources, in order) - one argument of a binding (the review's form; the same as `arg=` inline) |
 | `std.tool.needs` | `op`, `exists` (many: a thing of that kind, by lineage, is in the state), `absent` (many), `check` (many: a declared constraint), `args` - the preconditions of an op, for every binding of it |
 | `std.tool.custom` | `name` (id), `world`, `kind` (constraint or search), `in` (many), `out`, `fails` (the reply name said when a constraint fails), `doc` |
-| `std.tool.value` | `op`, `param`, `value` (ids together), `as` - the tool's own name for an accepted value of the world: the call gets `as` (the engine's `medium` for the world's grade `default`); since 0.155 |
+| `std.tool.value` | `op`, `param`, `value` (ids together), `as` - the tool's own name for an accepted value of the world: the call gets `as` (the engine's `medium` for the world's grade `default`) |
 
 The sources of an argument (`TOOL_ARG_SOURCES`) are `step.<key>` (the plan step's value; `step.count`: how many
 steps of the same values one call takes, which groups them; `step.things`: the ids of the things they act on),
@@ -2322,7 +2351,8 @@ provenance, expected), each value is translated by `nearestAccepted` when the pa
 a number into its range; a kind to the nearest accepted kind of its lineage (`kindLineage`: what `std.schema.drawn
 kind= as=` says it is drawn as, its core.type parents, the catalog's k.kinds.parent, then an accepted kind of which it
 is the parent); a grade to the nearest accepted grade of the ordered scale (k.expect.scale: tiny -> small, huge ->
-big; ties in the order of `accepts`). Every value not said is in `assumed` with its source (`translated` with `was`
+big; ties in the order of `accepts`; with `opts.toward` `{ from, dir }`, a value reached by a step goes to the nearest
+accepted grade past `from` in that direction, when there is one). Every value not said is in `assumed` with its source (`translated` with `was`
 and `by`).
 
 `runPlan(plan, bindings, primitives, opts)` resolves the binding of each step (by act and the nearest kind of the
@@ -2331,7 +2361,8 @@ lineage), fills and translates the arguments, checks the preconditions, calls th
 `primitives.view`: things `{ id, kind, ...attrs }` or facts `{ thing, attribute, value }`) and checks the effect
 (`makes=` something added). The plan is all or nothing: a failing step takes back the steps before it. It owns the
 timeline (`opts.timeline`, `toolTimeline()`): one plan is one entry; with `replace` (a revision) the last entry is
-undone first and the plan takes its place; `{ act: 'undo' }` / `{ act: 'redo' }` move it; a plan with `question`
+undone first and the plan takes its place (never for a reference plan, an act on the things that are there: it is
+a step of its own, and `toolSession` says it as that act, not as a remake); `{ act: 'undo' }` / `{ act: 'redo' }` move it; a plan with `question`
 is no step. Undo uses `primitives.snapshot()` / `restore(s)` when the tool has them, else the inverse of the
 entry's diff through the bindings (remove what was added, make again what was removed, set back what changed).
 Returns `{ ok, diff: { added, removed, changed }, same, replaced, calls, assumed, translated, failed?, result, step }`;

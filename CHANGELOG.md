@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.156.0
+
+A revision changes only what it names, and seven more turns PSys2 reported (reviewer 08:25; psys2 worker-log honest
+lists, Q42 (8), Q45 (7), Q46 (13)), each generic, proven by properties over the example worlds
+(`test/revise-names.test.mjs`).
+
+### Fixed
+- A wrong execution: "fewer cats" after "three cats and a dog" removed the dog. `reviseRequest` put the turn's kind
+  constraint over every wanted kind and the stepped total over every count. Now a count step whose turn names kinds of
+  the last result steps those kinds alone; every other kind keeps its count (a count `of` each kind); the target, the
+  whole and the sizes stay ("less trees" after a forest keeps the forest, "more trees" no longer makes them big). "fewer"
+  with no kind after a result counted by kind steps every kind by the scale's factor, none below one.
+- `planRequest` plans kinds counted each by a number of their own with those counts inside a whole too (the shapes of
+  a picture).
+- "make the house bigger" after "draw a house": a size cue that is also a reaction no longer makes a remake; it is the
+  change sense of make. A reference plan (an act on the things that are there) never undoes the last entry first
+  (`runPlan`, `runWorldPlan`) and is not said as a remake; after one, a turn of new values only ("make it smaller")
+  is the same act on the same things.
+- A stepped size is translated past the thing's own size in the step's direction (`nearestAccepted` `toward`, steps
+  carry `stepped`), so "bigger" on a tool with two grades changes something.
+
+### New
+- A general whole with no expectation of its own ("a random picture", "a picture with a lake") is planned as one of
+  its subkind wholes (the world's lineage): those whose parts hold the kinds said with it first, those a binding names
+  next, sampled by the seed; said as an assumption of the kind.
+- "all the X": `readRequest` reads the language's `partitive mode=all` before a kind: `all: true`, `plural: true`,
+  whatever the form ("all the fish"); an act on things takes every thing of the kind.
+- A place said by a thing of the view ("into the water", "next to the pond") gives each step `region` (the thing) and
+  `relation`, for bindings (`step.region`, `step.relation`).
+- `sayRequest` says the whole before its parts.
+- A statement of the speaker ("I like cats", "I love comics", "I saw a bird") is no request nor fragment:
+  `statement: true`, its verb unread; a wish word asks only after a modal or before an introduced thing.
+
 ## 0.155.0
 
 What a reply says (the reviewer's three defects seen through PSys2 on 0.154.0), generic, proven by properties over the

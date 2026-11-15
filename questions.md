@@ -600,3 +600,31 @@ Open, for the reviewer:
    silence the act assumption when the source is a continuation?
 6. Still in your order from 04:10: unread-word rule inside planRequest, `std.schema.key`, open question as a
    w.dialogue fact.
+
+## Q92 (worker, 0.156.0) — what is left of the PSys2 honest lists after 0.156, and what is the host's
+
+Built in 0.156.0 (CHANGELOG, `test/revise-names.test.mjs`): the reviewer's 08:25 wrong execution ("fewer cats" kept
+the dog out: it was mine, in `reviseRequest`), a count revision of a whole keeps the whole and the sizes, a general
+whole as one of its subkind wholes, "all the X", a place by a thing of the view (`region` / `relation` on the steps),
+"make the house bigger" as change, the whole said first, "I like cats" a statement. Checked through PSys2's door probe
+(`scripts/request-probe.mjs` run read-only with a loader hook that swaps its vendored file for `src/index.mjs`).
+Open, each with whose it is:
+1. [PSYS2] "a random picture" / "a picture with a lake": the plan is now a forest / a pond with parts, but the door's P9
+   check refuses it because the request's determiner count is `of=picture` and `plan.target` is the subkind. The check
+   should accept a count of a kind the plan's target is a subkind of (`kindLineage(plan.target)` includes `c.of`; the
+   plan's assumption `{ key: 'kind', of: 'picture' }` says it).
+2. [PSYS2] "move all the fish into the water": the steps now carry `region: '$<lake>'` and `relation: 'in'`; art.draw
+   binds `anchor<-custom.thingAt` and has no relation. Bind `anchor<-step.region` (and a relation argument when the
+   engine can put a thing in a region rather than next to it).
+3. [PSYS2] "fewer cats" through the door still begins "I made it again, the way you said." (the host's own revised
+   flag; the library's `toolSession` drops it for a whole and for reference plans).
+4. [KNOW] The wish words: w.lang.en.skip class=desire mixes want / need / wish (a wish) with like / love (a preference
+   unless after a modal). The library now reads a wish only after a modal or before an introduced thing, so "I want
+   cats" (bare plural) is read as a statement too. A split row (class=preference, or `after=` modals) would let it go
+   back; I read it when it is published.
+5. [LIB, not done] "and higher" after a move: with 0.156 a turn of new values only after an act on things is the same
+   act on the same things, so it should now be a further move; not verified on the Romanian turn (T12). The layers
+   arrangement ("break in 3 layers: water, land and sky") as an arrange by declared regions, and "add arrows" (links for
+   the parts that have none, Q46 (1)) are structure operators I have not built: next, if you agree.
+6. [LIB, small] "I'd like 2 birds": the tokenizer keeps "i'd" as one token (unread, honest); a clitic split from the
+   language world (w.lang.en contractions) would make it a wish.

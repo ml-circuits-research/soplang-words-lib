@@ -205,7 +205,7 @@ const idKeyOf = (type, srcs) => {
  * (`scale=` or `type=`: rows with an order, named by `by=` or the type's id slot; ties in the order of `accepts`).
  * Returns { value, translated?: true, was?, by? } or { refused: true, values }.
  */
-export function nearestAccepted(value, param, { live = null, catalog = [], look = null } = {}) {
+export function nearestAccepted(value, param, { live = null, catalog = [], look = null, toward = null } = {}) {
   if (value === undefined || value === null || !param) return { value };
   if (Array.isArray(value)) return { value };
   const numeric = ['number', 'integer'].includes(param.kind) || ['number', 'integer'].includes(param.type);
@@ -242,7 +242,9 @@ export function nearestAccepted(value, param, { live = null, catalog = [], look 
     if (order.has(String(value))) {
       const at = order.get(String(value));
       let best = null;
-      for (const a of acc) if (order.has(a) && (best === null || Math.abs(order.get(a) - at) < Math.abs(order.get(best) - at))) best = a;
+      // a value reached by a step (`toward`: { from, dir }) goes past where the thing is in the step's direction, when the tool has such a value
+      const past = toward && order.has(String(toward.from)) ? acc.filter((a) => order.has(a) && (toward.dir === 'up' ? order.get(a) > order.get(String(toward.from)) : order.get(a) < order.get(String(toward.from)))) : [];
+      for (const a of past.length ? past : acc) if (order.has(a) && (best === null || Math.abs(order.get(a) - at) < Math.abs(order.get(best) - at))) best = a;
       if (best !== null) return { value: best, translated: true, was: value, by: scale };
     }
   }
@@ -281,9 +283,10 @@ function runToolPlan(plan, bindings, primitives = {}, opts = {}) {
   if (plan.act === 'undo' || plan.act === 'redo') return move(plan.act, timeline, ctx, before);
   if (plan.question) return { ...base, ok: true, question: plan.question };
   if (!plan.ok) return { ...base, failed: { code: 'plan', reply: null, roles: {}, because: [...(plan.cannot ?? []), ...(plan.notHonoured ?? [])] } };
-  // a revision: the last entry is undone first and this plan takes its place
+  // a revision: the last entry is undone first and this plan takes its place; an act on the things that are there
+  // (a reference plan: "make the house bigger" planned as change) never undoes them first, it is a step of its own
   let undone = null;
-  if (replace && timeline?.done.length) {
+  if (replace && !plan.reference && timeline?.done.length) {
     undone = undoEntry(timeline.done.at(-1), ctx);
     if (!undone.ok) return { ...base, failed: undone.failed };
   }
@@ -452,7 +455,7 @@ function fillArgs(bind, kind, steps1, resolveV, ctx) {
     if (changed && !got) continue;
     if (!got && p?.default !== undefined) got = { value: p.default, from: 'default', because: [`${bind.op}.${a.name} default`] }; // the parameter's own default, declared: the weakest source
     if (!got) { if (p?.required) return { failed: { code: 'missing', reply: 'refused.missing_value', roles: { key: a.name } } }; continue; }
-    const t = nearestAccepted(got.value, p, ctx);
+    const t = nearestAccepted(got.value, p, { ...ctx, toward: steps1[0]?.stepped?.[a.name] ?? null });
     if (t.refused) return { failed: { code: 'value', reply: 'refused.value', roles: { key: a.name, value: String(got.value), values: (t.values ?? []).join(', ') } } };
     args[a.name] = p?.names?.has(String(t.value)) ? p.names.get(String(t.value)) : t.value; // the tool's own name for it, when declared
     if (t.translated) translated.push({ key: a.name, was: t.was, value: t.value, by: t.by });
@@ -636,7 +639,7 @@ export function toolSession(live, primitives, { language = null, catalog = [], r
         fromTimeline();
         dialogue.vary = !!rev.vary;
       }
-      const reply = sayRequest(rev.request, { ...plan, run, revised: rev.sort === 'reaction' && run.ok && !run.same, reply: rev.reply }, sayOpts);
+      const reply = sayRequest(rev.request, { ...plan, run, revised: rev.sort === 'reaction' && run.ok && !run.same && !plan.reference, reply: rev.reply }, sayOpts);
       return { request: rev.request, revision: rev, plan, run, reply };
     },
   };

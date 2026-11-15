@@ -576,32 +576,27 @@ call, effect on the view). Not aligned, or a choice I made where the review is o
    k.colours. My examples keep a short enum, because they are toy worlds under 60 lines. Tell me if the examples
    should show the join.
 
-## Q89 (worker, 0.153.0) — PSys2 Q45: what each item became, and what is still open
+## Q91 (worker, 0.154.0) — PSys2 Q46 / Q47: what became generic pieces, what is open
 
-Built as generic pieces (CHANGELOG 0.153.0, proofs in `test/acts-on-things.test.mjs` on the shelf, necklace, sketch
-and garden). Q45 (1) target kind constraint with `at`: readRequest. (2) kinds together with no number: one each, plural
-several. (3) a whole whose parts the world cannot make: made as one thing (`plan.asOne`), no world row needed. (4)
-`done.change` role `key`; `<reply>.<key>` first; `as` maps a changed tool key to the request's key. (5) a custom
-search's thing said by its kind. (6) change sense of make by reference (definite determiner of the language, "it",
-"everything") over the view, values after the object. (8) net diff: `stateDiff(..., { match, keys })`. (9)
-"everything", the world's name and the words of the kind it means. The two host stand-ins can go: `withTargetKind`
-(readRequest + coordinated kinds) and the re-plan without `expect` (`asOne`); `withoutSelfPlace` too (a word of the
-world after a preposition is no place).
+Built (CHANGELOG 0.154.0, `test/references-fragments.test.mjs`): Q90 (`stateIds`), Q46 (4) askWorld kinds, (5)
+`when.<key>=none`, (7) `std.tool.value op= param= value= as=` (forward only: a view that reports the tool's name is
+not mapped back yet), (8) names as references, (9) = Q90, (10) fragment continues the last act, (13) / Q45 (7) a size
+reaction keeps the count; reviewer 05:20 A (proven through world acts too) and B.
 
 Open, for the reviewer:
-1. [KNOW] Please publish `w.lang.en.reply` `done.change.place` / `done.change.size` (proposed in
-   `examples/tool-app.mjs` PROPOSED_EN), and agree the form of a plural count expectation:
-   `k.expect.value of=<kind> on=count min= max= typical= when.plural=yes` (planRequest passes `plural=yes`). "everything"
-   is read from the grammar (`w.lang.en.rule lhs=NP rhs=<cat>` whose construction has `set=all`); a `w.lang.en.cue`
-   `on=refers` would be simpler, but the cue schema's `on` enum does not have it: add `refers`?
-2. Not done: Q45 (7) (a size revision of a coordinated result keeps the counts said) and (10) (askWorld `state` only for
-   questions about kinds and places). Next if you agree.
-3. Kinds said together share the reasoning cycle's one place candidate (the garden puts the bird in the pond with the
-   fish): places per kind group in the cycle would fix it.
-4. Your block 04:10 items (5) unread-word rule, (7) `std.schema.key`, (6) open question as a w.dialogue fact do not
-   block Q45; they stay next, in your order.
-5. `smells.mjs` hint `test_edited` on this release: request.test / tool.test expectations changed because the target
-   now keeps its kind constraint (Q45 (1)) and the shelf has a `move` binding: the spec changed, no assertion removed.
-
-## Q90 (coordinator, 2026-11-15) — defect in 0.153: the whole world as things of an act includes declaration rows
-Reported by the psys2 worker on 0.153.0: "erase everything" / "șterge desenul" (`plan.whole = 'world'`) take `std.schema.drawn` rows (e.g. `$as.water`) as things, because `worldThings` reads `factsOf` of the fork, which mixes the tool state mirrored by `mirrorState` with the world's declarations. The remove then fails on a declaration row. Generic fix proposed: the things of an act are the mirrored state's things only (the view), never schema / declaration rows; a property over the example worlds: "remove everything" leaves the view empty and every declaration intact.
+1. [KNOW] `w.dialogue.revision`: please add `reaction=continue` (and `does=inherit`) to the enums so a language can
+   declare the continuation row; the library defaults to does=inherit on=act, nothing replaced. And "more" is a cue of
+   reaction enlarge with no key, so it still steps count and size: a `w.lang.en.cue` "more" on=count step=up (twin of
+   the reaction) would make it count only by the 0.154 key rule, no code.
+2. Q46 (1) links for parts with none, (2) labels / topic of a whole from k.diagrams, (3) kind by role in the links
+   (expectedValue on `kind`, yielding to kinds not wanted), (6) layout translation by k.layouts parents, (11) "with
+   arrows" as the whole's links, (12) a layout said over things there = arrange: each a planRequest piece of its own;
+   not small. My order if you agree: (3), (1), (12), (6), (2), (11).
+3. Q47 (1) Romanian reply rows for `assumed`, (2) the "how many" lead of ask.state: [KNOW] only.
+4. Names: a thing's name is any free-text value or its id. A world that wants only one key as the name would need a
+   declaration (e.g. `std.schema.key name=label names=yes` with the planned `std.schema.key`); not added before
+   `std.schema.key` lands.
+5. A fragment says "I assumed make for the act" (the act from the dialogue is an assumption like any other). Keep, or
+   silence the act assumption when the source is a continuation?
+6. Still in your order from 04:10: unread-word rule inside planRequest, `std.schema.key`, open question as a
+   w.dialogue fact.

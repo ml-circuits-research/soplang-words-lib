@@ -954,6 +954,10 @@ ${calcs.join('\n')}
 @k.tc.out core.slot of=std.tool.custom key=out
 @k.tc.fails core.slot of=std.tool.custom key=fails
 @k.tc.doc core.slot of=std.tool.custom key=doc kind=string
+@k.tv.op core.slot of=std.tool.value key=op id=true required=true
+@k.tv.param core.slot of=std.tool.value key=param id=true required=true
+@k.tv.value core.slot of=std.tool.value key=value id=true required=true
+@k.tv.as core.slot of=std.tool.value key=as required=true
 `,
     fns: {},
   },

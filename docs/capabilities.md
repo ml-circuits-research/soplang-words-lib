@@ -871,7 +871,7 @@ make
 
 ## Read, revise, plan and say a request from what a world declares
 
-*In `readRequest`, `requestWires`, `reviseRequest`, `planRequest`, `runPlan`, `capabilitiesOf`, `sayRequest`, `REQUEST_SOURCES`, `REQUEST_KEYS`, `VALUE_TYPES`; since 0.149.*
+*In `readRequest`, `requestWires`, `reviseRequest`, `planRequest`, `runPlan`, `capabilitiesOf`, `sayRequest`, `ASSUMED_SAY`, `REQUEST_SOURCES`, `REQUEST_KEYS`, `VALUE_TYPES`; since 0.149.*
 *Works on: the published w.request, w.dialogue (its revision facts), k.expect and the w.lang.en cues; any live world that declares `std.schema.honours`.*
 
 What was asked is a world: "draw a sketch, not circles" is a w.request with act make, target picture and a
@@ -903,7 +903,7 @@ print(p.steps.length, p.notHonoured.map((x) => `${x.words}: ${x.why}`));
 
 ## Bind a live world to its tool by wires, and run its plans with a timeline
 
-*In `runPlan`, `runWorldPlan`, `toolBindings`, `toolTimeline`, `toolSession`, `toolCapabilities`, `askWorld`, `nearestAccepted`, `readView`, `stateDiff`, `mirrorState`, `TOOL_ARG_SOURCES`, `WORLD_QUESTIONS`, `kindLineage`, `expectedValue`, `cutToCount`, `fillToCount`, `notAllOneKind`, `EXPECT_TYPES`; since 0.152.*
+*In `runPlan`, `runWorldPlan`, `toolBindings`, `toolTimeline`, `toolSession`, `toolCapabilities`, `askWorld`, `nearestAccepted`, `readView`, `stateDiff`, `mirrorState`, `stateIds`, `TOOL_ARG_SOURCES`, `WORLD_QUESTIONS`, `kindLineage`, `expectedValue`, `cutToCount`, `fillToCount`, `notAllOneKind`, `EXPECT_TYPES`; since 0.152.*
 *Works on: any live world that declares `std.tool.op` / `std.tool.param` / `std.tool.bind` (and `std.tool.custom`), the published k.expect.scale, w.lang.en cues and replies.*
 
 The link between a live world and the generic mechanisms is wires: a world declares its tool's operations with their
@@ -925,6 +925,16 @@ drawing" act on the whole world; a move says its place ("I moved the atlas to th
 each its own count, size and values ("a tiny novel and a big atlas", "a novel and a comic": one of each); a plural
 kind with no number takes its count from the expectations (`k.expect.value of=book on=count when.plural=yes`); a whole
 of the expectations whose parts the world cannot make is made as one thing (`plan.asOne`).
+
+Since 0.154 (`test/references-fragments.test.mjs`, `stateIds`): the things of an act are the things of the state, never
+declaration rows ("remove everything" leaves every `std.schema.drawn` row); a thing's name or label is the object of
+any act ("move summary to the left", "connect start to end"), with the question when two things share it; a message
+with no verb that wants a kind ("a sun" after "draw a fish") continues the last act as a new request, never when it
+is a reaction or a question; "remove the atlases" takes every atlas, "remove the atlas" with two asks which; a turn
+read only in part never revises or keeps the last result; "bigger" steps the size and keeps the count; a revision
+that changes no key it set says "Nothing changed."; "how many beads?" counts the beads only; `when.in=none` in an
+expectation; `std.tool.value` gives a tool its own name for a value of the world; "draw a boat" says one boat as said,
+and the reply names an assumption by its source (`ASSUMED_SAY`, data), not a tool parameter's default.
 
 ```js run
 const p = { name: 'size', type: 'ex.scale', by: 'step', accepts: ['small', 'big'] };

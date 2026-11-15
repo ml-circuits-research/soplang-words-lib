@@ -60,6 +60,7 @@ export function conditionsOf(row) {
 const before = (a, b) => { const i = a.findIndex((x, k) => x !== b[k]); return i >= 0 && a[i] < b[i]; }; // lexicographic
 const holds = (c, known) => {
   const v = known[c.key];
+  if (c.op === 'eq' && c.value === 'none') return v === undefined || v === null || v === ''; // when.<key>=none: the key is absent
   if (v === undefined || v === null) return false;
   if (c.op === 'min') return Number(v) >= c.value;
   if (c.op === 'max') return Number(v) <= c.value;

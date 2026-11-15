@@ -2005,7 +2005,17 @@ in the world and in `ctx.catalog`. Values are the enums of the kinds' slots and 
 world's `core.word` for its actions, its action names, then `k.actions.verb` facts), unless a cue phrase
 starting there is longer ("make it bigger", "put it back"). What no cue, kind, value or number takes is
 `unread` (closed words excepted). `ctx`: `language` (default `world`), `lang` (default w.lang.en),
-`catalog`, `dialogue` (`{ last }`: what "it" is), `kinds`, `values`, `valueTypes`, `verbs`.
+`catalog`, `dialogue` (`{ last }`: what "it" is), `kinds`, `values`, `valueTypes`, `verbs`, `state` (a world with
+the things that are there, default `world`). Since 0.154: a phrase that is the name of a thing of the state (its
+id, or a free text value of it: a slot with no enum, no reference, not a number, such as a label or a title) is a
+reference to that thing (`named: [{ ids, words, at, prep? }]`, `refers: 'named'`), never when the phrase is a value
+or a verb of the world or a kind this world has (declared, or with things there); a kind word only the catalog
+knows gives way to a name. `mentions`: every kind word read (`{ kind, words, at, unit?, world?, none? }`);
+`question: true` when the text ends with "?" or starts with a question word of the language (`${lang}.wh`). The
+plural forms of the kind words are the language world's inflection (a plural equal to the singular, "fish", is no
+plural); the spelling rule is used only for a language world with no inflection. A kind after a singular indefinite
+determiner of the language (`definite=no number=sg`: "a boat") with no number gets a count constraint 1 of that kind,
+`origin: 'said'`, `det: true` (never named as not honoured): one is said, not assumed.
 `requestWires(request, { id })` writes the request as w.request wires (request, constraints, unread).
 
 ```js run
@@ -2041,7 +2051,14 @@ factors, `k.expect.scale` of `options.catalog`, from the result's count; `on=siz
 scale), `add` (the constraints said replace those of the same key), `keep` (the same request, a new seed),
 `undo` (the previous request), `none`. A turn with an act and a new thing is a new request; "my expectation
 was ..." carries the whole new set. A relative size said in a revision ("make it smaller") is a step from the
-last one. `dialogue`: `{ last, result: { count, kinds }, previous, seed, previousSeed }`. Returns `{ sort:
+last one. Since 0.154: a turn with unread words and no reaction cue is never a revision (a request of its own:
+its act abduced by the planner when nothing unread stands there, or not understood); an act said on things named
+by their names is a request; a fragment (no verb, no reaction cue, not a question) that wants a kind not by a
+definite reference ("a sun" after "draw a fish") continues the dialogue's focus: `reaction: 'continue'`, a new
+request with the last act (`actFrom: 'dialogue'`; the `w.dialogue.revision reaction=continue` rows when the language
+has them, else does=inherit on=act, nothing replaced); a reaction's `step` rows apply only on the keys the turn
+names when it names one ("bigger" steps the size, the count stays), on all its rows otherwise.
+`dialogue`: `{ last, result: { count, kinds }, previous, seed, previousSeed }`. Returns `{ sort:
 'request' | 'reaction', reaction, does, request, replace, seed, vary, reply, undo }` (`vary`: plan it varied;
 `reply`: a reply name of the revision, such as sorry or welcome).
 
@@ -2141,6 +2158,30 @@ print(runPlan(toy, p).result.kinds, REQUEST_SOURCES);
 {"box":3,"ball":3} ["said","dialogue","induced","world","expect","sampled"]
 ```
 
+### stateIds(live, view?, ids?)
+
+The things of a world's state, never its declaration or knowledge rows (since 0.154, questions Q90): the ids of
+`view` (default `factsOf(live)`; or of `ids`) whose wire's type is a `std.schema.thing`, as the acts read the
+things of a world. A `std.schema.drawn kind= as=` row or a `k.expect` row has a kind but is no thing an act takes:
+"remove everything" removes the things of the state and leaves every declaration. `planRequest` takes the things of
+an act (by kind, by name, the whole world, the places of a candidate) and the change sense of make through it. A
+world with no `std.schema.thing` type keeps every id.
+
+```js run
+const toy = new World();
+toy.load(`@acts core.use world=std.acts
+@w std.schema.world name=toy
+@t.box core.type of=box extends=std.schema.thing closed=true
+@k std.schema.kind of=box world=toy acts=make acts=remove
+@d std.schema.drawn kind=box as=square
+@b1 box kind=box world=toy`);
+print(factsOf(toy).ofKind('box'), stateIds(toy));
+```
+
+```output
+["d","b1"] ["b1"]
+```
+
 ### factsOf(world), kindFactsOf(catalog, types?), deduceState(view, ids, options?), induceStyle(view, types, options?), induceCorrections(list, options?), REASONING, KIND_FACTS, REASON_RULES
 
 The first layer of reasoning of the gap filler, on one view of any world. `factsOf(world)` is the world as facts:
@@ -2216,14 +2257,16 @@ const r = repairWords(['show', 'the', 'trubine'], { worlds: [openWorld, otherWor
 // r.tokens -> ['show','the','turbine']; r.repairs[0] -> { from: 'trubine', to: 'turbine', source: 'world', cost: 0.6, at: 2 }
 ```
 
-### sayRequest(request, outcome, options?)
+### sayRequest(request, outcome, options?), ASSUMED_SAY
 
 The reply of a request as reply facts, each a reply name of the language world with its roles, and their
 text by `replyFrom`: the revision's reply (`outcome.reply`: sorry, welcome), `done.revise` (`outcome.revised`),
 `done.make` / `done.make.value` (the whole made, or each kind with its number), `assumed` (`{ key, value }`, each
 default used), `not_honoured` (`{ words, why }`, also for each reason of `outcome.cannot`), `unread` (`{ words }`, after a turn that made something).
 `outcome` is the plan with `run` (runPlan's result). `options`: `language`, `lang` (or a language code such as
-'en'), `dictionary`. Returns `{ facts, text, missing }` (`missing`: the reply names the language world lacks).
+'en'), `dictionary`, `say` (since 0.154: the sources of an assumption that are said; default the language world's
+`<lang>.reply name=assumed say=` values when it has them, else `ASSUMED_SAY`: every source but `default`, a tool
+parameter's declared default, the weakest expectation a person takes for granted; one rule for every key). Returns `{ facts, text, missing }` (`missing`: the reply names the language world lacks).
 
 ```js run
 const words = new World();
@@ -2253,6 +2296,7 @@ declarative, only the tool's concrete actions are code). A world declares its to
 | `std.tool.arg` | `bind` (`$` the binding), `param`, `from` (many: the sources, in order) - one argument of a binding (the review's form; the same as `arg=` inline) |
 | `std.tool.needs` | `op`, `exists` (many: a thing of that kind, by lineage, is in the state), `absent` (many), `check` (many: a declared constraint), `args` - the preconditions of an op, for every binding of it |
 | `std.tool.custom` | `name` (id), `world`, `kind` (constraint or search), `in` (many), `out`, `fails` (the reply name said when a constraint fails), `doc` |
+| `std.tool.value` | `op`, `param`, `value` (ids together), `as` - the tool's own name for an accepted value of the world: the call gets `as` (the engine's `medium` for the world's grade `default`); since 0.154 |
 
 The sources of an argument (`TOOL_ARG_SOURCES`) are `step.<key>` (the plan step's value; `step.count`: how many
 steps of the same values one call takes, which groups them; `step.things`: the ids of the things they act on),
@@ -2285,7 +2329,9 @@ the world's own `act`, as before.
 function named and not declared, a required parameter without a source). `toolCapabilities(live, bindings)`: the acts
 a world offers (honoured and bound) with their kinds and keys. `askWorld(question, request, { live, bindings, view })`
 says facts of the live world for the questions of `WORLD_QUESTIONS`: `capabilities` (the declarations) and `state`
-(the things of the kinds asked, by lineage, counted per kind: `state.count`, `state.empty`). `mirrorState(live, view)`
+(the things of the kinds asked, by lineage, counted per kind: `state.count`, `state.empty`; the kinds asked are the
+kinds wanted and the kinds a count is of, else every kind word said, a unit such as "beads" too: a whole or a link is
+counted only when its kind is said). `mirrorState(live, view)`
 tells the tool's things into a fork of the declarations so that the planner's reasoning (induction, places, deny
 rules) sees them. `toolSession(live, primitives, { language, catalog, revisions })` is the door with no code per
 world: read, a question (a reaction of the language world named in `WORLD_QUESTIONS`), undo / redo (the acts), revise,
@@ -2294,7 +2340,7 @@ nothing (`not_understood` with the words). `planRequest` plans an act on things 
 by a reference step over the state: "them" / "it" are the last result, else the things of the kind named (by lineage,
 the kinds not wanted left out), filtered by the values said before the kind; the values after it are the new values;
 several things for a singular kind is one question (`refused.which`, no step; "a novel" with an indefinite determiner
-is any one, the newest), none is `refused.no_such`. Since 0.153: "everything" (a word of the language's grammar that
+is any one, the newest), none is `refused.no_such`. "Everything" (a word of the language's grammar that
 alone is a noun phrase of `set=all`), the world's name (`std.schema.world name=`) and every word of the kind that name
 means are the whole world: an act takes every thing of a declared kind it is declared for (`plan.whole = 'world'`),
 and such a word after a preposition ("on the shelf") is no place. The change sense of make: a make whose object refers
@@ -2355,7 +2401,8 @@ typical=] if.<key>=<v> if.<key>.min= if.<key>.max=` (and the review's form `k.ex
 when.<key>=<v> when.<key>.min= when.<key>.max=`, `EXPECT_TYPES`; a row with no `of` is for any kind, least specific) of
 the live world (source `world`) then of the catalog (`expect`):
 those whose `of` is in the kind's lineage and whose conditions hold on what is `known` (the thing's other values,
-`kind`, `size`, `count`, `role`); several values of one if-key are alternatives. The most specific wins: the most
+`kind`, `size`, `count`, `role`); several values of one if-key are alternatives; `when.<key>=none` holds when the key
+is absent (a shape in no whole: `when.in=none`, since 0.154). The most specific wins: the most
 condition keys, then the nearest kind, then the world before the catalog. `planRequest` fills from them every slot
 key nothing else filled, per item, twice (one default may condition another), with the item's role in the plan's
 links (start, branch, leaf, middle); a value of the whole's count and layout before the slot's default; and an

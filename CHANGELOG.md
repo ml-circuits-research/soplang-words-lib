@@ -1,5 +1,48 @@
 # Changelog
 
+## 0.154.0
+
+Turns PSys2 lost to the request mechanisms (psys2 questions.md Q46, Q47; questions.md Q90), each a generic piece; proven
+by properties on the example worlds (shelf and necklace through a tool, sketch and garden through their own acts:
+`test/references-fragments.test.mjs`).
+
+### New
+- `stateIds(live, view?, ids?)`: the things of a world's state, wires of a `std.schema.thing` type, never declaration
+  or knowledge rows. The things of an act (by kind, by name, the whole world, the place candidates) and the change sense
+  of make go through it: "remove everything" no longer takes `std.schema.drawn` rows (Q90).
+- Names as references: `readRequest` reads a phrase that is the name of a thing of the state (its id or a free text
+  value: a label, a title) as a reference (`named`, `refers: 'named'`; `ctx.state`, which `toolSession` passes as the
+  mirrored state). A value, a verb or a kind this world has is never a name; a kind only the catalog knows gives way.
+  `planRequest` acts on the things named (remove, change, place, the change sense of make; connect joins them in the
+  order said); two things of one name: `refused.which`.
+- Fragment ellipsis: `reviseRequest` gives `reaction: 'continue'` for a turn with no verb, no reaction cue, not a
+  question, that wants a kind not by a definite reference: a new request with the dialogue's act (`actFrom:
+  'dialogue'`, in `assumed`); `w.dialogue.revision reaction=continue` rows when the language has them, else does=inherit
+  on=act, nothing replaced. `readRequest` sets `question` (a final "?" or a first word of `${lang}.wh`; the examples'
+  language now loads `w.lang.en.wh`).
+- `readRequest`: `mentions` (every kind word read, units and the world's words too). `askWorld` counts the kinds asked:
+  the kinds wanted, the kinds of a count, else the kinds mentioned ("how many beads?" counts beads, not the necklace or
+  the ties).
+- `when.<key>=none` in a conditional expectation: the key is absent.
+- `std.tool.value op= param= value= as=`: the tool's own name for an accepted value of the world (the call gets `as`).
+- A singular indefinite ("a boat") gives a count 1 of that kind with origin `said` (`det: true`): never "I assumed 1
+  for the count", never a refusal in a world that does not take a count (reviewer 06:05).
+- `ASSUMED_SAY` and `sayRequest(..., { say })`: which assumptions are said is data, by source (default: all but
+  `default`, a tool parameter's declared default, now its own source; or the language's `<lang>.reply name=assumed
+  say=` values). One rule for every key.
+
+### Changed
+- A turn with unread words and no reaction cue never revises or keeps the last result (Reviewer 05:20 B): it is a
+  request of its own, planned (its act abduced when nothing unread stands where it would be) or not understood.
+- A reaction's `step` rows apply only on the keys the turn names when it names one: "make it bigger" steps the size and
+  keeps the count (Q45 (7), Q46 (13)).
+- A revision through a tool whose net change adds and removes nothing and changes no key it set is `same`: "Nothing
+  changed." (a place or an order the tool recomputed alone is no change; `diff.changed[].unsaid` marks such a key).
+- Plurals of kind words are the language world's inflection only (a plural equal to the singular is none); the English
+  spelling rule stays for a language world with no inflection.
+- Plural + definite = every thing of the kind in the view, singular + several = the question: already so in 0.153 on
+  the shelf; now also proven through the world's own acts (sketch), and no declaration row counts as a second thing.
+
 ## 0.153.0
 
 What PSys2's Drawing still did or lost in the host (psys2 questions.md Q45), each a generic piece; proven on the example

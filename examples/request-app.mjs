@@ -118,7 +118,7 @@ export function requestSession(live, { language, catalog = [], revisions = null 
 export async function requestLanguage() {
   const { catalogWorld, worldsDir } = await import('../tools/worlds.mjs');
   if (!worldsDir()) return null;
-  const en = ['cue', 'det', 'prep', 'pron', 'skip', 'number', 'inflect', 'irregular', 'reply', 'count', 'onset', 'anaphor', 'rule', 'construction', 'word'].map((t) => `w.lang.en.${t}`);
+  const en = ['cue', 'det', 'prep', 'pron', 'skip', 'wh', 'number', 'inflect', 'irregular', 'reply', 'count', 'onset', 'anaphor', 'rule', 'construction', 'word'].map((t) => `w.lang.en.${t}`);
   return catalogWorld({ 'w.lang.en': en, 'k.actions': ['k.actions.verb'], 'k.expect': ['k.expect.amount', 'k.expect.scale', 'k.expect.make', 'k.expect.part'], 'w.dialogue': ['w.dialogue.revision'], 'k.colours': ['k.colours.basic', 'k.colours.colour'] });
 }
 

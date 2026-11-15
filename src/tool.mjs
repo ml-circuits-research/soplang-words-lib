@@ -35,7 +35,8 @@ const parseCall = (text) => { const m = String(text).match(/^([\w.]+)\s*\(([^)]*
 /**
  * The tool binding a world declares: `std.tool.op name= world= param= effect=`, `std.tool.param op= name= type= accepts=
  * scale= by= order= min= max= required=`, `std.tool.bind act= of= op= arg=<param><-<source>|... needs= makes= removes=
- * changes=`, `std.tool.custom name= kind=constraint|search in= out= fails=`. Returns { ops, params, binds, customs,
+ * changes=`, `std.tool.custom name= kind=constraint|search in= out= fails=`, `std.tool.value op= param= value= as=` (the
+ * tool's own name for an accepted value of the world: the call gets `as`). Returns { ops, params, binds, customs,
  * problems } (problems: an op, a parameter, a source form or a custom function a binding names that is not declared).
  */
 export function toolBindings(live, { catalog = [] } = {}) {
@@ -46,6 +47,8 @@ export function toolBindings(live, { catalog = [] } = {}) {
     m.set(first(r, 'name'), { op, name: first(r, 'name'), kind: first(r, 'kind'), type: first(r, 'type'), accepts: (r.accepts ?? []).map(String), scale: first(r, 'scale'), by: first(r, 'by'), order: first(r, 'order'), min: num(first(r, 'min')), max: num(first(r, 'max')), default: first(r, 'default'), required: ['yes', 'true', true].includes(first(r, 'required')) });
     params.set(op, m);
   }
+  // the tool's own name for a value of the world (std.tool.value op= param= value= as=): the call gets `as`
+  for (const r of rowsOf(live, 'std.tool.value')) { const p = params.get(first(r, 'op'))?.get(first(r, 'param')); if (p) (p.names ??= new Map()).set(String(first(r, 'value')), first(r, 'as')); }
   for (const r of rowsOf(live, 'std.tool.custom')) customs.set(first(r, 'name'), { name: first(r, 'name'), kind: first(r, 'kind') ?? 'constraint', in: r.in ?? [], out: first(r, 'out'), fails: first(r, 'fails') });
   // a binding's arguments: inline (arg=<param><-<source>|...) or one std.tool.arg wire each (bind=$<binding> param= from=...)
   const argRows = (live?.ofType?.('std.tool.arg') ?? []).map((f) => ({ bind: strip(f.attrs.bind?.[0] ?? ''), param: String(f.attrs.param?.[0] ?? ''), from: (f.attrs.from ?? []).map((x) => String(x).replace(/^"|"$/g, '')) }));
@@ -150,7 +153,7 @@ export function stateDiff(before, after, { match = false, keys = null } = {}) {
   for (const x of changed) (keySet && !keySet.has(x.key) ? unsaid : said).push(x);
   for (const x of redone) for (const k of x.keys) (keySet && !keySet.has(k) ? unsaid : said).push({ id: x.id, was: x.was, kind: x.kind, key: k, from: x.r.attrs[k], to: x.a.attrs[k] });
   const out = { added: added.filter((_, j) => !usedA.has(j)), removed: removed.filter((_, i) => !usedR.has(i)), changed: said };
-  if (!out.added.length && !out.removed.length && !out.changed.length) out.changed.push(...unsaid); // nothing else changed: the differences are the change
+  if (!out.added.length && !out.removed.length && !out.changed.length) out.changed.push(...unsaid.map((x) => ({ ...x, unsaid: true }))); // nothing else changed: the differences are the change (marked `unsaid`: no key asked for changed)
   return { ...out, redone: redone.map(({ r, a, ...x }) => x), same: !out.added.length && !out.removed.length && !changed.length && redone.every((x) => !x.keys.length) };
 }
 const emptyDiff = () => ({ added: [], removed: [], changed: [] });
@@ -303,7 +306,11 @@ function runToolPlan(plan, bindings, primitives = {}, opts = {}) {
   // the key a change is said by: the request's key the binding took the value from (arg=end<-step.place: a move says the place)
   const said = new Map(); for (const c of ex.calls) for (const b of B.binds.filter((x) => x.op === c.op)) for (const a of b.args) { const st = a.sources.find((x) => x.startsWith('step.')); if (st) said.set(a.name, st.slice(5)); }
   for (const x of diff.changed) if (said.has(x.key) && said.get(x.key) !== x.key) x.as = said.get(x.key);
-  return { ok: true, diff, same: !!undone && diff.same && isEmpty(diff), replaced: undone ? undone.diff.removed.map((t) => t.id) : [], calls: ex.calls, assumed: ex.assumed, translated: ex.translated, result: summary(ex.ids, entry.diff, after, plan), step: undone ? 'replaced' : 'new', entry };
+  // a revision whose net change has no thing added or removed and no key it set changed is no change ("nothing
+  // changed"), whatever the tool recomputed alone (a place, an order)
+  const same = !!undone && !diff.added.length && !diff.removed.length && diff.changed.every((x) => x.unsaid);
+  if (same) diff.changed = [];
+  return { ok: true, diff, same, replaced: undone ? undone.diff.removed.map((t) => t.id) : [], calls: ex.calls, assumed: ex.assumed, translated: ex.translated, result: summary(ex.ids, entry.diff, after, plan), step: undone ? 'replaced' : 'new', entry };
 }
 
 /**
@@ -443,11 +450,11 @@ function fillArgs(bind, kind, steps1, resolveV, ctx) {
     for (const s of changed ? a.sources : [...a.sources, 'expect']) { got = sourceValue(s, a.name, kind, steps1, args, resolveV, ctx); if (got) break; } // an expectation is always the last source
     const p = params.get(a.name);
     if (changed && !got) continue;
-    if (!got && p?.default !== undefined) got = { value: p.default, from: 'world', because: [`${bind.op}.${a.name} default`] }; // the parameter's own default, declared
+    if (!got && p?.default !== undefined) got = { value: p.default, from: 'default', because: [`${bind.op}.${a.name} default`] }; // the parameter's own default, declared: the weakest source
     if (!got) { if (p?.required) return { failed: { code: 'missing', reply: 'refused.missing_value', roles: { key: a.name } } }; continue; }
     const t = nearestAccepted(got.value, p, ctx);
     if (t.refused) return { failed: { code: 'value', reply: 'refused.value', roles: { key: a.name, value: String(got.value), values: (t.values ?? []).join(', ') } } };
-    args[a.name] = t.value;
+    args[a.name] = p?.names?.has(String(t.value)) ? p.names.get(String(t.value)) : t.value; // the tool's own name for it, when declared
     if (t.translated) translated.push({ key: a.name, was: t.was, value: t.value, by: t.by });
     const shown = got.from === 'custom' && typeof t.value === 'string' ? ctx.look().get(strip(t.value)) : null; // a thing of the view is said by its kind
     if (t.translated || (got.from !== 'said' && !got.plan)) assumed.push({ key: a.name, value: shown?.kind !== undefined ? plainKind(shown.kind) : t.value, ...(shown ? { thing: shown.id } : {}), from: t.translated ? 'translated' : got.from, ...(t.translated ? { was: t.was, by: t.by } : {}), ...(got.because?.length ? { because: [].concat(got.because).join(', ') } : {}), op: bind.op });
@@ -562,7 +569,11 @@ export const WORLD_QUESTIONS = Object.freeze(['capabilities', 'state']);
 export function askWorld(question, request, { live, bindings = null, view = null, catalog = [] } = {}) {
   if (question === 'capabilities') return { capabilities: toolCapabilities(live, bindings), facts: [] };
   const things = [...readView(view).values()];
-  const kinds = (request?.constraints ?? []).filter((c) => c.on === 'kind' && (c.want ?? 'yes') === 'yes' && c.value).map((c) => c.value);
+  // the kinds asked about: the kinds wanted, the kinds a count is of, else every kind word said (a unit such as "nodes"
+  // too); a whole or a link is counted only when its kind is said
+  let kinds = (request?.constraints ?? []).filter((c) => (c.on === 'kind' && (c.want ?? 'yes') === 'yes' && c.value) || (c.on === 'count' && c.of)).map((c) => c.value ?? c.of);
+  if (!kinds.length) kinds = (request?.mentions ?? []).filter((m) => !m.none).map((m) => m.kind); // a word for the world itself that is no kind counts everything
+  kinds = [...new Set(kinds)];
   const facts = [];
   if (kinds.length) for (const k of kinds) facts.push({ reply: 'state.count', roles: { kind: k, number: things.filter((t) => kindLineage(t.kind, { live, catalog }).includes(k)).length } });
   else { const m = new Map(); for (const t of things) m.set(t.kind, (m.get(t.kind) ?? 0) + 1); for (const [kind, number] of m) facts.push({ reply: 'state.count', roles: { kind, number } }); if (!m.size) facts.push({ reply: 'state.empty', roles: {} }); }
@@ -595,14 +606,14 @@ export function toolSession(live, primitives, { language = null, catalog = [], r
   return {
     timeline, dialogue, bindings: B,
     say(text) {
-      const request = readRequest(live, text, { language: language ?? live, catalog: cat, dialogue, ...(lang ? { lang } : {}) });
+      const state = mirror ? mirrorState(live, view).world : live; // the state as things: names are read from it, plans reason on it
+      const request = readRequest(live, text, { language: language ?? live, catalog: cat, dialogue, state, ...(lang ? { lang } : {}) });
       const question = WORLD_QUESTIONS.find((q) => request.reactions.some((r) => r.value === q));
       if (question) { // a question is no step: facts of the live world, said by reply facts
         const run = runPlan({ act: 'ask', question, ok: true, steps: [] }, B, primitives, runOpts);
         const answer = askWorld(question, request, { live, bindings: B, view, catalog: cat });
         return { request, revision: null, plan: null, run, reply: sayRequest(request, { run, capabilities: answer.capabilities, answer: answer.facts }, sayOpts) };
       }
-      const state = mirror ? mirrorState(live, view).world : live;
       const rev = request.act === 'undo' || request.act === 'redo' ? { undo: request.act === 'undo', redo: request.act === 'redo', request: null } : reviseRequest(dialogue, request, { revisions: revisions ?? language, catalog: cat, live: state });
       if (rev.undo || rev.redo) {
         const run = runPlan({ act: rev.redo ? 'redo' : 'undo' }, B, primitives, runOpts);

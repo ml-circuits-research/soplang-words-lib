@@ -442,3 +442,10 @@ tier}, why.nothing, why.none, and (0.143) the std.acts refusal codes refused.not
 number}, refused.no_room {kind}, refused.no_world_named {world}, refused.no_kind_in {kind, world}, refused.no_relation
 {relation}, refused.no_aspect {kind, aspect}, refused.nothing_to_show {view}, refused.bad_value {key}. test/kit-replies.test.mjs realises every name the catalog has (no English word in a
 Romanian one) and lists the rest as a todo. Also words for keys (w.seating.table.name → nume) for `{key}`.
+
+## Q35 of PSys2 (worker, 0.148.0) — for the reviewer
+Answered in 0.148.0: std.decide kind `intent`, `chooseRewrite`, readTurn `rewrites` / `dry`, and the cutter. Note: the
+library's `clauses` never cut inside "water lily" or "work done" (no cut point there); the cut the application saw is
+either its own splitter or the cut at "and" before "the third water lily", which no longer happens. PSys2 does not read
+through a kit set today, so `chooseRewrite` with its own `_understands` as `read` is the call that replaces its loop;
+`readTurn({ rewrites })` is the same choice for a host on the kit. Delete when satisfied.

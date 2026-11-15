@@ -5761,3 +5761,22 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - test/recurrence.test.mjs: daily count 3; every 2 weeks Mon/Wed count 5; weekdays until 24 Nov; the 31st only in
   long months; 29 February only in leap years; Fridays monthly; a window; max; HOURLY not expanded.
 - Gate: npm test 531 pass / 0 fail; compat 11; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.148.0 — an application's intent step on the library (its Q35)
+
+- std.decide kind `intent` (src/decide.mjs): reads (issues) / covers (uncovered) / slots (unfilled) / present (absent)
+  / previous (max) / cost. The application's current measures (issues, uncovered, previous, cost) read the same; the two
+  new ones are 0 when a host does not give them.
+- `chooseRewrite(text, rewrites, { read, stop, previous, world, criteria })` (src/rewrite.mjs): the clause (cost 0)
+  and the host's rewrites, read dry by the host's `read`, chosen by kind intent; a rewrite only when it reads strictly
+  better. `readTurn` options `rewrites` (array or per-clause function, for a clause with no plan; dry reading =
+  planClause: plan 0, ask 1 + open slots, refused 2 + absent for refused.no_such, not read 3), `previous`, `stop`
+  (added to the language world's closed words), `intentCriteria` / `intentWorld`, `whole`, `dry` (status `planned`).
+- `clauses`: the cutter had no cut point inside "water lily" / "work done" (none of them is a joiner or a wh word:
+  /tmp scratch probe on the catalog w.lang.en). The cut it did make was at "and" before a noun phrase: "remove the
+  fourth grass and the third water lily" -> ["remove the fourth grass", "the third water lily"]. Now a joiner before a
+  determiner or a number does not cut (one clause), and no cut point falls inside a phrase of `whole` (readTurn adds the
+  schema's multi-word words). The shop rows (Q71) cut as before.
+- test/rewrite.test.mjs (4), test/kit.test.mjs clauses case (+2 asserts).
+- Gate: npm test 534 pass / 0 fail; SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs" 534 / 0; npm run test:compat
+  11 / 0; node tools/scan-loops.mjs exit 0; git grep -il psys2 src/ = 0; tsc not installed here (not run).

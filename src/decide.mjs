@@ -46,5 +46,11 @@ export const DECIDE_TEXT = String.raw`
 @std.decide.c.related.1 std.decide.criterion of=related n=1 name=valid measure=valid dir=max about="a related case the world answers and reads back first (relatedCases)"
 @std.decide.c.related.2 std.decide.criterion of=related n=2 name=distance measure=distance dir=min
 @std.decide.c.alignment.1 std.decide.criterion of=alignment n=1 name=fit measure=fit dir=max about="the share of slots that match, references to paired types counting a quarter more (alignWorlds)"
+@std.decide.c.intent.1 std.decide.criterion of=intent n=1 name=reads measure=issues dir=min about="points of trouble of the reading of a rewrite, dry (unread 3, refused 2, a question 1, none 0)"
+@std.decide.c.intent.2 std.decide.criterion of=intent n=2 name=covers measure=uncovered dir=min about="content words said that the rewrite neither uses nor explains"
+@std.decide.c.intent.3 std.decide.criterion of=intent n=3 name=slots measure=unfilled dir=min about="typed slots the reading leaves open (required keys asked for)"
+@std.decide.c.intent.4 std.decide.criterion of=intent n=4 name=present measure=absent dir=min about="things the reading names that are not there (on the screen, in the world)"
+@std.decide.c.intent.5 std.decide.criterion of=intent n=5 name=previous measure=previous dir=max about="it names a thing of the previous turn or continues its act"
+@std.decide.c.intent.6 std.decide.criterion of=intent n=6 name=cost measure=cost dir=min about="how far the rewrite is from the words said (the clause itself 0)"
 @std.decide.c.contrast.1 std.decide.criterion of=contrast n=1 name=rare measure=share dir=min about="the kind's value fewest of its siblings hold (contrastOf)"
 `;

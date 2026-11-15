@@ -234,4 +234,6 @@ test('clauses: the real shop rows of PSys2 (knowledge Q71) cut where the referen
   const rows = { r0590: ['i should call grandma', 1], r0598: ['I want a puzzle and I pay 10 lei. What is the change?', 3], r0599: ['I want 2 pencils and I give the cashier 10 lei. How much change do I get?', 3], r0622: ["I would like a ball and a pencil and pay with 20 lei. what's the change", 3], r0623: ['how much does a pencil cost?', 1], r0625: ['I want a ball and a pencil and pay with 20 lei what is the change', 3] };
   for (const [id, [text, n]] of Object.entries(rows)) assert.equal(clauses(L, text, { read })?.length, n, `${id}: ${text}`);
   assert.deepEqual(clauses(L, "I would like a ball and a pencil and pay with 20 lei. what's the change", { read }).map((c) => c.text), ['I would like a ball and a pencil', 'pay with 20 lei', "what's the change"], 'a list stays one clause; a joiner before a verb cuts');
+  assert.deepEqual(clauses(L, 'remove the fourth grass and the third water lily', { read }).map((c) => c.text), ['remove the fourth grass and the third water lily'], 'a list of things with a two-word thing is one clause (Q35 of an application)');
+  assert.deepEqual(clauses(L, 'show the work done and remove the water lilies', { read }).map((c) => c.text), ['show the work done', 'remove the water lilies']);
 });

@@ -11,6 +11,7 @@ import { clauses, cutPoints } from './clauses.mjs';
 import { moodOf } from './reader.mjs';
 import { turn } from './turn.mjs';
 import { choose } from './rank.mjs';
+import { chooseRewrite } from './rewrite.mjs';
 import { typedWorldFor, schemaOf, fitsSlot } from './typed.mjs';
 import { typedLexicon } from './readtypes.mjs';
 import { valueText } from './parser.mjs';
@@ -108,6 +109,12 @@ function stepTimeline(set, act, n = 1) {
  * morphology), reply(world, request, result) }. Returns { status: 'done' | 'ask' | 'not-understood' | 'refused',
  * reading: { frame, act, roles, unread, mood, complete }, request?, owner?, reply, changed?, why? }. An
  * incomplete reading is never acted on.
+ * Rewrites (Q35 of an application): `rewrites` (an array for a message of one clause, or `(clause, { set, index,
+ * clauses }) -> [{ text, cost, explains, via }]`) are tried for a clause that does not run; each is read dry and
+ * std.decide's kind `intent` chooses (`chooseRewrite`; `previous`: phrases of the previous turn; `stop`: more function
+ * words; `intentCriteria` / `intentWorld`: the host's order). The result then carries `rewrites`: [{ said, as, via,
+ * changed, why, order }]. `whole`: names of things of several words the clause cutter never cuts (the schema's own
+ * are added). `dry: true`: read, bind and choose, nothing run ({ status: 'planned', clauses, plans }).
  */
 export function readTurn(set, text, context = {}) {
   const started = Date.now(), lang = context.lang ?? 'w.lang.en';
@@ -116,11 +123,23 @@ export function readTurn(set, text, context = {}) {
   // complete plan wins; else the whole message is one clause, read and reported as it is
   const plans = new Map();
   const planOf = (t) => { if (!plans.has(t)) plans.set(t, planClause(set, t, context)); return plans.get(t); };
-  const cut = set.language ? clauses(set.language, text, { lang, read: (t) => { const p = planOf(t); return p.plan ? { literal: p.literal } : null; } }) : null;
+  const whole = [...(context.whole || []), ...memoPerWorld(set.schema, 'kit-whole', () => [...typedLexicon(set.schema).keys()].filter((k) => /\s/.test(k)))]; // things of several words are never cut
+  const cut = set.language ? clauses(set.language, text, { lang, whole, read: (t) => { const p = planOf(t); return p.plan ? { literal: p.literal } : null; } }) : null;
   const parts = cut && cut.length > 1 ? cut.map((c) => c.text) : [text];
+  const rewritten = [];
+  if (context.rewrites) for (let i = 0; i < parts.length; i++) { // bounded: the clauses; a clause that does not run gets the host's rewrites, chosen by std.decide kind intent
+    if (planOf(parts[i]).plan) continue;
+    const props = typeof context.rewrites === 'function' ? context.rewrites(parts[i], { set, index: i, clauses: parts }) : parts.length === 1 ? context.rewrites : [];
+    if (!props?.length) continue;
+    const r = chooseRewrite(parts[i], props, { read: (t) => troubleOf(planOf(t)), stop: closedWords(set, lang, context.stop), previous: context.previous, world: context.intentWorld ?? set.language, criteria: context.intentCriteria });
+    rewritten.push({ said: parts[i], as: r.chosen.text, via: r.chosen.via, changed: r.changed, why: r.why, order: r.order.map((c) => ({ text: c.text, via: c.via, issues: c.issues, uncovered: c.uncovered, unfilled: c.unfilled, absent: c.absent, previous: c.previous, cost: c.cost })) });
+    if (r.changed) parts[i] = r.chosen.text;
+  }
+  const withRw = (o) => (rewritten.length ? { ...o, rewrites: rewritten } : o);
   const planned = parts.map(planOf);
   const stop = planned.find((p) => !p.plan); // the first clause that cannot run: said, and nothing of the message runs
-  if (stop) return parts.length > 1 ? { ...stop, clauses: parts } : stop;
+  if (stop) return withRw(parts.length > 1 ? { ...stop, clauses: parts } : stop);
+  if (context.dry) return withRw({ status: 'planned', clauses: parts, plans: planned.map((p) => ({ ...p.plan, reading: p.reading })) }); // read and bound, nothing run
   if (over()) return { status: 'too-complex', reading: planned[0].reading, reply: speak(set, 'too_complex.none', {}, context) };
   const outs = [];
   for (const p of planned) { // bounded: the clauses, one step each
@@ -129,9 +148,24 @@ export function readTurn(set, text, context = {}) {
     outs.push(r);
     if (r.status !== 'done') break;
   }
-  if (outs.length === 1) return outs[0];
+  if (outs.length === 1) return withRw(outs[0]);
   const last = outs[outs.length - 1];
-  return { ...last, status: outs.every((o) => o.status === 'done') ? 'done' : last.status, clauses: parts, results: outs, reply: outs.map((o) => o.reply).filter(Boolean).join(' '), changed: outs.flatMap((o) => o.changed || []), effects: outs.flatMap((o) => o.effects || []) };
+  return withRw({ ...last, status: outs.every((o) => o.status === 'done') ? 'done' : last.status, clauses: parts, results: outs, reply: outs.map((o) => o.reply).filter(Boolean).join(' '), changed: outs.flatMap((o) => o.changed || []), effects: outs.flatMap((o) => o.effects || []) });
+}
+
+/** A clause's points of trouble for std.decide kind intent: none 0, a question 1 (its open slots), refused 2, unread 3. */
+function troubleOf(p) {
+  if (p.plan) return { issues: 0 };
+  if (p.status === 'ask') return { issues: 1, unfilled: (p.asks || []).length || 1 };
+  if (p.status === 'refused') return { issues: 2, absent: p.code === 'refused.no_such' ? 1 : 0 };
+  return { issues: 3 };
+}
+
+/** The language world's closed words (determiners, prepositions, pronouns, auxiliaries, joiners, question words) and the host's. */
+function closedWords(set, lang, extra = []) {
+  const L = set.language;
+  const base = L ? memoPerWorld(L, `closed-words|${lang}`, () => new Set(['det', 'prep', 'pron', 'aux', 'joiner', 'wh', 'anaphor'].flatMap((t) => L.ofType(`${lang}.${t}`)).flatMap((w) => [...(w.attrs.text || []), ...(w.attrs.form || [])]).map((v) => valueText(v).toLowerCase()))) : new Set();
+  return extra?.length ? new Set([...base, ...[].concat(extra).map((w) => String(w).toLowerCase())]) : base;
 }
 
 /**

@@ -871,7 +871,7 @@ make
 
 ## Run an application's worlds with the host kit
 
-*In `loadWorldSet`, `readTurn`, `turnScope`, `openSession`, `replyFrom`, `referentOf`, `countClass`, `clauses`, `cutPoints`, `snapshotSet`, `restoreSet`, `whyTurn`, `KIT_REPLIES`; since 0.130.*
+*In `loadWorldSet`, `readTurn`, `turnScope`, `openSession`, `replyFrom`, `referentOf`, `countClass`, `clauses`, `cutPoints`, `chooseRewrite`, `snapshotSet`, `restoreSet`, `whyTurn`, `KIT_REPLIES`; since 0.130.*
 *Works on: published world schemas (w.list, w.tasks, ...), a language world's frames, the knowledge the worlds join.*
 
 An application loads its worlds and reads each message: "make a shopping list", "add 2 apples to

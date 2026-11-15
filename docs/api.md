@@ -1868,7 +1868,13 @@ two" is two requests, one step each, and nothing runs unless every clause reads.
 (`frames: false` skips those); the kit keeps the contract, the arbitration and the execution. A
 request marked `host` (or an act in `hostActs`) goes to `context.onHost(request, set)`, such as
 navigation; it is not a step of any world. `budget: { ms }` stops a turn before it runs out of
-time (`too-complex`, nothing changed). The result's `effects` say what to redraw. `turnScope(set, owner)` tells whether a change (`{ world, type }`, as `readTurn`
+time (`too-complex`, nothing changed). A clause that does not run may be read as one of the host's
+rewrites (`rewrites`: an array for a message of one clause, or `(clause, { set, index, clauses }) ->
+[{ text, cost, explains, via }]`), chosen by `chooseRewrite` with std.decide's kind `intent` (`previous`:
+phrases of the previous turn; `stop`: more function words; `intentCriteria` or `intentWorld`: another
+order); the result then carries `rewrites: [{ said, as, via, changed, why, order }]`. `whole` names things
+of several words the cutter never cuts (the schema's own are added); `dry: true` reads, binds and
+chooses but runs nothing (`{ status: 'planned', clauses, plans }`). The result's `effects` say what to redraw. `turnScope(set, owner)` tells whether a change (`{ world, type }`, as `readTurn`
 returns them for every world) is one a turn addressed to `owner` may make: that world and the
 session worlds. A turn runs in the world that owns the kind or holds the thing, and is one step of
 the set's timeline: `undo` goes to the world the last step touched. `examples/lists-app.mjs` is a second application on
@@ -1957,6 +1963,30 @@ print(KIT_REPLIES['ask.key'].roles, KIT_REPLIES['ask.key'].en);
 ["key"] What {key}?
 ```
 
+### chooseRewrite(text, rewrites, options)
+
+Chooses among a clause and other readings of it that a host proposes ("make the diagram more
+beautiful" -> "improve the diagram"). `rewrites` is `[{ text, cost = 1, explains = [], via }]`;
+`explains` are the words of the clause that kind of reading accounts for. `options.read(text) ->
+{ issues, unfilled?, absent? }` is the host's dry reading: its points of trouble, the typed slots it
+leaves open, the things it names that are not there. Each candidate (the clause itself has cost 0)
+gets `uncovered` (content words, those not in `options.stop`, neither used nor explained) and
+`previous` (1 when it holds every word of a phrase of `options.previous`), and `choose` decides by
+the criteria of std.decide's kind `intent`: reads, covers, slots, present, previous, cost (a World's
+own facts for the kind, `options.world`, or `options.criteria`, come first). A rewrite is taken only
+when it reads strictly better than the clause. Returns `{ chosen, self, changed, order, why }`.
+`readTurn` calls it for its option `rewrites`.
+
+```js run
+const reads = { 'improve the diagram': 0, 'tidy the diagram': 0 };
+const r = chooseRewrite('make the diagram more beautiful', [{ text: 'tidy the diagram', cost: 2, explains: ['make', 'beautiful'] }, { text: 'improve the diagram', cost: 1, explains: ['make', 'beautiful'] }], { read: (t) => ({ issues: reads[t] ?? 3 }), stop: ['the', 'more'] });
+print(r.chosen.text, r.why);
+```
+
+```output
+improve the diagram reads 0, covers 0, slots 0, present 0, previous 0, cost 1
+```
+
 ### clauses(world, text, options) and cutPoints(world, options?)
 
 One clause splitter. Sentences end at `.`, `?`, `!` and `;`. Inside one, the cut points are a
@@ -1964,7 +1994,10 @@ comma, the joiners that cut (`${lang}.joiner cut=yes`; two in a row are one: "an
 place before a question word (`${lang}.wh`). Each clause is read by `read(text) -> { literal,
 captured? } | null`. Among the cuttings whose every clause reads, the one with the most literal
 words wins, then the fewest captured, then the fewest clauses. The result is `[{ text, reading }]`,
-or null when some sentence has no cutting that reads. On PSys2's real shop rows it cuts "I would
+or null when some sentence has no cutting that reads. A thing of several words is never cut: no cut
+point inside a phrase of `options.whole`, and a joiner before a determiner or a number (`${lang}.det`,
+`${lang}.numeral`, digits) joins a list of things ("remove the fourth grass and the third water lily"
+is one clause). On PSys2's real shop rows it cuts "I would
 like a ball and a pencil and pay with 20 lei. what's the change" into three clauses: the list
 stays one, and the joiner before a verb cuts.
 

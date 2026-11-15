@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.148.0
+
+An application's intent step (its Q35) on the library's data and one call.
+
+### New
+- std.decide kind `intent`: reads (points of trouble of a dry reading), covers (content words neither used nor
+  explained), slots (typed slots left open), present (things named that are not there), previous (fits the previous
+  turn), cost.
+- `chooseRewrite(text, rewrites, { read, stop, previous, world, criteria })`: the clause and the host's rewrites
+  ([{ text, cost, explains, via }]) read dry by `read` and chosen by kind `intent`; a rewrite wins only when it reads
+  strictly better. Returns { chosen, self, changed, order, why }.
+- `readTurn` options `rewrites` (an array, or a function per clause that does not run), `previous`, `stop`,
+  `intentCriteria` / `intentWorld`, `whole`, and `dry` (read, bind and choose, nothing run: status `planned`). The
+  result carries `rewrites`: [{ said, as, via, changed, why, order }].
+
+### Changed
+- `clauses`: no cut inside a phrase of `whole` (readTurn adds the schema's words of several words), and a joiner
+  before a determiner or a number joins a list of things ("remove the fourth grass and the third water lily" is one
+  clause).
+
 ## 0.147.0
 
 ### New

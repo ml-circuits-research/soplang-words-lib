@@ -5,6 +5,9 @@
 // is read by `read(text) -> { literal, captured? } | null` (a host's reader, or readFrames' best); among the cuttings
 // whose every clause reads, the one with the most literal words wins, then the fewest captured, then the fewest
 // clauses. Returns [{ text, reading }] or null when some sentence has no cutting that reads.
+// A thing of several words is never cut (Q35 of an application): no cut point inside a phrase of `whole` (the
+// host's names of things, "salt and pepper", "water lily"), and a joiner before a determiner or a number joins two
+// noun phrases, not two clauses ("remove the fourth grass and the third water lily" is one clause).
 import { valueText } from './parser.mjs';
 import { memoPerWorld } from './memo.mjs';
 
@@ -13,20 +16,26 @@ export function cutPoints(world, { lang = 'w.lang.en' } = {}) {
   return memoPerWorld(world, `cut-points|${lang}`, () => ({
     joiners: new Set(world.ofType(`${lang}.joiner`).filter((j) => valueText(j.attrs.cut?.[0]) === 'yes' && /^\p{L}+$/u.test(valueText(j.attrs.text?.[0]))).map((j) => valueText(j.attrs.text[0]).toLowerCase())),
     wh: new Set(world.ofType(`${lang}.wh`).flatMap((w) => [...(w.attrs.text || []), ...(w.attrs.form || [])]).map((v) => valueText(v).toLowerCase())),
+    nounStart: new Set([`${lang}.det`, `${lang}.numeral`].flatMap((t) => world.ofType(t)).flatMap((w) => [...(w.attrs.text || []), ...(w.attrs.form || [])]).map((v) => valueText(v).toLowerCase()).filter((v) => /^\p{L}+$/u.test(v))),
   }));
 }
 
-export function clauses(world, text, { lang = 'w.lang.en', read } = {}) {
-  const { joiners, wh } = cutPoints(world, { lang });
+export function clauses(world, text, { lang = 'w.lang.en', read, whole = [] } = {}) {
+  const { joiners, wh, nounStart } = cutPoints(world, { lang });
+  const wholes = [...new Set([].concat(whole).map((p) => String(p).toLowerCase().replace(/['’]/g, '').split(/\s+/).filter(Boolean)).filter((p) => p.length > 1).map((p) => p.join(' ')))].map((p) => p.split(' '));
   const better = (a, b) => !b || a.literal > b.literal || (a.literal === b.literal && (a.captured < b.captured || (a.captured === b.captured && a.clauses.length < b.clauses.length)));
   const sentence = (s) => {
     const ws = s.replace(/,/g, ' , ').trim().split(/\s+/).filter(Boolean);
     const low = ws.map((w) => w.toLowerCase().replace(/['’]/g, ''));
+    const inside = new Array(low.length).fill(false); // a word inside a thing of several words (not its first)
+    for (const p of wholes) for (let i = 0; i + p.length <= low.length; i++) if (p.every((x, k) => low[i + k] === x)) for (let k = 1; k < p.length; k++) inside[i + k] = true; // bounded: the phrases x the words
     const cuts = []; // [end of a clause, start of the next]
     for (let i = 1; i < low.length; i++) { // bounded: the words
+      if (inside[i]) continue;
       if (low[i] === ',' || joiners.has(low[i])) {
         let j = i + 1;
         while (j < low.length && joiners.has(low[j])) j++; // bounded: the words after it ("and then": one joiner)
+        if (low[i] !== ',' && j === i + 1 && j < low.length && (nounStart.has(low[j]) || /^\d/.test(low[j]))) continue; // "... and the third water lily": a list of things
         cuts.push([i, j]);
         i = j - 1;
       }

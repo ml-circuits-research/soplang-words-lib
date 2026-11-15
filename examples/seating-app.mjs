@@ -7,8 +7,8 @@ import { readFileSync, existsSync } from 'node:fs';
 import { loadWorldSet, openSession, morphOf, dictionary, fold } from '../src/index.mjs';
 import { worldText, catalogWorld, worldsDir } from '../tools/worlds.mjs';
 
-const EN = ['frame', 'part', 'phrase', 'lex', 'det', 'numeral', 'prep', 'wh', 'aux', 'pron', 'answer', 'template', 'inflect', 'irregular', 'onset', 'reply', 'fn', 'joiner', 'anaphor', 'ordinal'];
-const RO = ['class', 'ending', 'irregular', 'vowel', 'fold', 'split', 'det', 'pron', 'prep', 'numeral', 'particle', 'frame', 'part', 'phrase', 'lex', 'reply', 'joiner', 'wh', 'aux', 'answer'];
+const EN = ['count', 'frame', 'part', 'phrase', 'lex', 'det', 'numeral', 'prep', 'wh', 'aux', 'pron', 'answer', 'template', 'inflect', 'irregular', 'onset', 'reply', 'fn', 'joiner', 'anaphor', 'ordinal'];
+const RO = ['class', 'ending', 'irregular', 'vowel', 'fold', 'split', 'det', 'pron', 'prep', 'numeral', 'particle', 'frame', 'part', 'phrase', 'lex', 'reply', 'joiner', 'wh', 'aux', 'answer', 'count'];
 
 /** The seating app in a language: { set, session, context }, or null when the published worlds cannot be read. */
 export async function seatingApp(lang = 'en') {
@@ -18,14 +18,12 @@ export async function seatingApp(lang = 'en') {
     const set = loadWorldSet(worldText, { names: ['w.seating'], language });
     return { set, context: { lang: 'w.lang.en' }, session: openSession(set) };
   }
-  const language = await catalogWorld({ 'w.lang.ro': RO.map((x) => `w.lang.ro.${x}`), 'w.lang.en': ['w.lang.en.template'], 'k.actions': ['k.actions.verb'] });
+  const language = await catalogWorld({ 'w.lang.ro': [...RO.map((x) => `w.lang.ro.${x}`), 'core.word'], 'w.lang.en': ['w.lang.en.template'], 'k.actions': ['k.actions.verb'] }); // core.word: the Romanian word of each kind
   const morph = morphOf(language, { types: { cls: 'w.lang.ro.class', ending: 'w.lang.ro.ending', irregular: 'w.lang.ro.irregular', fold: 'w.lang.ro.fold', split: 'w.lang.ro.split', vowel: 'w.lang.ro.vowel' } });
   const file = (dir) => (l) => { const f = `${worldsDir()}docs/worlds/w.lang.ro/${dir}/${l}.tsv`; return existsSync(f) ? readFileSync(f, 'utf8') : ''; };
   const dict = dictionary({ read: [file('dictionary'), file('dictionary-unimorph')], fold: (s) => fold(morph, s) });
-  // a kind's word in Romanian: the host's, until a language world maps kinds to its lemmas (Q79)
-  const words = { 'w.seating.table': 'masă', 'w.seating.guest': 'invitat', 'w.seating.seat': 'loc', name: 'nume' };
   const set = loadWorldSet(worldText, { names: ['w.seating'], language });
-  const context = { lang: 'w.lang.ro', morph, dictionary: dict, replyDictionary: dict, wordOf: (t) => words[t] };
+  const context = { lang: 'w.lang.ro', morph, dictionary: dict, replyDictionary: dict };
   return { set, context, session: openSession(set, context) };
 }
 

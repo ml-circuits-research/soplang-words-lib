@@ -38,3 +38,24 @@ test('seating in Romanian: the same acts from w.lang.ro frames, replies from w.l
   assert.equal(W(set).ofType('w.seating.table').length, 2);
   assert.deepEqual(s.say('adaugă o masă albastră').reading.unread, ['albastră'], 'an unread word as the user wrote it');
 });
+
+test('the session: "why?" over the last turn\'s facts; a snapshot restored in a new set keeps the worlds, undo and redo', { skip: !worldsDir() && 'offline' }, async () => {
+  const { seatingApp } = await import('../examples/seating-app.mjs');
+  const { session: s } = await seatingApp('en');
+  s.say('add a table called family');
+  assert.equal(s.say('why?').reply, 'You asked: "add a table called family". The name is family because you said so. The shape is round by default.');
+  s.say('add a guest called Ann');
+  s.say('make table 1 square');
+  const why = s.say('why did you do that');
+  assert.deepEqual(why.facts.map((f) => [f.key, f.value, f.tier]), [['shape', 'square', 'told']], 'a change: the key it changed');
+  const snap = JSON.parse(JSON.stringify(s.snapshot()));
+  const app = await seatingApp('en');
+  app.session.restore(snap);
+  assert.deepEqual([W(app.set).ofType('w.seating.table')[0].attrs.shape[0], W(app.set).ofType('w.seating.guest').length], ['square', 1]);
+  app.session.say('undo');
+  assert.equal(W(app.set).ofType('w.seating.table')[0].attrs.shape[0], 'round', 'undo after a restart');
+  app.session.say('undo');
+  assert.equal(W(app.set).ofType('w.seating.guest').length, 0, 'the timeline across the restore');
+  app.session.say('redo');
+  assert.equal(W(app.set).ofType('w.seating.guest').length, 1);
+});

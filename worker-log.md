@@ -5656,3 +5656,15 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - test/inflect-register.test.mjs: cactus → cactuses (common), cacti (register classical), all → [cacti, cactuses];
   cacti → cactus; child → children.
 - Gate: npm test 536 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.140.0 — the rest of the session (reviewer 17:15 item 1); Romanian kind words and count rules from the catalog
+
+- Pin b20eeeb… → f15a1d7 (w.lang.en.count / w.lang.ro.count, Romanian words of the 10 world schemas, w.lang.en.number).
+- examples/seating-app.mjs ro without `wordOf`: "Am adăugat o masă.", "Am șters masa." (the language world's core.word);
+  test/kit.test.mjs Romanian replies now use the published count rules (3 → "3 mese", 20 → "20 de mese").
+- test/seating-app.test.mjs: "why?" after "add a table called family" → "You asked: "add a table called family". The
+  name is family because you said so. The shape is round by default."; after "make table 1 square" the facts are
+  [shape square told]. A snapshot (JSON round trip) restored into a fresh seating app keeps the table and Ann; undo →
+  shape round, undo → Ann gone, redo → Ann back.
+- "What name?" stays English until w.lang.ro has an `ask.key` reply (Q80).
+- Gate: npm test 537 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

@@ -1848,7 +1848,7 @@ readTurn(set, 'add 2 apples to my shopping list'); // { status: 'done', request:
 readTurn(set, 'make a list');                      // { status: 'ask', asks: [{ key: 'name' }], reply: 'What name?' }: nothing made
 ```
 
-### openSession(set, context?), replyFrom(language, key, roles, options?) and countClass(language, n, options?)
+### openSession(set, context?), snapshotSet(set), restoreSet(set, data), whyTurn(set, result, context?), replyFrom(language, key, roles, options?) and countClass(language, n, options?)
 
 A session over a world set: the pending question and the slot its answer fills, and the
 timeline. `openSession(set, context)` returns `{ set, pending, turns, say(text) }`. A required
@@ -1860,6 +1860,14 @@ list yet. Shall I make it?") is answered by the language world's yes and no
 (`w.lang.en.answer polarity=`): yes makes what was missing and runs the message again. The
 language world's undo and redo phrases (`w.lang.en.phrase name=undo|redo`) step the live world's
 timeline back and forward; one turn is one step.
+
+A question of the language world that asks a reason (`w.lang.en.wh asks=reason`: "why?", "why
+did you do that") is answered from the last turn's facts by `whyTurn(set, result)`: what was
+asked, and how each value of the things it changed came (told, a default, knowledge), from the
+world's own why. A change names only the key it changed. `snapshotSet(set)` is the set as data
+(each world's log with its timeline, the steps across worlds, what "it" names), and
+`restoreSet(set, data)` puts a set loaded from the same schemas back into that state, undo and
+redo included; `session.snapshot()` and `session.restore(data)` keep the open question too.
 
 `replyFrom(language, key, roles, { lang, type, dictionary, count })` says an act in the user's
 language from the language world's reply facts (`type`, default `${lang}.reply`: `name=`,

@@ -359,7 +359,7 @@ function sayAct(set, act, { request, result, ok = true, n, thingType } = {}, con
   const lang = context.lang ?? 'w.lang.en', L = set.language;
   const kindType = request?.args?.kind ?? thingType ?? (result?.thing ? findThing(set, result.thing)?.thing.type : null) ?? (request?.args?.thing ? findThing(set, request.args.thing)?.thing.type : null);
   const count = Array.isArray(result?.things) ? result.things.length : Number(request?.args?.amount ?? 1);
-  const word = kindType ? (context.wordOf?.(kindType, lang) ?? labelOf(set, kindType)) : null; // a kind in the user's language: the host's wordOf, else the schema's word
+  const word = kindType ? (context.wordOf?.(kindType, lang) ?? wordIn(set, kindType, lang) ?? labelOf(set, kindType)) : null; // a kind in the user's language: the host's wordOf, the language world's word (core.word means=), else the schema's
   const names = { make: 'done.add', ...(context.replyNames || {}) }; // which reply fact says an act (make: "I added a list."; a drawing host names done.make)
   const roles = act === 'make' ? { kind: word } : { thing: word };
   if (count > 1) roles.number = count;
@@ -383,7 +383,7 @@ function sayAct(set, act, { request, result, ok = true, n, thingType } = {}, con
  */
 function askText(set, a, context = {}) {
   if (a.ask) return a.ask;
-  const key = context.wordOf?.(a.key, context.lang ?? 'w.lang.en') ?? a.key;
+  const key = context.wordOf?.(a.key, context.lang ?? 'w.lang.en') ?? wordIn(set, `${a.type ?? a.request?.args?.kind}.${a.key}`, context.lang ?? 'w.lang.en') ?? a.key;
   return replyFrom(set.language, 'ask.key', { key }, { lang: context.lang ?? 'w.lang.en', type: context.replies, dictionary: context.replyDictionary }) ?? `What ${a.key}?`;
 }
 
@@ -391,6 +391,15 @@ function askText(set, a, context = {}) {
 function notUnderstood(set, words, context = {}) {
   const list = words.map((w) => `"${w}"`).join(', ');
   return replyFrom(set.language, 'not_understood', { words: list }, { lang: context.lang ?? 'w.lang.en', type: context.replies }) ?? `I did not understand ${list}.`;
+}
+
+/** A type (or a key, type.key) said by the language world's own word for it (w.lang.ro: core.word text="masă" means=w.seating.table), or null. */
+function wordIn(set, type, lang = set.lang ?? null) {
+  const L = set.language;
+  if (!L) return null;
+  const own = (x) => !lang || x.id.startsWith(`${lang}.`); // the language world's own words, not a schema's English ones loaded beside them
+  const w = L.ofType('core.word').find((x) => own(x) && (x.attrs.means || []).map(valueText).includes(type));
+  return w ? valueText(w.attrs.text?.[0]) : null;
 }
 
 /** Types in a library sentence said by their words. */
@@ -460,6 +469,57 @@ export function turnScope(set, owner) {
 }
 
 /**
+ * The set as data (Q72 session part: snapshot / restore): each world's log with its timeline (undo, redo), the set's
+ * steps across worlds and the thing "it" names. `restoreSet(set, data)` puts a set loaded from the same schemas back
+ * into that state (a host that restarts keeps undo and redo).
+ */
+export function snapshotSet(set) {
+  return { format: 'sopworld-set', worlds: Object.fromEntries([...set.worlds.values()].map((w) => [w.name, w.world.toJSON({ timeline: true })])), steps: set.steps.map((x) => ({ ...x })), redo: set.redo.map((x) => ({ ...x })), focus: set.focus ?? null };
+}
+export function restoreSet(set, data) {
+  if (data?.format !== 'sopworld-set') throw new Error('sopworld: restoreSet: not a set snapshot');
+  for (const [name, snap] of Object.entries(data.worlds || {})) { // bounded: the worlds
+    const w = set.worlds.get(name);
+    if (!w) throw new Error(`sopworld: restoreSet: the set has no world ${name}`);
+    w.world = World.fromJSON(snap);
+  }
+  set.steps = (data.steps || []).map((x) => ({ ...x }));
+  set.redo = (data.redo || []).map((x) => ({ ...x }));
+  set.focus = data.focus ?? undefined;
+  return set;
+}
+
+/**
+ * Why a turn did what it did ("why?" after a turn): for each thing it changed, each key's value with how it came (told
+ * by the request, a default, knowledge, a guess) from the world's own why. Returns { said, facts: [{ thing, key, value,
+ * tier, how }] }; the sentence is the language world's `why` reply facts when present (`why.told`, `why.default`), else
+ * English.
+ */
+export function whyTurn(set, result, context = {}) {
+  const lang = context.lang ?? 'w.lang.en';
+  if (!result || result.status !== 'done') return { said: 'Nothing was done.', facts: [] };
+  const facts = [];
+  for (const e of [].concat(result.effects || []).filter((x) => x.effect === 'changed')) { // bounded: the effects
+    const w = set.worlds.get(e.world)?.world;
+    for (const id of e.things || []) { // bounded: the things
+      const t = w?.get(id);
+      if (!t) continue;
+      const only = result.request?.action === 'change' ? result.request.args.attr : null; // a change: the key it changed
+      for (const key of Object.keys(t.attrs).filter((k) => !k.startsWith('core.') && k !== 'kind' && k !== 'world' && (!only || k === only))) { // bounded: its keys
+        const step = w.why(id, key)?.steps?.[0];
+        if (step) facts.push({ thing: id, type: t.type, key, value: valueText(step.value), tier: step.tier, how: step.how });
+      }
+    }
+  }
+  const said = facts.map((f) => {
+    const roles = { key: f.key, value: f.value, thing: wordIn(set, f.type, lang) ?? labelOf(set, f.type) };
+    const k = f.tier === 'default' ? 'why.default' : f.tier === 'told' ? 'why.told' : `why.${f.tier}`;
+    return replyFrom(set.language, k, roles, { lang, type: context.replies, dictionary: context.replyDictionary }) ?? (f.tier === 'told' ? `The ${f.key} is ${f.value} because you said so.` : f.tier === 'default' ? `The ${f.key} is ${f.value} by default.` : `The ${f.key} is ${f.value} (${f.tier}).`);
+  });
+  return { said: said.length ? [result.text ? `You asked: "${result.text}".` : '', ...said].filter(Boolean).join(' ') : 'Nothing changed.', facts };
+}
+
+/**
  * A session over a world set (Q72 part 3): the pending question and the slot its answer fills, and the timeline.
  * `openSession(set, context)` returns { set, context, pending, turns, say(text) }. `say(text)`:
  * - a timeline phrase of the language world (`${lang}.phrase name=undo|redo item=`) undoes or redoes the last
@@ -480,8 +540,18 @@ export function openSession(set, context = {}) {
   const polarity = new Map((L?.ofType(`${lang}.answer`) ?? []).flatMap((a) => (a.attrs.text || []).map((x) => [norm(valueText(x)), valueText(a.attrs.polarity?.[0])])));
   const s = { set, context, pending: null, turns: [] };
   const done = (r) => { s.pending = r.asks?.[0] ? { ...r.asks[0], text: r.text } : null; const out = { ...r, pending: s.pending }; s.turns.push(out); return out; };
+  const reasons = new Set((L?.ofType(`${lang}.wh`) ?? []).filter((x) => valueText(x.attrs.asks?.[0]) === 'reason').map((x) => valueText(x.attrs.text?.[0]).toLowerCase()));
+  s.snapshot = () => ({ ...snapshotSet(set), pending: s.pending });
+  s.restore = (data) => { restoreSet(set, data); s.pending = data.pending ?? null; return s; };
   s.say = (text) => {
     const t = norm(text);
+    const toks = t.split(' ');
+    const lex = typedLexicon(set.schema);
+    if (reasons.has(toks[0]) && toks.length <= 5 && !toks.slice(1).some((w) => (lex.get(w) || []).some((e) => e.cat === 'kind' || e.cat === 'thing'))) { // "why?", "why did you do that": the last turn's reasons
+      const last = [...s.turns].reverse().find((x) => x.status === 'done');
+      const y = whyTurn(set, last, context);
+      return done({ status: 'done', text, reading: { act: 'why', unread: [], mood: 'question', complete: true }, reply: y.said, facts: y.facts });
+    }
     for (const act of ['undo', 'redo']) { // bounded: two timeline acts
       if (!timeline[act].has(t)) continue;
       const r = stepTimeline(set, act, 1);

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.140.0
+
+The rest of the session (Q72, reviewer 17:15 item 1); kinds named in the user's language; knowledge pin f15a1d7.
+
+### New
+- `snapshotSet(set)` / `restoreSet(set, data)`, `session.snapshot()` / `session.restore(data)`: worlds, timelines,
+  steps across worlds and the open question as data; undo and redo work after a restart.
+- `whyTurn(set, result)` and "why?" in a session (a wh of the language world with `asks=reason`): what was asked and how
+  each value came (told, default, knowledge).
+
+### Changed
+- A kind is said by the language world's own word (`w.lang.ro.word.* core.word text="masă" means=w.seating.table`):
+  the seating app needs no host `wordOf`; the plural class comes from the published `w.lang.ro.count` / `w.lang.en.count`.
+
 ## 0.139.0
 
 ### New

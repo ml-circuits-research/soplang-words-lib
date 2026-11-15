@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="c705d05c772b">
+<meta name="source-hash" content="5fc6bedc2999">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.139.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.140.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -631,8 +631,9 @@ print(contrastOf(w, &#x27;circle&#x27;).contrasts[0]);</code></pre></figure>
 <figure class="code"><figcaption>js</figcaption><pre><code>const set = loadWorldSet(loadText, { names: [&#x27;w.list&#x27;, &#x27;w.tasks&#x27;], language, bindings });
 readTurn(set, &#x27;add 2 apples to my shopping list&#x27;); // { status: &#x27;done&#x27;, request: { action: &#x27;make&#x27;, args: { kind: &#x27;w.list.item&#x27;, text: &#x27;apples&#x27;, quantity: 2, list: &#x27;$…&#x27; } } }
 readTurn(set, &#x27;make a list&#x27;);                      // { status: &#x27;ask&#x27;, asks: [{ key: &#x27;name&#x27; }], reply: &#x27;What name?&#x27; }: nothing made</code></pre></figure>
-<h3 id="opensessionset-context-replyfromlanguage-key-roles-options-and-countclasslanguage-n-options">openSession(set, context?), replyFrom(language, key, roles, options?) and countClass(language, n, options?)</h3>
+<h3 id="opensessionset-context-snapshotsetset-restoresetset-data-whyturnset-result-context-replyfromlanguage-key-roles-options-and-countclasslanguage-n-options">openSession(set, context?), snapshotSet(set), restoreSet(set, data), whyTurn(set, result, context?), replyFrom(language, key, roles, options?) and countClass(language, n, options?)</h3>
 <p>A session over a world set: the pending question and the slot its answer fills, and the timeline. <code>openSession(set, context)</code> returns <code>{ set, pending, turns, say(text) }</code>. A required key a request left open becomes the pending question (the slot's <code>ask</code>, else "What key?"). The next message fills it when it fits the slot (<code>fitsSlot</code>: a value of a closed set, a number, a name that is not a fragment). A value that does not fit is said and asked again. A message with a verb, or a question, drops the question and is read as a new turn. A confirmation ("There is no party list yet. Shall I make it?") is answered by the language world's yes and no (<code>w.lang.en.answer polarity=</code>): yes makes what was missing and runs the message again. The language world's undo and redo phrases (<code>w.lang.en.phrase name=undo|redo</code>) step the live world's timeline back and forward; one turn is one step.</p>
+<p>A question of the language world that asks a reason (<code>w.lang.en.wh asks=reason</code>: "why?", "why did you do that") is answered from the last turn's facts by <code>whyTurn(set, result)</code>: what was asked, and how each value of the things it changed came (told, a default, knowledge), from the world's own why. A change names only the key it changed. <code>snapshotSet(set)</code> is the set as data (each world's log with its timeline, the steps across worlds, what "it" names), and <code>restoreSet(set, data)</code> puts a set loaded from the same schemas back into that state, undo and redo included; <code>session.snapshot()</code> and <code>session.restore(data)</code> keep the open question too.</p>
 <p><code>replyFrom(language, key, roles, { lang, type, dictionary, count })</code> says an act in the user's language from the language world's reply facts (<code>type</code>, default <code>${lang}.reply</code>: <code>name=</code>, <code>count=</code>, <code>act=</code>, <code>role=</code>, <code>text=</code> in std.morph's template syntax). <code>key</code> is a reply name (<code>done.add</code>, <code>not_understood</code>) or an act. It takes the fact whose roles are all given and whose plural class is the class of <code>roles.number</code>, the one with the most roles first. <code>{art}</code> is the language's indefinite article, agreeing with the word it names; a plural the dictionary cannot make comes from the language world's inflection rules. Null when there is none. With the Romanian dictionary, <code>replyFrom(ro, 'done.remove', { thing: 'masă' }, { lang: 'w.lang.ro', dictionary })</code> gives "Am șters masa", and <code>done.add</code> with <code>{ kind: 'masă', number: 20 }</code> gives "Am adăugat 20 de mese". <code>readTurn</code> says make with <code>done.add</code> (a host names others in <code>context.replyNames</code>) and a kind in the user's language through <code>context.wordOf(type, lang)</code>.</p>
 <p><code>countClass(language, n, { lang })</code> is the plural class of a number by the language world's CLDR rules (<code>${lang}.count class= rule=</code>, with n, i, v, f, t, <code>%</code>, ranges, <code>and</code>, <code>or</code>); without rules, one for 1 and other otherwise.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const L = new World();
@@ -1163,7 +1164,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.139.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.140.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

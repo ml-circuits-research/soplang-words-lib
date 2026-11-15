@@ -871,7 +871,7 @@ make
 
 ## Run an application's worlds with the host kit
 
-*In `loadWorldSet`, `readTurn`, `turnScope`, `openSession`, `replyFrom`, `referentOf`, `countClass`, `clauses`, `cutPoints`; since 0.130.*
+*In `loadWorldSet`, `readTurn`, `turnScope`, `openSession`, `replyFrom`, `referentOf`, `countClass`, `clauses`, `cutPoints`, `snapshotSet`, `restoreSet`, `whyTurn`; since 0.130.*
 *Works on: published world schemas (w.list, w.tasks, ...), a language world's frames, the knowledge the worlds join.*
 
 An application loads its worlds and reads each message: "make a shopping list", "add 2 apples to
@@ -884,7 +884,8 @@ changes only the world it addresses. A session keeps the open question: "make a 
 world back and forward. Replies come from the language world's reply facts, in English or Romanian ("Am adăugat
 o casă."), with the plural class of the number by its CLDR rules. "add a table called one and add a table called two" is
 two requests; "remove the second table" and "remove it" name things; a host plugs in its own reader and takes
-navigation through a hook. `examples/lists-app.mjs` is a whole application in a page.
+navigation through a hook. "why?" answers from the last turn's facts ("The shape is round by default."), and a
+session saved as data comes back with its undo and redo. `examples/lists-app.mjs` is a whole application in a page.
 **Limits:** replies use the library's English act replies (a language world's reply templates
 are a knowledge ask); the binding of a frame's needs to a world's entry keys is given by the host;
 the session (pending questions, timeline) is the next part of the kit.

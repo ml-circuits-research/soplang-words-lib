@@ -145,7 +145,7 @@ test('Romanian replies from w.lang.ro.reply with the hand dictionary: article, p
   const { catalogWorld } = await import('../tools/worlds.mjs');
   const { readFileSync, existsSync } = await import('node:fs');
   const { morphOf, dictionary, fold, realise } = await import('../tools/lib-under-test.mjs');
-  const ro = await catalogWorld({ 'w.lang.ro': ['class', 'ending', 'irregular', 'vowel', 'fold', 'split', 'det', 'reply'].map((x) => `w.lang.ro.${x}`) });
+  const ro = await catalogWorld({ 'w.lang.ro': ['class', 'ending', 'irregular', 'vowel', 'fold', 'split', 'det', 'reply', 'count'].map((x) => `w.lang.ro.${x}`) });
   const m = morphOf(ro, { types: { cls: 'w.lang.ro.class', ending: 'w.lang.ro.ending', irregular: 'w.lang.ro.irregular', fold: 'w.lang.ro.fold', split: 'w.lang.ro.split', vowel: 'w.lang.ro.vowel' } });
   const file = (l) => { const f = `${worldsDir()}docs/worlds/w.lang.ro/dictionary/${l}.tsv`; return existsSync(f) ? readFileSync(f, 'utf8') : ''; };
   const d = dictionary({ read: file, fold: (s) => fold(m, s) });
@@ -155,8 +155,7 @@ test('Romanian replies from w.lang.ro.reply with the hand dictionary: article, p
   assert.equal(say('done.change', { thing: 'casă', value: 'roșu' }), 'Casa este acum roșie.');
   assert.equal(say('done.make.value', { kind: 'cerc', value: 'roșu' }), 'Am desenat un cerc roșu.');
   assert.equal(say('done.undo', {}), 'Am anulat ultima schimbare.');
-  // the plural class needs the language's CLDR rules (asked of the knowledge repository, Q79): toy rules here
-  ro.load('@c core.type of=w.lang.ro.count\n@c1 w.lang.ro.count class=one rule="i = 1 and v = 0"\n@c2 w.lang.ro.count class=few rule="v != 0 or n = 0 or n % 100 = 2..19"');
+  // the plural class by the language's CLDR rules (w.lang.ro.count, published for Q79)
   assert.equal(say('done.add', { kind: 'masă', number: 3 }), 'Am adăugat 3 mese.');
   assert.equal(say('done.add', { kind: 'masă', number: 20 }), 'Am adăugat 20 de mese.');
   assert.equal(realise(m, 'în forma {art@thing} {thing:case=gendat,def=no}', { thing: 'casă', art: 'un' }, { dictionary: d }), 'în forma unei case', 'the article takes the case of the word it agrees with (PSys2 Q25 L1)');

@@ -8,6 +8,7 @@
 // `focus` (the dialogue's focus picked it), `scene` (one of that kind exists), `slip` (a word one letter
 // away from a kind); `how` lists each step taken, so a reply can say what was assumed.
 import { parseText, nounPhrase } from './grammar.mjs';
+import { editDistance } from './interpret.mjs';
 import { parse } from './parser.mjs';
 import { FILL_TIERS } from './fill-tiers.mjs';
 
@@ -30,16 +31,8 @@ function meaning(w, word, of) {
 }
 
 /** One slip: one letter added, dropped, changed, or two neighbours swapped (bounded: two short words). */
-function oneSlip(a, b) {
-  if (a.length === b.length && a.length >= 4) { const d = [...a].map((c, k) => k).filter((k) => a[k] !== b[k]); if (d.length === 2 && d[1] === d[0] + 1 && a[d[0]] === b[d[1]] && a[d[1]] === b[d[0]]) return true; }
-  if (a === b || Math.abs(a.length - b.length) > 1 || Math.min(a.length, b.length) < 4) return false;
-  let i = 0, j = 0, edits = 0;
-  while (i < a.length && j < b.length) { // bounded: the letters
-    if (a[i] === b[j]) { i++; j++; continue; }
-    if (++edits > 1) return false;
-    if (a.length > b.length) i++; else if (b.length > a.length) j++; else { i++; j++; }
-  }
-  return edits + (a.length - i) + (b.length - j) <= 1;
+function oneSlip(a, b) { // one slip of the keys (a letter added, lost, changed or two swapped) in a word of four letters or more: the library's one edit distance
+  return a !== b && Math.min(a.length, b.length) >= 4 && editDistance(a, b, 1) <= 1;
 }
 
 /** The focus, newest first: the option, else std.focus.last wires that name things. */

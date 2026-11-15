@@ -5447,3 +5447,10 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   its tree (vendor aside): none. motionPlan and the mo.* format removed; motionRun moved to motion-facts.mjs, with
   a test of its own.
 - Gate: npm test 511 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.123.0 — R2 part 4: one pattern matcher, one kind walker, one edit distance
+
+- alternate.mjs matchPattern / matchAll (classes, alternatives, base spans) replace related-cases' and learn's
+  copies; kindChain = ancestorsOf by level; resolve's oneSlip on editDistance.
+- Findings 8 and 10 answered in questions.md Q70 (story planner with R3's catalog shapes; turn/route next).
+- Gate: npm test 511 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

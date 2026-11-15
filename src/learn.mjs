@@ -61,6 +61,7 @@ export function learnRules(world, cases, { heldOut = [], related: relatedOf, adm
 const toksOf = (t) => String(t).toLowerCase().replace(/[?!.,]+/g, ' ').match(/[\p{L}\p{N}_'-]+/gu) || [];
 import { typedLexicon } from './readtypes.mjs';
 import { valueText } from './parser.mjs';
+import { matchAll } from './alternate.mjs';
 /**
  * Delexicalisation (as in task-oriented dialogue and NLG): content words lifted to their type before aligning
  * (reviewer 00:05): through the world's typed lexicon
@@ -139,14 +140,7 @@ function applyRule(rule, text) { return applyRuleAll(rule, text)[0] ?? null; } /
 
 function applyRuleAll(rule, text) { // every way the rule applies (adjacent variables split differently), bounded by the tokens
   const toks = /</.test(text) ? String(text).trim().split(/\s+/) : toksOf(text), pat = rule.from.split(' '), outs = []; // a lifted text is its tokens already
-  const go = (i, k, env) => { // bounded: the pattern and the tokens
-    if (outs.length > 50) return;
-    if (k === pat.length) { if (i === toks.length) outs.push(rule.to.split(' ').flatMap((t) => { const m = /^\{(x\d+)\}$/.exec(t); return m ? env[m[1]] : [t]; }).join(' ')); return; }
-    const m = /^\{(x\d+)\}$/.exec(pat[k]);
-    if (m) { for (let j = i + 1; j <= toks.length; j++) go(j, k + 1, { ...env, [m[1]]: toks.slice(i, j) }); return; }
-    if (toks[i] === pat[k]) go(i + 1, k + 1, env);
-  };
-  go(0, 0, {});
+  for (const env of matchAll(pat, toks, { max: 51 })) outs.push(rule.to.split(' ').flatMap((t) => { const m = /^\{(x\d+)\}$/.exec(t); return m ? env[m[1]] : [t]; }).join(' ')); // the one matcher of the pattern language
   return [...new Set(outs)];
 }
 

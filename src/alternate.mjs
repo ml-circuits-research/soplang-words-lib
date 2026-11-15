@@ -22,19 +22,24 @@ export function wordClassesOf(world, type = 'w.lang.en.word_class') {
   return new Map(world.ofType(type).map((w) => [bare(w.attrs.name[0]), new Set((w.attrs.word || []).map((x) => bare(x).toLowerCase()))]));
 }
 
-function match(pat, toks, i, env, k, classes) { // bounded: the pattern and the tokens
-  if (k === pat.length) return i === toks.length ? env : null;
+// The one matcher of the pattern language (architecture review finding 12): `{x}` a span of one word or more,
+// `{x:class}` one word of a word class, `{x:base}` a span (its base form is the caller's), `[a|b]` one of the
+// words, any other token itself. Every env found, in order: shorter spans first.
+function* matches(pat, toks, i, env, k, classes) { // bounded: the pattern and the tokens
+  if (k === pat.length) { if (i === toks.length) yield env; return; }
   const p = pat[k];
   const cls = /^\{([a-z_0-9]+):([a-z_]+)\}$/.exec(p); // a word of a class (Q58: {x:wh} for one fact per alternative)
-  if (cls && cls[2] !== 'base') return i < toks.length && classes?.get(cls[2])?.has(toks[i]) ? match(pat, toks, i + 1, { ...env, [cls[1]]: [toks[i]] }, k + 1, classes) : null;
-  const span = /^\{([a-z_0-9]+)\}$/.exec(p);
-  if (span) {
-    for (let j = i + 1; j <= toks.length; j++) { const r = match(pat, toks, j, { ...env, [span[1]]: toks.slice(i, j) }, k + 1, classes); if (r) return r; }
-    return null;
-  }
+  if (cls && cls[2] !== 'base') { if (i < toks.length && classes?.get(cls[2])?.has(toks[i])) yield* matches(pat, toks, i + 1, { ...env, [cls[1]]: [toks[i]] }, k + 1, classes); return; }
+  const span = /^\{([a-z_0-9]+)(?::base)?\}$/.exec(p);
+  if (span) { for (let j = i + 1; j <= toks.length; j++) yield* matches(pat, toks, j, { ...env, [span[1]]: toks.slice(i, j) }, k + 1, classes); return; }
   const alts = /^\[(.*)\]$/.exec(p) ? p.slice(1, -1).split('|') : [p];
-  return i < toks.length && alts.includes(toks[i]) ? match(pat, toks, i + 1, env, k + 1, classes) : null;
+  if (i < toks.length && alts.includes(toks[i])) yield* matches(pat, toks, i + 1, env, k + 1, classes);
 }
+/** The first way `pat` (tokens) matches `toks`: { var: [tokens] } or null. */
+export function matchPattern(pat, toks, { classes } = {}) { for (const e of matches(pat, toks, 0, {}, 0, classes)) return e; return null; }
+/** Every way `pat` matches `toks` (at most `max`). */
+export function matchAll(pat, toks, { classes, max = 50 } = {}) { const out = []; for (const e of matches(pat, toks, 0, {}, 0, classes)) { out.push(e); if (out.length >= max) break; } return out; }
+const match = (pat, toks, i, env, k, classes) => matchPattern(pat, toks, { classes });
 
 /**
  * The canonical form of `text` by the alternation rules: { text, applied: [names], mode? }.

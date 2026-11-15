@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.123.0
+
+R2, fourth part (architecture review findings 12, 13, 18).
+
+### Changed
+- One matcher of the pattern language (`{x}`, `{x:class}`, `{x:base}`, `[a|b]`) in
+  src/alternate.mjs, used by the alternations, by relatedCases' wording and by learnt form
+  operators (which ignored `[a|b]` and word classes before).
+- One kind walker: `kindChain` is `ancestorsOf` grouped by level.
+- One edit distance: resolve's one-slip test is `editDistance(a, b, 1) <= 1`.
+
 ## 0.122.0
 
 R2, third part: one motion scheduler (architecture review finding 9).

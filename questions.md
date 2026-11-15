@@ -354,3 +354,15 @@ before the object ("pune și un lac", "mută și mai la stânga") is not a skip 
 (3) "stînga" (î for â, the old spelling) does not fold to "stânga"; (4) lists ("un lac, o rață, nori") and
 "mai" + direction ("mai la stânga", "mai în dreapta") are one role or none. The library side: (4) lists as
 several things of one role is mine (next); (1)-(3) are facts of w.lang.ro.
+
+## Q70 (architecture review findings 8 and 10): the story planner and the request pipeline, not merged yet
+
+Finding 8 (story.mjs and the planner's choice points do one job): agreed, but `compose` works on a World and
+the planner on a fact store over published worlds (`factStore(worlds)`) with `k.procedures`' method "write a
+story" loaded; moving compose's story moves onto it needs a World-backed store and k.procedures in every
+composing host. STORY_RELATIONS is also the one place that knows catalog shapes (k.people holds/uses, k.scenes
+has), which R3 takes out anyway. Choice taken: do it in R3 with the catalog shapes, as one change.
+Finding 10 (turn / turnFlow, route / arbitrate): agreed; PSys2 has its own route (meta-worlds) and cites
+`arbitrate` only in a comment (src/formalizer/routing.mjs:44), so the merge can drop the library's `turn`
+and `route` without a deprecation. Choice taken: next release, with the "open tab" criterion made a host
+criterion (R3), since both touch std.decide kind `world`.

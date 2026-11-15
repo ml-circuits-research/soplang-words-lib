@@ -9,6 +9,7 @@
 
 import { readByTypes, nearWords } from './readtypes.mjs';
 import { realiseFrame, paraphrasesOf } from './say.mjs';
+import { matchPattern } from './alternate.mjs';
 import { seeded } from './random.mjs';
 import { memoPerWorld } from './memo.mjs';
 import { valueText } from './parser.mjs';
@@ -24,17 +25,15 @@ function namedIn(world) { // one pass over the wires per change of the world, no
   return (n) => by.get(n) || [];
 }
 
-/** The chain of kinds of a thing, nearest first: [[level 1 kinds], [level 2], ...] (bounded by depth). */
+/** The chain of kinds of a thing, nearest first: [[level 1 kinds], [level 2], ...], its type last: ancestorsOf grouped by level (one kind walker). */
 export function kindChain(world, id, depth = 4) {
   const w = world.get(id);
   if (!w) return [];
-  const named = namedIn(world);
-  const parents = (names) => [...new Set(names.flatMap((n) => named(n).flatMap((x) => UP.flatMap((k) => (x.attrs[k] || []).map(bare)))))];
-  const first = [...new Set(UP.flatMap((k) => (w.attrs[k] || []).map(bare)))];
-  const levels = [first.length ? first : [w.type]];
-  for (let d = 1; d < depth; d++) { const up = parents(levels[d - 1]).filter((p) => !levels.flat().includes(p)); if (!up.length) break; levels.push(up); } // bounded: depth
-  if (first.length && !levels.flat().includes(w.type)) levels.push([w.type]); // the type is the widest kind
-  return levels;
+  const levels = [];
+  for (const [name, { level }] of ancestorsOf(world, id, { depth })) if (name !== w.type) (levels[level - 1] ||= []).push(name);
+  const out = levels.filter((l) => l?.length);
+  out.push([w.type]); // the type is the widest kind
+  return out;
 }
 
 /**
@@ -177,10 +176,3 @@ export function judgeOnRelated(answer, kase, list) {
   return { case: same(answer(kase.text, kase.frame), kase.frame.answer), byDistance, share: of ? +(pass / of).toFixed(3) : null };
 }
 
-function matchPattern(pat, toks, i = 0, env = {}, k = 0) { // bounded: the pattern and the tokens
-  if (k === pat.length) return i === toks.length ? env : null;
-  const sp = /^\{([a-z_0-9]+)(?::base)?\}$/.exec(pat[k]);
-  if (sp) { for (let j = i + 1; j <= toks.length; j++) { const r = matchPattern(pat, toks, j, { ...env, [sp[1]]: toks.slice(i, j) }, k + 1); if (r) return r; } return null; }
-  const alts = /^\[(.*)\]$/.exec(pat[k]) ? pat[k].slice(1, -1).split('|') : [pat[k]];
-  return i < toks.length && alts.includes(toks[i]) ? matchPattern(pat, toks, i + 1, env, k + 1) : null;
-}

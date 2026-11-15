@@ -14,35 +14,22 @@ import { valueText } from './parser.mjs';
 const asList = (r) => (Array.isArray(r) ? r : r?.requests ? r.requests : [r]);
 const whatOf = (req) => `${req.action}${req.args?.kind ? ` ${req.args.kind}` : req.args?.thing ? ` ${String(req.args.thing).replace(/^\$/, '')}` : ''}`;
 
+/** The default stages of a turn (std.turn), for a world that declares none: read the given readings, dry run, apply, reply; the graded fallback when every reading is refused. */
+export const TURN_STAGES = [
+  { name: 'read', providers: ['given'] }, { name: 'dryrun', after: 'read', per: 'candidate', on_empty: 'next', providers: ['dryrun'] },
+  { name: 'apply', after: 'dryrun', per: 'candidate', on_empty: 'next', providers: ['apply'] }, { name: 'reply', after: 'apply', per: 'candidate', providers: ['reply'] },
+  { name: 'fallback', when: 'exhausted', providers: ['fallback'] },
+];
+
 /**
- * @param {import('./world.mjs').World} world
- * @param {Array} readings each a request `{ action, args }`, a list of them (one sentence), or `{ requests }`; best first
- * @param {{ reply?: (world, request, result) => string }} options
+ * One turn: the readings tried in order (a dry run on a fork first), the first the world takes is applied and
+ * replied to, else the graded fallback. The one request pipeline is `turnFlow` (architecture review finding 10):
+ * `turn` runs it with TURN_STAGES. `readings`: each a request `{ action, args }`, a list (one sentence) or
+ * `{ requests }`, best first. Options: `reply(world, request, result)`, `load(need, world)` (typed needs: the
+ * host loads what the world says it needs, once, then the dry run again).
  */
 export function turn(world, readings, { reply = actReply, load } = {}) {
-  const tried = [], loaded = [];
-  for (let i = 0; i < readings.length; i++) { // bounded: the readings given
-    const reqs = asList(readings[i]);
-    let r = world.fork().act(reqs); // a dry run: the fork is thrown away
-    const needs = r.violations?.[0]?.reason?.needs;
-    if (!r.ok && needs?.length && load) { // typed needs: the host loads what the world says it needs, once, then the dry run again
-      for (const n of needs) { load(n, world); loaded.push(n); }
-      r = world.fork().act(reqs);
-    }
-    tried.push({ index: i, requests: reqs, ok: r.ok, status: r.status, failed: r.failed, missing: r.missing, violation: r.violations?.[0] });
-    if (r.ok) {
-      const done = world.act(reqs);
-      if (!done.ok) { tried[tried.length - 1] = { ...tried[tried.length - 1], ok: false, status: done.status, violation: done.violations?.[0] }; continue; } // the world changed in between
-      const results = done.results;
-      const changed = results.flatMap((x) => x.diff?.changed || []);
-      const why = changed.filter((c) => world.has(c.id)).map((c) => ({ id: c.id, key: c.key, steps: world.why(c.id, c.key)?.steps || [] }));
-      const guesses = results.flatMap((x) => x.result?.filled || []).map((f) => ({ ...f }));
-      const replies = results.map((x, j) => reply(world, reqs[j], x));
-      if (guesses.length) replies.push(`I guessed ${guesses.map((g) => `${g.key} ${g.value} (${g.tier}${g.source ? `, ${g.source}` : ''})`).join(', ')}.`);
-      return { status: 'done', reading: i, ...(loaded.length ? { loaded } : {}), results, diff: { added: results.flatMap((x) => x.diff?.added || []), removed: results.flatMap((x) => x.diff?.removed || []), changed }, why, guesses, replies, dropped: tried.slice(0, -1) };
-    }
-  }
-  return fallbackOf(world, tried, reply);
+  return turnFlow(world, readings, { reply, load, stages: TURN_STAGES });
 }
 
 
@@ -69,39 +56,6 @@ export function fallbackOf(world, tried, reply = actReply) {
 }
 
 /**
- * Choosing the world for a request (Round 24, A2): every world of the schemas is scored
- * by what it knows about the request — its card has the kind (or takes any kind of a
- * catalog), it allows the act, the thing named is one of its things — and by a dry run
- * (a world where the act would be refused loses); the host may add its own signal per
- * world (`scores`, an encoder's for instance). Best first: [{ world, score, why }].
- */
-export function route(world, request, { scores = {} } = {}) {
-  const args = request.args || {};
-  const kindName = args.kind ?? null;
-  const thingId = args.thing !== undefined ? String(args.thing).replace(/^\$/, '') : null;
-  const thing = thingId ? world.get(thingId) : null;
-  const kind = kindName ?? thing?.attrs.kind?.[0] ?? thingId;
-  const out = [];
-  for (const wd of world.ofType('std.schema.world')) { // bounded: the declared worlds
-    const name = wd.attrs.name[0], why = [];
-    let score = 0;
-    const decl = world.ofType('std.schema.kind').find((k) => k.attrs.of[0] === kind && k.attrs.world.includes(name));
-    const open = !decl && world.ofType('std.schema.kinds').find((k) => k.attrs.world[0] === name && world.ofType(k.attrs.from[0]).some((x) => x.attrs[k.attrs.key?.[0] || 'name']?.includes(kind)));
-    const k = decl || open;
-    if (k) { score += 2; why.push(decl ? `has ${kind}` : `takes any ${k.attrs.from[0]}: ${kind}`); }
-    if (k && (k.attrs.acts || []).includes(request.action)) { score += 1; why.push(`allows ${request.action}`); }
-    if (thing?.attrs.world?.includes(name)) { score += 2; why.push(`${thing.id} is here`); }
-    if (k) {
-      const r = world.fork().act({ action: request.action, args: request.action === 'make' ? { ...args, world: name } : args });
-      if (!r.ok) { score -= 2; why.push(`refused: ${valueText(r.violations?.[0]?.why ?? r.status)}`); }
-    }
-    if (scores[name] !== undefined) { score += Number(scores[name]); why.push(`host ${scores[name]}`); }
-    out.push({ world: name, score, why });
-  }
-  return out.sort((a, b) => b.score - a.score || a.world.localeCompare(b.world));
-}
-
-/**
  * The arbitration contract (reviewer 07:40, item 1): for one request, each declared world
  * gives one of three verdicts. `own`: it has the kind (or the thing, or a view whose state
  * has the attribute), allows the act, and its dry run takes it. `decline`: it has no use for
@@ -110,12 +64,13 @@ export function route(world, request, { scores = {} } = {}) {
  * only in the `exact` pass; in a `spelling` or `view` pass (the host trying variants) it
  * stays a decline, so a variant never turns into a refusal. `resolves(world, words)` is an
  * optional host hook: when several worlds own, the one whose things hold the words wins.
- * `coverage(world, words)` (how many words of the request the world's reading consumes) and `active`
- * (the open tab's world) decide among several owners through std.decide kind `world`: coverage, then the
- * tab, then the world's `priority`; `ranked` explains it.
+ * `coverage(world, words)` (how many words of the request the world's reading consumes) decides among several
+ * owners through std.decide kind `world`: coverage, then the world's `priority`; `ranked` explains it. An
+ * application's criterion is the host's: `active` (the open tab's world) is a measure a host's `criteria`
+ * (or its own `std.decide.criterion of=world` facts) may rank by.
  * Returns { verdicts: [{ world, verdict, why }], owner: world | null, ambiguous?: [worlds], pass }.
  */
-export function arbitrate(world, request, { pass = 'exact', resolves, words, coverage, active } = {}) {
+export function arbitrate(world, request, { pass = 'exact', resolves, words, coverage, active, criteria } = {}) {
   const args = request.args || {};
   const thingId = args.thing !== undefined ? String(args.thing).replace(/^\$/, '') : null;
   const thing = thingId ? world.get(thingId) : null;
@@ -136,11 +91,11 @@ export function arbitrate(world, request, { pass = 'exact', resolves, words, cov
   }
   let owners = verdicts.filter((v) => v.verdict === 'own').map((v) => v.world);
   if (owners.length > 1 && resolves && words) { const held = owners.filter((n) => resolves(n, words)); if (held.length) owners = held; }
-  if (owners.length > 1 && (coverage || active)) { // by coverage first, then the open tab, then priority (reviewer 03:20; std.decide kind world)
+  if (owners.length > 1 && (coverage || active || criteria)) { // std.decide kind world: coverage, then priority; an application criterion (the open tab) is the host's (`criteria`, or its own std.decide facts)
     const prio = (n) => Number(String(world.ofType('std.schema.world').find((w) => w.attrs.name?.[0] === n)?.attrs.priority?.[0] ?? 0));
     const cands = owners.map((n) => ({ name: n, coverage: coverage ? Number(coverage(n, words)) || 0 : 0, active: active === n ? 1 : 0, priority: prio(n) }));
-    const c = choose(world, 'world', cands, { seed: null }), top = c.best, second = c.order[1];
-    const tied = second && second.coverage === top.coverage && second.active === top.active && second.priority === top.priority;
+    const c = choose(world, 'world', cands, { seed: null, ...(criteria ? { criteria } : {}) }), top = c.best, second = c.order[1];
+    const tied = second && c.criteria.every((k) => second[k.measure] === top[k.measure]);
     if (!tied) owners = [top.name];
     return { verdicts, owner: owners.length === 1 ? owners[0] : null, ...(owners.length > 1 ? { ambiguous: owners } : {}), pass, ranked: c.ranked.map((r, i) => ({ world: cands[r.index].name, ...r })) };
   }
@@ -156,9 +111,11 @@ export function arbitrate(world, request, { pass = 'exact', resolves, words, cov
  * all or nothing), each call keeps its budget, the same input and state give the same path,
  * and `trace` names every stage taken.
  */
-export function turnFlow(world, readings, { providers = {}, reply = actReply, confirmed = false } = {}) {
-  const stages = world.ofType('std.turn.stage').map((s) => ({ name: s.attrs.name[0], after: s.attrs.after?.[0], before: s.attrs.before?.[0], on: s.attrs.on_empty?.[0] ?? 'fail', per: s.attrs.per?.[0], when: s.attrs.when?.[0], skip: s.attrs.skip_if?.[0], only: s.attrs.only || null }));
-  const provs = world.ofType('std.turn.provider').map((p) => ({ stage: p.attrs.stage[0], fn: p.attrs.name[0], tier: Number(p.attrs.tier?.[0] ?? 1) })).sort((a, b) => a.tier - b.tier || a.fn.localeCompare(b.fn));
+export function turnFlow(world, readings, { providers = {}, reply = actReply, confirmed = false, stages: given, load } = {}) {
+  const declared = world.ofType('std.turn.stage');
+  const stages = declared.length || !given ? declared.map((s) => ({ name: s.attrs.name[0], after: s.attrs.after?.[0], before: s.attrs.before?.[0], on: s.attrs.on_empty?.[0] ?? 'fail', per: s.attrs.per?.[0], when: s.attrs.when?.[0], skip: s.attrs.skip_if?.[0], only: s.attrs.only || null }))
+    : given.map((s) => ({ name: s.name, after: s.after, before: s.before, on: s.on_empty ?? 'fail', per: s.per, when: s.when, skip: s.skip_if, only: s.only || null })); // the world's stages, else the ones given (TURN_STAGES for turn)
+  const provs = (declared.length || !given ? world.ofType('std.turn.provider').map((p) => ({ stage: p.attrs.stage[0], fn: p.attrs.name[0], tier: Number(p.attrs.tier?.[0] ?? 1) })) : given.flatMap((s) => (s.providers || []).map((fn, i) => ({ stage: s.name, fn, tier: i + 1 })))).sort((a, b) => a.tier - b.tier || a.fn.localeCompare(b.fn));
   // the order: the after chain from the stage that follows nothing (ties by name: deterministic)
   const chain = [];
   const main = stages.filter((s) => !s.when && !s.before);
@@ -174,7 +131,7 @@ export function turnFlow(world, readings, { providers = {}, reply = actReply, co
   }
   const fns = { ...BUILTIN_PROVIDERS, ...providers };
   const trace = [];
-  const ctx = { world, input: readings, readings: [], tried: [], say: reply, confirmed, out: {} }; // out: what each stage yielded
+  const ctx = { world, input: readings, readings: [], tried: [], say: reply, confirmed, out: {}, load, loaded: [] }; // out: what each stage yielded
   const run = (stage) => { // the first provider of the stage that yields (a reader's candidates add up)
     if (stage.skip && (ctx.candidate?.some((r) => r.args?.[stage.skip] !== undefined) || ctx.out[stage.skip] !== undefined)) { trace.push({ stage: stage.name, skipped: stage.skip }); return true; }
     if (stage.only && ctx.candidate && !ctx.candidate.some((r) => stage.only.includes(r.action))) { trace.push({ stage: stage.name, skipped: 'only' }); return true; }
@@ -204,22 +161,24 @@ export function turnFlow(world, readings, { providers = {}, reply = actReply, co
       if (s.on === 'next') { ok = false; break; }
       return { status: 'failed', stage: s.name, reading: i, replies: [], dropped: ctx.tried, trace };
     }
-    if (ok) return { ...ctx.out.reply, reading: i, dropped: ctx.tried, trace };
+    if (ok) return { ...ctx.out.reply, reading: i, ...(ctx.loaded.length ? { loaded: ctx.loaded } : {}), dropped: ctx.tried.slice(0, -1), trace };
   }
-  for (const s of stages.filter((x) => x.when === 'exhausted')) if (run(s)) return { ...ctx.out[s.name], trace };
+  for (const s of stages.filter((x) => x.when === 'exhausted')) if (run(s)) return { ...ctx.out[s.name], ...(ctx.loaded.length ? { loaded: ctx.loaded } : {}), trace };
   return { status: 'nothing', replies: [], dropped: ctx.tried, trace };
 }
 
 const BUILTIN_PROVIDERS = {
   given: (ctx) => ctx.input,
   dryrun: (ctx) => {
-    const r = ctx.world.fork().act(ctx.candidate);
+    let r = ctx.world.fork().act(ctx.candidate);
+    const needs = r.violations?.[0]?.reason?.needs;
+    if (!r.ok && needs?.length && ctx.load) { for (const n of needs) { ctx.load(n, ctx.world); ctx.loaded.push(n); } r = ctx.world.fork().act(ctx.candidate); } // typed needs: loaded once, then the dry run again
     ctx.tried.push({ index: ctx.index, requests: ctx.candidate, ok: r.ok, status: r.status, failed: r.failed, missing: r.missing, violation: r.violations?.[0] });
     if (r.ok) return r;
     ctx.why = valueText(r.violations?.[0]?.why ?? r.status);
     return undefined;
   },
-  apply: (ctx) => { const r = ctx.world.act(ctx.candidate); if (!r.ok) { ctx.why = 'the world changed'; return undefined; } return r; },
+  apply: (ctx) => { const r = ctx.world.act(ctx.candidate); if (!r.ok) { ctx.why = 'the world changed'; const t = ctx.tried[ctx.tried.length - 1]; if (t) Object.assign(t, { ok: false, status: r.status, violation: r.violations?.[0] }); return undefined; } return r; },
   reply: (ctx) => {
     const done = ctx.out.apply, reqs = ctx.candidate, w = ctx.world;
     const results = done.results;
@@ -239,6 +198,6 @@ const BUILTIN_PROVIDERS = {
     ctx.question = `${String(many.action)[0].toUpperCase()}${String(many.action).slice(1)} all ${n ?? ''} ${many.args.thing}${n === 1 ? '' : 's'}?`.replace(/  +/g, ' ');
     return undefined;
   },
-  // the world for a candidate that names none: route's best, written into make
-  route: (ctx) => { for (const r of ctx.candidate) if (r.action === 'make' && r.args && r.args.world === undefined) { const best = route(ctx.world, r)[0]; if (best && best.score > 0) r.args = { ...r.args, world: best.world }; } return true; },
+  // the world for a candidate that names none: arbitrate's owner, written into make
+  route: (ctx) => { for (const r of ctx.candidate) if (r.action === 'make' && r.args && r.args.world === undefined) { const owner = arbitrate(ctx.world, r).owner; if (owner) r.args = { ...r.args, world: owner }; } return true; }, // the world that owns it (the one world chooser)
 };

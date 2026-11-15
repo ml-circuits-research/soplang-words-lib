@@ -1018,7 +1018,7 @@ print(r.conflicts.map((c) => [c.id, c.kept, c.dropped, c.keys]), w.ofType('k.f')
 ```output
 [["b","one","two",["w"]]] ["200"]
 ```
-### turn(world, readings, options?)
+### turn(world, readings, options?) and TURN_STAGES
 
 One request, end to end. `readings` are the candidate readings of one message, best
 first: each a request `{ action, args }`, a list of requests (one sentence), or
@@ -1031,6 +1031,10 @@ an argument: `question`, `missing`), `elsewhere` (the kind is known but the act 
 attribute is not here: the reply says what it can do and where), `unknown` (the best
 guess named in a `question`). Every result but `nothing` has `replies` (for `ask` and
 `unknown`, the question), and lists the readings `dropped` with the reason.
+
+`turn` is `turnFlow` with `TURN_STAGES` (read the readings given, dry run, apply, reply;
+the fallback when every reading is refused): the library has one request pipeline. A world
+that declares its own std.turn stages runs them.
 
 ```js run
 const w = new World();
@@ -1047,30 +1051,6 @@ print(turn(w, [{ action: 'make', args: { kind: 'sofa' } }]).question);
 ```output
 done 1 ["I made a chair (chair1)."] no world here has a table
 Did you mean to make sofa? (no world here has a sofa)
-```
-
-### route(world, request, options?)
-
-The world for a request, among the worlds declared with std.schema: each scored by its
-card (it has the kind, or takes any kind of a catalog: +2; it allows the act: +1), by the
-thing named (one of its things: +2), by a dry run (the act would be refused: −2), and by
-the host's own signal per world (`scores`, an encoder's for instance). Best first, each
-with the reasons: `[{ world, score, why }]`.
-
-```js run
-const w = new World();
-w.load(`@acts core.use world=std.acts
-  @a std.schema.world name=garden
-  @b std.schema.world name=kitchen
-  @t1 core.type of=rose extends=std.schema.thing closed=true
-  @t2 core.type of=pot extends=std.schema.thing closed=true
-  @k1 std.schema.kind of=rose world=garden acts=make
-  @k2 std.schema.kind of=pot world=kitchen world=garden acts=make`);
-print(route(w, { action: 'make', args: { kind: 'rose' } })[0], route(w, { action: 'make', args: { kind: 'pot' } }, { scores: { kitchen: 1 } })[0].world);
-```
-
-```output
-{"world":"garden","score":3,"why":["has rose","allows make"]} kitchen
 ```
 
 ### schemaGrid(world, name?, options?) and gridTests(cases, options?)

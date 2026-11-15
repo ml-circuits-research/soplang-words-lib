@@ -5,7 +5,7 @@
 //
 //   node tools/cases.mjs [--json] [--failures]
 import { readFileSync, readdirSync } from 'node:fs';
-import { World, turn, route } from '../src/index.mjs';
+import { World, turn, arbitrate } from '../src/index.mjs';
 import { worldText } from './worlds.mjs';
 
 const dir = new URL('../cases/', import.meta.url);
@@ -18,7 +18,7 @@ const cases = readdirSync(dir).filter((f) => f.endsWith('.cases.json')).flatMap(
 function check(w, r, e, kind) {
   if (!e) return null;
   if (kind === 'why') { const s = r?.steps?.[0] || {}; for (const k of Object.keys(e)) if (s[k] !== e[k]) return `why ${k}: ${s[k]} ≠ ${e[k]}`; return null; }
-  if (kind === 'route') return r[0]?.world === e.world ? null : `route: ${r[0]?.world} ≠ ${e.world}`;
+  if (kind === 'route') return r.owner === e.world ? null : `route: ${r.owner} ≠ ${e.world}`; // the world that owns the request (arbitrate)
   if (kind === 'turn') return r.status === e.status ? null : `turn: ${r.status} ≠ ${e.status}`;
   if (e.ok !== undefined && r.ok !== e.ok) return `ok: ${r.ok} ≠ ${e.ok}${r.violations?.[0]?.why ? ` (${String(r.violations[0].why)})` : ''}`;
   if (e.changes !== undefined && Boolean(r.diff && r.diff.same === false) !== e.changes) return `changes: ${r.diff ? !r.diff.same : 'no diff'} ≠ ${e.changes}`;
@@ -45,7 +45,7 @@ export function runCases() {
       w.load(['@acts core.use world=std.acts', ...texts, c.wires || ''].join('\n'));
       for (const [i, s] of c.steps.entries()) {
         let r, kind = 'act';
-        if (s.why) { r = w.why(...s.why); kind = 'why'; } else if (s.route) { r = route(w, s.route); kind = 'route'; } else if (s.turn) { r = turn(w, s.turn); kind = 'turn'; } else r = w.act({ action: s.act, args: s.args });
+        if (s.why) { r = w.why(...s.why); kind = 'why'; } else if (s.route) { r = arbitrate(w, s.route); kind = 'route'; } else if (s.turn) { r = turn(w, s.turn); kind = 'turn'; } else r = w.act({ action: s.act, args: s.args });
         const bad = check(w, r, s.expect, kind);
         if (bad) { fail = `step ${i + 1}: ${bad}`; break; }
       }

@@ -5454,3 +5454,10 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   copies; kindChain = ancestorsOf by level; resolve's oneSlip on editDistance.
 - Findings 8 and 10 answered in questions.md Q70 (story planner with R3's catalog shapes; turn/route next).
 - Gate: npm test 511 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.124.0 — R2 part 5: one request pipeline, one world chooser
+
+- turn = turnFlow(…, { stages: TURN_STAGES, load }); route removed (std.turn's route provider and tools/cases.mjs
+  use arbitrate's owner); the open-tab criterion left std.decide: a host's `criteria` / facts (Q70 answered 11:55).
+- PSys2 (origin/HEAD, vendor aside): no call of the library's turn, route or arbitrate (only a comment).
+- Gate: npm test 510 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

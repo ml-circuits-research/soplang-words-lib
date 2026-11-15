@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.124.0
+
+R2, fifth part (architecture review finding 10; Q70 answered 11:55): one request pipeline, one
+world chooser.
+
+### Changed
+- `turn` is `turnFlow` with `TURN_STAGES` (read, dry run, apply, reply; fallback when every
+  reading is refused); `turnFlow` takes `stages` (used when the world declares none) and `load`.
+- The open tab is no longer a std.decide criterion of the library: `arbitrate` ranks owners by
+  coverage, then priority; a host passes its own `criteria` (with `active`) or declares
+  `std.decide.criterion of=world` facts.
+
+### Removed
+- `route` (the one world chooser is `arbitrate`; std.turn's `route` provider uses its owner, and
+  the case corpus' routing steps check `arbitrate`'s owner). PSys2 calls neither.
+
 ## 0.123.0
 
 R2, fourth part (architecture review findings 12, 13, 18).

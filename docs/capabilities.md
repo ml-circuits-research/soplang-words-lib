@@ -405,7 +405,7 @@ print(t.replies, t.why[0].steps[0].action);
 
 ## Change the path of a request by telling facts
 
-*In `std.turn`, `turnFlow`; since 0.26.*
+*In `std.turn`, `turnFlow`, `TURN_STAGES`; since 0.26.*
 *Works on: a live world (its pipeline is a world schema of its own, `std.turn`).*
 
 The stages of `turn` are declared with `std.turn`: an application adds a stage (a
@@ -432,14 +432,14 @@ done 1 ["I made a chair (chair1)."]
 
 ## Choose a world for a request
 
-*In `route`, `arbitrate`; since 0.24.*
+*In `arbitrate`; since 0.24.*
 *Works on: world schemas (which one a request is for).*
 
-`route` scores the worlds of the schemas for a request by their cards, the thing it
-names, a dry run, and a signal of the host's own (an encoder's score), best first with
-the reasons. `arbitrate` (0.45) gives each world a verdict instead: `own`, `decline` (it has
-no use for the kind: the library's rule) or `refuse` (it has the kind but not the act, or
-its dry run refuses; only in the exact pass), with a `resolves` hook for ties.
+`arbitrate` gives each world a verdict for a request: `own`, `decline` (it has no use for the
+kind: the library's rule) or `refuse` (it has the kind but not the act, or its dry run refuses;
+only in the exact pass), with a `resolves` hook for ties. Among several owners, std.decide kind
+`world` chooses: the coverage of the request's words, then the world's priority; an
+application's own criterion (the open tab) is the host's.
 **Limits:** no reading of text: the request comes from the host.
 
 ```js run
@@ -448,11 +448,11 @@ w.load(`@acts core.use world=std.acts
   @a std.schema.world name=garden
   @t core.type of=rose extends=std.schema.thing closed=true
   @k std.schema.kind of=rose world=garden acts=make`);
-print(route(w, { action: 'make', args: { kind: 'rose' } }));
+print(arbitrate(w, { action: 'make', args: { kind: 'rose' } }).owner);
 ```
 
 ```output
-[{"world":"garden","score":3,"why":["has rose","allows make"]}]
+garden
 ```
 
 ## Tools for authors

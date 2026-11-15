@@ -494,7 +494,6 @@ export function turn(world: World, readings: ({ action: string; args?: Record<st
 };
 
 /** the worlds of the schemas scored for a request: their cards, the thing named, a dry run, the host's own signal; best first */
-export function route(world: World, request: { action: string; args?: Record<string, unknown> }, options?: { scores?: Record<string, number> }): { world: string; score: number; why: string[] }[];
 
 /** the coverage grid: world × kind × act cases run on a world with one thing of each kind, with what came of each */
 export function schemaGrid(world: World, name?: string, options?: { per?: number }): { world: string; act: string; kind: string; text: string; request: { action: string; args: Record<string, unknown> }; expect: { ok: boolean; added?: string[]; removed?: number; changed?: string[]; status?: string; why?: string } }[];
@@ -513,7 +512,8 @@ export function ledgerGroups(rows: object[], options?: { signals?: [string, (row
 export function stageOf(result: object): string | null;
 
 /** the request pipeline as data: runs the stages a world declares with std.turn; providers are functions of a context */
-export function turnFlow(world: World, readings: object[], options?: { providers?: Record<string, (ctx: any) => unknown>; reply?: (world: World, request: object, result: object) => string; confirmed?: boolean }): ReturnType<typeof turn> & { trace: { stage: string; provider?: string; yielded?: unknown; empty?: string; skipped?: string }[]; stage?: string };
+export const TURN_STAGES: { name: string; after?: string; per?: string; on_empty?: string; when?: string; providers: string[] }[];
+export function turnFlow(world: World, readings: object[], options?: { providers?: Record<string, (ctx: any) => unknown>; reply?: (world: World, request: object, result: object) => string; confirmed?: boolean; stages?: { name: string; after?: string; per?: string; on_empty?: string; when?: string; providers: string[] }[]; load?: (need: unknown, world: World) => void }): ReturnType<typeof turn> & { trace: { stage: string; provider?: string; yielded?: unknown; empty?: string; skipped?: string }[]; stage?: string };
 
 /** a grammar world's lexicon (g.word), rules (g.rule, with ? * + expanded) and coordinating words (g.coord) */
 export interface GrammarOptions { types?: { rule?: string; word?: string; coord?: string }; classes?: Record<string, string>; lexicon?: Record<string, { cat: string; lemma?: string; feat?: Record<string, unknown> } | { cat: string; lemma?: string; feat?: Record<string, unknown> }[]>; digits?: string }
@@ -532,7 +532,7 @@ export function resolve(world: World, phrase: string | object, options?: { gramm
 export function needsOf(world: World, scope?: { world?: string; view?: string }): { of: string; type: string; from?: string; loaded: boolean }[];
 
 /** The arbitration contract: own / decline / refuse per declared world for one request. */
-export function arbitrate(world: World, request: { action: string; args?: Record<string, unknown> }, options?: { pass?: 'exact' | 'spelling' | 'view'; resolves?: (world: string, words: string[]) => boolean; words?: string[] }): { verdicts: { world: string; verdict: 'own' | 'decline' | 'refuse'; why: string }[]; owner: string | null; ambiguous?: string[]; pass: string };
+export function arbitrate(world: World, request: { action: string; args?: Record<string, unknown> }, options?: { pass?: 'exact' | 'spelling' | 'view'; resolves?: (world: string, words: string[]) => boolean; words?: string[] | string; coverage?: (world: string, words: unknown) => number; active?: string; criteria?: { name: string; measure: string; dir: string }[] }): { verdicts: { world: string; verdict: 'own' | 'decline' | 'refuse'; why: string }[]; owner: string | null; ambiguous?: string[]; pass: string };
 /** One segmenter that knows the act forms: clauses, one act each. */
 export function segment(world: World, text: string, options?: { types?: { joiner?: string; frameLead?: string }; acts?: string[] }): { text: string; from: number; to: number; joiner?: string }[];
 /** The words that start an act: action names, core.word texts that mean one, and extra. */

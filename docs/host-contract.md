@@ -19,7 +19,7 @@ effect, not the world) is on [kinds of worlds](kinds-of-worlds.md#5-where-code-l
 | **Rendering**: drawing, layout on screen, the wording of replies in its language | reads `result.diff`, `why`, `schemaCard`; replaces `actReply` with its own (`turn(w, r, { reply })`) | a user interface |
 | **Translation** at the boundary | before reading, after replying | a language |
 | **Fetching and storage**: reading a catalog path (file, `fetch`), keeping a session | `createCatalog({ read, cache })`, `world.toJSON()` / `World.fromJSON` | the network and the disk |
-| **Its own signals** (an encoder's score per world) | `route(world, request, { scores })` | a model |
+| **Its own signals** (an encoder's score per world, the open tab) | `arbitrate(world, request, { coverage, active, criteria })` | a model, its user interface |
 | **Host actions** (what the host carries out itself) | `core.action fn=` with `new World({ actions })`, or a type named like the action | the host's side effects |
 | **Cause signals and replays** for the failure ledger | `ledgerGroups(rows, { signals })`, the rows it appends | its own evaluation |
 | **A guard** around a whole turn (time, memory) | the library's budgets bound each call (`{ budget }`) | the host owns the process |
@@ -32,7 +32,7 @@ effect, not the world) is on [kinds of worlds](kinds-of-worlds.md#5-where-code-l
 | The acts (make, remove, change, place, connect, group, pick, ask, copy, send, save, load, undo, redo, show, teach, forget, complete), their diff, undo, why | `std.acts`, `world.act`, `world.why` |
 | One sentence all or nothing | `world.act([...])` |
 | Dry runs, refusals with alternatives, the graded fallback | `world.score`, `turn` |
-| Choosing a world | `route` |
+| Choosing a world | `arbitrate` |
 | Filling what a request leaves out, by tiers, with the source | `std.fill`, `std.know`, `std.focus` |
 | The focus of a dialogue | `std.focus` |
 | Relations kept between things, rows, sets | `std.relations`, `std.boxes` |
@@ -53,7 +53,7 @@ sop-knowledge-worlds. Where the two differ, this wording is the interface:
   `std.route`. Here: shared things and views are part of `std.schema` / `std.acts`
   (`show`); the dialogue is `std.focus` with `turn`; space is `std.relations` with
   `std.boxes`; knowledge loading is `createCatalog` (a function, not a module of rules);
-  routing is `route`.
+  routing is `arbitrate`.
 - **An English pack of the acts.** It plans the acts' English forms as "its English pack".
   The library ships no word lists: words for acts come from knowledge (`k.actions`) or the
   host. `actReply` writes plain English as a default only.

@@ -92,7 +92,7 @@ Which kind each part of the API works on:
 | --- | --- |
 | a world schema | `std.schema` wires, `schemaCard`, `schemaExamples`, `schemaGrid`, `gridTests`, `world.schema(type)` |
 | a knowledge world | `createCatalog`, `bundleReader`, `std.know` (`std.know.fill`), `grammarOf`, `parseText`, `grammarView` (the grammar is a knowledge world about a language), `ask` on a fact by name |
-| a live world | `act` and the acts of `std.acts`, `turn`, `turnFlow`, `route`, `resolve`, `why`, `undo` / `redo`, `fork`, `std.focus`, `std.fill`, `needsOf` (what a live world still needs loaded) |
+| a live world | `act` and the acts of `std.acts`, `turn`, `turnFlow`, `arbitrate`, `resolve`, `why`, `undo` / `redo`, `fork`, `std.focus`, `std.fill`, `needsOf` (what a live world still needs loaded) |
 | any world | `tell`, `load`, `ask`, `query`, `check`, `complete`, `snapshot` |
 
 ## Standard equivalents

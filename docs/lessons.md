@@ -36,7 +36,7 @@ docs (a room planner, a timetable), each listing its gaps.
 
 PSys2's catalog, turn pipeline, routing and failure ledger were general but lived among its
 tabs; each took 50–250 lines to move, and the moving refused what was English or about one
-interface. **Done:** `createCatalog`, `turn`, `route`, the ledger; a take-over table in
+interface. **Done:** `createCatalog`, `turn`, `arbitrate`, the ledger; a take-over table in
 capabilities. **Will do:** space selection and layouts, a per-kind act hook, a turn log.
 
 ## Reuse shows up as shape, but a name clash looks the same (Round 23)

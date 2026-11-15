@@ -33,7 +33,7 @@ wanted (see [patterns](patterns.md), the parameterised world).
 
 | Export | Purpose | Works with | Cost |
 | --- | --- | --- | --- |
-| `turn`, `turnFlow`, `route` | one request end to end with a graded fallback (coded, or as declared with std.turn); the world for a request | `std.acts`, any action | one dry run per reading on a fork |
+| `turn`, `turnFlow`, `arbitrate` | one request end to end with a graded fallback (`turn` is `turnFlow` with the default stages); the world that owns a request | `std.acts`, any action | one dry run per reading on a fork |
 | `schemaCard`, `schemaExamples`, `actReply`, `schemaGrid`, `gridTests` | cards, examples, replies, the coverage grid, test files | `std.schema` | the grid runs every case on a fork |
 | `createCatalog`, `bundleReader` | knowledge loaded by lookup, cached, schemas first; offline bundles | any catalog in the sop-knowledge-worlds layout | one read per path |
 | `ledgerAppend`, `ledgerGroups`, `ledgerKey`, `stageOf`, `STAGES` | the failure ledger | `turn` | linear in the rows |

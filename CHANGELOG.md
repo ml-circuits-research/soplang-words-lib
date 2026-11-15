@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.145.0
+
+`readFrames` reads the catalog's frames (knowledge Q83, reviewer 18:45); knowledge Q85 kit cases 1-2; pin 68e8c8b
+(w.seating 3, w.timeline 3).
+
+### Changed
+- `readFrames`: `needs(name)` filters frames by the host's needs classes; `open` lets a host's list take one to three
+  words at a cost; `is=lexicon` parts read; fixed values become roles; roles are also given as the act's roles in
+  `args` (role maps); a verb with no dictionary sense reads through the world's `k.actions.verb` facts; apostrophes go
+  as the language world writes its items. On the 499 frame examples of w.lang.en against the knowledge repository's
+  reference reader (`node tools/bench-frames.mjs --all`): the same frame for 456 (was 249 at 0.130), the same act
+  and mode for 14.
+- The kit: a complete reading wins before a finer one that leaves words unread ("add a table for 4": seats 4); a value
+  word is read by its sense and said back in the user's word ("fă masa 1 albastră": colour blue, "Masa este acum
+  albastră.").
+
+### New
+- tools/bench-frames.mjs.
+
 ## 0.144.0
 
 ### New

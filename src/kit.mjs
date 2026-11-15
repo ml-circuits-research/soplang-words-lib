@@ -173,7 +173,10 @@ function planClause(set, text, context = {}) {
   const bound = r.frames.map((fr) => ({ fr, b: bindFrame(set, fr, { lang, text }) }));
   let win = bound.find((x) => x.b.request && !x.b.unread.length && !x.b.confirm) ?? bound.find((x) => x.b.confirm) ?? bound.find((x) => x.b.timeline && !x.b.unread.length) ?? [...bound].sort((x, y) => x.b.unread.length - y.b.unread.length)[0];
   const nRoles = (x) => Object.keys(x.fr.roles || {}).length;
-  const finer = bound.find((x) => x.b.placeless && nRoles(x) > nRoles(win)); // a reading that saw a place this kind cannot take: said, not swallowed into a name by a coarser frame
+  const complete = (x) => x && x.b.request && !x.b.unread.length && !x.b.confirm;
+  const relOf = (x) => String(x.fr.roles?.rel?.text ?? '').toLowerCase();
+  const swallowed = (x) => complete(win) && relOf(x) && Object.values(win.fr.roles || {}).some((v) => ` ${String(v.text ?? '').toLowerCase()} `.includes(` ${relOf(x)} `)); // the coarse reading took the place into a name ("ann at table 1")
+  const finer = bound.find((x) => x.b.placeless && nRoles(x) > nRoles(win) && (!complete(win) || swallowed(x))); // a reading that saw a place this kind cannot take: said, not swallowed; a complete reading otherwise wins (reader contract: unread first)
   if (finer) win = finer;
   const { fr: f, b } = win;
   if (!b.request && !b.timeline && !b.confirm && !b.unread.length && !b.why) b.unread = tokens; // nothing bound: every word is unread
@@ -322,13 +325,14 @@ function bindFrame(set, f, { lang, text = '' }) {
     if (f.act === 'change' && words('value') !== undefined) { // make table 2 square: a thing of the world and a value of one of its closed sets (or the key the template names)
       const ref = referentOf(set, kindWords.join(' '), { lang });
       if (!ref) return { unread: kindWords.map(formOf) };
-      const v = String(roles.value?.item ?? roles.value?.text ?? words('value')).toLowerCase();
+      const v = String(roles.value?.item ?? (roles.value?.words?.length ? gloss('value').join(' ') : null) ?? roles.value?.text ?? words('value')).toLowerCase(); // a Romanian value word by its sense (albastră: blue)
       const slotsT = set.schema._compiled().slots.get(ref.type) || new Map();
       const key = attrOf && slotsT.has(valueText(attrOf.attrs.attribute[0])) ? valueText(attrOf.attrs.attribute[0]) : [...slotsT].find(([, sl]) => (sl.enum || []).map((e) => valueText(e).toLowerCase()).includes(v))?.[0];
       used.add('thing'); used.add('value');
       const left = Object.keys(roles).filter((k) => !used.has(k)).flatMap(all);
       if (!key) return { unread: [...all('value'), ...left], placeless: { name: 'refused.cannot_be', roles: { thing: kindName(set, ref.type, lang), value: roles.value?.text ?? v } } };
-      return { request: { action: 'change', args: { thing: `$${ref.thing.id}`, attr: key, value: v } }, unread: left };
+      const said = roles.value?.words?.[0]?.lemma && roles.value.words.length === 1 ? roles.value.words[0].lemma : null; // the user's own word for the reply (albastru, agreeing)
+      return { request: { action: 'change', args: { thing: `$${ref.thing.id}`, attr: key, value: v }, ...(said && said !== v ? { say: { value: said } } : {}) }, unread: left };
     }
     if (f.act !== 'make' && kind && mods.length === 0) { // the kind alone ("remove the table"): the one thing of it, else which, else none
       const them = thingsOf(set, kind);
@@ -381,7 +385,7 @@ function sayAct(set, act, { request, result, ok = true, n, thingType } = {}, con
   const names = { make: 'done.add', ...(context.replyNames || {}) }; // which reply fact says an act (make: "I added a list."; a drawing host names done.make)
   const roles = act === 'make' ? { kind: word } : { thing: word };
   if (count > 1) roles.number = count;
-  if (act === 'change' && request?.args?.value !== undefined) roles.value = request.args.value;
+  if (act === 'change' && request?.args?.value !== undefined) roles.value = request.say?.value ?? request.args.value;
   if ((act === 'undo' || act === 'redo') && !ok) return speak(set, `nothing.${act}`, {}, context);
   return speak(set, names[act] ?? `done.${act}`, roles, context);
 }

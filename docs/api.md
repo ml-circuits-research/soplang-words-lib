@@ -1677,14 +1677,23 @@ world declares frames (`<lang>.frame name= en= act= mode= priority=`) as ordered
 - `word`: one of its words;
 - `verb act=`: a word whose lemma's sense is a verb of that act;
 - `det`: a determiner (`<lang>.det form=`);
+- `lexicon`: a word of a list (`<lang>.lex name= item=`, or the host's `lexicons`);
 - `role`, which takes words (`max_words`), a number (`<lang>.numeral form= value=` or digits),
   a preposition (`<lang>.prep form= rel=`), a list (`<lang>.lex name= item=`) or the rest.
+
+A verb with no dictionary sense is read through the world's `k.actions.verb text= act=` facts (a
+verb of several acts is each of them). `needs(name) -> boolean` keeps only the frames whose
+`needs` class the host has; `open: true` lets a list the language world does not hold (a host's
+lexicon, such as the values of its worlds) take any one to three words, at a cost to the reading.
+A frame's fixed values (`<lang>.fixed frame= role= value=`) are roles of its reading, and its
+roles are also given as the act's roles in `args` (`<lang>.role_map act= role= act_role=`, the
+frame's own map first: make's thing is its kind).
 
 Words are analysed by the language's morphology (`morph`, from `morphOf`, and its lazy
 `dictionary` with a sense per lemma), so inflected and unaccented forms read. Items of a phrase
 named `skip` are passed over wherever they stand. `readFrames(world, text, { lang, morph,
-dictionary, senses, max })` returns `{ best, frames, tokens }`; a frame is `{ frame, en, act,
-mode, roles, verb?, score }`, where each role has its `text` and, for words, `words: [{ form,
+dictionary, senses, max, lexicons, needs, open })` returns `{ best, frames, tokens }`; a frame is `{ frame, en, act,
+mode, roles, args, verb?, score }`, where each role has its `text` and, for words, `words: [{ form,
 lemma, sense, en, pos, features }]` and `en` (the reference words). Of the frames that take
 every word, the highest priority wins, and words with a known sense count. A role of words is
 also cut into `items` at commas and at the language's "and" (`<lang>.particle kind=conjunction

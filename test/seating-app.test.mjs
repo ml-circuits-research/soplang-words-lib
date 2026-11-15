@@ -14,15 +14,17 @@ test('seating in English: probe B', { skip: !worldsDir() && 'offline' }, async (
   assert.deepEqual(say('add 2 tables').status, 'ask', 'two tables need two names');
   assert.equal(say('red and blue').reply, 'I added 2 tables.');
   const ann = say('add a guest called Ann at table 1');
-  assert.deepEqual([ann.status, ann.reply, W(set).ofType('w.seating.guest').length], ['not-understood', 'A guest has no place at a table.', 0], 'w.seating seats a guest on a seat (Q26): said, nothing made');
+  assert.deepEqual([ann.status, ann.reply, W(set).ofType('w.seating.guest').length], ['done', 'I added a guest.', 1], 'w.seating 3: a guest has a table');
+  say('remove Ann');
   const sq = say('make table 2 square');
   assert.deepEqual([sq.reply, W(set).ofType('w.seating.table')[1].attrs.shape[0]], ['The table is square now.', 'square'], 'a value of a closed set: change');
-  assert.equal(say('make table 2 blue').status, 'not-understood', 'w.seating has no colour');
+  assert.deepEqual([say('make table 1 blue').reply, W(set).ofType('w.seating.table')[0].attrs.colour[0]], ['The table is blue now.', 'blue'], 'w.seating 3 has colour');
   say('add a guest called Ann');
   assert.deepEqual([say('remove Ann').reply, W(set).ofType('w.seating.guest').length], ['I removed the guest.', 0]);
   assert.equal(say('undo').reply, 'I undid the last change.');
   assert.equal(W(set).ofType('w.seating.guest')[0].attrs.name[0], 'Ann');
-  assert.deepEqual(say('add a table for 4').reading.unread, ['for', '4']);
+  const four = say('add a table for 4');
+  assert.deepEqual([four.status, four.request.args.seats], ['ask', '4'], 'knowledge Q85 (1): a complete reading wins before a finer one that leaves words unread');
 });
 
 test('seating in Romanian: the same acts from w.lang.ro frames, replies from w.lang.ro.reply', { skip: !worldsDir() && 'offline' }, async () => {
@@ -36,7 +38,12 @@ test('seating in Romanian: the same acts from w.lang.ro frames, replies from w.l
   assert.equal(s.say('șterge masa familie').reply, 'Am șters masa.');
   assert.equal(s.say('anulează').reply, 'Am anulat ultima schimbare.');
   assert.equal(W(set).ofType('w.seating.table').length, 2);
-  assert.deepEqual(s.say('adaugă o masă albastră').reading.unread, ['albastră'], 'an unread word as the user wrote it');
+  const blue = s.say('fă masa 1 albastră');
+  assert.deepEqual([blue.request.args.value, blue.reply], ['blue', 'Masa este acum albastră.'], 'knowledge Q85 (2): the value by its sense, said back in the user\'s word');
+  assert.deepEqual(s.say('adaugă o masă pentru 4').request.args.seats, '4');
+  assert.deepEqual(s.say('adaugă o masă înaltă').reading.unread, ['înaltă'], 'an unread word as the user wrote it');
+  const ana = s.say('adaugă un invitat numit Ana la masa 1');
+  assert.equal(ana.reply, 'Am adăugat un invitat.');
 });
 
 test('the session: "why?" over the last turn\'s facts; a snapshot restored in a new set keeps the worlds, undo and redo', { skip: !worldsDir() && 'offline' }, async () => {
@@ -68,6 +75,6 @@ test('refusals by code and roles: none, which, and a std.acts refusal said by it
   const which = s.say('remove the table');
   assert.deepEqual([which.status, which.reply, W(set).ofType('w.seating.table').length], ['ask', 'Which table? There are 2.', 2]);
   const { readTurn } = await import('../tools/lib-under-test.mjs');
-  const r = readTurn(set, 'x', { readers: [() => [{ request: { action: 'change', args: { thing: `$${W(set).ofType('w.seating.table')[0].id}`, attr: 'colour', value: 'red' } }, unread: [] }]] });
-  assert.equal(r.reply, 'A table has no colour.', 'std.acts refusal code no_key with its roles');
+  const r = readTurn(set, 'x', { readers: [() => [{ request: { action: 'change', args: { thing: `$${W(set).ofType('w.seating.table')[0].id}`, attr: 'height', value: 'red' } }, unread: [] }]] });
+  assert.equal(r.reply, 'A table has no height.', 'std.acts refusal code no_key with its roles');
 });

@@ -5707,3 +5707,19 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   templates; choose not found because of its generic), fixed; more than 60 functions checked. Functions whose defaults
   contain parentheses are not yet parsed (the next step of the test).
 - Gate: npm test 527 pass / 0 fail; compat 11; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.145.0 — readFrames on the catalog's frames (knowledge Q83), Q85 cases 1-2, pin 68e8c8b
+
+- Pin f15a1d7 → 68e8c8b (w.seating 3: a guest has a table, colour; acts.make.for; w.timeline 3).
+- `node tools/bench-frames.mjs` (every third example, the knowledge test's sample): 167 examples, same frame 86 / same
+  act and mode 17 before; after the verb index, needs, open lexicons, is=lexicon, fixed values, role maps, apostrophes
+  and the open-span cost: 151 / 5. `--all`: 499 examples, 456 same frame, 14 same act and mode, 29 otherwise
+  (the knowledge test asks same ≥ 95 % of half; its baseline was 249 of 498).
+- Romanian bench (`node tools/bench-ro-frames.mjs`): read 105/161, act 92/121, act and thing 83/121 (from 104/91/82).
+- Kit on w.seating 3 (test/seating-app.test.mjs, test/kit.test.mjs): "add a guest called Ann at table 1" done (table
+  ref); "make table 1 blue" → "The table is blue now."; "add a table for 4" → seats 4, asks the name (Q85 1);
+  "fă masa 1 albastră" → colour blue, "Masa este acum albastră." (Q85 2); "adaugă o masă pentru 4" → seats 4;
+  "adaugă un invitat numit Ana la masa 1" → "Am adăugat un invitat.".
+- Not done: Q85 (3) / Q89 comparative words on a number slot (`core.word role=more|less`): no published words yet in
+  w.timeline 3's schema; next release with a toy slot. Q87 (inflectBy on catalog plurals), Q84 (realise), Q88 (planner).
+- Gate: npm test 527 pass / 0 fail; compat 11; pilot same; psys2=0; scan clean; tsc ok.

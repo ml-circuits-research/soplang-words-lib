@@ -44,11 +44,11 @@ test('the seating world on the kit: every role a frame fills lands in an argumen
   const round = readTurn(set, 'add a round table called kids');
   assert.deepEqual([round.request.args.shape, round.request.args.name], ['round', 'kids']);
   const ann = readTurn(set, 'add a guest called Ann at table 1');
-  assert.deepEqual([ann.status, ann.reply, W(set, 'w.seating').ofType('w.seating.guest').length], ['not-understood', 'A guest has no place at a table.', 0], 'a guest sits on a seat in w.seating: never a guest named "ann at table 1"');
-  assert.deepEqual(readTurn(set, 'add a table for 4').reading.unread, ['for', '4']);
-  assert.deepEqual(readTurn(set, 'add a blue table').reading.unread, ['blue']);
-  assert.equal(readTurn(set, 'add a guest called Ann').request.args.name, 'Ann', 'a name as written');
-  const rm = readTurn(set, 'remove Ann');
+  assert.deepEqual([ann.status, ann.request.args.name, ann.request.args.table], ['done', 'Ann', `$${W(set, 'w.seating').ofType('w.seating.table')[0].id}`], 'w.seating 3: a guest has a table; never a guest named "ann at table 1"');
+  assert.deepEqual([readTurn(set, 'add a table for 4').request.args.seats], ['4'], 'acts.make.for: the template names the key (seats)');
+  assert.equal(readTurn(set, 'add a big table').reading.unread[0], 'big');
+  assert.equal(readTurn(set, 'add a guest called Bob').request.args.name, 'Bob', 'a name as written');
+  const rm = readTurn(set, 'remove Bob'); readTurn(set, 'remove Ann');
   assert.deepEqual([rm.status, rm.reply, W(set, 'w.seating').ofType('w.seating.guest').length], ['done', 'I removed the guest.', 0], 'a referent by its name');
   assert.equal(readTurn(set, 'undo').status, 'done');
   assert.equal(W(set, 'w.seating').ofType('w.seating.guest').length, 1);

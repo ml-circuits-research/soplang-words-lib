@@ -12,6 +12,7 @@
 import { analyse, fold, splitClitics } from './morph.mjs';
 import { valueText } from './parser.mjs';
 import { choose } from './rank.mjs';
+import { memoPerWorld } from './memo.mjs';
 
 const bare = (v) => valueText(v);
 
@@ -39,7 +40,13 @@ export function readFrames(world, text, { lang = 'w.lang.ro', morph: m, dictiona
   const sense = senses ?? ((id) => senseOf(world, id));
   const raw = String(text).toLowerCase().replace(/[.!?;:"“”()]+/g, ' ').replace(/,/g, ' , ').split(/\s+/).filter(Boolean);
   let toks = raw.flatMap((t) => (t === ',' ? [t] : m ? splitClitics(m, t) : [t]));
-  const items = (type, name) => world.ofType(type).filter((x) => bare(x.attrs.name?.[0]) === name).flatMap((x) => (x.attrs.item || []).map((i) => norm(bare(i)).split(/\s+/)));
+  const byName = memoPerWorld(world, `phrases-by-name|${lang}`, () => { const ix = new Map(); for (const x of world.ofType(`${lang}.phrase`)) { const k = bare(x.attrs.name?.[0]); (ix.get(k) || ix.set(k, []).get(k)).push(...(x.attrs.item || []).map(bare)); } return ix; }); // bounded: the phrases, once per contents
+  const itemsMemo = new Map();
+  const items = (type, name) => { // a named phrase's items, folded: through the index, never a scan of the phrases per step
+    if (type !== `${lang}.phrase`) return world.ofType(type).filter((x) => bare(x.attrs.name?.[0]) === name).flatMap((x) => (x.attrs.item || []).map((i) => norm(bare(i)).split(/\s+/)));
+    if (!itemsMemo.has(name)) itemsMemo.set(name, (byName.get(name) || []).map((i) => norm(i).split(/\s+/)));
+    return itemsMemo.get(name);
+  };
   // words to pass over wherever they stand (a phrase named skip)
   for (const s of items(`${lang}.phrase`, 'skip').sort((a, b) => b.length - a.length)) {
     for (let i = 0; i + s.length <= toks.length; i++) if (s.every((x, j) => norm(toks[i + j]) === x)) { toks.splice(i, s.length); i--; }

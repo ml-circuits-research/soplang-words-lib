@@ -23,11 +23,11 @@ const RESERVED = new Set(['kind', 'world']);
 function kindsOf(w, kind) {
   const out = [];
   for (const k of w.ofType('std.schema.kind')) if (k.attrs.of?.[0] === kind) for (const world of k.attrs.world) out.push({ type: kind, world, acts: k.attrs.acts || [], aspects: k.attrs.aspects || [] });
-  if (!out.length) for (const k of w.ofType('std.schema.kinds')) { // any kind a knowledge type names
+  if (!out.length) for (const k of w.ofType('std.schema.kinds')) { // bounded: the declarations, one index lookup each (any kind a knowledge type names)
     const from = k.attrs.from[0], key = k.attrs.key?.[0] || 'name';
-    if (w.ofType(from).some((x) => x.attrs[key]?.includes(kind))) out.push({ type: 'std.schema.thing', world: k.attrs.world[0], acts: k.attrs.acts || [], aspects: k.attrs.aspects || [], open: true });
+    if (w._matching({ type: from, where: { [key]: kind } }).length) out.push({ type: 'std.schema.thing', world: k.attrs.world[0], acts: k.attrs.acts || [], aspects: k.attrs.aspects || [], open: true });
     else if (k.attrs.stand_in) { // a kind the catalog does not draw, with a stand-in that it does
-      const s = w.ofType(k.attrs.stand_in[0]).find((x) => x.attrs.name?.includes(kind));
+      const s = w._matching({ type: k.attrs.stand_in[0], where: { name: kind } })[0];
       if (s) out.push({ type: 'std.schema.thing', world: k.attrs.world[0], acts: k.attrs.acts || [], aspects: k.attrs.aspects || [], open: true, standIn: s.attrs.drawing?.[0] });
     }
   }
@@ -303,9 +303,9 @@ const ACTIONS = {
     }
     // std.know.fill from=<catalog type> match=<its key that names the kind> key=<key> (rep.): the catalog's value at tier knowledge
     const sure = new Set(filled.filter((f) => f.tier !== 'default').map((f) => f.key));
-    for (const d of w.ofType('std.know.fill')) { // bounded: the declarations, then one catalog type's wires
+    for (const d of w.ofType('std.know.fill')) { // bounded: the declarations, one index lookup each
       const match = d.attrs.match?.[0] ?? 'name';
-      const fact = w.ofType(d.attrs.from[0]).find((x) => x.attrs[match]?.includes(kind));
+      const fact = w._matching({ type: valueText(d.attrs.from[0]), where: { [match]: kind } })[0]; // through the index, never a scan of the catalog per make
       if (!fact) continue;
       for (const key of d.attrs.key || []) {
         if (attrs[key] !== undefined || sure.has(key) || fact.attrs[key] === undefined) continue;
@@ -461,7 +461,7 @@ const ACTIONS = {
   }),
   acts_forget: (ctx, args) => pre('forget', ctx, args, (w) => {
     const id = String(one(args.fact)).replace(/^\$/, '');
-    const m = w.ofType('std.know.taught').find((x) => x.attrs.fact[0] === ref(id));
+    const m = w._matching({ type: 'std.know.taught', where: { fact: ref(id) } })[0];
     if (!m) return { ok: false, why: `${id} was not taught` };
     ctx.retract(m.id); ctx.retract(id);
     return { act: 'forget', fact: id };

@@ -9,9 +9,11 @@ import { World } from './world.mjs';
 import { readFrames } from './frames.mjs';
 import { moodOf } from './reader.mjs';
 import { arbitrate, turn } from './turn.mjs';
-import { typedWorldFor, schemaOf } from './typed.mjs';
+import { typedWorldFor, schemaOf, fitsSlot } from './typed.mjs';
 import { typedLexicon } from './readtypes.mjs';
 import { valueText } from './parser.mjs';
+import { memoPerWorld } from './memo.mjs';
+import { morphOf, realise, articleFor } from './morph.mjs';
 
 /**
  * Load the worlds an application uses. `loader(name) -> text` (a file, a fetch, a bundle). Options: `names` (the
@@ -47,6 +49,7 @@ const SESSION = new Set(['std.', 'core.', '_std']);
 export function readTurn(set, text, context = {}) {
   const { lang = 'w.lang.en', active, criteria, morph, dictionary } = context;
   const L = set.language;
+  const label = (type) => labelOf(set, type);
   const mood = moodOf(L, text, { lang });
   const verbOf = (lemma) => set.verbs[String(lemma).toLowerCase()];
   const r = readFrames(L, text, { lang, morph, dictionary, senses: (id) => (id && verbOf(id) ? { act: verbOf(id), en: id } : {}) });
@@ -73,7 +76,7 @@ export function readTurn(set, text, context = {}) {
     if (b.place && !words('place') && b.placeKind) { const all = set.live.ofType(b.placeKind); if (all.length) args[b.place] = `$${all[all.length - 1].id}`; } // no place said: the one made last
     if (b.place && words('place')) { // the place names a thing of the world: a list by its name
       const name = words('place').toLowerCase(), target = set.live.ofType(b.placeKind).find((x) => [].concat(b.placeKey ?? ['name']).some((k) => valueText(x.attrs[k]?.[0]).toLowerCase() === name));
-      if (!target) return { status: 'ask', reading, reply: `There is no ${name} ${b.placeKind.split('.').pop()} yet. Shall I make it?`, asks: [{ key: b.place, value: name }] };
+      if (!target) return { status: 'ask', reading, reply: `There is no ${name} ${label(b.placeKind)} yet. Shall I make it?`, asks: [{ key: b.place, value: name, confirm: { action: 'make', args: { kind: b.placeKind, [[].concat(b.placeKey ?? ['name'])[0]]: name } } }] };
       args[b.place] = `$${target.id}`;
     }
     request = { action: f.act, args };
@@ -93,13 +96,101 @@ export function readTurn(set, text, context = {}) {
   const before = new Set([...set.live.wires.keys()]);
   const t = turn(set.live, [request], context.reply ? { reply: context.reply } : {});
   const changed = [...set.live.wires.values()].filter((w) => !before.has(w.id)).map((w) => w.type);
-  const label = (type) => valueText(set.live.ofType('core.word').find((w) => (w.attrs.means || []).map(valueText).includes(type))?.attrs.text?.[0] ?? type.split('.').pop()); // a kind said by its word
-  const said = ((t.replies || []).join(' ') || t.question || '').replace(/\b([a-z]+(?:\.[a-z_]+)+)\b/g, (m) => (set.live._compiled().types.has(m) ? label(m) : m));
-  return { status: t.status === 'done' ? 'done' : t.status, reading, request, owner: owners.owner, reply: said, changed };
+  const library = ((t.replies || []).join(' ') || t.question || '').replace(/\b([a-z]+(?:\.[a-z_]+)+)\b/g, (m) => (set.live._compiled().types.has(m) ? label(m) : m)).replace(/\b(a|an) ([A-Za-z][\w-]*)/g, (all, _a, w) => `${articleFor(L, w, { types: { det: `${lang}.det`, onset: `${lang}.onset` } }) ?? _a} ${w}`); // a/an by the language world, after a type became its word
+  // a required key the act left open: one question each, answered by the next message (openSession)
+  const asks = (t.results || []).flatMap((x) => (x.result?.asks || []).map((a) => ({ ...a, thing: x.result.thing, type: set.live.get(x.result.thing)?.type })));
+  const roles2 = { kind: request.args.kind ? label(request.args.kind) : undefined, thing: b?.thing ? request.args[b.thing] : undefined, amount: b?.amount ? request.args[b.amount] : undefined };
+  const composed = t.status === 'done' ? replyFrom(L, request.action, roles2, { lang, type: context.replies, dictionary: context.replyDictionary }) : null; // the language world's reply, when it has one
+  const said = [composed ?? library, ...asks.map((a) => a.ask ?? `What ${a.key}?`)].filter(Boolean).join(' ');
+  return { status: t.status === 'done' ? 'done' : t.status, reading, request, owner: owners.owner, reply: said, changed, ...(asks.length ? { asks } : {}), ...(composed ? { composed: true } : {}) };
+}
+
+/** Types in a library sentence said by their words. */
+const labelled = (set, text) => text.replace(/\b([a-z]+(?:\.[a-z_]+)+)\b/g, (m) => (set.live._compiled().types.has(m) ? labelOf(set, m) : m));
+
+/** A type said by its word (core.word means=): "w.list.list" -> "list". */
+function labelOf(set, type) {
+  return valueText(set.live.ofType('core.word').find((w) => (w.attrs.means || []).map(valueText).includes(type))?.attrs.text?.[0] ?? String(type).split('.').pop());
+}
+
+/**
+ * A reply in the user's language from the language world's reply facts (`type`, default `${lang}.reply`: act=,
+ * text= with {role} slots, realised by std.morph): the fact for the act whose slots are all given, the most
+ * slots first; `dictionary` (std.morph's) gives the lemmas' classes and genders for the cells and agreement. Null
+ * when the language world has none: the caller keeps the library's sentence.
+ */
+export function replyFrom(language, act, roles, { lang = 'w.lang.en', type, dictionary } = {}) {
+  if (!language) return null;
+  const T = type ?? `${lang}.reply`;
+  const given = Object.keys(roles).filter((k) => roles[k] != null && roles[k] !== '');
+  const slotsOf = (text) => [...new Set([...text.matchAll(/\{([\w.]+)(?::[^}@]*)?(?:@\w+)?\}/g)].map((m) => m[1]))]; // realise's syntax: {role}, {role:cells}, {role@agrees_with}
+  const fit = language.ofType(T).map((f) => ({ act: valueText(f.attrs.act?.[0]), text: valueText(f.attrs.text?.[0] ?? '') }))
+    .filter((f) => f.act === act && slotsOf(f.text).every((x) => given.includes(x)))
+    .sort((x, y) => slotsOf(y.text).length - slotsOf(x.text).length)[0];
+  if (!fit) return null;
+  const m = memoPerWorld(language, `morph|${lang}|reply`, () => morphOf(language, { types: Object.fromEntries([['cls', 'class'], ['ending', 'ending'], ['irregular', 'irregular'], ['fold', 'fold'], ['split', 'split'], ['vowel', 'vowel']].map(([k, v]) => [k, `${lang}.${v}`]).concat([['template', T]])) }));
+  const out = realise(m, fit.text, Object.fromEntries(given.map((k) => [k, String(roles[k])])), { dictionary });
+  return out ? out.charAt(0).toUpperCase() + out.slice(1) : null;
 }
 
 /** The types a world owns (its kinds) and the session's: a turn that addressed `owner` may change only these. */
 export function turnScope(set, owner) {
   const own = new Set(set.worlds.get(owner)?.kinds ?? []);
   return (type) => own.has(type) || [...SESSION].some((p) => type.startsWith(p));
+}
+
+/**
+ * A session over a world set (Q72 part 3): the pending question and the slot its answer fills, and the timeline.
+ * `openSession(set, context)` returns { set, context, pending, turns, say(text) }. `say(text)`:
+ * - a timeline phrase of the language world (`${lang}.phrase name=undo|redo item=`) undoes or redoes the last
+ *   step of the live world (one turn is one step);
+ * - with a pending question, an answer that fits the slot (`fitsSlot` on the set's typed world: a value of a
+ *   closed set, a number, a name that is not a fragment) fills it; a yes or no (`${lang}.answer polarity=`)
+ *   answers a confirmation (yes: make what was missing, then the message it was asked for runs again); a message
+ *   that is neither drops the question and is read as a new turn;
+ * - otherwise `readTurn`, and a required key the act left open becomes the pending question.
+ * Every result is readTurn's shape, with `pending` (the question now open, or null).
+ */
+export function openSession(set, context = {}) {
+  const lang = context.lang ?? 'w.lang.en';
+  const L = set.language;
+  const norm = (t) => String(t).toLowerCase().replace(/[^\p{L}\p{N}' -]+/gu, ' ').replace(/\s+/g, ' ').trim();
+  const phrases = (name) => new Set((L?.ofType(`${lang}.phrase`) ?? []).filter((p) => valueText(p.attrs.name?.[0]) === name).flatMap((p) => (p.attrs.item || []).map((x) => norm(valueText(x)))));
+  const timeline = { undo: phrases('undo'), redo: phrases('redo') };
+  const polarity = new Map((L?.ofType(`${lang}.answer`) ?? []).flatMap((a) => (a.attrs.text || []).map((x) => [norm(valueText(x)), valueText(a.attrs.polarity?.[0])])));
+  const s = { set, context, pending: null, turns: [] };
+  const done = (r) => { s.pending = r.asks?.[0] ? { ...r.asks[0], text: r.text } : null; const out = { ...r, pending: s.pending }; s.turns.push(out); return out; };
+  s.say = (text) => {
+    const t = norm(text);
+    for (const act of ['undo', 'redo']) { // bounded: two timeline acts
+      if (!timeline[act].has(t)) continue;
+      const r = act === 'undo' ? set.live.undo(1) : set.live.redo(1);
+      const reply = r.ok ? (replyFrom(L, act, {}, { lang, type: context.replies, dictionary: context.replyDictionary }) ?? (act === 'undo' ? 'I took the last step back.' : 'I put it back.')) : (act === 'undo' ? 'There is nothing to undo.' : 'There is nothing to redo.');
+      return done({ status: r.ok ? 'done' : 'refused', text, reading: { act, unread: [], mood: 'imperative', complete: true }, reply });
+    }
+    const p = s.pending;
+    if (p?.confirm) {
+      const pol = polarity.get(t);
+      if (pol === 'no') return done({ status: 'done', text, reading: { act: 'answer', unread: [], complete: true }, reply: 'All right.' });
+      if (pol === 'yes') {
+        const made = turn(set.live, [p.confirm]);
+        if (made.status !== 'done') return done({ status: made.status, text, reading: { act: 'answer', unread: [], complete: true }, reply: (made.replies || []).join(' ') });
+        const again = readTurn(set, p.text, context);
+        return done({ ...again, text: p.text, reply: `${labelled(set, (made.replies || []).join(' '))} ${again.reply}`.trim() });
+      }
+    } else if (p?.thing && p.type) {
+      const fit = fitsSlot(set.typed, p.type, p.key, text);
+      const framed = readFrames(L, text, { lang, morph: context.morph, dictionary: context.dictionary }).best; // a message with a verb, or a question, is a new turn, not an answer
+      const verbal = t.split(' ').some((w) => set.verbs[w]);
+      const answer = !framed?.verb && !verbal && moodOf(L, text, { lang }) !== 'question';
+      if (answer && !fit.ok) return done({ status: 'ask', text: p.text, reading: { act: 'answer', unread: [], complete: false }, reply: `${fit.why[0].toUpperCase()}${fit.why.slice(1)}. ${p.ask ?? `What ${p.key}?`}`, asks: [p] }); // not a value of the slot: said, and asked again
+      if (answer) {
+        const r = turn(set.live, [{ action: 'change', args: { thing: p.thing, attr: p.key, value: fit.value } }]);
+        const ok = r.status === 'done';
+        return done({ status: r.status, text, reading: { act: 'answer', unread: [], mood: 'fragment', complete: true }, request: { action: 'change', args: { thing: p.thing, attr: p.key, value: fit.value } }, reply: ok ? (replyFrom(L, 'change', { thing: labelOf(set, p.type), value: fit.value }, { lang, type: context.replies, dictionary: context.replyDictionary }) ?? `The ${labelOf(set, p.type)} ${p.key} is now ${fit.value}.`) : (r.replies || []).join(' ') });
+      }
+    }
+    return done({ ...readTurn(set, text, context), text });
+  };
+  return s;
 }

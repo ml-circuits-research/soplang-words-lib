@@ -1817,6 +1817,38 @@ const set = loadWorldSet(loadText, { names: ['w.list', 'w.tasks'], language, bin
 readTurn(set, 'add 2 apples to my shopping list'); // { status: 'done', request: { action: 'make', args: { kind: 'w.list.item', text: 'apples', quantity: 2, list: '$…' } } }
 ```
 
+### openSession(set, context?) and replyFrom(language, act, roles, options?)
+
+A session over a world set: the pending question and the slot its answer fills, and the
+timeline. `openSession(set, context)` returns `{ set, pending, turns, say(text) }`. A required
+key a request left open becomes the pending question (the slot's `ask`, else "What key?"). The
+next message fills it when it fits the slot (`fitsSlot`: a value of a closed set, a number, a name
+that is not a fragment). A value that does not fit is said and asked again. A message with a verb,
+or a question, drops the question and is read as a new turn. A confirmation ("There is no party
+list yet. Shall I make it?") is answered by the language world's yes and no
+(`w.lang.en.answer polarity=`): yes makes what was missing and runs the message again. The
+language world's undo and redo phrases (`w.lang.en.phrase name=undo|redo`) step the live world's
+timeline back and forward; one turn is one step.
+
+`replyFrom(language, act, roles, { lang, type, dictionary })` says an act in the user's language
+from the language world's reply facts (`type`, default `${lang}.reply`, with `act=` and `text=`
+in std.morph's template syntax). It takes the fact whose slots are all given, the one with the
+most slots first. Null when there is none: `readTurn` then keeps the library's sentence. With a
+Romanian dictionary, `replyFrom(ro, 'remove', { thing: 'casă' }, { lang: 'w.lang.ro', type:
+'w.lang.ro.template', dictionary })` gives "Am șters casa".
+
+```js run
+const L = new World();
+L.load('@t core.type of=w.lang.en.reply\n@r w.lang.en.reply act=make text="I made a new {kind}."');
+print(replyFrom(L, 'make', { kind: 'list' }));
+print(replyFrom(L, 'remove', { thing: 'list' }));
+```
+
+```output
+I made a new list.
+null
+```
+
 ### compose(world, topic, options?) and interestOf(world, fact, options?)
 
 A composition of a genre about a topic, from knowledge, with no model (std.compose, first

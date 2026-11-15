@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.131.0
+
+The host kit, part 3: the session (reviewer 13:50), and lookups at size (point 5).
+
+### New
+- `openSession(set, context)`: the pending question and the slot its answer fills ("make a shape" asks
+  "Which colour?", "green" is said not to fit and asked again, "red" fills it); a confirmation answered
+  by the language world's yes/no (yes makes the missing list and runs the message again); undo and redo
+  by the language world's phrases, through the live world's timeline.
+- `replyFrom(language, act, roles, options)`: a reply from the language world's reply facts (default
+  `${lang}.reply`; Romanian's `w.lang.ro.template` with its dictionary gives "Am șters casa").
+- `readTurn` returns `asks` (required keys the act left open), composes replies from the language
+  world when it has them, and says a/an by the language world after a type becomes its word.
+
+### Changed
+- Catalog lookups in `make` (std.schema.kinds, std.know.fill, stand-ins, untaught) go through the index:
+  40 makes over 20,000 catalog facts 116 → 15 ms (test/lookup-budget.test.mjs).
+- `readFrames` reads named phrases through an index built once per contents: a turn of the lists app
+  55 → 20 ms.
+
 ## 0.130.0
 
 The host kit, first two parts (reviewer 13:50: Q72 approved).

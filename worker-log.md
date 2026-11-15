@@ -5523,3 +5523,24 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - outlineOf has no `concave` option: for the house drawing (walls 20,50,60x40, roof 30,20,40x30) it gives the convex
   hull of the parts' corners, a hexagon (20,50 30,20 70,20 80,50 80,90 20,90), not PSys2's hull of centres.
 - Gate: npm test 517 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.131.0 — host kit part 3 (reviewer 13:50): openSession (pending fill, confirmation, timeline), replyFrom, lookup budget
+
+- `node examples/lists-app.mjs` (now on `openSession`): "make a list" → "I made a list (…). What name?"; "party" →
+  "The list name is now party."; "undo" / "redo" through the language world's phrases (w.lang.en.phrase undo/redo
+  items); "add balloons to my picnic list" → "There is no picnic list yet. Shall I make it?"; "yes" → the list made,
+  then the item in it.
+- Toy world (test/kit.test.mjs): colour required, enum red/blue, ask "Which colour?": "make a shape" asks it;
+  "green" → `ask`, "Colour is one of red, blue, not "green". Which colour?" (still pending); "red" fills; undo takes
+  the answer back, redo puts it back. A message with a verb (a k.actions verb lemma or a frame's verb) or a question
+  is a new turn, never an answer ("add milk to it" is not taken as a list name).
+- 13:50 point 2 (replies from templates): `replyFrom` reads `${lang}.reply` facts (realise syntax); `readTurn` and the
+  session use them when present (context.replies names another type). w.lang.en has none yet (asked, Q73). With
+  w.lang.ro.template and the hand dictionary: remove {thing:cerc} → "Am șters cercul", {thing:casă} → "Am șters
+  casa"; the make template needs an `art` role and gave null here (Q73).
+- 13:50 point 5 (lookups at size): the std.know.fill lookup, kindsOf's std.schema.kinds check, the stand-in lookup and
+  `untaught` scanned a whole type per make (`ofType(...).find`); now `_matching` through the index. /tmp probe, 40
+  makes: 200 facts 34 ms, 20,000 facts 116 ms before → 15 ms after. test/lookup-budget.test.mjs holds it (20,000 vs
+  200 within 4× + 40 ms). readFrames scanned the phrases per search step: now an index per contents; one lists-app
+  turn 54.7 → 19.8 ms (320 turns later 19.1 ms, 340 items: flat).
+- Gate: npm test 521 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

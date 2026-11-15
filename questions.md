@@ -390,3 +390,15 @@ What every application needs to run worlds, as library parts (PSys2 keeps 96 fil
   "any literal is an anchor" is a pattern of the host's reader, not the library's.
 Choice proposed: build `loadWorldSet` and `readTurn` first (the compat suite then tests that surface), the session
 part after. Waiting for the reviewer's answer before building.
+
+## Q73 ([KNOW], host kit replies, reviewer 13:50 point 2): reply facts for w.lang.en, and an article for w.lang.ro's make
+
+The kit now composes replies from the language world (`replyFrom`: facts of `${lang}.reply` with `act=` and `text=` in
+std.morph's template syntax, the fact whose slots are all given, most slots first; else the library's English).
+(1) w.lang.en has request templates (w.lang.en.template "add a {kind}.") and no replies: could the knowledge
+repository publish `w.lang.en.reply act= text=` for make / remove / change / undo / redo and the open question
+("I made a {kind}.", "What {key}?")? (2) w.lang.ro.template make is "am desenat {art@kind} {kind:…} {colour@kind}":
+`art` is a role the caller must give as a lemma; a reply fact with the article in the cell (`{kind:…,def=no}` with the
+indefinite article as a determiner fact of w.lang.ro.det chosen by gender) would let the library say it without
+knowing Romanian. Remove already works with the hand dictionary ("Am șters casa"). Non-blocking: until then the
+library's English stays.

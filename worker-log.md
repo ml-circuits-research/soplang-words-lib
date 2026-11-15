@@ -5650,3 +5650,9 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   name of a k.colour wire"; the same slot without strict stays open (openJoins, check() issue). The knowledge
   repository can drop its copied enum lists (KR2) where the targets load with the schema.
 - Gate: npm test 535 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.139.0 — registers of irregular plurals (knowledge Q79, answered in Q81)
+
+- test/inflect-register.test.mjs: cactus → cactuses (common), cacti (register classical), all → [cacti, cactuses];
+  cacti → cactus; child → children.
+- Gate: npm test 536 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

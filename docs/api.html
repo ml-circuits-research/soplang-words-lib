@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="6de290f0753d">
+<meta name="source-hash" content="c705d05c772b">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.138.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.139.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -770,7 +770,7 @@ const O = { question: [&#x27;what&#x27;, &#x27;which&#x27;, &#x27;does&#x27;], s
 print([&#x27;what sound does a cow make&#x27;, &#x27;a cow makes which sound&#x27;, &#x27;cow sound?&#x27;].map((t) =&gt; readByTypes(w, t, O).best.answer[0]));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;moo&quot;,&quot;moo&quot;,&quot;moo&quot;]</code></pre></figure>
 <h3 id="inflectbyworld-word-op-options-and-articleforworld-word-options">inflectBy(world, word, op?, options?) and articleFor(world, word, options?)</h3>
-<p>Plurals and articles from a language world's facts (std.morph). <code>inflectBy</code> changes a word by ordered suffix rules (<code>op= order= suffix= after=consonant|vowel unless_suffix= min_length= replace= | add= drop=</code>), with irregular forms first. The pairs <code>singular= plural= read_only=</code> serve the plural and singular ops only, each in its own direction. The forms <code>lemma= form= vform=|degree=|num=</code> serve the op's cell (past, ing, comparative and so on); one marked <code>read_only=yes</code> or <code>variant=yes</code> is never written. A rule with keys it does not know is not applied. <code>articleFor</code> gives the determiner whose <code>before=</code> is the sound the word begins with, by the longest <code>onset</code> (<code>begins= sound=</code>) that matches, else by its first letter. The types default to w.lang.en's (<code>w.lang.en.inflect</code>, <code>.irregular</code>, <code>.irregular_form</code>, <code>.det</code>, <code>.onset</code>). <code>discourseRealiser</code> uses both when the language world has them: <code>{kind:num=pl}</code> gives the plural, and "a" or "an" takes its form from the next word.</p>
+<p>Plurals and articles from a language world's facts (std.morph). <code>inflectBy</code> changes a word by ordered suffix rules (<code>op= order= suffix= after=consonant|vowel unless_suffix= min_length= replace= | add= drop=</code>), with irregular forms first. The pairs <code>singular= plural= read_only=</code> serve the plural and singular ops only, each in its own direction. The forms <code>lemma= form= vform=|degree=|num=</code> serve the op's cell (past, ing, comparative and so on); one marked <code>read_only=yes</code> or <code>variant=yes</code> is never written. Two pairs of one word in two registers (<code>register=classical|common</code>: cacti, cactuses) are written as the common one unless <code>register</code> is asked; <code>all: true</code> gives every form, for a reader. A rule with keys it does not know is not applied. <code>articleFor</code> gives the determiner whose <code>before=</code> is the sound the word begins with, by the longest <code>onset</code> (<code>begins= sound=</code>) that matches, else by its first letter. The types default to w.lang.en's (<code>w.lang.en.inflect</code>, <code>.irregular</code>, <code>.irregular_form</code>, <code>.det</code>, <code>.onset</code>). <code>discourseRealiser</code> uses both when the language world has them: <code>{kind:num=pl}</code> gives the plural, and "a" or "an" takes its form from the next word.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.tell(`@t core.type of=w.lang.en.inflect  @t1 core.slot of=w.lang.en.inflect key=op  @t2 core.slot of=w.lang.en.inflect key=order kind=number
   @t3 core.slot of=w.lang.en.inflect key=suffix many=true  @t4 core.slot of=w.lang.en.inflect key=add  @t5 core.slot of=w.lang.en.inflect key=drop kind=number  @t6 core.slot of=w.lang.en.inflect key=after
@@ -1163,7 +1163,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.138.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.139.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

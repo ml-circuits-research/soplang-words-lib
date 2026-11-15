@@ -240,20 +240,26 @@ const KNOWN_RULE_KEYS = new Set(['op', 'order', 'suffix', 'after', 'unless_suffi
  * form= vform=|degree=|num=` for the op's cell, read_only=yes or variant=yes never written). A rule with keys it does
  * not know is not applied (said in `skipped`). Types default to w.lang.en's: { rule: 'w.lang.en.inflect',
  * irregular: 'w.lang.en.irregular', form: 'w.lang.en.irregular_form' }.
- * Returns the form (lower case), or the word when no rule applies.
+ * Two irregulars of one word in different registers (`register=classical|common`: cacti, cactuses): writing takes
+ * `register` when asked, else the common one (or one with no register); `all: true` gives every form, for reading.
+ * Returns the form (lower case), or the word when no rule applies (with `all`, a list).
  */
-export function inflectBy(world, word, op = 'plural', { types = {}, vowels } = {}) {
+export function inflectBy(world, word, op = 'plural', { types = {}, vowels, register, all = false } = {}) {
   const T = { rule: 'w.lang.en.inflect', irregular: 'w.lang.en.irregular', form: 'w.lang.en.irregular_form', ...types };
   const w = String(word).toLowerCase();
   const writes = (x) => one1(x, 'read_only') !== 'yes' && one1(x, 'variant') !== 'yes'; // a reading-only form is never written
   if (op === 'plural' || op === 'singular') { // irregulars per op: the pair singular/plural is read in the op's direction only
     const from = op === 'plural' ? 'singular' : 'plural';
-    const irr = world.ofType(T.irregular).find((x) => one1(x, from) === w && (op === 'singular' || writes(x)));
+    const irrs = world.ofType(T.irregular).filter((x) => one1(x, from) === w);
+    if (all && irrs.length) return [...new Set(irrs.map((x) => one1(x, op)))]; // reading: every form any register gives (cacti and cactuses)
+    // writing: the register asked, else the common one (or one with no register), else any that may be written
+    const ok = irrs.filter((x) => op === 'singular' || writes(x));
+    const irr = (register && ok.find((x) => one1(x, 'register') === register)) ?? ok.find((x) => !one1(x, 'register') || one1(x, 'register') === 'common') ?? ok[0];
     if (irr) return one1(irr, op);
   }
   const cell = op === 'plural' ? ['num', 'pl'] : op === 'singular' ? ['num', 'sg'] : ['comparative', 'superlative'].includes(op) ? ['degree', op] : ['vform', op];
   const form = world.ofType(T.form).find((x) => one1(x, 'lemma') === w && one1(x, cell[0]) === cell[1] && writes(x)); // the cell's irregular form (`<form type> lemma= form= vform=|degree=|num=`)
-  if (form) return one1(form, 'form');
+  if (form) return all ? [one1(form, 'form')] : one1(form, 'form');
   const V = new RegExp(`[${vowels ?? 'aeiou'}]$`);
   const rules = world.ofType(T.rule).filter((r) => one1(r, 'op') === op && Object.keys(r.attrs).every((k) => k.startsWith('core.') || KNOWN_RULE_KEYS.has(k))).sort((a, b) => Number(one1(a, 'order')) - Number(one1(b, 'order')));
   for (const r of rules) { // bounded: the rules
@@ -263,9 +269,10 @@ export function inflectBy(world, word, op = 'plural', { types = {}, vowels } = {
     if (hit === undefined) continue;
     if ((r.attrs.unless_suffix || []).map(q).some((s) => w.endsWith(s))) continue;
     const base = one1(r, 'replace') != null && hit ? w.slice(0, w.length - hit.length) : w.slice(0, w.length - Number(one1(r, 'drop') ?? 0));
-    return base + (one1(r, 'replace') ?? one1(r, 'add') ?? '');
+    const out = base + (one1(r, 'replace') ?? one1(r, 'add') ?? '');
+    return all ? [out] : out;
   }
-  return w;
+  return all ? [w] : w;
 }
 
 /**

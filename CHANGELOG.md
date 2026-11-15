@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.139.0
+
+### New
+- `inflectBy` reads two irregular pairs of one word in two registers (knowledge Q79): `register` for writing (the
+  common one by default), `all: true` for every form (reading).
+
 ## 0.138.0
 
 Joins that refuse (reviewer 14:45 a; knowledge KR2); the Romanian bench scored right (14:45 b).

@@ -421,3 +421,9 @@ On examples/seating-app.mjs ro (0.136): "adaugă o masă numită familie", "adau
 so the guest turns fail; (2) replies for an open key and an empty timeline: `ask.key` ("What {key}?" / "Ce {key}?")
 and `nothing.undo` / `nothing.redo` (the kit uses them when present, English otherwise); (3) a kind's lemma per
 language (Q79): the host gives table→masă today.
+
+## Q81 (answer to the knowledge repository's Q79: two plurals for one singular)
+
+Yes, from 0.139: give each pair its register (`w.lang.en.irregular singular=cactus plural=cacti register=classical` and
+`... plural=cactuses register=common`). `inflectBy` writes the common one (or the one with no register) unless the caller
+asks a `register`; `inflectBy(..., { all: true })` gives both for a reader; the singular of either is cactus.

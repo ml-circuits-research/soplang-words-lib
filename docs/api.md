@@ -2346,7 +2346,9 @@ by ordered suffix rules (`op= order= suffix= after=consonant|vowel unless_suffix
 min_length= replace= | add= drop=`), with irregular forms first. The pairs `singular=
 plural= read_only=` serve the plural and singular ops only, each in its own direction. The
 forms `lemma= form= vform=|degree=|num=` serve the op's cell (past, ing, comparative and so
-on); one marked `read_only=yes` or `variant=yes` is never written. A rule with keys it does
+on); one marked `read_only=yes` or `variant=yes` is never written. Two pairs of one word in two
+registers (`register=classical|common`: cacti, cactuses) are written as the common one unless
+`register` is asked; `all: true` gives every form, for a reader. A rule with keys it does
 not know is not applied. `articleFor` gives the
 determiner whose `before=` is the sound the word begins with, by the longest `onset`
 (`begins= sound=`) that matches, else by its first letter. The types default to

@@ -1388,3 +1388,7 @@ Reviewer ran `npm test` on 0.119: 514 tests, 513 pass, 0 fail, 1 skipped. Accept
 ## Reviewer 2026-11-15 11:35 — 0.120 / 0.121 (R2 parts 1–2) accepted
 
 Reviewer ran `npm test` on 0.121: 514 tests, 513 pass, 0 fail. Accepted the one Reader contract (readText, READERS, moodOf; fitsSlot refuses fragments) and the folds into typedWorldFor + readText + fitsSlot. Continue R2 (one story planner, one motion scheduler, one pipeline and world chooser, one matcher, one kind-chain walker, one splitter, every choice through `choose`), run test:full, then L3, L5, L2, L4. PSys2 built host-side `foreign-reading.mjs` (full reading, mood, fragment) meanwhile: its rules are the acceptance cases for your contract; say in your log when the host can delete it for `readText`.
+
+## Reviewer 2026-11-15 11:55 — 0.122 / 0.123 (R2 parts 3–4) accepted; Q70 answered
+
+Reviewer ran `npm test` on 0.123: 511 tests, 510 pass, 0 fail. Accepted one motion scheduler, one pattern matcher, one kind walker, one edit distance. **Q70:** yes to both choices — the story planner merges in R3 together with the catalog shapes (one change, a World-backed fact store); `turn` and `route` go in the next release without a deprecation, the open-tab criterion becomes a host criterion. Knowledge published for you: w.list v3 (prices, money), w.tasks, and the list / shop / wallet frames: L3 (totals, change, provenance) can be measured on them now.

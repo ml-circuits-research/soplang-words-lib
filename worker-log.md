@@ -5544,3 +5544,21 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   200 within 4× + 40 ms). readFrames scanned the phrases per search step: now an index per contents; one lists-app
   turn 54.7 → 19.8 ms (320 turns later 19.1 ms, 340 items: flat).
 - Gate: npm test 521 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.132.0 — reviewer 14:45 item 1 (roles used or named) and the ids out of replies; PSys2 Q24 probe B re-run
+
+- w.seating (published, pin b20eeeb) on the kit, PSys2's probe B turns: "add a table called family" → done,
+  name=family, reply "I made a table."; "add 2 tables" → ask "What name?", nothing made (the session takes "red and
+  blue": 2 tables named red and blue, "I made 2 tables."); "add a guest called Ann at table 1" → not-understood "A
+  guest has no place at a table." (w.seating seats guests on a seat; Q26 is the knowledge side), no guest; "add a table
+  for 4" → unread for, 4; "add a blue table" → unread blue (w.seating has no colour); "add a round table called kids" →
+  shape=round, name=kids; "remove Ann" → done "I removed the guest." (referent by name); "undo" → done; "undo the colour
+  change" → not understood (colour, change). Still not read: "make table 2 square" (no change frame reads it), "who is at
+  table 1".
+- Property (test/kit.test.mjs): 441 frame examples of w.lang.en on w.seating + w.list + w.tasks: 28 done, every role
+  word of each in an argument (a referent counts by its values, its kind's words and its place in order).
+- Ids: replies come from `sayAct` (reply facts first; else "I made a list.", "I made 2 tables." with the plural by
+  w.lang.en.inflect). Library sentences remain only for refusals and ask/pick answers (labelled kinds, no ids in
+  make/remove/change). Item 2 (composed from the language world's templates, Romanian mirror) waits for reply facts
+  (Q73); the next release does items 3 and 4.
+- Gate: see commit; npm test 523 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

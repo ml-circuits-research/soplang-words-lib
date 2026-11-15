@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.132.0
+
+The kit's readings are trusted (reviewer 14:45 item 1, PSys2 Q24 probe B), and its replies carry no ids.
+
+### Changed
+- `readTurn` binds every frame the reader kept, in turn: every role a frame filled lands in a request
+  argument or is named as unread (a value role fills the key the language world's template names,
+  `attribute=name`; a place is a referent a slot of the kind takes, else "A guest has no place at a table.").
+- A required key a make leaves open is asked before anything is made (`asks`, status `ask`); the session's
+  answer fills the request and runs it (n things: n values).
+- `undo` / `redo` frames step the live world's timeline; an undo with words it cannot use is not understood.
+- Replies: the language world's reply fact, else a short sentence with no id, the kind by its word, article
+  and plural by the language world ("I made 2 tables.", "I removed the guest.").
+- actReply no longer throws on an `ask` result without attributes.
+
+### New
+- `referentOf(set, words)`: "table 1", "Ann" → a thing of the set.
+- A property test: for every frame example of w.lang.en (441), a done turn used every word its roles filled.
+
 ## 0.131.0
 
 The host kit, part 3: the session (reviewer 13:50), and lookups at size (point 5).

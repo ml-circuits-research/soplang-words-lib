@@ -624,6 +624,7 @@ export function turnScope(set: WorldSet, owner: string): (type: string) => boole
 export interface Pending { key: string; ask?: string; thing?: string; type?: string; value?: string; confirm?: { action: string; args: Record<string, unknown> }; text: string }
 export interface Session { set: WorldSet; context: object; pending: Pending | null; turns: object[]; say(text: string): ReturnType<typeof readTurn> & { pending: Pending | null } }
 export function openSession(set: WorldSet, context?: { lang?: string; replies?: string; replyDictionary?: object; [option: string]: unknown }): Session;
+export function referentOf(set: WorldSet, words: string): { thing: Wire; type: string } | null;
 export function replyFrom(language: World | null, act: string, roles: Record<string, unknown>, options?: { lang?: string; type?: string; dictionary?: object }): string | null;
 export function arrangementOf(world: World, text: string, options?: { lang?: string }): { text: string; layout: string | null; relation: string | null; direction: string | null; reverse: boolean; diagramLayout: string | null; as: string | null } | null;
 export interface DiagramResult { kind: string; form: string; layout: string; topic: string; fill: string; text: string; nodes: { id: string; label: string; role: string; shape: string | null; x: number; y: number }[]; edges: { from: string; to: string }[]; groups: { id: string; label: string; members: string[] }[]; told?: object }

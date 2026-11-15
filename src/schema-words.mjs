@@ -123,7 +123,7 @@ export function actReply(w, request, result, { templates } = {}) {
       return `I changed the ${human(res.attr)} of ${name(res.thing)}${c?.from !== undefined ? ` from ${unq(c.from)}` : ''} to ${unq(res.value)}.`;
     }
     case 'pick': return res.things.length ? `I found ${list(res.things.map(name))}.` : `There is no such ${human(args.kind)}.`;
-    case 'ask': return res.attr ? (res.value === null ? `${name(res.thing)} has no ${human(res.attr)}.` : `The ${human(res.attr)} of ${name(res.thing)} is ${unq(res.value)}.`) : `${name(res.thing)}: ${Object.entries(res.attrs).filter(([k]) => !RESERVED.has(k)).map(([k, v]) => `${human(k)} ${unq([].concat(v).join(', '))}`).join(', ')}.`;
+    case 'ask': return res.attr ? (res.value === null ? `${name(res.thing)} has no ${human(res.attr)}.` : `The ${human(res.attr)} of ${name(res.thing)} is ${unq(res.value)}.`) : `${name(res.thing)}: ${Object.entries(res.attrs || {}).filter(([k]) => !RESERVED.has(k)).map(([k, v]) => `${human(k)} ${unq([].concat(v).join(', '))}`).join(', ')}.`;
     case 'copy': return `I copied ${name(res.from)} (${res.thing}).`;
     case 'connect': return `I connected ${name(args.a)} and ${name(args.b)}.`;
     case 'group': return `I grouped them as ${res.group}.`;

@@ -13,7 +13,7 @@ import { typedWorldFor, schemaOf, fitsSlot } from './typed.mjs';
 import { typedLexicon } from './readtypes.mjs';
 import { valueText } from './parser.mjs';
 import { memoPerWorld } from './memo.mjs';
-import { morphOf, realise, articleFor } from './morph.mjs';
+import { morphOf, realise, articleFor, inflectBy } from './morph.mjs';
 
 /**
  * Load the worlds an application uses. `loader(name) -> text` (a file, a fetch, a bundle). Options: `names` (the
@@ -59,50 +59,165 @@ export function readTurn(set, text, context = {}) {
     const unread = tokens.filter((t) => !known.has(t));
     return { status: 'not-understood', reading: { frame: null, unread: unread.length ? unread : tokens, mood, complete: false }, reply: `I did not understand ${(unread.length ? unread : tokens).map((t) => `"${t}"`).join(', ')}.` };
   }
-  const needsOf = (fr) => { const x = L.ofType(`${lang}.frame`).find((y) => valueText(y.attrs.name[0]) === fr.frame); return x?.attrs.needs ? valueText(x.attrs.needs[0]) : null; };
-  const f = r.frames.find((fr) => set.bindings[needsOf(fr)]) ?? r.best, roles = f.roles; // a frame whose needs this set binds wins over a general one
-  const reading = { frame: f.frame, act: f.act, roles, unread: [], mood, complete: mood !== 'statement' && mood !== 'fragment' };
-  if (!reading.complete) return { status: 'not-understood', reading, reply: mood === 'fragment' ? 'I did not understand: that is only a fragment.' : 'I took that as a statement, not a request.' };
-  // the frame bound to a request: the needs class through the host's bindings, else the role names as act roles
-  const frameFact = L.ofType(`${lang}.frame`).find((x) => valueText(x.attrs.name[0]) === f.frame);
-  const needs = frameFact?.attrs.needs ? valueText(frameFact.attrs.needs[0]) : null;
-  const b = needs ? set.bindings[needs] : null;
-  const words = (role) => roles[role]?.en ?? roles[role]?.text;
-  let request;
-  if (b) {
-    const args = { kind: b.kind };
-    if (b.thing && words('thing')) args[b.thing] = words('thing');
-    if (b.amount && roles.amount?.value !== undefined) args[b.amount] = roles.amount.value;
-    if (b.place && !words('place') && b.placeKind) { const all = set.live.ofType(b.placeKind); if (all.length) args[b.place] = `$${all[all.length - 1].id}`; } // no place said: the one made last
-    if (b.place && words('place')) { // the place names a thing of the world: a list by its name
-      const name = words('place').toLowerCase(), target = set.live.ofType(b.placeKind).find((x) => [].concat(b.placeKey ?? ['name']).some((k) => valueText(x.attrs[k]?.[0]).toLowerCase() === name));
-      if (!target) return { status: 'ask', reading, reply: `There is no ${name} ${label(b.placeKind)} yet. Shall I make it?`, asks: [{ key: b.place, value: name, confirm: { action: 'make', args: { kind: b.placeKind, [[].concat(b.placeKey ?? ['name'])[0]]: name } } }] };
-      args[b.place] = `$${target.id}`;
-    }
-    request = { action: f.act, args };
-  } else {
-    const kindWords = words('thing');
-    const lex = typedLexicon(set.live);
-    const kind = kindWords && [kindWords, kindWords.split(' ').pop(), kindWords.split(' ').pop().replace(/s$/, '')].flatMap((w) => lex.get(w) || []).find((e) => e.cat === 'kind')?.type;
-    if (!kind) { const unread = (kindWords ? kindWords.split(' ') : tokens).filter((w) => !lex.has(w)); return { status: 'not-understood', reading: { ...reading, complete: false, unread: unread.length ? unread : tokens }, reply: kindWords && !unread.length ? `There is no ${kindWords} here.` : `I did not understand ${(unread.length ? unread : tokens).map((w) => `"${w}"`).join(', ')}.` }; }
-    const values = {}; // words before the kind's word that are values of its closed sets: "a shopping list" -> sort=shopping
-    for (const w of kindWords.split(' ').slice(0, -1)) for (const [key, sl] of set.live._compiled().slots.get(kind) || []) if ((sl.enum || []).map((e) => valueText(e).toLowerCase()).includes(w)) values[key] = w;
-    const left = kindWords.split(' ').slice(0, -1).filter((w) => !Object.values(values).includes(w));
-    if (left.length) return { status: 'not-understood', reading: { ...reading, complete: false, unread: left }, reply: `I did not understand ${left.map((w) => `"${w}"`).join(', ')}.` }; // a word left is never dropped
-    request = { action: f.act, args: { kind, ...values, ...(roles.amount?.value !== undefined ? { amount: roles.amount.value } : {}) } };
+  const read0 = { mood, complete: mood !== 'statement' && mood !== 'fragment' };
+  if (!read0.complete) return { status: 'not-understood', reading: { frame: r.best.frame, act: r.best.act, roles: r.best.roles, unread: [], ...read0 }, reply: mood === 'fragment' ? 'I did not understand: that is only a fragment.' : 'I took that as a statement, not a request.' };
+  // every frame the reader kept, bound in turn: the first whose every filled role lands in an argument wins; a role
+  // that lands nowhere is named as unread, never dropped (reviewer 14:45 item 1)
+  const bound = r.frames.map((fr) => ({ fr, b: bindFrame(set, fr, { lang, text }) }));
+  let win = bound.find((x) => x.b.request && !x.b.unread.length && !x.b.confirm) ?? bound.find((x) => x.b.confirm) ?? bound.find((x) => x.b.timeline && !x.b.unread.length) ?? [...bound].sort((x, y) => x.b.unread.length - y.b.unread.length)[0];
+  const nRoles = (x) => Object.keys(x.fr.roles || {}).length;
+  const finer = bound.find((x) => x.b.placeless && nRoles(x) > nRoles(win)); // a reading that saw a place this kind cannot take: said, not swallowed into a name by a coarser frame
+  if (finer) win = finer;
+  const { fr: f, b } = win;
+  if (!b.request && !b.timeline && !b.confirm && !b.unread.length) b.unread = tokens; // nothing bound: every word is unread
+  const reading = { frame: f.frame, act: f.act, roles: f.roles, unread: b.unread, ...read0, complete: !b.unread.length && !b.why };
+  if (b.confirm) return { status: 'ask', reading, reply: `There is no ${b.confirm.args[b.confirm.key]} ${label(b.confirm.args.kind)} yet. Shall I make it?`, asks: [{ key: b.confirm.place, value: b.confirm.args[b.confirm.key], confirm: { action: 'make', args: b.confirm.args } }] };
+  if (!reading.complete) return { status: 'not-understood', reading, reply: b.placeless ? `${b.placeless}.` : b.unread.length ? `I did not understand ${b.unread.map((w) => `"${w}"`).join(', ')}.` : b.why };
+  if (b.timeline) { // undo / redo: a step of the live world's timeline
+    const n = b.timeline.n ?? 1, res = b.timeline.act === 'undo' ? set.live.undo(n) : set.live.redo(n);
+    return { status: res.ok ? 'done' : 'refused', reading, request: { action: b.timeline.act, args: { n } }, reply: sayAct(set, b.timeline.act, { ok: res.ok, n }, context) };
   }
+  const request = b.request;
+  // a required key the request leaves open is asked before anything is made: never a thing with a hole in it
+  const asks = requiredOpen(set, request);
+  if (asks.length) return { status: 'ask', reading, request, reply: asks.map((a) => a.ask ?? `What ${a.key}?`).join(' '), asks };
+  return runRequest(set, request, reading, context);
+}
+
+const SAID = new Set(['make', 'remove', 'change']); // acts whose reply is a sentence of what was done; questions keep the answer
+
+/** Run a bound request: arbitrate the world, one turn (one step), a reply with no ids. */
+function runRequest(set, request, reading, context = {}) {
+  const { lang = 'w.lang.en', active, criteria } = context;
   const owners = arbitrate(set.live, request, { active, criteria });
   if (!owners.owner) return { status: owners.ambiguous ? 'ask' : 'refused', reading, request, reply: owners.ambiguous ? `In which: ${owners.ambiguous.join(' or ')}?` : (owners.verdicts.find((v) => v.verdict === 'refuse')?.why ?? 'No world here takes that.'), ...(owners.ambiguous ? { asks: [{ key: 'world', values: owners.ambiguous }] } : {}) };
   const before = new Set([...set.live.wires.keys()]);
+  const thingType = request.args.thing ? set.live.get(String(request.args.thing).replace(/^\$/, ''))?.type : null; // said after it may be gone
   const t = turn(set.live, [request], context.reply ? { reply: context.reply } : {});
   const changed = [...set.live.wires.values()].filter((w) => !before.has(w.id)).map((w) => w.type);
-  const library = ((t.replies || []).join(' ') || t.question || '').replace(/\b([a-z]+(?:\.[a-z_]+)+)\b/g, (m) => (set.live._compiled().types.has(m) ? label(m) : m)).replace(/\b(a|an) ([A-Za-z][\w-]*)/g, (all, _a, w) => `${articleFor(L, w, { types: { det: `${lang}.det`, onset: `${lang}.onset` } }) ?? _a} ${w}`); // a/an by the language world, after a type became its word
-  // a required key the act left open: one question each, answered by the next message (openSession)
-  const asks = (t.results || []).flatMap((x) => (x.result?.asks || []).map((a) => ({ ...a, thing: x.result.thing, type: set.live.get(x.result.thing)?.type })));
-  const roles2 = { kind: request.args.kind ? label(request.args.kind) : undefined, thing: b?.thing ? request.args[b.thing] : undefined, amount: b?.amount ? request.args[b.amount] : undefined };
-  const composed = t.status === 'done' ? replyFrom(L, request.action, roles2, { lang, type: context.replies, dictionary: context.replyDictionary }) : null; // the language world's reply, when it has one
-  const said = [composed ?? library, ...asks.map((a) => a.ask ?? `What ${a.key}?`)].filter(Boolean).join(' ');
-  return { status: t.status === 'done' ? 'done' : t.status, reading, request, owner: owners.owner, reply: said, changed, ...(asks.length ? { asks } : {}), ...(composed ? { composed: true } : {}) };
+  const result = t.results?.[0]?.result;
+  const reply = t.status === 'done' && SAID.has(request.action) ? sayAct(set, request.action, { request, result, thingType }, context) : labelled(set, (t.replies || []).join(' ') || t.question || '');
+  return { status: t.status === 'done' ? 'done' : t.status, reading, request, owner: owners.owner, reply, changed };
+}
+
+/** The required keys of the kind a make request names that it does not give (and no default fills). */
+function requiredOpen(set, request) {
+  if (request.action !== 'make' || !request.args.kind) return [];
+  const slots = set.live._compiled().slots.get(request.args.kind);
+  if (!slots) return [];
+  return [...slots.values()].filter((sl) => sl.required && sl.default === undefined && request.args[sl.key] === undefined && sl.key !== 'kind').map((sl) => ({ key: sl.key, ...(sl.ask ? { ask: valueText(sl.ask) } : {}), request }));
+}
+
+/**
+ * A thing of the set named by words (a referent): "table 1" (a kind's word and a name or number of one of its
+ * things, else the n-th made), "Ann" (a thing whose name it is). Returns { thing, type } or null.
+ */
+export function referentOf(set, words) {
+  const toks = String(words).toLowerCase().split(/\s+/).filter(Boolean);
+  const lex = typedLexicon(set.live);
+  let kind = null, rest = toks;
+  for (let i = 0; i < toks.length && !kind; i++) { // bounded: the words
+    const k = [toks[i], toks[i].replace(/s$/, '')].flatMap((w) => lex.get(w) || []).find((e) => e.cat === 'kind')?.type;
+    if (k) { kind = k; rest = toks.filter((_, j) => j !== i); }
+  }
+  const name = rest.join(' ');
+  const things = kind ? set.live.ofType(kind) : [...set.worlds.values()].flatMap((w) => w.kinds).flatMap((t) => set.live.ofType(t));
+  if (!name) return kind && things.length ? { thing: things[things.length - 1], type: kind } : null;
+  const hit = things.find((x) => Object.entries(x.attrs).some(([k, vs]) => !k.startsWith('core.') && k !== 'kind' && k !== 'world' && vs.some((v) => valueText(v).toLowerCase() === name)));
+  if (hit) return { thing: hit, type: hit.type };
+  if (kind && /^\d+$/.test(name) && things[Number(name) - 1]) return { thing: things[Number(name) - 1], type: kind };
+  return null;
+}
+
+/**
+ * One frame reading bound to a request of the set: { request?, unread: [words], why?, confirm?, timeline? }. Every role
+ * the frame filled lands in an argument or its words are in `unread`.
+ */
+function bindFrame(set, f, { lang, text = '' }) {
+  const L = set.language, roles = f.roles || {}, unread = [];
+  const words = (role) => roles[role]?.en ?? roles[role]?.text;
+  const all = (role) => String(roles[role]?.text ?? words(role) ?? '').split(/\s+/).filter(Boolean);
+  if (f.act === 'undo' || f.act === 'redo') {
+    const left = Object.keys(roles).filter((k) => k !== 'amount');
+    return { timeline: { act: f.act, n: roles.amount?.value }, unread: left.flatMap(all) };
+  }
+  const frameFact = L.ofType(`${lang}.frame`).find((x) => valueText(x.attrs.name[0]) === f.frame);
+  const needs = frameFact?.attrs.needs ? valueText(frameFact.attrs.needs[0]) : null;
+  const b = needs ? set.bindings[needs] : null;
+  const attrOf = L.ofType(`${lang}.template`).find((t) => (t.attrs.frame || []).map(valueText).includes(f.frame) && t.attrs.attribute); // the language world says which key a value role fills
+  const used = new Set();
+  const args = {};
+  let kind = null, placeless = null;
+  if (b) {
+    kind = b.kind;
+    if (b.thing && words('thing')) { args[b.thing] = words('thing'); used.add('thing'); }
+    if (b.amount && roles.amount?.value !== undefined) { args[b.amount] = roles.amount.value; used.add('amount'); }
+    if (b.place && !words('place') && b.placeKind) { const ps = set.live.ofType(b.placeKind); if (ps.length) args[b.place] = `$${ps[ps.length - 1].id}`; } // no place said: the one made last
+    if (b.place && words('place')) {
+      const name = words('place').toLowerCase(), key = [].concat(b.placeKey ?? ['name'])[0];
+      const target = set.live.ofType(b.placeKind).find((x) => [].concat(b.placeKey ?? ['name']).some((k) => valueText(x.attrs[k]?.[0]).toLowerCase() === name));
+      used.add('place'); used.add('rel');
+      if (!target) return { confirm: { place: b.place, key, args: { kind: b.placeKind, [key]: name } }, unread: [] };
+      args[b.place] = `$${target.id}`;
+    }
+  } else {
+    const kindWords = all('thing');
+    if (!kindWords.length) return { unread: Object.keys(roles).flatMap(all) };
+    const lex = typedLexicon(set.live);
+    const head = kindWords[kindWords.length - 1];
+    kind = [kindWords.join(' '), head, head.replace(/s$/, '')].flatMap((w) => lex.get(w) || []).find((e) => e.cat === 'kind')?.type ?? null;
+    if (!kind && f.act !== 'make') { // a thing of the world, not a kind: remove Ann, remove table 1
+      const ref = referentOf(set, kindWords.join(' '));
+      if (!ref) return { unread: kindWords.filter((w) => !lex.has(w)).length ? kindWords.filter((w) => !lex.has(w)) : kindWords };
+      used.add('thing');
+      const left = Object.keys(roles).filter((k) => !used.has(k));
+      return { request: { action: f.act, args: { thing: `$${ref.thing.id}` } }, unread: left.flatMap(all) };
+    }
+    if (!kind) { const un = kindWords.filter((w) => !lex.has(w)); return { unread: un.length ? un : kindWords, why: un.length ? undefined : `There is no ${kindWords.join(' ')} here.` }; }
+    used.add('thing');
+    const slots = set.live._compiled().slots.get(kind) || new Map();
+    for (const w of kindWords.slice(0, -1)) { // words before the kind's word that are values of its closed sets: "a round table" -> shape=round
+      const hit = [...slots].find(([, sl]) => (sl.enum || []).map((e) => valueText(e).toLowerCase()).includes(w));
+      if (hit) args[hit[0]] = w; else unread.push(w);
+    }
+    if (roles.amount?.value !== undefined) { args.amount = roles.amount.value; used.add('amount'); }
+    if (words('value') !== undefined) {
+      const v = String(words('value')), key = attrOf ? valueText(attrOf.attrs.attribute[0]) : null;
+      const enumKey = [...slots].find(([, sl]) => (sl.enum || []).map((e) => valueText(e).toLowerCase()).includes(v.toLowerCase()))?.[0];
+      const k = key && slots.has(key) ? key : enumKey;
+      if (k) { const at = text.toLowerCase().indexOf(v.toLowerCase()); args[k] = at >= 0 && !enumKey ? text.slice(at, at + v.length) : v; used.add('value'); } // a name as the user wrote it
+    }
+    if (words('place') !== undefined) { // a place: a thing of the world that a slot of this kind takes
+      const ref = referentOf(set, words('place'));
+      const key = ref && [...slots].find(([, sl]) => sl.type && (sl.type === ref.type))?.[0];
+      if (key) { args[key] = `$${ref.thing.id}`; used.add('place'); used.add('rel'); }
+      else placeless = ref ? `${articleFor(L, labelOf(set, kind), { types: { det: `${lang}.det`, onset: `${lang}.onset` } }) ?? 'a'} ${labelOf(set, kind)} has no place ${words('rel') ?? 'at'} ${articleFor(L, labelOf(set, ref.type), { types: { det: `${lang}.det`, onset: `${lang}.onset` } }) ?? 'a'} ${labelOf(set, ref.type)}`.replace(/^./, (c) => c.toUpperCase()) : `There is no ${words('place')} here`;
+    }
+  }
+  for (const k of Object.keys(roles)) if (!used.has(k)) unread.push(...(k === 'rel' ? all('rel') : all(k)));
+  return { request: { action: f.act, args: { kind, ...args } }, unread, ...(placeless ? { placeless } : {}) };
+}
+
+/**
+ * The reply of a done act, with no ids: the language world's reply fact for the act when it has one (replyFrom),
+ * else a short sentence with the kind said by its word, its article and its plural by the language world.
+ */
+function sayAct(set, act, { request, result, ok = true, n, thingType } = {}, context = {}) {
+  const lang = context.lang ?? 'w.lang.en', L = set.language;
+  const kindType = request?.args?.kind ?? thingType ?? (result?.thing ? set.live.get(result.thing)?.type : null) ?? (request?.args?.thing ? set.live.get(String(request.args.thing).replace(/^\$/, ''))?.type : null);
+  const count = Array.isArray(result?.things) ? result.things.length : Number(request?.args?.amount ?? 1);
+  const word = kindType ? labelOf(set, kindType) : null;
+  const roles = { kind: word, amount: count > 1 ? count : undefined, n: n > 1 ? n : undefined };
+  const composed = replyFrom(L, act, roles, { lang, type: context.replies, dictionary: context.replyDictionary });
+  if (composed) return composed;
+  const plural = (w) => inflectBy(L, w, 'plural', { types: { rule: `${lang}.inflect`, irregular: `${lang}.irregular` } });
+  const np = !word ? 'that' : count > 1 ? `${count} ${word.split(' ').map((x, i, a) => (i === a.length - 1 ? plural(x) : x)).join(' ')}` : `${articleFor(L, word, { types: { det: `${lang}.det`, onset: `${lang}.onset` } }) ?? 'a'} ${word}`;
+  if (act === 'undo') return ok ? 'I took the last step back.' : 'There is nothing to undo.';
+  if (act === 'redo') return ok ? 'I put it back.' : 'There is nothing to redo.';
+  if (act === 'make') return `I made ${np}.`;
+  if (act === 'remove') return `I removed the ${word ?? 'thing'}.`;
+  if (act === 'change') return `I changed the ${word ?? 'thing'}.`;
+  return `I did that: ${act} ${np}.`;
 }
 
 /** Types in a library sentence said by their words. */
@@ -176,18 +291,28 @@ export function openSession(set, context = {}) {
         const made = turn(set.live, [p.confirm]);
         if (made.status !== 'done') return done({ status: made.status, text, reading: { act: 'answer', unread: [], complete: true }, reply: (made.replies || []).join(' ') });
         const again = readTurn(set, p.text, context);
-        return done({ ...again, text: p.text, reply: `${labelled(set, (made.replies || []).join(' '))} ${again.reply}`.trim() });
+        return done({ ...again, text: p.text, reply: `${sayAct(set, 'make', { request: p.confirm }, context)} ${again.reply}`.trim() });
       }
-    } else if (p?.thing && p.type) {
-      const fit = fitsSlot(set.typed, p.type, p.key, text);
+    } else if (p?.request) { // a request waiting for a required key: the answer fills it, then the request runs
+      const kind = p.request.args.kind, n = Number(p.request.args.amount ?? 1);
       const framed = readFrames(L, text, { lang, morph: context.morph, dictionary: context.dictionary }).best; // a message with a verb, or a question, is a new turn, not an answer
       const verbal = t.split(' ').some((w) => set.verbs[w]);
-      const answer = !framed?.verb && !verbal && moodOf(L, text, { lang }) !== 'question';
-      if (answer && !fit.ok) return done({ status: 'ask', text: p.text, reading: { act: 'answer', unread: [], complete: false }, reply: `${fit.why[0].toUpperCase()}${fit.why.slice(1)}. ${p.ask ?? `What ${p.key}?`}`, asks: [p] }); // not a value of the slot: said, and asked again
-      if (answer) {
-        const r = turn(set.live, [{ action: 'change', args: { thing: p.thing, attr: p.key, value: fit.value } }]);
-        const ok = r.status === 'done';
-        return done({ status: r.status, text, reading: { act: 'answer', unread: [], mood: 'fragment', complete: true }, request: { action: 'change', args: { thing: p.thing, attr: p.key, value: fit.value } }, reply: ok ? (replyFrom(L, 'change', { thing: labelOf(set, p.type), value: fit.value }, { lang, type: context.replies, dictionary: context.replyDictionary }) ?? `The ${labelOf(set, p.type)} ${p.key} is now ${fit.value}.`) : (r.replies || []).join(' ') });
+      if (!framed?.verb && !verbal && moodOf(L, text, { lang }) !== 'question') {
+        const ands = new Set((L?.ofType(`${lang}.particle`) ?? []).filter((x) => valueText(x.attrs.meaning?.[0]) === 'and').flatMap((x) => [...(x.attrs.form || []), ...(x.attrs.text || [])].map(valueText)).concat(['and']));
+        const parts = n > 1 ? String(text).split(/\s*,\s*|\s+/).filter((x) => x && !ands.has(x.toLowerCase())) : [String(text).trim()]; // n things: n values
+        const fits = parts.map((x) => fitsSlot(set.typed, kind, p.key, x));
+        const bad = fits.find((x) => !x.ok);
+        const again = (why) => done({ status: 'ask', text: p.text, reading: { act: 'answer', unread: [], complete: false }, reply: `${why} ${p.ask ?? `What ${p.key}?`}`, asks: [p] }); // said, and asked again
+        if (bad) return again(`${bad.why[0].toUpperCase()}${bad.why.slice(1)}.`);
+        if (parts.length !== n) return again(`That is ${parts.length}, and there ${n === 1 ? 'is 1' : `are ${n}`}.`);
+        const reqs = fits.map((x) => ({ action: p.request.action, args: { ...p.request.args, amount: undefined, [p.key]: x.value } }));
+        for (const q of reqs) delete q.args.amount;
+        const reading = { act: p.request.action, unread: [], mood: 'fragment', complete: true };
+        const open = requiredOpen(set, reqs[0]);
+        if (open.length) { const q = { ...open[0], request: n > 1 ? { ...p.request, args: { ...p.request.args, [p.key]: fits.map((x) => x.value) } } : reqs[0] }; return done({ status: 'ask', text: p.text, reading, request: reqs[0], reply: q.ask ?? `What ${q.key}?`, asks: [q] }); }
+        const outs = reqs.map((q) => runRequest(set, q, reading, context)); // bounded: n values
+        const last = outs[outs.length - 1];
+        return done({ ...last, text, reply: n > 1 ? sayAct(set, p.request.action, { request: p.request, result: { things: outs.map((o) => o.request) } }, context) : last.reply });
       }
     }
     return done({ ...readTurn(set, text, context), text });

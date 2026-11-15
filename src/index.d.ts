@@ -555,7 +555,7 @@ export function fold(m: Morph, text: string): string;
 export function splitClitics(m: Morph, word: string): string[];
 export interface Dictionary { lookup(lemma: string): { lemma: string; class: string; gender?: string; sense?: string } | null; byFolded(plain: string): { lemma: string; class: string; gender?: string; sense?: string }[]; loaded(): string[] }
 export function dictionary(options: { read: ((prefix: string) => string | null) | ((prefix: string) => string | null)[]; prefix?: number; fold?: (s: string) => string }): Dictionary;
-export function realise(m: Morph, template: string, roles: Record<string, string>, options?: { dictionary?: Dictionary; base?: Record<string, string>; agree?: string[] }): string | null;
+export function realise(m: Morph, template: string, roles: Record<string, string>, options?: { dictionary?: Dictionary; base?: Record<string, string>; agree?: string[]; sentence?: boolean }): string | null;
 export function templateFor(m: Morph, act: string, shape?: string | null): string | null;
 /** std.motion: the change points of states over time, from rules and events (pure, seeded). */
 /** Play a plan through the host's clock; returns cancel(). */
@@ -566,7 +566,7 @@ export function factStore(worlds: { id: string; schemaText: string; shards: { te
 /** A working copy of a live world for planning. */
 export class PlanLive { constructor(options?: { world?: string | null; things?: { id: string; kind: string; attrs?: Record<string, unknown>; members?: string[] }[]; history?: object[]; kinds?: Record<string, string> | null; store?: FactStore | null }); world: string | null; things: Map<string, object>; history: object[] }
 export interface PlanResult { method?: string; methods: string[]; acts: object[]; lines: string[]; explain: string[]; requests: { action: string; args: Record<string, unknown> }[]; skipped: string[]; effects: object[]; asks: string[]; refused?: boolean; tried?: { method: string; why: string }[]; truncated?: boolean }
-export function planner(store: FactStore, options?: { chain?: { type: string; keys: string[] }[]; prefix?: string; roles?: string; about?: string[]; seed?: number; chooseLimit?: number }): { methods: object[]; isA(a: string, b: string): boolean; plan(goal: { act: string; roles?: Record<string, unknown> }, live?: PlanLive): PlanResult };
+export function planner(store: FactStore, options?: { chain?: { type: string; keys: string[] }[]; prefix?: string; roles?: string; about?: string[]; seed?: number | null; chooseLimit?: number }): { methods: object[]; isA(a: string, b: string): boolean; plan(goal: { act: string; roles?: Record<string, unknown> }, live?: PlanLive, options?: { fixed?: Record<string, unknown> }): PlanResult };
 export function readMethods(store: FactStore, prefix?: string): object[];
 export const PLAN_LIMITS: { acts: number; depth: number };
 /** The full motion format (k.motion) as plain objects. */
@@ -657,7 +657,7 @@ export function shapeShare(feature: { shape: string; start_at?: number; peak_at?
 /** The interest model a world holds, or null. */
 export function interestModel(world: World): { appraisals: object[]; features: object[] } | null;
 /** Choice points solved jointly: a seeded weighted sample among the assignments the constraints allow. */
-export function solveChoices(vars: string[], options: { domain: (v: string, partial: Record<string, unknown>) => unknown[]; ok?: (partial: Record<string, unknown>, v?: string) => boolean; weight?: (v: string, value: unknown, partial: Record<string, unknown>) => number; seed?: number; limit?: number }): { values?: Record<string, unknown>; nodes: number; why?: string; deepest?: string | null };
+export function solveChoices(vars: string[], options: { domain: (v: string, partial: Record<string, unknown>) => unknown[]; ok?: (partial: Record<string, unknown>, v?: string) => boolean; weight?: (v: string, value: unknown, partial: Record<string, unknown>) => number; seed?: number | null; limit?: number }): { values?: Record<string, unknown>; nodes: number; why?: string; deepest?: string | null };
 /** The facts a story plan reads, from a world holding k.story and the catalog worlds it names. */
 export function readStory(world: World): object;
 /** A story plan: k.story's elements solved jointly under its constraints. */
@@ -697,7 +697,7 @@ export function alignWorlds(a: World, b: World, options?: { min?: number }): { m
 /** A story then a question: quantities held by owners follow the story; the question is read against them. */
 export function storyState(text: string, options?: { self?: string[]; one?: string[]; negations?: string[]; more?: string[]; fewer?: string[]; times?: Record<string, number>; than?: string[]; start?: string[]; most?: string[]; least?: string[]; prior?: object; verbs?: Record<string, 'set' | 'add' | 'remove' | 'give'>; numbers?: Record<string, number>; pronouns?: string[]; question?: string[]; all?: string[]; skip?: string[] }): { state: Record<string, Record<string, number>>; steps: object[]; answers: { question: string; answer: number | string | null; owner?: string; item: string; why: string }[]; refused: { sentence: string; why: string }[]; unread: string[]; starts: Record<string, number>; unknown: Record<string, boolean>; focus: { owner: string | null; item: string | null } };
 /** A word changed by a language world's ordered suffix rules, irregular forms first. */
-export function inflectBy(world: World, word: string, op?: string, options?: { types?: { rule?: string; irregular?: string; form?: string }; vowels?: string; register?: string; all?: boolean }): string | string[];
+export function inflectBy(world: World, word: string, op?: string, options?: { types?: { rule?: string; irregular?: string; form?: string }; vowels?: string; register?: string; all?: boolean; set?: string }): string | string[];
 /** The article before a word, by the sound it begins with (onsets, else its first letter). */
 export function articleFor(world: World, word: string, options?: { types?: { det?: string; onset?: string }; vowels?: string }): string | null;
 /** The form operator of an aligned pair: the shared runs become variables. */

@@ -5723,3 +5723,14 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Not done: Q85 (3) / Q89 comparative words on a number slot (`core.word role=more|less`): no published words yet in
   w.timeline 3's schema; next release with a toy slot. Q87 (inflectBy on catalog plurals), Q84 (realise), Q88 (planner).
 - Gate: npm test 527 pass / 0 fail; compat 11; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.146.0 — knowledge Q87 (inflectBy), Q84 (realise), Q88 (planner)
+
+- Q87 (/tmp/q87.mjs = the knowledge test's two inflectBy checks on the library's sources): the hand-over table
+  ['iris -> iri'] → []; the catalog's 1,356 head nouns: 37 wrong (14 read as plurals, 23 not back) → 0; taxi → taxis,
+  taxis → taxi. test/en-morph-catalog.test.mjs holds the cases on the pinned catalog.
+- Q84 (/tmp/q84.mjs): realise(m of w.lang.en, 'add a {value} {kind}.', orange/house, { sentence }) → "Add an orange
+  house."; 'add {number} {kind:num=pl}.' 3/mouse → "Add 3 mice."; no kind → null.
+- Q88 (test/plan-procedures.test.mjs): seed null gives the same first solution twice; `{ fixed: { host: 'bob' } }` →
+  host bob; a fixed guest that breaks the vegan match is refused; statement rows by key, history entries by act.
+- Gate: npm test 530 pass / 0 fail; compat 11; pilot same; psys2=0; scan clean; tsc ok.

@@ -116,7 +116,7 @@ export function planner(store, { chain, prefix = 'k.procedures', roles = 'k.acti
     return key === 'kind' || key === 'name' ? [item] : [];
   };
   const kindName = (live, v) => { const t = live.thing(v); return t ? t.kind : v; };
-  const show = (live, item) => { if (item && item.type && item.attrs) return item.attrs.name?.[0] ?? item.attrs.scene?.[0] ?? item.attrs.thing?.[0] ?? JSON.stringify(item.attrs); const t = live.thing(item); return t ? t.id : String(item); }; // a fact by its name (a has-fact by its scene, an obstacle by its thing)
+  const show = (live, item) => { if (item && item.type && item.attrs) return item.attrs.name?.[0] ?? item.attrs.scene?.[0] ?? item.attrs.thing?.[0] ?? JSON.stringify(item.attrs); const t = live.thing(item); if (t) return t.id; if (item && typeof item === 'object') return item.key !== undefined && 'value' in item ? String(item.key) : item.act !== undefined ? String(item.act) : item.id !== undefined ? String(item.id) : JSON.stringify(item); return String(item); }; // a statement row by its key, a history entry by its act (knowledge Q88) // a fact by its name (a has-fact by its scene, an obstacle by its thing)
   const roleValue = (goal, role, g) => { const x = goal.roles?.[role]; return x === undefined ? (g?.default !== undefined ? g.default : undefined) : x; };
 
   function values(ctx, name) { // bounded: bindings name earlier ones (together, upto, equals); the method facts have no cycle
@@ -180,6 +180,7 @@ export function planner(store, { chain, prefix = 'k.procedures', roles = 'k.acti
   // The choice points of a method (`choose=` bindings) solved jointly (Q57): a slot per value, made in order (an unmade
   // one ends the run past choose_min), different within a binding, every hard match checked as soon as what it reads is
   // chosen, soft matches doubling the weight. Returns Map(binding -> [values]) or null.
+  let hostFixed = null; // the choices the host fixed for the plan being made
   function solveChoose(ctx) {
     const chooseB = Object.values(ctx.method.bind).filter((b) => b.choose !== undefined);
     if (!chooseB.length) return new Map();
@@ -190,8 +191,9 @@ export function planner(store, { chain, prefix = 'k.procedures', roles = 'k.acti
     const fixedOf = (p) => { const f = new Map(); for (const b of chooseB) { const vs = slots.filter((x) => x.b === b && p[x.v] !== undefined).map((x) => p[x.v]); if (slots.filter((x) => x.b === b).every((x) => p[x.v] !== undefined)) f.set(b.name, vs.filter((x) => x !== null)); } return f; };
     const own = new Map();
     const domain = (v, p) => {
-      const { b, optional } = slotOf[v];
+      const { b, optional, i } = slotOf[v];
       ctx.env.fixed = fixedOf(p);
+      if (hostFixed && hostFixed[b.name] !== undefined) { const given = [].concat(hostFixed[b.name]); return i <= given.length ? [given[i - 1]] : (optional ? [null] : []); } // a choice the host fixed (plan(goal, live, { fixed })): only that value, still checked
       const all = [...(b.key ? (() => { const bd = { ...b, key: undefined }; const save = ctx.method.bind[b.name]; ctx.method.bind[b.name] = { ...save, choose: undefined, key: undefined }; const r = values(ctx, b.name); ctx.method.bind[b.name] = save; return [...new Set(r.flatMap((x) => keyOf(ctx.live, x, b.key)))]; })() : (() => { const save = ctx.method.bind[b.name]; ctx.method.bind[b.name] = { ...save, choose: undefined }; const r = values(ctx, b.name); ctx.method.bind[b.name] = save; return r; })())];
       own.set(v, all.length);
       return optional ? [...all, null] : all;
@@ -378,8 +380,13 @@ export function planner(store, { chain, prefix = 'k.procedures', roles = 'k.acti
      * The plan for a goal ({ act, roles }) over a live world (a PlanLive): { method, acts,
      * lines, explain, requests, methods, skipped, effects, asks, refused?, tried?, truncated? }.
      */
-    plan(goal, live = new PlanLive({ store })) {
+    plan(goal, live = new PlanLive({ store }), { fixed } = {}) {
       const out = { acts: [], lines: [], explain: [], requests: [], skipped: [], methods: [], effects: [], asks: [] };
+      hostFixed = fixed ?? null;
+      try { return planWith(goal, live, out); } finally { hostFixed = null; }
+    },
+  };
+  function planWith(goal, live, out) {
       const top = choose(goal, live);
       if (!top.chosen) return { ...out, refused: true, tried: top.tried };
       if (top.chosen.asks.length) return { ...out, method: top.chosen.m.name, asks: top.chosen.asks };
@@ -387,8 +394,7 @@ export function planner(store, { chain, prefix = 'k.procedures', roles = 'k.acti
       live.before = [...live.history];
       expand(top.chosen.m, goal, live, 0, out, [top.chosen.m.name]);
       return out;
-    },
-  };
+  }
 }
 
 /** The methods of a knowledge store (the Q44 format under `prefix`). */
@@ -421,8 +427,9 @@ export function readMethods(k, prefix = 'k.procedures') {
  * { why, nodes, deepest } when no assignment satisfies the constraints.
  */
 export function solveChoices(vars, { domain, ok = () => true, weight = () => 1, seed = 1, limit = 20000 } = {}) {
-  const rnd = seeded(seed);
-  const order = (v, cands, partial) => { // weighted draw without replacement: key u^(1/w) (Efraimidis-Spirakis)
+  const rnd = seed === null ? null : seeded(seed);
+  const order = (v, cands, partial) => { // weighted draw without replacement: key u^(1/w) (Efraimidis-Spirakis); seed null: by weight, ties in order (the first solution)
+    if (!rnd) return cands.map((c, i) => [c, Math.max(0, weight(v, c, partial)), i]).filter(([, w]) => w > 0).sort((a, b) => b[1] - a[1] || a[2] - b[2]).map(([c]) => c);
     return cands.map((c) => { const w = Math.max(0, weight(v, c, partial)); return [c, w > 0 ? Math.pow(rnd(), 1 / w) : -1]; })
       .filter(([, k]) => k >= 0).sort((a, b) => b[1] - a[1]).map(([c]) => c);
   };

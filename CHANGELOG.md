@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.146.0
+
+Knowledge Q87, Q84, Q88: where the library fell short of the knowledge repository's local copies.
+
+### Changed
+- `inflectBy`: the singular of a listed singular is itself (bus, iris); rule sets (`set=`, the lemma set by default);
+  `exception=` rules over the language's noun exception lists; `unless_is_singular`; is-plural stems (taxi, taxis).
+  On the catalog: all 1,356 head nouns read both ways and the hand-over table is all right (was 37 wrong).
+- `realise`: plurals of words the dictionary lacks and a / an by the language world (when morphOf had its types);
+  `sentence: true` for a capital ("Add an orange house.", "Add 3 mice.").
+- `planner.plan(goal, live, { fixed })`: choice points fixed by the host, still checked; `seed: null` gives the first
+  solution; a chosen statement row shows by its key, a history entry by its act (no "[object Object]").
+- `solveChoices` with `seed: null`: candidates by weight, ties in order.
+
 ## 0.145.0
 
 `readFrames` reads the catalog's frames (knowledge Q83, reviewer 18:45); knowledge Q85 kit cases 1-2; pin 68e8c8b

@@ -120,3 +120,28 @@ test('std.plan reads choice points (Q57): choose / choose_min, differs, soft, n;
     assert.equal(r.lines.length, g.length, 'the steps expand the chosen values');
   }
 });
+
+test('choice points fixed by the host and the first solution without a seed (knowledge Q88)', () => {
+  const procedures = `@m k.procedures.method name="seat two" act=make
+@g k.procedures.goal method="seat two" role=kind value=table
+@b1 k.procedures.binding method="seat two" name=menu value=vegan
+@b2 k.procedures.binding method="seat two" name=host from=k.toy.guest choose=1
+@b3 k.procedures.binding method="seat two" name=guests from=k.toy.guest choose=2 choose_min=1
+@x1 k.procedures.match method="seat two" binding=guests key=diet n=1 equals=menu
+@x2 k.procedures.match method="seat two" binding=guests key=name n=2 differs=host
+@s1 k.procedures.step method="seat two" n=1 act=make each=guests
+@a1 k.procedures.arg method="seat two" step=1 role=kind binding=guests key=name`;
+  const ids = { method: ['name'], goal: ['method', 'role'], binding: ['method', 'name'], match: ['method', 'binding', 'key', 'n'], step: ['method', 'n'], arg: ['method', 'step', 'role'], condition: ['method', 'n'] };
+  const schema = Object.entries(ids).flatMap(([t, keys]) => keys.map((k, i) => `@${t}${i} core.slot of=k.procedures.${t} key=${k} id=true`)).join('\n');
+  const guests = '@a k.toy.guest name=ann diet=vegan  @b k.toy.guest name=bob diet=meat  @c k.toy.guest name=cy diet=vegan  @d k.toy.guest name=di diet=vegan';
+  const store = factStore([{ id: 'k.procedures', schemaText: schema, shards: [{ text: procedures }] }, { id: 'k.toy', schemaText: '@s core.slot of=k.toy.guest key=name id=true', shards: [{ text: guests }] }, { id: 'k.actions', schemaText: '', shards: [] }]);
+  const first = planner(store, { chain: [], seed: null }).plan({ act: 'make', roles: { kind: 'table' } }, new PlanLive({ store }));
+  const again = planner(store, { chain: [], seed: null }).plan({ act: 'make', roles: { kind: 'table' } }, new PlanLive({ store }));
+  assert.deepEqual(first.chosen, again.chosen, 'seed null: the first solution, the same every time');
+  const P = planner(store, { chain: [] });
+  const host = P.plan({ act: 'make', roles: { kind: 'table' } }, new PlanLive({ store })).chosen.host[0];
+  const fixed = P.plan({ act: 'make', roles: { kind: 'table' } }, new PlanLive({ store }), { fixed: { host: 'bob' } });
+  assert.equal(fixed.chosen.host[0], 'bob', `fixed by the host (seeded: ${host})`);
+  const broken = P.plan({ act: 'make', roles: { kind: 'table' } }, new PlanLive({ store }), { fixed: { guests: ['bob'] } });
+  assert.ok(!broken.chosen?.guests?.includes('bob'), 'a fixed choice that breaks a match is refused');
+});

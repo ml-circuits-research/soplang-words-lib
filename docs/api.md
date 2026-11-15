@@ -1364,9 +1364,12 @@ The functions:
   and read lazily, one file when a word needs it. `read` may be a list of readers (several
   dictionaries of one language, read in place, never merged into a copy): their rows are one
   dictionary, and the first reader's row wins for a lemma in both.
-- `realise(m, template, roles, { dictionary, base })` fills `{role}`, `{role:f=v,...}`
+- `realise(m, template, roles, { dictionary, base, sentence })` fills `{role}`, `{role:f=v,...}`
   (that cell) and `{role@other}` (agreement with another role through unification of their
-  feature bundles).
+  feature bundles, which also takes the number and case written for the other). A word the
+  dictionary lacks takes `num=pl` by the language world's rules, and `a`/`an` takes its form from
+  the next word, when `morphOf` was given that world's types; `sentence: true` starts with a
+  capital ("Add an orange house.", "Add 3 mice.").
 - `splitClitics(m, word)` splits a word at the clitic joiners.
 
 ```js run
@@ -1391,8 +1394,11 @@ knowledge repository's Q44), decomposed into acts over a live world. `factStore(
 reads published worlds (`[{ id, schemaText, shards: [{ text }] }]`) into facts merged by
 identity, read lazily per type. `planner(store, { chain, prefix, roles })` reads the methods
 (`readMethods`). `chain` is `[{ type, keys }]`, what "is a kind of" is, or the store's
-`std.know.chain of= key=` facts. `plan(goal, live)` takes a goal `{ act, roles }` and a
-`PlanLive` (a working copy of the live world: things, history, the world schema's kinds).
+`std.know.chain of= key=` facts. `plan(goal, live, { fixed })` takes a goal `{ act, roles }` and a
+`PlanLive` (a working copy of the live world: things, history, the world schema's kinds);
+`fixed` (`{ binding: value | [values] }`) gives choice points the host decided (still checked:
+one that breaks a match is refused), and `seed: null` gives the first solution, the same every
+time. A chosen statement row is shown by its key, a history entry by its act.
 
 The plan returns:
 - `method`, `methods` (every method used, in order);
@@ -2393,7 +2399,10 @@ plural= read_only=` serve the plural and singular ops only, each in its own dire
 forms `lemma= form= vform=|degree=|num=` serve the op's cell (past, ing, comparative and so
 on); one marked `read_only=yes` or `variant=yes` is never written. Two pairs of one word in two
 registers (`register=classical|common`: cacti, cactuses) are written as the common one unless
-`register` is asked; `all: true` gives every form, for a reader. A rule with keys it does
+`register` is asked; `all: true` gives every form, for a reader. Rules in sets (`set=act|lemma`)
+are read in the lemma set unless `set` is asked; a rule with `exception=` applies to the words of
+that list (`<lang>.noun.exception kind=<name>-suffix|<name>-word`), `unless_is_singular=yes` spares a
+word in -is unless it is an is-plural, and the singular of a listed pair is itself (bus, iris). A rule with keys it does
 not know is not applied. `articleFor` gives the
 determiner whose `before=` is the sound the word begins with, by the longest `onset`
 (`begins= sound=`) that matches, else by its first letter. The types default to
@@ -2513,8 +2522,8 @@ print(storyPlan(kb).plan);
 Choice points solved jointly (std.plan). Variables are decided in order. `domain(v,
 partial)` gives the candidates of a variable, given the choices made before it. `ok(partial)`
 checks the hard constraints, and false prunes the branch. `weight` orders the candidates by
-a seeded weighted draw, so the first solution found is a weighted sample; weight 0 is never
-drawn. The search is bounded by `limit` nodes. The result is `{ values, nodes }`, or `{ why,
+a seeded weighted draw, so the first solution found is a weighted sample (with `seed: null`, by
+weight, ties in the given order); weight 0 is never drawn. The search is bounded by `limit` nodes. The result is `{ values, nodes }`, or `{ why,
 nodes, deepest }` with the variable that could not be filled.
 
 ```js run

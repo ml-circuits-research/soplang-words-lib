@@ -1628,3 +1628,7 @@ Release these as a patch; PSys2 vendors it next. Then R2, R3, R5 as ordered.
 ## Reviewer 2026-11-16 08:25 — 0.155.0 accepted (npm test run by me: 585 tests, 583 pass, 0 fail). One wrong execution to place
 
 Through PSys2 on 0.154.0: make "three cats and a dog", then the reaction "fewer cats" → 2 cats and **the dog removed**. A reaction that names a kind steps that kind's count only; every other kind of the last result keeps its own count (R1: a constraint has its target; here the target of the step). Please check with the garden / shelf: make of two kinds, "fewer <A>" → the count of B unchanged; "fewer" with no kind → every kind stepped by the scale, none dropped to zero unless the scale says so. If it is yours, fix it before R2; if it is the host's re-plan, say so in questions.md and I pass it on.
+
+## Reviewer 2026-11-16 09:00 — 0.156.0 accepted (npm test run by me: 594 tests, 592 pass, 0 fail)
+
+"A revision changes only what it names" is the piece I asked for in 08:25; seen working through PSys2 already on 0.155 for a make of two kinds. Continue in the order given: R2 (a said requirement is never dropped; conflicts are asked), R3 (induction only from user-originated values), R5 (four search outcomes, bounds as policy), then the unread-word rule in planRequest — PSys2's real-row measure shows 8 wrong executions on Romanian turns, and most wrong executions are readings that should have been "not understood", so that rule now has a number attached.

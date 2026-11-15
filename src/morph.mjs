@@ -181,18 +181,22 @@ export function dictionary({ read, prefix = 1, fold: f = (s) => s }) {
 /**
  * Realise a template: `{role}` is the role's lemma in its base form, `{role:f=v,..}` in
  * that cell, `{role@other}` agrees with another role (its gender and number, through
- * unification of their feature bundles). Roles are lemmas; their class and gender come
- * from the dictionary. Returns the sentence, or null when a form cannot be made.
+ * unification of their feature bundles, and the other's number and case as the template writes them). A cell left
+ * partly unsaid is the class's first cell that agrees with what is said (its unmarked one). Roles are lemmas; their
+ * class and gender come from the dictionary. Returns the sentence, or null when a form cannot be made.
  */
 export function realise(m, template, roles, { dictionary, base = {}, agree = ['gender', 'num'] } = {}) {
   const info = (lemma) => dictionary?.lookup(lemma) ?? null;
   let failed = false;
-  const text = template.replace(/\{([\w.]+)(?::([^}@]*))?(?:@(\w+))?\}/g, (_, role, cells, other) => {
+  const SLOT = /\{([\w.]+)(?::([^}@]*))?(?:@(\w+))?\}/g;
+  const cellsOf = new Map([...template.matchAll(SLOT)].map((x) => [x[1], Object.fromEntries((x[2] || '').split(',').filter(Boolean).map((y) => y.split('=')))])); // each role's cells as the template writes them
+  const text = template.replace(SLOT, (_, role, cells, other) => {
     const lemma = roles[role];
     if (lemma === undefined) { failed = true; return ''; }
     const e = info(lemma);
     if (!e) return lemma; // a word the dictionary lacks (a name): as given
     let feat = { ...base, ...Object.fromEntries((cells || '').split(',').filter(Boolean).map((x) => x.split('='))) };
+    if (other) for (const k of ['num', 'case']) if (feat[k] === undefined && cellsOf.get(other)?.[k] !== undefined) feat[k] = cellsOf.get(other)[k]; // agreement takes the other's number and case as written ("{art@thing} {thing:case=gendat}": unei)
     if (other) { // agreement: this word's bundle unified with the other's
       const o = info(roles[other]);
       let s = EMPTY;
@@ -207,7 +211,9 @@ export function realise(m, template, roles, { dictionary, base = {}, agree = ['g
     const cls = m.classes.get(e.class);
     if (!cls) return lemma;
     // the cell that fits: every feature the class's cells use, taken from feat
-    const cell = [...cls.cells.values()].find((c) => Object.entries(c.feat).every(([k, v]) => feat[k] === v));
+    const all = [...cls.cells.values()];
+    const cell = all.find((c) => Object.entries(c.feat).every(([k, v]) => feat[k] === v)) // the cell that fits every feature
+      ?? all.find((c) => Object.entries(feat).every(([k, v]) => !(k in c.feat) || c.feat[k] === v)); // else the class's first cell that agrees with the features given: its unmarked one
     const g = cell ? generate(m, lemma, e.class, cell.feat) : null;
     if (g === null) { failed = true; return ''; }
     return g;

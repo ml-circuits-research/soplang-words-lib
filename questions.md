@@ -402,3 +402,13 @@ repository publish `w.lang.en.reply act= text=` for make / remove / change / und
 indefinite article as a determiner fact of w.lang.ro.det chosen by gender) would let the library say it without
 knowing Romanian. Remove already works with the hand dictionary ("Am șters casa"). Non-blocking: until then the
 library's English stays.
+
+## Q79 ([KNOW], composed replies): the plural rules of w.lang.ro and w.lang.en as facts
+
+w.lang.ro.reply has `count=one|few|other` (thank you: "Am adăugat 3 mese." / "20 de mese." both read in 0.134). Which
+class a number is in is CLDR's plural rule, i.e. language data. The library reads `${lang}.count class= rule=` (CLDR's
+rule syntax: n, i, v, f, t, `%`, `=`, `!=`, ranges `a..b`, lists, `and`, `or`; the first rule that holds, else
+`other`). Asked: `w.lang.ro.count` (one: `i = 1 and v = 0`; few: `v != 0 or n = 0 or n % 100 = 2..19`) and
+`w.lang.en.count` (one: `i = 1 and v = 0`). Until then a Romanian 3 is `other` ("3 de mese"). Also: a kind's word in
+each language (w.seating.table → "table" / "masă"): the schema's core.word is English; the kit takes a host
+`wordOf(type, lang)` until a language world maps kinds to its lemmas.

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.134.0
+
+Composed replies in two languages (reviewer 14:45 item 2), issue bindings (knowledge Q78), the indefinite genitive
+(PSys2 Q25 L1); knowledge pin 2a3edf3.
+
+### Changed
+- `replyFrom(language, key, roles, options)`: by reply name or act, the plural class of `roles.number` (`count=`),
+  `{art}` from the language's indefinite article, plurals by the language's rules when the dictionary lacks them.
+  The kit's replies (done acts, undo, not understood) come from w.lang.en.reply / w.lang.ro.reply.
+- `realise`: an agreeing word takes the number and case the template gives the word it agrees with ("în forma unei
+  case"); a cell left partly unsaid is the class's first agreeing cell.
+- An issue in `check()` carries its rule's bindings (`bindings`).
+- `listSums` takes `tendered` as an option (w.list 4 has no `tendered`: money handed over is a story event).
+
+### New
+- `countClass(language, n)`: CLDR plural rules read from `${lang}.count` facts.
+
 ## 0.133.0
 
 One World per world, and refusal of what does not load (reviewer 14:45 items 3 and 4; the owner's isolation decision).

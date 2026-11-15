@@ -608,7 +608,7 @@ export class World {
     } finally {
       this._rollback(mark);
     }
-    const issues = this.ofType('core.issue').map((i) => ({ id: i.id, rule: (i.attrs.rule || [])[0]?.slice(1), about: (i.attrs.about || []).map((v) => v.slice(1)), ...(i.attrs.key ? { key: i.attrs.key[0] } : {}), why: i.attrs.why ? str(i.attrs.why[0]) : undefined }));
+    const issues = this.ofType('core.issue').map((i) => { const rule = (i.attrs.rule || [])[0]?.slice(1), why = i.attrs.why ? str(i.attrs.why[0]) : undefined, vars = this._issueVars?.get(`${rule}\u0001${why}`); return { id: i.id, rule, about: (i.attrs.about || []).map((v) => v.slice(1)), ...(i.attrs.key ? { key: i.attrs.key[0] } : {}), why, ...(vars ? { bindings: vars } : {}) }; }); // an issue carries its rule's bindings, so a language world can word it (knowledge Q78)
     for (const j of res.openJoins || []) issues.push({ id: j.id, key: j.key, kind: 'open-join', type: j.type, value: j.value, why: `${j.value} is not yet the ${j.by} of a ${j.type} wire` }); // reported, not refused
     return { ok: !res.violations.length, violations: res.violations, issues };
   }
@@ -1959,7 +1959,7 @@ export class World {
       const attrs = {};
       prov.ties = undefined;
       for (const k of Object.keys(t.attrs)) {
-        if (rule.soft && k === 'why') { attrs.why = [quote(this._say(str(t.attrs.why[0]), rule, s).text)]; continue; }
+        if (rule.soft && k === 'why') { const said = this._say(str(t.attrs.why[0]), rule, s); attrs.why = [quote(said.text)]; if (said.vars) (this._issueVars ||= new Map()).set(`${rule.id}\u0001${said.text}`, said.vars); continue; } // the bindings kept for the issue's report (knowledge Q78)
         for (const v of t.attrs[k]) { // bounded: the values of one template key
           const tied = isVar(v) ? walk(v + TIES, s) : v;
           if (tied[0] === LIST) (prov.ties ||= {})[k] = tied.slice(1).split(LIST);

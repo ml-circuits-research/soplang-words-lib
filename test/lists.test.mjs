@@ -12,17 +12,17 @@ const priceOf = (e) => prices[String(e.attrs.text[0]).replace(/"/g, '')];
 test('listSums on the published w.list: the change of the real shop turns, short money, the list meant', { skip: !worldsDir() && 'offline' }, () => {
   const w = new World();
   assert.ok(w.load(['@acts core.use world=std.acts', worldText('w.list')].join('\n')).ok);
-  w.tell('@l1 w.list.list name=shop sort=shopping tendered=10 currency=RON\n@e1 w.list.item text=puzzle list=$l1'); // "I want a puzzle and I pay 10 lei. What is the change?"
-  assert.deepEqual([listSums(w, listMeant(w), { priceOf }).total, listSums(w, 'l1', { priceOf }).change], [7, 3]);
-  w.tell('@l2 w.list.list name=pencils sort=shopping tendered=10\n@e2 w.list.item text=pencil quantity=2 list=$l2'); // "I want 2 pencils and I give the cashier 10 lei"
-  assert.equal(listSums(w, listMeant(w), { priceOf }).change, 6, 'quantity × price; the list made last is the one meant');
-  w.tell('@l3 w.list.list name=toys tendered=20 budget=15\n@e3 w.list.item text=ball list=$l3\n@e4 w.list.item text=pencil list=$l3'); // "a ball and a pencil and pay with 20 lei"
-  const s = listSums(w, 'l3', { priceOf });
+  w.tell('@l1 w.list.list name=shop sort=shopping currency=RON\n@e1 w.list.item text=puzzle list=$l1'); // "I want a puzzle and I pay 10 lei. What is the change?"
+  assert.deepEqual([listSums(w, listMeant(w), { priceOf }).total, listSums(w, 'l1', { priceOf, tendered: 10 }).change], [7, 3], 'the money paid is the story\'s event, given');
+  w.tell('@l2 w.list.list name=pencils sort=shopping\n@e2 w.list.item text=pencil quantity=2 list=$l2'); // "I want 2 pencils and I give the cashier 10 lei"
+  assert.equal(listSums(w, listMeant(w), { priceOf, tendered: 10 }).change, 6, 'quantity × price; the list made last is the one meant');
+  w.tell('@l3 w.list.list name=toys budget=15\n@e3 w.list.item text=ball list=$l3\n@e4 w.list.item text=pencil list=$l3'); // "a ball and a pencil and pay with 20 lei"
+  const s = listSums(w, 'l3', { priceOf, tendered: 20 });
   assert.deepEqual([s.total, s.change, s.left, s.affordable], [11, 9, 4, true]);
-  w.tell('@l4 w.list.list name=short tendered=5\n@e5 w.list.item text=ball list=$l4');
-  assert.deepEqual([listSums(w, 'l4', { priceOf }).short, listSums(w, 'l4', { priceOf }).why], [4, '4 short']);
+  w.tell('@l4 w.list.list name=short\n@e5 w.list.item text=ball list=$l4');
+  assert.deepEqual([listSums(w, 'l4', { priceOf, tendered: 5 }).short, listSums(w, 'l4', { priceOf, tendered: 5 }).why], [4, '4 short']);
   w.tell('@e6 w.list.item text=kite list=$l4');
-  assert.match(listSums(w, 'l4', { priceOf }).why, /no price for kite/, 'a total is not guessed');
+  assert.match(listSums(w, 'l4', { priceOf, tendered: 5 }).why, /no price for kite/, 'a total is not guessed');
   assert.equal(listMeant(w, { name: 'shop' }).id, 'l1');
 });
 

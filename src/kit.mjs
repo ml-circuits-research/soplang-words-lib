@@ -104,7 +104,7 @@ export function readTurn(set, text, context = {}) {
   if (!r.best) {
     const known = typedLexicon(set.schema);
     const unread = tokens.filter((t) => !known.has(t));
-    return { status: 'not-understood', reading: { frame: null, unread: unread.length ? unread : tokens, mood, complete: false }, reply: `I did not understand ${(unread.length ? unread : tokens).map((t) => `"${t}"`).join(', ')}.` };
+    return { status: 'not-understood', reading: { frame: null, unread: unread.length ? unread : tokens, mood, complete: false }, reply: notUnderstood(set, unread.length ? unread : tokens, context) };
   }
   const read0 = { mood, complete: mood !== 'statement' && mood !== 'fragment' };
   if (!read0.complete) return { status: 'not-understood', reading: { frame: r.best.frame, act: r.best.act, roles: r.best.roles, unread: [], ...read0 }, reply: mood === 'fragment' ? 'I did not understand: that is only a fragment.' : 'I took that as a statement, not a request.' };
@@ -119,10 +119,10 @@ export function readTurn(set, text, context = {}) {
   if (!b.request && !b.timeline && !b.confirm && !b.unread.length) b.unread = tokens; // nothing bound: every word is unread
   const reading = { frame: f.frame, act: f.act, roles: f.roles, unread: b.unread, ...read0, complete: !b.unread.length && !b.why };
   if (b.confirm) return { status: 'ask', reading, reply: `There is no ${b.confirm.args[b.confirm.key]} ${label(b.confirm.args.kind)} yet. Shall I make it?`, asks: [{ key: b.confirm.place, value: b.confirm.args[b.confirm.key], confirm: { action: 'make', args: b.confirm.args } }] };
-  if (!reading.complete) return { status: 'not-understood', reading, reply: b.placeless ? `${b.placeless}.` : b.unread.length ? `I did not understand ${b.unread.map((w) => `"${w}"`).join(', ')}.` : b.why };
+  if (!reading.complete) return { status: 'not-understood', reading, reply: b.placeless ? `${b.placeless}.` : b.unread.length ? notUnderstood(set, b.unread, context) : b.why };
   if (b.timeline) { // undo / redo: a step of the live world's timeline
     const n = b.timeline.n ?? 1, res = stepTimeline(set, b.timeline.act, n);
-    return { status: res.ok ? 'done' : 'refused', reading, request: { action: b.timeline.act, args: { n } }, reply: sayAct(set, b.timeline.act, { ok: res.ok, n }, context) };
+    return { status: res.ok ? 'done' : 'refused', reading, request: { action: b.timeline.act, args: { n } }, reply: res.ok ? (replyFrom(set.language, `done.${b.timeline.act}`, {}, { lang, type: context.replies, dictionary: context.replyDictionary }) ?? sayAct(set, b.timeline.act, { ok: true, n }, context)) : sayAct(set, b.timeline.act, { ok: false, n }, context) };
   }
   const request = b.request;
   // a required key the request leaves open is asked before anything is made: never a thing with a hole in it
@@ -259,9 +259,12 @@ function sayAct(set, act, { request, result, ok = true, n, thingType } = {}, con
   const lang = context.lang ?? 'w.lang.en', L = set.language;
   const kindType = request?.args?.kind ?? thingType ?? (result?.thing ? findThing(set, result.thing)?.thing.type : null) ?? (request?.args?.thing ? findThing(set, request.args.thing)?.thing.type : null);
   const count = Array.isArray(result?.things) ? result.things.length : Number(request?.args?.amount ?? 1);
-  const word = kindType ? labelOf(set, kindType) : null;
-  const roles = { kind: word, amount: count > 1 ? count : undefined, n: n > 1 ? n : undefined };
-  const composed = replyFrom(L, act, roles, { lang, type: context.replies, dictionary: context.replyDictionary });
+  const word = kindType ? (context.wordOf?.(kindType, lang) ?? labelOf(set, kindType)) : null; // a kind in the user's language: the host's wordOf, else the schema's word
+  const names = { make: 'done.add', ...(context.replyNames || {}) }; // which reply fact says an act (make: "I added a list."; a drawing host names done.make)
+  const roles = act === 'make' ? { kind: word } : { thing: word };
+  if (count > 1) roles.number = count;
+  if (act === 'change' && request?.args?.value !== undefined) roles.value = request.args.value;
+  const composed = replyFrom(L, names[act] ?? `done.${act}`, roles, { lang, type: context.replies, dictionary: context.replyDictionary }) ?? replyFrom(L, act, roles, { lang, type: context.replies, dictionary: context.replyDictionary });
   if (composed) return composed;
   const plural = (w) => inflectBy(L, w, 'plural', { types: { rule: `${lang}.inflect`, irregular: `${lang}.irregular` } });
   const np = !word ? 'that' : count > 1 ? `${count} ${word.split(' ').map((x, i, a) => (i === a.length - 1 ? plural(x) : x)).join(' ')}` : `${articleFor(L, word, { types: { det: `${lang}.det`, onset: `${lang}.onset` } }) ?? 'a'} ${word}`;
@@ -273,6 +276,12 @@ function sayAct(set, act, { request, result, ok = true, n, thingType } = {}, con
   return `I did that: ${act} ${np}.`;
 }
 
+/** The not-understood reply naming the words: the language world's `not_understood` fact, else English. */
+function notUnderstood(set, words, context = {}) {
+  const list = words.map((w) => `"${w}"`).join(', ');
+  return replyFrom(set.language, 'not_understood', { words: list }, { lang: context.lang ?? 'w.lang.en', type: context.replies }) ?? `I did not understand ${list}.`;
+}
+
 /** Types in a library sentence said by their words. */
 const labelled = (set, text) => text.replace(/\b([a-z]+(?:\.[a-z_]+)+)\b/g, (m) => (set.schema._compiled().types.has(m) ? labelOf(set, m) : m));
 
@@ -282,23 +291,56 @@ function labelOf(set, type) {
 }
 
 /**
- * A reply in the user's language from the language world's reply facts (`type`, default `${lang}.reply`: act=,
- * text= with {role} slots, realised by std.morph): the fact for the act whose slots are all given, the most
- * slots first; `dictionary` (std.morph's) gives the lemmas' classes and genders for the cells and agreement. Null
- * when the language world has none: the caller keeps the library's sentence.
+ * The plural class of a number by the language world's CLDR rules (`${lang}.count class= rule=`, CLDR's syntax over
+ * n, i, v, f, t with `%`, `=`, `!=`, ranges `a..b`, lists, `and`, `or`); without rules: one for 1, else other.
  */
-export function replyFrom(language, act, roles, { lang = 'w.lang.en', type, dictionary } = {}) {
+export function countClass(language, n, { lang = 'w.lang.en', type } = {}) {
+  const rules = language?.ofType(type ?? `${lang}.count`) ?? [];
+  const num = Number(n);
+  const str = String(n), frac = str.includes('.') ? str.split('.')[1] : '';
+  const ops = { n: Math.abs(num), i: Math.trunc(Math.abs(num)), v: frac.length, f: Number(frac || 0), t: Number(frac.replace(/0+$/, '') || 0) };
+  const holds = (rule) => String(rule).split(/\s+or\s+/).some((alt) => alt.split(/\s+and\s+/).every((c) => { // bounded: the rule's terms
+    const m = c.trim().match(/^([nivft])(?:\s*%\s*(\d+))?\s*(!?=)\s*(.+)$/);
+    if (!m) return false;
+    const x = m[2] ? ops[m[1]] % Number(m[2]) : ops[m[1]];
+    const any = m[4].split(',').some((r) => { const [lo, hi] = r.trim().split('..').map(Number); return hi === undefined ? x === lo : x >= lo && x <= hi && Number.isInteger(x); });
+    return m[3] === '=' ? any : !any;
+  }));
+  for (const r of rules) if (r.attrs.rule && holds(valueText(r.attrs.rule[0]))) return valueText(r.attrs.class[0]); // bounded: the rules
+  return rules.length ? 'other' : num === 1 ? 'one' : 'other';
+}
+
+/**
+ * A reply in the user's language from the language world's reply facts (`type`, default `${lang}.reply`: name=,
+ * count=, act=, role=, text= in std.morph's template syntax; reviewer 14:45 item 2, the knowledge repository's
+ * w.lang.en.reply and w.lang.ro.reply). `key` is a reply name ("done.add", "not_understood") or an act. The fact
+ * whose roles are all given and whose plural class (`count`) is the class of `roles.number` (1 when none) by
+ * `countClass`, the most roles first. `{art}` is the language's indefinite article (a `${lang}.det kind=article
+ * def=no` lemma), agreeing by realise; a plural the dictionary cannot make is made by the language world's
+ * inflection rules; a/an by its onsets. `dictionary` (std.morph's) gives classes and genders. Null when the language
+ * world has none: the caller keeps its own sentence.
+ */
+export function replyFrom(language, key, roles, { lang = 'w.lang.en', type, dictionary, count } = {}) {
   if (!language) return null;
   const T = type ?? `${lang}.reply`;
   const given = Object.keys(roles).filter((k) => roles[k] != null && roles[k] !== '');
   const slotsOf = (text) => [...new Set([...text.matchAll(/\{([\w.]+)(?::[^}@]*)?(?:@\w+)?\}/g)].map((m) => m[1]))]; // realise's syntax: {role}, {role:cells}, {role@agrees_with}
-  const fit = language.ofType(T).map((f) => ({ act: valueText(f.attrs.act?.[0]), text: valueText(f.attrs.text?.[0] ?? '') }))
-    .filter((f) => f.act === act && slotsOf(f.text).every((x) => given.includes(x)))
-    .sort((x, y) => slotsOf(y.text).length - slotsOf(x.text).length)[0];
+  const cls = count ?? countClass(language, roles.number ?? 1, { lang });
+  const facts = language.ofType(T).map((f) => ({ name: f.attrs.name ? valueText(f.attrs.name[0]) : null, act: f.attrs.act ? valueText(f.attrs.act[0]) : null, count: f.attrs.count ? valueText(f.attrs.count[0]) : null, text: valueText(f.attrs.text?.[0] ?? '') }));
+  const named = facts.filter((f) => f.name === key), pool = named.length ? named : facts.filter((f) => f.act === key);
+  const needs = (f) => slotsOf(f.text).filter((x) => x !== 'art');
+  const fit = pool.filter((f) => (!f.count || f.count === cls) && needs(f).every((x) => given.includes(x)))
+    .sort((x, y) => needs(y).length - needs(x).length)[0];
   if (!fit) return null;
-  const m = memoPerWorld(language, `morph|${lang}|reply`, () => morphOf(language, { types: Object.fromEntries([['cls', 'class'], ['ending', 'ending'], ['irregular', 'irregular'], ['fold', 'fold'], ['split', 'split'], ['vowel', 'vowel']].map(([k, v]) => [k, `${lang}.${v}`]).concat([['template', T]])) }));
-  const out = realise(m, fit.text, Object.fromEntries(given.map((k) => [k, String(roles[k])])), { dictionary });
-  return out ? out.charAt(0).toUpperCase() + out.slice(1) : null;
+  const m = memoPerWorld(language, `morph|${lang}|reply`, () => morphOf(language, { types: Object.fromEntries([['cls', 'class'], ['ending', 'ending'], ['irregular', 'irregular'], ['fold', 'fold'], ['split', 'split'], ['vowel', 'vowel']].map(([k, v]) => [k, `${lang}.${v}`]).filter(([k, t]) => k !== 'irregular' || language.ofType(t).every((x) => x.attrs.lemma && x.attrs.form)).concat([['template', T]])) }));
+  const r = Object.fromEntries(given.map((k) => [k, String(roles[k])]));
+  if (slotsOf(fit.text).includes('art') && r.art === undefined) { const a = language.ofType(`${lang}.det`).find((d) => valueText(d.attrs.kind?.[0]) === 'article' && valueText(d.attrs.def?.[0]) === 'no'); if (a) r.art = valueText(a.attrs.lemma?.[0] ?? a.attrs.form?.[0]); }
+  let text = fit.text;
+  for (const x of [...text.matchAll(/\{(\w+):num=pl\}/g)]) if (!dictionary?.lookup(r[x[1]])) { r[x[1]] = String(r[x[1]]).split(' ').map((w, i, all) => (i === all.length - 1 ? inflectBy(language, w, 'plural', { types: { rule: `${lang}.inflect`, irregular: `${lang}.irregular` } }) : w)).join(' '); text = text.replace(x[0], `{${x[1]}}`); } // a plural the dictionary cannot make: the language's rules
+  let out = realise(m, text, r, { dictionary });
+  if (!out) return null;
+  out = out.replace(/\b(a|an) ([A-Za-z][\w-]*)/g, (all, _a, w) => `${articleFor(language, w, { types: { det: `${lang}.det`, onset: `${lang}.onset` } }) ?? _a} ${w}`);
+  return out.charAt(0).toUpperCase() + out.slice(1);
 }
 
 /** What a turn addressed to `owner` may change: that world and the session worlds the host named (`changed` entries). */
@@ -332,7 +374,7 @@ export function openSession(set, context = {}) {
     for (const act of ['undo', 'redo']) { // bounded: two timeline acts
       if (!timeline[act].has(t)) continue;
       const r = stepTimeline(set, act, 1);
-      const reply = r.ok ? (replyFrom(L, act, {}, { lang, type: context.replies, dictionary: context.replyDictionary }) ?? (act === 'undo' ? 'I took the last step back.' : 'I put it back.')) : (act === 'undo' ? 'There is nothing to undo.' : 'There is nothing to redo.');
+      const reply = r.ok ? (replyFrom(L, `done.${act}`, {}, { lang, type: context.replies, dictionary: context.replyDictionary }) ?? (act === 'undo' ? 'I took the last step back.' : 'I put it back.')) : (act === 'undo' ? 'There is nothing to undo.' : 'There is nothing to redo.');
       return done({ status: r.ok ? 'done' : 'refused', text, reading: { act, unread: [], mood: 'imperative', complete: true }, reply });
     }
     const p = s.pending;

@@ -1704,11 +1704,12 @@ a tree
 ### listSums(world, list, options?) and listMeant(world, options?)
 
 The sums of a list, computed and never stored (w.list: the total, what is left, the change,
-whether it can be bought). `listSums(world, list, { itemType, link, priceOf, all })` gives
+whether it can be bought). `listSums(world, list, { itemType, link, priceOf, all, tendered })` gives
 `{ list, entries: [{ id, text, quantity, price, amount }], total, missing, currency, budget?,
 left?, affordable?, tendered?, change?, short?, why? }`. An entry's amount is its quantity (1
 when none) times its price (its own, else `priceOf(entry)`: prices are the application's data).
-Only open entries count unless `all`. `change` is tendered − total, `short` is what is missing
+Only open entries count unless `all`. The money handed over (`tendered`) is an event of the
+story, such as a pay event, given by the caller. `change` is tendered − total, `short` is what is missing
 when less was handed over, and `left` is budget − total. When an entry has no price, the total is
 not guessed: `total` is null with `why`. `listMeant(world, { type, name, sort })` is the list a
 request means when it names none: the one called `name`, else the one made last. The types and
@@ -1717,8 +1718,8 @@ milk done?") is `world.why(id, key)`.
 
 ```js run
 const w = new World();
-w.tell('@l lst name=shop tendered=10\n@a ent text=puzzle list=$l price=7');
-print(listSums(w, 'l', { itemType: 'ent' }).change);
+w.tell('@l lst name=shop\n@a ent text=puzzle list=$l price=7');
+print(listSums(w, 'l', { itemType: 'ent', tendered: 10 }).change);
 ```
 
 ```output
@@ -1832,7 +1833,7 @@ readTurn(set, 'add 2 apples to my shopping list'); // { status: 'done', request:
 readTurn(set, 'make a list');                      // { status: 'ask', asks: [{ key: 'name' }], reply: 'What name?' }: nothing made
 ```
 
-### openSession(set, context?) and replyFrom(language, act, roles, options?)
+### openSession(set, context?), replyFrom(language, key, roles, options?) and countClass(language, n, options?)
 
 A session over a world set: the pending question and the slot its answer fills, and the
 timeline. `openSession(set, context)` returns `{ set, pending, turns, say(text) }`. A required
@@ -1845,17 +1846,26 @@ list yet. Shall I make it?") is answered by the language world's yes and no
 language world's undo and redo phrases (`w.lang.en.phrase name=undo|redo`) step the live world's
 timeline back and forward; one turn is one step.
 
-`replyFrom(language, act, roles, { lang, type, dictionary })` says an act in the user's language
-from the language world's reply facts (`type`, default `${lang}.reply`, with `act=` and `text=`
-in std.morph's template syntax). It takes the fact whose slots are all given, the one with the
-most slots first. Null when there is none: `readTurn` then keeps the library's sentence. With a
-Romanian dictionary, `replyFrom(ro, 'remove', { thing: 'casă' }, { lang: 'w.lang.ro', type:
-'w.lang.ro.template', dictionary })` gives "Am șters casa".
+`replyFrom(language, key, roles, { lang, type, dictionary, count })` says an act in the user's
+language from the language world's reply facts (`type`, default `${lang}.reply`: `name=`,
+`count=`, `act=`, `role=`, `text=` in std.morph's template syntax). `key` is a reply name
+(`done.add`, `not_understood`) or an act. It takes the fact whose roles are all given and whose
+plural class is the class of `roles.number`, the one with the most roles first. `{art}` is the
+language's indefinite article, agreeing with the word it names; a plural the dictionary cannot
+make comes from the language world's inflection rules. Null when there is none. With the
+Romanian dictionary, `replyFrom(ro, 'done.remove', { thing: 'masă' }, { lang: 'w.lang.ro',
+dictionary })` gives "Am șters masa", and `done.add` with `{ kind: 'masă', number: 20 }` gives
+"Am adăugat 20 de mese". `readTurn` says make with `done.add` (a host names others in
+`context.replyNames`) and a kind in the user's language through `context.wordOf(type, lang)`.
+
+`countClass(language, n, { lang })` is the plural class of a number by the language world's
+CLDR rules (`${lang}.count class= rule=`, with n, i, v, f, t, `%`, ranges, `and`, `or`); without
+rules, one for 1 and other otherwise.
 
 ```js run
 const L = new World();
-L.load('@t core.type of=w.lang.en.reply\n@r w.lang.en.reply act=make text="I made a new {kind}."');
-print(replyFrom(L, 'make', { kind: 'list' }));
+L.load('@t core.type of=w.lang.en.reply\n@r w.lang.en.reply name=done.add act=make text="I made a new {kind}."');
+print(replyFrom(L, 'done.add', { kind: 'list' }));
 print(replyFrom(L, 'remove', { thing: 'list' }));
 ```
 

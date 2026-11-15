@@ -23,9 +23,10 @@ export function listMeant(world, { type = 'w.list.list', name, sort } = {}) {
  * (1 when none) × price (its own, else `priceOf(entry)`); only open entries count unless `all`. `change` is
  * tendered − total, `short` what is missing when less was tendered; `left` is budget − total. With an entry
  * priced by nothing the total is not known (`why`). Options: `itemType` ('w.list.item'), `link` ('list'),
- * `priceOf(entry) -> number | undefined`, `all`.
+ * `priceOf(entry) -> number | undefined`, `all`, `tendered` (the money handed over: an event of the story, such as a
+ * pay event of storyState, not a key of the list since w.list 4).
  */
-export function listSums(world, list, { itemType = 'w.list.item', link = 'list', priceOf, all = false } = {}) {
+export function listSums(world, list, { itemType = 'w.list.item', link = 'list', priceOf, all = false, tendered: paid } = {}) {
   const L = typeof list === 'string' ? world.get(list.replace(/^\$/, '')) : list;
   if (!L) return { why: 'no list' };
   const entries = world.ofType(itemType).filter((e) => (e.attrs[link] || []).some((v) => valueText(v).replace(/^\$/, '') === L.id) && (all || valueText(e.attrs.status?.[0] ?? 'open') !== 'done'))
@@ -37,7 +38,7 @@ export function listSums(world, list, { itemType = 'w.list.item', link = 'list',
   const out = { list: L.id, entries, missing: missing.map((x) => x.text), currency: valueText(L.attrs.currency?.[0] ?? '') || null };
   if (missing.length) return { ...out, total: null, why: `no price for ${missing.map((x) => x.text).join(', ')}` };
   out.total = +entries.reduce((s, x) => s + x.amount, 0).toFixed(2);
-  const budget = num(L.attrs.budget?.[0]), tendered = num(L.attrs.tendered?.[0]);
+  const budget = num(L.attrs.budget?.[0]), tendered = paid !== undefined ? num(paid) : num(L.attrs.tendered?.[0]); // money handed over is an event of the story (a pay event), given; a list of an older w.list may hold it
   if (budget !== undefined) Object.assign(out, { budget, left: +(budget - out.total).toFixed(2), affordable: out.total <= budget });
   if (tendered !== undefined) Object.assign(out, tendered >= out.total ? { tendered, change: +(tendered - out.total).toFixed(2) } : { tendered, short: +(out.total - tendered).toFixed(2), why: `${+(out.total - tendered).toFixed(2)} short` });
   return out;

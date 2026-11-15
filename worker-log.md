@@ -5577,3 +5577,19 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Gate: npm test 525 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
 - Not done: references across worlds (a w.tasks task naming a w.list list holds `$id` of another World; not checked
   there); passive worlds; effects for the page (item 5).
+
+## 0.134.0 — reviewer 14:45 item 2 (composed replies), knowledge Q78 (issue bindings), PSys2 Q25 L1; pin 2a3edf3
+
+- Pin moved b20eeeb → 2a3edf3 (w.lang.en.reply, w.lang.ro.reply, w.lang.en.fn, w.list 4). w.list 4 dropped
+  `tendered`: listSums takes it as an option (test/lists.test.mjs passes it; money handed over is a story event).
+- lists app now: "weekly" → "I added a list."; "undo" → "I undid the last change."; "make a purple dragon" → "I did
+  not understand: "purple", "dragon"." (w.lang.en.reply done.add, done.undo, not_understood); seating: "I added 2
+  tables.", "I removed the guest.".
+- Romanian with the hand dictionary (test/kit.test.mjs): done.add casă → "Am adăugat o casă."; done.remove masă →
+  "Am șters masa."; done.change casă roșu → "Casa este acum roșie."; done.make.value cerc roșu → "Am desenat un cerc
+  roșu."; with toy CLDR rules 3 → "Am adăugat 3 mese.", 20 → "Am adăugat 20 de mese." (without rules: "3 de mese";
+  Q79 asks the rules). Kind words in Romanian need a host `wordOf` (Q79).
+- Q25 L1: `realise(m, 'în forma {art@thing} {thing:case=gendat,def=no}', { thing: 'casă', art: 'un' })` → "în forma
+  unei case" (was "o case"); partial cells ("{kind:def=yes}") take the class's first agreeing cell.
+- Q78: `check().issues[i].bindings` (soft deny "two pumps on ?n" → { n: 'north' }); strict denies already had `vars`.
+- Gate: npm test 527 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

@@ -3,7 +3,7 @@
 // over a set of messages); a kind is said by its word.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readTurn, turnScope, openSession, replyFrom, loadWorldSet, World } from '../tools/lib-under-test.mjs';
+import { readTurn, turnScope, openSession, replyFrom, countClass, loadWorldSet, World } from '../tools/lib-under-test.mjs';
 import { worldsDir } from '../tools/worlds.mjs';
 
 const W = (set, name) => set.worlds.get(name).world;
@@ -19,7 +19,7 @@ test('the lists app on the kit: a request acts, words left unread are named and 
   const made = readTurn(set, 'make a shopping list called weekly');
   assert.equal(made.status, 'done');
   assert.deepEqual([W(set, 'w.list').ofType('w.list.list')[0].attrs.sort[0], W(set, 'w.list').ofType('w.list.list')[0].attrs.name[0]], ['shopping', 'weekly'], 'a value word of the kind is its value; the called role is its name');
-  assert.equal(made.reply, 'I made a list.', 'the kind said by its word, no id');
+  assert.equal(made.reply, 'I added a list.', 'composed from w.lang.en.reply done.add, the kind by its word, no id');
   const add = readTurn(set, 'add 2 apples to my weekly list');
   assert.deepEqual([add.status, add.request.args.text, add.request.args.quantity], ['done', 'apples', 2]);
   const n0 = size(set);
@@ -39,7 +39,7 @@ test('the seating world on the kit: every role a frame fills lands in an argumen
   const { worldText } = await import('../tools/worlds.mjs');
   const set = loadWorldSet(worldText, { names: ['w.seating'], language });
   const t = readTurn(set, 'add a table called family');
-  assert.deepEqual([t.status, t.request.args.name, t.reply], ['done', 'family', 'I made a table.']);
+  assert.deepEqual([t.status, t.request.args.name, t.reply], ['done', 'family', 'I added a table.']);
   assert.deepEqual([readTurn(set, 'add 2 tables').status, W(set, 'w.seating').ofType('w.seating.table').length], ['ask', 1], 'two tables need two names: asked, nothing made');
   const round = readTurn(set, 'add a round table called kids');
   assert.deepEqual([round.request.args.shape, round.request.args.name], ['round', 'kids']);
@@ -129,12 +129,37 @@ test('a session: a confirmation answered yes makes what was missing and runs the
   assert.equal(s.say('add milk to it').pending, null, 'a message with a verb is never taken as a name');
 });
 
-test('replies from the language world\'s reply facts when it has them; null otherwise (the library sentence stays)', () => {
+test('replies from the language world\'s reply facts: by name or act, by the plural class of the number, the most roles given; null otherwise', () => {
   const L = new World();
-  L.load('@t core.type of=w.lang.en.reply\n@r1 w.lang.en.reply act=make text="I made a new {kind}."\n@r2 w.lang.en.reply act=make text="I made {amount} new {kind}."');
-  assert.equal(replyFrom(L, 'make', { kind: 'list' }), 'I made a new list.');
-  assert.equal(replyFrom(L, 'make', { kind: 'list', amount: 2 }), 'I made 2 new list.', 'the fact with the most slots given');
+  L.load('@t core.type of=w.lang.en.reply\n@r1 w.lang.en.reply name=done.add count=one act=make text="I made a new {kind}."\n@r2 w.lang.en.reply name=done.add count=other act=make text="I made {number} new {kind}."\n@r3 w.lang.en.reply name=not_understood text="Not understood: {words}."');
+  assert.equal(replyFrom(L, 'done.add', { kind: 'list' }), 'I made a new list.');
+  assert.equal(replyFrom(L, 'done.add', { kind: 'list', number: 2 }), 'I made 2 new list.', 'count other (no plural rules here)');
+  assert.equal(replyFrom(L, 'make', { kind: 'list' }), 'I made a new list.', 'by act when no name matches');
+  assert.equal(replyFrom(L, 'not_understood', { words: '"blorp"' }), 'Not understood: "blorp".');
   assert.equal(replyFrom(L, 'remove', { thing: 'list' }), null);
+  L.load('@c core.type of=w.lang.en.count\n@c1 w.lang.en.count class=one rule="i = 1 and v = 0"');
+  assert.deepEqual([1, 2, 0, 1.5].map((n) => countClass(L, n)), ['one', 'other', 'other', 'other'], 'CLDR rules of the language world');
+});
+
+test('Romanian replies from w.lang.ro.reply with the hand dictionary: article, plural class, agreement (and the indefinite genitive)', { skip: !worldsDir() && 'offline' }, async () => {
+  const { catalogWorld } = await import('../tools/worlds.mjs');
+  const { readFileSync, existsSync } = await import('node:fs');
+  const { morphOf, dictionary, fold, realise } = await import('../tools/lib-under-test.mjs');
+  const ro = await catalogWorld({ 'w.lang.ro': ['class', 'ending', 'irregular', 'vowel', 'fold', 'split', 'det', 'reply'].map((x) => `w.lang.ro.${x}`) });
+  const m = morphOf(ro, { types: { cls: 'w.lang.ro.class', ending: 'w.lang.ro.ending', irregular: 'w.lang.ro.irregular', fold: 'w.lang.ro.fold', split: 'w.lang.ro.split', vowel: 'w.lang.ro.vowel' } });
+  const file = (l) => { const f = `${worldsDir()}docs/worlds/w.lang.ro/dictionary/${l}.tsv`; return existsSync(f) ? readFileSync(f, 'utf8') : ''; };
+  const d = dictionary({ read: file, fold: (s) => fold(m, s) });
+  const say = (k, r) => replyFrom(ro, k, r, { lang: 'w.lang.ro', dictionary: d });
+  assert.equal(say('done.add', { kind: 'casă' }), 'Am adăugat o casă.');
+  assert.equal(say('done.remove', { thing: 'masă' }), 'Am șters masa.');
+  assert.equal(say('done.change', { thing: 'casă', value: 'roșu' }), 'Casa este acum roșie.');
+  assert.equal(say('done.make.value', { kind: 'cerc', value: 'roșu' }), 'Am desenat un cerc roșu.');
+  assert.equal(say('done.undo', {}), 'Am anulat ultima schimbare.');
+  // the plural class needs the language's CLDR rules (asked of the knowledge repository, Q79): toy rules here
+  ro.load('@c core.type of=w.lang.ro.count\n@c1 w.lang.ro.count class=one rule="i = 1 and v = 0"\n@c2 w.lang.ro.count class=few rule="v != 0 or n = 0 or n % 100 = 2..19"');
+  assert.equal(say('done.add', { kind: 'masă', number: 3 }), 'Am adăugat 3 mese.');
+  assert.equal(say('done.add', { kind: 'masă', number: 20 }), 'Am adăugat 20 de mese.');
+  assert.equal(realise(m, 'în forma {art@thing} {thing:case=gendat,def=no}', { thing: 'casă', art: 'un' }, { dictionary: d }), 'în forma unei case', 'the article takes the case of the word it agrees with (PSys2 Q25 L1)');
 });
 
 test('one World per world: a turn changes only the world it addresses and the host\'s session worlds; a stray change to a second world is seen', { skip: !worldsDir() && 'offline' }, async () => {

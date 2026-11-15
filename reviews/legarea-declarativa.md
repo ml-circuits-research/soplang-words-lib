@@ -240,7 +240,7 @@ Firul `@k1` spune ce acte se aplică unei cutii. Firul `@h1` spune de ce cerinț
 
 ```
 @op1 std.tool.op    world=shelfworld name=add effect=makes
-@pa1 std.tool.param op=add name=kind   type=box required=true
+@pa1 std.tool.param op=add name=kind   of=box required=true
 @pa2 std.tool.param op=add name=n      kind=integer min=1 max=20 default=1
 @pa3 std.tool.param op=add name=size   accepts=small accepts=big
 @pa4 std.tool.param op=add name=colour kind=atom

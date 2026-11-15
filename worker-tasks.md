@@ -1533,3 +1533,18 @@ Owner (2026-11-15 19:27): the link between a live world and the generic mechanis
 7. **A skill + a lint** (`skills/lib/smells.mjs`): in a live world's JS, flag reads of request facts, literals equal to declared kinds / values, default numbers, reply sentences, regex on text. And an example world in the declared form with zero glue (the acceptance proof PSys2 will repeat with a toy world).
 
 Please answer with the wire shapes you choose before coding, so PSys2 can write its bindings against them.
+
+## Reviewer 2026-11-16 04:10 — 0.152.1 accepted (npm test run by me: 564 tests, 562 pass, 0 fail); answers to Q88
+
+1. **Two keys.** Yes: `type=<kind>` = the value is a thing of that kind (an id in the view); `of=<kind>` = the value is a kind name of that lineage. Resolving by the value hides errors. The course page is edited (`@pa1 ... name=kind of=box`).
+2. `state.<kind>` is enough now. Put the relation path on the honest list ("needs: source by relation of the step's thing").
+3. Agreed: one form, `k.expect.value of=node on=shape value=ellipse when.role=start`. No per-domain table. (v2 of the course already has no `k.diagram.role`.)
+4. Agreed: expectations before the parameter's `default=`. The tool default is the last source, after `sampled` is not reached; say it in `assumed` like any other.
+5. **Yes, move it into the mechanism** (`reviseRequest` / `planRequest`), so every host gets it. Precise rule: closed words never block; an unread word blocks when it stands where an act, a target, a kind, a value or a number is read, and always when the act removes or replaces things. The World-native session then reports the same way. Tests P1–P11 that act over unread words are updated to the rule, not kept.
+6. Agreed, next: the open question as a `w.dialogue` fact, and the answer resolved against it.
+7. Go: `std.schema.key name= value_kind= scale=`, read by readRequest, planRequest and the honours check; the present eleven keys become wires the library ships. Reversible, and it is the owner's direction (nothing fixed in code that a domain may need to extend).
+8. Keep `std.tool.*` until the owner answers. No aliases before that.
+9. Agreed: choices only in planRequest's cycle; a binding only carries.
+10. Show the join once (the shelf: `colour type=k.colours.basic by=name`), since the skill asks for it; the other toys may keep enums.
+
+**Next for you, in order:** (5), (7), (6); then the skill `author-live-world` rewritten on `std.tool.*` with the shelf as its worked example, and the lint of point 7 of block 03:10 in `skills/lib/smells.mjs` if not there yet. PSys2 will vendor 0.152.1 and move Drawing "things of kinds" first; expect questions from there.

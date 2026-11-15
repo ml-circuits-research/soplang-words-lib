@@ -883,6 +883,10 @@ ${calcs.join('\n')}
 @k.limit.of core.slot of=std.schema.limit key=of id=true
 @k.limit.max core.slot of=std.schema.limit key=max kind=integer required=true
 @k.count.kind core.slot of=std.schema.count key=kind id=true
+@k.hon.act core.slot of=std.schema.honours key=act required=true
+@k.hon.on core.slot of=std.schema.honours key=on many=true enum=kind enum=count enum=size enum=extent enum=attribute enum=place enum=manner enum=layout enum=with enum=about enum=length
+@k.hon.of core.slot of=std.schema.honours key=of many=true
+@k.hon.world core.slot of=std.schema.honours key=world
 
 # a kind belongs to a declared world
 @kw std.schema.kind world=?w

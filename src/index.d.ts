@@ -628,6 +628,34 @@ export interface Rewrite { text: string; cost?: number; explains?: string[]; via
 export interface RewriteChoice { text: string; via: string; cost: number; issues: number; uncovered: number; unfilled: number; absent: number; previous: number; reading?: object }
 /** Choose among a clause and its rewrites by std.decide kind intent; a rewrite wins only when it reads strictly better. */
 export function chooseRewrite(text: string, rewrites: Rewrite[], options: { read: (text: string) => { issues: number; unfilled?: number; absent?: number }; stop?: string[] | Set<string>; previous?: string[]; world?: World | null; criteria?: object[] }): { chosen: RewriteChoice; self: RewriteChoice; changed: boolean; order: RewriteChoice[]; why: string };
+/** One constraint of a w.request request. */
+export interface RequestConstraint { on: 'kind' | 'count' | 'size' | 'extent' | 'attribute' | 'place' | 'manner' | 'layout' | 'with' | 'about' | 'length'; want: 'yes' | 'no' | 'not_all'; value?: string | number | null; of?: string; attribute?: string; relation?: string; number?: number; min?: number; max?: number; bound?: 'exact' | 'min' | 'max' | 'range' | 'about'; exclusive?: boolean; amount?: string; step?: 'up' | 'down'; unit?: string; plural?: boolean; words: string; origin?: 'said' | 'default' | 'reaction'; cue?: string }
+/** A live w.request: what one message asked. `facts` (not enumerable) is the host's flat shape. */
+export interface Request { act: string | null; mode?: string | null; target: string | null; refers: 'kind' | 'thing' | 'last' | null; text: string; constraints: RequestConstraint[]; reactions: { value: string; step?: string; cue: string; words: string }[]; unread: string[]; unreadAt?: { text: string; n: number }[]; used?: string[]; revises?: string | null; readonly facts: { key: string; value?: unknown; neg?: boolean; all?: boolean; n?: number; min?: number; max?: number; unit?: string; step?: string; of?: string; attribute?: string }[] }
+/** The state of a dialogue a revision reads. */
+export interface RequestDialogue { last: Request | null; result?: { count?: number; kinds?: Record<string, number>; things?: string[]; layout?: string | null } | null; previous?: Request | null; seed?: number; previousSeed?: number; previousVary?: boolean; revisions?: unknown }
+/** A plan of a request: the acts with their roles filled, what was assumed, what is not honoured. */
+export interface RequestPlan { ok: boolean; act: string | null; target: string | null; roles: Record<string, unknown>; steps: { action: string; args: Record<string, unknown>; item?: boolean; link?: boolean }[]; assumed: { key: string; value: unknown; from: string }[]; notHonoured: { on: string; words: string; why: string; code: string; value?: unknown }[]; seed: number; sources: string[] }
+/** The order in which a gap is filled. */
+export const REQUEST_SOURCES: readonly string[];
+/** The constraint keys of w.request. */
+export const REQUEST_KEYS: readonly string[];
+/** The catalog types whose names are values of an attribute. */
+export const VALUE_TYPES: Readonly<Record<string, string[]>>;
+/** Read one message into a live w.request from the language world's cues and the world's kinds, slots and words. */
+export function readRequest(world: World, text: string, ctx?: { language?: World | null; lang?: string; catalog?: unknown; dialogue?: { last?: Request | null }; kinds?: string[]; values?: Record<string, { attribute: string; value: string }[]>; valueTypes?: Record<string, string[]>; verbs?: Record<string, string> }): Request;
+/** The request as w.request wires. */
+export function requestWires(request: Request, options?: { id?: string }): string;
+/** A turn against the dialogue: a new request, or the last one revised by w.dialogue.revision facts. */
+export function reviseRequest(dialogue: RequestDialogue | null, request: Request, opts?: { revisions?: unknown; catalog?: unknown }): { sort: 'request' | 'reaction'; reaction: string | null; does: { does: string; on?: string; direction?: string; replaces?: boolean; reply?: string }[]; request: Request | null; replace: boolean; seed: number; vary?: boolean; reply?: string | null; undo?: boolean };
+/** What a live world declares it can do. */
+export function capabilitiesOf(live: World): { honours: { act: string; on: Set<string>; of: string[] }[]; kinds: Map<string, Set<string>> };
+/** Plan a request from the world's declared capabilities, filling every gap from the sources in order. */
+export function planRequest(live: World, request: Request, opts?: { catalog?: unknown; dialogue?: RequestDialogue | null; sources?: readonly string[]; seed?: number; vary?: boolean }): RequestPlan;
+/** Run a plan's steps through act; the things of `replace` are removed first. */
+export function runPlan(live: World, plan: RequestPlan, options?: { replace?: string[] }): { ok: boolean; made: string[]; failed?: { step: object; why: string }; result: { things: string[]; count: number; kinds: Record<string, number>; whole: string | null; layout: string | null; links: number } };
+/** The reply of a request as reply facts and their text. */
+export function sayRequest(request: Request, outcome?: Partial<RequestPlan> & { run?: { result: object } | null; revised?: boolean; reply?: string | null }, opts?: string | { language?: World | null; lang?: string; dictionary?: unknown }): { facts: { reply: string; roles: Record<string, unknown>; from?: string; code?: string }[]; text: string; missing: string[] };
 export function turnScope(set: WorldSet, owner: string): (change: { world: string; type: string }) => boolean;
 export interface Pending { key: string; ask?: string; thing?: string; type?: string; value?: string; confirm?: { action: string; args: Record<string, unknown> }; text: string }
 export interface Session { set: WorldSet; context: object; pending: Pending | null; turns: object[]; say(text: string): ReturnType<typeof readTurn> & { pending: Pending | null; facts?: object[] }; snapshot(): object; restore(data: object): Session }

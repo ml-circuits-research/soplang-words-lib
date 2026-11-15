@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.136.0
+
+The second application extended to w.seating in English and Romanian (reviewer 16:45 item 2; PSys2 probe B).
+
+### New
+- examples/seating-app.mjs and test/seating-app.test.mjs: probe B in English ("add a table called family", "add 2
+  tables" + names, "make table 2 square", "remove Ann", "undo"; "add a guest called Ann at table 1" said, not made)
+  and in Romanian ("adaugă o masă numită familie" → "Am adăugat o masă.", "șterge masa familie", "anulează").
+- `readFrames` option `lexicons` (a host's words for a lexicon the frames take); a verb with several acts reads as each.
+
+### Changed
+- The kit binds change frames (a referent and a value of its closed sets), reads a kind's word wherever it stands, binds
+  Romanian readings by their senses' English words, names unread words as written, and asks open keys through the
+  language world's `ask.key` reply when it has one.
+
 ## 0.135.0
 
 The kit, reviewer 14:45 item 5: host readers, several requests per message, referents, a host hook, effects, a budget;

@@ -5607,3 +5607,16 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   budget ms -1 → too-complex, nothing changed. Seven compound turns in 196 ms.
 - The knowledge copy of clauseReader can go when its frames' readings move too (Q71): the splitter is here now.
 - Gate: npm test 529 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.136.0 — reviewer 16:45 item 2: the seating app in English and Romanian (probe B)
+
+- English (test/seating-app.test.mjs): "add a table called family" → "I added a table."; "add 2 tables" → ask, "red and
+  blue" → "I added 2 tables."; "add a guest called Ann at table 1" → "A guest has no place at a table." (nothing made;
+  Q26); "make table 2 square" → "The table is square now." (shape=square; the change frame read once "make" says both
+  make and change); "make table 2 blue" → not understood (w.seating has no colour; the reply names "2" too, since the
+  change frame cannot read a value outside the set's values); "remove Ann" → "I removed the guest."; "undo" → Ann back;
+  "add a table for 4" → unread for, 4.
+- Romanian: "adaugă o masă numită familie" → "Am adăugat o masă." (name familie); "adaugă o masă rotundă numită copii" →
+  shape round, name copii; "adaugă două mese" → ask; "șterge masa familie" → "Am șters masa."; "anulează" → "Am anulat
+  ultima schimbare."; "adaugă o masă albastră" → unread albastră. Guest turns fail on the dictionary (Q80).
+- Gate: npm test 531 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

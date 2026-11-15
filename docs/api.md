@@ -1818,7 +1818,12 @@ anything is made (`asks`). `undo` and `redo` frames step the live world back and
 `{ status: done | ask | not-understood | refused, reading: { frame, act, roles, unread, mood,
 complete }, request?, owner?, reply, changed?, asks? }`. A reply has no ids: the language
 world's reply fact for the act, else a short sentence with the kind said by its word, its
-article and its plural by the language world ("I made 2 tables.").
+article and its plural by the language world ("I made 2 tables."). A change frame ("make table 2
+square") binds a referent and a value of one of its closed sets (the frames' `value` lexicon is
+the set's values). A verb may say several acts (make: make, change). A Romanian reading binds by
+the senses' English words ("masa" is the sense table), wherever the kind's word stands ("o masă
+rotundă"); unread words are named as written. `examples/seating-app.mjs` runs w.seating in
+English and Romanian.
 
 `referentOf(set, words)` finds the thing words name: "table 1" (a kind's word and a name or
 number of one of its things, else the n-th made), "the second table" (the language world's

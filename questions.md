@@ -412,3 +412,12 @@ rule syntax: n, i, v, f, t, `%`, `=`, `!=`, ranges `a..b`, lists, `and`, `or`; t
 `w.lang.en.count` (one: `i = 1 and v = 0`). Until then a Romanian 3 is `other` ("3 de mese"). Also: a kind's word in
 each language (w.seating.table → "table" / "masă"): the schema's core.word is English; the kit takes a host
 `wordOf(type, lang)` until a language world maps kinds to its lemmas.
+
+## Q80 ([KNOW], seating in Romanian, reviewer 16:45 item 2): what w.lang.ro lacks for probe B
+
+On examples/seating-app.mjs ro (0.136): "adaugă o masă numită familie", "adaugă o masă rotundă numită copii",
+"șterge masa familie", "anulează" read and run, with replies from w.lang.ro.reply. Missing: (1) the noun `invitat`
+(guest) in the hand dictionary: "adaugă un invitat numit Ana" reads `invitat` as the participle of `invita` (no sense),
+so the guest turns fail; (2) replies for an open key and an empty timeline: `ask.key` ("What {key}?" / "Ce {key}?")
+and `nothing.undo` / `nothing.redo` (the kit uses them when present, English otherwise); (3) a kind's lemma per
+language (Q79): the host gives table→masă today.

@@ -30,12 +30,13 @@ export function senseOf(world, id) {
 /**
  * Read `text` by the frames of a language world. Options: `lang` ('w.lang.ro'), `morph` (morphOf of the
  * language), `dictionary` (its lemma dictionary, with senses), `senses(id) -> { act, en, pos }` (default
- * senseOf), `max` (frames kept, 5). Returns { best, frames: [{ frame, en, act, mode, roles: { role: { text,
+ * senseOf), `max` (frames kept, 5), `lexicons` ({ name: [words] }: a host's words for a lexicon the frames take, such
+ * as the values of its worlds for `value`). Returns { best, frames: [{ frame, en, act, mode, roles: { role: { text,
  * words: [{ form, lemma, sense, en, pos, features }], en, items? } }, score }], tokens } (items: a list cut at commas
  * and at the language's "and") with best null when no frame
  * takes every word (skip phrases aside).
  */
-export function readFrames(world, text, { lang = 'w.lang.ro', morph: m, dictionary: dict, senses, max = 5 } = {}) {
+export function readFrames(world, text, { lang = 'w.lang.ro', morph: m, dictionary: dict, senses, max = 5, lexicons = {} } = {}) {
   const norm = (s) => (m ? fold(m, String(s).toLowerCase()) : String(s).toLowerCase());
   const sense = senses ?? ((id) => senseOf(world, id));
   const raw = String(text).toLowerCase().replace(/[.!?;:"“”()]+/g, ' ').replace(/,/g, ' , ').split(/\s+/).filter(Boolean);
@@ -43,6 +44,7 @@ export function readFrames(world, text, { lang = 'w.lang.ro', morph: m, dictiona
   const byName = memoPerWorld(world, `phrases-by-name|${lang}`, () => { const ix = new Map(); for (const x of world.ofType(`${lang}.phrase`)) { const k = bare(x.attrs.name?.[0]); (ix.get(k) || ix.set(k, []).get(k)).push(...(x.attrs.item || []).map(bare)); } return ix; }); // bounded: the phrases, once per contents
   const itemsMemo = new Map();
   const items = (type, name) => { // a named phrase's items, folded: through the index, never a scan of the phrases per step
+    if (type === `${lang}.lex` && lexicons[name]) return [...lexicons[name].map((i) => norm(String(i)).split(/\s+/)), ...world.ofType(type).filter((x) => bare(x.attrs.name?.[0]) === name).flatMap((x) => (x.attrs.item || []).map((i) => norm(bare(i)).split(/\s+/)))]; // the host's words for a lexicon (the values of its worlds) with the language world's
     if (type !== `${lang}.phrase`) return world.ofType(type).filter((x) => bare(x.attrs.name?.[0]) === name).flatMap((x) => (x.attrs.item || []).map((i) => norm(bare(i)).split(/\s+/)));
     if (!itemsMemo.has(name)) itemsMemo.set(name, (byName.get(name) || []).map((i) => norm(i).split(/\s+/)));
     return itemsMemo.get(name);
@@ -63,7 +65,7 @@ export function readFrames(world, text, { lang = 'w.lang.ro', morph: m, dictiona
   const readings = (i) => { // the analyses of token i, with their senses
     if (!memo.has(i)) {
       const as = m ? analyse(m, toks[i], { dictionary: dict }) : [{ lemma: toks[i], features: {} }]; // no morphology: the word is its own lemma
-      memo.set(i, as.map((a) => { const e = dict?.lookup(a.lemma); const s = sense(e?.sense ?? (m ? undefined : a.lemma)); return { form: toks[i], lemma: a.lemma, sense: e?.sense ?? (s.act || s.en ? a.lemma : null), en: s.en ?? null, act: s.act ?? null, pos: s.pos ?? null, features: a.features }; }));
+      memo.set(i, as.map((a) => { const e = dict?.lookup(a.lemma); const s = sense(e?.sense ?? (m ? undefined : a.lemma)); return { form: toks[i], lemma: a.lemma, sense: e?.sense ?? (s.act || s.en ? a.lemma : null), en: s.en ?? null, act: s.act ?? null, ...(s.acts ? { acts: s.acts } : {}), pos: s.pos ?? null, features: a.features }; }));
     }
     return memo.get(i);
   };
@@ -86,7 +88,7 @@ export function readFrames(world, text, { lang = 'w.lang.ro', morph: m, dictiona
       if (p.is === 'lead' || p.is === 'phrase') r = seqs(items(`${lang}.phrase`, bare(a.phrase?.[0])));
       else if (p.is === 'word') r = seqs((a.word || []).map((w) => norm(bare(w)).split(/\s+/)));
       else if (p.is === 'det') r = ti < toks.length && dets.has(F[ti]) ? take(1) : null;
-      else if (p.is === 'verb') { const want = bare(a.act?.[0]); r = ti < toks.length && readings(ti).some((x) => x.act === want) ? take(1, { _verb: readings(ti).find((x) => x.act === want) }) : null; }
+      else if (p.is === 'verb') { const want = bare(a.act?.[0]); const hit = ti < toks.length ? readings(ti).find((x) => x.act === want || x.acts?.includes(want)) : null; r = hit ? take(1, { _verb: { ...hit, act: want } }) : null; } // a verb of several acts (make: make, change) is each of them
       else if (p.is === 'role') {
         const role = bare(a.role[0]), takes = bare(a.takes?.[0] ?? 'words'), most = Number(bare(a.max_words?.[0] ?? 99));
         if (takes === 'number') { if (ti < toks.length && (nums.has(F[ti]) || /^\d+$/.test(F[ti]))) r = take(1, { [role]: { text: toks[ti], value: nums.get(F[ti]) ?? Number(F[ti]) } }); }

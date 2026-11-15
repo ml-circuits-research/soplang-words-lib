@@ -21,7 +21,8 @@ test('every reply of readTurn and openSession goes through a reply name', { skip
   assert.ok(seen.size >= 12, [...seen].join(' '));
 });
 
-const EN = new Set(['the', 'a', 'an', 'i', 'is', 'are', 'not', 'there', 'what', 'nothing', 'to', 'of', 'you', 'that', 'yet']);
+// 'are' and 'a' are also Romanian (nu are loc; a durat), so they are not counted as English (knowledge 0966924e).
+const EN = new Set(['the', 'an', 'i', 'is', 'not', 'there', 'what', 'nothing', 'to', 'of', 'you', 'that', 'yet']);
 
 test('the published reply names, realised in English and in Romanian (no English word in the Romanian ones)', { skip: !worldsDir() && 'offline' }, async (t) => {
   const { seatingApp } = await import('../examples/seating-app.mjs');
@@ -35,7 +36,7 @@ test('the published reply names, realised in English and in Romanian (no English
     const e = replyFrom(en, name, roles), r = replyFrom(ro.set.language, name, rolesRo, { lang: 'w.lang.ro', dictionary: ro.context.dictionary });
     if (e == null) missing.en.push(name);
     if (r == null) missing.ro.push(name);
-    if (r != null) assert.deepEqual(r.toLowerCase().match(/\p{L}+/gu).filter((w) => EN.has(w)), [], `${name}: ${r}`);
+    if (r != null) assert.deepEqual((r.toLowerCase().match(/\p{L}+/gu) ?? []).filter((w) => EN.has(w)), [], `${name}: ${r}`);
   }
   console.log(`# reply names without a fact: en ${missing.en.length} (${missing.en.join(' ')}); ro ${missing.ro.length} (${missing.ro.join(' ')})`);
   for (const lang of ['en', 'ro']) if (missing[lang].length) t.todo(`w.lang.${lang}.reply lacks ${missing[lang].join(', ')} (asked in Q82)`);

@@ -50,7 +50,7 @@ test('the session: "why?" over the last turn\'s facts; a snapshot restored in a 
   const { seatingApp } = await import('../examples/seating-app.mjs');
   const { session: s } = await seatingApp('en');
   s.say('add a table called family');
-  assert.equal(s.say('why?').reply, 'You asked: "add a table called family". The name is family because you said so. The shape is round by default.');
+  assert.equal(s.say('why?').reply, 'You asked: add a table called family. The name is family because you said so. The shape is round by default.');
   s.say('add a guest called Ann');
   s.say('make table 1 square');
   const why = s.say('why did you do that');

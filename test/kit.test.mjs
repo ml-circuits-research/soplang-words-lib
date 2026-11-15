@@ -101,7 +101,7 @@ test('a session: the pending question and the slot its answer fills; a value tha
   assert.match(made.reply, /Which colour\?$/);
   const wrong = s.say('green');
   assert.deepEqual([wrong.status, wrong.pending.key], ['ask', 'colour'], 'still pending');
-  assert.match(wrong.reply, /one of red, blue, not "green"/);
+  assert.match(wrong.reply, /one of red, blue, not "?green"?\./);
   const red = s.say('red');
   assert.deepEqual([red.status, red.pending, W(set, 'w.toy').ofType('w.toy.shape')[0].attrs.colour], ['done', null, ['red']]);
   assert.equal(s.say('undo').status, 'done');

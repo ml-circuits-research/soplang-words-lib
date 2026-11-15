@@ -449,3 +449,24 @@ library's `clauses` never cut inside "water lily" or "work done" (no cut point t
 either its own splitter or the cut at "and" before "the third water lily", which no longer happens. PSys2 does not read
 through a kit set today, so `chooseRewrite` with its own `_understands` as `read` is the call that replaces its loop;
 `readTurn({ rewrites })` is the same choice for a host on the kit. Delete when satisfied.
+
+## Q83 (worker, 0.149.0) — requests as worlds: for the reviewer, PSys2 and the knowledge repository
+
+0.149.0 has readRequest / reviseRequest / planRequest / runPlan / sayRequest (api.md "readRequest", CHANGELOG). Choices
+taken while waiting, each open to a decision:
+- **Capabilities** are declared with a new std.schema type, `std.schema.honours act=<act> on=<key>... of=<thing>...
+  [world=]` (keys = the w.request constraint keys). PSys2's `w.honour act= keys=a,b target=` maps one to one (keys -> on,
+  target -> of). A world's own defaults are facts of the k.expect shapes (`k.expect.make`, `k.expect.part`, `k.expect.scale`,
+  `k.expect.amount`) told in the live world; they come before the catalog's (`sources` order). [KNOW] should
+  std.schema.honours be published in a w.* schema instead (the library would read either)?
+- **Why texts** of not_honoured (`{why}`) are short English phrases made by the library ("this world does not take
+  attribute for make"); `code` (not_declared, no_slot, value, no_kind, nothing_left, one_kind, no_act, no_target, act,
+  unit, not_allowed) is given with each. [KNOW] reply names `not_honoured.why.<code>` in w.lang.en / w.lang.ro would let
+  sayRequest say them in Romanian; it uses them as soon as they exist (planned, not yet read).
+- **Reject** flips every kind of the last result to not wanted (the revision fact says "the kinds said, or the kinds of
+  the last result"); exclusions that would leave nothing give way, the oldest first, and are named (nothing_left).
+- **Redo** (does=keep) and reject plan with `vary` (sampled like "random") so that "again" gives another result.
+- **put_back** returns the previous request with its seed (`undo: true`); the host runs it in place of the last result.
+- Colour words the world lacks are read through `VALUE_TYPES` (k.colours.basic / k.colours.colour names in the catalog)
+  so that "in red" is named, not dropped.
+- PSys2's Q36 (clauses joins two requests across "and the") is not done in this release.

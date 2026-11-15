@@ -5780,3 +5780,23 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - test/rewrite.test.mjs (4), test/kit.test.mjs clauses case (+2 asserts).
 - Gate: npm test 534 pass / 0 fail; SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs" 534 / 0; npm run test:compat
   11 / 0; node tools/scan-loops.mjs exit 0; git grep -il psys2 src/ = 0; tsc not installed here (not run).
+
+## 0.149.0 — requests as worlds (owner GO 2026-11-15; reviewer blocks 22:00 and 22:40)
+
+- Pin sop-knowledge-worlds 0966924e (w.request, w.dialogue, k.expect, 81 w.lang.en cues). Three tests followed its
+  reply texts (no quotes in why.asked / refused.value; "are" and "a" are Romanian words too in the no-English check).
+- src/request.mjs: `readRequest` (cues longest phrase first, then priority; kinds from std.schema.kind / honours /
+  k.expect makes, parts and shapes, plurals by the language's inflection; values from slot enums and VALUE_TYPES; act =
+  first verb unless a longer cue starts there), `requestWires`, `reviseRequest` (w.dialogue.revision rows), `planRequest`
+  (std.schema.honours, new in std.schema; sources said > dialogue > world > expect > sampled), `runPlan`, `sayRequest`.
+- examples/request-app.mjs: two invented worlds (sketch: shapes on a page; notes: short notes), one session, no code per
+  world. `node examples/request-app.mjs`.
+- test/request.test.mjs (6): reader cases (the owner's "not a circle", "not all circles", "5-10 nodes", "small pond",
+  "with water plants and a duck", "of 3 chapters", "make it bigger"), w.request wires told into a World with w.request;
+  revisions (reject, reduce 6 -> 4 by 0.6, enlarge 6 -> 9, refine, redo, thanks, frustration, put_back, expectation);
+  P1-P8 over each example world read from its declarations (`node --test test/request.test.mjs`: sketch P1 6, P2 3, P3 2,
+  P4 1, P5 1, P6 3, P7 1, P8 4; notes P2 3, P3 1, P4 1, P5 1, P6 3, P7 1, P8 6); a world declaring place with no slot
+  for it is named (no_slot); sayRequest by reply names.
+- Gate: npm test 542 tests, 540 pass / 0 fail / 1 skipped; SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs" 540 / 0;
+  npm run test:compat 11 / 0; node tools/scan-loops.mjs src clean; git grep -il psys2 src/ = 0; node tools/doc-examples.mjs
+  230 examples, 0 problems; tsc not installed here (not run). Notes for the reviewer: questions.md Q83.

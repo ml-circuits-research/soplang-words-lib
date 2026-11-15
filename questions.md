@@ -535,3 +535,43 @@ The skills were rewritten to the owner's direction (worker-log, "Skills rewritte
    expect); an unconditional kind expectation (an atlas is big) loses to it, a conditional one whose conditions hold wins.
 7. The lint for live-world JS (reviewer item 7, skills/lib/smells.mjs) is not extended here; the tool-world property
    checks a primitive's source names no declared kind and reads no request.
+
+## Q88 (worker, 0.152.1) — reconciling 0.152 with reviews/legarea-declarativa.md: what I aligned, what I did differently and why
+Aligned (0.152.1): `std.tool.arg bind= param= from=` (the inline `arg=` kept as a short form: one parser, no cost);
+`std.tool.needs op= exists=` (plus `absent=`, `check=<custom>`); `std.tool.param kind= type=<world kind> default=
+required=true`; `std.tool.bind world=`; `makes` from the op's `effect=makes`; sources `state.<…>` and `result.<n>`;
+`k.expect.value on= value= when.<key>=` (0.152.0's `k.expect.when key= if.` still read); §24 references for remove /
+change (one question when ambiguous, `refused.no_such` when nothing matches); §35 "a message read only in part executes
+nothing" (in `toolSession`); the review's order for executor steps (binding by lineage, sources, default, preconditions,
+call, effect on the view). Not aligned, or a choice I made where the review is open:
+1. **`type=` has two readings.** In §11 (d) `type=box` on `kind` means "a kind of box" and `type=shelf` on `on` means
+   "a thing that is a shelf". I resolve by the value: an id found in the view is checked by its kind, anything else is
+   read as a kind name and checked by lineage; a `type` whose rows have an `order` is a scale. Would you rather
+   have two keys (`type=` for things, `of=` for kind names)? That would be clearer, and it would need you to edit §11.
+2. **`state.<relation>` (§25) is `state.<kind>` here**: the thing of that kind that the request names, else the
+   newest one in the view. A relation path (`state.on`: what the step's thing is on) needs the step's thing to
+   exist first, so it is not done. Is the kind form enough for now?
+3. **`k.diagram.role role=start shape=ellipse` (§20)**: I did not add a second shape. The same fact is `k.expect.value
+   of=node on=shape value=ellipse when.role=start`, and planRequest gives each item its role from the plan's links.
+   A table per domain would be a second mechanism for one job, which is on the smell list (§42). Proposal: one form.
+4. **Order of a parameter's declared `default=` and the expectations.** The expectations (knowledge, `k.expect.value`)
+   come before the parameter default (§25 step 2 puts the default on whatever is missing). Reason: the default is the
+   tool's, while the expectation is knowledge about the thing and may be conditional. Do you agree?
+5. **§35 "a partly read message executes nothing"** is applied in the tool door (`toolSession`) only. `planRequest`
+   itself now refuses only to guess the target over an unread word. The World-native session of
+   `examples/request-app.mjs` and its tests (P1-P11) still act when some words are unread and report them. Should
+   the rule move into `reviseRequest` / `planRequest`, so that every host gets it?
+6. **The question of §24 ("which circle?")** is said (`refused.which`, no step). The answer to it ("the red one",
+   "the second") is not yet resolved against the open question in the dialogue. That is a dialogue piece (an open
+   question in `w.dialogue`), and it is next if you agree.
+7. **Constraint keys as wires (owner question 2, §IX):** not done. `REQUEST_KEYS` and the `on=` enum of
+   `std.schema.honours` stay fixed. Proposal: `std.schema.key name= value_kind= scale=`, read by readRequest,
+   planRequest and the honours check, so that a domain can bring `tempo`.
+8. **Names (owner question 1):** kept `std.tool.*`. If the owner chooses `std.schema.*`, aliases are cheap
+   (rowsOf over two type names).
+9. **"The abduction of the place" (§39, the first shelf with room)** happens in `planRequest`'s cycle on the mirrored
+   state (`mirrorState`), not in the binding. A binding takes the place from the plan (`step.<key>`) or from
+   `state.<kind>`. That keeps the choice in one mechanism.
+10. **The review's §11 example keeps colour as `kind=atom` with no join.** The author-live-world skill asks for a join to
+   k.colours. My examples keep a short enum, because they are toy worlds under 60 lines. Tell me if the examples
+   should show the join.

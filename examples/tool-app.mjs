@@ -17,24 +17,31 @@ export const SHELF = String.raw`
 @t.novel core.type of=novel extends=book closed=true
 @t.atlas core.type of=atlas extends=book closed=true
 @t.comic core.type of=comic extends=book closed=true
-@k.novel std.schema.kind of=novel world=shelf acts=make acts=remove
-@k.atlas std.schema.kind of=atlas world=shelf acts=make acts=remove
-@k.comic std.schema.kind of=comic world=shelf acts=make acts=remove
+@k.novel std.schema.kind of=novel world=shelf acts=make acts=remove acts=change
+@k.atlas std.schema.kind of=atlas world=shelf acts=make acts=remove acts=change
+@k.comic std.schema.kind of=comic world=shelf acts=make acts=remove acts=change
 @h.make std.schema.honours world=shelf act=make on=kind on=count on=size on=attribute of=book of=novel of=atlas of=comic
-@x.atlas k.expect.when of=atlas key=size value=big about="an atlas is a big book"
-@x.small k.expect.when of=book key=size value=small about="a book is small unless said"
-@x.right k.expect.when of=book key=end value=right if.size=big if.size=huge about="a big book stands at the right end"
-@x.left k.expect.when of=book key=end value=left about="the others at the left end"
+@h.remove std.schema.honours world=shelf act=remove on=kind on=count on=attribute of=book
+@h.change std.schema.honours world=shelf act=change on=kind on=attribute of=book
+@x.atlas k.expect.value of=atlas on=size value=big about="an atlas is a big book"
+@x.small k.expect.value of=book on=size value=small about="a book is small unless said"
+@x.right k.expect.value of=book on=end value=right when.size=big when.size=huge about="a big book stands at the right end"
+@x.left k.expect.value of=book on=end value=left about="the others at the left end"
 @op.add std.tool.op name=add world=shelf param=kind param=n param=size param=colour param=end effect=makes
-@pa.kind std.tool.param op=add name=kind type=kind accepts=novel accepts=atlas accepts=comic required=yes
-@pa.n std.tool.param op=add name=n type=integer min=1 max=12 required=yes
+@pa.kind std.tool.param op=add name=kind type=book required=true
+@pa.n std.tool.param op=add name=n kind=integer min=1 max=12 default=1
 @pa.size std.tool.param op=add name=size type=k.expect.scale accepts=small accepts=big
 @pa.end std.tool.param op=add name=end accepts=left accepts=right
 @op.remove std.tool.op name=remove world=shelf param=ids effect=removes
 @op.paint std.tool.op name=paint world=shelf param=ids param=colour effect=changes
-@b.make std.tool.bind act=make of=book op=add arg=kind<-step.kind arg=n<-step.count arg=size<-step.size arg=colour<-step.colour arg=end<-step.end makes=thing
-@b.remove std.tool.bind act=remove of=book op=remove arg=ids<-step.things needs=exists(ids) removes=ids
-@b.change std.tool.bind act=change of=book op=paint arg=ids<-step.things arg=colour<-step.colour needs=exists(ids) changes=colour
+@b.make std.tool.bind world=shelf act=make of=book op=add
+@a.kind std.tool.arg bind=$b.make param=kind from=step.kind
+@a.n std.tool.arg bind=$b.make param=n from=step.count
+@a.size std.tool.arg bind=$b.make param=size from=step.size
+@a.colour std.tool.arg bind=$b.make param=colour from=step.colour
+@a.end std.tool.arg bind=$b.make param=end from=step.end
+@b.remove std.tool.bind world=shelf act=remove of=book op=remove arg=ids<-step.things needs=exists(ids) removes=ids
+@b.change std.tool.bind world=shelf act=change of=book op=paint arg=ids<-step.things arg=colour<-step.colour needs=exists(ids) changes=colour
 `;
 
 /** The tool: three primitives and its state as facts. No request, no words, no defaults. */
@@ -67,15 +74,16 @@ export const NECKLACE = String.raw`
 @e.necklace k.expect.make thing=necklace unit=bead min=4 max=8 typical=6 kinds_min=2 kinds_max=2
 @e.bead k.expect.part of=necklace part=bead group=node min=4 max=8 typical=6 shape=round shape=square
 @e.tie k.expect.part of=necklace part=tie group=link min=0 max=7 typical=5
-@x.clasp k.expect.when of=bead key=colour value=gold if.role=start about="the first bead is the clasp"
-@x.white k.expect.when of=bead key=colour value=white about="the other beads are white"
+@x.clasp k.expect.value of=bead on=colour value=gold when.role=start about="the first bead is the clasp"
+@x.white k.expect.value of=bead on=colour value=white about="the other beads are white"
 @op.string std.tool.op name=string world=beads param=kind effect=makes
 @op.bead std.tool.op name=bead world=beads param=kind param=on param=colour effect=makes
 @pb.kind std.tool.param op=bead name=kind type=kind accepts=round accepts=square required=yes
 @op.tie std.tool.op name=tie world=beads param=kind param=a param=b effect=makes
 @op.cut std.tool.op name=cut world=beads param=ids effect=removes
 @b.necklace std.tool.bind act=make of=necklace op=string arg=kind<-step.kind makes=thing
-@b.bead std.tool.bind act=make of=bead op=bead arg=kind<-step.kind arg=on<-step.in arg=colour<-step.colour needs=exists(on) makes=thing
+@b.bead std.tool.bind act=make of=bead op=bead arg=kind<-step.kind arg=on<-step.in|state.necklace arg=colour<-step.colour makes=thing
+@n.bead std.tool.needs op=bead exists=necklace
 @b.tie std.tool.bind act=connect op=tie arg=kind<-value.tie arg=a<-step.a arg=b<-step.b needs=exists(a) needs=exists(b) makes=thing
 @b.cut std.tool.bind act=remove op=cut arg=ids<-step.things needs=exists(ids) removes=ids
 `;
@@ -125,7 +133,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   if (!language) { console.log('the published worlds cannot be read here'); process.exit(0); }
   const tool = shelfTool();
   const s = toolSession(exampleWorld(SHELF), tool, { language, catalog: [language] });
-  for (const t of ['add 3 tiny red novels', 'add 4 books, not comics', 'too many', 'undo', 'what can you do here?', 'add 2 huge atlases', 'add two novels and a comic', 'how many novels?', 'what is on the shelf?', 'in red']) {
+  for (const t of ['add 3 tiny red novels', 'add 4 books, not comics', 'too many', 'undo', 'what can you do here?', 'add 2 huge atlases', 'add two novels and a comic', 'how many novels?', 'what is on the shelf?', 'in red', 'paint the comic blue', 'remove the atlases', 'remove the novel', 'add 2 dictionaries']) {
     const r = s.say(t);
     console.log(`> ${t}\n  ${r.reply.text}\n  shelf: ${tool.view().map((b) => `${b.kind}/${b.size}/${b.end}${b.colour ? '/' + b.colour : ''}`).join(' ')}`);
   }

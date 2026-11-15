@@ -2111,6 +2111,7 @@ exhausted, induced, soft, derived, chosen }, seed, sources }`: when no candidate
 0.152: a general kind said ("books", not makeable itself) is a mix of its makeable subkinds by the world's lineage, and a
 kind not wanted excludes its subkinds too; coordinated kinds ("two novels and a comic") keep each count with the kind
 it stands before (a kind with no number is one); "3 necklaces" (a count of the whole) plans that many wholes; the
+target is never taken from the dialogue or the world over an unread word (0.152.1); the
 conditional expectations and the kept structure of a count revision are described under `expectedValue` below.
 `runPlan(live, plan, { replace })` (`runWorldPlan`) runs the steps through `act` (`{ step: i }` names what step i made),
 after removing the things of `replace` (the last result: a revision replaces it); it returns `{ ok, made,
@@ -2247,13 +2248,16 @@ declarative, only the tool's concrete actions are code). A world declares its to
 | Wire | Keys |
 | --- | --- |
 | `std.tool.op` | `name` (id), `world`, `param` (many), `effect` (makes, removes, changes), `doc` |
-| `std.tool.param` | `op`, `name` (id together), `type` (`kind`, `integer`, `number`, or a scale type: rows with an order), `accepts` (many: the values the tool takes), `scale`, `by` (the key naming a grade; default the type's id slot), `order` (default `order`), `min`, `max`, `required` |
-| `std.tool.bind` | `act`, `of` (many: the kinds, by lineage; none = any), `op`, `arg` (many: `<param><-<source>|<source>...`), `needs` (many: `exists(arg)`, `absent(arg)`, or a declared constraint `name(arg, ...)`), `makes`, `removes`, `changes` |
+| `std.tool.param` | `op`, `name` (id together), `kind` (the value's kind: `integer`, `number`, `string`, `atom`), `type` (a kind of the world: the value is it or a subkind, or a thing of it in the view; or a scale type: rows with an order; `kind` for any kind by `accepts`), `accepts` (many: the values the tool takes), `scale`, `by` (the key naming a grade; default the type's id slot), `order` (default `order`), `min`, `max`, `default` (taken when no source gives a value, after the expectations), `required` (true / yes) |
+| `std.tool.bind` | `world`, `act`, `of` (many: the kinds, by lineage; none = any), `op`, `arg` (many, the short form: `<param><-<source>|<source>...`), `needs` (many: `exists(arg)`, `absent(arg)`, or a declared constraint `name(arg, ...)`), `makes` (default: something added when the op's `effect` is makes), `removes`, `changes` |
+| `std.tool.arg` | `bind` (`$` the binding), `param`, `from` (many: the sources, in order) - one argument of a binding (the review's form; the same as `arg=` inline) |
+| `std.tool.needs` | `op`, `exists` (many: a thing of that kind, by lineage, is in the state), `absent` (many), `check` (many: a declared constraint), `args` - the preconditions of an op, for every binding of it |
 | `std.tool.custom` | `name` (id), `world`, `kind` (constraint or search), `in` (many), `out`, `fails` (the reply name said when a constraint fails), `doc` |
 
 The sources of an argument (`TOOL_ARG_SOURCES`) are `step.<key>` (the plan step's value; `step.count`: how many
 steps of the same values one call takes, which groups them; `step.things`: the ids of the things they act on),
-`request.<on>` / `request.attribute.<a>` (the constraint said), `plan.<role>`, `custom.<name>` (a declared search,
+`request.<on>` / `request.attribute.<a>` (the constraint said), `state.<kind>` (the thing of that kind the request
+names, else the newest one in the view), `result.<n>` (the id step n of the same plan made), `plan.<role>`, `custom.<name>` (a declared search,
 called with the arguments so far and the view), `value.<atom>` (a literal of the wires) and `expect`; a conditional
 expectation is always the last source. Filled in that order (said, revised, the plan's values with their
 provenance, expected), each value is translated by `nearestAccepted` when the parameter does not take it as said:
@@ -2285,7 +2289,11 @@ says facts of the live world for the questions of `WORLD_QUESTIONS`: `capabiliti
 tells the tool's things into a fork of the declarations so that the planner's reasoning (induction, places, deny
 rules) sees them. `toolSession(live, primitives, { language, catalog, revisions })` is the door with no code per
 world: read, a question (a reaction of the language world named in `WORLD_QUESTIONS`), undo / redo (the acts), revise,
-plan (on the mirrored state, with the last plan in the dialogue), run, say. `sayRequest` speaks from the run's diff
+plan (on the mirrored state, with the last plan in the dialogue), run, say. A message read only in part executes
+nothing (`not_understood` with the words). `planRequest` plans an act on things that are there (remove, change, place)
+by a reference step over the state: "them" / "it" are the last result, else the things of the kind named (by lineage,
+the kinds not wanted left out), filtered by the values said before the kind; the values after it are the new values;
+several things for a singular kind is one question (`refused.which`, no step), none is `refused.no_such`. `sayRequest` speaks from the run's diff
 (`done.add`, `done.remove`, `done.change`, `done.undo`, `why.nothing` with the reason's reply, `nothing.same`), from
 `outcome.capabilities` (`can`, `can.say`) and `outcome.answer` (askWorld's facts).
 
@@ -2320,11 +2328,13 @@ print(runPlan({ act: 'undo' }, toolBindings(w), tool, { timeline }).ok, balls.le
 true 0
 ```
 
-### kindLineage(kind, opts?), expectedValue(kind, key, known?, opts?), cutToCount(items, links, n), fillToCount(kinds, n, opts?), notAllOneKind(kinds, pool?)
+### kindLineage(kind, opts?), expectedValue(kind, key, known?, opts?), cutToCount(items, links, n), fillToCount(kinds, n, opts?), notAllOneKind(kinds, pool?), EXPECT_TYPES
 
 Knowledge a planner and a binding share (src/expect.mjs). `kindLineage` is the kind and its parents, nearest first
 (see above). `expectedValue` reads conditional expectations, rows `k.expect.when of= key= value= [min= max=
-typical=] if.<key>=<v> if.<key>.min= if.<key>.max=` of the live world (source `world`) then of the catalog (`expect`):
+typical=] if.<key>=<v> if.<key>.min= if.<key>.max=` (and the review's form `k.expect.value [of=] on=<key> value=
+when.<key>=<v> when.<key>.min= when.<key>.max=`, `EXPECT_TYPES`; a row with no `of` is for any kind, least specific) of
+the live world (source `world`) then of the catalog (`expect`):
 those whose `of` is in the kind's lineage and whose conditions hold on what is `known` (the thing's other values,
 `kind`, `size`, `count`, `role`); several values of one if-key are alternatives. The most specific wins: the most
 condition keys, then the nearest kind, then the world before the catalog. `planRequest` fills from them every slot

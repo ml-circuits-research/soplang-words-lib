@@ -17,7 +17,11 @@ test('toolBindings: the declarations read and checked (an undeclared op, paramet
   const w = exampleWorld(SHELF);
   const B = toolBindings(w);
   assert.deepEqual([[...B.ops.keys()], B.binds.map((b) => `${b.act}:${b.op}`), B.problems], [['add', 'remove', 'paint'], ['make:add', 'remove:remove', 'change:paint'], []]);
-  assert.deepEqual(B.binds[0].args.find((a) => a.name === 'n'), { name: 'n', sources: ['step.count'] });
+  assert.deepEqual(B.binds[0].args.find((a) => a.name === 'n'), { name: 'n', sources: ['step.count'] }, 'a std.tool.arg wire');
+  assert.deepEqual([B.params.get('add').get('n').default, B.params.get('add').get('n').kind, B.params.get('add').get('kind').required], ['1', 'integer', true]);
+  const N = toolBindings(exampleWorld(NECKLACE));
+  assert.deepEqual([N.problems, N.binds.find((b) => b.op === 'bead').needs.find((n) => n.name === 'some')?.kinds, N.binds.find((b) => b.op === 'bead').args.find((a) => a.name === 'on').sources], [[], ['necklace'], ['step.in', 'state.necklace']], 'std.tool.needs op= exists=; alternatives of sources');
+  assert.deepEqual([nearestAccepted('atlas', B.params.get('add').get('kind'), { live: w }).value, nearestAccepted('shelf', B.params.get('add').get('kind'), { live: w }).refused], ['atlas', true], 'type=<a kind of the world>: it or its subkinds');
   const bad = new World();
   bad.load(`@tool core.use world=std.tool
 @o std.tool.op name=put param=a
@@ -44,6 +48,8 @@ test('expectedValue: conditional expectations, the most specific first; the valu
   const e = (kind, key, known) => expectedValue(kind, key, known, { live: w })?.value;
   assert.deepEqual([e('atlas', 'size', {}), e('novel', 'size', {}), e('novel', 'end', { size: 'big' }), e('novel', 'end', { size: 'huge' }), e('novel', 'end', { size: 'small' })], ['big', 'small', 'right', 'right', 'left']);
   assert.deepEqual(expectedValue('novel', 'end', { size: 'big' }, { live: w }).because, ['size=big']);
+  const old = new World(); old.load('@x k.expect.when of=book key=end value=right if.size=big');
+  assert.equal(expectedValue('book', 'end', { size: 'big' }, { live: old }).value, 'right', 'the 0.152.0 form is still read');
 });
 
 test('structure operators: cut keeping it connected, fill in proportion, not all of one kind', () => {
@@ -136,6 +142,20 @@ test('the shelf: declared only by wires and three primitives, through the door (
   r = s.say('in red');
   assert.deepEqual([r.run.same, r.reply.text, content(tool.view())], [true, 'Nothing changed. That is what is there already.', before], 'a revision with no effect');
   assert.equal(s.timeline.done.length, n);
+  // acts on things that are there: a reference step over the view (selector before the kind, new value after)
+  r = s.say('paint the comic blue');
+  assert.deepEqual([tool.view().find((b) => b.kind === 'comic').colour, r.reply.text], ['blue', 'The comic is blue now.']);
+  r = s.say('remove the atlases');
+  assert.deepEqual([kinds().includes('atlas'), r.reply.text], [false, 'I removed 2 atlases.']);
+  const steps = s.timeline.done.length;
+  r = s.say('remove the novel');
+  assert.deepEqual([r.reply.text, s.timeline.done.length, kinds().filter((k) => k === 'novel').length], ['Which novel? There are 5.', steps, 5], 'several and none in focus: one question, no step');
+  assert.equal(s.say('remove the atlas').reply.text, 'Nothing changed. There is no atlas here.');
+  s.say('undo');
+  assert.ok(kinds().includes('atlas'), 'undo of a remove makes them again through the make binding');
+  // a message read only in part executes nothing, and the target is never guessed over an unread word
+  r = s.say('add 2 dictionaries');
+  assert.deepEqual([r.run.ok, r.reply.text.startsWith('Nothing changed. I did not understand'), s.timeline.done.length], [false, true, steps - 1]);
 });
 
 // ---- properties over every tool example world, by what it declares -------------------------------------------------

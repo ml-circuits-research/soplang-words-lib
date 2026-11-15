@@ -635,7 +635,7 @@ export interface Request { act: string | null; mode?: string | null; target: str
 /** The state of a dialogue a revision reads. */
 export interface RequestDialogue { last: Request | null; result?: { count?: number; kinds?: Record<string, number>; things?: string[]; layout?: string | null } | null; previous?: Request | null; seed?: number; previousSeed?: number; previousVary?: boolean; revisions?: unknown; lastRun?: { made: string[] } | null; corrections?: { on: string; step?: string; value?: unknown }[]; lastPlan?: RequestPlan | null }
 /** A plan of a request: the acts with their roles filled, what was assumed, what is not honoured. */
-export interface RequestPlan { ok: boolean; act: string | null; target: string | null; roles: Record<string, unknown>; steps: { action: string; args: Record<string, unknown>; item?: boolean; link?: boolean }[]; assumed: { key: string; value: unknown; from: string; because?: string }[]; structure?: "cut" | "fill"; notHonoured: { on: string; words: string; why: string; code: string; value?: unknown }[]; seed: number; sources: string[]; bounds?: { count: [number, number] | null; not: string[] }; rejected?: { place: string | null; label: string; why: string[]; hard: boolean }[]; cannot?: { why: string; words?: string }[]; reasoning?: { candidates: number; depth: number; ticks: number; exhausted: boolean; induced: { of: string; n: number; pattern: Record<string, unknown> }[]; soft: string[]; derived: number; chosen?: string } | null }
+export interface RequestPlan { ok: boolean; act: string | null; target: string | null; roles: Record<string, unknown>; steps: { action: string; args: Record<string, unknown>; item?: boolean; link?: boolean }[]; assumed: { key: string; value: unknown; from: string; because?: string }[]; structure?: "cut" | "fill"; reference?: boolean; ask?: boolean; replies?: { reply: string; roles: Record<string, unknown> }[]; notHonoured: { on: string; words: string; why: string; code: string; value?: unknown }[]; seed: number; sources: string[]; bounds?: { count: [number, number] | null; not: string[] }; rejected?: { place: string | null; label: string; why: string[]; hard: boolean }[]; cannot?: { why: string; words?: string }[]; reasoning?: { candidates: number; depth: number; ticks: number; exhausted: boolean; induced: { of: string; n: number; pattern: Record<string, unknown> }[]; soft: string[]; derived: number; chosen?: string } | null }
 /** The order in which a gap is filled. */
 export const REQUEST_SOURCES: readonly string[];
 /** The constraint keys of w.request. */
@@ -660,9 +660,9 @@ export interface ViewThing { id: string; kind: string | undefined; attrs: Record
 /** What changed between two views. */
 export interface StateDiff { added: ViewThing[]; removed: ViewThing[]; changed: { id: string; kind: string | undefined; key: string; from: unknown; to: unknown }[] }
 /** A tool parameter as declared by std.tool.param. */
-export interface ToolParam { op?: string; name?: string; type?: string; accepts?: string[]; scale?: string; by?: string; order?: string; min?: number; max?: number; required?: boolean }
+export interface ToolParam { op?: string; name?: string; kind?: string; default?: unknown; type?: string; accepts?: string[]; scale?: string; by?: string; order?: string; min?: number; max?: number; required?: boolean }
 /** The std.tool.* declarations of a world. */
-export interface ToolBindings { ops: Map<string, { name: string; world?: string; params: string[]; effects: string[]; doc?: string }>; params: Map<string, Map<string, ToolParam>>; binds: { i: number; act: string; of: string[]; op: string; args: { name: string; sources: string[] }[]; needs: { name: string; args: string[] }[]; makes: string[]; removes: string[]; changes: string[] }[]; customs: Map<string, { name: string; kind: string; in: string[]; out?: string; fails?: string }>; problems: { bind: number; why: string; code: string }[]; catalog: unknown[] }
+export interface ToolBindings { ops: Map<string, { name: string; world?: string; params: string[]; effects: string[]; doc?: string }>; params: Map<string, Map<string, ToolParam>>; binds: { i: number; id?: string; act: string; of: string[]; op: string; args: { name: string; sources: string[] }[]; needs: { name: string; args: string[]; kinds?: string[] }[]; makes: string[]; removes: string[]; changes: string[] }[]; customs: Map<string, { name: string; kind: string; in: string[]; out?: string; fails?: string }>; problems: { bind: number; why: string; code: string }[]; catalog: unknown[] }
 /** A timeline of plan runs: one entry per plan (a revision replaces the last). */
 export interface ToolTimeline { done: object[]; undone: object[] }
 /** The tool's operations by op name, its custom constraints and searches, its view and (optionally) snapshot / restore. */
@@ -683,7 +683,7 @@ export function toolTimeline(): ToolTimeline;
 /** The acts a tool world offers (honoured and bound). */
 export function toolCapabilities(live: World, bindings?: ToolBindings | null): { act: string; kinds: string[]; on: string[]; op: string }[];
 /** A value as a parameter takes it, translated by knowledge (range, kind lineage, ordered scale). */
-export function nearestAccepted(value: unknown, param: ToolParam | undefined, opts?: { live?: World | null; catalog?: unknown }): { value?: unknown; translated?: boolean; was?: unknown; by?: string; refused?: boolean; values?: string[] };
+export function nearestAccepted(value: unknown, param: ToolParam | undefined, opts?: { live?: World | null; catalog?: unknown; look?: (() => Map<string, ViewThing>) | null }): { value?: unknown; translated?: boolean; was?: unknown; by?: string; refused?: boolean; values?: string[] };
 /** A tool's state as a Map of things. */
 export function readView(view: unknown): Map<string, ViewThing>;
 /** What changed between two views. */
@@ -698,6 +698,8 @@ export function toolSession(live: World, primitives: ToolPrimitives, opts?: { la
 export function kindLineage(kind: string, opts?: { live?: World | null; catalog?: unknown; drawn?: boolean }): string[];
 /** The value a conditional expectation (k.expect.when) gives a key of a thing of a kind. */
 export function expectedValue(kind: string, key: string, known?: Record<string, unknown>, opts?: { live?: World | null; catalog?: unknown; sources?: string[]; lineage?: string[] | null }): { value: unknown; min?: number; max?: number; typical?: number; from: string; because: string[]; of?: string } | null;
+/** The row types of conditional expectations (k.expect.value, k.expect.when). */
+export const EXPECT_TYPES: readonly string[];
 /** The first n items of a structure, kept connected (breadth first along the links). */
 export function cutToCount<T>(items: T[], links: { a: T; b: T }[], n: number): { keep: T[]; drop: T[]; links: { a: T; b: T }[] };
 /** The kinds to add to reach n, in the proportions there are. */

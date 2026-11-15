@@ -41,7 +41,7 @@ export { storyState } from './story-focus.mjs';
 export { planner, factStore, PlanLive, readMethods, PLAN_LIMITS, solveChoices } from './plan.mjs';
 export { inflectBy, articleFor, morphOf, generate, analyse, fold, splitClitics, dictionary, realise, templateFor } from './morph.mjs';
 export { ledgerAppend, ledgerGroups, ledgerKey, stageOf, STAGES } from './ledger.mjs';
-export const version = '0.152.0';
+export const version = '0.152.1';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)
  * tools/build.mjs fills in `hash`, a fingerprint of the bundled sources, and `date`,
@@ -60,6 +60,6 @@ export { loadWorldSet, readTurn, turnScope, openSession, replyFrom, referentOf, 
 export { clauses, cutPoints } from './clauses.mjs';
 export { readRequest, reviseRequest, planRequest, runWorldPlan, sayRequest, requestWires, capabilitiesOf, REQUEST_SOURCES, REQUEST_KEYS, VALUE_TYPES } from './request.mjs';
 export { runPlan, toolBindings, toolTimeline, toolSession, toolCapabilities, nearestAccepted, stateDiff, mirrorState, askWorld, readView, WORLD_QUESTIONS, TOOL_ARG_SOURCES } from './tool.mjs';
-export { kindLineage, expectedValue, cutToCount, fillToCount, notAllOneKind } from './expect.mjs';
+export { kindLineage, expectedValue, cutToCount, fillToCount, notAllOneKind, EXPECT_TYPES } from './expect.mjs';
 export { repairWords, editCost, worldWords, languageWords, SPELL, SPELL_SOURCES, SPELL_COSTS } from './spell.mjs';
 export { factsOf, kindFactsOf, deduceState, induceStyle, induceCorrections, REASONING, KIND_FACTS, REASON_RULES } from './reason.mjs';

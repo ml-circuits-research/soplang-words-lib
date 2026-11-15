@@ -927,7 +927,18 @@ ${calcs.join('\n')}
 @k.tpa.order core.slot of=std.tool.param key=order
 @k.tpa.min core.slot of=std.tool.param key=min kind=number
 @k.tpa.max core.slot of=std.tool.param key=max kind=number
-@k.tpa.required core.slot of=std.tool.param key=required enum=yes enum=no
+@k.tpa.required core.slot of=std.tool.param key=required enum=yes enum=no enum=true enum=false
+@k.tpa.kind core.slot of=std.tool.param key=kind enum=integer enum=number enum=string enum=atom enum=boolean
+@k.tpa.default core.slot of=std.tool.param key=default
+@k.ta.bind core.slot of=std.tool.arg key=bind required=true
+@k.ta.param core.slot of=std.tool.arg key=param required=true
+@k.ta.from core.slot of=std.tool.arg key=from many=true
+@k.tn.op core.slot of=std.tool.needs key=op required=true
+@k.tn.exists core.slot of=std.tool.needs key=exists many=true
+@k.tn.absent core.slot of=std.tool.needs key=absent many=true
+@k.tn.check core.slot of=std.tool.needs key=check many=true
+@k.tn.args core.slot of=std.tool.needs key=args many=true
+@k.tb.world core.slot of=std.tool.bind key=world
 @k.tb.act core.slot of=std.tool.bind key=act required=true
 @k.tb.of core.slot of=std.tool.bind key=of many=true
 @k.tb.op core.slot of=std.tool.bind key=op required=true

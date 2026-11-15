@@ -1677,8 +1677,10 @@ world that is not declared.
 | Wire | Keys | Meaning |
 | --- | --- | --- |
 | `std.tool.op` | `name`, `world`, `param` (many), `effect` (makes, removes, changes), `doc` | an operation of the world's tool |
-| `std.tool.param` | `op`, `name`, `type`, `accepts` (many), `scale`, `by`, `order`, `min`, `max`, `required` | a typed parameter and the values the tool takes; others are translated by knowledge (nearest grade, kind lineage, range) |
+| `std.tool.param` | `op`, `name`, `kind`, `type`, `accepts` (many), `scale`, `by`, `order`, `min`, `max`, `default`, `required` | a typed parameter and the values the tool takes; others are translated by knowledge (nearest grade, kind lineage, range) |
 | `std.tool.bind` | `act`, `of` (many), `op`, `arg` (many, `<param><-<source>\|...`), `needs`, `makes`, `removes`, `changes` | a plan step of that act and kind runs that op, each argument from its sources, after its preconditions |
+| `std.tool.arg` | `bind`, `param`, `from` (many) | one argument of a binding and its sources, in order |
+| `std.tool.needs` | `op`, `exists`, `absent`, `check`, `args` | the preconditions of an op on the state |
 | `std.tool.custom` | `name`, `world`, `kind` (constraint, search), `in`, `out`, `fails`, `doc` | a named custom constraint or search the tool provides, with its signature |
 
 **The acts** are actions (`world.act({ action, args })`, or several as one sentence with

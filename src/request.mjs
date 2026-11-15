@@ -483,6 +483,7 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   const H = cap.honours.filter((h) => h.act === act);
   if (!H.length) { notHonoured.push({ on: 'act', words: act, why: `this world does not ${act}`, code: 'act' }); return out; }
   if (actFrom !== 'said') assumed.push({ key: 'act', value: act, from: actFrom });
+  if (act !== 'make' && act !== 'connect') return referencePlan(live, request, opts, out, H, act);
   const random = request.constraints.some((c) => c.on === 'manner' && c.value === 'random') || !!opts.vary; // "random", or a redo: varied within the range
   const catalog = [].concat(opts.catalog ?? []);
   const from = { world: live, expect: catalog };
@@ -492,8 +493,9 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   // the target: said, the dialogue's, the world's own (the first thing it declares to make)
   let target = request.refers === 'last' ? (request.target ?? opts.dialogue?.last?.target ?? null) : request.target, targetFrom = 'said';
   if (!target) { const k = request.constraints.find((c) => c.on === 'kind' && c.want === 'yes' && makeable(c.value)); if (k) target = k.value; }
-  if (!target && has('dialogue') && opts.dialogue?.last?.target) { target = opts.dialogue.last.target; targetFrom = 'dialogue'; }
-  if (!target && has('world')) { const t = H.flatMap((h) => h.of).find((k) => rowsOf(live, 'k.expect.make').some((m) => first(m, 'thing') === k)) ?? H.flatMap((h) => h.of)[0]; if (t) { target = t; targetFrom = 'world'; } }
+  const guessable = !request.unread?.length; // an unread word may be where the thing stands: the target is never guessed over it, like the act
+  if (!target && guessable && has('dialogue') && opts.dialogue?.last?.target) { target = opts.dialogue.last.target; targetFrom = 'dialogue'; }
+  if (!target && guessable && has('world')) { const t = H.flatMap((h) => h.of).find((k) => rowsOf(live, 'k.expect.make').some((m) => first(m, 'thing') === k)) ?? H.flatMap((h) => h.of)[0]; if (t) { target = t; targetFrom = 'world'; } }
   if (!target) { notHonoured.push({ on: 'target', words: request.text, why: 'nothing to make was read', code: 'no_target' }); return out; }
   out.target = target;
   if (targetFrom !== 'said') assumed.push({ key: 'target', value: target, from: targetFrom });
@@ -770,6 +772,49 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   return out;
 }
 
+/**
+ * An act on things that are there (remove, change, place ...): the things the request refers to, resolved on the
+ * world's state (factsOf): "them" / "it" are the last result; else the things of the kind named (by lineage), those of
+ * a kind not wanted left out, filtered by the values said before the kind ("the red novels"); the values said after it
+ * are the new values of a change, the place said is where a place puts them. Several things for a singular kind and
+ * none in focus: one question (`ask`, reply refused.which); none: refused.no_such. The steps are one per thing.
+ */
+function referencePlan(live, request, opts, out, H, act) {
+  const view = factsOf(live);
+  const kindC = request.constraints.filter((c) => c.on === 'kind' && (c.want ?? 'yes') === 'yes' && c.value);
+  const kind = request.refers === 'last' ? null : request.target ?? kindC[0]?.value ?? null;
+  const keys = new Set(H.filter((h) => !h.of.length || !kind || h.of.includes(kind) || kindLineage(kind, { live }).some((k) => h.of.includes(k))).flatMap((h) => [...h.on]));
+  for (const c of request.constraints) if (!keys.has(c.on) && (c.origin ?? 'said') === 'said') out.notHonoured.push({ on: c.on, words: c.words ?? String(c.value ?? c.on), why: `this world does not take ${c.on} for ${act}`, code: 'not_declared', value: c.value });
+  const reply = (r, roles) => { out.replies = [...(out.replies ?? []), { reply: r, roles }]; return out; };
+  let ids;
+  if (request.refers === 'last') ids = [...(opts.dialogue?.lastRun?.made ?? opts.dialogue?.result?.things ?? [])].map(strip).filter((id) => view.thing(id));
+  else if (kind) ids = view.ofKind(kind);
+  else { out.notHonoured.push({ on: 'target', words: request.text, why: 'nothing named was read', code: 'no_target' }); return out; }
+  const kindAt = kindC[0]?.at ?? (request.refers === 'last' ? -1 : Infinity);
+  const noK = request.constraints.filter((c) => c.on === 'kind' && c.want === 'no' && c.value).map((c) => c.value);
+  const attrs = request.constraints.filter((c) => c.on === 'attribute' && (c.want ?? 'yes') === 'yes' && keys.has('attribute'));
+  const selectors = act === 'remove' ? attrs : attrs.filter((c) => (c.at ?? 0) < kindAt);
+  const values = act === 'remove' ? [] : attrs.filter((c) => !selectors.includes(c));
+  ids = ids.filter((id) => !(view.thing(id)?.kinds ?? []).some((k) => noK.includes(k)) && selectors.every((c) => view.values(id, c.attribute ?? 'colour').map(String).includes(String(c.value))));
+  const countC = request.constraints.find((c) => c.on === 'count' && c.number !== undefined);
+  if (countC) ids = ids.slice(-countC.number); // "remove 2 novels": the newest
+  out.target = kind;
+  if (!ids.length) return reply('refused.no_such', { thing: plain(kind ?? request.text) });
+  const several = request.refers === 'last' || kindC[0]?.plural || countC || request.constraints.some((c) => c.on === 'count' && c.amount);
+  if (ids.length > 1 && !several) { out.ask = true; return reply('refused.which', { kind: plain(kind), number: ids.length }); }
+  const set = {};
+  for (const c of values) set[c.attribute ?? 'colour'] = c.value;
+  const sizeC = request.constraints.find((c) => c.on === 'size' && c.value && keys.has('size'));
+  if (sizeC && act !== 'remove') set.size = sizeC.value;
+  const placeC = request.constraints.find((c) => c.on === 'place' && c.value && keys.has('place'));
+  if (act === 'place' && placeC) set.place = placeC.value;
+  if (act !== 'remove' && !Object.keys(set).length) return reply('refused.missing_value', { key: act === 'place' ? 'place' : 'value' });
+  out.steps = ids.map((id) => ({ action: act, args: { thing: `$${id}`, ...set } }));
+  out.roles = { count: ids.length, things: ids, ...set };
+  out.ok = true; out.reference = true;
+  return out;
+}
+
 const NO_HINTS = Object.freeze({ attrs: null, layout: null, sizeStep: null, place: null, drop: null });
 const strip = (id) => String(id).replace(/^\$/, '');
 
@@ -858,7 +903,7 @@ export function planRequest(live, request, opts = {}) {
   const kept = keptStructure(live, request, opts);
   if (kept) return kept;
   const base = planOnce(live, request, opts, NO_HINTS);
-  if (!base.ok || opts.reason === false || typeof live?.fork !== 'function' || typeof live?._compiled !== 'function') return { ...base, rejected: [], cannot: [], reasoning: null };
+  if (!base.ok || base.reference || opts.reason === false || typeof live?.fork !== 'function' || typeof live?._compiled !== 'function') return { ...base, rejected: [], cannot: [], reasoning: null };
   const budget = { ticks: opts.ticks ?? REASONING.ticks, used: 0 };
   const max = Math.max(1, Math.min(opts.candidates ?? REASONING.candidates, REASONING.candidates));
   const c = live._compiled();
@@ -1008,12 +1053,13 @@ export function sayRequest(request, outcome = {}, opts = {}) {
       for (const e of ch.values()) facts.push({ reply: 'done.change', roles: { thing: plain(e.kind), number: e.n, value: String(e.value) } });
     }
     const nothing = !d.added.length && !d.removed.length && !d.changed.length;
-    if (nothing && !tool.question && !(tool.ok && (tool.undo || tool.redo))) {
+    if (nothing && !tool.question && !outcome.ask && !(tool.ok && (tool.undo || tool.redo))) {
       facts.push({ reply: 'why.nothing', roles: {} });
       if (tool.failed?.reply) facts.push({ reply: tool.failed.reply, roles: tool.failed.roles ?? {}, code: tool.failed.code });
       else if (tool.same) facts.push({ reply: 'nothing.same', roles: {}, code: 'same' }); // a revision that asks for what is there
     }
   }
+  for (const f of outcome.replies ?? []) facts.push({ reply: f.reply, roles: f.roles, code: 'plan' }); // what the plan says itself (refused.which, refused.no_such)
   if (run) {
     if (run.whole) facts.push({ reply: 'done.make', roles: { kind: plain(outcome.target), number: 1 } });
     else for (const [kind, n] of Object.entries(run.kinds)) { const v = outcome.roles?.colour; facts.push({ reply: v ? 'done.make.value' : 'done.make', roles: { kind: plain(kind), number: n, ...(v ? { value: v } : {}) } }); }
@@ -1023,7 +1069,7 @@ export function sayRequest(request, outcome = {}, opts = {}) {
   for (const a of tool && (!tool.ok || tool.same) ? [] : assumed) if (a.key !== 'target' || !run?.whole) facts.push({ reply: 'assumed', roles: { key: a.key, value: String(a.value) }, from: a.from });
   for (const nh of outcome.notHonoured ?? []) facts.push({ reply: 'not_honoured', roles: { words: nh.words, why: nh.why }, code: nh.code });
   for (const c of outcome.cannot ?? []) facts.push({ reply: 'not_honoured', roles: { words: c.words ?? request?.text ?? '', why: c.why }, code: 'cannot' });
-  if (request?.unread?.length && (run || outcome.revised || (tool && !tool.question))) facts.push({ reply: 'unread', roles: { words: request.unread.map((w) => `"${w}"`).join(', ') } });
+  if (request?.unread?.length && (run || outcome.revised || (tool && !tool.question && tool.failed?.code !== 'unread'))) facts.push({ reply: 'unread', roles: { words: request.unread.map((w) => `"${w}"`).join(', ') } });
   const missing = [];
   const texts = o.language ? facts.map((f) => { const t = replyFrom(o.language, f.reply, f.roles, { lang, dictionary: o.dictionary }); if (t == null) missing.push(f.reply); return t; }).filter(Boolean) : [];
   return { facts, text: texts.join(' '), missing: [...new Set(missing)] };

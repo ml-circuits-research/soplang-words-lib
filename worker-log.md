@@ -5877,3 +5877,8 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   1 skipped; SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs" 564 / 562 / 0; npm run test:compat 11 / 0;
   node tools/scan-loops.mjs src clean; doc examples api.md 138, capabilities.md 47, 0 problems.
 - Open points: questions.md Q87.
+
+## 0.152.1 reconciled with reviews/legarea-declarativa.md; Q87 items 3 and 5
+- Aligned: std.tool.arg / std.tool.needs / param kind, type (world kind), default, required=true; bind world=; makes from op effect; sources state.<kind>, result.<n>; k.expect.value on= when. (k.expect.when still read); references for remove / change / place (refused.which once, refused.no_such); partial read executes nothing (toolSession); no target guess over an unread word (planRequest). Examples in the review's forms; the shelf honours remove and change ("paint the comic blue", "remove the atlases", "remove the novel" -> "Which novel? There are 5.", "add 2 dictionaries" -> nothing changed, not understood).
+- Disagreements / choices: questions.md Q88 (10 items).
+- Tests: node --test test/tool.test.mjs 7 pass; npm test 564 tests, 562 pass, 0 fail, 1 skipped; SOPWORLD_BUNDLE=1 564 / 562 / 0; test:compat 11 / 0; doc examples 236, 0 problems; scan-loops clean.

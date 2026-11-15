@@ -44,12 +44,15 @@ export function kindLineage(kind, { live = null, catalog = [], drawn = false } =
   return out;
 }
 
-/** The conditions of a k.expect.when row: [{ key, op: 'eq' | 'min' | 'max', value }] from its if.<key>[.min|.max] attributes. */
+/** The row types of conditional expectations: `k.expect.value on= value= when.<key>=` (the review's form) and `k.expect.when key= value= if.<key>=` (0.152.0). */
+export const EXPECT_TYPES = Object.freeze(['k.expect.value', 'k.expect.when']);
+/** The conditions of a k.expect.value / k.expect.when row: [{ key, op: 'eq' | 'min' | 'max', value }] from its when.<key>[.min|.max] (or if.<key>...) attributes. */
 export function conditionsOf(row) {
   const out = [];
   for (const [k, vs] of Object.entries(row)) {
-    if (!k.startsWith('if.')) continue;
-    const rest = k.slice(3), m = rest.match(/^(.*)\.(min|max)$/);
+    const pre = k.startsWith('when.') ? 5 : k.startsWith('if.') ? 3 : 0;
+    if (!pre) continue;
+    const rest = k.slice(pre), m = rest.match(/^(.*)\.(min|max)$/);
     for (const v of vs) out.push(m ? { key: m[1], op: m[2], value: Number(v) } : { key: rest, op: 'eq', value: v });
   }
   return out;
@@ -65,8 +68,8 @@ const holds = (c, known) => {
 
 /**
  * The value a conditional expectation gives `key` of a thing of `kind`, the things already `known` of it (its other
- * values, `kind`, `size`, `count`, `role`): the rows `k.expect.when of= key= value= [min= max= typical=] if.<key>=<v>
- * if.<key>.min= if.<key>.max=` of the live world (source `world`), then of the catalog (source `expect`), whose `of` is
+ * values, `kind`, `size`, `count`, `role`): the rows `k.expect.value [of=] on=<key> value= [min= max= typical=]
+ * when.<key>=<v> when.<key>.min= when.<key>.max=` (also `k.expect.when key= ... if.<key>=`) of the live world (source `world`), then of the catalog (source `expect`), whose `of` is
  * in the kind's lineage and whose conditions all hold. The most specific wins: the most conditions, then the nearest
  * kind of the lineage, then the world before the catalog, then the order given. The values of one if-key are alternatives (any of them holds). Returns { value, min, max, typical,
  * from, because: [conditions], of } or null.
@@ -76,8 +79,8 @@ export function expectedValue(kind, key, known = {}, { live = null, catalog = []
   const from = { world: [live], expect: [].concat(catalog ?? []) };
   let best = null;
   sources.filter((s) => from[s]).forEach((s, si) => {
-    rowsOf(from[s], 'k.expect.when').forEach((r, ri) => {
-      if (first(r, 'key') !== key) return;
+    rowsOf(from[s], EXPECT_TYPES).forEach((r, ri) => {
+      if ((first(r, 'on') ?? first(r, 'key')) !== key) return;
       const of = first(r, 'of'), d = of === undefined ? line.length : line.indexOf(of);
       if (d < 0) return;
       const cs = conditionsOf(r);

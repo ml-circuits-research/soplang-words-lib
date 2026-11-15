@@ -20,7 +20,7 @@ const first = (o, k) => o?.[k]?.[0];
 const strip = (v) => String(v).replace(/^\$/, '');
 const num = (x) => (x === undefined || x === null || x === '' ? undefined : Number(x));
 /** The source forms of an argument (`arg=<param><-<source>|<source>...`). */
-export const TOOL_ARG_SOURCES = Object.freeze(['step', 'request', 'plan', 'custom', 'value', 'expect']);
+export const TOOL_ARG_SOURCES = Object.freeze(['step', 'request', 'state', 'result', 'plan', 'custom', 'value', 'expect']);
 const BUILTIN_NEEDS = new Set(['exists', 'absent']);
 
 // ---- declarations ------------------------------------------------------------------------------------------------
@@ -42,11 +42,29 @@ export function toolBindings(live, { catalog = [] } = {}) {
   for (const r of rowsOf(live, 'std.tool.op')) ops.set(first(r, 'name'), { name: first(r, 'name'), world: first(r, 'world'), params: r.param ?? [], effects: r.effect ?? [], doc: first(r, 'doc') });
   for (const r of rowsOf(live, 'std.tool.param')) {
     const op = first(r, 'op'), m = params.get(op) ?? new Map();
-    m.set(first(r, 'name'), { op, name: first(r, 'name'), type: first(r, 'type'), accepts: (r.accepts ?? []).map(String), scale: first(r, 'scale'), by: first(r, 'by'), order: first(r, 'order'), min: num(first(r, 'min')), max: num(first(r, 'max')), required: first(r, 'required') === 'yes' });
+    m.set(first(r, 'name'), { op, name: first(r, 'name'), kind: first(r, 'kind'), type: first(r, 'type'), accepts: (r.accepts ?? []).map(String), scale: first(r, 'scale'), by: first(r, 'by'), order: first(r, 'order'), min: num(first(r, 'min')), max: num(first(r, 'max')), default: first(r, 'default'), required: ['yes', 'true', true].includes(first(r, 'required')) });
     params.set(op, m);
   }
   for (const r of rowsOf(live, 'std.tool.custom')) customs.set(first(r, 'name'), { name: first(r, 'name'), kind: first(r, 'kind') ?? 'constraint', in: r.in ?? [], out: first(r, 'out'), fails: first(r, 'fails') });
-  const binds = rowsOf(live, 'std.tool.bind').map((r, i) => ({ i, act: first(r, 'act'), of: (r.of ?? []).map(String), op: first(r, 'op'), args: (r.arg ?? []).map(parseArg), needs: (r.needs ?? []).map(parseCall), makes: r.makes ?? [], removes: r.removes ?? [], changes: r.changes ?? [] }));
+  // a binding's arguments: inline (arg=<param><-<source>|...) or one std.tool.arg wire each (bind=$<binding> param= from=...)
+  const argRows = (live?.ofType?.('std.tool.arg') ?? []).map((f) => ({ bind: strip(f.attrs.bind?.[0] ?? ''), param: String(f.attrs.param?.[0] ?? ''), from: (f.attrs.from ?? []).map((x) => String(x).replace(/^"|"$/g, '')) }));
+  // preconditions of an op on the state (std.tool.needs op= exists=<kind> absent=<kind> check=<custom> args=...)
+  const opNeeds = new Map();
+  for (const r of rowsOf(live, 'std.tool.needs')) {
+    const list = opNeeds.get(first(r, 'op')) ?? [];
+    for (const k of r.exists ?? []) list.push({ name: 'some', args: [], kinds: [String(k)] });
+    for (const k of r.absent ?? []) list.push({ name: 'none', args: [], kinds: [String(k)] });
+    for (const c of r.check ?? []) list.push({ name: String(c), args: (r.args ?? []).map(String) });
+    opNeeds.set(first(r, 'op'), list);
+  }
+  const binds = (live?.ofType?.('std.tool.bind') ?? []).map((f, i) => {
+    const r = rowsOf({ ofType: () => [f] }, 'x')[0];
+    const args = (r.arg ?? []).map(parseArg);
+    for (const a of argRows.filter((x) => x.bind === f.id)) args.push({ name: a.param, sources: a.from.flatMap((x) => x.split('|')).filter(Boolean) });
+    const op = first(r, 'op');
+    const effects = ops.get(op)?.effects ?? [];
+    return { i, id: f.id, act: first(r, 'act'), of: (r.of ?? []).map(String), op, args, needs: [...(r.needs ?? []).map(parseCall), ...(opNeeds.get(op) ?? [])], makes: r.makes ?? (effects.includes('makes') ? ['thing'] : []), removes: r.removes ?? [], changes: r.changes ?? [] };
+  });
   for (const b of binds) {
     if (!ops.has(b.op)) problems.push({ bind: b.i, why: `op ${b.op} is not declared`, code: 'no_op' });
     const ps = params.get(b.op) ?? new Map(), declared = new Set([...(ops.get(b.op)?.params ?? []), ...ps.keys()]);
@@ -58,8 +76,8 @@ export function toolBindings(live, { catalog = [] } = {}) {
         if (head === 'custom' && customs.get(s.slice(7))?.kind !== 'search') problems.push({ bind: b.i, why: `${s.slice(7)} is not a declared search`, code: 'no_custom' });
       }
     }
-    for (const n of b.needs) if (!BUILTIN_NEEDS.has(n.name) && customs.get(n.name)?.kind !== 'constraint') problems.push({ bind: b.i, why: `${n.name} is not a declared constraint`, code: 'no_custom' });
-    for (const p of ps.values()) if (p.required && !b.args.some((a) => a.name === p.name)) problems.push({ bind: b.i, why: `${b.op} needs ${p.name} and the binding gives none`, code: 'required' });
+    for (const n of b.needs) if (!BUILTIN_NEEDS.has(n.name) && n.name !== 'some' && n.name !== 'none' && customs.get(n.name)?.kind !== 'constraint') problems.push({ bind: b.i, why: `${n.name} is not a declared constraint`, code: 'no_custom' });
+    for (const p of ps.values()) if (p.required && p.default === undefined && !b.args.some((a) => a.name === p.name)) problems.push({ bind: b.i, why: `${b.op} needs ${p.name} and the binding gives none`, code: 'required' });
   }
   return { ops, params, binds, customs, problems, catalog: [].concat(catalog ?? []) };
 }
@@ -155,20 +173,29 @@ const idKeyOf = (type, srcs) => {
  * (`scale=` or `type=`: rows with an order, named by `by=` or the type's id slot; ties in the order of `accepts`).
  * Returns { value, translated?: true, was?, by? } or { refused: true, values }.
  */
-export function nearestAccepted(value, param, { live = null, catalog = [] } = {}) {
+export function nearestAccepted(value, param, { live = null, catalog = [], look = null } = {}) {
   if (value === undefined || value === null || !param) return { value };
   if (Array.isArray(value)) return { value };
-  if (param.type === 'number' || param.type === 'integer' || param.min !== undefined || param.max !== undefined) {
+  const numeric = ['number', 'integer'].includes(param.kind) || ['number', 'integer'].includes(param.type);
+  if (numeric || param.min !== undefined || param.max !== undefined) {
     let n = Number(value);
-    if (Number.isNaN(n)) return param.type === 'number' || param.type === 'integer' ? { refused: true, values: [] } : { value };
-    if (param.type === 'integer') n = Math.round(n);
+    if (Number.isNaN(n)) return numeric ? { refused: true, values: [] } : { value };
+    if (param.type === 'integer' || param.kind === 'integer') n = Math.round(n);
     const c = Math.min(param.max ?? Infinity, Math.max(param.min ?? -Infinity, n));
     return c !== Number(value) ? { value: c, translated: true, was: value, by: 'range' } : { value: c };
   }
+  const srcs = [live, ...[].concat(catalog ?? [])];
+  const worldType = param.type && param.type !== 'kind' && live?._compiled?.().slots.get(param.type) && !rowsOf(srcs, param.type).some((r) => r.order !== undefined);
+  if (worldType && !(param.accepts ?? []).length) { // type=<a kind of the world>: the value is that kind or one of its subkinds (or a thing of it, by id)
+    const line = kindLineage(String(value), { live, catalog });
+    if (line.includes(param.type)) return { value };
+    const thing = typeof look === 'function' ? look().get(strip(value)) : null; // a thing of the tool's view
+    if (thing && kindLineage(String(thing.kind ?? ''), { live, catalog }).includes(param.type)) return { value };
+    return { refused: true, values: [param.type] };
+  }
   const acc = param.accepts ?? [];
   if (!acc.length || acc.includes(String(value))) return { value };
-  const srcs = [live, ...[].concat(catalog ?? [])];
-  if (param.type === 'kind') {
+  if (param.type === 'kind' || worldType) {
     const up = kindLineage(value, { live, catalog, drawn: true });
     const u = up.find((k) => acc.includes(k));
     if (u !== undefined) return { value: u, translated: true, was: value, by: up.indexOf(u) === 0 ? 'drawn' : 'lineage' };
@@ -327,8 +354,15 @@ function sourceValue(src, name, kind, steps1, args, resolveV, ctx) {
     const v = c.value ?? c.number;
     return v === undefined || v === null ? null : { value: v, from: c.origin && !SAID.has(c.origin) ? 'revised' : 'said' };
   }
+  if (head === 'result') { const v = resolveV({ step: Number(path) }); return v === undefined || v === null ? null : { value: v, from: 'said', plan: true }; }
+  if (head === 'state') { // the thing of that kind the request refers to (a constraint naming the kind), else the newest one there
+    const things = [...ctx.look().values()].filter((t) => kindLineage(t.kind, ctx).includes(path));
+    if (!things.length) return null;
+    const named = (ctx.request?.constraints ?? []).find((c) => c.value && things.some((t) => t.id === strip(c.value)));
+    return { value: named ? strip(named.value) : things.at(-1).id, from: named ? 'said' : 'world' };
+  }
   if (head === 'plan') { const v = ctx.plan?.roles?.[path]; return v === undefined ? null : { value: v, ...provenance(path, ctx), plan: true }; }
-  if (head === 'value') return { value: path, from: 'world' };
+  if (head === 'value') return { value: path, from: 'world', plan: true }; // a constant of the wires: not an assumption
   if (head === 'custom') {
     const fn = ctx.primitives?.[path];
     if (typeof fn !== 'function') return null;
@@ -342,10 +376,12 @@ function sourceValue(src, name, kind, steps1, args, resolveV, ctx) {
 function fillArgs(bind, kind, steps1, resolveV, ctx) {
   const params = ctx.B.params.get(bind.op) ?? new Map();
   const args = {}, assumed = [], translated = [];
-  for (const a of bind.args) { // bounded: the arguments of one binding
+  const declared = [...bind.args, ...[...params.values()].filter((p) => p.default !== undefined && !bind.args.some((a) => a.name === p.name)).map((p) => ({ name: p.name, sources: [] }))]; // a parameter the binding leaves out takes its declared default
+  for (const a of declared) { // bounded: the arguments of one binding
     let got = null;
     for (const s of [...a.sources, 'expect']) { got = sourceValue(s, a.name, kind, steps1, args, resolveV, ctx); if (got) break; } // an expectation is always the last source
     const p = params.get(a.name);
+    if (!got && p?.default !== undefined) got = { value: p.default, from: 'world', because: [`${bind.op}.${a.name} default`] }; // the parameter's own default, declared
     if (!got) { if (p?.required) return { failed: { code: 'missing', reply: 'refused.missing_value', roles: { key: a.name } } }; continue; }
     const t = nearestAccepted(got.value, p, ctx);
     if (t.refused) return { failed: { code: 'value', reply: 'refused.value', roles: { key: a.name, value: String(got.value), values: (t.values ?? []).join(', ') } } };
@@ -363,6 +399,11 @@ function needsUnmet(bind, args, kind, view, ctx) {
       const ids = vals.flatMap((v) => [].concat(v ?? [])).map(strip);
       const bad = ids.find((id) => (n.name === 'exists') !== view.has(id));
       if (bad !== undefined) return { code: n.name === 'exists' ? 'no_such' : 'exists', reply: n.name === 'exists' ? 'refused.no_such' : 'why.nothing', roles: { thing: bad } };
+      continue;
+    }
+    if (n.name === 'some' || n.name === 'none') { // a thing of the kind (by lineage) is in the state, or none is
+      const has = [...view.values()].some((t) => kindLineage(t.kind, ctx).some((k) => n.kinds.includes(k)));
+      if (has !== (n.name === 'some')) return { code: n.name === 'some' ? 'no_such' : 'exists', reply: n.name === 'some' ? 'refused.no_such' : 'why.nothing', roles: { thing: n.kinds[0] } };
       continue;
     }
     const custom = ctx.B.customs.get(n.name), fn = ctx.primitives?.[n.name];
@@ -500,6 +541,10 @@ export function toolSession(live, primitives, { language = null, catalog = [], r
         return { request, revision: rev, plan: null, run, reply: sayRequest(request, { run, reply: rev.reply }, sayOpts) };
       }
       if (!rev.request) return { request, revision: rev, plan: null, run: null, reply: sayRequest(request, { reply: rev.reply }, sayOpts) };
+      if (request.unread?.length && !request.reactions?.length) { // a message read only in part executes nothing
+        const run = runPlan(null, B, primitives, runOpts);
+        return { request: rev.request, revision: rev, plan: null, run, reply: sayRequest(rev.request, { run: { ...run, failed: { code: 'unread', reply: 'not_understood', roles: { words: request.unread.join(', ') } } } }, sayOpts) };
+      }
       const replace = rev.sort === 'reaction' && !!rev.replace && timeline.done.length > 0;
       const state = mirror ? mirrorState(live, view).world : live;
       const plan = planRequest(state, rev.request, { catalog: cat, dialogue, seed: rev.seed, vary: rev.vary, replace: replace ? timeline.done.at(-1).diff.added.map((t) => t.id) : [] });

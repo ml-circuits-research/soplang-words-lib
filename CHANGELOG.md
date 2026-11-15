@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.152.1
+
+Aligned with the reviewer's design (reviews/legarea-declarativa.md); disagreements in questions.md Q88.
+
+### Changed
+- `std.tool.arg bind=$<binding> param= from=...` (one wire per argument) beside the inline `arg=`; `std.tool.needs op=
+  exists=<kind> absent=<kind> check=<custom>` (preconditions of an op on the state); `std.tool.param kind=` (the value's
+  kind), `type=<a kind of the world>` (that kind or a subkind, or a thing of it in the view), `default=`, `required=true`;
+  `std.tool.bind world=`; `makes` defaults from the op's `effect=makes`.
+- Sources `state.<kind>` (the thing of that kind the request names, else the newest) and `result.<n>`.
+- Conditional expectations in the review's form `k.expect.value [of=] on= value= when.<key>=` (`EXPECT_TYPES`); the
+  0.152.0 `k.expect.when key= if.` is still read.
+- `planRequest`: remove / change / place planned by a reference step over the state ("them", the kind named, values
+  before the kind select, after it set; several for a singular kind: one question `refused.which`, no step; none:
+  `refused.no_such`); the target is never guessed from the dialogue or the world over an unread word.
+- `toolSession`: a message read only in part executes nothing (`not_understood`). A binding's `value.<atom>` constant is
+  no assumption.
+- The examples use the review's forms; the shelf honours remove and change.
+
 ## 0.152.0
 
 Tool binding as wires, executed by the library (owner 2026-11-15 19:27: the glue between a live world and the generic

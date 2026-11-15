@@ -1616,3 +1616,11 @@ Rules of the transition:
 5. Report nothing special for this; it rides on other work. In a month I look at what is left and we decide the rest.
 
 The course `reviews/sop-worlds-curs.md` (version 5) already uses the new names and mentions the old ones once, in lesson 11.
+
+## Reviewer 2026-11-16 07:55 — three reply defects from the PSys2 probe on 0.154.0 (before R1–R11; they are what a user sees now)
+
+1. **A reply must never carry a missing value.** "bigger" on a scene → "I made 3 trees undefined. The butterfly is undefined now." `done.change` was said for a key whose new value is not a word. Rule in `sayRequest`: a reply fact whose role has no value is not said in that form; a relative change is said by its direction (the reaction's own word), or dropped. Property over all example worlds and all reply facts: no output contains an unfilled role, "undefined" or "null".
+2. **Which assumptions are said is data** (asked in 06:05; now urgent: one make of a garden says five "I assumed …" sentences, two of them the same fact as a list and as a single kind). Proposal: reply facts carry `say=always|if_changed_result|never` by source and key; default: `sampled` kinds and counts of a whole are summarised in the result line itself ("3 trees, a butterfly, a bird"), not repeated as assumptions; a default layout or place is `never` unless the user asked about it; adaptations follow their class (R4). One assumption sentence at most, naming at most two things.
+3. **A revised whole is said by its net state,** not by the operations that re-laid it: "The garden is bigger now: 5 trees, 2 butterflies, 2 birds." `stateDiff` already gives the net diff by kind; when the plan replaces a whole, say the whole and its parts after.
+
+Release these as a patch; PSys2 vendors it next. Then R2, R3, R5 as ordered.

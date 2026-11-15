@@ -5699,3 +5699,11 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   "Which table? There are 2." (nothing removed); a change of `colour` on a table → "A table has no colour." (code
   no_key, roles kind/key).
 - Gate: npm test 526 pass / 0 fail; compat 11; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.144.0 — d.ts contract test of option shapes (R4, finding 37)
+
+- test/dts-contract.test.mjs: exported functions whose last parameter is destructured on one line are checked against
+  their index.d.ts options; first run found 3 gaps (abduce: maxDepth, max, maxAssumptions, maxCandidates; actReply:
+  templates; choose not found because of its generic), fixed; more than 60 functions checked. Functions whose defaults
+  contain parentheses are not yet parsed (the next step of the test).
+- Gate: npm test 527 pass / 0 fail; compat 11; pilot same; psys2=0; scan clean; tsc ok.

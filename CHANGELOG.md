@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.144.0
+
+### New
+- test/dts-contract.test.mjs (R4, finding 37): every option an exported function destructures is declared in its
+  index.d.ts options; `abduce` and `actReply` declarations completed.
+
 ## 0.143.0
 
 One failure convention for the acts (R4, findings 25 and 33, first part).

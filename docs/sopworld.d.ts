@@ -445,7 +445,7 @@ export function induce(examples: { when: string | Wire[]; then?: string | Wire[]
 export function adopt(world: World, explanation: Explanation): { ok: boolean; results: Result[] };
 export function induceRule(examples: { when: string | Wire[]; then: string | Wire[] }[], options?: { name?: string }): string;
 export function induceSlots(wires: string | Wire[], options?: { enumMax?: number; prefix?: string }): string;
-export function abduce(world: World, goal: string | Wire[], options?: object): Explanation[];
+export function abduce(world: World, goal: string | Wire[], options?: { maxDepth?: number; max?: number; maxAssumptions?: number; maxCandidates?: number }): Explanation[];
 export const builtins: Record<string, Fn>;
 
 /** An index of sentence patterns by the words they need: only the patterns a sentence can match are handed out. */
@@ -463,7 +463,7 @@ export function schemaCard(world: World, name?: string): { world: string; doc?: 
 /** example sentences per act and kind, with the request each should become */
 export function schemaExamples(world: World, name?: string, options?: { per?: number }): { world: string; act: string; kind: string; text: string; request: { action: string; args: Record<string, unknown> } }[];
 /** the reply for an act, from its result: what was done, or why not and what is possible */
-export function actReply(world: World, request: { action: string; args?: Record<string, unknown> }, result: object): string;
+export function actReply(world: World, request: { action: string; args?: Record<string, unknown> }, result: object, options?: { templates?: Record<string, string> }): string;
 
 /** a catalog of knowledge worlds: find what a word needs, read it once through the host's reader, tell it into a world (schemas first) */
 export function createCatalog(options: { index: { worlds: { id: string; schema?: string; depends?: string[]; shards?: { id: string; path: string }[] }[] }; vocab?: Record<string, string[]>; read: (path: string) => string | null | Promise<string | null>; cache?: { get(path: string): string | undefined; set(path: string, text: string): void }; lemma?: (word: string) => string[] }): {

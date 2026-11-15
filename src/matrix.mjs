@@ -22,7 +22,7 @@ export const SCHEMA_TYPES = new Set([
  * The reference (docs/reference.md) is checked against this table.
  */
 export const GRAMMAR = {
-  'core.slot': ['of', 'key', 'required', 'many', 'id', 'prefix', 'kind', 'type', 'enum', 'default', 'ask', 'min', 'max', 'step', 'soft', 'combine', 'why', 'to', 'unique', 'excludes', 'by', 'match', 'copy'],
+  'core.slot': ['of', 'key', 'required', 'many', 'id', 'prefix', 'kind', 'type', 'enum', 'default', 'ask', 'min', 'max', 'step', 'soft', 'combine', 'why', 'to', 'unique', 'excludes', 'by', 'match', 'copy', 'strict'],
   'core.type': ['of', 'extends', 'closed', 'complete', 'transient', 'shared', 'unique'],
   'core.namespace': ['prefix', 'open'],
   'core.schema.map': ['from', 'as'], // and one attribute per field it maps
@@ -281,6 +281,7 @@ export function compileMatrix(world) {
         excludes: w.attrs.excludes || [], // keys a wire with this key may not also have (x_about excludes x)
         by: get('by'), // type=T by=k: the value names a T wire by its k (a join to another world; open while T is not loaded)
         match: (w.attrs.match || []).map((m) => String(m).split(':')), // with by: more keys of the join, own:target (a variant named within its slot)
+        strict: get('strict') === 'true', // with by: a value that names no target is refused at once (the targets are loaded with the schema), not left open
       };
       if (s.combine && !['intersect', 'override'].includes(s.combine)) c.errors.push(`${w.id}: combine must be intersect or override`);
       // kind=ref to=T: the value is a reference to a wire of type T, and retracting that wire is refused

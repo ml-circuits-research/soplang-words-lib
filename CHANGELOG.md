@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.138.0
+
+Joins that refuse (reviewer 14:45 a; knowledge KR2); the Romanian bench scored right (14:45 b).
+
+### New
+- `core.slot ... by= strict=true`: a value that names no target is refused at once instead of left open.
+
+### Changed
+- tools/bench-ro-frames.mjs: verbs of several acts, glosses with no verb apart, plurals by every singular (read 104/161,
+  act 91/121, act and thing 82/121).
+
 ## 0.137.0
 
 PSys2 Q22 items 1-3 (reviewer 13:15): what the host still kept because of the library.

@@ -42,6 +42,7 @@ One key of one type: what it may hold, and whether it must be there.
 | `excludes` | key | none | yes | a wire with this key may not also have that one (`x_about excludes=x`: never the exact number and the approximate one) |
 | `by` | key | none | | with `type=T`: the value names a `T` wire by its value for this key (`drawing=horse`, `type=k.objects.object by=name`). It stays open until a `T` fact with that value is told, whatever order the shards come in. The tell lists it in `openJoins`, and `world.check()` reports it as an `open-join` issue. It is refused only by a strict check or once the host declares `T` complete (`world.closeType(T)`) |
 | `match` | `own:target` | none | yes | with `by`: more keys of the join; the target must also have this wire's `own` value under `target` (a variant named within its slot: `by=name match=kind:slot`) |
+| `strict` | `true` | false | | with `by`: a value that names no `T` wire is refused at once (a `domain` violation) instead of left open: for joins whose targets are loaded with the schema (copied enum lists can go) |
 | `copy` | `keep` | none | | with a `type=` to a thing of the live world: the act `copy` keeps this reference (by default a copy leaves references to other things unset) |
 
 Kinds: `integer`, `number` (integer or decimal), `boolean` (`true`, `false`), `string`

@@ -2276,7 +2276,7 @@ export class World {
                 ? [...(this.byType.get(s.type) || [])].map((tid) => this.wires.get(tid))
                 : [...new Set([nameOf(v), `"${nameOf(v)}"`].flatMap((x) => [...(this.index.get(K(s.type, s.by, this._iv(s.type, s.by, x))) || [])]))].map((tid) => this.wires.get(tid));
               if (targets.some(fits)) continue;
-              if (!res._strict && !this._closedTypes?.has(s.type)) { (res.openJoins || (res.openJoins = [])).push({ kind: 'open-join', id, key: k, value: v, type: s.type, by: s.by }); continue; }
+              if (!res._strict && !s.strict && !this._closedTypes?.has(s.type)) { (res.openJoins || (res.openJoins = [])).push({ kind: 'open-join', id, key: k, value: v, type: s.type, by: s.by }); continue; }
               res.violations.push(own({ kind: 'domain', id, key: k, value: v, why: `must be the ${s.by}${s.match.length ? ` (with ${s.match.map(([a, b]) => b || a).join(', ')})` : ''} of a ${s.type} wire` }, v));
               continue;
             }

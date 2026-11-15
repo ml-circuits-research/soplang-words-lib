@@ -5643,3 +5643,10 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   a plural compares by every singular it may come from (crocodiles → crocodile, not only crocodil).
 - `node tools/bench-ro-frames.mjs` at pin 2a3edf3: read 104/161 (65 %); act right 91/121 (75 %) of the glosses with an
   act; act and thing right 82/121 (68 %). docs/capabilities.md updated.
+
+## 0.138.0 — strict joins (reviewer 14:45 a)
+
+- `core.slot of=shape key=colour type=k.colour by=name strict=true`: "@b shape colour=purple" → refused "must be the
+  name of a k.colour wire"; the same slot without strict stays open (openJoins, check() issue). The knowledge
+  repository can drop its copied enum lists (KR2) where the targets load with the schema.
+- Gate: npm test 535 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

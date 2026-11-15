@@ -64,6 +64,17 @@ export function loadWorldSet(loader, { names = [], language = null, knowledge = 
   return { worlds, schema, language, typed, bindings, verbs: V, verbActs, session: new Set(session), steps: [], redo: [] };
 }
 
+/**
+ * A word and its singular by the language world's rules (`${lang}.inflect op=singular`, `${lang}.irregular`): "tables"
+ * names the kind table, "children" the kind child. A language world with no rules: the word and the word less a final s.
+ */
+function formsOf(set, word, lang = 'w.lang.en') {
+  const L = set.language, w = String(word).toLowerCase();
+  const rules = memoPerWorld(L ?? set.schema, `has-inflect|${lang}`, () => (L?.ofType(`${lang}.inflect`).length ?? 0) > 0);
+  const sg = rules ? inflectBy(L, w, 'singular', { types: { rule: `${lang}.inflect`, irregular: `${lang}.irregular` } }) : w.replace(/s$/, '');
+  return sg === w ? [w] : [w, sg];
+}
+
 /** The things of a type in every world of the set (a type's things live in the world that owns its kind). */
 function thingsOf(set, type) {
   return [...set.worlds.values()].flatMap((w) => w.world.ofType(type));
@@ -250,7 +261,7 @@ export function referentOf(set, words, { lang = 'w.lang.en' } = {}) {
   const lex = typedLexicon(set.schema);
   let kind = null, rest = toks;
   for (let i = 0; i < toks.length && !kind; i++) { // bounded: the words
-    const k = [toks[i], toks[i].replace(/s$/, '')].flatMap((w) => lex.get(w) || []).find((e) => e.cat === 'kind')?.type;
+    const k = formsOf(set, toks[i], lang).flatMap((w) => lex.get(w) || []).find((e) => e.cat === 'kind')?.type;
     if (k) { kind = k; rest = toks.filter((_, j) => j !== i); }
   }
   const name = rest.join(' ');
@@ -301,7 +312,7 @@ function bindFrame(set, f, { lang, text = '' }) {
     if (!kindWords.length) return { unread: Object.keys(roles).flatMap(all) };
     const lex = typedLexicon(set.schema);
     const forms = all('thing'), formOf = (w) => (forms.length === kindWords.length ? forms[kindWords.indexOf(w)] ?? w : w); // unread words as the user wrote them
-    const kindOf = (w) => [w, w.replace(/s$/, '')].flatMap((x) => lex.get(x) || []).find((e) => e.cat === 'kind')?.type;
+    const kindOf = (w) => formsOf(set, w, lang).flatMap((x) => lex.get(x) || []).find((e) => e.cat === 'kind')?.type;
     const whole = kindOf(kindWords.join(' '));
     let at = whole ? -1 : kindWords.length - 1; // the kind's word: last in English, first in Romanian ("masă rotundă"): wherever it stands
     if (!whole) { for (let i = kindWords.length - 1; i >= 0; i--) if (kindOf(kindWords[i])) { at = i; break; } } // bounded: the words
@@ -575,7 +586,7 @@ export function openSession(set, context = {}) {
       if (!framed?.verb && !verbal && moodOf(L, text, { lang }) !== 'question') {
         const ands = new Set((L?.ofType(`${lang}.particle`) ?? []).filter((x) => valueText(x.attrs.meaning?.[0]) === 'and').flatMap((x) => [...(x.attrs.form || []), ...(x.attrs.text || [])].map(valueText)).concat(['and']));
         const parts = n > 1 ? String(text).split(/\s*,\s*|\s+/).filter((x) => x && !ands.has(x.toLowerCase())) : [String(text).trim()]; // n things: n values
-        const fits = parts.map((x) => fitsSlot(set.typed, kind, p.key, x));
+        const fits = parts.map((x) => fitsSlot(set.typed, kind, p.key, x, { lemma: (w) => formsOf(set, w, lang) }));
         const bad = fits.find((x) => !x.ok);
         const again = (why) => done({ status: 'ask', text: p.text, reading: { act: 'answer', unread: [], complete: false }, reply: `${why} ${askText(set, p, context)}`, asks: [p] }); // said, and asked again
         if (bad) return again(`${bad.why[0].toUpperCase()}${bad.why.slice(1)}.`);

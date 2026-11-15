@@ -5668,3 +5668,14 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   shape round, undo → Ann gone, redo → Ann back.
 - "What name?" stays English until w.lang.ro has an `ask.key` reply (Q80).
 - Gate: npm test 537 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.141.0 — test:full; state of the architecture (reviewer 17:15)
+
+- `npm run test:full` at 0.140 (log /tmp/full.log): 537 pass / 0 fail, 537 / 0 (bundle), 533 / 1 under
+  SOPWORLD_COW_CHECK=1: the lookup budget test ("200 facts: 57 ms, 20,000 facts: 305 ms"), which times the copying in
+  that mode; skipped there (`SOPWORLD_COW_CHECK=1 node --test test/lookup-budget.test.mjs`: 1 pass).
+- `npm test` now runs test/ only (524 tests, 81 s); `npm run test:compat` 11 pass (finding 29).
+- reviews/state-of-the-architecture-2026-11-15.md: fixed 22, partly 11, open 16, refused 0, with the next order (R3,
+  R4, R5). English left in src/ is listed there (final-s fallbacks in 8 files, 30 `'w.lang.en'` defaults, EN word
+  lists in reader/statements/typed, English sentences in schema-words/statements and the kit's fallbacks).
+- Gate: npm test 524 pass / 0 fail; compat 11 pass; pilot same; psys2=0; scan clean; tsc ok.

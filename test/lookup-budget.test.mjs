@@ -18,7 +18,7 @@ test('catalog lookups through the index: 40 makes over 20,000 catalog facts cost
   const small = build(200), big = build(20000);
   makes(small, 200); // warm
   const a = makes(small, 200), b = makes(big, 20000);
-  assert.ok(b < a * 4 + 40, `200 facts: ${a.toFixed(0)} ms, 20,000 facts: ${b.toFixed(0)} ms`);
+  if (!process.env.SOPWORLD_COW_CHECK) assert.ok(b < a * 4 + 40, `200 facts: ${a.toFixed(0)} ms, 20,000 facts: ${b.toFixed(0)} ms`); // the copy-on-write check copies the world on every change: its time says nothing of the lookups
   const m = big.act({ action: 'make', args: { kind: 'item19999' } });
   assert.deepEqual(m.result.filled.map((f) => [f.key, f.value]), [['w', String((19999 % 300) + 10)]], 'and the catalog value is still found');
 });

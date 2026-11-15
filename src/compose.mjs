@@ -56,7 +56,7 @@ function interestModelOf(world) {
 const SKIP = new Set(['name', 'about', 'kind', 'class', 'is', 'source', 'own', 'cite', 'derived']);
 const keysOf = (f) => Object.keys(f.attrs).filter((k) => !k.startsWith('core.') && !SKIP.has(k));
 /** What a fact is about: its `about`, else its `name`. */
-export const subjectOf = (f) => one(f, 'about') ?? one(f, 'name');
+const subjectOf = (f) => one(f, 'about') ?? one(f, 'name');
 const worldOf = (type) => type.split('.').slice(0, 2).join('.');
 function graph(world) { return memoPerWorld(world, 'compose.graph', () => graphOf(world)); }
 function graphOf(world) { // names -> facts that name them, and the names a fact links
@@ -304,7 +304,7 @@ function composeGenre(world, topic, g, { size = {}, seed = 1, realise, measures,
     return 1 + best;
   };
   let sol = solveChoices(vars, { domain: (v) => dom[v], ok, weight, seed, limit: 100000 }), relaxed = null;
-  if (sol.why) { relaxed = `no layout gives every step its minimum facts (${sol.why}, at ${sol.deepest}): steps may go short`; strict = false; sol = solveChoices(vars, { domain: (v) => dom[v], ok, weight, seed }); }
+  if (sol.why) { relaxed = `no layout gives every step its minimum facts (${sol.why}, at ${sol.deepest}): steps may go short`; strict = false; sol = solveChoices(vars, { domain: (v) => dom[v], ok, weight, seed, limit: 100000 }) /* the same search as the strict one */; }
   if (sol.why) { // no layout within the search: the plainest one (each repeated part its minimum, relations by interest, the first alternative), said
     relaxed = `no layout found (${sol.why}, at ${sol.deepest}): the plainest one is used`;
     const values = {}; let gi = 0;

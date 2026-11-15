@@ -34,7 +34,7 @@ export function turn(world, readings, { reply = actReply, load } = {}) {
 
 
 /** The graded fallback when no reading was taken: one question; or not here but there; or the best guess, named. */
-export function fallbackOf(world, tried, reply = actReply) {
+function fallbackOf(world, tried, reply = actReply) {
   const missing = tried.find((t) => t.status === 'missing');
   if (missing) {
     const m = missing.missing[0];

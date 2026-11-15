@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.141.0
+
+test:full run; the state of the architecture against the 49 findings (reviews/state-of-the-architecture-2026-11-15.md).
+
+### Changed
+- `npm test` runs test/ only; the compat suite runs with `npm run test:compat` and in `test:full` (finding 29).
+- The kit reads singulars from the language world's rules (`w.lang.en.inflect op=singular`), not a final-s strip (21).
+- The relaxed composition retry searches as far as the strict one (44); `fallbackOf` and `subjectOf` are no longer
+  module exports (46).
+- The lookup budget test does not time the copy-on-write check mode.
+
 ## 0.140.0
 
 The rest of the session (Q72, reviewer 17:15 item 1); kinds named in the user's language; knowledge pin f15a1d7.

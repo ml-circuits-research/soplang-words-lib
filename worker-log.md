@@ -5479,3 +5479,13 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Gate: npm test 512 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
 - bench-ro-frames at the new pin (knowledge added lemmas, "și", î fold for Q69): read 100/161 (62 %), act right
   82/161 (51 %), act and thing right 62/161 (39 %) — was 93 / 74 / 38 at 7c7738f.
+
+## 0.127.0 — L5: statements about the user as facts (reviewer 09:20, 10:55)
+
+- src/statements.mjs: readStatement / tellStatement / describeThing / readAboutSelf on a toy person schema (w.person
+  is not published yet). /tmp/st.mjs: "I have two kids" children=2; "I am 40" age=40 (host's number key); "I like
+  cats, dogs and horses" likes=3 values (a list grows, by fills); "my name is Ana Pop" as written; "I live in Cluj";
+  "draw a house" not a statement; "how many kids do I have" -> children of me, 2.
+- The library's version of PSys2's host-side foreign-reading rules (11:35): readText's mood/complete/unread;
+  PSys2 can delete foreign-reading.mjs when its acceptance cases pass on readText (not measured here).
+- Gate: npm test 513 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

@@ -1721,6 +1721,31 @@ print(listSums(w, 'l', { itemType: 'ent' }).change);
 3
 ```
 
+### readStatement(world, text, options?), tellStatement(world, text, options?), describeThing(world, id) and readAboutSelf(world, text, options?)
+
+Statements about the user read by type, as taught facts (real turns: "I have two kids", "I am
+40", "I like cats, dogs and horses", "my name is Ana"). A text whose mood is `statement` is read
+against the keys of a person type (`type`; w.person when published): the key is named by one of
+its words (`core.word text= means=<key>`, or the key itself). The value is a number, a value of
+the key's closed set, a list (a many-valued key: cut at commas and "and"), or the rest of the
+sentence as written. A bare number after the copula sets the host's `number` key ("I am 40" →
+age). `readStatement` gives `{ mood, facts: [{ key, value | values }], unread, why? }`.
+`tellStatement(world, text, { type, subject, tier })` tells the facts on the user's thing
+(`subject`, `me`): a single value is replaced, a list grows. `describeThing(world, id)` is what
+the world knows about a thing ("what do you know about me"); `readAboutSelf(world, text,
+{ subject, ...read })` reads a question about the user through the same keys ("how many kids do
+I have"). The person words (`self`, `copula`, `have`, `skip`, `numbers`) default to English.
+
+```js run
+const w = new World();
+w.load('@p core.type of=ex.person  @k core.slot of=ex.person key=children kind=integer  @w core.word text=kids means=children');
+print(tellStatement(w, 'I have two kids', { type: 'ex.person' }).facts, w.get('me').attrs.children);
+```
+
+```output
+[{"key":"children","value":2}] ["2"]
+```
+
 ### compose(world, topic, options?) and interestOf(world, fact, options?)
 
 A composition of a genre about a topic, from knowledge, with no model (std.compose, first

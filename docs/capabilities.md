@@ -869,6 +869,29 @@ print(readFrames(w, 'zap a tree', { lang: 'ex' }).best.act);
 make
 ```
 
+## Learn about the user from what they say
+
+*In `readStatement`, `tellStatement`, `describeThing`, `readAboutSelf`; since 0.127.*
+*Works on: a person type's keys and their words (w.person when published), a live world's session.*
+
+"I have two kids", "I am 40", "I like cats, dogs and horses", "my name is Ana" become facts on
+the user's thing, read by the keys' types; a list grows, a single value is replaced. "How many
+kids do I have" reads back through the same keys, and "what do you know about me" describes the
+thing. Only statements are read so: a request is not.
+**Limits:** one key per sentence; a statement whose key the person type has no word for is
+said, not guessed ("I am happy" without a mood key).
+
+```js run
+const w = new World();
+w.load('@p core.type of=ex.person  @l core.slot of=ex.person key=likes many=true  @w core.word text=like means=likes');
+tellStatement(w, 'I like cats and dogs', { type: 'ex.person' });
+print(w.get('me').attrs.likes);
+```
+
+```output
+["cats","dogs"]
+```
+
 ## Sum a list: total, change, what is left
 
 *In `listSums`, `listMeant`; since 0.126.*

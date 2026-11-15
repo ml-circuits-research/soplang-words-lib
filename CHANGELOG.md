@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.127.0
+
+L5 of the reviewer's 09:20 block (10:55: real turns of PSys2's Profile tab).
+
+### New
+- `readStatement` / `tellStatement`: a first-person statement (mood statement) read against a
+  person type's keys: numbers, closed sets, lists that grow, values as written; told on the
+  user's thing at the host's tier. `describeThing` ("what do you know about me") and
+  `readAboutSelf` ("how many kids do I have").
+
 ## 0.126.0
 
 L3 of the reviewer's 09:20 block (list acts; real turns r0598, r0599, r0622, r0624, r0625, r0627),

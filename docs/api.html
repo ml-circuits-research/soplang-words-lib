@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="58ee27f0c669">
+<meta name="source-hash" content="2b91f046e352">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.126.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.127.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -604,6 +604,12 @@ print(readFrames(w, &#x27;zap a tree&#x27;, { lang: &#x27;ex&#x27; }).best.roles
 w.tell(&#x27;@l lst name=shop tendered=10\n@a ent text=puzzle list=$l price=7&#x27;);
 print(listSums(w, &#x27;l&#x27;, { itemType: &#x27;ent&#x27; }).change);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>3</code></pre></figure>
+<h3 id="readstatementworld-text-options-tellstatementworld-text-options-describethingworld-id-and-readaboutselfworld-text-options">readStatement(world, text, options?), tellStatement(world, text, options?), describeThing(world, id) and readAboutSelf(world, text, options?)</h3>
+<p>Statements about the user read by type, as taught facts (real turns: "I have two kids", "I am 40", "I like cats, dogs and horses", "my name is Ana"). A text whose mood is <code>statement</code> is read against the keys of a person type (<code>type</code>; w.person when published): the key is named by one of its words (<code>core.word text= means=&lt;key&gt;</code>, or the key itself). The value is a number, a value of the key's closed set, a list (a many-valued key: cut at commas and "and"), or the rest of the sentence as written. A bare number after the copula sets the host's <code>number</code> key ("I am 40" → age). <code>readStatement</code> gives <code>{ mood, facts: [{ key, value | values }], unread, why? }</code>. <code>tellStatement(world, text, { type, subject, tier })</code> tells the facts on the user's thing (<code>subject</code>, <code>me</code>): a single value is replaced, a list grows. <code>describeThing(world, id)</code> is what the world knows about a thing ("what do you know about me"); <code>readAboutSelf(world, text, { subject, ...read })</code> reads a question about the user through the same keys ("how many kids do I have"). The person words (<code>self</code>, <code>copula</code>, <code>have</code>, <code>skip</code>, <code>numbers</code>) default to English.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(&#x27;@p core.type of=ex.person  @k core.slot of=ex.person key=children kind=integer  @w core.word text=kids means=children&#x27;);
+print(tellStatement(w, &#x27;I have two kids&#x27;, { type: &#x27;ex.person&#x27; }).facts, w.get(&#x27;me&#x27;).attrs.children);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;key&quot;:&quot;children&quot;,&quot;value&quot;:2}] [&quot;2&quot;]</code></pre></figure>
 <h3 id="composeworld-topic-options-and-interestofworld-fact-options">compose(world, topic, options?) and interestOf(world, fact, options?)</h3>
 <p>A composition of a genre about a topic, from knowledge, with no model (std.compose, first version). The genre gives the moves of a section (<code>k.genres.genre name= move=...</code>): the first opens, the last closes, the middle ones take turns. The outline is the topic's relations: the facts that name it, grouped by type. Relations that can fill a chapter come first, then the most interesting. Every sentence cites its wire, and no fact is used twice. The size <code>{ chapters, sections, sentences }</code> is a budget set before selection; what the knowledge cannot fill is listed in <code>short</code>. The output is frames (<code>{ move, fact, about, cites }</code>) for the language world to realise (<code>realise(frame)</code>).</p>
 <p><code>interestOf</code> is the arithmetic of the world's <code>k.interest</code> (published by the knowledge repository): each feature adds <code>weight × share</code> to its appraisal, by its shape over a measure, and the score is novelty × coping × relevance − penalty. A weight is the middle of its range, or drawn inside it with <code>draw: seed</code>. The library computes the measures it can from facts (<code>measuresOf</code>): world and topic distance by joins of names, contrast with siblings, distance from the typical range, extremes, numbers with units, animacy, obviousness, said before, the same move again, items since the last point. The host gives the rest, or overrides any, in <code>measures</code>. Without a <code>k.interest</code> model the score is 0, with <code>why</code>.</p>
@@ -1119,7 +1125,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.126.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.127.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

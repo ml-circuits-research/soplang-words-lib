@@ -59,3 +59,15 @@ test('the session: "why?" over the last turn\'s facts; a snapshot restored in a 
   app.session.say('redo');
   assert.equal(W(app.set).ofType('w.seating.guest').length, 1);
 });
+
+test('refusals by code and roles: none, which, and a std.acts refusal said by its reply name', { skip: !worldsDir() && 'offline' }, async () => {
+  const { seatingApp } = await import('../examples/seating-app.mjs');
+  const { session: s, set } = await seatingApp('en');
+  assert.deepEqual([s.say('remove the table').status, s.say('remove the table').reply], ['refused', 'There is no table here.']);
+  s.say('add a table called a'); s.say('add a table called b');
+  const which = s.say('remove the table');
+  assert.deepEqual([which.status, which.reply, W(set).ofType('w.seating.table').length], ['ask', 'Which table? There are 2.', 2]);
+  const { readTurn } = await import('../tools/lib-under-test.mjs');
+  const r = readTurn(set, 'x', { readers: [() => [{ request: { action: 'change', args: { thing: `$${W(set).ofType('w.seating.table')[0].id}`, attr: 'colour', value: 'red' } }, unread: [] }]] });
+  assert.equal(r.reply, 'A table has no colour.', 'std.acts refusal code no_key with its roles');
+});

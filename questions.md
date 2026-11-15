@@ -437,5 +437,8 @@ ask.which_world {worlds}, ask.count {given, number}, not_understood.fragment, no
 refused.no_place {kind, rel, place}, refused.cannot_be {thing, value}, refused.no_such {thing}, refused.no_world,
 refused.no_host, refused.fragment {value}, refused.value {key, value, values}, refused {why}, too_complex.none,
 too_complex.rest, answer.no, why.asked {request}, why.told {key, value}, why.default {key, value}, why.other {key, value,
-tier}, why.nothing, why.none. test/kit-replies.test.mjs realises every name the catalog has (no English word in a
+tier}, why.nothing, why.none, and (0.143) the std.acts refusal codes refused.not_allowed {kind}, refused.no_world_kind
+{kind}, refused.no_key {kind, key}, refused.not_a_number {key, thing}, refused.missing_value {key}, refused.which {kind,
+number}, refused.no_room {kind}, refused.no_world_named {world}, refused.no_kind_in {kind, world}, refused.no_relation
+{relation}, refused.no_aspect {kind, aspect}, refused.nothing_to_show {view}, refused.bad_value {key}. test/kit-replies.test.mjs realises every name the catalog has (no English word in a
 Romanian one) and lists the rest as a todo. Also words for keys (w.seating.table.name → nume) for `{key}`.

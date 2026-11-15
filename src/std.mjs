@@ -233,25 +233,25 @@ function valuesFor(w, things, attr, spec, seed) {
 function changeMany(ctx, args) {
   const w = ctx.world;
   const things = setOf(w, args), attr = String(one(args.attr)), kind = String(one(args.thing));
-  if (!things.length) return refuse(w, 'change', kind, `there is no ${kind}`);
-  for (const t of things) if (!allows(w, t, 'change')) return refuse(w, 'change', t.attrs.kind[0], `${art(t.attrs.kind[0])} cannot be changed here`);
-  for (const t of things) if (t.type !== 'std.schema.thing' && !attrsOf(w, t.type).includes(attr)) return refuse(w, 'change', t.attrs.kind[0], `${art(t.attrs.kind[0])} has no ${attr}`, { attr });
+  if (!things.length) return refuse(w, 'change', kind, `there is no ${kind}`, { code: 'no_such', roles: { thing: kind } });
+  for (const t of things) if (!allows(w, t, 'change')) return refuse(w, 'change', t.attrs.kind[0], `${art(t.attrs.kind[0])} cannot be changed here`, { code: 'not_allowed', roles: { kind: t.attrs.kind[0] } });
+  for (const t of things) if (t.type !== 'std.schema.thing' && !attrsOf(w, t.type).includes(attr)) return refuse(w, 'change', t.attrs.kind[0], `${art(t.attrs.kind[0])} has no ${attr}`, { attr, code: 'no_key', roles: { kind: t.attrs.kind[0], key: attr } });
   const spec = args.value === undefined ? undefined : String(one(args.value));
   let values;
   if (spec === undefined && args.by !== undefined) { // more / less, each by the slot's step
     values = [];
     for (const t of things) {
       const now = Number(t.attrs[attr]?.[0]), sl = slotOf(w, t.type, attr), step = args.amount !== undefined ? Number(args.amount) : Number(sl?.step?.n ?? 1);
-      if (!Number.isFinite(now)) return refuse(w, 'change', kind, `the ${attr} of ${t.id} is not a number`, { attr });
+      if (!Number.isFinite(now)) return refuse(w, 'change', kind, `the ${attr} of ${t.id} is not a number`, { attr, code: 'not_a_number', roles: { key: attr, thing: t.attrs.kind[0] } });
       values.push(String(+(now + (one(args.by) === 'less' ? -step : step)).toFixed(10)));
     }
     const p = w.applyPatch({ sets: things.map((t, i) => ({ id: t.id, key: attr, value: values[i] })) });
     return p.ok === false ? p : { act: 'change', things: things.map((t) => t.id), attr, values: Object.fromEntries(things.map((t, i) => [t.id, values[i]])) };
   }
-  if (spec === undefined) return refuse(w, 'change', kind, `to what? (${attr})`, { attr, missing: 'value' });
+  if (spec === undefined) return refuse(w, 'change', kind, `to what? (${attr})`, { attr, missing: 'value', code: 'missing_value', roles: { key: attr } });
   if (/^(random|different|same as )/.test(spec)) {
     const r = valuesFor(w, things, attr, spec, (w.seq * 31 + things.length) % 2147483647);
-    if (r.why) return refuse(w, 'change', kind, r.why, { attr });
+    if (r.why) return refuse(w, 'change', kind, r.why, { attr, code: 'bad_value', roles: { key: attr } });
     values = r.values;
   } else values = things.map(() => spec);
   const p = w.applyPatch({ sets: things.map((t, i) => ({ id: t.id, key: attr, value: values[i] })) }); // all of them: one undo step
@@ -274,19 +274,19 @@ const ACTIONS = {
     }
     const kind = String(one(args.kind));
     const ks = kindsOf(w, kind).filter((k) => args.world === undefined || k.world === one(args.world));
-    if (!ks.length) return refuse(w, 'make', kind, `no world here has ${art(kind)}`);
+    if (!ks.length) return refuse(w, 'make', kind, `no world here has ${art(kind)}`, { code: 'no_world_kind', roles: { kind } });
     const k = ks.find((x) => x.acts.includes('make'));
-    if (!k) return refuse(w, 'make', kind, `${art(kind)} cannot be made here`);
+    if (!k) return refuse(w, 'make', kind, `${art(kind)} cannot be made here`, { code: 'not_allowed', roles: { kind: kind } });
     const attrs = { kind, world: k.world }, defaults = {};
     for (const s of attrsOf(w, k.type)) { const sl = slotOf(w, k.type, s); if (sl.default !== undefined) defaults[s] = valueText(sl.default); }
     for (const [key, v] of Object.entries(args)) {
       if (RESERVED.has(key) || key === 'id' || v === undefined) continue;
-      if (!k.open && !attrsOf(w, k.type).includes(key)) return refuse(w, 'make', kind, `${art(kind)} has no ${key}`, { attr: key });
+      if (!k.open && !attrsOf(w, k.type).includes(key)) return refuse(w, 'make', kind, `${art(kind)} has no ${key}`, { attr: key, code: 'no_key', roles: { kind: kind, key: key } });
       attrs[key] = v;
     }
     if (k.standIn) attrs.drawn_as = k.standIn;
     const full = overCapacity(w, kind, attrs);
-    if (full) return refuse(w, 'make', kind, full.why, { room: full.room, of: full.of });
+    if (full) return refuse(w, 'make', kind, full.why, { room: full.room, of: full.of, code: 'no_room', roles: { kind, room: full.room } });
     const id = args.id ? String(args.id) : fresh(w, kind);
     const r = ctx.tell(wireText(id, k.type, attrs), { now: true });
     if (r.ok === false) return r;
@@ -324,14 +324,14 @@ const ACTIONS = {
   acts_remove: (ctx, args) => pre('remove', ctx, args, (w) => {
     if (args.set !== undefined) { // each / all / the first / the last of a kind
       const things = setOf(w, args), kind = String(one(args.thing));
-      if (!things.length) return refuse(w, 'remove', kind, `there is no ${kind}`);
-      for (const t of things) if (!allows(w, t, 'remove')) return refuse(w, 'remove', t.attrs.kind[0], `${art(t.attrs.kind[0])} cannot be removed here`);
+      if (!things.length) return refuse(w, 'remove', kind, `there is no ${kind}`, { code: 'no_such', roles: { thing: kind } });
+      for (const t of things) if (!allows(w, t, 'remove')) return refuse(w, 'remove', t.attrs.kind[0], `${art(t.attrs.kind[0])} cannot be removed here`, { code: 'not_allowed', roles: { kind: t.attrs.kind[0] } });
       for (const t of things) { for (const l of w.ofType('std.acts.link')) if (l.attrs.a[0] === ref(t.id) || l.attrs.b[0] === ref(t.id)) ctx.retract(l.id); ctx.retract(t.id); }
       return { act: 'remove', things: things.map((t) => t.id) };
     }
     const { thing: t, why, kind, which } = thingOf(w, args.thing, args.nth, inOf(w, args));
-    if (!t) return refuse(w, 'remove', kind, why, which ? { which } : {});
-    if (!allows(w, t, 'remove')) return refuse(w, 'remove', t.attrs.kind[0], `${art(t.attrs.kind[0])} cannot be removed here`);
+    if (!t) return refuse(w, 'remove', kind, why, which ? { which, code: 'which', roles: { kind: kind, number: (which).length } } : { code: 'no_such', roles: { thing: kind } });
+    if (!allows(w, t, 'remove')) return refuse(w, 'remove', t.attrs.kind[0], `${art(t.attrs.kind[0])} cannot be removed here`, { code: 'not_allowed', roles: { kind: t.attrs.kind[0] } });
     for (const l of w.ofType('std.acts.link')) if (l.attrs.a[0] === ref(t.id) || l.attrs.b[0] === ref(t.id)) ctx.retract(l.id); // its links go with it
     ctx.retract(t.id);
     return { act: 'remove', thing: t.id };
@@ -339,23 +339,23 @@ const ACTIONS = {
   acts_change: (ctx, a) => { const args = viewThing(ctx, a); if (args.thing === undefined) return { ok: false, why: `change what? (${one(args.attr)})` }; return (args.set !== undefined || /^(random|different|same as )/.test(String(one(args.value ?? ''))) ? changeMany(ctx, args) : changeOne(ctx, args)); }, // with `in`: inside a container; no thing: the view whose state has the attribute
   acts_change_one: (ctx, args) => pre('change', ctx, args, (w) => {
     const { thing: t, why, kind, which } = thingOf(w, args.thing, args.nth, inOf(w, args));
-    if (!t) return refuse(w, 'change', kind, why, which ? { which } : {});
+    if (!t) return refuse(w, 'change', kind, why, which ? { which, code: 'which', roles: { kind: kind, number: (which).length } } : { code: 'no_such', roles: { thing: kind } });
     const k = t.attrs.kind[0], attr = String(one(args.attr));
-    if (!allows(w, t, 'change')) return refuse(w, 'change', k, `${art(k)} cannot be changed here`);
+    if (!allows(w, t, 'change')) return refuse(w, 'change', k, `${art(k)} cannot be changed here`, { code: 'not_allowed', roles: { kind: k } });
     const open = t.type === 'std.schema.thing';
     if (!open && !attrsOf(w, t.type).includes(attr)) {
       const others = [...new Set(w.ofType('std.schema.kind').filter((x) => x.attrs.of[0] !== k && attrsOf(w, x.attrs.of[0]).includes(attr)).flatMap((x) => x.attrs.world.map((wd) => `${wd}:${x.attrs.of[0]}`)))];
-      return refuse(w, 'change', k, `${art(k)} has no ${attr}`, { attr, hasIt: others });
+      return refuse(w, 'change', k, `${art(k)} has no ${attr}`, { attr, hasIt: others, code: 'no_key', roles: { kind: k, key: attr } });
     }
     let value = args.value === undefined ? undefined : String(one(args.value));
     if (args.by !== undefined) { // more / less: a number moved by an amount (the slot's step, else 1)
       const now = Number(t.attrs[attr]?.[0]), sl = slotOf(w, t.type, attr), step = args.amount !== undefined ? Number(args.amount) : Number(sl?.step?.n ?? 1);
-      if (!Number.isFinite(now)) return refuse(w, 'change', k, `the ${attr} of ${t.id} is not a number`, { attr });
+      if (!Number.isFinite(now)) return refuse(w, 'change', k, `the ${attr} of ${t.id} is not a number`, { attr, code: 'not_a_number', roles: { key: attr, thing: t.attrs.kind[0] } });
       value = String(+(now + (one(args.by) === 'less' ? -step : step)).toFixed(10));
     }
-    if (value === undefined) return refuse(w, 'change', k, `to what? (${attr})`, { attr, missing: 'value' });
+    if (value === undefined) return refuse(w, 'change', k, `to what? (${attr})`, { attr, missing: 'value', code: 'missing_value', roles: { key: attr } });
     const small = shrinksBelow(w, t, attr, value) || overCapacity(w, k, { ...Object.fromEntries(Object.entries(t.attrs).map(([a, v]) => [a, v[0]])), [attr]: value }, t.id);
-    if (small) return refuse(w, 'change', k, small.why, { attr });
+    if (small) return refuse(w, 'change', k, small.why, { attr, code: 'bad_value', roles: { key: attr } });
     const r = w.applyPatch({ sets: [{ id: t.id, key: attr, value }] }); // a set: one undo step, logged with the act's name
     return r.ok === false ? r : { act: 'change', thing: t.id, attr, value };
   }),
@@ -372,11 +372,11 @@ const ACTIONS = {
   acts_connect: (ctx, args) => pre('connect', ctx, args, (w) => {
     const a = thingOf(w, args.a), b = thingOf(w, args.b);
     for (const x of [a, b]) {
-      if (!x.thing) return refuse(w, 'connect', x.kind, x.why, x.which ? { which: x.which } : {});
-      if (!allows(w, x.thing, 'connect')) return refuse(w, 'connect', x.thing.attrs.kind[0], `${art(x.thing.attrs.kind[0])} cannot be connected here`);
+      if (!x.thing) return refuse(w, 'connect', x.kind, x.why, x.which ? { which: x.which, code: 'which', roles: { kind: x.kind, number: (x.which).length } } : { code: 'no_such', roles: { thing: x.kind } });
+      if (!allows(w, x.thing, 'connect')) return refuse(w, 'connect', x.thing.attrs.kind[0], `${art(x.thing.attrs.kind[0])} cannot be connected here`, { code: 'not_allowed', roles: { kind: x.thing.attrs.kind[0] } });
     }
     const declared = w.ofType('std.schema.relation');
-    if (args.rel !== undefined && declared.length && !declared.some((r) => r.attrs.name[0] === String(one(args.rel)))) return refuse(w, 'connect', a.thing.attrs.kind[0], `there is no relation ${one(args.rel)} here`, { relations: declared.map((r) => r.attrs.name[0]) });
+    if (args.rel !== undefined && declared.length && !declared.some((r) => r.attrs.name[0] === String(one(args.rel)))) return refuse(w, 'connect', a.thing.attrs.kind[0], `there is no relation ${one(args.rel)} here`, { relations: declared.map((r) => r.attrs.name[0]), code: 'no_relation', roles: { relation: String(one(args.rel)) } });
     const id = fresh(w, 'link');
     ctx.tell(wireText(id, 'std.acts.link', { a: ref(a.thing.id), b: ref(b.thing.id), ...(args.rel ? { rel: one(args.rel) } : {}) }), { now: true });
     return { act: 'connect', link: id };
@@ -385,8 +385,8 @@ const ACTIONS = {
     const ids = [];
     for (const x of [].concat(args.things)) {
       const r = thingOf(w, x);
-      if (!r.thing) return refuse(w, 'group', r.kind, r.why, r.which ? { which: r.which } : {});
-      if (!allows(w, r.thing, 'group')) return refuse(w, 'group', r.thing.attrs.kind[0], `${art(r.thing.attrs.kind[0])} cannot be grouped here`);
+      if (!r.thing) return refuse(w, 'group', r.kind, r.why, r.which ? { which: r.which, code: 'which', roles: { kind: r.kind, number: (r.which).length } } : { code: 'no_such', roles: { thing: r.kind } });
+      if (!allows(w, r.thing, 'group')) return refuse(w, 'group', r.thing.attrs.kind[0], `${art(r.thing.attrs.kind[0])} cannot be grouped here`, { code: 'not_allowed', roles: { kind: r.thing.attrs.kind[0] } });
       ids.push(ref(r.thing.id));
     }
     const name = args.name ? String(one(args.name)) : fresh(w, 'group');
@@ -409,22 +409,22 @@ const ACTIONS = {
       const f = named(w, args.thing, args.type);
       if (f) return askFact(w, f, args);
     }
-    if (args.rel !== undefined) { const r = thingOf(w, args.thing, args.nth, inOf(w, args)); if (!r.thing) return refuse(w, 'ask', r.kind, r.why, r.which ? { which: r.which } : {}); if (!allows(w, r.thing, 'ask')) return refuse(w, 'ask', r.thing.attrs.kind[0], `${art(r.thing.attrs.kind[0])} cannot be asked about here`); return askFact(w, r.thing, args); }
+    if (args.rel !== undefined) { const r = thingOf(w, args.thing, args.nth, inOf(w, args)); if (!r.thing) return refuse(w, 'ask', r.kind, r.why, r.which ? { which: r.which, code: 'which', roles: { kind: r.kind, number: (r.which).length } } : { code: 'no_such', roles: { thing: r.kind } }); if (!allows(w, r.thing, 'ask')) return refuse(w, 'ask', r.thing.attrs.kind[0], `${art(r.thing.attrs.kind[0])} cannot be asked about here`, { code: 'not_allowed', roles: { kind: r.thing.attrs.kind[0] } }); return askFact(w, r.thing, args); }
     const { thing: t, why, kind, which } = thingOf(w, args.thing, args.nth, inOf(w, args));
-    if (!t) return refuse(w, 'ask', kind, why, which ? { which } : {});
+    if (!t) return refuse(w, 'ask', kind, why, which ? { which, code: 'which', roles: { kind: kind, number: (which).length } } : { code: 'no_such', roles: { thing: kind } });
     if (args.attr === undefined) return { act: 'ask', thing: t.id, attrs: Object.fromEntries(Object.entries(t.attrs).map(([k, v]) => [k, v.length === 1 ? v[0] : [...v]])) };
     const attr = String(one(args.attr));
     return { act: 'ask', thing: t.id, attr, ...shapeOf(t.attrs[attr]), value: t.attrs[attr]?.[0] ?? null, why: w.why(t.id, attr) };
   }),
   acts_send: (ctx, args) => pre('send', ctx, args, (w) => { // to another world that has the kind: both schemas checked, one set
     const { thing: t, why, kind, which } = thingOf(w, args.thing, args.nth, inOf(w, args));
-    if (!t) return refuse(w, 'send', kind, why, which ? { which } : {});
+    if (!t) return refuse(w, 'send', kind, why, which ? { which, code: 'which', roles: { kind: kind, number: (which).length } } : { code: 'no_such', roles: { thing: kind } });
     const k = t.attrs.kind[0], to = String(one(args.to)), from = t.attrs.world?.[0];
-    if (!w.ofType('std.schema.world').some((x) => x.attrs.name[0] === to)) return refuse(w, 'send', k, `there is no world ${to}`);
+    if (!w.ofType('std.schema.world').some((x) => x.attrs.name[0] === to)) return refuse(w, 'send', k, `there is no world ${to}`, { code: 'no_world_named', roles: { world: to } });
     const here = kindsOf(w, k).find((x) => x.world === from), there = kindsOf(w, k).find((x) => x.world === to);
-    if (!here?.acts.includes('send')) return refuse(w, 'send', k, `${art(k)} cannot be sent from ${from}`);
-    if (!there) return refuse(w, 'send', k, `${to} has no ${k}`, { to });
-    if (!there.acts.includes('make')) return refuse(w, 'send', k, `${art(k)} cannot be made in ${to}`, { to });
+    if (!here?.acts.includes('send')) return refuse(w, 'send', k, `${art(k)} cannot be sent from ${from}`, { code: 'not_allowed', roles: { kind: k, world: from } });
+    if (!there) return refuse(w, 'send', k, `${to} has no ${k}`, { to, code: 'no_kind_in', roles: { kind: k, world: to } });
+    if (!there.acts.includes('make')) return refuse(w, 'send', k, `${art(k)} cannot be made in ${to}`, { to, code: 'not_allowed', roles: { kind: k, world: to } });
     const r = w.applyPatch({ sets: [{ id: t.id, key: 'world', value: to }] });
     return r.ok === false ? r : { act: 'send', thing: t.id, from, to };
   }),
@@ -432,7 +432,7 @@ const ACTIONS = {
     const view = w.ofType('std.schema.view').find((v) => v.attrs.name[0] === String(one(args.view)));
     if (!view) return { ok: false, why: `there is no view ${one(args.view)}` };
     const things = args.set !== undefined || !w.get(String(one(args.thing)).replace(/^\$/, ''))?.attrs.kind ? setOf(w, { ...args, set: args.set ?? 'each' }) : [w.get(String(one(args.thing)).replace(/^\$/, ''))];
-    if (!things.length) return refuse(w, 'show', String(one(args.thing)), `there is no ${one(args.thing)}`);
+    if (!things.length) return refuse(w, 'show', String(one(args.thing)), `there is no ${one(args.thing)}`, { code: 'no_such', roles: { thing: one(args.thing) } });
     const shows = view.attrs.shows || [], out = [], skipped = [];
     for (const t of things) {
       const k = t.attrs.kind[0], has = new Set(kindsOf(w, k).flatMap((x) => x.aspects));
@@ -440,13 +440,13 @@ const ACTIONS = {
       if (lack !== undefined && String(one(args.thing)) === '*') { skipped.push(t.id); continue; } // every thing in a view: those the view does not show are left out, and said
       if (lack !== undefined) {
         const asp = w.ofType('std.schema.aspect').find((a) => a.attrs.name[0] === lack);
-        return refuse(w, 'show', k, `${art(k)} has no ${asp?.attrs.doc ? valueText(asp.attrs.doc[0]) : lack}`, { view: view.attrs.name[0], aspect: lack, has: [...has] });
+        return refuse(w, 'show', k, `${art(k)} has no ${asp?.attrs.doc ? valueText(asp.attrs.doc[0]) : lack}`, { view: view.attrs.name[0], aspect: lack, has: [...has], code: 'no_aspect', roles: { kind: k, aspect: lack } });
       }
       const keys = shows.flatMap((a) => w.ofType('std.schema.aspect').find((x) => x.attrs.name[0] === a)?.attrs.keys || []);
       out.push({ id: t.id, kind: k, values: Object.fromEntries(keys.map((key) => [key, t.attrs[key]?.[0] ?? null])) });
       if (!w.ofType('std.acts.shown').some((x) => x.attrs.view[0] === view.attrs.name[0] && x.attrs.thing[0] === ref(t.id))) ctx.tell(wireText(`shown.${view.attrs.name[0]}.${t.id}`.replace(/[^\w.]/g, '_'), 'std.acts.shown', { view: view.attrs.name[0], thing: ref(t.id) }), { now: true });
     }
-    if (!out.length && skipped.length) return refuse(w, 'show', '*', `nothing here has what the view ${view.attrs.name[0]} shows`, { view: view.attrs.name[0] });
+    if (!out.length && skipped.length) return refuse(w, 'show', '*', `nothing here has what the view ${view.attrs.name[0]} shows`, { view: view.attrs.name[0], code: 'nothing_to_show', roles: { view: view.attrs.name[0] } });
     return { act: 'show', view: view.attrs.name[0], things: out, ...(skipped.length ? { skipped } : {}) };
   }),
   acts_teach: (ctx, args) => pre('teach', ctx, args, (w) => { // facts in the form of knowledge wires, at the tier taught, with who taught them
@@ -490,8 +490,8 @@ const ACTIONS = {
   }),
   acts_copy: (ctx, args) => pre('copy', ctx, args, (w) => {
     const { thing: t, why, kind, which } = thingOf(w, args.thing, args.nth, inOf(w, args));
-    if (!t) return refuse(w, 'copy', kind, why, which ? { which } : {});
-    if (!allows(w, t, 'copy')) return refuse(w, 'copy', t.attrs.kind[0], `${art(t.attrs.kind[0])} cannot be copied here`);
+    if (!t) return refuse(w, 'copy', kind, why, which ? { which, code: 'which', roles: { kind: kind, number: (which).length } } : { code: 'no_such', roles: { thing: kind } });
+    if (!allows(w, t, 'copy')) return refuse(w, 'copy', t.attrs.kind[0], `${art(t.attrs.kind[0])} cannot be copied here`, { code: 'not_allowed', roles: { kind: t.attrs.kind[0] } });
     const id = fresh(w, t.attrs.kind[0]);
     // what a copy keeps: every value, except a reference to another thing of the live world
     // (a seat, a container), which is left unset unless its slot says copy=keep

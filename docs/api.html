@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="2006e049b0ef">
+<meta name="source-hash" content="96607efda0a7">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.142.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.143.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -643,7 +643,8 @@ print(replyFrom(L, &#x27;remove&#x27;, { thing: &#x27;list&#x27; }));</code></pr
 <figure class="code"><figcaption>prints</figcaption><pre><code>I made a new list.
 null</code></pre></figure>
 <h3 id="kit_replies">KIT_REPLIES</h3>
-<p>Every sentence <code>readTurn</code> and <code>openSession</code> can say, by its reply name: the roles it fills and its English default (<code>many</code> with a number). The language world's reply facts of that name (<code>${lang}.reply name= count= text=</code>) say it in the user's language; the default is used only when the language world has none. The names: <code>done.add</code>, <code>done.remove</code>, <code>done.change</code>, <code>done.undo</code>, <code>done.redo</code>, <code>nothing.undo</code>, <code>nothing.redo</code>, <code>ask.key</code>, <code>ask.make_missing</code>, <code>ask.which_world</code>, <code>ask.count</code>, <code>not_understood</code>, <code>not_understood.fragment</code>, <code>not_understood.statement</code>, <code>refused.no_place</code>, <code>refused.cannot_be</code>, <code>refused.no_such</code>, <code>refused.no_world</code>, <code>refused.no_host</code>, <code>refused.fragment</code>, <code>refused.value</code>, <code>refused</code>, <code>too_complex.none</code>, <code>too_complex.rest</code>, <code>answer.no</code>, <code>why.asked</code>, <code>why.told</code>, <code>why.default</code>, <code>why.other</code>, <code>why.nothing</code>, <code>why.none</code>.</p>
+<p>Every sentence <code>readTurn</code> and <code>openSession</code> can say, by its reply name: the roles it fills and its English default (<code>many</code> with a number). The language world's reply facts of that name (<code>${lang}.reply name= count= text=</code>) say it in the user's language; the default is used only when the language world has none. The names: <code>done.add</code>, <code>done.remove</code>, <code>done.change</code>, <code>done.undo</code>, <code>done.redo</code>, <code>nothing.undo</code>, <code>nothing.redo</code>, <code>ask.key</code>, <code>ask.make_missing</code>, <code>ask.which_world</code>, <code>ask.count</code>, <code>not_understood</code>, <code>not_understood.fragment</code>, <code>not_understood.statement</code>, <code>refused.no_place</code>, <code>refused.cannot_be</code>, <code>refused.no_such</code>, <code>refused.no_world</code>, <code>refused.no_host</code>, <code>refused.fragment</code>, <code>refused.value</code>, the std.acts refusal codes (<code>refused.not_allowed</code>, <code>no_world_kind</code>, <code>no_key</code>, <code>not_a_number</code>, <code>missing_value</code>, <code>which</code>, <code>no_room</code>, <code>no_world_named</code>, <code>no_kind_in</code>, <code>no_relation</code>, <code>no_aspect</code>, <code>nothing_to_show</code>, <code>bad_value</code>), <code>refused</code>, <code>too_complex.none</code>, <code>too_complex.rest</code>, <code>answer.no</code>, <code>why.asked</code>, <code>why.told</code>, <code>why.default</code>, <code>why.other</code>, <code>why.nothing</code>, <code>why.none</code>.</p>
+<p>A std.acts refusal carries its code and roles in <code>reason</code> (<code>{ code: 'no_key', roles: { kind, key } }</code>) beside the English <code>why</code>, so a host says it in the user's language; the kit does so with <code>refused.&lt;code&gt;</code>, a kind's roles said by the language world's word.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>print(KIT_REPLIES[&#x27;ask.key&#x27;].roles, KIT_REPLIES[&#x27;ask.key&#x27;].en);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;key&quot;] What {key}?</code></pre></figure>
 <h3 id="clausesworld-text-options-and-cutpointsworld-options">clauses(world, text, options) and cutPoints(world, options?)</h3>
@@ -1168,7 +1169,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.142.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.143.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

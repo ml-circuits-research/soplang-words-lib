@@ -176,7 +176,7 @@ function planClause(set, text, context = {}) {
   const finer = bound.find((x) => x.b.placeless && nRoles(x) > nRoles(win)); // a reading that saw a place this kind cannot take: said, not swallowed into a name by a coarser frame
   if (finer) win = finer;
   const { fr: f, b } = win;
-  if (!b.request && !b.timeline && !b.confirm && !b.unread.length) b.unread = tokens; // nothing bound: every word is unread
+  if (!b.request && !b.timeline && !b.confirm && !b.unread.length && !b.why) b.unread = tokens; // nothing bound: every word is unread
   const reading = { frame: f.frame, act: f.act, roles: f.roles, unread: b.unread, ...read0, complete: !b.unread.length && !b.why };
   const { joiners } = cutPoints(L, { lang });
   for (const v of Object.values(f.roles || {})) { // a role that runs over a joiner into a verb holds a second clause: not this reading's words ("called three and add a blue table")
@@ -186,6 +186,7 @@ function planClause(set, text, context = {}) {
   }
   const literal = tokens.length - Object.values(f.roles || {}).reduce((n, v) => n + String(v.text ?? '').split(/\s+/).filter(Boolean).length, 0); // the words the frame itself matched
   if (b.confirm) return { status: 'ask', reading, reply: speak(set, 'ask.make_missing', { name: b.confirm.args[b.confirm.key], kind: kindName(set, b.confirm.args.kind, lang) }, context), asks: [{ key: b.confirm.place, value: b.confirm.args[b.confirm.key], confirm: { action: 'make', args: b.confirm.args } }] };
+  if (!reading.complete && !b.unread.length && b.why) return { status: b.why.name === 'refused.which' ? 'ask' : 'refused', reading: { ...reading, complete: true }, reply: speak(set, b.why.name, b.why.roles, context) }; // read whole, but nothing or several things to act on
   if (!reading.complete) return { status: 'not-understood', reading, reply: b.placeless ? speak(set, b.placeless.name, b.placeless.roles, context) : b.unread.length ? notUnderstood(set, b.unread, context) : speak(set, b.why.name, b.why.roles, context) };
   if (literal <= 0) return { status: 'not-understood', reading: { ...reading, complete: false, unread: tokens }, reply: notUnderstood(set, tokens, context) }; // a catch-all frame that matched no word of its own reads nothing
   if (b.timeline) return { plan: { as: 'timeline', act: b.timeline.act, n: b.timeline.n ?? 1 }, reading, literal };
@@ -228,7 +229,7 @@ function runRequest(set, request, reading, context = {}) {
   const changed = [...set.worlds.values()].flatMap((w) => { const was = before.get(w.name); return [...w.world.wires.values()].filter((x) => !was.has(x.id)).map((x) => ({ world: w.name, type: x.type })).concat([...was].filter((id) => !w.world.wires.has(id)).map((id) => ({ world: w.name, type: 'removed', id }))); }); // every world: a stray change to another world is seen
   if (t.status === 'done') { set.steps.push({ world: pick }); set.redo.length = 0; }
   const result = t.results?.[0]?.result;
-  const reply = t.status === 'done' && SAID.has(request.action) ? sayAct(set, request.action, { request, result, thingType }, context) : speak(set, 'refused', { why: labelled(set, (t.replies || []).join(' ') || t.question || '') }, context); // the library's reason, said inside the language world's frame (the reasons themselves become codes in R4)
+  const reply = t.status === 'done' && SAID.has(request.action) ? sayAct(set, request.action, { request, result, thingType }, context) : refusedReply(set, t, context); // the act's refusal by its code and roles (std.acts), in the user's language
   const owners_ = owner;
   const effects = t.status === 'done' ? [{ effect: 'changed', world: pick, things: [...new Set([result?.thing, ...(result?.things || [])].filter(Boolean).map(String))] }] : []; // for the page: what to redraw
   if (t.status === 'done') set.focus = result?.thing ?? (result?.things || []).slice(-1)[0] ?? held?.thing.id ?? set.focus; // what "it" names next
@@ -329,6 +330,12 @@ function bindFrame(set, f, { lang, text = '' }) {
       if (!key) return { unread: [...all('value'), ...left], placeless: { name: 'refused.cannot_be', roles: { thing: kindName(set, ref.type, lang), value: roles.value?.text ?? v } } };
       return { request: { action: 'change', args: { thing: `$${ref.thing.id}`, attr: key, value: v } }, unread: left };
     }
+    if (f.act !== 'make' && kind && mods.length === 0) { // the kind alone ("remove the table"): the one thing of it, else which, else none
+      const them = thingsOf(set, kind);
+      if (them.length !== 1) return { unread: [], why: them.length ? { name: 'refused.which', roles: { kind: kindName(set, kind, lang), number: them.length } } : { name: 'refused.no_such', roles: { thing: kindName(set, kind, lang) } } };
+      used.add('thing');
+      if (f.act !== 'change' || words('value') === undefined) return { request: { action: f.act, args: { thing: `$${them[0].id}` } }, unread: Object.keys(roles).filter((k) => !used.has(k)).flatMap(all) };
+    }
     if (f.act !== 'make' && referentOf(set, kindWords.join(' '), { lang })) kind = null; // a thing of the world named: remove the second table
     if (!kind && f.act !== 'make') { // a thing of the world, not a kind: remove Ann, remove table 1
       const ref = referentOf(set, kindWords.join(' '), { lang });
@@ -422,6 +429,19 @@ export const KIT_REPLIES = {
   'refused.no_host': { roles: [], en: 'No host here takes that.' },
   'refused.fragment': { roles: ['key', 'value'], en: '"{value}" is only a fragment.' },
   'refused.value': { roles: ['key', 'value', 'values'], en: 'The {key} is one of {values}, not "{value}".' },
+  'refused.not_allowed': { roles: ['kind'], en: 'That cannot be done to {art} {kind} here.' },
+  'refused.no_world_kind': { roles: ['kind'], en: 'No world here has {art} {kind}.' },
+  'refused.no_key': { roles: ['kind', 'key'], en: '{art} {kind} has no {key}.' },
+  'refused.not_a_number': { roles: ['key', 'thing'], en: 'The {key} of the {thing} is not a number.' },
+  'refused.missing_value': { roles: ['key'], en: 'To what {key}?' },
+  'refused.which': { roles: ['kind', 'number'], en: 'Which {kind}? There are {number}.' },
+  'refused.no_room': { roles: ['kind'], en: 'There is no room for another {kind}.' },
+  'refused.no_world_named': { roles: ['world'], en: 'There is no world {world}.' },
+  'refused.no_kind_in': { roles: ['kind', 'world'], en: '{world} has no {kind}.' },
+  'refused.no_relation': { roles: ['relation'], en: 'There is no relation {relation} here.' },
+  'refused.no_aspect': { roles: ['kind', 'aspect'], en: '{art} {kind} has no {aspect}.' },
+  'refused.nothing_to_show': { roles: ['view'], en: 'Nothing here has what the view {view} shows.' },
+  'refused.bad_value': { roles: ['key'], en: 'That is not a {key} here.' },
   'refused': { roles: ['why'], en: '{why}' },
   'too_complex.none': { roles: [], en: 'That took too long; nothing was changed.' },
   'too_complex.rest': { roles: [], en: 'That took too long; the rest was not done.' },
@@ -452,6 +472,19 @@ function speak(set, name, roles = {}, context = {}) {
   out = out.replace(/\{art\}/, () => art(roles[firstRole(out, out.indexOf('{art}') + 5)] ?? '')).replace(/\{art2\}/, () => art(roles[firstRole(out, out.indexOf('{art2}') + 6)] ?? ''));
   out = out.replace(/\{(\w+):num=pl\}/g, (_, k) => plural(roles[k] ?? '')).replace(/\{(\w+)\}/g, (_, k) => String(roles[k] ?? ''));
   return out.charAt(0).toUpperCase() + out.slice(1);
+}
+
+/** A refused turn said by its code (std.acts refusals carry `reason.code` and `roles`): `refused.<code>`; else its reason. */
+function refusedReply(set, t, context = {}) {
+  const lang = context.lang ?? 'w.lang.en';
+  const v = t.violations?.[0] ?? t.dropped?.find((d) => d.violation)?.violation ?? t.reason;
+  const reason = v?.reason ?? v;
+  if (reason?.code && KIT_REPLIES[`refused.${reason.code}`]) {
+    const types = set.schema._compiled().types;
+    const roles = Object.fromEntries(Object.entries(reason.roles || {}).map(([k, x]) => [k, typeof x === 'string' && types.has(x) ? kindName(set, x, lang) : (k === 'key' ? wordIn(set, `${reason.kind}.${x}`, lang) ?? x : x)]));
+    return speak(set, `refused.${reason.code}`, roles, context);
+  }
+  return speak(set, 'refused', { why: labelled(set, v?.why ?? ((t.replies || []).join(' ') || t.question || '')) }, context);
 }
 
 /** A kind said in the user's language: the language world's word, else the schema's. */

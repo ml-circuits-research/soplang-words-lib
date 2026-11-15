@@ -5690,3 +5690,12 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   26 names in both languages.
 - PSys2's "Am adăugat 2 de mese.": with the pinned w.lang.ro.count (0.140) it is "Am adăugat 2 mese." (test/kit.test.mjs).
 - Gate: npm test 525 pass / 0 fail (1 todo); compat 11; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.143.0 — refusals as codes with roles (R4, first part)
+
+- src/std.mjs: all 38 refusal sites of std.acts pass `code` and `roles` (grep `refuse(w, ` without `code:` → only the
+  definition and the pass-through of a world function's own reason).
+- test/seating-app.test.mjs: "remove the table" with no table → refused "There is no table here."; with two → ask
+  "Which table? There are 2." (nothing removed); a change of `colour` on a table → "A table has no colour." (code
+  no_key, roles kind/key).
+- Gate: npm test 526 pass / 0 fail; compat 11; pilot same; psys2=0; scan clean; tsc ok.

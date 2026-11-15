@@ -1906,9 +1906,16 @@ the language world has none. The names: `done.add`, `done.remove`, `done.change`
 `done.redo`, `nothing.undo`, `nothing.redo`, `ask.key`, `ask.make_missing`, `ask.which_world`,
 `ask.count`, `not_understood`, `not_understood.fragment`, `not_understood.statement`,
 `refused.no_place`, `refused.cannot_be`, `refused.no_such`, `refused.no_world`,
-`refused.no_host`, `refused.fragment`, `refused.value`, `refused`, `too_complex.none`,
+`refused.no_host`, `refused.fragment`, `refused.value`, the std.acts refusal codes
+(`refused.not_allowed`, `no_world_kind`, `no_key`, `not_a_number`, `missing_value`, `which`,
+`no_room`, `no_world_named`, `no_kind_in`, `no_relation`, `no_aspect`, `nothing_to_show`,
+`bad_value`), `refused`, `too_complex.none`,
 `too_complex.rest`, `answer.no`, `why.asked`, `why.told`, `why.default`, `why.other`,
 `why.nothing`, `why.none`.
+
+A std.acts refusal carries its code and roles in `reason` (`{ code: 'no_key', roles: { kind,
+key } }`) beside the English `why`, so a host says it in the user's language; the kit does so with
+`refused.<code>`, a kind's roles said by the language world's word.
 
 ```js run
 print(KIT_REPLIES['ask.key'].roles, KIT_REPLIES['ask.key'].en);

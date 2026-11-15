@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.143.0
+
+One failure convention for the acts (R4, findings 25 and 33, first part).
+
+### Changed
+- Every std.acts refusal carries `reason.code` and `reason.roles` (no_such, not_allowed, no_key, not_a_number,
+  missing_value, which, no_room, no_world_kind, no_world_named, no_kind_in, no_relation, no_aspect, nothing_to_show,
+  bad_value) beside its English `why`.
+- The kit says a refusal by `refused.<code>` with the roles in the user's language ("A table has no colour."); "remove
+  the table" with none says there is none, with several asks which, instead of a library question.
+
 ## 0.142.0
 
 Every kit sentence from the language world (reviewer 17:55).

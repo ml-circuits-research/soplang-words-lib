@@ -20,6 +20,7 @@ library differs. SOP Lang's own vocabulary is in the glossary, with its standard
 | `signatureOf`, `chunk`, `minePatterns` | supertagging (Bangalore and Joshi 1999); word classes (Brown et al. 1992); cascaded finite-state chunking (Abney 1996; FASTUS, Hobbs et al. 1997) | signatures are types from the world's lexicon; patterns are mined from a corpus and counted for coverage |
 | `readEnsemble`, `riskCoverage` | ensembles with reranking (Charniak and Johnson 2005); selective prediction and risk-coverage curves (Geifman and El-Yaniv 2017) | the readers' agreement is the confidence, ranked by std.decide criteria rather than a trained reranker |
 | `interestOf` | the appraisal model of interest (Silvia 2005, 2006): novelty-complexity and coping potential | the appraisals, features and weight ranges are a knowledge world (`k.interest`), measured on the facts of a world |
+| `planRequest` (its reasoning cycle), `factsOf`, `deduceState`, `induceStyle` | generate-and-test with constraints; forward chaining, bottom-up evaluation as in Datalog (Ceri, Gottlob and Tanca 1989); weighted abduction (Hobbs, Stickel, Appelt and Martin 1993); anti-unification (Plotkin 1970) | at most five candidates, each run on a fork; chaining stops at depth 2 and under a tick budget; the abductive costs are the places of the sources in a declared order, compared lexicographically by std.decide; generalisation is one step, over the things of one kind or the session's corrections |
 | std.motion | rule-based scheduling of nonverbal behaviour, such as blinks and visemes (the Behavior Markup Language, Kopp et al. 2006) | schedules are world rules over time, not an animation timeline format |
 
 ## References
@@ -27,6 +28,7 @@ library differs. SOP Lang's own vocabulary is in the glossary, with its standard
 - Abney, S. (1996). Partial parsing via finite-state cascades. *Natural Language Engineering* 2(4).
 - Bangalore, S. and Joshi, A. K. (1999). Supertagging: an approach to almost parsing. *Computational Linguistics* 25(2).
 - Brown, P. F. et al. (1992). Class-based n-gram models of natural language. *Computational Linguistics* 18(4).
+- Ceri, S., Gottlob, G. and Tanca, L. (1989). What you always wanted to know about Datalog (and never dared to ask). *IEEE Transactions on Knowledge and Data Engineering* 1(1).
 - Charniak, E. and Johnson, M. (2005). Coarse-to-fine n-best parsing and MaxEnt discriminative reranking. ACL.
 - Chen, T. Y., Cheung, S. C. and Yiu, S. M. (1998). Metamorphic testing: a new approach for generating next test cases. Technical report HKUST-CS98-01.
 - Doyle, J. (1979). A truth maintenance system. *Artificial Intelligence* 12(3).

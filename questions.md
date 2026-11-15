@@ -470,3 +470,29 @@ taken while waiting, each open to a decision:
 - Colour words the world lacks are read through `VALUE_TYPES` (k.colours.basic / k.colours.colour names in the catalog)
   so that "in red" is named, not dropped.
 - PSys2's Q36 (clauses joins two requests across "and the") is not done in this release.
+
+## Q84 (worker, 0.150.0) — the reasoning cycle in planRequest: choices taken, for the reviewer and PSys2
+
+0.150.0 (CHANGELOG, api.md "factsOf", capabilities "Reason a little") has factsOf and the propose -> simulate ->
+deduce -> abduce cycle, with induction before it. Choices taken while waiting, each open to a decision:
+- **What is a candidate.** Generic dimensions only: where the items go (a slot of every item kind that refers to things,
+  `type=` of the slot, when they do not go in a whole made with them), a place said by a kind ("in the pond") or by a
+  reference word ("there", "here", the language's place pronouns, "in it"), and a fall-back without induced/dialogue
+  values when a candidate breaks a hard constraint. Random variants (other seeds) are not candidates yet.
+- **Hard vs soft.** Hard: what the world refuses in the dry run (types, enums, deny, std.schema.capacity), a relation to
+  nothing, the plan's `bounds` (kinds not wanted, the count said). Soft: catalog expectations (`placed`) and open
+  required keys (a missing value is an open question, not a contradiction). Catalog knowledge is never hard.
+- **Weights.** An assumption costs the index of its source in `sources` (said 0 ... sampled 5); an inference chain costs
+  0.25 per step (container's own kind 0, a fact of its kind 1, of an is_a parent 2). Criteria order (std.decide kind
+  `plan`): consistent, honoured, expected, cost, assumptions, near. A world can declare its own `of=plan` criteria.
+- **Reference words.** Only places are resolved by the cycle; "it" as the target stays the dialogue's last target, as
+  before. "the rest" is not read yet (no generic meaning found without a selection world); say if you want one.
+- **Induction** works on enum keys and `size` of the item kinds (not identity, not references, not std.schema.thing keys)
+  and on the whole's `layout`; corrections: the last two with the same `on` and step (size or count) make a new request
+  one step smaller / bigger. PSys2's session must keep `dialogue.corrections` ([{ on, step }]) and pass `replace` (the
+  ids a revision removes) for both to work; `examples/request-app.mjs` shows it.
+- **Kind facts** come from the catalog worlds passed in `catalog`: load k.commonsense.thing, k.scenes.thing,
+  k.kinds.parent there (`requestKinds()` in the example; 0.5 s here). [KNOW] a compact `k.kinds.place` (kind -> the
+  places it is usually at, and which kinds are such places) would make `placed` cheaper and cleaner than reading
+  material / is_a rows; the rule reads any type listed in KIND_FACTS.
+- std.acts' capacity message says "fishs" (plural by +s); not changed here.

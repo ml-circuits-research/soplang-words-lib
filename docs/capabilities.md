@@ -880,7 +880,7 @@ plants and a duck", "about bees", "of 3 chapters" are constraints; every other c
 ("too many", "no", "again", "put it back", "not all circles, better layout") revises the last request by the
 w.dialogue revision facts, and the result replaces the last one. A live world plans the request from what it
 declares (`std.schema.honours act=make on=kind on=count ... of=picture`, its kinds, its slots, its own k.expect
-facts), fills each gap from the sources in order (said > dialogue > world > the catalog's k.expect > sampled; random
+facts), fills each gap from the sources in order (said > dialogue > induced > world > the catalog's k.expect > sampled; random
 varies within the typical range, never the minimum) and names what it assumed and what it does not honour. A new
 world gets this by declaring its capabilities and nothing else: `examples/request-app.mjs` runs two invented
 worlds (shapes on a page, short notes) through one session with no code per world, and `test/request.test.mjs`
@@ -899,6 +899,50 @@ print(p.steps.length, p.notHonoured.map((x) => `${x.words}: ${x.why}`));
 
 ```output
 2 ["red: this world does not take attribute for make"]
+```
+
+## Reason a little on the state of a live world before acting
+
+*In `planRequest` (its reasoning cycle), `factsOf`, `kindFactsOf`, `deduceState`, `induceStyle`, `induceCorrections`, `REASONING`, `KIND_FACTS`, `REASON_RULES`; since 0.150.*
+*Works on: any live world (its schema gives the view); the catalog's k.commonsense, k.scenes and k.kinds parents for what a kind expects.*
+
+The gap filler reasons a little, shallow and bounded, on the state of the concrete world, the same for every world.
+`factsOf(world)` is one flat view of any world as `(thing, attribute, value)` and `(thing, relation, thing)`, kept
+per version and built from the last view by the changes since (also on a fork). `planRequest` proposes at most five
+candidates (where the things could go, a reference word such as "there"), runs each on a fork (generate-and-test),
+deduces on the simulated state by forward chaining to depth 2 (what the world refuses, a relation to nothing, the
+request's own bounds are hard; what the catalog expects of the kinds present is soft: a fish is at water, and a pond
+is a thing made of water), and keeps the cheapest survivor by weighted abduction (Hobbs et al. 1993: the
+assumptions weighted by their source; the shorter chain of inference is cheaper). Before that, one step of
+anti-unification (Plotkin 1970) over the world's things of a kind and over the session's corrections gives soft
+defaults that rank before the world's own facts and k.expect: after three blue circles a fourth is blue unless
+told otherwise; "too many" twice makes the next picture smaller. The plan says what it assumed, what it rejected
+and why, and what it cannot do. `examples/request-app.mjs` adds an invented garden (animals in areas, a pond with
+room for one fish): "add a fish" goes to the pond with room, "add a bird" to the tree, "add 9 fish in the pond"
+cannot be done and says why; `test/request.test.mjs` runs P9-P11 over every example world by its declarations.
+
+```js run
+const w = new World();
+w.load(`@acts core.use world=std.acts
+@w std.schema.world name=toy
+@t.box core.type of=box extends=std.schema.thing closed=true
+@s.room core.slot of=box key=room kind=integer
+@t.ball core.type of=ball extends=std.schema.thing closed=true
+@s.in core.slot of=ball key=in type=box
+@k1 std.schema.kind of=box world=toy acts=remove
+@k2 std.schema.kind of=ball world=toy acts=make
+@cap std.schema.capacity of=box key=room holds=ball via=in
+@h std.schema.honours act=make on=kind on=count on=place of=ball
+@b1 box kind=box world=toy room=1
+@b2 box kind=box world=toy room=3
+@x ball kind=ball world=toy in=$b2`);
+const q = { act: 'make', target: 'ball', text: 'two balls there', unread: [], constraints: [{ on: 'count', want: 'yes', number: 2, words: '2' }, { on: 'place', want: 'yes', value: null, ref: 'there', words: 'there' }] };
+const p = planRequest(w, q, { dialogue: { lastRun: { made: ['b1'] } } });
+print(p.steps.map((s) => s.args.in), p.rejected.map((r) => `${r.label}: ${r.why[0]}`));
+```
+
+```output
+["$b2","$b2"] ["in b1: b1 has room for 0 more balls (room 1)"]
 ```
 
 ## Run an application's worlds with the host kit

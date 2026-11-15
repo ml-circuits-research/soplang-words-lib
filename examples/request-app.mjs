@@ -49,6 +49,34 @@ export const NOTES = String.raw`
 @w.write core.word text=write text=jot means=make
 `;
 
+// An example: animals put in the areas of a garden. A pond has room for so many fish; where an animal goes is not
+// declared anywhere: the planner tries the areas there are and keeps the one the catalog's kind facts expect.
+export const GARDEN = String.raw`
+@acts core.use world=std.acts
+@w std.schema.world name=garden doc="an example world: animals placed in the areas of a garden"
+@t.area core.type of=area extends=std.schema.thing closed=true
+@s.room core.slot of=area key=room kind=integer min=0
+@t.pond core.type of=pond extends=area closed=true
+@t.grass core.type of=grass extends=area closed=true
+@t.tree core.type of=tree extends=area closed=true
+@t.animal core.type of=animal extends=std.schema.thing closed=true
+@s.in core.slot of=animal key=in type=area
+@s.colour core.slot of=animal key=colour enum=grey enum=gold enum=brown enum=white
+@t.fish core.type of=fish extends=animal closed=true
+@t.bird core.type of=bird extends=animal closed=true
+@k.pond std.schema.kind of=pond world=garden acts=remove
+@k.grass std.schema.kind of=grass world=garden acts=remove
+@k.tree std.schema.kind of=tree world=garden acts=remove
+@k.fish std.schema.kind of=fish world=garden acts=make acts=remove
+@k.bird std.schema.kind of=bird world=garden acts=make acts=remove
+@cap std.schema.capacity of=pond key=room holds=fish via=in
+@h.make std.schema.honours world=garden act=make on=kind on=count on=attribute on=place of=fish of=bird
+@grass1 grass kind=grass world=garden
+@pond1 pond kind=pond world=garden room=1
+@tree1 tree kind=tree world=garden
+@pond2 pond kind=pond world=garden room=4
+`;
+
 /** A world from its text. */
 export function exampleWorld(text) { const w = new World(); const r = w.load(text); if (!r.ok) throw new Error(JSON.stringify(r.violations?.[0] ?? r)); return w; }
 
@@ -58,7 +86,7 @@ export function exampleWorld(text) { const w = new World(); const r = w.load(tex
  * for every world: what a world can do is what it declares.
  */
 export function requestSession(live, { language, catalog = [], revisions = null } = {}) {
-  const dialogue = { last: null, result: null, previous: null, seed: 1, lastRun: null };
+  const dialogue = { last: null, result: null, previous: null, seed: 1, lastRun: null, corrections: [] };
   return {
     dialogue,
     say(text) {
@@ -66,9 +94,12 @@ export function requestSession(live, { language, catalog = [], revisions = null 
       const rev = reviseRequest(dialogue, request, { revisions, catalog });
       if (rev.undo && !rev.request) return { request, revision: rev, plan: null, run: null, reply: sayRequest(request, { reply: 'nothing.undo' }, { language }) };
       if (!rev.request) return { request, revision: rev, plan: null, run: null, reply: sayRequest(request, { reply: rev.reply }, { language }) };
-      const plan = planRequest(live, rev.request, { catalog, dialogue, seed: rev.seed, vary: rev.vary });
-      const run = plan.ok ? runPlan(live, plan, { replace: (rev.replace || rev.undo) && dialogue.lastRun ? dialogue.lastRun.made : [] }) : null;
+      const replace = (rev.replace || rev.undo) && dialogue.lastRun ? dialogue.lastRun.made : [];
+      const plan = planRequest(live, rev.request, { catalog, dialogue, seed: rev.seed, vary: rev.vary, replace });
+      const run = plan.ok ? runPlan(live, plan, { replace }) : null;
       if (run?.ok) {
+        const step = rev.does?.find((d) => d.does === 'step'); // a correction ("too many", "bigger"), for induction over the session
+        if (step) dialogue.corrections.push({ on: step.on, step: step.direction });
         Object.assign(dialogue, rev.undo ? { previous: null } : { previous: dialogue.last, previousSeed: dialogue.seed, previousVary: dialogue.vary });
         Object.assign(dialogue, { last: rev.request, result: { ...run.result }, lastRun: run, seed: rev.seed, vary: !!rev.vary });
       }
@@ -89,11 +120,19 @@ export async function requestLanguage() {
   return catalogWorld({ 'w.lang.en': en, 'k.actions': ['k.actions.verb'], 'k.expect': ['k.expect.amount', 'k.expect.scale', 'k.expect.make', 'k.expect.part'], 'w.dialogue': ['w.dialogue.revision'], 'k.colours': ['k.colours.basic', 'k.colours.colour'] });
 }
 
+/** What the catalog says of kinds (k.commonsense, k.scenes, k.kinds parents), for the deduction of the planner. Null offline. */
+export async function requestKinds() {
+  const { catalogWorld, worldsDir } = await import('../tools/worlds.mjs');
+  if (!worldsDir()) return null;
+  return catalogWorld({ 'k.commonsense': ['k.commonsense.thing'], 'k.scenes': ['k.scenes.thing'], 'k.kinds': ['k.kinds.parent'] });
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
   const language = await requestLanguage();
   if (!language) { console.log('the published worlds cannot be read here'); process.exit(0); }
-  for (const [name, text, turns] of [['sketch', SKETCH, ['draw a sketch, not circles', 'too many', 'not all squares, with arrows', 'draw 3 small red circles in the top left', 'blorp a picture']], ['notes', NOTES, ['write a short note about bees', 'write a note about frogs in red']]]) {
-    const s = requestSession(exampleWorld(text), { language, catalog: [language], revisions: language });
+  const kinds = await requestKinds();
+  for (const [name, text, turns] of [['sketch', SKETCH, ['draw a sketch, not circles', 'too many', 'not all squares, with arrows', 'draw 3 small red circles in the top left', 'blorp a picture']], ['notes', NOTES, ['write a short note about bees', 'write a note about frogs in red']], ['garden', GARDEN, ['add a fish', 'add a bird', 'add 2 fish there', 'add 9 fish in the pond']]]) {
+    const s = requestSession(exampleWorld(text), { language, catalog: [language, kinds], revisions: language });
     console.log(`-- ${name}`);
     for (const t of turns) { const r = s.say(t); console.log(`> ${t}\n  ${r.reply.text}`); }
   }

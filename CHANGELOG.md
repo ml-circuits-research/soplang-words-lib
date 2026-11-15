@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.150.0
+
+A first layer of reasoning in the gap filler (owner 2026-11-15 14:11): shallow, generic, bounded, on the state of
+the live world, the same for every world.
+
+### New
+- `factsOf(world)`: one flat view of any world as `(thing, attribute, value)` and `(thing, relation, thing)` (a `$`
+  reference or a declared join), with kinds from the type lineage; indexed (`ofKind`, `related`, `inbound`), kept
+  per `world.version` and built from the last view of the same history by the events since (also on a fork).
+- `kindFactsOf(catalog, types)`, `KIND_FACTS`: what the catalog says of kinds (k.commonsense, k.scenes, k.kinds
+  parents) as `(kind, attribute, value)`.
+- `deduceState(view, ids, opts)`, `REASON_RULES`: forward chaining (Datalog-style, bottom-up) to depth 2 and the
+  constraints `join` (hard), `placed` (soft; a fish is at water, a pond is a thing made of water; each inference
+  step costs 0.25), `open` (soft), `request` (the plan's bounds: kinds not wanted, the count said; hard).
+- `induceStyle(view, types, opts)`, `induceCorrections(list, opts)`: anti-unification, one step (Plotkin 1970),
+  over the things of a kind (at least 3) and over a session's last corrections (2).
+- `REASONING`: the bounds (5 candidates, depth 2, a tick budget, 3 things, 2 corrections).
+- std.decide kind `plan`: consistent (hard), honoured, expected (soft cost), cost (assumptions weighted by the
+  place of their source), assumptions, near.
+- `examples/request-app.mjs`: a third invented world (animals in the areas of a garden; a pond with a capacity),
+  `requestKinds()`, and the session keeps `dialogue.corrections` and passes `replace` to the planner.
+
+### Changed
+- `planRequest`: propose (at most 5 candidates: where the items could go through a slot that refers to things, a
+  place said by a kind or by a reference word, a fall-back without induced and dialogue values) -> simulate (each
+  on a fork) -> deduce -> drop hard, cost soft -> abduce (`choose`, kind `plan`). New options `replace`, `ticks`,
+  `candidates`, `reason: false`; the plan carries `rejected` (with why), `cannot`, `bounds`, `reasoning`. When no
+  candidate survives, `ok` is false and `cannot` says why.
+- `REQUEST_SOURCES` = said, dialogue, induced, world, expect, sampled: a value induced from this world's state comes
+  before the world's own facts and k.expect.
+- `readRequest`: a reference word for a place ("there", "here", the language world's place pronouns; "in it") is a
+  place constraint with `ref`, which the planner resolves to the cheapest thing that makes the request satisfiable.
+- `runPlan`: `result.items`. `sayRequest`: a `not_honoured` fact for each reason of `outcome.cannot`.
+- A layout said as a value of the slot ("column") is no longer overridden by the sources of the layout.
+
 ## 0.149.0
 
 Requests as worlds (owner GO 2026-11-15): the mechanisms readRequest, reviseRequest, planRequest and sayRequest,

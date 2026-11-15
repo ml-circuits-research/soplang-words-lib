@@ -16,9 +16,15 @@ import { inflectBy } from './morph.mjs';
 import { replyFrom } from './kit.mjs';
 import { memoPerWorld } from './memo.mjs';
 import { seeded, below } from './random.mjs';
+import { choose } from './rank.mjs';
+import { factsOf, kindFactsOf, deduceState, induceStyle, induceCorrections, REASONING } from './reason.mjs';
 
-/** The order in which a gap is filled: what the user said, the dialogue state, the world's own facts, the catalog's expectations, a sampled value. */
-export const REQUEST_SOURCES = Object.freeze(['said', 'dialogue', 'world', 'expect', 'sampled']);
+/**
+ * The order in which a gap is filled: what the user said, the dialogue state, what is induced from this world's state
+ * (the common pattern of its things of a kind, the session's corrections), the world's own facts, the catalog's
+ * expectations, a sampled value. A value's place in this list is also its cost as an assumption (said 0).
+ */
+export const REQUEST_SOURCES = Object.freeze(['said', 'dialogue', 'induced', 'world', 'expect', 'sampled']);
 /** The constraint keys of w.request. */
 export const REQUEST_KEYS = Object.freeze(['kind', 'count', 'size', 'extent', 'attribute', 'place', 'manner', 'layout', 'with', 'about', 'length']);
 
@@ -53,6 +59,8 @@ function languageOf(language, lang) {
     const numbers = new Map();
     for (const r of rowsOf(language, `${lang}.number`)) if ((first(r, 'kind') ?? 'cardinal') === 'cardinal' && first(r, 'value') !== undefined) for (const t of r.text ?? []) numbers.set(String(t).toLowerCase(), Number(first(r, 'value')));
     const anaphors = new Set(texts('anaphor'));
+    const placeRefs = new Set(rowsOf(language, `${lang}.pron`).filter((r) => first(r, 'refers') === 'place' || first(r, 'deictic') === 'place').flatMap((r) => r.text ?? []).map((t) => String(t).toLowerCase()).filter((t) => !t.includes(' ')));
+    for (const t of ['there', 'here']) placeRefs.add(t);
     for (const t of ['it', 'this', 'that', 'them', 'these', 'those']) anaphors.add(t);
     const dets = new Set(texts('det'));
     for (const t of ['a', 'an', 'the', 'some', 'any', 'this', 'that']) dets.add(t);
@@ -64,7 +72,7 @@ function languageOf(language, lang) {
       lead: (r.lead ?? []).map(phraseTokens), between: (r.between ?? []).map(phraseTokens), trail: (r.trail ?? []).map(phraseTokens),
     }));
     const plural = (w) => { try { return inflectBy(language, w, 'plural', { types: { rule: `${lang}.inflect`, irregular: `${lang}.irregular` } }); } catch { return null; } };
-    return { stop, numbers, anaphors, dets, preps, cues, plural, hasInflect: rowsOf(language, `${lang}.inflect`).length > 0 };
+    return { stop, numbers, anaphors, placeRefs, dets, preps, cues, plural, hasInflect: rowsOf(language, `${lang}.inflect`).length > 0 };
   });
 }
 
@@ -283,6 +291,10 @@ export function readRequest(world, text, ctx = {}) {
     }
     const v = longestAt(ws, i, X.values, 3);
     if (v && free(i, v.n)) { take(i, v.n); const c = { on: 'attribute', want: 'yes', attribute: v.entry[0].attribute, value: v.entry[0].value, words: v.text, origin: 'said', at: i }; constraints.push(c); pending.push(c); continue; }
+    // a reference word for a place ("there", "in it"): a place constraint the planner resolves to a thing of the state
+    const placed = constraints.some((c) => c.on === 'place');
+    if (!placed && L.placeRefs.has(ws[i])) { take(i); constraints.push({ on: 'place', want: 'yes', value: null, ref: ws[i], words: ws[i], origin: 'said', at: i }); continue; }
+    if (!placed && L.anaphors.has(ws[i]) && i > 0 && L.preps.has(ws[i - 1]) && act) { take(i); constraints.push({ on: 'place', want: 'yes', value: null, ref: ws[i], relation: ws[i - 1], words: words(i - 1, 2), origin: 'said', at: i }); continue; }
     if (L.anaphors.has(ws[i]) && !target) { take(i); target = ctx.dialogue?.last?.target ?? null; refers = 'last'; }
   }
   if (!target && act) { const k = constraints.find((c) => c.on === 'kind' && c.want === 'yes'); if (k) { target = k.value; refers = 'kind'; } }
@@ -440,13 +452,8 @@ const slotsOf = (live, kind) => live?._compiled?.().slots.get(kind) ?? new Map()
 const pick = (rnd, lo, hi, notMin = false) => { const a = notMin && hi > lo ? lo + 1 : lo; return a + below(rnd, hi - a + 1); };
 const shuffle = (rnd, xs) => { const a = [...xs]; for (let i = a.length - 1; i > 0; i--) { const j = below(rnd, i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }; // bounded: the items
 
-/**
- * Plan a request in a live world from its declared capabilities, filling every gap from the sources in order
- * (`sources`, default REQUEST_SOURCES: said > dialogue > world > expect > sampled). `opts`: `catalog` (sources of
- * k.expect facts), `dialogue` ({ last, result }), `sources`, `seed`. Returns { ok, act, target, roles, steps,
- * assumed: [{ key, value, from }], notHonoured: [{ on, words, why, code }], seed }. Nothing is changed.
- */
-export function planRequest(live, request, opts = {}) {
+/** One plan of a request, the gaps filled from the sources in order, with the hints of the reasoning cycle (induced values, a place). */
+function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   const sources = opts.sources ?? REQUEST_SOURCES;
   const has = (s) => sources.includes(s);
   const seed = opts.seed ?? 1;
@@ -499,7 +506,8 @@ export function planRequest(live, request, opts = {}) {
   const scale = scaleOf([...(has('world') ? [live] : []), ...(has('expect') ? catalog : [])]);
   const amounts = (name) => rowsOf([...(has('world') ? [live] : []), ...(has('expect') ? catalog : [])], 'k.expect.amount').find((r) => first(r, 'name') === name);
   const sizeC = C('size')[0];
-  const sizeStep = sizeC ? (sizeC.value ?? (sizeC.step === 'up' ? stepNext(scale, 'default', 'up') : sizeC.step === 'down' ? stepNext(scale, 'default', 'down') : 'default')) : 'default';
+  const sizeI = !sizeC && has('induced') && hints.sizeStep && keys.has('size') ? stepNext(scale, 'default', hints.sizeStep) : null; // the session's corrections, generalised
+  const sizeStep = sizeC ? (sizeC.value ?? (sizeC.step === 'up' ? stepNext(scale, 'default', 'up') : sizeC.step === 'down' ? stepNext(scale, 'default', 'down') : 'default')) : sizeI ?? 'default';
   const lengthC = C('length')[0];
   const lengthStep = lengthC && !lengthC.unit ? lengthC.value : null;
   const cf = factor(scale, lengthStep ?? sizeStep) ?? 1;
@@ -556,6 +564,7 @@ export function planRequest(live, request, opts = {}) {
     lo = Math.max(1, Math.round(baseMin * cf)); hi = Math.max(lo, Math.round(baseMax * cf)); typ = Math.min(hi, Math.max(lo, Math.round(baseTyp * cf))); countFrom = mk ? mkFrom : 'world';
   }
   let n = random ? pick(rnd, lo, hi, true) : Math.min(hi, Math.max(lo, typ));
+  const saidCount = countFrom === 'said' ? [lo, hi] : null;
   if (random && !countC) countFrom = 'sampled';
   if (mode === 'shapes' && notAll.length && n < 2) n = 2;
 
@@ -627,10 +636,14 @@ export function planRequest(live, request, opts = {}) {
   const said = (c) => (c.origin ?? 'said') === 'said';
   const nameIt = (c, why, code) => { if (said(c)) notHonoured.push({ on: c.on, words: c.words ?? String(c.value), why, code, value: c.value }); };
   // size: each item's size factor, from the scale
+  if (sizeI && sizeI !== 'default') { const f = factor(scale, sizeStep, 'size'); if (placeRole('size', itemSlots(items[0]?.kind).get('size')?.enum ? sizeStep : f ?? sizeStep, { onWhole: false }) === 'put' || placeRole('size', sizeStep, { onItems: false }) === 'put') assumed.push({ key: 'size', value: sizeStep, from: 'induced' }); }
   if (sizeC) { const f = factor(scale, sizeStep, 'size'); const r = placeRole('size', itemSlots(items[0]?.kind).get('size')?.enum ? sizeStep : f ?? sizeStep, { onWhole: false }); if (r !== 'put' && placeRole('size', sizeStep, { onItems: false }) !== 'put') nameIt(sizeC, 'nothing here has a size', 'no_slot'); }
   for (const c of C('extent')) { const f = factor(scale, c.value, 'extent'); const r = placeRole('extent', wholeSlots.get('extent')?.enum ? c.value : f ?? c.value, { onItems: false }); if (r !== 'put') nameIt(c, 'nothing here has an extent', 'no_slot'); }
   for (const c of C('attribute')) { if (c.want === 'no') continue; const key = c.attribute ?? 'colour'; const r = placeRole(key, c.value); if (r !== 'put') nameIt(c, r === 'refused' ? `${c.value} is not a ${key} here` : `nothing here has a ${key}`, r === 'refused' ? 'value' : 'no_slot'); }
-  for (const c of C('place')) { const r = placeRole('place', c.value); if (r !== 'put') nameIt(c, r === 'refused' ? `there is no place ${c.value} here` : 'nothing here has a place', r === 'refused' ? 'value' : 'no_slot'); }
+  for (const c of C('place')) {
+    if (hints.place && items.length && items.every((it) => itemSlots(it.kind).has(hints.place.key))) { itemArgs[hints.place.key] = `$${hints.place.id}`; if (c.value !== hints.place.id) assumed.push({ key: 'place', value: hints.place.id, from: hints.place.from, words: c.words }); continue; }
+    if (c.ref) { nameIt(c, `nothing here is what ${c.ref} could be`, 'no_referent'); continue; }
+    const r = placeRole('place', c.value); if (r !== 'put') nameIt(c, r === 'refused' ? `there is no place ${c.value} here` : 'nothing here has a place', r === 'refused' ? 'value' : 'no_slot'); }
   for (const c of C('about')) { const r = placeRole('about', c.value, { onItems: false }); if (r !== 'put' && placeRole('about', c.value) !== 'put') nameIt(c, 'nothing here has a topic', 'no_slot'); }
   if (lengthC) {
     if (lengthC.unit && lengthC.unit === unit) { /* the count of the units, above */ }
@@ -640,7 +653,7 @@ export function planRequest(live, request, opts = {}) {
   } else if (mk && first(mk, 'length') && wholeSlots.has('length')) { const v = Math.round(num(first(mk, 'length')) * cf); wholeArgs.length = v; assumed.push({ key: 'length', value: v, from: mkFrom }); }
   // layout: said, the dialogue's, the world's expectation, the catalog's, the slot's default; "random" samples one
   const layoutSlot = whole ? wholeSlots.get('layout') : null;
-  if (layoutSlot || C('layout').length) {
+  if ((layoutSlot || C('layout').length) && !(wholeArgs.layout !== undefined && C('attribute').some((x) => x.attribute === 'layout'))) { // a layout said as a value of the slot stands
     const enumL = layoutSlot?.enum?.map(V) ?? null;
     const lc = C('layout')[0];
     let value = null, lf = null;
@@ -649,8 +662,9 @@ export function planRequest(live, request, opts = {}) {
     else if (lc) { nameIt(lc, `the layouts here are ${(enumL ?? []).join(', ')}`, 'value'); }
     if (!value) for (const s of sources) {
       if (s === 'dialogue' && opts.dialogue?.last) { const d = opts.dialogue.last.constraints?.find((c) => c.on === 'layout' && (!enumL || enumL.includes(c.value))); if (d) { value = d.value; lf = 'dialogue'; } }
-      if (s === 'world' && mkFrom === 'world' && first(mk, 'layout') && (!enumL || enumL.includes(first(mk, 'layout')))) { value = first(mk, 'layout'); lf = 'world'; }
-      if (s === 'expect' && mk && mkFrom === 'expect' && first(mk, 'layout') && (!enumL || enumL.includes(first(mk, 'layout')))) { value = first(mk, 'layout'); lf = 'expect'; }
+      if (s === 'induced' && hints.layout && !hints.drop?.has('layout') && (!enumL || enumL.includes(hints.layout))) { value = hints.layout; lf = 'induced'; }
+      if (s === 'world' && !value && mkFrom === 'world' && first(mk, 'layout') && (!enumL || enumL.includes(first(mk, 'layout')))) { value = first(mk, 'layout'); lf = 'world'; }
+      if (s === 'expect' && !value && mk && mkFrom === 'expect' && first(mk, 'layout') && (!enumL || enumL.includes(first(mk, 'layout')))) { value = first(mk, 'layout'); lf = 'expect'; }
       if (s === 'world' && !value && layoutSlot?.default) { value = V(layoutSlot.default); lf = 'world'; }
       if (s === 'sampled' && !value && enumL && random) { value = enumL[below(rnd, enumL.length)]; lf = 'sampled'; }
       if (value) break;
@@ -658,10 +672,17 @@ export function planRequest(live, request, opts = {}) {
     if (random && !lc && enumL) { value = enumL[below(rnd, enumL.length)]; lf = 'sampled'; }
     if (value) { if (layoutSlot) { wholeArgs.layout = value; if (lf !== 'said') assumed.push({ key: 'layout', value, from: lf }); } else if (lc) nameIt(lc, 'nothing here has a layout', 'no_slot'); }
   }
+  if (hints.place && !C('place').length && items.length && items.every((it) => itemSlots(it.kind).has(hints.place.key))) { itemArgs[hints.place.key] = `$${hints.place.id}`; assumed.push({ key: 'place', value: hints.place.id, from: hints.place.from }); }
   // a manner other than random is soft: a slot takes it where there is one
   for (const c of C('manner')) if (c.value !== 'random') placeRole('manner', c.value);
   // attribute values the dialogue state gives (the last request's), for the keys this request leaves open
   if (has('dialogue') && opts.dialogue?.last) for (const c of opts.dialogue.last.constraints ?? []) if (c.on === 'attribute' && c.want === 'yes' && keys.has('attribute') && !C('attribute').some((x) => x.attribute === c.attribute) && itemArgs[c.attribute] === undefined && wholeArgs[c.attribute] === undefined) { if (placeRole(c.attribute, c.value) === 'put') assumed.push({ key: c.attribute, value: c.value, from: 'dialogue' }); }
+  // the common pattern of this world's things of the kinds made (anti-unification), for the keys still open
+  if (has('induced') && hints.attrs) for (const [key, value] of Object.entries(hints.attrs)) {
+    if (hints.drop?.has(key) || itemArgs[key] !== undefined || C('attribute').some((x) => x.attribute === key)) continue;
+    if (key === 'size' ? (!keys.has('size') || sizeC || sizeI) : !keys.has('attribute')) continue;
+    if (placeRole(key, value, { onWhole: false }) === 'put') assumed.push({ key, value, from: 'induced' });
+  }
 
   if (countFrom !== 'said') assumed.push({ key: 'count', value: n, from: countFrom });
   const kindsUsed = [...new Set(items.map((it) => it.kind))];
@@ -679,7 +700,131 @@ export function planRequest(live, request, opts = {}) {
   out.roles = { count: n, kinds: kindsUsed, size: sizeStep, ...wholeArgs, ...itemArgs, links: steps.filter((s) => s.link).length, mode };
   out.steps = steps;
   out.ok = items.length > 0;
+  out.bounds = { count: saidCount, not: [...noK] }; // what deduction checks the made items against
   return out;
+}
+
+const NO_HINTS = Object.freeze({ attrs: null, layout: null, sizeStep: null, place: null, drop: null });
+const strip = (id) => String(id).replace(/^\$/, '');
+
+/**
+ * Plan a request in a live world from its declared capabilities, filling every gap from the sources in order
+ * (`sources`, default REQUEST_SOURCES: said > dialogue > induced > world > expect > sampled), and reason a little on
+ * the state of the world, in one bounded cycle (generate-and-test with constraints):
+ *   propose  - at most REASONING.candidates ways to satisfy the request (the places a thing could go, read from a
+ *              slot that refers to things; a reference word such as "there" or "in it"; a fall-back without the
+ *              induced and dialogue values when a candidate breaks a hard constraint);
+ *   simulate - each candidate is run on a fork of the live world (nothing changes in it);
+ *   deduce   - forward chaining to depth 2 on the simulated state (factsOf, deduceState): what the world refuses
+ *              (types, enums, deny rules, capacity), relations to things that are not there, the request's own
+ *              bounds (kinds not wanted, the count said) are hard; what the catalog expects of the kinds present
+ *              (k.commonsense, k.scenes, k.kinds: a fish is in water) and open required keys are soft;
+ *   abduce   - the surviving candidates ranked by `choose` with the criteria of kind `plan` (std.decide, or the
+ *              world's own): no hard violation, the fewest constraints not honoured, the fewest soft violations, the
+ *              cheapest assumptions (a value's cost is the place of its source in `sources`, Hobbs et al. 1993),
+ *              the fewest assumptions, the nearest referent;
+ *   induce   - before all this, the common pattern of this world's things of the kinds made (anti-unification,
+ *              induceStyle) and of the session's corrections (`dialogue.corrections`, induceCorrections) is a soft
+ *              default of source `induced`, ranked before the world's own facts and k.expect.
+ * `opts`: `catalog` (sources of k.expect and of the kind facts), `dialogue` ({ last, result, lastRun, corrections }),
+ * `sources`, `seed`, `vary`, `replace` (the ids a revision will remove first), `ticks`, `candidates`, `reason: false`
+ * (the plan alone). Returns { ok, act, target, roles, steps, assumed: [{ key, value, from }], notHonoured: [{ on,
+ * words, why, code }], rejected: [{ place, why, hard }], cannot: [{ why }], bounds, reasoning, seed, sources }.
+ * Nothing is changed.
+ */
+export function planRequest(live, request, opts = {}) {
+  const sources = opts.sources ?? REQUEST_SOURCES;
+  const base = planOnce(live, request, opts, NO_HINTS);
+  if (!base.ok || opts.reason === false || typeof live?.fork !== 'function' || typeof live?._compiled !== 'function') return { ...base, rejected: [], cannot: [], reasoning: null };
+  const budget = { ticks: opts.ticks ?? REASONING.ticks, used: 0 };
+  const max = Math.max(1, Math.min(opts.candidates ?? REASONING.candidates, REASONING.candidates));
+  const c = live._compiled();
+  const view = factsOf(live);
+  const except = new Set((opts.replace ?? []).map(strip));
+  const kindFacts = kindFactsOf([].concat(opts.catalog ?? []));
+  const itemKinds = [...new Set(base.steps.filter((x) => x.item).map((x) => x.args.kind))];
+  const wholeStep = base.steps.find((x) => !x.item && !x.link) ?? null;
+  const own = (t) => !String(t).startsWith('std.') && !String(t).startsWith('core.');
+
+  // induce: one step of anti-unification over the things of the kinds made, and over the session's corrections
+  const hints = { ...NO_HINTS }, induced = [];
+  if (sources.includes('induced')) {
+    const thingKeys = new Set([...(c.slots.get('std.schema.thing')?.keys() ?? []), 'kind', 'world']);
+    const keysOf = (type) => [...(c.slots.get(type)?.values() ?? [])].filter((x) => !thingKeys.has(x.key) && !x.identity && !x.refs?.length && (x.enum || x.key === 'size')).map((x) => x.key);
+    if (itemKinds.length) {
+      const lines = itemKinds.map((k) => c.lineage(k).filter(own));
+      const common = lines[0].filter((t) => lines.every((l) => l.includes(t)));
+      const st = induceStyle(view, common, { except, keys: keysOf });
+      if (st && Object.keys(st.pattern).length) { hints.attrs = st.pattern; induced.push({ of: st.of, n: st.n, pattern: st.pattern }); }
+    }
+    if (wholeStep) {
+      const st = induceStyle(view, c.lineage(wholeStep.args.kind).filter(own).slice(0, 1), { except, keys: () => ['layout'] });
+      if (st?.pattern.layout !== undefined) { hints.layout = st.pattern.layout; induced.push({ of: st.of, n: st.n, pattern: st.pattern }); }
+    }
+    const corr = request.revisedFrom === undefined ? induceCorrections(opts.dialogue?.corrections) : null; // a new request; a revision carries its own steps
+    if (corr && ['size', 'count'].includes(corr.on) && ['up', 'down'].includes(corr.step)) { hints.sizeStep = corr.step; induced.push({ of: 'corrections', n: corr.n, pattern: { [corr.on]: corr.step } }); }
+  }
+
+  // propose: where the items could go (a slot of every item kind that refers to things), when they do not go in a whole made with them
+  const placeC = request.constraints.find((x) => x.on === 'place' && x.want !== 'no') ?? null;
+  const inWhole = base.steps.some((x) => x.item && x.args.in && typeof x.args.in === 'object');
+  let refSlot = null, places = [];
+  if (itemKinds.length && !inWhole) {
+    const maps = itemKinds.map((k) => c.slots.get(k) ?? new Map());
+    const refs = [...maps[0].values()].filter((x) => x.refs?.length && maps.every((m) => m.get(x.key)?.refs?.length));
+    refSlot = refs.find((x) => x.key === placeC?.relation) ?? refs.find((x) => x.key === 'in' || x.key === 'on') ?? refs[0] ?? null;
+  }
+  if (refSlot && (!placeC || placeC.ref || (placeC.value && view.ofKind(placeC.value).length))) {
+    let ids = [...new Set(refSlot.refs.flatMap((t) => view.ofKind(t)))].filter((id) => !except.has(id));
+    if (placeC?.value && !placeC.ref) ids = ids.filter((id) => view.thing(id).kinds.includes(placeC.value));
+    const recent = [...(opts.dialogue?.lastRun?.made ?? []), ...(opts.dialogue?.result?.things ?? [])].map(strip);
+    const near = new Set(recent.flatMap((id) => [id, ...view.related(id).filter(Boolean)])); // the things just made, and what they are in
+    const age = new Map(ids.map((id, i) => [id, i]));
+    ids.sort((a, b) => Number(near.has(b)) - Number(near.has(a)) || age.get(b) - age.get(a)); // the dialogue's first, then the newest
+    places = ids.map((id, i) => ({ key: refSlot.key, id, from: near.has(id) ? 'dialogue' : 'world', distance: i }));
+  }
+  const specs = placeC && places.length ? places.slice(0, max).map((p) => ({ place: p })) : [{ place: null }, ...places.slice(0, max - 1).map((p) => ({ place: p }))];
+
+  // simulate and deduce: each candidate on a fork of the live world
+  const required = (t) => [...(c.slots.get(t.type)?.values() ?? [])].filter((x) => x.required).map((x) => x.key);
+  const simulate = (plan) => {
+    budget.used += plan.steps.length + 1;
+    const fork = live.fork();
+    const run = runPlan(fork, plan, { replace: [...except] });
+    if (!run.ok) return { hard: [{ rule: 'schema', thing: null, why: String(run.failed?.why ?? 'the world refused it') }], soft: [], derived: [] };
+    const fv = factsOf(fork);
+    return deduceState(fv, run.made, { kindFacts, budget, required, bounds: { ...plan.bounds, items: run.result.items }, placeable: (id) => !!refSlot && (fv.thing(id)?.kinds ?? []).some((k) => itemKinds.includes(k)) });
+  };
+  const tried = [];
+  for (let i = 0; i < specs.length && i < max; i++) { // bounded: REASONING.candidates
+    if (i > 0 && budget.used > budget.ticks) break;
+    const spec = specs[i];
+    const plan = i === 0 && !spec.place && !hints.attrs && !hints.layout && !hints.sizeStep ? base : planOnce(live, request, opts, { ...hints, place: spec.place, drop: spec.drop ?? null });
+    const check = plan.ok ? simulate(plan) : { hard: [{ rule: 'plan', why: plan.notHonoured.at(-1)?.why ?? 'nothing to make' }], soft: [], derived: [] };
+    tried.push({ spec, plan, check });
+    // a hard violation with values the dialogue or induction gave: try once more without them (they are soft, never constraints)
+    const soft = plan.assumed.filter((a) => (a.from === 'induced' || a.from === 'dialogue') && a.key !== 'place').map((a) => a.key); // a place is a candidate of its own
+    if (check.hard.length && soft.length && !spec.drop && specs.length < max) specs.push({ place: spec.place, drop: new Set([...soft, 'layout']) });
+  }
+
+  // abduce: the cheapest surviving candidate (criteria of kind `plan`, as data)
+  const weight = (from) => { const k = sources.indexOf(from); return k < 0 ? sources.length : k; };
+  const scored = tried.map((t, index) => ({ index, hard: t.check.hard.length, unexplained: t.plan.notHonoured.length, soft: t.check.cost ?? t.check.soft.reduce((a, x) => a + (x.cost ?? 1), 0), cost: t.plan.assumed.reduce((a, x) => a + weight(x.from), 0), assumptions: t.plan.assumed.length, distance: t.spec.place?.distance ?? 0 }));
+  const live1 = scored.filter((x) => !x.hard);
+  const label = (t) => (t.spec.place ? `${t.spec.place.key} ${t.spec.place.id}` : 'as planned') + (t.spec.drop ? ' without the induced values' : '');
+  const reasoning = { candidates: tried.length, depth: REASONING.depth, ticks: budget.used, exhausted: budget.used > budget.ticks, induced, soft: [], derived: 0 };
+  if (!live1.length) {
+    const why = [...new Set(tried.flatMap((t) => t.check.hard.map((h) => h.why)))];
+    return { ...tried[0].plan, ok: false, steps: [], assumed: [], rejected: tried.map((t) => ({ place: t.spec.place?.id ?? null, label: label(t), why: t.check.hard.map((h) => h.why), hard: true })), cannot: why.map((w) => ({ why: w, words: request.text })), reasoning };
+  }
+  const ch = choose(live, 'plan', live1, { seed: null });
+  const best = tried[ch.best.index], bs = ch.best;
+  const rejected = tried.filter((t) => t !== best).map((t) => {
+    const k = tried.indexOf(t), h = t.check.hard.map((x) => x.why), sc = scored[k];
+    const on = ch.criteria.find((x) => Number(sc[x.measure] ?? 0) !== Number(bs[x.measure] ?? 0));
+    return { place: t.spec.place?.id ?? null, label: label(t), why: h.length ? h : [on ? `${on.name}: ${+Number(sc[on.measure]).toFixed(2)} against ${+Number(bs[on.measure]).toFixed(2)}` : 'as good, later in the order'], hard: h.length > 0 };
+  });
+  return { ...best.plan, rejected, cannot: [], reasoning: { ...reasoning, soft: best.check.soft.map((x) => x.why), derived: best.check.derived.length, chosen: label(best) } };
 }
 
 /**
@@ -703,7 +848,7 @@ export function runPlan(live, plan, { replace = [] } = {}) {
   function summary() {
     const kinds = {}; let count = 0;
     plan.steps.forEach((s, i) => { if (s.item && ids[i]) { kinds[s.args.kind] = (kinds[s.args.kind] ?? 0) + 1; count++; } });
-    return { things: [...made], count, kinds, whole: plan.steps[0] && !plan.steps[0].item && !plan.steps[0].link ? ids[0] : null, layout: plan.roles?.layout ?? null, links: plan.steps.filter((s, i) => s.link && ids[i]).length };
+    return { things: [...made], items: plan.steps.flatMap((s, i) => (s.item && ids[i] ? [ids[i]] : [])), count, kinds, whole: plan.steps[0] && !plan.steps[0].item && !plan.steps[0].link ? ids[0] : null, layout: plan.roles?.layout ?? null, links: plan.steps.filter((s, i) => s.link && ids[i]).length };
   }
 }
 
@@ -726,6 +871,7 @@ export function sayRequest(request, outcome = {}, opts = {}) {
   }
   for (const a of outcome.assumed ?? []) if (a.key !== 'target' || !run?.whole) facts.push({ reply: 'assumed', roles: { key: a.key, value: String(a.value) }, from: a.from });
   for (const nh of outcome.notHonoured ?? []) facts.push({ reply: 'not_honoured', roles: { words: nh.words, why: nh.why }, code: nh.code });
+  for (const c of outcome.cannot ?? []) facts.push({ reply: 'not_honoured', roles: { words: c.words ?? request?.text ?? '', why: c.why }, code: 'cannot' });
   if (request?.unread?.length && (run || outcome.revised)) facts.push({ reply: 'unread', roles: { words: request.unread.map((w) => `"${w}"`).join(', ') } });
   const missing = [];
   const texts = o.language ? facts.map((f) => { const t = replyFrom(o.language, f.reply, f.roles, { lang, dictionary: o.dictionary }); if (t == null) missing.push(f.reply); return t; }).filter(Boolean) : [];

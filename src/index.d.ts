@@ -633,9 +633,9 @@ export interface RequestConstraint { on: 'kind' | 'count' | 'size' | 'extent' | 
 /** A live w.request: what one message asked. `facts` (not enumerable) is the host's flat shape. */
 export interface Request { act: string | null; mode?: string | null; target: string | null; refers: 'kind' | 'thing' | 'last' | null; text: string; constraints: RequestConstraint[]; reactions: { value: string; step?: string; cue: string; words: string }[]; unread: string[]; unreadAt?: { text: string; n: number }[]; used?: string[]; revises?: string | null; readonly facts: { key: string; value?: unknown; neg?: boolean; all?: boolean; n?: number; min?: number; max?: number; unit?: string; step?: string; of?: string; attribute?: string }[] }
 /** The state of a dialogue a revision reads. */
-export interface RequestDialogue { last: Request | null; result?: { count?: number; kinds?: Record<string, number>; things?: string[]; layout?: string | null } | null; previous?: Request | null; seed?: number; previousSeed?: number; previousVary?: boolean; revisions?: unknown }
+export interface RequestDialogue { last: Request | null; result?: { count?: number; kinds?: Record<string, number>; things?: string[]; layout?: string | null } | null; previous?: Request | null; seed?: number; previousSeed?: number; previousVary?: boolean; revisions?: unknown; lastRun?: { made: string[] } | null; corrections?: { on: string; step?: string; value?: unknown }[] }
 /** A plan of a request: the acts with their roles filled, what was assumed, what is not honoured. */
-export interface RequestPlan { ok: boolean; act: string | null; target: string | null; roles: Record<string, unknown>; steps: { action: string; args: Record<string, unknown>; item?: boolean; link?: boolean }[]; assumed: { key: string; value: unknown; from: string }[]; notHonoured: { on: string; words: string; why: string; code: string; value?: unknown }[]; seed: number; sources: string[] }
+export interface RequestPlan { ok: boolean; act: string | null; target: string | null; roles: Record<string, unknown>; steps: { action: string; args: Record<string, unknown>; item?: boolean; link?: boolean }[]; assumed: { key: string; value: unknown; from: string }[]; notHonoured: { on: string; words: string; why: string; code: string; value?: unknown }[]; seed: number; sources: string[]; bounds?: { count: [number, number] | null; not: string[] }; rejected?: { place: string | null; label: string; why: string[]; hard: boolean }[]; cannot?: { why: string; words?: string }[]; reasoning?: { candidates: number; depth: number; ticks: number; exhausted: boolean; induced: { of: string; n: number; pattern: Record<string, unknown> }[]; soft: string[]; derived: number; chosen?: string } | null }
 /** The order in which a gap is filled. */
 export const REQUEST_SOURCES: readonly string[];
 /** The constraint keys of w.request. */
@@ -651,11 +651,29 @@ export function reviseRequest(dialogue: RequestDialogue | null, request: Request
 /** What a live world declares it can do. */
 export function capabilitiesOf(live: World): { honours: { act: string; on: Set<string>; of: string[] }[]; kinds: Map<string, Set<string>> };
 /** Plan a request from the world's declared capabilities, filling every gap from the sources in order. */
-export function planRequest(live: World, request: Request, opts?: { catalog?: unknown; dialogue?: RequestDialogue | null; sources?: readonly string[]; seed?: number; vary?: boolean }): RequestPlan;
+export function planRequest(live: World, request: Request, opts?: { catalog?: unknown; dialogue?: RequestDialogue | Partial<RequestDialogue> | null; sources?: readonly string[]; seed?: number; vary?: boolean; replace?: string[]; ticks?: number; candidates?: number; reason?: boolean }): RequestPlan;
 /** Run a plan's steps through act; the things of `replace` are removed first. */
-export function runPlan(live: World, plan: RequestPlan, options?: { replace?: string[] }): { ok: boolean; made: string[]; failed?: { step: object; why: string }; result: { things: string[]; count: number; kinds: Record<string, number>; whole: string | null; layout: string | null; links: number } };
+export function runPlan(live: World, plan: RequestPlan, options?: { replace?: string[] }): { ok: boolean; made: string[]; failed?: { step: object; why: string }; result: { things: string[]; items: string[]; count: number; kinds: Record<string, number>; whole: string | null; layout: string | null; links: number } };
 /** The reply of a request as reply facts and their text. */
 export function sayRequest(request: Request, outcome?: Partial<RequestPlan> & { run?: { result: object } | null; revised?: boolean; reply?: string | null }, opts?: string | { language?: World | null; lang?: string; dictionary?: unknown }): { facts: { reply: string; roles: Record<string, unknown>; from?: string; code?: string }[]; text: string; missing: string[] };
+/** The world as facts: (thing, attribute, value) and (thing, relation, thing), indexed, kept per world version. */
+export interface FactView { version: number; depth: number; readonly size: number; thing(id: string): { id: string; type: string; kinds: string[]; attrs: Map<string, unknown[]>; rels: { relation: string; to: string | null; value?: unknown; joins?: { type: string; by: string } }[] } | undefined; ids(): string[]; ofKind(kind: string): string[]; values(id: string, key: string): unknown[]; related(id: string, relation?: string): (string | null)[]; inbound(id: string, relation?: string): string[]; attributes(id?: string): { thing: string; attribute: string; value: unknown }[]; relations(id?: string): { thing: string; relation: string; to: string | null }[] }
+/** The bounds of the reasoning cycle of planRequest. */
+export const REASONING: Readonly<{ candidates: number; depth: number; ticks: number; induceMin: number; correctionsMin: number; flatten: number; look: number }>;
+/** The catalog types read as facts of kinds. */
+export const KIND_FACTS: readonly { type: string; by: string; key?: string; value?: string; parent?: string }[];
+/** The constraints deduction checks on a simulated state. */
+export const REASON_RULES: readonly { name: string; hard?: boolean; soft?: number; step?: number; needs?: readonly string[]; via?: readonly string[]; holds?: readonly string[] }[];
+/** One flat view of any world as facts, built from the last view by the changes since. */
+export function factsOf(world: World): FactView;
+/** What the catalog says of each kind, as (kind, attribute, value). */
+export function kindFactsOf(catalog: World | World[] | null, types?: readonly { type: string; by: string; key?: string; value?: string; parent?: string }[]): Map<string, { attribute: string; value: string; from: string }[]>;
+/** Forward chaining to depth 2 and the constraints of REASON_RULES on the things given. */
+export function deduceState(view: FactView | { thing(id: string): unknown; related(id: string, relation?: string): unknown[] }, ids: string[], opts?: { rules?: readonly object[]; catalog?: unknown; kindFacts?: Map<string, { attribute: string; value: string }[]>; depth?: number; budget?: { ticks: number; used: number }; bounds?: { count?: [number, number] | null; not?: string[]; items?: string[] }; required?: (thing: object) => string[]; placeable?: (id: string) => boolean }): { hard: { rule: string; thing: string | null; why: string }[]; soft: { rule: string; thing: string | null; why: string; cost: number }[]; derived: { thing: string; attribute: string; value: string; depth: number }[]; cost: number; ticks: number; exhausted: boolean };
+/** Anti-unification (one step) of the things of a type: the attribute values all of them share. */
+export function induceStyle(view: FactView, types: string | string[], options?: { except?: Set<string>; min?: number; keys?: ((type: string) => string[]) | null }): { of: string; n: number; pattern: Record<string, unknown> } | null;
+/** Anti-unification of a session's last corrections. */
+export function induceCorrections(list: { on: string; step?: string; value?: unknown }[] | null | undefined, options?: { min?: number }): { on: string; step?: string; value?: unknown; n: number } | null;
 export function turnScope(set: WorldSet, owner: string): (change: { world: string; type: string }) => boolean;
 export interface Pending { key: string; ask?: string; thing?: string; type?: string; value?: string; confirm?: { action: string; args: Record<string, unknown> }; text: string }
 export interface Session { set: WorldSet; context: object; pending: Pending | null; turns: object[]; say(text: string): ReturnType<typeof readTurn> & { pending: Pending | null; facts?: object[] }; snapshot(): object; restore(data: object): Session }

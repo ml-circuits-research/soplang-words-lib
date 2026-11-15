@@ -3,9 +3,9 @@
 // properties P1-P8 run over every example world by reading what it declares, not by a list of its words.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { World, readRequest, reviseRequest, planRequest, runPlan, sayRequest, requestWires, capabilitiesOf, REQUEST_KEYS } from '../tools/lib-under-test.mjs';
+import { World, readRequest, reviseRequest, planRequest, runPlan, sayRequest, requestWires, capabilitiesOf, REQUEST_KEYS, REQUEST_SOURCES, factsOf, deduceState } from '../tools/lib-under-test.mjs';
 import { worldsDir, worldText } from '../tools/worlds.mjs';
-import { SKETCH, NOTES, exampleWorld, requestSession, requestLanguage } from '../examples/request-app.mjs';
+import { SKETCH, NOTES, GARDEN, exampleWorld, requestSession, requestLanguage, requestKinds } from '../examples/request-app.mjs';
 
 const offline = !worldsDir() && 'offline';
 const language = offline ? null : await requestLanguage();
@@ -165,4 +165,100 @@ test('sayRequest: reply facts by name, composed by the language world', { skip: 
   assert.deepEqual([...new Set(say.facts.map((f) => f.reply))], ['done.make', 'assumed', 'not_honoured', 'unread']);
   assert.match(say.text, /^I drew a picture\. I assumed row for the layout\..* I could not do in the top left: .* I did not use: "blorp"\.$/);
   assert.deepEqual(say.missing, []);
+});
+
+// ---- the reasoning cycle (owner 2026-11-15 14:11): P9-P11 over every example world, by what it declares ----------
+const kinds = offline ? null : await requestKinds();
+const WORLDS2 = { sketch: SKETCH, notes: NOTES, garden: GARDEN };
+const ctx2 = { language, catalog: [language, kinds].filter(Boolean) };
+/** The makeable kinds of a world, and the slots of each: those that refer to things and those with an enum. */
+function declared2(w) {
+  const cap = capabilitiesOf(w), c = w._compiled();
+  const h = cap.honours.find((x) => x.act === 'make');
+  const made = h.of.filter((k) => cap.kinds.get(k)?.has('make'));
+  const slots = (k) => [...(c.slots.get(k)?.values() ?? [])];
+  return { keys: h.on, made, refs: made.filter((k) => slots(k).some((s) => s.refs?.length)), styled: made.map((k) => ({ kind: k, slot: slots(k).find((s) => s.enum && s.key !== 'kind' && s.key !== 'world') })).filter((x) => x.slot) };
+}
+const hardOf = (live, plan, run) => deduceState(factsOf(live), run.made, { catalog: ctx2.catalog, bounds: { ...plan.bounds, items: run.result.items } }).hard;
+
+for (const [name, text] of Object.entries(WORLDS2)) {
+  test(`reasoning properties P9-P11 over ${name}, read from its declarations`, { skip: offline }, () => {
+    const D = declared2(exampleWorld(text));
+    const counted = [];
+    // P9: no executed result violates a hard constraint of the simulated state; a request that would is not executed
+    {
+      const live = exampleWorld(text), s = requestSession(live, { ...ctx2, revisions: language });
+      const turns = [...D.made.map((k) => `make a ${k}`), ...D.made.map((k) => `make 3 ${k}s`), ...D.refs.map((k) => `make 2 ${k}s there`), ...D.refs.map((k) => `make 40 ${k}s there`)];
+      for (const t of turns) {
+        const before = live.version, r = s.say(t);
+        if (r.run?.ok) assert.deepEqual(hardOf(live, r.plan, r.run), [], `P9 ${t}`);
+        else assert.ok(!r.plan?.ok && live.version === before, `P9 ${t}: nothing executed`);
+        counted.push('P9');
+      }
+    }
+    // P10: a reference word resolves to a thing that makes the request satisfiable (the dialogue's place is full)
+    for (const k of D.refs) {
+      const live = exampleWorld(text);
+      const slot = [...live._compiled().slots.get(k).values()].find((x) => x.refs?.length);
+      const things = slot.refs.flatMap((t) => factsOf(live).ofKind(t));
+      if (things.length < 2) continue;
+      // the dialogue's place: one with a declared capacity, filled up to it
+      const near = things.find((id) => live.ofType('std.schema.capacity').some((cp) => factsOf(live).thing(id).kinds.includes(String(cp.attrs.of[0])))) ?? things.at(-1);
+      let made = null;
+      for (let i = 0; i < 20; i++) { const r = live.act({ action: 'make', args: { kind: k, [slot.key]: `$${near}` } }); if (r.ok === false) break; made = r.result.thing; } // bounded: twenty
+      const full = live.fork().act({ action: 'make', args: { kind: k, [slot.key]: `$${near}` } }).ok === false;
+      const p = planRequest(live, read(live, `make a ${k} there`, ctx2), { catalog: ctx2.catalog, dialogue: { lastRun: { made: [made] } } });
+      assert.ok(p.ok, `P10 ${k}: ${JSON.stringify(p.cannot)}`);
+      const to = p.assumed.find((a) => a.key === 'place')?.value;
+      assert.ok(to && things.includes(to), `P10 ${k} there -> ${to}`);
+      const f = live.fork(), run = runPlan(f, p);
+      assert.ok(run.ok && hardOf(f, p, run).length === 0, `P10 ${k}: the referent makes it satisfiable`);
+      if (full) assert.ok(to !== near && p.rejected.some((x) => x.place === near && x.hard), `P10 ${k}: the full one is rejected, with why`);
+      counted.push('P10');
+    }
+    // P11: after three things of one style a fourth takes that style unless told otherwise
+    for (const { kind, slot } of D.styled) {
+      if (!D.keys.has('attribute')) continue;
+      const live = exampleWorld(text);
+      const [said, style] = slot.enum.map(String);
+      for (let i = 0; i < 3; i++) assert.ok(live.act({ action: 'make', args: { kind, [slot.key]: style } }).ok !== false);
+      const valueOf = (plan) => [...new Set(plan.steps.filter((x) => x.args.kind === kind).map((x) => x.args[slot.key]))]; // on the thing of that kind: a whole or an item
+      const p = planRequest(live, read(live, `make a ${kind}`, ctx2), { catalog: ctx2.catalog });
+      assert.deepEqual(valueOf(p), [style], `P11 ${kind} takes ${style}`);
+      assert.ok(p.assumed.some((a) => a.key === slot.key && a.value === style && a.from === 'induced'), `P11 ${kind}: said as induced`);
+      const q = read(live, `make a ${kind}`, ctx2); // told otherwise: the value said, as the reader gives it for any key
+      const told = planRequest(live, { ...q, constraints: [...q.constraints, { on: 'attribute', want: 'yes', attribute: slot.key, value: said, words: said, origin: 'said' }] }, { catalog: ctx2.catalog });
+      assert.deepEqual(valueOf(told), [said], `P11 ${kind}: unless told otherwise`);
+      counted.push('P11');
+    }
+    const by = counted.reduce((a, p) => ({ ...a, [p]: (a[p] ?? 0) + 1 }), {});
+    console.log(`# ${name}: ${Object.entries(by).map(([p, n]) => `${p} ${n}`).join(', ')}`);
+    assert.ok(by.P9, JSON.stringify(by));
+  });
+}
+
+test('reasoning: the catalog places a kind (deduction, depth 2), corrections generalise (induction), the plan explains itself', { skip: offline }, () => {
+  const live = exampleWorld(GARDEN);
+  let p = planRequest(live, read(live, 'add a fish', ctx2), { catalog: ctx2.catalog });
+  assert.deepEqual([p.steps[0].args.in, p.reasoning.chosen], ['$pond2', 'in pond2'], 'a fish is in water: a pond is a thing made of water (k.kinds)');
+  assert.ok(p.rejected.length >= 3 && p.rejected.every((x) => x.why.length), JSON.stringify(p.rejected));
+  p = planRequest(live, read(live, 'add a bird', ctx2), { catalog: ctx2.catalog });
+  assert.equal(p.steps[0].args.in, '$tree1', 'a bird is at a tree: the shorter explanation');
+  p = planRequest(live, read(live, 'add a fish in the grass', ctx2), { catalog: ctx2.catalog });
+  assert.deepEqual([p.ok, p.steps[0].args.in, p.reasoning.soft.length], [true, '$grass1', 1], 'what is said wins over what is expected; the soft violation is kept');
+  const q9 = read(live, 'add 9 fish in the pond', ctx2);
+  p = planRequest(live, q9, { catalog: ctx2.catalog });
+  assert.deepEqual([p.ok, p.steps.length, p.cannot.length > 0, p.rejected.every((x) => x.hard)], [false, 0, true, true]);
+  assert.match(sayRequest(q9, p, { language }).text, /room/);
+  // the session's corrections: "too many" twice, then a new picture is smaller than the first
+  const s = requestSession(exampleWorld(SKETCH), { ...ctx2, revisions: language });
+  const n0 = s.say('draw a picture').run.result.count;
+  s.say('too many'); s.say('too many');
+  const r = s.say('draw a picture');
+  assert.ok(r.run.result.count < n0 && r.plan.assumed.some((a) => a.key === 'size' && a.from === 'induced'), `${n0} -> ${r.run.result.count}`);
+  // the induced source is data: without it, nothing is induced
+  const lv = exampleWorld(SKETCH);
+  for (let i = 0; i < 3; i++) lv.act({ action: 'make', args: { kind: 'circle', colour: 'blue' } });
+  assert.ok(planRequest(lv, read(lv, 'draw a circle', ctx2), { catalog: ctx2.catalog }).assumed.some((a) => a.from === 'induced'));
+  assert.ok(!planRequest(lv, read(lv, 'draw a circle', ctx2), { catalog: ctx2.catalog, sources: REQUEST_SOURCES.filter((x) => x !== 'induced') }).assumed.some((a) => a.from === 'induced'));
 });

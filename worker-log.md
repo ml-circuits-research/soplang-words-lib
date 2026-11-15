@@ -5800,3 +5800,27 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Gate: npm test 542 tests, 540 pass / 0 fail / 1 skipped; SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs" 540 / 0;
   npm run test:compat 11 / 0; node tools/scan-loops.mjs src clean; git grep -il psys2 src/ = 0; node tools/doc-examples.mjs
   230 examples, 0 problems; tsc not installed here (not run). Notes for the reviewer: questions.md Q83.
+
+## 0.150.0 — a first layer of reasoning in the gap filler (owner 2026-11-15 14:11; reviewer block 23:20)
+
+- src/reason.mjs: `factsOf` (one flat view of any world: things with kinds, attributes, relations by `$` or declared
+  join; per version, built from the last view of the same history by the events since, also across forks; layered,
+  flattened past 256 changed things), `kindFactsOf` / `KIND_FACTS` (k.commonsense.thing, k.scenes.thing, k.kinds.kind,
+  k.kinds.parent), `deduceState` / `REASON_RULES` (forward chaining to depth 2; join hard, placed soft with 0.25 per
+  inference step, open soft, request bounds hard), `induceStyle`, `induceCorrections`, `REASONING`.
+- src/request.mjs: `planRequest` is now propose (<= 5: places through a slot that refers to things; a place said by a
+  kind or "there" / "in it"; a fall-back without induced and dialogue values) -> simulate on a fork -> deduce -> drop
+  hard / cost soft -> abduce by `choose` kind `plan` (new std.decide criteria) ; induced values (source `induced`,
+  REQUEST_SOURCES said > dialogue > induced > world > expect > sampled). Plan carries `rejected`, `cannot`, `bounds`,
+  `reasoning`. readRequest reads place references; runPlan `result.items`; sayRequest says `cannot`.
+- examples/request-app.mjs: a third invented world (garden: animals in areas, a pond with a capacity), `requestKinds()`,
+  session corrections. `node examples/request-app.mjs`: "add a fish" -> pond2 (a pond is a thing made of water, k.kinds),
+  "add a bird" -> tree1, "add 9 fish in the pond" -> cannot, with the capacity reason.
+- Tests: test/request.test.mjs P9-P11 over every example world by its declarations (`node --test test/request.test.mjs`:
+  sketch P9 8, P11 4; notes P9 2; garden P9 8, P10 2, P11 2) and one test of the cycle (deduction depth, corrections ->
+  smaller, sources as data); test/reason.test.mjs (3): incremental view = direct reading (also on a fork, undo, refused
+  tell), chaining stops at depth 2, anti-unification one step.
+- Gate: npm test 549 tests, 547 pass / 0 fail / 1 skipped; SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs" 547 / 0;
+  SOPWORLD_COW_CHECK=1 node --test test/request.test.mjs test/reason.test.mjs 13 / 0; npm run test:compat 11 / 0;
+  node tools/scan-loops.mjs src clean; node tools/doc-examples.mjs 232 examples, 0 problems; git grep -il psys2 src/ = 0.
+  Notes for the reviewer: questions.md Q84.

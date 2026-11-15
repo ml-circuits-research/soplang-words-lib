@@ -53,4 +53,10 @@ export const DECIDE_TEXT = String.raw`
 @std.decide.c.intent.5 std.decide.criterion of=intent n=5 name=previous measure=previous dir=max about="it names a thing of the previous turn or continues its act"
 @std.decide.c.intent.6 std.decide.criterion of=intent n=6 name=cost measure=cost dir=min about="how far the rewrite is from the words said (the clause itself 0)"
 @std.decide.c.contrast.1 std.decide.criterion of=contrast n=1 name=rare measure=share dir=min about="the kind's value fewest of its siblings hold (contrastOf)"
+@std.decide.c.plan.1 std.decide.criterion of=plan n=1 name=consistent measure=hard dir=hard about="no hard violation on the simulated state (planRequest)"
+@std.decide.c.plan.2 std.decide.criterion of=plan n=2 name=honoured measure=unexplained dir=min about="the fewest constraints said and not honoured"
+@std.decide.c.plan.3 std.decide.criterion of=plan n=3 name=expected measure=soft dir=min about="the fewest soft violations (what the catalog expects of the kinds present, open required keys)"
+@std.decide.c.plan.4 std.decide.criterion of=plan n=4 name=cost measure=cost dir=min about="the cheapest assumptions: each costs the place of its source in the order of sources (weighted abduction)"
+@std.decide.c.plan.5 std.decide.criterion of=plan n=5 name=assumptions measure=assumptions dir=min about="the fewest assumptions"
+@std.decide.c.plan.6 std.decide.criterion of=plan n=6 name=near measure=distance dir=min about="the referent the dialogue named last, then the newest"
 `;

@@ -2070,8 +2070,8 @@ honours, for the things named) and `std.schema.kind` (what can be made, with whi
 that the act does not honour is in `notHonoured` (`{ on, words, why, code }`, code `not_declared`); so is a
 declared one nothing in the world takes (`no_slot`), a value a slot refuses (`value`), a kind it has not
 (`no_kind`), and exclusions that would leave nothing (`nothing_left`, the oldest gives way). The gaps are
-filled from the sources in the order of `options.sources` (default `REQUEST_SOURCES`: said, dialogue, world,
-expect, sampled): the target (said, the dialogue's, the world's first declared whole), the expectation of it
+filled from the sources in the order of `options.sources` (default `REQUEST_SOURCES`: said, dialogue, induced,
+world, expect, sampled; a value's place in that list is also its cost as an assumption): the target (said, the dialogue's, the world's first declared whole), the expectation of it
 (`k.expect.make` / `k.expect.part` in the world, then in `options.catalog`), the count (a number, a range, a
 named amount `k.expect.amount`, "about N" by its factors, else the expectation's typical count times the
 size's `count_factor` of `k.expect.scale`, else one; plural kinds alone take the amount `some`), the kinds
@@ -2080,11 +2080,37 @@ layout (said, the dialogue's, the expectation's, the slot's default), the size a
 place, topic and length, each put on a slot of the whole or of every item where one takes it. "random" (and
 `options.vary`, a redo) samples with `options.seed` inside the range, never its minimum. The act may be left
 out when nothing is unread: the dialogue's, else the only act the world declares for the thing named; an
-unread word where the act stands is never guessed over. Returns `{ ok, act, target, roles, steps: [{ action,
-args, item?, link? }], assumed: [{ key, value, from }], notHonoured, seed, sources }`; nothing is changed.
+unread word where the act stands is never guessed over.
+
+Around that plan runs one bounded reasoning cycle on the state of the live world (owner 2026-11-15), the same for
+every world, a generate-and-test with constraints:
+- **induce**: the common pattern of the world's things of the kinds made (anti-unification, one step, `induceStyle`:
+  at least `REASONING.induceMin` = 3 things; the things `options.replace` names do not count) and of the session's
+  corrections (`dialogue.corrections`, `induceCorrections`: "too many" twice makes a new thing smaller) become
+  values of source `induced`, before the world's own facts and k.expect; never a constraint;
+- **propose**: at most `REASONING.candidates` = 5 candidates: where the items could go (a slot of every item kind
+  that refers to things, when the items do not go in a whole made with them: the things of that type, the
+  dialogue's first, then the newest; a place said by a kind ("in the pond") or by a reference word ("there", "in
+  it")), and once a fall-back without the induced and dialogue values when a candidate breaks a hard constraint;
+- **simulate**: each candidate runs on a fork of the live world;
+- **deduce**: `deduceState` on the simulated state, forward chaining to depth 2: what the world refuses (types,
+  enums, deny rules, capacity), relations to things that are not there and the plan's `bounds` (kinds not wanted,
+  the count said) are hard and drop the candidate; what the catalog expects of the kinds present (`KIND_FACTS`:
+  k.commonsense, k.scenes, k.kinds; "a fish is at water", "a pond is a thing made of water") and open required keys
+  are soft and cost;
+- **abduce**: the survivors are ranked by `choose` with the criteria of kind `plan` (std.decide, or the world's own
+  `std.decide.criterion of=plan`): consistent, honoured, expected (soft cost), cost (the assumptions weighted by
+  their source, weighted abduction), assumptions, near (the referent).
+
+Every value a plan fills has passed that check before it is used. Bounded by `options.candidates`, the depth 2 and
+a tick budget (`options.ticks`, default `REASONING.ticks`); `options.reason: false` gives the plan alone. Returns
+`{ ok, act, target, roles, steps: [{ action, args, item?, link? }], assumed: [{ key, value, from }], notHonoured,
+rejected: [{ place, label, why, hard }], cannot: [{ why, words }], bounds, reasoning: { candidates, depth, ticks,
+exhausted, induced, soft, derived, chosen }, seed, sources }`: when no candidate survives, `ok` is false and
+`cannot` says why. Nothing is changed.
 `runPlan(live, plan, { replace })` runs the steps through `act` (`{ step: i }` names what step i made),
 after removing the things of `replace` (the last result: a revision replaces it); it returns `{ ok, made,
-failed, result: { things, count, kinds, whole, layout, links } }`.
+failed, result: { things, items, count, kinds, whole, layout, links } }`.
 
 ```js run
 const toy = new World();
@@ -2107,7 +2133,59 @@ print(runPlan(toy, p).result.kinds, REQUEST_SOURCES);
 
 ```output
 6 ["box","ball"] [{"key":"count","value":6,"from":"world"},{"key":"kinds","value":"box, ball","from":"world"}] ["not_declared"]
-{"box":3,"ball":3} ["said","dialogue","world","expect","sampled"]
+{"box":3,"ball":3} ["said","dialogue","induced","world","expect","sampled"]
+```
+
+### factsOf(world), kindFactsOf(catalog, types?), deduceState(view, ids, options?), induceStyle(view, types, options?), induceCorrections(list, options?), REASONING, KIND_FACTS, REASON_RULES
+
+The first layer of reasoning of the gap filler, on one view of any world. `factsOf(world)` is the world as facts:
+every wire that is not a pattern or a matrix wire is a thing with its kinds (its type, the types it extends, its
+`kind` values), its attributes `(thing, attribute, value)` and its relations `(thing, relation, thing)` (a `$`
+reference, or a join a slot declares with `type= by=`). Rules are written against this view only. The view is kept
+per `world.version`; a new version is built from the last view of the same history (the world's own, or that of
+the world it was forked from, found by the events they share) by the events since, as a layer over it, flattened
+past `REASONING.flatten` changed things. Methods: `thing(id)`, `ids()`, `ofKind(kind)`, `values(id, key)`,
+`related(id, relation?)`, `inbound(id, relation?)`, `attributes(id?)`, `relations(id?)`.
+
+`kindFactsOf(catalog, types = KIND_FACTS)` reads what a catalog says of kinds: each row of a listed type is facts
+of the kind its `by` key names; a row with `key`, `value` and `parent` (k.kinds.parent) says `(kind, key, value)` and
+`(kind, is_a, parent)`. `deduceState(view, ids, options)` is forward chaining as in Datalog, bottom-up to depth 2
+(level 1: what the catalog says of a thing's kinds; level 2: of their is_a parents), then the constraints of
+`REASON_RULES` on the things `ids`: `join` (a relation names a thing that is there; hard), `placed` (a kind the
+catalog places at somewhere, by `at` or `place`, is in or on a thing that is such a place, by its kind or by the
+catalog's facts of it; soft, each inference step of the chain costs `step`), `open` (a required key is open; soft),
+`request` (the `bounds` of a plan: kinds not wanted, the count said; hard). Options: `catalog` or `kindFacts`,
+`bounds` ({ count, not, items }), `depth`, `budget` ({ ticks, used }), `required(thing)`, `placeable(id)`. Returns
+`{ hard, soft, derived, cost, ticks, exhausted }`. `induceStyle(view, types, { except, min, keys })` is
+anti-unification, one step (Plotkin 1970): at the first type of `types` with at least `min` things, the attribute
+values all of them share (`{ of, n, pattern }`, or null). `induceCorrections(list, { min })` does the same over the
+last `min` corrections (`{ on, step, value }`). `REASONING` holds the bounds: 5 candidates, depth 2, the ticks of
+one plan, 3 things to induce from, 2 corrections.
+
+```js run
+const w = new World();
+w.load(`@acts core.use world=std.acts
+@w std.schema.world name=toy
+@t.box core.type of=box extends=std.schema.thing closed=true
+@t.ball core.type of=ball extends=std.schema.thing closed=true
+@s.in core.slot of=ball key=in type=box
+@s.colour core.slot of=ball key=colour enum=red enum=blue
+@k1 std.schema.kind of=box world=toy acts=make
+@k2 std.schema.kind of=ball world=toy acts=make`);
+w.act({ action: 'make', args: { kind: 'box' } });
+for (let i = 0; i < 3; i++) w.act({ action: 'make', args: { kind: 'ball', colour: 'blue', in: '$box1' } });
+const v = factsOf(w);
+print(v.ofKind('ball'), v.relations('ball1'), v.inbound('box1').length);
+print(induceStyle(v, ['ball'], { keys: () => ['colour'] }));
+const kb = new World();
+kb.load('@t core.type of=ex.thing\n@a ex.thing name=ball at=bag');
+print(deduceState(v, ['ball1'], { kindFacts: kindFactsOf(kb, [{ type: 'ex.thing', by: 'name' }]) }).soft.map((x) => x.why));
+```
+
+```output
+["ball1","ball2","ball3"] [{"thing":"ball1","relation":"in","to":"box1"}] 3
+{"of":"ball","n":3,"pattern":{"colour":"blue"}}
+["a ball is usually at bag, not in box1"]
 ```
 
 ### sayRequest(request, outcome, options?)
@@ -2115,7 +2193,7 @@ print(runPlan(toy, p).result.kinds, REQUEST_SOURCES);
 The reply of a request as reply facts, each a reply name of the language world with its roles, and their
 text by `replyFrom`: the revision's reply (`outcome.reply`: sorry, welcome), `done.revise` (`outcome.revised`),
 `done.make` / `done.make.value` (the whole made, or each kind with its number), `assumed` (`{ key, value }`, each
-default used), `not_honoured` (`{ words, why }`), `unread` (`{ words }`, after a turn that made something).
+default used), `not_honoured` (`{ words, why }`, also for each reason of `outcome.cannot`), `unread` (`{ words }`, after a turn that made something).
 `outcome` is the plan with `run` (runPlan's result). `options`: `language`, `lang` (or a language code such as
 'en'), `dictionary`. Returns `{ facts, text, missing }` (`missing`: the reply names the language world lacks).
 

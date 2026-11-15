@@ -17,7 +17,7 @@ test('readRequest: negation, not all, ranges, amounts, scale, place and extent, 
   const w = exampleWorld(SKETCH);
   let r = read(w, 'draw a sketch, not a circle');
   assert.deepEqual([r.act, r.target], ['make', 'picture']);
-  assert.deepEqual(C(r, 'kind'), [{ on: 'kind', want: 'no', value: 'circle', words: 'not a circle' }]);
+  assert.deepEqual(C(r, 'kind'), [{ on: 'kind', want: 'no', value: 'circle', words: 'not a circle' }, { on: 'kind', want: 'yes', value: 'picture', words: 'sketch', indefinite: true, world: true }], 'the target keeps its kind constraint (0.153); "sketch" is the world\'s own name');
   assert.deepEqual(C(read(w, 'not all circles, better layout'), 'kind').map((c) => c.want), ['not_all']);
   assert.deepEqual(C(read(w, 'not all circles, better layout'), 'layout').map((c) => c.value), ['better']);
   r = read(w, 'draw a picture with 5-10 shapes');
@@ -38,12 +38,12 @@ test('readRequest: negation, not all, ranges, amounts, scale, place and extent, 
   assert.deepEqual([r.act, r.reactions.map((x) => x.value), C(r, 'size').map((c) => c.step)], [null, ['enlarge'], ['up']], 'a cue longer than the verb is the reading');
   // the host's flat shape and the w.request wires
   assert.deepEqual(read(w, 'not all circles').facts, [{ key: 'kind', value: 'circle', neg: true, all: true }]);
-  assert.deepEqual(read(w, 'a small pond').facts, [{ key: 'size', step: 'small' }]);
+  assert.deepEqual(read(w, 'a small pond').facts, [{ key: 'size', step: 'small' }, { key: 'kind', value: 'pond' }]);
   const rw = new World();
   assert.ok(rw.load(['@s core.use world=std.schema', worldText('w.request')].join('\n')).ok);
   const told = rw.tell(requestWires(read(w, 'draw a picture with 5-10 shapes, not a circle, blorp')));
   assert.ok(told.ok, JSON.stringify(told.violations?.[0]));
-  assert.deepEqual([rw.ofType('w.request.constraint').length, rw.ofType('w.request.unread').length], [2, 1]);
+  assert.deepEqual([rw.ofType('w.request.constraint').length, rw.ofType('w.request.unread').length], [3, 1]); // the target's kind, the count, the kind not wanted
 });
 
 test('reviseRequest: new request or a revision by the w.dialogue.revision facts (flip, step, add, keep, undo, none)', { skip: offline }, () => {
@@ -53,18 +53,18 @@ test('reviseRequest: new request or a revision by the w.dialogue.revision facts 
   const rv = (t) => reviseRequest(d, read(w, t, { dialogue: d }), { revisions: language, catalog: [language] });
   assert.equal(rv('draw a picture').sort, 'request', 'a new thing is a new request');
   let r = rv('no');
-  assert.deepEqual([r.reaction, r.replace, C(r.request, 'kind').map((c) => `${c.want}:${c.value}`)], ['reject', true, ['no:circle']]);
+  assert.deepEqual([r.reaction, r.replace, C(r.request, 'kind').map((c) => `${c.want}:${c.value}`)], ['reject', true, ['yes:picture', 'no:circle']]);
   r = rv('you overdid it');
   assert.deepEqual([r.reaction, C(r.request, 'count').map((c) => c.number)], ['reduce', [4]], '6 times 0.6 / 1 (k.expect.scale small / default)');
   assert.ok(C(r.request, 'extent').length, 'and the extent one step down');
   assert.deepEqual(C(rv('more').request, 'count').map((c) => c.number), [9]);
   r = rv('not all circles, better layout');
-  assert.deepEqual([r.reaction, C(r.request, 'kind').map((c) => `${c.want}:${c.value}`), C(r.request, 'layout').length], ['refine', ['not_all:circle'], 1]);
+  assert.deepEqual([r.reaction, C(r.request, 'kind').map((c) => `${c.want}:${c.value}`), C(r.request, 'layout').length], ['refine', ['yes:picture', 'not_all:circle'], 1]);
   r = rv('again');
   assert.deepEqual([r.reaction, r.seed, r.vary], ['redo', 2, true]);
   assert.deepEqual([rv('thanks').request, rv('thanks').reply], [null, 'welcome']);
   r = rv('this is stupid');
-  assert.deepEqual([r.reaction, r.reply, C(r.request, 'kind').map((c) => c.want)], ['frustration', 'sorry', ['no']]);
+  assert.deepEqual([r.reaction, r.reply, C(r.request, 'kind').map((c) => c.want)], ['frustration', 'sorry', ['yes', 'no']]);
   assert.deepEqual([rv('put it back').undo, rv('put it back').request], [true, null]);
   r = rv('my expectation was a diagram with 5-10 nodes, not a circle');
   assert.deepEqual([r.reaction, r.request.target, C(r.request, 'count').map((c) => [c.min, c.max])], ['refine', 'diagram', [[5, 10]]]);

@@ -68,7 +68,19 @@ function languageOf(language, lang) {
       lead: (r.lead ?? []).map(phraseTokens), between: (r.between ?? []).map(phraseTokens), trail: (r.trail ?? []).map(phraseTokens),
     }));
     const plural = (w) => { try { return inflectBy(language, w, 'plural', { types: { rule: `${lang}.inflect`, irregular: `${lang}.irregular` } }); } catch { return null; } };
-    return { stop, numbers, anaphors, placeRefs, dets, preps, cues, plural, hasInflect: rowsOf(language, `${lang}.inflect`).length > 0 };
+    // definite determiners (the language's `definite=yes`): a kind said with one refers to things that are there
+    const definite = new Set(rowsOf(language, `${lang}.det`).filter((r) => first(r, 'definite') === 'yes').flatMap((r) => r.text ?? []).map((t) => String(t).toLowerCase()));
+    if (!definite.size) for (const t of ['the', 'this', 'that', 'these', 'those']) definite.add(t);
+    const indefinite = new Set(rowsOf(language, `${lang}.det`).filter((r) => first(r, 'definite') === 'no' && first(r, 'number') === 'sg').flatMap((r) => r.text ?? []).map((t) => String(t).toLowerCase()));
+    if (!indefinite.size) for (const t of ['a', 'an']) indefinite.add(t);
+    const joiners = new Set(texts('joiner').filter((t) => !t.includes(' ')));
+    for (const t of ['and', ',']) joiners.add(t);
+    // a word that alone is a noun phrase of the set of all things (the language's grammar: a rule NP -> <cat> whose
+    // construction has set=all, and the words of that cat): "everything"
+    const allCons = new Set(rowsOf(language, `${lang}.construction`).filter((r) => first(r, 'set') === 'all').map((r) => first(r, 'name')));
+    const allCats = new Set(rowsOf(language, `${lang}.rule`).filter((r) => first(r, 'lhs') === 'NP' && (r.rhs ?? []).length === 1 && allCons.has(first(r, 'construction'))).map((r) => first(r, 'rhs')));
+    const everything = new Set(rowsOf(language, `${lang}.word`).filter((r) => allCats.has(first(r, 'cat'))).flatMap((r) => r.text ?? []).map((t) => String(t).toLowerCase()).filter((t) => !t.includes(' ')));
+    return { stop, numbers, anaphors, placeRefs, dets, definite, indefinite, joiners, everything, preps, cues, plural, hasInflect: rowsOf(language, `${lang}.inflect`).length > 0 };
   });
 }
 
@@ -92,6 +104,13 @@ function lexiconOf(world, ctx, L, lang) {
     for (const p of rowsOf(sources, 'k.expect.part')) { add(first(p, 'part'), first(p, 'part'), { part: true }); for (const s of p.shape ?? []) add(s, s); }
     for (const w of rowsOf(world, 'core.word')) for (const m of w.means ?? []) { const e = [...kinds.values()].find((x) => x.kind === m); if (e) for (const t of w.text ?? []) add(t, m, e); }
     for (const t of ctx.kinds ?? []) add(t, t);
+    // the world itself: its name (std.schema.world name=), and the kind that name means (a core.word), is a word for the whole world
+    for (const r of rowsOf(world, 'std.schema.world')) for (const name of r.name ?? []) {
+      const t = String(name).toLowerCase().replace(/_/g, ' ');
+      const e = kinds.get(t);
+      if (!e) { kinds.set(t, { kind: String(name), whole: false, unit: false, part: false, made: false, plural: false, world: true, none: true }); continue; }
+      for (const [p, x] of kinds) if (x.kind === e.kind) kinds.set(p, { ...x, world: true }); // every word of the kind the name means
+    }
     // values: the enum values of the slots of the world's kinds (colour red, layout grid)
     const values = new Map(); // word -> [{ attribute, value }]
     const c = world?._compiled?.();
@@ -268,12 +287,12 @@ export function readRequest(world, text, ctx = {}) {
     else if (c.on === 'attribute') { const v = o.value.entry.find((x) => !c.attribute || x.attribute === c.attribute) ?? o.value.entry[0]; constraints.push({ ...base, attribute: c.attribute ?? v.attribute, value: v.value }); }
     else if (c.on === 'layout') constraints.push({ ...base, value: c.value ?? o.value?.entry[0]?.value });
     else if (c.on === 'about') constraints.push({ ...base, value: o.topic.text });
-    else if (c.on === 'place') constraints.push({ ...base, value: c.value ?? o.kind?.entry.kind, relation: c.relation });
+    else if (c.on === 'place') { if (!(o.kind?.entry.world && c.value === undefined)) constraints.push({ ...base, value: c.value ?? o.kind?.entry.kind, relation: c.relation }); } // a place that names the world itself is where everything is: no constraint
     else constraints.push({ ...base, ...(c.value !== undefined ? { value: c.value } : {}), ...(c.step ? { step: c.step } : {}) });
   }
 
   // kinds, wholes, numbers and values left: the target, wanted kinds, bare counts and attributes
-  let target = null, refers = null;
+  let target = null, refers = null, refersAt = null;
   const pending = []; // values waiting for the kind they describe
   for (let i = 0; i < ws.length; i++) { // bounded: the tokens
     if (used[i]) continue;
@@ -288,14 +307,20 @@ export function readRequest(world, text, ctx = {}) {
     if (k && free(i, k.n)) {
       const afterPlace = L.preps.has(ws[i - 1] ?? '') || (L.dets.has(ws[i - 1] ?? '') && L.preps.has(ws[i - 2] ?? ''));
       take(i, k.n);
+      if (k.entry.world && afterPlace) continue; // "on the shelf", "in the drawing": the world itself is where everything is, not a place in it
+      if (k.entry.none) { if (!target) { refers = 'all'; refersAt = i; } continue; } // the world's name, a kind of none: the whole world
       const count = constraints.find((c) => c.on === 'count' && !c.of && c.at < i && c.at >= i - 4);
       if (count) count.of = k.entry.kind;
-      if (k.entry.whole && !target && !afterPlace) { target = k.entry.kind; refers = 'kind'; continue; }
       const countOf = constraints.find((c) => c.on === 'count' && c.of === k.entry.kind);
+      // a definite determiner before the kind (the language's definite=yes), over the modifiers between: it refers to things there
+      let d = i - 1; while (d >= 0 && d >= i - 4 && !L.dets.has(ws[d]) && !L.joiners.has(ws[d]) && (used[d] || X.values.has(ws[d]))) d--; // bounded: four tokens
+      const definite = d >= 0 && L.definite.has(ws[d]), indefinite = d >= 0 && L.indefinite.has(ws[d]);
+      const kc = { on: 'kind', want: 'yes', value: k.entry.kind, words: k.text, origin: 'said', at: i, ...(k.entry.plural && !countOf ? { plural: true } : {}), ...(definite ? { definite: true } : {}), ...(indefinite ? { indefinite: true } : {}), ...(k.entry.world ? { world: true } : {}) };
+      if (k.entry.whole && !target && !afterPlace) { target = k.entry.kind; refers = 'kind'; if (!constraints.some((c) => c.on === 'kind' && c.value === k.entry.kind)) constraints.push(kc); continue; } // the target keeps its kind constraint, with the place of its word
       for (const p of pending.splice(0)) p.of = k.entry.kind;
       if (k.entry.unit && !k.entry.made) continue; // "5 nodes": the unit of a whole, counted, not a kind
       if (afterPlace && !constraints.some((c) => c.on === 'place' && c.value === k.entry.kind)) { constraints.push({ on: 'place', want: 'yes', value: k.entry.kind, relation: ws[i - 1] === 'the' || ws[i - 1] === 'a' ? ws[i - 2] : ws[i - 1], words: words(i, k.n), origin: 'said', at: i }); continue; }
-      if (!constraints.some((c) => c.on === 'kind' && c.value === k.entry.kind)) constraints.push({ on: 'kind', want: 'yes', value: k.entry.kind, words: k.text, origin: 'said', at: i, ...(k.entry.plural && !countOf ? { plural: true } : {}) });
+      if (!constraints.some((c) => c.on === 'kind' && c.value === k.entry.kind)) constraints.push(kc);
       continue;
     }
     const v = longestAt(ws, i, X.values, 3);
@@ -304,13 +329,27 @@ export function readRequest(world, text, ctx = {}) {
     const placed = constraints.some((c) => c.on === 'place');
     if (!placed && L.placeRefs.has(ws[i])) { take(i); constraints.push({ on: 'place', want: 'yes', value: null, ref: ws[i], words: ws[i], origin: 'said', at: i }); continue; }
     if (!placed && L.anaphors.has(ws[i]) && i > 0 && L.preps.has(ws[i - 1]) && act) { take(i); constraints.push({ on: 'place', want: 'yes', value: null, ref: ws[i], relation: ws[i - 1], words: words(i - 1, 2), origin: 'said', at: i }); continue; }
-    if (L.anaphors.has(ws[i]) && !target) { take(i); target = ctx.dialogue?.last?.target ?? null; refers = 'last'; }
+    if (L.everything.has(ws[i]) && !target && refers !== 'last') { take(i); refers = 'all'; refersAt = i; continue; } // "everything": every thing of the world
+    if (L.anaphors.has(ws[i]) && !target && refers !== 'all') { take(i); target = ctx.dialogue?.last?.target ?? null; refers = 'last'; refersAt = i; }
   }
-  if (!target && act) { const k = constraints.find((c) => c.on === 'kind' && c.want === 'yes'); if (k) { target = k.value; refers = 'kind'; } }
+  if (!target && act && refers !== 'all') { const k = constraints.find((c) => c.on === 'kind' && c.want === 'yes'); if (k) { target = k.value; refers = 'kind'; } }
+  // modifiers of kinds said together ("a tiny house and a big sun"): a size or a value belongs to the kind whose word
+  // follows it with no joiner between, else to the one before it; only when two kinds or more are said
+  const kindWords = constraints.filter((c) => c.on === 'kind' && c.want === 'yes' && c.value && c.at !== undefined);
+  if (new Set(kindWords.map((c) => c.value)).size > 1) {
+    const joined = (a, b) => { for (let x = Math.min(a, b) + 1; x < Math.max(a, b); x++) if (L.joiners.has(ws[x])) return true; return false; }; // bounded: the tokens between
+    for (const c of constraints) {
+      if (!['size', 'attribute'].includes(c.on) || c.of || (c.want ?? 'yes') !== 'yes' || c.at === undefined) continue;
+      const after = kindWords.filter((x) => x.at > c.at && !joined(c.at, x.at)).sort((a, b) => a.at - b.at)[0];
+      const before = kindWords.filter((x) => x.at < c.at && !joined(x.at, c.at)).sort((a, b) => b.at - a.at)[0];
+      const of = (after ?? before)?.value;
+      if (of) c.of = of;
+    }
+  }
 
   const unreadAt = [];
   for (let i = 0; i < ws.length; i++) if (!used[i] && !L.stop.has(ws[i]) && !/^[-,]$/.test(ws[i])) unreadAt.push({ text: ws[i], n: i + 1 }); // bounded: the tokens
-  const req = { act, mode, target, refers, text: String(text ?? ''), constraints, reactions, unread: [...new Set(unreadAt.map((u) => u.text))], unreadAt, used: ws.filter((_, i) => used[i]), ...(spell ? { spell: { repairs: spell.repairs, asks: spell.asks } } : {}) };
+  const req = { act, mode, target, refers, ...(refersAt !== null ? { refersAt } : {}), text: String(text ?? ''), constraints, reactions, unread: [...new Set(unreadAt.map((u) => u.text))], unreadAt, used: ws.filter((_, i) => used[i]), ...(spell ? { spell: { repairs: spell.repairs, asks: spell.asks } } : {}) };
   return withFacts(req);
 }
 
@@ -372,7 +411,9 @@ const factor = (scale, step, key = 'count') => scale?.find((s) => s.step === ste
 /**
  * A turn against the dialogue: a new request, or a revision of the last one by the w.dialogue.revision facts of its
  * reaction (flip, step, add, keep, undo, none). `dialogue`: { last, result, previous, seed } (result: { count, kinds:
- * { kind: n }, things }); `opts`: `revisions` (a source of w.dialogue.revision facts), `catalog` (k.expect.scale facts).
+ * { kind: n }, things }); `opts`: `revisions` (a source of w.dialogue.revision facts), `catalog` (k.expect.scale facts),
+ * `live` (the world with its state: an act said on what is there with only new values, "make it red", is then a new
+ * request in the change sense of make, not a revision).
  * Returns { sort: 'request' | 'reaction', reaction, does, request, replace, seed, reply, undo }.
  */
 export function reviseRequest(dialogue, request, opts = {}) {
@@ -380,6 +421,9 @@ export function reviseRequest(dialogue, request, opts = {}) {
   const seed = (dialogue?.seed ?? 1);
   const fresh = { sort: 'request', reaction: null, does: [], request, replace: false, seed };
   if (!last) return fresh;
+  // an act said on what is there with only new values ("make it red"): a request of its own (the change sense of
+  // make, decided by planRequest over `opts.live`, the world with its state), not a revision of the last one
+  if (request.act && opts.live && !request.reactions.length && capabilitiesOf(opts.live).honours.some((h) => h.act === 'change') && changeSense(opts.live, request, { dialogue })) return fresh;
   const rx = new Set(request.reactions.map((r) => r.value));
   const expectation = request.reactions.some((r) => /expectation/.test(r.cue ?? ''));
   const newThing = request.act && request.target && request.refers !== 'last' && !expectation;
@@ -483,6 +527,12 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   const H = cap.honours.filter((h) => h.act === act);
   if (!H.length) { notHonoured.push({ on: 'act', words: act, why: `this world does not ${act}`, code: 'act' }); return out; }
   if (actFrom !== 'said') assumed.push({ key: 'act', value: act, from: actFrom });
+  // the change sense of make ("make the house red", "make it red"): its object refers to things that are there and it
+  // says only their new values; decided by reference over the view, planned as the act change when the world honours it
+  if (act === 'make' && changeSense(live, request, opts)) {
+    const Hc = cap.honours.filter((h) => h.act === 'change');
+    if (Hc.length) { out.act = 'change'; out.sense = 'change'; return referencePlan(live, request, opts, out, Hc, 'change'); }
+  }
   if (act !== 'make' && act !== 'connect') return referencePlan(live, request, opts, out, H, act);
   const random = request.constraints.some((c) => c.on === 'manner' && c.value === 'random') || !!opts.vary; // "random", or a redo: varied within the range
   const catalog = [].concat(opts.catalog ?? []);
@@ -505,6 +555,7 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   const cs = [];
   for (const c of request.constraints) {
     if (keys.has(c.on)) { cs.push(c); continue; }
+    if (c.on === 'kind' && c.value === target && (c.want ?? 'yes') === 'yes') continue; // the target's own kind constraint is the target
     if ((c.origin ?? 'said') === 'said') notHonoured.push({ on: c.on, words: c.words ?? String(c.value ?? c.on), why: `this world does not take ${c.on} for ${act}`, code: 'not_declared', value: c.value });
   }
   const C = (on) => cs.filter((c) => c.on === on);
@@ -513,10 +564,18 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   // the expectation of the target: the world's own facts, then the catalog's
   let mk = null, mkFrom = null;
   for (const s of sources) if ((s === 'world' || s === 'expect') && !mk) { const m = rowsOf(from[s], 'k.expect.make').find((r) => first(r, 'thing') === target); if (m) { mk = m; mkFrom = s; } }
-  const parts = mk ? rowsOf(from[mkFrom], 'k.expect.part').filter((p) => first(p, 'of') === target) : [];
+  let parts = mk ? rowsOf(from[mkFrom], 'k.expect.part').filter((p) => first(p, 'of') === target) : [];
+  // a whole of the expectations whose parts this world cannot make ("a house" of walls and a roof, where the world
+  // draws a house as one thing): the expectation does not apply here, the kind is made as one thing (said in `wholeAsOne`)
+  let wholeAsOne = false;
+  if (mk && parts.length && makeable(target) && !parts.some((p) => first(p, 'group') !== 'link' && (makeable(first(p, 'part')) || (p.shape ?? []).some(makeable)))) { mk = null; mkFrom = null; parts = []; wholeAsOne = true; }
   const scale = scaleOf([...(has('world') ? [live] : []), ...(has('expect') ? catalog : [])]);
   const amounts = (name) => rowsOf([...(has('world') ? [live] : []), ...(has('expect') ? catalog : [])], 'k.expect.amount').find((r) => first(r, 'name') === name);
-  const sizeC = C('size')[0];
+  // a size or a value said of one of several kinds said ("a tiny house and a big sun": readRequest gives it `of`) goes
+  // to the items of that kind only
+  const kindsSaid = new Set(C('kind').filter((c) => c.want === 'yes' && c.value).map((c) => c.value));
+  const perKind = (c) => kindsSaid.size > 1 && !!c.of && kindsSaid.has(c.of) && ['size', 'attribute'].includes(c.on);
+  const sizeC = C('size').find((c) => !perKind(c));
   const sizeI = !sizeC && has('induced') && hints.sizeStep && keys.has('size') ? stepNext(scale, 'default', hints.sizeStep) : null; // the session's corrections, generalised
   const sizeStep = sizeC ? (sizeC.value ?? (sizeC.step === 'up' ? stepNext(scale, 'default', 'up') : sizeC.step === 'down' ? stepNext(scale, 'default', 'down') : 'default')) : sizeI ?? 'default';
   const lengthC = C('length')[0];
@@ -528,7 +587,7 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   const isLink = (p) => first(p, 'group') === 'link';
   const whole = !!mk && makeable(target);
   const unit = mk ? first(mk, 'unit') : null;
-  const wantK = C('kind').filter((c) => c.want === 'yes' && c.value), noK = new Set(C('kind').filter((c) => c.want === 'no').map((c) => c.value));
+  const wantK = C('kind').filter((c) => c.want === 'yes' && c.value && !(c.value === target && mk)), noK = new Set(C('kind').filter((c) => c.want === 'no').map((c) => c.value));
   const notAll = C('kind').filter((c) => c.want === 'not_all');
   const withs = C('with');
   for (const c of wantK) if (!makeable(c.value) && !parts.some((p) => first(p, 'part') === c.value) && c.value !== target) notHonoured.push({ on: 'kind', words: c.words ?? c.value, why: `there is no ${c.value} here`, code: 'no_kind', value: c.value });
@@ -565,6 +624,15 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   const wholeC = whole ? C('count').find((c) => c.of === target && c.of !== unit && c.number > 1 && !c.bound) ?? null : null; // "3 necklaces": that many wholes, each planned alike
   const countC = C('count').find((c) => c !== wholeC && (!c.of || c.of === unit || c.of === target || pool.includes(c.of))) ?? null;
   let lo, hi, typ, countFrom;
+  // a plural kind said with no number: several, as the expectations say for that kind (k.expect.value on=count, given
+  // plural=yes), else the amount "some" of the catalog, else two to four
+  const severalOf = (kind) => {
+    const e = expectedValue(kind, 'count', { ...saidKnown, plural: 'yes' }, whenCtx);
+    if (e && (e.min !== undefined || e.typical !== undefined || (e.value !== undefined && !Number.isNaN(Number(e.value))))) { const t = e.typical ?? num(e.value) ?? e.min; const l = e.min ?? Math.min(t, 2); const h = Math.max(l, e.max ?? t); return { lo: l, hi: h, typ: Math.min(h, Math.max(l, t)), from: e.from }; }
+    const a = amounts('some') ?? amounts('few');
+    const l = num(first(a, 'min')) ?? 2, h = num(first(a, 'max')) ?? 4;
+    return { lo: l, hi: h, typ: num(first(a, 'typical')) ?? l, from: a ? 'expect' : 'sampled' };
+  };
   const baseMin = mk ? num(first(mk, 'min')) : 1, baseMax = mk ? num(first(mk, 'max')) : 1, baseTyp = mk ? num(first(mk, 'typical')) : 1;
   const whenCtx = { live, catalog: has('expect') ? catalog : [], sources: ['world', 'expect'].filter(has) };
   const saidKnown = { ...(sizeC || sizeI ? { size: sizeStep } : {}), ...Object.fromEntries(C('attribute').filter((c) => c.want === 'yes').map((c) => [c.attribute ?? 'colour', c.value])) };
@@ -579,19 +647,24 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
     else if (countC.bound === 'max') { hi = countC.number - (countC.exclusive ? 1 : 0); lo = Math.min(hi, Math.max(1, baseMin)); typ = hi; }
     else lo = hi = typ = countC.number;
   } else if (wantK.some((c) => c.plural) && mode === 'kind') {
-    const a = amounts('some') ?? amounts('few'); lo = num(first(a, 'min')) ?? 2; hi = num(first(a, 'max')) ?? 4; typ = num(first(a, 'typical')) ?? lo; countFrom = a ? 'expect' : 'sampled';
+    const p = severalOf(wantK.find((c) => c.plural).value); lo = p.lo; hi = p.hi; typ = p.typ; countFrom = p.from;
   } else if (countWhen) { // a conditional expectation of the count (k.expect.when key=count min= max= typical= if.size=...)
     lo = countWhen.min ?? countWhen.typical ?? 1; hi = Math.max(lo, countWhen.max ?? lo); typ = Math.min(hi, Math.max(lo, countWhen.typical ?? lo)); countFrom = countWhen.from;
   } else {
-    lo = Math.max(1, Math.round(baseMin * cf)); hi = Math.max(lo, Math.round(baseMax * cf)); typ = Math.min(hi, Math.max(lo, Math.round(baseTyp * cf))); countFrom = mk ? mkFrom : 'world';
+    const cfw = mk ? cf : 1; // the size scales the count of a whole's units; one thing of a kind stays one ("a huge atlas")
+    lo = Math.max(1, Math.round(baseMin * cfw)); hi = Math.max(lo, Math.round(baseMax * cfw)); typ = Math.min(hi, Math.max(lo, Math.round(baseTyp * cfw))); countFrom = mk ? mkFrom : mode === 'kind' && wantK.length && wantK.every((c) => !c.plural) ? 'said' : 'world'; // a kind said in the singular is one, as said
   }
   let n = random ? pick(rnd, lo, hi, true) : Math.min(hi, Math.max(lo, typ));
   // coordinated kinds ("two novels and a comic"): each count stays with the kind it stands before; a kind said with
   // no number is one
-  const coordinated = (mode === 'shapes' || mode === 'kind') && wantK.filter((c) => pool.includes(c.value)).length >= 2 && C('count').some((c) => c.of && c.number !== undefined && !c.bound && pool.includes(c.of))
-    ? wantK.filter((c, i, a) => pool.includes(c.value) && a.findIndex((x) => x.value === c.value) === i).map((c) => ({ kind: c.value, n: C('count').find((x) => x.of === c.value && x.number !== undefined && !x.bound)?.number ?? 1 }))
+  // no number, or several: kinds said together outside a whole ("a sky and a sun") are each one, a plural one several
+  // (severalOf); inside a whole they start from a count said
+  const saidKinds = wantK.filter((c, i, a) => pool.includes(c.value) && a.findIndex((x) => x.value === c.value) === i);
+  const countOfKind = (k) => C('count').find((x) => x.of === k && x.number !== undefined && !x.bound);
+  const coordinated = (mode === 'shapes' || mode === 'kind') && saidKinds.length >= 2 && (C('count').some((c) => c.of && c.number !== undefined && !c.bound && pool.includes(c.of)) || (mode === 'kind' && !C('count').some((c) => !c.of)))
+    ? saidKinds.map((c) => { const said = countOfKind(c.value); if (said) return { kind: c.value, n: said.number, from: 'said' }; if (c.plural) { const p = severalOf(c.value); return { kind: c.value, n: random ? pick(rnd, p.lo, p.hi, true) : p.typ, from: p.from }; } return { kind: c.value, n: 1, from: 'said' }; })
     : null;
-  if (coordinated) { n = coordinated.reduce((a, x) => a + x.n, 0); lo = hi = typ = n; countFrom = 'said'; }
+  if (coordinated) { n = coordinated.reduce((a, x) => a + x.n, 0); lo = hi = typ = n; countFrom = 'said'; for (const x of coordinated) if (x.from !== 'said') assumed.push({ key: 'count', value: x.n, from: x.from, of: x.kind }); }
   const saidCount = countFrom === 'said' ? [lo, hi] : null;
   if (random && !countC) countFrom = 'sampled';
   if (mode === 'shapes' && notAll.length && n < 2) n = 2;
@@ -669,7 +742,7 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   if (sizeI && sizeI !== 'default') { const f = factor(scale, sizeStep, 'size'); if (placeRole('size', itemSlots(items[0]?.kind).get('size')?.enum ? sizeStep : f ?? sizeStep, { onWhole: false }) === 'put' || placeRole('size', sizeStep, { onItems: false }) === 'put') assumed.push({ key: 'size', value: sizeStep, from: 'induced' }); }
   if (sizeC) { const f = factor(scale, sizeStep, 'size'); const r = placeRole('size', itemSlots(items[0]?.kind).get('size')?.enum ? sizeStep : f ?? sizeStep, { onWhole: false }); if (r !== 'put' && placeRole('size', sizeStep, { onItems: false }) !== 'put') nameIt(sizeC, 'nothing here has a size', 'no_slot'); }
   for (const c of C('extent')) { const f = factor(scale, c.value, 'extent'); const r = placeRole('extent', wholeSlots.get('extent')?.enum ? c.value : f ?? c.value, { onItems: false }); if (r !== 'put') nameIt(c, 'nothing here has an extent', 'no_slot'); }
-  for (const c of C('attribute')) { if (c.want === 'no') continue; const key = c.attribute ?? 'colour'; const r = placeRole(key, c.value); if (r !== 'put') nameIt(c, r === 'refused' ? `${c.value} is not a ${key} here` : `nothing here has a ${key}`, r === 'refused' ? 'value' : 'no_slot'); }
+  for (const c of C('attribute')) { if (c.want === 'no' || perKind(c)) continue; const key = c.attribute ?? 'colour'; const r = placeRole(key, c.value); if (r !== 'put') nameIt(c, r === 'refused' ? `${c.value} is not a ${key} here` : `nothing here has a ${key}`, r === 'refused' ? 'value' : 'no_slot'); }
   for (const c of C('place')) {
     if (hints.place && items.length && items.every((it) => itemSlots(it.kind).has(hints.place.key))) { itemArgs[hints.place.key] = `$${hints.place.id}`; if (c.value !== hints.place.id) assumed.push({ key: 'place', value: hints.place.id, from: hints.place.from, words: c.words }); continue; }
     if (c.ref) { nameIt(c, `nothing here is what ${c.ref} could be`, 'no_referent'); continue; }
@@ -724,7 +797,21 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   const steps = [];
   if (whole) steps.push({ action: 'make', args: { kind: target, ...wholeArgs } });
   const inWhole = whole && items.every((it) => itemSlots(it.kind).has('in'));
-  for (const it of items) steps.push({ action: 'make', args: { kind: it.kind, ...itemArgs, ...(inWhole ? { in: { step: 0 } } : {}) }, item: true });
+  const own = new Map(); // kind -> the args said of it alone
+  for (const c of cs.filter((x) => perKind(x) && (x.want ?? 'yes') === 'yes')) {
+    const ks = [...new Set(items.map((it) => it.kind))].filter((k) => k === c.of || kindLineage(k, { live }).includes(c.of));
+    if (!ks.length) continue;
+    const key = c.on === 'size' ? 'size' : c.attribute ?? 'colour';
+    for (const k of ks) {
+      const sl = itemSlots(k).get(key);
+      if (!sl) { nameIt(c, `nothing here has a ${key}`, 'no_slot'); continue; }
+      let v = c.value;
+      if (c.on === 'size') { const st = c.value ?? (c.step ? stepNext(scale, 'default', c.step) : 'default'); v = sl.enum ? st : factor(scale, st, 'size') ?? st; }
+      if (sl.enum && !sl.enum.map(V).includes(v)) { nameIt(c, `${c.value} is not a ${key} here`, 'value'); continue; }
+      own.set(k, { ...(own.get(k) ?? {}), [key]: v });
+    }
+  }
+  for (const it of items) steps.push({ action: 'make', args: { kind: it.kind, ...itemArgs, ...(own.get(it.kind) ?? {}), ...(inWhole ? { in: { step: 0 } } : {}) }, item: true });
   const first0 = whole ? 1 : 0;
   const layout = wholeArgs.layout;
   if (links && items.every((it) => can(it.kind, 'connect'))) for (let i = 1; i <= links && i < items.length; i++) steps.push({ action: 'connect', args: { a: { step: first0 + (layout === 'tree' ? Math.floor((i - 1) / 2) : i - 1) }, b: { step: first0 + i } }, link: true }); // bounded: the items
@@ -762,6 +849,7 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   for (const key of inducedKeys) if (!steps.some((x) => x.item && x.args[key] === itemArgs[key])) { const i = assumed.findIndex((a) => a.key === key && a.from === 'induced'); if (i >= 0) assumed.splice(i, 1); } // an induced value no item kept
   if (whole) Object.assign(wholeArgs, Object.fromEntries(Object.entries(steps[0].args).filter(([k]) => k !== 'kind')));
   out.roles = { count: n, kinds: kindsUsed, size: sizeStep, ...wholeArgs, ...itemArgs, links: steps.filter((s) => s.link).length, mode };
+  if (wholeAsOne) out.asOne = target; // the expectation's parts are not made here: the whole is one thing
   if (wholeC) { // the steps of one whole, again for each further whole, their step references moved along
     const one = steps.length, shift = (v, k) => (v && typeof v === 'object' && 'step' in v ? { step: v.step + k * one } : v);
     for (let k = 1; k < wholeC.number; k++) for (let i = 0; i < one; i++) steps.push({ ...steps[i], args: Object.fromEntries(Object.entries(steps[i].args).map(([a, v]) => [a, shift(v, k)])) }); // bounded: the wholes said times the steps of one
@@ -782,15 +870,18 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
 function referencePlan(live, request, opts, out, H, act) {
   const view = factsOf(live);
   const kindC = request.constraints.filter((c) => c.on === 'kind' && (c.want ?? 'yes') === 'yes' && c.value);
-  const kind = request.refers === 'last' ? null : request.target ?? kindC[0]?.value ?? null;
+  // the whole world: "everything" (refers all), or a word for the world itself (its name, the kind it means)
+  const wholeWorld = request.refers === 'all' || kindC.some((c) => c.world && (c.value === request.target || !request.target));
+  const kind = request.refers === 'last' || wholeWorld ? null : request.target ?? kindC[0]?.value ?? null;
   const keys = new Set(H.filter((h) => !h.of.length || !kind || h.of.includes(kind) || kindLineage(kind, { live }).some((k) => h.of.includes(k))).flatMap((h) => [...h.on]));
-  for (const c of request.constraints) if (!keys.has(c.on) && (c.origin ?? 'said') === 'said') out.notHonoured.push({ on: c.on, words: c.words ?? String(c.value ?? c.on), why: `this world does not take ${c.on} for ${act}`, code: 'not_declared', value: c.value });
+  for (const c of request.constraints) if (!keys.has(c.on) && (c.origin ?? 'said') === 'said' && !(c.on === 'kind' && (c.want ?? 'yes') === 'yes' && (c.value === kind || (wholeWorld && c.world)))) out.notHonoured.push({ on: c.on, words: c.words ?? String(c.value ?? c.on), why: `this world does not take ${c.on} for ${act}`, code: 'not_declared', value: c.value });
   const reply = (r, roles) => { out.replies = [...(out.replies ?? []), { reply: r, roles }]; return out; };
   let ids;
   if (request.refers === 'last') ids = [...(opts.dialogue?.lastRun?.made ?? opts.dialogue?.result?.things ?? [])].map(strip).filter((id) => view.thing(id));
+  else if (wholeWorld) ids = worldThings(live, view, act, H);
   else if (kind) ids = view.ofKind(kind);
   else { out.notHonoured.push({ on: 'target', words: request.text, why: 'nothing named was read', code: 'no_target' }); return out; }
-  const kindAt = kindC[0]?.at ?? (request.refers === 'last' ? -1 : Infinity);
+  const kindAt = kindC.find((c) => c.value === kind)?.at ?? kindC[0]?.at ?? (request.refers === 'last' || wholeWorld ? request.refersAt ?? -1 : Infinity);
   const noK = request.constraints.filter((c) => c.on === 'kind' && c.want === 'no' && c.value).map((c) => c.value);
   const attrs = request.constraints.filter((c) => c.on === 'attribute' && (c.want ?? 'yes') === 'yes' && keys.has('attribute'));
   const selectors = act === 'remove' ? attrs : attrs.filter((c) => (c.at ?? 0) < kindAt);
@@ -799,20 +890,52 @@ function referencePlan(live, request, opts, out, H, act) {
   const countC = request.constraints.find((c) => c.on === 'count' && c.number !== undefined);
   if (countC) ids = ids.slice(-countC.number); // "remove 2 novels": the newest
   out.target = kind;
-  if (!ids.length) return reply('refused.no_such', { thing: plain(kind ?? request.text) });
-  const several = request.refers === 'last' || kindC[0]?.plural || countC || request.constraints.some((c) => c.on === 'count' && c.amount);
+  if (wholeWorld) out.whole = 'world';
+  if (!ids.length) return reply(wholeWorld ? 'state.empty' : 'refused.no_such', wholeWorld ? {} : { thing: plain(kind ?? request.text) });
+  const several = request.refers === 'last' || wholeWorld || kindC[0]?.plural || countC || request.constraints.some((c) => c.on === 'count' && c.amount);
+  if (ids.length > 1 && !several && kindC.find((c) => c.value === kind)?.indefinite) ids = ids.slice(-1); // "a novel": any one, the newest
   if (ids.length > 1 && !several) { out.ask = true; return reply('refused.which', { kind: plain(kind), number: ids.length }); }
   const set = {};
   for (const c of values) set[c.attribute ?? 'colour'] = c.value;
-  const sizeC = request.constraints.find((c) => c.on === 'size' && c.value && keys.has('size'));
-  if (sizeC && act !== 'remove') set.size = sizeC.value;
+  const sizeC = request.constraints.find((c) => c.on === 'size' && (c.value || c.step) && keys.has('size'));
+  if (sizeC?.value && act !== 'remove') set.size = sizeC.value;
   const placeC = request.constraints.find((c) => c.on === 'place' && c.value && keys.has('place'));
   if (act === 'place' && placeC) set.place = placeC.value;
-  if (act !== 'remove' && !Object.keys(set).length) return reply('refused.missing_value', { key: act === 'place' ? 'place' : 'value' });
-  out.steps = ids.map((id) => ({ action: act, args: { thing: `$${id}`, ...set } }));
-  out.roles = { count: ids.length, things: ids, ...set };
+  // a size said as a step ("smaller"): one grade of the scale from the size each thing has now
+  const stepped = sizeC && !sizeC.value && sizeC.step && act !== 'remove' ? scaleOf([live, ...[].concat(opts.catalog ?? [])]) ?? true : null;
+  const sizeOf = (id) => { const now = view.values(id, 'size')[0]; return stepNext(stepped === true ? null : stepped, now === undefined ? 'default' : String(now), sizeC.step); };
+  if (act !== 'remove' && !Object.keys(set).length && !stepped) return reply('refused.missing_value', { key: act === 'place' ? 'place' : 'value' });
+  if (act === 'remove' && ids.length > 1) { const set = new Set(ids); const held = (id) => view.inbound(id).some((x) => set.has(x.thing ?? x)); ids = [...ids.filter((id) => !held(id)), ...ids.filter(held)]; } // what other things are in goes last
+  out.steps = ids.map((id) => ({ action: act, args: { thing: `$${id}`, ...set, ...(stepped ? { size: sizeOf(id) } : {}) } }));
+  const byKind = {}; for (const id of ids) { const k = view.thing(id)?.kinds?.[0]; if (k) byKind[k] = (byKind[k] ?? 0) + 1; }
+  out.roles = { count: ids.length, things: ids, byKind, ...set, ...(stepped ? { size: sizeOf(ids[0]) } : {}) };
   out.ok = true; out.reference = true;
   return out;
+}
+
+/** The things of the world an act takes when it is said of the whole world: those of a declared kind (std.schema.kind) the act is declared for, or of a kind its honours name, along the lineage. */
+function worldThings(live, view, act, H) {
+  const declared = capabilitiesOf(live).kinds, of = new Set(H.flatMap((h) => h.of));
+  return view.ids().filter((id) => (view.thing(id)?.kinds ?? []).some((k) => declared.has(k) && (declared.get(k).has(act) || kindLineage(k, { live }).some((x) => of.has(x)))));
+}
+
+/**
+ * The change sense of make: the request's object refers to things that are there (the last result for "it", every
+ * thing for "everything", or a kind said with a definite determiner of which the view has things) and the request says
+ * only values after that object (an attribute or a size: "make the house red", "make the dogs smaller"), no number and
+ * no other kind. A value before the object describes a new thing ("make a red house") and keeps the sense of make.
+ */
+function changeSense(live, request, opts) {
+  const kinds = request.constraints.filter((c) => c.on === 'kind' && (c.want ?? 'yes') === 'yes' && c.value);
+  if (request.constraints.some((c) => !['kind', 'attribute', 'size'].includes(c.on)) || kinds.length > 1) return false;
+  const view = factsOf(live);
+  let at = null;
+  if (request.refers === 'last') { if ([...(opts.dialogue?.lastRun?.made ?? opts.dialogue?.result?.things ?? [])].some((id) => view.thing(strip(id)))) at = request.refersAt ?? -1; }
+  else if (request.refers === 'all' || kinds[0]?.world) { if (worldThings(live, view, 'change', capabilitiesOf(live).honours.filter((h) => h.act === 'change')).length) at = request.refersAt ?? kinds[0]?.at ?? -1; }
+  else if (kinds[0]?.definite && view.ofKind(kinds[0].value).length) at = kinds[0].at;
+  if (at === null) return false;
+  const values = request.constraints.filter((c) => (c.on === 'attribute' || c.on === 'size') && (c.want ?? 'yes') === 'yes');
+  return values.length > 0 && values.every((c) => c.at === undefined || c.at > at);
 }
 
 const NO_HINTS = Object.freeze({ attrs: null, layout: null, sizeStep: null, place: null, drop: null });
@@ -1049,28 +1172,34 @@ export function sayRequest(request, outcome = {}, opts = {}) {
     else {
       for (const [kind, n] of byKind(d.added)) facts.push({ reply: 'done.add', roles: { kind: plain(kind), number: n } });
       for (const [kind, n] of byKind(d.removed.filter((t) => !replaced.has(t.id)))) facts.push({ reply: 'done.remove', roles: { thing: plain(kind), number: n } });
-      const ch = new Map(); for (const x of d.changed) { const k = `${x.kind}|${x.key}|${x.to}`; const e = ch.get(k) ?? { kind: x.kind, value: x.to, n: 0 }; e.n++; ch.set(k, e); }
-      for (const e of ch.values()) facts.push({ reply: 'done.change', roles: { thing: plain(e.kind), number: e.n, value: String(e.value) } });
+      const ch = new Map(); for (const x of d.changed) { const key = x.as ?? x.key, k = `${x.kind}|${key}|${x.to}`; const e = ch.get(k) ?? { kind: x.kind, key, value: x.to, n: 0 }; e.n++; ch.set(k, e); }
+      for (const e of ch.values()) facts.push({ reply: 'done.change', roles: { thing: plain(e.kind), number: e.n, key: String(e.key), value: plain(String(e.value)) } }); // the key: said by the reply done.change.<key> when the language has one
     }
     const nothing = !d.added.length && !d.removed.length && !d.changed.length;
     if (nothing && !tool.question && !outcome.ask && !(tool.ok && (tool.undo || tool.redo))) {
       facts.push({ reply: 'why.nothing', roles: {} });
-      if (tool.failed?.reply) facts.push({ reply: tool.failed.reply, roles: tool.failed.roles ?? {}, code: tool.failed.code });
+      if (tool.failed?.reply && tool.failed.reply !== 'why.nothing') facts.push({ reply: tool.failed.reply, roles: tool.failed.roles ?? {}, code: tool.failed.code }); // said once
       else if (tool.same) facts.push({ reply: 'nothing.same', roles: {}, code: 'same' }); // a revision that asks for what is there
     }
   }
   for (const f of outcome.replies ?? []) facts.push({ reply: f.reply, roles: f.roles, code: 'plan' }); // what the plan says itself (refused.which, refused.no_such)
-  if (run) {
+  if (run && outcome.reference && outcome.run?.ok !== false) { // an act on things that are there, run through the world's own acts: said from the plan's things
+    for (const [kind, n] of Object.entries(outcome.roles?.byKind ?? {})) {
+      if (outcome.act === 'remove') facts.push({ reply: 'done.remove', roles: { thing: plain(kind), number: n } });
+      else for (const key of Object.keys(outcome.roles).filter((k) => !['count', 'things', 'byKind'].includes(k))) facts.push({ reply: 'done.change', roles: { thing: plain(kind), number: n, key, value: plain(String(outcome.roles[key])) } });
+    }
+  } else if (run) {
     if (run.whole) facts.push({ reply: 'done.make', roles: { kind: plain(outcome.target), number: 1 } });
     else for (const [kind, n] of Object.entries(run.kinds)) { const v = outcome.roles?.colour; facts.push({ reply: v ? 'done.make.value' : 'done.make', roles: { kind: plain(kind), number: n, ...(v ? { value: v } : {}) } }); }
   }
   const assumed = [...(outcome.assumed ?? [])];
   for (const a of tool?.ok ? tool.assumed ?? [] : []) if (a.from === 'translated' || !assumed.some((x) => String(x.value) === String(a.value))) assumed.push(a); // what the binding filled or translated beyond the plan
-  for (const a of tool && (!tool.ok || tool.same) ? [] : assumed) if (a.key !== 'target' || !run?.whole) facts.push({ reply: 'assumed', roles: { key: a.key, value: String(a.value) }, from: a.from });
+  const told = new Set();
+  for (const a of tool && (!tool.ok || tool.same) ? [] : assumed) { const k = `${a.key}|${a.value}`; if ((a.key !== 'target' || !run?.whole) && !told.has(k)) { told.add(k); facts.push({ reply: 'assumed', roles: { key: a.key, value: String(a.value) }, from: a.from }); } } // one fact per key and value
   for (const nh of outcome.notHonoured ?? []) facts.push({ reply: 'not_honoured', roles: { words: nh.words, why: nh.why }, code: nh.code });
   for (const c of outcome.cannot ?? []) facts.push({ reply: 'not_honoured', roles: { words: c.words ?? request?.text ?? '', why: c.why }, code: 'cannot' });
   if (request?.unread?.length && (run || outcome.revised || (tool && !tool.question && tool.failed?.code !== 'unread'))) facts.push({ reply: 'unread', roles: { words: request.unread.map((w) => `"${w}"`).join(', ') } });
   const missing = [];
-  const texts = o.language ? facts.map((f) => { const t = replyFrom(o.language, f.reply, f.roles, { lang, dictionary: o.dictionary }); if (t == null) missing.push(f.reply); return t; }).filter(Boolean) : [];
+  const texts = o.language ? facts.map((f) => { const t = (f.roles?.key ? replyFrom(o.language, `${f.reply}.${f.roles.key}`, f.roles, { lang, dictionary: o.dictionary }) : null) ?? replyFrom(o.language, f.reply, f.roles, { lang, dictionary: o.dictionary }); if (t == null) missing.push(f.reply); return t; }).filter(Boolean) : []; // a fact with a key: the reply named for that key first (done.change.place), else the general one
   return { facts, text: texts.join(' '), missing: [...new Set(missing)] };
 }

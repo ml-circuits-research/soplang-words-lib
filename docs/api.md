@@ -2029,7 +2029,7 @@ print(q.act, q.target, q.facts, q.unread);
 ```
 
 ```output
-make heap [{"key":"place","value":"top"},{"key":"kind","value":"ball","neg":true}] ["blorp"]
+make heap [{"key":"place","value":"top"},{"key":"kind","value":"ball","neg":true},{"key":"kind","value":"heap"}] ["blorp"]
 ```
 
 ### reviseRequest(dialogue, request, options?)
@@ -2239,7 +2239,7 @@ print(sayRequest(q, outcome, { language: words, lang: 'ex' }).text);
 I made a heap. I took 6 for the count. Not at the top: a heap has no place here.
 ```
 
-### runPlan(plan, bindings, primitives, opts?), toolBindings(live, opts?), toolTimeline(), toolSession(live, primitives, opts?), toolCapabilities(live, bindings?), askWorld(question, request, opts?), nearestAccepted(value, param, opts?), readView(view), stateDiff(before, after), mirrorState(live, view), runWorldPlan(live, plan, options?), TOOL_ARG_SOURCES, WORLD_QUESTIONS
+### runPlan(plan, bindings, primitives, opts?), toolBindings(live, opts?), toolTimeline(), toolSession(live, primitives, opts?), toolCapabilities(live, bindings?), askWorld(question, request, opts?), nearestAccepted(value, param, opts?), readView(view), stateDiff(before, after, opts?), mirrorState(live, view), runWorldPlan(live, plan, options?), TOOL_ARG_SOURCES, WORLD_QUESTIONS
 
 Tool binding as wires (0.152; owner 2026-11-15: the glue between a live world and the generic mechanisms is
 declarative, only the tool's concrete actions are code). A world declares its tool in the `std.tool` module
@@ -2293,9 +2293,28 @@ plan (on the mirrored state, with the last plan in the dialogue), run, say. A me
 nothing (`not_understood` with the words). `planRequest` plans an act on things that are there (remove, change, place)
 by a reference step over the state: "them" / "it" are the last result, else the things of the kind named (by lineage,
 the kinds not wanted left out), filtered by the values said before the kind; the values after it are the new values;
-several things for a singular kind is one question (`refused.which`, no step), none is `refused.no_such`. `sayRequest` speaks from the run's diff
-(`done.add`, `done.remove`, `done.change`, `done.undo`, `why.nothing` with the reason's reply, `nothing.same`), from
-`outcome.capabilities` (`can`, `can.say`) and `outcome.answer` (askWorld's facts).
+several things for a singular kind is one question (`refused.which`, no step; "a novel" with an indefinite determiner
+is any one, the newest), none is `refused.no_such`. Since 0.153: "everything" (a word of the language's grammar that
+alone is a noun phrase of `set=all`), the world's name (`std.schema.world name=`) and every word of the kind that name
+means are the whole world: an act takes every thing of a declared kind it is declared for (`plan.whole = 'world'`),
+and such a word after a preposition ("on the shelf") is no place. The change sense of make: a make whose object refers
+to things that are there ("it", "everything", a kind with a definite determiner of which there are things) and that
+says only values after it ("make the comic blue", "make the atlas smaller": one grade from the size it has now) is
+planned as `change` (`plan.act = 'change'`, `plan.sense = 'change'`) when the world honours change; a value before the
+kind ("make a red comic") keeps make; `reviseRequest(..., { live })` lets such a turn be a request of its own.
+`sayRequest` speaks from the run's diff (`done.add`, `done.remove`, `done.change` with roles `thing`, `number`,
+`key`, `value`, `done.undo`, `why.nothing` with the reason's reply, `nothing.same`), from `outcome.capabilities`
+(`can`, `can.say`) and `outcome.answer` (askWorld's facts); a fact with a `key` is said by the reply named
+`<name>.<key>` when the language has one (`done.change.place`: "I moved the atlas to the left."), else by `<name>`.
+
+The diff `runPlan` returns is the net change (0.153): `stateDiff(before, after, { match: true, keys })` matches a
+thing removed and one added by kind and values (the pairs most alike first; references to redone things alike), says
+a pair that differs as `changed` (with `was`), and says only the keys the plan set (of a revision: those it set
+otherwise than the plan it replaced; a place the tool computes is not said unless nothing else changed); `same` is
+exact (the same things with the same values, ids aside). A reference step the tool carried out whose key the view
+cannot show (a move inside one region) is said from the call (`by: 'call'`); a change key is said by the request's key
+the binding took it from (`arg=end<-step.place`: `as: 'place'`). A change binding's changed values are never filled
+from expectations or defaults. Undo by inverse leaves out keys no change binding takes.
 
 ```js run
 const w = new World();

@@ -575,3 +575,30 @@ call, effect on the view). Not aligned, or a choice I made where the review is o
 10. **The review's §11 example keeps colour as `kind=atom` with no join.** The author-live-world skill asks for a join to
    k.colours. My examples keep a short enum, because they are toy worlds under 60 lines. Tell me if the examples
    should show the join.
+
+## Q89 (worker, 0.153.0) — PSys2 Q45: what each item became, and what is still open
+
+Built as generic pieces (CHANGELOG 0.153.0, proofs in `test/acts-on-things.test.mjs` on the shelf, necklace, sketch
+and garden). Q45 (1) target kind constraint with `at`: readRequest. (2) kinds together with no number: one each, plural
+several. (3) a whole whose parts the world cannot make: made as one thing (`plan.asOne`), no world row needed. (4)
+`done.change` role `key`; `<reply>.<key>` first; `as` maps a changed tool key to the request's key. (5) a custom
+search's thing said by its kind. (6) change sense of make by reference (definite determiner of the language, "it",
+"everything") over the view, values after the object. (8) net diff: `stateDiff(..., { match, keys })`. (9)
+"everything", the world's name and the words of the kind it means. The two host stand-ins can go: `withTargetKind`
+(readRequest + coordinated kinds) and the re-plan without `expect` (`asOne`); `withoutSelfPlace` too (a word of the
+world after a preposition is no place).
+
+Open, for the reviewer:
+1. [KNOW] Please publish `w.lang.en.reply` `done.change.place` / `done.change.size` (proposed in
+   `examples/tool-app.mjs` PROPOSED_EN), and agree the form of a plural count expectation:
+   `k.expect.value of=<kind> on=count min= max= typical= when.plural=yes` (planRequest passes `plural=yes`). "everything"
+   is read from the grammar (`w.lang.en.rule lhs=NP rhs=<cat>` whose construction has `set=all`); a `w.lang.en.cue`
+   `on=refers` would be simpler, but the cue schema's `on` enum does not have it: add `refers`?
+2. Not done: Q45 (7) (a size revision of a coordinated result keeps the counts said) and (10) (askWorld `state` only for
+   questions about kinds and places). Next if you agree.
+3. Kinds said together share the reasoning cycle's one place candidate (the garden puts the bird in the pond with the
+   fish): places per kind group in the cycle would fix it.
+4. Your block 04:10 items (5) unread-word rule, (7) `std.schema.key`, (6) open question as a w.dialogue fact do not
+   block Q45; they stay next, in your order.
+5. `smells.mjs` hint `test_edited` on this release: request.test / tool.test expectations changed because the target
+   now keeps its kind constraint (Q45 (1)) and the shelf has a `move` binding: the spec changed, no assertion removed.

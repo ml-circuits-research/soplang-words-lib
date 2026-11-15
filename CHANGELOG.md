@@ -1,5 +1,44 @@
 # Changelog
 
+## 0.153.0
+
+What PSys2's Drawing still did or lost in the host (psys2 questions.md Q45), each a generic piece; proven on the example
+worlds (shelf, necklace, sketch, garden: `test/acts-on-things.test.mjs`).
+
+### New
+- `stateDiff(before, after, { match, keys })`: a thing removed and one added matched by kind and values; a pair that
+  differs is `changed` with `was`; only `keys` are said (the rest only when nothing else changed); `redone`, and `same`
+  exact. `runPlan`'s diff is this net change, its keys the ones the plan set (of a revision: set otherwise than the plan
+  it replaces), so "fewer dogs" says one dog removed and a place the tool computes is not said. A reference step whose
+  key the view cannot show is said from the call (`by: 'call'`); `as`: the request's key a binding took a changed value
+  from (a move says the place).
+- The change sense of make (`plan.sense = 'change'`): a make whose object refers to things that are there and says only
+  values after it is planned as change, by reference over the view (definite determiner: the language's
+  `definite=yes`; "it"; "everything"); a size said as a step changes each thing one grade from its own size.
+  `reviseRequest(..., { live })`: such a turn is a request of its own, not a revision.
+- The whole world as the things of an act (`plan.whole = 'world'`): "everything" (the language grammar's NP of
+  `set=all`: `requestLanguage` now loads `w.lang.en.rule`, `.construction`, `.word`), the world's name and every word of
+  the kind it means; such a word after a preposition is no place (the host's `withoutSelfPlace`).
+- `done.change` has the role `key`; a reply fact with a key is said by `<name>.<key>` when the language has it
+  (proposed in `examples/tool-app.mjs` PROPOSED_EN: `done.change.place`, `done.change.size`).
+- Kinds said together (no whole) are each one with no number, several when plural; a size or a value said of one of
+  them goes to that kind only (readRequest gives it `of`: the kind word after it with no joiner between, else before).
+- A plural kind with no number: the count from `k.expect.value on=count` (given `plural=yes`), then the amount "some".
+- A whole of the expectations whose parts the world cannot make is made as one thing (`plan.asOne`).
+- `readRequest`: the target always keeps its kind constraint with `at`; kind constraints carry `definite`,
+  `indefinite`, `world`; `refers: 'all'`, `refersAt`. An indefinite singular in an act on things takes the newest one.
+
+### Changed
+- A kind said in the singular is one, as said (no `assumed count`), and the size no longer scales it ("a huge atlas"
+  was two).
+- A change binding's changed values are never filled from expectations or parameter defaults; undo by inverse leaves
+  out keys no change binding takes; a change that asks for what is there says `nothing.same`; remove of several takes
+  the things others are in last; the assumed value of a custom search that is a thing of the view is said by its kind.
+- `sayRequest`: one `assumed` fact per key and value; `why.nothing` said once; reference plans run through a world's
+  own acts are said (`done.remove`, `done.change`) from the plan's things.
+- The examples: the shelf has `move` (act place), size on change, a computed place `at` in its view and a plural count
+  expectation; the sketch honours remove and change.
+
 ## 0.152.1
 
 Aligned with the reviewer's design (reviews/legarea-declarativa.md); disagreements in questions.md Q88.

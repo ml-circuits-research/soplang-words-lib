@@ -5882,3 +5882,8 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Aligned: std.tool.arg / std.tool.needs / param kind, type (world kind), default, required=true; bind world=; makes from op effect; sources state.<kind>, result.<n>; k.expect.value on= when. (k.expect.when still read); references for remove / change / place (refused.which once, refused.no_such); partial read executes nothing (toolSession); no target guess over an unread word (planRequest). Examples in the review's forms; the shelf honours remove and change ("paint the comic blue", "remove the atlases", "remove the novel" -> "Which novel? There are 5.", "add 2 dictionaries" -> nothing changed, not understood).
 - Disagreements / choices: questions.md Q88 (10 items).
 - Tests: node --test test/tool.test.mjs 7 pass; npm test 564 tests, 562 pass, 0 fail, 1 skipped; SOPWORLD_BUNDLE=1 564 / 562 / 0; test:compat 11 / 0; doc examples 236, 0 problems; scan-loops clean.
+
+## 0.153.0 PSys2 Q45 as generic pieces
+- stateDiff by kind + values (`match`, `keys`, `redone`, exact `same`) and runPlan's net diff; change sense of make by reference over the view; whole world ("everything", world name, its kind's words) for acts; done.change `key` (+ `as`, call-said changes the view cannot show); kinds together with their own count/size/values; plural count from `k.expect.value on=count when.plural=yes`; target kind constraint with `at`; whole of unmakeable parts made as one (`asOne`). Both psys2 stand-ins replaced by library pieces.
+- Tests: touched (acts-on-things 8, request 10, tool 7) pass; npm test 572 tests, 570 pass, 0 fail, 1 skipped; SOPWORLD_BUNDLE=1 on touched + docs + dts 38 / 38.
+- Open points: questions.md Q89.

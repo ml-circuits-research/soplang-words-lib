@@ -18,6 +18,7 @@ import { quote } from './parser.mjs';
 
 const first = (o, k) => o?.[k]?.[0];
 const strip = (v) => String(v).replace(/^\$/, '');
+const plainKind = (k) => String(k).split('.').pop().replace(/_/g, ' ');
 const num = (x) => (x === undefined || x === null || x === '' ? undefined : Number(x));
 /** The source forms of an argument (`arg=<param><-<source>|<source>...`). */
 export const TOOL_ARG_SOURCES = Object.freeze(['step', 'request', 'state', 'result', 'plan', 'custom', 'value', 'expect']);
@@ -115,8 +116,17 @@ export function readView(view) {
   return m;
 }
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-/** What changed between two views: { added: [{ id, kind, attrs }], removed: [...], changed: [{ id, kind, key, from, to }] }. */
-export function stateDiff(before, after) {
+/**
+ * What changed between two views: { added: [{ id, kind, attrs }], removed: [...], changed: [{ id, kind, key, from, to }] }.
+ * By id; with `match: true` a thing removed and a thing added are also matched by identity of kind and values (the
+ * pairs with the most values alike first; a reference to a thing of a pair counts as alike): a pair alike in every
+ * value is no change; a pair that differs is `changed` (with `was`, the id it replaces). Only the keys in `keys` are
+ * said (all keys when none is given), of a pair or of a thing that kept its id; the other differences (a place the
+ * tool computed) are not said, unless nothing else changed. With `match` the
+ * result also has `redone: [{ id, was, kind, keys }]` (every pair, with the keys it differs on) and `same` (true
+ * only when the two views have the same things with the same values, ids aside: exact).
+ */
+export function stateDiff(before, after, { match = false, keys = null } = {}) {
   const B = before instanceof Map ? before : readView(before), A = after instanceof Map ? after : readView(after);
   const added = [], removed = [], changed = [];
   for (const [id, t] of A) if (!B.has(id)) added.push(t);
@@ -126,18 +136,37 @@ export function stateDiff(before, after) {
     if (!o) continue;
     for (const k of new Set([...Object.keys(o.attrs), ...Object.keys(t.attrs)])) if (!same(o.attrs[k], t.attrs[k])) changed.push({ id, kind: t.kind, key: k, from: o.attrs[k], to: t.attrs[k] });
   }
-  return { added, removed, changed };
+  if (!match) return { added, removed, changed };
+  const ids = new Set([...removed, ...added].map((t) => t.id)); // references to things of a pair are alike
+  const val = (v) => (v !== undefined && v !== null && ids.has(String(v)) ? '#' : JSON.stringify(v ?? null));
+  const differs = (r, a) => [...new Set([...Object.keys(r.attrs), ...Object.keys(a.attrs)])].filter((k) => val(r.attrs[k]) !== val(a.attrs[k]));
+  const pairs = [];
+  removed.forEach((r, i) => added.forEach((a, j) => { if (r.kind === a.kind) { const d = differs(r, a); pairs.push({ i, j, d, n: d.length }); } })); // bounded: removed x added
+  pairs.sort((x, y) => x.n - y.n || x.j - y.j || x.i - y.i);
+  const usedR = new Set(), usedA = new Set(), redone = [];
+  for (const p of pairs) { if (usedR.has(p.i) || usedA.has(p.j)) continue; usedR.add(p.i); usedA.add(p.j); redone.push({ id: added[p.j].id, was: removed[p.i].id, kind: added[p.j].kind, keys: p.d, r: removed[p.i], a: added[p.j] }); }
+  const keySet = keys ? new Set(typeof keys === 'string' ? [keys] : keys) : null;
+  const said = [], unsaid = [];
+  for (const x of changed) (keySet && !keySet.has(x.key) ? unsaid : said).push(x);
+  for (const x of redone) for (const k of x.keys) (keySet && !keySet.has(k) ? unsaid : said).push({ id: x.id, was: x.was, kind: x.kind, key: k, from: x.r.attrs[k], to: x.a.attrs[k] });
+  const out = { added: added.filter((_, j) => !usedA.has(j)), removed: removed.filter((_, i) => !usedR.has(i)), changed: said };
+  if (!out.added.length && !out.removed.length && !out.changed.length) out.changed.push(...unsaid); // nothing else changed: the differences are the change
+  return { ...out, redone: redone.map(({ r, a, ...x }) => x), same: !out.added.length && !out.removed.length && !changed.length && redone.every((x) => !x.keys.length) };
 }
 const emptyDiff = () => ({ added: [], removed: [], changed: [] });
-/** A diff without the pairs of a removed thing and an added thing of the same kind and values (a revision that redid them alike). */
-function sameCancelled(d) {
-  const ids = new Set([...d.removed, ...d.added].map((t) => t.id)); // references to things redone alike are alike
-  const sig = (t) => JSON.stringify([t.kind, Object.entries(t.attrs).map(([k, v]) => [k, ids.has(String(v)) ? '#' : v]).sort()]);
-  const left = [...d.removed], added = [];
-  for (const t of d.added) { const i = left.findIndex((r) => sig(r) === sig(t)); if (i >= 0) left.splice(i, 1); else added.push(t); }
-  return { added, removed: left, changed: d.changed };
-}
 const isEmpty = (d) => !d.added.length && !d.removed.length && !d.changed.length;
+
+/** The keys a plan sets (step arguments and the arguments of the calls); of a revision, those it sets otherwise than the plan it replaces: so a value the plan did not touch (a place the tool computed) is not said. */
+function plannedKeys(oldEntry, plan, calls) {
+  const skip = new Set(['kind', 'thing', 'in', 'a', 'b', 'n', 'ids', 'things']);
+  const vals = (steps) => { const m = new Map(); for (const st of steps ?? []) for (const [k, v] of Object.entries(st.args ?? {})) if (!skip.has(k) && !(v && typeof v === 'object')) m.set(k, [...(m.get(k) ?? []), JSON.stringify(v)]); return m; };
+  const callVals = (cs) => vals((cs ?? []).map((c) => ({ args: c.args })));
+  const out = new Set();
+  for (const [a, b] of [[vals(oldEntry?.plan?.steps), vals(plan?.steps)], [callVals(oldEntry?.calls), callVals(calls)]]) {
+    for (const k of new Set([...a.keys(), ...b.keys()])) if (JSON.stringify([...new Set(a.get(k) ?? [])].sort()) !== JSON.stringify([...new Set(b.get(k) ?? [])].sort())) out.add(k);
+  }
+  return out;
+}
 
 /**
  * The tool's state as things of a fork of the live world (its declarations), so the planner's reasoning (induction,
@@ -265,9 +294,39 @@ function runToolPlan(plan, bindings, primitives = {}, opts = {}) {
   }
   const after = ctx.look();
   const entry = { plan, request, snapshot, after: typeof primitives.snapshot === 'function' ? primitives.snapshot() : undefined, diff: stateDiff(start, after), calls: ex.calls };
+  const replacedEntry = undone ? timeline.done.at(-1) : null;
   if (timeline) { if (undone) timeline.done[timeline.done.length - 1] = entry; else timeline.done.push(entry); timeline.undone = []; }
-  const diff = sameCancelled(stateDiff(before, after)); // a thing taken away and one like it put back is no change
-  return { ok: true, diff, same: !!undone && isEmpty(diff), replaced: undone ? undone.diff.removed.map((t) => t.id) : [], calls: ex.calls, assumed: ex.assumed, translated: ex.translated, result: summary(ex.ids, entry.diff, after, plan), step: undone ? 'replaced' : 'new', entry };
+  // the result as the net change: things removed and added again alike are matched (kind and values); of a revision,
+  // only the keys its plan set otherwise are said
+  const diff = stateDiff(before, after, { match: true, keys: plannedKeys(replacedEntry, plan, ex.calls) });
+  unobserved(diff, plan, ex, before, after);
+  // the key a change is said by: the request's key the binding took the value from (arg=end<-step.place: a move says the place)
+  const said = new Map(); for (const c of ex.calls) for (const b of B.binds.filter((x) => x.op === c.op)) for (const a of b.args) { const st = a.sources.find((x) => x.startsWith('step.')); if (st) said.set(a.name, st.slice(5)); }
+  for (const x of diff.changed) if (said.has(x.key) && said.get(x.key) !== x.key) x.as = said.get(x.key);
+  return { ok: true, diff, same: !!undone && diff.same && isEmpty(diff), replaced: undone ? undone.diff.removed.map((t) => t.id) : [], calls: ex.calls, assumed: ex.assumed, translated: ex.translated, result: summary(ex.ids, entry.diff, after, plan), step: undone ? 'replaced' : 'new', entry };
+}
+
+/**
+ * A step on a thing that is there (a reference step) whose call the tool carried out, while the view shows no change
+ * of the key the step set because the view cannot show that value (a move "up" inside the same region): the change
+ * the call made is said from the step (`changed` with `by: 'call'`). When the view does show the value and it was so
+ * already, nothing is added (that is no change).
+ */
+function unobserved(diff, plan, ex, before, after) {
+  const seen = new Set(diff.changed.map((x) => `${x.id}|${x.key}`));
+  (plan?.steps ?? []).forEach((st, i) => {
+    const call = ex.calls.find((c) => c.steps.includes(i));
+    if (st.args?.thing === undefined || st.item || !call) return;
+    const id = strip(st.args.thing), b = before.get(id), a = after.get(id);
+    if (!b || !a) return;
+    for (const [key, v0] of Object.entries(st.args)) {
+      const v = call.args[key] ?? v0; // the value as the tool took it (translated)
+      if (['thing', 'kind'].includes(key) || v === undefined || v === null || typeof v === 'object' || seen.has(`${id}|${key}`)) continue;
+      if (a.attrs[key] === undefined || String(a.attrs[key]) === String(v)) continue; // the view does not have the key, or shows the value: what it shows stands
+      diff.changed.push({ id, kind: a.kind, key, from: b.attrs[key], to: v, by: 'call' });
+      seen.add(`${id}|${key}`);
+    }
+  });
 }
 
 function summary(ids, diff, after, plan = null) {
@@ -277,7 +336,8 @@ function summary(ids, diff, after, plan = null) {
   const itemSet = new Set(items);
   for (const t of diff.added) if (itemSet.has(t.id)) kinds[t.kind] = (kinds[t.kind] ?? 0) + 1; // the items, as the plan counts them
   const whole = steps[0] && !steps[0].item && !steps[0].link ? ids[0] ?? null : null;
-  return { things: diff.added.map((t) => t.id), items, count: items.length, kinds, whole, layout: plan?.roles?.layout ?? null, links: steps.filter((s, i) => s.link && ids[i]).length, present: after.size };
+  const acted = plan?.reference ? (plan.roles?.things ?? []).map(strip).filter((id) => after.has(id)) : []; // an act on things that are there: those things are its result
+  return { things: diff.added.length ? diff.added.map((t) => t.id) : acted, items, count: items.length, kinds, whole, layout: plan?.roles?.layout ?? null, links: steps.filter((s, i) => s.link && ids[i]).length, present: after.size };
 }
 
 /** Run steps through their bindings; all or nothing is the caller's job. Returns { ok, ids, calls, assumed, translated, failed }. */
@@ -379,15 +439,18 @@ function fillArgs(bind, kind, steps1, resolveV, ctx) {
   const declared = [...bind.args, ...[...params.values()].filter((p) => p.default !== undefined && !bind.args.some((a) => a.name === p.name)).map((p) => ({ name: p.name, sources: [] }))]; // a parameter the binding leaves out takes its declared default
   for (const a of declared) { // bounded: the arguments of one binding
     let got = null;
-    for (const s of [...a.sources, 'expect']) { got = sourceValue(s, a.name, kind, steps1, args, resolveV, ctx); if (got) break; } // an expectation is always the last source
+    const changed = bind.changes.includes(a.name); // a value a change sets is said or planned, never expected: an expectation would change what was not asked
+    for (const s of changed ? a.sources : [...a.sources, 'expect']) { got = sourceValue(s, a.name, kind, steps1, args, resolveV, ctx); if (got) break; } // an expectation is always the last source
     const p = params.get(a.name);
+    if (changed && !got) continue;
     if (!got && p?.default !== undefined) got = { value: p.default, from: 'world', because: [`${bind.op}.${a.name} default`] }; // the parameter's own default, declared
     if (!got) { if (p?.required) return { failed: { code: 'missing', reply: 'refused.missing_value', roles: { key: a.name } } }; continue; }
     const t = nearestAccepted(got.value, p, ctx);
     if (t.refused) return { failed: { code: 'value', reply: 'refused.value', roles: { key: a.name, value: String(got.value), values: (t.values ?? []).join(', ') } } };
     args[a.name] = t.value;
     if (t.translated) translated.push({ key: a.name, was: t.was, value: t.value, by: t.by });
-    if (t.translated || (got.from !== 'said' && !got.plan)) assumed.push({ key: a.name, value: t.value, from: t.translated ? 'translated' : got.from, ...(t.translated ? { was: t.was, by: t.by } : {}), ...(got.because?.length ? { because: [].concat(got.because).join(', ') } : {}), op: bind.op });
+    const shown = got.from === 'custom' && typeof t.value === 'string' ? ctx.look().get(strip(t.value)) : null; // a thing of the view is said by its kind
+    if (t.translated || (got.from !== 'said' && !got.plan)) assumed.push({ key: a.name, value: shown?.kind !== undefined ? plainKind(shown.kind) : t.value, ...(shown ? { thing: shown.id } : {}), from: t.translated ? 'translated' : got.from, ...(t.translated ? { was: t.was, by: t.by } : {}), ...(got.because?.length ? { because: [].concat(got.because).join(', ') } : {}), op: bind.op });
   }
   return { args, assumed, translated };
 }
@@ -414,40 +477,45 @@ function needsUnmet(bind, args, kind, view, ctx) {
   return null;
 }
 
-function effectUnmet(bind, args, kind, d) {
+function effectUnmet(bind, args, kind, d, view) {
   if (bind.makes.length && !d.added.length) return { code: 'no_effect', reply: 'why.nothing', roles: { kind } };
   for (const r of bind.removes) { const gone = new Set(d.removed.map((t) => t.id)); const want = [].concat(args[r] ?? []).map(strip); if (want.some((id) => !gone.has(id))) return { code: 'no_effect', reply: 'why.nothing', roles: { kind } }; }
-  if (bind.changes.length && !d.changed.some((x) => bind.changes.includes(x.key))) return { code: 'no_effect', reply: 'why.nothing', roles: { kind } };
+  if (bind.changes.length && !d.changed.some((x) => bind.changes.includes(x.key))) {
+    const things = [].concat(args.ids ?? args.thing ?? []).map(strip);
+    const already = things.length && bind.changes.every((k) => args[k] === undefined || things.every((id) => String(view.get(id)?.attrs[k]) === String(args[k])));
+    return already ? { code: 'same', reply: 'nothing.same', roles: { kind } } : { code: 'no_effect', reply: 'why.nothing', roles: { kind } }; // asked for what is there already
+  }
   return null;
 }
 
 // ---- the timeline: undo by the tool's snapshot, else by the inverse of the diff through the bindings ---------------
-/** The steps that take a diff back: remove what was added, make again what was removed, set back what changed. */
-function inverseSteps(diff) {
+/** The steps that take a diff back: remove what was added, make again what was removed, set back what changed (a key no change binding takes, such as a place the tool computes, comes back with the rest). */
+function inverseSteps(diff, ctx) {
+  const settable = (x) => { const b = ctx ? pickBind(ctx.B, 'change', x.kind, ctx) : null; return !b || b.args.some((a) => a.name === x.key || a.sources.includes(`step.${x.key}`)); };
   return [
     ...diff.added.map((t) => ({ action: 'remove', args: { thing: t.id, kind: t.kind } })),
     ...diff.removed.map((t) => ({ action: 'make', args: { kind: t.kind, ...t.attrs }, item: true })),
-    ...diff.changed.map((x) => ({ action: 'change', args: { thing: x.id, kind: x.kind, [x.key]: x.from } })),
+    ...diff.changed.filter(settable).map((x) => ({ action: 'change', args: { thing: x.id, kind: x.kind, [x.key]: x.from } })),
   ];
 }
 function undoEntry(entry, ctx) {
   const before = ctx.look();
   if (entry.snapshot !== undefined && typeof ctx.primitives.restore === 'function') { ctx.primitives.restore(entry.snapshot); return { ok: true, diff: stateDiff(before, ctx.look()) }; }
-  const ex = execute(inverseSteps(entry.diff), { ...ctx, plan: null, request: null });
+  const ex = execute(inverseSteps(entry.diff, ctx), { ...ctx, plan: null, request: null });
   if (!ex.ok) { rollback(before, undefined, ctx); return { ok: false, failed: { ...ex.failed, code: `undo_${ex.failed.code}` } }; }
   return { ok: true, diff: stateDiff(before, ctx.look()) };
 }
 function redoEntry(entry, undone, ctx) {
   const before = ctx.look();
   if (entry.after !== undefined && typeof ctx.primitives.restore === 'function') { ctx.primitives.restore(entry.after); return { ok: true, diff: stateDiff(before, ctx.look()) }; }
-  const ex = execute(inverseSteps(undone.diff), { ...ctx, plan: null, request: null });
+  const ex = execute(inverseSteps(undone.diff, ctx), { ...ctx, plan: null, request: null });
   if (!ex.ok) { rollback(before, undefined, ctx); return { ok: false, failed: { ...ex.failed, code: `redo_${ex.failed.code}` } }; }
   return { ok: true, diff: stateDiff(before, ctx.look()) };
 }
 function rollback(start, snapshot, ctx) {
   if (snapshot !== undefined && typeof ctx.primitives.restore === 'function') { ctx.primitives.restore(snapshot); return; }
   const d = stateDiff(start, ctx.look());
-  if (!isEmpty(d)) execute(inverseSteps(d), { ...ctx, plan: null, request: null });
+  if (!isEmpty(d)) execute(inverseSteps(d, ctx), { ...ctx, plan: null, request: null });
 }
 function move(act, timeline, ctx, before) {
   const out = { ok: false, [act]: true, diff: emptyDiff(), replaced: [], calls: [], assumed: [], translated: [], step: act, result: summary([], emptyDiff(), before) };
@@ -534,7 +602,8 @@ export function toolSession(live, primitives, { language = null, catalog = [], r
         const answer = askWorld(question, request, { live, bindings: B, view, catalog: cat });
         return { request, revision: null, plan: null, run, reply: sayRequest(request, { run, capabilities: answer.capabilities, answer: answer.facts }, sayOpts) };
       }
-      const rev = request.act === 'undo' || request.act === 'redo' ? { undo: request.act === 'undo', redo: request.act === 'redo', request: null } : reviseRequest(dialogue, request, { revisions: revisions ?? language, catalog: cat });
+      const state = mirror ? mirrorState(live, view).world : live;
+      const rev = request.act === 'undo' || request.act === 'redo' ? { undo: request.act === 'undo', redo: request.act === 'redo', request: null } : reviseRequest(dialogue, request, { revisions: revisions ?? language, catalog: cat, live: state });
       if (rev.undo || rev.redo) {
         const run = runPlan({ act: rev.redo ? 'redo' : 'undo' }, B, primitives, runOpts);
         fromTimeline();
@@ -546,7 +615,6 @@ export function toolSession(live, primitives, { language = null, catalog = [], r
         return { request: rev.request, revision: rev, plan: null, run, reply: sayRequest(rev.request, { run: { ...run, failed: { code: 'unread', reply: 'not_understood', roles: { words: request.unread.join(', ') } } } }, sayOpts) };
       }
       const replace = rev.sort === 'reaction' && !!rev.replace && timeline.done.length > 0;
-      const state = mirror ? mirrorState(live, view).world : live;
       const plan = planRequest(state, rev.request, { catalog: cat, dialogue, seed: rev.seed, vary: rev.vary, replace: replace ? timeline.done.at(-1).diff.added.map((t) => t.id) : [] });
       const run = runPlan(plan, B, primitives, { ...runOpts, replace, request: rev.request });
       if (run.ok) {

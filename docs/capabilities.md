@@ -917,6 +917,15 @@ question about the world ("what can you do here?", "how many novels?") is answer
 `examples/tool-app.mjs` declares two invented worlds (books on a shelf, beads on a necklace) by wires and a few
 primitives, and runs them through `toolSession` with no code per world; `test/tool.test.mjs` runs properties over both.
 
+Since 0.153 (`test/acts-on-things.test.mjs`): a revision is said as its net change ("too many" → "I removed the
+novel.", not every book removed and added again; a place the tool computes is not said); "make the comic blue" and
+"make it green" change what is there, decided by reference over the view (a definite kind with things of it, the last
+result), while "make a red comic" makes one; "remove everything", "remove the shelf" and, in the sketch, "delete the
+drawing" act on the whole world; a move says its place ("I moved the atlas to the left."); kinds said together keep
+each its own count, size and values ("a tiny novel and a big atlas", "a novel and a comic": one of each); a plural
+kind with no number takes its count from the expectations (`k.expect.value of=book on=count when.plural=yes`); a whole
+of the expectations whose parts the world cannot make is made as one thing (`plan.asOne`).
+
 ```js run
 const p = { name: 'size', type: 'ex.scale', by: 'step', accepts: ['small', 'big'] };
 const scale = new World();

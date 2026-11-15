@@ -22,18 +22,21 @@ export const SHELF = String.raw`
 @k.comic std.schema.kind of=comic world=shelf acts=make acts=remove acts=change
 @h.make std.schema.honours world=shelf act=make on=kind on=count on=size on=attribute of=book of=novel of=atlas of=comic
 @h.remove std.schema.honours world=shelf act=remove on=kind on=count on=attribute of=book
-@h.change std.schema.honours world=shelf act=change on=kind on=attribute of=book
+@h.change std.schema.honours world=shelf act=change on=kind on=attribute on=size of=book
+@h.place std.schema.honours world=shelf act=place on=kind on=place of=book
 @x.atlas k.expect.value of=atlas on=size value=big about="an atlas is a big book"
 @x.small k.expect.value of=book on=size value=small about="a book is small unless said"
 @x.right k.expect.value of=book on=end value=right when.size=big when.size=huge about="a big book stands at the right end"
 @x.left k.expect.value of=book on=end value=left about="the others at the left end"
+@x.some k.expect.value of=book on=count min=2 max=4 typical=3 when.plural=yes about="books said with no number are three"
 @op.add std.tool.op name=add world=shelf param=kind param=n param=size param=colour param=end effect=makes
 @pa.kind std.tool.param op=add name=kind type=book required=true
 @pa.n std.tool.param op=add name=n kind=integer min=1 max=12 default=1
 @pa.size std.tool.param op=add name=size type=k.expect.scale accepts=small accepts=big
 @pa.end std.tool.param op=add name=end accepts=left accepts=right
 @op.remove std.tool.op name=remove world=shelf param=ids effect=removes
-@op.paint std.tool.op name=paint world=shelf param=ids param=colour effect=changes
+@op.paint std.tool.op name=paint world=shelf param=ids param=colour param=size effect=changes
+@pp.size std.tool.param op=paint name=size type=k.expect.scale accepts=small accepts=big
 @b.make std.tool.bind world=shelf act=make of=book op=add
 @a.kind std.tool.arg bind=$b.make param=kind from=step.kind
 @a.n std.tool.arg bind=$b.make param=n from=step.count
@@ -41,17 +44,20 @@ export const SHELF = String.raw`
 @a.colour std.tool.arg bind=$b.make param=colour from=step.colour
 @a.end std.tool.arg bind=$b.make param=end from=step.end
 @b.remove std.tool.bind world=shelf act=remove of=book op=remove arg=ids<-step.things needs=exists(ids) removes=ids
-@b.change std.tool.bind world=shelf act=change of=book op=paint arg=ids<-step.things arg=colour<-step.colour needs=exists(ids) changes=colour
+@op.move std.tool.op name=move world=shelf param=ids param=end effect=changes
+@b.place std.tool.bind world=shelf act=place of=book op=move arg=ids<-step.things arg=end<-step.place needs=exists(ids) changes=end
+@b.change std.tool.bind world=shelf act=change of=book op=paint arg=ids<-step.things arg=colour<-step.colour arg=size<-step.size needs=exists(ids) changes=colour changes=size
 `;
 
-/** The tool: three primitives and its state as facts. No request, no words, no defaults. */
+/** The tool: four primitives and its state as facts. No request, no words, no defaults. */
 export function shelfTool() {
   let books = [], next = 1;
   return {
     add({ kind, n, size, colour, end }) { for (let i = 0; i < n; i++) books.push({ id: `b${next++}`, kind, size, colour, end }); },
+    move({ ids, end }) { const moved = books.filter((b) => ids.includes(b.id)); books = books.filter((b) => !ids.includes(b.id)); for (const b of moved) b.end = end; books = end === 'left' ? [...moved, ...books] : [...books, ...moved]; },
     remove({ ids }) { books = books.filter((b) => !ids.includes(b.id)); },
-    paint({ ids, colour }) { for (const b of books) if (ids.includes(b.id)) b.colour = colour; },
-    view: () => books.map((b) => ({ ...b })),
+    paint({ ids, colour, size }) { for (const b of books) if (ids.includes(b.id)) { if (colour) b.colour = colour; if (size) b.size = size; } },
+    view: () => books.map((b, i) => ({ ...b, at: i + 1 })), // `at`: where the book stands, computed by the tool (no request sets it)
   };
 }
 
@@ -117,6 +123,10 @@ export const PROPOSED_EN = String.raw`
 @w.lang.en.reply.state.count.other w.lang.en.reply name=state.count count=other role=kind role=number text="There are {number} {kind:num=pl}."
 @w.lang.en.reply.state.empty.one w.lang.en.reply name=state.empty count=one text="There is nothing here yet."
 @w.lang.en.reply.nothing.same.one w.lang.en.reply name=nothing.same count=one text="That is what is there already."
+@w.lang.en.reply.done.change.place.one w.lang.en.reply name=done.change.place count=one role=thing role=value text="I moved the {thing} to the {value}."
+@w.lang.en.reply.done.change.place.other w.lang.en.reply name=done.change.place count=other role=thing role=number role=value text="I moved {number} {thing:num=pl} to the {value}."
+@w.lang.en.reply.done.change.size.one w.lang.en.reply name=done.change.size count=one role=thing role=value text="The {thing} is {value} now."
+@w.lang.en.reply.done.change.size.other w.lang.en.reply name=done.change.size count=other role=thing role=number role=value text="I made {number} {thing:num=pl} {value}."
 `;
 
 /** The published words a tool session needs, with the proposed ones; null offline. */

@@ -25,6 +25,8 @@ export const SKETCH = String.raw`
 @k.square std.schema.kind of=square world=sketch acts=make acts=remove acts=change acts=connect
 @k.triangle std.schema.kind of=triangle world=sketch acts=make acts=remove acts=change acts=connect
 @h.make std.schema.honours world=sketch act=make on=kind on=count on=size on=extent on=attribute on=layout on=manner on=with of=picture of=circle of=square of=triangle
+@h.remove std.schema.honours world=sketch act=remove on=kind on=count on=attribute of=picture of=shape
+@h.change std.schema.honours world=sketch act=change on=kind on=attribute of=shape
 @e.picture k.expect.make thing=picture made_in=diagram unit=shape min=4 max=8 typical=5 kinds_min=2 kinds_max=3 layout=row
 @e.shape k.expect.part of=picture part=shape group=node min=4 max=8 typical=5 needed=yes shape=circle shape=square shape=triangle
 @e.link k.expect.part of=picture part=link group=link min=0 max=7 typical=0
@@ -91,7 +93,7 @@ export function requestSession(live, { language, catalog = [], revisions = null 
     dialogue,
     say(text) {
       const request = readRequest(live, text, { language, catalog, dialogue });
-      const rev = reviseRequest(dialogue, request, { revisions, catalog });
+      const rev = reviseRequest(dialogue, request, { revisions, catalog, live });
       if (rev.undo && !rev.request) return { request, revision: rev, plan: null, run: null, reply: sayRequest(request, { reply: 'nothing.undo' }, { language }) };
       if (!rev.request) return { request, revision: rev, plan: null, run: null, reply: sayRequest(request, { reply: rev.reply }, { language }) };
       const replace = (rev.replace || rev.undo) && dialogue.lastRun ? dialogue.lastRun.made : [];
@@ -116,7 +118,7 @@ export function requestSession(live, { language, catalog = [], revisions = null 
 export async function requestLanguage() {
   const { catalogWorld, worldsDir } = await import('../tools/worlds.mjs');
   if (!worldsDir()) return null;
-  const en = ['cue', 'det', 'prep', 'pron', 'skip', 'number', 'inflect', 'irregular', 'reply', 'count', 'onset', 'anaphor'].map((t) => `w.lang.en.${t}`);
+  const en = ['cue', 'det', 'prep', 'pron', 'skip', 'number', 'inflect', 'irregular', 'reply', 'count', 'onset', 'anaphor', 'rule', 'construction', 'word'].map((t) => `w.lang.en.${t}`);
   return catalogWorld({ 'w.lang.en': en, 'k.actions': ['k.actions.verb'], 'k.expect': ['k.expect.amount', 'k.expect.scale', 'k.expect.make', 'k.expect.part'], 'w.dialogue': ['w.dialogue.revision'], 'k.colours': ['k.colours.basic', 'k.colours.colour'] });
 }
 

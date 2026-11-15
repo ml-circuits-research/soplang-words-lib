@@ -16,7 +16,7 @@ const content = (v) => v.map(({ id, ...t }) => JSON.stringify(Object.entries(t).
 test('toolBindings: the declarations read and checked (an undeclared op, parameter, source, constraint)', () => {
   const w = exampleWorld(SHELF);
   const B = toolBindings(w);
-  assert.deepEqual([[...B.ops.keys()], B.binds.map((b) => `${b.act}:${b.op}`), B.problems], [['add', 'remove', 'paint'], ['make:add', 'remove:remove', 'change:paint'], []]);
+  assert.deepEqual([[...B.ops.keys()], B.binds.map((b) => `${b.act}:${b.op}`), B.problems], [['add', 'remove', 'paint', 'move'], ['make:add', 'remove:remove', 'place:move', 'change:paint'], []]);
   assert.deepEqual(B.binds[0].args.find((a) => a.name === 'n'), { name: 'n', sources: ['step.count'] }, 'a std.tool.arg wire');
   assert.deepEqual([B.params.get('add').get('n').default, B.params.get('add').get('n').kind, B.params.get('add').get('kind').required], ['1', 'integer', true]);
   const N = toolBindings(exampleWorld(NECKLACE));

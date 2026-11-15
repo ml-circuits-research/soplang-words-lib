@@ -96,33 +96,34 @@ export function typedWorldFor(schema, knowledge = null, { max = 5000, text = {},
  * name of one of its things; a closed set one of its values; a number a number; a name or a title takes
  * words that are not a question, an act, an attribute or a relation word of the world (so a relation read as a value is
  * refused), a title any words; a text takes anything but nothing. An empty value, an article alone or a single
- * letter is never a name, a title or a thing. Returns { ok, as, id?, value?, why? }. `skip`: words to pass over
- * (articles); `lemma(word) -> [forms]`.
+ * letter is never a name, a title or a thing; nor are the speaker alone ("my") or articles and letters ("an a"), in any
+ * slot, typed or not. Returns { ok, code?: empty | fragment | type, as, id?, value?, why? }. `skip`: words to pass
+ * over (articles); `self`: the speaker's words; `lemma(word) -> [forms]`.
  */
-export function fitsSlot(typed, type, key, text, { skip = ['a', 'an', 'the'], lemma } = {}) {
-  const sig = typed.slots.get(`${type}|${key}`);
-  if (!sig) return { ok: false, why: `${type} has no slot ${key}` };
+export function fitsSlot(typed, type, key, text, { skip = ['a', 'an', 'the'], self = ['i', 'me', 'my', 'we', 'our', 'us'], lemma } = {}) {
+  const sig = typed.slots.get(`${type}|${key}`) ?? { expects: 'text' }; // a slot the typed world has no type for still takes no fragment
   const raw = String(text ?? '').trim(), low = raw.toLowerCase();
-  const toks = (low.match(/[\p{L}\p{N}_'-]+/gu) || []).filter((t) => !skip.includes(t));
+  const all = low.match(/[\p{L}\p{N}_'-]+/gu) || [];
+  const toks = all.filter((t) => !skip.includes(t));
   const forms = (t) => [t, ...(lemma ? lemma(t) : []), t.replace(/s$/, '')];
   const lex = typed.lexicon;
-  if (!raw) return { ok: false, as: sig.expects, why: `${key} needs a value` }; // an empty slot value is never a value
-  if (sig.expects !== 'number' && sig.expects !== 'text' && toks.length === 0) return { ok: false, as: sig.expects, why: `"${raw}" is a fragment, not a ${sig.expects === 'thing' ? sig.of.split('.').pop() : sig.expects}` }; // only an article
-  if ((sig.expects === 'name' || sig.expects === 'title') && toks.length === 1 && /^\p{L}$/u.test(toks[0])) return { ok: false, as: sig.expects, why: `"${raw}" is a single letter, a fragment` };
+  if (!raw) return { ok: false, code: 'empty', as: sig.expects, why: `${key} needs a value` }; // an empty slot value is never a value
+  const piece = (t) => skip.includes(t) || self.includes(t) || /^\p{L}$/u.test(t); // an article, the speaker, a single letter
+  if (sig.expects !== 'number' && all.every(piece) && !(all.length === 1 && /^\p{L}$/u.test(all[0]) && sig.expects === 'value' && (sig.values || []).some((v) => v.toLowerCase() === all[0]))) return { ok: false, code: 'fragment', as: sig.expects, why: `"${raw}" is a fragment, not a ${sig.expects === 'thing' ? sig.of.split('.').pop() : sig.expects}` }; // "a", "my", "an a", "x"
   if (sig.expects === 'text') return { ok: true, as: 'text', value: raw };
-  if (sig.expects === 'number') return /^-?\d+(\.\d+)?$/.test(toks.join('')) ? { ok: true, as: 'number', value: Number(toks.join('')) } : { ok: false, as: 'number', why: `${key} takes a number, not "${raw}"` };
-  if (sig.expects === 'value') { const v = sig.values.find((x) => x.toLowerCase() === toks.join(' ') || x.toLowerCase().replace(/_/g, ' ') === toks.join(' ')); return v ? { ok: true, as: 'value', value: v } : { ok: false, as: 'value', why: `${key} is one of ${sig.values.slice(0, 6).join(', ')}${sig.values.length > 6 ? ', ...' : ''}, not "${raw}"` }; }
+  if (sig.expects === 'number') return /^-?\d+(\.\d+)?$/.test(toks.join('')) ? { ok: true, as: 'number', value: Number(toks.join('')) } : { ok: false, code: 'type', as: 'number', why: `${key} takes a number, not "${raw}"` };
+  if (sig.expects === 'value') { const v = sig.values.find((x) => x.toLowerCase() === toks.join(' ') || x.toLowerCase().replace(/_/g, ' ') === toks.join(' ')); return v ? { ok: true, as: 'value', value: v } : { ok: false, code: 'type', as: 'value', why: `${key} is one of ${sig.values.slice(0, 6).join(', ')}${sig.values.length > 6 ? ', ...' : ''}, not "${raw}"` }; }
   if (sig.expects === 'thing') {
     const phrase = toks.join(' ');
     const hit = (lex.get(phrase) || []).find((e) => e.cat === 'thing' && e.type === sig.of) ?? forms(phrase).flatMap((f) => lex.get(f) || []).find((e) => e.cat === 'thing' && e.type === sig.of);
-    return hit ? { ok: true, as: 'thing', id: hit.id, value: phrase } : { ok: false, as: 'thing', why: `there is no ${sig.of.split('.').pop()} called "${raw}"` };
+    return hit ? { ok: true, as: 'thing', id: hit.id, value: phrase } : { ok: false, code: 'type', as: 'thing', why: `there is no ${sig.of.split('.').pop()} called "${raw}"` };
   }
   // a name or a title: any words, but not a question, an act or an attribute of the world
   const QUESTION = new Set(['what', 'which', 'who', 'whom', 'whose', 'where', 'when', 'why', 'how']);
   for (const t of toks) {
-    if (QUESTION.has(t) && sig.expects === 'name') return { ok: false, as: sig.expects, why: `"${raw}" asks something; a ${sig.expects} does not` };
+    if (QUESTION.has(t) && sig.expects === 'name') return { ok: false, code: 'type', as: sig.expects, why: `"${raw}" asks something; a ${sig.expects} does not` };
     const e = forms(t).flatMap((f) => lex.get(f) || []).find((x) => x.cat === 'act' || (x.cat === 'attr' && x.verb) || x.cat === 'word'); // a word the world reads as an act, a key or a relation
-    if (e && sig.expects === 'name') return { ok: false, as: 'name', why: `"${t}" in "${raw}" is ${e.cat === 'act' ? `the act ${e.act}` : e.cat === 'attr' ? `the ${e.key} of a thing` : `a word for ${e.means}`}, not part of a name` };
+    if (e && sig.expects === 'name') return { ok: false, code: 'type', as: 'name', why: `"${t}" in "${raw}" is ${e.cat === 'act' ? `the act ${e.act}` : e.cat === 'attr' ? `the ${e.key} of a thing` : `a word for ${e.means}`}, not part of a name` };
   }
-  return toks.length ? { ok: true, as: sig.expects, value: raw } : { ok: false, as: sig.expects, why: `${key} needs words` };
+  return toks.length ? { ok: true, as: sig.expects, value: raw } : { ok: false, code: 'fragment', as: sig.expects, why: `${key} needs words` };
 }

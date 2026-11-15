@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.137.0
+
+PSys2 Q22 items 1-3 (reviewer 13:15): what the host still kept because of the library.
+
+### New
+- `confidentTypo(from, to)`; readers mark each repair `confident`; `readText` is complete after confident typos only,
+  listing them in `named`.
+- `moodOf` reads the language world's function words (`<lang>.fn`: wish, politeness, filler, hesitation): "I want a red
+  circle" and "I'd like 2 tables" are `wish` (a request), "could you add a table" an imperative; "my" and "an a" are
+  fragments; `detail: true` gives `{ mood, by }`; a name that is a thing of the world is not a speaker ("Done is red").
+- `fitsSlot` returns `code` (empty | fragment | type) and refuses fragments in a slot the typed world has no type for.
+
+### Changed
+- The kit stores a list entry as the user wrote it (with its articles).
+
 ## 0.136.0
 
 The second application extended to w.seating in English and Romanian (reviewer 16:45 item 2; PSys2 probe B).

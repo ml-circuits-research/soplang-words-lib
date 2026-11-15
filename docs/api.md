@@ -2251,7 +2251,7 @@ print(relatedCases(w, kase).filter((c) => c.valid).map((c) => [c.distance, c.tex
 [[1,"yak sound"],[2,"sheep sound"]]
 ```
 
-### readText(world, text, options?), moodOf(world, text, options?) and READERS
+### readText(world, text, options?), moodOf(world, text, options?), confidentTypo(from, to) and READERS
 
 One Reader contract for every reader, so a host, an ensemble or a learner can swap them, and
 completeness is computed from data, never claimed by a pattern. `readText(world, text, { reader,
@@ -2261,14 +2261,22 @@ candidates: fewer words unread, then fewer repairs, then lower cost, then more s
 returns `{ candidates, best, unread, repaired, mood, complete, why? }`:
 - `unread` are the words the best reading did not use; a reading with words left is not
   complete, and those words are never arguments;
-- `repaired` are respellings (a reader's `via: 'spelling'`); a repaired reading is not complete;
+- `repaired` are respellings (a reader's `via: 'spelling'`), each `confident` or not
+  (`confidentTypo`: the typed word and its respelling are whole words of 4 letters or more, within
+  the spelling budget of 1 edit, 2 from 8 letters, with the first letter kept or the first two
+  swapped). A reading whose repairs are all confident is complete and lists them in `named`, so
+  the reply can say them; any other repair makes it incomplete;
 - `mood` is read before the act by `moodOf`: `question` (a final ?, a question word or an
-  auxiliary first), `statement` (a first-person subject first, or a name and an auxiliary:
-  "I have two kids", "Tom has 5 apples"), `fragment` (nothing, an article or a letter alone),
-  else `imperative`. An act frame needs an imperative or a question.
+  auxiliary first), `wish` (a wish of the language world first, `<lang>.fn view=wish`: "I want a
+  red circle", a request), `statement` (a first-person subject first, or a name and an
+  auxiliary: "I have two kids", "Tom has 5 apples", unless the name is a thing of the world),
+  `fragment` (nothing, articles and letters, or the speaker alone: "my", "an a"), else
+  `imperative` (also after a polite lead: "could you add a table"). Hesitations, lead fillers and
+  politeness of the language world are passed over. `detail: true` gives `{ mood, by }`. An act
+  frame needs an imperative, a wish or a question.
 
 The mood words come from the language world (`<lang>.wh`, `<lang>.aux`, `<lang>.pron
-person=1`, `<lang>.det`), with English defaults for a world that has none.
+person=1`, `<lang>.det`, `<lang>.fn`), with English defaults for a world that has none.
 
 ```js run
 const w = new World();

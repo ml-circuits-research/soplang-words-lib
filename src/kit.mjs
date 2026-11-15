@@ -286,7 +286,7 @@ function bindFrame(set, f, { lang, text = '' }) {
   let kind = null, placeless = null;
   if (b) {
     kind = b.kind;
-    if (b.thing && words('thing')) { args[b.thing] = words('thing'); used.add('thing'); }
+    if (b.thing && words('thing')) { args[b.thing] = roles.thing?.text ?? words('thing'); used.add('thing'); } // the entry as the user wrote it
     if (b.amount && roles.amount?.value !== undefined) { args[b.amount] = roles.amount.value; used.add('amount'); }
     if (b.place && !words('place') && b.placeKind) { const ps = thingsOf(set, b.placeKind); if (ps.length) args[b.place] = `$${ps[ps.length - 1].id}`; } // no place said: the one made last
     if (b.place && words('place')) {

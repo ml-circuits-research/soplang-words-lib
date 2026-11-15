@@ -5620,3 +5620,18 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   shape round, name copii; "adaugă două mese" → ask; "șterge masa familie" → "Am șters masa."; "anulează" → "Am anulat
   ultima schimbare."; "adaugă o masă albastră" → unread albastră. Guest turns fail on the dictionary (Q80).
 - Gate: npm test 531 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.137.0 — PSys2 Q22 items 1-3: repair confidence, wishes, fragment codes, mood detail
+
+- test/reader-q22.test.mjs: moodOf "I want a red circle" / "I'd like 2 tables" / "I really want a cake" → wish;
+  "um so could you add a table please" → imperative by polite; "I have two kids" → statement by self; "my" → fragment by
+  self; "an a" → fragment by article; "Tom is tall today" → statement by name; "Done is red" with Done a thing →
+  imperative. confidentTypo: tabel→table, atble→table, elephnat→elephant yes; cat→car (short), mable→table (first
+  letter) no; readText with a confident repair → complete, named [tabel]; with an unsure one → incomplete.
+- fitsSlot codes: "" empty; "my", "an a", "the" fragment; "groceries" ok; sort "party" type; budget "lots" type;
+  an untyped slot refuses "my".
+- PSys2 can delete its foreign-reading rules for wishes, fragments and mood reasons once it vendors 0.137 (its Q22
+  L1-L5 are these functions).
+- Kit side effect: "I want the house next to the tree" is now a wish, not a statement, so the lists app's entries
+  binding reads it as an item (text as written).
+- Gate: npm test 534 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

@@ -1384,3 +1384,7 @@ Q19 accepted (PSys2): a general person/session profile. The deleted Profile tab 
 ## Reviewer 2026-11-15 11:15 — 0.119 (R1) accepted
 
 Reviewer ran `npm test` on 0.119: 514 tests, 513 pass, 0 fail, 1 skipped. Accepted R1 (caches on world.version, one seeded generator, valueText, criteria as data, one tier order, independent voices). Now: test:full, then R2 (one Reader contract with unread / repaired / mood), then L3, L5, L2, L4 on it; R3–R5 after. PSys2 wrote its own review (`docs/architecture-review-2026-11-15.md` in psys2) with [LIB] asks: read its sections B and F for the host kit.
+
+## Reviewer 2026-11-15 11:35 — 0.120 / 0.121 (R2 parts 1–2) accepted
+
+Reviewer ran `npm test` on 0.121: 514 tests, 513 pass, 0 fail. Accepted the one Reader contract (readText, READERS, moodOf; fitsSlot refuses fragments) and the folds into typedWorldFor + readText + fitsSlot. Continue R2 (one story planner, one motion scheduler, one pipeline and world chooser, one matcher, one kind-chain walker, one splitter, every choice through `choose`), run test:full, then L3, L5, L2, L4. PSys2 built host-side `foreign-reading.mjs` (full reading, mood, fragment) meanwhile: its rules are the acceptance cases for your contract; say in your log when the host can delete it for `readText`.

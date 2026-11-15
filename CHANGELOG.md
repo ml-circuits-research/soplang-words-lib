@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.135.0
+
+The kit, reviewer 14:45 item 5: host readers, several requests per message, referents, a host hook, effects, a budget;
+and the one clause splitter (Q71).
+
+### New
+- `clauses(world, text, { lang, read })` and `cutPoints(world)`: cuts at a comma, the language world's joiners that cut
+  and before a question word; the cutting whose clauses all read, most literal words first (the knowledge
+  repository's reference clauseReader, now the library's).
+- `readTurn` context: `readers` (host readers under the reader contract, before the frames; `frames: false`),
+  `onHost` / `hostActs` (host requests such as navigation, not a world step), `budget: { ms }` (`too-complex`).
+- `readTurn` reads several clauses as several requests, one step each, none run unless all read; `effects` for the
+  page; `referentOf` reads ordinals ("the second table") and anaphors ("it": the thing the last turn touched).
+
+### Changed
+- A frame role that runs over a joiner into a verb ("called three and add a blue table") is not that reading's words.
+
 ## 0.134.0
 
 Composed replies in two languages (reviewer 14:45 item 2), issue bindings (knowledge Q78), the indefinite genitive

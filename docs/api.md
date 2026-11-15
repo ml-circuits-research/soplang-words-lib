@@ -1821,7 +1821,17 @@ world's reply fact for the act, else a short sentence with the kind said by its 
 article and its plural by the language world ("I made 2 tables.").
 
 `referentOf(set, words)` finds the thing words name: "table 1" (a kind's word and a name or
-number of one of its things, else the n-th made), "Ann" (a thing whose value it is). `turnScope(set, owner)` tells whether a change (`{ world, type }`, as `readTurn`
+number of one of its things, else the n-th made), "the second table" (the language world's
+ordinals), "it" (its anaphors: the thing the last turn made or touched), "Ann" (a thing whose
+value it is).
+
+A message is cut into clauses (`clauses`, below): "add a table called one and add a table called
+two" is two requests, one step each, and nothing runs unless every clause reads. Host readers
+(`context.readers`: `fn(set, text, context) -> [{ request, unread }]`) are tried before the frames
+(`frames: false` skips those); the kit keeps the contract, the arbitration and the execution. A
+request marked `host` (or an act in `hostActs`) goes to `context.onHost(request, set)`, such as
+navigation; it is not a step of any world. `budget: { ms }` stops a turn before it runs out of
+time (`too-complex`, nothing changed). The result's `effects` say what to redraw. `turnScope(set, owner)` tells whether a change (`{ world, type }`, as `readTurn`
 returns them for every world) is one a turn addressed to `owner` may make: that world and the
 session worlds. A turn runs in the world that owns the kind or holds the thing, and is one step of
 the set's timeline: `undo` goes to the world the last step touched. `examples/lists-app.mjs` is a second application on
@@ -1872,6 +1882,28 @@ print(replyFrom(L, 'remove', { thing: 'list' }));
 ```output
 I made a new list.
 null
+```
+
+### clauses(world, text, options) and cutPoints(world, options?)
+
+One clause splitter. Sentences end at `.`, `?`, `!` and `;`. Inside one, the cut points are a
+comma, the joiners that cut (`${lang}.joiner cut=yes`; two in a row are one: "and then"), and the
+place before a question word (`${lang}.wh`). Each clause is read by `read(text) -> { literal,
+captured? } | null`. Among the cuttings whose every clause reads, the one with the most literal
+words wins, then the fewest captured, then the fewest clauses. The result is `[{ text, reading }]`,
+or null when some sentence has no cutting that reads. On PSys2's real shop rows it cuts "I would
+like a ball and a pencil and pay with 20 lei. what's the change" into three clauses: the list
+stays one, and the joiner before a verb cuts.
+
+```js run
+const w = new World();
+w.load('@t core.type of=ex.joiner\n@j ex.joiner text=and cut=yes');
+const read = (t) => (/^(add|remove) \w+$/.test(t) ? { literal: 1 } : null);
+print(clauses(w, 'add milk and remove eggs', { lang: 'ex', read }).map((c) => c.text));
+```
+
+```output
+["add milk","remove eggs"]
 ```
 
 ### compose(world, topic, options?) and interestOf(world, fact, options?)

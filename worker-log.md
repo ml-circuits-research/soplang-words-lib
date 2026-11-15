@@ -5593,3 +5593,17 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   unei case" (was "o case"); partial cells ("{kind:def=yes}") take the class's first agreeing cell.
 - Q78: `check().issues[i].bindings` (soft deny "two pumps on ?n" → { n: 'north' }); strict denies already had `vars`.
 - Gate: npm test 527 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.135.0 — reviewer 14:45 item 5 (host readers, clauses, referents, host hook, effects, budget); Q71 splitter
+
+- `clauses` (src/clauses.mjs): PSys2's real shop rows (knowledge tests/w.lang.en.list-frames.test.mjs REAL) cut into
+  the reference reader's clause counts with readFrames as the reader: r0590 1, r0598 3, r0599 3, r0622 3, r0623 1,
+  r0625 3 (r0624/r0626/r0627 repeat them). The clauses' frames are not all the reference's yet (r0599 "How much change
+  do I get" reads acts.calc.has, r0622 "what's the change" a generic ask): frame ranking, R3.
+- Kit (test/kit.test.mjs): "add a table called one and add a table called two" → 2 clauses, 2 steps, 2 effects;
+  "add a table called three and add a blue table" → nothing runs (unread includes blue); "remove the second table" →
+  table2; "add a guest called Ann" then "remove it" → "I removed the guest."; a host reader for "open the seating tab"
+  with onHost → "Opened seating.", effect { kind: open }, no world step; a host reader's make → "I added a table.";
+  budget ms -1 → too-complex, nothing changed. Seven compound turns in 196 ms.
+- The knowledge copy of clauseReader can go when its frames' readings move too (Q71): the splitter is here now.
+- Gate: npm test 529 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

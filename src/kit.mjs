@@ -7,6 +7,7 @@
 
 import { World } from './world.mjs';
 import { readFrames } from './frames.mjs';
+import { clauses, cutPoints } from './clauses.mjs';
 import { moodOf } from './reader.mjs';
 import { turn } from './turn.mjs';
 import { choose } from './rank.mjs';
@@ -74,6 +75,7 @@ function findThing(set, id) {
 /** One step of the set's timeline back or forward: the world the last step touched undoes it. */
 function stepTimeline(set, act, n = 1) {
   let k = 0;
+  const touched = [];
   for (; k < n; k++) { // bounded: n
     const from = act === 'undo' ? set.steps : set.redo, to = act === 'undo' ? set.redo : set.steps;
     const step = from[from.length - 1];
@@ -82,8 +84,9 @@ function stepTimeline(set, act, n = 1) {
     const r = act === 'undo' ? w.undo(1) : w.redo(1);
     if (r.ok === false) break;
     to.push(from.pop());
+    touched.push(step.world);
   }
-  return { ok: k > 0, n: k };
+  return { ok: k > 0, n: k, worlds: touched };
 }
 
 /**
@@ -94,10 +97,53 @@ function stepTimeline(set, act, n = 1) {
  * incomplete reading is never acted on.
  */
 export function readTurn(set, text, context = {}) {
-  const { lang = 'w.lang.en', active, criteria, morph, dictionary } = context;
+  const started = Date.now(), lang = context.lang ?? 'w.lang.en';
+  const over = () => context.budget?.ms && Date.now() - started > context.budget.ms;
+  // the message cut into clauses (one splitter, the language world's cut points): a cutting whose every clause has a
+  // complete plan wins; else the whole message is one clause, read and reported as it is
+  const plans = new Map();
+  const planOf = (t) => { if (!plans.has(t)) plans.set(t, planClause(set, t, context)); return plans.get(t); };
+  const cut = set.language ? clauses(set.language, text, { lang, read: (t) => { const p = planOf(t); return p.plan ? { literal: p.literal } : null; } }) : null;
+  const parts = cut && cut.length > 1 ? cut.map((c) => c.text) : [text];
+  const planned = parts.map(planOf);
+  const stop = planned.find((p) => !p.plan); // the first clause that cannot run: said, and nothing of the message runs
+  if (stop) return parts.length > 1 ? { ...stop, clauses: parts } : stop;
+  if (over()) return { status: 'too-complex', reading: planned[0].reading, reply: 'That took too long; nothing was changed.' };
+  const outs = [];
+  for (const p of planned) { // bounded: the clauses, one step each
+    if (over()) { outs.push({ status: 'too-complex', reading: p.reading, reply: 'That took too long; the rest was not done.' }); break; }
+    const r = runPlan(set, p, context);
+    outs.push(r);
+    if (r.status !== 'done') break;
+  }
+  if (outs.length === 1) return outs[0];
+  const last = outs[outs.length - 1];
+  return { ...last, status: outs.every((o) => o.status === 'done') ? 'done' : last.status, clauses: parts, results: outs, reply: outs.map((o) => o.reply).filter(Boolean).join(' '), changed: outs.flatMap((o) => o.changed || []), effects: outs.flatMap((o) => o.effects || []) };
+}
+
+/**
+ * One clause read and bound, nothing run: { plan: { as: 'request' | 'timeline' | 'host', ... }, reading, literal }
+ * or a final result (not understood, a question). Host readers (`context.readers`: fn(set, text, context) ->
+ * [{ request, unread, literal? }]) are tried before the language world's frames (`context.frames: false` skips them).
+ */
+function planClause(set, text, context = {}) {
+  const { lang = 'w.lang.en', morph, dictionary } = context;
   const L = set.language;
   const label = (type) => labelOf(set, type);
-  const mood = moodOf(L, text, { lang });
+  const mood = L ? moodOf(L, text, { lang }) : 'imperative';
+  for (const reader of context.readers || []) { // bounded: the host's readers
+    const cands = [].concat(reader(set, text, context) || []);
+    const good = cands.find((c) => c?.request && !(c.unread || []).length);
+    if (good) {
+      const reading = { frame: good.frame ?? null, act: good.request.action, roles: good.roles ?? {}, unread: [], mood, complete: true, reader: reader.name || 'host' };
+      const host = good.request.host || context.hostActs?.includes(good.request.action);
+      if (host) return { plan: { as: 'host', request: good.request }, reading, literal: good.literal ?? 1 };
+      const asks = requiredOpen(set, good.request);
+      if (asks.length) return { status: 'ask', reading, request: good.request, reply: asks.map((x) => x.ask ?? `What ${x.key}?`).join(' '), asks };
+      return { plan: { as: 'request', request: good.request }, reading, literal: good.literal ?? 1 };
+    }
+  }
+  if (context.frames === false || !L) return { status: 'not-understood', reading: { frame: null, unread: String(text).split(/\s+/), mood, complete: false }, reply: notUnderstood(set, String(text).split(/\s+/), context) };
   const verbOf = (lemma) => set.verbs[String(lemma).toLowerCase()];
   const r = readFrames(L, text, { lang, morph, dictionary, senses: (id) => (id && verbOf(id) ? { act: verbOf(id), en: id } : {}) });
   const tokens = r.tokens;
@@ -118,17 +164,37 @@ export function readTurn(set, text, context = {}) {
   const { fr: f, b } = win;
   if (!b.request && !b.timeline && !b.confirm && !b.unread.length) b.unread = tokens; // nothing bound: every word is unread
   const reading = { frame: f.frame, act: f.act, roles: f.roles, unread: b.unread, ...read0, complete: !b.unread.length && !b.why };
+  const { joiners } = cutPoints(L, { lang });
+  for (const v of Object.values(f.roles || {})) { // a role that runs over a joiner into a verb holds a second clause: not this reading's words ("called three and add a blue table")
+    const ws = String(v.text ?? '').toLowerCase().split(/\s+/);
+    const at = ws.findIndex((w, i) => joiners.has(w) && ws.slice(i + 1).some((x) => verbOf(x)));
+    if (at >= 0) return { status: 'not-understood', reading: { ...reading, complete: false, unread: ws.slice(at) }, reply: notUnderstood(set, ws.slice(at), context) };
+  }
+  const literal = tokens.length - Object.values(f.roles || {}).reduce((n, v) => n + String(v.text ?? '').split(/\s+/).filter(Boolean).length, 0); // the words the frame itself matched
   if (b.confirm) return { status: 'ask', reading, reply: `There is no ${b.confirm.args[b.confirm.key]} ${label(b.confirm.args.kind)} yet. Shall I make it?`, asks: [{ key: b.confirm.place, value: b.confirm.args[b.confirm.key], confirm: { action: 'make', args: b.confirm.args } }] };
   if (!reading.complete) return { status: 'not-understood', reading, reply: b.placeless ? `${b.placeless}.` : b.unread.length ? notUnderstood(set, b.unread, context) : b.why };
-  if (b.timeline) { // undo / redo: a step of the live world's timeline
-    const n = b.timeline.n ?? 1, res = stepTimeline(set, b.timeline.act, n);
-    return { status: res.ok ? 'done' : 'refused', reading, request: { action: b.timeline.act, args: { n } }, reply: res.ok ? (replyFrom(set.language, `done.${b.timeline.act}`, {}, { lang, type: context.replies, dictionary: context.replyDictionary }) ?? sayAct(set, b.timeline.act, { ok: true, n }, context)) : sayAct(set, b.timeline.act, { ok: false, n }, context) };
-  }
+  if (literal <= 0) return { status: 'not-understood', reading: { ...reading, complete: false, unread: tokens }, reply: notUnderstood(set, tokens, context) }; // a catch-all frame that matched no word of its own reads nothing
+  if (b.timeline) return { plan: { as: 'timeline', act: b.timeline.act, n: b.timeline.n ?? 1 }, reading, literal };
   const request = b.request;
   // a required key the request leaves open is asked before anything is made: never a thing with a hole in it
   const asks = requiredOpen(set, request);
-  if (asks.length) return { status: 'ask', reading, request, reply: asks.map((a) => a.ask ?? `What ${a.key}?`).join(' '), asks };
-  return runRequest(set, request, reading, context);
+  if (asks.length) return { status: 'ask', reading, request, reply: asks.map((x) => x.ask ?? `What ${x.key}?`).join(' '), asks };
+  return { plan: { as: 'request', request }, reading, literal };
+}
+
+/** Run one planned clause: a timeline step, a host request (its effects), or a request in the world that owns it. */
+function runPlan(set, p, context = {}) {
+  const lang = context.lang ?? 'w.lang.en';
+  const { plan, reading } = p;
+  if (plan.as === 'timeline') {
+    const res = stepTimeline(set, plan.act, plan.n);
+    return { status: res.ok ? 'done' : 'refused', reading, request: { action: plan.act, args: { n: plan.n } }, reply: res.ok ? (replyFrom(set.language, `done.${plan.act}`, {}, { lang, type: context.replies, dictionary: context.replyDictionary }) ?? sayAct(set, plan.act, { ok: true, n: plan.n }, context)) : sayAct(set, plan.act, { ok: false, n: plan.n }, context), effects: [{ effect: plan.act, worlds: res.worlds ?? [] }] };
+  }
+  if (plan.as === 'host') { // navigation and the like: the host's, through its hook; not a step of any world
+    const h = context.onHost ? context.onHost(plan.request, set) || {} : { reply: 'No host here takes that.' };
+    return { status: h.status ?? 'done', reading, request: plan.request, reply: h.reply ?? '', changed: [], effects: [].concat(h.effects || []) };
+  }
+  return runRequest(set, plan.request, reading, context);
 }
 
 const SAID = new Set(['make', 'remove', 'change']); // acts whose reply is a sentence of what was done; questions keep the answer
@@ -150,7 +216,9 @@ function runRequest(set, request, reading, context = {}) {
   const result = t.results?.[0]?.result;
   const reply = t.status === 'done' && SAID.has(request.action) ? sayAct(set, request.action, { request, result, thingType }, context) : labelled(set, (t.replies || []).join(' ') || t.question || '');
   const owners_ = owner;
-  return { status: t.status === 'done' ? 'done' : t.status, reading, request, owner: owners_.owner, reply, changed };
+  const effects = t.status === 'done' ? [{ effect: 'changed', world: pick, things: [...new Set([result?.thing, ...(result?.things || [])].filter(Boolean).map(String))] }] : []; // for the page: what to redraw
+  if (t.status === 'done') set.focus = result?.thing ?? (result?.things || []).slice(-1)[0] ?? held?.thing.id ?? set.focus; // what "it" names next
+  return { status: t.status === 'done' ? 'done' : t.status, reading, request, owner: owners_.owner, reply, changed, effects };
 }
 
 /** The required keys of the kind a make request names that it does not give (and no default fills). */
@@ -163,10 +231,19 @@ function requiredOpen(set, request) {
 
 /**
  * A thing of the set named by words (a referent): "table 1" (a kind's word and a name or number of one of its
- * things, else the n-th made), "Ann" (a thing whose name it is). Returns { thing, type } or null.
+ * things, else the n-th made), "the second table" (the language world's ordinals), "it" (its anaphors: the thing the
+ * last turn made or touched), "Ann" (a thing whose name it is). Returns { thing, type } or null.
  */
-export function referentOf(set, words) {
-  const toks = String(words).toLowerCase().split(/\s+/).filter(Boolean);
+export function referentOf(set, words, { lang = 'w.lang.en' } = {}) {
+  const L = set.language;
+  const text = String(words).toLowerCase().trim();
+  const anaphors = new Set((L?.ofType(`${lang}.anaphor`) ?? []).map((a) => valueText(a.attrs.text?.[0]).toLowerCase()));
+  if (anaphors.has(text)) { const f = set.focus && findThing(set, set.focus); return f ? { thing: f.thing, type: f.thing.type } : null; } // "it", "that one": the thing the last turn made or touched
+  const dets = new Set((L?.ofType(`${lang}.det`) ?? []).flatMap((d) => [...(d.attrs.text || []), ...(d.attrs.form || [])]).map((v) => valueText(v).toLowerCase()));
+  const ordinals = new Map((L?.ofType(`${lang}.ordinal`) ?? []).map((o) => [valueText(o.attrs.text?.[0]).toLowerCase(), Number(valueText(o.attrs.value?.[0]))]));
+  let toks = text.split(/\s+/).filter((t) => t && !dets.has(t));
+  const nth = toks.map((t) => ordinals.get(t)).find((v) => v !== undefined); // "the second table": the second made
+  toks = toks.filter((t) => !ordinals.has(t));
   const lex = typedLexicon(set.schema);
   let kind = null, rest = toks;
   for (let i = 0; i < toks.length && !kind; i++) { // bounded: the words
@@ -175,6 +252,7 @@ export function referentOf(set, words) {
   }
   const name = rest.join(' ');
   const things = kind ? thingsOf(set, kind) : [...set.worlds.values()].flatMap((w) => w.kinds.flatMap((t) => w.world.ofType(t)));
+  if (!name && nth !== undefined) return kind && things[nth - 1] ? { thing: things[nth - 1], type: kind } : null;
   if (!name) return kind && things.length ? { thing: things[things.length - 1], type: kind } : null;
   const hit = things.find((x) => Object.entries(x.attrs).some(([k, vs]) => !k.startsWith('core.') && k !== 'kind' && k !== 'world' && vs.some((v) => valueText(v).toLowerCase() === name)));
   if (hit) return { thing: hit, type: hit.type };
@@ -219,8 +297,9 @@ function bindFrame(set, f, { lang, text = '' }) {
     const lex = typedLexicon(set.schema);
     const head = kindWords[kindWords.length - 1];
     kind = [kindWords.join(' '), head, head.replace(/s$/, '')].flatMap((w) => lex.get(w) || []).find((e) => e.cat === 'kind')?.type ?? null;
+    if (f.act !== 'make' && referentOf(set, kindWords.join(' '), { lang })) kind = null; // a thing of the world named: remove the second table
     if (!kind && f.act !== 'make') { // a thing of the world, not a kind: remove Ann, remove table 1
-      const ref = referentOf(set, kindWords.join(' '));
+      const ref = referentOf(set, kindWords.join(' '), { lang });
       if (!ref) return { unread: kindWords.filter((w) => !lex.has(w)).length ? kindWords.filter((w) => !lex.has(w)) : kindWords };
       used.add('thing');
       const left = Object.keys(roles).filter((k) => !used.has(k));
@@ -235,7 +314,7 @@ function bindFrame(set, f, { lang, text = '' }) {
     }
     if (roles.amount?.value !== undefined) { args.amount = roles.amount.value; used.add('amount'); }
     if (words('value') !== undefined) {
-      const v = String(words('value')), key = attrOf ? valueText(attrOf.attrs.attribute[0]) : null;
+      const v = String(roles.value?.text ?? words('value')), key = attrOf ? valueText(attrOf.attrs.attribute[0]) : null;
       const enumKey = [...slots].find(([, sl]) => (sl.enum || []).map((e) => valueText(e).toLowerCase()).includes(v.toLowerCase()))?.[0];
       const k = key && slots.has(key) ? key : enumKey;
       if (k) { const at = text.toLowerCase().indexOf(v.toLowerCase()); args[k] = at >= 0 && !enumKey ? text.slice(at, at + v.length) : v; used.add('value'); } // a name as the user wrote it

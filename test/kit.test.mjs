@@ -199,3 +199,40 @@ test('loadWorldSet refuses what does not load: no kind of its own, types nothing
   assert.throws(load('w.a'), /imports go round: w.a -> w.b -> w.a/);
   assert.throws(load('w.gone'), /no text for w.gone/);
 });
+
+test('several requests in one message: one step each, all read before any runs; ordinals and "it"; a host reader and its hook; a budget', { skip: !worldsDir() && 'offline' }, async () => {
+  const { listsApp } = await import('../examples/lists-app.mjs');
+  const { language, bindings } = await listsApp();
+  const { worldText } = await import('../tools/worlds.mjs');
+  const set = loadWorldSet(worldText, { names: ['w.seating', 'w.list'], language, bindings });
+  const two = readTurn(set, 'add a table called one and add a table called two');
+  assert.deepEqual([two.status, two.clauses, set.steps.length], ['done', ['add a table called one', 'add a table called two'], 2], 'two clauses, two steps');
+  assert.deepEqual(two.effects.map((e) => e.things[0]), ['w_seating_table1', 'w_seating_table2'], 'effects for the page');
+  const n = W(set, 'w.seating').wires.size;
+  const bad = readTurn(set, 'add a table called three and add a blue table');
+  assert.deepEqual([bad.status, W(set, 'w.seating').wires.size], ['not-understood', n], 'one clause cannot run: nothing of the message runs');
+  assert.ok(bad.reading.unread.includes('blue'));
+  assert.equal(readTurn(set, 'remove the second table').effects[0].things[0], 'w_seating_table2', 'an ordinal of the language world');
+  readTurn(set, 'add a guest called Ann');
+  assert.equal(readTurn(set, 'remove it').reply, 'I removed the guest.', '"it": the thing the last turn made');
+  assert.equal(readTurn(set, 'undo').status, 'done');
+  // a host reader (its own formalizer) under the reader contract, and a host request through the hook
+  const nav = (s, text) => (/^open the (\w+) tab$/i.test(text) ? [{ request: { action: 'open', args: { tab: text.split(' ')[2] }, host: true }, unread: [] }] : []);
+  const opened = readTurn(set, 'open the seating tab', { readers: [nav], onHost: (req) => ({ reply: `Opened ${req.args.tab}.`, effects: [{ kind: 'open', tab: req.args.tab }] }) });
+  assert.deepEqual([opened.status, opened.reply, opened.effects], ['done', 'Opened seating.', [{ kind: 'open', tab: 'seating' }]]);
+  assert.equal(set.steps.length, 4, 'a host request is not a step of any world');
+  const mine = (s, text) => (text === 'big table' ? [{ request: { action: 'make', args: { kind: 'w.seating.table', name: 'big' } }, unread: [] }] : []);
+  assert.equal(readTurn(set, 'big table', { readers: [mine] }).reply, 'I added a table.', 'the kit keeps the contract, the arbitration and the execution');
+  assert.equal(readTurn(set, 'add a table called x and add a table called y', { budget: { ms: -1 } }).status, 'too-complex', 'over budget: nothing changed');
+});
+
+test('clauses: the real shop rows of PSys2 (knowledge Q71) cut where the reference reader cuts', { skip: !worldsDir() && 'offline' }, async () => {
+  const { clauses, readFrames } = await import('../tools/lib-under-test.mjs');
+  const { catalogWorld } = await import('../tools/worlds.mjs');
+  const L = await catalogWorld({ 'w.lang.en': ['frame', 'part', 'phrase', 'lex', 'det', 'numeral', 'prep', 'wh', 'aux', 'pron', 'joiner'].map((x) => `w.lang.en.${x}`), 'k.actions': ['k.actions.verb'] });
+  const verbs = Object.fromEntries(L.ofType('k.actions.verb').map((v) => [String(v.attrs.text[0]).replace(/"/g, '').toLowerCase(), String(v.attrs.act[0]).replace(/"/g, '')]));
+  const read = (t) => { const r = readFrames(L, t, { lang: 'w.lang.en', senses: (id) => (id && verbs[String(id).toLowerCase()] ? { act: verbs[String(id).toLowerCase()], en: id } : {}) }); if (!r.best) return null; const lit = r.tokens.length - Object.values(r.best.roles).reduce((k, v) => k + String(v.text ?? '').split(/\s+/).filter(Boolean).length, 0); return lit > 0 ? { literal: lit } : null; };
+  const rows = { r0590: ['i should call grandma', 1], r0598: ['I want a puzzle and I pay 10 lei. What is the change?', 3], r0599: ['I want 2 pencils and I give the cashier 10 lei. How much change do I get?', 3], r0622: ["I would like a ball and a pencil and pay with 20 lei. what's the change", 3], r0623: ['how much does a pencil cost?', 1], r0625: ['I want a ball and a pencil and pay with 20 lei what is the change', 3] };
+  for (const [id, [text, n]] of Object.entries(rows)) assert.equal(clauses(L, text, { read })?.length, n, `${id}: ${text}`);
+  assert.deepEqual(clauses(L, "I would like a ball and a pencil and pay with 20 lei. what's the change", { read }).map((c) => c.text), ['I would like a ball and a pencil', 'pay with 20 lei', "what's the change"], 'a list stays one clause; a joiner before a verb cuts');
+});

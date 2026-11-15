@@ -8,7 +8,7 @@ import { worldText, catalogWorld, worldsDir } from '../tools/worlds.mjs';
 
 export async function listsApp() {
   if (!worldsDir()) return null;
-  const language = await catalogWorld({ 'w.lang.en': ['w.lang.en.frame', 'w.lang.en.part', 'w.lang.en.phrase', 'w.lang.en.lex', 'w.lang.en.det', 'w.lang.en.numeral', 'w.lang.en.prep', 'w.lang.en.wh', 'w.lang.en.aux', 'w.lang.en.pron', 'w.lang.en.answer', 'w.lang.en.template', 'w.lang.en.inflect', 'w.lang.en.irregular', 'w.lang.en.onset', 'w.lang.en.reply', 'w.lang.en.fn'], 'k.actions': ['k.actions.verb'] });
+  const language = await catalogWorld({ 'w.lang.en': ['w.lang.en.frame', 'w.lang.en.part', 'w.lang.en.phrase', 'w.lang.en.lex', 'w.lang.en.det', 'w.lang.en.numeral', 'w.lang.en.prep', 'w.lang.en.wh', 'w.lang.en.aux', 'w.lang.en.pron', 'w.lang.en.answer', 'w.lang.en.template', 'w.lang.en.inflect', 'w.lang.en.irregular', 'w.lang.en.onset', 'w.lang.en.reply', 'w.lang.en.fn', 'w.lang.en.joiner', 'w.lang.en.anaphor', 'w.lang.en.ordinal'], 'k.actions': ['k.actions.verb'] });
   // how the frames that need entries map onto w.list (until the language world says it: a knowledge ask)
   const bindings = { entries: { kind: 'w.list.item', thing: 'text', amount: 'quantity', place: 'list', placeKind: 'w.list.list', placeKey: ['name', 'sort'] } };
   return loadWorldSet(worldText, { names: ['w.list', 'w.tasks'], language, bindings });

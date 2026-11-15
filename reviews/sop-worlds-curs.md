@@ -1,6 +1,6 @@
 # SOP Worlds: curs de început
 
-*Versiunea 4, 16 noiembrie 2026. Text de lucru în română, sursă pentru documentația și skill-urile din sopworld. Termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 5, 16 noiembrie 2026. Text de lucru în română, sursă pentru documentația și skill-urile din sopworld. Termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 *Cursul descrie cum trebuie să lucreze tehnologia. Ce este deja făcut și ce nu este spus separat, în Anexa A. Exemplele de fire nu au fost încă rulate una câte una; biblioteca le va trece prin teste, iar unde un exemplu nu rulează, cursul se corectează.*
 
@@ -87,8 +87,8 @@ Tot ce urmează în curs se scrie cu această singură formă.
 |---|---|
 | `core.` | Tipuri ale limbajului însuși. Cu ele se scrie schema: `core.type`, `core.slot`, `core.rule`, `core.deny`. |
 | `std.` | Tipuri ale modulelor standard ale bibliotecii, adică mecanisme gata făcute. De exemplu `std.schema.kind`. |
-| `k.` | Tipuri din lumile de cunoaștere: fapte generale. De exemplu `k.expect.make`. |
-| `w.` | Tipuri din schemele de lumi refolosibile. De exemplu `w.person`, `w.request`, `w.lang.en`. |
+| `k.` | Tipuri din bazele de cunoaștere: fapte generale. De exemplu `k.expect.make`. |
+| `w.` | Tipuri din tiparele de lumi. De exemplu `w.person`, `w.request`, `w.lang.en`. |
 | fără prefix | Tipuri proprii ale unui exemplu sau ale unei aplicații: `book`, `shelf`. |
 
 **Identificatorii cu punct sunt tot o convenție.** În `@t.book core.type of=book`, litera `t` vine de la „type” și ajută cititorul. La fel `@s.` pentru sloturi, `@p.` pentru modele, `@d.` pentru interdicții, `@h.` pentru capabilități. Limbajul cere doar ca identificatorul să fie unic.
@@ -263,34 +263,38 @@ Forma unui fir nu spune tot. Câteva întrebări de înțeles trebuie să aibă 
 
 Biblioteca are de scris o pagină cu aceste răspunsuri, fiecare cu un exemplu care rulează.
 
-## Lecția 11. Specificație, conținut, instanță
+## Lecția 11. Tipar, cunoaștere, instanță
 
-În practică lumile sunt de trei feluri. Ele nu sunt trei categorii de aceeași natură; sunt trei roluri diferite.
+În practică lumile au trei roluri. Ele nu sunt trei categorii de aceeași natură: una este o specificație, una este conținut, una este o stare concretă.
 
-| Fel de lume | Ce este |
+| Rol | Ce este |
 |---|---|
-| schema lumii (world schema) | O **specificație**: descrie un fel de lume, fără lucruri anume. Felurile de lucruri, sloturile, constrângerile, cuvintele. Se refolosește. Exemplu: `w.seating` descrie ce este un plan de mese. |
-| lume de cunoaștere (knowledge world) | **Conținut**: fapte generale, adevărate pentru toată lumea, scrise după o schemă a lor. Exemplu: ce este obișnuit când faci o diagramă. |
-| lume vie (live world) | O **instanță** cu stare: lucrurile concrete ale unui om sau ale unei sarcini, valorile lor de acum, ce s-a schimbat. Exemplu: planul de mese pentru sâmbătă. |
+| tipar de lume (world pattern) | O **specificație** refolosibilă: descrie un fel de lume, fără lucruri anume. Felurile de lucruri, sloturile, constrângerile, cuvintele. Exemplu: `w.seating` descrie ce este un plan de mese, oricare ar fi el. |
+| bază de cunoaștere (knowledge base) | **Conținut**: fapte generale, adevărate pentru toată lumea, scrise după un tipar al lor. Exemplu: ce este obișnuit când faci o diagramă. |
+| instanță de lume (world instance) | O **stare concretă**: lucrurile unui om sau ale unei sarcini, valorile lor de acum, ce s-a schimbat. Este construită din unul sau mai multe tipare și din cunoașterea de care are nevoie. Exemplu: planul de mese pentru sâmbătă. |
 
-O lume vie se obține încărcând una sau mai multe scheme, citind cunoașterea de care are nevoie și adăugând lucrurile concrete.
+> **Numele vechi.** În programul și în documentele scrise până acum, cele trei se numesc *schema lumii* (world schema), *lume de cunoaștere* (knowledge world) și *lume vie* (live world). Numele vechi rămân valabile o vreme; tot ce se scrie sau se modifică de acum folosește numele noi.
 
-O observație: și schema, și cunoașterea sunt scrise tot ca fire, deci sunt și ele lumi. Aceasta este o însușire a limbajului (se poate descrie pe sine), nu un al patrulea fel de lume.
+Cuvântul **schemă** rămâne, cu un înțeles precis: partea de reguli a unei lumi (lecția 5). Un tipar de lume este o schemă împachetată și publicată cu nume, împreună cu cuvintele ei, ca să fie încărcată în multe instanțe.
 
-Schemele de lumi și lumile de cunoaștere sunt publicate într-un depozit comun, *sop-knowledge-worlds*. Ce se află acolo este **standardizat**: are un nume fix, o schemă verificată și o licență, și orice aplicație îl poate încărca după nume.
+O instanță de lume se obține încărcând unul sau mai multe tipare, citind cunoașterea de care are nevoie și adăugând lucrurile concrete.
 
-| Lume standard | Ce conține |
+O observație: și tiparele, și bazele de cunoaștere sunt scrise tot ca fire, deci sunt și ele lumi în sensul lecției 5. Aceasta este o însușire a limbajului (se poate descrie pe sine), nu un al patrulea rol.
+
+Tiparele de lumi și bazele de cunoaștere sunt publicate într-un depozit comun, *sop-knowledge-worlds*. Ce se află acolo este **standardizat**: are un nume fix, o schemă verificată și o licență, și orice aplicație îl poate încărca după nume. Prefixul `k.` arată o bază de cunoaștere, iar `w.` un tipar de lume (lecția 4).
+
+| Publicat | Ce conține |
 |---|---|
 | `k.expect` | Ce este obișnuit: câte părți are de regulă un lucru, ce mărimi, ce așezare. |
 | `k.actions` | Verbele și actele pe care le numesc: „draw”, „make”, „create” înseamnă `make`. |
 | `k.colours` | Numele culorilor și valorile lor. |
-| `k.animals` și alte lumi despre feluri de lucruri | Ce este fiecare, din ce se trage, unde stă de obicei. |
+| `k.animals` și alte baze despre feluri de lucruri | Ce este fiecare, din ce se trage, unde stă de obicei. |
 | `k.layouts` | Din ce părți este făcut un raport, o scrisoare. |
 | `k.charts` | Ce fel de grafic se potrivește cu ce fel de date. |
 | `k.time.zone` | Fusuri orare. |
 | `w.lang.en` | Engleza: cuvintele de legătură, numeralele, pluralul, cuvintele de negație și de cantitate. |
 | `w.lang.ro` | Vocabularul și formele limbii române. |
-| `w.request`, `w.dialogue` | Schema unei cereri și a unui dialog (partea a treia). |
+| `w.request`, `w.dialogue` | Tiparul unei cereri și al unui dialog (partea a treia). |
 | `w.person` | O persoană: nume, preferințe. |
 | `w.list`, `w.tasks`, `w.seating`, `w.timeline`, `w.calendar` | Liste, sarcini, plan de mese, cronologie, calendar. |
 
@@ -342,7 +346,7 @@ Sistemul poate face lucruri reale în mai multe părți ale lui: desenează, fac
 
 | Parte a unui domeniu | Explicație |
 |---|---|
-| lumea vie | Starea domeniului, ca fire (lecția 11). |
+| instanța de lume | Starea domeniului, ca fire (lecția 11). |
 | uneltele (tools) | Bucăți mici de program care produc efectul real. |
 | vederea stării (state view) | O funcție care citește ce este cu adevărat în unelte și îl dă ca fire. |
 
@@ -517,7 +521,7 @@ Două reguli țin de cinste. Dacă rămân cuvinte necitite într-un loc care co
 
 Regula acestui pas: **o reacție schimbă numai ce numește.** „Fewer novels” schimbă numărul romanelor; culoarea, mărimea și raftul rămân.
 
-**Trimiteri la lucruri care există.** „Move the blue atlas up”, „make it red”, „remove the second one”. Sistemul caută lucrul în starea lumii vii.
+**Trimiteri la lucruri care există.** „Move the blue atlas up”, „make it red”, „remove the second one”. Sistemul caută lucrul în starea instanței de lume.
 
 | Fel de trimitere | Exemplu |
 |---|---|
@@ -670,7 +674,7 @@ Fiecare pas al planului este dus la o unealtă prin legătura declarată în lec
 |---|---|
 | `step.` | Din pasul de plan: felul părții, numărul ei. |
 | `request.` | Din cerința cu acea cheie, după adaptare (lecția 19). |
-| `state.` | Din starea lumii vii: un lucru care există și este numit în cerere. |
+| `state.` | Din starea instanței de lume: un lucru care există și este numit în cerere. |
 | `result.` | Un lucru făcut de un pas anterior al aceluiași plan. |
 
 Unealta nu vede cererea. Primește valori gata alese.
@@ -679,7 +683,7 @@ Unealta nu vede cererea. Primește valori gata alese.
 
 | Situație | Ce se face |
 |---|---|
-| Cine are dreptate despre stare | Unealta. Lumea vie este o oglindă a ei, citită prin vederea stării. |
+| Cine are dreptate despre stare | Unealta. Instanța de lume este o oglindă a ei, citită prin vederea stării. |
 | Efectul văzut diferă de cel declarat | Pasul nu se socotește făcut. Se spune ce s-a întâmplat de fapt. |
 | O unealtă dă greș la jumătatea planului | Pașii făcuți se desfac prin anularea uneltei. Unde o unealtă nu poate anula, se face operația de compensare declarată. Se spune omului ce s-a desfăcut. |
 | Starea s-a schimbat între plan și execuție (omul a mutat ceva cu mâna) | Planul se reface pe starea nouă; nu se execută orbește. |
@@ -700,7 +704,7 @@ Răspunsul nu este scris de mână în domeniu. Se compune din date.
 
 Cuvintele vin din lumea limbii, ca **fapte de răspuns (reply facts)**: propoziții cu locuri de completat. De aceea același răspuns poate fi dat și în română.
 
-Două întrebări ale omului se rezolvă prin același mecanism. „What is on the shelf?” se răspunde din starea lumii vii. „What can you do here?” se răspunde din capabilitățile declarate.
+Două întrebări ale omului se rezolvă prin același mecanism. „What is on the shelf?” se răspunde din starea instanței de lume. „What can you do here?” se răspunde din capabilitățile declarate.
 
 Fiecare valoare ține minte de unde a fost luată: aceasta este **proveniența (provenance)**. Servește răspunsului, reacțiilor (se știe ce este presupunere și se poate schimba), inducției (lecția 22) și reviziei programului.
 
@@ -708,7 +712,7 @@ Când o cerere nu poate fi rezolvată cu piesele generale existente, nu se scrie
 
 ## Lecția 25. Cum se face un domeniu nou
 
-Pașii, în ordine. Se scriu felurile de lucruri și sloturile. Se scriu cuvintele domeniului. Se declară capabilitățile, promițând numai ce domeniul îndeplinește cu adevărat. Se scriu uneltele: puține, mici, fără text și fără valori alese în ele. Se scrie vederea stării. Se declară uneltele și legăturile. Se caută în cunoașterea standard ce există deja. Se rulează testele și se încearcă propoziții noi.
+Pașii, în ordine. Se scriu felurile de lucruri și sloturile. Se scriu cuvintele domeniului. Se declară capabilitățile, promițând numai ce domeniul îndeplinește cu adevărat. Se scriu uneltele: puține, mici, fără text și fără valori alese în ele. Se scrie vederea stării. Se declară uneltele și legăturile. Se caută în cunoașterea publicată ce există deja. Se rulează testele și se încearcă propoziții noi.
 
 Declarațiile bibliotecii, toate la un loc:
 
@@ -829,7 +833,6 @@ Etichetele: **bibliotecă** = făcut și testat în sopworld; **aplicație** = f
 | „schemă” ca nume unic | Înlocuiește *matrix* în bibliotecă și în documentația ei. |
 | numele firelor de unealtă | `std.tool.*`, cum sunt acum, sau în familia `std.schema.*`. |
 | limba întrebărilor din `ask=` | Engleză în schemă și traducere, sau fapte de răspuns în lumea fiecărei limbi. |
-| numele celor trei feluri de lumi | Păstrăm „schema lumii”, „lume de cunoaștere”, „lume vie”, cu explicația din lecția 11 (specificație, conținut, instanță). O redenumire ar atinge trei depozite și nu o recomand. |
 
 ## Anexa C. Cu ce seamănă
 
@@ -868,10 +871,10 @@ Referințele sunt date din memorie, cu autor și an, și trebuie verificate îna
 | variabilă, model, interdicție, regulă | Lecția 8. |
 | constrângere tare, slabă | Una refuză; cealaltă primește și ține o problemă. Lecția 8. |
 | funcție (function) | Un calcul declarat și scris ca program. Lecția 9. |
-| schema lumii, lume de cunoaștere, lume vie | Specificație, conținut, instanță. Lecția 11. |
+| tipar de lume, bază de cunoaștere, instanță de lume | Specificație refolosibilă; conținut; stare concretă. Lecția 11. |
 | îmbinare (join) | Legarea unui slot de un lucru din altă lume. Lecția 12. |
 | rezolvitor (solver) | Căutarea de valori pentru multe chei deschise deodată. Lecția 13. |
-| domeniu de capabilități | O lume vie, uneltele ei și vederea stării. Lecția 14. |
+| domeniu de capabilități | O instanță de lume, uneltele ei și vederea stării. Lecția 14. |
 | capabilitate, unealtă, legătură | Promisiunea; operația; declarația care le leagă. Lecția 14. |
 | cerere, cerință, rol | Propoziția ca fire; o parte a ei; locul unei valori într-o acțiune. Lecția 17. |
 | țintă, domeniu de aplicare, cuantificator | Despre ce lucru, unde și „fiecare” sau „în total”. Lecția 17. |

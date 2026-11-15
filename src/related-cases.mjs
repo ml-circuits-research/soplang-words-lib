@@ -13,6 +13,7 @@ import { matchPattern } from './alternate.mjs';
 import { seeded } from './random.mjs';
 import { memoPerWorld } from './memo.mjs';
 import { valueText } from './parser.mjs';
+import { choose } from './rank.mjs';
 
 const bare = (v) => valueText(v).replace(/^\$/, '');
 const UP = ['kind', 'class', 'is', 'is_a'];
@@ -151,12 +152,11 @@ export function relatedCases(world, kase, { distance = 2, axes = ['filler', 'key
     }
     c.valid = true;
   }
-  const rnd = seeded(seed);
   const byDist = new Map();
-  for (const c of out.map((c) => [c, rnd()]).sort((a, b) => Number(b[0].valid) - Number(a[0].valid) || a[0].distance - b[0].distance || a[1] - b[1]).map(([c]) => c)) {
+  for (const c of choose(world, 'related', out, { seed }).order) { // one way to choose (std.decide kind related): valid first, nearer first, a seeded order among ties
     const k = `${c.distance}|${c.axes[0]}`; const list = byDist.get(k) || byDist.set(k, []).get(k); if (list.length < n) list.push(c); // stratified per distance and axis
   }
-  return [...byDist.values()].flat().sort((a, b) => Number(b.valid) - Number(a.valid) || a.distance - b.distance);
+  return choose(world, 'related', [...byDist.values()].flat(), { seed: null }).order;
 }
 
 /**

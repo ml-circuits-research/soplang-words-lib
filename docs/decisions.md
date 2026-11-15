@@ -36,7 +36,7 @@ tuned in code.
 | --- | --- | --- | --- |
 | A reading of a message (`world.score`, `rank`) | readings | `RANKING`'s measures in the order std.decide declares (kind `score`: consistent, referents, lacks, words, assumes; `rankingOf(world)`) | **order from data (0.94)**; the measures read a reading's structure |
 | A value of a key | values by tier | tiers: told > derived > forced > default > guessed | data (tiers are declared) |
-| The world that takes a request (`arbitrate`) | owning worlds | own / decline / refuse; among several owners **`choose`**, kind `world`: coverage of the request, the open tab, priority | **done (0.104)** |
+| The world that takes a request (`arbitrate`) | owning worlds | own / decline / refuse; among several owners **`choose`**, kind `world`: coverage of the request, priority (the open tab is a host's criterion) | **done** |
 | A template of a sentence (`discourseRealiser`) | templates of the move and register whose slots fill | **`choose`**, kind `template`: fills, fresh, specificity, prior, seed | **done (0.92)** |
 | A near word (`readByTypes` `near`) | words through k.words senses | **`choose`**, kind `word`: fits, cost, prior | **done (0.92)** |
 | The reading of several readers (`readEnsemble`) | frames pooled from the readers | **`choose`**, kind `ensemble`: agreement (weighted), coverage, cost, specificity; a confidence, a question back below the threshold | **done (0.98)** |
@@ -44,6 +44,9 @@ tuned in code.
 | An alternation rule (`normalise`) | rules that match | **`choose`**, kind `rule`: matches, specificity (literal words), then the order told (`n`); `byRule: 'order'` keeps the order alone | **done (0.93)**; 35/35 published cases unchanged |
 | A grammar parse (`parseText`) | parses | **`choose`**, kind `parse`: priority, literal words, size, depth; ties keep a stable order | **done (0.94)** |
 | A fact for a move (`compose`) | facts about the topic | **`choose`**, kind `fact`: unsaid, interest (k.interest) | **done (0.93)** |
+| A frame of a language world (`readFrames`) | frames that take every word | **`choose`**, kind `frame`: priority with the words of known sense | **done** |
+| A related case (`relatedCases`) | cases up and down the kinds | **`choose`**, kind `related`: valid, distance, a seeded order among ties | **done** |
+| A pairing of types (`alignWorlds`) | type pairs | **`choose`**, kind `alignment`: the share of matching slots, references a quarter more | **done** |
 | A choice point of a procedure (`std.plan`, `solveChoices`) | assignments | hard matches prune, soft matches weight a seeded draw | a weighted draw by design (variety), within hard constraints |
 | A frame to sample (`sample`) | legal frames | novelty weights, seeded | a weighted draw by design (variety) |
 | A story element (`storyPlan`) | catalog facts | hard constraints prune, soft ones weight a seeded draw | a weighted draw by design |

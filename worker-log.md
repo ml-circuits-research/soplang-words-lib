@@ -5461,3 +5461,9 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   use arbitrate's owner); the open-tab criterion left std.decide: a host's `criteria` / facts (Q70 answered 11:55).
 - PSys2 (origin/HEAD, vendor aside): no call of the library's turn, route or arbitrate (only a comment).
 - Gate: npm test 510 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.125.0 — R2 part 6: choosing sorts through choose
+
+- readFrames, relatedCases (stratification and final order), alignWorlds through choose kinds frame, related,
+  alignment (src/decide.mjs); `veto` export removed (PSys2 calls world.veto through its own code, never lib.veto).
+- Gate: npm test 510 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

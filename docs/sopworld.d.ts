@@ -136,7 +136,6 @@ export interface Veto {
 }
 export interface VetoOptions { minWords?: number; leftOut?: number; criteria?: Criterion[] }
 /** answer with the top reading, or not, and why */
-export declare function veto(result: { candidates: Scored[]; order: number[] } | Scored[], options?: VetoOptions): Veto;
 export interface QueryResult {
   /** 'budget': the call ran out of budget; `site`, `steps` and `why` say where */
   status: 'supported' | 'conflicting' | 'ambiguous' | 'missing' | 'refused' | 'no' | 'unknown' | 'budget' | 'unsupported';

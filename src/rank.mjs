@@ -101,8 +101,6 @@ export function vetoOf(result, { minWords = 1, leftOut = 0, criteria = RANKING }
   return { answer: reasons.length === 0, index: top.index ?? order[0], reasons, ask, read };
 }
 
-/** The same as world.veto, for a host that has scored readings in hand. */
-export function veto(result, options) { return vetoOf(result, options); }
 
 /**
  * One way to choose (reviewer 01:00): candidates of a choice point decided by the criteria declared for its

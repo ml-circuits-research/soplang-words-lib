@@ -5,6 +5,7 @@
 // has and the aligned slot of the other lacks (a default, a closed set of choices, required) is
 // OFFERED with the map, never told: the host measures it before taking it.
 // In the literature: structure mapping (Gentner 1983) and the Structure-Mapping Engine (Falkenhainer et al. 1989); docs/literature.md.
+import { choose } from './rank.mjs';
 
 const sigOf = (s) => [s.refs?.length ? 'ref' : (s.kinds || []).slice().sort().join('|') || 'atom', s.many ? 'many' : 'one', s.enum ? 'enum' : ''].join('/');
 
@@ -37,7 +38,7 @@ export function alignWorlds(a, b, { min = 0.5 } = {}) {
   const map = {}, slots = {}, taken = new Set();
   // references must agree: a pair whose ref slots point to types that pair as well is worth more
   const refScore = (p) => p.m && Object.entries(p.m).filter(([ka, kb]) => { const x = A[p.ta].find((s) => s.key === ka), y = B[p.tb].find((s) => s.key === kb); return x.refs?.length && y.refs?.length && pairs.some((q) => x.refs.includes(q.ta) && y.refs.includes(q.tb)); }).length;
-  for (const p of pairs.sort((x, y) => y.share + 0.25 * refScore(y) - (x.share + 0.25 * refScore(x)) || x.ta.localeCompare(y.ta))) {
+  for (const p of choose(null, 'alignment', pairs.map((x) => ({ ...x, fit: x.share + 0.25 * refScore(x) })).sort((x, y) => x.ta.localeCompare(y.ta)), { seed: null }).order) { // one way to choose (std.decide kind alignment); ties in the order of the type names
     if (map[p.ta] || taken.has(p.tb)) continue;
     map[p.ta] = p.tb; slots[p.ta] = p.m; taken.add(p.tb);
   }

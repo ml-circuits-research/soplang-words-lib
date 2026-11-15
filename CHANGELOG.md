@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.125.0
+
+R2, sixth part (architecture review finding 14): every choosing sort through `choose`.
+
+### Changed
+- `readFrames`, `relatedCases` and `alignWorlds` choose through `choose`, with std.decide kinds
+  `frame`, `related` and `alignment` declared as data (docs/decisions.md lists them).
+
+### Removed
+- `veto` (the same as `world.veto`, which stays); PSys2 does not call it.
+
 ## 0.124.0
 
 R2, fifth part (architecture review finding 10; Q70 answered 11:55): one request pipeline, one

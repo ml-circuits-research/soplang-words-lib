@@ -42,4 +42,8 @@ export const DECIDE_TEXT = String.raw`
 @std.decide.c.fact.1 std.decide.criterion of=fact n=1 name=unsaid measure=said dir=hard
 @std.decide.c.fact.2 std.decide.criterion of=fact n=2 name=about_topic measure=aboutTopic dir=max about="a fact about the topic itself before one that only names it among its values"
 @std.decide.c.fact.3 std.decide.criterion of=fact n=3 name=interest measure=interest dir=max about="k.interest"
+@std.decide.c.frame.1 std.decide.criterion of=frame n=1 name=score measure=score dir=max about="a language frame's priority with the words of known sense (readFrames)"
+@std.decide.c.related.1 std.decide.criterion of=related n=1 name=valid measure=valid dir=max about="a related case the world answers and reads back first (relatedCases)"
+@std.decide.c.related.2 std.decide.criterion of=related n=2 name=distance measure=distance dir=min
+@std.decide.c.alignment.1 std.decide.criterion of=alignment n=1 name=fit measure=fit dir=max about="the share of slots that match, references to paired types counting a quarter more (alignWorlds)"
 `;

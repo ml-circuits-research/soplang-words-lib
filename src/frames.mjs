@@ -11,6 +11,7 @@
 
 import { analyse, fold, splitClitics } from './morph.mjs';
 import { valueText } from './parser.mjs';
+import { choose } from './rank.mjs';
 
 const bare = (v) => valueText(v);
 
@@ -106,6 +107,6 @@ export function readFrames(world, text, { lang = 'w.lang.ro', morph: m, dictiona
     const known = Object.values(roles).flatMap((v) => v.words || []).filter((x) => x.sense).length + Object.values(roles).filter((v) => v.item !== undefined || v.rel !== undefined || v.value !== undefined).length; // a word with a sense, or a role read from a closed list
     out.push({ frame: fr.name, en: fr.en, act: fr.act, mode: fr.mode, roles, ...(verb ? { verb: { form: verb.form, lemma: verb.lemma, en: verb.en } } : {}), score: fr.priority + known + parts.filter((p) => !p.optional).length / 10 });
   }
-  out.sort((x, y) => y.score - x.score);
-  return { best: out[0] ?? null, frames: out.slice(0, max), tokens: toks };
+  const ranked = choose(world, 'frame', out, { seed: null }).order; // one way to choose (std.decide kind frame)
+  return { best: ranked[0] ?? null, frames: ranked.slice(0, max), tokens: toks };
 }

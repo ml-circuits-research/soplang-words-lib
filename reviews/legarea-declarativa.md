@@ -1,797 +1,796 @@
-# Legarea declarativă a lumilor vii de cunoaștere și de unelte
+# SOP Worlds: curs de început
 
-*Versiunea 1, 15 noiembrie 2026. Sursă pentru documentația din sopworld și pentru skill-uri. Scrisă de revizor; ce e marcat **[există]** este în bibliotecă sau în aplicație azi, ce e marcat **[provizoriu]** există dar în locul greșit (cod în aplicație), ce e marcat **[propus]** nu există încă.*
+*Versiunea 2, 15 noiembrie 2026. Text de lucru în română, sursă pentru documentația și skill-urile din sopworld. Termenul englez este dat în paranteză la prima apariție.*
 
----
-
-## Cum se citește acest document
-
-Documentul răspunde la o singură întrebare: **cum ajunge o propoziție a unui om să producă un efect real într-un domeniu al sistemului, fără ca cineva să fi scris cod pentru acea propoziție sau pentru acel domeniu?**
-
-Răspunsul are trei părți, în această ordine:
-
-1. **Limbajul** (Partea I): ce este un fir, ce este un tip, cum se pun scheme și constrângeri pe fire.
-2. **Declarațiile** (Partea II): ce spune despre sine un domeniu de capabilități, ca să poată fi folosit de mecanismele generale.
-3. **Mecanismele** (Părțile III–VI): cum se citește cererea, cum se leagă de declarații, când și cum se raționează, cum se execută și cum se răspunde.
-
-Urmează rețeta pentru un domeniu nou (Partea VII), ce este interzis și cum se verifică (Partea VIII), starea de azi (Partea IX) și legăturile cu literatura (Partea X).
-
-Regula care stă deasupra tuturor: **cod este doar acțiunea concretă a unei unelte. Tot restul — ce parametri există, cum se potrivesc, ce valoare se alege, ce constrângere se respectă, ce se răspunde — este cunoaștere scrisă ca fire și executată de mecanisme generale.**
+*Documentul descrie și lucruri care nu există încă. Lecția 20 spune exact ce există, ce este provizoriu și ce este doar propus. Până acolo, tot ce este propus poartă semnul **[propus]**.*
 
 ---
 
-# Partea I — Limbajul: fire, tipuri, scheme
+## Lecția 1. Ce problemă rezolvă tehnologia
 
-## 1. Firul (wire)
+Un om scrie o propoziție: „desenează o pădure mare, fără păsări”. Sistemul trebuie să facă ceva real: să pună copaci pe o pagină. Apoi omul scrie „mai puțini” și sistemul trebuie să înțeleagă că e vorba de copaci, să păstreze restul și să refacă desenul.
 
-Un **fir (wire)** este o singură declarație:
+Felul obișnuit de a construi așa ceva este să scrii, pentru fiecare fel de propoziție, o bucată de program care o recunoaște și face ce trebuie. Merge pentru propozițiile la care s-a gândit programatorul. Pentru celelalte nu merge, iar fiecare propoziție nouă cere încă o bucată de program. După câteva sute de bucăți, nimeni nu mai știe ce face sistemul și de ce, iar o reparație strică altceva.
 
-```
-@id tip cheie=valoare cheie=valoare ...
-```
+SOP Worlds pornește de la altă idee. Programul nu știe nimic despre propoziții anume și nimic despre păduri. El știe doar să lucreze cu **declarații**. Tot ce este specific — ce lucruri există, ce se poate face cu ele, ce este tipic, ce nu este voie — este scris ca declarații, într-un singur limbaj mic, numit SOP Lang. Câteva mecanisme generale citesc aceste declarații și fac restul: înțeleg cererea, aleg valorile care lipsesc, verifică regulile, cheamă unealta potrivită și spun ce au făcut.
 
-- `@id` este **identificatorul (id)** firului. Alte fire îl pot numi cu `$id`; aceasta este o **referință (reference)**.
-- `tip` este **tipul (type)** firului: al doilea cuvânt. Spune ce fel de declarație este.
-- `cheie=valoare` este o pereche. Un fir are **chei (keys)**. O cheie poate apărea de mai multe ori (`acts=make acts=remove`): atunci are mai multe valori.
+Scopul are trei părți.
 
-Exemplu:
+Prima: **refolosire**. Ce se scrie o dată despre culori, mărimi, animale sau despre cum arată o schemă logică se folosește în orice parte a sistemului, fără a fi copiat.
 
-```
-@a1 k.animal name=fish lives=water legs=0
-```
+A doua: **extindere fără program nou**. O zonă nouă a sistemului (de exemplu un calendar) se adaugă scriind declarații și câteva unelte mici, nu scriind din nou înțelegerea limbii și luarea deciziilor.
 
-**Terminologie fixă.** Un fir are *chei*, nu sloturi și nu roluri. Cele trei cuvinte înseamnă lucruri diferite și nu se amestecă:
+A treia: **cinste**. Pentru că fiecare valoare vine dintr-o declarație, sistemul poate spune de unde a luat-o („am pus 7 noduri, cât e tipic”) și poate spune limpede ce nu a înțeles sau ce nu poate face, în loc să ghicească.
 
-| Termen | Ce este | Unde trăiește |
-|---|---|---|
-| **cheie (key)** | numele unei valori dintr-un fir concret | în fir |
-| **slot (slot)** | *declarația* unei chei pentru un tip: ce poate conține, dacă e obligatorie, ce valoare implicită are | în schemă, ca fir de tip `core.slot` |
-| **rol (role)** | locul pe care îl ocupă o valoare într-un *act*: cine, ce, unde, cât | în semnătura unui act și într-un plan |
+Restul cursului explică, pe rând: limbajul (lecțiile 2–6), felurile de lumi (lecția 7), ce declară o zonă a sistemului (lecțiile 8–10), drumul unei cereri (lecțiile 11–13), legarea (lecțiile 14–15), raționamentul (lecțiile 16–17), execuția și răspunsul (lecția 18), rețeta pentru o zonă nouă (lecția 19), starea de azi (lecția 20), regulile de revizie (lecția 21) și legăturile cu alte sisteme (lecția 22).
 
-Deci: firul `@b1 box name=Ana on=$s1` are cheile `name` și `on`. Faptul că `box` are voie să aibă `name` și că `name` e obligatoriu este un slot. Iar când cineva spune „mută cutia pe raftul de sus”, „cutia” ocupă rolul *lucru* și „raftul de sus” rolul *loc* în actul *mută*. Legarea despre care vorbește acest document este în mare parte drumul **de la roluri la chei și la parametri de unelte**.
+Pe tot parcursul folosim un exemplu foarte mic: **un raft cu cutii**. Omul poate pune cutii pe rafturi, le poate muta, colora și șterge.
 
-**De ce o singură formă.** Fapte, scheme, reguli, constrângeri, cuvinte, capabilități și legături de unelte se scriu toate ca fire. Consecința practică: orice mecanism care știe să citească fire poate citi orice declarație, inclusiv declarațiile despre alte declarații. Nu există un al doilea limbaj „de configurare”.
+---
 
-*Cu ce seamănă:* cadrele (frames) ale lui Minsky (1974) și structurile de trăsături (feature structures) din gramaticile de unificare; un fir fără variabile este un fapt Datalog cu argumente numite în loc de poziționale.
+## Lecția 2. Firul
 
-## 2. Fapt, model, șablon, variabilă
-
-- Un **fapt (fact)** este un fir fără variabile: spune că ceva este așa.
-- O **variabilă (variable)** este `?nume` în loc de valoare: o valoare de găsit prin potrivire.
-- Un **model (pattern)** este un fir care descrie fire de găsit.
-- Un **șablon (template)** este un fir care descrie un fir de făcut sau de completat.
-
-O **regulă (rule)** spune: „dacă aceste modele se potrivesc, aceste șabloane sunt adevărate”. O **interdicție (deny)** spune: „aceste modele nu au voie să se potrivească”.
+Unitatea limbajului este **firul (wire)**. Un fir este o singură declarație, scrisă pe un rând:
 
 ```
-@r1 core.rule when=$p1 then=$t1
-@p1 box on=?s
-@t1 shelf.used id=?s
-@d1 core.deny when=$p2 doc="o cutie nu stă pe ea însăși"
-@p2 box id=?b on=?b
+@c1 box name=Ana colour=red on=$r1
 ```
 
-## 3. Lume și matrice (world, matrix)
+Rândul se citește așa. `@c1` este **identificatorul (id)** firului, numele lui propriu. `box` este **tipul (type)** firului: spune ce fel de declarație este. Urmează perechi `cheie=valoare`. Fiecare pereche are o **cheie (key)**, aici `name`, `colour` și `on`, și o valoare.
 
-O **lume (world)** este o mulțime de fapte ținută consistentă cu o **matrice (matrix)**. Matricea este totalitatea firelor care spun ce fapte pot exista și ce decurge din ele: sloturi, tipuri, reguli, interdicții.
+Valoarea `$r1` este o **referință (reference)**: arată spre alt fir, cel cu identificatorul `r1`. Așa se leagă firele între ele.
 
-Lumea verifică fiecare schimbare. O schimbare care încalcă matricea este refuzată, iar motivul refuzului este el însuși date (**încălcare, violation**), nu un mesaj de eroare scris de mână.
-
-*Cu ce seamănă:* o bază de cunoștințe cu TBox și ABox din logicile descriptive, plus constrângeri de integritate ca în bazele de date, plus un sistem de menținere a adevărului (truth maintenance, Doyle 1979; de Kleer 1986), fiindcă lumea ține minte din ce a derivat fiecare valoare.
-
-## 4. Tip și fel de lucru
-
-Aici apare confuzia cea mai frecventă, deci precis:
-
-- **Tip (type)** este al doilea cuvânt al oricărui fir. `k.animal`, `core.slot`, `box` sunt tipuri. Un tip poate extinde alt tip (`extends=`).
-- **Fel de lucru (kind of thing)** este un tip care extinde `std.schema.thing`. Adică: un tip de fire ale căror instanțe sunt *lucruri din domeniu* pe care omul le poate face, schimba, muta, șterge.
-
-Deci **da, un fel de lucru este un tip de fir** — dar nu orice tip de fir este un fel de lucru. `core.slot` este un tip, dar nimeni nu „desenează un slot”. `box` este și tip, și fel de lucru.
+O cheie poate apărea de mai multe ori în același fir. Atunci are mai multe valori:
 
 ```
-@t.box   core.type of=box   extends=std.schema.thing closed=true
-@t.shelf core.type of=shelf extends=std.schema.thing closed=true
+@k2 std.schema.kind of=box acts=make acts=remove
+```
+
+Firul de sus spune că pe `box` se aplică două acte, `make` și `remove`.
+
+Un fir care spune că ceva este așa, fără nimic de găsit, se numește **fapt (fact)**. Firul `@c1` de mai sus este un fapt: există o cutie numită Ana, roșie, pe raftul `r1`.
+
+Atât este limbajul la bază. Tot ce urmează — scheme, reguli, cuvinte, capabilități — se scrie cu aceeași formă. Câștigul este că un mecanism care știe să citească fire poate citi orice declarație din sistem.
+
+---
+
+## Lecția 3. Lumea
+
+O **lume (world)** este o mulțime de fire ținute împreună și verificate. Într-o lume intră două feluri de fire.
+
+Primele sunt **faptele**: ce există acum. De exemplu, cele două cutii și raftul.
+
+Celelalte sunt firele care spun **ce fapte au voie să existe și ce decurge din ele**. Pe acestea le numim **schema (schema)** lumii. Schema spune, de exemplu, că o cutie are un nume, că are o culoare, că stă pe un raft, și că pe un raft încap cel mult trei cutii.
+
+Lumea verifică fiecare schimbare față de schemă. Dacă cineva încearcă să pună a patra cutie pe un raft de trei, lumea refuză. Refuzul nu este un mesaj de eroare scris de cineva; este el însuși o declarație, care spune ce regulă a fost încălcată și de către ce fir. Se numește **încălcare (violation)**. De aceea sistemul poate explica refuzul.
+
+O lume mai are două însușiri folositoare. Ține minte istoricul, deci poate reveni la o stare anterioară (**undo**). Și se poate copia: o **copie (fork)** este o a doua lume care pornește identică, pe care se poate încerca ceva fără a atinge originalul.
+
+> **Notă de terminologie.** În codul și documentația actuală a bibliotecii, ceea ce numim aici „schemă” se numește *matrix*. Cuvântul „schemă” este mai ușor de înțeles și îl folosim în tot cursul. Există o singură grijă: biblioteca folosește deja „schema lumii” (world schema) pentru o schemă publicată spre refolosire, cu nume propriu, de exemplu `w.seating`. Cele două sensuri se împacă bine: **schema** este partea de reguli a oricărei lumi; **schema lumii** este o schemă împachetată și publicată ca să fie încărcată în mai multe lumi. Dacă proprietarul aprobă schimbarea, cuvântul *matrix* se înlocuiește în bibliotecă.
+
+---
+
+## Lecția 4. Tipuri și feluri de lucruri
+
+Fiecare fir are un tip. Tipurile se declară și ele prin fire:
+
+```
+@t.box   core.type of=box   extends=std.schema.thing
+@t.shelf core.type of=shelf extends=std.schema.thing
 @t.crate core.type of=crate extends=box
 ```
 
-`crate extends=box` este **moștenire (lineage)**: orice se spune despre `box` e valabil pentru `crate`. Moștenirea este prima și cea mai ieftină tehnică de generalizare (vezi §17).
+Cheia `extends` spune că un tip îl **extinde** pe altul. Tot ce se declară despre `box` este valabil și pentru `crate`. Aceasta se numește **moștenire (lineage)**.
 
-Atenție la un al doilea sens, moștenit din bibliotecă: în `core.slot ... kind=integer`, **fel de literal (kind)** înseamnă ce fel de valoare ține slotul (`integer`, `number`, `boolean`, `string`, `atom`, `quantity.<nume>`, `time.<nume>`). În acest document scriu mereu „fel de lucru” sau „fel de literal”, niciodată doar „fel”.
+Unele tipuri descriu lucruri pe care omul le poate face, muta sau șterge: cutii, rafturi, copaci, noduri, paragrafe. Pe acestea le numim **feluri de lucruri (kinds of things)**. Un fel de lucru este un tip care extinde `std.schema.thing`.
 
-## 5. Slotul: schema unei chei
+Deci un fel de lucru *este* un tip de fir. Dar nu orice tip este un fel de lucru. `core.type` este un tip, însă nimeni nu „pune un core.type pe raft”. `box` este și tip, și fel de lucru.
 
-```
-@s.box.name  core.slot of=box   key=name  kind=string  required=true ask="Cum se numește cutia?"
-@s.box.on    core.slot of=box   key=on    type=shelf
-@s.box.size  core.slot of=box   key=size  kind=atom enum=small enum=medium enum=big default=medium
-@s.shelf.cap core.slot of=shelf key=slots kind=integer min=1 max=6 default=3
-```
-
-Un slot poate spune:
-
-- **ce ține**: un fel de literal (`kind=`), un alt lucru (`type=shelf`, adică o legătură), o listă închisă (`enum=`), un interval (`min= max= step=`);
-- **dacă e obligatoriu** (`required=true`). O cheie obligatorie fără valoare este o **cheie deschisă (open key)**. O cheie deschisă este o întrebare pe care lumea știe că o are;
-- **valoarea implicită** (`default=`), luată ca **presupunere (assumption)**, nu ca fapt spus;
-- **întrebarea** de pus omului când cheia e deschisă (`ask=`).
-
-Acesta este răspunsul la „cum pui scheme pe tipurile de fire”: **schema unui tip este mulțimea firelor `core.slot` care îl numesc.** Nu există un format separat de schemă.
-
-## 6. Constrângeri peste fire
-
-Constrângerile se scriu tot ca fire. Sunt cinci forme, de la cea mai ieftină la cea mai scumpă:
-
-| Formă | Exemplu | Ce verifică |
-|---|---|---|
-| limite de slot | `min=1 max=6`, `enum=` | o valoare, local |
-| limită de număr `std.schema.limit` | `of=table max=50` | câte lucruri de un fel |
-| capacitate `std.schema.capacity` | `of=shelf key=slots holds=box via=on` | câte lucruri ține un alt lucru |
-| interdicție `core.deny` | „doi invitați certați nu stau la aceeași masă” | o combinație de fapte |
-| verificare calculată `core.check` | „intervalele nu se suprapun” | o funcție numită, peste valori |
-
-O constrângere poate fi **tare (hard)** — schimbarea e refuzată — sau **slabă (soft)** — schimbarea e primită și se ține o **problemă (issue)** ca fir `core.issue` cât timp durează. Diferența contează enorm pentru raționament: constrângerile tari taie candidați, cele slabe îi ordonează (§27).
-
-*Cu ce seamănă:* problemele de satisfacere a constrângerilor (CSP; Mackworth 1977 pentru consistența pe arce) și varianta lor ponderată (weighted / soft CSP).
-
-## 7. Cum devin firele „lucruri generale” pe care lucrează motoarele
-
-Mecanismele generale nu citesc tipuri anume. Ele citesc o **vedere ca fapte (facts view)** a oricărei lumi **[există: `factsOf`]**. În această vedere, orice fir care nu e model sau fir de matrice devine:
-
-- un **lucru (thing)** cu felurile lui (tipul lui, tipurile pe care le extinde);
-- **atribute**: triplete `(lucru, atribut, valoare)`;
-- **relații**: triplete `(lucru, relație, lucru)` — orice referință `$id` și orice slot `type=`.
-
-Asta este „traducerea în ceva generic”: indiferent că lumea e un desen, un plan de mese sau un document, motoarele văd *lucruri, atribute, relații și feluri*. O regulă de raționament scrisă pe această vedere merge pe orice lume.
-
-Al doilea pas de generalizare vine din cunoaștere **[există: `kindFactsOf`]**: ce spune un catalog despre un fel de lucru („peștele trăiește în apă”, „un nor stă pe cer”) devine fapte despre *orice lucru de acel fel* din orice lume vie.
+| Termen | Explicație |
+|---|---|
+| tip (type) | Al doilea cuvânt al oricărui fir. Spune ce fel de declarație este firul. |
+| fel de lucru (kind of thing) | Un tip care extinde `std.schema.thing`. Firele de acest tip sunt lucrurile din lume asupra cărora omul acționează. |
+| moștenire (lineage) | Lanțul de tipuri extinse. Ce se spune despre un tip este valabil pentru toate tipurile care îl extind. |
 
 ---
 
-# Partea II — Cele trei feluri de lumi și ce declară un domeniu
+## Lecția 5. Sloturi: schema unei chei
 
-## 8. Cele trei feluri de lumi
-
-| Fel | Ce conține | Exemplu |
-|---|---|---|
-| **schema lumii (world schema)** | ce este un fel de lume: felurile de lucruri, sloturile, actele, limitele, regulile, cuvintele. Fără lucruri anume. Refolosibilă. | `w.seating`: mese, locuri, invitați |
-| **lume de cunoaștere (knowledge world)** | fapte despre lume în general, adevărate pentru toți, fără stare de sesiune | `k.animals`, `k.colours`, `k.expect`, `w.lang.en` |
-| **lume vie (live world)** | o instanță care rulează: lucrurile făcute de om, valorile lor, focusul, istoricul, undo | planul de mese de sâmbătă |
-
-Relația: **lume vie = scheme + cunoașterea pe care o citește + starea sesiunii.**
-
-## 9. Domeniul de capabilități (capability domain)
-
-Sistemul are mai multe zone în care poate face lucruri reale: desenează, face diagrame, scrie documente, așază invitați, ține un calendar, cântă note. Numesc o astfel de zonă **domeniu de capabilități (capability domain)**. Evit cuvântul „tab”: tabul este doar un mod de a *arăta* un domeniu pe ecran. Același domeniu poate fi arătat într-o fereastră, citit cu voce sau folosit de alt program.
-
-Un domeniu de capabilități este alcătuit din:
-
-1. **o lume vie** — starea lui, ca fire;
-2. **unelte (tools)** — codul care produce efectul real (pune pixeli, mută un nod, inserează un paragraf);
-3. **una sau mai multe vederi (views)** — cum este arătată starea.
-
-## 10. Capabilitate, unealtă, legătură — trei lucruri diferite
-
-Aceasta este distincția pe care o cere întreaga arhitectură.
-
-- **Capabilitate (capability)**: o *promisiune declarată* a domeniului. Are forma: *act* + *pe ce fel de lucru* + *ce constrângeri onorează*. Exemplu: „pot **face** o **pădure** și țin cont de **număr**, **mărime**, **loc** și de **ce feluri nu vrei**”. Este cunoaștere, scrisă ca fir. Nu spune *cum*.
-- **Unealtă (tool)**: o *operație de cod* cu parametri tipizați și un efect. Exemplu: `add(kind, n, size, colour, where)`. Nu știe nimic despre propoziții, cereri sau valori implicite.
-- **Legătură (binding)**: firele care spun *ce unealtă realizează ce capabilitate și de unde vine fiecare argument*.
-
-Relațiile dintre ele:
-
-- o capabilitate fără legătură la o unealtă este o promisiune neonorată: mecanismul trebuie să spună „știu ce ceri, dar nu am cu ce”;
-- o unealtă fără capabilitate este de neatins prin limbaj: există, dar nimeni nu o poate cere;
-- o capabilitate poate fi realizată de **mai multe unelte în secvență** (un „iaz” = apă + pești + stuf), iar descompunerea vine din cunoaștere, nu din unealtă;
-- aceeași unealtă poate realiza **mai multe capabilități** (`add` servește și „desenează trei pisici”, și fiecare parte a unei păduri).
-
-De ce separate: capabilitatea e ce înțelege *omul* și ce verifică *planificatorul*; unealta e ce poate *codul*. Dacă le lipești, ajungi exact la ce am găsit în aplicație: o funcție JavaScript care citește cererea, alege valori și scrie propoziția de răspuns.
-
-*Cu ce seamănă:* în planificarea clasică (STRIPS, Fikes și Nilsson 1971; PDDL), capabilitatea este operatorul abstract cu precondiții și efecte, unealta este executorul. În apelarea de funcții de către modelele de limbaj și în MCP, unealta are o schemă de parametri — dar acolo *modelul* decide argumentele; aici le decide un mecanism care poate arăta de unde a luat fiecare valoare.
-
-## 11. Ce declară un domeniu: lista completă
-
-Un domeniu declară șase grupe de fire. Nimic altceva nu are voie să fie „știut” în cod.
-
-**(a) Felurile de lucruri și sloturile lor [există]** — §4, §5.
-
-**(b) Cuvintele [există]** — `core.word text=crate means=box`. Vocabularul domeniului stă lângă domeniu; limba (determinanți, prepoziții, numerale, indicii de negație) stă în lumea limbii.
-
-**(c) Capabilitățile [există]**
+Un fir are chei. Dar ce chei are voie să aibă un fir de tip `box`? Ce valori pot avea? Care sunt obligatorii? Răspunsul îl dau firele de tip `core.slot`. Un **slot (slot)** este declarația unei chei pentru un tip.
 
 ```
-@k.box   std.schema.kind    of=box   world=shelfworld acts=make acts=place acts=change acts=remove
-@h.make  std.schema.honours world=shelfworld act=make  on=kind on=count on=size on=place on=attribute of=box
-@h.place std.schema.honours world=shelfworld act=place on=place of=box
+@s1 core.slot of=box   key=name   kind=string
+@s2 core.slot of=box   key=colour kind=atom
+@s3 core.slot of=box   key=size   kind=atom enum=small enum=big default=small
+@s4 core.slot of=box   key=on     type=shelf required=true ask="Pe ce raft?"
+@s5 core.slot of=shelf key=slots  kind=integer min=1 max=6 default=3
 ```
 
-`std.schema.kind` spune ce acte se aplică unui fel de lucru. `std.schema.honours` spune ce **chei de constrângere** onorează un act pentru lucrurile numite. Cheile de constrângere sunt cele din `w.request` (§14): `kind`, `count`, `size`, `extent`, `attribute`, `place`, `manner`, `layout`, `with`, `about`, `length`.
+Firul `@s3` se citește așa: tipul `box` are cheia `size`; valoarea este un cuvânt dintr-o listă închisă, `small` sau `big`; dacă nimeni nu spune mărimea, se ia `small`.
 
-**(d) Uneltele: semnătură, precondiții, efecte [propus; azi doar `std.schema.effect of= act= action=` și, în aplicație, `psys2.op`]**
+Firul `@s4` spune că cheia `on` ține un alt lucru, de tip `shelf`. Este obligatorie. Dacă lipsește, lumea știe ce întrebare să pună.
 
-```
-@op.add   std.tool.op    world=shelfworld name=add effect=makes
-@pa.kind  std.tool.param op=add name=kind  type=box        required=true
-@pa.n     std.tool.param op=add name=n     kind=integer min=1 max=20 default=1
-@pa.size  std.tool.param op=add name=size  accepts=small accepts=medium accepts=big
-@pa.on    std.tool.param op=add name=on    type=shelf
-@pre.add  std.tool.needs op=add exists=shelf
-```
+| Ce poate spune un slot | Explicație |
+|---|---|
+| ce fel de valoare ține | Cu `kind=`: număr întreg, număr, text, cuvânt, cantitate, moment de timp. |
+| că ține un alt lucru | Cu `type=`: valoarea este un fir de acel tip. Așa apar legăturile între lucruri. |
+| valorile permise | Cu `enum=` pentru o listă închisă, sau `min=`, `max=`, `step=` pentru un interval. |
+| dacă este obligatorie | Cu `required=true`. O cheie obligatorie fără valoare se numește **cheie deschisă (open key)**. O cheie deschisă este o întrebare pe care lumea știe că o are. |
+| valoarea implicită | Cu `default=`. Este luată ca presupunere, nu ca fapt spus de om. |
+| întrebarea de pus | Cu `ask=`. |
 
-**(e) Legătura [propus]**
+Trei cuvinte se confundă ușor și trebuie ținute separat:
 
-```
-@b.make std.tool.bind world=shelfworld act=make of=box op=add
-@a1 std.tool.arg bind=$b.make param=kind from=step.kind
-@a2 std.tool.arg bind=$b.make param=n    from=step.count
-@a3 std.tool.arg bind=$b.make param=size from=request.size
-@a4 std.tool.arg bind=$b.make param=on   from=request.place
-```
+| Termen | Explicație |
+|---|---|
+| cheie (key) | Numele unei valori dintr-un fir concret. Firul `@c1 box name=Ana` are cheia `name`. |
+| slot (slot) | Declarația unei chei pentru un tip, în schemă. Spune ce are voie să conțină cheia. |
+| rol (role) | Locul pe care îl ocupă o valoare într-o acțiune cerută: ce lucru, unde, cât. Apare în cereri și planuri, nu în fire. Îl întâlnim în lecția 11. |
 
-**(f) Așteptări proprii, opțional [există: `k.expect.*`]** — doar unde domeniul diferă de cunoașterea generală (§20).
-
-Și, în afara firelor, două bucăți de cod:
-
-- **uneltele** propriu-zise;
-- **vederea stării (state view)**: o funcție care dă starea reală a uneltei ca fire (ce lucruri sunt, cu ce id, ce atribute, unde).
+Răspunsul la întrebarea „cum se pune o schemă pe un tip de fir” este, așadar, simplu: schema unui tip este mulțimea firelor `core.slot` care numesc acel tip. Nu există un al doilea format.
 
 ---
 
-# Partea III — Traseul unei cereri
+## Lecția 6. Reguli și constrângeri
 
-## 12. Privire de ansamblu: șapte pași
+Sloturile spun ce poate conține un fir luat singur. Unele lucruri privesc mai multe fire deodată. Pentru ele există reguli și constrângeri, scrise tot ca fire.
 
-| Pas | Întrebarea | Intră | Iese | Mecanism |
-|---|---|---|---|---|
-| 1. **Vedere** | Ce este acum în domeniu? | starea uneltei | fapte | vederea stării + `factsOf` |
-| 2. **Înțelegere** | Ce a spus omul? | text | cerere (`w.request`) | `readRequest` |
-| 3. **Situare** | E cerere nouă sau reacție? La ce se referă? | cerere + dialog | cerere revizuită | `reviseRequest`, referințe |
-| 4. **Decizie** | Ce anume se face, cu ce valori? | cerere + capabilități + cunoaștere + fapte | plan | `planRequest` |
-| 5. **Acțiune** | Fă-o. | plan + legături | efect + stare nouă | `runPlan` + unelte |
-| 6. **Spunere** | Ce s-a făcut, ce s-a presupus, ce nu s-a putut? | plan + diferență de stare | răspuns | `sayRequest` |
-| 7. **Păstrare** | Ce ține minte dialogul? | tot | pas de istoric | `w.dialogue`, cronologie |
+Pentru a vorbi despre „orice cutie” avem nevoie de o **variabilă (variable)**. O variabilă se scrie `?nume` în locul unei valori și înseamnă „o valoare de găsit”. Un fir cu variabile se numește **model (pattern)**: descrie fire de căutat.
 
-Limba apare doar la pașii 2 și 6. Între ei, totul este fire fără cuvinte. De aceea româna poate rămâne un strat de traducere și de aceea un domeniu nou nu cere o gramatică nouă.
+O **regulă (rule)** spune: dacă aceste modele se potrivesc, atunci și acest fir este adevărat. O **interdicție (deny)** spune: aceste modele nu au voie să se potrivească.
 
-*Cu ce seamănă:* arhitectura „stare de informație” a dialogului (information state update, Larsson și Traum 2000); ciclul clasic percepe–decide–acționează; conducta de generare de limbaj a lui Reiter și Dale (2000) pentru pasul 6.
+```
+@d1 core.deny when=$p1 doc="o cutie mare nu stă pe raftul de sus"
+@p1 box size=big on=?r
+@p2 shelf id=?r level=top
+```
 
-## 13. Pasul 1 — vederea
+O constrângere poate fi **tare (hard)** sau **slabă (soft)**. La una tare, schimbarea este refuzată. La una slabă, schimbarea este primită, dar lumea ține o **problemă (issue)** cât timp situația durează. Diferența va conta la raționament: constrângerile tari elimină variante, cele slabe le ordonează de la bună la mai puțin bună.
 
-Înainte de orice citire, starea reală a uneltei devine fapte. Motivele:
-
-- referințele („cutia roșie”, „pe ele”, „a doua”) se rezolvă pe fapte, nu pe text;
-- constrângerile se verifică pe fapte;
-- **diferența dintre vederea de dinainte și cea de după** este singura sursă cinstită pentru „ce s-a făcut”.
-
-Regulă: vederea nu interpretează. Dă id-uri, feluri, atribute, relații. Nimic despre cerere.
-
-*Cu ce seamănă:* problema vederilor actualizabile din baze de date și lentilele bidirecționale (Foster și colab. 2007): starea uneltei și faptele sunt două fețe ale aceluiași lucru, ținute în acord.
-
-## 14. Pasul 2 — înțelegerea: cererea ca lume
-
-O propoziție nu se potrivește cu un tipar de propoziție. Se citește într-o **cerere (request)**, care este ea însăși fire, de tip `w.request`:
-
-- **actul (act)**: ce se vrea făcut — `make`, `change`, `place`, `remove`, `arrange`, `undo`…;
-- **ținta (target)**: pe ce — un fel de lucru sau un întreg;
-- **constrângerile (constraints)**: fiecare cu `on` (cheia), `want` (`yes` / `no` / `not_all`), valoare, eventual număr, limite, unitate, și **cuvintele exacte** din care a fost citită;
-- **reacțiile (reactions)**: „prea multe”, „mai mic”, „frumos”;
-- **necititul (unread)**: cuvintele pe care nimic nu le-a luat.
-
-Exemplu: „fă o pădure mare, fără păsări” devine: act `make`, țintă `forest`, constrângeri `size=big (yes)`, `kind=bird (no)`, nimic necitit.
-
-De unde vin cuvintele — toate date:
-
-- **indicii (cues)** din lumea limbii: „fără”, „cel mult”, „în colț”, „prea multe”;
-- **felurile de lucruri** și **cuvintele** domeniului;
-- **valorile** din sloturi (`enum=`) și din cataloage (culori);
-- **verbele** din `k.actions`.
-
-Două reguli de cinste:
-
-1. **Ce nu e citit se spune.** O cerere cu cuvinte necitite în locuri care contează nu se execută pe ghicite.
-2. **Corectarea de cuvinte** (`repairWords`) nu atinge un cuvânt corect: candidații vin din faptele lumilor vii, din dialog, apoi din dicționar, și se repară doar la un singur cel mai bun candidat.
-
-*Cu ce seamănă:* semantica de cadre (Fillmore; FrameNet) și sistemele de dialog conduse de cadre (GUS, Bobrow și colab. 1977); SHRDLU (Winograd 1972) pentru ideea că înțelegerea se sprijină pe starea unei lumi mici.
-
-## 15. Pasul 3 — situarea
-
-Trei întrebări, fiecare cu mecanismul ei:
-
-- **Cerere nouă sau reacție?** Un mesaj cu act și lucru nou e cerere nouă. Altfel e reacție la ultimul rezultat, iar faptele `w.dialogue.revision` spun ce face reacția: `step` (un pas pe scară: „mai puține” înjumătățește numărul), `flip` (ce era devine nedorit), `add` (constrângerea spusă o înlocuiește pe cea cu aceeași cheie), `keep` (la fel, altă variantă), `undo`, `none`.
-- **La ce se referă?** „el”, „ele”, „cutia roșie”, „a doua” se rezolvă pe faptele din vedere și pe ultimul rezultat ținut de dialog.
-- **Ce rămâne neatins?** O revizuire schimbă *doar* cheile pe care le numește. Restul cererii anterioare rămâne exact. Aceasta este schimbarea minimă.
-
-*Cu ce seamănă:* revizuirea de convingeri cu schimbare minimă (AGM: Alchourrón, Gärdenfors, Makinson 1985); rezolvarea anaforei pe o stare de discurs.
+| Formă de constrângere | Explicație |
+|---|---|
+| limitele unui slot | `min`, `max`, `enum`. Privesc o singură valoare. |
+| limită de număr | `std.schema.limit of=table max=50`: cel mult atâtea lucruri de un fel. |
+| capacitate | `std.schema.capacity of=shelf key=slots holds=box via=on`: câte lucruri poate ține un alt lucru. |
+| interdicție | `core.deny`: o combinație de fapte care nu are voie să existe. |
+| verificare calculată | `core.check`: o funcție numită, pentru ce nu se poate spune prin modele, de exemplu „două intervale de timp nu se suprapun”. |
 
 ---
 
-# Partea IV — Tehnicile de legare, una câte una
+## Lecția 7. Trei feluri de lumi
 
-Legarea este drumul de la **rolurile cererii** la **cheile lumii vii** și la **parametrii uneltelor**. Sunt unsprezece tehnici. Le dau în ordinea costului: se încearcă întâi cea mai ieftină, iar fiecare are un semnal clar de „nu ajunge, treci la următoarea”.
+Am spus că o lume este fapte plus schemă. În practică lumile sunt de trei feluri, după ce conțin.
 
-## 16. Legarea directă prin nume și tip
+| Fel de lume | Explicație |
+|---|---|
+| schema lumii (world schema) | Descrie un fel de lume, fără lucruri anume: felurile de lucruri, sloturile, constrângerile, cuvintele. Este refolosibilă. Exemplu: `w.seating` descrie ce este un plan de mese, oricare. |
+| lume de cunoaștere (knowledge world) | Fapte despre lume în general, adevărate pentru toată lumea și fără legătură cu vreo sesiune. Exemple: `k.animals` (peștele trăiește în apă), `k.colours`, `k.expect` (ce este tipic), `w.lang.en` (cuvintele și regulile englezei). |
+| lume vie (live world) | O lume care rulează acum, pentru un om: lucrurile pe care le-a făcut, valorile lor, istoricul. Exemplu: planul de mese pentru nunta de sâmbătă. |
 
-**Ce face.** Cheia de constrângere `size` a cererii se leagă de slotul `size` al felului de lucru și de parametrul `size` al uneltei, pentru că poartă același nume și valoarea spusă e printre cele acceptate.
+Legătura dintre ele: o lume vie se obține încărcând una sau mai multe scheme de lumi, citind cunoașterea de care are nevoie, și adăugând ce face omul.
 
-**Exemplu (raft).** „o cutie mare” → `size=big`; slotul `box.size` are `enum=big`; parametrul `add.size` are `accepts=big`. Se leagă fără niciun pas de gândire.
+De ce trei feluri și nu unul: schema și cunoașterea se scriu o dată și se folosesc de mii de ori; lumea vie este scurtă și particulară. Dacă le amesteci, ajungi să copiezi cunoaștere în fiecare loc.
 
-**Când nu ajunge.** Valoarea spusă nu e acceptată, sau numele diferă, sau slotul lipsește.
+---
 
-*Cu ce seamănă:* unificarea de structuri de trăsături; potrivirea de schemă prin nume.
+## Lecția 8. Domeniul de capabilități
 
-## 17. Legarea prin moștenire (lineage)
+Sistemul poate face lucruri reale în mai multe zone: desenează, face diagrame, scrie documente, așază invitați la mese, ține un calendar. Numim o astfel de zonă **domeniu de capabilități (capability domain)**.
 
-**Ce face.** Ce e declarat pentru un fel de lucru e valabil pentru cele care îl extind; ce e nedorit pentru un fel e nedorit pentru subfelurile lui.
+Nu spunem „tab”. Un tab este doar un fel de a arăta un domeniu pe ecran. Același domeniu poate fi arătat altfel, citit cu voce sau folosit de alt program.
 
-**Exemple.**
-- *Desen:* „fără pești” exclude și `goldfish`, fiindcă `goldfish extends=fish`.
-- *Raft:* capabilitatea „mută o cutie” e valabilă pentru `crate`.
-- *Plan de mese:* „mută un invitat” e valabil pentru `child`, care extinde `guest`.
+| Parte a unui domeniu | Explicație |
+|---|---|
+| lumea vie | Starea domeniului, ca fire: ce lucruri există acum și ce valori au. |
+| uneltele (tools) | Bucăți mici de program care produc efectul real: pun o formă pe pagină, mută un nod, inserează un paragraf. Sunt singurul program specific domeniului. |
+| vederea stării (state view) | O funcție care citește starea reală a uneltelor și o dă ca fire, pentru ca lumea vie să reflecte ce este cu adevărat acolo. |
+| afișarea (view) | Cum vede omul domeniul: o pagină, o listă, o hartă. Nu ne ocupă în acest curs. |
 
-**Când nu ajunge.** Felul spus nu e nici declarat, nici descendent al unuia declarat.
+Raftul nostru este un domeniu de capabilități. Lumea lui vie conține rafturile și cutiile. Uneltele lui sunt patru: adaugă o cutie, mută o cutie, schimbă o însușire, șterge o cutie.
 
-*Cu ce seamănă:* subsumarea din logicile descriptive; moștenirea în rețele semantice.
+---
 
-## 18. Substituția prin cunoaștere („realizat ca”)
+## Lecția 9. Capabilitate, unealtă, legătură
 
-**Ce face.** Un fel de lucru pe care unealta nu îl are se realizează prin cel mai apropiat pe care îl are, iar asta **se spune**.
+Aceste trei cuvinte sunt miezul cursului. Se confundă ușor, iar confuzia lor este exact greșeala pe care tehnologia vrea să o evite.
+
+O **capabilitate (capability)** este o promisiune declarată a domeniului. Spune trei lucruri: ce act, pe ce fel de lucru, și de ce cerințe ține cont. De exemplu: „pot **face** **cutii** și țin cont de **număr**, **mărime**, **culoare** și **loc**”. Capabilitatea este o declarație. Nu spune cum se face.
+
+O **unealtă (tool)** este o operație de program cu parametri, care produce un efect. De exemplu `add(kind, n, size, colour, on)`. Unealta nu știe nimic despre propoziții, despre ce a cerut omul sau despre ce este tipic. Primește valori și le execută.
+
+O **legătură (binding)** este declarația care spune ce unealtă realizează ce capabilitate și de unde vine fiecare valoare a parametrilor ei.
+
+| Situație | Explicație |
+|---|---|
+| capabilitate fără unealtă | O promisiune care nu poate fi ținută. Sistemul trebuie să spună: „înțeleg ce ceri, dar nu am cu ce să o fac”. |
+| unealtă fără capabilitate | O operație care există în program, dar pe care nimeni nu o poate cere prin limbaj. |
+| o capabilitate, mai multe unelte | „Fă un iaz” se realizează prin mai mulți pași: apă, pești, stuf. Împărțirea în pași vine din cunoaștere, nu din unealtă. |
+| o unealtă, mai multe capabilități | Aceeași `add` servește și „pune trei cutii”, și fiecare parte dintr-un întreg mai mare. |
+
+De ce sunt ținute separat. Capabilitatea este ceea ce înțelege omul și ceea ce verifică mecanismul de decizie. Unealta este ceea ce poate face programul. Dacă le lipești într-o singură funcție, acea funcție ajunge să citească cererea, să aleagă valori și să scrie răspunsul — adică devine din nou o bucată de program pe caz, iar toată generalitatea se pierde.
+
+---
+
+## Lecția 10. Ce declară un domeniu
+
+Un domeniu declară șase grupe de fire. Le arătăm pe toate pentru raft.
+
+**Grupa 1: felurile de lucruri și sloturile lor.** Le-am văzut în lecțiile 4 și 5.
+
+**Grupa 2: cuvintele domeniului.**
 
 ```
-@as.reed std.schema.drawn world=drawing kind=reed as=flower
-@as.oval std.schema.drawn world=diagram kind=oval as=ellipse
+@wd1 core.word text=crate text=carton means=box
 ```
 
-**Exemple.** *Desen:* stuful e desenat ca floare. *Diagramă:* ovalul e elipsă. *Muzică:* un instrument lipsă e cântat cu cel mai apropiat din aceeași familie.
+Firul spune că „crate” și „carton” înseamnă `box`. Aici stau doar cuvintele specifice domeniului. Cuvintele generale ale limbii („fără”, „trei”, „mai mic”) stau în lumea limbii și se folosesc în toate domeniile.
 
-**Regula de cinste.** Substituția intră în lista de presupuneri a planului. Omul află că a primit altceva.
+**Grupa 3: capabilitățile.**
 
-**Starea.** **[există în aplicație ca `std.schema.drawn`]**; trebuie mutat în bibliotecă și generalizat la orice parametru, nu doar la feluri (§19).
+```
+@k1 std.schema.kind    of=box world=shelfworld acts=make acts=place acts=change acts=remove
+@h1 std.schema.honours world=shelfworld act=make   on=kind on=count on=size on=attribute on=place of=box
+@h2 std.schema.honours world=shelfworld act=place  on=place of=box
+@h3 std.schema.honours world=shelfworld act=change on=attribute on=size of=box
+```
 
-## 19. Traducerea valorilor pe o scară sau într-un spațiu
+Firul `@k1` spune ce acte se aplică unei cutii. Firul `@h1` spune de ce cerințe ține cont actul `make` pentru cutii: de felul lucrului, de număr, de mărime, de însușiri (cum e culoarea) și de loc. Verbul englez *honours* înseamnă „onorează”, adică „ține cont de”.
 
-**Ce face.** O valoare spusă care nu e printre cele acceptate de parametru se duce la **cea mai apropiată acceptată**, după o ordine sau o distanță pe care o dă cunoașterea.
+**Grupa 4: semnătura uneltelor [propus].**
 
-**Exemple.**
-- *Mărime:* scara `tiny < small < default < big < huge` este în `k.expect.scale`. Unealta acceptă doar `small` și `big`. „minuscul” → `small`. Fără niciun tabel de sinonime în cod.
-- *Culoare:* „turcoaz” la o unealtă cu opt culori → cea mai apropiată din `k.colours`, spusă ca presupunere.
-- *Loc:* „sus în dreapta” la o unealtă cu regiuni numite → regiunea a cărei descriere din `k.space` se potrivește.
-- *Timp:* „după-amiază” într-un calendar cu ore → intervalul din `k.time`.
+```
+@op1 std.tool.op    world=shelfworld name=add effect=makes
+@pa1 std.tool.param op=add name=kind   type=box required=true
+@pa2 std.tool.param op=add name=n      kind=integer min=1 max=20 default=1
+@pa3 std.tool.param op=add name=size   accepts=small accepts=big
+@pa4 std.tool.param op=add name=colour kind=atom
+@pa5 std.tool.param op=add name=on     type=shelf
+@pr1 std.tool.needs op=add exists=shelf
+```
 
-**De ce e un singur mecanism.** Toate patru sunt același lucru: *valoare spusă + mulțimea valorilor acceptate + o ordine sau o distanță din cunoaștere → valoarea cea mai apropiată, cu proveniență*. Astăzi fiecare e scrisă separat în JavaScript; asta e peticul care trebuie să dispară.
+Aceste fire descriu unealta `add` din afară: ce parametri are, ce valori primește fiecare, ce trebuie să existe înainte (`needs`: măcar un raft) și ce efect are (`makes`: apare un lucru nou).
 
-**Când nu ajunge.** Nu există ordine sau distanță pentru acel fel de valoare. Atunci constrângerea merge la „nu am putut onora”, cu motivul.
+**Grupa 5: legătura [propus].**
 
-*Cu ce seamănă:* ierarhiile de concepte și măsurile de similaritate semantică; „relaxarea interogării” din baze de date cooperative.
+```
+@b1 std.tool.bind world=shelfworld act=make of=box op=add
+@a1 std.tool.arg  bind=$b1 param=kind   from=step.kind
+@a2 std.tool.arg  bind=$b1 param=n      from=step.count
+@a3 std.tool.arg  bind=$b1 param=size   from=request.size
+@a4 std.tool.arg  bind=$b1 param=colour from=request.attribute.colour
+@a5 std.tool.arg  bind=$b1 param=on     from=request.place
+```
 
-## 20. Umplerea golurilor: valori implicite ca așteptări
+Firul `@b1` spune: actul `make` pe `box` se realizează cu unealta `add`. Firele `@a1`–`@a5` spun, pentru fiecare parametru, de unde se ia valoarea.
 
-**Ce face.** Ce omul nu a spus se completează din surse, **într-o ordine fixă care este și costul presupunerii** **[există: `REQUEST_SOURCES`]**:
+**Grupa 6: așteptări proprii, dacă e cazul.** Ce este tipic se ia de obicei din cunoașterea generală. Un domeniu adaugă așteptări proprii doar unde diferă. Le explicăm în lecția 15.
 
-1. **spus (said)** — în mesaj;
-2. **dialog (dialogue)** — din cererea anterioară, dacă e același lucru;
-3. **indus (induced)** — din ce e deja în lumea vie (§26);
-4. **lume (world)** — implicitul slotului;
-5. **așteptare (expect)** — ce e tipic, din cunoaștere;
-6. **eșantionat (sampled)** — o alegere variată, între limite.
+În afara firelor, domeniul are două bucăți de program: uneltele și vederea stării. Atât.
 
-Așteptările sunt fapte:
+---
+
+## Lecția 11. Cererea
+
+Când omul scrie o propoziție, primul lucru pe care îl face sistemul este să o transforme într-o **cerere (request)**. Cererea este ea însăși o mică lume de fire, de tip `w.request`. Odată ce propoziția a devenit cerere, nimic din ce urmează nu mai lucrează cu cuvinte.
+
+Să luăm „pune trei cutii roșii, fără cutii mari”.
+
+| Parte a cererii | Explicație |
+|---|---|
+| actul (act) | Ce se vrea făcut. Aici `make`. Vine din verb. |
+| ținta (target) | Pe ce fel de lucru. Aici `box`. |
+| cerințele (constraints) | Fiecare cerință are o cheie, un sens (vreau, nu vreau, nu toate) și o valoare. Aici: `count` = 3; `attribute colour` = red; `size` = big, cu sensul „nu vreau”. Fiecare cerință ține minte și cuvintele exacte din care a fost citită. |
+| reacțiile (reactions) | Cuvinte care judecă rezultatul dinainte: „prea multe”, „mai mic”, „frumos”. Aici nu sunt. |
+| necititul (unread) | Cuvintele pe care nimic nu le-a înțeles. Aici nu sunt. |
+
+Aici apare cuvântul **rol**. În cererea de mai sus, „cutii” ocupă rolul de lucru făcut, „trei” rolul de număr. Rolurile sunt locurile dintr-o acțiune. Legarea, despre care vorbim în lecțiile 14 și 15, duce valorile din roluri în cheile lumii vii și în parametrii uneltelor.
+
+Cerințele au un set mic de chei, aceleași în toate domeniile: felul lucrului (`kind`), numărul (`count`), mărimea (`size`), întinderea (`extent`), o însușire (`attribute`), locul (`place`), maniera (`manner`), așezarea (`layout`), „cu ce” (`with`), „despre ce” (`about`), lungimea (`length`). Acestea sunt aceleași chei pe care le numesc capabilitățile după `on=`. Așa se întâlnesc ce cere omul și ce promite domeniul.
+
+De unde știe sistemul cuvintele: din lumea limbii (cuvinte ca „fără”, „cel mult”, numerale), din cuvintele domeniului (lecția 10), din valorile sloturilor (`small`, `big`) și din cunoaștere (numele culorilor). Toate sunt declarații.
+
+Două reguli țin de cinste. Dacă rămân cuvinte necitite într-un loc care contează, cererea nu se execută pe ghicite. Și dacă un cuvânt pare greșit scris, este corectat numai când există un singur candidat clar; un cuvânt corect nu se schimbă niciodată.
+
+---
+
+## Lecția 12. Cerere nouă sau reacție
+
+Al doilea mesaj al omului poate fi o cerere nouă („pune și un raft”) sau o reacție la ce tocmai s-a făcut („mai puține”). Sistemul trebuie să decidă care, și o face tot din declarații.
+
+Un mesaj care are un act și un lucru nou este o cerere nouă. Altfel este o reacție, iar ce face reacția este scris ca fapte în lumea dialogului:
+
+```
+@v1 w.dialogue.revision reaction=reduce does=step on=count direction=down
+```
+
+Firul spune: reacția „reduce” (citită din „mai puține”, „prea multe”) face un pas în jos pe număr.
+
+| Ce poate face o reacție | Explicație |
+|---|---|
+| un pas (step) | Urcă sau coboară o treaptă pe o scară: mai multe, mai puține, mai mare, mai mic. |
+| întoarce (flip) | Ce era făcut devine nedorit: „nu cercuri”. |
+| adaugă (add) | Cerința spusă acum o înlocuiește pe cea veche cu aceeași cheie. |
+| păstrează (keep) | Aceeași cerere, altă variantă: „altfel”. |
+| anulează (undo) | Se revine la cererea dinainte. |
+| nimic (none) | O laudă sau o mulțumire. Nu se schimbă nimic și nu se reface nimic. |
+
+Regula cea mai importantă a acestui pas: **o reacție schimbă numai ce numește.** „Mai puțini copaci” schimbă numărul copacilor. Mărimea, locul și restul rămân exact cum erau.
+
+Tot aici se rezolvă referințele la lucruri existente: „ea”, „ele”, „cutia roșie”, „a doua”. Se caută în starea lumii vii lucrul care se potrivește. Dacă se potrivesc mai multe, sistemul pune o singură întrebare. Dacă nu se potrivește niciunul, spune asta.
+
+---
+
+## Lecția 13. Drumul complet al unui mesaj
+
+Acum putem pune pașii la un loc. Fiecare mesaj trece prin aceiași șapte pași, în orice domeniu.
+
+| Pas | Explicație |
+|---|---|
+| 1. Vedere | Starea reală a domeniului este citită ca fire. De aici înainte sistemul știe ce există. |
+| 2. Înțelegere | Propoziția devine cerere (lecția 11). |
+| 3. Situare | Se decide dacă e cerere nouă sau reacție și la ce lucruri se referă (lecția 12). |
+| 4. Decizie | Din cerere, capabilități și cunoaștere se face un **plan (plan)**: o listă de pași, fiecare cu toate valorile alese (lecțiile 14–17). |
+| 5. Acțiune | Fiecare pas al planului cheamă o unealtă, prin legătura ei (lecția 18). |
+| 6. Spunere | Se compune răspunsul: ce s-a făcut, ce s-a presupus, ce nu s-a putut (lecția 18). |
+| 7. Păstrare | Dialogul ține minte cererea și rezultatul, pentru mesajul următor și pentru undo. |
+
+Limba apare numai la pașii 2 și 6. Între ei totul este fire. De aceea sistemul poate lucra în română printr-un strat de traducere, fără a învăța fiecare domeniu din nou în fiecare limbă.
+
+---
+
+## Lecția 14. Legarea, partea întâi: cazurile directe
+
+**Legarea** înseamnă a duce fiecare valoare din cerere la locul ei: într-o cheie a lumii vii și într-un parametru al unei unelte. Există mai multe tehnici. Se încearcă în ordine, de la cea mai simplă. Fiecare are un semn clar că nu ajunge, și atunci se trece la următoarea.
+
+### Tehnica 1. Potrivire directă
+
+Cerința `size=big` are aceeași cheie ca slotul `size` al cutiei și ca parametrul `size` al uneltei `add`, iar `big` este printre valorile primite. Valoarea trece direct. Nu este nevoie de nicio gândire.
+
+Semnul că nu ajunge: valoarea spusă nu este printre cele primite, sau slotul lipsește.
+
+### Tehnica 2. Moștenire
+
+Ce s-a declarat pentru un fel de lucru este valabil pentru felurile care îl extind.
+
+| Domeniu | Exemplu |
+|---|---|
+| raft | Capabilitatea „mută o cutie” este valabilă și pentru `crate`, fiindcă `crate` extinde `box`. |
+| desen | „Fără pești” îl exclude și pe `goldfish`, fiindcă `goldfish` extinde `fish`. |
+| plan de mese | „Mută un invitat” este valabil și pentru un copil, fiindcă `child` extinde `guest`. |
+
+Semnul că nu ajunge: felul spus nu este nici declarat, nici urmaș al unuia declarat.
+
+### Tehnica 3. Înlocuire declarată
+
+Uneori omul cere un fel de lucru pe care unealta nu îl are, dar are unul apropiat. Domeniul poate declara înlocuirea:
+
+```
+@as1 std.schema.drawn world=drawing kind=reed as=flower
+```
+
+Firul spune: în desen, stuful se desenează ca floare.
+
+| Domeniu | Exemplu |
+|---|---|
+| desen | Stuful este desenat ca floare. |
+| diagramă | Ovalul este desenat ca elipsă. |
+| muzică | Un instrument care lipsește este cântat cu cel mai apropiat din aceeași familie. |
+
+Regula de cinste: înlocuirea este trecută între presupunerile planului, deci omul află că a primit altceva decât a cerut.
+
+### Tehnica 4. Traducerea unei valori pe o scară
+
+Omul spune „minuscul”. Unealta primește doar `small` și `big`. Cunoașterea are o scară a mărimilor:
+
+```
+@sc1 k.expect.scale step=tiny    order=1
+@sc2 k.expect.scale step=small   order=2
+@sc3 k.expect.scale step=default order=3
+@sc4 k.expect.scale step=big     order=4
+@sc5 k.expect.scale step=huge    order=5
+```
+
+Mecanismul general ia valoarea spusă, se uită la valorile pe care le primește parametrul și o alege pe cea mai apropiată pe scară: `small`. Nu există niciun tabel de sinonime în program.
+
+Aceeași tehnică servește orice fel de valoare pentru care cunoașterea are o ordine sau o măsură de apropiere.
+
+| Fel de valoare | Exemplu |
+|---|---|
+| mărime | „Minuscul” devine `small`, pe scara mărimilor. |
+| culoare | „Turcoaz”, la o unealtă cu opt culori, devine cea mai apropiată dintre ele. |
+| loc | „Sus în dreapta”, la o unealtă cu regiuni numite, devine regiunea care corespunde. |
+| timp | „După-amiază”, într-un calendar cu ore, devine intervalul 12–18. |
+
+Semnul că nu ajunge: cunoașterea nu are nicio ordine pentru acel fel de valoare. Atunci cerința este trecută la „nu am putut ține cont de”, cu motivul.
+
+### Tehnica 5. Îmbinare cu altă lume
+
+Un slot poate spune că valoarea lui este un lucru dintr-o altă lume, găsit după o cheie:
+
+```
+@s9 core.slot of=guest key=person type=w.person by=name
+```
+
+Firul spune: invitatul este o persoană din lumea persoanelor, găsită după nume. Se numește **îmbinare (join)**. Prin ea, lumea vie folosește cunoașterea din altă lume fără să o copieze.
+
+| Domeniu | Exemplu |
+|---|---|
+| plan de mese | Invitatul este o persoană din `w.person`; de acolo se știu preferințele ei. |
+| calendar | Locul unui eveniment este un oraș din `k.places`; de acolo se știe fusul orar. |
+| desen | Un lucru desenat este de un fel din `k.animals`; de acolo se știe că peștele stă în apă. |
+
+Îmbinarea este strictă: un nume care nu există în lumea numită este o încălcare.
+
+### Tehnica 6. Referință la ce există
+
+Când cererea vorbește despre un lucru care există deja („mută cutia roșie”), valoarea rolului este identificatorul acelui lucru, găsit în starea lumii vii.
+
+| Fel de referință | Exemplu |
+|---|---|
+| după nume | „cutia Ana” |
+| după fel și însușire | „cutia roșie” |
+| după ordine | „a doua” |
+| după pronume | „ea”, „ele”: lucrurile din ultimul rezultat |
+| după relație | „cea de lângă casă” |
+
+---
+
+## Lecția 15. Legarea, partea a doua: când lipsește ceva
+
+Omul nu spune aproape niciodată tot. „Fă o diagramă” nu spune câte noduri, ce forme, cum așezate. Tehnicile următoare completează ce lipsește.
+
+### Tehnica 7. Umplerea golurilor din surse ordonate
+
+Fiecare gol se umple din prima sursă care are o valoare. Ordinea surselor este fixă și este aceeași în toate domeniile.
+
+| Sursa, în ordine | Explicație |
+|---|---|
+| 1. spus (said) | Ce a spus omul în acest mesaj. |
+| 2. dialog (dialogue) | Ce a spus mai devreme despre același lucru. |
+| 3. indus (induced) | Ce se vede în lumea vie: dacă toate cutiile sunt roșii, și cea nouă va fi roșie. |
+| 4. lume (world) | Valoarea implicită a slotului (`default=`). |
+| 5. așteptare (expect) | Ce este tipic, din cunoaștere. |
+| 6. eșantionat (sampled) | O alegere variată, între limitele permise. |
+
+Locul în această listă este și **costul** presupunerii: o valoare luată de mai jos este o presupunere mai slabă. Costul va conta în lecția 17.
+
+Ce este tipic se scrie ca fapte de **așteptare (expectation)**:
 
 ```
 @e1 k.expect.make thing=flowchart unit=node min=5 max=9 typical=7 kinds_min=2 kinds_max=3 layout=flow
 @e2 k.expect.part of=forest part=tree min=5 max=7 typical=6 needed=yes
-@e3 k.expect.scale step=small order=2 count_factor=0.5 size_factor=0.7
 ```
 
-**Regula care apără de prostii.** *O valoare implicită umple doar ce omul a lăsat gol. Nu înlocuiește niciodată ce a spus.* Dacă omul cere „cum se coace pâinea” și cunoașterea nu are pașii, răspunsul corect e „nu știu pașii; pot face cinci pași goi sau mi-i spui tu” — nu o diagramă despre altceva.
+Primul fir spune: o schemă logică are de obicei 5–9 noduri, tipic 7, cu 2–3 forme diferite, așezate în flux. Al doilea: o pădure are 5–7 copaci, și copacii sunt obligatorii.
 
-**Așteptări cu condiție [propus].** Multe valori implicite depind de altele: „un lucru mic stă în colț”, „până la șase lucruri se așază pe un rând, peste șase pe grilă”, „nodul de început e elipsă, ramificarea e romb”. Acestea se scriu ca așteptări cu `when=`:
+Unele valori implicite depind de altele. Acestea se scriu ca așteptări cu o condiție **[propus]**:
 
 ```
-@e4 k.expect.value on=place  value=corner when.size=small
-@e5 k.expect.value on=layout value=row    when.count.max=6
-@e6 k.expect.value on=layout value=grid   when.count.min=7
-@e7 k.diagram.role role=start  shape=ellipse
-@e8 k.diagram.role role=branch shape=diamond
+@e3 k.expect.value on=place  value=corner when.size=small
+@e4 k.expect.value on=layout value=row    when.count.max=6
+@e5 k.expect.value on=layout value=grid   when.count.min=7
 ```
 
-*Cu ce seamănă:* logica implicitelor (default logic, Reiter 1980); completarea cadrelor cu valori tipice la Minsky; prototipurile din psihologia categoriilor (Rosch).
+Se citesc: un lucru mic se pune într-un colț; până la șase lucruri se așază pe un rând; de la șapte în sus, pe o grilă.
 
-## 21. Îmbinarea între lumi (join)
+O regulă apără de răspunsuri absurde: **o valoare implicită umple numai ce omul a lăsat gol. Nu înlocuiește niciodată ce a spus.** Dacă omul cere o diagramă despre „cum se coace pâinea” și cunoașterea nu are pașii, răspunsul corect este „nu știu pașii; pot face cinci pași goi sau mi-i spui tu”. Nu este o diagramă despre altceva.
 
-**Ce face.** Un slot al unei lumi numește un lucru dintr-o altă lume, prin tip și cheie: `type=T by=name`. Astfel o lume vie folosește cunoaștere fără s-o copieze.
+### Tehnica 8. Întregul din părți
 
-**Exemple.**
-- *Plan de mese:* `guest.person type=w.person by=name` — invitatul este o persoană din lumea persoanelor, cu preferințele ei.
-- *Calendar:* `event.place type=k.places.city by=name` — de aici vine fusul orar.
-- *Desen:* un lucru desenat este de un fel din catalog, deci „trăiește în apă” se aplică.
+Omul cere adesea un **întreg (whole)**: o pădure, o schemă logică, un raport. Unealta știe să facă doar părți: un copac, un nod, o secțiune. Faptele de așteptare spun din ce părți este făcut un întreg, iar planul primește câte un pas pentru fiecare parte.
 
-**Ce apără.** Îmbinarea este strictă: un nume care nu există în lumea numită este o încălcare, nu un text liber.
-
-*Cu ce seamănă:* cheile străine; alinierea de ontologii.
-
-## 22. Compunerea întregului din părți
-
-**Ce face.** O cerere pentru un **întreg (whole)** — „o pădure”, „o schemă logică”, „un raport” — se descompune în părți după faptele de așteptare, iar fiecare parte devine un pas de plan legat de o unealtă.
-
-**Exemple.**
-- *Desen:* pădure → 5–7 copaci (obligatoriu), eventual păsări, flori.
-- *Diagramă:* schemă logică → 5–9 noduri, 2–3 forme, legate în flux.
-- *Document:* raport → titlu, introducere, 3 secțiuni, concluzie (din `k.layouts`).
-- *Plan de mese:* „o masă de opt” → o masă + opt locuri.
-
-Constrângerile cererii se împart între părți după cheia lor: un număr stă lângă felul pe care îl numără („doi câini și un copac”: doi e al câinilor), o excludere se aplică tuturor părților, o mărime se aplică întregului.
-
-*Cu ce seamănă:* planificarea ierarhică pe rețele de sarcini (HTN; Erol, Hendler, Nau 1994; SHOP2): un întreg este o sarcină compusă, metodele ei sunt fapte de cunoaștere.
-
-## 23. Operatori de structură peste orice întreg [propus]
-
-Unele decizii nu țin de niciun domeniu, ci de forma „întreg cu părți și legături”:
-
-- **taie la n** păstrând structura (rădăcina și nivelurile de sus ale unui arbore, primele capitole ale unui text);
-- **completează până la n**;
-- **„nu toate la fel”**: cel puțin două feluri între părți;
-- **mai multe feluri spuse împreună** („un cer și un soare”): fiecare cu numărul lui;
-- **unește tot ce e liber** („leagă-le pe toate”).
-
-Aceștia trebuie să fie operatori ai bibliotecii, valabili pe o diagramă, pe un document cu capitole, pe o listă cu subpuncte. Astăzi sunt scriși în codul diagramelor și al documentelor, separat.
-
-## 24. Referința la ce există
-
-**Ce face.** Un rol ocupat de o expresie despre ceva existent se leagă de id-ul unui lucru din vedere:
-
-- **prin nume sau etichetă**: „nodul Start”;
-- **prin fel și atribut**: „cutia roșie”;
-- **prin ordinal**: „a doua”;
-- **prin pronume**: „el”, „ele” = lucrurile ultimului rezultat;
-- **prin relație**: „cea de lângă casă”.
-
-Dacă se potrivesc mai multe și niciuna nu e în focus, mecanismul **întreabă o singură dată** („care cerc?”). Dacă nu se potrivește niciuna, spune asta.
-
-## 25. Legarea de unealtă: de la pas de plan la apel [propus]
-
-Un pas de plan are: act, fel de lucru, roluri umplute. Legătura (§11 e) spune pentru fiecare parametru al uneltei de unde vine argumentul:
-
-| Sursă `from=` | Înseamnă |
+| Domeniu | Exemplu |
 |---|---|
-| `step.<rol>` | din pasul de plan (felul, numărul părții) |
-| `request.<cheie>` | din constrângerea cererii, tradusă pe valorile acceptate (§19) |
-| `state.<relație>` | din vedere: id-ul unui lucru existent (§24) |
-| `result.<pas>` | id-ul făcut de un pas anterior al aceluiași plan |
+| desen | O pădure: 5–7 copaci, eventual păsări și flori. |
+| diagramă | O schemă logică: 5–9 noduri legate în flux. |
+| document | Un raport: titlu, introducere, trei secțiuni, concluzie. |
+| plan de mese | „O masă de opt”: o masă și opt locuri. |
 
-Executorul general face, pentru fiecare pas:
+Cerințele cererii se împart între părți după felul lor. Un număr aparține felului pe care îl numără: în „doi câini și un copac”, doi este al câinilor. O excludere se aplică tuturor părților. O mărime se aplică întregului.
 
-1. găsește legătura după (act, fel de lucru), urcând pe moștenire;
-2. umple fiecare parametru din sursa lui; unde lipsește, ia implicitul parametrului;
-3. verifică **precondițiile** pe vedere („există un raft”);
-4. apelează unealta;
-5. citește vederea din nou și verifică **efectul** declarat („a apărut un `box`”).
+### Tehnica 9. Operatori de structură [propus]
 
-Unealta nu vede cererea. Primește doar argumente tipizate.
+Unele decizii nu țin de niciun domeniu, ci de forma generală „un întreg cu părți și legături între ele”. Trebuie să fie mecanisme ale bibliotecii, aceleași pentru o diagramă, un document cu capitole sau o listă cu subpuncte.
 
-## 26. Legarea prin inducție din ce e deja acolo
+| Operator | Explicație |
+|---|---|
+| taie la n | Reduce întregul la n părți păstrându-i structura: rădăcina și nivelurile de sus ale unui arbore, primele capitole ale unui text. |
+| completează la n | Adaugă părți până la numărul cerut. |
+| nu toate la fel | Asigură cel puțin două feluri între părți. |
+| mai multe feluri deodată | „Un cer și un soare”: fiecare fel cu numărul lui. |
+| leagă tot | „Unește-le pe toate”: fiecare parte nelegată primește o legătură. |
 
-**Ce face.** Dacă lucrurile de același fel din lumea vie au toate o valoare comună, un lucru nou o ia și el **[există: `induceStyle`]**. Dacă omul a corectat de două ori în același sens, a treia oară corecția se aplică de la început **[există: `induceCorrections`]**.
+### Tehnica 10. Inducție din ce există
 
-**Exemple.** *Diagramă:* toate nodurile sunt albastre → nodul nou e albastru. *Plan de mese:* toate mesele sunt rotunde → masa nouă e rotundă. *Document:* toate titlurile sunt scurte → titlul nou e scurt.
+Dacă toate lucrurile de același fel din lumea vie au o valoare comună, un lucru nou o primește și el. Dacă omul a corectat de două ori în același sens, a treia oară corecția se aplică de la început.
 
-De aceea „indus” stă înaintea implicitului din lume și a așteptării în ordinea surselor: ce a făcut omul aici contează mai mult decât ce e tipic în general.
+| Domeniu | Exemplu |
+|---|---|
+| diagramă | Toate nodurile sunt albastre, deci nodul nou este albastru. |
+| plan de mese | Toate mesele sunt rotunde, deci masa nouă este rotundă. |
+| document | Toate titlurile sunt scurte, deci titlul nou este scurt. |
 
-*Cu ce seamănă:* anti-unificarea (cea mai puțin generală generalizare, Plotkin 1970); învățarea din exemple în programarea logică inductivă.
+De aceea „indus” stă înaintea valorii implicite și a așteptării în lista surselor: ce a făcut omul aici contează mai mult decât ce este tipic în general.
 
----
+### Tehnica 11. De la pas de plan la apelul uneltei [propus]
 
-# Partea V — Când e nevoie de raționament și de căutare
+Planul este gata: are pași, fiecare cu act, fel de lucru și valori. Ultima legare duce fiecare pas la o unealtă. Firele de legătură din lecția 10 spun de unde vine fiecare parametru.
 
-## 27. Principiul: drumul direct, până apare un semnal
+| Sursa unui parametru | Explicație |
+|---|---|
+| `step.` | Din pasul de plan: felul părții, numărul ei. |
+| `request.` | Din cerința cererii cu acea cheie, după traducerea pe valorile primite (tehnica 4). |
+| `state.` | Din starea lumii vii: identificatorul unui lucru existent (tehnica 6). |
+| `result.` | Identificatorul unui lucru făcut de un pas anterior al aceluiași plan. |
 
-Majoritatea cererilor se leagă direct (§16–§18) și se execută. Raționamentul și căutarea costă, deci pornesc **numai la un semnal**. Fiecare semnal este o stare a datelor, vizibilă și verificabilă — nu o bănuială a programatorului.
-
-| Semnalul | Ce înseamnă | Ce procedură pornește |
-|---|---|---|
-| **rol sau parametru obligatoriu gol** | omul nu a spus ceva necesar | umplere din surse (§20); dacă nicio sursă nu are, **o întrebare** |
-| **valoare neacceptată** | spus, dar unealta nu o are | traducere pe scară (§19) sau substituție (§18) |
-| **constrângere spusă, nedeclarată de act** | capabilitatea nu există | refuz cinstit: „nu țin cont de X aici” |
-| **constrângere tare încălcată la simulare** | planul ar strica ceva | respinge candidatul, încearcă altul (§29) |
-| **constrângere slabă încălcată** | planul e posibil dar nefiresc | cost; alege candidatul cel mai ieftin (§30) |
-| **mai multe planuri posibile** | cererea lasă libertate | propune câteva, simulează, alege (§29) |
-| **referință ambiguă** | mai multe lucruri se potrivesc | focus; altfel o întrebare |
-| **excluderi care nu lasă nimic** | „fără A, fără B” și doar A, B există | cea mai veche cedează, și se spune |
-| **diferență de stare goală** | s-a executat și nu s-a schimbat nimic | răspuns „nu am schimbat nimic, pentru că…” |
-| **cuvinte necitite într-un loc care contează** | n-am înțeles o parte | nu se execută; se numesc părțile înțelese și neînțelese |
-
-Aceasta este și definiția practică a „când e nevoie de reasoning”: **când legarea directă lasă un gol, un conflict sau o alegere.**
-
-## 28. Deducția: ce decurge și ce se încalcă
-
-**Ce face.** Pornind de la faptele lumii vii și de la ce spune cunoașterea despre felurile lor, derivă consecințe și găsește încălcări **[există: `deduceState`]**. Mărginită: adâncime 2 (ce spune catalogul despre felul lucrului, apoi despre părinții felului).
-
-**Exemple.**
-- *Desen:* „peștele trăiește în apă” + un pește pus pe cer → încălcare slabă („peștele nu e în apă”).
-- *Plan de mese:* capacitate 8 + al nouălea invitat → încălcare tare.
-- *Calendar:* două evenimente ale aceleiași persoane care se suprapun → încălcare tare sau slabă, după cum e declarat.
-- *Document:* o secțiune fără titlu → cheie deschisă.
-
-*Cu ce seamănă:* înlănțuirea înainte din Datalog; verificarea constrângerilor de integritate.
-
-## 29. Căutarea: propune, simulează, respinge, alege
-
-Când există o alegere, ciclul este **[există în `planRequest`]**:
-
-1. **propune** cel mult 5 candidați (valori diferite pentru golurile libere);
-2. **simulează** fiecare pe o **copie (fork)** a lumii vii — nimic real nu se atinge;
-3. **deduce** consecințele pe copie;
-4. **respinge** candidații cu încălcări tari;
-5. **ordonează** restul după cost (§30);
-6. **alege** primul; dacă nu rămâne niciunul, spune ce constrângere a blocat.
-
-Pentru probleme cu multe chei deschise și domenii enumerabile (așezarea a 40 de invitați la 5 mese), același cadru folosește un **rezolvitor (solver)** **[există: `world.solve`]**: aceeași declarație de constrângeri, altă strategie de căutare.
-
-**Mărginire.** Fiecare apel are un **buget (budget)** de pași. La epuizare, răspunsul spune că s-a oprit, nu inventează.
-
-*Cu ce seamănă:* generează-și-testează; căutarea cu revenire și propagarea de constrângeri din CSP; planificarea prin simulare înainte.
-
-## 30. Abducția: cea mai bună explicație pentru ce lipsește
-
-**Ce face.** Dintre mai multe moduri de a umple golurile, îl alege pe cel care cere **cele mai ieftine presupuneri**. Costul unei presupuneri este locul sursei ei în ordinea din §20 (spus = 0, dialog, indus, lume, așteptare, eșantionat) plus costul încălcărilor slabe și al pașilor de inferență.
-
-**Exemple.**
-- „pune un pește” într-un desen cu un iaz și un cer: candidatul „în iaz” nu încalcă nimic; „pe cer” încalcă o constrângere slabă. Se alege iazul. Omul nu a spus unde; sistemul a *abdus* locul.
-- „pictează un lac fără păsări”: verbul „pictează” nu e act declarat; cea mai ieftină explicație, dat fiind că urmează un întreg care se poate face, este `make`.
-- *Calendar:* „mută ședința mai târziu” → cel mai apropiat interval liber care nu încalcă nimic.
-
-*Cu ce seamănă:* abducția la Peirce; „interpretarea ca abducție” (Hobbs și colab. 1993), unde înțelegerea unui text este cea mai ieftină demonstrație; abducția ponderată.
-
-## 31. Inducția: regula din exemple
-
-Vezi §26. Este mărginită intenționat: cel puțin 3 lucruri din care să generalizeze, cel puțin 2 corecții. Sub aceste praguri nu induce nimic.
-
-## 32. Cum se leagă cele trei între ele
-
-- **Inducția** produce valori candidate („aici totul e albastru”).
-- **Abducția** alege între candidați pe cel mai ieftin.
-- **Deducția** verifică alegerea și o respinge dacă încalcă ceva tare.
-
-Toate trei lucrează pe aceeași vedere ca fapte și pe aceleași constrângere declarate. Niciuna nu știe în ce domeniu se află.
+Unealta nu vede cererea. Primește doar valori gata alese.
 
 ---
 
-# Partea VI — Constrângeri, proveniență, răspuns
+## Lecția 16. Când este nevoie de raționament
 
-## 33. Un singur vocabular de constrângeri [propus ca unificare]
+Cele mai multe cereri se leagă direct și se execută. Raționamentul costă timp, deci pornește doar când apare un **semnal**. Un semnal este o stare a datelor, pe care oricine o poate verifica. Nu este o bănuială a programatorului.
 
-Azi există constrângeri în patru locuri cu patru forme: în cerere (`on=`, `want=`), în schemă (limite, capacități, interdicții), în cunoaștere („trăiește în apă”) și în așteptări (min, max, tipic). Propunerea este o singură formă, cu trei atribute:
+Pe scurt: este nevoie de raționament când legarea directă lasă **un gol, un conflict sau o alegere**.
 
-- **tărie (strength)**: tare sau slabă, cu cost;
-- **origine (origin)**: spus, revizuit, dialog, indus, lume, așteptare, cunoaștere;
-- **cuvinte (words)**: textul exact al omului, dacă a fost spusă.
-
-Câștigul: același verificator, aceeași formă de „nu am putut onora”, aceeași ordine de cedare (la conflict cedează întâi presupunerea cea mai slabă, niciodată ce a spus omul).
-
-## 34. Proveniența (provenance)
-
-Fiecare valoare din plan poartă de unde vine: care sursă, care fapt, care regulă. De aici vin trei lucruri:
-
-- răspunsul poate spune „am presupus 7 noduri, cât e tipic”;
-- la revizuire se știe ce e voie să se schimbe (presupunerile) și ce nu (ce a spus omul);
-- la revizie de cod se vede dacă o valoare a venit din cunoaștere sau dintr-o constantă ascunsă.
-
-Lumea ține deja **treapta (tier)** fiecărei valori: `told`, `derived`, `forced`, `default`, `guessed`.
-
-*Cu ce seamănă:* proveniența datelor (semi-inele de proveniență, Green și colab. 2007); justificările din sistemele de menținere a adevărului.
-
-## 35. Execuția și cronologia (timeline)
-
-Reguli, valabile în orice domeniu:
-
-- **o cerere executată = un pas de undo**, oricâte unelte a apelat;
-- **o revizuire înlocuiește pasul** rezultatului pe care îl revizuiește;
-- **o întrebare nu e pas**;
-- **undo și redo sunt acte ale cronologiei**, nu ale domeniului; domeniul declară doar unealta lui de anulare;
-- **un mesaj citit doar parțial nu execută nimic**.
-
-Astăzi aplicația face asta în ușa ei **[provizoriu]**; locul este în `runPlan` **[propus]**.
-
-## 36. Răspunsul: din diferența de stare, nu din propoziții scrise de mână
-
-Răspunsul are patru părți, toate din date:
-
-1. **ce s-a făcut** — din diferența dintre vederea de dinainte și cea de după;
-2. **ce s-a presupus** — din proveniență, doar presupunerile care contează;
-3. **ce nu s-a putut onora** — cu cuvintele omului și cu motivul (`not_declared`, `no_slot`, `value`, `no_kind`, `nothing_left`);
-4. **ce nu s-a înțeles** — cuvintele necitite.
-
-Cuvintele vin din **fapte de răspuns (reply facts)** ale lumii limbii, cu roluri de umplut. Un domeniu nu conține nicio propoziție. De aceea același răspuns iese în română prin lumea `w.lang.ro`.
-
-Două întrebări se răspund prin același mecanism, „spune fapte ale lumii vii”:
-
-- „ce e în desen?” → interogare pe vedere;
-- „ce poți face aici?” → interogare pe capabilități și legături.
-
-*Cu ce seamănă:* maximele lui Grice (cantitate, calitate) ca regulă de proiectare; generarea de limbaj din date (Reiter și Dale 2000).
-
-## 37. Lista cinstită (honest list)
-
-Ce nu are încă piesă generală nu se rezolvă cu o regulă pe caz. Se trece pe o listă, cu forma „are nevoie de <piesă>”, unde piesa e una dintre: declarație, cunoaștere, limbă, compunere de lumi, metodă de raționament, mecanism de bibliotecă. Lista este ea însăși fire (`w.honest`, **[propus]**), ca nevoile să se poată număra pe piese. Următoarea lucrare se alege după câte cereri reale deblochează o piesă.
+| Semnal | Ce se face |
+|---|---|
+| un rol obligatoriu este gol | Se umple din surse (tehnica 7). Dacă nicio sursă nu are valoare, se pune o singură întrebare. |
+| valoarea spusă nu este primită | Se traduce pe scară (tehnica 4) sau se înlocuiește declarat (tehnica 3). |
+| cerința nu este între cele promise de act | Refuz cinstit: „aici nu pot ține cont de asta”. |
+| o constrângere tare ar fi încălcată | Varianta se respinge și se încearcă alta (lecția 17). |
+| o constrângere slabă ar fi încălcată | Varianta primește un cost; se alege cea mai ieftină (lecția 17). |
+| sunt posibile mai multe planuri | Se propun câteva, se încearcă pe o copie, se alege (lecția 17). |
+| o referință se potrivește cu mai multe lucruri | Se ia lucrul în atenție; dacă nu este unul, o întrebare. |
+| excluderile nu mai lasă nimic | Cea mai veche excludere cedează, și se spune. |
+| după execuție nu s-a schimbat nimic | Răspunsul spune că nu s-a schimbat nimic și de ce. |
+| au rămas cuvinte necitite care contează | Nu se execută. Se spune ce parte s-a înțeles și ce parte nu. |
 
 ---
 
-# Partea VII — Rețeta pentru un domeniu nou
+## Lecția 17. Cele trei feluri de raționament și căutarea
 
-## 38. Pașii
+Toate lucrează pe aceeași bază: **vederea ca fapte (facts view)** a lumii vii. În această vedere, orice lume, indiferent de domeniu, arată la fel: **lucruri**, fiecare cu **felurile** lui; **însușiri**, adică triplete (lucru, însușire, valoare); și **relații**, adică triplete (lucru, relație, alt lucru). La acestea se adaugă ce spune cunoașterea despre fiecare fel („peștele trăiește în apă”).
 
-1. **Scrie felurile de lucruri și sloturile.** Întreabă: ce face omul aici, ce are fiecare lucru?
-2. **Scrie cuvintele** domeniului. Nu cuvinte de limbă generală.
-3. **Declară capabilitățile**: pentru fiecare act, ce constrângeri onorează *cu adevărat*.
-4. **Scrie uneltele**: puține, mici, cu parametri tipizați. Fără text, fără valori implicite ascunse.
-5. **Scrie vederea stării.**
-6. **Declară semnăturile uneltelor și legăturile.**
-7. **Caută în cunoaștere** ce există deja (așteptări, scări, locuri). Adaugă așteptări proprii doar unde domeniul diferă.
-8. **Rulează testele generate din declarații** (§41).
-9. **Probează cu fraze noi.** Ce nu merge: întâi întreabă ce piesă generală lipsește; dacă nu există, pe lista cinstită.
+Aceasta este traducerea în ceva general despre care vorbeam: regulile de raționament sunt scrise o singură dată, pe lucruri, însușiri și relații, și merg pe un desen, pe un plan de mese sau pe un calendar.
 
-## 39. Exemplu complet: un raft cu cutii
+### Deducția: ce decurge și ce se încalcă
+
+**Deducția (deduction)** pornește de la faptele lumii vii și de la cunoaștere și află ce decurge din ele și ce reguli sunt încălcate. Este mărginită la doi pași: ce spune cunoașterea despre felul lucrului, apoi despre felul din care acesta se trage.
+
+| Domeniu | Exemplu |
+|---|---|
+| raft | Raftul are 3 locuri; a patra cutie încalcă o constrângere tare. |
+| desen | Peștele trăiește în apă; un pește pus pe cer încalcă o constrângere slabă. |
+| plan de mese | Doi invitați certați la aceeași masă încalcă o interdicție. |
+| calendar | Două evenimente ale aceleiași persoane care se suprapun. |
+
+### Căutarea: propune, încearcă, respinge, alege
+
+Când există o alegere, sistemul face un ciclu scurt. Propune câteva variante, cel mult cinci. Pe fiecare o încearcă pe o copie a lumii vii, deci nimic real nu se atinge. Pe copie rulează deducția. Variantele care încalcă o constrângere tare sunt respinse. Cele rămase sunt ordonate după cost. Prima este aleasă. Dacă nu rămâne niciuna, sistemul spune ce constrângere a blocat.
+
+Pentru probleme mari — așezarea a patruzeci de invitați la cinci mese — aceleași declarații de constrângeri sunt date unui **rezolvitor (solver)**, care caută mai eficient. Declarațiile nu se schimbă; se schimbă doar strategia de căutare.
+
+Fiecare căutare are un **buget (budget)** de pași. Când bugetul se termină, sistemul spune că s-a oprit. Nu inventează un rezultat.
+
+### Abducția: cea mai ieftină completare
+
+**Abducția (abduction)** răspunde la întrebarea: dintre felurile în care pot completa ce lipsește, care cere cele mai puține și mai slabe presupuneri? Costul unei variante este suma costurilor presupunerilor ei (locul sursei, din lecția 15) și a constrângerilor slabe pe care le încalcă.
+
+| Domeniu | Exemplu |
+|---|---|
+| desen | „Pune un pește”, într-un desen cu un iaz și un cer. Varianta „în iaz” nu încalcă nimic. Varianta „pe cer” încalcă o constrângere slabă. Se alege iazul, deși omul nu a spus unde. |
+| raft | „Pune o cutie”, fără raft numit. Se alege primul raft care mai are loc. |
+| calendar | „Mută ședința mai târziu”. Se alege cel mai apropiat interval liber care nu încalcă nimic. |
+
+### Inducția: regula din exemple
+
+**Inducția (induction)** caută ce au în comun lucrurile existente și propune aceeași valoare pentru un lucru nou. Am întâlnit-o ca tehnica 10. Este mărginită intenționat: are nevoie de cel puțin trei lucruri sau de două corecții. Sub aceste praguri nu trage nicio concluzie.
+
+### Cum lucrează împreună
+
+Inducția propune valori. Abducția alege varianta cea mai ieftină. Deducția o verifică și o respinge dacă încalcă o regulă tare. Niciuna dintre ele nu știe în ce domeniu se află.
+
+---
+
+## Lecția 18. Execuția și răspunsul
+
+### Execuția
+
+Un mecanism general, **executorul**, ia planul pas cu pas **[propus în această formă]**. Pentru fiecare pas găsește legătura potrivită după act și fel de lucru. Umple parametrii din sursele lor. Verifică în starea lumii vii ce trebuie să existe înainte. Cheamă unealta. Apoi citește din nou starea și verifică dacă efectul declarat s-a produs.
+
+### Istoricul
+
+Câteva reguli sunt aceleași în orice domeniu. O cerere executată este un singur pas de undo, oricâte unelte a chemat. O reacție înlocuiește pasul pe care îl corectează. O întrebare nu este un pas. Un mesaj înțeles doar pe jumătate nu execută nimic.
+
+### Răspunsul
+
+Răspunsul nu este scris de mână în domeniu. Se compune din date, în patru părți.
+
+| Parte a răspunsului | De unde vine |
+|---|---|
+| ce s-a făcut | Din diferența dintre starea de dinainte și cea de după. Dacă diferența este goală, răspunsul spune că nu s-a schimbat nimic. |
+| ce s-a presupus | Din sursa fiecărei valori. Se spun doar presupunerile care contează. |
+| ce nu s-a putut | Fiecare cerință neonorată, cu cuvintele omului și cu motivul. |
+| ce nu s-a înțeles | Cuvintele necitite. |
+
+Cuvintele răspunsului vin din lumea limbii, ca **fapte de răspuns (reply facts)**: propoziții cu locuri goale, de umplut. De aceea același răspuns iese și în română.
+
+Două întrebări ale omului se rezolvă prin același mecanism. „Ce este pe raft?” se răspunde din starea lumii vii. „Ce poți face aici?” se răspunde din capabilitățile declarate.
+
+### Proveniența
+
+Fiecare valoare din plan ține minte de unde vine. Aceasta se numește **proveniență (provenance)**. Servește la trei lucruri: răspunsul poate spune ce a presupus; la o reacție se știe ce este voie să se schimbe (presupunerile) și ce nu (ce a spus omul); la revizia programului se vede dacă o valoare a venit din cunoaștere sau dintr-o constantă ascunsă.
+
+### Lista cinstită
+
+Când o cerere nu poate fi rezolvată cu piesele generale existente, nu se scrie o regulă pentru acel caz. Cazul se trece pe **lista cinstită (honest list)**, cu piesa generală care lipsește: o declarație, o bucată de cunoaștere, un cuvânt, o compunere de lumi, o metodă de raționament sau un mecanism de bibliotecă. Lucrul următor se alege după câte cereri reale deblochează o piesă.
+
+---
+
+## Lecția 19. Cum se face un domeniu nou
+
+Pașii, în ordine. Întâi se scriu felurile de lucruri și sloturile lor. Apoi cuvintele domeniului. Apoi capabilitățile, cu grijă să fie promise doar cerințele de care domeniul chiar ține cont. Apoi uneltele: puține, mici, fără text și fără valori implicite ascunse. Apoi vederea stării. Apoi semnătura uneltelor și legăturile. Apoi se caută în cunoaștere ce există deja și se adaugă așteptări proprii doar unde domeniul diferă. La sfârșit se rulează testele și se încearcă fraze noi.
+
+Raftul, complet:
 
 ```
-# feluri de lucruri și sloturi
-@w        std.schema.world name=shelfworld
-@t.shelf  core.type of=shelf extends=std.schema.thing closed=true
-@t.box    core.type of=box   extends=std.schema.thing closed=true
-@s1 core.slot of=shelf key=slots  kind=integer min=1 max=6 default=3
-@s2 core.slot of=box   key=name   kind=string
-@s3 core.slot of=box   key=colour kind=atom
-@s4 core.slot of=box   key=size   kind=atom enum=small enum=big default=small
-@s5 core.slot of=box   key=on     type=shelf
-@cap std.schema.capacity of=shelf key=slots holds=box via=on
-
-# cuvinte
-@wd1 core.word text=crate text=carton means=box
-
-# capabilități
-@k1 std.schema.kind of=shelf world=shelfworld acts=make
-@k2 std.schema.kind of=box   world=shelfworld acts=make acts=place acts=change acts=remove
-@h1 std.schema.honours world=shelfworld act=make   on=kind on=count on=size on=attribute on=place of=box
-@h2 std.schema.honours world=shelfworld act=place  on=place of=box
-@h3 std.schema.honours world=shelfworld act=change on=attribute on=size of=box
-@h4 std.schema.honours world=shelfworld act=remove of=box
-
-# unelte și legături (forma propusă)
-@op1 std.tool.op world=shelfworld name=add    effect=makes
-@op2 std.tool.op world=shelfworld name=move   effect=changes
-@op3 std.tool.op world=shelfworld name=set    effect=changes
-@op4 std.tool.op world=shelfworld name=delete effect=removes
-@b1 std.tool.bind act=make   of=box op=add
-@b2 std.tool.bind act=place  of=box op=move
-@b3 std.tool.bind act=change of=box op=set
-@b4 std.tool.bind act=remove of=box op=delete
+@w    std.schema.world name=shelfworld
+@t1   core.type of=shelf extends=std.schema.thing
+@t2   core.type of=box   extends=std.schema.thing
+@s1   core.slot of=shelf key=slots  kind=integer min=1 max=6 default=3
+@s2   core.slot of=box   key=name   kind=string
+@s3   core.slot of=box   key=colour kind=atom
+@s4   core.slot of=box   key=size   kind=atom enum=small enum=big default=small
+@s5   core.slot of=box   key=on     type=shelf
+@cap  std.schema.capacity of=shelf key=slots holds=box via=on
+@wd1  core.word text=crate text=carton means=box
+@k1   std.schema.kind of=shelf world=shelfworld acts=make
+@k2   std.schema.kind of=box   world=shelfworld acts=make acts=place acts=change acts=remove
+@h1   std.schema.honours world=shelfworld act=make   on=kind on=count on=size on=attribute on=place of=box
+@h2   std.schema.honours world=shelfworld act=place  on=place of=box
+@h3   std.schema.honours world=shelfworld act=change on=attribute on=size of=box
+@h4   std.schema.honours world=shelfworld act=remove of=box
+@b1   std.tool.bind act=make   of=box op=add
+@b2   std.tool.bind act=place  of=box op=move
+@b3   std.tool.bind act=change of=box op=set
+@b4   std.tool.bind act=remove of=box op=delete
 ```
 
-Cod: patru funcții (`add`, `move`, `set`, `delete`) și vederea. Atât.
+Programul domeniului: patru unelte (`add`, `move`, `set`, `delete`) și vederea stării.
 
 Ce trebuie să meargă fără nimic în plus:
 
-| Omul spune | Ce se întâmplă | Tehnica |
-|---|---|---|
-| „pune trei cutii roșii” | 3 cutii, roșii, mici, pe primul raft cu loc | direct; implicit de slot; abducția locului |
-| „fără cutii mari” apoi „încă două” | 2 mici | dialog; constrângerea rămâne |
-| „mai puține” | se revine la mai puține, restul neschimbat | revizuire `step` |
-| „mută cartonul roșu pe raftul de sus” | o întrebare dacă sunt trei roșii | cuvânt; referință ambiguă |
-| „zece cutii” pe un raft de 3 | refuz cu motivul capacității | deducție, constrângere tare |
-| „ce poți face aici?” | lista din capabilități | spune fapte |
-| „undo” | pasul întreg înapoi | cronologie |
-
-## 40. Aceleași tehnici pe domenii diferite
-
-| Tehnică | Desen (spațiu) | Diagramă (graf) | Document (text) | Plan de mese (alocare) | Calendar (timp) |
-|---|---|---|---|---|---|
-| moștenire | goldfish → fish | romb → formă | subsecțiune → secțiune | copil → invitat | ședință → eveniment |
-| traducere pe scară | minuscul → mic | „multe” → 9 | „scurt” → 0,4× | „mare” → masă de 10 | „dimineață” → 9–12 |
-| așteptare | pădure: 5–7 copaci | flux: 5–9 noduri | raport: 3 secțiuni | masă: 8 locuri | ședință: 1 oră |
-| îmbinare | lucru ↔ `k.animals` | nod ↔ pas din `k.process` | secțiune ↔ `k.layouts` | invitat ↔ `w.person` | loc ↔ `k.places` |
-| deducție | pește în apă | fără săgeată spre sine | fără titlu gol | capacitate, certați | fără suprapuneri |
-| abducție | unde pun peștele | de ce nod leg nodul nou | unde inserez paragraful | la ce masă pun invitatul | când mut ședința |
-| inducție | toate florile roșii | toate nodurile albastre | toate titlurile scurte | toate mesele rotunde | toate ședințele dimineața |
-| operator de structură | — | taie la n noduri | taie la n capitole | — | — |
-
-Faptul că tabelul se poate umple pe fiecare coloană cu aceleași rânduri este argumentul că mecanismele sunt generale.
+| Omul spune | Ce se întâmplă și de ce |
+|---|---|
+| „pune trei cutii roșii” | Trei cutii roșii, mici, pe primul raft cu loc. Potrivire directă pentru număr și culoare; valoare implicită pentru mărime; abducție pentru raft. |
+| „mai puține” | Mai puține cutii; culoarea și raftul rămân. Reacție cu un pas pe număr. |
+| „mută cartonul roșu sus” | Dacă sunt trei cutii roșii, o întrebare: „care?”. Cuvânt al domeniului; referință cu mai multe potriviri. |
+| „zece cutii” | Refuz, cu motivul: raftul are trei locuri. Deducție, constrângere tare. |
+| „o cutie uriașă” | O cutie mare, și se spune că „uriaș” a fost luat ca „mare”. Traducere pe scară. |
+| „ce poți face aici?” | Lista actelor și a cerințelor de care se ține cont. Din capabilități. |
+| „undo” | Ultimul pas întreg înapoi. |
 
 ---
 
-# Partea VIII — Ce este interzis și cum se verifică
-
-## 41. Ce are voie să fie cod
-
-În codul unui domeniu au voie doar:
-
-1. **uneltele** — operații mici, cu parametri tipizați, care nu citesc cererea;
-2. **vederea stării**;
-3. **constrângeri și căutări speciale**, fiecare declarată în firele domeniului cu nume și semnătură, și numai unde un fir nu o poate spune (geometrie, așezare automată, un algoritm de stivuire).
-
-## 42. Mirosurile de petic (patch smells)
-
-O revizie respinge, în codul unui domeniu sau al ușii:
-
-- citirea cererii sau a faptelor ei;
-- tabele de cuvinte sau de sinonime;
-- valori implicite (numere, forme, locuri);
-- alegerea numărului, a felului, a formei, a locului;
-- numele unui fel de lucru sau al unei lumi ca text în cod;
-- propoziții de răspuns;
-- expresii regulate pe textul omului sau pe răspuns;
-- un prag reglat pe un singur caz;
-- o constantă copiată din test în cod;
-- o verificare slăbită ca să treacă un caz;
-- două mecanisme pentru același lucru după o schimbare.
-
-## 43. Cum se măsoară
-
-- **Numărătorul de cod de legătură**: câte astfel de încălcări sunt în fișierele la care ajung operațiile unui domeniu. Are voie doar să scadă.
-- **Două coloane la orice rezultat**: „doar prin legătură declarată” și „prin cod scris de mână”. Contează prima.
-- **Teste generate din declarații**: din fiecare `honours` se generează proprietăți („dacă actul onorează numărul, numărul spus apare în rezultat sau în «nu am putut»”). Un domeniu nou primește testele fără să le scrie cineva.
-- **Probe cu fraze noi** la fiecare livrare, nu fraze fixe.
-- **Dovada de generalitate**: un domeniu de jucărie făcut doar din fire și câteva unelte merge cu zero linii de legătură.
-
-*Cu ce seamănă:* testarea bazată pe proprietăți (QuickCheck, Claessen și Hughes 2000) și testarea metamorfică.
-
----
-
-# Partea IX — Starea de azi
+## Lecția 20. Ce există azi și ce nu
 
 | Piesă | Stare |
 |---|---|
-| fire, tipuri, sloturi, reguli, interdicții, lume, copie, undo | **există** (bibliotecă) |
-| `std.schema.kind`, `honours`, `limit`, `capacity`, `needs`, `view` | **există** |
-| vederea ca fapte (`factsOf`), fapte despre feluri (`kindFactsOf`) | **există** |
-| citirea cererii, corectarea de cuvinte, revizuirea | **există** |
-| planul cu surse ordonate, ciclul propune–simulează–respinge–alege | **există** |
-| deducție mărginită, abducție ponderată, inducție locală | **există** |
-| rezolvitoare pentru multe chei deschise | **există** |
-| `sayRequest` | **există**, dar domeniile își scriu încă propriile propoziții |
-| substituția „realizat ca” (`std.schema.drawn`) | **provizoriu** (în aplicație; doar pentru feluri) |
-| legătura act → operație (`psys2.op`) | **provizoriu** (leagă la o funcție de legătură, nu la o unealtă) |
-| cronologia (un pas pe cerere) | **provizoriu** (în ușa aplicației) |
-| referințe la lucruri existente, starea ca fapte ale cererii | **provizoriu** |
-| semnătura uneltei, parametri, precondiții, efecte (`std.tool.*`) | **propus** |
-| traducerea oricărei valori pe scară | **propus** (azi: tabele în cod) |
-| așteptări cu condiție | **propus** (azi: `if` în cod) |
-| operatori de structură | **propus** (azi: în codul diagramelor și documentelor) |
-| execuția cu unelte + diferență de stare | **propus** |
-| un singur vocabular de constrângeri | **propus** |
-| lista cinstită ca fire (`w.honest`) | **propus** |
+| fire, tipuri, sloturi, reguli, interdicții | Există în bibliotecă. |
+| lume, copie, undo, încălcări ca date | Există în bibliotecă. |
+| declararea capabilităților (`std.schema.kind`, `std.schema.honours`) | Există în bibliotecă. |
+| limite, capacități, îmbinări | Există în bibliotecă. |
+| citirea propoziției într-o cerere | Există în bibliotecă. |
+| cerere nouă sau reacție | Există în bibliotecă. |
+| planul cu surse ordonate | Există în bibliotecă. |
+| vederea ca fapte; deducție, abducție, inducție mărginite | Există în bibliotecă. |
+| rezolvitoare pentru probleme mari | Există în bibliotecă. |
+| înlocuirea declarată | Provizoriu: există doar în aplicație și doar pentru feluri de lucruri. |
+| legătura de la act la unealtă | Provizoriu: în aplicație există o formă simplă (`psys2.op`), care leagă actul de o funcție mare, nu de o unealtă mică. |
+| referințe la lucruri existente | Provizoriu: în aplicație. |
+| istoricul (un pas pe cerere) | Provizoriu: în aplicație; locul lui este în bibliotecă. |
+| semnătura uneltelor (`std.tool.*`) | Propus. Nu există. |
+| traducerea oricărei valori pe o scară | Propus. Azi sunt tabele în program. |
+| așteptări cu condiție | Propus. Azi sunt ramuri `if` în program. |
+| operatori de structură | Propus. Azi sunt în programul diagramelor și al documentelor. |
+| executorul cu unelte și diferență de stare | Propus. |
+| răspuns compus numai din date | Parțial. Mecanismul există, dar domeniile își scriu încă propriile propoziții. |
+| lista cinstită ca fire | Propus. |
 
-**Problema principală azi:** în cele trei domenii declarate (desen, diagrame, documente), între planul general și unealtă stă câte o funcție JavaScript care decide din nou valori și scrie răspunsul. Tot ce e marcat „propus” mai sus există deja acolo, dar ca cod pe domeniu. Lucrarea următoare este mutarea lor în fire și în mecanisme.
+Problema principală de azi, spusă direct: în cele trei domenii care folosesc drumul nou (desen, diagrame, documente), între plan și unealtă stă câte o funcție JavaScript mare. Ea alege din nou valori, ține tabele de cuvinte și scrie propoziția de răspuns. Tot ce este marcat „propus” în tabel există deja acolo, dar ca program pe domeniu, nu ca declarații. Lucrul următor este mutarea lor.
 
-Încă o observație cinstită despre bibliotecă: lista cheilor de constrângere (`kind`, `count`, `size`…) este fixă în codul ei. Ar trebui să fie tot fire, ca un domeniu să poată aduce o cheie nouă (de exemplu `tempo` pentru muzică) fără schimbare de bibliotecă.
-
----
-
-# Partea X — Legături cu alte sisteme și cu literatura
-
-| Idee de aici | Înrudită cu | Diferența |
-|---|---|---|
-| fir cu chei, sloturi cu implicite | cadre (Minsky 1974); structuri de trăsături | o singură sintaxă și pentru reguli, și pentru capabilități |
-| lume = fapte + matrice | baze de cunoștințe DL (TBox/ABox); constrângeri de integritate | verificare la fiecare schimbare, cu undo |
-| derivări ținute minte | menținerea adevărului (Doyle 1979; de Kleer 1986) | parte din lume, nu sistem separat |
-| capabilitate + unealtă + precondiții + efecte | STRIPS (Fikes, Nilsson 1971); PDDL | capabilitatea poartă și ce constrângeri de limbaj onorează |
-| întreg din părți | HTN (Erol, Hendler, Nau 1994); SHOP2 | metodele sunt fapte de așteptare cu intervale |
-| constrângeri tari și slabe | CSP (Mackworth 1977); CSP ponderat | aceleași constrângeri folosite la citire, plan și răspuns |
-| implicite ca așteptări | logica implicitelor (Reiter 1980) | cu cost și cu proveniență spusă omului |
-| abducție cu costuri | Peirce; Hobbs și colab. 1993 | costul = locul sursei în ordinea surselor |
-| inducție locală | anti-unificare (Plotkin 1970); ILP | mărginită la câteva exemple din sesiune |
-| deducție mărginită | Datalog, înlănțuire înainte | adâncime 2, cu buget |
-| cererea ca stare | information state update (Larsson, Traum 2000); GUS (Bobrow 1977) | cererea este o lume cu aceleași mecanisme ca oricare |
-| înțelegere sprijinită pe o lume mică | SHRDLU (Winograd 1972) | lumea e declarată, nu programată; mai multe domenii |
-| revizuire cu schimbare minimă | AGM (1985) | pe cheile de constrângere ale cererii |
-| vederea stării | vederi actualizabile; lentile (Foster și colab. 2007) | într-un sens: unealta scrie, vederea citește |
-| proveniență | semi-inele de proveniență (Green și colab. 2007) | folosită direct în răspuns |
-| răspuns din date | Reiter și Dale 2000; Grice 1975 | din diferența de stare |
-| teste din declarații | QuickCheck (Claessen, Hughes 2000) | generate din capabilități |
-| scheme de unelte | apelare de funcții, MCP | argumentele le alege un mecanism explicabil, nu un model |
-
-Referințele sunt date din memorie, cu autor și an; înainte de publicare în documentația bibliotecii trebuie verificate una câte una față de `docs/literature.md`.
+O a doua observație: lista cheilor de cerință (`kind`, `count`, `size` și celelalte) este scrisă fix în programul bibliotecii. Ar trebui să fie tot declarații, ca un domeniu să poată aduce o cheie nouă, de exemplu `tempo` pentru muzică.
 
 ---
 
-## Întrebări deschise pentru proprietar
+## Lecția 21. Ce este voie să fie program și cum se verifică
 
-1. **Numele firelor de unealtă**: `std.tool.op / param / bind / arg` — sau le vrei în familia `std.schema.*`, lângă `honours`?
-2. **Cheile de constrângere ca fire**: ești de acord ca lista fixă din bibliotecă să devină declarabilă?
-3. **Cât de mult are voie o „constrângere specială” în cod** (§41 punctul 3)? Propun: doar funcții pure, fără acces la cerere, declarate cu nume.
-4. **Exemplul purtat în documentația finală**: raftul, sau unul dintre domeniile reale?
+În programul unui domeniu au voie trei lucruri: uneltele, vederea stării și, rar, o constrângere sau o căutare specială care nu se poate spune prin fire (geometrie, așezare automată). Aceasta din urmă trebuie declarată în firele domeniului, cu nume.
+
+La revizie se resping următoarele, oriunde ar apărea în programul unui domeniu.
+
+| Ce se respinge | De ce |
+|---|---|
+| citirea cererii | Unealta trebuie să primească valori gata alese. |
+| tabele de cuvinte sau de sinonime | Cuvintele sunt declarații în lumea limbii sau a domeniului. |
+| valori implicite în program | Sunt sloturi sau așteptări. |
+| alegerea numărului, a felului, a formei, a locului | Este treaba planului. |
+| numele unui fel de lucru scris în program | Programul nu are voie să știe ce feluri există. |
+| propoziții de răspuns | Răspunsul se compune din date. |
+| expresii regulate pe textul omului | Citirea este treaba mecanismului de înțelegere. |
+| un prag potrivit pe un singur caz | Este o regulă pe caz, ascunsă într-un număr. |
+| o verificare slăbită ca să treacă un test | Ascunde o greșeală. |
+
+Măsurarea se face în patru feluri. Un numărător arată câte astfel de încălcări sunt în programul fiecărui domeniu; numărul are voie doar să scadă. Orice rezultat se raportează pe două coloane, „numai prin declarații” și „prin program scris de mână”, și contează prima. Din fiecare capabilitate declarată se generează teste automat: dacă actul promite că ține cont de număr, atunci numărul spus trebuie să apară în rezultat sau în „nu am putut”. Iar dovada finală este un domeniu de jucărie, cum e raftul, care merge doar cu fire și câteva unelte.
+
+---
+
+## Lecția 22. Cu ce seamănă
+
+Ideile nu sunt noi luate una câte una. Nou este că sunt puse într-un singur limbaj și folosite împreună. Tabelul arată înrudirile, pentru cine vrea să citească mai departe. Referințele sunt date din memorie și trebuie verificate înainte de publicare.
+
+| Ideea din curs | Înrudirea |
+|---|---|
+| fir cu chei și sloturi cu valori implicite | Cadrele lui Minsky (1974) și structurile de trăsături din gramaticile de unificare. |
+| lume = fapte + schemă | Bazele de cunoștințe din logicile descriptive și constrângerile de integritate din bazele de date. |
+| lumea ține minte din ce a dedus fiecare valoare | Sistemele de menținere a adevărului (Doyle 1979; de Kleer 1986). |
+| capabilitate, unealtă, condiții și efecte | Planificarea clasică: STRIPS (Fikes și Nilsson 1971) și limbajul PDDL. |
+| întregul din părți | Planificarea ierarhică pe rețele de sarcini (Erol, Hendler și Nau 1994). |
+| constrângeri tari și slabe, căutare | Problemele de satisfacere a constrângerilor (Mackworth 1977) și varianta lor ponderată. |
+| valori implicite ca așteptări | Logica implicitelor (Reiter 1980). |
+| abducția cu costuri | Peirce; „interpretarea ca abducție” (Hobbs și colaboratorii 1993). |
+| inducția din exemple | Anti-unificarea (Plotkin 1970). |
+| deducția mărginită | Datalog și înlănțuirea înainte. |
+| cererea ca stare a dialogului | Abordarea „stării de informație” (Larsson și Traum 2000); sistemul GUS (Bobrow și colaboratorii 1977). |
+| înțelegerea sprijinită pe o lume mică | SHRDLU (Winograd 1972). Diferența: aici lumea este declarată, nu programată, și sunt mai multe domenii. |
+| reacția schimbă numai ce numește | Revizuirea convingerilor cu schimbare minimă (Alchourrón, Gärdenfors și Makinson 1985). |
+| proveniența valorilor | Proveniența datelor (Green și colaboratorii 2007). |
+| răspunsul compus din date | Generarea de limbaj natural (Reiter și Dale 2000). |
+| teste generate din declarații | Testarea bazată pe proprietăți (Claessen și Hughes 2000). |
+| semnătura uneltelor | Schemele de funcții folosite de modelele de limbaj. Diferența: aici valorile sunt alese de un mecanism care poate arăta de unde a luat fiecare. |
+
+---
+
+## Vocabular
+
+| Termen | Explicație |
+|---|---|
+| fir (wire) | O declarație: identificator, tip, perechi cheie=valoare. |
+| cheie (key) | Numele unei valori dintr-un fir. |
+| referință (reference) | O valoare `$id` care arată spre alt fir. |
+| fapt (fact) | Un fir fără variabile, care spune că ceva este așa. |
+| tip (type) | Al doilea cuvânt al unui fir. |
+| fel de lucru (kind of thing) | Un tip ale cărui fire sunt lucruri asupra cărora omul acționează. |
+| slot (slot) | Declarația unei chei pentru un tip. |
+| schemă (schema) | Firele unei lumi care spun ce fapte pot exista și ce decurge din ele. În bibliotecă se numește azi *matrix*. |
+| lume (world) | Fapte ținute în acord cu o schemă. |
+| schema lumii (world schema) | O schemă publicată pentru refolosire. |
+| lume de cunoaștere (knowledge world) | Fapte generale, fără stare de sesiune. |
+| lume vie (live world) | O lume care rulează pentru un om. |
+| domeniu de capabilități (capability domain) | O zonă a sistemului: o lume vie, uneltele ei și vederea stării. |
+| capabilitate (capability) | Promisiune declarată: act, fel de lucru, cerințe de care se ține cont. |
+| unealtă (tool) | Operație de program cu parametri și efect. |
+| legătură (binding) | Declarația care leagă o capabilitate de o unealtă. |
+| cerere (request) | Propoziția omului, ca fire. |
+| cerință (constraint) | O parte a cererii: cheie, sens, valoare. |
+| rol (role) | Locul unei valori într-o acțiune. |
+| reacție (reaction) | Un mesaj care judecă rezultatul dinainte. |
+| plan (plan) | Lista de pași, cu toate valorile alese. |
+| așteptare (expectation) | Un fapt despre ce este tipic. |
+| presupunere (assumption) | O valoare luată, nu spusă. |
+| proveniență (provenance) | De unde vine o valoare. |
+| constrângere tare, slabă (hard, soft) | Una refuză schimbarea; cealaltă o primește și ține o problemă. |
+| deducție, abducție, inducție | Ce decurge; cea mai ieftină completare; regula din exemple. |
+| listă cinstită (honest list) | Cazurile nerezolvate, fiecare cu piesa generală care îi lipsește. |
+
+---
+
+## De hotărât de către proprietar
+
+| Întrebare | Explicație |
+|---|---|
+| „schemă” în loc de „matrix” | Nu văd o problemă, cu precizarea din lecția 3 despre cele două sensuri. Cere o redenumire în bibliotecă și în documentația ei. |
+| numele firelor de unealtă | `std.tool.op`, `param`, `bind`, `arg`, sau în familia `std.schema.*`, lângă `honours`. |
+| cheile de cerință ca declarații | Dacă lista fixă din bibliotecă devine declarabilă de către domenii. |
+| cât program special este permis | Propun: doar funcții fără acces la cerere, declarate cu nume în firele domeniului. |

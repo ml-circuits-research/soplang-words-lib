@@ -1987,6 +1987,152 @@ print(r.chosen.text, r.why);
 improve the diagram reads 0, covers 0, slots 0, present 0, previous 0, cost 1
 ```
 
+### readRequest(world, text, ctx?) and requestWires(request, options?)
+
+Reads one message into a live `w.request`: `{ act, target, refers, text, constraints, reactions, unread,
+unreadAt, used }` and, not enumerable, `facts` (the host's flat shape: `{ key, value, neg, all, n, min, max,
+unit, step, of, attribute }`). A constraint is `{ on, want, value?, of?, attribute?, relation?, number?, min?,
+max?, bound?, amount?, step?, unit?, words, origin: 'said', cue }` with `on` one of `REQUEST_KEYS` (kind,
+count, size, extent, attribute, place, manner, layout, with, about, length) and `want` yes / no / not_all.
+The words are data: the cues of the language world (`${lang}.cue name= on= lead= between= trail= takes=
+priority=`, matched longest phrase first, then priority, then the longer reading with its operand; two cues
+of the same words that set different keys both hold, "in a corner" = extent small and place corner), its
+determiners, prepositions, number words, inflection (plurals of the kind words) and closed words. Kinds are
+the world's (`std.schema.kind`, `core.word`, `std.schema.honours of=`) and the expectation facts' (the
+`thing` of `k.expect.make` is a whole, its `unit` is counted, not wanted; its parts and shapes are kinds),
+in the world and in `ctx.catalog`. Values are the enums of the kinds' slots and the names of the catalog's
+`VALUE_TYPES` (a colour the world lacks is read, so that it can be named). The act is the first verb (the
+world's `core.word` for its actions, its action names, then `k.actions.verb` facts), unless a cue phrase
+starting there is longer ("make it bigger", "put it back"). What no cue, kind, value or number takes is
+`unread` (closed words excepted). `ctx`: `language` (default `world`), `lang` (default w.lang.en),
+`catalog`, `dialogue` (`{ last }`: what "it" is), `kinds`, `values`, `valueTypes`, `verbs`.
+`requestWires(request, { id })` writes the request as w.request wires (request, constraints, unread).
+
+```js run
+const words = new World();
+words.tell(`@c1 ex.cue name=not on=kind want=no lead="not" lead="no" takes=kind priority=2
+@c2 ex.cue name=fewer on=reaction value=reduce lead="too many" takes=none priority=3
+@c3 ex.cue name=place on=place value=top lead="at the top" takes=none priority=3
+@d ex.det text=a text=the`);
+const toy = new World();
+toy.load(`@acts core.use world=std.acts
+@w std.schema.world name=toy
+@t.heap core.type of=heap extends=std.schema.thing closed=true
+@t.box core.type of=box extends=std.schema.thing closed=true
+@t.ball core.type of=ball extends=std.schema.thing closed=true
+@k1 std.schema.kind of=heap world=toy acts=make acts=remove
+@k2 std.schema.kind of=box world=toy acts=make acts=remove
+@k3 std.schema.kind of=ball world=toy acts=make acts=remove
+@e k.expect.make thing=heap unit=thing min=4 max=8 typical=6 kinds_min=2 kinds_max=2`);
+const q = readRequest(toy, 'make a heap, not balls, at the top, blorp', { language: words, lang: 'ex' });
+print(q.act, q.target, q.facts, q.unread);
+```
+
+```output
+make heap [{"key":"place","value":"top"},{"key":"kind","value":"ball","neg":true}] ["blorp"]
+```
+
+### reviseRequest(dialogue, request, options?)
+
+Decides whether a turn is a new request or a reaction to the last result, and revises the last request by
+the `w.dialogue.revision` facts of the reaction (`options.revisions`, or `dialogue.revisions`): `flip` (the
+kinds of the last result, or the wanted ones, become not wanted), `step` (`on=count`: the count by the scale's
+factors, `k.expect.scale` of `options.catalog`, from the result's count; `on=size` / `extent`: one step of the
+scale), `add` (the constraints said replace those of the same key), `keep` (the same request, a new seed),
+`undo` (the previous request), `none`. A turn with an act and a new thing is a new request; "my expectation
+was ..." carries the whole new set. A relative size said in a revision ("make it smaller") is a step from the
+last one. `dialogue`: `{ last, result: { count, kinds }, previous, seed, previousSeed }`. Returns `{ sort:
+'request' | 'reaction', reaction, does, request, replace, seed, vary, reply, undo }` (`vary`: plan it varied;
+`reply`: a reply name of the revision, such as sorry or welcome).
+
+```js run
+const words = new World();
+words.tell(`@c ex.cue name=fewer on=reaction value=reduce lead="too many" takes=none priority=3
+@v w.dialogue.revision reaction=reduce does=step on=count direction=down
+@s1 k.expect.scale step=small order=2 count_factor=0.5 size_factor=0.7 extent=0.25
+@s2 k.expect.scale step=default order=3 count_factor=1 size_factor=1 extent=0.6`);
+const toy = new World();
+toy.load('@w std.schema.world name=toy\n@t.box core.type of=box extends=std.schema.thing\n@k std.schema.kind of=box world=toy acts=make');
+const last = readRequest(toy, 'make boxes', { language: words, lang: 'ex', verbs: { make: 'make' } });
+const r = reviseRequest({ last, result: { count: 6, kinds: { box: 6 } } }, readRequest(toy, 'too many', { language: words, lang: 'ex' }), { revisions: words, catalog: [words] });
+print(r.sort, r.reaction, r.replace, r.request.facts);
+```
+
+```output
+reaction reduce true [{"key":"kind","value":"box"},{"key":"count","n":3}]
+```
+
+### planRequest(live, request, options?), runPlan(live, plan, options?), capabilitiesOf(live), REQUEST_SOURCES, REQUEST_KEYS, VALUE_TYPES
+
+Plans a request in any live world from what it declares, and fills every gap by one mechanism.
+`capabilitiesOf(live)` reads the declarations: `std.schema.honours act= on= of=` (the constraints an act
+honours, for the things named) and `std.schema.kind` (what can be made, with which acts). A constraint said
+that the act does not honour is in `notHonoured` (`{ on, words, why, code }`, code `not_declared`); so is a
+declared one nothing in the world takes (`no_slot`), a value a slot refuses (`value`), a kind it has not
+(`no_kind`), and exclusions that would leave nothing (`nothing_left`, the oldest gives way). The gaps are
+filled from the sources in the order of `options.sources` (default `REQUEST_SOURCES`: said, dialogue, world,
+expect, sampled): the target (said, the dialogue's, the world's first declared whole), the expectation of it
+(`k.expect.make` / `k.expect.part` in the world, then in `options.catalog`), the count (a number, a range, a
+named amount `k.expect.amount`, "about N" by its factors, else the expectation's typical count times the
+size's `count_factor` of `k.expect.scale`, else one; plural kinds alone take the amount `some`), the kinds
+(the shapes of a varied part, or the parts of a whole, or the kinds said; wanted / not wanted / not all), the
+layout (said, the dialogue's, the expectation's, the slot's default), the size and extent factors, attributes,
+place, topic and length, each put on a slot of the whole or of every item where one takes it. "random" (and
+`options.vary`, a redo) samples with `options.seed` inside the range, never its minimum. The act may be left
+out when nothing is unread: the dialogue's, else the only act the world declares for the thing named; an
+unread word where the act stands is never guessed over. Returns `{ ok, act, target, roles, steps: [{ action,
+args, item?, link? }], assumed: [{ key, value, from }], notHonoured, seed, sources }`; nothing is changed.
+`runPlan(live, plan, { replace })` runs the steps through `act` (`{ step: i }` names what step i made),
+after removing the things of `replace` (the last result: a revision replaces it); it returns `{ ok, made,
+failed, result: { things, count, kinds, whole, layout, links } }`.
+
+```js run
+const toy = new World();
+toy.load(`@acts core.use world=std.acts
+@w std.schema.world name=toy
+@t.heap core.type of=heap extends=std.schema.thing closed=true
+@t.box core.type of=box extends=std.schema.thing closed=true
+@t.ball core.type of=ball extends=std.schema.thing closed=true
+@k1 std.schema.kind of=heap world=toy acts=make acts=remove
+@k2 std.schema.kind of=box world=toy acts=make acts=remove
+@k3 std.schema.kind of=ball world=toy acts=make acts=remove
+@h std.schema.honours act=make on=kind on=count of=heap
+@e k.expect.make thing=heap unit=thing min=4 max=8 typical=6 kinds_min=2 kinds_max=2
+@p k.expect.part of=heap part=thing group=node min=4 max=8 typical=6 shape=box shape=ball`);
+const q = { act: 'make', target: 'heap', text: 'a heap at the top', unread: [], constraints: [{ on: 'place', want: 'yes', value: 'top', words: 'at the top' }] };
+const p = planRequest(toy, q);
+print(p.roles.count, p.roles.kinds, p.assumed, p.notHonoured.map((x) => x.code));
+print(runPlan(toy, p).result.kinds, REQUEST_SOURCES);
+```
+
+```output
+6 ["box","ball"] [{"key":"count","value":6,"from":"world"},{"key":"kinds","value":"box, ball","from":"world"}] ["not_declared"]
+{"box":3,"ball":3} ["said","dialogue","world","expect","sampled"]
+```
+
+### sayRequest(request, outcome, options?)
+
+The reply of a request as reply facts, each a reply name of the language world with its roles, and their
+text by `replyFrom`: the revision's reply (`outcome.reply`: sorry, welcome), `done.revise` (`outcome.revised`),
+`done.make` / `done.make.value` (the whole made, or each kind with its number), `assumed` (`{ key, value }`, each
+default used), `not_honoured` (`{ words, why }`), `unread` (`{ words }`, after a turn that made something).
+`outcome` is the plan with `run` (runPlan's result). `options`: `language`, `lang` (or a language code such as
+'en'), `dictionary`. Returns `{ facts, text, missing }` (`missing`: the reply names the language world lacks).
+
+```js run
+const words = new World();
+words.tell(`@r1 ex.reply name=done.make count=one text="I made a {kind}."
+@r2 ex.reply name=assumed count=one role=key role=value text="I took {value} for the {key}."
+@r3 ex.reply name=not_honoured count=one role=words role=why text="Not {words}: {why}."`);
+const q = { text: 'make a heap at the top', unread: [], constraints: [] };
+const outcome = { target: 'heap', assumed: [{ key: 'count', value: 6, from: 'world' }], notHonoured: [{ on: 'place', words: 'at the top', why: 'a heap has no place here' }], run: { result: { whole: 'heap1', kinds: {} } } };
+print(sayRequest(q, outcome, { language: words, lang: 'ex' }).text);
+```
+
+```output
+I made a heap. I took 6 for the count. Not at the top: a heap has no place here.
+```
+
 ### clauses(world, text, options) and cutPoints(world, options?)
 
 One clause splitter. Sentences end at `.`, `?`, `!` and `;`. Inside one, the cut points are a

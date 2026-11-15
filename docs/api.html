@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="fb66c1127986">
+<meta name="source-hash" content="441030a01e82">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.148.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.149.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -658,6 +658,69 @@ null</code></pre></figure>
 const r = chooseRewrite(&#x27;make the diagram more beautiful&#x27;, [{ text: &#x27;tidy the diagram&#x27;, cost: 2, explains: [&#x27;make&#x27;, &#x27;beautiful&#x27;] }, { text: &#x27;improve the diagram&#x27;, cost: 1, explains: [&#x27;make&#x27;, &#x27;beautiful&#x27;] }], { read: (t) =&gt; ({ issues: reads[t] ?? 3 }), stop: [&#x27;the&#x27;, &#x27;more&#x27;] });
 print(r.chosen.text, r.why);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>improve the diagram reads 0, covers 0, slots 0, present 0, previous 0, cost 1</code></pre></figure>
+<h3 id="readrequestworld-text-ctx-and-requestwiresrequest-options">readRequest(world, text, ctx?) and requestWires(request, options?)</h3>
+<p>Reads one message into a live <code>w.request</code>: <code>{ act, target, refers, text, constraints, reactions, unread, unreadAt, used }</code> and, not enumerable, <code>facts</code> (the host's flat shape: <code>{ key, value, neg, all, n, min, max, unit, step, of, attribute }</code>). A constraint is <code>{ on, want, value?, of?, attribute?, relation?, number?, min?, max?, bound?, amount?, step?, unit?, words, origin: 'said', cue }</code> with <code>on</code> one of <code>REQUEST_KEYS</code> (kind, count, size, extent, attribute, place, manner, layout, with, about, length) and <code>want</code> yes / no / not_all. The words are data: the cues of the language world (<code>${lang}.cue name= on= lead= between= trail= takes= priority=</code>, matched longest phrase first, then priority, then the longer reading with its operand; two cues of the same words that set different keys both hold, "in a corner" = extent small and place corner), its determiners, prepositions, number words, inflection (plurals of the kind words) and closed words. Kinds are the world's (<code>std.schema.kind</code>, <code>core.word</code>, <code>std.schema.honours of=</code>) and the expectation facts' (the <code>thing</code> of <code>k.expect.make</code> is a whole, its <code>unit</code> is counted, not wanted; its parts and shapes are kinds), in the world and in <code>ctx.catalog</code>. Values are the enums of the kinds' slots and the names of the catalog's <code>VALUE_TYPES</code> (a colour the world lacks is read, so that it can be named). The act is the first verb (the world's <code>core.word</code> for its actions, its action names, then <code>k.actions.verb</code> facts), unless a cue phrase starting there is longer ("make it bigger", "put it back"). What no cue, kind, value or number takes is <code>unread</code> (closed words excepted). <code>ctx</code>: <code>language</code> (default <code>world</code>), <code>lang</code> (default w.lang.en), <code>catalog</code>, <code>dialogue</code> (<code>{ last }</code>: what "it" is), <code>kinds</code>, <code>values</code>, <code>valueTypes</code>, <code>verbs</code>. <code>requestWires(request, { id })</code> writes the request as w.request wires (request, constraints, unread).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const words = new World();
+words.tell(`@c1 ex.cue name=not on=kind want=no lead=&quot;not&quot; lead=&quot;no&quot; takes=kind priority=2
+@c2 ex.cue name=fewer on=reaction value=reduce lead=&quot;too many&quot; takes=none priority=3
+@c3 ex.cue name=place on=place value=top lead=&quot;at the top&quot; takes=none priority=3
+@d ex.det text=a text=the`);
+const toy = new World();
+toy.load(`@acts core.use world=std.acts
+@w std.schema.world name=toy
+@t.heap core.type of=heap extends=std.schema.thing closed=true
+@t.box core.type of=box extends=std.schema.thing closed=true
+@t.ball core.type of=ball extends=std.schema.thing closed=true
+@k1 std.schema.kind of=heap world=toy acts=make acts=remove
+@k2 std.schema.kind of=box world=toy acts=make acts=remove
+@k3 std.schema.kind of=ball world=toy acts=make acts=remove
+@e k.expect.make thing=heap unit=thing min=4 max=8 typical=6 kinds_min=2 kinds_max=2`);
+const q = readRequest(toy, &#x27;make a heap, not balls, at the top, blorp&#x27;, { language: words, lang: &#x27;ex&#x27; });
+print(q.act, q.target, q.facts, q.unread);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>make heap [{&quot;key&quot;:&quot;place&quot;,&quot;value&quot;:&quot;top&quot;},{&quot;key&quot;:&quot;kind&quot;,&quot;value&quot;:&quot;ball&quot;,&quot;neg&quot;:true}] [&quot;blorp&quot;]</code></pre></figure>
+<h3 id="reviserequestdialogue-request-options">reviseRequest(dialogue, request, options?)</h3>
+<p>Decides whether a turn is a new request or a reaction to the last result, and revises the last request by the <code>w.dialogue.revision</code> facts of the reaction (<code>options.revisions</code>, or <code>dialogue.revisions</code>): <code>flip</code> (the kinds of the last result, or the wanted ones, become not wanted), <code>step</code> (<code>on=count</code>: the count by the scale's factors, <code>k.expect.scale</code> of <code>options.catalog</code>, from the result's count; <code>on=size</code> / <code>extent</code>: one step of the scale), <code>add</code> (the constraints said replace those of the same key), <code>keep</code> (the same request, a new seed), <code>undo</code> (the previous request), <code>none</code>. A turn with an act and a new thing is a new request; "my expectation was ..." carries the whole new set. A relative size said in a revision ("make it smaller") is a step from the last one. <code>dialogue</code>: <code>{ last, result: { count, kinds }, previous, seed, previousSeed }</code>. Returns <code>{ sort: 'request' | 'reaction', reaction, does, request, replace, seed, vary, reply, undo }</code> (<code>vary</code>: plan it varied; <code>reply</code>: a reply name of the revision, such as sorry or welcome).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const words = new World();
+words.tell(`@c ex.cue name=fewer on=reaction value=reduce lead=&quot;too many&quot; takes=none priority=3
+@v w.dialogue.revision reaction=reduce does=step on=count direction=down
+@s1 k.expect.scale step=small order=2 count_factor=0.5 size_factor=0.7 extent=0.25
+@s2 k.expect.scale step=default order=3 count_factor=1 size_factor=1 extent=0.6`);
+const toy = new World();
+toy.load(&#x27;@w std.schema.world name=toy\n@t.box core.type of=box extends=std.schema.thing\n@k std.schema.kind of=box world=toy acts=make&#x27;);
+const last = readRequest(toy, &#x27;make boxes&#x27;, { language: words, lang: &#x27;ex&#x27;, verbs: { make: &#x27;make&#x27; } });
+const r = reviseRequest({ last, result: { count: 6, kinds: { box: 6 } } }, readRequest(toy, &#x27;too many&#x27;, { language: words, lang: &#x27;ex&#x27; }), { revisions: words, catalog: [words] });
+print(r.sort, r.reaction, r.replace, r.request.facts);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>reaction reduce true [{&quot;key&quot;:&quot;kind&quot;,&quot;value&quot;:&quot;box&quot;},{&quot;key&quot;:&quot;count&quot;,&quot;n&quot;:3}]</code></pre></figure>
+<h3 id="planrequestlive-request-options-runplanlive-plan-options-capabilitiesoflive-request_sources-request_keys-value_types">planRequest(live, request, options?), runPlan(live, plan, options?), capabilitiesOf(live), REQUEST_SOURCES, REQUEST_KEYS, VALUE_TYPES</h3>
+<p>Plans a request in any live world from what it declares, and fills every gap by one mechanism. <code>capabilitiesOf(live)</code> reads the declarations: <code>std.schema.honours act= on= of=</code> (the constraints an act honours, for the things named) and <code>std.schema.kind</code> (what can be made, with which acts). A constraint said that the act does not honour is in <code>notHonoured</code> (<code>{ on, words, why, code }</code>, code <code>not_declared</code>); so is a declared one nothing in the world takes (<code>no_slot</code>), a value a slot refuses (<code>value</code>), a kind it has not (<code>no_kind</code>), and exclusions that would leave nothing (<code>nothing_left</code>, the oldest gives way). The gaps are filled from the sources in the order of <code>options.sources</code> (default <code>REQUEST_SOURCES</code>: said, dialogue, world, expect, sampled): the target (said, the dialogue's, the world's first declared whole), the expectation of it (<code>k.expect.make</code> / <code>k.expect.part</code> in the world, then in <code>options.catalog</code>), the count (a number, a range, a named amount <code>k.expect.amount</code>, "about N" by its factors, else the expectation's typical count times the size's <code>count_factor</code> of <code>k.expect.scale</code>, else one; plural kinds alone take the amount <code>some</code>), the kinds (the shapes of a varied part, or the parts of a whole, or the kinds said; wanted / not wanted / not all), the layout (said, the dialogue's, the expectation's, the slot's default), the size and extent factors, attributes, place, topic and length, each put on a slot of the whole or of every item where one takes it. "random" (and <code>options.vary</code>, a redo) samples with <code>options.seed</code> inside the range, never its minimum. The act may be left out when nothing is unread: the dialogue's, else the only act the world declares for the thing named; an unread word where the act stands is never guessed over. Returns <code>{ ok, act, target, roles, steps: [{ action, args, item?, link? }], assumed: [{ key, value, from }], notHonoured, seed, sources }</code>; nothing is changed. <code>runPlan(live, plan, { replace })</code> runs the steps through <code>act</code> (<code>{ step: i }</code> names what step i made), after removing the things of <code>replace</code> (the last result: a revision replaces it); it returns <code>{ ok, made, failed, result: { things, count, kinds, whole, layout, links } }</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const toy = new World();
+toy.load(`@acts core.use world=std.acts
+@w std.schema.world name=toy
+@t.heap core.type of=heap extends=std.schema.thing closed=true
+@t.box core.type of=box extends=std.schema.thing closed=true
+@t.ball core.type of=ball extends=std.schema.thing closed=true
+@k1 std.schema.kind of=heap world=toy acts=make acts=remove
+@k2 std.schema.kind of=box world=toy acts=make acts=remove
+@k3 std.schema.kind of=ball world=toy acts=make acts=remove
+@h std.schema.honours act=make on=kind on=count of=heap
+@e k.expect.make thing=heap unit=thing min=4 max=8 typical=6 kinds_min=2 kinds_max=2
+@p k.expect.part of=heap part=thing group=node min=4 max=8 typical=6 shape=box shape=ball`);
+const q = { act: &#x27;make&#x27;, target: &#x27;heap&#x27;, text: &#x27;a heap at the top&#x27;, unread: [], constraints: [{ on: &#x27;place&#x27;, want: &#x27;yes&#x27;, value: &#x27;top&#x27;, words: &#x27;at the top&#x27; }] };
+const p = planRequest(toy, q);
+print(p.roles.count, p.roles.kinds, p.assumed, p.notHonoured.map((x) =&gt; x.code));
+print(runPlan(toy, p).result.kinds, REQUEST_SOURCES);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>6 [&quot;box&quot;,&quot;ball&quot;] [{&quot;key&quot;:&quot;count&quot;,&quot;value&quot;:6,&quot;from&quot;:&quot;world&quot;},{&quot;key&quot;:&quot;kinds&quot;,&quot;value&quot;:&quot;box, ball&quot;,&quot;from&quot;:&quot;world&quot;}] [&quot;not_declared&quot;]
+{&quot;box&quot;:3,&quot;ball&quot;:3} [&quot;said&quot;,&quot;dialogue&quot;,&quot;world&quot;,&quot;expect&quot;,&quot;sampled&quot;]</code></pre></figure>
+<h3 id="sayrequestrequest-outcome-options">sayRequest(request, outcome, options?)</h3>
+<p>The reply of a request as reply facts, each a reply name of the language world with its roles, and their text by <code>replyFrom</code>: the revision's reply (<code>outcome.reply</code>: sorry, welcome), <code>done.revise</code> (<code>outcome.revised</code>), <code>done.make</code> / <code>done.make.value</code> (the whole made, or each kind with its number), <code>assumed</code> (<code>{ key, value }</code>, each default used), <code>not_honoured</code> (<code>{ words, why }</code>), <code>unread</code> (<code>{ words }</code>, after a turn that made something). <code>outcome</code> is the plan with <code>run</code> (runPlan's result). <code>options</code>: <code>language</code>, <code>lang</code> (or a language code such as 'en'), <code>dictionary</code>. Returns <code>{ facts, text, missing }</code> (<code>missing</code>: the reply names the language world lacks).</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const words = new World();
+words.tell(`@r1 ex.reply name=done.make count=one text=&quot;I made a {kind}.&quot;
+@r2 ex.reply name=assumed count=one role=key role=value text=&quot;I took {value} for the {key}.&quot;
+@r3 ex.reply name=not_honoured count=one role=words role=why text=&quot;Not {words}: {why}.&quot;`);
+const q = { text: &#x27;make a heap at the top&#x27;, unread: [], constraints: [] };
+const outcome = { target: &#x27;heap&#x27;, assumed: [{ key: &#x27;count&#x27;, value: 6, from: &#x27;world&#x27; }], notHonoured: [{ on: &#x27;place&#x27;, words: &#x27;at the top&#x27;, why: &#x27;a heap has no place here&#x27; }], run: { result: { whole: &#x27;heap1&#x27;, kinds: {} } } };
+print(sayRequest(q, outcome, { language: words, lang: &#x27;ex&#x27; }).text);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>I made a heap. I took 6 for the count. Not at the top: a heap has no place here.</code></pre></figure>
 <h3 id="clausesworld-text-options-and-cutpointsworld-options">clauses(world, text, options) and cutPoints(world, options?)</h3>
 <p>One clause splitter. Sentences end at <code>.</code>, <code>?</code>, <code>!</code> and <code>;</code>. Inside one, the cut points are a comma, the joiners that cut (<code>${lang}.joiner cut=yes</code>; two in a row are one: "and then"), and the place before a question word (<code>${lang}.wh</code>). Each clause is read by <code>read(text) -&gt; { literal, captured? } | null</code>. Among the cuttings whose every clause reads, the one with the most literal words wins, then the fewest captured, then the fewest clauses. The result is <code>[{ text, reading }]</code>, or null when some sentence has no cutting that reads. A thing of several words is never cut: no cut point inside a phrase of <code>options.whole</code>, and a joiner before a determiner or a number (<code>${lang}.det</code>, <code>${lang}.numeral</code>, digits) joins a list of things ("remove the fourth grass and the third water lily" is one clause). On PSys2's real shop rows it cuts "I would like a ball and a pencil and pay with 20 lei. what's the change" into three clauses: the list stays one, and the joiner before a verb cuts.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
@@ -1180,7 +1243,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.148.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.149.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

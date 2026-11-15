@@ -869,6 +869,38 @@ print(readFrames(w, 'zap a tree', { lang: 'ex' }).best.act);
 make
 ```
 
+## Read, revise, plan and say a request from what a world declares
+
+*In `readRequest`, `requestWires`, `reviseRequest`, `planRequest`, `runPlan`, `capabilitiesOf`, `sayRequest`, `REQUEST_SOURCES`, `REQUEST_KEYS`, `VALUE_TYPES`; since 0.149.*
+*Works on: the published w.request, w.dialogue (its revision facts), k.expect and the w.lang.en cues; any live world that declares `std.schema.honours`.*
+
+What was asked is a world: "draw a sketch, not circles" is a w.request with act make, target picture and a
+constraint kind circle not wanted; "5-10 nodes", "a few", "about 7", "a small pond", "in a corner", "with water
+plants and a duck", "about bees", "of 3 chapters" are constraints; every other content word is unread. A reaction
+("too many", "no", "again", "put it back", "not all circles, better layout") revises the last request by the
+w.dialogue revision facts, and the result replaces the last one. A live world plans the request from what it
+declares (`std.schema.honours act=make on=kind on=count ... of=picture`, its kinds, its slots, its own k.expect
+facts), fills each gap from the sources in order (said > dialogue > world > the catalog's k.expect > sampled; random
+varies within the typical range, never the minimum) and names what it assumed and what it does not honour. A new
+world gets this by declaring its capabilities and nothing else: `examples/request-app.mjs` runs two invented
+worlds (shapes on a page, short notes) through one session with no code per world, and `test/request.test.mjs`
+runs the properties P1-P8 over each, reading what it declares.
+
+```js run
+const toy = new World();
+toy.load(`@acts core.use world=std.acts
+@w std.schema.world name=toy
+@t.box core.type of=box extends=std.schema.thing closed=true
+@k std.schema.kind of=box world=toy acts=make
+@h std.schema.honours act=make on=count of=box`);
+const p = planRequest(toy, { act: 'make', target: 'box', text: 'two red boxes', unread: [], constraints: [{ on: 'count', want: 'yes', number: 2, words: '2' }, { on: 'attribute', want: 'yes', attribute: 'colour', value: 'red', words: 'red' }] });
+print(p.steps.length, p.notHonoured.map((x) => `${x.words}: ${x.why}`));
+```
+
+```output
+2 ["red: this world does not take attribute for make"]
+```
+
 ## Run an application's worlds with the host kit
 
 *In `loadWorldSet`, `readTurn`, `turnScope`, `openSession`, `replyFrom`, `referentOf`, `countClass`, `clauses`, `cutPoints`, `chooseRewrite`, `snapshotSet`, `restoreSet`, `whyTurn`, `KIT_REPLIES`; since 0.130.*

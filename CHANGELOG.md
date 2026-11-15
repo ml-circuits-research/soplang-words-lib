@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.149.0
+
+Requests as worlds (owner GO 2026-11-15): the mechanisms readRequest, reviseRequest, planRequest and sayRequest,
+one gap-filling mechanism over any live world from what it declares. Knowledge pin 0966924e (w.request,
+w.dialogue, k.expect, the w.lang.en cues).
+
+### New
+- `readRequest(world, text, ctx)`: a live w.request (act, target, refers, constraints: kind wanted / not / not_all,
+  count as a number, range, named amount or about N, size and extent on the scale, attribute, place, manner,
+  layout, with-lists, about, length; reactions; unread words). The words are the language world's
+  `${lang}.cue` facts, longest phrase first then priority; two cues of the same words that set different keys
+  both hold. `facts` gives the host's flat shape; `requestWires` writes w.request wires.
+- `reviseRequest(dialogue, request, { revisions, catalog })`: a new request, or the last one revised by the
+  w.dialogue.revision facts of its reaction (flip, step by the k.expect.scale factors, add, keep with a new seed,
+  undo, none), with `replace`, `seed`, `vary` and the revision's reply name.
+- `planRequest(live, request, { catalog, dialogue, sources, seed, vary })`: from the world's declarations
+  (`std.schema.honours act= on= of=`, new in std.schema; its kinds and slots; its own k.expect facts, then the
+  catalog's) the acts with their roles filled, what was assumed (with its source) and what is not honoured
+  (not declared, no slot, refused value, no such kind, nothing left). The order of sources is data:
+  `REQUEST_SOURCES` = said, dialogue, world, expect, sampled. "random" samples in the range, never its minimum.
+  An unread word where the act stands is never guessed over. `capabilitiesOf(live)`.
+- `runPlan(live, plan, { replace })`: the steps through `act`, the last result removed first.
+- `sayRequest(request, outcome, { language, lang })`: reply facts (the revision's reply, done.revise, done.make,
+  assumed, not_honoured, unread) and their text by `replyFrom`.
+- `examples/request-app.mjs`: two invented worlds (shapes on a page, short notes) through one session with no
+  code per world; `test/request.test.mjs` runs P1-P8 over each by reading its declarations.
+
+### Changed
+- Tests follow the reply texts of knowledge 0966924e (no quotes around a request or a refused value).
+
 ## 0.148.0
 
 An application's intent step (its Q35) on the library's data and one call.

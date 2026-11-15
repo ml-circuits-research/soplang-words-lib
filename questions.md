@@ -602,3 +602,6 @@ Open, for the reviewer:
    block Q45; they stay next, in your order.
 5. `smells.mjs` hint `test_edited` on this release: request.test / tool.test expectations changed because the target
    now keeps its kind constraint (Q45 (1)) and the shelf has a `move` binding: the spec changed, no assertion removed.
+
+## Q90 (coordinator, 2026-11-15) — defect in 0.153: the whole world as things of an act includes declaration rows
+Reported by the psys2 worker on 0.153.0: "erase everything" / "șterge desenul" (`plan.whole = 'world'`) take `std.schema.drawn` rows (e.g. `$as.water`) as things, because `worldThings` reads `factsOf` of the fork, which mixes the tool state mirrored by `mirrorState` with the world's declarations. The remove then fails on a declaration row. Generic fix proposed: the things of an act are the mirrored state's things only (the view), never schema / declaration rows; a property over the example worlds: "remove everything" leaves the view empty and every declaration intact.

@@ -1152,9 +1152,14 @@ print(ablation(cells, (t, c) => (c.strip ? t.replace(/^um /i, '') : t), { plain:
 *In `skills/`; since 0.97.*
 *Works on: an application, its failures and held-out rows, and the knowledge repositories in `repos.pin`.*
 
-Six skills turn the library's tools into steps an agent follows. They learn a world from
-examples, improve it from failures, learn language rules, consolidate, audit knowledge, and
-expand and test a case. Each has a dry run on real material, listed in skills/README.md.
+Eight skills turn the library's tools into steps an agent follows, always generically. A failing turn
+is triaged by its request evidence to the generic piece it needs (a declaration, a knowledge fact, a
+language word, a composition, a method, a library mechanism). The piece is built, or the turn stays on the
+honest list as "needs <generic piece>". The skills are: improve worlds from failures, propose a generic
+method (with the patch-smell checklist), author a live world, learn a world from examples, learn language
+rules, audit knowledge, expand and test a case, and consolidate. The gates are properties generated from
+the declared worlds, fresh probes and the honest list shrinking, with a two-phase acceptance rule. Each
+skill has a dry run, listed in skills/README.md.
 **Limits:** the dry runs read psys2's form pairs and the pinned catalog. A host's own run
 needs its adapter: the reader and the answers.
 

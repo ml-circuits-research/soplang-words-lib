@@ -5827,3 +5827,29 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 
 ## 0.151.0 contextual spell repair (psys2 Q39)
 - `src/spell.mjs`: `repairWords` (candidates from factsOf of the live worlds, dialogue words, language words; keyboard-aware cost + source prior as data; unique best or ask), wired into `readRequest` as `ctx.spell`. Docs api.md, d.ts, CHANGELOG. Tests: `node --test test/spell.test.mjs` (8 pass); npm test 557 tests, 555 pass, 0 fail, 1 skipped; SOPWORLD_BUNDLE=1 557 / 555 / 0. Open points: questions.md Q85.
+
+## Skills rewritten to the owner's direction (2026-11-15; psys2 coordinator brief)
+- Why: the six skills were case-first (start from a failing case, end in a rule fitted to its family), spoke of the
+  pre-request architecture (readByTypes, phrase operators), and gated on held-out freezing and "nothing right turns
+  wrong". The owner: always generic, or the case stays on an honest list as "needs <generic piece>"; the declared
+  worlds are the only guide; the host's data principle is industrial (nothing held back; fresh probes instead).
+- skills/README.md: the first question (which generic piece: declaration, knowledge, language, composition, method,
+  library), the two-phase acceptance (transition: patch-only losses do not count, told apart by running with the
+  patches off; steady: at least 10 real turns won per lost, net, every loss listed), gates (properties generated from
+  declarations, fresh probes, honest list shrinking; counts reported), the cycle and order. skills/HONEST-LIST.md: the
+  format and how to choose work (rankNeeds: real turns unlocked, then worlds).
+- All six SKILL.md rewritten; new skills propose-generic-method (ideas from literature -> adversarial review with the
+  patch-smell checklist -> proposal; scripts/smells.mjs over a git range) and author-live-world (how to declare;
+  coverage and generated properties). Shared: skills/lib/honest.mjs (triage by request evidence, checkHonest,
+  rankNeeds, honestDelta, acceptance, patchOnly), skills/lib/smells.mjs, skills/lib/declarations.mjs.
+- Dry runs (each `node skills/<name>/scripts/dry-run.mjs`, all exit 0):
+  author-live-world: sketch 44/44 properties, 3 gaps (remove/change/connect have no honours), 6 honoured-but-named;
+  notes 11/11, 1 gap (size no_slot); garden 22/22; the control world's added gap is found.
+  propose-generic-method: 8 honest rows from example turns, 0 problems; top piece the act word (2 turns, 2 worlds);
+  review flags the "blorp" patch and a one-support alternation, the honours declaration is clean.
+  improve-world-from-failures: (A) 5 rows, (B) 512 rows from 565 pairs; top: clause splitting 190, skip words 131.
+  consolidate (no held-out): fillers proposed 8, 4 refused as content words; all pairs 253 -> 286/500 (reported);
+  fresh probes 84 -> 89/96; honest list 247 -> 214; accepted in both phases.
+  learn-language-rules (all pairs): 143 operators, 22 admitted, 1 passes the smell review, 21 refused.
+  learn-world-from-examples 8/8, no smell; audit-knowledge unchanged; node tools/generalisation-test.mjs share 1.
+- Library code untouched (src/ unchanged). Docs: README Skills, docs/capabilities.md (rebuilt). Question: Q86.

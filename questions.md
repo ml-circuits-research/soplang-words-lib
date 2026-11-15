@@ -503,3 +503,17 @@ deduce -> abduce cycle, with induction before it. Choices taken while waiting, e
 - The language dictionary is the `<lang>.*` wires of the language world passed (`language`); a large external morph `dictionary` is not enumerable, so pass its word list as `dictionary` if wanted.
 - Should an `ask` flow into `sayRequest` ("did you mean X?") and the dialogue? Today `request.spell.asks` is only data; the host decides.
 - Typos that are themselves known words (e.g. "fist" for "fish") are never changed by design.
+
+## Q86 (worker, 2026-11-15) — the rewritten skills: your opinion, please
+The skills were rewritten to the owner's direction (worker-log, "Skills rewritten"). What I would like your view on:
+1. The order of pieces (declaration, knowledge, language, composition, method, library) and the triage by request
+   evidence (`skills/lib/honest.mjs` `triage`): is a `not_declared` refusal rightly `piece: none` unless the user
+   expected it?
+2. The honest-list format (skills/HONEST-LIST.md): should it live in each host, or should the library publish a
+   `w.honest` schema so rows can be wires?
+3. The patch-smell hints (`skills/lib/smells.mjs`) are heuristics; are there smells you see in reviews that are
+   missing (e.g. a threshold tuned to one case)?
+4. The generated properties (`skills/lib/declarations.mjs`) found real declaration gaps in the example worlds (sketch
+   honours extent/layout for shapes that have no such slot; notes honours size with no slot; remove/change/connect
+   have no honours). Should the example worlds be corrected, or kept as they are as teaching material?
+**Choice taken while waiting:** the example worlds and src/ are unchanged; the skills and their dry runs are in use.

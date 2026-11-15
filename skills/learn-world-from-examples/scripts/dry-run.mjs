@@ -15,3 +15,7 @@ const requests = names.slice(0, 4).flatMap((n) => keys.slice(0, 2).map((key) => 
 let read = 0;
 for (const r of requests) if (readByTypes(w, r, { question: ['what', 'is'], skip: ['the', 'of'] }).best?.answer?.length) read++;
 console.log(`requests written without the schema (key × name): ${read}/${requests.length} read with an answer`);
+// the review of the proposal before it becomes a live world: value lists the knowledge has, sentences in patterns
+const { smellsOf } = await import('../../lib/smells.mjs');
+const smells = smellsOf({ world: String(slots.text ?? slots) });
+console.log(`review of the proposed slots: ${smells.length ? smells.map((s) => `${s.smell} (${s.at})`).join('; ') : 'no smell'}; then declare kinds, acts and honours and run skills/author-live-world`);

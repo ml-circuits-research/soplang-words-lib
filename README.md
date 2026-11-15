@@ -110,9 +110,12 @@ w.explain('a1');               // ... from b1 and f1
 
 ## Skills
 
-Six agent skills for learning worlds from use, each with a dry run on real material:
-learn a world from examples, improve it from failures, learn language rules, consolidate,
-audit knowledge, and expand and test a case. See [skills/README.md](skills/README.md).
+Eight agent skills for improving worlds from use, generically (owner 2026-11-15: a case is solved by a
+generic piece, a declaration, a fact, a word, a method or a composition, or it stays on the honest list as
+"needs <generic piece>"). They are: triage failures, propose a generic method (ideas, adversarial review,
+patch smells), author a live world (declarations, coverage, generated properties), learn a world from
+examples, learn language rules, audit knowledge, expand and test a case, and consolidate. Each has a dry run
+on real material. See [skills/README.md](skills/README.md) and [skills/HONEST-LIST.md](skills/HONEST-LIST.md).
 
 ## Develop
 

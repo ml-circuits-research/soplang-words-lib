@@ -121,10 +121,10 @@ export function readTurn(set, text, context = {}) {
   const planned = parts.map(planOf);
   const stop = planned.find((p) => !p.plan); // the first clause that cannot run: said, and nothing of the message runs
   if (stop) return parts.length > 1 ? { ...stop, clauses: parts } : stop;
-  if (over()) return { status: 'too-complex', reading: planned[0].reading, reply: 'That took too long; nothing was changed.' };
+  if (over()) return { status: 'too-complex', reading: planned[0].reading, reply: speak(set, 'too_complex.none', {}, context) };
   const outs = [];
   for (const p of planned) { // bounded: the clauses, one step each
-    if (over()) { outs.push({ status: 'too-complex', reading: p.reading, reply: 'That took too long; the rest was not done.' }); break; }
+    if (over()) { outs.push({ status: 'too-complex', reading: p.reading, reply: speak(set, 'too_complex.rest', {}, context) }); break; }
     const r = runPlan(set, p, context);
     outs.push(r);
     if (r.status !== 'done') break;
@@ -167,7 +167,7 @@ function planClause(set, text, context = {}) {
     return { status: 'not-understood', reading: { frame: null, unread: unread.length ? unread : tokens, mood, complete: false }, reply: notUnderstood(set, unread.length ? unread : tokens, context) };
   }
   const read0 = { mood, complete: mood !== 'statement' && mood !== 'fragment' };
-  if (!read0.complete) return { status: 'not-understood', reading: { frame: r.best.frame, act: r.best.act, roles: r.best.roles, unread: [], ...read0 }, reply: mood === 'fragment' ? 'I did not understand: that is only a fragment.' : 'I took that as a statement, not a request.' };
+  if (!read0.complete) return { status: 'not-understood', reading: { frame: r.best.frame, act: r.best.act, roles: r.best.roles, unread: [], ...read0 }, reply: speak(set, mood === 'fragment' ? 'not_understood.fragment' : 'not_understood.statement', {}, context) };
   // every frame the reader kept, bound in turn: the first whose every filled role lands in an argument wins; a role
   // that lands nowhere is named as unread, never dropped (reviewer 14:45 item 1)
   const bound = r.frames.map((fr) => ({ fr, b: bindFrame(set, fr, { lang, text }) }));
@@ -185,8 +185,8 @@ function planClause(set, text, context = {}) {
     if (at >= 0) return { status: 'not-understood', reading: { ...reading, complete: false, unread: ws.slice(at) }, reply: notUnderstood(set, ws.slice(at), context) };
   }
   const literal = tokens.length - Object.values(f.roles || {}).reduce((n, v) => n + String(v.text ?? '').split(/\s+/).filter(Boolean).length, 0); // the words the frame itself matched
-  if (b.confirm) return { status: 'ask', reading, reply: `There is no ${b.confirm.args[b.confirm.key]} ${label(b.confirm.args.kind)} yet. Shall I make it?`, asks: [{ key: b.confirm.place, value: b.confirm.args[b.confirm.key], confirm: { action: 'make', args: b.confirm.args } }] };
-  if (!reading.complete) return { status: 'not-understood', reading, reply: b.placeless ? `${b.placeless}.` : b.unread.length ? notUnderstood(set, b.unread, context) : b.why };
+  if (b.confirm) return { status: 'ask', reading, reply: speak(set, 'ask.make_missing', { name: b.confirm.args[b.confirm.key], kind: kindName(set, b.confirm.args.kind, lang) }, context), asks: [{ key: b.confirm.place, value: b.confirm.args[b.confirm.key], confirm: { action: 'make', args: b.confirm.args } }] };
+  if (!reading.complete) return { status: 'not-understood', reading, reply: b.placeless ? speak(set, b.placeless.name, b.placeless.roles, context) : b.unread.length ? notUnderstood(set, b.unread, context) : speak(set, b.why.name, b.why.roles, context) };
   if (literal <= 0) return { status: 'not-understood', reading: { ...reading, complete: false, unread: tokens }, reply: notUnderstood(set, tokens, context) }; // a catch-all frame that matched no word of its own reads nothing
   if (b.timeline) return { plan: { as: 'timeline', act: b.timeline.act, n: b.timeline.n ?? 1 }, reading, literal };
   const request = b.request;
@@ -205,7 +205,7 @@ function runPlan(set, p, context = {}) {
     return { status: res.ok ? 'done' : 'refused', reading, request: { action: plan.act, args: { n: plan.n } }, reply: res.ok ? (replyFrom(set.language, `done.${plan.act}`, {}, { lang, type: context.replies, dictionary: context.replyDictionary }) ?? sayAct(set, plan.act, { ok: true, n: plan.n }, context)) : sayAct(set, plan.act, { ok: false, n: plan.n }, context), effects: [{ effect: plan.act, worlds: res.worlds ?? [] }] };
   }
   if (plan.as === 'host') { // navigation and the like: the host's, through its hook; not a step of any world
-    const h = context.onHost ? context.onHost(plan.request, set) || {} : { reply: 'No host here takes that.' };
+    const h = context.onHost ? context.onHost(plan.request, set) || {} : { reply: speak(set, 'refused.no_host', {}, context) };
     return { status: h.status ?? 'done', reading, request: plan.request, reply: h.reply ?? '', changed: [], effects: [].concat(h.effects || []) };
   }
   return runRequest(set, plan.request, reading, context);
@@ -219,7 +219,7 @@ function runRequest(set, request, reading, context = {}) {
   const held = request.args.thing ? findThing(set, request.args.thing) : null;
   const owners = held ? [held.world] : [...set.worlds.values()].filter((w) => w.kinds.includes(request.args.kind)).map((w) => w.name);
   const pick = owners.length === 1 ? owners[0] : owners.includes(active) ? active : (criteria && owners.length > 1 ? choose(null, 'world', owners.map((o) => ({ world: o, active: o === active })), { seed: null, criteria }).best?.world : null); // the host's criteria (the open tab a measure)
-  if (!pick) return { status: owners.length ? 'ask' : 'refused', reading, request, reply: owners.length ? `In which: ${owners.join(' or ')}?` : 'No world here takes that.', ...(owners.length ? { asks: [{ key: 'world', values: owners }] } : {}) };
+  if (!pick) return { status: owners.length ? 'ask' : 'refused', reading, request, reply: owners.length ? speak(set, 'ask.which_world', { worlds: owners.join(', ') }, context) : speak(set, 'refused.no_world', {}, context), ...(owners.length ? { asks: [{ key: 'world', values: owners }] } : {}) };
   const owner = { owner: pick };
   const before = new Map([...set.worlds.values()].map((w) => [w.name, new Set(w.world.wires.keys())]));
   const thingType = held?.thing.type ?? null; // said after it may be gone
@@ -228,7 +228,7 @@ function runRequest(set, request, reading, context = {}) {
   const changed = [...set.worlds.values()].flatMap((w) => { const was = before.get(w.name); return [...w.world.wires.values()].filter((x) => !was.has(x.id)).map((x) => ({ world: w.name, type: x.type })).concat([...was].filter((id) => !w.world.wires.has(id)).map((id) => ({ world: w.name, type: 'removed', id }))); }); // every world: a stray change to another world is seen
   if (t.status === 'done') { set.steps.push({ world: pick }); set.redo.length = 0; }
   const result = t.results?.[0]?.result;
-  const reply = t.status === 'done' && SAID.has(request.action) ? sayAct(set, request.action, { request, result, thingType }, context) : labelled(set, (t.replies || []).join(' ') || t.question || '');
+  const reply = t.status === 'done' && SAID.has(request.action) ? sayAct(set, request.action, { request, result, thingType }, context) : speak(set, 'refused', { why: labelled(set, (t.replies || []).join(' ') || t.question || '') }, context); // the library's reason, said inside the language world's frame (the reasons themselves become codes in R4)
   const owners_ = owner;
   const effects = t.status === 'done' ? [{ effect: 'changed', world: pick, things: [...new Set([result?.thing, ...(result?.things || [])].filter(Boolean).map(String))] }] : []; // for the page: what to redraw
   if (t.status === 'done') set.focus = result?.thing ?? (result?.things || []).slice(-1)[0] ?? held?.thing.id ?? set.focus; // what "it" names next
@@ -326,7 +326,7 @@ function bindFrame(set, f, { lang, text = '' }) {
       const key = attrOf && slotsT.has(valueText(attrOf.attrs.attribute[0])) ? valueText(attrOf.attrs.attribute[0]) : [...slotsT].find(([, sl]) => (sl.enum || []).map((e) => valueText(e).toLowerCase()).includes(v))?.[0];
       used.add('thing'); used.add('value');
       const left = Object.keys(roles).filter((k) => !used.has(k)).flatMap(all);
-      if (!key) return { unread: [...all('value'), ...left], placeless: `${articleFor(L, labelOf(set, ref.type), { types: { det: `${lang}.det`, onset: `${lang}.onset` } }) ?? 'a'} ${labelOf(set, ref.type)} cannot be ${v}`.replace(/^./, (c) => c.toUpperCase()) };
+      if (!key) return { unread: [...all('value'), ...left], placeless: { name: 'refused.cannot_be', roles: { thing: kindName(set, ref.type, lang), value: roles.value?.text ?? v } } };
       return { request: { action: 'change', args: { thing: `$${ref.thing.id}`, attr: key, value: v } }, unread: left };
     }
     if (f.act !== 'make' && referentOf(set, kindWords.join(' '), { lang })) kind = null; // a thing of the world named: remove the second table
@@ -337,7 +337,7 @@ function bindFrame(set, f, { lang, text = '' }) {
       const left = Object.keys(roles).filter((k) => !used.has(k));
       return { request: { action: f.act, args: { thing: `$${ref.thing.id}` } }, unread: left.flatMap(all) };
     }
-    if (!kind) { const un = kindWords.filter((w) => !lex.has(w)); return { unread: (un.length ? un : kindWords).map(formOf), why: un.length ? undefined : `There is no ${kindWords.join(' ')} here.` }; }
+    if (!kind) { const un = kindWords.filter((w) => !lex.has(w)); return { unread: (un.length ? un : kindWords).map(formOf), why: un.length ? undefined : { name: 'refused.no_such', roles: { thing: forms.join(' ') } } }; }
     used.add('thing');
     const slots = set.schema._compiled().slots.get(kind) || new Map();
     for (const w of mods) { // the other words of the thing that are values of its closed sets: "a round table" -> shape=round
@@ -355,7 +355,7 @@ function bindFrame(set, f, { lang, text = '' }) {
       const ref = referentOf(set, words('place'));
       const key = ref && [...slots].find(([, sl]) => sl.type && (sl.type === ref.type))?.[0];
       if (key) { args[key] = `$${ref.thing.id}`; used.add('place'); used.add('rel'); }
-      else placeless = ref ? `${articleFor(L, labelOf(set, kind), { types: { det: `${lang}.det`, onset: `${lang}.onset` } }) ?? 'a'} ${labelOf(set, kind)} has no place ${words('rel') ?? 'at'} ${articleFor(L, labelOf(set, ref.type), { types: { det: `${lang}.det`, onset: `${lang}.onset` } }) ?? 'a'} ${labelOf(set, ref.type)}`.replace(/^./, (c) => c.toUpperCase()) : `There is no ${words('place')} here`;
+      else placeless = ref ? { name: 'refused.no_place', roles: { kind: kindName(set, kind, lang), rel: all('rel').join(' ') || 'at', place: kindName(set, ref.type, lang) } } : { name: 'refused.no_such', roles: { thing: all('place').join(' ') } };
     }
   }
   for (const k of Object.keys(roles)) if (!used.has(k)) unread.push(...(k === 'rel' ? all('rel') : all(k)));
@@ -375,17 +375,8 @@ function sayAct(set, act, { request, result, ok = true, n, thingType } = {}, con
   const roles = act === 'make' ? { kind: word } : { thing: word };
   if (count > 1) roles.number = count;
   if (act === 'change' && request?.args?.value !== undefined) roles.value = request.args.value;
-  if ((act === 'undo' || act === 'redo') && !ok) return replyFrom(L, `nothing.${act}`, {}, { lang, type: context.replies }) ?? (act === 'undo' ? 'There is nothing to undo.' : 'There is nothing to redo.');
-  const composed = replyFrom(L, names[act] ?? `done.${act}`, roles, { lang, type: context.replies, dictionary: context.replyDictionary }) ?? replyFrom(L, act, roles, { lang, type: context.replies, dictionary: context.replyDictionary });
-  if (composed) return composed;
-  const plural = (w) => inflectBy(L, w, 'plural', { types: { rule: `${lang}.inflect`, irregular: `${lang}.irregular` } });
-  const np = !word ? 'that' : count > 1 ? `${count} ${word.split(' ').map((x, i, a) => (i === a.length - 1 ? plural(x) : x)).join(' ')}` : `${articleFor(L, word, { types: { det: `${lang}.det`, onset: `${lang}.onset` } }) ?? 'a'} ${word}`;
-  if (act === 'undo') return ok ? 'I took the last step back.' : 'There is nothing to undo.';
-  if (act === 'redo') return ok ? 'I put it back.' : 'There is nothing to redo.';
-  if (act === 'make') return `I made ${np}.`;
-  if (act === 'remove') return `I removed the ${word ?? 'thing'}.`;
-  if (act === 'change') return `I changed the ${word ?? 'thing'}.`;
-  return `I did that: ${act} ${np}.`;
+  if ((act === 'undo' || act === 'redo') && !ok) return speak(set, `nothing.${act}`, {}, context);
+  return speak(set, names[act] ?? `done.${act}`, roles, context);
 }
 
 /**
@@ -395,13 +386,77 @@ function sayAct(set, act, { request, result, ok = true, n, thingType } = {}, con
 function askText(set, a, context = {}) {
   if (a.ask) return a.ask;
   const key = context.wordOf?.(a.key, context.lang ?? 'w.lang.en') ?? wordIn(set, `${a.type ?? a.request?.args?.kind}.${a.key}`, context.lang ?? 'w.lang.en') ?? a.key;
-  return replyFrom(set.language, 'ask.key', { key }, { lang: context.lang ?? 'w.lang.en', type: context.replies, dictionary: context.replyDictionary }) ?? `What ${a.key}?`;
+  return speak(set, 'ask.key', { key }, context);
 }
 
 /** The not-understood reply naming the words: the language world's `not_understood` fact, else English. */
 function notUnderstood(set, words, context = {}) {
   const list = words.map((w) => `"${w}"`).join(', ');
-  return replyFrom(set.language, 'not_understood', { words: list }, { lang: context.lang ?? 'w.lang.en', type: context.replies }) ?? `I did not understand ${list}.`;
+  return speak(set, 'not_understood', { words: list }, context);
+}
+
+/**
+ * Every sentence the kit can say, by its reply name: the roles it fills and its English default, used only when the
+ * language world has no reply fact of that name (`${lang}.reply name=`). A host or the knowledge repository publishes
+ * these names in each language (test/kit-replies.test.mjs realises them all).
+ */
+export const KIT_REPLIES = {
+  'done.add': { roles: ['kind', 'number?'], en: 'I added {art} {kind}.', many: 'I added {number} {kind:num=pl}.' },
+  'done.remove': { roles: ['thing', 'number?'], en: 'I removed the {thing}.', many: 'I removed {number} {thing:num=pl}.' },
+  'done.change': { roles: ['thing', 'value', 'number?'], en: 'The {thing} is {value} now.', many: 'The {number} {thing:num=pl} are {value} now.' },
+  'done.undo': { roles: [], en: 'I undid the last change.' },
+  'done.redo': { roles: [], en: 'I put it back.' },
+  'nothing.undo': { roles: [], en: 'There is nothing to undo.' },
+  'nothing.redo': { roles: [], en: 'There is nothing to redo.' },
+  'ask.key': { roles: ['key'], en: 'What {key}?' },
+  'ask.make_missing': { roles: ['name', 'kind'], en: 'There is no {name} {kind} yet. Shall I make it?' },
+  'ask.which_world': { roles: ['worlds'], en: 'In which: {worlds}?' },
+  'ask.count': { roles: ['given', 'number'], en: 'That is {given}; I need {number}.' },
+  'not_understood': { roles: ['words'], en: 'I did not understand: {words}.' },
+  'not_understood.fragment': { roles: [], en: 'That is only a fragment.' },
+  'not_understood.statement': { roles: [], en: 'I took that as a statement, not a request.' },
+  'refused.no_place': { roles: ['kind', 'rel', 'place'], en: '{art} {kind} has no place {rel} {art2} {place}.' },
+  'refused.cannot_be': { roles: ['thing', 'value'], en: '{art} {thing} cannot be {value}.' },
+  'refused.no_such': { roles: ['thing'], en: 'There is no {thing} here.' },
+  'refused.no_world': { roles: [], en: 'No world here takes that.' },
+  'refused.no_host': { roles: [], en: 'No host here takes that.' },
+  'refused.fragment': { roles: ['key', 'value'], en: '"{value}" is only a fragment.' },
+  'refused.value': { roles: ['key', 'value', 'values'], en: 'The {key} is one of {values}, not "{value}".' },
+  'refused': { roles: ['why'], en: '{why}' },
+  'too_complex.none': { roles: [], en: 'That took too long; nothing was changed.' },
+  'too_complex.rest': { roles: [], en: 'That took too long; the rest was not done.' },
+  'answer.no': { roles: [], en: 'All right.' },
+  'why.asked': { roles: ['request'], en: 'You asked: "{request}".' },
+  'why.told': { roles: ['key', 'value'], en: 'The {key} is {value} because you said so.' },
+  'why.default': { roles: ['key', 'value'], en: 'The {key} is {value} by default.' },
+  'why.other': { roles: ['key', 'value', 'tier'], en: 'The {key} is {value} ({tier}).' },
+  'why.nothing': { roles: [], en: 'Nothing changed.' },
+  'why.none': { roles: [], en: 'Nothing was done.' },
+};
+
+/**
+ * One sentence of the kit by its reply name: the language world's reply fact (replyFrom: CLDR class, articles,
+ * agreement), else the English default of KIT_REPLIES (plural and a/an by the language world when it has them).
+ */
+function speak(set, name, roles = {}, context = {}) {
+  const lang = context.lang ?? 'w.lang.en', L = set.language;
+  const said = replyFrom(L, name, roles, { lang, type: context.replies, dictionary: context.replyDictionary });
+  if (said) return said;
+  const d = KIT_REPLIES[name];
+  if (!d) return '';
+  const many = roles.number !== undefined && Number(roles.number) !== 1 && d.many;
+  const plural = (w) => String(w).split(' ').map((x, i, a) => (i === a.length - 1 ? (L ? inflectBy(L, x, 'plural', { types: { rule: 'w.lang.en.inflect', irregular: 'w.lang.en.irregular' } }) : `${x}s`) : x)).join(' ');
+  const art = (w) => (L && articleFor(L, String(w), { types: { det: 'w.lang.en.det', onset: 'w.lang.en.onset' } })) ?? (/^[aeiou]/i.test(String(w)) ? 'an' : 'a');
+  const firstRole = (t, after) => (t.slice(after).match(/\{(\w+)\}/) || [])[1];
+  let out = (many ? d.many : d.en);
+  out = out.replace(/\{art\}/, () => art(roles[firstRole(out, out.indexOf('{art}') + 5)] ?? '')).replace(/\{art2\}/, () => art(roles[firstRole(out, out.indexOf('{art2}') + 6)] ?? ''));
+  out = out.replace(/\{(\w+):num=pl\}/g, (_, k) => plural(roles[k] ?? '')).replace(/\{(\w+)\}/g, (_, k) => String(roles[k] ?? ''));
+  return out.charAt(0).toUpperCase() + out.slice(1);
+}
+
+/** A kind said in the user's language: the language world's word, else the schema's. */
+function kindName(set, type, lang) {
+  return wordIn(set, type, lang) ?? labelOf(set, type);
 }
 
 /** A type (or a key, type.key) said by the language world's own word for it (w.lang.ro: core.word text="masă" means=w.seating.table), or null. */
@@ -508,7 +563,7 @@ export function restoreSet(set, data) {
  */
 export function whyTurn(set, result, context = {}) {
   const lang = context.lang ?? 'w.lang.en';
-  if (!result || result.status !== 'done') return { said: 'Nothing was done.', facts: [] };
+  if (!result || result.status !== 'done') return { said: speak(set, 'why.none', {}, context), facts: [] };
   const facts = [];
   for (const e of [].concat(result.effects || []).filter((x) => x.effect === 'changed')) { // bounded: the effects
     const w = set.worlds.get(e.world)?.world;
@@ -522,12 +577,8 @@ export function whyTurn(set, result, context = {}) {
       }
     }
   }
-  const said = facts.map((f) => {
-    const roles = { key: f.key, value: f.value, thing: wordIn(set, f.type, lang) ?? labelOf(set, f.type) };
-    const k = f.tier === 'default' ? 'why.default' : f.tier === 'told' ? 'why.told' : `why.${f.tier}`;
-    return replyFrom(set.language, k, roles, { lang, type: context.replies, dictionary: context.replyDictionary }) ?? (f.tier === 'told' ? `The ${f.key} is ${f.value} because you said so.` : f.tier === 'default' ? `The ${f.key} is ${f.value} by default.` : `The ${f.key} is ${f.value} (${f.tier}).`);
-  });
-  return { said: said.length ? [result.text ? `You asked: "${result.text}".` : '', ...said].filter(Boolean).join(' ') : 'Nothing changed.', facts };
+  const said = facts.map((f) => speak(set, f.tier === 'told' || f.tier === 'default' ? `why.${f.tier}` : 'why.other', { key: wordIn(set, `${f.type}.${f.key}`, lang) ?? f.key, value: f.value, tier: f.tier, thing: kindName(set, f.type, lang) }, context));
+  return { said: said.length ? [result.text ? speak(set, 'why.asked', { request: result.text }, context) : '', ...said].filter(Boolean).join(' ') : speak(set, 'why.nothing', {}, context), facts };
 }
 
 /**
@@ -566,13 +617,13 @@ export function openSession(set, context = {}) {
     for (const act of ['undo', 'redo']) { // bounded: two timeline acts
       if (!timeline[act].has(t)) continue;
       const r = stepTimeline(set, act, 1);
-      const reply = r.ok ? (replyFrom(L, `done.${act}`, {}, { lang, type: context.replies, dictionary: context.replyDictionary }) ?? (act === 'undo' ? 'I took the last step back.' : 'I put it back.')) : (act === 'undo' ? 'There is nothing to undo.' : 'There is nothing to redo.');
+      const reply = speak(set, r.ok ? `done.${act}` : `nothing.${act}`, {}, context);
       return done({ status: r.ok ? 'done' : 'refused', text, reading: { act, unread: [], mood: 'imperative', complete: true }, reply });
     }
     const p = s.pending;
     if (p?.confirm) {
       const pol = polarity.get(t);
-      if (pol === 'no') return done({ status: 'done', text, reading: { act: 'answer', unread: [], complete: true }, reply: 'All right.' });
+      if (pol === 'no') return done({ status: 'done', text, reading: { act: 'answer', unread: [], complete: true }, reply: speak(set, 'answer.no', {}, context) });
       if (pol === 'yes') {
         const made = runRequest(set, p.confirm, { act: 'make', unread: [], complete: true }, context);
         if (made.status !== 'done') return done({ ...made, text });
@@ -589,8 +640,8 @@ export function openSession(set, context = {}) {
         const fits = parts.map((x) => fitsSlot(set.typed, kind, p.key, x, { lemma: (w) => formsOf(set, w, lang) }));
         const bad = fits.find((x) => !x.ok);
         const again = (why) => done({ status: 'ask', text: p.text, reading: { act: 'answer', unread: [], complete: false }, reply: `${why} ${askText(set, p, context)}`, asks: [p] }); // said, and asked again
-        if (bad) return again(`${bad.why[0].toUpperCase()}${bad.why.slice(1)}.`);
-        if (parts.length !== n) return again(`That is ${parts.length}, and there ${n === 1 ? 'is 1' : `are ${n}`}.`);
+        if (bad) { const sl = set.schema._compiled().slots.get(kind)?.get?.(p.key); const badText = parts[fits.indexOf(bad)]; return again(speak(set, bad.code === 'fragment' ? 'refused.fragment' : 'refused.value', { key: wordIn(set, `${kind}.${p.key}`, lang) ?? p.key, value: badText, values: (sl?.enum || []).map(valueText).join(', ') }, context)); }
+        if (parts.length !== n) return again(speak(set, 'ask.count', { given: parts.length, number: n }, context));
         const reqs = fits.map((x) => ({ action: p.request.action, args: { ...p.request.args, amount: undefined, [p.key]: x.value } }));
         for (const q of reqs) delete q.args.amount;
         const reading = { act: p.request.action, unread: [], mood: 'fragment', complete: true };

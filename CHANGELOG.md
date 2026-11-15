@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.142.0
+
+Every kit sentence from the language world (reviewer 17:55).
+
+### New
+- `KIT_REPLIES`: the 31 reply names `readTurn` and `openSession` can say, with their roles and English defaults. Every
+  reply goes through one `speak(name, roles)`: the language world's reply fact of that name, else the default.
+
+### Changed
+- Refusals, questions, the timeline, "why" and the session's answers are named replies with roles (no English built
+  inside the kit's logic); a kind, a key and a value are said in the user's language when the language world has words.
+
 ## 0.141.0
 
 test:full run; the state of the architecture against the 49 findings (reviews/state-of-the-architecture-2026-11-15.md).

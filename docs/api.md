@@ -1897,6 +1897,27 @@ I made a new list.
 null
 ```
 
+### KIT_REPLIES
+
+Every sentence `readTurn` and `openSession` can say, by its reply name: the roles it fills and
+its English default (`many` with a number). The language world's reply facts of that name
+(`${lang}.reply name= count= text=`) say it in the user's language; the default is used only when
+the language world has none. The names: `done.add`, `done.remove`, `done.change`, `done.undo`,
+`done.redo`, `nothing.undo`, `nothing.redo`, `ask.key`, `ask.make_missing`, `ask.which_world`,
+`ask.count`, `not_understood`, `not_understood.fragment`, `not_understood.statement`,
+`refused.no_place`, `refused.cannot_be`, `refused.no_such`, `refused.no_world`,
+`refused.no_host`, `refused.fragment`, `refused.value`, `refused`, `too_complex.none`,
+`too_complex.rest`, `answer.no`, `why.asked`, `why.told`, `why.default`, `why.other`,
+`why.nothing`, `why.none`.
+
+```js run
+print(KIT_REPLIES['ask.key'].roles, KIT_REPLIES['ask.key'].en);
+```
+
+```output
+["key"] What {key}?
+```
+
 ### clauses(world, text, options) and cutPoints(world, options?)
 
 One clause splitter. Sentences end at `.`, `?`, `!` and `;`. Inside one, the cut points are a

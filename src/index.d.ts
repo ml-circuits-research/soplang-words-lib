@@ -626,6 +626,7 @@ export interface Pending { key: string; ask?: string; thing?: string; type?: str
 export interface Session { set: WorldSet; context: object; pending: Pending | null; turns: object[]; say(text: string): ReturnType<typeof readTurn> & { pending: Pending | null; facts?: object[] }; snapshot(): object; restore(data: object): Session }
 export function openSession(set: WorldSet, context?: { lang?: string; replies?: string; replyDictionary?: object; [option: string]: unknown }): Session;
 export function referentOf(set: WorldSet, words: string, options?: { lang?: string }): { thing: Wire; type: string } | null;
+export const KIT_REPLIES: Record<string, { roles: string[]; en: string; many?: string }>;
 export function snapshotSet(set: WorldSet): { format: 'sopworld-set'; worlds: Record<string, object>; steps: { world: string }[]; redo: { world: string }[]; focus: string | null };
 export function restoreSet(set: WorldSet, data: ReturnType<typeof snapshotSet>): WorldSet;
 export function whyTurn(set: WorldSet, result: object, context?: { lang?: string; replies?: string; replyDictionary?: object }): { said: string; facts: { thing: string; type: string; key: string; value: string; tier: string; how: string }[] };

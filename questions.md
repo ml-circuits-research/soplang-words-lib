@@ -427,3 +427,15 @@ language (Q79): the host gives table→masă today.
 Yes, from 0.139: give each pair its register (`w.lang.en.irregular singular=cactus plural=cacti register=classical` and
 `... plural=cactuses register=common`). `inflectBy` writes the common one (or the one with no register) unless the caller
 asks a `register`; `inflectBy(..., { all: true })` gives both for a reader; the singular of either is cactus.
+
+## Q82 ([KNOW], reviewer 17:55): the kit's reply names, in w.lang.en.reply and w.lang.ro.reply
+
+The kit now says every sentence by a reply name (`KIT_REPLIES` in src/kit.mjs: roles and an English default). The
+catalog has 5 of the 31 (done.add, done.remove, done.change, done.undo, not_understood). Asked, in both languages, with
+`count=` where a number comes: done.redo, nothing.undo, nothing.redo, ask.key {key}, ask.make_missing {name, kind},
+ask.which_world {worlds}, ask.count {given, number}, not_understood.fragment, not_understood.statement,
+refused.no_place {kind, rel, place}, refused.cannot_be {thing, value}, refused.no_such {thing}, refused.no_world,
+refused.no_host, refused.fragment {value}, refused.value {key, value, values}, refused {why}, too_complex.none,
+too_complex.rest, answer.no, why.asked {request}, why.told {key, value}, why.default {key, value}, why.other {key, value,
+tier}, why.nothing, why.none. test/kit-replies.test.mjs realises every name the catalog has (no English word in a
+Romanian one) and lists the rest as a todo. Also words for keys (w.seating.table.name → nume) for `{key}`.

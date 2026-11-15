@@ -5679,3 +5679,14 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   R4, R5). English left in src/ is listed there (final-s fallbacks in 8 files, 30 `'w.lang.en'` defaults, EN word
   lists in reader/statements/typed, English sentences in schema-words/statements and the kit's fallbacks).
 - Gate: npm test 524 pass / 0 fail; compat 11 pass; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.142.0 — every kit sentence from the language world (reviewer 17:55)
+
+- src/kit.mjs: every reply goes through `speak(set, name, roles, context)` over `KIT_REPLIES` (31 names). The English
+  defaults sit in that table only.
+- test/kit-replies.test.mjs: with a reply world that marks each name ([name roles]), 18 seating turns in a session
+  all answer with a marked reply (14 distinct names seen). The published replies: en and ro each have 5 of 31 names
+  (`node --test test/kit-replies.test.mjs` prints the missing 26); the Romanian ones carry no English word. Q82 asks the
+  26 names in both languages.
+- PSys2's "Am adăugat 2 de mese.": with the pinned w.lang.ro.count (0.140) it is "Am adăugat 2 mese." (test/kit.test.mjs).
+- Gate: npm test 525 pass / 0 fail (1 todo); compat 11; pilot same; psys2=0; scan clean; tsc ok.

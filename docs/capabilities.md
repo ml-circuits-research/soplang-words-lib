@@ -869,6 +869,19 @@ print(readFrames(w, 'zap a tree', { lang: 'ex' }).best.act);
 make
 ```
 
+## Run an application's worlds with the host kit
+
+*In `loadWorldSet`, `readTurn`, `turnScope`; since 0.130.*
+*Works on: published world schemas (w.list, w.tasks, ...), a language world's frames, the knowledge the worlds join.*
+
+An application loads its worlds and reads each message: "make a shopping list", "add 2 apples to
+my shopping list" act; "make a purple dragon" is not understood and the reply names "purple" and
+"dragon"; "I have two kids" is a statement, not a request. Only complete readings act, and a turn
+changes only the world it addresses. `examples/lists-app.mjs` is a whole application in a page.
+**Limits:** replies use the library's English act replies (a language world's reply templates
+are a knowledge ask); the binding of a frame's needs to a world's entry keys is given by the host;
+the session (pending questions, timeline) is the next part of the kit.
+
 ## Step round a cycle, read a clock, say what sets a kind apart
 
 *In `cycleOf`, `cycleAdd`, `cycleDiff`, `statedDay`, `readClock`, `writeClock`, `contrastOf`; since 0.128.*

@@ -5508,3 +5508,18 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Concave outlines (the knowledge repository is deriving drawings' outlines) not done: the convex hull only.
 - Q72 in questions.md: loadWorldSet / readTurn / session API proposed, not built (13:15: design first).
 - Gate: npm test 516 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.130.0 — host kit parts 1-2 (reviewer 13:50, Q72): loadWorldSet, readTurn; examples/lists-app.mjs
+
+- `node examples/lists-app.mjs`: "make a shopping list" done (sort=shopping, reply "I made a list"); "add milk to my
+  shopping list" / "add 2 apples to the shopping list" done (w.list.item text, quantity, list); "make a purple dragon"
+  not understood, reply names "purple", "dragon", nothing changed; "I have two kids" a statement, not acted on.
+- 13:50 points: (1) incomplete readings never executed: done; (2) replies in the user's language from templates:
+  NOT done — the library's English actReply with kinds said by their words; w.lang.en has request templates
+  (w.lang.en.template "add a {kind}.") but no reply templates; w.lang.ro.template has replies (a knowledge ask for
+  w.lang.en); (3) open tab only as context criteria: done; (4) turn scope: property test over 4 messages; (5) indexed
+  lookups: the typed lexicon and senses are memoised per world version (0.119); the taught tier is world facts read
+  through the index; no budget test written yet; (6) the second application: examples/lists-app.mjs.
+- outlineOf has no `concave` option: for the house drawing (walls 20,50,60x40, roof 30,20,40x30) it gives the convex
+  hull of the parts' corners, a hexagon (20,50 30,20 70,20 80,50 80,90 20,90), not PSys2's hull of centres.
+- Gate: npm test 517 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

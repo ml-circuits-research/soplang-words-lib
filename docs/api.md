@@ -1790,6 +1790,33 @@ print(contrastOf(w, 'circle').contrasts[0]);
 {"key":"corners","value":"0","share":0,"others":{"3":1,"4":1}}
 ```
 
+### loadWorldSet(loader, options), readTurn(set, text, context?) and turnScope(set, owner)
+
+The host kit: what an application needs to run worlds. `loadWorldSet(loader, { names,
+language, knowledge, bindings, verbs })` loads the world schemas `names` (`loader(name) -> text`)
+into one live world with std.acts, builds the set's typed world, and keeps the language world
+(its frames, parts, phrases, closed words and `k.actions.verb` facts) as the reader. `bindings`
+maps a frame's `needs` class onto a world's entry kind and keys (`{ entries: { kind, thing,
+amount, place, placeKind, placeKey } }`) until the language world says it.
+
+`readTurn(set, text, { lang, active, criteria, morph, dictionary, reply })` reads one message
+with the language world's frames, under the Reader contract: a statement or a fragment is not a
+request, and a word the reading did not use is never dropped. A frame whose `needs` the set
+binds wins over a general one. The frame is bound to a request: words before the kind's word that
+are values of its closed sets become those values ("a shopping list": `sort=shopping`), and a
+place names a thing (else the one made last). `arbitrate` chooses the world, with the open tab
+only as the host's `criteria`. Only a complete reading is acted on. The result is `{ status:
+done | ask | not-understood | refused, reading: { frame, act, roles, unread, mood, complete },
+request?, owner?, reply, changed? }`. A reply names the words not understood, and a kind is
+said by its word. `turnScope(set, owner)` tells whether a type is one a turn addressed to `owner`
+may change (its kinds and the session's). `examples/lists-app.mjs` is a second application on
+the kit alone (w.list and w.tasks with a text loop).
+
+```js
+const set = loadWorldSet(loadText, { names: ['w.list', 'w.tasks'], language, bindings });
+readTurn(set, 'add 2 apples to my shopping list'); // { status: 'done', request: { action: 'make', args: { kind: 'w.list.item', text: 'apples', quantity: 2, list: '$…' } } }
+```
+
 ### compose(world, topic, options?) and interestOf(world, fact, options?)
 
 A composition of a genre about a topic, from knowledge, with no model (std.compose, first

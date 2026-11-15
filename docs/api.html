@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="d2cbc192a734">
+<meta name="source-hash" content="36b24267cd78">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.129.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.130.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -623,6 +623,11 @@ print(cycleAdd(w, &#x27;Tue&#x27;, 1, { type: &#x27;ex.day&#x27; }), writeClock(
 w.tell(&#x27;@c sh name=circle kind=flat corners=0  @s sh name=square kind=flat corners=4  @t sh name=triangle kind=flat corners=3&#x27;);
 print(contrastOf(w, &#x27;circle&#x27;).contrasts[0]);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>{&quot;key&quot;:&quot;corners&quot;,&quot;value&quot;:&quot;0&quot;,&quot;share&quot;:0,&quot;others&quot;:{&quot;3&quot;:1,&quot;4&quot;:1}}</code></pre></figure>
+<h3 id="loadworldsetloader-options-readturnset-text-context-and-turnscopeset-owner">loadWorldSet(loader, options), readTurn(set, text, context?) and turnScope(set, owner)</h3>
+<p>The host kit: what an application needs to run worlds. <code>loadWorldSet(loader, { names, language, knowledge, bindings, verbs })</code> loads the world schemas <code>names</code> (<code>loader(name) -&gt; text</code>) into one live world with std.acts, builds the set's typed world, and keeps the language world (its frames, parts, phrases, closed words and <code>k.actions.verb</code> facts) as the reader. <code>bindings</code> maps a frame's <code>needs</code> class onto a world's entry kind and keys (<code>{ entries: { kind, thing, amount, place, placeKind, placeKey } }</code>) until the language world says it.</p>
+<p><code>readTurn(set, text, { lang, active, criteria, morph, dictionary, reply })</code> reads one message with the language world's frames, under the Reader contract: a statement or a fragment is not a request, and a word the reading did not use is never dropped. A frame whose <code>needs</code> the set binds wins over a general one. The frame is bound to a request: words before the kind's word that are values of its closed sets become those values ("a shopping list": <code>sort=shopping</code>), and a place names a thing (else the one made last). <code>arbitrate</code> chooses the world, with the open tab only as the host's <code>criteria</code>. Only a complete reading is acted on. The result is <code>{ status: done | ask | not-understood | refused, reading: { frame, act, roles, unread, mood, complete }, request?, owner?, reply, changed? }</code>. A reply names the words not understood, and a kind is said by its word. <code>turnScope(set, owner)</code> tells whether a type is one a turn addressed to <code>owner</code> may change (its kinds and the session's). <code>examples/lists-app.mjs</code> is a second application on the kit alone (w.list and w.tasks with a text loop).</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>const set = loadWorldSet(loadText, { names: [&#x27;w.list&#x27;, &#x27;w.tasks&#x27;], language, bindings });
+readTurn(set, &#x27;add 2 apples to my shopping list&#x27;); // { status: &#x27;done&#x27;, request: { action: &#x27;make&#x27;, args: { kind: &#x27;w.list.item&#x27;, text: &#x27;apples&#x27;, quantity: 2, list: &#x27;$…&#x27; } } }</code></pre></figure>
 <h3 id="composeworld-topic-options-and-interestofworld-fact-options">compose(world, topic, options?) and interestOf(world, fact, options?)</h3>
 <p>A composition of a genre about a topic, from knowledge, with no model (std.compose, first version). The genre gives the moves of a section (<code>k.genres.genre name= move=...</code>): the first opens, the last closes, the middle ones take turns. The outline is the topic's relations: the facts that name it, grouped by type. Relations that can fill a chapter come first, then the most interesting. Every sentence cites its wire, and no fact is used twice. The size <code>{ chapters, sections, sentences }</code> is a budget set before selection; what the knowledge cannot fill is listed in <code>short</code>. The output is frames (<code>{ move, fact, about, cites }</code>) for the language world to realise (<code>realise(frame)</code>).</p>
 <p><code>interestOf</code> is the arithmetic of the world's <code>k.interest</code> (published by the knowledge repository): each feature adds <code>weight × share</code> to its appraisal, by its shape over a measure, and the score is novelty × coping × relevance − penalty. A weight is the middle of its range, or drawn inside it with <code>draw: seed</code>. The library computes the measures it can from facts (<code>measuresOf</code>): world and topic distance by joins of names, contrast with siblings, distance from the typical range, extremes, numbers with units, animacy, obviousness, said before, the same move again, items since the last point. The host gives the rest, or overrides any, in <code>measures</code>. Without a <code>k.interest</code> model the score is 0, with <code>why</code>.</p>
@@ -1138,7 +1143,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.129.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.130.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

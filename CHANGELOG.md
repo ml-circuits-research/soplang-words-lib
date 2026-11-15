@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.130.0
+
+The host kit, first two parts (reviewer 13:50: Q72 approved).
+
+### New
+- `loadWorldSet(loader, { names, language, knowledge, bindings })`: an application's worlds in one
+  live world, its typed world, the language world as the reader.
+- `readTurn(set, text, context)`: read by the language world's frames under the Reader contract,
+  bind the frame to a request, choose the world with `arbitrate`, act only on a complete reading;
+  replies name the words not understood and say kinds by their words.
+- `turnScope(set, owner)`: the types a turn may change; a property test over messages.
+- examples/lists-app.mjs: a second application (w.list, w.tasks, a text loop) on the kit alone.
+
+### Changed
+- `readFrames` reads a language world without morphology (each word its own lemma, verbs through
+  `senses`), and closed words by `form` or `text`.
+
 ## 0.129.0
 
 From the reviewer's 13:15 entry, item 4 (PSys2 Q21: the owner's real case "a diagram in the shape

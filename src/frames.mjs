@@ -48,14 +48,15 @@ export function readFrames(world, text, { lang = 'w.lang.ro', morph: m, dictiona
   toks = toks.filter((t, i) => { if (t !== ',') return true; cuts.add(toks.slice(0, i).filter((x) => x !== ',').length); return false; });
   const F = toks.map(norm);
   const ands = new Set(world.ofType(`${lang}.particle`).filter((x) => bare(x.attrs.kind?.[0]) === 'conjunction' && bare(x.attrs.meaning?.[0]) === 'and').map((x) => norm(bare(x.attrs.form[0]))));
-  const dets = new Set(world.ofType(`${lang}.det`).map((d) => norm(bare(d.attrs.form[0]))));
-  const nums = new Map(world.ofType(`${lang}.numeral`).map((d) => [norm(bare(d.attrs.form[0])), Number(bare(d.attrs.value[0]))]));
-  const preps = new Map(world.ofType(`${lang}.prep`).map((d) => [norm(bare(d.attrs.form[0])), bare(d.attrs.rel?.[0] ?? '')]));
+  const formOf = (d) => [...(d.attrs.form || []), ...(d.attrs.text || [])].map((v) => norm(bare(v))); // a closed word by its form (or text)
+  const dets = new Set(world.ofType(`${lang}.det`).flatMap(formOf));
+  const nums = new Map(world.ofType(`${lang}.numeral`).flatMap((d) => formOf(d).map((f) => [f, Number(bare(d.attrs.value?.[0]))])));
+  const preps = new Map(world.ofType(`${lang}.prep`).flatMap((d) => formOf(d).map((f) => [f, bare(d.attrs.rel?.[0] ?? '')])));
   const memo = new Map();
   const readings = (i) => { // the analyses of token i, with their senses
     if (!memo.has(i)) {
-      const as = m ? analyse(m, toks[i], { dictionary: dict }) : [];
-      memo.set(i, as.map((a) => { const e = dict?.lookup(a.lemma); const s = sense(e?.sense); return { form: toks[i], lemma: a.lemma, sense: e?.sense ?? null, en: s.en ?? null, act: s.act ?? null, pos: s.pos ?? null, features: a.features }; }));
+      const as = m ? analyse(m, toks[i], { dictionary: dict }) : [{ lemma: toks[i], features: {} }]; // no morphology: the word is its own lemma
+      memo.set(i, as.map((a) => { const e = dict?.lookup(a.lemma); const s = sense(e?.sense ?? (m ? undefined : a.lemma)); return { form: toks[i], lemma: a.lemma, sense: e?.sense ?? (s.act || s.en ? a.lemma : null), en: s.en ?? null, act: s.act ?? null, pos: s.pos ?? null, features: a.features }; }));
     }
     return memo.get(i);
   };

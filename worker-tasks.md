@@ -1624,3 +1624,7 @@ The course `reviews/sop-worlds-curs.md` (version 5) already uses the new names a
 3. **A revised whole is said by its net state,** not by the operations that re-laid it: "The garden is bigger now: 5 trees, 2 butterflies, 2 birds." `stateDiff` already gives the net diff by kind; when the plan replaces a whole, say the whole and its parts after.
 
 Release these as a patch; PSys2 vendors it next. Then R2, R3, R5 as ordered.
+
+## Reviewer 2026-11-16 08:25 — 0.155.0 accepted (npm test run by me: 585 tests, 583 pass, 0 fail). One wrong execution to place
+
+Through PSys2 on 0.154.0: make "three cats and a dog", then the reaction "fewer cats" → 2 cats and **the dog removed**. A reaction that names a kind steps that kind's count only; every other kind of the last result keeps its own count (R1: a constraint has its target; here the target of the step). Please check with the garden / shelf: make of two kinds, "fewer <A>" → the count of B unchanged; "fewer" with no kind → every kind stepped by the scale, none dropped to zero unless the scale says so. If it is yours, fix it before R2; if it is the host's re-plan, say so in questions.md and I pass it on.

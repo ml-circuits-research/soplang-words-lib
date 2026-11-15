@@ -457,7 +457,8 @@ function fillArgs(bind, kind, steps1, resolveV, ctx) {
     args[a.name] = p?.names?.has(String(t.value)) ? p.names.get(String(t.value)) : t.value; // the tool's own name for it, when declared
     if (t.translated) translated.push({ key: a.name, was: t.was, value: t.value, by: t.by });
     const shown = got.from === 'custom' && typeof t.value === 'string' ? ctx.look().get(strip(t.value)) : null; // a thing of the view is said by its kind
-    if (t.translated || (got.from !== 'said' && !got.plan)) assumed.push({ key: a.name, value: shown?.kind !== undefined ? plainKind(shown.kind) : t.value, ...(shown ? { thing: shown.id } : {}), from: t.translated ? 'translated' : got.from, ...(t.translated ? { was: t.was, by: t.by } : {}), ...(got.because?.length ? { because: [].concat(got.because).join(', ') } : {}), op: bind.op });
+    const drawn = t.translated && t.by === 'drawn'; // a kind drawn as another (std.schema.drawn: oval as ellipse) is the same meaning, not an assumption
+    if (drawn ? got.from !== 'said' && !got.plan : t.translated || (got.from !== 'said' && !got.plan)) assumed.push({ key: a.name, value: shown?.kind !== undefined ? plainKind(shown.kind) : t.value, ...(shown ? { thing: shown.id } : {}), ...(p?.default !== undefined && String(p.default) === String(t.value) ? { default: true } : {}), from: t.translated && !drawn ? 'translated' : got.from, ...(t.translated ? { was: t.was, by: t.by } : {}), ...(got.because?.length ? { because: [].concat(got.because).join(', ') } : {}), op: bind.op });
   }
   return { args, assumed, translated };
 }

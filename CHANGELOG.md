@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.155.0
+
+What a reply says (the reviewer's three defects seen through PSys2 on 0.154.0), generic, proven by properties over the
+example worlds (`test/reply-said.test.mjs`).
+
+### Changed
+- `sayRequest` never says a missing value: a changed key with no value to say (`undefined`, `null`, `NaN`, empty) is
+  said by its direction, the word of the request's reaction ("bigger", "more"), or its line is left out; a fact with an
+  unfilled role is dropped; no text contains "undefined", "null" or "NaN".
+- Only the assumptions that matter are said, as data: `default: true` on an assumption (the world pattern's declared
+  default: layout, tool parameter default, a place the world arranges) makes it of the source `default`; the sources are
+  ranked by their place in `say`; at most `sayMax` (new `ASSUMED_MAX` = 2, or `<lang>.reply name=assumed max=`), one
+  per key; a list of kinds and a single kind are one fact; kinds and a count the result lines state are not repeated.
+- A revision of a whole says the whole's net state, one `done.whole` fact (`whole`, `parts`: "The necklace now has 5
+  rounds, 4 squares."), not the operations; operations stay for acts on individual things.
+- A kind drawn as another by `std.schema.drawn` is not an assumption ("I assumed oval for the kinds. I assumed ellipse
+  for the kind."): `runPlan`'s `assumed` leaves it out.
+
 ## 0.154.0
 
 Turns PSys2 lost to the request mechanisms (psys2 questions.md Q46, Q47; questions.md Q90), each a generic piece; proven

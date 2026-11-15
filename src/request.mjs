@@ -13,7 +13,7 @@
 // catalog. The words come from the language world (`<lang>.cue`, determiners, prepositions, number words, inflection).
 // Nothing here names a world, a kind or an application.
 import { valueText } from './parser.mjs';
-import { inflectBy } from './morph.mjs';
+import { inflectBy, articleFor } from './morph.mjs';
 import { replyFrom } from './kit.mjs';
 import { memoPerWorld } from './memo.mjs';
 import { seeded, below } from './random.mjs';
@@ -34,6 +34,8 @@ export const REQUEST_SOURCES = Object.freeze(['said', 'dialogue', 'induced', 'wo
  * `<lang>.reply name=assumed say=<source>` values when it has them). Left out: `default`, a tool parameter's declared
  * default, the weakest expectation a person takes for granted. One rule for every key.
  */
+/** At most this many assumptions are said in one reply (the strongest by their place in the sources said; `sayRequest` opts.sayMax, or the language's `<lang>.reply name=assumed max=`). */
+export const ASSUMED_MAX = 2;
 export const ASSUMED_SAY = Object.freeze(['dialogue', 'induced', 'world', 'expect', 'sampled', 'translated', 'custom', 'revised']);
 export const REQUEST_KEYS = Object.freeze(['kind', 'count', 'size', 'extent', 'attribute', 'place', 'manner', 'layout', 'with', 'about', 'length']);
 
@@ -834,7 +836,7 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   for (const c of C('extent')) { const f = factor(scale, c.value, 'extent'); const r = placeRole('extent', wholeSlots.get('extent')?.enum ? c.value : f ?? c.value, { onItems: false }); if (r !== 'put') nameIt(c, 'nothing here has an extent', 'no_slot'); }
   for (const c of C('attribute')) { if (c.want === 'no' || perKind(c)) continue; const key = c.attribute ?? 'colour'; const r = placeRole(key, c.value); if (r !== 'put') nameIt(c, r === 'refused' ? `${c.value} is not a ${key} here` : `nothing here has a ${key}`, r === 'refused' ? 'value' : 'no_slot'); }
   for (const c of C('place')) {
-    if (hints.place && items.length && items.every((it) => itemSlots(it.kind).has(hints.place.key))) { itemArgs[hints.place.key] = `$${hints.place.id}`; if (c.value !== hints.place.id) assumed.push({ key: 'place', value: hints.place.id, from: hints.place.from, words: c.words }); continue; }
+    if (hints.place && items.length && items.every((it) => itemSlots(it.kind).has(hints.place.key))) { itemArgs[hints.place.key] = `$${hints.place.id}`; if (c.value !== hints.place.id) assumed.push({ key: 'place', value: hints.place.id, from: hints.place.from, words: c.words, ...(hints.place.from === 'world' ? { default: true } : {}) }); continue; }
     if (c.ref) { nameIt(c, `nothing here is what ${c.ref} could be`, 'no_referent'); continue; }
     const r = placeRole('place', c.value); if (r !== 'put') nameIt(c, r === 'refused' ? `there is no place ${c.value} here` : 'nothing here has a place', r === 'refused' ? 'value' : 'no_slot'); }
   for (const c of C('about')) { const r = placeRole('about', c.value, { onItems: false }); if (r !== 'put' && placeRole('about', c.value) !== 'put') nameIt(c, 'nothing here has a topic', 'no_slot'); }
@@ -849,24 +851,24 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   if ((layoutSlot || C('layout').length) && !(wholeArgs.layout !== undefined && C('attribute').some((x) => x.attribute === 'layout'))) { // a layout said as a value of the slot stands
     const enumL = layoutSlot?.enum?.map(V) ?? null;
     const lc = C('layout')[0];
-    let value = null, lf = null;
+    let value = null, lf = null, lDefault = false; // lDefault: the value is the world's own declared default (its make expectation or the slot's default): not news
     if (lc && (!enumL || enumL.includes(lc.value))) { value = lc.value; lf = 'said'; }
     else if (lc && enumL && ['better', undefined, null].includes(lc.value)) { const lastL = opts.dialogue?.result?.layout ?? null; value = enumL.find((x) => x !== lastL && x !== first(mk, 'layout')) ?? enumL[0]; lf = 'sampled'; }
     else if (lc) { nameIt(lc, `the layouts here are ${(enumL ?? []).join(', ')}`, 'value'); }
     if (!value) for (const s of sources) {
       if (s === 'dialogue' && opts.dialogue?.last) { const d = opts.dialogue.last.constraints?.find((c) => c.on === 'layout' && (!enumL || enumL.includes(c.value))); if (d) { value = d.value; lf = 'dialogue'; } }
       if (s === 'induced' && hints.layout && !hints.drop?.has('layout') && (!enumL || enumL.includes(hints.layout))) { value = hints.layout; lf = 'induced'; }
-      if (s === 'world' && !value && mkFrom === 'world' && first(mk, 'layout') && (!enumL || enumL.includes(first(mk, 'layout')))) { value = first(mk, 'layout'); lf = 'world'; }
-      if (s === 'expect' && !value && mk && mkFrom === 'expect' && first(mk, 'layout') && (!enumL || enumL.includes(first(mk, 'layout')))) { value = first(mk, 'layout'); lf = 'expect'; }
+      if (s === 'world' && !value && mkFrom === 'world' && first(mk, 'layout') && (!enumL || enumL.includes(first(mk, 'layout')))) { value = first(mk, 'layout'); lf = 'world'; lDefault = true; }
+      if (s === 'expect' && !value && mk && mkFrom === 'expect' && first(mk, 'layout') && (!enumL || enumL.includes(first(mk, 'layout')))) { value = first(mk, 'layout'); lf = 'expect'; lDefault = true; }
       if ((s === 'world' || s === 'expect') && !value) { const e = expectedValue(target, 'layout', { count: n, ...saidKnown }, { ...whenCtx, sources: [s] }); if (e?.value !== undefined && (!enumL || enumL.includes(e.value))) { value = e.value; lf = s; } } // a conditional expectation before the slot's default
-      if (s === 'world' && !value && layoutSlot?.default) { value = V(layoutSlot.default); lf = 'world'; }
+      if (s === 'world' && !value && layoutSlot?.default) { value = V(layoutSlot.default); lf = 'world'; lDefault = true; }
       if (s === 'sampled' && !value && enumL && random) { value = enumL[below(rnd, enumL.length)]; lf = 'sampled'; }
       if (value) break;
     }
     if (random && !lc && enumL) { value = enumL[below(rnd, enumL.length)]; lf = 'sampled'; }
-    if (value) { if (layoutSlot) { wholeArgs.layout = value; if (lf !== 'said') assumed.push({ key: 'layout', value, from: lf }); } else if (lc) nameIt(lc, 'nothing here has a layout', 'no_slot'); }
+    if (value) { if (layoutSlot) { wholeArgs.layout = value; if (lf !== 'said') assumed.push({ key: 'layout', value, from: lf, ...(lDefault ? { default: true } : {}) }); } else if (lc) nameIt(lc, 'nothing here has a layout', 'no_slot'); }
   }
-  if (hints.place && !C('place').length && items.length && items.every((it) => itemSlots(it.kind).has(hints.place.key))) { itemArgs[hints.place.key] = `$${hints.place.id}`; assumed.push({ key: 'place', value: hints.place.id, from: hints.place.from }); }
+  if (hints.place && !C('place').length && items.length && items.every((it) => itemSlots(it.kind).has(hints.place.key))) { itemArgs[hints.place.key] = `$${hints.place.id}`; assumed.push({ key: 'place', value: hints.place.id, from: hints.place.from, ...(hints.place.from === 'world' ? { default: true } : {}) }); }
   // a manner other than random is soft: a slot takes it where there is one
   for (const c of C('manner')) if (c.value !== 'random') placeRole('manner', c.value);
   // attribute values the dialogue state gives (the last request's), for the keys this request leaves open
@@ -1252,6 +1254,14 @@ export function runWorldPlan(live, plan, { replace = [] } = {}) {
 
 const pluralIn = (language, lang, w) => { if (!language) return w; try { return inflectBy(language, w, 'plural', { types: { rule: `${lang}.inflect`, irregular: `${lang}.irregular` } }) ?? w; } catch { return w; } };
 
+
+/** A value a reply cannot say: nothing, a failed number, or the word of a missing value. */
+const unsayable = (v) => v === undefined || v === null || (typeof v === 'number' && !Number.isFinite(v)) || /^\s*(undefined|null|NaN)?\s*$/.test(String(v));
+/** The reply sentences of the revision of a whole, used when the language world has no `done.whole` of its own (English only; the language worlds say them in their language). */
+const WHOLE_REPLIES = Object.freeze({ 'done.whole': [{ roles: ['whole', 'parts'], text: 'The {whole} now has {parts}.' }] });
+const fallbackReply = (f, lang) => { if (lang !== 'w.lang.en') return null; const row = (WHOLE_REPLIES[f.reply] ?? []).find((r) => r.roles.every((k) => !unsayable(f.roles?.[k]))); return row ? row.text.replace(/\{(\w+)\}/g, (_, k) => f.roles[k]).replace(/^./, (c) => c.toUpperCase()) : null; };
+const wordsOf = (v) => String(v ?? '').split(/,\s*/).filter(Boolean);
+
 /**
  * The reply of a request as reply facts, each a w.lang.* reply name with its roles: done.revise, done.make (what was
  * made), assumed (each default used), not_honoured (each constraint the world did not honour), unread (the words no
@@ -1271,17 +1281,28 @@ export function sayRequest(request, outcome = {}, opts = {}) {
     if (c.on?.length) facts.push({ reply: 'can.say', roles: { act: c.act, keys: c.on.join(', ') } });
   }
   for (const f of outcome.answer ?? []) facts.push({ reply: f.reply, roles: { ...f.roles, ...(f.roles.kind ? { kind: plain(f.roles.kind) } : {}) } }); // facts of the live world (askWorld)
+  const wholeFact = (kinds) => { // the net state of a whole: its parts by kind ("5 trees, 2 butterflies, a bird")
+    const art = (w) => (o.language && articleFor(o.language, w, { types: { det: `${lang}.det`, onset: `${lang}.onset` } })) || (/^[aeiou]/i.test(w) ? 'an' : 'a');
+    const text = kinds.map(([kind, n]) => (n === 1 ? `${art(plain(kind))} ${plain(kind)}` : `${n} ${pluralIn(o.language, lang, plain(kind))}`)).join(', ');
+    for (let i = facts.length - 1; i >= 0; i--) if (facts[i].reply === 'done.revise') facts.splice(i, 1);
+    facts.push({ reply: 'done.whole', roles: { whole: plain(outcome.target), parts: text }, kinds: kinds.map(([k]) => plain(k)), numbers: kinds.map(([, n]) => n) });
+  };
   const tool = outcome.run?.diff ? outcome.run : null; // a run through a tool binding: the reply is the diff of the view
   const run = tool ? null : outcome.run?.result ?? null;
   if (tool) {
     const d = tool.diff, replaced = new Set(); // the diff has the things a revision redid alike taken out already
     const byKind = (list) => { const m = new Map(); for (const t of list) m.set(t.kind, (m.get(t.kind) ?? 0) + 1); return [...m]; };
+    const dir = (request?.reactions ?? []).find((r) => (r.step === 'up' || r.step === 'down') && r.words)?.words ?? null; // a change with no value to say is said by its direction, in the request's own word
+    const parts = Object.entries(tool.result?.kinds ?? {}).filter(([, n]) => n > 0);
+    const wholeRevised = !!(outcome.revised && tool.ok && !tool.same && !tool.undo && !tool.redo && tool.result?.whole && outcome.target && parts.length);
     if (tool.undo || tool.redo) { if (tool.ok) facts.push({ reply: tool.undo ? 'done.undo' : 'done.redo', roles: {} }); }
-    else {
+    else if (wholeRevised) { // a revision of a whole says the whole's net state (the diff aggregated over its parts), not the operations that re-laid it
+      wholeFact(parts);
+    } else {
       for (const [kind, n] of byKind(d.added)) facts.push({ reply: 'done.add', roles: { kind: plain(kind), number: n } });
       for (const [kind, n] of byKind(d.removed.filter((t) => !replaced.has(t.id)))) facts.push({ reply: 'done.remove', roles: { thing: plain(kind), number: n } });
-      const ch = new Map(); for (const x of d.changed) { const key = x.as ?? x.key, k = `${x.kind}|${key}|${x.to}`; const e = ch.get(k) ?? { kind: x.kind, key, value: x.to, n: 0 }; e.n++; ch.set(k, e); }
-      for (const e of ch.values()) facts.push({ reply: 'done.change', roles: { thing: plain(e.kind), number: e.n, key: String(e.key), value: plain(String(e.value)) } }); // the key: said by the reply done.change.<key> when the language has one
+      const ch = new Map(); for (const x of d.changed) { const key = x.as ?? x.key, value = unsayable(x.to) ? dir : plain(String(x.to)); if (value === null || value === undefined) continue; const k = `${x.kind}|${key}|${value}`; const e = ch.get(k) ?? { kind: x.kind, key, value, n: 0 }; e.n++; ch.set(k, e); }
+      for (const e of ch.values()) facts.push({ reply: 'done.change', roles: { thing: plain(e.kind), number: e.n, key: String(e.key), value: e.value } }); // the key: said by the reply done.change.<key> when the language has one; a value that is missing is said by the direction of the request, or not said
     }
     const nothing = !d.added.length && !d.removed.length && !d.changed.length;
     if (nothing && !tool.question && !outcome.ask && !(tool.ok && (tool.undo || tool.redo))) {
@@ -1297,18 +1318,40 @@ export function sayRequest(request, outcome = {}, opts = {}) {
       else for (const key of Object.keys(outcome.roles).filter((k) => !['count', 'things', 'byKind'].includes(k))) facts.push({ reply: 'done.change', roles: { thing: plain(kind), number: n, key, value: plain(String(outcome.roles[key])) } });
     }
   } else if (run) {
-    if (run.whole) facts.push({ reply: 'done.make', roles: { kind: plain(outcome.target), number: 1 } });
-    else for (const [kind, n] of Object.entries(run.kinds)) { const v = outcome.roles?.colour; facts.push({ reply: v ? 'done.make.value' : 'done.make', roles: { kind: plain(kind), number: n, ...(v ? { value: v } : {}) } }); }
+    if (run.whole && outcome.revised && outcome.target && Object.keys(run.kinds ?? {}).length) wholeFact(Object.entries(run.kinds));
+    else if (run.whole) facts.push({ reply: 'done.make', roles: { kind: plain(outcome.target), number: 1 } });
+    else if (!(run.whole && outcome.revised && Object.keys(run.kinds ?? {}).length)) for (const [kind, n] of Object.entries(run.kinds)) { const v = outcome.roles?.colour; facts.push({ reply: v ? 'done.make.value' : 'done.make', roles: { kind: plain(kind), number: n, ...(v ? { value: v } : {}) } }); }
   }
   const assumed = [...(outcome.assumed ?? [])];
   for (const a of tool?.ok ? tool.assumed ?? [] : []) if (a.from === 'translated' || !assumed.some((x) => String(x.value) === String(a.value))) assumed.push(a); // what the binding filled or translated beyond the plan
-  const told = new Set();
-  const sayFrom = new Set(o.say ?? (() => { const v = o.language ? rowsOf(o.language, `${lang}.reply`).filter((r) => first(r, 'name') === 'assumed').flatMap((r) => r.say ?? []) : []; return v.length ? v : ASSUMED_SAY; })());
-  for (const a of tool && (!tool.ok || tool.same) ? [] : assumed) { const k = `${a.key}|${a.value}`; if (a.from !== undefined && !sayFrom.has(a.from)) continue; if ((a.key !== 'target' || !run?.whole) && !told.has(k)) { told.add(k); facts.push({ reply: 'assumed', roles: { key: a.key, value: String(a.value) }, from: a.from }); } } // one fact per key and value
+  // Which assumptions are said is data: the sources (`say`, in order of strength), a value that is only the world's declared default is
+  // of the source `default`, at most `sayMax` are said (the strongest by source), and one fact is said once.
+  const rule = o.language ? rowsOf(o.language, `${lang}.reply`).filter((r) => first(r, 'name') === 'assumed') : [];
+  const order = o.say ?? (() => { const v = rule.flatMap((r) => r.say ?? []); return v.length ? v : ASSUMED_SAY; })();
+  const sayFrom = new Set(order);
+  const max = o.sayMax ?? rule.map((r) => Number(first(r, 'max'))).find((x) => Number.isFinite(x)) ?? ASSUMED_MAX;
+  const sourceOf = (a) => (a.default ? 'default' : a.from);
+  const stem = (k) => String(k).replace(/s$/, ''); // a list of kinds and a single kind are one fact
+  const valuesOf = (a) => wordsOf(a.value).map((v) => plain(v));
+  const candidates = (tool && (!tool.ok || tool.same) ? [] : assumed).filter((a) => (a.from === undefined || sayFrom.has(sourceOf(a))) && !(a.key === 'target' && run?.whole) && !unsayable(a.value));
+  const stated = new Set(facts.filter((f) => /^done\./.test(f.reply)).flatMap((f) => [f.roles?.kind, f.roles?.thing, ...(f.kinds ?? [])].filter(Boolean).map((k) => plain(k)))); // what the result lines already say
+  const planKinds = new Set((outcome.roles?.kinds ?? []).map((k) => plain(k)));
+  const counted = facts.filter((f) => /^done\.(add|make)/.test(f.reply) && planKinds.has(f.roles?.kind)).reduce((n, f) => n + (f.roles.number ?? 0), 0) + facts.filter((f) => f.reply === 'done.whole').reduce((n, f) => n + f.numbers.reduce((x, y) => x + y, 0), 0);
+  const said = candidates.filter((a, i) => {
+    const vals = valuesOf(a);
+    if (stem(a.key) === 'kind' && vals.every((v) => stated.has(v))) return false; // the kinds are in the result line
+    if (a.key === 'count' && counted === Number(a.value)) return false; // so is their number
+    return !candidates.some((b, j) => j !== i && stem(b.key) === stem(a.key) && vals.every((v) => valuesOf(b).includes(v)) && (valuesOf(b).length > vals.length || j < i)); // a fact another says in full is not said again
+  });
+  const rank = (a) => { const r = order.indexOf(sourceOf(a)); return r < 0 ? order.length : r; };
+  const keys = new Set();
+  const chosen = said.map((a, i) => ({ a, i })).sort((x, y) => rank(x.a) - rank(y.a) || x.i - y.i).filter(({ a }) => !keys.has(stem(a.key)) && keys.add(stem(a.key))).slice(0, max).sort((x, y) => x.i - y.i); // one fact per key
+  for (const { a } of chosen) facts.push({ reply: 'assumed', roles: { key: a.key, value: String(a.value) }, from: a.from });
   for (const nh of outcome.notHonoured ?? []) facts.push({ reply: 'not_honoured', roles: { words: nh.words, why: nh.why }, code: nh.code });
   for (const c of outcome.cannot ?? []) facts.push({ reply: 'not_honoured', roles: { words: c.words ?? request?.text ?? '', why: c.why }, code: 'cannot' });
   if (request?.unread?.length && (run || outcome.revised || (tool && !tool.question && tool.failed?.code !== 'unread'))) facts.push({ reply: 'unread', roles: { words: request.unread.map((w) => `"${w}"`).join(', ') } });
+  for (let i = facts.length - 1; i >= 0; i--) if (Object.values(facts[i].roles ?? {}).some(unsayable)) facts.splice(i, 1); // a reply is never said with a missing value or an empty slot
   const missing = [];
-  const texts = o.language ? facts.map((f) => { const t = (f.roles?.key ? replyFrom(o.language, `${f.reply}.${f.roles.key}`, f.roles, { lang, dictionary: o.dictionary }) : null) ?? replyFrom(o.language, f.reply, f.roles, { lang, dictionary: o.dictionary }); if (t == null) missing.push(f.reply); return t; }).filter(Boolean) : []; // a fact with a key: the reply named for that key first (done.change.place), else the general one
+  const texts = o.language ? facts.map((f) => { let t = (f.roles?.key ? replyFrom(o.language, `${f.reply}.${f.roles.key}`, f.roles, { lang, dictionary: o.dictionary }) : null) ?? replyFrom(o.language, f.reply, f.roles, { lang, dictionary: o.dictionary }); if (t == null) t = fallbackReply(f, lang); if (t == null) missing.push(f.reply); return t; }).filter((t) => t && !/\b(undefined|null|NaN)\b|\{\w+\}/.test(t)) : []; // a fact with a key: the reply named for that key first (done.change.place), else the general one
   return { facts, text: texts.join(' '), missing: [...new Set(missing)] };
 }

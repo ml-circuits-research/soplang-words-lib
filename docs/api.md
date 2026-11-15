@@ -2006,7 +2006,7 @@ world's `core.word` for its actions, its action names, then `k.actions.verb` fac
 starting there is longer ("make it bigger", "put it back"). What no cue, kind, value or number takes is
 `unread` (closed words excepted). `ctx`: `language` (default `world`), `lang` (default w.lang.en),
 `catalog`, `dialogue` (`{ last }`: what "it" is), `kinds`, `values`, `valueTypes`, `verbs`, `state` (a world with
-the things that are there, default `world`). Since 0.154: a phrase that is the name of a thing of the state (its
+the things that are there, default `world`). Also, a phrase that is the name of a thing of the state (its
 id, or a free text value of it: a slot with no enum, no reference, not a number, such as a label or a title) is a
 reference to that thing (`named: [{ ids, words, at, prep? }]`, `refers: 'named'`), never when the phrase is a value
 or a verb of the world or a kind this world has (declared, or with things there); a kind word only the catalog
@@ -2051,7 +2051,7 @@ factors, `k.expect.scale` of `options.catalog`, from the result's count; `on=siz
 scale), `add` (the constraints said replace those of the same key), `keep` (the same request, a new seed),
 `undo` (the previous request), `none`. A turn with an act and a new thing is a new request; "my expectation
 was ..." carries the whole new set. A relative size said in a revision ("make it smaller") is a step from the
-last one. Since 0.154: a turn with unread words and no reaction cue is never a revision (a request of its own:
+last one. Also, a turn with unread words and no reaction cue is never a revision (a request of its own:
 its act abduced by the planner when nothing unread stands there, or not understood); an act said on things named
 by their names is a request; a fragment (no verb, no reaction cue, not a question) that wants a kind not by a
 definite reference ("a sun" after "draw a fish") continues the dialogue's focus: `reaction: 'continue'`, a new
@@ -2160,7 +2160,7 @@ print(runPlan(toy, p).result.kinds, REQUEST_SOURCES);
 
 ### stateIds(live, view?, ids?)
 
-The things of a world's state, never its declaration or knowledge rows (since 0.154, questions Q90): the ids of
+The things of a world's state, never its declaration or knowledge rows (questions Q90): the ids of
 `view` (default `factsOf(live)`; or of `ids`) whose wire's type is a `std.schema.thing`, as the acts read the
 things of a world. A `std.schema.drawn kind= as=` row or a `k.expect` row has a kind but is no thing an act takes:
 "remove everything" removes the things of the state and leaves every declaration. `planRequest` takes the things of
@@ -2257,16 +2257,30 @@ const r = repairWords(['show', 'the', 'trubine'], { worlds: [openWorld, otherWor
 // r.tokens -> ['show','the','turbine']; r.repairs[0] -> { from: 'trubine', to: 'turbine', source: 'world', cost: 0.6, at: 2 }
 ```
 
-### sayRequest(request, outcome, options?), ASSUMED_SAY
+### sayRequest(request, outcome, options?), ASSUMED_SAY, ASSUMED_MAX
 
 The reply of a request as reply facts, each a reply name of the language world with its roles, and their
 text by `replyFrom`: the revision's reply (`outcome.reply`: sorry, welcome), `done.revise` (`outcome.revised`),
 `done.make` / `done.make.value` (the whole made, or each kind with its number), `assumed` (`{ key, value }`, each
 default used), `not_honoured` (`{ words, why }`, also for each reason of `outcome.cannot`), `unread` (`{ words }`, after a turn that made something).
 `outcome` is the plan with `run` (runPlan's result). `options`: `language`, `lang` (or a language code such as
-'en'), `dictionary`, `say` (since 0.154: the sources of an assumption that are said; default the language world's
+'en'), `dictionary`, `say` (the sources of an assumption that are said; default the language world's
 `<lang>.reply name=assumed say=` values when it has them, else `ASSUMED_SAY`: every source but `default`, a tool
-parameter's declared default, the weakest expectation a person takes for granted; one rule for every key). Returns `{ facts, text, missing }` (`missing`: the reply names the language world lacks).
+parameter's declared default, the weakest expectation a person takes for granted; one rule for every key).
+The reply says only the assumptions that matter, all of it data: an assumption flagged `default: true` (a
+value that is the world pattern's own declared default: the layout of a make expectation or a slot default, a tool
+parameter's default, a place the world arranges) is of the source `default`, so not said unless `say` lists it; the
+sources are ranked by their place in `say` (the strongest first) and at most `sayMax` are said (default `ASSUMED_MAX`
+= 2, or `<lang>.reply name=assumed max=`), one per key; a list of kinds and a single kind are one fact (a fact another
+says in full is dropped); the kinds, and the count, that the result lines already state are not said again; a kind
+that `std.schema.drawn` draws as another (oval as ellipse) is not an assumption (`runPlan`'s `assumed` leaves it out;
+`translated` keeps it). No reply carries a missing value: a changed key whose new value cannot be said (`undefined`,
+`null`, `NaN`, empty) is said by its direction, the word of the request's own reaction ("bigger", "more"), or the line
+is left out; a reply fact with an unfilled role is dropped, and no text contains "undefined", "null" or "NaN". A
+revision of a whole (`outcome.revised`, a run with a `whole`) says the whole's net state, the parts by kind from the
+run's result, as one `done.whole` fact (roles `whole`, `parts`: "The necklace now has 5 rounds, 4 squares.") instead of
+the operations that re-laid it; operations (`done.add`, `done.remove`, `done.change`) remain for acts on individual
+things. The English sentence is a default of the library until the language world publishes `done.whole`. Returns `{ facts, text, missing }` (`missing`: the reply names the language world lacks).
 
 ```js run
 const words = new World();
@@ -2296,7 +2310,7 @@ declarative, only the tool's concrete actions are code). A world declares its to
 | `std.tool.arg` | `bind` (`$` the binding), `param`, `from` (many: the sources, in order) - one argument of a binding (the review's form; the same as `arg=` inline) |
 | `std.tool.needs` | `op`, `exists` (many: a thing of that kind, by lineage, is in the state), `absent` (many), `check` (many: a declared constraint), `args` - the preconditions of an op, for every binding of it |
 | `std.tool.custom` | `name` (id), `world`, `kind` (constraint or search), `in` (many), `out`, `fails` (the reply name said when a constraint fails), `doc` |
-| `std.tool.value` | `op`, `param`, `value` (ids together), `as` - the tool's own name for an accepted value of the world: the call gets `as` (the engine's `medium` for the world's grade `default`); since 0.154 |
+| `std.tool.value` | `op`, `param`, `value` (ids together), `as` - the tool's own name for an accepted value of the world: the call gets `as` (the engine's `medium` for the world's grade `default`); since 0.155 |
 
 The sources of an argument (`TOOL_ARG_SOURCES`) are `step.<key>` (the plan step's value; `step.count`: how many
 steps of the same values one call takes, which groups them; `step.things`: the ids of the things they act on),
@@ -2402,7 +2416,7 @@ when.<key>=<v> when.<key>.min= when.<key>.max=`, `EXPECT_TYPES`; a row with no `
 the live world (source `world`) then of the catalog (`expect`):
 those whose `of` is in the kind's lineage and whose conditions hold on what is `known` (the thing's other values,
 `kind`, `size`, `count`, `role`); several values of one if-key are alternatives; `when.<key>=none` holds when the key
-is absent (a shape in no whole: `when.in=none`, since 0.154). The most specific wins: the most
+is absent (a shape in no whole: `when.in=none`). The most specific wins: the most
 condition keys, then the nearest kind, then the world before the catalog. `planRequest` fills from them every slot
 key nothing else filled, per item, twice (one default may condition another), with the item's role in the plan's
 links (start, branch, leaf, middle); a value of the whole's count and layout before the slot's default; and an

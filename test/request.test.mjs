@@ -163,7 +163,7 @@ test('sayRequest: reply facts by name, composed by the language world', { skip: 
   const run = runPlan(w, p);
   const say = sayRequest(q, { ...p, run }, { language });
   assert.deepEqual([...new Set(say.facts.map((f) => f.reply))], ['done.make', 'assumed', 'not_honoured', 'unread']);
-  assert.match(say.text, /^I drew a picture\. I assumed row for the layout\..* I could not do in the top left: .* I did not use: "blorp"\.$/);
+  assert.match(say.text, /^I drew a picture\. (I assumed [^.]*\. ){1,2}I could not do in the top left: .* I did not use: "blorp"\.$/);
   assert.deepEqual(say.missing, []);
 });
 

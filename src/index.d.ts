@@ -644,6 +644,8 @@ export const REQUEST_KEYS: readonly string[];
 export const VALUE_TYPES: Readonly<Record<string, string[]>>;
 /** The sources of an assumption the reply says by default (all but a tool parameter's declared default). */
 export const ASSUMED_SAY: readonly string[];
+/** At most this many assumptions are said in one reply (sayRequest option `sayMax`). */
+export const ASSUMED_MAX: number;
 /** Read one message into a live w.request from the language world's cues and the world's kinds, slots and words. */
 export function readRequest(world: World, text: string, ctx?: { language?: World | null; lang?: string; catalog?: unknown; dialogue?: { last?: Request | null }; state?: World | null; kinds?: string[]; values?: Record<string, { attribute: string; value: string }[]>; valueTypes?: Record<string, string[]>; verbs?: Record<string, string>; spell?: boolean | SpellOptions }): Request & { spell?: { repairs: SpellRepair[]; asks: SpellAsk[] } };
 /** The request as w.request wires. */

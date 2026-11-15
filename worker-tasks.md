@@ -1548,3 +1548,15 @@ Please answer with the wire shapes you choose before coding, so PSys2 can write 
 10. Show the join once (the shelf: `colour type=k.colours.basic by=name`), since the skill asks for it; the other toys may keep enums.
 
 **Next for you, in order:** (5), (7), (6); then the skill `author-live-world` rewritten on `std.tool.*` with the shelf as its worked example, and the lint of point 7 of block 03:10 in `skills/lib/smells.mjs` if not there yet. PSys2 will vendor 0.152.1 and move Drawing "things of kinds" first; expect questions from there.
+
+## Reviewer 2026-11-16 05:20 — 0.153.0 accepted (npm test run by me: 572 tests, 570 pass, 0 fail); answers to Q89
+
+1. Reply facts `done.change.place` / `done.change.size`: agreed, hand them to the knowledge repository as proposed. Plural count as `k.expect.value of=<kind> on=count min= max= typical= when.plural=yes`: agreed (one form, conditional expectation). `on=refers` in the cue schema: yes, add it; a cue is simpler than a grammar rule for "everything / all of them / them all", and the same cue then serves the plural definite below.
+2. Q45 (7) and (10): go, after point A below.
+3. Places per kind group in the cycle: agreed; it is the "counts and values stay with their kind" principle applied to places. One candidate per group, the groups checked together for hard violations.
+4. Order stands: unread-word rule in planRequest, `std.schema.key`, open question as a `w.dialogue` fact.
+5. `test_edited`: accepted as a spec change. Keep the hint; say in the log each time which assertion changed and why, as you did.
+
+**Two pieces from my PSys2 probe on 0.152.1 that belong to you (check whether 0.153.0 already has them):**
+A. **Plural definite = all.** "remove the houses" (2 houses) → "Which house? There are 2."; "make the birds tiny" → cannot change "the bird". The number of the kind word (the language world's plural) decides: plural + definite = every thing of the kind in the view; singular + several = the question. A test on the shelf: "remove the atlases" removes all, "remove the atlas" asks.
+B. **A turn with no reaction cue and no act never revises.** "turquoise bird please" after a make → the last result was re-laid identically and said as redone. `reviseRequest` returned a revision (`keep`?) for a message that has a kind and an unknown value. Rule: `keep` needs its own cue; a message with a kind and no act is a new request whose act is abduced (make) or it is not understood. And `runPlan` with an empty net diff says `nothing_changed`, never `done`.

@@ -17,6 +17,7 @@ import { replyFrom } from './kit.mjs';
 import { memoPerWorld } from './memo.mjs';
 import { seeded, below } from './random.mjs';
 import { choose } from './rank.mjs';
+import { repairWords } from './spell.mjs';
 import { factsOf, kindFactsOf, deduceState, induceStyle, induceCorrections, REASONING } from './reason.mjs';
 
 /**
@@ -135,13 +136,26 @@ const at = (ws, i, p) => p.length > 0 && p.every((w, k) => ws[i + k] === w);
  * Read one request. `world` is the open live world (its kinds, slots, words, honours declarations and expectation
  * facts); `ctx`: `language` (the language world with `<lang>.cue`; default `world`), `lang` (default w.lang.en),
  * `catalog` (more sources of k.expect and k.actions facts), `dialogue` ({ last }: the last request, read for "it"),
- * `kinds`, `values`, `verbs` (more words). Returns { act, target, refers, text, constraints, reactions, unread, used, facts }.
+ * `kinds`, `values`, `verbs` (more words), `spell` (true or repairWords options: repair near-miss words by the words of the world, the other `worlds`, the dialogue and the language before reading; the result carries `spell`). Returns { act, target, refers, text, constraints, reactions, unread, used, facts }.
  */
 export function readRequest(world, text, ctx = {}) {
   const lang = ctx.lang ?? 'w.lang.en';
   const L = languageOf(ctx.language ?? world, lang);
   const X = lexiconOf(world, ctx, L, lang);
-  const ws = tokensOf(text);
+  let ws = tokensOf(text);
+  let spell = null;
+  if (ctx.spell) { // one candidate source of the reader: words of the open world's lexicon, the other worlds, the dialogue, the language
+    const o = ctx.spell === true ? {} : ctx.spell;
+    const raw = String(text ?? '');
+    const protect = new Set(); // names (capitalized, not first) and quoted text are never changed
+    for (const m of raw.matchAll(/"[^"]*"|“[^”]*”/gu)) for (const w of tokensOf(m[0])) protect.add(w);
+    for (const m of raw.matchAll(/[\p{L}'’]+/gu)) if (m.index > 0 && /^\p{Lu}/u.test(m[0]) && /[\p{L}]/u.test(raw.slice(0, m.index))) for (const w of tokensOf(m[0])) protect.add(w);
+    const phrases = (m) => [...m.keys()].flatMap((k) => k.split(' '));
+    const own = [...phrases(X.kinds), ...phrases(X.values), ...phrases(X.verbs)];
+    const closed = [...L.stop, ...L.numbers.keys(), ...L.dets, ...L.preps, ...L.anaphors, ...L.placeRefs, ...L.cues.flatMap((c) => [...c.lead, ...c.trail, ...c.between].flat())];
+    spell = repairWords(ws, { ...o, worlds: [world, ...[].concat(o.worlds ?? [])], dialogue: o.dialogue ?? ctx.dialogue, lang, language: ctx.language ?? world, lexicon: own, dictionary: closed, protect });
+    ws = spell.tokens;
+  }
   const used = new Array(ws.length).fill(false);
   const free = (i, n = 1) => { for (let k = i; k < i + n; k++) if (k >= ws.length || used[k]) return false; return true; }; // bounded: n tokens
   const take = (i, n = 1) => { for (let k = i; k < i + n; k++) used[k] = true; }; // bounded: n tokens
@@ -301,7 +315,7 @@ export function readRequest(world, text, ctx = {}) {
 
   const unreadAt = [];
   for (let i = 0; i < ws.length; i++) if (!used[i] && !L.stop.has(ws[i]) && !/^[-,]$/.test(ws[i])) unreadAt.push({ text: ws[i], n: i + 1 }); // bounded: the tokens
-  const req = { act, mode, target, refers, text: String(text ?? ''), constraints, reactions, unread: [...new Set(unreadAt.map((u) => u.text))], unreadAt, used: ws.filter((_, i) => used[i]) };
+  const req = { act, mode, target, refers, text: String(text ?? ''), constraints, reactions, unread: [...new Set(unreadAt.map((u) => u.text))], unreadAt, used: ws.filter((_, i) => used[i]), ...(spell ? { spell: { repairs: spell.repairs, asks: spell.asks } } : {}) };
   return withFacts(req);
 }
 

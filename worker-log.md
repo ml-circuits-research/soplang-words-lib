@@ -5824,3 +5824,6 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   SOPWORLD_COW_CHECK=1 node --test test/request.test.mjs test/reason.test.mjs 13 / 0; npm run test:compat 11 / 0;
   node tools/scan-loops.mjs src clean; node tools/doc-examples.mjs 232 examples, 0 problems; git grep -il psys2 src/ = 0.
   Notes for the reviewer: questions.md Q84.
+
+## 0.151.0 contextual spell repair (psys2 Q39)
+- `src/spell.mjs`: `repairWords` (candidates from factsOf of the live worlds, dialogue words, language words; keyboard-aware cost + source prior as data; unique best or ask), wired into `readRequest` as `ctx.spell`. Docs api.md, d.ts, CHANGELOG. Tests: `node --test test/spell.test.mjs` (8 pass); npm test 557 tests, 555 pass, 0 fail, 1 skipped; SOPWORLD_BUNDLE=1 557 / 555 / 0. Open points: questions.md Q85.

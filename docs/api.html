@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="1da395428625">
+<meta name="source-hash" content="fe18ba6ae39b">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.150.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.151.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -737,6 +737,10 @@ print(deduceState(v, [&#x27;ball1&#x27;], { kindFacts: kindFactsOf(kb, [{ type: 
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;ball1&quot;,&quot;ball2&quot;,&quot;ball3&quot;] [{&quot;thing&quot;:&quot;ball1&quot;,&quot;relation&quot;:&quot;in&quot;,&quot;to&quot;:&quot;box1&quot;}] 3
 {&quot;of&quot;:&quot;ball&quot;,&quot;n&quot;:3,&quot;pattern&quot;:{&quot;colour&quot;:&quot;blue&quot;}}
 [&quot;a ball is usually at bag, not in box1&quot;]</code></pre></figure>
+<h3 id="repairwordstokens-options-editcosta-b-max-worldwordsworld-languagewordslanguage-lang-spell-spell_sources-spell_costs">repairWords(tokens, options?), editCost(a, b, max?), worldWords(world), languageWords(language, lang?), SPELL, SPELL_SOURCES, SPELL_COSTS</h3>
+<p>A generic, deterministic contextual spell repair (no world ids, no per-app code). <code>repairWords(tokens, { worlds, dialogue, lang, language, lexicon, dictionary, protect })</code> returns <code>{ tokens, repairs: [{ from, to, source, cost, at }], asks: [{ from, at, candidates: [{ word, source, cost }] }] }</code>. Candidates: the words of the first (open) world, of the other live worlds (<code>worldWords</code>: thing names, labels, string values and kinds from <code>factsOf</code>, plus its declared kinds, words and actions), the dialogue's recent words (<code>dialogue.words</code>, <code>last.text</code>, <code>history</code>), then the language dictionary (<code>languageWords</code>: the text, form and cue words of the <code>&lt;lang&gt;.*</code> wires, plus <code>dictionary</code>). The score is a keyboard-aware edit cost (<code>editCost</code>, <code>SPELL_COSTS</code>: adjacent QWERTY key 0.4, missing diacritic 0.1, doubled or dropped letter 0.5, swapped neighbours 0.6, any other edit 1) plus the source prior, DATA in <code>SPELL_SOURCES</code> (world 0, worlds 0.1, dialogue 0.2, dictionary 0.3). The threshold applies to the edit cost alone (<code>SPELL</code>: 1.0 for 4 letters, 1.2 from 5), so a prior never lets a far word win. A token is repaired only on a unique best (the runner-up at least <code>SPELL.margin</code> 0.25 worse); otherwise it is left and an <code>ask</code> lists the top 3. Never changed: a known word (of any source), a number, a word under 4 letters, a capitalized word that does not start the message, quoted text, and <code>protect</code>ed words. <code>readRequest(world, text, { spell: true | options })</code> uses it as one candidate source inside the reader (the open world's own lexicon, <code>ctx.catalog</code>/<code>dialogue</code> and the language's closed words are passed in; names and quotes are protected from the raw text) and returns <code>request.spell = { repairs, asks }</code>; off by default.</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>const r = repairWords([&#x27;show&#x27;, &#x27;the&#x27;, &#x27;trubine&#x27;], { worlds: [openWorld, otherWorld] });
+// r.tokens -&gt; [&#x27;show&#x27;,&#x27;the&#x27;,&#x27;turbine&#x27;]; r.repairs[0] -&gt; { from: &#x27;trubine&#x27;, to: &#x27;turbine&#x27;, source: &#x27;world&#x27;, cost: 0.6, at: 2 }</code></pre></figure>
 <h3 id="sayrequestrequest-outcome-options">sayRequest(request, outcome, options?)</h3>
 <p>The reply of a request as reply facts, each a reply name of the language world with its roles, and their text by <code>replyFrom</code>: the revision's reply (<code>outcome.reply</code>: sorry, welcome), <code>done.revise</code> (<code>outcome.revised</code>), <code>done.make</code> / <code>done.make.value</code> (the whole made, or each kind with its number), <code>assumed</code> (<code>{ key, value }</code>, each default used), <code>not_honoured</code> (<code>{ words, why }</code>, also for each reason of <code>outcome.cannot</code>), <code>unread</code> (<code>{ words }</code>, after a turn that made something). <code>outcome</code> is the plan with <code>run</code> (runPlan's result). <code>options</code>: <code>language</code>, <code>lang</code> (or a language code such as 'en'), <code>dictionary</code>. Returns <code>{ facts, text, missing }</code> (<code>missing</code>: the reply names the language world lacks).</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const words = new World();
@@ -1269,7 +1273,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.150.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.151.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

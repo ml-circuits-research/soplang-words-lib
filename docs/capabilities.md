@@ -945,6 +945,30 @@ print(p.steps.map((s) => s.args.in), p.rejected.map((r) => `${r.label}: ${r.why[
 ["$b2","$b2"] ["in b1: b1 has room for 0 more balls (room 1)"]
 ```
 
+
+## Repair a near-miss word by the words of the live worlds
+
+*In `repairWords`, `editCost`, `worldWords`, `languageWords`, `SPELL`, `SPELL_SOURCES`, `SPELL_COSTS`, and `readRequest` with `spell`; since 0.151.*
+*Works on: any live world (its facts, kinds, words and actions), the dialogue's words, the language world's words.*
+
+A typo is repaired from context, not by a global dictionary alone: the open world's words rank first, then the other
+live worlds', then the dialogue's, then the language's (the order is data, `SPELL_SOURCES`). The cost is a keyboard-aware
+edit distance; a word is changed only on a unique best within the threshold, otherwise `asks` lists candidates.
+
+```js run
+const w = new World();
+w.load(`@acts core.use world=std.acts
+@t.gadget core.type of=gadget extends=std.schema.thing closed=true
+@s.label core.slot of=gadget key=label kind=string
+@g1 gadget label="turbine"`);
+const r = repairWords(['show', 'the', 'trubine'], { worlds: [w] });
+print(r.tokens.join(' '), r.repairs[0].source);
+```
+
+```output
+show the turbine world
+```
+
 ## Run an application's worlds with the host kit
 
 *In `loadWorldSet`, `readTurn`, `turnScope`, `openSession`, `replyFrom`, `referentOf`, `countClass`, `clauses`, `cutPoints`, `chooseRewrite`, `snapshotSet`, `restoreSet`, `whyTurn`, `KIT_REPLIES`; since 0.130.*

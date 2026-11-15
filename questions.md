@@ -496,3 +496,10 @@ deduce -> abduce cycle, with induction before it. Choices taken while waiting, e
   places it is usually at, and which kinds are such places) would make `placed` cheaper and cleaner than reading
   material / is_a rows; the rule reads any type listed in KIND_FACTS.
 - std.acts' capacity message says "fishs" (plural by +s); not changed here.
+
+## Q85 (spell repair 0.151.0)
+- Thresholds (`SPELL`) and priors are first guesses, not tuned on real user typos; PSys2 phrase logs should calibrate them (maxCost, margin, minLength 4).
+- Words of 3 letters or fewer are never repaired; multi-word joins/splits ("greencircle", "sh ape") are not handled.
+- The language dictionary is the `<lang>.*` wires of the language world passed (`language`); a large external morph `dictionary` is not enumerable, so pass its word list as `dictionary` if wanted.
+- Should an `ask` flow into `sayRequest` ("did you mean X?") and the dialogue? Today `request.spell.asks` is only data; the host decides.
+- Typos that are themselves known words (e.g. "fist" for "fish") are never changed by design.

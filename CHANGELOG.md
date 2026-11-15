@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.151.0
+
+A contextual spell repair (psys2 Q39), generic and deterministic.
+
+### New
+- `repairWords(tokens, { worlds, dialogue, lang, language, ... })` -> `{ tokens, repairs, asks }`; `editCost`,
+  `worldWords`, `languageWords`, `SPELL`, `SPELL_SOURCES` (the source prior as data: open world, other worlds,
+  dialogue, dictionary), `SPELL_COSTS` (src/spell.mjs). Keyboard-aware edit cost; repair only on a unique best
+  within the threshold, else an `ask`; names, quotes, numbers and known words never change.
+- `readRequest(..., { spell: true | options })`: the repair as one candidate source of the reader; the request
+  carries `spell: { repairs, asks }`. Off by default.
+- test/spell.test.mjs (8): costs, sources, wrong-repair guards, ambiguity, readRequest, and a property over the
+  three example worlds (a typo of a label or kind is repaired to it).
+
 ## 0.150.0
 
 A first layer of reasoning in the gap filler (owner 2026-11-15 14:11): shallow, generic, bounded, on the state of

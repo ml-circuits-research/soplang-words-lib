@@ -2188,6 +2188,29 @@ print(deduceState(v, ['ball1'], { kindFacts: kindFactsOf(kb, [{ type: 'ex.thing'
 ["a ball is usually at bag, not in box1"]
 ```
 
+### repairWords(tokens, options?), editCost(a, b, max?), worldWords(world), languageWords(language, lang?), SPELL, SPELL_SOURCES, SPELL_COSTS
+
+A generic, deterministic contextual spell repair (no world ids, no per-app code). `repairWords(tokens, { worlds,
+dialogue, lang, language, lexicon, dictionary, protect })` returns `{ tokens, repairs: [{ from, to, source, cost, at }],
+asks: [{ from, at, candidates: [{ word, source, cost }] }] }`. Candidates: the words of the first (open) world, of the
+other live worlds (`worldWords`: thing names, labels, string values and kinds from `factsOf`, plus its declared kinds,
+words and actions), the dialogue's recent words (`dialogue.words`, `last.text`, `history`), then the language
+dictionary (`languageWords`: the text, form and cue words of the `<lang>.*` wires, plus `dictionary`). The score is a
+keyboard-aware edit cost (`editCost`, `SPELL_COSTS`: adjacent QWERTY key 0.4, missing diacritic 0.1, doubled or
+dropped letter 0.5, swapped neighbours 0.6, any other edit 1) plus the source prior, DATA in `SPELL_SOURCES`
+(world 0, worlds 0.1, dialogue 0.2, dictionary 0.3). The threshold applies to the edit cost alone (`SPELL`: 1.0 for
+4 letters, 1.2 from 5), so a prior never lets a far word win. A token is repaired only on a unique best (the runner-up
+at least `SPELL.margin` 0.25 worse); otherwise it is left and an `ask` lists the top 3. Never changed: a known word
+(of any source), a number, a word under 4 letters, a capitalized word that does not start the message, quoted text,
+and `protect`ed words. `readRequest(world, text, { spell: true | options })` uses it as one candidate source inside the
+reader (the open world's own lexicon, `ctx.catalog`/`dialogue` and the language's closed words are passed in; names and
+quotes are protected from the raw text) and returns `request.spell = { repairs, asks }`; off by default.
+
+```js
+const r = repairWords(['show', 'the', 'trubine'], { worlds: [openWorld, otherWorld] });
+// r.tokens -> ['show','the','turbine']; r.repairs[0] -> { from: 'trubine', to: 'turbine', source: 'world', cost: 0.6, at: 2 }
+```
+
 ### sayRequest(request, outcome, options?)
 
 The reply of a request as reply facts, each a reply name of the language world with its roles, and their

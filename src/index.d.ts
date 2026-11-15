@@ -643,7 +643,7 @@ export const REQUEST_KEYS: readonly string[];
 /** The catalog types whose names are values of an attribute. */
 export const VALUE_TYPES: Readonly<Record<string, string[]>>;
 /** Read one message into a live w.request from the language world's cues and the world's kinds, slots and words. */
-export function readRequest(world: World, text: string, ctx?: { language?: World | null; lang?: string; catalog?: unknown; dialogue?: { last?: Request | null }; kinds?: string[]; values?: Record<string, { attribute: string; value: string }[]>; valueTypes?: Record<string, string[]>; verbs?: Record<string, string> }): Request;
+export function readRequest(world: World, text: string, ctx?: { language?: World | null; lang?: string; catalog?: unknown; dialogue?: { last?: Request | null }; kinds?: string[]; values?: Record<string, { attribute: string; value: string }[]>; valueTypes?: Record<string, string[]>; verbs?: Record<string, string>; spell?: boolean | SpellOptions }): Request & { spell?: { repairs: SpellRepair[]; asks: SpellAsk[] } };
 /** The request as w.request wires. */
 export function requestWires(request: Request, options?: { id?: string }): string;
 /** A turn against the dialogue: a new request, or the last one revised by w.dialogue.revision facts. */
@@ -829,3 +829,15 @@ export function tabulate(results: { degree: number; dim?: string; dims?: string[
 export function tableText(table: Record<string, { pass: number; of: number }>): string;
 /** A verbless continuation: the previous act reused with the roles the message gives. */
 export function resolveEllipsis(world: World, text: string, previous: { act: string; args: Record<string, unknown> }, options?: { pronouns?: string[]; skip?: string[]; lang?: string; dirKey?: string; more?: string[]; small?: string[]; positions?: Record<string, number | 'middle'>; fold?: (word: string) => string }): { act: string; args: Record<string, unknown>; reused: true; changed: string[]; relative?: { more?: boolean; small?: boolean } } | null;
+
+export interface SpellOptions { worlds?: World[]; dialogue?: { words?: string[]; last?: { text?: string } | null; history?: string[] }; lang?: string; language?: World | null; lexicon?: Iterable<string>; dictionary?: Iterable<string>; protect?: Iterable<string>; sources?: readonly { source: string; prior: number }[]; bounds?: Partial<typeof SPELL> }
+export interface SpellRepair { from: string; to: string; source: 'world' | 'worlds' | 'dialogue' | 'dictionary'; cost: number; at: number }
+export interface SpellAsk { from: string; at: number; candidates: { word: string; source: string; cost: number }[] }
+/** Contextual, deterministic spell repair by the words of the live worlds, the dialogue and the language. */
+export function repairWords(tokens: string[] | string, options?: SpellOptions): { tokens: string[]; repairs: SpellRepair[]; asks: SpellAsk[] };
+export function editCost(a: string, b: string, max?: number): number;
+export function worldWords(world: World): Set<string>;
+export function languageWords(language: World | null | undefined, lang?: string): Set<string>;
+export const SPELL: Readonly<{ minLength: number; maxCostShort: number; maxCostLong: number; margin: number; top: number; maxWords: number; recent: number }>;
+export const SPELL_SOURCES: readonly { source: string; prior: number }[];
+export const SPELL_COSTS: Readonly<{ near: number; accent: number; doubled: number; swap: number; other: number }>;

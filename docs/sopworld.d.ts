@@ -615,6 +615,7 @@ export function cycleAdd(world: World, member: string, steps: number, options?: 
 export function cycleDiff(world: World, from: string, to: string, options?: { type?: string; cycle?: string }): number | null;
 export function statedDay(world: World, text: string, options?: { cycle?: string; today?: string[]; type?: string }): string | null;
 export function readClock(text: string, options?: { words?: object }): number | null;
+export function expandRecurrence(rule: string | { freq: string; interval?: number; byday?: string[]; bymonthday?: number[]; until?: string; count?: number }, start: string, options?: { from?: string; to?: string; max?: number }): string[];
 export function writeClock(minutes: number, options?: { ampm?: boolean; words?: object }): string;
 export function contrastOf(world: World, kind: string, options?: { type?: string; up?: string[]; skip?: Set<string>; max?: number }): { kind?: string; type?: string; parents?: string[]; siblings?: string[]; contrasts?: { key: string; value: string; share: number; others: Record<string, number> }[]; why?: string };
 export function outlineOf(parts: { x: number; y: number; w?: number; h?: number }[]): { x: number; y: number }[];

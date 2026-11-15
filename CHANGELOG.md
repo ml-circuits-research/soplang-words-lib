@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.147.0
+
+### New
+- `expandRecurrence(rule, start, { from, to, max })`: a repeating event's days (RFC 5545 RRULE: daily / weekly /
+  monthly / yearly, interval, weekdays, days of the month, until, count; knowledge Q92).
+
+### Changed
+- `readFrames` reads verbs of several words (line up, go back): 459 of 499 frame examples as the reference reader.
+
 ## 0.146.0
 
 Knowledge Q87, Q84, Q88: where the library fell short of the knowledge repository's local copies.

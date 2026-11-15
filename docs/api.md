@@ -1788,6 +1788,23 @@ print(cycleAdd(w, 'Tue', 1, { type: 'ex.day' }), writeClock(readClock("3 o'clock
 Mon 5 o'clock
 ```
 
+### expandRecurrence(rule, start, options?)
+
+The days of a repeating event (RFC 5545's RRULE, the part a calendar needs): `rule` is an RRULE
+text or `{ freq, interval, byday, bymonthday, until, count }`, with `freq` daily, weekly, monthly
+or yearly, every `interval` periods, on weekdays (`MO`…`SU`) or days of the month, until a date or
+a count. `start` is the first day (an ISO date); `{ from, to }` keeps the days in a window, and
+`max` (1000) bounds the list. A day a month or year lacks (the 31st, 29 February) is skipped and
+not counted. The day names of a language are its language world's; the rule is language-free.
+
+```js run
+print(expandRecurrence('FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE;COUNT=4', '2026-11-16'));
+```
+
+```output
+["2026-11-16","2026-11-18","2026-11-30","2026-12-02"]
+```
+
 ### contrastOf(world, kind, options?)
 
 How a kind differs from its siblings ("how is a circle different from other shapes"): the facts

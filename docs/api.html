@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="d98fd5f1a9d8">
+<meta name="source-hash" content="fbd6e6ec475f">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.146.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.147.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -618,6 +618,10 @@ print(tellStatement(w, &#x27;I have two kids&#x27;, { type: &#x27;ex.person&#x27
 w.tell(&#x27;@a ex.day name=Mon cycle=wk n=1  @b ex.day name=Tue cycle=wk n=2&#x27;);
 print(cycleAdd(w, &#x27;Tue&#x27;, 1, { type: &#x27;ex.day&#x27; }), writeClock(readClock(&quot;3 o&#x27;clock&quot;) + 120));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>Mon 5 o&#x27;clock</code></pre></figure>
+<h3 id="expandrecurrencerule-start-options">expandRecurrence(rule, start, options?)</h3>
+<p>The days of a repeating event (RFC 5545's RRULE, the part a calendar needs): <code>rule</code> is an RRULE text or <code>{ freq, interval, byday, bymonthday, until, count }</code>, with <code>freq</code> daily, weekly, monthly or yearly, every <code>interval</code> periods, on weekdays (<code>MO</code>…<code>SU</code>) or days of the month, until a date or a count. <code>start</code> is the first day (an ISO date); <code>{ from, to }</code> keeps the days in a window, and <code>max</code> (1000) bounds the list. A day a month or year lacks (the 31st, 29 February) is skipped and not counted. The day names of a language are its language world's; the rule is language-free.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>print(expandRecurrence(&#x27;FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE;COUNT=4&#x27;, &#x27;2026-11-16&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;2026-11-16&quot;,&quot;2026-11-18&quot;,&quot;2026-11-30&quot;,&quot;2026-12-02&quot;]</code></pre></figure>
 <h3 id="contrastofworld-kind-options">contrastOf(world, kind, options?)</h3>
 <p>How a kind differs from its siblings ("how is a circle different from other shapes"): the facts named for the kind are merged, its siblings are the things of the same type that share a parent (<code>kind</code>, <code>class</code>, <code>is</code>, <code>is_a</code>, <code>kind_of</code>), and a key contrasts when few siblings hold the kind's value. It returns <code>{ kind, type, parents, siblings, contrasts: [{ key, value, share, others }] }</code>, rarest first (std.decide kind <code>contrast</code>), or <code>{ why }</code>. Options: <code>type</code>, <code>up</code>, <code>skip</code>, <code>max</code>.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
@@ -1170,7 +1174,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.146.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.147.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

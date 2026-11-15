@@ -39,6 +39,7 @@ export function senseOf(world, id) {
 export function readFrames(world, text, { lang = 'w.lang.ro', morph: m, dictionary: dict, senses, max = 5, lexicons = {}, needs, open = false } = {}) {
   const norm = (s) => (m ? fold(m, String(s).toLowerCase()) : String(s).toLowerCase());
   const verbIndex = memoPerWorld(world, 'frames-verb-index', () => { const ix = new Map(); for (const v of world.ofType('k.actions.verb')) { const t = bare(v.attrs.text?.[0] ?? '').toLowerCase(); (ix.get(t) || ix.set(t, []).get(t)).push(bare(v.attrs.act?.[0])); } return ix; }); // a word's acts by the k.actions verbs the world holds
+  const multiVerbs = memoPerWorld(world, 'frames-multi-verbs', () => { const ix = new Map(); for (const [t, acts] of verbIndex) if (t.includes(' ')) for (const a of acts) (ix.get(a) || ix.set(a, []).get(a)).push(t.split(/\s+/)); for (const l of ix.values()) l.sort((x, y) => y.length - x.length); return ix; });
   const byVerb = (id) => { const acts = id ? verbIndex.get(String(id).toLowerCase()) : null; return acts?.length ? { act: acts.includes(String(id).toLowerCase()) ? String(id).toLowerCase() : acts[0], acts, en: String(id), pos: 'verb' } : null; };
   const sense = senses ?? ((id) => { const s0 = senseOf(world, id); return s0.act || s0.en ? s0 : byVerb(id) ?? s0; });
   const raw = String(text).toLowerCase().replace(/[.!?;:"“”()]+/g, ' ').replace(/['’]/g, '').replace(/,/g, ' , ').split(/\s+/).filter(Boolean); // didn't = didnt, as the language world writes its items
@@ -99,7 +100,12 @@ export function readFrames(world, text, { lang = 'w.lang.ro', morph: m, dictiona
         if (isOpen(name)) { for (let n = 1; n <= 3 && ti + n <= toks.length && !r; n++) r = take(n); }
         else r = seqs([...items(`${lang}.lex`, name), ...items(`${lang}.phrase`, name)]);
       }
-      else if (p.is === 'verb') { const want = bare(a.act?.[0]); const hit = ti < toks.length ? readings(ti).find((x) => x.act === want || x.acts?.includes(want)) : null; r = hit ? take(1, { _verb: { ...hit, act: want } }) : null; } // a verb of several acts (make: make, change) is each of them
+      else if (p.is === 'verb') {
+        const want = bare(a.act?.[0]);
+        for (const mw of multiVerbs.get(want) || []) if (!r && seqAt(ti, mw)) r = take(mw.length, { _verb: { form: toks.slice(ti, ti + mw.length).join(' '), lemma: mw.join(' '), en: mw.join(' '), act: want } }); // a verb of several words (line up, go back)
+        const hit = !r && ti < toks.length ? readings(ti).find((x) => x.act === want || x.acts?.includes(want)) : null;
+        if (hit) r = take(1, { _verb: { ...hit, act: want } }); // a verb of several acts (make: make, change) is each of them
+      }
       else if (p.is === 'role') {
         const role = bare(a.role[0]), takes = bare(a.takes?.[0] ?? 'words'), most = Number(bare(a.max_words?.[0] ?? 99));
         if (takes === 'number') { if (ti < toks.length && (nums.has(F[ti]) || /^\d+$/.test(F[ti]))) r = take(1, { [role]: { text: toks[ti], value: nums.get(F[ti]) ?? Number(F[ti]) } }); }

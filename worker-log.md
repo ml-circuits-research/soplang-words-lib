@@ -5734,3 +5734,30 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Q88 (test/plan-procedures.test.mjs): seed null gives the same first solution twice; `{ fixed: { host: 'bob' } }` →
   host bob; a fixed guest that breaks the vegan match is refused; statement rows by key, history entries by act.
 - Gate: npm test 530 pass / 0 fail; compat 11; pilot same; psys2=0; scan clean; tsc ok.
+
+## 0.147.0 — RRULE expansion (knowledge Q92); the frame examples still read differently, by cause; PSys2 class B
+
+- `node tools/bench-frames.mjs --all`: 499 examples, same frame 459 (was 456: verbs of several words, "line up",
+  "go back"), same act and mode 14, otherwise 26. A heavier cost for open-lexicon spans (3, 4) lowered it (451, 445):
+  kept at 2. The 40 left, by cause (`--rows`):
+  - open-lexicon over-reach, a frame with a host list taking words a closed frame should (13 in acts.data.change.* /
+    acts.data.remove.*: acts.data.change.factor wins for "Make it a pie chart.", "Legend off.", "Delete this chart.";
+    acts.text.make.text for "Highlight the word milk in green.", "Not bold.", "Start a new chapter.");
+  - two frames of the same act ranked the other way (14 counted as same act and mode, plus "Start a new melody." blank
+    vs melody, "I want a house." wish vs make, "A big red house please." bare.mods vs change.short, "Deselect
+    everything." acts.deselect vs acts.more.pick.none);
+  - separable verbs split around their object ("Line up the circles", "Line up the planets in order of size": the
+    verb is read only when contiguous), "Go back to the start.", "Say hello to Ana." (verb + object + particle).
+- PSys2 class B (Romanian plural / relative moves and continuations, 11 rows of psys2 training/eval/real-2026-11-15
+  at 720ea98), `readFrames` on w.lang.ro with the hand + UniMorph dictionaries (/tmp/classb.mjs):
+  reads alone 6 — r0052, r0054 "muta casele mai sus" and r0055 "muta crocodilii mai jos" (ro.place.dir.amt: a plural
+  thing, amount mai, direction up/down), r0064 "pune si un lac" (ro.place.bare, lake), r0066 "muta si mai la stinga"
+  (ro.place.dir.amt.it: the thing is the last one, a continuation for resolveEllipsis), r0006 (English residue: no
+  frame, so nothing changes, as its check wants); partly 3 — r0039 "fa picioarele corocilului negre" (change, value
+  black, thing leg, but the typo "corocilului" stays unglossed), r0067 / r0069 "muta casa din mijloc / din dreapta mai
+  la dreapta" (place, but "din mijloc" / "din dreapta" stays inside the thing: a positional referent, the kit's
+  next referent kind); not read 2 — r0043 "sa fie diferite" (a subjunctive wish about the last things), r0068 "nu
+  prima acasa, cea din mijloc" (a correction).
+- test/recurrence.test.mjs: daily count 3; every 2 weeks Mon/Wed count 5; weekdays until 24 Nov; the 31st only in
+  long months; 29 February only in leap years; Fridays monthly; a window; max; HOURLY not expanded.
+- Gate: npm test 531 pass / 0 fail; compat 11; pilot same; psys2=0; scan clean; tsc ok.

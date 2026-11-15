@@ -892,7 +892,7 @@ the session (pending questions, timeline) is the next part of the kit.
 
 ## Step round a cycle, read a clock, say what sets a kind apart
 
-*In `cycleOf`, `cycleAdd`, `cycleDiff`, `statedDay`, `readClock`, `writeClock`, `contrastOf`; since 0.128.*
+*In `cycleOf`, `cycleAdd`, `cycleDiff`, `statedDay`, `readClock`, `writeClock`, `expandRecurrence`, `contrastOf`; since 0.128.*
 *Works on: k.time's ordered members (weekdays, months, seasons, parts of the day), any kinds with parents (k.shapes).*
 
 "Today is Friday", then "what day is tomorrow" (Saturday); "how many days until Friday"; "3

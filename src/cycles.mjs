@@ -83,3 +83,49 @@ export function writeClock(minutes, { ampm = false, words = { oclock: "o'clock",
   if (m === 45) return `${words.quarterTo} ${hour(h24 + 1)}${suffix}`;
   return `${hour(h24)}:${String(m).padStart(2, '0')}${suffix}`;
 }
+
+const WEEKDAYS = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA']; // RFC 5545's day codes, Sunday first as Date.getUTCDay
+
+/**
+ * The days of a repeating event (RFC 5545 RRULE, the part a calendar needs; knowledge Q92): `rule` is an RRULE text
+ * ("FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,WE;COUNT=6") or an object { freq: daily | weekly | monthly | yearly, interval,
+ * byday: ['MO', ...], bymonthday: [n], until: 'YYYY-MM-DD', count }. `start` is the first day (an ISO date). Options:
+ * `from` / `to` (a window: only the days in it), `max` (at most this many days, 1000). Returns ISO dates in order. The
+ * day names of a language are a language world's (k.time names map to the codes); the rule is language-free.
+ */
+export function expandRecurrence(rule, start, { from, to, max = 1000 } = {}) {
+  const r = typeof rule === 'string' ? Object.fromEntries(rule.replace(/^RRULE:/i, '').split(';').filter(Boolean).map((p) => { const [k, v] = p.split('='); return [k.toLowerCase(), v]; })) : { ...rule };
+  const freq = String(r.freq ?? '').toLowerCase(), every = Math.max(1, Number(r.interval ?? 1));
+  const list = (v) => (v === undefined ? [] : Array.isArray(v) ? v : String(v).split(','));
+  const byday = list(r.byday).map((d) => String(d).toUpperCase().slice(-2)), bymd = list(r.bymonthday).map(Number);
+  const iso = (d) => d.toISOString().slice(0, 10);
+  const day = (s) => { const t = String(s).replace(/^(\d{4})(\d{2})(\d{2}).*$/, '$1-$2-$3'); return new Date(`${t.slice(0, 10)}T00:00:00Z`); };
+  const first = day(start), until = r.until ? day(r.until) : null, count = r.count !== undefined ? Number(r.count) : null;
+  const lo = from ? day(from) : null, hi = to ? day(to) : null;
+  if (!['daily', 'weekly', 'monthly', 'yearly'].includes(freq) || Number.isNaN(first.getTime())) return [];
+  const out = [];
+  let n = 0;
+  const take = (d) => { // a day of the rule: counted from the start, kept if in the window
+    if (d < first || (until && d > until)) return true;
+    n += 1;
+    if (count !== null && n > count) return false;
+    if ((!lo || d >= lo) && (!hi || d <= hi)) out.push(iso(d));
+    return out.length < max;
+  };
+  const addDays = (d, k) => new Date(d.getTime() + k * 86400000);
+  for (let p = 0; p < 100000; p++) { // bounded: periods, stopped by until, count, the window's end or max
+    let days;
+    if (freq === 'daily') days = [addDays(first, p * every)];
+    else if (freq === 'weekly') { const wk = addDays(first, p * 7 * every - first.getUTCDay()); days = (byday.length ? byday : [WEEKDAYS[first.getUTCDay()]]).map((c) => addDays(wk, WEEKDAYS.indexOf(c))).filter((d) => !Number.isNaN(d.getTime())).sort((a, b) => a - b); }
+    else if (freq === 'monthly') {
+      const y = first.getUTCFullYear(), m = first.getUTCMonth() + p * every;
+      const mds = bymd.length ? bymd : byday.length ? [] : [first.getUTCDate()];
+      days = mds.map((x) => new Date(Date.UTC(y, m, x))).filter((d) => d.getUTCMonth() === ((m % 12) + 12) % 12); // the 31st only in months that have it
+      if (byday.length) { const len = new Date(Date.UTC(y, m + 1, 0)).getUTCDate(); for (let x = 1; x <= len; x++) { const d = new Date(Date.UTC(y, m, x)); if (byday.includes(WEEKDAYS[d.getUTCDay()])) days.push(d); } days.sort((a, b) => a - b); } // bounded: the days of a month
+    } else { const d = new Date(Date.UTC(first.getUTCFullYear() + p * every, first.getUTCMonth(), first.getUTCDate())); days = d.getUTCDate() === first.getUTCDate() ? [d] : []; } // 29 February only in leap years
+    for (const d of days) if (!take(d)) return out; // bounded: the days of a period
+    const last = days[days.length - 1] ?? addDays(first, p);
+    if ((until && last > until) || (hi && last > hi && (count === null || n >= count))) return out;
+  }
+  return out;
+}

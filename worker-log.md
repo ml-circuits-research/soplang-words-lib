@@ -5477,3 +5477,5 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
   20 lei) change 9; 5 lei for a ball: short 4. The prices are PSys2's shop data, so PSys2 measures the rows.
 - Q71: the clause splitter merges in R3 with the cut words.
 - Gate: npm test 512 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+- bench-ro-frames at the new pin (knowledge added lemmas, "și", î fold for Q69): read 100/161 (62 %), act right
+  82/161 (51 %), act and thing right 62/161 (39 %) — was 93 / 74 / 38 at 7c7738f.

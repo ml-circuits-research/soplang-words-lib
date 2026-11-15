@@ -1697,6 +1697,30 @@ print(readFrames(w, 'zap a tree', { lang: 'ex' }).best.roles.thing.text);
 a tree
 ```
 
+### listSums(world, list, options?) and listMeant(world, options?)
+
+The sums of a list, computed and never stored (w.list: the total, what is left, the change,
+whether it can be bought). `listSums(world, list, { itemType, link, priceOf, all })` gives
+`{ list, entries: [{ id, text, quantity, price, amount }], total, missing, currency, budget?,
+left?, affordable?, tendered?, change?, short?, why? }`. An entry's amount is its quantity (1
+when none) times its price (its own, else `priceOf(entry)`: prices are the application's data).
+Only open entries count unless `all`. `change` is tendered − total, `short` is what is missing
+when less was handed over, and `left` is budget − total. When an entry has no price, the total is
+not guessed: `total` is null with `why`. `listMeant(world, { type, name, sort })` is the list a
+request means when it names none: the one called `name`, else the one made last. The types and
+keys default to w.list's (`w.list.list`, `w.list.item`, `list`). Why a value is so ("why is the
+milk done?") is `world.why(id, key)`.
+
+```js run
+const w = new World();
+w.tell('@l lst name=shop tendered=10\n@a ent text=puzzle list=$l price=7');
+print(listSums(w, 'l', { itemType: 'ent' }).change);
+```
+
+```output
+3
+```
+
 ### compose(world, topic, options?) and interestOf(world, fact, options?)
 
 A composition of a genre about a topic, from knowledge, with no model (std.compose, first

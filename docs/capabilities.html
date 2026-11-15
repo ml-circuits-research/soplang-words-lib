@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld What the library can do</title>
-<meta name="source-hash" content="045a8627e576">
+<meta name="source-hash" content="1fcf45cbd0fb">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.125.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.126.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html" aria-current="page">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -366,6 +366,13 @@ print(judgeOnRelated((t) =&gt; (t === &#x27;cow sound&#x27; ? [&#x27;moo&#x27;] 
 w.tell(&#x27;@f ex.frame name=x.make act=make priority=1\n@a ex.part frame=x.make at=1 is=word word=zap\n@b ex.part frame=x.make at=2 is=role role=thing takes=words&#x27;);
 print(readFrames(w, &#x27;zap a tree&#x27;, { lang: &#x27;ex&#x27; }).best.act);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>make</code></pre></figure>
+<h2 id="sum-a-list-total-change-what-is-left">Sum a list: total, change, what is left</h2>
+<p><em>In <code>listSums</code>, <code>listMeant</code>; since 0.126.</em> <em>Works on: a list world (w.list) and an application's prices.</em></p>
+<p>A shopping list's total (quantity × price per entry), the change from the money handed over, what is short, what is left of a budget, and whether it can be bought, all computed when asked and never stored. A request that names no list means the one made last. Real turns: "I want a puzzle and I pay 10 lei. What is the change?", "I want 2 pencils and I give the cashier 10 lei". <strong>Limits:</strong> prices are the application's (no knowledge world holds prices); an entry with no price leaves the total unknown, never guessed.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(&#x27;@l lst name=shop tendered=20\n@a ent text=ball list=$l price=9\n@b ent text=pencil list=$l price=2&#x27;);
+print(listSums(w, &#x27;l&#x27;, { itemType: &#x27;ent&#x27; }).change);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>9</code></pre></figure>
 <h2 id="build-the-typed-world-of-a-world">Build the typed world of a world</h2>
 <p><em>In <code>typedWorldFor</code>, <code>schemaOf</code>, <code>fitsSlot</code>, <code>freeTextType</code>; since 0.114.</em> <em>Works on: a world's schema (a World, or a host's description of its kinds and keys) and the knowledge its slots join.</em></p>
 <p>The typed readers need typed facts. A world made of patterns and a matrix gets them from its schema and the knowledge it joins: kinds and keys with their words, closed sets, the joined things, the session's things, and a type for every free-text slot. A slot then refuses words that do not fit it, such as a relation read as an instrument's name. <strong>Limits:</strong> a free-text slot's type is guessed from its key unless the host names it; a join must be named by the schema or the host.</p>
@@ -412,7 +419,7 @@ print(serialize([w1]).trim(), quantity(&#x27;2kg&#x27;), STAGES.length &gt; 3);<
 <div class="table"><table><thead><tr><th>PSys2 package</th><th>here</th><th>PSys2 lines it replaces</th><th>refused (stays in the host)</th><th>since</th></tr></thead><tbody><tr><td>knowledge-loader</td><td><code>createCatalog</code>, <code>bundleReader</code>, <code>tools/build-bundle.mjs</code></td><td>254 (catalog 105, cache 52, source 20, bundle loader 20, bundle generator 57)</td><td>English lemma rules (the host passes <code>lemma</code>), decoding k.objects parts for drawing, the avatar's faces, the evaluation-set generator; taught facts are the act <code>teach</code></td><td>since 0.23</td></tr><tr><td>turn-pipeline</td><td><code>turn</code> (dry run on a fork, all or nothing, diff, why, guesses, replies, graded fallback)</td><td>the dry-run protocol, all-or-nothing holds and graded fallback (estimated 120 + 350 of its 900 general lines)</td><td>the reading of English, the per-turn tick budget wiring (the library has its own budgets), translation, the encoder accept rule</td><td>since 0.24</td></tr><tr><td>meta.worlds</td><td><code>route</code> (cards, referents, a dry run, a host signal)</td><td>its routing rules (the cards stay generated by the host)</td><td>the tab registry and the generated cards of one application</td><td>since 0.24</td></tr><tr><td>failure-ledger</td><td><code>ledgerAppend</code>, <code>ledgerGroups</code>, <code>stageOf</code>, <code>tools/ledger.mjs</code></td><td>the format, append and counting (of its 160 generator lines)</td><td>its cause-signal list and the replay of its own evaluation scripts</td><td>since 0.25</td></tr><tr><td>acts, session.things, session.dialogue, common.sense, space</td><td>compared (questions.md Q30): already covered by std.schema, std.acts, views, std.focus, <code>turn</code>, <code>createCatalog</code>; missing: a per-kind act hook, space selection and layouts, overlap enforcement, a turn log, pieces</td><td>—</td><td>English forms and readers, its tabs' words, facts (to sop-knowledge-worlds)</td><td>—</td></tr></tbody></table></div>
 <p class="source">Generated from <code>docs/capabilities.md</code>.</p>
 </main>
-<footer>sopworld 0.125.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.126.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

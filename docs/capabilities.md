@@ -869,6 +869,28 @@ print(readFrames(w, 'zap a tree', { lang: 'ex' }).best.act);
 make
 ```
 
+## Sum a list: total, change, what is left
+
+*In `listSums`, `listMeant`; since 0.126.*
+*Works on: a list world (w.list) and an application's prices.*
+
+A shopping list's total (quantity × price per entry), the change from the money handed over,
+what is short, what is left of a budget, and whether it can be bought, all computed when asked
+and never stored. A request that names no list means the one made last. Real turns: "I want a
+puzzle and I pay 10 lei. What is the change?", "I want 2 pencils and I give the cashier 10 lei".
+**Limits:** prices are the application's (no knowledge world holds prices); an entry with no
+price leaves the total unknown, never guessed.
+
+```js run
+const w = new World();
+w.tell('@l lst name=shop tendered=20\n@a ent text=ball list=$l price=9\n@b ent text=pencil list=$l price=2');
+print(listSums(w, 'l', { itemType: 'ent' }).change);
+```
+
+```output
+9
+```
+
 ## Build the typed world of a world
 
 *In `typedWorldFor`, `schemaOf`, `fitsSlot`, `freeTextType`; since 0.114.*

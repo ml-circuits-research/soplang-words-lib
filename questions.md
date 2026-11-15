@@ -366,3 +366,11 @@ Finding 10 (turn / turnFlow, route / arbitrate): agreed; PSys2 has its own route
 `arbitrate` only in a comment (src/formalizer/routing.mjs:44), so the merge can drop the library's `turn`
 and `route` without a deprecation. Choice taken: next release, with the "open tab" criterion made a host
 criterion (R3), since both touch std.decide kind `world`.
+
+## Q71 (architecture review finding 15): one clause splitter, with R3
+
+The five splitters (canonicalise, splitRunOn, segment, sentencesOf, storyState's) differ mostly in their cut
+words (joiners, openers, fillers, sentence ends), which are language: the fix is one `clauses(world, text)` whose
+cut points are language-world facts. That is R3's work (knowledge out of src/), and R3 asks the knowledge
+repository for the facts. Choice taken: the splitter merges in R3, together with the cut words; L3 (real rows)
+goes first, as 11:35 orders.

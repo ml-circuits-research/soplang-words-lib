@@ -5467,3 +5467,13 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - readFrames, relatedCases (stratification and final order), alignWorlds through choose kinds frame, related,
   alignment (src/decide.mjs); `veto` export removed (PSys2 calls world.veto through its own code, never lib.veto).
 - Gate: npm test 510 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+- test:full after R2 parts 1-6: 510 / 510 / 507, 0 fail.
+
+## 0.126.0 — L3: list sums (real turns r0598, r0599, r0622, r0624, r0625, r0627)
+
+- repos.pin knowledge -> b20eeeb (w.list v3 with sort/budget/tendered/currency/price; the î fold of Q69).
+- listSums / listMeant (src/lists.mjs). /tmp/ls.mjs with a toy price list (puzzle 7, pencil 2, ball 9) on the
+  published w.list: r0598/r0624 change 3; r0599/r0627 (2 pencils, 10 lei) change 6; r0622/r0625 (ball + pencil,
+  20 lei) change 9; 5 lei for a ball: short 4. The prices are PSys2's shop data, so PSys2 measures the rows.
+- Q71: the clause splitter merges in R3 with the cut words.
+- Gate: npm test 512 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.

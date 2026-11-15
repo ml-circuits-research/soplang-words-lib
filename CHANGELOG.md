@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.126.0
+
+L3 of the reviewer's 09:20 block (list acts; real turns r0598, r0599, r0622, r0624, r0625, r0627),
+on w.list v3. The knowledge pin moves to b20eeeb.
+
+### New
+- `listSums(world, list, { priceOf })`: total (quantity × price), change, short, left, affordable,
+  computed and never stored; no total guessed when a price is missing.
+- `listMeant(world, { name, sort })`: the list a request means when it names none.
+
 ## 0.125.0
 
 R2, sixth part (architecture review finding 14): every choosing sort through `choose`.

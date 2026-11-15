@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="aabe0f12a0f8">
+<meta name="source-hash" content="58ee27f0c669">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.125.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.126.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -598,6 +598,12 @@ print(fitsSlot(t, &#x27;ex.player&#x27;, &#x27;instrument&#x27;, &#x27;the violi
 w.tell(&#x27;@f ex.frame name=x.make act=make priority=1\n@a ex.part frame=x.make at=1 is=word word=zap\n@b ex.part frame=x.make at=2 is=role role=thing takes=words&#x27;);
 print(readFrames(w, &#x27;zap a tree&#x27;, { lang: &#x27;ex&#x27; }).best.roles.thing.text);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>a tree</code></pre></figure>
+<h3 id="listsumsworld-list-options-and-listmeantworld-options">listSums(world, list, options?) and listMeant(world, options?)</h3>
+<p>The sums of a list, computed and never stored (w.list: the total, what is left, the change, whether it can be bought). <code>listSums(world, list, { itemType, link, priceOf, all })</code> gives <code>{ list, entries: [{ id, text, quantity, price, amount }], total, missing, currency, budget?, left?, affordable?, tendered?, change?, short?, why? }</code>. An entry's amount is its quantity (1 when none) times its price (its own, else <code>priceOf(entry)</code>: prices are the application's data). Only open entries count unless <code>all</code>. <code>change</code> is tendered − total, <code>short</code> is what is missing when less was handed over, and <code>left</code> is budget − total. When an entry has no price, the total is not guessed: <code>total</code> is null with <code>why</code>. <code>listMeant(world, { type, name, sort })</code> is the list a request means when it names none: the one called <code>name</code>, else the one made last. The types and keys default to w.list's (<code>w.list.list</code>, <code>w.list.item</code>, <code>list</code>). Why a value is so ("why is the milk done?") is <code>world.why(id, key)</code>.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.tell(&#x27;@l lst name=shop tendered=10\n@a ent text=puzzle list=$l price=7&#x27;);
+print(listSums(w, &#x27;l&#x27;, { itemType: &#x27;ent&#x27; }).change);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>3</code></pre></figure>
 <h3 id="composeworld-topic-options-and-interestofworld-fact-options">compose(world, topic, options?) and interestOf(world, fact, options?)</h3>
 <p>A composition of a genre about a topic, from knowledge, with no model (std.compose, first version). The genre gives the moves of a section (<code>k.genres.genre name= move=...</code>): the first opens, the last closes, the middle ones take turns. The outline is the topic's relations: the facts that name it, grouped by type. Relations that can fill a chapter come first, then the most interesting. Every sentence cites its wire, and no fact is used twice. The size <code>{ chapters, sections, sentences }</code> is a budget set before selection; what the knowledge cannot fill is listed in <code>short</code>. The output is frames (<code>{ move, fact, about, cites }</code>) for the language world to realise (<code>realise(frame)</code>).</p>
 <p><code>interestOf</code> is the arithmetic of the world's <code>k.interest</code> (published by the knowledge repository): each feature adds <code>weight × share</code> to its appraisal, by its shape over a measure, and the score is novelty × coping × relevance − penalty. A weight is the middle of its range, or drawn inside it with <code>draw: seed</code>. The library computes the measures it can from facts (<code>measuresOf</code>): world and topic distance by joins of names, contrast with siblings, distance from the typical range, extremes, numbers with units, animacy, obviousness, said before, the same move again, items since the last point. The host gives the rest, or overrides any, in <code>measures</code>. Without a <code>k.interest</code> model the score is 0, with <code>why</code>.</p>
@@ -1113,7 +1119,7 @@ print(Object.keys(solvers));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.125.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.126.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

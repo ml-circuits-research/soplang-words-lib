@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld What the library can do</title>
-<meta name="source-hash" content="71e2cfd016c6">
+<meta name="source-hash" content="bc6b6e9e44ae">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -361,7 +361,7 @@ print(judgeOnRelated((t) =&gt; (t === &#x27;cow sound&#x27; ? [&#x27;moo&#x27;] 
 <figure class="code"><figcaption>prints</figcaption><pre><code>0</code></pre></figure>
 <h2 id="read-a-language-by-its-frames">Read a language by its frames</h2>
 <p><em>In <code>readFrames</code>, <code>senseOf</code>; since 0.115.</em> <em>Works on: a language world with frames, parts, closed classes and std.morph morphology (w.lang.ro), and its lemma dictionary.</em></p>
-<p>A request in another language is read straight into the act and roles of the reference language: "deseneaza doua case" is <code>make</code>, amount 2, thing house. The parts are matched in order, verbs by the act of their lemma's sense, nouns and adjectives through the morphology and the dictionary, so forms typed without diacritics read too. <strong>Limits:</strong> a word missing from the language's dictionary stays as typed; lists ("a house and three clouds") are one role. On PSys2's 161 real Romanian turns glossed by hand (<code>node tools/bench-ro-frames.mjs</code>): 58 % read by a frame, 46 % with the right act, 24 % with the right act and thing, mostly limited by the dictionary's 256 lemmas.</p>
+<p>A request in another language is read straight into the act and roles of the reference language: "deseneaza doua case" is <code>make</code>, amount 2, thing house. The parts are matched in order, verbs by the act of their lemma's sense, nouns and adjectives through the morphology and the dictionary, so forms typed without diacritics read too. <strong>Limits:</strong> a word missing from the language's dictionary stays as typed; lists ("a house and three clouds") are one role. On PSys2's 161 real Romanian turns glossed by hand (<code>node tools/bench-ro-frames.mjs</code>): 65 % read by a frame; of the 121 glosses with an act, 75 % read with the right act and 68 % with the right act and thing (40 glosses have no verb to compare).</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
 w.tell(&#x27;@f ex.frame name=x.make act=make priority=1\n@a ex.part frame=x.make at=1 is=word word=zap\n@b ex.part frame=x.make at=2 is=role role=thing takes=words&#x27;);
 print(readFrames(w, &#x27;zap a tree&#x27;, { lang: &#x27;ex&#x27; }).best.act);</code></pre></figure>

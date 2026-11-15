@@ -856,8 +856,8 @@ order, verbs by the act of their lemma's sense, nouns and adjectives through the
 and the dictionary, so forms typed without diacritics read too.
 **Limits:** a word missing from the language's dictionary stays as typed; lists ("a house and
 three clouds") are one role. On PSys2's 161 real Romanian turns glossed by hand (`node
-tools/bench-ro-frames.mjs`): 58 % read by a frame, 46 % with the right act, 24 % with the
-right act and thing, mostly limited by the dictionary's 256 lemmas.
+tools/bench-ro-frames.mjs`): 65 % read by a frame; of the 121 glosses with an act, 75 % read
+with the right act and 68 % with the right act and thing (40 glosses have no verb to compare).
 
 ```js run
 const w = new World();

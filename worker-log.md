@@ -5635,3 +5635,11 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Kit side effect: "I want the house next to the tree" is now a wish, not a statement, so the lists app's entries
   binding reads it as an item (text as written).
 - Gate: npm test 534 pass / 0 fail; pilot same; psys2=0; scan clean; tsc ok.
+
+## bench-ro-frames scoring (reviewer 14:45 b, the knowledge worker's faults)
+
+- A gloss verb with several acts (make: make, change) accepts any of them (it was mapped to change only); a gloss with
+  no verb ("more to the right", 40 of 161) has no act to compare and is not counted wrong (reported apart, `noref`);
+  a plural compares by every singular it may come from (crocodiles → crocodile, not only crocodil).
+- `node tools/bench-ro-frames.mjs` at pin 2a3edf3: read 104/161 (65 %); act right 91/121 (75 %) of the glosses with an
+  act; act and thing right 82/121 (68 %). docs/capabilities.md updated.

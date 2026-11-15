@@ -23,27 +23,28 @@ const twoDicts = !process.argv.includes('--hand'); // the hand dictionary (with 
 const d = dictionary({ read: twoDicts ? [file('dictionary'), file('dictionary-unimorph')] : file('dictionary'), fold: (s) => fold(m, s) });
 
 // the reference meaning of an English gloss: the act of its first verb that k.actions knows, and its content words
-const verbs = new Map(); for (const v of w.ofType('k.actions.verb')) { const t = String(v.attrs.text[0]).replace(/^"|"$/g, ''); if (!verbs.has(t)) verbs.set(t, String(v.attrs.act[0]).replace(/^"|"$/g, '')); }
+// a verb may say several acts (make: make and change): the gloss's act is any of them (knowledge worker, 14:45 b)
+const verbs = new Map(); for (const v of w.ofType('k.actions.verb')) { const t = String(v.attrs.text[0]).replace(/^"|"$/g, ''); (verbs.get(t) ?? verbs.set(t, new Set()).get(t)).add(String(v.attrs.act[0]).replace(/^"|"$/g, '')); }
 const STOP = new Set('a an the one some and of to on in at with it me my i you your please more less bit little very this that these those be is are was'.split(' '));
-const stem = (x) => x.replace(/'s$/, '').replace(/(ies)$/, 'y').replace(/(es|s)$/, '');
-const refOf = (en) => { const ws = en.toLowerCase().match(/[a-z']+/g) || []; const vi = ws.findIndex((x) => verbs.has(x)); return { act: vi >= 0 ? verbs.get(ws[vi]) : null, words: new Set(ws.filter((x, i) => i !== vi && !STOP.has(x)).map(stem)) }; };
+const forms = (x) => { const b = x.replace(/'s$/, ''); return [b, b.replace(/ies$/, 'y'), b.replace(/es$/, ''), b.replace(/s$/, '')]; }; // every singular a plural may come from: crocodiles -> crocodile, not only crocodil
+const refOf = (en) => { const ws = en.toLowerCase().match(/[a-z']+/g) || []; const vi = ws.findIndex((x) => verbs.has(x)); return { acts: vi >= 0 ? verbs.get(ws[vi]) : null, words: new Set(ws.filter((x, i) => i !== vi && !STOP.has(x)).flatMap(forms)) }; };
 
 const rows = ro.filter((r) => gold.has(r.id) && r.text);
-let read = 0, act = 0, both = 0, refActs = 0;
+let read = 0, act = 0, both = 0, refActs = 0, noVerb = 0;
 const lines = [];
 for (const r of rows) {
   const ref = refOf(gold.get(r.id)), got = readFrames(w, r.text, { morph: m, dictionary: d }).best;
-  if (ref.act) refActs++;
+  if (ref.acts) refActs++; else noVerb++;
   if (!got) { lines.push(`-     ${r.text}  ||  ${gold.get(r.id)}`); continue; }
   read++;
-  const actOk = ref.act !== null && got.act === ref.act;
-  const thing = got.roles.thing?.words?.map((x) => x.en).filter(Boolean).map((x) => stem(x.split(' ').pop())) ?? [];
+  const actOk = !!ref.acts && ref.acts.has(got.act); // a gloss with no verb ("more to the right") has no act to compare: not counted wrong
+  const thing = got.roles.thing?.words?.map((x) => x.en).filter(Boolean).flatMap((x) => forms(x.split(' ').pop())) ?? [];
   const thingOk = !got.roles.thing || thing.some((x) => ref.words.has(x));
   if (actOk) act++;
   if (actOk && thingOk) both++;
-  lines.push(`${actOk && thingOk ? 'ok   ' : actOk ? 'act  ' : 'wrong'} ${r.text}  ->  ${got.act} ${Object.entries(got.roles).map(([k, v]) => `${k}=${v.en ?? v.value ?? v.item ?? v.rel}`).join(' ')}  ||  ${gold.get(r.id)}`);
+  lines.push(`${actOk && thingOk ? 'ok   ' : actOk ? 'act  ' : ref.acts ? 'wrong' : 'noref'} ${r.text}  ->  ${got.act} ${Object.entries(got.roles).map(([k, v]) => `${k}=${v.en ?? v.value ?? v.item ?? v.rel}`).join(' ')}  ||  ${gold.get(r.id)}`);
 }
 const pct = (x, n) => `${x}/${n} (${n ? Math.round((100 * x) / n) : 0} %)`;
 console.log(`real Romanian turns with a gloss: ${rows.length}; glosses with an act k.actions knows: ${refActs}`);
-console.log(`read by a frame: ${pct(read, rows.length)}; act right: ${pct(act, rows.length)}; act and thing right: ${pct(both, rows.length)}`);
+console.log(`read by a frame: ${pct(read, rows.length)}; act right: ${pct(act, refActs)} of the glosses with an act (${noVerb} glosses have no verb); act and thing right: ${pct(both, refActs)}`);
 if (process.argv.includes('--rows')) console.log(lines.join('\n'));

@@ -1147,7 +1147,13 @@ the host's open classes (nouns, adjectives: the grammar owns none); `digits: 'NU
 digits as that category. In a rule, a lower-case or quoted part is a literal word,
 `[all|each]` is one of several, a rule with `status=hole` is skipped, and `head=` names the
 part the phrase is about. A text with `_` (`next_to`) is a word of several parts, read as
-one token; `'s` is a token of its own. A left-recursive rule (`NP -> NP PP`) grows the
+one token; `'s` is a token of its own. Optional host lexical `origin` strings are carried to parse leaves, keeping distinct
+source senses from being deduplicated; they do not become semantic features. A
+`productions` option supplies an authoritative array of `{id, attrs}` rule records
+instead of reading rule wires from the world. Each record uses the existing
+`lhs`/`rhs` (and optional `head`/`priority`/`status`) token-array attributes. It is not
+merged with ambient rules. Explicit `types.word: null` and `types.coord: null` disable
+ambient words and coordination, respectively. A left-recursive rule (`NP -> NP PP`) grows the
 phrases found so far.
 
 The result also says `tokens`, `unknown` (the words no lexicon entry, literal or digit
@@ -1231,6 +1237,84 @@ print([np.rule, np.head, np.pp[0].words, parseText(w, 'the moon', { start: 'NP',
 
 ```output
 ["r2","star",["next to","the","house"],[{"word":"moon","at":1}]]
+```
+
+### compileGrammarOverlay(world, options?)
+
+Compiles a loaded SOP declaration module into explicit grammar options and semantic
+composition templates. The caller supplies all eight type identities in `types`:
+`binding`, `feature`, `filter`, `rule`, `map`, `node`, `step`, `agreement`. These roles
+have fixed field names; the compiler contains no language or domain vocabulary.
+
+| Role | Fields | Meaning |
+| --- | --- | --- |
+| binding | name, source_type, text_key, cat; optional source_id | Select a loaded vocabulary provider and lexical category. |
+| feature | binding, key; exactly one of from_key/value | Copy a provider value or supply an explicit constant. |
+| filter | binding, key, value | Conjunctive equality filter on provider values. |
+| rule | name, lhs, repeated rhs | Ordered category production. |
+| map | name, root; exactly one of rule/cat | Assign a template to a production or lexical category. |
+| node | name, kind; optional parent plus field/index, value | Object, array, copy, literal or null template node. |
+| step | of, at; exactly one of key/index | Ordered component of a copy path. |
+| agreement | rule, left, right | Two copy roots that must agree before production composition. |
+
+All fields are single-valued except `rule.rhs`. Unknown fields are rejected except
+`core.*` metadata. References use declaration names; production mappings compile to
+actual wire IDs. Categories are ASCII identifiers beginning with an uppercase
+letter, followed by letters, digits, `_`, `.` or `-`. Each RHS entry names a declared
+production or provider category. This compiler subset uses explicit productions;
+implicit literal RHS words, repetition and optional markers are not accepted.
+
+A copy node has a nonempty, consecutive zero-based path, rooted at `node` or
+`children`. Object children attach through distinct fields; array children through
+consecutive zero-based indices. Reserved template fields `$get`/`$literal` are not
+ordinary object fields. Every root has no parent. Cycles, orphans, duplicate
+identities/fields/indices/steps, unsupported node kinds, incomplete declarations,
+missing mappings and invalid agreement operands fail before a result is returned.
+SOP scalar values use `valueText`: quoted strings are decoded, atoms remain strings,
+including numeric- or boolean-looking atoms. Only `at`/`index` decode integers;
+`kind=null` explicitly produces JSON null. No value coercion is inferred.
+
+Each binding must emit at least one lexical entry. `source_id` restricts every
+provider, including `core.word`. Filters match repeated source values existentially;
+when filtering the text key, only matching aliases are emitted. Copied text-key
+features stay paired with that alias. Other repeated feature values produce bounded
+alternatives. Missing text/features in matching providers fail closed. Different
+source identities remain alternatives even if their semantic features agree.
+
+The result is `{ok:false, issues:[{reason,id?}]}` on failure. On success it contains
+`grammar` options for `parseText`, `composition` options for `composeParses`, and a
+`provenance` table indexed by scalar lexical `origin` IDs. Provenance records the
+provider/binding wire identities and available `core.*`, `source`, `license`
+attributes; it does not invent a licence absent from the loaded data. Source ranges
+remain the parser's opt-in original Unicode evidence.
+
+`grammar.productions` is a detached normalized snapshot. `source.world` is the exact
+input world instance and `source.stamp` its rollback-restored mutation stamp at compilation.
+A consuming reader must check **both** before using cached results; a package
+version, `world.version` (which does not advance on all schema edits), a similarly
+stamped independent world, or the snapshot alone is not a
+freshness check. No world is changed by compilation. Defaults are 100000 compiler
+steps and maximum template depth 64 (range 1–256); budget exhaustion returns no
+partial successful compilation. Compilation validates declarations, not semantic
+truth, legend concept resolution, property applicability or executable requests.
+
+```js
+const w = new World();
+w.load(`@b x.binding name=names source_type=toy.item text_key=text cat=N
+@f x.feature binding=names key=kind from_key=kind
+@r x.rule name=message lhs=M rhs=N
+@mr x.map name=message rule=message root=message @ml x.map name=lexical cat=N root=lexical
+@nr x.node name=message kind=copy @sr0 x.step of=message at=0 key=children @sr1 x.step of=message at=1 index=0
+@nl x.node name=lexical kind=copy @sl0 x.step of=lexical at=0 key=node @sl1 x.step of=lexical at=1 key=feat
+@word toy.item text=ko kind=vessel`);
+const types = Object.fromEntries(['binding','feature','filter','rule','map','node','step','agreement'].map(role => [role, 'x.' + role]));
+const c = compileGrammarOverlay(w, { types });
+const p = parseText(w, 'ko', { ...c.grammar, start: 'M' });
+print(c.ok, composeParses(p, c.composition).candidates[0].value);
+```
+
+```output
+true {"kind":"vessel"}
 ```
 
 ### composeParses(parses, options?)

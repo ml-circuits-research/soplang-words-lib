@@ -2043,3 +2043,13 @@ using structural JSON equality without type coercion. Missing bindings fail
 explicitly, and bounded evaluation reports truncation. This
 produces interpretation proposals, not proof of meaning or instance resolution.
 See [the API and runnable example](api.md#composeparsesparses-options).
+
+
+### compileGrammarOverlay
+
+Compiles explicitly named SOP declaration roles into a detached grammar snapshot,
+lexical entries with source identities, composition templates and equality guards.
+Provider filters, repeated-value alternatives, template graph integrity and missing
+providers are checked without language or domain vocabulary in the mechanism.
+Compilation is bounded and fails as a whole. Consumers must bind cached compilation
+to its exact source world and fact/schema revision; see [the API contract](api.md#compilegrammaroverlayworld-options).

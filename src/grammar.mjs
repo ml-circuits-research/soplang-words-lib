@@ -19,22 +19,22 @@ import { grammarSource, GRAMMAR_WORDS } from './grammar-source.mjs';
  * and the open classes come from the host (`lexicon: { word: [{ cat, lemma }] }`). In a
  * rule, a lower-case part or a quoted one is a literal word and `[a|b]` is one of several.
  */
-export function grammarOf(world, { types = {}, classes = {}, lexicon = {}, digits } = {}) {
+export function grammarOf(world, { types = {}, classes = {}, lexicon = {}, digits, productions } = {}) {
   const T = { rule: 'g.rule', word: 'g.word', coord: 'g.coord', ...types };
   const lex = new Map(), rules = new Map(), coord = new Set();
   const unq = (t) => valueText(t).replace(/_/g, ' '); // next_to is the words next to
   const addWord = (text, e) => { const t = unq(text).toLowerCase(); (lex.get(t) || lex.set(t, []).get(t)).push(e); };
   for (const w of world.ofType(T.word)) for (const t of w.attrs.text || []) addWord(t, { cat: w.attrs.cat[0], lemma: w.attrs.lemma?.[0] ?? unq(t).toLowerCase(), feat: Object.fromEntries(Object.entries(w.attrs).filter(([k]) => !['text', 'lemma', 'cat'].includes(k) && !k.startsWith('core.')).map(([k, v]) => [k, v[0]])) });
   for (const [cat, type] of Object.entries(classes)) for (const w of world.ofType(type)) for (const t of w.attrs.text || []) addWord(t, { cat, lemma: unq(w.attrs.value?.[0] ?? t).toLowerCase(), feat: Object.fromEntries(Object.entries(w.attrs).filter(([k]) => !['text', 'in', 'note', 'doc'].includes(k) && !k.startsWith('core.')).map(([k, v]) => [k, v[0]])) });
-  for (const [word, es] of Object.entries(lexicon)) for (const e of [].concat(es)) addWord(word, { cat: e.cat, lemma: e.lemma ?? word.toLowerCase(), feat: e.feat || {} });
+  for (const [word, es] of Object.entries(lexicon)) for (const e of [].concat(es)) addWord(word, { cat: e.cat, lemma: e.lemma ?? word.toLowerCase(), feat: e.feat || {}, ...(e.origin !== undefined ? { origin: e.origin } : {}) });
   for (const w of world.ofType(T.coord)) for (const t of [...(w.attrs.word || []), ...(w.attrs.text || [])]) coord.add(unq(t).toLowerCase()); // word= or text= (a language world's coord.sep)
   const add = (lhs, rhs) => (rules.get(lhs) || rules.set(lhs, []).get(lhs)).push(rhs);
-  for (const w of world.ofType(T.rule)) {
+  for (const w of productions ?? world.ofType(T.rule)) {
     if (w.attrs.status?.[0] === 'hole') continue; // a rule the grammar marks as not yet read
     const lhs = w.attrs.lhs[0];
     let variants = [[]];
     for (const raw of w.attrs.rhs || []) { // bounded: the parts of one rule (2^optional variants)
-      const item = unq(raw);
+      const item = productions && /^[A-Z]/.test(raw) ? raw : unq(raw); // compiled category identifiers are already decoded; underscores are not word separators
       const m = /^(.+?)([?*+])?$/.exec(item), mark = m[2];
       let base = m[1];
       if (/^\[.*\]$/.test(base)) base = `=${base.slice(1, -1).split('|').map((x) => x.trim().toLowerCase()).join('|')}`; // one of several words
@@ -91,7 +91,7 @@ export function parseText(world, text, { start = 'S', max = 8, budget = 20000, a
     const out = [];
     if (i < tok.length && cat.startsWith('=')) { if (cat.slice(1).split('|').includes(tok[i])) out.push({ end: i + 1, at: { cat, span: [i, i + 1], word: tok[i], lemma: tok[i] } }); active.delete(key); memo.set(key, out); return out; } // a literal word
     if (i < tok.length && cat === g.digits && /^\d+$/.test(tok[i])) out.push({ end: i + 1, at: { cat, span: [i, i + 1], word: tok[i], lemma: tok[i], feat: { value: Number(tok[i]) } } }); // digits, when the grammar names their category
-    if (i < tok.length) for (const e of g.lex.get(tok[i]) || []) if (e.cat === cat) out.push({ end: i + 1, at: { cat, span: [i, i + 1], word: tok[i], lemma: e.lemma, ...(Object.keys(e.feat).length ? { feat: e.feat } : {}) } });
+    if (i < tok.length) for (const e of g.lex.get(tok[i]) || []) if (e.cat === cat) out.push({ end: i + 1, at: { cat, span: [i, i + 1], word: tok[i], lemma: e.lemma, ...(Object.keys(e.feat).length ? { feat: e.feat } : {}), ...(e.origin !== undefined ? { origin: e.origin } : {}) } });
     const own = (g.rules.get(cat) || []).filter((rhs) => rhs[0] !== cat), left = (g.rules.get(cat) || []).filter((rhs) => rhs[0] === cat);
     for (const rhs of own) { // bounded: the rules of one category
       let partial = [{ end: i, children: [] }];

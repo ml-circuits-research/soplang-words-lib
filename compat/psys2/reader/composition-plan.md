@@ -47,3 +47,21 @@ The knowledge adapter still needs to resolve symbolic rule names to actual produ
 wire IDs and compile agreement-node references to templates. This mechanism change
 alone does not make the pending English overlay an executable reader or resolve
 instances in a domain world.
+
+## Validated SOP overlay compiler
+
+The generic compiler reads all eight declaration roles through caller-supplied type
+identities. It emits an authoritative, decoded production snapshot, lexical entries
+with scalar origin IDs, detached source provenance, semantic templates and equality
+guards. Every declared provider must be available; source identity restrictions and
+text filters apply uniformly. Repeated semantic fields remain bounded alternatives,
+and text-key features stay paired with their emitted aliases. No domain vocabulary
+is copied into the library.
+
+The first integration pins the published knowledge declarations at `1c4f32ea` and
+checks both declared value domains. It is still a compiler milestone, not an instance
+resolver or a request execution path. Compilation is bound to the exact source World
+and its rollback-restored `stamp`: inspection found that `world.version` alone does
+not change on every schema-only edit. The subsequent bridge must reject stale or
+foreign-world compilation, preserve unresolved alternatives and account for ignored
+source gaps through an explicit language policy.

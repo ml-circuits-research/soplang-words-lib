@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.201.0
+
+- Retain validated request graph revisions and explicit node changes against an exact historical parent. Existing source text identities cannot be overwritten; no fragment interpretation or execution is inferred.
+
 ## 0.200.0
 
 - Resolve request targets from explicit canonical snapshot populations, preserving ambiguity, unknown membership, named-target semantics and one/all cardinality policies. Reuses the three-valued selector evaluator without reading text or executing effects.

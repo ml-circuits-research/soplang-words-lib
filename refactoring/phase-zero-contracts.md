@@ -206,3 +206,7 @@ The shared evaluator traverses published result/selector, group/not and scoped q
 ### Increment 0.200.0 — explicit target population resolution
 
 Canonical snapshot populations, explicit one/all policies and the shared predicate evaluator now produce target resolutions with retained ambiguity/unknown choices. Named-target semantics are delegated explicitly and may not disappear when there is no selector. Result requirements remain separate. Canonical membership, semantic callback truth and population coverage remain trusted adapter declarations; this is not subtype inference, conversation resolution, ordinal selection or creation authority.
+
+### Increment 0.201.0 — explicit retained request corrections
+
+Validated initial request graphs and explicit put/remove corrections can now be retained against an exact historical parent. Existing source identities cannot be rewritten, old revisions remain immutable and invalid changes refuse before publication. This implements graph revision storage and validation, not turn classification, contextual referent selection or effect execution. Source/processing, per-graph validation and publication have independent finite budgets.

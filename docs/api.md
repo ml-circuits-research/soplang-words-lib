@@ -4865,3 +4865,36 @@ resolved
 ```
 
 A unique match resolves under policy one only when coverage is complete and no candidate remains unknown. Multiple known matches are ambiguous even in a partial population. Zero matches indicate absence only with complete coverage. Policy all retains known matches and resolves only with complete coverage. Structured clarification choices preserve historical instance/scope/version identity. A named target requires a declared target evaluator; matching only its kind cannot resolve its name. Result requirements never filter a target selection. New targets require creation, and bound targets remain inside lexical quantifier evaluation. No effects are performed.
+
+### retainRequestRevision(world, input, options?)
+
+Retains an initial schema-named request graph, or a new revision derived from an exact retained parent. Corrections contain explicit whole-node replacements/additions in `changes.put` and node IDs in `changes.remove`. The graph is validated before publication. Selecting the parent and interpreting the correction remain caller responsibilities.
+
+```js
+const w = new World();
+const literal = value => ({kind: 'literal', value});
+const r = {id: 'r', type: 'std.request', attrs: {
+  act: [literal('inspect')], mood: [literal('check')], source: [{kind: 'ref', value: 's'}]
+}};
+const graph = {request: 'r', nodes: [
+  {id: 's', type: 'std.request.source', attrs: {text: [{kind: 'string', value: 'invented'}]}}, r
+]};
+print(retainRequestRevision(w, {owner: 'toy.dialog', revision: '1', graph}).ok);
+const replacement = {...r, attrs: {...r.attrs, act: [literal('review')]}};
+const corrected = retainRequestRevision(w, {owner: 'toy.dialog', revision: '2',
+  base: {owner: 'toy.dialog', revision: '1'}, changes: {put: [replacement], remove: []}});
+print(corrected.ok);
+print(corrected.retained.definition.parent.revision);
+print(w.retainedRevision('toy.dialog', '1').definition.graph.nodes[1].attrs.act[0].value);
+```
+
+```output
+true
+true
+1
+inspect
+```
+
+Previous revisions are immutable. Existing source nodes cannot be overwritten with different text: add a new source identity and reference it explicitly. Unknown removals, contradictory changes, dangling ownership and invalid resulting graphs refuse without publishing a revision. The request root identity remains unchanged in a derived revision. Cross-owner branches are explicit historical links, not permission to edit another actor's live state.
+
+`budget` bounds copying and revision processing; `graphBudget` bounds each serializer invocation independently; `retentionBudget` bounds retained publication. They are separate finite caps, not a single aggregate work count. `dry` validates and returns an ephemeral retained record. Reusing an owner/revision with different contents refuses; this function does not modify live request facts, infer a dialogue correction or publish evidence of execution.

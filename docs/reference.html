@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="6e321ca4efc6">
+<meta name="source-hash" content="c4408143f47d">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.200.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.201.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html" aria-current="page">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -798,9 +798,12 @@ print(builtins.time_add([&#x27;10:40&#x27;, &#x27;35min&#x27;]), builtins.div([&
 <p><code>resolveRequestTargets</code> selects from populations keyed by request target identity. A population names the exact canonical kind and its historical instance/scope/version; each subject retains source, source type, typed native ID and revision. Canonical membership and completeness are trusted assertions from the declared adapter. The resolver does not infer subtyping, ordinals or a focus from strings.</p>
 <p>Selectors use the existing three-valued predicate evaluator. The resolver never applies requested result predicates as selectors. A separate target callback evaluates declared descriptor semantics such as a name; without that callback a named target remains unknown. Under policy one, two known matching subjects establish ambiguity even when a population is incomplete. One known match still needs complete coverage with no unknown candidate to establish uniqueness. Policy all preserves known members but cannot claim an exhaustive result from partial coverage.</p>
 <p>Each target reports a resolved, ambiguous, missing, unknown, requires-creation or lexically-bound status. Structured clarification records retain historical choices without inventing user-facing wording. A successful computation is not a promise that every target resolved. One finite budget covers schema checks, callbacks, copied evidence and every repeated selector evaluation. Public world mutation invalidates the whole operation. No result authorizes an effect, creates an object or replaces an authenticated journal assessment.</p>
+<h2 id="immutable-request-graph-revisions">Immutable request graph revisions</h2>
+<p><code>retainRequestRevision</code> supplies the version-preserving part of request correction. Initial graphs use the published serializer representation. A derived revision names an exact retained owner/revision and a list of whole-node put/remove changes. Unmentioned nodes remain unchanged, the root keeps its identity and the complete resulting graph must validate before retention. Parent graphs remain available after branching and serialization/restoration.</p>
+<p>Source text identities are immutable within this operation: a correction adds a new source node instead of replacing historical source contents under the old ID. A new revision can reference both old and new sources, preserving provenance of unchanged and corrected predicates. The retained parent link records a structural history, not authenticated conversational authority. Choosing the prior request, interpreting a fragment, approving a default and executing a world change remain separate decisions. The mechanism never derives these decisions from words or array order.</p>
 <p class="source">Generated from <code>docs/reference.md</code>.</p>
 </main>
-<footer>sopworld 0.200.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.201.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

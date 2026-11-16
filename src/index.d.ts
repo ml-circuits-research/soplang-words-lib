@@ -963,3 +963,15 @@ export function resolveRequestTargets(world: World, request: string, options?: {
   evaluateTarget?: (input: Readonly<Record<string, unknown>>) => { truth: RequestTruth; evidence: unknown[]; reason?: string };
   evaluateConstraint?: (input: Readonly<Record<string, unknown>>) => { truth: RequestTruth; evidence: unknown[]; reason?: string };
 }): { ok: boolean; request: string | null; sourceStamp?: number; targets: Array<Record<string, unknown>>; steps: number; trust?: string; issues?: unknown[] };
+
+
+export type RequestRevisionIdentity = { owner: string; revision: string };
+export type RequestRevisionInput = RequestRevisionIdentity & (
+  { graph: { request: string; nodes: RequestGraphNode[] } } |
+  { base: RequestRevisionIdentity; changes: { put: RequestGraphNode[]; remove: string[] } }
+);
+/** Retain an explicit validated graph version, preserving its historical parent. */
+export function retainRequestRevision(world: World, input: RequestRevisionInput, options?: { budget?: number; graphBudget?: number; retentionBudget?: number; dry?: boolean }): {
+  ok: boolean; created: boolean; retained?: RetainedRevision; graph?: { request: string; nodes: RequestGraphNode[] }; wires?: string;
+  steps?: number; limits?: { copy: number; perGraph: number; retention: number }; issues?: { reason: string }[]; violations?: Array<Record<string, unknown>>;
+};

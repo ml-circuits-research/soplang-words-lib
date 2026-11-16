@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="1e6be4c1e146">
+<meta name="source-hash" content="c6a5ed83625b">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.200.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.201.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -1604,9 +1604,32 @@ print(result.targets[0].status);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true
 resolved</code></pre></figure>
 <p>A unique match resolves under policy one only when coverage is complete and no candidate remains unknown. Multiple known matches are ambiguous even in a partial population. Zero matches indicate absence only with complete coverage. Policy all retains known matches and resolves only with complete coverage. Structured clarification choices preserve historical instance/scope/version identity. A named target requires a declared target evaluator; matching only its kind cannot resolve its name. Result requirements never filter a target selection. New targets require creation, and bound targets remain inside lexical quantifier evaluation. No effects are performed.</p>
+<h3 id="retainrequestrevisionworld-input-options">retainRequestRevision(world, input, options?)</h3>
+<p>Retains an initial schema-named request graph, or a new revision derived from an exact retained parent. Corrections contain explicit whole-node replacements/additions in <code>changes.put</code> and node IDs in <code>changes.remove</code>. The graph is validated before publication. Selecting the parent and interpreting the correction remain caller responsibilities.</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>const w = new World();
+const literal = value =&gt; ({kind: &#x27;literal&#x27;, value});
+const r = {id: &#x27;r&#x27;, type: &#x27;std.request&#x27;, attrs: {
+  act: [literal(&#x27;inspect&#x27;)], mood: [literal(&#x27;check&#x27;)], source: [{kind: &#x27;ref&#x27;, value: &#x27;s&#x27;}]
+}};
+const graph = {request: &#x27;r&#x27;, nodes: [
+  {id: &#x27;s&#x27;, type: &#x27;std.request.source&#x27;, attrs: {text: [{kind: &#x27;string&#x27;, value: &#x27;invented&#x27;}]}}, r
+]};
+print(retainRequestRevision(w, {owner: &#x27;toy.dialog&#x27;, revision: &#x27;1&#x27;, graph}).ok);
+const replacement = {...r, attrs: {...r.attrs, act: [literal(&#x27;review&#x27;)]}};
+const corrected = retainRequestRevision(w, {owner: &#x27;toy.dialog&#x27;, revision: &#x27;2&#x27;,
+  base: {owner: &#x27;toy.dialog&#x27;, revision: &#x27;1&#x27;}, changes: {put: [replacement], remove: []}});
+print(corrected.ok);
+print(corrected.retained.definition.parent.revision);
+print(w.retainedRevision(&#x27;toy.dialog&#x27;, &#x27;1&#x27;).definition.graph.nodes[1].attrs.act[0].value);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true
+true
+1
+inspect</code></pre></figure>
+<p>Previous revisions are immutable. Existing source nodes cannot be overwritten with different text: add a new source identity and reference it explicitly. Unknown removals, contradictory changes, dangling ownership and invalid resulting graphs refuse without publishing a revision. The request root identity remains unchanged in a derived revision. Cross-owner branches are explicit historical links, not permission to edit another actor's live state.</p>
+<p><code>budget</code> bounds copying and revision processing; <code>graphBudget</code> bounds each serializer invocation independently; <code>retentionBudget</code> bounds retained publication. They are separate finite caps, not a single aggregate work count. <code>dry</code> validates and returns an ephemeral retained record. Reusing an owner/revision with different contents refuses; this function does not modify live request facts, infer a dialogue correction or publish evidence of execution.</p>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.200.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.201.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

@@ -14,7 +14,7 @@ const variant = definite => {
       { id: 'source', type: 'std.request.source', attrs: { text: [string({ $get: ['node', 'source', 'text'] })] } },
       { id: 'r', type: 'std.request', attrs: { act: [literal(get('act'))], mood: [literal(get('mood'))], source: [ref('source')], root: [ref('condition')] } },
       { id: 'target', type: 'std.request.target', attrs: { request: [ref('r')], mode: [literal(target.mode)], kind: [literal(target.kind)], ...(definite ? { determiner: [literal(target.determiner)] } : {}) } },
-      { id: 'condition', type: 'std.request.constraint', attrs: { request: [ref('r')], target: [ref('target')], concept: [literal(condition.concept)], operator: [literal(condition.operator)], value: [literal(condition.value)], character: [literal(condition.character)], polarity: [literal(condition.polarity)] } },
+      { id: 'condition', type: 'std.request.constraint', attrs: { request: [ref('r')], target: [ref('target')], concept: [literal(condition.concept)], operator: [literal(condition.operator)], value: [string(condition.value)], character: [literal(condition.character)], polarity: [literal(condition.polarity)] } },
     ],
     evidence: { command: get('evidence'), nodes: [{ id: 'condition', source: 'source', ranges: condition.evidence }] },
   };

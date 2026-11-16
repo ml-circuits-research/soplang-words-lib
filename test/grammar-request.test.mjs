@@ -18,7 +18,7 @@ test('declared generic property assignment becomes a checked request graph with 
  assert.equal(result.candidates.length,1,JSON.stringify(result));assert.equal(result.coverage.complete,true);
  const c=result.candidates[0],w=graph(c);assert.equal(inspectRequest(w,c.request).ok,true);
  assert.equal(valueText(w.get('source').attrs.text[0]),'Mo ko za.');assert.equal(w.get('target').attrs.mode[0],'existing');assert.equal(w.get('target').attrs.kind[0],'vessel');
- assert.equal(w.get('condition').attrs.value[0],'amber');assert.deepEqual([w.get('condition').attrs['source.start'][0],w.get('condition').attrs['source.end'][0]],['6','8']);
+ assert.equal(w.get('condition').attrs.value[0],JSON.stringify('amber'));assert.deepEqual([w.get('condition').attrs['source.start'][0],w.get('condition').attrs['source.end'][0]],['6','8']);
  assert.equal(c.coverage.terminal,'.');assert.equal(c.origins.length,3);assert.equal(world.wires.size,0);
 });
 
@@ -48,7 +48,7 @@ test('bridge refuses stale schema stamps and foreign worlds, retaining freshness
 test('disjoint lexical evidence remains disjoint, and serialization cannot inject extra wires',()=>{
  const f=fixture();f.compiled.grammar.lexicon['za zi']=f.compiled.grammar.lexicon.za;delete f.compiled.grammar.lexicon.za;
  const result=readGrammarRequests(f.world,'mo ko za zi',f.options);assert.equal(result.candidates.length,1,JSON.stringify(result));const c=result.candidates[0];assert.deepEqual(c.evidence.nodes[0].ranges,[[6,8],[9,11]]);assert.equal(graph(c).get('condition').attrs['source.start'],undefined);
- const x=fixture();x.compiled.grammar.lexicon.za.feat.value='odd "value"\n@injected bad';const answer=readGrammarRequests(x.world,'mo ko za',x.options);assert.equal(answer.candidates.length,0,'literal-token profile rejects token injection');
+ const x=fixture();x.compiled.grammar.lexicon.za.feat.value='odd "value"\n@injected bad';const answer=readGrammarRequests(x.world,'mo ko za',x.options);assert.equal(answer.candidates.length,1);const w=graph(answer.candidates[0]);assert.equal(w.get('injected'),undefined);assert.equal(valueText(w.get('condition').attrs.value[0]),'odd \"value\"\n@injected bad');
 });
 
 const direct = () => {

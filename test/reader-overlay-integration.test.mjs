@@ -32,10 +32,22 @@ test('published imperative family yields the owner development colour request an
   const result=readGrammarRequests(world,text,{compiled,...ENGLISH_REQUEST_OPTIONS});assert.equal(result.candidates.length,1,JSON.stringify(result));assert.equal(result.coverage.complete,true);
   const candidate=result.candidates[0],graph=new World();graph.load('@use core.use world=std.request');graph.load(candidate.wires);assert.equal(inspectRequest(graph,candidate.request).ok,true);
   assert.equal(graph.get('target').attrs.mode[0],'existing');assert.equal(graph.get('target').attrs.kind[0],'circle');assert.equal(graph.get('target').attrs.selector,undefined);
-  assert.equal(graph.get('r').attrs.root[0],'$condition');assert.equal(graph.get('condition').attrs.concept[0],concept);assert.equal(graph.get('condition').attrs.value[0],value);
+  assert.equal(graph.get('r').attrs.root[0],'$condition');assert.equal(graph.get('condition').attrs.concept[0],concept);assert.equal(graph.get('condition').attrs.value[0],JSON.stringify(value));
   assert.equal(graph.get('condition').attrs.character[0],'requirement');assert.equal(graph.get('condition').attrs.polarity[0],'positive');
   const start=Array.from(text.slice(0,text.indexOf(value))).length;assert.deepEqual(candidate.evidence.nodes[0].ranges,[[start,start+Array.from(value).length]]);
   assert.ok(candidate.origins.some(origin=>origin.wire==='k.shapes.shape.circle'));
  }
  for(const text of ['Change the colour of the green circle to purple.','Change the colour of the circle to purple?','Do not change the colour of the circle to purple.'])assert.equal(readGrammarRequests(world,text,{compiled,...ENGLISH_REQUEST_OPTIONS}).candidates.length,0,text);
+});
+
+
+test('all published colour names survive the explicit textual-value profile', {skip:!world&&'pinned knowledge unavailable'},()=>{
+ const compiled=compileGrammarOverlay(world,{types:ENGLISH_OVERLAY_TYPES});assert.equal(compiled.ok,true);
+ const names=[...new Set(Object.entries(compiled.grammar.lexicon).filter(([,entries])=>entries.some(e=>e.cat==='VALUE'&&e.feat.concept==='colour')).map(([text])=>text))];
+ assert.ok(names.some(name=>name.includes(' ')),'exercise multiword provider names');
+ for(const name of names){
+  const result=readGrammarRequests(world,`Change the colour of the circle to ${name}.`,{compiled,...ENGLISH_REQUEST_OPTIONS});
+  assert.equal(result.coverage.complete,true,name+JSON.stringify(result.failures));assert.ok(result.candidates.length,name);
+  for(const candidate of result.candidates){const graph=new World();graph.load('@use core.use world=std.request');graph.load(candidate.wires);assert.equal(inspectRequest(graph,candidate.request).ok,true);assert.equal(graph.get('condition').attrs.value[0],JSON.stringify(name),name);}
+ }
 });

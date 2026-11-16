@@ -168,7 +168,7 @@ Announce the phase-zero release only after the first path runs end to end. Its d
 
 ### Increment 0.193.0 — schema graph serialization and consumer profiles
 
-serializeRequestGraph validates explicit literal/string/ref tokens, schema-owned types/slots, local identities, cardinality and owned/reachable graph membership before inspectRequest. readGrammarRequests consumes schema graph envelopes and derives only verified contiguous source anchors. Legacy property shape is now a compat data profile, not generic source logic. First-path literal values remain supported; explicit provider token-kind data is needed for multiword values. Existing consumers must adopt the new profile and evidence.nodes interface deliberately. Review 14 settled the design; implementation is submitted for review without announcing broader language coverage or completed end-to-end execution.
+serializeRequestGraph validates explicit literal/string/ref tokens, schema-owned types/slots, local identities, cardinality and owned/reachable graph membership before inspectRequest. readGrammarRequests consumes schema graph envelopes and derives only verified contiguous source anchors. Legacy property shape is now a compat data profile, not generic source logic. The property-name profile declares colour/shape provider labels uniformly as strings, correcting the initial literal-only rejection of multiword names. Other value families require their own explicit token semantics. Existing consumers must adopt the new profile and evidence.nodes interface deliberately. Review 14 settled the design; implementation is submitted for review without announcing broader language coverage or completed end-to-end execution.
 
 ### First-path phase-zero milestone — published and served
 

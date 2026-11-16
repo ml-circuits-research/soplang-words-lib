@@ -111,9 +111,10 @@ stay external; caller-supplied spans and foreign source references decline. Prof
 are trusted author interpretations, not semantic proof or live instance resolution.
 No heldout sentences or outcomes were read for this mechanism change.
 
-The compatibility profile explicitly declares canonical property values as SOP
-literal tokens. Multiword/string-valued provider names decline until their mapping
-supplies an explicit string token; the old spelling-based quoting guess is not
-retained. Direct graph composition already supports explicit string tokens. This
-limit preserves the first Drawing path, but does not claim parity for every string
-that the earlier fixed bridge could quote.
+The compatibility profile declares provider names as textual strings uniformly,
+including single-word and multiword colour/shape names. These are labels resolved
+by the consumer against the owning knowledge family, not reference identities or
+numeric native values. Consumers compare decoded labels, then retain the resolved
+native value separately. This corrects the initial literal-only profile regression
+without a spelling-based quoting guess. Other value families must declare their
+own token semantics rather than inherit this name-label profile blindly.

@@ -2395,3 +2395,28 @@ Measure per turn: right description / partial / none / wrong; wrong descriptions
 **Phase-0 release boundary — confirmed as you propose.** Enumerate exactly. Frozen in the announcement: legend (spaces, axes, units, concepts, roles, relations, act conditions) with point and frame; schema links; request (envelope, mood, graph, logical nodes, selectors); typed trace records; reply claims (when landed); change policy; objective; import evidence; reference samples and calibration. Deferred and named as such: tolerance policy, learning episode and learned factor, calibration-to-axis consistency, the retained-revision registry. PSys2's declarations and the knowledge migration need the frozen list, not the deferred one.
 
 **Held-out reader set.** It is in none of the three repositories I can read (not in this repo, PSys2 or the knowledge repo), so I cannot review the four flagged IDs yet. Put it in a path the rule-authoring agent is told not to read (for example `eval/reader-heldout/` with a line in its README), push it, and I will review those IDs here by ID only, without quoting their sentences. Its provisional status until then is right.
+
+## 2026-11-16 18:00 (Rome) — reviewer: correction to the reader plan — SOP-BERT (DistilBERT) from diagram-vss-demo is the learned candidate to start from (owner)
+
+The owner pointed me to `ml-circuits-research/diagram-vss-demo` and `ml-circuits-research/vss-vs-bert`: a fine-tuned DistilBERT worked better than VSS, and VSS is harder to train in general. I read both (shallow read-only clones). He is right, and it changes my 17:45 block.
+
+| Evidence | Where |
+|---|---|
+| diagram-vss-demo has three readers writing the same SOP wires, run by the same engine: Rules, VSS, and SOP-BERT (one DistilBERT fine-tuned on annotated requests, run in the browser with Transformers.js; it cuts the message and reads, per request, the act, the value of each legend key, the role fillers and the written names/numbers). | its README, "The readers" |
+| Held-out split, everything executed: requests done right SOP-BERT 83.8 %, VSS 78.0 %, Rules 73.3 %. | `training/sketch/PRECISION.md` |
+| A fresh set written by another model, unseen by either learned reader (405 messages, 1,313 actions): at ≤ 3 % confidently wrong, SOP-BERT all-data does 37.2 % of requests right, VSS 5.9–10.4 %; at ≤ 1 %, 22.8 % against 2.2–4.6 %. VSS's confidence doubled its error rate on a new writer; SOP-BERT's barely moved. All executed: SOP-BERT all-data 54.6 % right with 7.7 % of executed actions wrong; Rules 55.5 % right with 42.6 % wrong. | `training/sketch/FRESH2_RESULT.md` |
+| vss-vs-bert, real data (SNIPS): slot span F1 BERT-tiny 0.831 vs VSS reader 0.387; intent 0.985 vs 0.976. | `RESULTS.md`, R68 |
+
+Why last night's MiniLM proposer failed where SOP-BERT works: SOP-BERT IS the reader and the engine runs its wires, gated by its own calibrated confidence; last night's model was accepted only when the old rules agreed, was labelled by the old rules, and was trained on generated frames — so it could not win.
+
+**Revised plan for the reader (replaces the candidate table of 17:45):**
+
+| Part | What |
+|---|---|
+| Primary learned reader | SOP-BERT's design: DistilBERT fine-tuned, cutter + per-request heads, Transformers.js in the browser. Retarget its heads from the diagram demo's legend keys to the general request description (act, targets with selectors, constraints by concept/operator/relation, logical nodes, mood). One model for the four areas. |
+| Data | The owner's English turns (development), annotated requests in the general description, fresh sets written by another model (as diagram-vss-demo did), a held-out set never used for labels or rules; the roundtrip check of `ROLES_ROUNDTRIP.md` (every gold label must decode back to its gold, no silent wrong labels). |
+| Gate | diagram-vss-demo's main metric, which is exactly the owner's: precision of execution with the risk–coverage curve; a threshold chosen on held-out data; below it the system asks, saying why. Wrong executions = 0 on his sessions remains the acceptance. |
+| Symbolic grammar | Kept as the fallback and the explainer of a reading, not the gatekeeper of the model; both verified by resolution in the instance. |
+| VSS | Not on the critical path (harder to train generally); keep it as a later comparison only. |
+
+Licence: diagram-vss-demo is AGPL-3.0, like PSys2; code and model brought into PSys2 keep their provenance; into the MIT library, only what its licence allows (the model and its training code belong in PSys2 or a training repository, not in `src/` of the library).

@@ -2,7 +2,7 @@
 
 ## RDR1 — Target selection versus required result
 
-The owner's “Change the colour of the green bird to yellow.” identifies an existing bird by its current green colour and asks for a yellow result. The published target schema has only kind/name/determiner, and ordinary constraints do not distinguish selection from result. Two colour constraints on the target would assert incompatible results. Proposed direction, coordinated by the primary worker: a target-owned selector graph separate from the desired result graph, preserving source spans and rejecting cross-context node sharing. These labels remain pending until a published representation exists.
+The owner's “Change the colour of the green bird to yellow.” identifies an existing bird by its current green colour and asks for a yellow result. The published target schema has only kind/name/determiner, and ordinary constraints do not distinguish selection from result. Two colour constraints on the target would assert incompatible results. Proposed direction, coordinated by the primary worker: a target-owned selector graph separate from the desired result graph, preserving source spans and rejecting cross-context node sharing. The primary worker published this structural representation in 0.183.0 (a92e4cc); semantic label updates and review remain pending.
 
 ## RDR2 — Non-action dialogue and missing context
 

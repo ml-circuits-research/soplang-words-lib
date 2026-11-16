@@ -41,6 +41,8 @@ export const REQUEST_KEYS = Object.freeze(['kind', 'count', 'size', 'extent', 'a
 
 /** The catalog types whose names are values of an attribute (read so that a value the world lacks is named, not dropped). */
 export const VALUE_TYPES = Object.freeze({ colour: ['k.colours.basic', 'k.colours.colour'] });
+/** A step cue's direction: next / previous are up / down. */
+const stepDir = (s) => (s === 'next' ? 'up' : s === 'previous' ? 'down' : s);
 const STEPS = ['tiny', 'small', 'default', 'big', 'huge']; // the enum of k.expect.scale step (its order= decides when the facts are given)
 
 // ---- facts from any source: a World, a factStore, an array of either --------------------------------------------
@@ -72,7 +74,7 @@ function languageOf(language, lang) {
     for (const t of ['in', 'on', 'at', 'into', 'under', 'near', 'by', 'from', 'to', 'of']) preps.add(t);
     const cues = rowsOf(language, `${lang}.cue`).map((r, n) => ({
       n, name: first(r, 'name'), on: first(r, 'on'), want: first(r, 'want'), value: first(r, 'value'), relation: first(r, 'relation'), attribute: first(r, 'attribute'),
-      bound: first(r, 'bound'), amount: first(r, 'amount'), step: first(r, 'step'), unit: first(r, 'unit'), takes: first(r, 'takes') ?? 'none', priority: num(first(r, 'priority')) ?? 1,
+      bound: first(r, 'bound'), amount: first(r, 'amount'), step: stepDir(first(r, 'step')), unit: first(r, 'unit'), takes: first(r, 'takes') ?? 'none', priority: num(first(r, 'priority')) ?? 1,
       lead: (r.lead ?? []).map(phraseTokens), between: (r.between ?? []).map(phraseTokens), trail: (r.trail ?? []).map(phraseTokens),
     }));
     const plural = (w) => { try { return inflectBy(language, w, 'plural', { types: { rule: `${lang}.inflect`, irregular: `${lang}.irregular` } }); } catch { return null; } };
@@ -386,9 +388,9 @@ export function readRequest(world, text, ctx = {}) {
       else if (it.entry && !it.entry.plural && !(it.entry.unit && !it.entry.made) && L.indefinite.has(ws[it.from])) constraints.push({ ...base, on: 'count', number: 1, of: kind, words: w1, det: true }); // "with a lake": one, said
       if (it.n === undefined || (it.entry && !(it.entry.unit && !it.entry.made))) constraints.push({ ...base, value: kind, words: w1 });
     }
-    else if (c.on === 'attribute' && c.step && !c.attribute && o.kind) { // a step through the ordered values of a kind's attribute ("the next mouth"): the attribute is the thing's own
-      const k = o.kind, def = L.definite.has(ws[m.from - 1] ?? '') || L.definite.has(ws[k.from] ?? '');
-      constraints.push({ ...base, step: c.step, of: k.entry.kind });
+    else if (c.on === 'attribute' && c.step && o.kind) { // a step through the ordered values of a kind's attribute ("the next mouth"): the attribute is the thing's own
+      const k = o.kind, def = L.definite.has(ws[m.from - 1] ?? '') || L.definite.has(ws[m.from] ?? '') || L.definite.has(ws[k.from] ?? '');
+      constraints.push({ ...base, step: c.step, of: k.entry.kind, ...(c.attribute ? { attribute: c.attribute } : {}) });
       constraints.push({ on: 'kind', want: 'yes', value: k.entry.kind, words: k.text, origin: 'said', at: k.to - 1, ...(def ? { definite: true } : {}) });
     }
     else if (c.on === 'attribute') {
@@ -905,7 +907,7 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
     if (there.length === 1) {
       const Hc = cap.honours.filter((h) => h.act === 'change');
       if (Hc.length && request.constraints.some((c) => (c.on === 'attribute' || c.on === 'size') && (c.want ?? 'yes') === 'yes')) { out.act = 'change'; out.sense = 'change'; return referencePlan(live, request, opts, out, Hc, 'change', there); }
-      out.target = said0; out.replies = [{ reply: 'refused.already', roles: { thing: plain(said0) } }]; return out;
+      out.target = said0; out.referent = [...there]; out.replies = [{ reply: 'refused.already', roles: { thing: plain(said0) } }]; return out; // `referent`: the thing the reply names, the one "it" means next
     }
   }
   const H = cap.honours.filter((h) => h.act === act);
@@ -1550,6 +1552,13 @@ function keptStructure(live, request, opts) {
  * Nothing is changed.
  */
 export function planRequest(live, request, opts = {}) {
+  const plan = planRequestOnce(live, request, opts);
+  // the act read was turned into another act (a put of a thing there into a change of it) and a said constraint is not
+  // taken by it ("put a heart on the chest": the place stays unread): nothing runs, what was not taken is said
+  if (plan.ok && request.act && plan.act && plan.act !== request.act && (plan.notHonoured ?? []).some((n) => n.code === 'not_declared')) return { ...plan, ok: false, turned: { from: request.act, to: plan.act } };
+  return plan;
+}
+function planRequestOnce(live, request, opts = {}) {
   const lost = unreadThatMatters(request);
   // "make the puppet an emoji": what a thing should become, in words this world does not have: said with what it can be (its declared kinds), nothing run
   if (lost.length && request.predicate && (!request.act || ['make', 'change'].includes(request.act))) {

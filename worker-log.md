@@ -5941,3 +5941,7 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Q99 (1): a part joined `as=part` keeps its kind in the mirror; a relative size steps from the size it has (big, huge). (2): "it" after a preset: a value whose key the last things lack goes to the whole that has it; a value goes to the things that take its key. (3): `std.schema.kinds single=true`; "put a hat" with a hat on replaces the variant said or says "The hat is already there." (4): next/previous of a noun phrase alone is a property over FACE (needs the cue `step=up|down takes=thing`, still proposed). (5): a reset gives each thing its own defaults; none declared: `refused.no_default`. (6): variant plus size ("big smile") is one change, a property. (7): "The eyes are already green." (`nothing.same.value`).
 - Also fixed: a variant carried from the last turn to another kind (a hat's crown to the glasses). Decision left open: "reset the face" resets the face's own slots only; "reset everything" resets all things.
 - Tests: face-world 16 (6 new), acts-on-things 1 text; `npm test` 634 pass, 0 fail; bundle run of the two files green.
+
+## 2026-11-16 0.164.0 (Q100, Q98)
+- Q100 (1) referent after refused.already / same; (2) turned act with untaken words runs nothing (`plan.turned`); (3) published variant_next / variant_previous read as a step (repos.pin knowledge b57c4633); (4) assumptions said by the world's key. Q98 (2) already held since 0.162 (property added).
+- Tests: `test/referent-turns.test.mjs` (5); `npm test` and bundle run below.

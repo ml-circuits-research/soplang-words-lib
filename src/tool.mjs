@@ -458,6 +458,22 @@ function sourceValue(src, name, kind, steps1, args, resolveV, ctx) {
   return null;
 }
 
+/**
+ * The key of the world an argument stands for, the name an assumption is said by: the key the person says it by (the
+ * binding's `step.<key>` source), else the argument's own name when the thing's type has a slot of it, else the one
+ * slot of the kind that takes the value (an enum, or the names of its catalog type). Never the tool's parameter name
+ * when the world has a key for it; the argument's name when nothing is found.
+ */
+function worldKey(a, kind, value, ctx) {
+  const c = ctx.live?._compiled?.();
+  const slots = c && kind ? c.slots.get(kind) ?? c.slots.get(joinedKinds(ctx.live, ctx.catalog).get(String(kind))?.as) : null;
+  if (!slots || slots.has(a.name)) return a.name;
+  const said = a.sources.map((x) => x.split('.')).find(([h, k]) => h === 'step' && k && slots.has(k));
+  if (said) return said[1];
+  const fits = [...slots.values()].filter((sl) => !['kind', 'world'].includes(sl.key) && (sl.enum?.map(String).includes(String(value)) || (sl.by && sl.type && rowsOf([].concat(ctx.catalog ?? []), sl.type).some((r) => String(first(r, sl.by)) === String(value)))));
+  return fits.length === 1 ? fits[0].key : a.name;
+}
+
 function fillArgs(bind, kind, steps1, resolveV, ctx) {
   const params = ctx.B.params.get(bind.op) ?? new Map();
   const args = {}, assumed = [], translated = [];
@@ -476,7 +492,7 @@ function fillArgs(bind, kind, steps1, resolveV, ctx) {
     if (t.translated) translated.push({ key: a.name, was: t.was, value: t.value, by: t.by });
     const shown = got.from === 'custom' && typeof t.value === 'string' ? ctx.look().get(strip(t.value)) : null; // a thing of the view is said by its kind
     const drawn = t.translated && t.by === 'drawn'; // a kind drawn as another (std.schema.drawn: oval as ellipse) is the same meaning, not an assumption
-    if (drawn ? got.from !== 'said' && !got.plan : t.translated || (got.from !== 'said' && !got.plan)) assumed.push({ key: a.name, value: shown?.kind !== undefined ? plainKind(shown.kind) : t.value, ...(shown ? { thing: shown.id } : {}), ...(p?.default !== undefined && String(p.default) === String(t.value) ? { default: true } : {}), from: t.translated && !drawn ? 'translated' : got.from, ...(t.translated ? { was: t.was, by: t.by } : {}), ...(got.because?.length ? { because: [].concat(got.because).join(', ') } : {}), op: bind.op });
+    if (drawn ? got.from !== 'said' && !got.plan : t.translated || (got.from !== 'said' && !got.plan)) assumed.push({ key: worldKey(a, kind, t.value, ctx), value: shown?.kind !== undefined ? plainKind(shown.kind) : t.value, ...(shown ? { thing: shown.id } : {}), ...(p?.default !== undefined && String(p.default) === String(t.value) ? { default: true } : {}), from: t.translated && !drawn ? 'translated' : got.from, ...(t.translated ? { was: t.was, by: t.by } : {}), ...(got.because?.length ? { because: [].concat(got.because).join(', ') } : {}), op: bind.op });
   }
   return { args, assumed, translated };
 }
@@ -668,6 +684,10 @@ export function toolSession(live, primitives, { language = null, catalog = [], r
         if (step) dialogue.corrections.push({ on: step.on, step: step.direction });
         fromTimeline();
         dialogue.vary = !!rev.vary;
+      } else { // a reply that changed nothing and names a thing (it is there already, it has the value): that thing is what "it" means next
+        const named = plan.referent ?? (run.failed?.code === 'same' ? plan.steps?.flatMap((x) => [].concat(x.args?.ids ?? x.args?.thing ?? [])) : null);
+        const ids = (named ?? []).map(strip).filter((id) => view().some((t) => String(t.id) === id || state.thing?.(id)));
+        if (ids.length) dialogue.lastRun = { made: ids };
       }
       const reply = sayRequest(rev.request, { ...plan, run, revised: rev.sort === 'reaction' && run.ok && !run.same && !plan.reference, reply: rev.reply }, sayOpts);
       return { request: rev.request, revision: rev, plan, run, reply };

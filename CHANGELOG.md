@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.164.0
+
+PSys2 Q100 (and Q98 checked). Properties in `test/referent-turns.test.mjs`; `repos.pin` knowledge pin b57c4633 (the published step cues).
+
+### Fixed
+- The thing named by a reply that changed nothing (`refused.already`, `nothing.same.value`) is what "it" means next.
+- A read act planned as another act with words left untaken (`put a heart on the chest`) runs nothing (`plan.turned`).
+- "the next mouth" / "another nose" with the published cue `attribute.variant_next` / `variant_previous` is a step, not a place.
+- An assumption is said by the key of the world, never by a tool argument's name.
+- A kind joined `as=<type>` keeps that type's slots (`about` of a genre joined as a document type): covered by a property.
+
 ## 0.163.0
 
 What the avatar's thirteen owner turns still failed on (PSys2 Q99). Properties in `test/face-world.test.mjs` over `FACE` (new

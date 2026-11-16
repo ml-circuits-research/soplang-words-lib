@@ -2474,7 +2474,7 @@ print(runPlan({ act: 'undo' }, toolBindings(w), tool, { timeline }).ok, balls.le
 true 0
 ```
 
-### A whole with slots of parts: joined kinds as a type, values from a catalog, what a thing can be (0.162.0, 0.163.0), canBe(live, predicate, catalog?)
+### A whole with slots of parts: joined kinds as a type, values from a catalog, what a thing can be (0.162.0 to 0.164.0), canBe(live, predicate, catalog?)
 
 A world instance that takes its kinds from a knowledge base by join can say which of its own types the joined kinds are:
 `std.schema.kinds world= from=<type> key=name acts=... as=<type of the world>`. The joined kinds are then kinds of that
@@ -2528,7 +2528,23 @@ expectation (`k.expect.value of= on=place when.side=`), else asked (`refused.whi
 `side` slot, else the side is named as not taken. `stateDiff` reports a change of a thing's kind (`key: 'kind'`), and the
 reply says it once, naming the thing by the kind it had ("The face is a boy now.").
 
-Added in 0.163.0 (properties in `test/face-world.test.mjs`; the example world `FACE` has a preset `king` that wears a crown):
+Added with 0.164.0 (properties in `test/referent-turns.test.mjs`):
+- the thing a reply that changed nothing names (`refused.already`, `nothing.same.value`) is the referent of "it" in the next turn
+  ("put on a hat", "The hat is already there.", "make it red" colours the hat): the plan of a refused make carries `referent`, and
+  `toolSession` keeps the things a failed `same` run named as the dialogue's last run;
+- `planRequest`: when the act read is planned as another act (a put turned into a change of the thing there) and a said constraint
+  is left untaken (`not_declared`: "put a heart on the chest", the place), the plan is not ok (`turned: { from, to }`), nothing runs and
+  the words are said ("Nothing changed. I could not do on the chest: ...");
+- a step cue of the language that names its attribute (`on=attribute attribute=variant step=next|previous`, the published
+  `attribute.variant_next` / `variant_previous`) is read like the unnamed step cue: "the next mouth", "another nose" is a step
+  through the ordered values, never a place (`step=next|previous` are `up|down`); "next to" stays a place;
+- an assumption of a tool call is said by the key of the world: the binding's `step.<key>` source, the argument's own name when the
+  thing has such a slot, else the one slot of the kind that takes the value ("I assumed square for the variant", not "for the worn");
+  the argument's name only when nothing is found;
+- Q98: a kind joined `as=<type>` takes that type's slots in plans as in the mirror: genres joined as a document type keep their
+  topic ("write a short letter about a villa").
+
+Added with 0.163.0 (properties in `test/face-world.test.mjs`; the example world `FACE` has a preset `king` that wears a crown):
 - a part joined `as=part` keeps its kind in the mirror, and a relative size is stepped from the size the thing has ("bigger"
   twice: big, then huge); the plan's `byKind` names `eyes`, not `part`;
 - "it" after a preset is the last result's things; a value whose key none of them has ("make it happy": a mood, only the

@@ -10,11 +10,11 @@ export function resolveRequestTargets(world,request,options={}){
  const copy=value=>{const out=retainedDefinition(value,tick);fresh();return out;};
  const shape=(v,keys)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length===keys.length&&keys.every(k=>Object.hasOwn(v,k));
  try{
-  if(!world||!id)fail('invalid-input');const descriptors=Object.getOwnPropertyDescriptors(options),opts={};for(const key of Reflect.ownKeys(descriptors)){tick();if(typeof key!=='string'||!['populations','policies','evaluateConstraint','bindings','family','budget'].includes(key)||!Object.hasOwn(descriptors[key],'value'))fail('invalid-options');opts[key]=descriptors[key].value;}
-  budget=opts.budget??100000;const family=opts.family??'std.request';if(!Number.isSafeInteger(budget)||budget<1||!text(family)||opts.evaluateConstraint!==undefined&&typeof opts.evaluateConstraint!=='function')fail('invalid-options');
+  if(!world||!id)fail('invalid-input');const descriptors=Object.getOwnPropertyDescriptors(options),opts={};for(const key of Reflect.ownKeys(descriptors)){tick();if(typeof key!=='string'||!['populations','policies','evaluateConstraint','evaluateTarget','bindings','family','budget'].includes(key)||!Object.hasOwn(descriptors[key],'value'))fail('invalid-options');opts[key]=descriptors[key].value;}
+  budget=opts.budget??100000;const family=opts.family??'std.request';if(!Number.isSafeInteger(budget)||budget<1||!text(family)||opts.evaluateConstraint!==undefined&&typeof opts.evaluateConstraint!=='function'||opts.evaluateTarget!==undefined&&typeof opts.evaluateTarget!=='function')fail('invalid-options');
   tick();const inspected=inspectRequest(world,id,{family,budget:{steps:Math.max(1,budget-steps)}});steps+=world.stats().steps;fresh();if(!inspected.ok)fail(inspected.issues.some(i=>i.kind==='budget')?'budget':'invalid-request');
   tick();const checked=world.check(undefined,{budget:{steps:Math.max(1,budget-steps)}});steps+=world.stats().steps;fresh();if(!checked.ok)fail(checked.violations.some(i=>i.kind==='budget')?'budget':'invalid-schema');
-  const populations=copy(opts.populations??{}),policies=copy(opts.policies??{}),bindings=copy(opts.bindings??{}),owned=new Map();
+  const requestWire=copy(world.get(id)),populations=copy(opts.populations??{}),policies=copy(opts.policies??{}),bindings=copy(opts.bindings??{}),owned=new Map();
   for(const wire of world.ofType(family+'.target')){tick();if(ref(first(wire,'request'))===id)owned.set(wire.id,copy(wire));}
   for(const data of [populations,policies,bindings]){if(!data||typeof data!=='object'||Array.isArray(data))fail('invalid-options');for(const key of Object.keys(data)){tick();if(!owned.has(key))fail('foreign-target');}}
   // Ground context may describe other targets, but cannot decide the very
@@ -32,21 +32,28 @@ export function resolveRequestTargets(world,request,options={}){
    if(!population){targets.push(unresolved('missing-population'));continue;}
    let valid=true;try{if(!shape(population,['kind','context','complete','subjects','evidence'])||population.kind!==base.kind||typeof population.complete!=='boolean'||!Array.isArray(population.subjects)||!Array.isArray(population.evidence))throw Error();validateContext(population.context);const sources=new Set();for(const subject of population.subjects){tick();validateSubject(subject,population.context);if(sources.has(subject.source))throw Error();sources.add(subject.source);}}catch(error){if(error?.resolution)throw error;valid=false;}
    if(!valid){targets.push(unresolved('invalid-canonical-population'));continue;}
-   base.evidence=population.evidence;let unknown=0;
+   base.evidence=population.evidence;let unknown=0,targetUnknown=0;
    for(const subject of population.subjects){
-    tick();const ground=copy({context:population.context,subject});let evaluation=null,truth='true';
+    tick();const ground=copy({context:population.context,subject});let evaluation=null,truth='true',targetEvaluation={truth:'true',evidence:[]};
+    if(opts.evaluateTarget){
+     tick();const input=copy({request:requestWire,target:node,binding:ground,bindings:{...bindings,[target]:ground}});let raw,threw=false;
+     try{raw=opts.evaluateTarget(input);}catch(error){fresh();threw=true;targetEvaluation={truth:'unknown',evidence:[],reason:'target-callback-threw'};}
+     fresh();if(!threw){try{const captured=copy(raw),keys=Object.keys(captured??{});if(!captured||typeof captured!=='object'||Array.isArray(captured)||!['truth','evidence'].every(k=>Object.hasOwn(captured,k))||keys.some(k=>!['truth','evidence','reason'].includes(k))||!['true','false','unknown'].includes(captured.truth)||!Array.isArray(captured.evidence)||captured.reason!==undefined&&!text(captured.reason))throw Error();targetEvaluation=captured;}catch(error){fresh();if(error?.resolution)throw error;targetEvaluation={truth:'unknown',evidence:[],reason:'invalid-target-callback-data'};}}
+    }else if(first(node,'name')!==undefined)targetEvaluation={truth:'unknown',evidence:[],reason:'missing-target-evaluator'};
+
     if(first(node,'selector')!==undefined){
      if(Object.hasOwn(bindings,target))fail('candidate-binding-conflict');
      evaluation=evaluateRequestPredicates(world,id,{family,selector:target,bindings:{...bindings,[target]:ground},evaluateConstraint:opts.evaluateConstraint,budget:Math.max(1,budget-steps)});steps+=evaluation.steps;fresh();tick();if(!evaluation.ok&&evaluation.failures.some(i=>['budget','source-changed'].includes(i.reason)))fail(evaluation.failures[0].reason);truth=evaluation.truth;
     }
-    base.candidates.push({binding:ground,truth,evaluation});if(truth==='true')base.matches.push(ground);else if(truth==='unknown')unknown++;
+    truth=targetEvaluation.truth==='false'||truth==='false'?'false':targetEvaluation.truth==='unknown'||truth==='unknown'?'unknown':'true';
+    base.candidates.push({binding:ground,truth,evaluation,targetEvaluation});if(truth==='true')base.matches.push(ground);else if(truth==='unknown'){unknown++;if(targetEvaluation.truth==='unknown')targetUnknown++;}
    }
    if(!['one','all'].includes(policy)){targets.push(unresolved('missing-or-invalid-policy'));continue;}
    if(policy==='one'&&base.matches.length>1){targets.push({...base,status:'ambiguous',clarification:{target,reason:'multiple-matching-subjects',choices:base.matches}});continue;}
-   if(!population.complete||unknown){targets.push(unresolved(!population.complete?'population-incomplete':'selector-unknown'));continue;}
+   if(!population.complete||unknown){targets.push(unresolved(!population.complete?'population-incomplete':targetUnknown?'target-predicate-unknown':'selector-unknown'));continue;}
    if(policy==='one'&&!base.matches.length){targets.push({...base,status:'missing',clarification:{target,reason:'no-matching-subject',choices:[]}});continue;}
    targets.push({...base,status:'resolved',clarification:null});
   }
-  fresh();return {ok:true,request:id,sourceStamp:stamp,targets:copy(targets),steps,trust:'canonical kind membership, population coverage and pure selector callbacks over explicit stable snapshots; no subtype inference'};
+  fresh();return {ok:true,request:id,sourceStamp:stamp,targets:copy(targets),steps,trust:'canonical kind membership, population coverage and pure target/selector callbacks over explicit stable snapshots; no subtype inference'};
  }catch(error){return {ok:false,request:id,truth:'unknown',targets:[],steps,issues:[{reason:world?.stamp!==stamp||world?._clock!==clock?'source-changed':error?.resolution?error.reason:'invalid-resolution-data'}]};}
 }

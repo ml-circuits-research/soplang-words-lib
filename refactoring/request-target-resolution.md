@@ -7,7 +7,7 @@ create/execute anything. Membership in the exact target kind and population
 coverage are trusted declarations; structural subtype compatibility is not
 inferred and would need a separate declared evaluator.
 
-Options are `populations`, `policies`, `evaluateConstraint`, `bindings`, `family`
+Options are `populations`, `policies`, `evaluateConstraint`, `evaluateTarget`, `bindings`, `family`
 (default `std.request`) and a total `budget` (default 100,000 steps). A population
 is keyed by target ID and contains `{kind, context, complete, subjects, evidence}`.
 Its context is `{instanceId, scope, version}`; every subject has
@@ -27,7 +27,21 @@ records; clarification choices preserve the complete context and subject.
 
 A target selector is evaluated for each explicit candidate by the existing
 three-valued predicate evaluator. The request result is never used as a selector.
-Without a selector every declared canonical member is a match. Initial ground
+Without a selector an unnamed target admits every declared canonical member,
+unless an explicit `evaluateTarget` callback adds a candidate predicate. A named
+target always needs this callback: canonical kind membership does not prove its
+name. Missing name evidence is unknown, never an automatic kind-only match.
+
+`evaluateTarget` receives one frozen record `{request, target, binding, bindings}`
+and evaluates the positive proposition described by the target's non-selector
+fields over the candidate snapshot. It returns
+`{truth: 'true' | 'false' | 'unknown', evidence: [], reason?}`. The mechanism does
+not choose a native name property or compare strings itself. Its truth is
+conjoined with the selector using three-valued logic: a false selector excludes
+a candidate even when its name is unknown. Candidate records preserve this
+`targetEvaluation` separately from the selector `evaluation`. Callback calls,
+input/evidence copies, exceptions and source mutation use the same total budget
+and whole-operation freshness guard. Initial ground
 bindings may provide other explicit subjects, but cannot override candidate
 bindings or introduce lexical bound variables globally. Quantifier-bound targets
 remain lexical and reject global population/policy input. New targets return
@@ -37,7 +51,7 @@ Structural and schema checks run before selection. One total budget charges
 those checks, every reused predicate evaluation, candidate/evidence copies and
 output construction. Public world mutation, including temporary mutation rolled
 back by a callback, invalidates the whole operation and discards all resolutions.
-Semantic callbacks must be pure over declared stable external snapshots; neither
+Both target and constraint callbacks must be pure over declared stable external snapshots; neither
 the evaluator nor source-stamp checks independently prove host truth or coverage.
 
 Successful computation returns `ok: true`, source stamp, target statuses, known

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="28a74a37f6e3">
+<meta name="source-hash" content="4e415f36839d">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.190.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.191.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html" aria-current="page">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -769,9 +769,11 @@ print(builtins.time_add([&#x27;10:40&#x27;, &#x27;35min&#x27;]), builtins.div([&
 <p>Evaluates declared semantic templates over grammar parse trees. Production IDs and lexical categories select templates; own-property paths copy lexical features or already composed child values. Every surviving alternative retains its parse index. Per-production equality guards compare declared operands before parent composition, using structural JSON equality without type coercion. Missing bindings fail explicitly, and bounded evaluation reports truncation. This produces interpretation proposals, not proof of meaning or instance resolution. See <a href="api.html#composeparsesparses-options">the API and runnable example</a>.</p>
 <h3 id="compilegrammaroverlay">compileGrammarOverlay</h3>
 <p>Compiles explicitly named SOP declaration roles into a detached grammar snapshot, lexical entries with source identities, composition templates and equality guards. Provider filters, repeated-value alternatives, template graph integrity and missing providers are checked without language or domain vocabulary in the mechanism. Compilation is bounded and fails as a whole. Consumers must bind cached compilation to its exact source world and fact/schema revision; see <a href="api.html#compilegrammaroverlayworld-options">the API contract</a>.</p>
+<h2 id="assesspropertychange">assessPropertyChange</h2>
+<p>Assesses exact native property tokens against an explicit resolved expectation using correlated std.trace before/after observations and operation inputs/results. The immutable retained snapshot supports a typed std.reply.property claim with changed/unchanged/unconfirmed status, recomputed on validation. This is neither semantic intent resolution nor a whole-request or perceptual-success guarantee. See the API for correlation, version, alias, budget and trust boundaries.</p>
 <p class="source">Generated from <code>docs/reference.md</code>.</p>
 </main>
-<footer>sopworld 0.190.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.191.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

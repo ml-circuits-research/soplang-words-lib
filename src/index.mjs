@@ -1,3 +1,4 @@
+export { assessPropertyChange } from './reply-property.mjs';
 export { World } from './world.mjs';
 export { parse, format, serialize, tokenize, str, quote, readValue, writeValue, valueText, SopError } from './parser.mjs';
 export { unify, walk } from './unify.mjs';
@@ -43,7 +44,7 @@ export { storyState } from './story-focus.mjs';
 export { planner, factStore, PlanLive, readMethods, PLAN_LIMITS, solveChoices } from './plan.mjs';
 export { inflectBy, articleFor, morphOf, generate, analyse, fold, splitClitics, dictionary, realise, templateFor } from './morph.mjs';
 export { ledgerAppend, ledgerGroups, ledgerKey, stageOf, STAGES } from './ledger.mjs';
-export const version = '0.190.0';
+export const version = '0.191.0';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)
  * tools/build.mjs fills in `hash`, a fingerprint of the bundled sources, and `date`,

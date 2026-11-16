@@ -151,3 +151,7 @@ The reviewer accepted composition, equality guards and mixin reindexing and expl
 ### Increment 0.190.0 — validated SOP grammar overlay compiler
 
 compileGrammarOverlay validates configured declaration families, provider bindings, graph attachments/paths, agreement roots and mappings; emits a normalized production snapshot, lexical alternatives with origin IDs, composition templates/guards and detached provenance. Knowledge1c4f32ea integration exercises broad provider families and property/value agreement. Exact source-world identity plus stamp is the freshness boundary (version alone misses schema-only edits). The request bridge and real Drawing effect remain subsequent work, not compiler coverage claims.
+
+### Increment 0.191.0 — exact native-property reply evidence
+
+assessPropertyChange plus std.reply.property provide the first-path reply slice: exact token expectation, same-property before/after observations, request/step/invocation correlation, explicit operation input/result membership, source-version change for changed status, and immutable retained snapshots recomputed by the claim validator. Unchanged and unconfirmed remain distinct. This supports the native field-setting claim only; semantic resolution, causal/authentic observation guarantees, visual change, broader predicate assessments and grouped/full-request claims are not implied. Both trace and reply modules must be loaded; aliases are explicit.

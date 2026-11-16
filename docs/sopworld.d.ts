@@ -924,3 +924,6 @@ export function calibrateReference(world: World, id: string, options?: { family?
 
 /** Capture and retain an explicitly framed numerical legend space. Native point slots remain separate. */
 export function retainPointSpace(world: World, id: string, options?: { family?: string; dry?: boolean; budget?: { steps?: number; ms?: number } }): { ok: boolean; created: boolean; retained?: RetainedRevision; violations: Array<{ kind: string; [key: string]: unknown }> };
+
+/** Assess only exact native property tokens using correlated immutable trace evidence. */
+export function assessPropertyChange(world: World, options: { request: string; step: string; before: string; after: string; expectation: string; source: string; sourceType: string; key: string; owner: string; revision: string; family?: string; replyFamily?: string; dry?: boolean; budget?: {steps?: number; ms?: number} }): {ok: boolean; created: boolean; retained?: RetainedRevision; assessment?: Record<string, unknown>; claim?: {type: string; attrs: Record<string,string[]>}; violations: Array<{kind: string; [key: string]: unknown}>};

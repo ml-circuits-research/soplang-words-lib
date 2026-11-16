@@ -1,3 +1,4 @@
+import { replyPropertyValidator } from './reply-property.mjs';
 import { traceInputValidator, traceGraphValidator } from './trace-contracts.mjs';
 import { requestValidator } from './request-contracts.mjs';
 // Opt-in structural contracts. These schemas validate records; they do not establish
@@ -103,6 +104,18 @@ export const CONTRACT_MODULES = {
 @std.trace.graph.valid.arg core.function.arg of=$std.trace.graph.valid.function name=request kind=ref
 @std.trace.graph.validation core.validate on=std.trace.request fn=std.trace.graph.valid why="invalid trace dependencies, invocation correlation, reply ownership or replacement lineage"
 `, fns: { 'std.trace.input.valid': traceInputValidator, 'std.trace.graph.valid': traceGraphValidator },
+  },
+  'std.reply': {
+    text: `
+@std.reply.module core.module name=std.reply version=0.191.0 exports=std.reply.property
+@std.reply.property.type core.type of=std.reply.property closed=true
+@std.reply.property.owner core.slot of=std.reply.property key=owner kind=string present=true
+@std.reply.property.revision core.slot of=std.reply.property key=revision kind=string present=true
+@std.reply.property.status core.slot of=std.reply.property key=status kind=atom enum=changed enum=unchanged enum=unconfirmed present=true
+@std.reply.property.valid.function core.function name=std.reply.property.valid out.kind=boolean pure=true
+@std.reply.property.valid.arg core.function.arg of=$std.reply.property.valid.function name=claim kind=ref
+@std.reply.property.validation core.validate on=std.reply.property fn=std.reply.property.valid why="property claim must match its retained correlated evidence and recomputed assessment"
+`, fns: { 'std.reply.property.valid': replyPropertyValidator },
   },
   'std.change': {
     text: `

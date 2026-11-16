@@ -4495,3 +4495,36 @@ print(retainPointSpace(w, 's').created);
 point.space:s x
 false
 ```
+
+### assessPropertyChange(world, options)
+
+Added with 0.191. Assesses one exact native property using published trace records and retains its evidence. Load `std.trace` and `std.reply` first. Required options: `request`, `step`, `before`, `after`, `expectation` (trace record IDs); `source`, `sourceType`, `key` (native property identity); and nonempty `owner`, `revision` strings (retained assessment identity). `family` selects an aliased trace module; `replyFamily` selects an aliased reply module. The reply schema and its registered evaluator must be loaded. `budget` bounds checking/capture/retention; `dry:true` leaves no retained entry.
+
+Before/after are observations of the same step/invocation, with the named phases; the step belongs to the request. Each observation must identify exactly one input for the selected source/type/key. Expectation and before-input must occur in the step's input list; after-input must occur in its result list. Expectation is a typed trace input containing the resolved native key and desired canonical SOP tokens. The resolver, not this evaluator, establishes its relation to semantic intent and preserves mapping provenance.
+
+Comparison is exact, ordered token-array equality: repeated values and quoted/bare categories remain distinct, and `1` differs from `1.0`. It does not infer numeric, perceptual, ontology or unit equivalence. `unchanged` means both before and after already equal expectation, without claiming operation success. `changed` requires after matching, before differing, a confirmed step and different before/after source versions. A valid but unmatched result, unconfirmed step or changed values without a new source version produces `unconfirmed` with a specific reason. Invalid/ambiguous correlation refuses publication.
+
+Returns `{ok, created, retained?, assessment?, claim?, violations}`. The deeply frozen assessment has fixed format `sop.reply.exact-property`, schemaVersion 1, normalized request/step/subject/expectation and observation snapshots, plus derived status/reason. Reusing owner/revision for different evidence fails. `claim` is an id-less wire `{type, attrs}` for the selected reply family; give it an ID when telling it. `std.reply.property` is closed and requires owner/revision/status; its validator recomputes the result from retained contents, including operation inputs/results and repeated-record identity consistency. Changing live trace records cannot rewrite a retained claim. Restoring snapshots preserves the evidence before claims replay.
+
+This is a historical claim about exact native property tokens. It neither proves visible appearance changed nor proves object existence, creation/removal, causal responsibility, complete request coverage or current state after later edits. In particular, changing an override from absent to explicit does not prove the rendered colour changed. Observer/receipt accuracy and semantic-to-native mapping remain trusted adapter responsibilities; self-consistent fabricated observations are not authenticated by this API. Broader predicate assessments, grouping and text realization remain separate.
+
+```js
+const w = new World();
+w.load('@trace core.use world=std.trace\n@reply core.use world=std.reply');
+const vals = value => quote(JSON.stringify([value]));
+w.load(`@r std.trace.request message="Set the shade."
+@e std.trace.input source=resolved.requirement version=1 source.type=resolved.property key=shade values=${vals('new')}
+@b std.trace.input source=item.1 version=1 source.type=example.item key=shade values=${vals('old')}
+@a std.trace.input source=item.1 version=2 source.type=example.item key=shade values=${vals('new')}
+@s std.trace.step request=$r operation=set.property operation.version=1 invocation=call.1 status=confirmed input=$e input=$b result=$a
+@before std.trace.observation step=$s invocation=call.1 phase=before input=$b
+@after std.trace.observation step=$s invocation=call.1 phase=after input=$a`);
+const result = assessPropertyChange(w, {request:'r', step:'s', before:'before', after:'after', expectation:'e', source:'item.1', sourceType:'example.item', key:'shade', owner:'reply.1', revision:'1'});
+print(result.assessment.status);
+print(w.tell('@claim std.reply.property owner=reply.1 revision=1 status=changed').ok);
+```
+
+```output
+changed
+true
+```

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="c4639708ca32">
+<meta name="source-hash" content="263f1ad53498">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.190.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.191.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -1449,9 +1449,30 @@ print(result.retained.owner, result.retained.definition.axes[0].name);
 print(retainPointSpace(w, &#x27;s&#x27;).created);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>point.space:s x
 false</code></pre></figure>
+<h3 id="assesspropertychangeworld-options">assessPropertyChange(world, options)</h3>
+<p>Added with 0.191. Assesses one exact native property using published trace records and retains its evidence. Load <code>std.trace</code> and <code>std.reply</code> first. Required options: <code>request</code>, <code>step</code>, <code>before</code>, <code>after</code>, <code>expectation</code> (trace record IDs); <code>source</code>, <code>sourceType</code>, <code>key</code> (native property identity); and nonempty <code>owner</code>, <code>revision</code> strings (retained assessment identity). <code>family</code> selects an aliased trace module; <code>replyFamily</code> selects an aliased reply module. The reply schema and its registered evaluator must be loaded. <code>budget</code> bounds checking/capture/retention; <code>dry:true</code> leaves no retained entry.</p>
+<p>Before/after are observations of the same step/invocation, with the named phases; the step belongs to the request. Each observation must identify exactly one input for the selected source/type/key. Expectation and before-input must occur in the step's input list; after-input must occur in its result list. Expectation is a typed trace input containing the resolved native key and desired canonical SOP tokens. The resolver, not this evaluator, establishes its relation to semantic intent and preserves mapping provenance.</p>
+<p>Comparison is exact, ordered token-array equality: repeated values and quoted/bare categories remain distinct, and <code>1</code> differs from <code>1.0</code>. It does not infer numeric, perceptual, ontology or unit equivalence. <code>unchanged</code> means both before and after already equal expectation, without claiming operation success. <code>changed</code> requires after matching, before differing, a confirmed step and different before/after source versions. A valid but unmatched result, unconfirmed step or changed values without a new source version produces <code>unconfirmed</code> with a specific reason. Invalid/ambiguous correlation refuses publication.</p>
+<p>Returns <code>{ok, created, retained?, assessment?, claim?, violations}</code>. The deeply frozen assessment has fixed format <code>sop.reply.exact-property</code>, schemaVersion 1, normalized request/step/subject/expectation and observation snapshots, plus derived status/reason. Reusing owner/revision for different evidence fails. <code>claim</code> is an id-less wire <code>{type, attrs}</code> for the selected reply family; give it an ID when telling it. <code>std.reply.property</code> is closed and requires owner/revision/status; its validator recomputes the result from retained contents, including operation inputs/results and repeated-record identity consistency. Changing live trace records cannot rewrite a retained claim. Restoring snapshots preserves the evidence before claims replay.</p>
+<p>This is a historical claim about exact native property tokens. It neither proves visible appearance changed nor proves object existence, creation/removal, causal responsibility, complete request coverage or current state after later edits. In particular, changing an override from absent to explicit does not prove the rendered colour changed. Observer/receipt accuracy and semantic-to-native mapping remain trusted adapter responsibilities; self-consistent fabricated observations are not authenticated by this API. Broader predicate assessments, grouping and text realization remain separate.</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>const w = new World();
+w.load(&#x27;@trace core.use world=std.trace\n@reply core.use world=std.reply&#x27;);
+const vals = value =&gt; quote(JSON.stringify([value]));
+w.load(`@r std.trace.request message=&quot;Set the shade.&quot;
+@e std.trace.input source=resolved.requirement version=1 source.type=resolved.property key=shade values=${vals(&#x27;new&#x27;)}
+@b std.trace.input source=item.1 version=1 source.type=example.item key=shade values=${vals(&#x27;old&#x27;)}
+@a std.trace.input source=item.1 version=2 source.type=example.item key=shade values=${vals(&#x27;new&#x27;)}
+@s std.trace.step request=$r operation=set.property operation.version=1 invocation=call.1 status=confirmed input=$e input=$b result=$a
+@before std.trace.observation step=$s invocation=call.1 phase=before input=$b
+@after std.trace.observation step=$s invocation=call.1 phase=after input=$a`);
+const result = assessPropertyChange(w, {request:&#x27;r&#x27;, step:&#x27;s&#x27;, before:&#x27;before&#x27;, after:&#x27;after&#x27;, expectation:&#x27;e&#x27;, source:&#x27;item.1&#x27;, sourceType:&#x27;example.item&#x27;, key:&#x27;shade&#x27;, owner:&#x27;reply.1&#x27;, revision:&#x27;1&#x27;});
+print(result.assessment.status);
+print(w.tell(&#x27;@claim std.reply.property owner=reply.1 revision=1 status=changed&#x27;).ok);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>changed
+true</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.190.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.191.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

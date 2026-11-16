@@ -2053,3 +2053,7 @@ Provider filters, repeated-value alternatives, template graph integrity and miss
 providers are checked without language or domain vocabulary in the mechanism.
 Compilation is bounded and fails as a whole. Consumers must bind cached compilation
 to its exact source world and fact/schema revision; see [the API contract](api.md#compilegrammaroverlayworld-options).
+
+## assessPropertyChange
+
+Assesses exact native property tokens against an explicit resolved expectation using correlated std.trace before/after observations and operation inputs/results. The immutable retained snapshot supports a typed std.reply.property claim with changed/unchanged/unconfirmed status, recomputed on validation. This is neither semantic intent resolution nor a whole-request or perceptual-success guarantee. See the API for correlation, version, alias, budget and trust boundaries.

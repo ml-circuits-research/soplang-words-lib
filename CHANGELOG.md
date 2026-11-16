@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.185.0
+
+- Add opt-in original Unicode source ranges to parseText, preserving existing token-index spans and default outputs. Multiword tokens retain disjoint contributing intervals.
+- Unaligned rewrites, invalid Unicode and source-mapping budget exhaustion report unavailable provenance without changing parses.
+
 ## 0.184.0
 
 - Add generic retained revisions: exact detached frozen JSON definitions keyed by identity and revision, idempotent reuse and conflict rejection.

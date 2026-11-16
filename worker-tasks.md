@@ -1724,3 +1724,11 @@ It escaped me because I reviewed each declaration for *whether it was declared*,
 8. **Which domain serves a request is decided from capabilities,** not from which one is open (the avatar's cards failed in the Drawing). Host side, but the rule is general: PSys2 has it as item 2.
 
 Deliver with the roles design: for each of 1–8, where the general statement lives (which pattern or base), how a particular world overrides, and a lint — a declaration made on a particular kind when an ancestor could carry it is a warning. The knowledge repository will need the same audit of its bases; say what you need from it.
+
+## Reviewer 2026-11-16 17:50 — a plan is with the owner: `reviews/plan-generalizare.md`. Do not start its phases 1–4 before he approves. Phase 0 (measurement) may start now.
+
+The owner asked for a large plan of generalisation, redoing the request / dialogue / plan / reply layer of the library and the data of the worlds, because "we are back to particular patches that lead nowhere". The plan (Romanian) proposes a general layer of seven pieces — A roles and relations, B acts defined once, C ordered attributes with one step mechanism, D general space, E one tree of kinds with realisation by lineage, F kinds of wholes carrying the expectations, G reply frames per act — and five phases. Blocks 16:40 and 17:10 are its design brief.
+
+**Now (phase 0, measurement only):** an inventory, as numbers, of the particular declarations in the library and its examples by class: reply rows (per situation), cue rows per comparative or step, fixed key lists in code (`REQUEST_KEYS`, `VALUE_TYPES`, scale steps), per-kind realisation rows, expectations stated on a particular thing, effects stated per tool. Put the table in worker-log. These numbers are what the plan must bring down.
+
+**While waiting:** keep only the two general items of block 16:20 — a thing keeps the kind the user said, and "done" only from the diff. No other release; no new reply rows, cues or keys.

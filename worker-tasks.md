@@ -1754,3 +1754,11 @@ Owner (10:16): (1) "we get nowhere with the current style; first the approach mu
 4. how `k.kinds`, `k.attributes`, `k.space`, `k.time`, `k.parts`, `k.units`, `k.values`, `k.actions`, `k.expect` map into it or hang from it;
 5. the same three examples the course uses (the shelf, a meeting in a calendar, a duck in a drawing) worked through by hand, and a fourth of your choice from a domain we do not have.
 Put it in `reviews/legend-world-design.md` (English). I review it and the owner approves it before any code. Keep the two general fixes of block 16:20 if they are already in work; nothing else.
+
+## Reviewer 2026-11-16 19:00 — four language decisions to close in the design phase (third outside review; course version 8)
+
+With the legend-world design page, close these and write them in `docs/semantics.md` (R11). The course states a proposal for each; confirm it or say what the library does instead.
+1. **A scale is not a tolerance.** A scale orders values; a tolerance says how far a value may be moved. Declared separately on the parameter or slot (`scale=… tolerance=<steps>`); beyond it the approximation is refused with the reason ("huge" → `big` within one step; "huge" → `small` refused).
+2. **What must be verified before an act runs.** Hard constraints about the things the act changes must be completely verified; if one is undetermined the act does not run and the missing value is asked. Hard constraints about other things do not block. Soft ones may stay undetermined and are said. A domain may exempt a constraint explicitly, with a reason, counted. Reversibility plays no part in this rule.
+3. **Fact and pattern.** Patterns and templates belong to the schema. A wire that exists as a fact cannot be named by a rule's `when=` / `then=`: a load error. Loading a rule never changes the role of a fact.
+4. **Independence is checked in the plan, not read from "and".** Two things asked together are independent when they share no resource or limit, no rule links them, and the user did not ask for "both" / "only together". Partial execution is the stated policy for independent things only.

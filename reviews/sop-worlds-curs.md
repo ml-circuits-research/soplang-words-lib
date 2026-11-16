@@ -1,8 +1,8 @@
 # SOP Worlds: curs de început
 
-*Versiunea 7, 16 noiembrie 2026. Text de lucru în română, sursă pentru documentația și skill-urile din sopworld. Termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 8, 16 noiembrie 2026. Text de lucru în română, sursă pentru documentația și skill-urile din sopworld. Termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
-*Cursul descrie cum trebuie să lucreze tehnologia. Unde un lucru este stabilit numai ca intenție, lecția o spune pe loc cu cuvântul „propus”. Starea implementării este în Anexa A. Partea a patra (lecțiile 27–30) este propunerea de generalizare: lumea legendelor și ce se reface din bibliotecă. Exemplele de fire nu au fost încă rulate una câte una; biblioteca le va trece prin teste și cursul se corectează unde un exemplu nu rulează.*
+*Cursul descrie cum trebuie să lucreze tehnologia. Sub titlul fiecărei lecții, rândul „Stare” spune ce există azi și ce este numai propus. Starea implementării este în Anexa A. Partea a patra (lecțiile 27–30) este propunerea de generalizare: lumea legendelor și ce se reface din bibliotecă. Exemplele de fire nu au fost încă rulate una câte una; biblioteca le va trece prin teste și cursul se corectează unde un exemplu nu rulează.*
 
 ---
 
@@ -86,6 +86,8 @@ Schema are două întoarceri. Una mică, între completare și raționament: com
 
 ## Lecția 3. Firul
 
+*Stare: există în bibliotecă și în aplicație.*
+
 Unitatea limbajului este **firul (wire)**: o singură declarație, scrisă pe un rând.
 
 ```
@@ -107,6 +109,8 @@ Dacă valorile repetate au o ordine și câte sunt permise depinde de cheie și 
 Un fir care spune că ceva este așa se numește **fapt (fact)**. Firul `@b1` este un fapt.
 
 ## Lecția 4. Numele: puncte, prefixe și spații de nume
+
+*Stare: există; evitarea coliziunii numelor de tipuri este de stabilit.*
 
 **Punctul nu are niciun înțeles pentru limbaj.** `std.schema.kind` este un singur nume. Convenția respectată peste tot este că prima parte a numelui unui tip spune de unde vine.
 
@@ -140,6 +144,8 @@ Fiindcă prefixul este numai o convenție, două tipare publicate ar putea alege
 
 ## Lecția 5. Lumea, schema și ce înseamnă „validă”
 
+*Stare: lumea, schema, încălcările, copia și anularea există; cele trei rezultate ale unei verificări și regula pentru verificarea nedeterminată sunt propuse.*
+
 O **lume (world)** este o mulțime de fire ținute împreună și verificate. Are două feluri de fire: faptele, care spun ce există acum, și **schema (schema)**, care spune ce fapte au voie să existe și ce decurge din ele.
 
 Lumea verifică fiecare schimbare față de schemă. Dacă cineva încearcă să pună a șaptea carte pe un raft cu șase locuri, lumea refuză. Refuzul este el însuși o declarație, numită **încălcare (violation)**: spune ce regulă a fost încălcată și de către ce fire.
@@ -152,7 +158,14 @@ Rezultatul unei verificări are trei valori, nu două.
 | nevalidă (invalid) | Există cel puțin o încălcare tare. |
 | nedeterminată (undetermined) | Nu s-a găsit nicio încălcare, dar verificarea nu a fost completă: lipsește o valoare de care o regulă are nevoie, sau o limită a oprit căutarea. |
 
-O verificare nedeterminată nu este o garanție. Un plan construit pe ea spune ce nu a putut fi verificat.
+O verificare nedeterminată nu este o garanție. Ce se întâmplă cu un act în acest caz este o regulă explicită, nu o chestiune de reversibilitate (propus):
+
+| Constrângere | Ce se cere înaintea execuției |
+|---|---|
+| tare, despre lucrurile pe care actul le schimbă | Trebuie verificată complet. Dacă rămâne nedeterminată, actul nu se execută; sistemul cere valoarea care lipsește. |
+| tare, despre alte lucruri | Nu oprește actul; rămâne cum era. |
+| slabă | Poate rămâne nedeterminată; se spune în răspuns. |
+| declarată de domeniu ca „poate rămâne neverificată” | Excepție explicită, cu motiv, numărată. |
 
 O lume poate fi **în construcție**: unele valori obligatorii pot lipsi încă. O carte fără raft este primită, iar lumea ține minte că îi lipsește raftul. Ce nu se primește niciodată este o valoare greșită: un raft care nu există, un număr în afara limitelor. Înainte de un efect real, valorile obligatorii trebuie să fie prezente.
 
@@ -161,6 +174,8 @@ O lume ține minte ce s-a schimbat, deci poate reveni la o stare anterioară (an
 > **Despre cuvântul „schemă”.** În programul bibliotecii, schema unei lumi poartă azi alt nume englez, *matrix*. Redenumirea este de hotărât (Anexa B).
 
 ## Lecția 6. Tipuri și feluri de lucruri
+
+*Stare: există.*
 
 Tipurile se declară prin fire, cu `core.type`:
 
@@ -179,6 +194,8 @@ Felul unei cărți este spus într-un singur loc: prin tip. Nu există și o che
 Tipurile care descriu lucruri asupra cărora se acționează se numesc **feluri de lucruri (kinds of things)**. Ele extind `std.schema.thing`, direct sau prin alt tip. Orice fel de lucru este un tip; nu orice tip este un fel de lucru.
 
 ## Lecția 7. Sloturi: ce are voie să conțină o cheie
+
+*Stare: există; declararea numărului și a ordinii valorilor este propusă.*
 
 Un **slot (slot)** este declarația unei chei pentru un tip.
 
@@ -212,6 +229,8 @@ O cheie obligatorie fără valoare se numește **cheie deschisă (open key)**.
 | rol (role) | Locul unei valori într-o acțiune: ce lucru, unde, cât. Ține de modelul acțiunii (lecția 17), nu de structura lucrurilor. |
 
 ## Lecția 8. Reguli, interdicții și constrângeri
+
+*Stare: există.*
 
 O **variabilă (variable)** se scrie `?name` și înseamnă „o valoare de găsit”. Un fir folosit pentru a căuta alte fire se numește **model (pattern)**. Aceeași variabilă în două modele ale aceleiași reguli înseamnă aceeași valoare; o variabilă este valabilă numai în regula ei.
 
@@ -250,6 +269,8 @@ O constrângere poate fi **tare (hard)**: schimbarea este refuzată. Sau **slab�
 
 ## Lecția 9. Când o constrângere are nevoie de calcul
 
+*Stare: există.*
+
 Schema poate chema o **funcție (function)**. Cazul simplu folosește o funcție a bibliotecii:
 
 ```
@@ -285,6 +306,8 @@ Programul este permis unde este nevoie de calcul. Faptul că există o regulă, 
 
 ## Lecția 10. Ce înseamnă exact declarațiile
 
+*Stare: parțial stabilit; rândurile marcate sunt hotărâri încă deschise.*
+
 Forma unui fir nu spune tot. Tabelul arată întrebările de înțeles și răspunsul fiecăreia. Unde scrie „de stabilit”, biblioteca are de hotărât și de scris, cu un exemplu care rulează; cursul nu inventează răspunsul.
 
 | Întrebare | Răspuns |
@@ -292,13 +315,15 @@ Forma unui fir nu spune tot. Tabelul arată întrebările de înțeles și răsp
 | Ce înseamnă că o valoare lipsește? | Că nu este cunoscută. Nu înseamnă „fals”. |
 | Cum se spune că ceva *nu* este așa? | Printr-o afirmație negativă explicită, diferită de lipsă. Forma ei: de stabilit. |
 | Ce face o regulă când îi lipsește o valoare? | Nu se potrivește. Dacă valoarea este una de care depinde o interdicție, verificarea este nedeterminată pentru acea interdicție (lecția 5). Exemplu: o carte fără mărime pe raftul de sus — interdicția „carte mare pe raftul de sus” nu este nici îndeplinită, nici încălcată. |
-| Cum se deosebește un model de un fapt? | Un fir numit de o regulă după `when=` este model. Trebuie ca încărcarea unei reguli să nu poată transforma un fapt existent în model: de stabilit. |
+| Cum se deosebește un model de un fapt? | Hotărârea propusă: modelele și șabloanele aparțin schemei, nu faptelor. Un fir este model din clipa în care este declarat într-o schemă și numit de o regulă; un fir care există deja ca fapt nu poate fi numit de o regulă după `when=` sau `then=` — aceasta este o eroare la încărcare. Astfel încărcarea unei reguli nu schimbă niciodată rolul unui fapt. De confirmat de bibliotecă. |
 | Unde este valabilă o variabilă? | În regula sau interdicția în care apare. |
 | Când dispare un fir dedus? | Când nu mai are niciun temei (lecția 8). |
 | Valorile repetate au ordine? | După cum declară slotul: mulțime, listă sau o singură valoare (propus, lecția 7). |
 | Când este o lume validă? | Fără încălcări tari și cu verificare completă (lecția 5). |
 
 ## Lecția 11. Tipar, cunoaștere, instanță
+
+*Stare: există; numele noi sunt în curs de adoptare; felurile de cunoaștere declarate pe fiecare rând sunt propuse.*
 
 Lumile au trei roluri. Nu sunt trei categorii de aceeași natură: una este o specificație, una este conținut, una este o stare concretă.
 
@@ -345,6 +370,8 @@ Biblioteca cu rafturi din curs este un exemplu inventat și nu este publicată.
 
 ## Lecția 12. Compunerea lumilor
 
+*Stare: legarea de altă lume există; restrângerea și conflictul la import sunt propuse.*
+
 Compunerea are trei operații: importul, extinderea și legarea de lucruri din altă lume.
 
 **Importul.** O lume încarcă un tipar publicat, la o versiune fixată. Tipurile, sloturile și regulile tiparului devin ale ei. Schimbarea versiunii este o hotărâre, urmată de rularea testelor.
@@ -378,6 +405,8 @@ Legarea se face de un lucru anume, cu identitate stabilă, nu de un nume. Când 
 
 ## Lecția 13. Folosirea fără dialog
 
+*Stare: mecanismele există; cele două exemple nu sunt încă scrise și rulate.*
+
 Două exemple arată primul nivel al tehnologiei, fără propoziții și fără unelte.
 
 **Verificarea unui document.** Cunoașterea (`k.layouts`) are norma că un raport are titlu, introducere, cel puțin două secțiuni și o concluzie. Un document este încărcat ca fapte. Lumea răspunde ce lipsește (concluzia), ce regulă este încălcată și ce nu a putut verifica (nedeterminat, dacă lipsește o informație de care o regulă are nevoie). Nu se schimbă nimic.
@@ -391,6 +420,8 @@ Aceleași mecanisme sunt folosite în partea a treia, sub o conversație.
 # Partea a treia. Folosirea conversațională
 
 ## Lecția 14. Domeniul, capabilitatea, unealta, legătura
+
+*Stare: există.*
 
 Sistemul poate face lucruri reale în mai multe părți ale lui: desenează, face diagrame, scrie documente, așază invitați. O astfel de parte se numește **domeniu de capabilități (capability domain)**.
 
@@ -418,6 +449,8 @@ O **legătură (binding)** este declarația care spune ce unealtă îndeplineșt
 Dacă cele trei sunt lipite într-o singură funcție, acea funcție ajunge să citească cererea, să aleagă valori și să scrie răspunsul: programul pe caz din lecția 1.
 
 ## Lecția 15. Ce declară un domeniu
+
+*Stare: există în bibliotecă și în patru domenii ale aplicației; scara, toleranța și efectul așteptat complet sunt propuse.*
 
 Pentru bibliotecă. Felurile de lucruri și sloturile sunt cele din lecțiile 6 și 7.
 
@@ -447,7 +480,7 @@ Pentru bibliotecă. Felurile de lucruri și sloturile sunt cele din lecțiile 6 
 @op.add      std.tool.op    world=library name=add effect=makes
 @pa.add.kind std.tool.param op=add name=kind  of=book required=true
 @pa.add.n    std.tool.param op=add name=n     kind=integer min=1 max=20 default=1
-@pa.add.size std.tool.param op=add name=size  accepts=small accepts=big
+@pa.add.size std.tool.param op=add name=size  accepts=small accepts=big scale=k.expect.scale tolerance=1
 @pa.add.cov  std.tool.param op=add name=cover type=k.colours.basic by=name
 @pa.add.on   std.tool.param op=add name=on    type=shelf
 @nd.add      std.tool.needs op=add exists=shelf
@@ -474,6 +507,8 @@ Pentru bibliotecă. Felurile de lucruri și sloturile sunt cele din lecțiile 6 
 
 ## Lecția 16. Etapele unui mesaj
 
+*Stare: există.*
+
 | Etapă | Intră → iese |
 |---|---|
 | 1. Starea | Ce este în unelte → fapte despre ce există. |
@@ -490,6 +525,8 @@ Etapele 5 și 6 nu sunt strict una după alta. Completarea dă valori candidate 
 Limba apare numai la etapele 2 și 8. Între ele totul este fire.
 
 ## Lecția 17. Interpretarea: propoziția devine cerere
+
+*Stare: cererea și cheile ei există; ținta ca grup, domeniul de aplicare, cuantificatorul, identitatea cerinței și perechile minimale sunt propuse.*
 
 O **cerere (request)** este o mică lume de fire, după tiparul `w.request`. Pentru „add three blue novels, no big ones”, în schiță:
 
@@ -560,6 +597,8 @@ Când sistemul nu este sigur de citire, spune omului ce a înțeles înainte de 
 
 ## Lecția 18. Situarea: focus, reacții, trimiteri, întrebări
 
+*Stare: reacțiile, trimiterile și întrebarea la mai multe potriviri există; focusul, enumerarea stabilă și legarea răspunsului de întrebare sunt propuse.*
+
 **Focusul conversației.** Dialogul ține minte trei lucruri: lucrurile despre care se vorbește, selecția activă (dacă omul a ales ceva) și cererea care este corectată acum. Trimiterile și reacțiile se citesc față de acest focus.
 
 **Cerere nouă sau reacție.** Un mesaj cu un act și un lucru nou este o cerere nouă. Altfel poate fi o **reacție (reaction)** la ce tocmai s-a făcut. Ce face fiecare reacție este un fapt în lumea dialogului:
@@ -598,12 +637,14 @@ Când întreabă, sistemul nu execută nimic și ține minte o **întrebare desc
 
 ## Lecția 19. Adaptarea valorilor
 
+*Stare: echivalența declarată și aproximarea pe scară există; toleranța declarată separat este propusă.*
+
 Uneori omul spune o valoare pe care domeniul nu o primește întocmai. Sunt trei situații. Regula comună: sistemul face cât poate de bine și spune ce a făcut altfel; nu oprește omul cu întrebări pentru o înlocuire.
 
 | Fel de adaptare | Ce este și când este permisă |
 |---|---|
 | echivalență | Alt cuvânt pentru același lucru **în vocabularul domeniului**: domeniul declară că „oval” este felul lui `ellipse`. Sensul se păstrează. Se face fără a fi anunțat. |
-| aproximare | Cea mai apropiată valoare: „tiny” devine mic, „turquoise” devine culoarea disponibilă cea mai apropiată. Este permisă când parametrul declară o toleranță (o scară pe care valorile sunt ordonate) sau când valoarea era o preferință. Se face și se spune ce s-a luat în loc. |
+| aproximare | Cea mai apropiată valoare: „tiny” devine mic, „turquoise” devine culoarea disponibilă cea mai apropiată. Are nevoie de două declarații diferite: o **scară**, care spune cum se compară valorile, și o **toleranță**, care spune câtă abatere este primită. Fără toleranță declarată, sau dincolo de ea, nu se aproximează. Se face și se spune ce s-a luat în loc. |
 | substituție | Alt lucru în locul celui cerut, când domeniul nu are altceva: o rață desenată cu imaginea unei păsări. Se face și se spune o dată ce s-a folosit în loc. Lucrul își păstrează felul spus de om: în stare este o rață, deci „rața” poate fi mutată sau colorată apoi. |
 
 Aproximarea se sprijină pe cunoaștere. Scara mărimilor:
@@ -616,6 +657,8 @@ Aproximarea se sprijină pe cunoaștere. Scara mărimilor:
 @sc.5 k.expect.scale step=huge    order=5
 ```
 
+Scara nu este o toleranță. Dacă unealta primește numai `tiny` și `small`, existența scării nu îndreptățește transformarea lui „huge” în `small`: sunt trei trepte distanță. Toleranța se declară pe parametru, de exemplu „cel mult o treaptă”; „huge” spre `big` este primit, „huge” spre `small` este refuzat cu explicație.
+
 Cerința originală a omului se păstrează în cerere; transformarea se notează lângă ea. Răspunsul le poate arăta pe amândouă.
 
 Dacă pentru o valoare nu există nici echivalență, nici toleranță, cerința nu poate fi îndeplinită. Ce se întâmplă cu restul cererii depinde de structura ei (lecția 20).
@@ -625,6 +668,8 @@ Un caz aparte este **interpretarea**: „in the afternoon” devine un interval 
 Tot aici intră moștenirea (lecția 6): „no fish” îl exclude și pe peștișorul auriu.
 
 ## Lecția 20. Completarea: ce a spus omul și ce presupune sistemul
+
+*Stare: completarea din surse și așteptările există; cele patru însușiri separate ale unei valori, conflictul dus la întrebare și verificarea independenței sunt propuse.*
 
 Fiecare valoare dintr-o cerere are patru însușiri separate. Ele nu trebuie amestecate.
 
@@ -649,7 +694,7 @@ O cerere care poate fi îndeplinită numai în parte se tratează după structur
 
 | Structura | Ce se face |
 |---|---|
-| lucruri independente cerute împreună („a villa and a swing”) | Se face ce se poate și se spune ce lipsește. |
+| lucruri independente cerute împreună („a villa and a swing”) | Se face ce se poate și se spune ce lipsește. Independența nu se deduce din cuvântul „și”: se verifică în plan. Două lucruri sunt independente dacă nu împart o resursă sau o limită (un loc, un buget, un număr total), dacă nicio regulă nu le leagă și dacă omul nu a cerut „amândouă” sau „numai împreună”. |
 | o parte a unui singur lucru cerut („a house with a swing in the garden”) | Nu se execută pe jumătate: se întreabă sau se refuză cu explicație. |
 
 Locurile goale se completează cu **valori candidate**, luate din surse în această ordine: ce a spus omul mai devreme despre același lucru; ce au în comun lucrurile pe care omul le-a cerut așa; valoarea din slot; valoarea obișnuită din cunoaștere; o alegere variată între limite. Unde o sursă dă mai multe valori posibile sau niciuna, locul rămâne deschis pentru raționament (lecția 22).
@@ -666,6 +711,8 @@ Valorile obișnuite se scriu ca fapte de **așteptare (expectation)**:
 Regula care apără de răspunsuri absurde: **o valoare obișnuită completează numai ce omul a lăsat gol.** Dacă omul cere o diagramă despre „how bread is baked” și cunoașterea nu are pașii, răspunsul este „I do not know the steps; I can make five empty steps, or you can name them”.
 
 ## Lecția 21. Descompunerea: întregul și părțile
+
+*Stare: întregul din părți există; operațiile care declară ce păstrează sunt propuse.*
 
 Omul cere adesea un **întreg (whole)**: o pădure, o schemă logică, un raport. Uneltele fac părți. Faptele de așteptare și normele spun din ce părți este făcut întregul:
 
@@ -694,6 +741,8 @@ Unele operații țin de forma „un întreg cu părți și legături”. Mecanis
 Rezultatul este un **plan (plan)**: o listă de pași, fiecare cu actul, felul lucrului și valorile lui, unele încă deschise.
 
 ## Lecția 22. Raționamentul
+
+*Stare: deducția, completarea cu cost minim, extinderea valorii comune și rezolvitorul există; cele cinci sfârșituri, limitele ca politici și „numai valori venite de la om” sunt propuse.*
 
 Raționamentul pornește la un **semnal**: o stare a datelor pe care oricine o poate verifica. Este nevoie de el când rămâne **un loc deschis, o contradicție sau o alegere**.
 
@@ -737,6 +786,8 @@ O căutare se poate încheia în cinci feluri.
 
 ## Lecția 23. Legătura și execuția
 
+*Stare: legătura, execuția și verificarea schimbării față de stare există; starea observată ținută separat, rezultatele execuției și compensarea sunt propuse.*
+
 Fiecare pas al planului este dus la o unealtă prin legătura declarată. Cheia `from=` spune de unde vine fiecare parametru.
 
 | Sursa din `from=` | Explicație |
@@ -769,6 +820,8 @@ O execuție se încheie într-unul din aceste feluri, și răspunsul îl numeșt
 
 ## Lecția 24. Răspunsul
 
+*Stare: răspunsul din diferența de stare există; evidența execuției în răspuns este propusă.*
+
 Răspunsul se compune din date: diferența de stare **și** evidența execuției.
 
 | Parte a răspunsului | De unde vine |
@@ -788,11 +841,13 @@ Fiecare valoare ține minte sursa ei: aceasta este **proveniența (provenance)**
 
 Când o cerere nu poate fi rezolvată cu mecanismele existente, nu se scrie o regulă pentru acel caz. Cazul se trece în **registrul cazurilor nerezolvate** (în depozite: *honest list*), cu piesa generală care lipsește: o declarație, o bucată de cunoaștere, un cuvânt, o compunere de lumi, o metodă de raționament sau un mecanism de bibliotecă.
 
-## Lecția 25. Un domeniu complet
+## Lecția 25. Structura unui domeniu
+
+*Stare: structura există în patru domenii; exemplul nu a fost rulat ca atare.*
 
 Pașii pentru un domeniu nou: felurile de lucruri și sloturile; cuvintele; capabilitățile, promițând numai ce domeniul îndeplinește; uneltele, puține și mici; vederea stării; descrierea uneltelor și legăturile; ce există deja în cunoașterea publicată; testele și propoziții noi.
 
-Declarațiile bibliotecii, la un loc. Pentru scurtime, descrierea parametrilor și sursele lor sunt date numai pentru `add` (lecția 15); celelalte unelte se descriu la fel.
+Lecția arată structura; nu este încă un exemplu rulat de la un capăt la altul. Declarațiile bibliotecii, la un loc. Pentru scurtime, descrierea parametrilor și sursele lor sunt date numai pentru `add` (lecția 15); celelalte unelte se descriu la fel.
 
 ```
 @w        std.schema.world name=library
@@ -853,11 +908,13 @@ Fiecare rând din tabel pornește, separat, de la starea de pornire de mai sus, 
 | „remove the atlases” | Toate cele cinci sunt scoase. Nu există o selecție activă, deci pluralul înseamnă toate. |
 | „add ten atlases” | Refuz cu explicație: sunt șapte locuri libere. O cerință nu este redusă pe tăcute. |
 | „add a shelf” | Un raft nou, cu șase locuri (valoarea din slot). |
-| „a huge dictionary” | Un dicționar mare, și se spune că „huge” a fost luat ca „big”: parametrul `size` declară o scară. |
+| „a huge dictionary” | Un dicționar mare, și se spune că „huge” a fost luat ca „big”: parametrul `size` declară o scară și o toleranță de o treaptă (lecția 15). |
 | „what can you do here?” | Lista actelor și a cerințelor de care se ține cont, din capabilități. |
 | „undo” (după oricare rând care a schimbat ceva) | Ultimul pas întreg înapoi. |
 
 ## Lecția 26. Ce are voie să fie program și cum se măsoară
+
+*Stare: măsurile sunt în parte folosite; proba cu motorul înghețat și perechile minimale sunt propuse.*
 
 Criteriul: **programul unui domeniu nu are voie să dubleze pe ascuns interpretarea și hotărârile care trebuie să fie declarate.** O unealtă poate cunoaște lucrurile ei: unealta de desen știe ce este un cerc.
 
@@ -902,6 +959,8 @@ Ce trece neschimbat de la un domeniu la altul este dovada cea mai directă.
 
 ## Lecția 27. De ce o lume a legendelor
 
+*Stare: propunere.*
+
 Lecțiile de până aici au un cusur comun, găsit pe sesiunile reale: multe declarații sunt scrise pe lucrul particular. Întrebarea pentru raftul unei cărți este „Which shelf should it go on?”. Rața are un rând care spune că se desenează ca o pasăre. Fiecare fel de răspuns are rândul lui. De aceea fiecare caz nou a cerut un rând nou, iar rândurile noi au fost, de fapt, petice.
 
 Regula care îndreaptă aceasta: **se pornește de la general spre particular, întotdeauna.** Fiecare declarație stă pe conceptul cel mai general pentru care este adevărată și se moștenește în jos. O lume particulară declară numai ce are ea diferit.
@@ -930,6 +989,8 @@ Conceptele generale nu sunt multe. Un fel simplu de a le găsi pe toate este să
 | toate? unele? niciunul? fiecare? | cuprindere |
 
 ## Lecția 28. Conceptele lumii legendelor
+
+*Stare: propunere; există numai bucăți nelegate.*
 
 Sunt șase grupe. Lista este gândită să fie completă la acest nivel de abstracție: un concept nou ar trebui să apară rar, iar dacă apar multe, înseamnă că am coborât prea jos.
 
@@ -995,6 +1056,8 @@ Ce avem deja din acestea, ca bucăți nelegate între ele: arborele felurilor (`
 
 ## Lecția 29. Cum se leagă o lume de lumea legendelor
 
+*Stare: propunere.*
+
 Fiecare tip spune ce concept este. Fiecare slot spune ce concept realizează. Forma firelor de mai jos este propusă; biblioteca o va stabili.
 
 Biblioteca cu rafturi:
@@ -1037,13 +1100,15 @@ Desenul: o rață este un fel de pasăre în arborele felurilor. Dacă desenul n
 
 ## Lecția 30. Straturile bibliotecii și ce înseamnă „refacem”
 
+*Stare: descriere a stării de azi și două variante de hotărât.*
+
 Biblioteca sopworld are trei straturi, unul peste altul. Pentru a hotărî ce se reface, trebuie văzut ce face fiecare și unde sunt greșelile.
 
-| Strat | Ce face | O asemănare |
-|---|---|---|
-| 1. Motorul limbajului | Citește firele; ține tipurile și sloturile; verifică regulile și interdicțiile la fiecare schimbare; ține minte ce a dedus și din ce; anulează; face copii; caută valori cu rezolvitorul. Nu știe nimic despre propoziții, cereri sau domenii. | Motorul unei baze de date: păstrează datele corecte, oricare ar fi ele. |
-| 2. Modulele generale | Capabilități, limite, capacități, legarea de altă lume, descrierea uneltelor. Sunt scrise ca fire, peste motor. | Tabelele de sistem ale bazei de date. |
-| 3. Stratul conversației | Citește propoziția într-o cerere; hotărăște dacă este cerere nouă sau reacție; completează ce lipsește; face planul; pornește uneltele; compune răspunsul. | Programul care folosește baza de date pentru o aplicație anume. |
+| Strat | Ce face |
+|---|---|
+| 1. Motorul limbajului | Citește firele; ține tipurile și sloturile; verifică regulile și interdicțiile la fiecare schimbare; ține minte ce a dedus și din ce; anulează; face copii; caută valori cu rezolvitorul. Nu știe nimic despre propoziții, cereri sau domenii. Seamănă cu motorul unei baze de date: păstrează datele corecte, oricare ar fi ele. |
+| 2. Modulele generale | Capabilități, limite, capacități, legarea de altă lume, descrierea uneltelor. Sunt scrise ca fire, peste motor. Seamănă cu tabelele de sistem ale unei baze de date. |
+| 3. Stratul conversației | Citește propoziția într-o cerere; hotărăște dacă este cerere nouă sau reacție; completează ce lipsește; face planul; pornește uneltele; compune răspunsul. Seamănă cu programul care folosește baza de date pentru o aplicație anume. |
 
 Unde sunt greșelile găsite:
 
@@ -1173,3 +1238,19 @@ Referințele sunt date din memorie, cu autor și an, și trebuie verificate îna
 | deducție, completare cu cost minim, extinderea unei valori comune | Lecția 22. |
 | stare observată, stare primită pentru execuție, compensare | Lecția 23. |
 | proveniență, registrul cazurilor nerezolvate | Lecția 24. |
+
+## Anexa E. Hotărâri deschise ale limbajului
+
+Acestea sunt hotărâri de bază. Trebuie închise și scrise în specificația bibliotecii înainte ca exemplele cursului să fie luate drept specificație.
+
+| Hotărâre | Starea ei |
+|---|---|
+| un fapt nu poate deveni model la încărcarea unei reguli | Propusă în lecția 10; de confirmat. |
+| cum se scrie o afirmație negativă explicită | Deschisă. |
+| câte valori are o cheie și dacă au ordine | Propusă în lecția 7. |
+| ce verificări trebuie încheiate înaintea execuției | Propusă în lecția 5. |
+| scara și toleranța ca două declarații | Propusă în lecția 19. |
+| cum se verifică independența a două lucruri cerute împreună | Propusă în lecția 20. |
+| cum se evită același nume de tip în două tipare | Deschisă. |
+| ce este în lumea legendelor și cum se leagă celelalte lumi de ea | Propusă în lecțiile 27–29; de aprobat de proprietar. |
+| ce se reface din bibliotecă | De hotărât de proprietar; lecția 30. |

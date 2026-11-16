@@ -44,3 +44,14 @@ Two prerequisites need explicit treatment before the first complete category fam
 - Selecting the green bird and making it yellow require different semantic scopes. Library 0.183.0 now publishes a target-owned selector graph separate from result constraints; two simultaneous colour result constraints would be wrong. Labels can adopt that published representation after semantic review; the initial proposed labels remain unchanged in this corpus milestone.
 
 After those boundaries: start from `Message = Command | RequestFrame | Fragment`, map category-level trees to request graphs, preserve attachment/scope alternatives, and separate interpretation from instance resolution. Repair must preserve negation, numbers, quantifiers and names. The measurement interface must distinguish right description, partial, no reading and wrong description. Incorrect descriptions are a gate; successful structural loading is not an interpretation score. SOP-BERT is the primary reader; the symbolic reader is a fallback and explainer. Both propose the same general request graph and face the same instance-resolution gate. Agreement with the symbolic reader is not a correctness oracle for the model.
+
+
+Frame-role projection is documented in [frames.md](frames.md). It consumes explicit
+normalized argument records and published source licences; it does not add phrase
+coverage or replace the preview reader.
+
+During the frame-binder task, an overly broad tail of worker-tasks.md reprinted the
+same previously disclosed heldout-ID review metadata. Sentence files remain
+unopened; this repeat exposure changes neither the existing provisional status nor
+the requirement for fresh independent final evaluation. No review metadata was
+used in binder design or tests.

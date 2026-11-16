@@ -137,3 +137,25 @@ replacing that path merely to remove a wrapper would change resource behavior.
 A separately validated frame binder can use direct projection once its versioned
 knowledge declarations are selected and compiled. No broader parsing or execution
 coverage follows from this mechanism alone.
+
+## Executable licence-to-role adapter
+
+The compatibility adapter in `frames.mjs` now joins the published licence, frame,
+part, role-map and semantic-role identities and projects all matching licensed
+alternatives with the public template API. The selected frame supplies act, mode
+and needs; lexical act is used only to validate the licensed verb-part join. Role
+arrays retain marker/argument distinctions, exact source evidence and whole copied
+objects/results. Neutral NP qualifiers are not rewritten based on a guessed act.
+
+Knowledge revision `0591f342` supplies the initial five licences. The adapter
+explicitly admits the documented version-2 optional target-mode field; absent mode
+stays unresolved and unknown values fail. It produces role projections only:
+argument typing, unit compatibility, request construction and instance resolution
+remain separate obligations. It neither replaces the pinned preview reader nor
+claims that a phrase which reaches a role record is an executable request.
+
+The next phrase-data integration can use separate static knowledge views from the
+same pin for syntax mappings and frame paths, since both reuse the template node
+and step types. A draft smoke of transitive, resultative and oblique composition
+confirmed the agreed reading envelope; that draft is not part of this pinned
+milestone's acceptance tests or coverage claim.

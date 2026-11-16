@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 24, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 25, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -108,6 +108,47 @@ Mai multe valori ale aceleiași chei reprezintă altceva: o colecție de element
 | `at=120,540` și `at=540,120` | Puncte diferite: coordonatele nu sunt o mulțime fără ordine. |
 | Aceiași participanți, enumerați invers | Aceeași colecție numai dacă slotul declară ordinea nerelevantă. |
 | Aceleași paragrafe, enumerate invers | Alt document când slotul păstrează ordinea textului. |
+
+### 2.2.2 Alegerea reprezentării unui punct
+
+Un punct este o valoare fără identitate proprie. Două obiecte pot ocupa aceeași poziție fără să devină același obiect. Reprezentarea trebuie să permită compararea coordonatelor și citirea unei axe într-o regulă, fără să introducă o identitate separată pentru fiecare număr.
+
+Avem trei variante: valoarea dedicată propusă `at=120,540`, un obiect JSON existent cu câmpurile `x` și `y`, sau fire separate pentru punct și coordonate. Variantele presupun sloturi diferite și nu se încarcă împreună ca declarații ale aceluiași tip. Forma dedicată cere `kind=point space=page`. Forma JSON cere `kind=json`, iar valoarea este un text SOP al cărui conținut decodat este obiectul JSON. Ghilimelele și barele inverse interioare trebuie escapate conform regulilor textelor din secțiunea 2.2.
+
+Exemplul JSON existent arată cele două niveluri de citire: ghilimelele exterioare sunt ale textului SOP, iar cele escapate aparțin cheilor obiectului JSON. După decodare, ordinea cheilor nu schimbă egalitatea valorii.
+
+```sop
+@s.node.at core.slot of=node key=at kind=json
+@n1 node at="{\"x\":120,\"y\":540}"
+```
+
+În varianta cu fire separate, aceeași poziție ar putea fi scrisă astfel, cu tipuri ilustrative care trebuie declarate în schemă:
+
+```sop
+@n1 node at=$position1
+@position1 pointValue space=page
+@coordx coordinate of=$position1 axis=x value=120
+@coordy coordinate of=$position1 axis=y value=540
+```
+
+`position1` are acum identitate, iar fiecare coordonată este un fapt. Schema trebuie să impună exact o coordonată pentru fiecare axă și să definească egalitatea semantică dintre puncte cu identificatori diferiți. Fără această regulă, două poziții numeric egale pot părea diferite numai pentru că se numesc `position1` și `position2`.
+
+| Criteriu | Consecințele celor trei variante |
+|---|---|
+| Citirea unei axe | Valoarea dedicată trebuie să ofere `at.x=?x`; JSON oferă deja citirea prin cale; firele separate cer potrivirea obiectului, punctului și coordonatei legate. |
+| Egalitate | Valoarea dedicată compară coordonate tipizate în același spațiu; JSON folosește forma canonică, indiferent de ordinea cheilor; firele separate cer comparație structurală peste identități diferite. |
+| Identitatea faptului | Primele două variante compară slotul ca valoare; varianta cu referință introduce o identitate suplimentară. Niciuna nu autorizează îmbinarea obiectelor numai pentru că au aceeași poziție. |
+| Lizibilitate și volum | Forma dedicată păstrează un singur fir compact; JSON păstrează un fir, cu numele axelor și escapare; exemplul cu fire separate cere un fir al obiectului, unul al punctului și câte unul pentru fiecare axă. |
+| Schimbarea motorului | Punctul dedicat cere validare, canonizare și acces prin axă; JSON are deja canonizare și căi, dar nu impune singur axele și unitățile; firele separate folosesc potrivirea existentă, cu restricții structurale suplimentare. |
+| Evoluția schemei | Punctul dedicat depinde de ordinea axelor din versiunea spațiului; JSON și firele separate păstrează numele axelor, dar tot cer migrare dacă sensul ori unitățile lor se schimbă. |
+
+Alegerea pentru proiect este `kind=point`, cu acces prin numele axei, reutilizând ideea căilor din mecanismul JSON. Motivul este semantic: poziția rămâne o valoare cu spațiu declarat, fără identități artificiale. JSON rămâne disponibil, dar `kind=json` singur nu dovedește că valoarea are exact axele și unitățile unui spațiu. Firele separate sunt potrivite când coordonatele sunt măsurări cu surse și istoric propriu; atunci descriu observații despre un punct, nu reprezentarea elementară a valorii lui.
+
+În contractul propus, pattern-ul `@p node at.x=?x` citește axa numită `x` chiar dacă valoarea este serializată prin virgule. O interdicție poate folosi variabila numerică într-un `core.check`. Numele axei se rezolvă prin schema spațiului, nu prin poziția curentă pe ecran. Șablonul unei reguli produce întregul punct; modificarea unei axe reconstruiește și validează valoarea completă înainte de înlocuire, așa cum mecanismul JSON actual scrie valoarea întreagă.
+
+Serializarea dedicată folosește numere finite, separate prin virgulă, fără spații; separatorul zecimal este punctul. `at=-12.5,540` are două coordonate; `at=12,5,540` are trei și se refuză într-un spațiu cu două axe. Această formă numerică nu cere ghilimele sau escapare. Egalitatea se calculează după canonizarea numerică, nu după textul original. Dacă slotul participă la cheia de identitate a unui fapt, folosește aceeași egalitate canonică. Două valori diferite pentru poziția aceluiași obiect nu se împacă prin medie sau alegere arbitrară.
+
+Ordinea axelor este imutabilă în interiorul unei versiuni publicate. Datele persistente se încarcă împreună cu versiunea spațiului care le-a definit. Dacă noua versiune schimbă ordinea din `(x,y)` în `(y,x)`, migrarea citește vechea ordine și rescrie `120,540` ca `540,120`. Aceiași octeți nu se reinterpretează tacit după noua schemă. Adăugarea unei axe cere o regulă explicită de completare sau lasă migrarea incompletă. Fără migrare, versiunea incompatibilă se refuză. Punctele din spații ori unități diferite nu sunt declarate egale fără o transformare explicită.
 
 ## 2.3 Marcatori sintactici și referințe
 

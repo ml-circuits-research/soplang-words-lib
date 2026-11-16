@@ -58,7 +58,7 @@ Motorul limbajului intră în refacerea completă acolo unde contractele o cer. 
 | lipsă, necunoscut, negație | O valoare absentă este necunoscută; o afirmație negativă are o formă a ei; o regulă căreia îi lipsește o valoare face verificarea nedeterminată. |
 | fapt și model | Un fir care există ca fapt nu poate fi numit de o regulă: eroare la încărcare. |
 | retragerea firelor deduse | Numai când nu mai au niciun temei; de verificat că așa este azi și de scris cu trei teste. |
-| valori de tip punct | Un slot poate ține un punct într-un spațiu (mai multe numere, câte unul pe axă), pe lângă număr, text și referință. |
+| valori de tip punct | Alegerea din carte §2.2.2: `kind=point`, acces prin axă (`at.x`), egalitate canonică și versiunea spațiului păstrată. Migrarea remapează ordinea axelor; nu reinterpretează datele vechi. JSON rămâne disponibil. |
 
 ### 3.2 Modulele generale
 

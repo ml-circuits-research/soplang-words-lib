@@ -6027,3 +6027,8 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 
 - Continued pending F48–F50 after current remote/task verification. Replaced the misleading live calendar-chart link with side-by-side active drawing embedding and local snapshot provenance; separated trace act from tool operation, normalized after.version and specified journal persistence across sessions. Consolidated point/collection prose while preserving R1–R5 identifiers. Runtime unchanged.
 - Validation: `python3 ../.session-control/check-book-v21.py` and `git diff --check` passed. `npm test` rebuilt docs and passed; `SOPWORLD_BUNDLE=1 npm run test:src` passed. Each log reports 650 tests, 648 pass, 0 fail, 1 skip, 1 todo.
+
+## 2026-11-16 — G0: book v25, point representation comparison
+
+- Continued pending F25 after inspecting current tasks and the JSON reference/parser. Added the three-way comparison and author decision, named-axis access, serialization, canonical equality and versioned axis migration. Updated the point task in the refactoring plan. Runtime unchanged.
+- Read review 7 at dee2df5 before synchronization; removed the accepted v23/v24 requests and retained new F51–F54 follow-ups. Validation: `python3 ../.session-control/check-book-v21.py` and `git diff --check` passed. A `node --input-type=module` probe loaded a kind=json slot, told n1 with JSON.stringify/quote, and queried `@p node at.x=120`; result was exactly [{"p":"n1"}]. `npm test` rebuilt docs and passed; `SOPWORLD_BUNDLE=1 npm run test:src` passed. Each log reports 650 tests, 648 pass, 0 fail, 1 skip, 1 todo.

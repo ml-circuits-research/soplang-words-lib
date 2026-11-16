@@ -1,6 +1,7 @@
 import { choose } from './rank.mjs';
 import { normalise } from './alternate.mjs';
 import { valueText } from './parser.mjs';
+import { grammarSource, GRAMMAR_WORDS } from './grammar-source.mjs';
 // std.grammar (Round 26 B, smallest version): language-free machinery that applies a
 // grammar world to text. The world holds the language as facts — `g.word text= lemma= cat=`
 // (the lexicon), `g.rule lhs= rhs= ...` (categories in order; `X?` optional, `X*` any
@@ -51,7 +52,7 @@ export function grammarOf(world, { types = {}, classes = {}, lexicon = {}, digit
 
 /** Tokens, with the lexicon's words of several parts ("next to") kept as one. */
 function tokenize(text, g) {
-  const raw = String(text).toLowerCase().match(/'s\b|[\p{L}\p{N}]+(?:'(?!s\b)[\p{L}]+)?|[&]/gu) || [];
+  const raw = String(text).toLowerCase().match(GRAMMAR_WORDS) || [];
   const out = [];
   for (let i = 0; i < raw.length; i++) { // bounded: the words
     const m = g.multi.find((t) => { const ws = t.split(/\s+/); return ws.every((x, k) => raw[i + k] === x); });
@@ -66,8 +67,12 @@ function tokenize(text, g) {
  * with `tokens`, `unknown` (words no lexicon entry, literal or digit reads) and, past the
  * step budget, `truncated: true` and what was complete by then (it never throws);
  * a node is { cat, span: [i, j], word?, lemma?, feat?, children?, coord? }.
+ * With sourceSpans, source reports original Unicode-scalar token ranges and nodes
+ * gain sourceRanges when mapping succeeds; token-index span never changes.
  */
-export function parseText(world, text, { start = 'S', max = 8, budget = 20000, alternations, ...grammar } = {}) {
+export function parseText(world, text, { start = 'S', max = 8, budget = 20000, alternations, sourceSpans = false, sourceBudget = 20000, ...grammar } = {}) {
+  const original = sourceSpans ? String(text) : null;
+  if (sourceSpans) text = original;
   let applied = null, mode = null; // the alternation rules of the language world bring a variant to its canonical form first
   if (alternations) { const n = normalise(world, text, alternations === true ? {} : alternations); if (n.applied.length) { text = n.text; applied = n.applied; mode = n.mode ?? null; } }
   const g = grammarOf(world, grammar), tok = tokenize(text, g);
@@ -138,7 +143,8 @@ export function parseText(world, text, { start = 'S', max = 8, budget = 20000, a
     .sort((a, b) => JSON.stringify(a.tree).localeCompare(JSON.stringify(b.tree))); // a stable order first, so ties keep it
   const chosen = choose(world, 'parse', parses, { seed: null }).order.slice(0, max).map(({ depth, prio: _p, lits: _l, ...p }) => p); // one way to choose (std.decide, kind parse): priority, literal words, size, depth
   // no noun is owned: a word the lexicon does not have is reported, not judged
-  return Object.assign(chosen, { tokens: tok, ...(unknown.length ? { unknown } : {}), ...(over ? { truncated: true, steps } : {}), ...(applied ? { applied, normalised: text } : {}), ...(mode ? { mode } : {}) });
+  const source = sourceSpans ? grammarSource(original, tok, chosen, { rewritten: !!applied, budget: sourceBudget }) : null;
+  return Object.assign(chosen, { ...(sourceSpans ? { source } : {}), tokens: tok, ...(unknown.length ? { unknown } : {}), ...(over ? { truncated: true, steps } : {}), ...(applied ? { applied, normalised: text } : {}), ...(mode ? { mode } : {}) });
 }
 
 /** A noun phrase node read as roles: { det, num, mods, head, lemma, span, pp? } (categories named by the grammar: `cats`). */

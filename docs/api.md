@@ -1158,6 +1158,53 @@ coordination as `{ coord: [...] }`; `parts` are the phrases inside it of the sam
 such as the owner in "the house's door"); the category names are the grammar's (`cats`).
 Verbs and argument frames are next (questions.md Q32).
 
+With `sourceSpans: true`, the result also has `source: { text, unit:
+'unicode-scalar', status, tokenRanges, reason? }`. `text` is the exact original
+message, including casing, punctuation and whitespace. `tokenRanges[i]` lists
+half-open original Unicode scalar intervals contributing to `tokens[i]`. Each
+returned tree node gains `sourceRanges`, the union of intervals contributing to its
+existing token-index `span`. These are separate coordinate systems: `span` and
+`unknown.at` keep their existing meanings. Default calls add no source metadata
+and preserve their existing parse candidates and ordering.
+
+Intervals merge only when overlapping or adjacent. A multiword lexical token can
+therefore have several intervals: ignored punctuation or whitespace between its
+words is not falsely reported as lexical evidence. A consumer of the request
+contract's single `source.start`/`source.end` interval may directly use one range;
+it must not silently turn disjoint ranges into a bounding interval and call that
+exact coverage. A raw phrase envelope or richer multi-range provenance needs its
+own explicit interpretation.
+
+Whole-string lowercasing remains the tokenizer's behavior. Source correspondence
+handles length-changing casing, context-sensitive casing and astral characters;
+combining marks ignored by the existing tokenizer remain uncovered gaps. Isolated
+surrogates produce unavailable provenance. If an alternation actually rewrites the
+message, its current API supplies no edit alignment: `source.status` is
+`unavailable`, `tokenRanges` is `null`, and nodes have no `sourceRanges`. The parser
+still returns its normalized readings and `applied` metadata. Merely enabling
+alternations without applying a rewrite does not lose the exact mapping.
+
+`sourceBudget` is an independent nonnegative safe-integer work limit (default
+20000) for correspondence and tree decoration. Exhausting it leaves parse results
+unchanged and sets `source.reason=budget`; no partially decorated trees are
+returned. Other unavailable reasons are `unaligned-alternation`, `invalid-unicode`,
+`unsupported-case-mapping`, `token-alignment`, and `invalid-budget`. Check `status`
+before using offsets. This option does not repair words or certify interpretation.
+
+```js
+const w = new World();
+w.load('@r g.rule lhs=S rhs=W+');
+const p = parseText(w, 'RED, cup!', { sourceSpans: true,
+  lexicon: { red: { cat: 'W' }, cup: { cat: 'W' } } });
+print(p.source.tokenRanges);
+print(p[0].tree.sourceRanges);
+```
+
+```output
+[[[0,3]],[[5,8]]]
+[[0,3],[5,8]]
+```
+
 ```js run
 const w = new World();
 w.tell(`@a g.word text=two lemma=2 cat=Num  @b g.word text=red lemma=red cat=Adj  @c g.word text=cups lemma=cup cat=N

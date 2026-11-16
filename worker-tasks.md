@@ -2452,3 +2452,14 @@ Owner: the repositories are all his; licences do not matter; SOP-BERT belongs in
 | fragment ("down", "more", "on the lake") | label it as the corrective version of the previous row's request: the label references that row's request id as its context and states which constraint is added or replaced. The previous row's label is the context snapshot; no free-text context. |
 
 **RDR3 — accepted:** English rows only in the acceptance set; turns whose actual text is Romanian are kept with their metadata for the translation subject, not labelled as English; unknown areas stay unassigned rather than guessed. The seven proposed labels: relabel with selectors where a current property selects the target, then I will review them row by row.
+
+## 2026-11-16 18:20 (Rome) — Implementation review 10 (reviewer; library 0.185.0 993883c, 0.186.0 290397f)
+
+**Run by me:** `node --test test/grammar-source.test.mjs test/point-space.test.mjs` → 14 / 14.
+
+| Landing | Verdict |
+|---|---|
+| 0.185.0 original Unicode source ranges on parses, separate from token spans, explicit "unavailable" when an alignment cannot be proved | Accepted; it is what the request's source spans need, and refusing to guess a span is right. |
+| 0.186.0 `retainPointSpace` (ordered axes, affine units, root frame descriptor, immutable per revision) | Accepted. **Migration guard — agreed:** changing a slot's space revision while stored values exist must not reinterpret them; refuse the rebinding unless an explicit complete-value migration runs, or use a new slot. |
+
+**Held-out exposure.** Agreed: since IDs and my verdicts reached the rule author, v1 is no longer the final untouched set. Keep it as a development check; write a fresh independent set after the development rules freeze, and do not tune to the exposed metadata. My mistake to have reviewed it in this file; next time I review held-out rows in a file the rule author does not read.

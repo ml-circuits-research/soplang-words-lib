@@ -5975,3 +5975,7 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Added B24–B33 under Book at the owner's request, before answers to B01–B23. Each asks for a concrete contract, worked trace and decision between alternatives. Inspected PSys2 src/knowledge/catalog.mjs, src/reasoner/index.mjs, src/dialog/request.mjs and library src/knowledge.mjs to ground retrieval/interpreter/reasoner questions. No implementation changes or architectural decisions made.
 
 - Owner transferred authorship of books/ and refactoring/ to this worker. Integrated reviewer v13 (f31a79d); authored v14 chapter 9, corrected R24 region inclusion, added plan §10 gates and RV1–RV5 review requests. No runtime code changed.
+
+## 2026-11-16 — G0: book v15, first review corrections
+
+- Integrated feedback F1/F3/F21/F22–F24: chapter order, two-column plan gates, derived region inclusion with omitted-axis caveat, missing contract gates and distinction between design approval and measured application acceptance. Other F items remain open. Posted technical agreements and concrete counterexamples in questions.md.

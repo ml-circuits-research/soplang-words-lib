@@ -265,12 +265,18 @@ La cererea proprietarului, sesiunea worker redactează cartea și aceste planuri
 
 Înainte de pasul 3 din secțiunea 8 se închid următoarele livrabile. Capitolul 9 al cărții este prima explicație a contractelor, nu o dovadă că sunt deja implementate.
 
-| Livrabil | Referință | Dovada cerută la review |
-|---|---|---|
-| Schema unui spațiu nou și a operațiilor lui | 9.1–9.2, B24 | Exemplu complet, unități, metrică, limite și operație nesuportată. |
-| Reprezentarea regulilor și interpretarea unică a firelor | 9.3, B25–B26 | Traseu text–valori–referințe–regulă, cu erori localizate. |
-| Accesul la cunoașterea relevantă și completitudinea | 9.4, B27–B28 | Dependențe directe și inverse, ciclu, shard lipsă și invalidare. |
-| Contractele motoarelor și coordonarea lor | 9.5, B29–B30 | Două motoare, rezultate distincte, verificare și buget epuizat. |
-| Refolosirea între domenii | 9.6, B31–B33 | Identități păstrate, exemplu numeric complet, eșec și recuperare. |
+| Livrabil | Referință și dovada cerută la review |
+|---|---|
+| Spații și operații | 9.1–9.2, B24: lista operațiilor generale, schema completă, unități, metrică și operație nesuportată. |
+| Reguli și interpretare | 9.3, B25–B26: condiții și efecte structurate; traseu text–valori–referințe–regulă, cu erori localizate. |
+| Acces la cunoaștere | 9.4, B27–B28: dependențe directe și inverse, ciclu, fragment de bază lipsă, completitudine și invalidare. |
+| Motoare | 9.5, B29–B30: două motoare, rezultate distincte, verificare comună și buget epuizat. |
+| Cerere și răspuns | 6.3, R71: cererea în concepte, cu identitatea fiecărei cerințe, și formele generale de răspuns. |
+| Observarea uneltei | R70, 9.6: identități, versiune, conținut observat, efect necunoscut și eșec verificabil. |
+| Refolosire | 9.6, B31–B33: identități păstrate între domenii, exemplu numeric complet, eșec și recuperare. |
+| Migrarea stării | B22: format vechi și nou, păstrarea identității, incompatibilitate detectată și recuperare fără pierderea originalului. |
+| Acceptarea aplicației | 7: cele trei sesiuni ale proprietarului, cu numitor fix și rezultate corect / parțial / refuz justificat / greșit. Ținta este zero greșite, fără a ascunde cazurile eliminate. Aceasta este poarta finală a implementării; la proiectare se aprobă verificările intenției, nu se pretinde că rezultatul viitor este deja măsurat. |
+
+Autorul redactează fiecare contract, reviewerul îl verifică prin contraexemple. Proprietarul aprobă proiectul înainte de implementare. Deciziile tehnice mici se închid între autor și reviewer conform protocolului din worker-tasks; nu cer o aprobare separată a proprietarului.
 
 Ordinea este contract semantic, reprezentare, exemple manuale și review, apoi implementare după aprobare. Scăderea numărului de constante sau de rânduri nu înlocuiește aceste probe.

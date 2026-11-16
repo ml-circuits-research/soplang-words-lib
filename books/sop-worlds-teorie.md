@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 14, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 15, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -681,7 +681,7 @@ Acestea sunt tipurile de fire propuse pentru a scrie lumea legendelor și conți
 | `name` | Numele regiunii: `red`, `circle`, `formal`, `morning`. |
 | `centre.<axă>` | Valoarea centrului pe fiecare axă. |
 | `spread` | Întinderea în jurul centrului. |
-| `inside` | Numele unei regiuni mai largi care o cuprinde. |
+| includere calculată | Nu este o cheie declarată. Se deduce numai când testul R24 dovedește includerea. |
 
 **`w.legend.degree`** declară un cuvânt de grad.
 
@@ -1298,7 +1298,9 @@ Felurile de afirmații, cuprinderea și negația sunt fire `w.legend.concept`. O
 
 **R23. Regiunile se pot suprapune.** Un punct poate fi și „red”, și „orange”. La căutare („the red fish”) contează apartenența. La numire, în răspuns, se folosește regiunea cu centrul cel mai apropiat. O regiune din mai multe bucăți se scrie ca mai multe fire cu același nume.
 
-**R24. `inside` afirmă includerea întregii regiuni.** Centrul dinăuntru nu este o dovadă suficientă. Pe o axă, intervalul [4, 8] are centrul 6 în [0, 7], dar punctul 8 este în afară. Pentru două bile în aceeași metrică, o condiție suficientă este `distanța dintre centre + raza interioară ≤ raza exterioară`. Pentru intervale se compară ambele capete. Pentru forme generale, verificatorul trebuie să poată demonstra includerea prin operațiile declarate ale spațiului. Dacă nu poate, rezultatul este nedeterminat; relația nu se folosește ca adevăr demonstrat. Eșantionarea câtorva puncte poate găsi un contraexemplu, dar nu dovedește includerea.
+**R24. `inside` afirmă includerea întregii regiuni.** Centrul dinăuntru nu este o dovadă suficientă. Pe o axă, intervalul [4, 8] are centrul 6 în [0, 7], dar punctul 8 este în afară. Pentru două bile în aceeași metrică, o condiție suficientă este `distanța dintre centre + raza interioară ≤ raza exterioară`. Pentru intervale se compară ambele capete. Pentru forme generale, verificatorul trebuie să poată demonstra includerea prin operațiile declarate ale spațiului. Dacă nu poate, rezultatul este nedeterminat; relația nu se folosește ca adevăr demonstrat. Eșantionarea câtorva puncte poate găsi un contraexemplu, dar nu dovedește includerea. La aplicarea testului trebuie comparate aceleași axe, în aceeași metrică. O axă omisă din regiunea interioară rămâne liberă în limitele spațiului: dacă regiunea exterioară o restrânge, includerea nu rezultă din testul centrelor și razelor. De exemplu, „dark” lasă nuanța liberă și nu este inclus în „blue”, chiar dacă alegem pentru ilustrare un centru albastru.
+
+Relația de includere este un rezultat calculat, nu o afirmație primită fără dovadă. Poate servi la explicarea relației dintre două regiuni; găsirea unui pește albastru folosește direct apartenența punctului său la regiunea albastră. Cheia `inside` se retrage din propunerea de declarație: o relație derivată poate fi memorată împreună cu dovada și versiunile regiunilor, apoi invalidată când acestea se schimbă.
 
 **R25. Egalitatea de distanță.** Când două valori posibile sunt la fel de aproape de cea cerută, se face una din două, după caracterul valorii (secțiunea 6.6). Dacă valoarea este o cerință a omului, aplicația le oferă pe amândouă și întreabă: la zece și jumătate cerut, cu zece și unsprezece libere, „10:00 or 11:00?”. Dacă este o presupunere a aplicației, se ia cea mai mică pe prima axă și se spune.
 
@@ -1541,6 +1543,82 @@ Starea de pornire, aceeași pentru toate: Ana are ședința `m1`, „Review”, 
 
 ---
 
+# 9. De la declarații la un rezultat: piesele care trebuie construite
+
+*Capitol nou, versiunea 14. Propunere de arhitectură pentru review. Explică un contract de construit; nu pretinde că implementarea curentă îl îndeplinește. Numele concrete ale noilor tipuri de fire rămân de stabilit prin schema completă.*
+
+## 9.1 Ce trebuie să știe programul general
+
+A declara un concept nu înseamnă că programul îi înțelege automat numele. Numele „timp” nu execută un calcul. Programul poate lucra numai dacă declarația îl leagă de operații a căror semnificație este definită: comparație numerică, verificarea apartenenței, potrivirea unui model, aplicarea unei reguli sau căutarea unor valori.
+
+Sunt trei feluri de extensie. Un autor poate adăuga un fapt într-un spațiu existent, poate construi un spațiu sau o regulă din operațiile existente, sau poate avea nevoie de o operație nouă. Primele două sunt date. A treia cere un contract nou și o implementare verificată. Sistemul trebuie să spună „operație nesuportată” dacă aceasta lipsește. Nu o înlocuiește cu o presupunere despre numele conceptului.
+
+## 9.2 Cum se introduce un spațiu nou
+
+Să vrem distanța liberă dintre nodurile unei diagrame. Alegem o axă numită `clearance`, în pixeli ai paginii, cu valori nenegative. Declarăm separat unitatea, valorile permise și măsura distanței. Pentru două valori a și b, distanța este valoarea absolută a diferenței. „Cel puțin 12 pixeli” este regiunea [12, infinit), nu un cuvânt pe care o unealtă îl interpretează singură.
+
+Autorul declară apoi ce însușire folosește spațiul, cum se măsoară acea însușire din vederea diagramei și ce operație poate schimba pozițiile nodurilor. Măsurarea și schimbarea sunt responsabilități diferite: un sistem poate verifica o diagramă chiar dacă nu are unealta care o repară.
+
+| Declarație necesară | Ce permite programului |
+|---|---|
+| axă și unitate | Să refuze compararea pixelilor cu minute fără o transformare declarată. |
+| domeniu numeric | Să refuze o distanță negativă. |
+| metrică | Să compare două distanțe; normalizarea cere o scară explicită dacă axa nu are margine finită. |
+| regiune | Să verifice cerința „cel puțin 12”. |
+| măsurare din stare | Să obțină valoarea reală după executare. |
+| capabilitate de modificare | Să caute o așezare, dacă aceasta este cerută și disponibilă. |
+
+Dacă distanța observată este 8, cerința este încălcată cu 4 pixeli. Dacă o așezare nouă dă 14, cerința este satisfăcută. Nu rezultă că acea așezare este cea mai frumoasă sau optimă: asemenea afirmații cer obiective și dovezi separate.
+
+Pentru spațiul nou nu trebuie o ramură de program „dacă numele este clearance”. Operațiile numerice sunt aceleași ca pentru durata unei ședințe. În schimb, calculul geometric al distanței dintre contururile nodurilor este o funcție declarată, cu intrări și rezultat verificabile. Refolosirea privește contractul operațiilor, nu presupunerea că toate domeniile au aceeași geometrie.
+
+## 9.3 Ce înseamnă interpretarea firelor
+
+Textul trece prin etape distincte. Mai întâi este citit ca sintaxă: identificatori, tipuri, chei, atomi, texte și referințe. Apoi referințele și numele sunt rezolvate în modulele și instanțele potrivite. Schema verifică valorile și multiplicitatea lor. Legăturile conceptuale arată ce operații se aplică. Abia apoi regulile pot fi evaluate.
+
+Un text între ghilimele rămâne text. `before="object exists"` nu este o condiție executabilă până când cartea nu dă o reprezentare structurală a condiției. Explicația în limbaj natural poate însoți condiția, dar nu îi ține locul.
+
+Propunerea este o singură reprezentare semantică a firului, care păstrează identitatea, tipul, valorile tipizate, proveniența și locul din text. Un renderer poate primi o proiecție simplă a ei. Nu recitește textul SOP cu reguli proprii. Astfel, o referință și un text care seamănă cu o referință nu ajung confundate în două componente diferite.
+
+## 9.4 Cum strângem firele relevante
+
+„Toate firele unui concept” nu înseamnă toate firele care conțin același cuvânt. Pentru desenarea unei rațe avem nevoie de felul rață, strămoșii lui, realizările disponibile, proprietățile și regulile aplicabile. Pentru găsirea unei ședințe libere avem nevoie și de alte ședințe ale participanților, chiar dacă acestea nu conțin cuvintele cererii.
+
+Propunerea este un catalog de identități și legături tipizate. Pentru fiecare concept se pot căuta definiția, părinții, sloturile, spațiile, regulile care îl folosesc, realizările și sursele de fapte. Un index invers găsește regulile care menționează conceptul sau strămoșii lui. Indexul este un mijloc de acces, nu o nouă sursă de adevăr.
+
+Căutarea pornește din operația cerută și urmează dependențele acesteia. Memorează identitățile deja vizitate, ca un ciclu să nu provoace o buclă. Dacă descoperă o regulă care cere alte date, le solicită și continuă. O limită de timp oprește căutarea cu rezultat incomplet; nu transformă datele lipsă în inexistență.
+
+Rezultatul conține firele, versiunile surselor, dependențele lipsă și domeniul despre care știm că datele sunt complete. Pentru calendar, acest domeniu poate fi „toate rezervările Anei între 09:00 și 12:00 la versiunea V”. Completitudinea trebuie garantată de sursa care deține rezervările. Nu poate fi dedusă doar fiindcă o cerere de rețea s-a terminat.
+
+## 9.5 Cum se schimbă motorul de raționament
+
+Un motor primește o stare cu versiune, un scop, constrângeri, preferințe și un buget. Declară ce operații și ce fragment de logică suportă. Un motor care nu știe negație nu are voie să ignore interdicția negativă și să raporteze succes.
+
+Un motor de deducție poate produce consecințe. Un rezolvitor poate căuta începutul unei ședințe. Un planificator poate propune o succesiune de operații. Ele au roluri diferite; nu sunt variante interschimbabile doar fiindcă toate se numesc reasoning.
+
+Rezultatul unui motor trebuie să distingă cel puțin: candidat găsit, candidat verificat, contradicție demonstrată, lipsă de date, operație nesuportată și buget epuizat. Optimizarea adaugă distincția dintre soluție fezabilă și optim demonstrat. Fiecare rezultat numește presupunerile și datele pe care se bazează.
+
+Un coordonator conduce pașii: obține datele, cere deducțiile, generează candidați, verifică restricțiile și pregătește execuția. Motoarele nu modifică direct uneltele. Verificarea comună controlează rezultatul pe aceeași stare. Pentru operații externe, contractul trebuie să spună ce rezultat se poate verifica și ce funcție este acceptată ca autoritate de calcul; expresia „verificator general” nu elimină această responsabilitate.
+
+## 9.6 O ședință, urmărită cu numere
+
+Fixăm pentru exemplu o zi și un fus orar deja rezolvate. Minutele se numără de la miezul nopții. Ana are o rezervare [600, 660), adică 10:00–11:00. Cererea este o ședință de 30 de minute, cu Ana, începând exact la 10:30. Interpretarea produce participantul identificat, începutul 630 și durata 30. Sfârșitul calculat este 660.
+
+Pentru două intervale [a,b) și [c,d), suprapunerea este adevărată când a < d și c < b. Aici 630 < 660 și 600 < 660: există conflict. Acesta este un calcul explicit, nu o concluzie obținută din cuvântul „ședință”. Regula leagă întâi rezervările care împart un participant, apoi aplică testul intervalelor.
+
+Coordonatorul poate căuta o alternativă. La 660, intervalul propus este [660,690). Condiția 660 < 660 este falsă, deci rezervarea cunoscută nu îl blochează. Dar acest calcul singur nu dovedește că Ana este liberă: trebuie consultate toate rezervările ei relevante până la 690. Dacă sursa este indisponibilă, rezultatul rămâne necunoscut.
+
+Cererea inițială a spus o oră exactă. Alternativa 11:00 este prezentată omului, nu executată automat. După acceptare se verifică din nou versiunea rezervărilor. Dacă altă ședință a apărut între timp, planul se reevaluează.
+
+Unealta primește identitatea Anei, începutul 660 și durata 30. După operație se citește starea: trebuie să existe ședința creată, cu aceste valori și fără schimbarea rezervării vechi. Dacă unealta nu confirmă rezultatul sau observația lipsește, sistemul nu spune „am programat”.
+
+O diagramă poate folosi apoi aceleași identități de ședințe pentru a arăta numărul lor pe participant. Ea produce noduri grafice, nu copii ale persoanelor. Trebuie declarat dacă desenul este un instantaneu sau o vedere actualizată; această alegere schimbă dependențele și invalidarea rezultatului.
+
+## 9.7 Ce trebuie verificat înainte de implementare
+
+Acest capitol descrie mecanismele și limitele lor. Mai trebuie scrise schemele complete ale declarațiilor noi, reprezentarea structurală a condițiilor și protocolul verificabil de completitudine. Acestea sunt livrabile de proiectare, nu detalii pe care implementatorul le poate inventa separat în fiecare domeniu. Reviewerul trebuie să încerce să găsească o tranziție din exemplu care nu este justificată de date, o regulă sau un contract explicit.
+
+
 # Anexe
 
 ## Anexa A. Cu ce seamănă
@@ -1692,79 +1770,3 @@ Rândurile de mai jos sunt alegeri de politică. Prima coloană trimite la regul
 | R64 | Ce se face cu o unealtă care nu poate desface: se execută și se spune, sau se cere acordul înainte. |
 | R68 | Cum se verifică tonul unui text; până atunci răspunsul nu îl afirmă. |
 | R80 | Care este al cincilea domeniu, cel de dovadă. |
-
-
-# 9. De la declarații la un rezultat: piesele care trebuie construite
-
-*Capitol nou, versiunea 14. Propunere de arhitectură pentru review. Explică un contract de construit; nu pretinde că implementarea curentă îl îndeplinește. Numele concrete ale noilor tipuri de fire rămân de stabilit prin schema completă.*
-
-## 9.1 Ce trebuie să știe programul general
-
-A declara un concept nu înseamnă că programul îi înțelege automat numele. Numele „timp” nu execută un calcul. Programul poate lucra numai dacă declarația îl leagă de operații a căror semnificație este definită: comparație numerică, verificarea apartenenței, potrivirea unui model, aplicarea unei reguli sau căutarea unor valori.
-
-Sunt trei feluri de extensie. Un autor poate adăuga un fapt într-un spațiu existent, poate construi un spațiu sau o regulă din operațiile existente, sau poate avea nevoie de o operație nouă. Primele două sunt date. A treia cere un contract nou și o implementare verificată. Sistemul trebuie să spună „operație nesuportată” dacă aceasta lipsește. Nu o înlocuiește cu o presupunere despre numele conceptului.
-
-## 9.2 Cum se introduce un spațiu nou
-
-Să vrem distanța liberă dintre nodurile unei diagrame. Alegem o axă numită `clearance`, în pixeli ai paginii, cu valori nenegative. Declarăm separat unitatea, valorile permise și măsura distanței. Pentru două valori a și b, distanța este valoarea absolută a diferenței. „Cel puțin 12 pixeli” este regiunea [12, infinit), nu un cuvânt pe care o unealtă îl interpretează singură.
-
-Autorul declară apoi ce însușire folosește spațiul, cum se măsoară acea însușire din vederea diagramei și ce operație poate schimba pozițiile nodurilor. Măsurarea și schimbarea sunt responsabilități diferite: un sistem poate verifica o diagramă chiar dacă nu are unealta care o repară.
-
-| Declarație necesară | Ce permite programului |
-|---|---|
-| axă și unitate | Să refuze compararea pixelilor cu minute fără o transformare declarată. |
-| domeniu numeric | Să refuze o distanță negativă. |
-| metrică | Să compare două distanțe; normalizarea cere o scară explicită dacă axa nu are margine finită. |
-| regiune | Să verifice cerința „cel puțin 12”. |
-| măsurare din stare | Să obțină valoarea reală după executare. |
-| capabilitate de modificare | Să caute o așezare, dacă aceasta este cerută și disponibilă. |
-
-Dacă distanța observată este 8, cerința este încălcată cu 4 pixeli. Dacă o așezare nouă dă 14, cerința este satisfăcută. Nu rezultă că acea așezare este cea mai frumoasă sau optimă: asemenea afirmații cer obiective și dovezi separate.
-
-Pentru spațiul nou nu trebuie o ramură de program „dacă numele este clearance”. Operațiile numerice sunt aceleași ca pentru durata unei ședințe. În schimb, calculul geometric al distanței dintre contururile nodurilor este o funcție declarată, cu intrări și rezultat verificabile. Refolosirea privește contractul operațiilor, nu presupunerea că toate domeniile au aceeași geometrie.
-
-## 9.3 Ce înseamnă interpretarea firelor
-
-Textul trece prin etape distincte. Mai întâi este citit ca sintaxă: identificatori, tipuri, chei, atomi, texte și referințe. Apoi referințele și numele sunt rezolvate în modulele și instanțele potrivite. Schema verifică valorile și multiplicitatea lor. Legăturile conceptuale arată ce operații se aplică. Abia apoi regulile pot fi evaluate.
-
-Un text între ghilimele rămâne text. `before="object exists"` nu este o condiție executabilă până când cartea nu dă o reprezentare structurală a condiției. Explicația în limbaj natural poate însoți condiția, dar nu îi ține locul.
-
-Propunerea este o singură reprezentare semantică a firului, care păstrează identitatea, tipul, valorile tipizate, proveniența și locul din text. Un renderer poate primi o proiecție simplă a ei. Nu recitește textul SOP cu reguli proprii. Astfel, o referință și un text care seamănă cu o referință nu ajung confundate în două componente diferite.
-
-## 9.4 Cum strângem firele relevante
-
-„Toate firele unui concept” nu înseamnă toate firele care conțin același cuvânt. Pentru desenarea unei rațe avem nevoie de felul rață, strămoșii lui, realizările disponibile, proprietățile și regulile aplicabile. Pentru găsirea unei ședințe libere avem nevoie și de alte ședințe ale participanților, chiar dacă acestea nu conțin cuvintele cererii.
-
-Propunerea este un catalog de identități și legături tipizate. Pentru fiecare concept se pot căuta definiția, părinții, sloturile, spațiile, regulile care îl folosesc, realizările și sursele de fapte. Un index invers găsește regulile care menționează conceptul sau strămoșii lui. Indexul este un mijloc de acces, nu o nouă sursă de adevăr.
-
-Căutarea pornește din operația cerută și urmează dependențele acesteia. Memorează identitățile deja vizitate, ca un ciclu să nu provoace o buclă. Dacă descoperă o regulă care cere alte date, le solicită și continuă. O limită de timp oprește căutarea cu rezultat incomplet; nu transformă datele lipsă în inexistență.
-
-Rezultatul conține firele, versiunile surselor, dependențele lipsă și domeniul despre care știm că datele sunt complete. Pentru calendar, acest domeniu poate fi „toate rezervările Anei între 09:00 și 12:00 la versiunea V”. Completitudinea trebuie garantată de sursa care deține rezervările. Nu poate fi dedusă doar fiindcă o cerere de rețea s-a terminat.
-
-## 9.5 Cum se schimbă motorul de raționament
-
-Un motor primește o stare cu versiune, un scop, constrângeri, preferințe și un buget. Declară ce operații și ce fragment de logică suportă. Un motor care nu știe negație nu are voie să ignore interdicția negativă și să raporteze succes.
-
-Un motor de deducție poate produce consecințe. Un rezolvitor poate căuta începutul unei ședințe. Un planificator poate propune o succesiune de operații. Ele au roluri diferite; nu sunt variante interschimbabile doar fiindcă toate se numesc reasoning.
-
-Rezultatul unui motor trebuie să distingă cel puțin: candidat găsit, candidat verificat, contradicție demonstrată, lipsă de date, operație nesuportată și buget epuizat. Optimizarea adaugă distincția dintre soluție fezabilă și optim demonstrat. Fiecare rezultat numește presupunerile și datele pe care se bazează.
-
-Un coordonator conduce pașii: obține datele, cere deducțiile, generează candidați, verifică restricțiile și pregătește execuția. Motoarele nu modifică direct uneltele. Verificarea comună controlează rezultatul pe aceeași stare. Pentru operații externe, contractul trebuie să spună ce rezultat se poate verifica și ce funcție este acceptată ca autoritate de calcul; expresia „verificator general” nu elimină această responsabilitate.
-
-## 9.6 O ședință, urmărită cu numere
-
-Fixăm pentru exemplu o zi și un fus orar deja rezolvate. Minutele se numără de la miezul nopții. Ana are o rezervare [600, 660), adică 10:00–11:00. Cererea este o ședință de 30 de minute, cu Ana, începând exact la 10:30. Interpretarea produce participantul identificat, începutul 630 și durata 30. Sfârșitul calculat este 660.
-
-Pentru două intervale [a,b) și [c,d), suprapunerea este adevărată când a < d și c < b. Aici 630 < 660 și 600 < 660: există conflict. Acesta este un calcul explicit, nu o concluzie obținută din cuvântul „ședință”. Regula leagă întâi rezervările care împart un participant, apoi aplică testul intervalelor.
-
-Coordonatorul poate căuta o alternativă. La 660, intervalul propus este [660,690). Condiția 660 < 660 este falsă, deci rezervarea cunoscută nu îl blochează. Dar acest calcul singur nu dovedește că Ana este liberă: trebuie consultate toate rezervările ei relevante până la 690. Dacă sursa este indisponibilă, rezultatul rămâne necunoscut.
-
-Cererea inițială a spus o oră exactă. Alternativa 11:00 este prezentată omului, nu executată automat. După acceptare se verifică din nou versiunea rezervărilor. Dacă altă ședință a apărut între timp, planul se reevaluează.
-
-Unealta primește identitatea Anei, începutul 660 și durata 30. După operație se citește starea: trebuie să existe ședința creată, cu aceste valori și fără schimbarea rezervării vechi. Dacă unealta nu confirmă rezultatul sau observația lipsește, sistemul nu spune „am programat”.
-
-O diagramă poate folosi apoi aceleași identități de ședințe pentru a arăta numărul lor pe participant. Ea produce noduri grafice, nu copii ale persoanelor. Trebuie declarat dacă desenul este un instantaneu sau o vedere actualizată; această alegere schimbă dependențele și invalidarea rezultatului.
-
-## 9.7 Ce trebuie verificat înainte de implementare
-
-Acest capitol descrie mecanismele și limitele lor. Mai trebuie scrise schemele complete ale declarațiilor noi, reprezentarea structurală a condițiilor și protocolul verificabil de completitudine. Acestea sunt livrabile de proiectare, nu detalii pe care implementatorul le poate inventa separat în fiecare domeniu. Reviewerul trebuie să încerce să găsească o tranziție din exemplu care nu este justificată de date, o regulă sau un contract explicit.

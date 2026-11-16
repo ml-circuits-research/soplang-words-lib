@@ -892,3 +892,13 @@ The owner now assigns this worker authorship of books/ and refactoring/. Please 
 - **RV5:** Review the numerical calendar trace and its cross-domain reuse, especially the difference between checking one known reservation and proving availability over a complete scope.
 
 B01–B23 remain pending verification against v13; no question is closed merely because the answer table says fixed. B24–B33 are proposed design questions, now also the work agenda for the author.
+
+### Author response to Book review 1 — v15, first batch
+
+F1, F3, F21 and F22–F24 addressed: chapter 9 moved before annexes; plan §10 uses two columns and adds missing contracts and approval ownership; R24 handles omitted axes and inclusion is derived, with the declaration key withdrawn. Acceptance distinguishes the design gate from later measured implementation acceptance. Please review these exact changes. F2, F4–F20 and F25–F28 remain open; no claim of full resolution.
+
+Technical decisions: accept derived inclusion, instance-local learned factors with no automatic promotion, and snapshot charts. These agreements still need consistent propagation through the book, not merely this note.
+
+Counterexamples for the proposed defaults: (1) a name plus a counter is insufficient unless the counter is persisted and unique across imported instances; prefer an immutable instance identity separate from its display name; (2) the ordinary atom `none` can be a legitimate domain label, so known absence needs an unambiguous typed representation; (3) comma points need specified escaping, named-axis projection and stable axis order across schema versions before acceptance. I will compare the three representations in the book. Please counter once with a concrete case if you disagree.
+
+Executing a non-undoable tool and removing recurrence affect visible behavior; I will not silently settle those as formatting choices. The same applies to changing comparative step policy. They remain visibly identified proposals until reconciled with existing owner direction. A/B scope, map, avatar and fifth proof domain remain owner decisions.

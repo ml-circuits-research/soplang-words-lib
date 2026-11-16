@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 37, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 38, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -2939,26 +2939,39 @@ Un pachet devine activ numai cu dependențele necesare rezolvate și cu acoperir
 
 Când un concept se schimbă, se reverifică atât utilizările directe, cât și regulile care moștenesc proprietăți de la el. O parte devenită opțională poate schimba completarea multor întreguri; o regiune de culoare modificată poate schimba selecția obiectelor. Versionarea permite reproducerea explicației vechi, iar actualizarea nu rescrie dovezile unei execuții anterioare.
 
-## 11.5 Estimarea volumului și măsurarea acoperirii
+## 11.5 Inventarul existent și măsurarea acoperirii
 
-Nu există un număr de fire care să garanteze înțelegerea tuturor cererilor. Volumul se estimează pentru un profil de capabilități și un vocabular declarat. Mai întâi se numără conceptele și relațiile necesare; apoi se separă cunoașterea semantică de reprezentările grafice, indexuri și copii generate. Altfel, un catalog foarte mare de puncte ale desenelor poate părea o bază foarte bogată de relații, deși nu spune care parte susține un obiect.
+Volumul se măsoară pentru un profil de capabilități și un vocabular declarat. Mai întâi se identifică lucrurile, părțile, însușirile și relațiile cerute; apoi se caută declarațiile care le pot susține. Numărul punctelor din contururi se păstrează separat de relațiile semantice. Altfel, un desen detaliat poate părea o bază bogată de cunoaștere, deși nu spune care parte susține un obiect.
 
-Calculul următor este un buget ilustrativ de redactare pentru un pilot limitat în cele patru domenii, nu o măsurătoare a pachetului existent și nici o promisiune că acoperă toate mesajele. Numărul de feluri este numărul uniunii conceptelor alese, fără a număra același concept din nou în fiecare domeniu. Fiecare factor trebuie înlocuit cu inventarul real înaintea planificării implementării.
+Un inventar concret, extras din sesiunile de desen, diagrame și documente folosite la verificarea proiectului, arată următoarele cerințe. El este un punct de pornire măsurabil, nu un plafon al vocabularului. Calendarul cere în plus datele și relațiile descrise în secțiunea 11.2; sesiunile respective nu măsoară acoperirea lui.
 
-| Grup de declarații al pilotului | Ipoteză explicită și fire estimate |
+| Familie de cerințe | Conținut care trebuie legat de declarații |
 |---|---|
-| Feluri și legături de bază | 60 de feluri × 6 declarații în medie pentru identitate, părinte, nume și valori obișnuite: 360. |
-| Structuri de întreguri | 12 întreguri × o declarație a întregului și 5 roluri de părți: 72. |
-| Regiuni simple | 20 de regiuni × 3 declarații în medie pentru definiție și legături: 60. |
-| Realizări compuse minimale | 20 de realizări × o declarație și 8 părți: 180; contururile detaliate nu sunt incluse. |
-| Construcții de limbă și contracte comune | Buget editorial explicit de 130 de declarații reutilizabile; insuficiența lui se verifică pe inventarul construcțiilor. |
-| Proveniență | 20 de înregistrări distincte de sursă; trimiterile la ele apar pe fapte. |
+| Feluri și personaje | Duck, bird, child, grandfather, girl, robot, man, boy, woman și frog; diferențele dintre feluri trebuie păstrate și în realizare, nu numai în nume. |
+| Întreguri și părți | Swing/seat, flower/petal, hair/beard, story/chapter/narrator; existența unei părți, rolul ei funcțional și posibilitatea de editare sunt cerințe distincte. |
+| Scenă și întinderi | Grass, lake, pond, water, sky, ground, cloud, sun, house, fish și water plant; nivelurile numite trebuie să aibă întindere și ordine. |
+| Diagrame și documente | Node, arrow, hexagon, circle și letter; forma de așezare nu este același lucru cu felul fiecărui nod, iar numele unui document nu îi furnizează conținutul. |
+| Însușiri și relații | Verde, galben, azuriu, păr creț, expresie tristă/surprinsă; deasupra, aproape, înăuntru, pe suprafața de sprijin, primul/ultimul, mai sus/jos și păstrarea unei valori. Fiecare cere spațiu, reper sau relație declarată, nu doar un cuvânt recunoscut. |
 
-Totalul acestui calcul este 822 de fire, înainte de sloturile metamodelului, contururi, cuvintele suplimentare, excepții și indecșii publicați. El arată ordinul de mărime al unui nucleu redactat și verificat manual; nu este dimensiunea întregii cunoașteri necesare produsului. Dacă un rol are mai multe relații sau o regiune cere o structură complexă, costul crește și se actualizează explicit. Nu se reduc declarațiile doar ca să fie păstrat bugetul inițial.
+La versiunea `2c94c3d8acb4` a depozitului de cunoaștere, catalogul publicat enumeră 36 de lumi și 422835 de declarații în fragmentele lor. Acesta este perimetrul numărătorii: schemele, directoarele neincluse în catalog și indecșii generați nu sunt adăugați la total. Inventarul reproductibil, cu tipuri, identificatori și localizarea candidaților, este în [raportul de inventar](../refactoring/knowledge-inventory.md). Versiunea este fixată pentru a putea reproduce observația; cifrele nu sunt o cerință a teoriei.
 
-O bază existentă poate reutiliza mult din acest conținut, dar reutilizarea se acceptă semantic, nu prin potrivirea numelor. Conversia unei clase precum `small` în regiune numerică cere repere, unități și o justificare; nu este suficient ca un importator să înlocuiască eticheta cu o cifră. Capitolul despre parametrii numerici trebuie să stabilească această justificare separat.
+| Familie semantică din secțiunea 11.1 | Declarații găsite și ce trebuie verificat în continuare |
+|---|---|
+| Feluri și relații | 14443 `k.kinds.parent` și 1114 `k.kinds.relation`. Primele includ mai multe dimensiuni de relație; nu sunt toate muchii is-a și nu reprezintă atâtea feluri distincte. Se verifică sensul fiecărei legături folosite. |
+| Vocabular și construcții | 29520 `k.words.sense` și 499 `w.lang.en.frame`. Un sens sau un cadru prezent nu dovedește citirea unei cereri complete cu toate condițiile. |
+| Spații și regiuni | 215 `k.colours.colour`, 59 `k.shapes.shape`, 14 `k.values.scale` și 13 `k.values.position`. Migrarea verifică coordonate, unități și definițiile regiunilor; o poziție încă etichetată nu devine automat regiune calculabilă. |
+| Structuri | 307 `k.parts.whole`, 432 `k.parts.usual`, 370 `k.parts.inherited` și 45 `k.kinds.role`. Se verifică cardinalitățile, obligativitatea și rolurile funcționale, fără a confunda „obișnuit” cu „obligatoriu”. |
+| Context și valori obișnuite | 61 `k.scenes.scene` și 1088 `k.scenes.has`, alături de declarațiile despre părți obișnuite. Apartenența la o scenă nu este singură o regulă de poziționare. |
+| Realizări | 2212 `k.objects.object`, 27904 `k.objects.part` și 271165 `k.objects.point`. Punctele descriu geometrie; legarea părților la concepte și unelte editabile rămâne o verificare separată. |
+| Proveniență | Toate cele 422835 de declarații numărate poartă `core.source`. Prezența câmpului nu dovedește corectitudinea afirmației, adecvarea licenței sau completitudinea lanțului de transformare. |
 
-Măsurarea de acoperire urmărește pentru fiecare familie de probleme dacă lipsa apare la recunoaștere, descriere, referință, cunoaștere, realizare sau verificare. Se păstrează și rezultatele corecte de tip clarificare/refuz. Adăugarea unui catalog de nume poate îmbunătăți recunoașterea fără să câștige nicio execuție; raportul trebuie să arate acest lucru. Un număr de fire sau de megabytes nu poate ține locul acestei măsurători.
+Rândurile nu sunt pachete disjuncte care se însumează: aceeași declarație despre o parte obișnuită servește atât structurii, cât și completării. Numărătoarea este a declarațiilor, nu a identităților conceptuale unice. Chiar și un nume exact poate avea alt sens: de exemplu, un candidat pentru `circle` într-o relație despre teatru nu dovedește existența formei geometrice cerute într-o diagramă.
+
+Căutarea lexicală reproductibilă urmărește 36 de nume singulare extrase din exemple. Ea găsește, între altele, realizare pentru `swing`, declarații despre `grandfather`, un rol pentru `node` și o realizare de substituție pentru `water plant`. Pentru `level`, `chapter` și `narrator` nu găsește un candidat cu acel `name` exact în fragmentele publicate. Aceasta nu demonstrează lipsa conceptului: el poate apărea ca rol, valoare a altei chei sau sinonim. Registrul de migrare trebuie să închidă acea căutare semantică, nu să declare conceptele absente pe baza unei singure chei.
+
+Diferența dintre cerințe și pachetul utilizabil se consemnează pe dependențe. Pentru swing/seat se verifică legătura de sprijin și geometria locului; pentru grandfather, trăsăturile care îl disting vizual; pentru lake/pond/water, sensurile, întinderea și regulile de referire; pentru un document cu capitole și narator, rolurile și legarea temei. Nu se scade numărul cerințelor din numărul firelor: cele două numără obiecte diferite. Până la această verificare, inventarul arată candidați de reutilizare și obligații deschise, nu un procent pretins de acoperire executabilă.
+
+Măsurarea de acoperire urmărește apoi pentru fiecare familie de probleme dacă lipsa apare la recunoaștere, descriere, referință, cunoaștere, realizare sau verificare. Se păstrează și rezultatele corecte de clarificare. Adăugarea unui catalog de nume poate îmbunătăți recunoașterea fără să câștige vreo execuție; raportul trebuie să arate acest lucru.
 
 # 12. Parametrii numerici: origine, calibrare și stabilitatea deciziilor
 

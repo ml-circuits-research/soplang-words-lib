@@ -36,3 +36,7 @@ The other repositories can prepare migration ledgers and adapters independently.
 Entry point: `core.use world=std.knowledge`, importing `std.provenance`, `std.source`, `std.import`. Canonical record names: std.source, std.import.mapping, std.provenance, std.knowledge.parent. The exact book example loads under closed schemas; paired tests reject missing fields, wrong reference targets, quoted reference-looking strings, duplicate singleton values, unknown fields/statuses and deletion of referenced evidence. Atomic forward references and module aliases are tested.
 
 Acceptance: these records parse, load and reject structural invalidity. Concept-name resolution, truth of relations, source licence policy and semantic acceptance are not implemented by these records. No full phase-zero freeze: legend, point, semantic links, request, trace, reply and numerical/change families remain pending.
+
+## Legend decisions requiring reconciliation before freeze
+
+Implementation audit exposed conflicting act-condition forms (§4.6.1 versus §4.8), name-versus-reference ambiguity for spaces/axes/units, undeclared coordinates in the short colour example, and missing version/frame/unit/calibration fields. The concrete condition-record and typed-reference counterproposal is published in questions.md. These are schema-design blockers for the legend/point families, not permission to load arbitrary metadata or claim semantic validation from parsing alone. Other independent contract families can proceed.

@@ -1006,3 +1006,16 @@ Direct owner authorization now supersedes the scheduled book-only scope; impleme
 ### Implementation review — import-evidence structural modules (0.169.0)
 
 The exact §11.3.2 example now loads using std.knowledge and transitive std.provenance/std.source/std.import modules. Tests reject malformed records and protect referenced evidence; the same schemas accept an unrelated material taxonomy without code changes. Please review the public field/status variants. Child/parent remain atomic concept names pending semantic-link resolution; structural loading does not justify accepting a relation or a licence. This is deliberately an incremental release, not a full phase-zero freeze. A generic module-alias bug exposed by a type equal to its module name was fixed and covered.
+
+### Phase-zero design negotiation — legend contracts exposed by implementation
+
+The next closed schema cannot honestly accept all current legend examples. Read-only audit found these concrete contradictions, not a request to expand the book again. Proposed decisions for review:
+
+| Issue and counterexample | Proposed contract and alternative considered |
+| --- | --- |
+| §4.6.1 rejects text conditions, while §4.8 uses before="object exists"; after.has=object,quality also packs arguments into one atom. | Use w.legend.condition records referenced by act before/after: kind=exists/absent/has/holds, explicit object/quality/goal role arguments. Validate each variant and bind role names against the owning act. `holds` takes the relation supplied by the request; it does not guess a relation from the word place. Retaining both encodings would require two interpreters and permit unverifiable text. |
+| Axis of=colour names a space, whose declaration ID is sp.colour; unit of=ratio cannot distinguish ratio axes of two spaces. | Use typed declaration references among legend records (of=$sp.colour, space=$sp.page, unit.of=$ax.page.x). Public name remains vocabulary data. For legacy consumer annotations, resolve names explicitly with missing/ambiguous rejection; do not silently accept an unchecked atom/ref union. Strict joins by qualified names are a possible alternative, but unqualified axis names are insufficient. |
+| §4.8 declares only hue but the same region uses saturation/lightness; numerical examples add axis unit/calibration absent from the field table. | Supply all prerequisite axes in runnable fixtures and freeze unit/calibration fields with real typed dependencies. Omitted coordinates may describe a region; undeclared coordinates must be rejected. |
+| Point semantics require versioned axis order and frames, but the space table has only name/form. | Freeze a versioned space and explicit frame descriptor before claiming dimension/version/frame validation. Do not call a comma-token recognizer full point support. |
+
+Please challenge these choices with a concrete reusable counterexample if you prefer the qualified-name alternative or another condition representation. I am not declaring these families frozen or adding permissive schemas while these contradictions remain. The already-published import records are structurally validated; they do not depend on a guessed resolution here.

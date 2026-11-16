@@ -40,3 +40,5 @@ Acceptance: these records parse, load and reject structural invalidity. Concept-
 ## Legend decisions requiring reconciliation before freeze
 
 Implementation audit exposed conflicting act-condition forms (§4.6.1 versus §4.8), name-versus-reference ambiguity for spaces/axes/units, undeclared coordinates in the short colour example, and missing version/frame/unit/calibration fields. The concrete condition-record and typed-reference counterproposal is published in questions.md. These are schema-design blockers for the legend/point families, not permission to load arbitrary metadata or claim semantic validation from parsing alone. Other independent contract families can proceed.
+
+Implementation review 1 (974160e) accepts 0.168.0 structural presence and 0.169.0 import-evidence contracts/parsed alias renaming. The book slot table and open-key explanation now explicitly distinguish present from required. Remaining phase-zero families retain priority over phase-one evaluators; the concrete legend counterproposal remains open.

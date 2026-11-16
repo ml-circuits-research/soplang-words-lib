@@ -353,6 +353,7 @@ Tabelul de mai jos este complet: toate cheile pe care le poate avea astăzi un f
 | `of` | Numele tipului căruia îi aparține cheia. Obligatorie. |
 | `key` | Numele cheii. Obligatorie. |
 | `required` | `true`: cheia este obligatorie. Un fir de acest tip căruia îi lipsește are o cheie deschisă (secțiunea 3.3). |
+| `present` | `true`: cheia exactă trebuie să existe după deducție; o înregistrare fără ea este structural invalidă și tranzacția este refuzată. |
 | `many` | `true`: cheia poate avea mai multe valori. Fără ea, una singură. |
 | `kind` | Felul valorii, când valoarea este scrisă direct. Valorile posibile sunt în tabelul următor. Poate fi repetată; valoarea trebuie să se potrivească cu unul dintre feluri. |
 | `type` | Numele unui tip: valoarea trebuie să fie o referință la un fir de acel tip. Poate fi repetată. |
@@ -400,6 +401,8 @@ Valorile posibile ale cheii `kind`:
 ## 3.3 Cheile deschise
 
 **Ce sunt.** Să presupunem că schema declară cheia `at` a tipului `drawn` ca obligatorie, iar în lume apare faptul `@f2 drawn size=1`, fără `at`. Biblioteca nu refuză acest fapt. Îl primește și ține minte că îi lipsește ceva. O cheie pe care schema o declară obligatorie și care nu are încă valoare pe un fapt se numește **cheie deschisă (open key)**.
+
+Această situație folosește `required=true`, nu `present=true`. Un loc încă necunoscut poate rămâne o sarcină de completare; în schimb, o înregistrare de proveniență fără sursa sa nu este o dovadă incompletă utilizabilă, ci o înregistrare invalidă. `present=true` refuză această lipsă la validare. Autorul schemei alege proprietatea după sensul înregistrării, nu presupune că toate câmpurile numite „obligatorii” trebuie să aibă aceeași politică.
 
 **De ce există.** Într-o conversație, aceasta este situația obișnuită, nu o greșeală: omul spune „draw a fish” și nu spune unde. Dacă faptele incomplete ar fi refuzate, aplicația nu ar avea unde să țină ce a înțeles până în acel moment. Cheia deschisă este felul în care lumea ține, într-o formă pe care programul o poate număra, răspunsul la întrebarea „ce mai trebuie hotărât?”.
 
@@ -2175,6 +2178,8 @@ Genurile (scrisoare, raport, poveste, notă) și părțile fiecăruia sunt grafu
 | „what is in the document?” | Se răspunde din stare: genul, titlul, părțile (secțiunea 6.10). |
 
 ## 7.4 Calendarul
+
+**Starea implementării.** PSys2 publică în `a0987918` un adaptor local de calendar, documentat în [contractul gazdei](../../psys2/specs/29-calendar-host.md). El primește persoane, săli și ședințe cu identități și momente deja rezolvate, verifică referințele și suprapunerile, aplică modificări atomic și întoarce observația stării efective. Versiunile previn scrierile pornite dintr-o stare veche; identitatea operației împiedică repetarea efectului la reluare; anularea condiționată restaurează ultima schimbare fără să șteargă editări independente. Observația completă privește numai depozitul local al acestei instanțe. Adaptorul și vederea tabelară nu implementează încă citirea conversațională, recurența, persistența sau legarea la zona activă a aplicației; acestea se construiesc pe contractele comune, nu sunt presupuse realizate de existența operațiilor.
 
 ```
 @w          std.schema.world name=calendar

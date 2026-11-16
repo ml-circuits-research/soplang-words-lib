@@ -999,14 +999,6 @@ Added §4.4.5: aggregate membership/operation/coverage, empty versus unknown inp
 
 Checked the accepted calendar and snapshot contracts in §8.6 and the relocated migration register. Removed the resolved F19/F20/F26/F27/F28 and Z requests. §6.1.2 now explicitly retains occurrence plus series identity, permits totals only over a closed scope (otherwise an explicitly labelled partial-data proposal), and asks before overwriting manually changed target values, including deleting an edited node. These apply your decisions; F4, F43 and the v48/AA review remain open.
 
-### Implementation review — structural presence, phase-zero foundation
-
-Direct owner authorization now supersedes the scheduled book-only scope; implementation is active across all repositories. Added generic `core.slot present=true` (0.168.0), not a special contract-type validator. Alternatives checked: existing required/open completion cannot reject incomplete contract records; a generated negative deny per slot expands schemas and needs extra identity/absence rules; post-deduction slot presence reuses native transactional validation and inheritance. It rejects malformed presence flags and prefix slots, and preserves legacy required semantics. Please review the distinction and rollback/inheritance tests. Full phase zero is not announced: points, semantic links and contract families still need their own rejection evidence. Generality applies to library, knowledge and demo; owner examples are probes, not special-case branches or import filters.
-
-### Implementation review — import-evidence structural modules (0.169.0)
-
-The exact §11.3.2 example now loads using std.knowledge and transitive std.provenance/std.source/std.import modules. Tests reject malformed records and protect referenced evidence; the same schemas accept an unrelated material taxonomy without code changes. Please review the public field/status variants. Child/parent remain atomic concept names pending semantic-link resolution; structural loading does not justify accepting a relation or a licence. This is deliberately an incremental release, not a full phase-zero freeze. A generic module-alias bug exposed by a type equal to its module name was fixed and covered.
-
 ### Phase-zero design negotiation — legend contracts exposed by implementation
 
 The next closed schema cannot honestly accept all current legend examples. Read-only audit found these concrete contradictions, not a request to expand the book again. Proposed decisions for review:

@@ -80,7 +80,7 @@ export const CONTRACT_MODULES = {
   },
   'w.legend': {
     text: `
-@w.legend.module core.module name=w.legend version=0.173.0 exports=w.legend.act exports=w.legend.condition exports=w.legend.space exports=w.legend.axis exports=w.legend.unit
+@w.legend.module core.module name=w.legend version=0.174.0 exports=w.legend.act exports=w.legend.condition exports=w.legend.space exports=w.legend.axis exports=w.legend.unit exports=w.legend.concept exports=w.legend.degree exports=w.legend.relation exports=w.legend.role
 @w.legend.space.type core.type of=w.legend.space closed=true
 @w.legend.axis.type core.type of=w.legend.axis closed=true shared=true
 @w.legend.unit.type core.type of=w.legend.unit closed=true shared=true
@@ -162,6 +162,63 @@ export const CONTRACT_MODULES = {
 @w.legend.canonical.deny.owner core.deny when=$w.legend.canonical.axis when=$w.legend.canonical.unit with=$w.legend.canonical.identity not=$w.legend.canonical.allowed why="canonical unit must belong to its axis"
 @w.legend.canonical.deny.factor core.deny when=$w.legend.canonical.axis when=$w.legend.canonical.unit if=$w.legend.canonical.factor why="canonical unit factor must equal one"
 @w.legend.canonical.deny.offset core.deny when=$w.legend.canonical.axis when=$w.legend.canonical.unit if=$w.legend.canonical.offset why="canonical unit offset must equal zero"
+@w.legend.concept.type core.type of=w.legend.concept closed=true shared=true
+@w.legend.concept.name core.slot of=w.legend.concept key=name kind=atom present=true
+@w.legend.concept.group core.slot of=w.legend.concept key=group kind=atom
+@w.legend.concept.question core.slot of=w.legend.concept key=question kind=string
+@w.legend.concept.specialises core.slot of=w.legend.concept key=specialises kind=ref to=w.legend.concept
+@w.legend.degree.type core.type of=w.legend.degree closed=true shared=true
+@w.legend.degree.word core.slot of=w.legend.degree key=word kind=atom present=true
+@w.legend.degree.direction core.slot of=w.legend.degree key=direction kind=atom enum=up enum=down present=true
+@w.legend.degree.factor core.slot of=w.legend.degree key=factor kind=number present=true
+@w.legend.relation.type core.type of=w.legend.relation closed=true shared=true
+@w.legend.relation.name core.slot of=w.legend.relation key=name kind=atom present=true
+@w.legend.relation.space core.slot of=w.legend.relation key=space kind=ref to=w.legend.space
+@w.legend.relation.inverse core.slot of=w.legend.relation key=inverse kind=ref to=w.legend.relation
+@w.legend.relation.test core.slot of=w.legend.relation key=test kind=atom
+@w.legend.role.type core.type of=w.legend.role closed=true shared=true
+@w.legend.role.name core.slot of=w.legend.role key=name kind=atom present=true
+@w.legend.role.of core.slot of=w.legend.role key=of kind=ref type=w.legend.act type=w.legend.relation present=true
+@w.legend.factor.p w.legend.degree factor=?factor
+@w.legend.factor.c core.check fn=lte args=?factor args=0
+@w.legend.factor.d core.deny when=$w.legend.factor.p if=$w.legend.factor.c why="degree factor must be positive"
+@w.legend.ancestor.type core.type of=w.legend.ancestor closed=true shared=true transient=true
+@w.legend.ancestor.child core.slot of=w.legend.ancestor key=child kind=ref to=w.legend.concept present=true
+@w.legend.ancestor.parent core.slot of=w.legend.ancestor key=parent kind=ref to=w.legend.concept present=true
+@w.legend.ancestor.p w.legend.concept specialises=$w.legend.ancestor.q
+@w.legend.ancestor.q w.legend.concept
+@w.legend.ancestor.edge w.legend.ancestor child=$w.legend.ancestor.p parent=$w.legend.ancestor.q
+@w.legend.ancestor.direct core.rule when=$w.legend.ancestor.p when=$w.legend.ancestor.q then=$w.legend.ancestor.edge
+@w.legend.ancestor.left w.legend.ancestor child=?child parent=?middle
+@w.legend.ancestor.right w.legend.ancestor child=?middle parent=?parent
+@w.legend.ancestor.transitive w.legend.ancestor child=?child parent=?parent
+@w.legend.ancestor.close core.rule when=$w.legend.ancestor.left when=$w.legend.ancestor.right then=$w.legend.ancestor.transitive
+@w.legend.ancestor.cycle w.legend.ancestor child=?same parent=?same
+@w.legend.ancestor.deny core.deny when=$w.legend.ancestor.cycle why="concept specialisation must be acyclic"
+@w.legend.roles.a w.legend.role of=?owner name=?role
+@w.legend.roles.b w.legend.role of=?owner name=?role
+@w.legend.roles.ca core.calc out=?left fn=concat args=identity. args=?w.legend.roles.a
+@w.legend.roles.cb core.calc out=?right fn=concat args=identity. args=?w.legend.roles.b
+@w.legend.roles.different core.check fn=neq args=?left args=?right
+@w.legend.roles.unique core.deny when=$w.legend.roles.a when=$w.legend.roles.b with=$w.legend.roles.ca with=$w.legend.roles.cb if=$w.legend.roles.different why="role name must be unique within owner"
+@w.legend.roles.record w.legend.role of=$w.legend.roles.act name=?role
+@w.legend.roles.act w.legend.act
+@w.legend.roles.allowed w.legend.act role=?role
+@w.legend.roles.identity core.calc out=?w.legend.roles.allowed fn=concat args=?w.legend.roles.act
+@w.legend.roles.member core.deny when=$w.legend.roles.record when=$w.legend.roles.act with=$w.legend.roles.identity not=$w.legend.roles.allowed why="role record must name a declared act role"
+@w.legend.inverse.a w.legend.relation inverse=$w.legend.inverse.b
+@w.legend.inverse.b w.legend.relation inverse=$w.legend.inverse.c
+@w.legend.inverse.c w.legend.relation
+@w.legend.inverse.ca core.calc out=?left fn=concat args=identity. args=?w.legend.inverse.a
+@w.legend.inverse.cc core.calc out=?right fn=concat args=identity. args=?w.legend.inverse.c
+@w.legend.inverse.different core.check fn=neq args=?left args=?right
+@w.legend.inverse.deny core.deny when=$w.legend.inverse.a when=$w.legend.inverse.b when=$w.legend.inverse.c with=$w.legend.inverse.ca with=$w.legend.inverse.cc if=$w.legend.inverse.different why="declared inverse relations must agree"
+@w.legend.inverse.space.a w.legend.relation inverse=$w.legend.inverse.space.b space=?a
+@w.legend.inverse.space.b w.legend.relation space=?b
+@w.legend.inverse.space.ca core.calc out=?left fn=concat args=identity. args=?a
+@w.legend.inverse.space.cb core.calc out=?right fn=concat args=identity. args=?b
+@w.legend.inverse.space.different core.check fn=neq args=?left args=?right
+@w.legend.inverse.space.deny core.deny when=$w.legend.inverse.space.a when=$w.legend.inverse.space.b with=$w.legend.inverse.space.ca with=$w.legend.inverse.space.cb if=$w.legend.inverse.space.different why="inverse relations must use the same declared space"
 @w.legend.act.type core.type of=w.legend.act closed=true
 @w.legend.condition.type core.type of=w.legend.condition closed=true
 @w.legend.act.name core.slot of=w.legend.act key=name kind=atom present=true

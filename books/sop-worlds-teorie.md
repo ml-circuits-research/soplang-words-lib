@@ -1173,7 +1173,7 @@ La fel, un slot cu `means=quality` și un spațiu primește comparativele, super
 
 ## 4.8 Tipurile de fire ale lumii legendelor
 
-Aceste tipuri descriu lumea legendelor și conținutul legat de ea. Contractele structurale pentru acte, condiții, spații, axe și unități sunt implementate prin `core.use world=w.legend`. Regiunile, gradele, reperele și valorile de tip punct rămân propuse.
+Aceste tipuri descriu lumea legendelor și conținutul legat de ea. Contractele structurale pentru acte, condiții, spații, axe, unități, concepte, grade, roluri și relații sunt implementate prin `core.use world=w.legend`. Regiunile, reperele și valorile de tip punct rămân propuse.
 
 **`w.legend.space`** declară un spațiu conceptual.
 
@@ -1264,10 +1264,28 @@ Tipurile de fire ale lumii legendelor sunt cele din secțiunea 4.8, la care se a
 
 | Tipul | Ce declară și cu ce chei |
 |---|---|
-| `w.legend.concept` | Un concept general. Chei: `name`; `group` (grupa din care face parte); `specialises` (conceptul mai general, dacă are unul); `question` (întrebarea generală: „Where?”). |
-| `w.legend.role` | Un rol. Chei: `name`; `of` (actul sau relația în care apare). |
-| `w.legend.relation` | O relație generală. Chei: `name` (`in`, `on`, `next_to`); `space` (în ce spațiu se măsoară); `inverse`; `test` (funcția care spune, din pozițiile a două lucruri, dacă relația ține). |
+| `w.legend.concept` | Un concept general. Chei: `name`; `group` (grupa din care face parte); `specialises` (referință tipizată la conceptul mai general, dacă are unul); `question` (întrebarea generală: „Where?”). |
+| `w.legend.role` | Un rol. Chei: `name`; `of` (referință tipizată la actul sau relația în care apare). |
+| `w.legend.relation` | O relație generală. Chei: `name` (`in`, `on`, `next_to`); `space` (referință opțională la spațiul în care se măsoară); `inverse` (referință opțională la relația inversă); `test` (funcția care spune, din pozițiile a două lucruri, dacă relația ține). |
 | `w.legend.unit` | Unitate declarată prin `name`, `of` (referință la axă), `factor` pozitiv și `offset` finit, toate obligatorii. Conversia declarată este `valoare_canonică = factor × valoare + offset`. |
+
+Exemplu minimal executabil, cu un vocabular ilustrativ:
+
+```sop
+@concept.entity w.legend.concept name=entity group=basic question="What exists?"
+@concept.component w.legend.concept name=component specialises=$concept.entity
+@degree.large w.legend.degree word=large direction=up factor=1.6
+@relation.connected w.legend.relation name=connected inverse=$relation.connected
+@role.endpoint w.legend.role name=endpoint of=$relation.connected
+```
+
+`specialises` referă un singur concept mai general. Mai multe concepte pot avea același părinte, dar o specializare nu poate reveni la ea însăși, nici printr-un lanț de alte concepte. Modulul respinge asemenea cicluri și după editări; scoaterea unei legături retrage consecințele ei de specializare. `group` este deocamdată o etichetă de organizare, iar `question` este text explicativ: niciuna nu rezolvă automat un concept sau o întrebare a utilizatorului.
+
+Un rol are o referință tipizată la un act sau la o relație. Numele lui este unic în acel proprietar, inclusiv când declarațiile sunt în namespace-uri diferite. Pentru un act, rolul trebuie să apară deja în lista `role` a actului; lista poate exista fără înregistrări separate de rol, dar o înregistrare nu poate inventa un rol incompatibil. Pentru o relație, înregistrarea rolului introduce numele respectiv. Referința tipizată evită confuzia dintre două acte sau relații cu aceeași etichetă.
+
+O relație simetrică poate fi propria inversă. Dacă ambele capete declară o inversă, declarațiile trebuie să fie reciproce; dacă ambele numesc un spațiu, trebuie să refere același spațiu. O declarație unilaterală este permisă, fără a genera tacit cealaltă declarație. Cheia `test` este opțională și numește contractul unei funcții viitoare; prezența numelui nu validează funcția, semnătura sau rezultatul ei. Relațiile nemăsurate geometric pot omite `space`.
+
+Factorul unui grad este numeric, finit și pozitiv; direcția este explicită. Aceasta este validare structurală: un factor subunitar sau egal cu 1 nu este refuzat anticipat, deoarece regula de aplicare și calibrarea contextuală nu sunt implementate aici. Un consumator nu poate presupune că încărcarea declarației execută deja o mărire sau micșorare.
 
 Felurile de afirmații, cuprinderea și negația sunt fire `w.legend.concept`. O resursă nu are tip propriu: un tip de lucruri se declară resursă cu `resource=true` pe firul lui `core.type`.
 

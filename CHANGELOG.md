@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.174.0
+
+- Add typed legend concepts, degree metadata, relations and owner-bound roles. Reject specialisation cycles, inconsistent inverse declarations and invalid owner-role references using existing SOP mechanisms.
+- Test the actual conceptual book fixture, transactional hierarchy edits, namespace crossings and module aliases. Semantic linking and evaluation remain pending.
+
+
 ## 0.173.0
 
 - Extend the legend contract with versioned spaces, ordered axes and typed canonical/alternative units; validate ownership, unique names/orders and numerical parameters.

@@ -60,3 +60,7 @@ Published subset: w.legend.act/condition through core.use world=w.legend. Varian
 Entry point w.legend now includes space/axis/unit with typed ownership and canonical unit references, unique axis name/order, finite parameters and affine unit metadata. Exact book §4.8 colour declarations are tested. Numerical axes on graph spaces are rejected. No frame/point, region-coordinate checking, conversion, metric or semantic name-resolution claim; those contracts remain required before full phase-zero publication. Version is metadata, not immutable state.
 
 Review a268361 accepts reference-sample identity (0.171.0) and typed act conditions/module qualification (0.172.0). Immutable snapshots before reproducible calibration remain pending; these acceptances do not close the frame, semantic-link or request-graph obligations.
+
+### Increment 0.174.0 — concepts, degrees, relations and roles
+
+Closed shared declaration schemas with typed references, acyclic single-parent specialization, inverse consistency and owner-role membership. Closure is transient derived data using existing reasoning budgets; it is not semantic resolution on core.type/core.slot. Group/question and relation test names remain explicit metadata; no function binding, degree evaluation or request graph claim. Frames, point values and regions remain pending.

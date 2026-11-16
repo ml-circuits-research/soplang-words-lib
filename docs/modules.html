@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld The standard modules</title>
-<meta name="source-hash" content="8958497c95e5">
+<meta name="source-hash" content="375bf322a09d">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.173.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.174.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html" aria-current="page">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -49,9 +49,13 @@
 <p>Canonical units must reference their own axis, with factor one and offset zero. Alternative units require finite positive <code>factor</code> and finite signed <code>offset</code>; their declaration means <code>canonical = factor * value + offset</code>. Unit names are unique per axis. Forward axis/unit references load in one atomic batch.</p>
 <p>Optional bounds must satisfy min &lt; max when both exist; weights and normalization lengths are positive. Circular axes require an explicit positive <code>period</code>; linear axes forbid it. <code>scale</code> and <code>step</code> occur together: ratio step &gt; 1, interval step &gt; 0, with direction selecting multiplication/division or addition/subtraction in the future evaluator. Finite scalar parsing and reference checks apply throughout.</p>
 <p>This validates declarations only. Frame transformations, point values, region coordinates, metric evaluation, unit conversion and semantic name resolution remain pending. Space version is metadata, not enforced immutability. Empty spaces can be declared before their axes; that does not make them complete point schemas.</p>
+<h2 id="legend-concepts-degrees-relations-and-roles">Legend concepts, degrees, relations and roles</h2>
+<p>Added with 0.174.0: <code>w.legend</code> exports closed, shared concept/degree/relation/role declarations. Concepts require an atomic name, with optional group label, explanatory question and typed singleton <code>specialises</code> parent. Declarative transitive ancestry rejects specialization cycles, including cycles across namespaces and after edits; derived ancestry retracts with its premises. The helper <code>w.legend.ancestor</code> is transient implementation data, not an asserted semantic-link API. Materializing closure can require quadratic space in the number of concepts and consumes the existing reasoning budget.</p>
+<p>Degree records require a word, direction up/down and finite positive factor. This does not choose an application/calibration rule; factors below or equal to one remain structurally allowed. Relations require a name; space, inverse relation and test-function name are optional. Symmetric self-inverses and one-sided declarations are allowed, but two declared inverses must agree and cannot declare different spaces. Function registration, signatures and truth evaluation are not validated by a name.</p>
+<p>Roles require name and a reference to an act or relation, using the existing reference union (<code>kind=ref type=w.legend.act type=w.legend.relation</code>). Role names are unique per owner across namespaces. An act-owned role record must occur in that act's role list; standalone relation roles need no additional owner list. Referenced owners cannot be deleted. These records do not yet resolve core.type/core.slot semantic annotations or requests.</p>
 <p class="source">Generated from <code>docs/modules.md</code>.</p>
 </main>
-<footer>sopworld 0.173.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.174.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

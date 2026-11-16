@@ -291,6 +291,7 @@ export class World {
   /** the matrix wires by id */
   matrix: Map<string, Wire>;
   /** what the matrix says about a type: parent, lineage, closed, keys with all their attributes */
+  semanticLinks(): { ok: boolean; links: Array<{ id: string; key: string; value: string; target: string }>; violations: Array<{ kind: string; id: string; key: string; why: string }> };
   schema(type: string): { type: string; extends: string | null; lineage: string[]; closed: boolean; keys: Record<string, Record<string, unknown>>; [attr: string]: unknown } | null;
   log: object[];
   tell(input: string | Wire[], options?: ChangeOptions): Result;

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="9ac438eb058c">
+<meta name="source-hash" content="2791e14eebd5">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.174.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.175.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html" aria-current="page">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -95,6 +95,19 @@ print(w.tell(&#x27;@r2 reading value=3 note=x&#x27;).violations[0].kind);</code>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true
 unknown-key</code></pre></figure>
 <p><strong>Limits.</strong> A prefix, not a pattern.</p>
+<h3 id="coreschemalink">core.schema.link</h3>
+<p><strong>Syntax.</strong> Declare a singleton annotation on native schema wires.</p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Meaning</th></tr></thead><tbody><tr><td><code>on</code></td><td><code>core.type</code> or <code>core.slot</code>.</td></tr><tr><td><code>key</code></td><td>Annotation key to resolve.</td></tr><tr><td><code>target</code></td><td>Allowed target record type, including its subtypes.</td></tr><tr><td><code>by</code></td><td>Target key holding its public name.</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> All four fields are required singleton atoms. An annotation is optional, but if present must be an unquoted public name resolving to exactly one matching record in the whole World, or an explicit reference to a matching record. Multiple descriptors for the same annotation form a union of allowed targets. Quoted text is not promoted to a reference.</p>
+<p><strong>When it is evaluated.</strong> Against final transactional state, after ingestion and deduction. Forward references in one atomic batch work; target deletion, rename and newly ambiguous names are rechecked. Validation consumes the reasoning budget.</p>
+<p><strong>Interactions.</strong> Annotated duplicate type/slot declarations cannot silently discard different links. Intersect requires identical authored annotations; explicit slot override chooses a declaration, but every authored link is validated. Module aliases rename descriptor target types. <code>world.semanticLinks()</code> exposes current <code>{ok, links, violations}</code> without caching; each link has <code>{id, key, value, target}</code>.</p>
+<p><strong>Violations.</strong> <code>schema</code> for malformed descriptors; <code>schema-link</code> for malformed, missing, wrong-type or ambiguous targets.</p>
+<p><strong>Example.</strong> A custom vocabulary uses the same mechanism as the legend.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(&#x27;@binding core.schema.link on=core.type key=classification target=category by=code\n@t core.type of=item classification=basic\n@c category code=basic&#x27;);
+print(w.semanticLinks().links[0].target);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>c</code></pre></figure>
+<p><strong>Limits.</strong> Native schema declarations only; mapped notations are not extended automatically. This resolves identities, not behavioral meaning. Missing annotations remain permitted. Name lookup is global without local namespace preference; explicit references disambiguate. Validation scans annotations against current target records and makes no incremental-performance claim.</p>
 <h3 id="coreschemamap">core.schema.map</h3>
 <p>How to read slot, type and module declarations that are written in another notation.</p>
 <p><strong>Syntax</strong></p>
@@ -725,7 +738,7 @@ print(builtins.time_add([&#x27;10:40&#x27;, &#x27;35min&#x27;]), builtins.div([&
 11:15 3 true tuesday</code></pre></figure>
 <p class="source">Generated from <code>docs/reference.md</code>.</p>
 </main>
-<footer>sopworld 0.174.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.175.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

@@ -4212,3 +4212,17 @@ print(typeof version, Object.keys(build));
 string ["version","hash","date"]
 ```
 
+
+### `world.semanticLinks()`
+
+Returns `{ok, links, violations}` for the current generic `core.schema.link` descriptors. Each link records `{id, key, value, target}`: schema declaration identity, annotation key, authored token and resolved target identity. Missing, ambiguous and wrong-type targets produce `schema-link` violations. Results are calculated from current state, with no stale cache. Loading w.legend registers is/means/space; this inspection does not execute conceptual behavior.
+
+```js run
+const w = new World();
+w.load('@binding core.schema.link on=core.type key=classification target=category by=code\n@t core.type of=item classification=basic\n@c category code=basic');
+print(w.semanticLinks().links[0].target);
+```
+
+```output
+c
+```

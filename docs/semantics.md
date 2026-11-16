@@ -530,6 +530,7 @@ registers ([reference](reference.md#coredeny)).
 | `cardinality` | several values under a key that is not `many` | any change |
 | `excludes` | a wire has a key and a key its slot `excludes` | any change |
 | `open-join` | an issue: a `by=` join whose target with that value is not told yet (shards load in any order); refused only by `check(undefined, { strict: true })`, after `world.closeType(type)`, or at once when the slot says `strict=true` | `world.check()`, a tell's `openJoins` |
+| `schema-link` | A schema annotation has a malformed, missing, wrong-type or ambiguous target; the transaction is rejected. | any change |
 | `missing-key` | an exact slot declared `present=true` has no value after deduction; the transaction is refused | any change |
 | `unknown-key` | a key that a closed type does not declare | any change |
 | `dangling-ref` | a reference to a wire that does not exist; a retraction of a wire a `kind=ref` slot refers to | any change, `retract` |

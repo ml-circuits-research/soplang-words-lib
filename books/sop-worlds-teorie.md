@@ -1136,6 +1136,20 @@ Această tratare a felului nu confundă clasificarea cu realizarea: folosirea un
 
 **Regula.** Fiecare fir `core.type` primește cheia `is`, cu numele unui concept. Fiecare fir `core.slot` primește cheia `means`, cu numele unui concept, și, după concept, o a doua cheie care îl precizează. Un slot fără `means` este refuzat la verificarea schemei.
 
+**Starea implementării.** Regula completă de mai sus este ținta migrării, nu o cerință aplicată retroactiv schemelor vechi. În incrementul actual, `is`, `means` și `space`, când sunt prezente, se rezolvă strict către concepte sau spații declarate. Lipsa legăturilor este încă permisă pentru compatibilitate; obligativitatea pe toate sloturile, precizările din tabel și comportamentele derivate rămân de implementat. `ask`, `enum` și `default` existente nu sunt eliminate înaintea mecanismelor care le înlocuiesc.
+
+```sop
+@type.sample core.type of=sample is=thing
+@slot.sample core.slot of=sample key=value kind=number means=quality space=size
+@concept.thing w.legend.concept name=thing
+@concept.quality w.legend.concept name=quality
+@space.size w.legend.space name=size form=axes version=1
+```
+
+Exemplul se încarcă împreună, după `core.use world=w.legend`; țintele pot apărea după schema care le referă. Un atom precum `quality` caută exact un nume public în lumea încărcată. Niciun rezultat sau mai multe rezultate produc eroare. Referința `means=$concept.quality` selectează identitatea exactă și rămâne valabilă dacă eticheta publică este schimbată. Un text citat nu este tratat ca referință. Căutarea numelor este globală în instanța World, fără preferință tacită pentru namespace-ul curent; vocabularul ambiguu cere referințe explicite.
+
+Verificarea se repetă pe starea finală a fiecărei tranzacții. Ștergerea sau redenumirea unei ținte și introducerea unui nume concurent nu pot lăsa o schemă legată de ceva inexistent sau ambiguu. La eșec se revine la starea anterioară. API-ul `semanticLinks()` raportează separat valoarea scrisă și identitatea rezolvată; nu rescrie declarația autorului și nu păstrează un cache care ar deveni învechit. Validarea legăturii nu validează încă faptul că o valoare numerică este un punct al spațiului sau că poate executa o comparație semantică.
+
 | `means=` | Cheia de precizare și valorile ei |
 |---|---|
 | `kind` | Niciuna. Valoarea cheii este un fel din arborele felurilor. |

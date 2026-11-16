@@ -64,3 +64,7 @@ Review a268361 accepts reference-sample identity (0.171.0) and typed act conditi
 ### Increment 0.174.0 — concepts, degrees, relations and roles
 
 Closed shared declaration schemas with typed references, acyclic single-parent specialization, inverse consistency and owner-role membership. Closure is transient derived data using existing reasoning budgets; it is not semantic resolution on core.type/core.slot. Group/question and relation test names remain explicit metadata; no function binding, degree evaluation or request graph claim. Frames, point values and regions remain pending.
+
+### Increment 0.175.0 — resolved schema annotation identities
+
+Generic core.schema.link descriptors register native type/slot annotations; w.legend provides is/means/space target mappings. Final-state validation rejects missing/ambiguous/wrong-type identities and invalidating edits. semanticLinks() exposes current resolutions without cached fact dependencies. Explicit references disambiguate global public names; module aliases work through descriptor remapping. Mandatory means, all semantic refinements, mapped-notation semantics and behavior remain pending; no full phase-zero release claim.

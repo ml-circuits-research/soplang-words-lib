@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="57f0cfba0d57">
+<meta name="source-hash" content="c6b5bcfa5d61">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.174.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.175.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -1353,9 +1353,15 @@ print(Object.keys(solvers));</code></pre></figure>
 <p><code>version</code> is the version of the library. <code>build</code> is <code>{ version, hash, date }</code>: which build a single file is (<code>hash</code> and <code>date</code> are <code>null</code> when running from the sources); <code>docs/version.md</code> says the same.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>print(typeof version, Object.keys(build));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>string [&quot;version&quot;,&quot;hash&quot;,&quot;date&quot;]</code></pre></figure>
+<h3 id="worldsemanticlinks"><code>world.semanticLinks()</code></h3>
+<p>Returns <code>{ok, links, violations}</code> for the current generic <code>core.schema.link</code> descriptors. Each link records <code>{id, key, value, target}</code>: schema declaration identity, annotation key, authored token and resolved target identity. Missing, ambiguous and wrong-type targets produce <code>schema-link</code> violations. Results are calculated from current state, with no stale cache. Loading w.legend registers is/means/space; this inspection does not execute conceptual behavior.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(&#x27;@binding core.schema.link on=core.type key=classification target=category by=code\n@t core.type of=item classification=basic\n@c category code=basic&#x27;);
+print(w.semanticLinks().links[0].target);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>c</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.174.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.175.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

@@ -1,3 +1,4 @@
+import { schemaLinks } from './schema-links.mjs';
 // World: fact wires kept consistent with a consistency matrix.
 //
 // This file is the kernel: the store and its indexes, transactions, ingest, matching,
@@ -134,6 +135,9 @@ export class World {
    * What the matrix says about a type: what it extends, whether it is closed, and its keys
    * (own and inherited) with every attribute their wires carry (doc, ask, observe, ...).
    */
+  /** Resolve declared schema annotations without caching mutable target identities. */
+  semanticLinks() { return schemaLinks(this); }
+
   schema(type) {
     const c = this._compiled();
     const decl = c.types.get(type);
@@ -2256,6 +2260,7 @@ export class World {
 
   _validate(res) {
     const c = this._compiled();
+    res.violations.push(...schemaLinks(this, () => this._b.tick('schema-link')).violations);
     for (const id of res._touched) {
       const w = this.wires.get(id);
       if (!w) continue;

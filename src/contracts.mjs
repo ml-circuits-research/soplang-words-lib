@@ -80,7 +80,10 @@ export const CONTRACT_MODULES = {
   },
   'w.legend': {
     text: `
-@w.legend.module core.module name=w.legend version=0.174.0 exports=w.legend.act exports=w.legend.condition exports=w.legend.space exports=w.legend.axis exports=w.legend.unit exports=w.legend.concept exports=w.legend.degree exports=w.legend.relation exports=w.legend.role
+@w.legend.module core.module name=w.legend version=0.175.0 exports=w.legend.act exports=w.legend.condition exports=w.legend.space exports=w.legend.axis exports=w.legend.unit exports=w.legend.concept exports=w.legend.degree exports=w.legend.relation exports=w.legend.role
+@w.legend.link.is core.schema.link on=core.type key=is target=w.legend.concept by=name
+@w.legend.link.means core.schema.link on=core.slot key=means target=w.legend.concept by=name
+@w.legend.link.space core.schema.link on=core.slot key=space target=w.legend.space by=name
 @w.legend.space.type core.type of=w.legend.space closed=true
 @w.legend.axis.type core.type of=w.legend.axis closed=true shared=true
 @w.legend.unit.type core.type of=w.legend.unit closed=true shared=true

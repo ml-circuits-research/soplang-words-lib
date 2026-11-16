@@ -230,6 +230,39 @@ unknown-key
 
 **Limits.** A prefix, not a pattern.
 
+### core.schema.link
+
+**Syntax.** Declare a singleton annotation on native schema wires.
+
+| Attribute | Meaning |
+|---|---|
+| `on` | `core.type` or `core.slot`. |
+| `key` | Annotation key to resolve. |
+| `target` | Allowed target record type, including its subtypes. |
+| `by` | Target key holding its public name. |
+
+**Meaning.** All four fields are required singleton atoms. An annotation is optional, but if present must be an unquoted public name resolving to exactly one matching record in the whole World, or an explicit reference to a matching record. Multiple descriptors for the same annotation form a union of allowed targets. Quoted text is not promoted to a reference.
+
+**When it is evaluated.** Against final transactional state, after ingestion and deduction. Forward references in one atomic batch work; target deletion, rename and newly ambiguous names are rechecked. Validation consumes the reasoning budget.
+
+**Interactions.** Annotated duplicate type/slot declarations cannot silently discard different links. Intersect requires identical authored annotations; explicit slot override chooses a declaration, but every authored link is validated. Module aliases rename descriptor target types. `world.semanticLinks()` exposes current `{ok, links, violations}` without caching; each link has `{id, key, value, target}`.
+
+**Violations.** `schema` for malformed descriptors; `schema-link` for malformed, missing, wrong-type or ambiguous targets.
+
+**Example.** A custom vocabulary uses the same mechanism as the legend.
+
+```js run
+const w = new World();
+w.load('@binding core.schema.link on=core.type key=classification target=category by=code\n@t core.type of=item classification=basic\n@c category code=basic');
+print(w.semanticLinks().links[0].target);
+```
+
+```output
+c
+```
+
+**Limits.** Native schema declarations only; mapped notations are not extended automatically. This resolves identities, not behavioral meaning. Missing annotations remain permitted. Name lookup is global without local namespace preference; explicit references disambiguate. Validation scans annotations against current target records and makes no incremental-performance claim.
+
 ### core.schema.map
 
 How to read slot, type and module declarations that are written in another notation.

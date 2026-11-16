@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.175.0
+
+- Add generic core.schema.link descriptors, transactional reference/name resolution and semanticLinks() inspection. Legend registers is/means/space annotations with strict missing/ambiguous rejection.
+- Preserve semantic annotations in schema conflict handling; legacy unannotated schemas remain valid. Full semantic behavior and mandatory annotation migration remain pending.
+
+
 ## 0.174.0
 
 - Add typed legend concepts, degree metadata, relations and owner-bound roles. Reject specialisation cycles, inconsistent inverse declarations and invalid owner-role references using existing SOP mechanisms.

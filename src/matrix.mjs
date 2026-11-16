@@ -10,7 +10,7 @@ const RANGE_CAP = 2000;
 
 export const SCHEMA_TYPES = new Set([
   'core.slot', 'core.type', 'core.abducible', 'core.precision', 'core.tier', 'core.rule', 'core.deny', 'core.calc', 'core.check', 'core.use',
-  'core.schema.map', 'core.namespace', 'core.producer', 'core.action',
+  'core.schema.map', 'core.schema.link', 'core.namespace', 'core.producer', 'core.action',
   'core.sequence', 'core.fluent', 'core.effect', 'core.relation', 'core.aggregate', 'core.rank', 'core.module',
   'core.function', 'core.function.arg',
 ]);
@@ -25,6 +25,7 @@ export const GRAMMAR = {
   'core.slot': ['of', 'key', 'required', 'present', 'many', 'id', 'prefix', 'kind', 'type', 'enum', 'default', 'ask', 'min', 'max', 'step', 'soft', 'combine', 'why', 'to', 'unique', 'excludes', 'by', 'match', 'copy', 'strict'],
   'core.type': ['of', 'extends', 'closed', 'complete', 'transient', 'shared', 'unique'],
   'core.namespace': ['prefix', 'open'],
+  'core.schema.link': ['on', 'key', 'target', 'by'],
   'core.schema.map': ['from', 'as'], // and one attribute per field it maps
   'core.use': ['world', 'prefix', 'as'],
   'core.module': ['name', 'version', 'imports', 'exports'],
@@ -202,10 +203,19 @@ export function compileMatrix(world) {
   }
   const extra = []; // core.tier wires: the host's own tiers of certainty
   const actionWires = []; // core.action wires without fn=: actions written as wires
+  // Generic annotation contracts; target existence is checked after ingestion.
+  c.schemaLinks = [];
+  for (const w of world.matrix.values()) if (w.type === 'core.schema.link') {
+    const d = Object.fromEntries(['on', 'key', 'target', 'by'].map(k => [k, first(w, k)]));
+    if (Object.keys(d).some(k => w.attrs[k]?.length !== 1 || !fitsKind('atom', d[k])) || !['core.type', 'core.slot'].includes(d.on)) {
+      c.errors.push(`${w.id}: core.schema.link needs singleton on=core.type|core.slot, key, target and by atoms`);
+    } else c.schemaLinks.push(d);
+  }
+  const annotations = (type, attrs) => [...new Set(c.schemaLinks.filter(d => d.on === type).map(d => d.key))].sort().map(k => [k, attrs[k] || []]);
   const own = new Map(); // type -> Map(key -> slot) declared on that type itself
   // Two declarations of the same key of the same type: equal ones are one declaration;
   // different ones are a conflict unless one says how they combine (combine=intersect|override).
-  const content = (s) => JSON.stringify([s.present, s.required, s.many, s.identity, s.prefix, s.refs, s.kinds, s.enum, s.default, s.ask, s.min, s.max, s.step, s.soft]);
+  const content = (s) => JSON.stringify([s.present, s.required, s.many, s.identity, s.prefix, s.refs, s.kinds, s.enum, s.default, s.ask, s.min, s.max, s.step, s.soft, annotations('core.slot', s.attrs)]);
   const both = (a, b) => (a && b ? a.filter((x) => b.includes(x)) : a || b);
   const declare = (of, key, s) => {
     const mine = own.get(of) || own.set(of, new Map()).get(of);
@@ -217,6 +227,9 @@ export function compileMatrix(world) {
       const winner = s.combine === 'override' ? s : old;
       mine.set(key, { ...winner, combined: { how, from } });
     } else if (how === 'intersect') {
+      if (JSON.stringify(annotations('core.slot', old.attrs)) !== JSON.stringify(annotations('core.slot', s.attrs))) {
+        c.errors.push(`${s.id}: intersect cannot combine different schema links for ${of}.${key}`); return;
+      }
       const m = { ...old, id: s.id, attrs: { ...old.attrs, ...s.attrs }, combined: { how, from } };
       m.enum = both(old.enum, s.enum);
       m.kinds = old.kinds.length && s.kinds.length ? old.kinds.filter((x) => s.kinds.includes(x)) : [...old.kinds, ...s.kinds];
@@ -316,6 +329,9 @@ export function compileMatrix(world) {
         c.errors.push(`${w.id}: type ${name} is already declared by ${before.id} with another parent`);
         continue;
       }
+      if (before && JSON.stringify(annotations('core.type', before.attrs)) !== JSON.stringify(annotations('core.type', w.attrs))) {
+        c.errors.push(`${w.id}: type ${name} has conflicting schema links`); continue;
+      }
       c.types.set(name, w);
       if (closed) c.closed.add(name);
       if (f ? field(f.complete, w) === 'true' : flag(w, 'complete')) c.complete.add(name);
@@ -400,7 +416,7 @@ export function compileMatrix(world) {
     const known = GRAMMAR[w.type === 'core.test' ? 'core.check' : w.type];
     if (!known || w.type === 'core.schema.map' || c.maps.has(w.type)) continue; // a mapped notation has its own attributes
     for (const k of Object.keys(w.attrs)) {
-      if (known.includes(k) || known.some((p) => p.endsWith('.') && k.startsWith(p)) || (k.startsWith('core.') && k !== 'core.on')) continue;
+      if (c.schemaLinks.some(d => d.on === w.type && d.key === k) || known.includes(k) || known.some((p) => p.endsWith('.') && k.startsWith(p)) || (k.startsWith('core.') && k !== 'core.on')) continue;
       c.unknown.push({ id: w.id, type: w.type, key: k });
     }
   }

@@ -2511,3 +2511,9 @@ For the first path, freeze only what it uses: one assessment kind (exact propert
 ## 2026-11-16 20:40 (Rome) — Review 14 (reviewer; 6e2de52)
 
 Counter on the bridge accepted as written: schema-named nodes and slots serialized generically, validity by `inspectRequest`, supported profiles declared by the consumer, current consumers on their pin until the replacement lands. Phase-0 announcement after the first end-to-end path, with the deferred list as recorded. Nothing further open from review 13.
+
+## 2026-11-16 21:10 (Rome) — Review 15 (reviewer; 0.193.0 ee1084d generic request serializer)
+
+**Run by me:** `node --test test/request-serialize.test.mjs test/grammar-request.test.mjs test/reader-overlay-integration.test.mjs` → all pass; no domain word in `src/request-serialize.mjs`.
+
+Accepted: this closes the counter of review 13. The bridge now serializes schema-named nodes and slots and leaves validity to `inspectRequest`; the supported profile is consumer data. With PSys2 b35866b5 the first request runs end to end behind `?engine=new` (reader → request → resolution → effect → assessed reply), so the condition for announcing phase 0 is met: please publish the announcement in worker-log with its deferred list, and I will relay it.

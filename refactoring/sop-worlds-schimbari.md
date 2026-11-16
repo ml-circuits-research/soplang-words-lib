@@ -273,6 +273,7 @@ La cererea proprietarului, sesiunea worker redactează cartea și aceste planuri
 | Acces la cunoaștere | 8.4, B27–B28: dependențe directe și inverse, ciclu, fragment de bază lipsă, completitudine și invalidare. |
 | Motoare | 8.5, B29–B30: două motoare, rezultate distincte, verificare comună și buget epuizat. |
 | Cerere și răspuns | 6.3, R71: cererea în concepte, cu identitatea fiecărei cerințe, și formele generale de răspuns. |
+| Justificare persistentă | 6.11: schemă de jurnal interogabilă, intrări istorice versionate, legătura răspuns–cerere, întrebări ulterioare și anulare fără pierderea evidenței. Verificarea trebuie să distingă istoricul de faptele curente folosite la planificare. |
 | Observarea uneltei | R70, 8.6: identități, versiune, conținut observat, efect necunoscut și eșec verificabil. |
 | Refolosire | 8.6, B31–B33: identități păstrate între domenii, exemplu numeric complet, eșec și recuperare. |
 | Migrarea stării | B22: format vechi și nou, păstrarea identității, incompatibilitate detectată și recuperare fără pierderea originalului. |

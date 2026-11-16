@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 21, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 22, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -1616,6 +1616,35 @@ Regula este simplă: explicația se construiește din evidența păstrată în t
 
 O **urmă de justificare (justification trace)** este înregistrarea acestei legături. Fiecare pas numește intrările, operația, rezultatul și pasul care l-a cerut. O intrare este fie un fragment al cererii, fie un fapt identificat din starea citită, fie o declarație dintr-o versiune fixată a cunoașterii. O concluzie derivată trimite la regula și intrările ei. O observație a uneltei poartă identitatea operației și versiunea stării observate.
 
+În proiectul propus, urma este alcătuită din fapte într-o instanță de jurnal a sesiunii. Nu este numai un obiect temporar al componentei de răspuns. Instanța jurnalului are o schemă publicată, astfel încât pașii să poată fi căutați prin pattern-uri, salvați și reîncărcați. Nu introducem aceste fapte ca obiecte desenate sau ca ședințe: ele descriu cererea și evaluarea ei, nu domeniul asupra căruia s-a lucrat.
+
+Fiecare răspuns păstrează identificatorul cererii și al pasului care îl justifică. „Why?” se leagă de ultimul răspuns relevant din contextul conversației; o întrebare explicită despre o acțiune mai veche selectează răspunsul acelei acțiuni. Dacă sunt mai multe candidate, sistemul cere precizarea. El nu înlocuiește explicația unei acțiuni vechi cu justificarea stării curente numai pentru că aceasta este mai ușor de obținut.
+
+| Date păstrate în jurnal | Rol în explicație |
+|---|---|
+| Cerere și răspuns | Identitatea mesajului, formularea primită, cererea structurată și rezultatul comunicat. |
+| Pas de evaluare | Operația și versiunea ei, intrările, rezultatul și legătura cu cererea. |
+| Intrare istorică | Identitatea sursei, versiunea citită și valorile exacte consumate de pas. |
+| Dependență | Legătura dintre un pas și pașii sau intrările pe care se sprijină. |
+| Observație de execuție | Identitatea apelului, confirmarea uneltei, starea observată înainte și după, verificarea efectului. |
+| Anulare | Pasul vizat, efectele restaurate și rezultatul observat al restaurării. |
+
+Intrarea istorică este o copie a valorilor folosite, nu o referință activă care ar citi mereu ultima versiune a faptului. Dacă o ședință este modificată ulterior, explicația refuzului anterior continuă să arate intervalul citit atunci. Identitatea sursei este păstrată ca valoare de proveniență; referințele dintre faptele jurnalului leagă numai înregistrări existente în acel jurnal. Această separare este aceeași cu cea dintre sursa activă și proveniența unui instantaneu din secțiunea 2.6.2.
+
+Anularea schimbă starea domeniului și retrage preferințele învățate de pas, dar nu șterge dovada că pasul a avut loc. Jurnalul primește o înregistrare nouă de anulare, legată de operația inițială. Astfel, „why did you move it?” poate primi o explicație istorică urmată de precizarea că mutarea a fost anulată. O anulare eșuată înregistrează efectul rămas observat. Păstrarea istoricului nu autorizează refolosirea unei concluzii anulate drept fapt curent.
+
+Reprezentarea următoare este o propunere minimală pentru legături, nu schema completă a jurnalului și nici o facilitate deja implementată:
+
+```sop
+@req1 std.trace.request message="put the duck on the lake"
+@input1 std.trace.input source="drawing-instance/duck1" version="state-17" key=at value="120,540"
+@step1 std.trace.step request=$req1 operation=place status=confirmed input=$input1
+@reply1 std.trace.reply request=$req1 step=$step1 text="I moved the duck onto the lake."
+@undo1 std.trace.undo target=$step1 status=confirmed afterVersion="state-19"
+```
+
+`req1` identifică mesajul, iar `input1` fixează o valoare citită din starea 17. `source` este aici o valoare istorică explicită, nu o referință `$` către un obiect care ar trebui să existe pentru totdeauna. `step1` și `reply1` folosesc referințe reale către înregistrările jurnalului. `undo1` păstrează legătura cu pasul anulat și versiunea observată după anulare. Tipurile și valorile complete ale intrărilor trebuie păstrate în schema finală; textul din `value` ilustrează valoarea, fără a decide serializarea generală a punctelor. Fragmentul omite observațiile detaliate: singur, `status=confirmed` nu este o dovadă suficientă pentru răspuns.
+
 Autorul tiparului declară regulile; motorul înregistrează potrivirile și calculele; unealta raportează efectele observate. Componenta de răspuns selectează din această urmă pașii necesari explicației și le exprimă sensul în cuvinte. Ea nu este autorizată să adauge o cauză pentru care nu există un pas înregistrat.
 
 | Răspuns | Ce trebuie să explice „de ce?” |
@@ -1626,7 +1655,7 @@ Autorul tiparului declară regulile; motorul înregistrează potrivirile și cal
 | presupunere | Valoarea omisă de om, sursa valorii completate și motivul pentru care acea sursă se aplică. |
 | adaptare | Valoarea cerută, valoarea realizată, distanța, toleranța și regula care permite abaterea. |
 
-Urmărim exemplul calendarului. Pentru claritate, numerele sunt minute față de începutul zilei fixate în exemplu, o reprezentare de calcul, nu formatul de stocare al momentelor absolute. Ana este ocupată între 600 și 660. Noua cerere are începutul 630 și durata 30. Înregistrarea calculului este următoarea; notația tabelului arată câmpurile urmei, nu introduce tipuri SOP noi.
+Urmărim exemplul calendarului. Pentru claritate, numerele sunt minute față de începutul zilei fixate în exemplu, o reprezentare de calcul, nu formatul de stocare al momentelor absolute. Ana este ocupată între 600 și 660. Noua cerere are începutul 630 și durata 30. Înregistrarea calculului este următoarea; tabelul descrie conținutul faptelor jurnalului; numele coloanelor nu sunt chei SOP suplimentare.
 
 | Pas | Evidență înregistrată |
 |---|---|
@@ -1638,11 +1667,44 @@ Urmărim exemplul calendarului. Pentru claritate, numerele sunt minute față de
 
 Explicația pentru om este: „Ana already has a meeting from 10:00 to 11:00. Your 30-minute meeting at 10:30 overlaps it, so I did not schedule it.” Fiecare afirmație corespunde unui pas. Dacă numele Ana are doi candidați, explicația este în schimb „Two people named Ana match your request; I need to know which one.” Nu se calculează disponibilitatea unei persoane alese arbitrar.
 
-În desen, pentru „I moved the duck onto the lake”, explicația arată identitatea raței, relația cerută, operația și observația care dovedește că relația se ține după mutare. Dacă s-a folosit imaginea unei păsări, se adaugă lanțul rață–pasăre și realizarea disponibilă: aceasta explică imaginea, fără să schimbe felul lucrului.
+În desen, urmărim „put the duck on the lake”. Presupunem că rața și lacul există, că referințele sunt univoce și că relația cerută nu este deja satisfăcută. Fiecare rând de mai jos trebuie să aibă un corespondent în urma aceleiași cereri; un rezultat din altă cerere nu poate completa o dovadă lipsă.
+
+| Pas | Evidență înregistrată |
+|---|---|
+| cerere | Actul `place`, obiectul cerut și ținta, legate de fragmentele mesajului. |
+| referenți | Identitățile `duck1` și `lake1`, împreună cu versiunea desenului în care au fost găsite. |
+| condiție | Relația `on` trebuie să țină între cele două obiecte; testul ei în starea inițială este fals. |
+| plan | Poziția propusă, testul geometric care o validează și operația care o poate realiza. |
+| apel | Identitatea apelului și confirmarea uneltei pentru mutarea acelei rațe. |
+| observație | Poziția raței înainte și după apel, din citirea efectivă a desenului. |
+| verificare | Testul declarat pentru `on` este adevărat pe observația de după; diferența față de starea inițială conține mutarea cerută. |
+| răspuns | „I moved the duck onto the lake.”, legat de apel și de verificarea efectului. |
+
+Dacă unealta confirmă, dar observația nu arată relația, ultimul rând nu este permis. Dacă relația era deja adevărată înainte, planul nu mută rața și răspunsul spune că ea era deja pe lac. Explicația trebuie să arate această diferență, nu doar faptul că o funcție a fost apelată.
+
+Reutilizarea unei imagini cere o justificare separată de justificarea mutării. Tabelul compară două explicații care pot produce același desen, dar se bazează pe cunoaștere diferită.
+
+| Explicație | Ce permite verificarea ei |
+|---|---|
+| „There is no duck image; duck is a kind of bird, and bird is the nearest ancestor with an available image.” | Numește relația de specializare, realizarea disponibilă și regula generală de căutare pe strămoși. Aceeași regulă poate fi aplicată altor feluri. |
+| „Ducks are drawn as birds.” | Nu arată dacă s-a aplicat moștenirea sau doar un rând scris pentru această cerere. Fără sursele și regula generală, explicația nu demonstrează reutilizarea. |
+
+Criteriul nu interzice faptele specifice: faptul că rața este pasăre și identitatea raței cerute sunt intrări legitime. Verificarea urmărește dacă decizia de realizare vine dintr-o regulă generală aplicată acelor intrări sau dintr-o asociere particulară între cerere și răspuns. O explicație scurtă poate omite detalii pentru lizibilitate, dar desfășurarea ei trebuie să le poată furniza.
 
 În diagramă, pentru o distanță minimă de 12 unități ale paginii, explicația poate spune „The nodes were 8 units apart; the layout moved them to 14, satisfying the minimum of 12.” Urma trebuie să conțină măsurările și limita. Nu poate afirma „best layout” fără o dovadă de optimizare.
 
-În document, dacă lungimea a fost completată dintr-o valoare obișnuită, explicația numește genul și sursa acelei valori: „You did not specify a length; I used the declared usual length for this kind of letter.” Dacă sursa lipsește, propoziția nu este permisă. Pentru ton, lipsa unei verificări nu poate fi ascunsă prin „I made it formal”: se explică doar transformarea efectuată și faptul că rezultatul nu a fost verificat pentru ton.
+În document, presupunem cererea „write a letter about the meeting”, fără lungime specificată. Exemplul folosește o declarație ilustrativă care dă lungimea obișnuită de 180 de cuvinte pentru genul scrisorii. Numărul nu este o constantă a programului și nu devine o cerință exactă a omului.
+
+| Pas | Evidență înregistrată |
+|---|---|
+| cerere | Genul scrisorii și subiectul; nicio cerință de lungime în mesaj. |
+| surse preferate | Nu există o valoare contextuală sau o preferință a omului aplicabilă, potrivit ordinii din secțiunea 4.5. |
+| cunoaștere | Identitatea și versiunea declarației de lungime obișnuită: 180 de cuvinte pentru acel gen. |
+| aplicabilitate | Genul cerut coincide cu genul declarației sau este o specializare care nu o înlocuiește cu altă valoare. |
+| alegere | 180 de cuvinte este ținta presupusă a planului, marcată ca presupunere și legată de sursă. |
+| explicație | „You did not specify a length; I used the declared usual length of 180 words for this kind of letter.” |
+
+Acest traseu explică alegerea unei ținte, nu dovedește că textul final are 180 de cuvinte. După compunere, lungimea efectivă trebuie măsurată și comparată cu toleranța permisă. Dacă sursa obișnuită lipsește, sistemul nu poate produce aceeași explicație; trebuie să folosească următoarea sursă justificată sau să întrebe. Pentru ton, lipsa unei verificări nu poate fi ascunsă prin „I made it formal”: se explică numai transformarea și proprietățile efectiv verificate.
 
 Pentru toate domeniile, explicația scurtă poate fi desfășurată în pașii ei, cu identitățile și versiunile reale. Numele de reguli dintr-un exemplu al cărții nu sunt dovezi dintr-o execuție. Dacă urma s-a pierdut, răspunsul corect este că justificarea nu mai este disponibilă, nu o reconstrucție prezentată ca certitudine.
 
@@ -1757,7 +1819,7 @@ Genurile (scrisoare, raport, poveste, notă) și părțile fiecăruia sunt grafu
 ```
 @w          std.schema.world name=calendar
 @use        core.use world=w.person
-@t.meeting  core.type of=meeting extends=std.schema.thing is=thing
+@t.meeting  core.type of=meeting extends=std.schema.thing is=thing complete=true
 @t.room     core.type of=room    extends=std.schema.thing is=thing resource=true
 @s.meet.title  core.slot of=meeting key=title  kind=string   means=name
 @s.meet.start  core.slot of=meeting key=start  kind=number   means=time  part=start
@@ -1904,8 +1966,10 @@ Căutarea pornește din operația cerută și urmează aceste dependențe. Memor
 În demo, calendarul este o instanță locală. Toate ședințele ei sunt în starea citită; nu presupunem un serviciu extern de rezervări. Autorul tiparului poate declara această închidere printr-un fir existent al limbajului:
 
 ```
-@t.meeting core.type of=meeting complete=true
+@t.meeting core.type of=meeting extends=std.schema.thing is=thing complete=true
 ```
+
+Este aceeași declarație completă din secțiunea 7.4, reprodusă pentru explicație; nu se adaugă o a doua declarație cu același identificator și alt conținut. Pentru un calendar încărcat numai parțial, schema acestui exemplu nu este aplicabilă ca atare. Activarea și interogarea instanței complete au loc numai după ce încărcarea integrală a faptelor a reușit.
 
 Firul spune că tipul despre care vorbim este `meeting`, iar `complete=true` permite răspunsul „nu” când nu există o potrivire în acea instanță. Programul care încarcă instanța trebuie să asigure că toate faptele ei au fost citite înainte să folosească această proprietate. Declarația nu produce faptele lipsă. Ea nu spune nici că toate bazele de cunoaștere ale lumii au fost încărcate.
 
@@ -1937,7 +2001,7 @@ O soluție fezabilă satisface constrângerile; o soluție optimă are în plus 
 
 Pentru fiecare candidat, coordonatorul face o copie de încercare a instanței, conform 3.9, aplică schimbările propuse și cere verificarea lumii asupra copiei. Este aceeași semantică de validare ca la o schimbare scrisă de mână. Copia include aceleași versiuni de schemă și cunoaștere. Un plan care rămâne nedeterminat nu ajunge la unelte. Abia un plan valid poate trece în etapa 7, după verificarea că starea originală nu s-a schimbat între timp.
 
-O funcție geometrică sau numerică declarată poate rămâne o dependență de încredere: verificatorul îi controlează argumentele, tipul rezultatului și proprietățile verificabile, dar nu poate dovedi corectitudinea oricărui program arbitrar. Contractul numește funcția și versiunea ei; testele ei și limitele metodei sunt parte din justificare. O funcție lipsă nu se consideră adevărată implicit.
+O funcție geometrică sau numerică declarată poate rămâne o dependență de încredere: verificatorul îi controlează argumentele, tipul rezultatului și proprietățile verificabile, dar nu poate dovedi corectitudinea oricărui program arbitrar. Contractul numește funcția și versiunea ei; testele ei și limitele metodei sunt parte din justificare. Autorul domeniului trebuie să aleagă o implementare verificată pentru acel contract și să declare limitele ei; numirea funcției nu este o dovadă de corectitudine. O funcție lipsă nu se consideră adevărată implicit.
 
 ## 8.6 O ședință, urmărită cu numere
 

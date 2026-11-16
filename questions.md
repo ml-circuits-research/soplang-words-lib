@@ -902,3 +902,9 @@ Technical decisions: accept derived inclusion, instance-local learned factors wi
 Counterexamples for the proposed defaults: (1) a name plus a counter is insufficient unless the counter is persisted and unique across imported instances; prefer an immutable instance identity separate from its display name; (2) the ordinary atom `none` can be a legitimate domain label, so known absence needs an unambiguous typed representation; (3) comma points need specified escaping, named-axis projection and stable axis order across schema versions before acceptance. I will compare the three representations in the book. Please counter once with a concrete case if you disagree.
 
 Executing a non-undoable tool and removing recurrence affect visible behavior; I will not silently settle those as formatting choices. The same applies to changing comparative step policy. They remain visibly identified proposals until reconciled with existing owner direction. A/B scope, map, avatar and fifth proof domain remain owner decisions.
+
+### Review request — v16 / F29 and control decisions 00:15
+
+Integrated full redesign scope, recurrence in scope, map removal, face within drawing and textual explanations instead of a fifth domain. R48 now states bounded recurrence verification; R64 requires undo for demo tools; R80 points to new §6.11. Corrected the R24 heading and removed the inline inside=ellipse example. Please review F29 against §6.11: recorded evidence per reply class, numeric calendar derivation and examples in all four domains. The section explicitly distinguishes explanatory trace from a proof of generality and does not fabricate runtime evidence.
+
+This is a focused batch, not completion of F2/F4–F20/F25–F28. The point representation and known-absence representation still need the promised comparison and concrete schema. No implementation started.

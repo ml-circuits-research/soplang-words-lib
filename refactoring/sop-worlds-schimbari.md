@@ -48,7 +48,7 @@ Biblioteca are trei straturi (teoria, lecția 5 și următoarele descriu ce fac)
 
 ### 3.1 Motorul limbajului
 
-Fișierele motorului (citirea firelor, tipuri, sloturi, reguli, verificare, anulare, copie, rezolvitor) nu au greșelile găsite în sesiuni. Primesc precizări, nu o rescriere.
+Motorul limbajului intră în refacerea completă acolo unde contractele o cer. Inventarul de mai jos arată punctele cunoscute, fără să limiteze schimbările necesare.
 
 | Schimbare | Detaliu |
 |---|---|
@@ -97,7 +97,7 @@ Aici se reface. Fișierele și constantele sunt cele din depozit, numărate de m
 
 **Cum se verifică.** Testele motorului rămân și trebuie să treacă neschimbate. Pentru stratul nou: proprietăți pe roluri, pe exemple mici din cele patru domenii (desen, diagramă, document, calendar), nu pe lumi inventate; perechi minimale pentru citire; verificarea că un răspuns spune „am făcut” numai pentru o schimbare aflată în stare.
 
-**Ce este de hotărât.** Varianta A (se reface stratul conversației, motorul rămâne cu precizările de la 3.1) sau varianta B (se reface tot). Recomandarea mea este A; motivele sunt în secțiunea 9.
+**Amploare decisă.** Refacere completă, inclusiv motorul unde proiectul o cere. Conservarea unei implementări nu poate limita contractul conceptual; probele de comportament rămân necesare.
 
 ---
 
@@ -180,8 +180,8 @@ Hotărârea proprietarului (16 noiembrie): aplicația are patru domenii — **de
 | calendar | Domeniu nou (lecția 32). Există un tipar publicat `w.calendar`; se rescrie peste concepte și primește unelte și o înfățișare pe pagină. Se face după ce lumea legendelor și stratul nou există. Este și proba: nu are voie să aducă niciun rând de răspuns, nicio întrebare, niciun indiciu, nicio listă de valori. |
 | grafice (domeniu separat) | **Se elimină.** Cele 481 de tipare de propoziții și programul lui ies din aplicație; ce merită păstrat (desenarea barelor și a liniilor) devine unealtă a diagramelor. |
 | muzică | **Se elimină deocamdată.** Cele 477 de tipare și programul lui ies din aplicație; tiparul din cunoaștere rămâne publicat, nefolosit. |
-| hartă | Nehotărât. Este în întregime pe drumul vechi (582 de tipare). De hotărât: se elimină deocamdată, ca muzica, sau trece pe declarații după calendar. |
-| avatar | Nehotărât ca loc în listă. Este deja pe declarații; proprietarul a cerut să meargă pe același drum ca restul. De hotărât dacă rămâne ca al cincilea domeniu sau ca parte a desenului (o față este un lucru desenat, cu părți). |
+| harta | Se scoate din demo. |
+| avatarul | Fața intră în desen ca lucru cu părți; nu este domeniu separat. |
 
 ### 5.4 Sarcini de actualizare, ca listă de lucru
 
@@ -193,7 +193,7 @@ Hotărârea proprietarului (16 noiembrie): aplicația are patru domenii — **de
 | Calendarul: tiparul rescris, uneltele (adaugă, mută, schimbă, șterge), vederea stării, înfățișarea pe pagină. | cunoaștere, aplicație |
 | Exemplele și testele bibliotecii mutate de pe lumile inventate pe exemple mici din cele patru domenii. | bibliotecă |
 | Sesiunile de măsură: rândurile despre grafice, muzică și hartă se scot din numărătoare sau se marchează „domeniu eliminat”. | aplicație |
-| Hotărârea despre hartă și avatar, apoi sarcinile care decurg. | proprietar |
+| Eliminarea hărții din demo și integrarea feței în desen, conform deciziei primite. | proprietar |
 
 **Cum se verifică aplicația.** Cele trei sesiuni ale proprietarului, cu verificări care afirmă intenția. Punctul de pornire, din jurnalul aplicației: sesiunea din 16 noiembrie, 51 de replici, 11 corecte, 12 parțiale, 23 de refuzuri, 5 greșite; sesiunea în română din 15 noiembrie, 43 de replici, 8, 5, 26, 4; sesiunea în engleză, 16 replici, 7, 2, 5, 2. Greșitele trebuie să ajungă la zero; corectele trebuie să crească fără ca sesiunile să fie folosite la scrierea declarațiilor.
 
@@ -235,7 +235,7 @@ Hotărârea proprietarului (16 noiembrie): aplicația are patru domenii — **de
 |---|---|
 | 0 | Măsurarea. Făcută: verificările strânse și inventarul. |
 | 1 | Pagina de proiect a lumii legendelor, cu firele și cele patru exemple lucrate de mână. **Aprobă proprietarul.** |
-| 2 | Hotărârile de limbaj de la 3.1, scrise într-o pagină. **Aprobă proprietarul**, odată cu alegerea între varianta A și B. |
+| 2 | Contractele de limbaj și de execuție sunt scrise și revizuite. Proprietarul aprobă proiectul înainte de implementare; amploarea refacerii complete este deja decisă. |
 | 3 | Lumea legendelor publicată; cheile noi pe tip și pe slot în motor; modulul spațiilor și clasa de comparație. |
 | 4 | Stratul conversației rescris peste concepte, pe exemplele bibliotecii. Mecanismele vechi se șterg în aceeași livrare. |
 | 5 | În paralel cu 4: bazele de cunoaștere, în ordinea `k.kinds`, `k.colours`, `k.space` și `k.time`, `k.expect`, `k.parts` și grafurile, apoi restul. |
@@ -247,16 +247,16 @@ Durata nu o pot promite. Estimarea mea, cu cele două sesiuni de lucru: pașii 1
 
 ---
 
-## 9. Ce a rămas de hotărât de către proprietar
+## 9. Decizii de amploare și alegeri tehnice
 
 | Hotărâre | Ce înseamnă fiecare variantă |
 |---|---|
-| cât se reface din bibliotecă | **Varianta A:** se reface stratul conversației și datele; motorul primește precizările de la 3.1. Testele motorului rămân valabile; se pierde numai ce era greșit ca abordare. **Varianta B:** se reface tot, inclusiv motorul. Se pierde un motor verificat fără un câștig pe care să-l pot arăta, fiindcă greșelile găsite nu sunt acolo; durează de câteva ori mai mult. Recomand A. |
+| amploarea refacerii | Decis: refacere completă, inclusiv motorul unde proiectul o cere. |
 | numele firelor lumii legendelor | `w.legend.*` cu cheile `is=`, `means=`, `space=`, `relation=`, `role=` sunt propunerea mea; biblioteca poate propune altele în pagina de proiect. |
 | excepțiile discrete | Care liste închise rămân (gramatica, da sau nu, starea unei cereri) și cu ce motiv. Se hotărăște pe pagina de proiect. |
 | învățarea factorilor | Unde se ține ce învață sistemul despre „mare” pentru un om și un fel de lume: numai în instanță, sau și în cunoașterea felului de lume. Propun: întâi în instanță; trecerea în cunoaștere, mai târziu, cu o regulă scrisă. |
-| harta | Se elimină deocamdată, ca muzica, sau trece pe declarații după calendar. |
-| avatarul | Rămâne al cincilea domeniu, sau devine parte a desenului. |
+| harta | Se scoate din demo. |
+| avatarul | Fața intră în desen ca lucru cu părți; nu este domeniu separat. |
 
 
 ## 10. Predarea redactării și poarta de proiectare (versiunea cărții 14)
@@ -280,3 +280,12 @@ La cererea proprietarului, sesiunea worker redactează cartea și aceste planuri
 Autorul redactează fiecare contract, reviewerul îl verifică prin contraexemple. Proprietarul aprobă proiectul înainte de implementare. Deciziile tehnice mici se închid între autor și reviewer conform protocolului din worker-tasks; nu cer o aprobare separată a proprietarului.
 
 Ordinea este contract semantic, reprezentare, exemple manuale și review, apoi implementare după aprobare. Scăderea numărului de constante sau de rânduri nu înlocuiește aceste probe.
+
+
+## 11. Deciziile de control integrate în versiunea 16
+
+Blocul de control 00:15 fixează refacerea completă, calendarul cu recurență, eliminarea hărții din demo și fața ca parte a desenului. Secțiunile istorice care descriu codul existent sunt inventare, nu limite pentru proiect.
+
+Cerința nouă de acceptare este R80 și secțiunea 6.11: fiecare răspuns poate fi explicat printr-o urmă care numește datele, declarațiile, calculele și observațiile reale. Implementarea trebuie să păstreze urma de la interpretare până la execuție și răspuns. Reviewerul verifică dacă explicația citează concepte și reguli generale sau ascunde un caz particular. Explicația completează testele intenției; nu le înlocuiește.
+
+Pentru recurență se proiectează seria, identitatea aparițiilor, excepțiile, fusul orar, editarea unei apariții versus a seriei și verificarea conflictelor pe un interval explicit. Pentru uneltele demo, anularea verificabilă este parte obligatorie a contractului.

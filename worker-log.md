@@ -5979,3 +5979,8 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 ## 2026-11-16 — G0: book v15, first review corrections
 
 - Integrated feedback F1/F3/F21/F22–F24: chapter order, two-column plan gates, derived region inclusion with omitted-axis caveat, missing contract gates and distinction between design approval and measured application acceptance. Other F items remain open. Posted technical agreements and concrete counterexamples in questions.md.
+
+## 2026-11-16 — G0: book v16, explainable replies and scope decisions
+
+- Integrated control 00:15: revised R48/R64/R80 and plan scope; added §6.11 with evidence contracts and explanations in four domains. Corrected R24 heading and removed inside=ellipse. F29 submitted for review; other open feedback retained. No runtime changes.
+- Checks: `git diff --check`; `npm test` and `SOPWORLD_BUNDLE=1 npm run test:src` each completed with 648 pass, 0 fail, 1 skip, 1 todo (650 tests).

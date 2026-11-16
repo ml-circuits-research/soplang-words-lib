@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 15, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 16, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -1044,6 +1044,43 @@ Fiecare valoare ține minte de unde vine; aceasta se numește **proveniență (p
 
 ---
 
+
+## 6.11 Cum explică sistemul un răspuns
+
+Regula este simplă: explicația se construiește din evidența păstrată în timpul lucrului. Nu se inventează după răspuns o poveste plauzibilă. Când omul întreabă „why?”, sistemul arată legătura dintre cererea lui, regulile aplicate și rezultatul observat.
+
+O **urmă de justificare (justification trace)** este înregistrarea acestei legături. Fiecare pas numește intrările, operația, rezultatul și pasul care l-a cerut. O intrare este fie un fragment al cererii, fie un fapt identificat din starea citită, fie o declarație dintr-o versiune fixată a cunoașterii. O concluzie derivată trimite la regula și intrările ei. O observație a uneltei poartă identitatea operației și versiunea stării observate.
+
+Autorul tiparului declară regulile; motorul înregistrează potrivirile și calculele; unealta raportează efectele observate. Componenta de răspuns selectează din această urmă pașii necesari explicației și le exprimă sensul în cuvinte. Ea nu este autorizată să adauge o cauză pentru care nu există un pas înregistrat.
+
+| Răspuns | Ce trebuie să explice „de ce?” |
+|---|---|
+| executat | Cerința, operația confirmată, diferența relevantă și verificarea condiției finale. |
+| refuzat | Constrângerea încălcată, faptele care o declanșează și calculul; la date lipsă spune ce nu a putut verifica. |
+| întrebare | Ambiguitatea sau valoarea lipsă, candidații cunoscuți și de ce alegerea nu este justificată. |
+| presupunere | Valoarea omisă de om, sursa valorii completate și motivul pentru care acea sursă se aplică. |
+| adaptare | Valoarea cerută, valoarea realizată, distanța, toleranța și regula care permite abaterea. |
+
+Urmărim exemplul calendarului. Pentru claritate, numerele sunt minute față de începutul zilei fixate în exemplu, o reprezentare de calcul, nu formatul de stocare al momentelor absolute. Ana este ocupată între 600 și 660. Noua cerere are începutul 630 și durata 30. Înregistrarea calculului este următoarea; notația tabelului arată câmpurile urmei, nu introduce tipuri SOP noi.
+
+| Pas | Evidență înregistrată |
+|---|---|
+| intrare | Cererea spune 10:30 și 30 minute; participantul se rezolvă la identitatea Anei. |
+| fapt | Rezervarea existentă, la versiunea citită, are același participant și intervalul [600,660). |
+| calcul | Sfârșitul cerut este 630 + 30 = 660. |
+| regulă | Două intervale ale aceluiași participant nu se suprapun; 630 < 660 și 600 < 660 sunt ambele adevărate. |
+| rezultat | Cererea exactă este refuzată; nu a fost executată nicio operație. |
+
+Explicația pentru om este: „Ana already has a meeting from 10:00 to 11:00. Your 30-minute meeting at 10:30 overlaps it, so I did not schedule it.” Fiecare afirmație corespunde unui pas. Dacă numele Ana are doi candidați, explicația este în schimb „Two people named Ana match your request; I need to know which one.” Nu se calculează disponibilitatea unei persoane alese arbitrar.
+
+În desen, pentru „I moved the duck onto the lake”, explicația arată identitatea raței, relația cerută, operația și observația care dovedește că relația se ține după mutare. Dacă s-a folosit imaginea unei păsări, se adaugă lanțul rață–pasăre și realizarea disponibilă: aceasta explică imaginea, fără să schimbe felul lucrului.
+
+În diagramă, pentru o distanță minimă de 12 unități ale paginii, explicația poate spune „The nodes were 8 units apart; the layout moved them to 14, satisfying the minimum of 12.” Urma trebuie să conțină măsurările și limita. Nu poate afirma „best layout” fără o dovadă de optimizare.
+
+În document, dacă lungimea a fost completată dintr-o valoare obișnuită, explicația numește genul și sursa acelei valori: „You did not specify a length; I used the declared usual length for this kind of letter.” Dacă sursa lipsește, propoziția nu este permisă. Pentru ton, lipsa unei verificări nu poate fi ascunsă prin „I made it formal”: se explică doar transformarea efectuată și faptul că rezultatul nu a fost verificat pentru ton.
+
+Pentru toate domeniile, explicația scurtă poate fi desfășurată în pașii ei, cu identitățile și versiunile reale. Numele de reguli dintr-un exemplu al cărții nu sunt dovezi dintr-o execuție. Dacă urma s-a pierdut, răspunsul corect este că justificarea nu mai este disponibilă, nu o reconstrucție prezentată ca certitudine.
+
 # 7. Cele patru domenii
 
 Capitolul acesta arată cum arată fiecare domeniu când tot ce s-a explicat este pus la lucru. Fiecare secțiune are aceeași formă: declarația întreagă a domeniului, citită pe scurt; ce rămâne program; și un tabel cu propoziții ale omului, fiecare cu ce se întâmplă și cu secțiunea din care decurge.
@@ -1298,7 +1335,7 @@ Felurile de afirmații, cuprinderea și negația sunt fire `w.legend.concept`. O
 
 **R23. Regiunile se pot suprapune.** Un punct poate fi și „red”, și „orange”. La căutare („the red fish”) contează apartenența. La numire, în răspuns, se folosește regiunea cu centrul cel mai apropiat. O regiune din mai multe bucăți se scrie ca mai multe fire cu același nume.
 
-**R24. `inside` afirmă includerea întregii regiuni.** Centrul dinăuntru nu este o dovadă suficientă. Pe o axă, intervalul [4, 8] are centrul 6 în [0, 7], dar punctul 8 este în afară. Pentru două bile în aceeași metrică, o condiție suficientă este `distanța dintre centre + raza interioară ≤ raza exterioară`. Pentru intervale se compară ambele capete. Pentru forme generale, verificatorul trebuie să poată demonstra includerea prin operațiile declarate ale spațiului. Dacă nu poate, rezultatul este nedeterminat; relația nu se folosește ca adevăr demonstrat. Eșantionarea câtorva puncte poate găsi un contraexemplu, dar nu dovedește includerea. La aplicarea testului trebuie comparate aceleași axe, în aceeași metrică. O axă omisă din regiunea interioară rămâne liberă în limitele spațiului: dacă regiunea exterioară o restrânge, includerea nu rezultă din testul centrelor și razelor. De exemplu, „dark” lasă nuanța liberă și nu este inclus în „blue”, chiar dacă alegem pentru ilustrare un centru albastru.
+**R24. Includerea unei regiuni în alta se calculează.** Centrul dinăuntru nu este o dovadă suficientă. Pe o axă, intervalul [4, 8] are centrul 6 în [0, 7], dar punctul 8 este în afară. Pentru două bile în aceeași metrică, o condiție suficientă este `distanța dintre centre + raza interioară ≤ raza exterioară`. Pentru intervale se compară ambele capete. Pentru forme generale, verificatorul trebuie să poată demonstra includerea prin operațiile declarate ale spațiului. Dacă nu poate, rezultatul este nedeterminat; relația nu se folosește ca adevăr demonstrat. Eșantionarea câtorva puncte poate găsi un contraexemplu, dar nu dovedește includerea. La aplicarea testului trebuie comparate aceleași axe, în aceeași metrică. O axă omisă din regiunea interioară rămâne liberă în limitele spațiului: dacă regiunea exterioară o restrânge, includerea nu rezultă din testul centrelor și razelor. De exemplu, „dark” lasă nuanța liberă și nu este inclus în „blue”, chiar dacă alegem pentru ilustrare un centru albastru.
 
 Relația de includere este un rezultat calculat, nu o afirmație primită fără dovadă. Poate servi la explicarea relației dintre două regiuni; găsirea unui pește albastru folosește direct apartenența punctului său la regiunea albastră. Cheia `inside` se retrage din propunerea de declarație: o relație derivată poate fi memorată împreună cu dovada și versiunile regiunilor, apoi invalidată când acestea se schimbă.
 
@@ -1390,7 +1427,7 @@ Trei lucruri au fost numite „moștenire” și trebuie ținute deosebite.
 
 **R47. Schimbarea orei.** Dacă ora cerută nu există în ziua aceea, aplicația refuză și spune de ce. Dacă există de două ori, întreabă care dintre ele.
 
-**R48. Repetarea** („every Monday”) nu intră în prima versiune a calendarului **(de confirmat)**. O asemenea cerere primește răspunsul că repetarea nu este încă posibilă.
+**R48. Repetarea ședințelor intră în proiect.** O serie păstrează regula de repetare, fusul orar și excepțiile; fiecare apariție are identitate stabilă. Modificarea uneia trebuie deosebită de modificarea întregii serii. Verificarea conflictelor privește aparițiile din intervalul verificat, nu o expansiune infinită. O serie fără sfârșit nu poate fi declarată liberă pentru tot viitorul după verificarea unui număr finit de apariții. Forma firelor, intervalul verificat și politica de extindere sunt contracte de proiectare încă de scris; recurența nu este exclusă din implementarea țintă.
 
 ## 8.11 Fapt, normă, obișnuit; tare și slab
 
@@ -1451,7 +1488,7 @@ Exemple de margine, în spațiul formelor, cu toleranța 0,15. „Oval”, când
 
 **R63. Dacă desfacerea eșuează,** starea este citită din nou și spusă omului așa cum este: ce a rămas făcut și ce nu. Aplicația nu pretinde nici că a făcut, nici că nu a făcut.
 
-**R64. O unealtă care nu poate desface** o declară. Cererea se execută, iar răspunsul spune că acel pas nu poate fi anulat **(de confirmat)**.
+**R64. Uneltele celor patru domenii trebuie să permită anularea.** Contractul fiecărei operații include informația necesară refacerii stării dinainte și verificarea rezultatului anulării. Un eșec al anulării se raportează conform R63. O unealtă viitoare fără anulare are nevoie de o politică explicită; nu moștenește automat permisiunea de a executa.
 
 ## 8.16 Corectări și anulare
 
@@ -1537,7 +1574,7 @@ Starea de pornire, aceeași pentru toate: Ana are ședința `m1`, „Review”, 
 
 **R79. Numărătoarea nu își schimbă numitorul.** Mesajele din sesiunile omului care țin de domeniile scoase (grafice ca domeniu, muzică) rămân în numărătoare, într-o coloană separată, pentru ca procentele să nu crească prin scoaterea de cazuri.
 
-**R80. Dovada generalității.** Calendarul a ghidat proiectarea, deci nu poate fi singura dovadă. El arată costul adăugării unui domeniu: se scrie după înghețarea părții generale și nu are voie să ceară nicio schimbare în ea. Dovada propriu-zisă este un al cincilea domeniu, ales de proprietar după înghețare, despre care proiectarea nu a știut nimic **(de confirmat)**.
+**R80. Dovada cerută este explicația textuală verificabilă.** Pentru fiecare răspuns se poate urmări ce a spus omul, ce declarații generale și fapte au fost folosite, ce calcule au rezultat și ce s-a observat. Secțiunea 6.11 fixează contractul. Nu există un al cincilea domeniu de probă. O explicație nu demonstrează singură generalitatea: ea face vizibile dependențele pentru ca reviewerul să poată detecta o regulă scrisă pentru un caz particular. Testele intenției și contraexemplele verifică în continuare comportamentul.
 
 **R81. Trecerea.** Drumul vechi de citire rămâne în aplicație până când drumul nou are, pe aceleași sesiuni, cel puțin tot atâtea mesaje corecte și niciunul greșit. Fiecare depozit își fixează versiunile celorlalte două; versiunile se mută numai împreună, cu testele celor trei trecute.
 
@@ -1747,9 +1784,9 @@ Această anexă adună într-un loc tot ce în document poartă semnul (propus),
 
 | Întrebarea | Variantele |
 |---|---|
-| cât se reface din bibliotecă | A: se reface partea de conversație și datele, iar partea descrisă în capitolele 2 și 3 rămâne. B: se reface tot. |
-| harta | Se scoate deocamdată, ca muzica, sau trece pe declarații după calendar. |
-| avatarul | Rămâne al cincilea domeniu sau devine o parte a desenului. |
+| amploarea refacerii | Decis: refacere completă, inclusiv motorul unde contractele o cer; implementarea începe după aprobarea proiectului. |
+| harta | Decis: scoasă din demo. |
+| avatarul | Fața este un lucru desenat cu părți; nu un domeniu separat. |
 | numele tipurilor `w.legend.*` | Cele din secțiunea 4.8 sau altele. |
 | unde stau factorii învățați ai cuvintelor de grad | În instanța de lume, sau într-o bază de cunoaștere a omului. |
 
@@ -1764,9 +1801,9 @@ Rândurile de mai jos sunt alegeri de politică. Prima coloană trimite la regul
 | R9 | Dacă „se știe că nu are” se scrie `none`, și pe ce sloturi este permis. |
 | R31 | Mărimea pașilor: 1,25 pentru mărimi; 30 de minute pentru oră. |
 | R34 | Dacă ce se învață poate trece vreodată în cunoașterea comună, și cine aprobă. |
-| R48 | Dacă repetarea ședințelor intră în prima versiune a calendarului. |
+| R48 | Recurența este inclusă; rămân de proiectat reprezentarea seriei, excepțiile și verificarea pe intervale finite. |
 | R49 | Dacă normele sunt slabe în timpul lucrului sau unele sunt tari. |
 | R59 | Dacă un grafic făcut din calendar rămâne o fotografie sau se ține la zi. |
 | R64 | Ce se face cu o unealtă care nu poate desface: se execută și se spune, sau se cere acordul înainte. |
 | R68 | Cum se verifică tonul unui text; până atunci răspunsul nu îl afirmă. |
-| R80 | Care este al cincilea domeniu, cel de dovadă. |
+| R80 | Decis: explicații textuale verificabile, fără al cincilea domeniu. |

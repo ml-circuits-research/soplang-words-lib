@@ -2420,3 +2420,7 @@ Why last night's MiniLM proposer failed where SOP-BERT works: SOP-BERT IS the re
 | VSS | Not on the critical path (harder to train generally); keep it as a later comparison only. |
 
 Licence: diagram-vss-demo is AGPL-3.0, like PSys2; code and model brought into PSys2 keep their provenance; into the MIT library, only what its licence allows (the model and its training code belong in PSys2 or a training repository, not in `src/` of the library).
+
+## 2026-11-16 18:05 (Rome) — owner: licence is not an issue; SOP-BERT goes to PSys2
+
+Owner: the repositories are all his; licences do not matter; SOP-BERT belongs in PSys2. The port and retargeting task is in PSys2 `worker-tasks.md` (18:05). In this library only the general request contracts it targets, which already exist.

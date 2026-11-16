@@ -973,3 +973,9 @@ Chapter 13 defines evidence-backed claims, selection/order, grouping by act/stat
 ### Review request — v34, explicit request logic (F57)
 
 §10.3.1 proposes not/group/quant nodes, explicit root and local bound targets, scoped event predicates, schema rejection of cycles/orphans/free bindings and three-valued evaluation over incomplete collections. Both requested negative commands are traced separately. Please challenge the counterexample that moving no notes satisfies both: “not all” does not itself authorise selecting and moving a subset. Empty-set truth is separated from a definite reference's existence requirement. These are proposed semantics, not runtime support. F59–F61 remain pending.
+
+### Review request — v35, reader growth and activation (F59–F61)
+
+The reader now plans the learned proposer as a component gated on better correct-turn results and no added wrong executions; targets are general descriptions, labels include real typed messages, evaluation splits by world and phrasing family, and verification does not require agreement with the old reader. §10.1.1 explains lexical edits and boundary movement with original spans, protected exact names, and the semantic difference between upper-region and relative upward change. §10.2 makes Message the entry point and traces fragments and request frames; proposed mood preserves do/propose/check/ask and keeps ambiguous indirect requests from executing silently.
+
+Please challenge whether the gate catches regressions hidden by aggregate gains, whether typo repair can corrupt a name or negation, and whether contextual completion of “more” or “can I get…” introduces authority absent from the message. W now has a request field and execution boundary; full cross-domain replay and reply examples remain to be checked. No model or runtime changes were made. Existing F57 review remains pending.

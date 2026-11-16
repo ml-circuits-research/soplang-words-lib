@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 34, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 35, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -2645,6 +2645,23 @@ Lumea limbii deține formele și construcțiile engleze, iar bazele conceptuale 
 
 Lexicul poate da mai multe categorii sau sensuri aceleiași forme. Alegerea se face împreună cu structura propoziției și tipurile conceptelor. „Light” poate modifica o culoare sau greutatea unui obiect; o listă de cuvinte care îl transformă mereu în același număr pierde această distincție. În schimb, un nume exact al unui obiect nu trebuie reparat ortografic doar pentru că seamănă cu un cuvânt comun.
 
+### 10.1.1 Potrivirea formelor imperfecte
+
+Un mesaj tastat nu este neapărat o secvență de forme corecte. Cititorul păstrează textul original și construiește variante de segmentare și de formă, fiecare cu intervalele originale și operațiile propuse. Mecanismul este aceeași căutare a potrivirii apropiate din secțiunea 6.4.1, aplicată formelor lexicale, înainte de alegerea sensului. Distanța dintre litere nu înlocuiește distanța conceptuală: două cuvinte apropiate ortografic pot avea sensuri incompatibile.
+
+Mai întâi sunt căutate formele exacte, inclusiv numele locale cu mai multe cuvinte. Pentru un segment rămas necunoscut se generează candidați prin inserție, ștergere, substituție, transpoziție și mutarea unei granițe de cuvânt. Politica declară costurile, toleranța și bugetul de căutare, calibrate prin procedura din capitolul 12; nu există un prag numeric universal justificat doar de aceste exemple. Potrivirea gramaticală și compatibilitatea rolurilor elimină candidați, dar simplul fapt că unul poate fi executat nu dovedește intenția.
+
+| Fragment primit | Candidat și verificare |
+|---|---|
+| `watter` | `water`, prin eliminarea unei litere dublate, dacă forma este necunoscută și sensul se potrivește rolului. Se păstrează legătura cu întregul fragment original. |
+| `th epond` | `the pond`, prin mutarea graniței, fără schimbarea șirului de litere. Determinantul și substantivul trebuie să formeze împreună un grup nominal valid. |
+| `upper` într-o cerere de schimbare | Se păstrează întâi sensul lexical existent, de exemplu regiunea superioară. O construcție comparativă neuzuală poate propune și o creștere pe axa verticală, dar cele două citiri nu sunt sinonime: regiunea cerută și deplasarea relativă au condiții diferite. |
+| Numele exact `Watter` al unui obiect | Rămâne referință la acel obiect; nu devine `water`. Numele locale și intervalele citate sunt protejate de corectarea automată. |
+
+Corectarea poate afecta mai multe tokenuri; de aceea proveniența nu se reduce la o pereche „token greșit → token bun”. Varianta `th epond` păstrează intervalele din textul original chiar dacă arborele rezultat are alte granițe. Nici numărul, nici negația și nici unitatea unei valori nu pot dispărea drept zgomot. Un nume aproximativ poate fi propus utilizatorului ca referent candidat, dar nu este redenumit ori substituit în tăcere.
+
+Dacă două variante admisibile produc aceeași descriere, ele pot fi reunite păstrând ambele justificări. Dacă produc efecte diferite, cititorul explică diferența: pentru `upper`, „Do you mean higher than it is now, or in the upper area?”. Un singur candidat rămas numai fiindcă s-a epuizat bugetul nu este declarat unic. Cazurile de evaluare includ și forme corecte care seamănă cu greșeli: îmbunătățirea recunoașterii nu trebuie să deterioreze numele și sensurile deja corecte.
+
 ## 10.2 Gramatica și arborele sintactic
 
 O regulă gramaticală descrie cum se construiește o expresie din componente. Un grup nominal poate conține un determinant, o cantitate, modificatori și un substantiv principal. Arborele rezultat păstrează fiecare componentă și intervalul ei în text. Acesta este diferit de modelul de fire din secțiunea 3.4: arborele descrie organizarea textului, iar un pattern SOP caută potriviri într-o lume. Arborele poate fi reprezentat ulterior prin fire, dar cele două operații nu trebuie confundate.
@@ -2652,13 +2669,16 @@ O regulă gramaticală descrie cum se construiește o expresie din componente. U
 Forma următoare este o schemă gramaticală propusă pentru cititor, în notație de gramatică, nu cod SOP încărcabil. `NP` înseamnă grup nominal, `PP` grup prepozițional, `V` verb, `N` substantiv, `Adj` modificator, iar `?`, `*` și `+` înseamnă opțional, zero sau mai multe, respectiv una sau mai multe apariții. `Name`, `Pron`, `Det`, `Num`, `Prep` și `Coord` sunt categorii ale lexicului.
 
 ```text
+Message  := Command | RequestFrame | Fragment
 Command  := V NP Complement*
+RequestFrame := "I want" NP | "can I get" NP | "make it so" Clause
+Clause   := NP Predicate
 NP       := Name | Pron | Det? Num? Adj* N Modifier*
 Modifier := PP | Relative
 PP       := Prep NP
 Relative := "that" Predicate
 Group    := NP (Coord NP)+
-Fragment := PP | Adj | Num | NP Complement+
+Fragment := PP | Adj | Num | Direction | Degree | NP (Complement | Direction | Degree)+
 ```
 
 Această schemă arată componentele, nu închide toate regulile. `Complement` este un rol permis de cadrul verbului, iar `Predicate` este o proprietate sau o relație din construcțiile suportate. Coordonarea trebuie introdusă în locurile permise de gramatică, cu tipul ei de grup; nu înseamnă tăierea mesajului la fiecare „and”. O gramatică livrată trebuie să definească toate categoriile utilizate și să declare limitele sale de recursie și calcul.
@@ -2672,6 +2692,22 @@ Această schemă arată componentele, nu închide toate regulile. `Complement` e
 | Pronume | Produce o cerință de referire cu trăsături; nu alege obiectul înainte de consultarea focusului și selecției. |
 | Elipsă și fragment | Produce rolul spus și rolurile omise; situarea decide ce se poate moșteni din dialog. |
 | Negație și distribuție | Construiește întinderea operatorului: negarea actului, a unei proprietăți sau a cuantificării au rezultate diferite. |
+
+Intrarea gramaticii este `Message`, nu doar imperativul. `Direction` și `Degree` sunt categorii lexicale pentru direcții și modificări de grad; `Clause` exprimă o stare cerută, iar `Predicate` poate fi proprietate sau relație. Cadrele din schemă sunt exemple ale unor familii de construcții declarate în lumea limbii, cu roluri și reguli de compunere; nu teste de egalitate cu propoziții întregi. O implementare le extinde cu politețe, flexiune și forme interogative păstrând aceleași roluri.
+
+| Formă de mesaj | Descrierea produsă și informația încă necesară |
+|---|---|
+| `down` | Direcție de schimbare pe o axă; ținta, reperul și pasul provin din context sau rămân deschise. |
+| `more` | Creștere de grad ori cantitate; conceptul modificat trebuie identificat, nu ales automat după ultimul număr. |
+| `on the lake` | Relație cu o țintă existentă; poate corecta locul cererii active fără a introduce un obiect nou. |
+| `the pond up` | Țintă explicită plus direcție; actul de schimbare se deduce din construcție și axa aplicabilă. |
+| `I want a boat` | Stare dorită cu o țintă introdusă; în contextul editării poate produce o cerere de creare, păstrând determinarea și cantitatea. |
+| `can I get a boat` | Același conținut nominal, dar forma poate fi cerere indirectă sau întrebare despre posibilitate. Modul conversațional rămâne de stabilit. |
+| `make it so the heading is above the table` | Stare finală cerută, cu relație între referenți; planificatorul alege schimbarea care o realizează fără să inventeze un verb lipsă din mesaj. |
+
+Situarea completează numai roluri pentru care dialogul oferă o justificare: selecția curentă, întrebarea la care se răspunde ori cererea încă deschisă. Dacă `more` poate însemna mai multe obiecte sau dimensiune mai mare, se oferă cele două interpretări pentru clarificare, nu se cere o reformulare fără indicații. Un fragment nu repetă automat efectul ultimei execuții; deosebirea dintre completarea unei cereri, corectarea ei și o cerere nouă urmează jurnalul din secțiunea 6.11.
+
+Conținutul actului și modul cererii sunt distincte. Contractul propus adaugă pe `std.request` câmpul `mood=do|propose|check|ask`: efectuare, prezentarea unui plan, verificarea posibilității sau obținerea unei informații. Un mod încă nerezolvat nu primește implicit valoarea `do`; exemplele scurte care omit câmpul presupun că modul este stabilit în etapa de interpretare. Numai `do`, după rezolvarea celorlalte obligații, autorizează efecte. `propose` și `check` pot evalua un plan pe fork, dar nu apelează unelte cu efecte; `ask` citește dovezi. Cadrul interogativ nu este șters ca simplă politețe înainte de această decizie. Dacă `can I get…` rămâne ambiguu în context, sistemul separă „Shall I add it, or only check whether it can be added?”. Schema este propusă pentru stratul conversațional; API-ul actual de parsare nu implementează această autorizare.
 
 Biblioteca actuală oferă deja `parseText`, `grammarOf` și `nounPhrase`. Exemplul complet de mai jos folosește numai mecanismul sintactic existent, cu un lexic minimal. Rezultatul a fost rulat pe biblioteca actuală; el nu pretinde că toate construcțiile din tabel sunt deja declarate în lumea limbii.
 
@@ -2787,7 +2823,19 @@ Cititorul are la fiecare versiune un inventar verificabil de construcții și vo
 | Cerere înțeleasă, dar nerealizabilă | Explică restricția sau capabilitatea lipsă; o alternativă care schimbă o cerință fermă rămâne propunere. |
 | Căutare întreruptă | Spune că nu a obținut o citire suficient verificată; nu transformă bugetul epuizat în „nu există acest sens”. |
 
-Decizia de proiectare este ca un model statistic să poată propune descrieri printr-o interfață separată, dar să nu fie o dependență necesară și să nu primească acces direct la unelte. Ținta propunerii este descrierea conceptuală generală, nu setul de chei fixe al cititorului vechi și nici vocabularul unui singur domeniu. Legarea la schema domeniului are loc ulterior. Datele pentru evaluare trebuie separate atât pe domenii, cât și pe familii de formulări. Propunerea include sursele în text și necunoscutele, trece aceleași verificări ca analiza gramaticală și rămâne candidată. În configurația de bază acest mecanism nu este activat ca soluție presupusă a lipsei de gramatică. Introducerea lui cere o măsurare separată pe expresii reale și domenii nefolosite la pregătire, cu numărarea execuțiilor greșite, nu numai a descrierilor care trec validarea.
+Propunătorul învățat este o componentă planificată a cititorului, alături de analiza simbolică, cu o poartă explicită de acceptare înainte de activare. El primește mesajul și contextul de referire necesar și produce descrieri candidate în vocabularul general din secțiunea 6.3.2, inclusiv modul, țintele, constrângerile și nodurile logice. Nu produce cheile particulare ale unei lumi, comenzi de unealtă sau o reformulare pe care vechiul cititor trebuie obligatoriu să o accepte. Legarea la lumea concretă urmează propunerii; verificatorul controlează schema, rezolvarea referințelor, acoperirea cuvintelor și coerența condițiilor. O condiție nerealizabilă poate reprezenta corect mesajul și nu trebuie înlocuită pentru a obține un plan executabil.
+
+Datele de pregătire cuprind mesaje tastate efectiv, etichetate cu descrierea generală și intervalele justificative, completate cu variante generate. Etichetele sunt revizuite independent de cititorul existent; altfel modelul ar învăța tocmai cheile și omisiunile pe care încercăm să le înlocuim. Variantele aceleiași expresii și întreaga familie de reformulări rămân în aceeași partiție. Separarea pe domenii testează transferul, iar separarea pe familii de formulări testează citirea unor construcții nefolosite la pregătire. Mesajele păstrate pentru acceptare nu sunt utilizate ulterior la ajustare fără înlocuirea explicită a setului de evaluare.
+
+| Etapa acceptării | Ce se măsoară sau se verifică |
+|---|---|
+| Fidelitatea descrierii | Act, mod, ținte, condiții, negație și cuantificare față de eticheta revizuită, nu doar validitatea schemei. Fiecare condiție explicită citează cuvintele care o susțin; completările din context au proveniență separată. |
+| Rezolvarea în instanță | Referenți și sensuri candidate, roluri obligatorii, condiții păstrate și explicația eventualei imposibilități. Acordul vechiului cititor nu este criteriu de admitere. |
+| Comparația cu sistemul de referință | Pe aceleași mesaje și stări, mai multe cereri rezolvate corect și niciun plus de execuții greșite, inclusiv în sesiunile reale ale utilizatorului. Se raportează separat clarificările, abținerile și regresiile pe cererile anterior corecte. |
+| Transferul | Rezultate separate pentru domenii și familii de formulări ținute deoparte; un câștig agregat nu ascunde un domeniu deteriorat. |
+| Activarea | Versiunile modelului, datelor, politicii și rezultatele verificării sunt fixate împreună. Dacă poarta nu este trecută, componenta rămâne în evaluare, iar cazurile pierdute ghidează următoarea revizie. |
+
+Numărul de execuții greșite se măsoară atât ca număr de cazuri, cât și raportat la efectele încercate, pe un set fixat în avans. Mai puține abțineri nu constituie progres dacă sunt înlocuite de acțiuni incorecte. O evaluare fără erori observate nu este o garanție universală: verificările la fiecare cerere rămân active și după acceptare. Acesta este contractul componentei viitoare, nu anunțul activării ori al antrenării unui model în implementarea actuală.
 
 Un model poate produce o cerere perfect validă pentru o intenție pe care omul nu a exprimat-o. Verificatorul lumii poate constata că obiectele există și acțiunea este permisă, fără să poată demonstra că tocmai acea acțiune a fost cerută. De aceea proveniența lexicală, comparația interpretărilor și clarificarea rămân necesare. O creștere numai pe reformulări generate din aceleași cadre nu justifică înlocuirea cititorului pe mesaje reale.
 

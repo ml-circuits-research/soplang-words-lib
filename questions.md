@@ -1011,3 +1011,7 @@ The next closed schema cannot honestly accept all current legend examples. Read-
 | Point semantics require versioned axis order and frames, but the space table has only name/form. | Freeze a versioned space and explicit frame descriptor before claiming dimension/version/frame validation. Do not call a comma-token recognizer full point support. |
 
 Please challenge these choices with a concrete reusable counterexample if you prefer the qualified-name alternative or another condition representation. I am not declaring these families frozen or adding permissive schemas while these contradictions remain. The already-published import records are structurally validated; they do not depend on a guessed resolution here.
+
+### Implementation review — objective records (0.170.0)
+
+Published the next independent phase-zero schema through std.objective, using the exact book §12.4.1 example and rejection tests. No evaluator or optimizer claim. Review choices: weight zero explicitly disables contribution; repeated identical term references are deduplicated by existing store semantics; same-priority terms remain valid; priority is bounded to Number.MAX_SAFE_INTEGER to prevent distinct priorities collapsing in the current numeric representation. This is an implementation representation bound, not a conceptual ceiling. Please challenge these choices if a reusable case requires another policy. The pending legend-reference/condition negotiation remains separate and does not block this structural family.

@@ -43,7 +43,7 @@ Tools: `tools/validate.mjs`, `tools/reuse.mjs`, `tools/ledger.mjs`, `tools/build
 
 ## Import-evidence contracts
 
-Since 0.169.0, `core.use world=std.knowledge` loads the closed `std.knowledge.parent` record and its typed dependencies: `std.provenance`, `std.source` and `std.import.mapping` (module `std.import`). Each module can also be loaded independently. These are structural contracts: mandatory fields use `present=true`, unknown fields and wrong reference types are refused, and referenced evidence cannot be deleted while still used. Atomic batches may contain forward references.
+Added with 0.169.0: `core.use world=std.knowledge` loads the closed `std.knowledge.parent` record and its typed dependencies: `std.provenance`, `std.source` and `std.import.mapping` (module `std.import`). Each module can also be loaded independently. These are structural contracts: mandatory fields use `present=true`, unknown fields and wrong reference types are refused, and referenced evidence cannot be deleted while still used. Atomic batches may contain forward references.
 
 | Record | Fields |
 | --- | --- |
@@ -53,3 +53,16 @@ Since 0.169.0, `core.use world=std.knowledge` loads the closed `std.knowledge.pa
 | `std.knowledge.parent` | Required `child`, `parent` atoms, `provenance` reference and `status` (`candidate`, `accepted`, `rejected`). |
 
 A loaded candidate is not an accepted inference. The contracts do not resolve concept names, prove source truth, enforce publication licences or implement the remaining phase-zero families. The executable book example and rejection cases are in `test/import-contracts.test.mjs`. This incremental release must not be treated as the full phase-zero freeze.
+
+## Objective records
+
+Added with 0.170.0: `core.use world=std.objective` loads closed `std.objective` and `std.objective.term` records. Every listed field is structurally mandatory (`present=true`).
+
+| Record | Fields |
+| --- | --- |
+| `std.objective` | `order=lexicographic`; `direction=minimise` or `maximise`; one or more typed `term` references. Repeated references to the same identity are deduplicated by the store. |
+| `std.objective.term` | `evaluator` atom; `normalisation=declared.by.evaluator`; finite nonnegative `weight`; integer `priority` from zero through Number.MAX_SAFE_INTEGER. Equal priorities are allowed. |
+
+A zero weight explicitly disables the contribution; it does not turn missing observations for active terms into zero costs. Distinct term identities remain distinct even if they name the same evaluator. The safe-integer priority bound prevents accidental numeric collisions in the current representation.
+
+These schemas reject malformed records and protect referenced terms. They do not resolve evaluator names, check the referenced normalization definition, execute an optimizer or select a candidate. The actual book example and counterexamples are exercised in `test/objective-contracts.test.mjs`. Other numerical/change-policy families and the full phase-zero freeze remain pending.

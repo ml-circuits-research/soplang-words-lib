@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.170.0
+
+- Added opt-in `std.objective` structural contracts with typed term references, required fields, finite nonnegative weights and exactly representable nonnegative integer priorities. Same-priority terms and zero-weight contributions are explicit.
+- Load validation does not claim evaluator resolution or optimization.
+
 ## 0.169.0
 
 - Added opt-in closed import-evidence modules: `std.source`, `std.import`, `std.provenance`, `std.knowledge`, with structural presence and typed references. No truth, licensing or concept-resolution claim.

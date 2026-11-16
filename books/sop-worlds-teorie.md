@@ -3327,13 +3327,17 @@ O pondere modificată poate schimba mai multe cereri care folosesc același obie
 
 ### 12.4.1 Un obiectiv cu ponderi și priorități
 
-Un obiectiv poate combina priorități lexicografice cu sume ponderate în interiorul fiecărui nivel. Fragmentul propus separă obiectivul de termeni, astfel încât ordinea, ponderea și normalizarea fiecărui termen să poată fi citite. `displacement` și `crowding` numesc evaluatori declarați, ale căror rezultate sunt deja normalizate; declarațiile evaluatorilor nu sunt reproduse în acest fragment.
+Un obiectiv poate combina priorități lexicografice cu sume ponderate în interiorul fiecărui nivel. Contractul structural publicat în biblioteca 0.170.0, încărcat prin `core.use world=std.objective`, separă obiectivul de termeni, astfel încât ordinea, ponderea și normalizarea fiecărui termen să poată fi citite. `displacement` și `crowding` numesc evaluatori declarați, ale căror rezultate sunt deja normalizate; declarațiile evaluatorilor nu sunt reproduse în acest fragment.
 
 ```sop
 @objective.layout std.objective order=lexicographic direction=minimise term=$term.move term=$term.crowding
 @term.move std.objective.term evaluator=displacement normalisation=declared.by.evaluator weight=2 priority=1
 @term.crowding std.objective.term evaluator=crowding normalisation=declared.by.evaluator weight=1 priority=2
 ```
+
+Schema cere toate câmpurile exemplului și respinge cheile necunoscute, referințele la alt tip și termenii structurali incompleți. `order` este `lexicographic`, iar `direction` poate fi `minimise` sau `maximise`. `weight` este un număr finit nenegativ. Ponderea zero dezactivează contribuția unui termen; aceasta nu permite tratarea unei valori lipsă a unui termen activ drept zero. `priority` este un întreg nenegativ; versiunea curentă îl limitează la întregii reprezentabili exact în JavaScript, până la 9007199254740991, pentru a nu confunda priorități distincte prin rotunjire. Aceasta este o condiție a reprezentării curente, nu o limită conceptuală a numărului de niveluri.
+
+Referințele `term` repetate către aceeași identitate se păstrează o singură dată; nu dublează contribuția. Două înregistrări cu identități diferite rămân termeni diferiți chiar dacă numesc același evaluator. Sunt admise priorități egale, tocmai pentru suma ponderată din interiorul unui nivel. Ștergerea unui termen încă referit este refuzată. Încărcarea verifică aceste proprietăți structurale, dar nu rezolvă evaluatorii, nu execută optimizarea și nu dovedește că normalizarea este justificată; aceste obligații trebuie îndeplinite înaintea evaluării unui candidat.
 
 Prioritățile mai mici se compară întâi. Pentru fiecare prioritate se însumează termenii ponderați de la acel nivel; apoi vectorii se compară lexicografic. Cu A=(0,2; 0,6) și B=(0,5; 0,2), vectorii devin (0,4; 0,6) și (1,0; 0,2), deci A câștigă la primul nivel. Aglomerarea nu poate compensa deplasarea în această politică. Dacă ambii termeni primesc prioritatea 1, vectorul are o singură componentă și obținem sumele 1,0 și 1,2 discutate mai sus. Cu ponderi egale și aceeași prioritate, câștigă B prin 0,7 față de 0,8.
 

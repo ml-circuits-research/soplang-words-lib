@@ -43,4 +43,18 @@ export const CONTRACT_MODULES = {
 @std.knowledge.parent.status core.slot of=std.knowledge.parent key=status kind=atom enum=candidate enum=accepted enum=rejected present=true
 `, fns: {},
   },
+  'std.objective': {
+    text: `
+@std.objective.module core.module name=std.objective version=0.170.0 exports=std.objective exports=std.objective.term
+@std.objective.type core.type of=std.objective closed=true
+@std.objective.order core.slot of=std.objective key=order kind=atom enum=lexicographic present=true
+@std.objective.direction core.slot of=std.objective key=direction kind=atom enum=minimise enum=maximise present=true
+@std.objective.terms core.slot of=std.objective key=term kind=ref to=std.objective.term many=true present=true
+@std.objective.term.type core.type of=std.objective.term closed=true
+@std.objective.term.evaluator core.slot of=std.objective.term key=evaluator kind=atom present=true
+@std.objective.term.normalisation core.slot of=std.objective.term key=normalisation kind=atom enum=declared.by.evaluator present=true
+@std.objective.term.weight core.slot of=std.objective.term key=weight kind=number min=0 present=true
+@std.objective.term.priority core.slot of=std.objective.term key=priority kind=integer min=0 max=9007199254740991 present=true
+`, fns: {},
+  },
 };

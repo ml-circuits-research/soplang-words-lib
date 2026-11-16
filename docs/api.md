@@ -2094,10 +2094,17 @@ print(r.sort, r.reaction, r.replace, r.request.facts);
 reaction reduce true [{"key":"kind","value":"box"},{"key":"count","n":3}]
 ```
 
-### planRequest(live, request, options?), runPlan(live, plan, options?), capabilitiesOf(live), REQUEST_SOURCES, REQUEST_KEYS, VALUE_TYPES
+### planRequest(live, request, options?), runPlan(live, plan, options?), capabilitiesOf(live, opts?), declares(live, act, kind, opts?), honoursKind(h, kind, opts?), REQUEST_SOURCES, REQUEST_KEYS, VALUE_TYPES
 
 Plans a request in any live world from what it declares, and fills every gap by one mechanism.
-`capabilitiesOf(live)` reads the declarations: `std.schema.honours act= on= of=` (the constraints an act
+`declares(live, act, kind, { catalog })` says whether the world declares the kind for the act: the kind is declared in the world
+knowledge base explicitly, or taken by join (`std.schema.kinds world= from=<type> key=name acts= stand_in=<type>`: every row of
+the type is a kind with those acts, a row's `drawing=` is the base it is drawn as, so a villa counts through the house), or is a
+subkind of one, and a `std.schema.honours` row of the act covers it (`of=` names the kind, a parent, or the joined type). The
+host calls it instead of reading the honours rows. A `std.tool.param` of type `kind` with no `accepts=` list takes every such
+kind. A numeric attribute cue (`on=attribute takes=number unit=`, "by 30 degrees") reads as an attribute constraint with
+`value`, `number` and `unit`; `readRequest` never throws on a cue.
+`capabilitiesOf(live, { catalog })` reads the declarations: `std.schema.honours act= on= of=` (the constraints an act
 honours, for the things named) and `std.schema.kind` (what can be made, with which acts). A constraint said
 that the act does not honour is in `notHonoured` (`{ on, words, why, code }`, code `not_declared`); so is a
 declared one nothing in the world takes (`no_slot`), a value a slot refuses (`value`), a kind it has not
@@ -2449,8 +2456,9 @@ print(runPlan({ act: 'undo' }, toolBindings(w), tool, { timeline }).ok, balls.le
 true 0
 ```
 
-### kindLineage(kind, opts?), expectedValue(kind, key, known?, opts?), cutToCount(items, links, n), fillToCount(kinds, n, opts?), notAllOneKind(kinds, pool?), EXPECT_TYPES
+### kindLineage(kind, opts?), joinedKinds(live, catalog?), expectedValue(kind, key, known?, opts?), cutToCount(items, links, n), fillToCount(kinds, n, opts?), notAllOneKind(kinds, pool?), EXPECT_TYPES
 
+`joinedKinds(live, catalog)` is the Map of kinds taken by join (`std.schema.kinds`): kind to `{ acts, world, from, standIn? }`.
 Knowledge a planner and a binding share (src/expect.mjs). `kindLineage` is the kind and its parents, nearest first
 (see above). `expectedValue` reads conditional expectations, rows `k.expect.when of= key= value= [min= max=
 typical=] if.<key>=<v> if.<key>.min= if.<key>.max=` (and the review's form `k.expect.value [of=] on=<key> value=

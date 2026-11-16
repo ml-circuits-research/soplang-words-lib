@@ -5910,3 +5910,8 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - `done.revise` dropped after a step reaction. "with a lake" / "with three fish": counts are of the kind inside the whole, bounds widened by what was added. "fewer X" with no X in the result: `refused.no_such`, result kept. Move reply `done.place.<relation>` when the language has it.
 - Not done (Q94): "fewer flowers" on a garden whose kinds are all present in the result is fine; the PSys2 case needs the host's garden; a not-honoured place constraint ("in the corner" not taken by the world) still executes the rest and says it (honest partial, a world capability, not an unread word); Romanian move reply is [KNOW].
 - Tests: touched (revise-names 14, request, tool, references-fragments, acts-on-things) pass; npm test and SOPWORLD_BUNDLE run below.
+
+## 0.158.0 cues of the catalog at 7042ea70; kinds by join (psys2 re-pin)
+- Numeric attribute cue read (`attribute.rotation`: value 30, unit degree); readRequest never throws on a cue (a cue with no readable operand is no match, words unread). "what is in / on" + the world's whole noun: mention `inside`, `askWorld` skips it (art.draw reads were already right; the count came from askWorld).
+- Join: `capabilitiesOf(live, { catalog })` + `joined`, `declares`, `honoursKind`, `joinedKinds`; stand-in via `kindLineage drawn`; `type=kind` param with no `accepts` takes declared kinds. Not changed: `toolCapabilities` and `worldThings` read only the live world's kinds (no catalog argument yet).
+- Tests: `test/cues-robust.test.mjs` (6; property over every cue of the w.lang.en shards, 10 s); `repos.pin` knowledge pin 7042ea70.

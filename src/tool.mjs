@@ -226,6 +226,11 @@ export function nearestAccepted(value, param, { live = null, catalog = [], look 
     return { refused: true, values: [param.type] };
   }
   const acc = param.accepts ?? [];
+  if (param.type === 'kind' && !acc.length && live) { // a parameter of type kind with no closed list takes every kind the world declares (explicit or joined, subkinds and stand-ins included)
+    const cap = capabilitiesOf(live, { catalog });
+    if (cap.kinds.size && !kindLineage(String(value), { live, catalog, drawn: true }).some((k) => cap.kinds.has(k))) return { refused: true, values: [...cap.kinds.keys()] };
+    return { value };
+  }
   if (!acc.length || acc.includes(String(value))) return { value };
   if (param.type === 'kind' || worldType) {
     const up = kindLineage(value, { live, catalog, drawn: true });
@@ -577,7 +582,7 @@ export function askWorld(question, request, { live, bindings = null, view = null
   // the kinds asked about: the kinds wanted, the kinds a count is of, else every kind word said (a unit such as "nodes"
   // too); a whole or a link is counted only when its kind is said
   let kinds = (request?.constraints ?? []).filter((c) => (c.on === 'kind' && (c.want ?? 'yes') === 'yes' && c.value) || (c.on === 'count' && c.of)).map((c) => c.value ?? c.of);
-  if (!kinds.length) kinds = (request?.mentions ?? []).filter((m) => !m.none).map((m) => m.kind); // a word for the world itself that is no kind counts everything
+  if (!kinds.length) kinds = (request?.mentions ?? []).filter((m) => !m.none && !m.inside).map((m) => m.kind); // a word for the world itself that is no kind counts everything
   kinds = [...new Set(kinds)];
   const facts = [];
   if (kinds.length) for (const k of kinds) facts.push({ reply: 'state.count', roles: { kind: k, number: things.filter((t) => kindLineage(t.kind, { live, catalog }).includes(k)).length } });

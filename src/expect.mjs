@@ -9,6 +9,7 @@
 //   fillToCount(items, n, { pool, notAll })  -> the kinds to add to reach n, in the proportions there are
 //   notAllOneKind(kinds, pool)               -> the kinds with a second kind of the pool when all are one
 import { valueText } from './parser.mjs';
+import { memoPerWorld } from './memo.mjs';
 
 const V = (v) => (typeof v === 'string' ? valueText(v) : v);
 /** The rows of `type` in a World (ofType), a factStore (facts) or an array of either, as { key: [values] } objects. */
@@ -21,6 +22,29 @@ export function rowsOf(src, type) {
 }
 const first = (o, k) => o?.[k]?.[0];
 const num = (x) => (x === undefined || x === null || x === '' ? undefined : Number(x));
+
+const sourceIds = new WeakMap();
+/**
+ * The kinds a world takes by join: every `std.schema.kinds world= from=<type> key=name acts= stand_in=<type>` row makes
+ * each row of the type `from` (its `key`, default name) a declared kind with those acts, and each row of `stand_in`
+ * a kind drawn as the base its `drawing=` names (a `from` row's own `drawing=` says it too). Returns
+ * Map kind -> { acts: Set, world, from, standIn? }; explicit kinds are not in it. `sources`: the live world and the catalog.
+ */
+export function joinedKinds(live, catalog = []) {
+  const srcs = [live, ...[].concat(catalog ?? [])].filter(Boolean);
+  const build = () => {
+    const out = new Map();
+    for (const j of rowsOf(live, 'std.schema.kinds')) {
+      const acts = new Set(j.acts ?? []), from = first(j, 'from'), key = first(j, 'key') ?? 'name', world = first(j, 'world'), stand = first(j, 'stand_in');
+      if (from) for (const r of rowsOf(srcs, from)) for (const n of r[key] ?? []) if (!out.has(String(n))) out.set(String(n), { acts, world, from, ...(first(r, 'drawing') ? { standIn: String(first(r, 'drawing')) } : {}) });
+      if (stand) for (const r of rowsOf(srcs, stand)) for (const n of r.name ?? []) if (!out.has(String(n)) && first(r, 'drawing')) out.set(String(n), { acts, world, from: stand, standIn: String(first(r, 'drawing')) });
+    }
+    return out;
+  };
+  if (!rowsOf(live, 'std.schema.kinds').length) return new Map();
+  const id = srcs.slice(1).map((c) => { if (!sourceIds.has(c)) sourceIds.set(c, sourceIds.size + 1); return sourceIds.get(c) + ':' + (c.version ?? ''); }).join(',');
+  return memoPerWorld(live, `expect|joined|${id}`, build);
+}
 
 /**
  * The kind and its parents, nearest first: the live world's core.type lineage (without std.* and core.* types), then
@@ -35,6 +59,8 @@ export function kindLineage(kind, { live = null, catalog = [], drawn = false } =
   add(kind);
   const c = live?._compiled?.();
   if (c) for (const t of c.lineage(String(kind))) if (!/^(std|core)\./.test(t)) add(t);
+  const stand = drawn ? joinedKinds(live, catalog).get(String(kind))?.standIn : undefined; // a joined kind drawn as a base (villa -> house): the base and its lineage
+  if (stand !== undefined) { add(stand); if (c) for (const t of c.lineage(stand)) if (!/^(std|core)\./.test(t)) add(t); }
   const parents = rowsOf([].concat(catalog ?? []), 'k.kinds.parent');
   for (let depth = 0, frontier = [...out]; depth < 4 && frontier.length; depth++) { // bounded: four levels of the catalog's parents
     const next = [];

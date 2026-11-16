@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.158.0
+
+Cues of the catalog at 7042ea70 no longer break the reader; kinds taken by join count as declared (psys2 re-pin);
+properties in `test/cues-robust.test.mjs`.
+
+### Fixed
+- `readRequest` reads an attribute cue that takes a number and a unit ("rotate the X by 30 degrees": `attribute.rotation`):
+  the constraint is `{ on: 'attribute', attribute, value: 30, number: 30, unit }` (it threw on `o.value.entry`). It never
+  throws on a cue: a cue whose operand cannot be read is no match and its words stay unread.
+- "what is in / on the picture" (the whole noun of the world, a word the world's declarations give for its whole) asks about
+  the whole view: the mention is marked `inside` and `askWorld` does not count it as a kind ("There are 0 pictures").
+
+### New
+- Kinds declared by join (`std.schema.kinds world= from= key= acts= stand_in=`) count as declared: `capabilitiesOf(live,
+  { catalog })` lists them in `kinds` and `joined` (with the stand-in a row's `drawing=` says), `kindLineage(..., { drawn: true })`
+  goes from a stand-in to its base (villa to house), honours rows may name the type a kind is joined from (`of=`), and
+  `declares(live, act, kind, { catalog })` / `honoursKind(h, kind, opts)` answer for the host (explicit, joined, subkind, stand-in).
+- A `std.tool.param` of type `kind` with no `accepts=` list takes every declared kind (`nearestAccepted`) and refuses the others.
+- The catalog pin of the tests is 7042ea70.
+
 ## 0.157.0
 
 Partial reading never executes, a count revision is said by its net result, and four small Q93 items; properties over

@@ -20,7 +20,7 @@ import { seeded, below } from './random.mjs';
 import { choose } from './rank.mjs';
 import { repairWords } from './spell.mjs';
 import { factsOf, kindFactsOf, deduceState, induceStyle, induceCorrections, REASONING } from './reason.mjs';
-import { rowsOf, kindLineage, expectedValue, cutToCount, fillToCount, notAllOneKind } from './expect.mjs';
+import { rowsOf, kindLineage, joinedKinds, expectedValue, cutToCount, fillToCount, notAllOneKind } from './expect.mjs';
 
 /**
  * The order in which a gap is filled: what the user said, the dialogue state, what is induced from this world's state
@@ -279,7 +279,7 @@ export function readRequest(world, text, ctx = {}) {
   // a cue phrase longer than the verb it starts with is the reading ("put it back", "make it bigger")
   if (actAt && matches.some((m) => m.from === actAt.i && m.phrase > actAt.n)) { for (let k = actAt.i; k < actAt.i + actAt.n; k++) used[k] = false; act = null; actAt = null; } // bounded: the verb's tokens
   // the operand at acceptance time (what is still free)
-  const operand = (m) => {
+  const operandOf = (m) => {
     const c = m.c;
     if (c.on === 'reaction') return { to: m.to };
     if (m.lo !== undefined || m.n !== undefined) return { to: m.to };
@@ -313,6 +313,7 @@ export function readRequest(world, text, ctx = {}) {
       default: return { to: m.to };
     }
   };
+  const operand = (m) => { try { return operandOf(m); } catch { return null; } }; // a cue whose operand cannot be read is no match
   for (const m of matches) { const o = operand(m); m.span = o ? o.to - m.from : 0; }
   matches.sort((a, b) => b.phrase - a.phrase || b.c.priority - a.c.priority || b.span - a.span || a.from - b.from || a.c.n - b.c.n);
   const accepted = [];
@@ -326,6 +327,8 @@ export function readRequest(world, text, ctx = {}) {
     if (twin && !free(phraseTo, o.to - phraseTo)) continue;
     accepted.push({ ...m, o, phraseTo });
     take(m.from, o.to - m.from);
+    const nC = constraints.length, nR = reactions.length;
+    try {
     const c = m.c, w = words(m.from, o.to - m.from);
     if (c.on === 'reaction') { reactions.push({ value: c.value, step: c.step, cue: c.name, words: w, at: m.from }); continue; }
     const base = { on: c.on, want: c.want ?? 'yes', words: w, origin: 'said', cue: c.name, at: m.from };
@@ -344,11 +347,18 @@ export function readRequest(world, text, ctx = {}) {
       else if (it.entry && !it.entry.plural && !it.entry.unit && L.indefinite.has(ws[it.from])) constraints.push({ ...base, on: 'count', number: 1, of: kind, words: w1, det: true }); // "with a lake": one, said
       if (it.n === undefined || (it.entry && !it.entry.unit)) constraints.push({ ...base, value: kind, words: w1 });
     }
-    else if (c.on === 'attribute') { const v = o.value.entry.find((x) => !c.attribute || x.attribute === c.attribute) ?? o.value.entry[0]; constraints.push({ ...base, attribute: c.attribute ?? v.attribute, value: v.value }); }
+    else if (c.on === 'attribute') {
+      const n = m.n ?? o.n; // an attribute that takes a number (and a unit): "by 30 degrees"
+      if (n !== undefined && !o.value) constraints.push({ ...base, attribute: c.attribute, value: n, number: n, ...(c.unit ? { unit: c.unit } : {}) });
+      else { const v = o.value?.entry?.find((x) => !c.attribute || x.attribute === c.attribute) ?? o.value?.entry?.[0]; if (v) constraints.push({ ...base, attribute: c.attribute ?? v.attribute, value: v.value }); else for (let k = m.from; k < o.to; k++) used[k] = false; } // no readable value: the words stay unread
+    }
     else if (c.on === 'layout') constraints.push({ ...base, value: c.value ?? o.value?.entry[0]?.value });
     else if (c.on === 'about') constraints.push({ ...base, value: o.topic.text });
     else if (c.on === 'place') { if (!(o.kind?.entry.world && c.value === undefined)) constraints.push({ ...base, value: c.value ?? o.kind?.entry.kind, relation: c.relation }); } // a place that names the world itself is where everything is: no constraint
     else constraints.push({ ...base, ...(c.value !== undefined ? { value: c.value } : {}), ...(c.step ? { step: c.step } : {}) });
+    } catch { // a cue whose operand cannot be read (a declaration of a shape the reader does not take): nothing of it is kept, its words stay unread; readRequest never throws on a cue
+      constraints.length = nC; reactions.length = nR; for (let k = m.from; k < o.to; k++) used[k] = false; // bounded: the cue's tokens
+    }
   }
 
   // names of things that are there (ctx.state, else the world itself): a phrase that is a thing's name refers to it,
@@ -385,6 +395,7 @@ export function readRequest(world, text, ctx = {}) {
     if (k && free(i, k.n)) {
       mentions.push({ kind: k.entry.kind, words: k.text, at: i, ...(k.entry.unit ? { unit: true } : {}), ...(k.entry.world ? { world: true } : {}), ...(k.entry.none ? { none: true } : {}) });
       const afterPlace = L.preps.has(ws[i - 1] ?? '') || (L.dets.has(ws[i - 1] ?? '') && L.preps.has(ws[i - 2] ?? ''));
+      if (k.entry.world && afterPlace) mentions[mentions.length - 1].inside = true; // "in the picture": the whole view as a place, not a kind to count
       take(i, k.n);
       if (k.entry.world && afterPlace) continue; // "on the shelf", "in the drawing": the world itself is where everything is, not a place in it
       if (k.entry.none) { if (!target) { refers = 'all'; refersAt = i; } continue; } // the world's name, a kind of none: the whole world
@@ -668,13 +679,40 @@ export function reviseRequest(dialogue, request, opts = {}) {
 
 // ---- planning ----------------------------------------------------------------------------------------------------
 /** What a live world declares it can do: { honours: [{ act, on: Set, of }], kinds: Map(kind -> Set(acts)), slots(kind) }. */
-export function capabilitiesOf(live) {
-  return memoPerWorld(live, 'request|capabilities', () => {
+export function capabilitiesOf(live, { catalog = [] } = {}) {
+  const base = memoPerWorld(live, 'request|capabilities', () => {
     const honours = rowsOf(live, 'std.schema.honours').map((h) => ({ act: first(h, 'act'), on: new Set(h.on ?? []), of: h.of ?? [] }));
     const kinds = new Map();
     for (const k of rowsOf(live, 'std.schema.kind')) kinds.set(first(k, 'of'), new Set(k.acts ?? []));
     return { honours, kinds };
   });
+  const joined = joinedKinds(live, catalog); // kinds declared by join (std.schema.kinds): they count as declared for their acts
+  if (!joined.size) return { ...base, joined };
+  const kinds = new Map(base.kinds);
+  for (const [k, j] of joined) if (!kinds.has(k)) kinds.set(k, j.acts);
+  return { honours: base.honours, kinds, joined };
+}
+/** Does the honours row `h` cover `kind`: it names no kind, or names the kind, one of its parents (the lineage, a joined kind's stand-in too) or the type the kind is joined from. */
+export function honoursKind(h, kind, { live = null, catalog = [] } = {}) {
+  if (!h.of.length) return true;
+  if (kind === undefined || kind === null) return false;
+  if (h.of.includes(kind)) return true;
+  const from = joinedKinds(live, catalog).get(String(kind))?.from;
+  return (from !== undefined && h.of.includes(from)) || kindLineage(kind, { live, catalog, drawn: true }).some((k) => h.of.includes(k));
+}
+/**
+ * Does the world declare `kind` for `act`: the kind (declared explicitly, or taken by join from a catalog type, or a
+ * subkind or stand-in of one) has the act among its declared acts and, when the world honours the act with rows
+ * (std.schema.honours), one of them covers it. One call for the host instead of reading the honours rows itself.
+ */
+export function declares(live, act, kind, { catalog = [] } = {}) {
+  const cap = capabilitiesOf(live, { catalog });
+  const line = kindLineage(kind, { live, catalog, drawn: true });
+  const own = line.find((k) => cap.kinds.has(k));
+  const rows = cap.honours.filter((h) => h.act === act);
+  const viaHonours = rows.some((h) => h.of.length && honoursKind(h, kind, { live, catalog }));
+  if (own !== undefined && cap.kinds.get(own).has(act)) return !rows.length || rows.some((h) => honoursKind(h, kind, { live, catalog }));
+  return viaHonours;
 }
 const slotsOf = (live, kind) => live?._compiled?.().slots.get(kind) ?? new Map();
 
@@ -688,13 +726,13 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   const has = (s) => sources.includes(s);
   const seed = opts.seed ?? 1;
   const rnd = seeded(seed);
-  const cap = capabilitiesOf(live);
+  const cap = capabilitiesOf(live, { catalog: opts.catalog });
   // the act: said; else (nothing unread: an unread word where the act stands is never guessed over) the dialogue's,
   // else the one act this world declares for the thing named
   let act = request.act ?? null, actFrom = request.act ? request.actFrom ?? 'said' : 'said'; // a fragment's act is the dialogue's
   if (!act && !request.unread?.length) {
     const named = request.target ?? request.constraints.find((c) => c.on === 'kind' && c.want === 'yes')?.value;
-    const acts = [...new Set(cap.honours.filter((h) => named && (!h.of.length || h.of.includes(named))).map((h) => h.act))];
+    const acts = [...new Set(cap.honours.filter((h) => named && honoursKind(h, named, { live, catalog: opts.catalog })).map((h) => h.act))];
     if (opts.dialogue?.last?.act && sources.includes('dialogue')) { act = opts.dialogue.last.act; actFrom = 'dialogue'; }
     else if (acts.length === 1) { act = acts[0]; actFrom = 'world'; }
   }
@@ -745,7 +783,7 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   }
   out.target = target;
   if (targetFrom !== 'said') assumed.push({ key: 'target', value: target, from: targetFrom });
-  const keys = new Set(H.filter((h) => !h.of.length || h.of.includes(target)).flatMap((h) => [...h.on]));
+  const keys = new Set(H.filter((h) => honoursKind(h, target, { live, catalog: opts.catalog })).flatMap((h) => [...h.on]));
 
   // constraints the act does not honour here are named (those the dialogue added are dropped quietly)
   const cs = [];
@@ -1083,7 +1121,7 @@ function referencePlan(live, request, opts, out, H, act) {
   // the whole world: "everything" (refers all), or a word for the world itself (its name, the kind it means)
   const wholeWorld = request.refers === 'all' || kindC.some((c) => c.world && (c.value === request.target || !request.target));
   const kind = request.refers === 'last' || request.refers === 'named' || wholeWorld ? null : request.target ?? kindC[0]?.value ?? null;
-  const keys = new Set(H.filter((h) => !h.of.length || !kind || h.of.includes(kind) || kindLineage(kind, { live }).some((k) => h.of.includes(k))).flatMap((h) => [...h.on]));
+  const keys = new Set(H.filter((h) => !kind || honoursKind(h, kind, { live, catalog: opts.catalog })).flatMap((h) => [...h.on]));
   for (const c of request.constraints) if (!keys.has(c.on) && (c.origin ?? 'said') === 'said' && !c.det && !(c.on === 'kind' && (c.want ?? 'yes') === 'yes' && (c.value === kind || (wholeWorld && c.world)))) out.notHonoured.push({ on: c.on, words: c.words ?? String(c.value ?? c.on), why: `this world does not take ${c.on} for ${act}`, code: 'not_declared', value: c.value });
   const reply = (r, roles) => { out.replies = [...(out.replies ?? []), { reply: r, roles }]; return out; };
   let ids, objects = null;

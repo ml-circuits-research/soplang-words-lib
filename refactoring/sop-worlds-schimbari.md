@@ -409,3 +409,7 @@ Pentru reducerea mecanismelor, cartea propune rezolvarea filtrată (§6.4.1), sc
 Capitolul 9 explică acum API-urile nucleului prin exemple executate și delimitează conversația existentă de contractul conceptual propus. Familiile specializate din referința API rămân de dezvoltat pedagogic; lista apelurilor din catalogul conceptual (§6.8.2) nu se confundă cu metodele JavaScript.
 
 Review-ul 26fa72c identifică patru livrabile esențiale încă deschise: cititorul englez și construcțiile lui (E1), pachetul minim de cunoaștere și proveniența lui (E2), stabilirea și verificarea parametrilor numerici (E3), compunerea răspunsului din dovezi (E4). Capitolul API arată mecanisme disponibile, nu rezolvarea acestor lipsuri.
+
+E1 are acum contractul cititorului în §§6.3.3–6.3.6. Înainte de implementare trebuie închise gramatica livrată și compunerea semantică, exhaustivitatea analizelor candidate și schema nodurilor logice pentru întinderea cuantificatorilor. Un model poate propune doar candidate; validitatea în lume nu este dovadă a intenției. Experimentul anterior Q50 nu autorizează activarea lui și nu se reia în această etapă.
+
+Review 10 acceptă F51, F6 și limitele generalizării. Replay-ul nou `reviews/replay-new-examples-calendar-documents.md` adaugă W–BB: mod de cerere fără execuție, modificări relative explicite și ancore, relații cu măsură, proiecții între lumi, însușiri agregate și „same as”, respectiv compunere bazată pe texte sursă. Acestea rămân deschise, fără operații noi presupuse în catalog.

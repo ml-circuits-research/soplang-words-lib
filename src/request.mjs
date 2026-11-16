@@ -786,7 +786,12 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   // a general whole with no expectation of its own ("a random picture", "a picture with a lake"): planned as one of its
   // subkinds (the world's lineage) that are wholes of the expectations, those whose parts hold every kind said with it
   // first, sampled by the seed; the subkind is an assumption of source `sampled`
-  const makeOf = (k) => ['world', 'expect'].filter(has).some((s) => rowsOf(from[s], 'k.expect.make').some((m) => first(m, 'thing') === k));
+  // a kind the world only takes by join (std.schema.kinds) is declared for its acts, not as a whole: the catalog's k.expect.make of it
+  // (a tree of a trunk and a crown) is its own only when the world declares that whole (a k.expect.make row of its own, or the kind in std.schema.kind)
+  const explicitKinds = new Set(rowsOf(live, 'std.schema.kind').map((r) => first(r, 'of')));
+  const ownWholes = new Set(rowsOf(live, 'k.expect.make').map((r) => first(r, 'thing')));
+  const wholeRows = (s, k) => (s === 'expect' && cap.joined?.has(k) && !explicitKinds.has(k) && !ownWholes.has(k) ? [] : rowsOf(from[s], 'k.expect.make').filter((m) => first(m, 'thing') === k));
+  const makeOf = (k) => ['world', 'expect'].filter(has).some((s) => wholeRows(s, k).length > 0);
   if (!makeOf(target) && !(request.refers === 'last')) {
     const subs = [...cap.kinds.keys()].filter((k) => k !== target && makeable(k) && makeOf(k) && kindLineage(k, { live }).includes(target));
     if (subs.length) {
@@ -818,7 +823,7 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
 
   // the expectation of the target: the world's own facts, then the catalog's
   let mk = null, mkFrom = null;
-  for (const s of sources) if ((s === 'world' || s === 'expect') && !mk) { const m = rowsOf(from[s], 'k.expect.make').find((r) => first(r, 'thing') === target); if (m) { mk = m; mkFrom = s; } }
+  for (const s of sources) if ((s === 'world' || s === 'expect') && !mk) { const m = wholeRows(s, target)[0]; if (m) { mk = m; mkFrom = s; } }
   let parts = mk ? rowsOf(from[mkFrom], 'k.expect.part').filter((p) => first(p, 'of') === target) : [];
   // a whole of the expectations whose parts this world cannot make ("a house" of walls and a roof, where the world
   // draws a house as one thing): the expectation does not apply here, the kind is made as one thing (said in `wholeAsOne`)
@@ -1286,7 +1291,7 @@ function keptStructure(live, request, opts) {
   const plan = { ...lastPlan, steps, roles: { ...lastPlan.roles, count: itemSteps.length, kinds, links: linkPairs.length }, assumed: [], notHonoured: [], rejected: [], cannot: [], bounds: { ...(lastPlan.bounds ?? {}), count: [n, n] }, structure: n < items.length ? 'cut' : 'fill', seed: opts.seed ?? lastPlan.seed };
   if (typeof live?.fork === 'function' && typeof live?._compiled === 'function' && opts.reason !== false) { // the same check as any candidate
     const fork = live.fork();
-    const run = runWorldPlan(fork, plan, { replace: opts.replace ?? [] });
+    const run = runWorldPlan(fork, plan, { replace: opts.replace ?? [], catalog: opts.catalog });
     if (!run.ok) return null;
     const check = deduceState(factsOf(fork), run.made, { kindFacts: kindFactsOf([].concat(opts.catalog ?? [])), bounds: { ...plan.bounds, items: run.result.items } });
     if (check.hard.length) return null;
@@ -1382,7 +1387,7 @@ export function planRequest(live, request, opts = {}) {
   const simulate = (plan) => {
     budget.used += plan.steps.length + 1;
     const fork = live.fork();
-    const run = runWorldPlan(fork, plan, { replace: [...except] });
+    const run = runWorldPlan(fork, plan, { replace: [...except], catalog: opts.catalog });
     if (!run.ok) return { hard: [{ rule: 'schema', thing: null, why: String(run.failed?.why ?? 'the world refused it') }], soft: [], derived: [] };
     const fv = factsOf(fork);
     return deduceState(fv, run.made, { kindFacts, budget, required, bounds: { ...plan.bounds, items: run.result.items }, placeable: (id) => !!refSlot && (fv.thing(id)?.kinds ?? []).some((k) => itemKinds.includes(k)) });
@@ -1424,7 +1429,12 @@ export function planRequest(live, request, opts = {}) {
  * `replace` (the things of the last result), those are removed first: a revision replaces, it does not pile on.
  * Returns { ok, made, failed, result: { things, count, kinds, whole, layout } }.
  */
-export function runWorldPlan(live, plan, { replace = [] } = {}) {
+export function runWorldPlan(live, plan, { replace = [], catalog = [] } = {}) {
+  const cat = [].concat(catalog ?? []).filter(Boolean), had = live._actCatalog;
+  if (cat.length) live._actCatalog = cat; // the acts find the kinds the world joins (std.schema.kinds) in the catalog, as capabilitiesOf does
+  try { return runWorldPlanIn(live, plan, replace); } finally { if (cat.length) { if (had === undefined) delete live._actCatalog; else live._actCatalog = had; } }
+}
+function runWorldPlanIn(live, plan, replace) {
   if (plan?.unread?.length) return { ok: false, made: [], failed: { code: 'unread', reply: 'not_understood', roles: { words: plan.unread.join(', ') } }, result: { things: [], items: [], count: 0, kinds: {}, whole: null, layout: null, links: 0 } };
   if (plan?.reference) replace = []; // an act on the things that are there never removes them first
   for (const id of replace) if (live.get(String(id).replace(/^\$/, ''))) live.act({ action: 'remove', args: { thing: `$${String(id).replace(/^\$/, '')}` } }); // bounded: the things of the last result
@@ -1479,19 +1489,26 @@ export function sayRequest(request, outcome = {}, opts = {}) {
     facts.push({ reply: 'can', roles: { act: c.act, kinds: c.kinds.map((k) => pluralIn(o.language, lang, plain(k))).join(', ') } });
     if (c.on?.length) facts.push({ reply: 'can.say', roles: { act: c.act, keys: c.on.join(', ') } });
   }
-  for (const f of outcome.answer ?? []) facts.push({ reply: f.reply, roles: { ...f.roles, ...(f.roles.kind ? { kind: plain(f.roles.kind) } : {}) } }); // facts of the live world (askWorld)
+  for (const f of outcome.answer ?? []) facts.push({ reply: f.reply, ...(f.fallback ? { fallback: f.fallback } : {}), roles: { ...f.roles, ...(f.roles.kind ? { kind: plain(f.roles.kind) } : {}) } }); // facts of the live world (askWorld)
   const wholeFact = (kinds) => { // the net state of a whole: its parts by kind ("5 trees, 2 butterflies, a bird")
     const art = (w) => (o.language && articleFor(o.language, w, { types: { det: `${lang}.det`, onset: `${lang}.onset` } })) || (/^[aeiou]/i.test(w) ? 'an' : 'a');
     const text = kinds.map(([kind, n]) => (n === 1 ? `${art(plain(kind))} ${plain(kind)}` : `${n} ${pluralIn(o.language, lang, plain(kind))}`)).join(', ');
     for (let i = facts.length - 1; i >= 0; i--) if (facts[i].reply === 'done.revise') facts.splice(i, 1);
     facts.push({ reply: 'done.whole', roles: { whole: plain(outcome.target), parts: text }, kinds: kinds.map(([k]) => plain(k)), numbers: kinds.map(([, n]) => n) });
   };
+  // the values the request said of one kind ("a red boat and a blue house": colour red of the boat, blue of the house), those `shown` says the result has
+  const saidValues = (kind, shown) => [...new Set((request?.constraints ?? []).filter((c) => c.on === 'attribute' && (c.want ?? 'yes') === 'yes' && (c.origin ?? 'said') === 'said' && c.of === kind && c.attribute && !unsayable(c.value) && shown(c.attribute, c.value)).map((c) => plain(String(c.value))))].join(' ');
   const tool = outcome.run?.diff ? outcome.run : null; // a run through a tool binding: the reply is the diff of the view
   const run = tool ? null : outcome.run?.result ?? null;
   if (tool) {
     const d = tool.diff, replaced = new Set(); // the diff has the things a revision redid alike taken out already
     const byKind = (list) => { const m = new Map(); for (const t of list) m.set(t.kind, (m.get(t.kind) ?? 0) + 1); return [...m]; };
     const dir = (request?.reactions ?? []).find((r) => (r.step === 'up' || r.step === 'down') && r.words)?.words ?? null; // a change with no value to say is said by its direction, in the request's own word
+    const addedGroups = (list) => { // the things made, per kind and per the values the request said of that kind (and the view shows): "a red boat and a blue house"
+      const m = new Map();
+      for (const t of list) { const value = saidValues(t.kind, (a, v) => String(t.attrs?.[a]) === String(v)), k = `${t.kind}|${value}`, e = m.get(k) ?? { kind: t.kind, value, n: 0 }; e.n++; m.set(k, e); }
+      return [...m.values()];
+    };
     const parts = Object.entries(tool.result?.kinds ?? {}).filter(([, n]) => n > 0);
     const wholeRevised = !!(outcome.revised && tool.ok && !tool.same && !tool.undo && !tool.redo && tool.result?.whole && outcome.target && parts.length);
     if (tool.undo || tool.redo) { if (tool.ok) facts.push({ reply: tool.undo ? 'done.undo' : 'done.redo', roles: {} }); }
@@ -1500,7 +1517,7 @@ export function sayRequest(request, outcome = {}, opts = {}) {
     } else {
       // the whole is said before its parts (the thing the plan made first, or a thing of the whole's kind)
       const wholeFirst = (list) => { const isWhole = (t) => t.id === tool.result?.whole || (!!tool.result?.whole && t.kind === outcome.target); return [...list.filter(isWhole), ...list.filter((t) => !isWhole(t))]; };
-      for (const [kind, n] of byKind(wholeFirst(d.added))) facts.push({ reply: 'done.add', roles: { kind: plain(kind), number: n } });
+      for (const g of addedGroups(wholeFirst(d.added))) facts.push(g.value ? { reply: 'done.add.value', fallback: ['done.make.value', 'done.add'], roles: { kind: plain(g.kind), number: g.n, value: g.value } } : { reply: 'done.add', roles: { kind: plain(g.kind), number: g.n } });
       for (const [kind, n] of byKind(wholeFirst(d.removed.filter((t) => !replaced.has(t.id))))) facts.push({ reply: 'done.remove', roles: { thing: plain(kind), number: n } });
       // a move to a thing of the view ("into the water"): the relation the request said, with that thing, when the language has the reply `done.<act>.<relation>` for it; else the key's own reply
       const rel = outcome.roles?.relation ? String(outcome.roles.relation).replace(/ /g, '_') : null, regionKind = outcome.roles?.place ? plain(String(outcome.roles.place)) : null;
@@ -1524,7 +1541,13 @@ export function sayRequest(request, outcome = {}, opts = {}) {
   } else if (run) {
     if (run.whole && outcome.revised && outcome.target && Object.keys(run.kinds ?? {}).length) wholeFact(Object.entries(run.kinds));
     else if (run.whole) facts.push({ reply: 'done.make', roles: { kind: plain(outcome.target), number: 1 } });
-    else if (!(run.whole && outcome.revised && Object.keys(run.kinds ?? {}).length)) for (const [kind, n] of Object.entries(run.kinds)) { const v = outcome.roles?.colour; facts.push({ reply: v ? 'done.make.value' : 'done.make', roles: { kind: plain(kind), number: n, ...(v ? { value: v } : {}) } }); }
+    else if (!(run.whole && outcome.revised && Object.keys(run.kinds ?? {}).length)) {
+      // per kind and per the values the plan gave its things (the request's per-kind attribute constraints); a value said of no kind (outcome.roles.colour) goes to every kind as before
+      const groups = new Map(), items = (outcome.steps ?? []).filter((s) => s.item && s.args?.kind);
+      if (items.length && items.length === Object.values(run.kinds).reduce((a, n) => a + n, 0)) for (const s of items) { const value = saidValues(s.args.kind, (a, v) => String(s.args[a]) === String(v)), k = `${s.args.kind}|${value}`, e = groups.get(k) ?? { kind: s.args.kind, value, n: 0 }; e.n++; groups.set(k, e); }
+      else for (const [kind, n] of Object.entries(run.kinds)) groups.set(kind, { kind, value: saidValues(kind, () => true), n });
+      for (const g of groups.values()) { const v = g.value || (outcome.roles?.colour ?? ''); facts.push({ reply: v ? 'done.make.value' : 'done.make', roles: { kind: plain(g.kind), number: g.n, ...(v ? { value: v } : {}) } }); }
+    }
   }
   { // what was said of a made whole (its topic, its title) and where the knowledge ran short of what was asked: made N of M (a plan's `short`, or the host's own: { made, asked, kind | unit })
     const ranOk = tool ? tool.ok && !tool.same && !tool.undo && !tool.redo : outcome.run?.ok !== false && !!run;
@@ -1564,6 +1587,6 @@ export function sayRequest(request, outcome = {}, opts = {}) {
   if (request?.unread?.length && !outcome.unread?.length && (run || outcome.revised || (tool && !tool.question && tool.failed?.code !== 'unread'))) facts.push({ reply: 'unread', roles: { words: request.unread.map((w) => `"${w}"`).join(', ') } });
   for (let i = facts.length - 1; i >= 0; i--) if (Object.values(facts[i].roles ?? {}).some(unsayable)) facts.splice(i, 1); // a reply is never said with a missing value or an empty slot
   const missing = [];
-  const texts = o.language ? facts.map((f) => { let t = (f.roles?.key ? replyFrom(o.language, `${f.reply}.${f.roles.key}`, f.roles, { lang, dictionary: o.dictionary }) : null) ?? replyFrom(o.language, f.reply, f.roles, { lang, dictionary: o.dictionary }); if (t == null) t = fallbackReply(f, lang); if (t == null) missing.push(f.reply); return t; }).filter((t) => t && !/\b(undefined|null|NaN)\b|\{\w+\}/.test(t)) : []; // a fact with a key: the reply named for that key first (done.change.place), else the general one
+  const texts = o.language ? facts.map((f) => { const say = (name) => replyFrom(o.language, name, f.roles, { lang, dictionary: o.dictionary }); let t = (f.roles?.key ? say(`${f.reply}.${f.roles.key}`) : null) ?? say(f.reply); for (const alt of f.fallback ?? []) if (t == null) t = say(alt); if (t == null) t = fallbackReply(f, lang); if (t == null) missing.push(f.reply); return t; }).filter((t) => t && !/\b(undefined|null|NaN)\b|\{\w+\}/.test(t)) : []; // a fact with a key: the reply named for that key first (done.change.place), else the general one
   return { facts, text: texts.join(' '), missing: [...new Set(missing)] };
 }

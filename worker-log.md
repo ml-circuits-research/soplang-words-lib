@@ -5920,3 +5920,11 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Whole count never checked against parts; "fewer flowers" steps one part; "with a chapter" is one; length steps for "shorter"/"longer" on a text; `done.about`/`done.title`/`short_of` reply facts; `fresh` trace of "new" and a bare "new X" is a make; `toolCapabilities`/`worldThings` take the catalog. New example worlds STORIES, MEADOW.
 - Q93 (3) "a picture with a lake" already gave one lake in the example worlds (general whole, singular `with`); the case that gave two was a unit kind said with "a" (no det count): fixed and tested. Not reproduced with the host's own catalog.
 - Tests: `test/whole-counts.test.mjs` (6).
+
+## 0.160.0 — kinds by join end to end; values said per kind
+
+- A joined kind is declared for its acts, not planned as a whole by the catalog's `k.expect.make` unless the world declares it (own row or `std.schema.kind`): "draw two dogs and a tree" stays dog, dog, tree (test against the pin 7042ea70 and over the 7 example worlds).
+- Several `std.schema.kinds` rows: `from` joined the row identity (they conflicted on `from` before); objects + people merge.
+- Acts that run a plan find joined rows through `catalog`: `runWorldPlan(..., { catalog })`, the planner's fork, `pickBind` (join `from`, stand-in), `mirrorState(live, view, { catalog })` (without it "remove the goats" said "no goat here").
+- `sayRequest` says values per kind (`done.add.value`, fallback `done.make.value`, `done.add`); `askWorld` names said attributes for at most `STATE_FEW` (4) things (`state.count.value`). Test edited: tool.test.mjs shelf now expects "I added 3 red novels." (the value said is said).
+- Tests: `test/joined-kinds.test.mjs` (6); `npm test` 617 run, 615 pass, 0 fail; bundle run of the touched suites green. Needs from the knowledge repository: replies `done.add.value`, `state.count.value` (en, ro); from psys2: the join rows + the explicit whole rows for what it draws as wholes, and addThings through the lazy loader for joined kinds.

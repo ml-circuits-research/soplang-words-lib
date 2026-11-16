@@ -661,7 +661,7 @@ export function honoursKind(h: { of: string[] }, kind: string, opts?: { live?: W
 /** Plan a request from the world's declared capabilities, filling every gap from the sources in order. */
 export function planRequest(live: World, request: Request, opts?: { catalog?: unknown; dialogue?: RequestDialogue | Partial<RequestDialogue> | null; sources?: readonly string[]; seed?: number; vary?: boolean; replace?: string[]; ticks?: number; candidates?: number; reason?: boolean }): RequestPlan;
 /** Run a plan's steps through the world's own act; the things of `replace` are removed first. */
-export function runWorldPlan(live: World, plan: RequestPlan, options?: { replace?: string[] }): WorldRun;
+export function runWorldPlan(live: World, plan: RequestPlan, options?: { replace?: string[]; catalog?: unknown }): WorldRun;
 export interface WorldRun { ok: boolean; made: string[]; failed?: { step: object; why: string }; result: { things: string[]; items: string[]; count: number; kinds: Record<string, number>; whole: string | null; layout: string | null; links: number } }
 /** A thing of a tool's view. */
 export interface ViewThing { id: string; kind: string | undefined; attrs: Record<string, unknown> }
@@ -678,12 +678,14 @@ export type ToolPrimitives = Record<string, ((args: Record<string, unknown>, vie
 /** The result of a plan run through a tool binding. */
 export interface ToolRun { ok: boolean; diff: StateDiff; same?: boolean; replaced: string[]; calls: { op: string; args: Record<string, unknown>; steps: number[] }[]; assumed: { key: string; value: unknown; from: string; was?: unknown; by?: string; because?: string; op?: string }[]; translated: { key: string; was: unknown; value: unknown; by: string }[]; failed?: { code: string; reply: string | null; roles: Record<string, unknown>; because?: object[]; op?: string; detail?: string }; result: { things: string[]; items: string[]; count: number; kinds: Record<string, number>; whole: string | null; layout: string | null; links: number; present: number }; step: string; question?: string; undo?: boolean; redo?: boolean; entry?: object }
 /** Run a plan: through a world's own act (a World first), or through its tool binding (primitives, view, timeline). */
-export function runPlan(live: World, plan: RequestPlan, options?: { replace?: string[] }): WorldRun;
+export function runPlan(live: World, plan: RequestPlan, options?: { replace?: string[]; /** the sources whose kinds the world joins (std.schema.kinds): the acts find them there, as capabilitiesOf does */ catalog?: unknown }): WorldRun;
 export function runPlan(plan: RequestPlan | { act: 'undo' | 'redo' } | { act?: string; question: string; ok?: boolean; steps?: unknown[] }, bindings: ToolBindings | null, primitives: ToolPrimitives, opts?: { view?: unknown; timeline?: ToolTimeline | null; replace?: boolean; request?: Request | null; live?: World | null; catalog?: unknown }): ToolRun;
 /** The source forms of a binding argument. */
 export const TOOL_ARG_SOURCES: readonly string[];
 /** The questions the door answers with facts of the live world. */
 export const WORLD_QUESTIONS: readonly string[];
+/** Up to this many things in the view, askWorld's state answer names each thing's said attributes. */
+export const STATE_FEW: number;
 /** The std.tool.* declarations of a world, checked. */
 export function toolBindings(live: World, opts?: { catalog?: unknown }): ToolBindings;
 /** A new timeline. */
@@ -697,9 +699,9 @@ export function readView(view: unknown): Map<string, ViewThing>;
 /** What changed between two views. */
 export function stateDiff(before: unknown, after: unknown, opts?: { match?: boolean; keys?: Iterable<string> | string | null }): StateDiff;
 /** The tool's state told into a fork of the declarations. */
-export function mirrorState(live: World, view: unknown): { world: World; skipped: string[] };
+export function mirrorState(live: World, view: unknown, options?: { catalog?: unknown }): { world: World; skipped: string[] };
 /** Facts of the live world for a question (capabilities, state), as reply facts. */
-export function askWorld(question: string, request: Request | null, opts?: { live?: World | null; bindings?: ToolBindings | null; view?: unknown; catalog?: unknown }): { facts: { reply: string; roles: Record<string, unknown> }[]; capabilities?: { act: string; kinds: string[]; on: string[]; op: string }[] };
+export function askWorld(question: string, request: Request | null, opts?: { live?: World | null; bindings?: ToolBindings | null; view?: unknown; catalog?: unknown; /** a state answer names the said attributes up to this many things (default STATE_FEW) */ few?: number; /** attribute keys named in a state answer (default VALUE_TYPES) */ valueTypes?: Record<string, string[]> }): { facts: { reply: string; fallback?: string[]; roles: Record<string, unknown> }[]; capabilities?: { act: string; kinds: string[]; on: string[]; op: string }[] };
 /** A session over a tool world: read, revise, plan, run, say, with no code per world. */
 export function toolSession(live: World, primitives: ToolPrimitives, opts?: { language?: World | null; catalog?: unknown; revisions?: unknown; lang?: string; seed?: number; mirror?: boolean; bindings?: ToolBindings | null }): { say(text: string): { request: Request; revision: object | null; plan: RequestPlan | null; run: ToolRun | null; reply: { facts: object[]; text: string; missing: string[] } }; timeline: ToolTimeline; dialogue: RequestDialogue; bindings: ToolBindings };
 /** A kind and its parents (the world's lineage, the catalog's k.kinds.parent; with `drawn`, what it is drawn as first). */

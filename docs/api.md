@@ -2101,7 +2101,14 @@ Plans a request in any live world from what it declares, and fills every gap by 
 knowledge base explicitly, or taken by join (`std.schema.kinds world= from=<type> key=name acts= stand_in=<type>`: every row of
 the type is a kind with those acts, a row's `drawing=` is the base it is drawn as, so a villa counts through the house), or is a
 subkind of one, and a `std.schema.honours` row of the act covers it (`of=` names the kind, a parent, or the joined type). The
-host calls it instead of reading the honours rows. A `std.tool.param` of type `kind` with no `accepts=` list takes every such
+host calls it instead of reading the honours rows. A kind taken by join is declared for its acts, it is not planned as a
+whole: the catalog's `k.expect.make` of it (a tree of a trunk and a crown) is its own only when the world declares that whole (a
+`k.expect.make` row of its own in the world, or the kind in `std.schema.kind`), so joining `k.objects.object` leaves "draw two
+dogs and a tree" a dog, a dog and a tree. A world may have several `std.schema.kinds` rows (`from=k.objects.object`,
+`from=k.people.kind`): `world` and `from` together identify a row and the kinds of all rows are merged (the first row naming a
+kind wins). The acts that run a plan find the joined rows through the catalog like `capabilitiesOf` does: `planRequest`'s
+fork, `runWorldPlan(live, plan, { catalog })` (the std.acts find the kind in the catalog; without it a joined kind is "no world
+here has"), the binding of a step (`of=` names the kind, a parent or the type it is joined from) and `mirrorState`. A `std.tool.param` of type `kind` with no `accepts=` list takes every such
 kind. A numeric attribute cue (`on=attribute takes=number unit=`, "by 30 degrees") reads as an attribute constraint with
 `value`, `number` and `unit`; `readRequest` never throws on a cue.
 `capabilitiesOf(live, { catalog })` reads the declarations: `std.schema.honours act= on= of=` (the constraints an act
@@ -2307,6 +2314,11 @@ The reply of a request as reply facts, each a reply name of the language world w
 text by `replyFrom`: the revision's reply (`outcome.reply`: sorry, welcome), `done.revise` (`outcome.revised`, not after a step such as "fewer" or "bigger": that is said by its net result, 0.157),
 `done.make` / `done.make.value` (the whole made, or each kind with its number), `assumed` (`{ key, value }`, each
 default used), `not_honoured` (`{ words, why }`, also for each reason of `outcome.cannot`), `unread` (`{ words }`, after a turn that made something), `not_understood` (`{ words }`, a plan not made for unread words), `done.about` / `done.title` (`{ whole, topic | title }`, what was said of a made whole: "The story is about ancient hobbits", 0.159), `short_of` (`{ made, asked, kind | unit }`: the knowledge held fewer parts than asked, or the host's composer wrote fewer words; from `outcome.short`, a plan's `short` `{ made, asked, kind, from }` or the host's own), and `done.place.<relation>` (`{ thing, number, value }`) for a move to a thing of the view when the language has that reply ("I moved 2 fish into the lake."), else the change as before.
+The values the user said are said per kind, from the request's per-kind attribute constraints (`attribute colour=red of=boat`,
+`attribute colour=blue of=house`), not one value for the turn: "I drew a red boat. I drew a blue house." A run through a tool
+binding says `done.add.value { kind, number, value }` for the things made (the view shows the value said; a language without
+that reply falls back to `done.make.value`, then to `done.add`), a run through the acts says `done.make.value`; kinds with
+different values are different facts ("2 red comics and 3 blue novels"), a value said of no kind goes to every kind as before.
 `outcome` is the plan with `run` (runPlan's result). `options`: `language`, `lang` (or a language code such as
 'en'), `dictionary`, `say` (the sources of an assumption that are said; default the language world's
 `<lang>.reply name=assumed say=` values when it has them, else `ASSUMED_SAY`: every source but `default`, a tool
@@ -2343,7 +2355,7 @@ print(sayRequest(q, outcome, { language: words, lang: 'ex' }).text);
 I made a heap. I took 6 for the count. Not at the top: a heap has no place here.
 ```
 
-### runPlan(plan, bindings, primitives, opts?), toolBindings(live, opts?), toolTimeline(), toolSession(live, primitives, opts?), toolCapabilities(live, bindings?, opts?), askWorld(question, request, opts?), nearestAccepted(value, param, opts?), readView(view), stateDiff(before, after, opts?), mirrorState(live, view), runWorldPlan(live, plan, options?), TOOL_ARG_SOURCES, WORLD_QUESTIONS
+### runPlan(plan, bindings, primitives, opts?), toolBindings(live, opts?), toolTimeline(), toolSession(live, primitives, opts?), toolCapabilities(live, bindings?, opts?), askWorld(question, request, opts?), nearestAccepted(value, param, opts?), readView(view), stateDiff(before, after, opts?), mirrorState(live, view, opts?), runWorldPlan(live, plan, options?), TOOL_ARG_SOURCES, WORLD_QUESTIONS, STATE_FEW
 
 Tool binding as wires (0.152; owner 2026-11-15: the glue between a live world and the generic mechanisms is
 declarative, only the tool's concrete actions are code). A world declares its tool in the `std.tool` module
@@ -2394,7 +2406,10 @@ a world offers (honoured and bound) with their kinds and keys. `askWorld(questio
 says facts of the live world for the questions of `WORLD_QUESTIONS`: `capabilities` (the declarations) and `state`
 (the things of the kinds asked, by lineage, counted per kind: `state.count`, `state.empty`; the kinds asked are the
 kinds wanted and the kinds a count is of, else every kind word said, a unit such as "beads" too: a whole or a link is
-counted only when its kind is said). `mirrorState(live, view)`
+counted only when its kind is said). With few things in the view (`STATE_FEW`, 4, or `opts.few`) a state answer names each
+thing's said attributes, grouped per kind: `state.count.value { kind, number, value }` ("There is a red boat. There is a blue
+house."; the keys are those of `VALUE_TYPES`, `opts.valueTypes`, and the attributes the question names; a language without the
+reply says `state.count`); many things are only counted. `mirrorState(live, view, { catalog })`
 tells the tool's things into a fork of the declarations so that the planner's reasoning (induction, places, deny
 rules) sees them. `toolSession(live, primitives, { language, catalog, revisions })` is the door with no code per
 world: read, a question (a reaction of the language world named in `WORLD_QUESTIONS`), undo / redo (the acts), revise,

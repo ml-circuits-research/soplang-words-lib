@@ -121,7 +121,7 @@ test('the shelf: declared only by wires and three primitives, through the door (
   const kinds = () => tool.view().map((b) => b.kind);
   let r = s.say('add 3 tiny red novels');
   assert.deepEqual([kinds(), tool.view().map((b) => `${b.size}/${b.colour}`)], [['novel', 'novel', 'novel'], ['small/red', 'small/red', 'small/red']], 'tiny -> small: the nearest grade the tool takes');
-  assert.match(r.reply.text, /^I added 3 novels\./);
+  assert.match(r.reply.text, /^I added 3 red novels\./, "the value said of the kind is said (0.160)");
   r = s.say('add 4 books, not comics');
   assert.deepEqual([kinds().length, kinds().includes('comic'), new Set(kinds().slice(3)).size], [7, false, 2], 'a general kind: its subkinds, not the one negated, a mix');
   r = s.say('too many');

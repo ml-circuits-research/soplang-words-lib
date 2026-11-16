@@ -25,9 +25,10 @@ function kindsOf(w, kind) {
   for (const k of w.ofType('std.schema.kind')) if (k.attrs.of?.[0] === kind) for (const world of k.attrs.world) out.push({ type: kind, world, acts: k.attrs.acts || [], aspects: k.attrs.aspects || [] });
   if (!out.length) for (const k of w.ofType('std.schema.kinds')) { // bounded: the declarations, one index lookup each (any kind a knowledge type names)
     const from = k.attrs.from[0], key = k.attrs.key?.[0] || 'name';
-    if (w._matching({ type: from, where: { [key]: kind } }).length) out.push({ type: 'std.schema.thing', world: k.attrs.world[0], acts: k.attrs.acts || [], aspects: k.attrs.aspects || [], open: true });
+    const look = (q) => [w, ...(w._actCatalog ?? [])].flatMap((src) => (typeof src._matching === 'function' ? src._matching(q) : [])); // the world's own rows, then the catalog's (runWorldPlan sets `_actCatalog`)
+    if (look({ type: from, where: { [key]: kind } }).length) out.push({ type: 'std.schema.thing', world: k.attrs.world[0], acts: k.attrs.acts || [], aspects: k.attrs.aspects || [], open: true });
     else if (k.attrs.stand_in) { // a kind the catalog does not draw, with a stand-in that it does
-      const s = w._matching({ type: k.attrs.stand_in[0], where: { name: kind } })[0];
+      const s = look({ type: k.attrs.stand_in[0], where: { name: kind } })[0];
       if (s) out.push({ type: 'std.schema.thing', world: k.attrs.world[0], acts: k.attrs.acts || [], aspects: k.attrs.aspects || [], open: true, standIn: s.attrs.drawing?.[0] });
     }
   }
@@ -849,7 +850,7 @@ ${calcs.join('\n')}
 @k.kind.world core.slot of=std.schema.kind key=world required=true many=true
 @k.kind.acts core.slot of=std.schema.kind key=acts many=true ACTENUM
 @k.kinds.world core.slot of=std.schema.kinds key=world id=true
-@k.kinds.from core.slot of=std.schema.kinds key=from required=true
+@k.kinds.from core.slot of=std.schema.kinds key=from required=true id=true
 @k.kinds.stand core.slot of=std.schema.kinds key=stand_in
 @k.kinds.acts core.slot of=std.schema.kinds key=acts many=true ACTENUM
 @k.aspect.name core.slot of=std.schema.aspect key=name id=true

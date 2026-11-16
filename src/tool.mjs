@@ -12,8 +12,8 @@
 // A primitive is a small typed operation (`add({ kind, n, size })`); it never reads the request, holds no words and no
 // defaults. The view is the tool's state as facts. A custom constraint or search is a named function declared in the
 // world (`std.tool.custom`) with its signature. Nothing here names a world, a kind or a sentence.
-import { rowsOf, kindLineage, expectedValue } from './expect.mjs';
-import { readRequest, reviseRequest, planRequest, runWorldPlan, sayRequest, capabilitiesOf } from './request.mjs';
+import { rowsOf, kindLineage, joinedKinds, expectedValue } from './expect.mjs';
+import { readRequest, reviseRequest, planRequest, runWorldPlan, sayRequest, capabilitiesOf, VALUE_TYPES } from './request.mjs';
 import { quote } from './parser.mjs';
 
 const first = (o, k) => o?.[k]?.[0];
@@ -88,7 +88,8 @@ export function toolBindings(live, { catalog = [] } = {}) {
 
 /** The binding of an act for a kind: the one whose `of` is nearest in the kind's lineage (a binding without `of` takes any kind). */
 function pickBind(B, act, kind, ctx) {
-  const line = kind === undefined ? [] : kindLineage(kind, ctx);
+  const from = kind === undefined ? undefined : joinedKinds(ctx.live, ctx.catalog).get(String(kind))?.from; // a kind taken by join is covered by a bind of the type it is joined from, as honoursKind says
+  const line = kind === undefined ? [] : [...kindLineage(kind, { ...ctx, drawn: true }), ...(from !== undefined ? [from] : [])];
   let best = null, bestD = Infinity;
   for (const b of B.binds) {
     if (b.act !== act) continue;
@@ -176,18 +177,22 @@ function plannedKeys(oldEntry, plan, calls) {
  * places, deny rules, capacity) sees it: each thing of a declared kind, with the values its slots take. Returns the
  * fork and the things that could not be told ({ world, skipped }).
  */
-export function mirrorState(live, view) {
+export function mirrorState(live, view, { catalog = [] } = {}) {
   const w = live.fork();
   const c = live._compiled();
   const worldOf = new Map(rowsOf(live, 'std.schema.kind').map((k) => [first(k, 'of'), first(k, 'world')]));
+  const joined = joinedKinds(live, catalog); // a thing of a kind taken by join (std.schema.kinds) is an open std.schema.thing of the join's world
   const skipped = [];
   for (const t of readView(view).values()) { // bounded: the things of the view
-    const slots = c.slots.get(t.kind);
-    if (!slots || !worldOf.has(t.kind)) { skipped.push(t.id); continue; }
-    const attrs = Object.entries(t.attrs).filter(([k, v]) => slots.has(k) && k !== 'kind' && k !== 'world' && v !== undefined && v !== null && !slots.get(k).refs?.length);
+    const slots = c.slots.get(t.kind), j = !worldOf.has(t.kind) ? joined.get(String(t.kind)) : undefined;
+    if (!j && (!slots || !worldOf.has(t.kind))) { skipped.push(t.id); continue; }
+    const type = j ? 'std.schema.thing' : t.kind, world = j ? j.world : worldOf.get(t.kind);
+    const attrs = Object.entries(t.attrs).filter(([k, v]) => (j ? !/[^\w.-]/.test(k) : slots.has(k) && !slots.get(k).refs?.length) && k !== 'kind' && k !== 'world' && v !== undefined && v !== null && typeof v !== 'object');
     const id = /^[A-Za-z_][\w.-]*$/.test(t.id) && !w.has(t.id) ? t.id : null;
     if (!id) { skipped.push(t.id); continue; }
-    const r = w.tell(`@${id} ${t.kind} kind=${quote(t.kind)} world=${quote(worldOf.get(t.kind))}${attrs.map(([k, v]) => ` ${k}=${typeof v === 'number' ? v : quote(v)}`).join('')}`);
+    const line = (list) => `@${id} ${type} kind=${quote(t.kind)} world=${quote(world)}${list.map(([k, v]) => ` ${k}=${typeof v === 'number' ? v : quote(v)}`).join('')}`;
+    let r = w.tell(line(attrs));
+    if (r?.ok === false && attrs.length && j) r = w.tell(line([])); // an open thing the world's slots do not take: its kind and world alone
     if (r?.ok === false) skipped.push(t.id);
   }
   return { world: w, skipped };
@@ -569,6 +574,8 @@ export function toolCapabilities(live, bindings = null, { catalog = [] } = {}) {
   return out.filter((x) => x.kinds.length && cap.honours.some((h) => h.act === x.act)); // an act is offered when it is honoured and bound
 }
 
+/** Up to this many things in the view, a state answer names each thing's said attributes (`askWorld` opts.few). */
+export const STATE_FEW = 4;
 /** The questions the door answers by saying facts of the live world: its declarations (capabilities) and its state. */
 export const WORLD_QUESTIONS = Object.freeze(['capabilities', 'state']);
 /**
@@ -576,7 +583,7 @@ export const WORLD_QUESTIONS = Object.freeze(['capabilities', 'state']);
  * (toolCapabilities), `state` from the view: the things of the kinds the request names (by lineage), else all, counted
  * per kind (`state.count` { kind, number }; `state.empty` when there is nothing). Returns { facts, capabilities }.
  */
-export function askWorld(question, request, { live, bindings = null, view = null, catalog = [] } = {}) {
+export function askWorld(question, request, { live, bindings = null, view = null, catalog = [], ...opts } = {}) {
   if (question === 'capabilities') return { capabilities: toolCapabilities(live, bindings, { catalog }), facts: [] };
   const things = [...readView(view).values()];
   // the kinds asked about: the kinds wanted, the kinds a count is of, else every kind word said (a unit such as "nodes"
@@ -585,8 +592,18 @@ export function askWorld(question, request, { live, bindings = null, view = null
   if (!kinds.length) kinds = (request?.mentions ?? []).filter((m) => !m.none && !m.inside).map((m) => m.kind); // a word for the world itself that is no kind counts everything
   kinds = [...new Set(kinds)];
   const facts = [];
-  if (kinds.length) for (const k of kinds) facts.push({ reply: 'state.count', roles: { kind: k, number: things.filter((t) => kindLineage(t.kind, { live, catalog }).includes(k)).length } });
-  else { const m = new Map(); for (const t of things) m.set(t.kind, (m.get(t.kind) ?? 0) + 1); for (const [kind, number] of m) facts.push({ reply: 'state.count', roles: { kind, number } }); if (!m.size) facts.push({ reply: 'state.empty', roles: {} }); }
+  // with few things in the view each thing's said attributes are named (a red boat, a blue house): the values of the keys of
+  // `valueTypes` (default VALUE_TYPES: colour) and of the attributes the request names, grouped per kind; many things are only counted
+  const few = things.length > 0 && things.length <= (opts.few ?? STATE_FEW);
+  const keys = few ? [...new Set([...Object.keys(opts.valueTypes ?? VALUE_TYPES), ...(request?.constraints ?? []).filter((c) => c.on === 'attribute' && c.attribute).map((c) => c.attribute)])] : [];
+  const count = (kind, list) => {
+    if (!keys.length) { facts.push({ reply: 'state.count', roles: { kind, number: list.length } }); return; }
+    const groups = new Map();
+    for (const t of list) { const v = keys.map((k) => t.attrs?.[k]).filter((x) => x !== undefined && x !== null && x !== '' && typeof x !== 'object').map(String).join(' '); groups.set(v, (groups.get(v) ?? 0) + 1); }
+    for (const [value, number] of [...groups].sort((a, b) => Number(!a[0]) - Number(!b[0]))) facts.push(value ? { reply: 'state.count.value', fallback: ['state.count'], roles: { kind, number, value } } : { reply: 'state.count', roles: { kind, number } });
+  };
+  if (kinds.length) for (const k of kinds) count(k, things.filter((t) => kindLineage(t.kind, { live, catalog }).includes(k)));
+  else { const m = new Map(); for (const t of things) m.set(t.kind, [...(m.get(t.kind) ?? []), t]); for (const [kind, list] of m) count(kind, list); if (!m.size) facts.push({ reply: 'state.empty', roles: {} }); }
   return { facts };
 }
 
@@ -616,7 +633,7 @@ export function toolSession(live, primitives, { language = null, catalog = [], r
   return {
     timeline, dialogue, bindings: B,
     say(text) {
-      const state = mirror ? mirrorState(live, view).world : live; // the state as things: names are read from it, plans reason on it
+      const state = mirror ? mirrorState(live, view, { catalog: cat }).world : live; // the state as things: names are read from it, plans reason on it
       const request = readRequest(live, text, { language: language ?? live, catalog: cat, dialogue, state, ...(lang ? { lang } : {}) });
       const question = WORLD_QUESTIONS.find((q) => request.reactions.some((r) => r.value === q));
       if (question) { // a question is no step: facts of the live world, said by reply facts

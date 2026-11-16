@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.160.0
+
+Kinds taken by join (`std.schema.kinds`) work end to end for a world instance that joins a knowledge base; properties in
+`test/joined-kinds.test.mjs` over the example worlds, and one test against the catalog at pin 7042ea70.
+
+### Fixed
+- A kind declared by join is declared for its acts, not planned as a whole by the catalog's `k.expect.make` of it unless the
+  world declares that whole (a `k.expect.make` row of its own, or the kind in `std.schema.kind`): joining `k.objects.object`
+  no longer turns "draw two dogs and a tree" into a crown / branches plan.
+- Several `std.schema.kinds` rows per world (`from=k.objects.object`, `from=k.people.kind`) no longer conflict: `from` is part
+  of the row's identity and the kinds of all rows are merged.
+- The acts that run a plan find joined rows through the catalog: `planRequest`'s fork and `runWorldPlan(live, plan, { catalog })`
+  (std.acts), the binding picked for a step (`std.tool.bind of=` may name the type a kind is joined from), `mirrorState(live,
+  view, { catalog })` (things of a joined kind are in the state the planner reads: "remove the goats" finds them).
+
+### New
+- `sayRequest` says the values said per kind ("I added a red novel. I added a blue atlas."), from the per-kind attribute
+  constraints; reply `done.add.value` (falls back to `done.make.value`, then `done.add`).
+- `askWorld` state answers name the said attributes of few things (`STATE_FEW`, `opts.few`): `state.count.value`.
+
 ## 0.159.0
 
 The count of a whole is a count of wholes; what a reply says of a made whole; a text's length; "new" leaves a trace;

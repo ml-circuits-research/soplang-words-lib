@@ -903,7 +903,7 @@ print(p.steps.length, p.notHonoured.map((x) => `${x.words}: ${x.why}`));
 
 ## Bind a live world to its tool by wires, and run its plans with a timeline
 
-*In `runPlan`, `runWorldPlan`, `toolBindings`, `toolTimeline`, `toolSession`, `toolCapabilities`, `askWorld`, `nearestAccepted`, `readView`, `stateDiff`, `mirrorState`, `stateIds`, `TOOL_ARG_SOURCES`, `WORLD_QUESTIONS`, `kindLineage`, `expectedValue`, `cutToCount`, `fillToCount`, `notAllOneKind`, `EXPECT_TYPES`; since 0.152.*
+*In `runPlan`, `runWorldPlan`, `toolBindings`, `toolTimeline`, `toolSession`, `toolCapabilities`, `askWorld`, `nearestAccepted`, `readView`, `stateDiff`, `mirrorState`, `stateIds`, `TOOL_ARG_SOURCES`, `WORLD_QUESTIONS`, `STATE_FEW`, `kindLineage`, `expectedValue`, `cutToCount`, `fillToCount`, `notAllOneKind`, `EXPECT_TYPES`; since 0.152.*
 *Works on: any live world that declares `std.tool.op` / `std.tool.param` / `std.tool.bind` (and `std.tool.custom`), the published k.expect.scale, w.lang.en cues and replies.*
 
 The link between a live world and the generic mechanisms is wires: a world declares its tool's operations with their

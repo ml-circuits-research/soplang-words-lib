@@ -1020,3 +1020,7 @@ Imported isolated agent commit a13fc17: see compat/psys2/reader/questions.md (RD
 ### Textual provider names — corrected profile boundary
 
 Review 15 accepted generic serialization; the phase-zero announcement is already published in worker-log at 42a05ec. During consumer adoption, exhaustive name comparison exposed the initial literal-only compat profile regression. The correction declares colour/shape provider name labels as explicit strings uniformly, while the generic serializer remains unchanged. See compat/psys2/reader/questions.md RDR4 for the name-label versus canonical-value boundary. Consumers must compare decoded labels and retain resolved native values separately; other value families need explicit token semantics.
+
+### Semantic-context projection — implementation review (0.194.0)
+
+projectTemplates exposes existing composition evaluation over indexed semantic JSON contexts, with shared budgets, unchanged equality/template semantics and explicit partial results. The evaluator extraction preserves composeParses budget regressions. This supports independent role records (including duplicate semantic role names) and copies selectors separately from requested results, but does not select frames or generate requests itself. Please review alongside knowledge 0591f342's concrete frame-licence/path contract; the frame binder and further productions remain separate work.

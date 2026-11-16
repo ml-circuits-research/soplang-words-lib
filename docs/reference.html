@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="1a111500c471">
+<meta name="source-hash" content="a3b9987477e7">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.193.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.194.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html" aria-current="page">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -775,9 +775,11 @@ print(builtins.time_add([&#x27;10:40&#x27;, &#x27;35min&#x27;]), builtins.div([&
 <p>Bridges explicit declarative readings to structurally validated <code>std.request</code> graph candidates with construction semantics declared in templates. It requires a fresh exact-world compilation, accounts for source gaps through a configured punctuation policy, refuses pruning and incomplete interpretations, and preserves alternative readings and provenance. It neither resolves live instances nor executes effects or claims successful replies. See <a href="api.html#readgrammarrequestsworld-text-options">the bounded profile and API</a>.</p>
 <h3 id="serializerequestgraph">serializeRequestGraph</h3>
 <p>Serializes explicit schema-named nodes and literal/string/reference tokens into a checked request graph. Loaded schema slots, local reference closure and <code>inspectRequest</code> validate structure; no construction or action is selected by the serializer. See <a href="api.html#serializerequestgraphinput-options">graph data and limits</a>.</p>
+<h3 id="projecttemplates">projectTemplates</h3>
+<p>Applies the existing composition template/guard language directly to indexed semantic JSON jobs under one shared budget. It preserves alternatives, whole selector records and ordered role arrays without parse wrappers or a new expression language. See <a href="api.html#projecttemplatesjobs-options">direct projection and failure semantics</a>.</p>
 <p class="source">Generated from <code>docs/reference.md</code>.</p>
 </main>
-<footer>sopworld 0.193.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.194.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

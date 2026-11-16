@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="456d2b4af22b">
+<meta name="source-hash" content="69de1449263f">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.193.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.194.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -502,6 +502,17 @@ const c = compileGrammarOverlay(w, { types });
 const p = parseText(w, &#x27;ko&#x27;, { ...c.grammar, start: &#x27;M&#x27; });
 print(c.ok, composeParses(p, c.composition).candidates[0].value);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true {&quot;kind&quot;:&quot;vessel&quot;}</code></pre></figure>
+<h3 id="projecttemplatesjobs-options">projectTemplates(jobs, options?)</h3>
+<p>Projects an already composed semantic JSON context without requiring a parse tree. Each job is exactly <code>{template, context}</code>: <code>template</code> names a declaration in <code>options.templates</code>, and <code>context</code> is ordinary finite JSON. Jobs are alternatives, not instructions to merge their results. Output is <code>{candidates, failures}</code> with <code>{index, value}</code> candidates and <code>{index?, reason}</code> failures. Indices refer to the original job positions; successful alternatives remain separate and ordered.</p>
+<p>The template language is exactly the one used by <code>composeParses</code>: ordinary JSON builds objects/arrays, <code>{$get: ['path', 0, 'key']}</code> copies an own-property path from the supplied context, and <code>{$literal: value}</code> quotes data containing directive keys. There are no additional operators, callbacks, conversions or implicit bindings. Optional <code>guards: {templateName: [{left, right}]}</code> compares projected operands using structural JSON equality before producing a candidate. Object key order is irrelevant; array order and primitive types matter. A missing path yields <code>missing-binding</code>; unequal operands yield <code>guard-rejected</code>. These are different failures, not a substituted null or default value. Null is a valid context: a constant template can project it, but a path lookup against it fails.</p>
+<p>All template and guard declarations are checked before any job can succeed, including unused declarations. Unknown guard keys and malformed templates yield an unindexed failure with no candidates. Each context is fully validated/copied before its guards run: sparse arrays, accessors, symbols, hidden properties, non-plain objects, nonfinite numbers and cyclic/deep data are refused, including unsafe fields that a template would not read. No accessor is executed. Outputs are detached from input contexts and other candidates.</p>
+<p><code>budget</code> defaults to 20000 and <code>maxDepth</code> to 64 (maximum 256). One evaluator budget covers declaration checks, job enumeration, context copying, guards and projection for the entire batch. Exhaustion adds <code>truncated: true</code>; earlier candidates may remain, but are not evidence that all alternatives were considered. A depth failure is explicit and indexed when caused by one context. Applications must account for all failures and upstream enumeration limits before acting on a candidate. The existing <code>composeParses</code> traversal and its budget accounting remain unchanged; projection's additional full-context/declaration checks are deliberately charged.</p>
+<p>Role arrays can preserve a selected object's entire selector alongside a separate result, or retain a marker and argument sharing the same semantic role. The projector does not select frames, validate licences, infer role semantics or build request graphs by itself. Such declarations remain the adapter's responsibility.</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>const result = projectTemplates([
+  {template:&#x27;pair&#x27;, context:{selected:{kind:&#x27;toy.item&#x27;, selector:{value:&#x27;old&#x27;}}, desired:{value:&#x27;new&#x27;}}},
+], {templates:{pair:{target:{$get:[&#x27;selected&#x27;]}, result:{$get:[&#x27;desired&#x27;]}}}});
+print(result.candidates[0].value.target.selector.value, result.candidates[0].value.result.value, result.failures.length);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>old new 0</code></pre></figure>
 <h3 id="composeparsesparses-options">composeParses(parses, options?)</h3>
 <p><code>composeParses(parses, { rules, lexical, guards, budget, maxDepth })</code> evaluates declarative semantic templates over each parse independently. <code>rules</code> maps exact production IDs; <code>lexical</code> maps lexical categories. Ordinary JSON objects/arrays assemble a record. <code>{$get: path}</code> copies an own-property path from <code>{node, children}</code>, where <code>children</code> contains already composed child values. <code>{$literal: value}</code> quotes JSON containing reserved keys. Every child must have a mapping; an explicit <code>{$literal: null}</code> can acknowledge syntax-only material.</p>
 <p><code>guards</code> maps production IDs to arrays of <code>{left, right}</code> template pairs. Each pair is evaluated in the same <code>{node, children}</code> context after the children compose and before the parent's output template is evaluated. Both operands must exist and be structurally equal JSON. Object key insertion order does not matter; arrays are ordered, primitive types do not coerce, and JSON numeric zero has one value (<code>-0</code> and <code>0</code> agree). No approximate numeric or domain-specific equality is inferred. Several pairs are conjunctive; an empty array imposes no condition.</p>
@@ -1497,7 +1508,7 @@ print(w.tell(&#x27;@claim std.reply.property owner=reply.1 revision=1 status=cha
 true</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.193.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.194.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

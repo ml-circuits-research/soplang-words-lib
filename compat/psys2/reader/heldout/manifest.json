@@ -1,0 +1,7 @@
+{
+  "format": "sop.reader.holdout",
+  "version": 1,
+  "rowsSha256": "8d5af911bd86cd55928a86098cca405818b7ee18bae93582a671c5cb04c764b7",
+  "count": 20,
+  "authoredBeforeRules": true
+}

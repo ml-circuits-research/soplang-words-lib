@@ -1,0 +1,14 @@
+[
+  {
+    "path": "training/eval/owner-2026-11-15T1143-checks.jsonl",
+    "sha256": "aca92f4568a6c2be31aa5e31f9a412808852482589ebb1e0521e97663fe4ebc3"
+  },
+  {
+    "path": "training/eval/owner-2026-11-16T0751-checks.jsonl",
+    "sha256": "5ee07bc3844670e584422ef5c779156c8f31c7ca186127f93944c63e1b5e979a"
+  },
+  {
+    "path": "training/eval/ro-en-meaning/rows.jsonl",
+    "sha256": "4e0593eea73770e3c117b203dc6c46ae275354adca6c92888863501da0a6e630"
+  }
+]

@@ -1,0 +1,56 @@
+{
+  "format": "sop.reader.development",
+  "version": 1,
+  "repository": "https://github.com/ml-circuits-research/psys2.git",
+  "commit": "6c79cac3cb1848edaeacc65ad9171cb7be34802c",
+  "sources": [
+    {
+      "id": "owner-en-2026-11-15",
+      "kind": "owner-english",
+      "path": "training/eval/owner-2026-11-15T1143-checks.jsonl"
+    },
+    {
+      "id": "owner-mixed-2026-11-16",
+      "kind": "owner-english-language-reviewed",
+      "path": "training/eval/owner-2026-11-16T0751-checks.jsonl",
+      "turns": [
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51
+      ]
+    },
+    {
+      "id": "owner-hand-gloss",
+      "kind": "owner-reviewed-english-gloss",
+      "path": "training/eval/ro-en-meaning/rows.jsonl",
+      "select": "hand-gloss"
+    }
+  ],
+  "languageReview": "Nov16 turns14-32 and43-51 are English despite the app language selector. Turn33 is Romanian despite lang=en and is not passed to the English reader. No new translation is manufactured.",
+  "goldPolicy": "Source intent prose is evidence for manual annotation, not old reader output or execution check conversion. Unlabelled rows remain pending."
+}

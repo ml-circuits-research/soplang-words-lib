@@ -2055,17 +2055,17 @@ Intrarea istorică este o copie a valorilor folosite, nu o referință activă c
 
 Anularea schimbă starea domeniului și retrage preferințele învățate de pas, dar nu șterge dovada că pasul a avut loc. Jurnalul primește o înregistrare nouă de anulare, legată de operația inițială. Astfel, „why did you move it?” poate primi o explicație istorică urmată de precizarea că mutarea a fost anulată. O anulare eșuată înregistrează efectul rămas observat. Păstrarea istoricului nu autorizează refolosirea unei concluzii anulate drept fapt curent.
 
-Reprezentarea următoare este o propunere minimală pentru legături, nu schema completă a jurnalului și nici o facilitate deja implementată:
+Reprezentarea următoare separă fundația implementată de legăturile propuse. Din versiunea 0.180.0, `core.use world=std.trace` publică numai `std.trace.request` și `std.trace.input`: primele două fire se încarcă sub scheme închise. Firele pentru pas, răspuns și anulare rămân propuse; fragmentul complet nu este încă un jurnal executabil:
 
 ```sop
 @req1 std.trace.request message="put the duck on the lake"
-@input1 std.trace.input source="drawing-instance/duck1" version="state-17" key=at value="120,540"
+@input1 std.trace.input source="drawing-instance/duck1" version="state-17" source.type=drawn key=at values="[\"120,540\"]"
 @step1 std.trace.step request=$req1 act=place operation=move status=confirmed input=$input1
 @reply1 std.trace.reply request=$req1 step=$step1 text="I moved the duck onto the lake."
 @undo1 std.trace.undo target=$step1 status=confirmed after.version="state-19"
 ```
 
-`req1` identifică mesajul, iar `input1` fixează o valoare citită din starea 17. `source` este aici o valoare istorică explicită, nu o referință `$` către un obiect care ar trebui să existe pentru totdeauna. `step1` distinge actul semantic `place` de operația uneltei `move`; împreună cu `reply1`, folosește referințe reale către înregistrările jurnalului. `undo1` păstrează legătura cu pasul anulat și versiunea observată după anulare. Tipurile și valorile complete ale intrărilor trebuie păstrate în schema finală; textul din `value` ilustrează valoarea, fără a decide serializarea generală a punctelor. Fragmentul omite observațiile detaliate: singur, `status=confirmed` nu este o dovadă suficientă pentru răspuns.
+`req1` identifică mesajul, iar `input1` fixează o valoare citită din starea 17. `source` este aici o valoare istorică explicită, nu o referință `$` către un obiect care ar trebui să existe pentru totdeauna. `step1` distinge actul semantic `place` de operația uneltei `move`; împreună cu `reply1`, folosește referințe reale către înregistrările jurnalului. `undo1` păstrează legătura cu pasul anulat și versiunea observată după anulare. Intrarea păstrează tipul sursei în `source.type`, cheia citită și o listă JSON de tokenuri SOP în `values`. Lista păstrează ordinea și repetițiile; tokenul numeric `12`, textul `"12"` și referința istorică `$obiect` rămân categorii diferite. Referințele din listă sunt date istorice, nu legături care cer existența obiectului în starea curentă. `values=[]` înregistrează că citirea nu a găsit valori pentru acea cheie; nu dovedește închiderea întregii lumi. Variabilele și fragmentele care introduc alte chei sau fire sunt refuzate. Forma canonică normalizează escaparea textelor, nu scrierea numerică: `1` și `1.0` își păstrează tokenurile originale. Valoarea `120,540` rămâne aici un token, fără validare geometrică. Schema nu face încă jurnalul imuabil și nu îl salvează automat; aceste obligații cer mecanisme distincte. Fragmentul omite observațiile detaliate: singur, `status=confirmed` nu este o dovadă suficientă pentru răspuns.
 
 Autorul tiparului declară regulile; motorul înregistrează potrivirile și calculele; unealta raportează efectele observate. Componenta de răspuns selectează din această urmă pașii necesari explicației și le exprimă sensul în cuvinte. Ea nu este autorizată să adauge o cauză pentru care nu există un pas înregistrat.
 

@@ -1,3 +1,4 @@
+import { traceInputValidator } from './trace-contracts.mjs';
 import { requestValidator } from './request-contracts.mjs';
 // Opt-in structural contracts. These schemas validate records; they do not establish
 // the truth, licensing suitability or semantic correctness of the recorded evidence.
@@ -57,6 +58,22 @@ export const CONTRACT_MODULES = {
 @std.objective.term.weight core.slot of=std.objective.term key=weight kind=number min=0 present=true
 @std.objective.term.priority core.slot of=std.objective.term key=priority kind=integer min=0 max=9007199254740991 present=true
 `, fns: {},
+  },
+  'std.trace': {
+    text: `
+@std.trace.module core.module name=std.trace version=0.180.0 exports=std.trace.request exports=std.trace.input
+@std.trace.request.type core.type of=std.trace.request closed=true
+@std.trace.request.message core.slot of=std.trace.request key=message kind=string present=true
+@std.trace.input.type core.type of=std.trace.input closed=true
+@std.trace.input.source core.slot of=std.trace.input key=source kind=string present=true
+@std.trace.input.version core.slot of=std.trace.input key=version kind=string present=true
+@std.trace.input.source.type core.slot of=std.trace.input key=source.type kind=atom present=true
+@std.trace.input.key core.slot of=std.trace.input key=key kind=atom present=true
+@std.trace.input.values core.slot of=std.trace.input key=values kind=json present=true
+@std.trace.input.valid.function core.function name=std.trace.input.valid out.kind=boolean pure=true
+@std.trace.input.valid.arg core.function.arg of=$std.trace.input.valid.function name=input kind=ref
+@std.trace.input.validation core.validate on=std.trace.input fn=std.trace.input.valid why="trace values must be a JSON array of canonical concrete SOP value tokens"
+`, fns: { 'std.trace.input.valid': traceInputValidator },
   },
   'std.change': {
     text: `

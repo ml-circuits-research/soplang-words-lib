@@ -141,3 +141,13 @@ Vocabulary names, eq/comparison value typing and orderability, dimensional unit 
 Added with 0.179.0, `core.use world=std.change` publishes `std.change.policy`. Each closed record requires four unquoted vocabulary names: `kind`, `concept`, `anchor`, and `unit`. These identify the applicable kind/property, the part held fixed, and the quantity unit. Quoted prose, references, missing fields, unknown keys and conflicting singleton values are rejected. The exact book §4.4.4 fixture is tested.
 
 This contract stores declarations only. Names are not yet resolved against the legend; compatible units, inherited policies, explicit-request precedence and ambiguous alternatives require the future selector/evaluator. Multiple records for one kind/concept remain distinct data; their successful loading is not evidence that selection would succeed. There is no default anchor, arithmetic, interval update or effect execution.
+
+## Historical trace inputs
+
+Added with 0.180.0, `core.use world=std.trace` exports only `std.trace.request` and `std.trace.input`. A request stores its required `message` string. An input requires historical `source` and `version` strings, `source.type` and `key` atoms, and `values` as a JSON array of canonical SOP value-token strings. The source identity is provenance, not a live reference.
+
+The array preserves duplicates, order and token categories. Numeric `12`, quoted text `"12"`, historical reference `$old` and quoted text `"$old"` remain distinct. Historical reference targets need not exist in the current world. An empty array records an observed slot without values; it does not assert that an entire world or query scope is closed. The snapshot does not resolve its source schema or prove the truth of the observation.
+
+A final-state validator parses each token with the language parser and requires exactly one concrete canonical value. It rejects variables (including `$?x`), non-string JSON elements, additional keys/wires, comments appended to a token and noncanonical string escapes. Canonical refers to quoted-string spelling, not numeric normalization: `01` and `1` retain their source tokens. Payload traversal consumes validation budget; existing JSON size/depth limits also apply. Invalid edits roll back.
+
+This foundation does not export step, observation, reply, undo or correction types, establish a structured-request link, generate evidence, make records append-only, or save a journal. Those contracts and persistence remain required before a full trace-family release. A stored `message` is not execution authorization.

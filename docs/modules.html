@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld The standard modules</title>
-<meta name="source-hash" content="bdf6c1f650d0">
+<meta name="source-hash" content="a0ee9cd9082c">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.179.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.180.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html" aria-current="page">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -70,9 +70,14 @@
 <h2 id="change-policy-declarations">Change-policy declarations</h2>
 <p>Added with 0.179.0, <code>core.use world=std.change</code> publishes <code>std.change.policy</code>. Each closed record requires four unquoted vocabulary names: <code>kind</code>, <code>concept</code>, <code>anchor</code>, and <code>unit</code>. These identify the applicable kind/property, the part held fixed, and the quantity unit. Quoted prose, references, missing fields, unknown keys and conflicting singleton values are rejected. The exact book §4.4.4 fixture is tested.</p>
 <p>This contract stores declarations only. Names are not yet resolved against the legend; compatible units, inherited policies, explicit-request precedence and ambiguous alternatives require the future selector/evaluator. Multiple records for one kind/concept remain distinct data; their successful loading is not evidence that selection would succeed. There is no default anchor, arithmetic, interval update or effect execution.</p>
+<h2 id="historical-trace-inputs">Historical trace inputs</h2>
+<p>Added with 0.180.0, <code>core.use world=std.trace</code> exports only <code>std.trace.request</code> and <code>std.trace.input</code>. A request stores its required <code>message</code> string. An input requires historical <code>source</code> and <code>version</code> strings, <code>source.type</code> and <code>key</code> atoms, and <code>values</code> as a JSON array of canonical SOP value-token strings. The source identity is provenance, not a live reference.</p>
+<p>The array preserves duplicates, order and token categories. Numeric <code>12</code>, quoted text <code>"12"</code>, historical reference <code>$old</code> and quoted text <code>"$old"</code> remain distinct. Historical reference targets need not exist in the current world. An empty array records an observed slot without values; it does not assert that an entire world or query scope is closed. The snapshot does not resolve its source schema or prove the truth of the observation.</p>
+<p>A final-state validator parses each token with the language parser and requires exactly one concrete canonical value. It rejects variables (including <code>$?x</code>), non-string JSON elements, additional keys/wires, comments appended to a token and noncanonical string escapes. Canonical refers to quoted-string spelling, not numeric normalization: <code>01</code> and <code>1</code> retain their source tokens. Payload traversal consumes validation budget; existing JSON size/depth limits also apply. Invalid edits roll back.</p>
+<p>This foundation does not export step, observation, reply, undo or correction types, establish a structured-request link, generate evidence, make records append-only, or save a journal. Those contracts and persistence remain required before a full trace-family release. A stored <code>message</code> is not execution authorization.</p>
 <p class="source">Generated from <code>docs/modules.md</code>.</p>
 </main>
-<footer>sopworld 0.179.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.180.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

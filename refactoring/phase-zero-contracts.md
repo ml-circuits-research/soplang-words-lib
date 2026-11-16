@@ -86,3 +86,7 @@ std.request now exports constraints, logical nodes, value descriptions and bound
 ### Increment 0.179.0 — change-policy declarations
 
 Entry point std.change exports std.change.policy with required atom kind/concept/anchor/unit and a closed schema. The exact §4.4.4 example and malformed declarations are tested. Name resolution, compatible units, policy selection (including conflicting alternatives), request precedence and execution remain pending. Frame publication/snapshot invariants and typed journal evidence still need concrete representation decisions; full phase zero is not released.
+
+### Increment 0.180.0 — historical request/input trace foundation
+
+std.trace exports only request/message and input/source/version/source.type/key/values. Historical inputs preserve concrete canonical SOP token strings inside a JSON array, including multiplicity/order and references whose live targets may no longer exist. Existing JSON limits and budgeted final-state parsing reject malformed, noncanonical or variable tokens. The revised first two §6.11 records are executable; the remaining fragment is explicitly proposed. Structured request linkage, step/observation/reply/undo/correction contracts, evidence truth and immutable persistence remain pending. This is not full trace or phase-zero acceptance.

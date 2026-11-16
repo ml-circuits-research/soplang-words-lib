@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.180.0
+
+- Add std.trace.request and std.trace.input foundations. Historical inputs preserve canonical SOP token categories, duplicates and order inside JSON, without live reference dependencies. Reject malformed or variable tokens transactionally under the validation budget.
+- Full trace linkage, observations, append-only persistence and evidenced reply semantics remain pending.
+
 ## 0.179.0
 
 - Publish std.change.policy with required kind, concept, anchor and unit vocabulary names. This is a structural contract; policy selection, unit compatibility and change execution remain pending.

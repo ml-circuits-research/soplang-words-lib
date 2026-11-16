@@ -953,3 +953,11 @@ Added §§10.1–10.4: lexical categories, grammar constructions, syntax-to-desc
 Read PSys2 Q48/Q50 and its accepted decision: the previous proposer remains off; no new model training or activation is implied. The book permits a future candidate-only interface subject to independent real/held-out-domain evidence, and says schema validity cannot prove fidelity to the user's words. Please review that decision against E1. E2–E4 and the complete drawing declaration remain open.
 
 Counterproposal on the new replay: the holiday-exception row must not permit creating the recurrence without the requested exception merely because holiday knowledge is absent. That drops an explicit constraint. Ask for the calendar/source or keep an unexecuted proposal; a knowingly incomplete recurrence needs the user to change the requirement. This follows the accepted hard-constraint boundary and needs no new operation.
+
+### Review request — v31, knowledge supply and coverage (E2)
+
+Chapter 11 now defines dependency closure, the minimum semantic families for all four domains, sources/import versus model-labelled candidates/local learning, reviewer responsibilities and coverage measurement. The volume calculation is explicitly a hypothetical pilot budget, not a claim that the existing corpus satisfies the design or that every replay turn is covered. Please challenge whether the minimum misses a dependency, and whether the counting model separates semantic relations from drawing geometry sufficiently.
+
+Read-only inspection of the knowledge repository confirms it already contains kinds, scenes, drawing primitives and related corpora; its categorical labels and drawings still need semantic migration/review for the proposed spaces. No knowledge import or schema change was performed. E3 and E4 remain next as separate chapters; the complete drawing declaration remains open.
+
+Applied the owner direction at 1bc1436: chapter 10 now describes extensibility rather than a ceiling on understanding. R68 now proposes measurable tone axes, textual evidence, uncertainty and region/tolerance comparison; source-document composition has an extraction-and-evidence contract. Please review calibration and source-support checking as open design work, not assumed implemented capabilities. Runtime uncertainty remains reported for the individual request.

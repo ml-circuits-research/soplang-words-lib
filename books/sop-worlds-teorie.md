@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 30, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 31, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -1450,7 +1450,7 @@ Dacă peștii au fost deja creați, legarea grupului `fish1` la acele identită�
 
 Aceeași structură permite ca mesajul real cu două case diferite să aibă o țintă pentru case și o cantitate a acelui grup. Dar semnificația lui „diferite” și părțile complete ale peisajului trebuie declarate separat. Exemplul de aici nu închide aceste lacune din replay și nu face, singur, un domeniu executabil.
 
-Cititorul englez este dezvoltat în capitolul 10: lexic, gramatică, compunere semantică și limitele interpretării.
+Cititorul englez este dezvoltat în capitolul 10: lexic, gramatică, compunere semantică și extinderea interpretării.
 
 ## 6.4 Situarea: ce este acest mesaj față de ce s-a spus înainte
 
@@ -1663,7 +1663,18 @@ Planul alege între lucruri cu înțeles diferit; funcția caută înăuntrul al
 | `layout` (diagrame) | Primește nodurile și săgețile. Dă câte un punct pentru fiecare nod. Verificare: niciun nod peste altul. |
 | `compose` (documente) | Primește partea de scris, lista afirmațiilor pe care cunoașterea le are despre subiect, lungimea cerută și punctul de ton. Dă textul și lista afirmațiilor folosite. |
 
-`compose` nu inventează. Are voie să folosească numai afirmațiile primite și formule legate de partea scrisă (salutul, încheierea). Lungimea se verifică prin numărare. Afirmațiile folosite se verifică față de lista dată. Dacă lista este goală, se scriu numai formulele, iar răspunsul spune că despre subiect nu se știe nimic. **Tonul nu poate fi verificat automat în prima versiune;** răspunsul nu afirmă că tonul cerut a fost atins (anexa D). *(R68)*
+`compose` nu inventează. Are voie să folosească numai afirmațiile primite și formule legate de partea scrisă (salutul, încheierea). Lungimea se verifică prin numărare. Afirmațiile folosite se verifică față de lista dată. Dacă lista este goală, se scriu numai formulele, iar răspunsul spune că despre subiect nu se știe nimic. Tonul se verifică prin măsurarea textului în spațiul de ton și compararea rezultatului cu regiunea cerută, după mecanismul propus mai jos. O măsurare încă necalibrată sau incertă rămâne marcată ca atare în rezultatul concret, fără să transforme această lipsă într-o limită a proiectului. *(R68)*
+
+Măsurarea tonului este o funcție declarată care primește textul, profilul de limbă și versiunea spațiului și întoarce coordonatele estimate, dovezile textuale și incertitudinea. Axele pot descrie formalitatea, căldura și caracterul direct. Alegerea cuvintelor, formele de adresare, lungimea propozițiilor și marcatorii de atenuare sunt trăsături de intrare, nu definiții universale ale tonului: un text lung nu este automat formal. O funcție de măsurare, simbolică sau învățată, le combină conform unui model declarat și calibrat pe judecăți independente. Pentru fiecare axă cerută se compară valoarea cu regiunea țintă și toleranța ei; incertitudinea care traversează frontiera produce un rezultat nedeterminat, nu o reușită certă.
+
+| Pasul verificării tonului | Rezultatul necesar |
+|---|---|
+| Extrage trăsături | Fragmentele textului și măsurile lor, cu versiunea extractorului. |
+| Proiectează în spațiul de ton | Coordonate, intervale de incertitudine și versiunea modelului de măsurare. |
+| Compară cu regiunea cerută | Apartenență verificată, abatere măsurată sau incertitudine ce cere o verificare suplimentară. |
+| Revizuiește textul | Un candidat care păstrează afirmațiile și cerințele ferme; se măsoară din nou după schimbare. |
+
+Conținutul provenit din alt document folosește tot o capabilitate declarată. Ea primește textul sursă și identificatorul versiunii, extrage afirmații legate de intervale din sursă și păstrează relațiile dintre ele, apoi compune rezultatul cerut. Verificarea caută atât afirmații adăugate fără suport, cât și omisiuni care schimbă sensul, precum pierderea unei negații sau a unei condiții. Cititorul de comenzi stabilește ce se cere documentului; extractorul de conținut stabilește ce spune documentul. Această separare permite proiectarea rezumării fără să pretindă că recunoașterea unei comenzi este deja înțelegerea textului sursă. Rezultatul concret cu suport insuficient rămâne propunere verificabilă, iar mecanismul lipsă intră în registrul de lucru.
 
 Dacă planul cere ca peștele să fie în iaz, `free_spot` nu poate răspunde cu o poziție pe cer pentru că acolo a găsit loc. Poate returna un punct verificabil în regiunea permisă sau poate declara că nu a găsit o soluție. Distincția dintre căutare epuizată și imposibilitate demonstrată rămâne cea din secțiunea 8.5.
 
@@ -2703,9 +2714,9 @@ Există o limită reală a schemei de cerere din secțiunea 6.3.2. `scope=each` 
 
 Verificarea semantică are loc în etape: tipurile și rolurile trebuie să fie coerente; referințele trebuie rezolvate sau marcate deschise; fiecare fragment cu efect asupra intenției trebuie acoperit; apoi se verifică realizabilitatea. O cerere imposibilă poate fi totuși citită corect. Lipsa unei capabilități trebuie raportată ca atare și nu este motiv suficient pentru a înlocui o intenție explicită cu alta, executabilă. Reformularea și recitirea pot detecta pierderi de informație, dar două componente care repetă aceeași eroare pot trece acest test; comparația cu interpretări independente rămâne necesară.
 
-## 10.4 Acoperire, degradare controlată și propuneri de model
+## 10.4 Acoperire, extindere și propuneri de model
 
-Cititorul propus are un domeniu declarat de construcții și vocabular. Nu este o promisiune de înțelegere nelimitată a englezei: ironia, referințele la evenimente necunoscute, discursul lung, sensurile nedeclarate și cuantificarea încă nereprezentabilă pot rămâne nerezolvate. Comportamentul util este să localizeze lipsa și să ceară informația potrivită, fără să pretindă că o schemă validă dovedește fidelitatea față de mesaj.
+Cititorul are la fiecare versiune un inventar verificabil de construcții și vocabular. Inventarul descrie starea implementării, nu fixează un plafon al proiectului. O construcție nouă se tratează prin date lexicale, o regulă gramaticală și de compunere, o extensie a descrierii sau un propunător în vocabularul general, după cauza lipsurilor. Pentru mesajul concret încă nerezolvat se localizează lipsa și se cere informația potrivită; cazul intră în registrul de lucru cu interpretarea așteptată și mecanismul de generalizat. O schemă validă rămâne o verificare necesară, nu dovada suficientă a fidelității față de mesaj.
 
 | Rezultatul citirii | Răspunsul și continuarea permise |
 |---|---|
@@ -2719,6 +2730,101 @@ Cititorul propus are un domeniu declarat de construcții și vocabular. Nu este 
 Decizia de proiectare este ca un model statistic să poată propune descrieri printr-o interfață separată, dar să nu fie o dependență necesară și să nu primească acces direct la unelte. Ținta propunerii este descrierea conceptuală generală, nu setul de chei fixe al cititorului vechi și nici vocabularul unui singur domeniu. Legarea la schema domeniului are loc ulterior. Datele pentru evaluare trebuie separate atât pe domenii, cât și pe familii de formulări. Propunerea include sursele în text și necunoscutele, trece aceleași verificări ca analiza gramaticală și rămâne candidată. În configurația de bază acest mecanism nu este activat ca soluție presupusă a lipsei de gramatică. Introducerea lui cere o măsurare separată pe expresii reale și domenii nefolosite la pregătire, cu numărarea execuțiilor greșite, nu numai a descrierilor care trec validarea.
 
 Un model poate produce o cerere perfect validă pentru o intenție pe care omul nu a exprimat-o. Verificatorul lumii poate constata că obiectele există și acțiunea este permisă, fără să poată demonstra că tocmai acea acțiune a fost cerută. De aceea proveniența lexicală, comparația interpretărilor și clarificarea rămân necesare. O creștere numai pe reformulări generate din aceleași cadre nu justifică înlocuirea cititorului pe mesaje reale.
+
+# 11. Cunoașterea necesară: conținut, proveniență și acoperire
+
+Un mecanism general nu poate înlocui informația despre lucrurile cu care lucrează. O regulă de moștenire poate căuta un strămoș, dar trebuie să existe arborele felurilor; un planificator poate păstra părți obligatorii, dar cineva trebuie să declare acele părți. A spune că informația „vine din cunoaștere” este suficient numai dacă putem identifica declarațiile, sursele și limitele lor. Acest capitol stabilește ce trebuie să conțină un pachet utilizabil și cum se deosebește o bază mare de una suficientă pentru operațiile promise.
+
+## 11.1 Pachetul minim este închis pe dependențe
+
+Pachetul minim se stabilește pornind de la capabilități și de la familiile de probleme pe care aplicația declară că le rezolvă. Pentru fiecare concept expus, se urmăresc dependențele până când toate operațiile necesare au intrări cunoscute: felul, părinții relevanți, spațiile, regiunile, rolurile și realizările cerute. Aceasta este închiderea pe dependențe. Nu cere încărcarea tuturor cunoștințelor despre lume; cere ca un concept oferit utilizatorului să nu se termine într-o trimitere lipsă tocmai în timpul planificării.
+
+| Componentă comună | Ce trebuie să poată afla sistemul din ea |
+|---|---|
+| Feluri și specializări | Identitatea conceptului, părinții și sensul fiecărei legături; distanțele se folosesc numai prin metrica declarată. |
+| Vocabular conceptual | Formele engleze ale conceptelor, sensurile și sursa lor; categoriile gramaticale și construcțiile generale aparțin lumii limbii. |
+| Spații și regiuni | Axe, unități, repere, domenii și definițiile regiunilor; un nume de culoare fără coordonate nu este încă o regiune calculabilă. |
+| Structuri de întreguri | Rolurile părților, cardinalitățile și relațiile dintre ele; ce este obligatoriu se distinge de ce este doar obișnuit. |
+| Relații funcționale | Ce parte susține, conține sau atașează alt obiect și în ce condiții; o simplă relație „parte din” nu identifică automat acel rol. |
+| Valori obișnuite și preferințe | Contextul în care se aplică, caracterul lor modificabil și proveniența; nu sunt legi tari despre toate instanțele. |
+| Realizări și capabilități | Ce reprezentare poate produce unealta, cu ce parametri și ce limitări; un concept cunoscut poate rămâne nerealizabil. |
+| Surse și versiuni | De unde provine fiecare afirmație, transformarea care a produs-o și versiunea la care a fost verificată. |
+
+De exemplu, faptul că o scrisoare are o semnătură nu precizează cine semnează. Structura declară rolul; identitatea semnatarului poate veni din instanță sau din cerere. Dacă lipsește, mecanismul de completare nu are voie să inventeze o persoană doar pentru a închide graful. O dependență poate fi rezolvată și printr-o întrebare explicită, dacă aceasta face parte din capabilitatea declarată.
+
+Acoperirea se păstrează separat pentru recunoaștere, raționament și realizare. Sistemul poate recunoaște un fel și răspunde din cunoaștere despre el fără să-l poată desena. Poate avea o imagine fără să cunoască părțile ei editabile. Aceste stări trebuie declarate; nici existența unui cuvânt, nici existența unui fișier grafic nu implică întreaga capabilitate.
+
+## 11.2 Conținutul necesar celor patru domenii
+
+Pachetul comun este reutilizat între domenii. Un domeniu adaugă numai structurile și legăturile specifice operațiilor sale. Tabelul descrie minimul semantic pentru familiile de operații ale cărții, nu un inventar al tuturor obiectelor despre care poate vorbi un om. Un produs trebuie să declare separat ce feluri și ce operații acoperă concret.
+
+| Domeniu | Cunoașterea indispensabilă și limita acoperirii |
+|---|---|
+| Desen | Feluri reprezentabile, realizări proprii ori moștenite, părți editabile, relații de susținere/conținere, întinderi și straturi, culori și proporții obișnuite. Fără rolul părții de sprijin, o verificare geometrică nu poate decide locul funcțional potrivit. |
+| Diagrame | Feluri de noduri și legături, structuri de graf, roluri de început/sfârșit, ordine, forme și reguli de așezare. Un desen frumos al unui graf nu dovedește corectitudinea relațiilor lui. |
+| Documente | Genuri, structura secțiunilor, roluri de conținut, regiuni de lungime și ton, plus afirmațiile despre subiect cu sursele lor. Un șablon de scrisoare fără informații despre subiect produce structură, nu conținut factual justificat. |
+| Calendar | Tipuri de evenimente și resurse, durate, disponibilitate, relații temporale, repere și grupuri numite. Persoanele, întâlnirile și disponibilitatea curentă sunt date ale instanței; nu se deduc dintr-o bază generală. |
+
+Aceste dependențe produc diferențe practice. O relație temporală poate fi verificată exact după citirea completă a rezervărilor relevante, pe când tonul unui document poate rămâne o proprietate neverificată. În desen, geometria unei părți poate fi disponibilă fără ca numele ei semantic să fie cunoscut. Pachetul nu ascunde aceste diferențe sub o singură etichetă „concept suportat”.
+
+Datele obligatorii ale instanței nu trebuie confundate cu cunoașterea generală. O sursă generală despre sărbători are nevoie de regiune și interval de valabilitate; nu spune automat ce zile sunt nelucrătoare pentru o persoană. Dacă o excepție cerută nu poate fi verificată, cererea rămâne incompletă. Absența sursei nu autorizează eliminarea excepției din plan.
+
+Pentru reutilizare, o relație sau un rol se declară la cel mai general nivel justificat de date. „Suprafața de sprijin a unui obiect” este reutilizabilă; o instrucțiune pentru o singură propoziție a utilizatorului nu este. Totuși, faptele particulare sunt legitime: că o anumită piesă este suprafața de sprijin a unui anumit fel este tocmai informația de domeniu de care regula generală are nevoie.
+
+## 11.3 Surse și transformări
+
+Există trei căi principale de alimentare: declarații redactate de autori, importuri din surse externe și fapte introduse sau învățate în instanță. Ele pot folosi aceeași schemă, dar nu au aceeași autoritate. O afirmație generală importată, o aproximare editorială și o preferință a unui utilizator trebuie să rămână deosebite după îmbinare. Un scor de încredere nu înlocuiește proveniența și nu transformă automat o preferință într-un fapt universal.
+
+| Calea de alimentare | Ce se păstrează și ce nu se presupune |
+|---|---|
+| Redactare explicită | Autorul, motivul, contextul și exemplele de verificare; valorile alese ca ipoteze de lucru sunt marcate astfel. |
+| Import determinist | Identitatea și versiunea sursei, înregistrarea originală, maparea către schema locală și transformările aplicate. Repetarea importului pe aceeași intrare trebuie să dea aceleași fire. |
+| Deducție din alte fapte | Regula și premisele cu versiunile lor; concluzia este retrasă sau reverificată când suportul se schimbă. |
+| Predicție ori etichetare de model | Modelul sau procedura, intrarea și statutul de candidat verificat sau neverificat; numele unei clase prezise nu este adevăr garantat. |
+| Învățare locală | Utilizatorul sau episodul, instanța și domeniul de aplicare; promovarea către cunoaștere comună cere o decizie separată. |
+
+Un import de relații de tip „parte din” poate furniza candidați pentru structura unui obiect. Nu furnizează automat cardinalități obligatorii, geometrie și roluri de susținere. Aceste informații cer surse suplimentare sau redactare verificată. În mod similar, o listă de nume de culori poate completa lexicul, dar nu stabilește singură frontierele regiunilor de culoare.
+
+Înainte de folosirea și redistribuirea unei surse se consemnează condițiile aplicabile exact versiunii preluate, atribuirea și transformările permise. Faptul că un fișier este accesibil public nu dovedește că poate fi republicat. Verificarea aparține importatorului și reviewerului sursei; cartea nu declară o licență potrivită pentru un set de date fără analiza lui. Importurile cu condiții diferite își păstrează proveniența și separarea necesară distribuirii.
+
+O etichetă produsă de model poate economisi redactare, dar trebuie verificată tocmai la frontierele care schimbă comportamentul: roluri obligatorii, imposibilități, relații folosite pentru acțiuni și atribuiri de sens. Verificarea unui eșantion poate estima calitatea lotului; nu dovedește că fiecare fapt rămas este corect. Faptele cu efect critic cer o verificare potrivită consecinței lor sau rămân propuneri slabe.
+
+## 11.4 Cine verifică și ce înseamnă acceptarea
+
+Verificarea are niveluri distincte. Încărcarea fără erori demonstrează compatibilitatea cu schema, nu adevărul semantic al datelor. O schemă poate accepta două roluri inversate; un desen poate avea coordonate valide și părți denumite greșit. De aceea acceptarea unui pachet combină verificarea mecanică, citirea semantică și folosirea în probleme independente de exemplele care au motivat redactarea.
+
+| Responsabilitate | Dovada cerută |
+|---|---|
+| Autorul sau importatorul | Sursă identificabilă, mapare explicabilă, ieșire reproductibilă și diferența față de versiunea precedentă. |
+| Verificatorul de schemă | Tipuri, unități, cardinalități, referințe și restricții valide; lipsurile sunt raportate, nu completate prin etichete arbitrare. |
+| Reviewerul semantic | Sensul relațiilor, caracterul tare sau obișnuit, excepțiile și coerența cu sursa; corectitudinea nu se reduce la faptul că un exemplu trece. |
+| Autorul adaptorului | Capabilități și limite reale pentru datele oferite: ce părți poate modifica, ce poate măsura și ce nu poate verifica. |
+| Verificarea prin utilizare | Cereri noi, perechi minimale și cazuri în care trebuie refuzat sau întrebat; nu doar reușite pe aceleași formulări. |
+
+Un pachet devine activ numai cu dependențele necesare rezolvate și cu acoperirea declarată. O sursă încă neîncărcată se deosebește de o afirmație absentă într-o sursă completă. Dacă un shard lipsește temporar, sistemul nu deduce că obiectul nu există în catalog. Dacă două surse se contrazic, conflictul rămâne vizibil; alegerea unei surse trebuie justificată prin domeniu, versiune sau autoritate, nu prin ordinea accidentală a încărcării.
+
+Când un concept se schimbă, se reverifică atât utilizările directe, cât și regulile care moștenesc proprietăți de la el. O parte devenită opțională poate schimba completarea multor întreguri; o regiune de culoare modificată poate schimba selecția obiectelor. Versionarea permite reproducerea explicației vechi, iar actualizarea nu rescrie dovezile unei execuții anterioare.
+
+## 11.5 Estimarea volumului și măsurarea acoperirii
+
+Nu există un număr de fire care să garanteze înțelegerea tuturor cererilor. Volumul se estimează pentru un profil de capabilități și un vocabular declarat. Mai întâi se numără conceptele și relațiile necesare; apoi se separă cunoașterea semantică de reprezentările grafice, indexuri și copii generate. Altfel, un catalog foarte mare de puncte ale desenelor poate părea o bază foarte bogată de relații, deși nu spune care parte susține un obiect.
+
+Calculul următor este un buget ilustrativ de redactare pentru un pilot limitat în cele patru domenii, nu o măsurătoare a pachetului existent și nici o promisiune că acoperă toate mesajele. Numărul de feluri este numărul uniunii conceptelor alese, fără a număra același concept din nou în fiecare domeniu. Fiecare factor trebuie înlocuit cu inventarul real înaintea planificării implementării.
+
+| Grup de declarații al pilotului | Ipoteză explicită și fire estimate |
+|---|---|
+| Feluri și legături de bază | 60 de feluri × 6 declarații în medie pentru identitate, părinte, nume și valori obișnuite: 360. |
+| Structuri de întreguri | 12 întreguri × o declarație a întregului și 5 roluri de părți: 72. |
+| Regiuni simple | 20 de regiuni × 3 declarații în medie pentru definiție și legături: 60. |
+| Realizări compuse minimale | 20 de realizări × o declarație și 8 părți: 180; contururile detaliate nu sunt incluse. |
+| Construcții de limbă și contracte comune | Buget editorial explicit de 130 de declarații reutilizabile; insuficiența lui se verifică pe inventarul construcțiilor. |
+| Proveniență | 20 de înregistrări distincte de sursă; trimiterile la ele apar pe fapte. |
+
+Totalul acestui calcul este 822 de fire, înainte de sloturile metamodelului, contururi, cuvintele suplimentare, excepții și indecșii publicați. El arată ordinul de mărime al unui nucleu redactat și verificat manual; nu este dimensiunea întregii cunoașteri necesare produsului. Dacă un rol are mai multe relații sau o regiune cere o structură complexă, costul crește și se actualizează explicit. Nu se reduc declarațiile doar ca să fie păstrat bugetul inițial.
+
+O bază existentă poate reutiliza mult din acest conținut, dar reutilizarea se acceptă semantic, nu prin potrivirea numelor. Conversia unei clase precum `small` în regiune numerică cere repere, unități și o justificare; nu este suficient ca un importator să înlocuiască eticheta cu o cifră. Capitolul despre parametrii numerici trebuie să stabilească această justificare separat.
+
+Măsurarea de acoperire urmărește pentru fiecare familie de probleme dacă lipsa apare la recunoaștere, descriere, referință, cunoaștere, realizare sau verificare. Se păstrează și rezultatele corecte de tip clarificare/refuz. Adăugarea unui catalog de nume poate îmbunătăți recunoașterea fără să câștige nicio execuție; raportul trebuie să arate acest lucru. Un număr de fire sau de megabytes nu poate ține locul acestei măsurători.
 
 ## Anexa A. Cu ce seamănă
 
@@ -2867,4 +2973,4 @@ Rândurile de mai jos sunt alegeri de politică. Prima coloană trimite la regul
 | R49 | Dacă normele sunt slabe în timpul lucrului sau unele sunt tari. |
 | R59 | Dacă un grafic făcut din calendar rămâne o fotografie sau se ține la zi. |
 | R64 | Ce se face cu o unealtă care nu poate desface: se execută și se spune, sau se cere acordul înainte. |
-| R68 | Cum se verifică tonul unui text; până atunci răspunsul nu îl afirmă. |
+| R68 | Calibrarea măsurării în spațiul de ton, toleranțele și tratarea incertitudinii, prin mecanismul din 6.8.1. |

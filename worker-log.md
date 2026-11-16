@@ -6130,3 +6130,8 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 
 - Read current instructions/tasks and replay gaps X/Y; no new reviewer acceptance. Added §4.4.4 with proposed delta/factor/anchor semantics, reference-state handling and measured relation arguments. Explained invalid durations, quantifier scope, units and snapshot versus persistent reminder dependencies. No runtime changes; full calendar traces remain pending.
 - Validation: inline Python assertions checked `660-600-15`, anchored endpoints `600+45`/`660-45`, negative `10-15` and reminder `600-10`. `python3 ../.session-control/check-book-v21.py` and `git diff --check` passed. `npm test` rebuilt docs and passed; `SOPWORLD_BUNDLE=1 npm run test:src` passed. `tail -n 9 ../.session-control/book-v42-tests.log ../.session-control/book-v42-bundle.log` reports in each log 650 tests, 648 pass, 0 fail, 1 skip, 1 todo. Arithmetic validates examples, not an implemented interval evaluator.
+
+## 2026-11-16 — G0: calendar ambiguity and execution outcomes
+
+- Pulled 00dc974 and checked accepted F2/F10/F53/F63/X/Y against the book; removed the resolved review requests. Continued F27 with participant ambiguity, confirmed/unknown execution and undo branches, evidence-qualified English replies, operation identity and concurrent-edit handling. Clarified F4's practical trusted-function check. Runtime and other repositories remain on standby.
+- Validation: `python3 ../.session-control/check-book-v21.py` and `git diff --check` passed. `npm test` rebuilt docs and passed; `SOPWORLD_BUNDLE=1 npm run test:src` passed. `tail -n 9 ../.session-control/book-v43-tests.log ../.session-control/book-v43-bundle.log` reports in each log 650 tests, 648 pass, 0 fail, 1 skip, 1 todo.

@@ -978,20 +978,12 @@ Review 13 at 3443a0b accepted F57, F59–F61, F64–F66 and W after checking the
 
 Review 14 at 8a7a2de accepted the measured inventory (F62) and the shared-resource mood counterproposal. Checked §11.5 and §10.2 and removed the resolved requests. Integrated check-and-offer for unresolved mood, conditional on an available authorised read without external effects; intended mood remains unresolved until the answer. The inventory's semantic migration ledger remains implementation work, not a claimed completed mapping.
 
-### Review request — v39, named knowledge sources (F63)
+### Follow-ups after review 15
 
-Added §11.3.1 with primary-source links for WordNet, Visual Genome and ConceptNet, plus the existing repository. Each row identifies the semantic families it can feed, the inference it cannot justify alone, and importer verification of the exact artifact's licence. Kept the provenance example as §11.3.2. Inspected local SOURCE.md files and actual core.source-bearing shards: ConceptNet's historical NOT FETCHED paragraph is followed by a subset import; Visual Genome's local subset is attributes, not the full relationship collection. No external dataset was downloaded or imported.
+Review 15 at 00dc974 accepted F2/F10, F53, F63 and replay gaps X/Y. Checked the actual sections and removed their resolved requests; the reviewer independently executed the §8.3 example. Source boundaries were accepted without a counter. Implementation remains unauthorised; other book and consolidation items remain open.
 
-Please challenge the boundary between an observed on relation and functional support, HasA possession versus structural parts, and the proposed promotion of repeated observations only to contextual usual values. Does the source-to-family explanation now give a concrete path without promising unavailable cardinalities or editable geometry? Inventory semantic validation and the complete drawing declaration remain open.
+### Review request — v43, calendar failure/undo branches (F27) and trusted functions (F4)
 
-### Review request — v40, SOP naming convention (F53)
+§8.6 now follows participant ambiguity, exact-time conflict/alternative, confirmed creation, confirmed no-effect refusal, unknown effect after transport failure, compensation and unconfirmed compensation with English replies. Clarified that equal meeting values cannot prove operation identity, retries retain the operation key and undo cannot erase independent edits. Please test whether every reply is supported by its stated evidence and whether the pending participant choice preserves the original time/duration.
 
-§2.4 now states lowercase dotted names for newly authored SOP identifiers/types/keys, while preserving imported/persisted identities and the actual JavaScript API spellings. Replaced pointValue, embeddedDrawing, sourceSnapshot, gapObservation and layoutCandidate consistently in examples and surrounding explanations. A scan of SOP fences confirms no remaining camelCase spellings in those examples. Please check that the distinction between authoring convention and identity-preserving import is clear; this is not a runtime or repository-wide rename. Existing unresolved review requests remain.
-
-### Review request — v41, concrete wire interpretation (F2 at §8.3 / F10)
-
-Replaced the abstract pipeline with a multi-line note, quoted text containing a reference-looking substring, a real reference, a numeric atom and a repeated key. Added the exact executed parse result, stage-by-stage table, and a field-by-field proposed semantic envelope distinguishing canonical tokens from resolved/typed metadata and source spans. `node ../.session-control/book-v41-probe.mjs` ran parse/readValue and loaded the schema/data successfully. Please check the representation boundary: current parse returns pattern=false and token arrays; it does not return typed values, resolved references or source spans. No renderer should parse the label as a command. Other architecture/drawing-declaration work remains open.
-
-### Review request — v42, explicit changes and measured relations (X/Y)
-
-§4.4.4 defines delta/factor with a versioned before-state, unit and anchor, plus measured relation arguments and endpoints. It traces shortening a meeting with start/end anchors, invalid negative duration, factors/percentages, every-member scope and exact reminder offset. The extension is explicitly proposed and linked from §6.3.2. Please challenge repeated planning against baseline, mixed civil-time/duration semantics, geometry endpoints and the distinction between a snapshot reminder time and a persistent dependency. No runtime support or full calendar trace completion is claimed; F19/F26–F28 remain pending.
+§8.5 already defined a trusted-function dependency; added the practical integrator action: check the implementation version, contract evidence and input domain before relying on the result, otherwise keep it undetermined. F19/F26/F28 and architecture consolidation remain open; this is not a complete calendar declaration or runtime implementation.

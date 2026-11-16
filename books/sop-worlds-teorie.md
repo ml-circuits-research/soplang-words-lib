@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 42, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 43, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -2380,7 +2380,7 @@ O soluție fezabilă satisface constrângerile; o soluție optimă are în plus 
 
 Pentru fiecare candidat, coordonatorul face o copie de încercare a instanței, conform 3.9, aplică schimbările propuse și cere verificarea lumii asupra copiei. Este aceeași semantică de validare ca la o schimbare scrisă de mână. Copia include aceleași versiuni de schemă și cunoaștere. Un plan care rămâne nedeterminat nu ajunge la unelte. Abia un plan valid poate trece în etapa 7, după verificarea că starea originală nu s-a schimbat între timp.
 
-O funcție geometrică sau numerică declarată poate rămâne o dependență de încredere: verificatorul îi controlează argumentele, tipul rezultatului și proprietățile verificabile, dar nu poate dovedi corectitudinea oricărui program arbitrar. Contractul numește funcția și versiunea ei; testele ei și limitele metodei sunt parte din justificare. Autorul domeniului trebuie să aleagă o implementare verificată pentru acel contract și să declare limitele ei; numirea funcției nu este o dovadă de corectitudine. O funcție lipsă nu se consideră adevărată implicit.
+O funcție geometrică sau numerică declarată poate rămâne o dependență de încredere: verificatorul îi controlează argumentele, tipul rezultatului și proprietățile verificabile, dar nu poate dovedi corectitudinea oricărui program arbitrar. Contractul numește funcția și versiunea ei; testele ei și limitele metodei sunt parte din justificare. Autorul domeniului trebuie să aleagă o implementare verificată pentru acel contract și să declare limitele ei; numirea funcției nu este o dovadă de corectitudine. O funcție lipsă nu se consideră adevărată implicit. Practic, înainte să folosească rezultatul pentru o decizie, integratorul verifică versiunea implementării, probele contractului și domeniul intrărilor; dacă acestea nu justifică acel caz, rezultatul rămâne nedeterminat, nu o dovadă de satisfacere.
 
 ## 8.6 O ședință, urmărită cu numere
 
@@ -2393,6 +2393,22 @@ Coordonatorul poate căuta o alternativă. La 660, intervalul propus este [660,6
 Cererea inițială a spus o oră exactă. Alternativa 11:00 este prezentată omului, nu executată automat. După acceptare se verifică din nou versiunea rezervărilor. Dacă altă ședință a apărut între timp, planul se reevaluează.
 
 Unealta primește identitatea Anei, începutul 660 și durata 30. După operație se citește starea: trebuie să existe ședința creată, cu aceste valori și fără schimbarea rezervării vechi. Dacă unealta nu confirmă rezultatul sau observația lipsește, sistemul nu spune „am programat”.
+
+Aceeași cerere poate ajunge la rezultate diferite fără să-i schimbăm sensul. Identitatea participantului trebuie rezolvată înaintea verificării disponibilității. Dacă două persoane au eticheta Ana, aplicația nu alege persoana cu programul mai liber: acesta ar fi un criteriu de optimizare aplicat identității, nu rezolvarea referinței. Prezintă numele împreună cu un identificator sau un atribut distinctiv deja cunoscut și păstrează ora și durata cerute până la răspuns.
+
+| Ramura scenariului | Starea păstrată și răspunsul justificat |
+|---|---|
+| Două persoane numite Ana | Nicio rezervare creată; se păstrează cele două identități candidate. „Which Ana do you mean?” este însoțit de distincțiile reale disponibile, fără informații inventate despre persoane. |
+| Conflict la 10:30, alternativa verificată la 11:00 | Ora exactă cerută nu este schimbată tacit. „Ana is busy at 10:30. 11:00 is free; shall I book it?” presupune citirea completă relevantă, nu doar absența conflictului cunoscut. |
+| Alternativă acceptată și creare observată | Jurnalul păstrează identitatea întâlnirii noi și operația corelată. „I scheduled the meeting with Ana from 11:00 to 11:30.” |
+| Refuz confirmat al creării și absență verificată a efectului | Nu există întâlnire nouă atribuită pasului. „The booking was rejected; no meeting was created.” Motivul este adăugat numai dacă provine dintr-un rezultat verificat al uneltei. |
+| Răspuns pierdut, efect încă necunoscut | Nu se reîncearcă orbește crearea. „I could not confirm whether the meeting was created. I need to check the calendar.” |
+| Anulare cerută după crearea confirmată | Se compensează numai întâlnirea identificată în pasul respectiv; după observarea dispariției ei: „I removed the meeting I just created.” Rezervarea inițială 10:00–11:00 rămâne neschimbată. |
+| Compensare neconfirmată | Jurnalul nu este șters și pasul nu este declarat anulat. „I could not confirm the cancellation; the meeting may still be present.” |
+
+Pentru răspunsul pierdut, adaptorul caută efectul după identitatea operației sau cheia de idempotență stabilită înainte de apel. O întâlnire cu aceleași valori nu este automat aceeași operație: altcineva putea crea una identică. Dacă verificarea găsește efectul corelat, continuarea folosește identitatea găsită; dacă dovedește absența și politica permite reîncercarea, aceasta păstrează aceeași cheie. În lipsa unei concluzii, rămâne statutul necunoscut. O eroare de transport nu dovedește absența efectului.
+
+Anularea citește versiunea curentă a întâlnirii create și o compară cu starea consemnată după execuție. Dacă între timp întâlnirea a fost modificată independent, nu se șterge automat acea muncă sub pretextul restaurării stării vechi; conflictul urmează politica de compensare din secțiunea 6.9.2. Anularea adaugă în jurnal o operație compensatoare cu rezultatul observat, nu elimină episodul care explică de ce întâlnirea a existat. Aceste ramuri aplică același contract de execuție în toate domeniile; calendarul furnizează identitățile și observațiile concrete.
 
 O diagramă poate folosi apoi aceleași identități de ședințe pentru a arăta numărul lor pe participant. Ea produce noduri grafice, nu copii ale persoanelor. Trebuie declarat dacă desenul este un instantaneu sau o vedere actualizată; această alegere schimbă dependențele și invalidarea rezultatului.
 

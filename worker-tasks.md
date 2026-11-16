@@ -1645,3 +1645,35 @@ The rule "a said requirement that cannot be read or honoured is never silently d
 2. "I baked a cake, draw it" → `I did not understand "baked", "draw"`. The unread clause is "I baked a cake"; "draw" is read. The list of unread words must not contain a word a later clause reads as its act; say the clause not understood (the clause cut you already have) and that nothing was done because "it" has no referent without it.
 
 Then R2, R3, R5 as ordered; they are the oldest open items of block 06:50.
+
+## Reviewer 2026-11-16 15:50 — second outside review of the course (owner sent it). What I keep, as general tasks S1–S12
+
+The review's main point is right: the course promised stronger guarantees than the semantics define. These are about the mechanisms, not the text. They extend R1–R11 (block 06:50); where one overlaps, I say so. Order = my priority. R2, R3, R5 stay first.
+
+**S1. Three results of a check, not two (with R5).** `valid`, `invalid`, `undetermined`. A world with no hard violation found is `valid` only if the check was complete: all needed values known and the inference not cut by a bound. A bound reached, or a value a constraint needs that is unknown, gives `undetermined`, and a plan built on it says so. Deliver: the status in `check` / `planRequest`, the condition of completeness written down, a property: no reply says "done / valid" on an undetermined check without saying what was not checked.
+
+**S2. Unknown, explicit negation and absence are three things (with R11).** If a book has no size, is "a big book does not go on the top shelf" satisfied, violated or undetermined? Define: an absent optional value is unknown; a deny whose pattern needs an unknown value does not fire and the check is `undetermined` for that deny when the key is declared `required` or `decides=`; how to say a negative fact (a value explicitly not so). Show how unknown propagates through `core.check` and when it blocks execution.
+
+**S3. A wire's role must not change when a rule is loaded.** Today a wire is a pattern because a rule names it with `when=`. Loading a rule could then reclassify a wire that was a fact. Decide and document: patterns and templates are declared in a context of their own (the rule's, or a marker), a fact is never turned into a pattern by a later load, and using one id as both is a load error.
+
+**S4. Slots declare cardinality and order.** `acts=make acts=remove` is a set; `args=?a args=?b` is an ordered list; can a book have two `on=`? `core.slot … many=set|list|one` (names yours), checked. For functions, consider named arguments (`arg.start_a=`), which removes the dependence on order.
+
+**S5. Withdrawal by support.** A derived wire goes only when it has no valid support left: two rules giving the same conclusion, a conclusion that is also told, cycles of derivation. If the TMS already does this, write it in the semantics page with the three examples as tests.
+
+**S6. Composition = import, extension, conflict (with R9).** What a pattern imports, what stays local, how rules combine, where shared constraints are checked. A *restriction* in a specialised type (a narrower range of an inherited slot) is allowed; two incompatible definitions are a conflict. Today "any difference is a violation" forbids legitimate specialisation.
+
+**S7. Namespaces and rules; type names.** State in one place: a rule matches inside one namespace (the language page says so); a reference across namespaces is not a right of access; how type-name collisions between published patterns are avoided (the prefix is only a convention: is there a check at load?).
+
+**S8. Kinds of knowledge.** A knowledge base mixes domain facts ("a fish lives in water"), norms, defaults ("a flowchart usually has seven nodes") and heuristics ("a small thing goes in a corner"). Each row should carry its class and its context of application (`k.expect.*` are conventions of making, valid for a domain of use), so that a drawing convention is never read as a property of the thing. Probably one key on the base's schema (`class=fact|norm|default|heuristic`, `context=`); the reasoning treats them differently already (hard / soft / fill) — make the class explicit and checked.
+
+**S9. Source, strength and priority are separate fields (with R2).** The order said → dialogue → induced → world → expect → sampled is used as source, as priority and as cost at once. A constraint carries: source; obligatory or optional; the context it holds in; and the cost is computed, not read off the position. Optimise assumptions only after the obligatory requirements hold.
+
+**S10. One policy for a requirement that cannot be met as said (with R4, R2).** Approximation is executed only where a tolerance is declared (the parameter's scale, a slot's `approx=`) or the value was a preference; substitution of a different thing needs the user's acceptance — reversibility is not consent; partial execution only for coordinated, independent things (0.166 has this). The original requirement is kept in the request with the transformation recorded beside it.
+
+**S11. Conversational focus and requirement identity (with R1).** (a) A focus: the things under discussion, the active selection, the request being corrected; "the books" may mean the selection, "it" is not always the last result, "red, actually" is a correction with no reaction word. (b) A requirement's identity is its property, its target *as a thing or group of the request's structure* (not only a type), its scope and its quantifier; two attributes (colour, style) are two requirements though both are `on=attribute`. Revision replaces by this identity.
+
+**S12. What was done = state diff + execution log; structure operators declare what they keep.** (a) A reply combines the net diff with the log of calls and the tools' confirmations: a notification sent changes no view; two calls can cancel out. "The final state is the same" is not "nothing happened". Results `executed partly`, `effect unknown`, `compensation failed` exist. Keep the observed state (may be invalid) apart from the state accepted for execution. `effect=makes` should say what appears and with which properties. (b) "cut to n", "connect all" declare what they preserve, what they may change and when they refuse (a required section, a flow that would break); the legitimacy comes from the world pattern.
+
+**Tests of fidelity (replaces my wording in R7).** The read-back round trip checks *consistency of recoding*, not fidelity: a wrong reading can pass it. For fidelity add reference interpretations written by hand, and minimal pairs: two sentences that differ in a negation, a target or a quantifier must give different requests.
+
+Tell me in questions.md which of S1–S12 you think are wrong or already done.

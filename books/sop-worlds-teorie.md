@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 17, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 18, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -57,9 +57,9 @@ Omul scrie apoi numai **„in the sky”**. Nu este o propoziție întreagă. Ap
 
 # 2. Limbajul SOP Lang
 
-Capitolul acesta descrie limbajul așa cum este astăzi. Limbajul are o singură construcție, firul, și patru semne.
+Capitolul acesta introduce sintaxa declarațiilor, categoriile de valori și regulile de interpretare. Descriem mecanismul existent și marcăm separat contractul propus pentru organizarea proiectelor.
 
-## 2.1 Firul
+## 2.1 Sintaxa unei declarații
 
 Tot ce se scrie în SOP Lang este un șir de declarații. O declarație se numește **fir (wire)**. Un fir are întotdeauna aceeași formă, în trei părți, în această ordine:
 
@@ -83,9 +83,9 @@ Un exemplu din desen:
 
 Identificatorul firului este `f1`. Tipul lui este `fish`. Are trei chei. Cheia `size` are valoarea `1.6`. Cheia `at` are valoarea `120,540`. Cheia `in` are valoarea `$pond1`, care este o trimitere la firul cu identificatorul `pond1`. În cuvinte: există un pește, de 1,6 ori mai mare decât unul obișnuit, la poziția 120 pe orizontală și 540 pe verticală, aflat în lucrul descris de firul `pond1`.
 
-## 2.2 Valorile
+## 2.2 Categorii lexicale și valori
 
-O valoare este de unul din patru feluri. Felul se recunoaște după primul caracter.
+Analiza lexicală separă textul în unități numite token-uri. La acest nivel, o valoare aparține uneia dintre categoriile de mai jos. Categoria lexicală nu este încă tipul semantic al valorii: `10:30` este recunoscut ca atom, apoi schema poate cere interpretarea lui ca oră.
 
 | Felul | Cum se scrie și ce este |
 |---|---|
@@ -94,7 +94,13 @@ O valoare este de unul din patru feluri. Felul se recunoaște după primul carac
 | referință (reference) | `$` urmat de identificatorul unui fir: `$pond1`. Înseamnă „firul cu acest identificator”. |
 | variabilă (variable) | `?` urmat de un nume: `?n`. Înseamnă „orice valoare”. Este permisă numai în reguli și în întrebări, niciodată într-un fapt (secțiunea 3.4). |
 
-## 2.3 Cele patru semne
+De exemplu, `label="Review"` furnizează un text, `source=$m1` furnizează o referință, iar `label=?text` cere legarea unei variabile în timpul potrivirii. Textul `"$m1"` rămâne text: ghilimelele împiedică interpretarea lui ca referință. Schimbarea categoriei schimbă sensul declarației, chiar dacă literele din interior sunt aceleași.
+
+## 2.3 Marcatori sintactici și referințe
+
+**Sintaxa (syntax)** stabilește ce secvențe de caractere sunt declarații corecte. **Semantica (semantics)** stabilește ce înseamnă o declarație și cum influențează lumea. `@n1 node` poate fi corect sintactic înainte să știm ce proprietăți are tipul `node`. Dacă un slot obligatoriu lipsește, aceasta este o problemă semantică de completitudine, nu un caracter scris greșit.
+
+Marcatorii de mai jos sunt interpretați de analizorul lexical. Ei disting declararea unei identități, folosirea unei identități existente, legarea unei valori necunoscute și comentariul. Nu sunt operatori care execută singuri o acțiune.
 
 | Semnul | Ce înseamnă și unde poate sta |
 |---|---|
@@ -105,7 +111,7 @@ O valoare este de unul din patru feluri. Felul se recunoaște după primul carac
 
 Mai există semnul `::`, care apare în interiorul unui identificator; este explicat în secțiunea 2.6.
 
-## 2.4 Nume: identificatori, tipuri, chei și puncte
+## 2.4 Identificatori, nume de tipuri și calificarea numelor
 
 Identificatorii, tipurile și cheile sunt nume, scrise după aceeași regulă: litere, cifre, liniuțe, și puncte între bucăți. `f1`, `fish`, `core.type` și `s.drawn.at` sunt nume corecte.
 
@@ -122,7 +128,7 @@ Identificatorii, tipurile și cheile sunt nume, scrise după aceeași regulă: l
 
 Un lucru trebuie spus limpede, fiindcă produce confuzie: **un tip nu este un fir și nu are identificator.** Un tip este un nume. Oriunde limbajul așteaptă un tip, se scrie numele lui, fără `$`: ca al doilea cuvânt al unui fir (`@f1 fish`), sau ca valoare a unor chei care cer un tip (`of=fish`, `extends=fish`, `type=fish`). Un tip nici nu trebuie declarat ca să fie folosit: firul `@f1 fish size=1.6` este primit și într-o lume care nu a auzit de `fish`. Declararea unui tip adaugă informații despre el; cum se face este în secțiunea 3.1.
 
-## 2.5 Două feluri de fire: fapte și schemă
+## 2.5 Semantica declarațiilor: fapte, schemă și pattern-uri
 
 Toate firele se scriu la fel, dar biblioteca le folosește în două feluri.
 
@@ -130,30 +136,52 @@ Un **fapt (fact)** este un fir care spune că ceva există și cum este: peștel
 
 **Schema (schema)** este mulțimea firelor care spun ce fapte au voie să existe și ce decurge din ele. Schema se scrie o dată, de către cel care descrie domeniul, și se schimbă rar. În programul și documentația bibliotecii, schema se numește încă *matrix*; trecerea la numele „schema” se face treptat.
 
-Biblioteca hotărăște în care din cele două categorii intră un fir după două reguli. Un fir este al schemei dacă tipul lui este unul dintre tipurile predefinite de schemă (cele din capitolul 3, de exemplu `core.type` sau `core.rule`). Un fir este al schemei și dacă o regulă din același text îl numește; un asemenea fir este un model (secțiunea 3.4). Orice alt fir este un fapt.
+Biblioteca hotărăște în care din cele două categorii intră un fir după două reguli. Un fir este al schemei dacă tipul lui este unul dintre tipurile predefinite de schemă (cele din capitolul 3, de exemplu `core.type` sau `core.rule`). Un fir este al schemei și dacă o regulă din același text îl folosește drept condiție sau concluzie: în primul caz este un pattern, în al doilea un șablon de concluzie (secțiunile 3.4–3.5). Orice alt fir este un fapt.
 
 Faptele și firele schemei au identificatori separați: un fapt `p` și un fir de schemă `p` nu se ciocnesc.
 
-## 2.6 Spațiile de nume
+## 2.6 Spații de nume, module și organizarea proiectului
 
-**Problema.** Aplicația ține mai multe lumi deodată: pagina de desen, diagrama, documentul, calendarul. Fiecare își numește lucrurile cum vrea, și este firesc ca în diagramă să existe un fir `n1` și în altă lume tot un `n1`. Atâta timp cât lumile stau despărțite, nu se întâmplă nimic. Dar unele cereri au nevoie de două lumi deodată, de exemplu „a bar chart of meetings per person”, care citește calendarul și scrie în diagramă. Atunci faptele celor două lumi ajung una lângă alta, iar două fire diferite cu același identificator ar fi luate drept unul singur.
+Un **spațiu de nume (namespace)** stabilește contextul în care un nume este rezolvat. Problema nu este doar că două obiecte se pot numi `n1`. Trebuie să știm și din ce modul vine tipul lor, ce fișier îi conține și din ce instanță provin atunci când sunt salvați sau legați de altă lume.
 
-**Soluția.** Fiecare lume primește un **spațiu de nume (namespace)**: un nume scurt care este pus automat în fața identificatorului fiecărui fapt al ei, despărțit prin `::`. Dacă lumea diagramei are spațiul de nume `diagram`, faptul scris `@n1 node ...` este ținut de bibliotecă drept `diagram::n1`.
+Aceste patru informații nu sunt identice. Calea unui fișier este adresa de stocare. Modulul este unitatea de schemă reutilizabilă. Instanța este o stare concretă construită cu acea schemă. Identificatorul local numește un fapt în acea instanță. Același modul al diagramei poate fi folosit de două diagrame diferite; o diagramă poate fi salvată în mai multe fișiere.
 
-**Cine îl stabilește.** Spațiul de nume **nu se declară printr-un fir**. Îl dă programul aplicației, în clipa în care creează lumea: îi spune bibliotecii „aceasta este o lume nouă, cu spațiul de nume `diagram`”. De atunci, fiecare fapt spus acelei lumi primește prefixul singur. Cine scrie fire pentru un domeniu nu scrie niciodată `diagram::`; scrie `@n1` și `$n1`, ca și cum ar fi singur. În aplicația noastră, fiecare instanță de lume este creată astfel, cu spațiul ei.
+### 2.6.1 Calificarea referințelor
 
-**Regulile.** Sunt patru, și toate servesc același scop: faptele a două lumi să nu fie amestecate din greșeală.
+În mecanismul existent al bibliotecii sopworld, programul gazdă furnizează un namespace la încărcarea faptelor. `@n1 node` încărcat în namespace-ul `diagram` devine faptul `diagram::n1`. O referință locală `$n1` din același context îl numește pe acesta. O referință calificată `$calendar::m1` numește un fapt al calendarului. `$::x` numește un fapt din contextul fără prefix.
 
-| Regula | Ce înseamnă |
+```
+@n1 node label="Review" source=$calendar::m1
+```
+
+Încărcat în contextul `diagram`, firul declară nodul `diagram::n1`. `node` este tipul obiectului grafic; `label` este textul afișat; `source` este o referință explicită spre ședința `m1` din calendar. Schema nodului trebuie să declare cheia `source` și tipul țintei. Exemplul arată o legătură, nu importă singur calendarul și nu garantează că ținta a fost încărcată.
+
+Într-o regulă, o referință la un pattern, precum `$p.node`, are un rol diferit: identifică pattern-ul declarat în schemă. La evaluare poate desemna faptul găsit de acel pattern. Secțiunile 3.4–3.5 urmăresc exact această legare. Numele fișierului nu schimbă sensul lui `$`.
+
+### 2.6.2 Organizarea pe disc — contract propus
+
+Organizarea proiectului trebuie să poată furniza namespace-uri implicite. Propunerea este ca încărcătorul proiectului să citească un manifest: o declarație a rădăcinii proiectului, modulelor, importurilor și instanțelor. Manifestul poate deduce numele inițiale din căi relative. Forma concretă a manifestului rămâne de stabilit; tabelul următor descrie contractul, nu o funcționalitate implementată.
+
+| Cale relativă | Rol declarat în proiect |
 |---|---|
-| referința simplă rămâne în lume | `$n1`, scris în lumea diagramei, înseamnă `diagram::n1`. |
-| trecerea în altă lume se scrie | Ca un fir să trimită la un fapt din altă lume, spațiul trebuie scris: `$calendar::m1`. `$::x` înseamnă faptul `x` care nu este în niciun spațiu de nume. |
-| o regulă se potrivește într-un singur spațiu | O regulă nu leagă, prin valori egale, un fapt din diagramă cu unul din calendar. Două fapte se pot întâlni într-o regulă numai dacă unul trimite la celălalt printr-o referință scrisă. |
-| schema nu este în niciun spațiu | Firele schemei sunt aceleași pentru toate lumile care le folosesc. Numai faptele au spațiu de nume. |
+| `worlds/diagram/schema.sop` | Schema modulului diagramei; numele public este explicit și rămâne stabil. |
+| `worlds/diagram/rules.sop` | Reguli ale aceluiași modul, nu altă instanță pentru că sunt în alt fișier. |
+| `instances/diagram/main.sop` | Fapte ale unei instanțe cu identitate persistentă. |
+| `instances/diagram/parts/nodes.sop` | Alte fapte ale aceleiași instanțe, dacă manifestul spune aceasta. |
+| `instances/calendar/main.sop` | Fapte ale instanței calendarului, legate explicit de diagramă când este nevoie. |
 
-Un tip poate fi declarat `shared=true` (secțiunea 3.1); faptele lui aparțin atunci tuturor spațiilor de nume. Este folosit pentru lucruri care sunt aceleași peste tot, cum este omul care folosește aplicația.
+Încărcătorul rezolvă întâi calea relativ la rădăcina declarată, apoi rolul fișierului. Două căi normalizate care desemnează același fișier nu îl încarcă de două ori. Un import care iese din rădăcinile permise se refuză; o dependență publicată se identifică prin modul și versiune, nu prin calea absolută de pe calculatorul autorului.
 
-**O capcană de nume.** Există și un tip predefinit numit `core.namespace`. Nu are legătură cu spațiile de nume de mai sus: declară un prefix de chei care sunt primite pe orice fir (secțiunea 3.8). Numele lui este înșelător; schimbarea lui este trecută în anexa C.
+Numele dedus din cale este o convenție de inițializare, nu identitatea permanentă a faptelor. La prima salvare, instanța primește și păstrează o identitate imutabilă. Mutarea directorului nu creează altă instanță. Copierea unui proiect trebuie să aleagă explicit între continuarea aceleiași identități și crearea unei copii independente cu remaparea referințelor. La coliziune între identități, încărcătorul refuză îmbinarea implicită.
+
+### 2.6.3 Sublumi și limitele vizibilității
+
+Un subdirector nu este automat o sublume. Putem împărți o diagramă în fișiere doar pentru organizare, fără să schimbăm ce văd regulile. O **sublume (subworld)** există când este declarată o instanță distinctă, cu stare și identitate proprii, legată de instanța care o conține. Conținerea nu înseamnă automat import, moștenire de tipuri sau acces la toate faptele.
+
+Pentru a reuni date din două instanțe, un context de compunere declară ce scheme și ce fapte citește, la ce versiuni și cu ce drept de modificare. Referințele între lumi sunt explicite. Nu se leagă două fapte numai fiindcă numele local sau o valoare textuală coincid. Excepțiile intenționate, precum tipurile partajate, trebuie declarate; mecanismul existent folosește `shared=true` pentru participarea faptelor unui tip între namespace-uri.
+
+Firele schemei au identități în module; namespace-ul faptelor nu trebuie confundat cu calificarea tipurilor. `diagram.node` poate fi un tip public, iar `diagram::n1` un fapt. Punctul și `::` au roluri distincte. Nici `core.namespace`, în implementarea de astăzi, nu declară un namespace de instanță: el permite un prefix de chei. Acest nume istoric trebuie schimbat sau explicat până la migrare.
+
 
 ---
 
@@ -273,23 +301,39 @@ Valorile posibile ale cheii `kind`:
 
 **Legătura cu variabilele.** Cheia deschisă și variabila par același lucru, fiindcă amândouă sunt „un loc fără valoare”. Sunt lucruri diferite. Variabila (secțiunea 3.4) stă într-o regulă, în schemă, și înseamnă „oricare ar fi valoarea”; nu lipsește nimic, este felul de a scrie o regulă generală. Cheia deschisă stă pe un fapt și înseamnă „aici trebuie o valoare și încă nu o știm”. Cele două se întâlnesc numai în operația de rezolvare, care tratează cheile deschise ca pe necunoscutele unei probleme și caută valori care mulțumesc toate regulile.
 
-## 3.4 Modele și variabile
+## 3.4 Pattern-uri, variabile și legarea la fapte
 
-**Problema.** Sloturile spun ceva despre un singur fir. Multe lucruri pe care vrem să le declarăm privesc mai multe fire deodată: „un nod spre care nu vine nicio săgeată este un început”; „un om nu poate fi în două ședințe în același timp”. Pentru ele este nevoie de un fel de a vorbi despre **orice** fir de un anumit fel.
+Un **pattern (model de potrivire)** este o condiție structurală de căutare a faptelor. Nu este un model de învățare automată, o imagine și nici un exemplu pe care programul trebuie să îl imite. Spune ce tip de fapt căutăm și ce relații trebuie să aibă valorile lui. În continuare folosim termenul tehnic „pattern” pentru a evita aceste confuzii.
 
-**Modelul.** Un **model (pattern)** este un fir care nu spune că ceva există, ci descrie firele care trebuie căutate. Se scrie ca orice fir. Este model numai fiindcă o regulă îl numește (secțiunea 2.5).
+Un fapt spune „acest nod există și are această culoare”. Un pattern spune „găsește un nod cu această culoare”. Amândouă folosesc sintaxa firelor, însă au roluri semantice diferite. În mecanismul existent, un fir numit de o regulă drept condiție este înregistrat ca pattern în schema acelei reguli; nu este introdus ca obiect în starea diagramei. Simpla prezență a semnului `?` nu este o declarație suficientă a acestui rol.
 
-**Variabila.** Într-un model, în locul unei valori se poate scrie o **variabilă (variable)**: `?` urmat de un nume. Variabila se potrivește cu orice valoare și o ține minte sub numele ei.
+Să avem următoarele fapte ale diagramei:
 
 ```
-@p.in link to=?n
+@n1 node label="Review" colour=red
+@n2 node label="Decision" colour=blue
+@n3 node label="Finish" colour=red
 ```
 
-Acest model descrie orice fir de tipul `link`. Pentru fiecare fir găsit, variabila `?n` ia valoarea cheii `to` a acelui fir.
+`node` este aici numele tipului de obiect grafic „nod de diagramă”. Nu este un cuvânt rezervat al limbajului. `n1`, `n2` și `n3` sunt identități ale celor trei obiecte. `label` și `colour` sunt cheile lor; schema trebuie să le permită. Un pattern folosit de o regulă poate fi:
 
-Trei reguli despre variabile. O variabilă care apare de mai multe ori în aceeași regulă trebuie să aibă aceeași valoare peste tot; astfel se leagă două modele între ele. O variabilă este valabilă numai în regula în care apare; `?n` din altă regulă este altă variabilă. Un fapt nu poate conține variabile.
+```
+@p.red node colour=red label=?text
+```
 
-**Trei chei speciale** pot fi puse pe un model sau pe un fir de construit. Nu fac parte din firul descris; schimbă felul în care este folosit.
+`p.red` numește condiția de căutare, nu un al patrulea nod. Căutarea se limitează la tipul `node` și descendenții lui. Constanta `colour=red` trebuie să coincidă cu valoarea faptului. Variabila `?text` preia valoarea cheii `label`. O cheie pe care pattern-ul nu o menționează nu este verificată de acel pattern.
+
+| Fapt încercat | Rezultat al potrivirii |
+|---|---|
+| `n1` | Potrivire: pattern-ul desemnează `n1`, iar `?text` primește textul `Review`. |
+| `n2` | Fără potrivire: `blue` nu este `red`. |
+| `n3` | Potrivire distinctă: pattern-ul desemnează `n3`, iar `?text` primește `Finish`. |
+
+Aceasta este **legarea variabilelor (binding)**: pentru fiecare rezultat există o asociere concretă între variabile și valori, plus faptul găsit. Nu păstrăm o singură variabilă globală care se schimbă din `Review` în `Finish`; avem două rezultate independente. O variabilă repetată în aceeași regulă trebuie să păstreze aceeași valoare în toate condițiile acelei potriviri. Această egalitate permite **îmbinarea condițiilor (join)**. Numele variabilei din altă regulă nu creează o legătură între reguli.
+
+Dacă faptul nu are `label`, condiția `label=?text` nu produce o potrivire. Nu inventează textul lipsă. Dacă pattern-ul ar spune numai `node colour=red`, lipsa etichetei nu ar conta. Un pattern poate să nu aibă deloc variabile: constantele și tipul sunt suficiente pentru o condiție de căutare.
+
+**Metadatele de potrivire și construcție** de mai jos pot fi puse pe un pattern sau pe un șablon de concluzie. Nu fac parte din firul descris; schimbă felul în care este folosit.
 
 | Cheia | Ce face |
 |---|---|
@@ -297,11 +341,11 @@ Trei reguli despre variabile. O variabilă care apare de mai multe ori în aceea
 | `core.select` | Pe un model. `latest` sau `first`: dintre firele care se potrivesc, numai ultimul sau primul. |
 | `core.on` | Pe un fir de construit. Valoarea este un model al aceleiași reguli: în loc să se facă un fir nou, cheile se adaugă pe firul găsit de acel model. |
 
-## 3.5 `core.rule`: ce decurge din ce există
+## 3.5 Reguli de deducție: condiții, potrivire și concluzie
 
-**La ce folosește.** O **regulă (rule)** spune: de câte ori aceste modele se potrivesc, există și acest fir. Firul adăugat astfel se numește **dedus (derived)**. Biblioteca ține minte din ce a fost dedus fiecare fir și îl retrage singură când temeiul dispare. Astfel, ce decurge din starea lumii este mereu la zi, fără program care să îl întrețină.
+O **regulă de deducție (deduction rule)** definește ce concluzie este justificată de anumite fapte. Ea nu descrie o secvență de instrucțiuni care desenează pe ecran. Motorul găsește asocierile care satisfac condițiile și aplică forma concluziei pentru fiecare asociere. Unealta de desenare este o altă componentă, descrisă în capitolul 6.
 
-**Exemplu.** În diagramă, un nod spre care nu vine nicio săgeată este un nod de început.
+În exemplul diagramei, numim „nod de început” un nod fără legătură care intră în el. Aceasta este o definiție declarată pentru exemplu, nu o semnificație ascunsă în numele `node`. Schema regulii este:
 
 ```
 @p.node  node
@@ -310,16 +354,38 @@ Trei reguli despre variabile. O variabilă care apare de mai multe ori în aceea
 @r.start core.rule when=$p.node not=$p.in then=$t.start
 ```
 
-Primul fir este un model: orice nod. Al doilea este un model: o săgeată a cărei cheie `to` trimite la nodul găsit de primul model. Al treilea este firul de construit: pe nodul găsit se adaugă `start=true`. Al patrulea este regula: când există un nod (`when`) și nu există nicio săgeată spre el (`not`), atunci există ce descrie al treilea fir (`then`). Când omul trage o săgeată spre acel nod, `start=true` dispare singur.
+Primul fir definește pattern-ul `p.node`: caută orice fapt de tip `node`. Nu îi cere nicio cheie, deci poate găsi orice nod. Al doilea definește pattern-ul `p.in`: caută un fapt de tip `link`, adică o legătură din diagramă, al cărui capăt `to` este faptul găsit de `p.node`. Aici `$p.node` nu este textul `p.node` și nici un nod din diagramă cu acest nume. Motorul îl interpretează ca referință la faptul deja asociat acelui pattern.
 
-| Cheia | Ce spune |
+Al treilea fir este un **șablon de concluzie (conclusion template)**. `core.on=$p.node` cere adăugarea cheii `start=true` pe nodul găsit, nu crearea unui obiect numit `t.start`. Al patrulea fir leagă piesele: `when=$p.node` numește condiția pozitivă, `not=$p.in` numește condiția negativă, iar `then=$t.start` numește concluzia.
+
+Prin urmare, `when=$p.node` este o referință reală la o declarație din schemă. Nu este o formulă incompletă și nu cere programului să ghicească ce înseamnă „model”. Încărcătorul rezolvă `p.node` în unitatea regulii. Dacă declarația lipsește sau nu poate fi folosită drept pattern, schema trebuie refuzată. Prefixele `p.` și `t.` sunt convenții de citire; rolul vine din folosirea declarației de către regulă.
+
+Pentru a urmări execuția, încărcăm regula împreună cu schema tipurilor, apoi spunem aceste fapte:
+
+```
+@n1 node label="Review"
+@n2 node label="Decision"
+@e1 link from=$n1 to=$n2
+```
+
+| Evaluare | Ce găsește motorul |
 |---|---|
-| `when` | Un model care trebuie să se potrivească. Cel puțin unul; repetată, trebuie să se potrivească toate. |
-| `not` | Un model care nu trebuie să aibă nicio potrivire. |
-| `with` | Un calcul de făcut (un fir `core.calc`, secțiunea 3.7). |
-| `if` | O condiție care trebuie să fie adevărată (un fir `core.check`, secțiunea 3.7). |
-| `then` | Firul de construit. Cel puțin unul. |
-| `lazy` | `true`: firul este dedus numai când cineva întreabă de el. |
+| `p.node` găsește `n1` | `p.in` ar trebui să găsească o legătură cu `to=$n1`. Nu există în starea citită, deci condiția negativă trece și `n1` primește `start=true`. |
+| `p.node` găsește `n2` | `e1` are `to=$n2`. Condiția negativă nu trece; regula nu adaugă `start=true` pe `n2`. |
+
+Dacă se adaugă o legătură spre `n1`, justificarea concluziei despre `n1` dispare. Motorul retrage valoarea dedusă dacă nu mai există alt temei pentru ea. Un fapt declarat explicit de utilizator și o valoare dedusă trebuie păstrate distinct în evidența justificării.
+
+`not` exprimă lipsa unei potriviri în starea evaluată, nu o dovadă despre legături care încă nu au fost încărcate. Dacă diagrama este incomplet încărcată, nu putem prezenta rezultatul ca definiție definitivă a începutului ei. Regulile de completitudine din 3.9 și 9.4 precizează când concluzia poate fi folosită pentru validare sau execuție.
+
+| Cheie | Semantica în evaluarea regulii |
+|---|---|
+| `when` | Referință la un pattern pozitiv. Motorul caută fapte care îi satisfac tipul, constantele și egalitățile. Mai multe `when` cer o asociere comună compatibilă, nu rezultate fără legătură. |
+| `not` | Referință la un pattern negativ. Pentru asocierea curentă, condiția trece numai dacă nu există nicio extensie care să satisfacă pattern-ul. |
+| `with` | Referință la un calcul `core.calc`, care produce o valoare pentru asocierea curentă. |
+| `if` | Referință la o condiție calculată `core.check`; rezultatul ei trebuie să fie adevărat. |
+| `then` | Referință la un șablon de concluzie, completat cu valorile și faptele asociate. |
+| `lazy` | Solicită evaluarea deducției la cerere; nu schimbă ce condiții justifică acea concluzie. |
+
 
 ## 3.6 `core.deny`: ce nu este permis
 
@@ -1268,7 +1334,7 @@ Astăzi biblioteca nu are `kind=point`; un punct se ține ca două numere sub o 
 
 ## 8.2 Identitatea și viața unui fir
 
-**R6. Identitatea unui fapt este perechea formată din numele lumii lui și identificatorul lui.** Numele lumii este spațiul de nume din secțiunea 2.6. **(Propus)** Numele se ia din firul `std.schema.world name=...` al tiparului, completat cu un număr când există mai multe instanțe ale aceluiași tipar; astfel nu mai depinde de felul în care programul creează lumea.
+**R6. Identitatea persistentă a unui fapt este perechea dintre identitatea imutabilă a instanței și identificatorul local al faptului.** **(Propus)** Numele afișat al lumii, numele modulului și calea pe disc nu sunt această identitate. Încărcătorul poate deduce un nume inițial din calea relativă, dar salvează separat identitatea instanței. Un namespace lizibil precum `calendar` se rezolvă în contextul proiectului la această identitate. Redenumirea ori mutarea directorului păstrează referințele; copierea independentă remapează identitățile și referințele interne împreună. Secțiunea 2.6 descrie contractul și deosebirea față de prefixele textuale actuale.
 
 **R7. La ce trimite o referință.** Într-un fapt, `$x` trimite întotdeauna la un fapt, din aceeași lume. Într-o regulă, `$x` trimite întotdeauna la un model sau la un fir de construit al aceleiași reguli. Cele două nu se pot confunda, deși un fapt și un fir de schemă pot avea același identificator, fiindcă locul în care este scrisă referința hotărăște unde este căutată.
 
@@ -1835,7 +1901,7 @@ Rândurile de mai jos sunt alegeri de politică. Prima coloană trimite la regul
 | Regula | Ce este de hotărât |
 |---|---|
 | R5 | Dacă lipsa de ordine a unei chei cu mai multe valori se declară cu `order=ignored` sau altfel. |
-| R6 | Dacă numele lumii vine din firul `std.schema.world` sau rămâne dat de program. |
+| R6 | Identitatea imutabilă separată de nume este decisă; rămân formatul manifestului și reprezentarea persistentă a referințelor, conform 2.6. |
 | R9 | Dacă „se știe că nu are” se scrie `none`, și pe ce sloturi este permis. |
 | R31 | Mărimea pașilor: 1,25 pentru mărimi; 30 de minute pentru oră. |
 | R34 | Dacă ce se învață poate trece vreodată în cunoașterea comună, și cine aprobă. |

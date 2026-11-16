@@ -5989,3 +5989,8 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 
 - Expanded §§9.4–9.5 for F12–F17 with dependency links, local complete instance versus missing knowledge, distinct versions, existing pipeline mapping, one search-outcome vocabulary and common validation on a fork. Clarified selected undefined terms and R35 reference. No runtime changes.
 - Validation: `git diff --check`; `npm test` and `SOPWORLD_BUNDLE=1 npm run test:src`: each 648 pass, 0 fail, 1 skip, 1 todo out of 650 tests.
+
+## 2026-11-16 — G0: book v18, explicit pattern semantics and project namespaces
+
+- Owner requested technical titles, explanatory prose and realistic file/module/namespace organization. Rewrote §§2.3/2.6/3.4/3.5 and renamed chapter-2 headings. Added binding tables, rule trace and a proposed project-loader contract with stable instance identity. Runtime unchanged.
+- Aligned R6, its open-format decision and the refactoring design gate with the project-loader contract. Validation commands: `npm test` and `SOPWORLD_BUNDLE=1 npm run test:src` each reported 650 tests, 648 pass, 0 fail, 1 skip, 1 todo; `npm test` rebuilt docs. A `node --input-type=module` probe imported World from src/index.mjs, loaded the exact §3.5 rule and facts, inspected `w.ofType("node")`, then added `@e2 link from=$n2 to=$n1`: only n1 initially had derived start=true, and neither node had it afterward.

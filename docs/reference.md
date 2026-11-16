@@ -230,6 +230,41 @@ unknown-key
 
 **Limits.** A prefix, not a pattern.
 
+### core.validate
+
+**Syntax.** Register a final-state invariant over records.
+
+| Attribute | Meaning |
+|---|---|
+| `on` | Required record type; subtypes are included. |
+| `fn` | Required registered validator function name. |
+| `why` | Optional explanation when the validator returns false. |
+
+**Meaning.** The function must declare `pure=true`, `out.kind=boolean` and exactly one required `kind=ref` argument. The callback receives `(['$record.id'], world, {tick})` and must synchronously return JavaScript `true` to accept. `false`, exceptions, promises and all other values refuse validation. A missing registration refuses even an empty configuration. This is stricter than an ordinary unused function declaration.
+
+**When it is evaluated.** Every final-state validation checks every matching record, including untouched parents after child edits. Calls are uncached, so function re-registration cannot reuse an old result. Forward records in one atomic batch are available. `check()` and dry changes use the same invariants.
+
+**Interactions.** Callback traversal should call `tick()` for data-dependent work; descriptor/record iteration is also charged to the reasoning budget. Budget exhaustion keeps its normal transactional refusal. Callbacks must inspect records directly, not call validating APIs recursively. Ordinary nested mutations are refused, but purity remains a trusted host contract, not a sandbox against arbitrary JavaScript or external effects.
+
+**Violations.** `schema` for an invalid declaration/signature; `validation` for missing registration, false/invalid result, exception or reentrant validation. A `budget` refusal rolls back the transaction.
+
+**Example.** A parent's invariant depends on its children, even when only a child is edited.
+
+```js run
+const w = new World();
+w.register('function', 'has.child', ([ref], world) => world.ofType('child').some(c => c.attrs.parent?.includes(ref)));
+w.load('@fn core.function name=has.child out.kind=boolean pure=true\n@arg core.function.arg of=$fn name=record kind=ref\n@v core.validate on=parent fn=has.child');
+print(w.tell('@p parent\n@c child parent=$p').ok);
+print(w.retract('c').ok);
+```
+
+```output
+true
+false
+```
+
+**Limits.** A callback is executable host code and must be bounded, synchronous and pure. Cooperative ticks cannot preempt an arbitrary nonterminating JavaScript callback. Validation does not derive facts, supply solver propagation or authorize effects. Graph-specific topology and scope rules must still be implemented by a validator; the hook alone does not validate request graphs.
+
 ### core.schema.link
 
 **Syntax.** Declare a singleton annotation on native schema wires.

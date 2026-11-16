@@ -2257,6 +2257,8 @@ Genurile (scrisoare, raport, poveste, notă) și părțile fiecăruia sunt grafu
 
 **Starea implementării.** PSys2 publică în `214802c7` un adaptor local de calendar, documentat în [contractul gazdei](../../psys2/specs/29-calendar-host.md). El primește persoane, săli și ședințe cu identități și momente deja rezolvate, verifică integritatea structurală și referințele, păstrează inclusiv suprapunerile deja observate, aplică modificări atomic și întoarce observația stării efective. Versiunile previn scrierile pornite dintr-o stare veche; identitatea operației împiedică repetarea efectului la reluare; anularea condiționată restaurează ultima schimbare fără să șteargă editări independente. Politica de suprapunere aparține regulilor declarate ale lumii, nu codului adaptorului. Observația completă privește numai depozitul local al acestei instanțe. Adaptorul și vederea tabelară nu implementează încă citirea conversațională, recurența, persistența sau legarea la zona activă a aplicației; acestea se construiesc pe contractele comune, nu sunt presupuse realizate de existența operațiilor.
 
+Compoziția activă a demo-ului PSys2 publicată în `23e5a048` exclude Map și Music din încărcare, rutare, bundle-uri și metadatele taburilor. Sursele reutilizabile rămân fixture-uri pentru teste, nu capabilități ale demo-ului. Integrarea Charts în diagramă, Avatar în desen și zona Calendar activă nu sunt încă livrate. Rândurile istorice de evaluare sunt păstrate, astfel încât retragerea capabilităților nu micșorează artificial numitorul acceptării.
+
 ```
 @w          std.schema.world name=calendar
 @use        core.use world=w.person
@@ -2897,6 +2899,10 @@ Rezultatul verificat:
 Regula calculează jumătatea valorii 8 și o pune pe același fir. `functions()` confirmă că funcția declarată este înregistrată. `Number(x)` este potrivit aici deoarece parametrul este numeric; pentru `json`, funcția trebuie să decodeze tokenul conform reprezentării, nu să presupună că primește direct un obiect JavaScript.
 
 `pure=true` este o obligație a implementării gazdei, nu o verificare automată că JavaScript nu are efecte. O funcție folosită în deducție trebuie să tolereze toate intrările admise de contract, inclusiv combinații care vor fi ulterior eliminate de alte condiții. Înlocuirea unei funcții predefinite este refuzată fără opțiunea explicită `override`. Celelalte categorii înregistrabile (`action`, `producer`, `filter`, `context`, `lemma`) au semnături proprii; nu se apelează toate ca o funcție de calcul.
+
+Pentru o verificare care citește un ansamblu de fire, biblioteca oferă și `core.validate on=<tip> fn=<funcție>`. Funcția pură primește referința înregistrării și lumea finală a tranzacției; rezultatul trebuie să fie booleanul JavaScript `true`. Funcția rulează și când s-a schimbat numai un copil al înregistrării. Rezultatul nu este memorat între verificări; o funcție reînregistrată nu moștenește verdictul celei vechi. Funcțiile lipsă, rezultatele neclare, promisiunile și excepțiile refuză tranzacția. O traversare cooperantă consumă buget prin `tick()` din al treilea argument al callback-ului.
+
+Acest mecanism este un punct de validare generic, nu implementarea grafului cererii. Verificatorul grafului trebuie încă să definească accesibilitatea, ciclurile și domeniul variabilelor. Callback-ul inspectează direct datele și nu apelează recursiv `check()` sau alte operații care validează. Puritatea rămâne obligația gazdei: protecția pentru mutații obișnuite nu izolează cod JavaScript arbitrar sau efecte externe.
 
 ## 9.12 Citirea unei cereri există deja, dar contractul conceptual este propus
 

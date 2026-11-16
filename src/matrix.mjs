@@ -10,7 +10,7 @@ const RANGE_CAP = 2000;
 
 export const SCHEMA_TYPES = new Set([
   'core.slot', 'core.type', 'core.abducible', 'core.precision', 'core.tier', 'core.rule', 'core.deny', 'core.calc', 'core.check', 'core.use',
-  'core.schema.map', 'core.schema.link', 'core.namespace', 'core.producer', 'core.action',
+  'core.schema.map', 'core.schema.link', 'core.validate', 'core.namespace', 'core.producer', 'core.action',
   'core.sequence', 'core.fluent', 'core.effect', 'core.relation', 'core.aggregate', 'core.rank', 'core.module',
   'core.function', 'core.function.arg',
 ]);
@@ -25,6 +25,7 @@ export const GRAMMAR = {
   'core.slot': ['of', 'key', 'required', 'present', 'many', 'id', 'prefix', 'kind', 'type', 'enum', 'default', 'ask', 'min', 'max', 'step', 'soft', 'combine', 'why', 'to', 'unique', 'excludes', 'by', 'match', 'copy', 'strict'],
   'core.type': ['of', 'extends', 'closed', 'complete', 'transient', 'shared', 'unique'],
   'core.namespace': ['prefix', 'open'],
+  'core.validate': ['on', 'fn', 'why'],
   'core.schema.link': ['on', 'key', 'target', 'by'],
   'core.schema.map': ['from', 'as'], // and one attribute per field it maps
   'core.use': ['world', 'prefix', 'as'],
@@ -408,6 +409,19 @@ export function compileMatrix(world) {
     if (e.amount === undefined && e.value === undefined) c.errors.push(`${w.id}: core.effect needs amount=<event key> or value=<literal>`);
     fluent.effects.push(e);
     push(c.effectsByEvent, on, e);
+  }
+
+  c.validators = [];
+  for (const w of world.matrix.values()) if (w.type === 'core.validate') {
+    const on = first(w, 'on'), fn = first(w, 'fn'), why = first(w, 'why');
+    if (['on', 'fn'].some(k => w.attrs[k]?.length !== 1 || !fitsKind('atom', first(w, k))) || (w.attrs.why && w.attrs.why.length !== 1)) {
+      c.errors.push(`${w.id}: core.validate needs singleton on/fn atoms and optional singleton why`); continue;
+    }
+    const d = c.functions.get(fn);
+    if (!d || !d.pure || d.out.kind !== 'boolean' || d.args.length !== 1 || d.args[0].kind !== 'ref' || d.args[0].optional) {
+      c.errors.push(`${w.id}: validator ${fn} must declare pure=true, out.kind=boolean and one required ref argument`); continue;
+    }
+    c.validators.push({ id: w.id, on, fn, why });
   }
 
   // ---- attributes nobody reads: most often a misspelling

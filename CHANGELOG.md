@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.177.0
+
+- Add core.validate for uncached, synchronous final-state invariants over typed records, including untouched parents after child edits. Missing functions, invalid results, exceptions and reentrant validation fail closed.
+- Account for validator traversal and schema-link scans under the existing validation budget. Request topology validators remain pending.
+
+
 ## 0.176.0
 
 - Publish request source/envelope/target structural contracts with mandatory explicit mood and typed ownership. No missing mode defaults to execution.

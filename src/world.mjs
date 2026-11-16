@@ -1,3 +1,4 @@
+import { validateRecords } from './validate-records.mjs';
 import { schemaLinks } from './schema-links.mjs';
 // World: fact wires kept consistent with a consistency matrix.
 //
@@ -2260,7 +2261,13 @@ export class World {
 
   _validate(res) {
     const c = this._compiled();
-    res.violations.push(...schemaLinks(this, () => this._b.tick('schema-link')).violations);
+    if (this._runningValidator) {
+      this._validatorMutation = true;
+      res.violations.push({ kind: 'validation', rule: this._runningValidator, why: 'validator must not mutate the world' });
+      return;
+    }
+    res.violations.push(...schemaLinks(this, () => this._b.tick('validate')).violations);
+    validateRecords(this, res);
     for (const id of res._touched) {
       const w = this.wires.get(id);
       if (!w) continue;

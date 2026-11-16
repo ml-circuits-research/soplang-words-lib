@@ -121,3 +121,7 @@ Added with 0.176.0: `core.use world=std.request` exports closed std.request.sour
 Mood has no default and grants no execution authority. Act/kind names are not resolved to capabilities or concepts by this increment. Sources may be reused. Referenced requests/sources cannot be deleted; forward references and edits are transactional. The executable book fixture covers this foundation only.
 
 The module does not export constraint/logical/value schemas, root edges or bound targets yet. Unknown fact types remain governed by the library's existing open-world behavior; their acceptance is not proof of a request contract. Consumers must use published exports and must not infer that full graph validation or phase zero is complete.
+
+## Final-state contract validation
+
+Added with 0.177.0: core.validate provides a generic hook for invariants that read multiple records. It runs registered synchronous pure boolean callbacks after ingestion, without cached results or a dependency on the parent being touched. This is a prerequisite for request topology and frame consistency, not their implementation. See the reference for strict signatures, failure behavior, cooperative budget ticks and trusted-host purity limits.

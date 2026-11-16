@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="2791e14eebd5">
+<meta name="source-hash" content="5c2aa2defda7">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.176.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.177.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html" aria-current="page">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -95,6 +95,22 @@ print(w.tell(&#x27;@r2 reading value=3 note=x&#x27;).violations[0].kind);</code>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true
 unknown-key</code></pre></figure>
 <p><strong>Limits.</strong> A prefix, not a pattern.</p>
+<h3 id="corevalidate">core.validate</h3>
+<p><strong>Syntax.</strong> Register a final-state invariant over records.</p>
+<div class="table"><table><thead><tr><th>Attribute</th><th>Meaning</th></tr></thead><tbody><tr><td><code>on</code></td><td>Required record type; subtypes are included.</td></tr><tr><td><code>fn</code></td><td>Required registered validator function name.</td></tr><tr><td><code>why</code></td><td>Optional explanation when the validator returns false.</td></tr></tbody></table></div>
+<p><strong>Meaning.</strong> The function must declare <code>pure=true</code>, <code>out.kind=boolean</code> and exactly one required <code>kind=ref</code> argument. The callback receives <code>(['$record.id'], world, {tick})</code> and must synchronously return JavaScript <code>true</code> to accept. <code>false</code>, exceptions, promises and all other values refuse validation. A missing registration refuses even an empty configuration. This is stricter than an ordinary unused function declaration.</p>
+<p><strong>When it is evaluated.</strong> Every final-state validation checks every matching record, including untouched parents after child edits. Calls are uncached, so function re-registration cannot reuse an old result. Forward records in one atomic batch are available. <code>check()</code> and dry changes use the same invariants.</p>
+<p><strong>Interactions.</strong> Callback traversal should call <code>tick()</code> for data-dependent work; descriptor/record iteration is also charged to the reasoning budget. Budget exhaustion keeps its normal transactional refusal. Callbacks must inspect records directly, not call validating APIs recursively. Ordinary nested mutations are refused, but purity remains a trusted host contract, not a sandbox against arbitrary JavaScript or external effects.</p>
+<p><strong>Violations.</strong> <code>schema</code> for an invalid declaration/signature; <code>validation</code> for missing registration, false/invalid result, exception or reentrant validation. A <code>budget</code> refusal rolls back the transaction.</p>
+<p><strong>Example.</strong> A parent's invariant depends on its children, even when only a child is edited.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.register(&#x27;function&#x27;, &#x27;has.child&#x27;, ([ref], world) =&gt; world.ofType(&#x27;child&#x27;).some(c =&gt; c.attrs.parent?.includes(ref)));
+w.load(&#x27;@fn core.function name=has.child out.kind=boolean pure=true\n@arg core.function.arg of=$fn name=record kind=ref\n@v core.validate on=parent fn=has.child&#x27;);
+print(w.tell(&#x27;@p parent\n@c child parent=$p&#x27;).ok);
+print(w.retract(&#x27;c&#x27;).ok);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true
+false</code></pre></figure>
+<p><strong>Limits.</strong> A callback is executable host code and must be bounded, synchronous and pure. Cooperative ticks cannot preempt an arbitrary nonterminating JavaScript callback. Validation does not derive facts, supply solver propagation or authorize effects. Graph-specific topology and scope rules must still be implemented by a validator; the hook alone does not validate request graphs.</p>
 <h3 id="coreschemalink">core.schema.link</h3>
 <p><strong>Syntax.</strong> Declare a singleton annotation on native schema wires.</p>
 <div class="table"><table><thead><tr><th>Attribute</th><th>Meaning</th></tr></thead><tbody><tr><td><code>on</code></td><td><code>core.type</code> or <code>core.slot</code>.</td></tr><tr><td><code>key</code></td><td>Annotation key to resolve.</td></tr><tr><td><code>target</code></td><td>Allowed target record type, including its subtypes.</td></tr><tr><td><code>by</code></td><td>Target key holding its public name.</td></tr></tbody></table></div>
@@ -738,7 +754,7 @@ print(builtins.time_add([&#x27;10:40&#x27;, &#x27;35min&#x27;]), builtins.div([&
 11:15 3 true tuesday</code></pre></figure>
 <p class="source">Generated from <code>docs/reference.md</code>.</p>
 </main>
-<footer>sopworld 0.176.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.177.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

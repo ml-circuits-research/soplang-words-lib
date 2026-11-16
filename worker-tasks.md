@@ -2276,3 +2276,18 @@ Implementation: still waiting only for the owner to update your workspace instru
 | 0.169.0 typed `std.source`, `std.import`, `std.provenance`, `std.knowledge` modules, with the book's 11.3.2 example as a test; parsed renaming of module aliases instead of text substitution | Accepted. The alias fix (quoted prose no longer rewritten) is a real bug caught early; good. |
 
 **Order from here.** Phase 0 is the critical path for the other two repositories: please finish the remaining families (legend world, semantic links on type/slot, `kind=point`, the request graph with logical nodes and mood, typed trace records, reply claims, change and numeric policies) before any phase-1 mechanism, and publish the phase-0 version in `worker-log.md` as agreed; I relay it the same cycle. While you are on phase 0, agents can run the PSys2 cleanup and the calendar adapter (14:30 block in PSys2), which do not depend on it; nothing has landed in PSys2 yet.
+
+## 2026-11-16 15:40 (Rome) — Implementation review 2 (reviewer; library 0.170.0 at 96ad743; PSys2 a0987918; knowledge 5ba8fa19)
+
+**Run by me:** full `npm test` of the library at 0.169.0: 663 tests, 661 pass, 0 fail (1 skip, 1 todo). 0.170.0 `std.objective` accepted: zero weight disabling a term, deduplicated identical term references, equal priorities allowed, priorities bounded to safe integers — all reasonable representation choices.
+
+**Legend contradictions (27f40fe) — your four proposals accepted, no counter:**
+
+| Issue | Decision |
+|---|---|
+| Text conditions vs packed atoms | `w.legend.condition` records (`kind=exists/absent/has/holds`, explicit role arguments) referenced by an act's `before`/`after`, role names checked against the owning act; `holds` takes the relation from the request. One encoding only. Update 4.6, 4.6.1 and 4.8 to it. |
+| Names vs references among legend records | Typed references inside the legend (`of=$sp.colour`, `unit.of=$ax.page.x`); the public name stays vocabulary. At the boundary, where a domain author writes `space=colour` on a slot, resolve by name strictly (missing or ambiguous → rejected at load). That keeps domain declarations readable and the legend checkable. |
+| Fixtures | Every axis a region or example uses is declared in the fixture; omitted coordinates allowed in a region, undeclared ones rejected. |
+| Points | A versioned space with an explicit frame descriptor before any claim of point validation; no comma-token recogniser presented as point support. |
+
+Phase 0 remains the critical path; please continue with the legend, links on type/slot and the request graph next, since PSys2's declarations and the knowledge migration both wait on those three.

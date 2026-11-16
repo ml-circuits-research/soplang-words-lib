@@ -2179,7 +2179,6 @@ Still open: F2, F4 (part), F10, F19, F20, F26–F28, F43 (part), F52–F54; repl
 
 **Items.**
 
-- F62. Chapter 11, 11.5 (direction). The pilot budget (60 kinds, 822 wires) is illustrative factors. The real inventory is available now and should replace it: (a) the kinds, parts, places and qualities the owner actually used in the two replay files (duck, bird, swing and its seat, child, grandfather, girl, robot, man, boy, woman with curly hair, bearded man, flower and petals, grass, lake/pond/water, sky, ground, cloud, sun, house, fish, water plants, levels; nodes, layout shapes; letter, story with chapters, narrator, frogs) — that is the minimum a pilot must cover; (b) what the knowledge repository already has (the 40 published worlds, the kinds and drawings you inspected), counted by the families of 11.1; the difference is the work. Count it instead of estimating it.
 - F63. Chapter 11, 11.3 (missing: concrete sources). The book says what an import must keep, not where knowledge could come from. Name candidate open sources per family, each marked "licence to be verified by the importer" as you require: a lexical kind tree (WordNet: synonym sets and hypernyms), relations between objects in pictures (Visual Genome: "on", "in", "has", region annotations), common-sense part and use relations (ConceptNet), and the existing knowledge repository. For each: which family of 11.1 it can feed, what it cannot give (cardinalities, the supporting part, geometry), and how its output is checked. Without names the chapter reads as "someone will write it".
 
 **Book size.** The book is now about 3,100 lines. The owner reads on a phone. When the remaining items are in, I will propose where the text can be cut (repetitions between chapter 8 and chapters 4–6, the parts of 9 that restate 3), not more.
@@ -2202,3 +2201,20 @@ Still open: F2 (8.3), F4 (part), F10, F19, F20, F26–F28, F43 (part), F53, F57,
 **New examples since my last file:** none this cycle; the next batch will test the drawing declaration when it lands, and cross-area moods ("can you make the chart from my calendar?", "could the letter mention the Friday meeting?").
 
 Still open: F2 (8.3), F4 (part), F10, F19, F20, F26–F28, F43 (part), F53, F62 (measured inventory), F63 (named sources); replay gaps C, G, T, X, Y, Z, AA, BB; the complete drawing declaration.
+
+## 2026-11-16 14:35 (Rome) — Book review 14 (reviewer; book v38 at ad841df)
+
+**F62 resolved and deleted.** 11.5 now counts instead of estimating, with a pinned and reproducible script, and keeps candidate discovery apart from coverage. The perimeter (published catalog shards only, schemas and generated indexes excluded) is the right one, and the warning that `circle` may be a theatre sense and that a missing `name=chapter` proves nothing is exactly the caution a reader needs. One observation for the plan, not the book: about two thirds of the 422,835 declarations are geometry (`k.objects.point` 271,165, `k.faces.point` 8,938); the semantic part the mechanisms need is a few tens of thousands, and the migration work sits in the labelled values (the 336 enumerated slots) and the missing roles (support, extent, visible differences), as your table says.
+
+**Your counterproposal on shared resources — accepted, with one rule added.** Sharing a resource does not select `check`; permission, availability and other people's agreement are execution checks. Tested on the cross-area examples:
+
+| Message | Mood under your rule |
+|---|---|
+| "can you make the chart from my calendar?" | do: an executable act on the user's own result. |
+| "could the letter mention the Friday meeting?" | do: an edit of the user's letter; the meeting is resolved by reference (a snapshot of its title and time). |
+| "could you move the review to Friday?" | do; the participants' availability is checked before execution, as you say. |
+| "can I move the review to Friday?" | genuinely open between feasibility and request. |
+
+The added rule, for that last row: when the mood stays unresolved, take `check` and offer the act in the same reply ("Friday 10:00 is free for everyone; shall I move it?"). Checking is free and reversible and costs the user one word; executing on an unresolved mood is not. That keeps ordinary indirect requests executing and never turns a feasibility question into an action.
+
+Still open: F2 (8.3), F4 (part), F10, F19, F20, F26–F28, F43 (part), F53, F63 (named sources); replay gaps C, G, T, X, Y, Z, AA, BB; the complete drawing declaration.

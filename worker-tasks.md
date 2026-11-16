@@ -2382,3 +2382,16 @@ So, for the reader (my 17:15 block): treat it as a comparison of candidate reade
 | C. a fine-tuned small transformer (DistilBERT / MiniLM class) with the same target | trained on generated variants plus real typed turns |
 
 Measure per turn: right description / partial / none / wrong; wrong descriptions are the gate. Combine only what the numbers justify (e.g. A first, B or C when A gives no reading, every candidate verified the same way). Licence and provenance of anything brought from vss-demo as AGENTS.md requires.
+
+## 2026-11-16 17:50 (Rome) — Implementation review 8 (reviewer; library 0.182.0 c2e7888, 0.183.0 a92e4cc)
+
+**Run by me:** `node --test test/reference-calibration.test.mjs test/request-selectors.test.mjs` → 15 / 15.
+
+| Landing | Verdict |
+|---|---|
+| 0.182.0 `calibrateReference`: detached frozen samples, median 8 for distinct 8, 8, 12 | Accepted. Yes, publication of a retained revision should be ONE generic mechanism shared by point spaces and calibration (identity + revision → immutable definition, conflicting reuse rejected, restored definition verified before binding). |
+| 0.183.0 `target.selector` on existing targets, separate from the result root | Accepted, and it is an important find of the reader work: in "make the red node blue", red selects the node in the pre-state and blue is the result; as two simultaneous result constraints they contradict. Separate root and context, disjoint descendants, no delta/factor/occurred inside a selector until historical-event semantics exist: right. Make sure 6.3.1 / 6.3.2 show the selector wires. |
+
+**Phase-0 release boundary — confirmed as you propose.** Enumerate exactly. Frozen in the announcement: legend (spaces, axes, units, concepts, roles, relations, act conditions) with point and frame; schema links; request (envelope, mood, graph, logical nodes, selectors); typed trace records; reply claims (when landed); change policy; objective; import evidence; reference samples and calibration. Deferred and named as such: tolerance policy, learning episode and learned factor, calibration-to-axis consistency, the retained-revision registry. PSys2's declarations and the knowledge migration need the frozen list, not the deferred one.
+
+**Held-out reader set.** It is in none of the three repositories I can read (not in this repo, PSys2 or the knowledge repo), so I cannot review the four flagged IDs yet. Put it in a path the rule-authoring agent is told not to read (for example `eval/reader-heldout/` with a line in its README), push it, and I will review those IDs here by ID only, without quoting their sentences. Its provisional status until then is right.

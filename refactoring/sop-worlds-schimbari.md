@@ -416,6 +416,8 @@ Review 10 acceptă F51, F6 și limitele generalizării. Replay-ul nou `reviews/r
 
 E2 este propus în capitolul 11: pachetul minim închis pe dependențe, surse, responsabilități și un buget ilustrativ de redactare. Inventarul efectiv trebuie măsurat înainte de migrare; nu se echivalează numărul firelor grafice cu acoperirea relațiilor semantice. Repo-ul de cunoaștere rămâne nemodificat în această etapă.
 
-E3 este propus în capitolul 12: proveniența parametrilor, normalizare, toleranțe, costuri și verificarea stabilității. F52 și F54 sunt trimise la review prin exemplul corectat din 8.2; calibrarea empirică și legarea completă a țintelor rămân verificări ale implementării viitoare.
+E3 este propus în capitolul 12: proveniența parametrilor, normalizare, toleranțe, costuri și verificarea stabilității. F52 și F54 au fost acceptate în review 12 prin exemplul corectat din 8.2; calibrarea empirică și legarea completă a țintelor rămân verificări ale implementării viitoare.
 
 E4 este propus în capitolul 13: afirmații cu dovezi, plan de răspuns, grupare, selecție și realizare în engleză. Verificările de sens și acoperire preced evaluarea stilului; implementarea trebuie să păstreze maparea text–afirmație–dovadă. Nodurile logice ale cererii, cititorul învățat cu prag de acceptare și declarația completă a desenului rămân în lista deschisă.
+
+F57 are o propunere în §10.3.1: graf logic al cererii, rădăcină, legare locală, predicate despre efecte și evaluare cu informație incompletă. Implementarea trebuie să probeze separat schema grafului, semantica cuantificatorilor și autorizarea efectului; adevărul unei interdicții nu introduce singur un plan pozitiv.

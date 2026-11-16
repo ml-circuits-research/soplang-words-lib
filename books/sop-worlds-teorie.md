@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 33, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 34, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -1434,7 +1434,7 @@ Următoarea formă este propusă pentru mesajul „draw three big red fish in th
 
 `operator` selectează verificarea cerinței, nu o unealtă: egalitate de cantitate, calcul de grad, apartenență la regiune sau relație. `polarity=positive` cere satisfacerea ei; `negative` cere ca predicatul să fie fals. `character=requirement` exprimă obligația, `preference` o preferință care poate ceda cerințelor, iar `assumption` o alegere a aplicației pentru o informație omisă. Negarea nu slăbește obligația: „no circles” poate fi o cerință negativă tare a cererii. O presupunere nu inventează un interval în mesaj: ea indică declarația sau pasul de justificare care a propus-o.
 
-Schema trebuie să verifice variantele operatorului. `relation` cere `relation` și `goal`; `eq`, `less.equal`, `greater.equal`, `degree` și `region` cer o valoare de tipul acceptat de concept; operatorii `less.equal` și `greater.equal` sunt admiși numai pe valori ordonabile, în unități compatibile. O cheie `goal` rămasă pe o egalitate numerică este o eroare de schemă a cererii. Rezolvitorul păstrează separat descrierea țintei, identitățile găsite și versiunea stării citite. Această legare permite verificarea fiecărui rezultat și explicarea unei ambiguități fără modificarea sensului inițial al cererii.
+Schema trebuie să verifice variantele operatorului. Extensia logică din secțiunea 10.3.1 adaugă predicatul `occurred`, care cere un act, faza verificată și o valoare booleană și citește dovezile unei schimbări; nu se tratează ca egalitate numerică. `relation` cere `relation` și `goal`; `eq`, `less.equal`, `greater.equal`, `degree` și `region` cer o valoare de tipul acceptat de concept; operatorii `less.equal` și `greater.equal` sunt admiși numai pe valori ordonabile, în unități compatibile. O cheie `goal` rămasă pe o egalitate numerică este o eroare de schemă a cererii. Rezolvitorul păstrează separat descrierea țintei, identitățile găsite și versiunea stării citite. Această legare permite verificarea fiecărui rezultat și explicarea unei ambiguități fără modificarea sensului inițial al cererii.
 
 Să urmeze mesajul „in the sky”. Situarea din secțiunea 6.4 îl leagă de locul grupului de pești din ultima cerere. În versiunea nouă a acelei cereri, se adaugă sursa și ținta cerute de corectare, iar `c.place` este înlocuit, păstrându-și identitatea:
 
@@ -2715,9 +2715,64 @@ Pentru „make two red cards and a note”, coordonarea din exemplul sintactic p
 
 „Move the note beside the heading” poate selecta nota care este deja lângă titlu sau poate cere să fie mutată lângă titlu. Cadrul verbului și contextul pot elimina o citire dacă îi lipsesc roluri obligatorii ori dacă nu are referent, dar preferința pentru o analiză mai scurtă nu este o dovadă suficientă despre intenție. Dacă ambele citiri rămân aplicabile și schimbă starea diferit, întrebarea precizează diferența: „Do you mean the note already beside the heading, or should I move it there?”
 
-Există o limită reală a schemei de cerere din secțiunea 6.3.2. `scope=each` sau `scope=group`, împreună cu o polaritate, descriu cerințe simple; nu reprezintă singure orice alternanță de cuantificatori. „Do not move all the notes” cere negarea mutării întregului set, pe când „do not move any note” interzice mutarea fiecărui membru. Contractul complet necesită noduri logice explicite pentru grupare, negație și cuantificare, cu legarea variabilelor și ținta fiecărui operator. Până la definirea și verificarea acelei extensii, cititorul nu aplatizează aceste cazuri într-o constrângere care schimbă sensul; păstrează structura sau cere reformulare. Această lipsă nu poate fi reparată printr-un scor de potrivire mai bun.
+Întinderea negației și a cuantificatorilor este reprezentată prin nodurile logice din secțiunea 10.3.1. Constrângerile simple rămân frunze ale acestei reprezentări, iar gruparea explicită păstrează diferența dintre negarea unei condiții și negarea cuantificării ei.
 
 Verificarea semantică are loc în etape: tipurile și rolurile trebuie să fie coerente; referințele trebuie rezolvate sau marcate deschise; fiecare fragment cu efect asupra intenției trebuie acoperit; apoi se verifică realizabilitatea. O cerere imposibilă poate fi totuși citită corect. Lipsa unei capabilități trebuie raportată ca atare și nu este motiv suficient pentru a înlocui o intenție explicită cu alta, executabilă. Reformularea și recitirea pot detecta pierderi de informație, dar două componente care repetă aceeași eroare pot trece acest test; comparația cu interpretări independente rămâne necesară.
+
+### 10.3.1 Noduri logice și legarea cuantificatorilor
+
+Pentru a păstra întinderea negației și a cuantificării, cererea folosește un graf logic explicit. Frunzele sunt condiții asupra țintelor; nodurile interioare combină condițiile. Propunerea adaugă tipurile de mai jos, fără a schimba sensul unei constrângeri simple. Numele sunt un contract de proiectare, nu tipuri deja implementate.
+
+| Tipul propus | Câmpuri și semnificație |
+|---|---|
+| `std.request.not` | `of` indică exact condiția negată. Inversează adevărat/fals și păstrează rezultatul nedeterminat. |
+| `std.request.group` | `operator=and` sau `operator=or`, cu `member` repetat. Combină membrii în aceeași întindere de variabile. |
+| `std.request.quant` | `kind=all`, `any`, `each` sau `none`; `target` este colecția, `bind` este ținta locală legată la fiecare membru, iar `body` condiția evaluată. |
+
+`all` cere ca fiecare membru să satisfacă corpul; `any` cere existența cel puțin unui membru care îl satisface; `none` neagă această existență. `each` are aceeași condiție de adevăr ca `all`, dar păstrează distribuția cerinței și a dovezilor pe fiecare membru pentru planificare și explicație. El nu reprezintă încă o cantitate: „two for each section” cere o țintă de rezultate locală fiecărei secțiuni și o constrângere de cantitate în corpul cuantificatorului.
+
+O țintă cu `mode=bound` nu caută singură un obiect în lume. Ea primește pe rând identitățile din colecția cuantificatorului care o leagă. Un cuantificator interior are propria legare; nu poate captura accidental ținta altuia. Cererea indică rădăcina prin `root`. Când aceasta există, condițiile obligatorii trebuie să fie accesibile din ea; o condiție orfană, un ciclu, o referință lipsă ori o țintă legată folosită în afara corpului său sunt erori de schemă. Cererile simple fără rădăcină explicită păstrează conjuncția condițiilor de nivel superior din secțiunea 6.3.2.
+
+Să comparăm „do not move all the notes” cu „do not move any note”. Colecția de note este rezolvată din aceeași stare de referință. Predicatul frunză spune că nota a fost mutată în pasul curent: la verificarea candidatului se citește diferența planificată, iar după execuție diferența observată și dovada operației. Nu înseamnă că nota a fost vreodată mutată în istoria ei. `concept=change operator=occurred act=place phase=result value=true` este forma propusă pentru acest predicat de eveniment.
+
+```sop
+@source.notes std.request.source text="do not move all the notes"
+@request.notes std.request act=place source=$source.notes root=$not.all
+@notes std.request.target request=$request.notes mode=existing kind=note determiner=definite
+@member std.request.target request=$request.notes mode=bound
+@moved std.request.constraint request=$request.notes target=$member concept=change operator=occurred act=place phase=result value=true polarity=positive character=requirement source=$source.notes
+@all std.request.quant kind=all target=$notes bind=$member body=$moved
+@not.all std.request.not of=$all
+```
+
+| Etapa primei cereri | Interpretarea păstrată |
+|---|---|
+| Rezolvarea colecției | Se identifică notele la care se referă omul, cu versiunea stării și acoperirea colecției. |
+| Evaluarea corpului | Pentru fiecare notă se verifică dacă pasul o mută. |
+| Cuantificarea | `all` este adevărat numai dacă toate notele sunt mutate. |
+| Negația exterioară | `not.all` cere ca nu toate să fie mutate. Nu cere singur să fie mutată măcar una. |
+
+Pentru a doua cerere se păstrează țintele și predicatul, dar se schimbă sursa și rădăcina; nodurile `all` și `not.all` sunt retrase și înlocuite de `any` și `not.any`. Blocul următor descrie această versiune alternativă, nu declarații care se concatenează cu versiunea precedentă folosind aceiași identificatori.
+
+```sop
+@source.notes std.request.source text="do not move any note"
+@request.notes std.request act=place source=$source.notes root=$not.any
+@any std.request.quant kind=any target=$notes bind=$member body=$moved
+@not.any std.request.not of=$any
+```
+
+| Etapa celei de-a doua cereri | Interpretarea păstrată |
+|---|---|
+| Colecția și corpul | Aceleași note și același predicat de mutare în pasul curent. |
+| Cuantificarea | `any` este adevărat când cel puțin o notă este mutată. |
+| Negația exterioară | `not.any` cere să nu fie mutată nicio notă; este echivalent cu `none` asupra aceluiași corp. |
+| Consecința pentru plan | Orice candidat care mută măcar o notă este respins de această cerință. |
+
+Cu trei note identificate, mutarea a două satisface „not all”, dar nu „not any”. Mutarea tuturor nu satisface niciuna; mutarea niciuneia le satisface pe amândouă. O interdicție singură nu autorizează alegerea arbitrară a unor note de mutat. Ea poate restrânge un plan deja discutat; dacă omul dorește o mutare parțială, selecția și destinația trebuie rezolvate din cerere sau context. Propoziția negativă nu este executată ca un imperativ pozitiv doar fiindcă firul cererii numește actul `place`.
+
+Evaluarea folosește adevărat, fals și nedeterminat. `and` este fals când un membru este fals și adevărat când toți sunt adevărați; `or` este adevărat când un membru este adevărat și fals când toți sunt falși; altfel rezultatul este nedeterminat. Pentru o colecție incomplet citită, `all` nu devine adevărat doar fiindcă toate elementele încărcate trec; un contraexemplu cunoscut îl poate face fals. `any` poate fi adevărat printr-un martor cunoscut, dar absența unui martor nu îl face fals fără acoperire completă. Negarea nu transformă o citire incompletă în dovadă.
+
+Pe o colecție demonstrabil goală, semantica logică este `all=true`, `any=false`, `none=true`. Separat, referința hotărâtă a omului poate presupune existența unor note; acea problemă se rezolvă înainte de planificare, fără a prezenta adevărul pe mulțimea goală ca realizarea cererii. Astfel, logica și conversația folosesc reguli explicite diferite, fără excepții ascunse în cuantificator.
 
 ## 10.4 Acoperire, extindere și propuneri de model
 

@@ -940,7 +940,7 @@ Review 7 at dee2df5 accepted F7–F9 and F48–F50 after checking the revised te
 
 ### Remaining follow-ups after review 10
 
-Review 10 at 5771263 accepted F51, F6, the generalisation boundaries and the controlled R37 extension after reading the text; their review requests are removed. Remaining work includes F52's per-request bound, F53 naming consistency, F54 numerical calibration, region-valued extent/layers, composition from parts, the full description schema and complete drawing declaration. The newly supplied replay gaps W–BB remain open; none is closed merely by the operation catalogue. E1 is submitted below; E2–E4 remain pending.
+Review 10 at 5771263 accepted F51, F6, the generalisation boundaries and the controlled R37 extension after reading the text; their review requests are removed. Remaining work includes F53 naming consistency, region-valued extent/layers, composition from parts, the full description schema and complete drawing declaration. The newly supplied replay gaps W–BB remain open; none is closed merely by the operation catalogue. E1 is submitted below; E2–E4 remain pending.
 
 ### Review request — v29, library API chapter with executed examples
 
@@ -962,14 +962,14 @@ Read-only inspection of the knowledge repository confirms it already contains ki
 
 Applied the owner direction at 1bc1436: chapter 10 now describes extensibility rather than a ceiling on understanding. R68 now proposes measurable tone axes, textual evidence, uncertainty and region/tolerance comparison; source-document composition has an extraction-and-evidence contract. Please review calibration and source-support checking as open design work, not assumed implemented capabilities. Runtime uncertainty remains reported for the individual request.
 
-### Review request — v32, numeric policy chapter (E3), F52/F54
+### Follow-ups after review 12
 
-Chapter 12 distinguishes observations, request bounds, unit conversions, normalization, tolerances, cost weights and learned parameters. It gives calibration provenance, independent evaluation, sensitivity/unit/taxonomy invariants and an explicit cost-order reversal example. F52 now puts the lower bound on a request constraint and checks recomputed pair measurements on a fork; the candidate schema no longer hardcodes the request. F54 states who chooses normalization and why changing its magnitude changes tolerance decisions. Please challenge the calibration contract and the pair-target binding; no parameter is claimed empirically calibrated by these illustrative numbers.
-
-Also incorporated the reviewer's verified geometric callback details (token-array arguments and calc before neq). E4 remains the next standalone chapter; full drawing/description declarations remain pending.
-
-Read review 11 at e6a8e96. Removed the accepted holiday-exception counterproposal. F55 is corrected: chapters precede the Anexe heading. F56 now records the nearest almost-matching construction and tests category-level extensions on minimal pairs; F58 offers evidenced readings instead of asking the user to simplify. F57 and F59–F61 remain explicit follow-ups; the grammatical probe acceptance does not close the full reader design.
+Review 12 at 833d35c accepted F52, F54, F55, F56 and F58; checked the revised bounds, normalization rationale, chapter placement and reader extension/clarification text and removed that review request. The chapter 12 design now needs concrete declaration wires (F64), while F53 and F57/F59–F61 remain open. The reviewer independently verified the solveReport/apply example. Chapters 11–13 received positive direction, with specific outstanding work F62–F66: measured inventory, named sources, provenance/parameter wires, consistent tone measurement and propose/check/unknown-information replies. These are pending rather than closed by the chapter additions.
 
 ### Review request — v33, reply composition (E4)
 
 Chapter 13 defines evidence-backed claims, selection/order, grouping by act/status/roles with unique object counts, whole/part compression, meaningful assumptions/adaptations, reference choice and English realisation with semantic coverage checks. Replaced §6.10's infallible-source claim and one-frame wording with correlated evidence and equivalent frame families. Please challenge mixed confirmed/unknown outcomes, duplicate attempts, different destinations/properties and creating a whole versus editing its parts: these must not produce broader success claims. The reply-wire fragment is explicitly proposed; no runtime evaluator is claimed.
+
+### Review request — v34, explicit request logic (F57)
+
+§10.3.1 proposes not/group/quant nodes, explicit root and local bound targets, scoped event predicates, schema rejection of cycles/orphans/free bindings and three-valued evaluation over incomplete collections. Both requested negative commands are traced separately. Please challenge the counterexample that moving no notes satisfies both: “not all” does not itself authorise selecting and moving a subset. Empty-set truth is separated from a definite reference's existence requirement. These are proposed semantics, not runtime support. F59–F61 remain pending.

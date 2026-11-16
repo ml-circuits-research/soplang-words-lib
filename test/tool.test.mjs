@@ -126,7 +126,7 @@ test('the shelf: declared only by wires and three primitives, through the door (
   assert.deepEqual([kinds().length, kinds().includes('comic'), new Set(kinds().slice(3)).size], [7, false, 2], 'a general kind: its subkinds, not the one negated, a mix');
   r = s.say('too many');
   assert.deepEqual([r.revision.sort, r.run.step, kinds().length, s.timeline.done.length, r.plan.structure], ['reaction', 'replaced', 5, 2, 'cut']);
-  assert.match(r.reply.text, /made it again/);
+  assert.match(r.reply.text, /^I removed/, 'a count revision is said by its net diff, not as a remake');
   r = s.say('undo');
   assert.deepEqual([kinds().length, r.reply.text], [3, 'I undid the last change.']);
   r = s.say('what can you do here?');

@@ -5,7 +5,7 @@
 // no case keyed to a world, a kind or a sentence beyond the turns that state the property.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { World, toolSession, readRequest, planRequest, capabilitiesOf } from '../tools/lib-under-test.mjs';
+import { World, toolSession, readRequest, planRequest, capabilitiesOf, sayRequest } from '../tools/lib-under-test.mjs';
 import { worldsDir } from '../tools/worlds.mjs';
 import { requestSession, requestKinds, SKETCH, NOTES, GARDEN, exampleWorld } from '../examples/request-app.mjs';
 import { SHELF, NECKLACE, shelfTool, necklaceTool, toolLanguage } from '../examples/tool-app.mjs';
@@ -163,3 +163,68 @@ test('a statement of the speaker with a verb of its own is no request; a wish is
 });
 
 test('the toy world loads', () => { const w = new World(); assert.ok(w.load(SCENES).ok); });
+
+// ---- 0.157.0 ----------------------------------------------------------------------------------------------------
+const WORLDS = () => [
+  ['shelf', () => toolSession(exampleWorld(SHELF), shelfTool(), { language, catalog: [language] }), 'add three novels and an atlas'],
+  ['necklace', () => toolSession(exampleWorld(NECKLACE), necklaceTool(), { language, catalog: [language] }), 'make a necklace'],
+  ['sketch', () => requestSession(exampleWorld(SKETCH), { language, catalog: [language, kinds], revisions: language }), 'draw 3 circles and a square'],
+  ['garden', () => requestSession(exampleWorld(GARDEN), { language, catalog: [language, kinds], revisions: language }), 'add 2 fish'],
+];
+
+test('a count revision is said by its net result, never as a remake ("I made it again")', { skip: offline }, () => {
+  for (const [name, mk, first] of WORLDS()) {
+    const s = mk(); s.say(first);
+    for (const turn of ['too many', 'fewer', 'more']) {
+      const r = s.say(turn);
+      assert.ok(!r.reply.facts.some((f) => f.reply === 'done.revise'), `${name}: ${turn}: ${r.reply.text}`);
+    }
+  }
+});
+
+test('a turn with an unread word executes nothing and says what was not understood, in the plan and not only in the door', { skip: offline }, () => {
+  for (const [name, mk, first] of WORLDS()) {
+    const s = mk(); s.say(first);
+    for (const turn of [`${first} blorfish`, 'fewer blorfish', 'make a zorp blorfish']) {
+      const before = JSON.stringify(s.timeline?.done.length ?? s.dialogue.lastRun?.made);
+      const r = s.say(turn);
+      assert.ok(r.plan?.ok === false && r.plan.unread?.length && !r.plan.steps.length, `${name}: ${turn}: planned nothing`);
+      assert.ok(!r.run?.ok && !(r.run?.made?.length) && !(r.run?.calls?.length), `${name}: ${turn}: ran nothing`);
+      assert.deepEqual(r.reply.facts.map((f) => f.reply).filter((x) => x !== 'why.nothing'), ['not_understood'], `${name}: ${turn}: ${r.reply.text}`);
+      assert.equal(JSON.stringify(s.timeline?.done.length ?? s.dialogue.lastRun?.made), before, `${name}: ${turn}: nothing kept or re-laid`);
+    }
+    // planRequest/runPlan on their own: the same rule without any session
+    const live = exampleWorld(name === 'shelf' ? SHELF : name === 'necklace' ? NECKLACE : name === 'sketch' ? SKETCH : GARDEN);
+    const q = readRequest(live, `${first} blorfish`, { language, catalog: [language] });
+    const p = planRequest(live, q, { catalog: [language, kinds] });
+    assert.deepEqual([p.ok, p.steps.length, p.unread], [false, 0, ['blorfish']], `${name}: planRequest`);
+  }
+});
+
+test('a count said with "with" is that many of the kind inside the whole, never the whole\'s count', { skip: offline }, () => {
+  const s = requestSession(exampleWorld(SKETCH), { language, catalog: [language, kinds], revisions: language });
+  const n = (r, k) => r.run.result.items.length === 0 ? 0 : Object.entries(r.run.result.kinds).find(([x]) => x === k)?.[1] ?? 0;
+  let r = s.say('draw a picture with a circle');
+  assert.equal(n(r, 'circle'), 1, 'a circle said in the singular is one');
+  r = s.say('draw a picture with 3 squares');
+  assert.equal(n(r, 'square'), 3);
+  r = s.say('draw a circle with three squares');
+  assert.deepEqual([r.run.ok, n(r, 'circle'), n(r, 'square')], [true, 1, 3], 'the bounds say what was said, with what was added');
+});
+
+test('"fewer X" where the last result has no X names it and keeps the result', { skip: offline }, () => {
+  const s = requestSession(exampleWorld(SKETCH), { language, catalog: [language, kinds], revisions: language });
+  s.say('draw 3 circles and a square');
+  const before = JSON.stringify(s.dialogue.result);
+  const r = s.say('fewer triangles');
+  assert.deepEqual([r.revision.request, r.reply.facts.map((f) => f.reply), r.reply.text, JSON.stringify(s.dialogue.result)], [null, ['refused.no_such'], 'There is no triangle here.', before]);
+});
+
+test('a move to a thing of the view says the relation with that thing, when the language has the reply; else the key\'s own', { skip: offline }, () => {
+  const run = { ok: true, diff: { added: [], removed: [], changed: [{ id: 'a', kind: 'fish', key: 'place', from: 'top', to: 'bottom' }, { id: 'b', kind: 'fish', key: 'place', from: 'top', to: 'bottom' }] }, assumed: [], result: { kinds: {} } };
+  const plan = (relation) => ({ ok: true, act: 'place', reference: true, roles: { place: 'lake', region: '$l1', relation } });
+  const say = (relation) => sayRequest({ unread: [], reactions: [], constraints: [] }, { ...plan(relation), run }, { language });
+  assert.equal(say('into').text, 'I moved 2 fish into the lake.');
+  assert.equal(say('next to').text, 'I moved 2 fish to the bottom.', 'no reply for that relation: the change as before');
+  assert.equal(say(undefined).text, 'I moved 2 fish to the bottom.');
+});

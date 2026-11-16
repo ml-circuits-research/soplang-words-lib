@@ -341,6 +341,7 @@ export function readRequest(world, text, ctx = {}) {
     } else if (c.on === 'with') for (const it of o.items) {
       const kind = it.entry?.kind ?? it.text, w1 = words(it.from, it.to - it.from);
       if (it.n !== undefined) constraints.push({ ...base, on: 'count', number: it.n, of: kind, words: w1 }); // "with 5 shapes": a count of them
+      else if (it.entry && !it.entry.plural && !it.entry.unit && L.indefinite.has(ws[it.from])) constraints.push({ ...base, on: 'count', number: 1, of: kind, words: w1, det: true }); // "with a lake": one, said
       if (it.n === undefined || (it.entry && !it.entry.unit)) constraints.push({ ...base, value: kind, words: w1 });
     }
     else if (c.on === 'attribute') { const v = o.value.entry.find((x) => !c.attribute || x.attribute === c.attribute) ?? o.value.entry[0]; constraints.push({ ...base, attribute: c.attribute ?? v.attribute, value: v.value }); }
@@ -484,6 +485,17 @@ function withFacts(req) {
   return req;
 }
 
+/**
+ * The unread words of a request that matter, decided by the reading alone: every unread content word (the reader leaves
+ * stop words out of `unread`), whether it stands inside a constraint or role span or by itself, in a request or in a
+ * reaction. A turn that has one executes nothing and says what was not understood.
+ */
+export function unreadThatMatters(request) {
+  const at = request?.unreadAt ?? (request?.unread ?? []).map((text) => ({ text }));
+  if (!at.length) return [];
+  return [...new Set(at.map((x) => x.text))];
+}
+
 /** The request as w.request wires (one request, its constraints, its unread words), to tell into a live world that loads w.request. */
 export function requestWires(request, { id = 'request1' } = {}) {
   const q = (s) => JSON.stringify(String(s));
@@ -582,6 +594,10 @@ export function reviseRequest(dialogue, request, opts = {}) {
   const resultKinds = Object.entries(result?.kinds ?? {}).filter(([, n]) => n > 0);
   const stepKinds = does.some((d) => d.does === 'step' && d.on === 'count') ? [...new Set(request.constraints.filter((c) => c.on === 'kind' && (c.want ?? 'yes') === 'yes' && c.value && resultKinds.some(([k]) => k === c.value)).map((c) => c.value))] : [];
   if (stepKinds.length) does = does.filter((d) => d.does !== 'step' || d.on === 'count');
+  // "fewer X" where the last result has no X (nor a kind of X): there is nothing of it to take away, and the other kinds are not its count
+  const downCount = does.find((d) => d.does === 'step' && d.on === 'count' && d.direction === 'down');
+  const absent = request.constraints.filter((c) => c.on === 'kind' && (c.want ?? 'yes') === 'yes' && c.value && c.value !== last.target && !resultKinds.some(([k]) => k === c.value || kindLineage(k, { live: opts.live }).includes(c.value)));
+  if (downCount && !stepKinds.length && resultKinds.length > 1 && absent.length && absent.length === request.constraints.filter((c) => c.on === 'kind' && (c.want ?? 'yes') === 'yes' && c.value && c.value !== last.target).length) return { sort: 'reaction', reaction, does, request: null, replace: false, seed, reply: 'refused.no_such' };
   const reply = does.find((d) => d.reply)?.reply ?? null;
   if (does.some((d) => d.does === 'undo')) return { sort: 'reaction', reaction, does, request: dialogue.previous ?? null, replace: false, undo: true, seed: dialogue.previousSeed ?? seed, vary: !!dialogue.previousVary, reply };
   if (does.every((d) => d.does === 'none')) return { sort: 'reaction', reaction, does, request: null, replace: false, seed, reply };
@@ -802,7 +818,8 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
 
   // the count: said (a number, a range, an amount), else the expectation scaled by the size, else one
   const wholeC = whole ? C('count').find((c) => c.of === target && c.of !== unit && c.number > 1 && !c.bound) ?? null : null; // "3 necklaces": that many wholes, each planned alike
-  const countC = C('count').find((c) => c !== wholeC && (!c.of || c.of === unit || c.of === target || pool.includes(c.of))) ?? null;
+  const withCounted = (c) => !!whole && !!c.of && c.of !== target && c.of !== unit && withs.some((w) => w.value === c.of); // "a picture with 3 circles": 3 of them inside the whole, not the whole's count
+  const countC = C('count').find((c) => c !== wholeC && !withCounted(c) && (!c.of || c.of === unit || c.of === target || pool.includes(c.of))) ?? null;
   let lo, hi, typ, countFrom;
   // a plural kind said with no number: several, as the expectations say for that kind (k.expect.value on=count, given
   // plural=yes), else the amount "some" of the catalog, else two to four
@@ -896,11 +913,23 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
 
   // with: parts that must be there (links between the items, or a kind of the pool)
   const linkPart = parts.find(isLink);
-  let links = 0;
+  let links = 0, withAdded = 0;
   for (const c of withs) {
     if (linkPart && (c.value === first(linkPart, 'part'))) { links = Math.max(1, items.length - 1); continue; }
+    if (makeable(c.value)) { // a kind with a count said ("with a lake", "with three fish"): exactly that many, the rest of the pool giving way
+      const m = C('count').find((x) => x.of === c.value && x.number !== undefined && !x.bound)?.number;
+      const have = items.filter((it) => it.kind === c.value).length;
+      if (m === undefined && have) continue;
+      const want = m ?? 1;
+      if (have < want) { for (let i = have; i < want; i++) items.push({ kind: c.value }); withAdded += want - have; } // bounded: the count said
+      else if (have > want && whole && mode !== 'parts') { // too many of it in a whole: the surplus is another kind of the pool, or goes
+        const other = pool.find((k) => k !== c.value && !withs.some((w) => w.value === k));
+        let extra = have - want;
+        for (let i = items.length - 1; i >= 0 && extra > 0; i--) if (items[i].kind === c.value) { if (other) items[i].kind = other; else items.splice(i, 1); extra--; } // bounded: the items
+      }
+      continue;
+    }
     if (items.some((it) => it.kind === c.value)) continue;
-    if (makeable(c.value)) { items.push({ kind: c.value }); continue; }
     notHonoured.push({ on: 'with', words: c.words ?? c.value, why: `there is no ${c.value} here`, code: 'no_kind', value: c.value });
   }
   if (linkPart && !links && !noK.has(first(linkPart, 'part')) && (num(first(linkPart, 'typical')) ?? 0) > 0) links = items.length - 1;
@@ -1037,7 +1066,7 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   }
   out.steps = steps;
   out.ok = items.length > 0;
-  out.bounds = { count: saidCount, not: [...noK] }; // what deduction checks the made items against
+  out.bounds = { count: saidCount ? [saidCount[0] + withAdded, saidCount[1] + withAdded] : saidCount, not: [...noK] }; // what deduction checks the made items against
   return out;
 }
 
@@ -1227,6 +1256,8 @@ function keptStructure(live, request, opts) {
  * Nothing is changed.
  */
 export function planRequest(live, request, opts = {}) {
+  const lost = unreadThatMatters(request);
+  if (lost.length) return { ok: false, act: request.act ?? null, target: request.target ?? null, steps: [], assumed: [], notHonoured: [], rejected: [], cannot: [], replies: [], unread: lost, reasoning: null }; // a part of the turn that matters is not read: nothing is planned, so nothing runs
   const sources = opts.sources ?? REQUEST_SOURCES;
   const kept = keptStructure(live, request, opts);
   if (kept) return kept;
@@ -1329,6 +1360,7 @@ export function planRequest(live, request, opts = {}) {
  * Returns { ok, made, failed, result: { things, count, kinds, whole, layout } }.
  */
 export function runWorldPlan(live, plan, { replace = [] } = {}) {
+  if (plan?.unread?.length) return { ok: false, made: [], failed: { code: 'unread', reply: 'not_understood', roles: { words: plan.unread.join(', ') } }, result: { things: [], items: [], count: 0, kinds: {}, whole: null, layout: null, links: 0 } };
   if (plan?.reference) replace = []; // an act on the things that are there never removes them first
   for (const id of replace) if (live.get(String(id).replace(/^\$/, ''))) live.act({ action: 'remove', args: { thing: `$${String(id).replace(/^\$/, '')}` } }); // bounded: the things of the last result
   const made = [], ids = [];
@@ -1370,8 +1402,8 @@ export function sayRequest(request, outcome = {}, opts = {}) {
   const o = typeof opts === 'string' ? { lang: opts.includes('.') ? opts : `w.lang.${opts}` } : opts;
   const lang = o.lang ?? 'w.lang.en';
   const facts = [];
-  if (outcome.reply) facts.push({ reply: outcome.reply, roles: {} });
-  if (outcome.revised && !outcome.reference) facts.push({ reply: 'done.revise', roles: {} }); // an act on things there is no remake
+  if (outcome.reply) facts.push({ reply: outcome.reply, roles: outcome.reply === 'refused.no_such' ? { thing: plain(request?.constraints?.find((c) => c.on === 'kind' && c.value)?.value ?? '') } : {} });
+  if (outcome.revised && !outcome.reference && !(request?.reactions ?? []).some((r) => r.step)) facts.push({ reply: 'done.revise', roles: {} }); // an act on things there is no remake, and a step ("fewer", "bigger") is said by its net result, not as a remake
   // what this world can do (toolCapabilities): one fact per act, its kinds in the language's plural
   for (const c of outcome.capabilities ?? []) {
     facts.push({ reply: 'can', roles: { act: c.act, kinds: c.kinds.map((k) => pluralIn(o.language, lang, plain(k))).join(', ') } });
@@ -1400,8 +1432,11 @@ export function sayRequest(request, outcome = {}, opts = {}) {
       const wholeFirst = (list) => { const isWhole = (t) => t.id === tool.result?.whole || (!!tool.result?.whole && t.kind === outcome.target); return [...list.filter(isWhole), ...list.filter((t) => !isWhole(t))]; };
       for (const [kind, n] of byKind(wholeFirst(d.added))) facts.push({ reply: 'done.add', roles: { kind: plain(kind), number: n } });
       for (const [kind, n] of byKind(wholeFirst(d.removed.filter((t) => !replaced.has(t.id))))) facts.push({ reply: 'done.remove', roles: { thing: plain(kind), number: n } });
-      const ch = new Map(); for (const x of d.changed) { const key = x.as ?? x.key, value = unsayable(x.to) ? dir : plain(String(x.to)); if (value === null || value === undefined) continue; const k = `${x.kind}|${key}|${value}`; const e = ch.get(k) ?? { kind: x.kind, key, value, n: 0 }; e.n++; ch.set(k, e); }
-      for (const e of ch.values()) facts.push({ reply: 'done.change', roles: { thing: plain(e.kind), number: e.n, key: String(e.key), value: e.value } }); // the key: said by the reply done.change.<key> when the language has one; a value that is missing is said by the direction of the request, or not said
+      // a move to a thing of the view ("into the water"): the relation the request said, with that thing, when the language has the reply `done.<act>.<relation>` for it; else the key's own reply
+      const rel = outcome.roles?.relation ? String(outcome.roles.relation).replace(/ /g, '_') : null, regionKind = outcome.roles?.place ? plain(String(outcome.roles.place)) : null;
+      const relSaid = !!(rel && regionKind && o.language && replyFrom(o.language, `done.place.${rel}`, { thing: 'x', number: 2, value: regionKind, key: rel }, { lang, dictionary: o.dictionary }) != null);
+      const ch = new Map(); for (const x of d.changed) { const key = relSaid && (x.as ?? x.key) === 'place' ? rel : x.as ?? x.key, value = relSaid && key === rel ? regionKind : unsayable(x.to) ? dir : plain(String(x.to)); if (value === null || value === undefined) continue; const k = `${x.kind}|${key}|${value}`; const e = ch.get(k) ?? { kind: x.kind, key, value, n: 0 }; e.n++; ch.set(k, e); }
+      for (const e of ch.values()) facts.push(relSaid && e.key === rel ? { reply: 'done.place', roles: { thing: plain(e.kind), number: e.n, key: rel, value: e.value } } : { reply: 'done.change', roles: { thing: plain(e.kind), number: e.n, key: String(e.key), value: e.value } }); // the key: said by the reply done.change.<key> when the language has one; a value that is missing is said by the direction of the request, or not said
     }
     const nothing = !d.added.length && !d.removed.length && !d.changed.length;
     if (nothing && !tool.question && !outcome.ask && !(tool.ok && (tool.undo || tool.redo))) {
@@ -1421,6 +1456,7 @@ export function sayRequest(request, outcome = {}, opts = {}) {
     else if (run.whole) facts.push({ reply: 'done.make', roles: { kind: plain(outcome.target), number: 1 } });
     else if (!(run.whole && outcome.revised && Object.keys(run.kinds ?? {}).length)) for (const [kind, n] of Object.entries(run.kinds)) { const v = outcome.roles?.colour; facts.push({ reply: v ? 'done.make.value' : 'done.make', roles: { kind: plain(kind), number: n, ...(v ? { value: v } : {}) } }); }
   }
+  if (outcome.unread?.length && tool?.failed?.code !== 'unread') facts.push({ reply: 'not_understood', roles: { words: outcome.unread.join(', ') } }); // a part that matters was not read: said, nothing was done
   const assumed = [...(outcome.assumed ?? [])];
   for (const a of tool?.ok ? tool.assumed ?? [] : []) if (a.from === 'translated' || !assumed.some((x) => String(x.value) === String(a.value))) assumed.push(a); // what the binding filled or translated beyond the plan
   // Which assumptions are said is data: the sources (`say`, in order of strength), a value that is only the world's declared default is
@@ -1448,7 +1484,7 @@ export function sayRequest(request, outcome = {}, opts = {}) {
   for (const { a } of chosen) facts.push({ reply: 'assumed', roles: { key: a.key, value: String(a.value) }, from: a.from });
   for (const nh of outcome.notHonoured ?? []) facts.push({ reply: 'not_honoured', roles: { words: nh.words, why: nh.why }, code: nh.code });
   for (const c of outcome.cannot ?? []) facts.push({ reply: 'not_honoured', roles: { words: c.words ?? request?.text ?? '', why: c.why }, code: 'cannot' });
-  if (request?.unread?.length && (run || outcome.revised || (tool && !tool.question && tool.failed?.code !== 'unread'))) facts.push({ reply: 'unread', roles: { words: request.unread.map((w) => `"${w}"`).join(', ') } });
+  if (request?.unread?.length && !outcome.unread?.length && (run || outcome.revised || (tool && !tool.question && tool.failed?.code !== 'unread'))) facts.push({ reply: 'unread', roles: { words: request.unread.map((w) => `"${w}"`).join(', ') } });
   for (let i = facts.length - 1; i >= 0; i--) if (Object.values(facts[i].roles ?? {}).some(unsayable)) facts.splice(i, 1); // a reply is never said with a missing value or an empty slot
   const missing = [];
   const texts = o.language ? facts.map((f) => { let t = (f.roles?.key ? replyFrom(o.language, `${f.reply}.${f.roles.key}`, f.roles, { lang, dictionary: o.dictionary }) : null) ?? replyFrom(o.language, f.reply, f.roles, { lang, dictionary: o.dictionary }); if (t == null) t = fallbackReply(f, lang); if (t == null) missing.push(f.reply); return t; }).filter((t) => t && !/\b(undefined|null|NaN)\b|\{\w+\}/.test(t)) : []; // a fact with a key: the reply named for that key first (done.change.place), else the general one

@@ -119,7 +119,7 @@ test('a turn read in part never revises; a reaction steps the keys it names; a r
   const { tool, s } = tooled(SHELF, shelfTool);
   s.say('add a novel');
   let r = s.say('blorpish novel please');
-  assert.deepEqual([r.revision.sort, r.plan, tool.view().length], ['request', null, 1], 'not understood: nothing kept, nothing re-laid');
+  assert.deepEqual([r.revision.sort, r.plan.ok, r.plan.steps.length, tool.view().length], ['request', false, 0, 1], 'not understood: nothing planned, nothing kept, nothing re-laid');
   assert.match(r.reply.text, /blorpish/);
   // "bigger" names the size: the count stays (sketch, through its acts)
   const sk = acts(SKETCH);

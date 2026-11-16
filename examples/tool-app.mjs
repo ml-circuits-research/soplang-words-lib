@@ -125,6 +125,8 @@ export const PROPOSED_EN = String.raw`
 @w.lang.en.reply.nothing.same.one w.lang.en.reply name=nothing.same count=one text="That is what is there already."
 @w.lang.en.reply.done.change.place.one w.lang.en.reply name=done.change.place count=one role=thing role=value text="I moved the {thing} to the {value}."
 @w.lang.en.reply.done.change.place.other w.lang.en.reply name=done.change.place count=other role=thing role=number role=value text="I moved {number} {thing:num=pl} to the {value}."
+@w.lang.en.reply.done.place.into.one w.lang.en.reply name=done.place.into count=one role=thing role=value text="I moved the {thing} into the {value}."
+@w.lang.en.reply.done.place.into.other w.lang.en.reply name=done.place.into count=other role=thing role=number role=value text="I moved {number} {thing:num=pl} into the {value}."
 @w.lang.en.reply.done.change.size.one w.lang.en.reply name=done.change.size count=one role=thing role=value text="The {thing} is {value} now."
 @w.lang.en.reply.done.change.size.other w.lang.en.reply name=done.change.size count=other role=thing role=number role=value text="I made {number} {thing:num=pl} {value}."
 `;

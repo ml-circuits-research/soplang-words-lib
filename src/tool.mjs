@@ -282,6 +282,7 @@ function runToolPlan(plan, bindings, primitives = {}, opts = {}) {
   if (!plan) return { ...base, failed: { code: 'no_plan', reply: 'why.none', roles: {} } };
   if (plan.act === 'undo' || plan.act === 'redo') return move(plan.act, timeline, ctx, before);
   if (plan.question) return { ...base, ok: true, question: plan.question };
+  if (plan.unread?.length) return { ...base, failed: { code: 'unread', reply: 'not_understood', roles: { words: plan.unread.join(', ') } } };
   if (!plan.ok) return { ...base, failed: { code: 'plan', reply: null, roles: {}, because: [...(plan.cannot ?? []), ...(plan.notHonoured ?? [])] } };
   // a revision: the last entry is undone first and this plan takes its place; an act on the things that are there
   // (a reference plan: "make the house bigger" planned as change) never undoes them first, it is a step of its own
@@ -625,10 +626,6 @@ export function toolSession(live, primitives, { language = null, catalog = [], r
         return { request, revision: rev, plan: null, run, reply: sayRequest(request, { run, reply: rev.reply }, sayOpts) };
       }
       if (!rev.request) return { request, revision: rev, plan: null, run: null, reply: sayRequest(request, { reply: rev.reply }, sayOpts) };
-      if (request.unread?.length && !request.reactions?.length) { // a message read only in part executes nothing
-        const run = runPlan(null, B, primitives, runOpts);
-        return { request: rev.request, revision: rev, plan: null, run, reply: sayRequest(rev.request, { run: { ...run, failed: { code: 'unread', reply: 'not_understood', roles: { words: request.unread.join(', ') } } } }, sayOpts) };
-      }
       const replace = rev.sort === 'reaction' && !!rev.replace && timeline.done.length > 0;
       const plan = planRequest(state, rev.request, { catalog: cat, dialogue, seed: rev.seed, vary: rev.vary, replace: replace ? timeline.done.at(-1).diff.added.map((t) => t.id) : [] });
       const run = runPlan(plan, B, primitives, { ...runOpts, replace, request: rev.request });

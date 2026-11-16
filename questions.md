@@ -628,3 +628,17 @@ Open, each with whose it is:
    the parts that have none, Q46 (1)) are structure operators I have not built: next, if you agree.
 6. [LIB, small] "I'd like 2 birds": the tokenizer keeps "i'd" as one token (unread, honest); a clitic split from the
    language world (w.lang.en contractions) would make it a wish.
+
+## Q94 (worker, 0.157.0) — what is left of Q93
+Built (CHANGELOG 0.157.0): (1) no remake after a step; partial reading never executes (in `planRequest` / `runPlan`);
+Q93 (2) the case "fewer X with no X in the result"; (3) and (4) a count said with "with"; (5) `done.place.<relation>`.
+Open, each with whose it is:
+1. [PSYS2 / LIB, needs a probe] "fewer flowers" on a garden when flowers ARE in the garden's parts: the example worlds
+   do not reproduce the "7 made, the request said 3" refusal (fixed here for the with-count form and the absent kind);
+   if it still shows through the door, send the plan (`plan.bounds`, `plan.assumed`) of that turn.
+2. [LIB, decision] A constraint the world's act does not take ("in the corner" for make: `not_honoured`, code
+   `not_declared` / `no_slot`) still lets the rest execute and says "I could not do ...". That is a world capability
+   statement, not an unread word, so I left it. If the owner wants any not-honoured place constraint of a move to
+   refuse the whole turn, say so: one line in `planOnce` (act place with a not-honoured place constraint -> `ok: false`).
+3. [KNOW] The reply `done.place.<relation>` rows (into, next to, ...) belong in w.lang.en / w.lang.ro replies; on a
+   Romanian turn the move still comes out in English until the region value has a word for `done.change.place`.

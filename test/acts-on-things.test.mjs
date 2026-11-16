@@ -34,7 +34,7 @@ test('the shelf: a revision is said as its net change; a place the tool computes
   s.say('add 4 novels');
   const r = s.say('too many');
   assert.deepEqual([r.run.diff.added.length, r.run.diff.removed.length, r.run.diff.changed.length], [0, 4 - tool.view().length, 0]);
-  assert.match(r.reply.text, /^I made it again, the way you said\. I removed (the novel|\d novels)\.$/);
+  assert.match(r.reply.text, /^I removed (the novel|\d novels)\.$/);
   s.say('add a huge atlas');
   const m = s.say('remove the atlas');
   assert.equal(m.reply.text, 'I removed the atlas.', 'the books that moved along (`at`) are not said');

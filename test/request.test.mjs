@@ -158,13 +158,19 @@ test('a world that declares a constraint it has nowhere to put fails: the planne
 
 test('sayRequest: reply facts by name, composed by the language world', { skip: offline }, () => {
   const w = exampleWorld(SKETCH);
-  const q = read(w, 'draw a sketch in the top left, blorp');
+  const q = read(w, 'draw a sketch in the top left');
   const p = planRequest(w, q, { catalog: ctx.catalog });
   const run = runPlan(w, p);
   const say = sayRequest(q, { ...p, run }, { language });
-  assert.deepEqual([...new Set(say.facts.map((f) => f.reply))], ['done.make', 'assumed', 'not_honoured', 'unread']);
-  assert.match(say.text, /^I drew a picture\. (I assumed [^.]*\. ){1,2}I could not do in the top left: .* I did not use: "blorp"\.$/);
+  assert.deepEqual([...new Set(say.facts.map((f) => f.reply))], ['done.make', 'assumed', 'not_honoured']);
+  assert.match(say.text, /^I drew a picture\. (I assumed [^.]*\. ){1,2}I could not do in the top left: .*$/);
   assert.deepEqual(say.missing, []);
+  // a word of the turn that is unread: nothing is planned, nothing runs, what was not understood is said
+  const q2 = read(w, 'draw a sketch in the top left, blorp');
+  const p2 = planRequest(w, q2, { catalog: ctx.catalog });
+  const r2 = runPlan(w, p2);
+  const say2 = sayRequest(q2, { ...p2, run: r2 }, { language });
+  assert.deepEqual([p2.ok, r2.ok, r2.made.length, say2.facts.map((f) => f.reply), say2.text], [false, false, 0, ['not_understood'], 'I did not understand: blorp.']);
 });
 
 // ---- the reasoning cycle (owner 2026-11-15 14:11): P9-P11 over every example world, by what it declares ----------

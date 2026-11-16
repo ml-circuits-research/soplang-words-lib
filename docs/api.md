@@ -2125,6 +2125,17 @@ to"), for a binding to take as `step.region` / `step.relation` (0.156). A size s
 bigger") gives each step `stepped: { size: { from, dir } }`, so that `nearestAccepted` translates past the size the
 thing has, in the step's direction, when the tool takes no grade in between.
 
+A turn with an unread word that matters is never planned (0.157): `unreadThatMatters(request)` is every word of
+`request.unread` (the reader leaves closed words out; the reading alone decides, no word list), inside a constraint or
+role span or not, in a request or in a reaction. `planRequest` then returns `{ ok: false, steps: [], unread: [words] }`
+before anything else; `runPlan` (`runWorldPlan` and the tool run) refuses such a plan with `failed: { code: 'unread',
+reply: 'not_understood', roles: { words } }` and calls nothing, and `sayRequest` says `not_understood` ("I did not
+understand: blorfish."). So "move a fish in the corner on the right" with a place that is not read moves nothing, in
+every host, whatever else in the turn is readable. A count said with "with" ("a picture with a lake", "a lake with
+three fish": `a`, `an` is one) is that many of the kind inside the whole, never the whole's count, and the plan's
+`bounds.count` allows the items it adds. `reviseRequest` on "fewer X" where the last result has neither X nor a kind of X
+(and has several kinds) gives `{ request: null, reply: 'refused.no_such' }` and keeps the result.
+
 Around that plan runs one bounded reasoning cycle on the state of the live world (owner 2026-11-15), the same for
 every world, a generate-and-test with constraints:
 - **induce**: the common pattern of the world's things of the kinds made (anti-unification, one step, `induceStyle`:
@@ -2286,9 +2297,9 @@ const r = repairWords(['show', 'the', 'trubine'], { worlds: [openWorld, otherWor
 ### sayRequest(request, outcome, options?), ASSUMED_SAY, ASSUMED_MAX
 
 The reply of a request as reply facts, each a reply name of the language world with its roles, and their
-text by `replyFrom`: the revision's reply (`outcome.reply`: sorry, welcome), `done.revise` (`outcome.revised`),
+text by `replyFrom`: the revision's reply (`outcome.reply`: sorry, welcome), `done.revise` (`outcome.revised`, not after a step such as "fewer" or "bigger": that is said by its net result, 0.157),
 `done.make` / `done.make.value` (the whole made, or each kind with its number), `assumed` (`{ key, value }`, each
-default used), `not_honoured` (`{ words, why }`, also for each reason of `outcome.cannot`), `unread` (`{ words }`, after a turn that made something).
+default used), `not_honoured` (`{ words, why }`, also for each reason of `outcome.cannot`), `unread` (`{ words }`, after a turn that made something), `not_understood` (`{ words }`, a plan not made for unread words), and `done.place.<relation>` (`{ thing, number, value }`) for a move to a thing of the view when the language has that reply ("I moved 2 fish into the lake."), else the change as before.
 `outcome` is the plan with `run` (runPlan's result). `options`: `language`, `lang` (or a language code such as
 'en'), `dictionary`, `say` (the sources of an assumption that are said; default the language world's
 `<lang>.reply name=assumed say=` values when it has them, else `ASSUMED_SAY`: every source but `default`, a tool

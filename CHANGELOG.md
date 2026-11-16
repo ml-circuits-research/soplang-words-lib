@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.157.0
+
+Partial reading never executes, a count revision is said by its net result, and four small Q93 items; properties over
+the example worlds (`test/revise-names.test.mjs`).
+
+### Fixed
+- Q93 (1): "fewer cats" no longer begins "I made it again": `done.revise` is not said after a step reaction ("fewer",
+  "too many", "bigger"); only a remake ("again") says it.
+- Partial reading (reviewer, r0019 / r0129): a turn with an unread word executes nothing, in `planRequest` and
+  `runPlan`, not only in `toolSession` (`unreadThatMatters`: every unread content word, decided by the reading; the plan
+  is `{ ok: false, unread }`, the run `failed.code: 'unread'`, the reply `not_understood`).
+- Q93 (3, 4): a count said with "with" ("a picture with a lake" drew 2 lakes, "a lake with three fish" was refused
+  "2 made, the request said 1") is that many of the kind inside the whole (`a` is one); the plan's bounds allow them.
+- Q93 (2, partly): "fewer X" where the last result has no X (nor a kind of X) says "There is no X here." and keeps the
+  result (it used to replace the whole with the count of X).
+
+### New
+- Q93 (5): a move to a thing of the view says the relation when the language has `done.place.<relation>` ("I moved 2 fish
+  into the lake."); else the change as before. Rows for `into` in the tool example's language.
+
 ## 0.156.0
 
 A revision changes only what it names, and seven more turns PSys2 reported (reviewer 08:25; psys2 worker-log honest

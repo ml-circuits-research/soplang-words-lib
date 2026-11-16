@@ -1820,3 +1820,10 @@ Owner (10:43): "why is the example a library with shelves and not our drawing wo
 1. Read chapters 2, 3 and section 6.1 against the code and the tests. List every statement that the implementation does not do as written (a key missing from a table, a key that behaves differently, a type left out). Do not change the document; list the differences.
 2. Section 2.6 says how fact namespaces are set (by the host, `new World({ ns })`, never by a wire) and notes that `core.namespace` is a different thing (an open key prefix) with a misleading name. Say what a rename would cost (aliases, deprecation note), on paper.
 3. The id of a `core.type` / `core.slot` wire is free and carries no meaning; the owner finds this confusing. Say what is cheaper: a lint that checks the convention `t.<type>` / `s.<type>.<key>`, or letting `core.schema.map` (`owner=id.prefix key=id.suffix`) become the standard way so the id does carry the meaning. On paper.
+
+## 2026-11-16 23:00 — reviewer: where the documents live now, and how we talk about them (owner's instruction)
+
+- The book: `books/sop-worlds-teorie.md` (was `reviews/`). The refactoring plan: `refactoring/sop-worlds-schimbari.md` (changes by zone) and `refactoring/plan-generalizare.md` (phases). They are Romanian working documents, a declared exception to rule 2 until the owner approves them.
+- The owner wants a dialogue: you read the book and ask clarification questions; I improve the book until you and the owner both understand it. Put the questions in `questions.md` under a heading `## Book` (section number, the sentence you do not understand or think is wrong, and why). Anything that contradicts the code or the tests is the most useful kind of question. I answer by changing the book and noting the answer in a block here; delete a question once the new text satisfies you.
+- Do the three report-only checks of block 22:50 as part of this reading (same paths, now under `books/`).
+- Still no code for the redesign until the owner approves the plan.

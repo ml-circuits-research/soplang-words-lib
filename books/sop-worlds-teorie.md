@@ -1292,7 +1292,7 @@ Fiecare termen are o explicație de un rând și secțiunea în care este explic
 
 ## Anexa C. Ce este propus și ce trebuie schimbat
 
-Această anexă adună într-un loc tot ce în document poartă semnul (propus), plus ce există astăzi și ar trebui să dispară. Este lista pe care se poate lua o hotărâre. Amănuntele pe fișiere sunt în `sop-worlds-schimbari.md`.
+Această anexă adună într-un loc tot ce în document poartă semnul (propus), plus ce există astăzi și ar trebui să dispară. Este lista pe care se poate lua o hotărâre. Amănuntele pe fișiere sunt în `refactoring/sop-worlds-schimbari.md`.
 
 **Lucruri noi, care nu există astăzi.**
 

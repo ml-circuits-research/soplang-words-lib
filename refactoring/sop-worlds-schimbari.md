@@ -1,6 +1,6 @@
 # SOP Worlds: schimbările necesare
 
-*Anexă la „SOP Worlds: teoria” (`sop-worlds-teorie.md`), 16 noiembrie 2026. Teoria descrie starea dorită. Acest document spune, pe fiecare zonă de cod și de date, ce există azi și ce trebuie schimbat ca să se ajungă acolo. Este scris ca să poată fi citit și revizuit de mână de proprietar, apoi dat la lucru sesiunilor.*
+*Anexă la „SOP Worlds: teoria” (`books/sop-worlds-teorie.md`), 16 noiembrie 2026. Teoria descrie starea dorită. Acest document spune, pe fiecare zonă de cod și de date, ce există azi și ce trebuie schimbat ca să se ajungă acolo. Este scris ca să poată fi citit și revizuit de mână de proprietar, apoi dat la lucru sesiunilor.*
 
 *Numerele vin din trei surse, numite la fiecare tabel: numărătoarea mea în depozite, inventarul făcut de sesiunea aplicației (jurnalul ei din 16 noiembrie, „Audit of every world for generality”) și jurnalele bibliotecii. Unde nu am verificat eu, scrie.*
 
@@ -203,7 +203,7 @@ Hotărârea proprietarului (16 noiembrie): aplicația are patru domenii — **de
 
 | Ce | Schimbare |
 |---|---|
-| teoria | `reviews/sop-worlds-teorie.md` este sursa. După aprobare se traduce în engleză și se împarte în paginile documentației bibliotecii. |
+| teoria | `books/sop-worlds-teorie.md` este sursa. După aprobare se traduce în engleză și se împarte în paginile documentației bibliotecii. |
 | paginile bibliotecii | `glossary`, `kinds-of-worlds`, `language`, `reference`, `api`, `capabilities`, `host-contract`, `patterns`, `literature` se rescriu cu numele noi (tipar de lume, bază de cunoaștere, instanță de lume; schemă în loc de *matrix*) și cu lumea legendelor. O pagină nouă, `semantics`, închide hotărârile de limbaj de la 3.1. |
 | exemplele din pagini | Fiecare exemplu rulează ca test. Exemplele sunt numai din cele patru domenii; lumile inventate de până acum (raftul, colierul) ies din documentație. |
 | skill-urile | `author-live-world` devine „cum declari un domeniu”: sloturi legate de concepte, unelte, nimic altceva. `audit-knowledge` verifică nivelul de generalitate și listele de cuvinte. `propose-generic-method`, `consolidate`, `improve-world-from-failures`, `expand-and-test-case`, `learn-language-rules`, `learn-world-from-examples` se rescriu pe regula „de la general la particular”. Lista cazurilor nerezolvate se numește „register of unsupported cases”. |

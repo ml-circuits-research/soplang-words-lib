@@ -4736,3 +4736,50 @@ print(w.tell('@claim std.reply.existence owner=reply revision=1 status=made').ok
 made
 true
 ```
+
+### prepareRequestBatch(input, options)
+
+Added with 0.196. Takes `{entries:[{id, request, wires, after}]}` and returns `{ok, plan?, issues}`. Each entry carries one complete schema-valid request graph and explicitly lists the entry IDs whose semantic success it requires. Every graph is checked with the existing generic serializer and request inspector before a plan is returned. No entry can insert executable declarations or refer into another entry's graph. Graph IDs are local to an entry; the same request ID can occur in different entries without being merged.
+
+The frozen plan contains canonical entries and topological `layers`. Entry and dependency IDs are sorted for reproducibility; sorting never creates a dependency. Entries in the same layer are independent. Missing dependencies, self-edges, duplicates, cycles or any malformed graph refuse the whole preparation. Existing selector/result, relation, logical group, quantifier, numeric and question structures remain intact: this boundary imposes no property-only profile and does not certify that a host implements them.
+
+`budget` (default 200000) bounds batch copying, decoding and scheduling work; `graphBudget` (default 20000) independently bounds each graph validation. Total validation work therefore also depends on the number of entries. These are separate explicit limits, not a claimed single global operation count. Input data is copied without invoking accessors. Preparation performs no host effects and chooses no language alternative. The caller must pass an already selected interpretation and retain the reader's provenance with its journal; schema validity alone does not establish semantic coverage or user intent. Follow-up referents require explicit resolution; `after` does not silently bind pronouns to prior results.
+
+```js
+const wires = '@s std.request.source text="Inspect."\n@r std.request act=inspect mood=ask source=$s';
+const prepared = prepareRequestBatch({entries:[{id:'inspection', request:'r', wires, after:[]}]});
+print(prepared.ok);
+print(prepared.plan.layers);
+```
+
+```output
+true
+[["inspection"]]
+```
+
+### requestBatchFrontier(plan, outcomes, options)
+
+Returns `{ok, ready, waiting, blocked, complete, issues}` for a plan created by this module instance. `outcomes` is an array of unique `{id,status}` records, where status is confirmed, unverified, refused, failed or unknown. A consumer may report confirmed only after its evidence establishes the required semantic success. An effect receipt or successful host call alone is not enough. The function trusts this report; it is a scheduler, not an assessment validator.
+
+A pending entry is ready only when all its dependencies are confirmed. Unverified/refused/failed/unknown outcomes block descendants; independent entries remain ready. Missing prerequisite outcomes leave descendants waiting. `blocked` reports immediate obstructing dependencies, including transitively blocked entries. `complete` means a terminal outcome was reported, not that it succeeded. Outcomes for dependent entries before prerequisite confirmation are rejected, rather than rewriting their causal history. Calls do not mutate the plan or remember outcomes; supply the complete history each time. A JSON copy is not a prepared plan: re-prepare the original batch after process/bundle changes. Optional `budget` bounds frontier work.
+
+```js
+const wires = '@source std.request.source text="Inspect an invented item."\n@r std.request act=inspect mood=ask source=$source\n@t std.request.target request=$r mode=existing kind=toy.item';
+const result = prepareRequestBatch({entries:[
+  {id:'first', request:'r', wires, after:[]},
+  {id:'dependent', request:'r', wires, after:['first']},
+  {id:'independent', request:'r', wires, after:[]}
+]});
+print(result.ok);
+print(requestBatchFrontier(result.plan).ready);
+const next = requestBatchFrontier(result.plan, [{id:'first',status:'unverified'}]);
+print(next.ready);
+print(next.blocked.map(entry => entry.id));
+```
+
+```output
+true
+["first","independent"]
+["independent"]
+["dependent"]
+```

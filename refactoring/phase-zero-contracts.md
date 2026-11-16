@@ -188,3 +188,8 @@ The owner decision relayed in PSys2 at 21:45 supersedes the historical legacy-de
 ## Parallel implementation update: existence evidence (0.195)
 
 `assessExistenceChange` adds closed trace subject/presence/population records and retained existence claims. Area adapters can consume it after publication, with complete lifecycle observations, stable incarnated subjects and explicit step references. Filtered membership cannot verify deletion; incomplete absence remains unknown. This does not complete relation/numeric assessments, semantic request revision linkage or complex-command execution. Those continue alongside area hosts and training, not as serial prerequisites.
+
+
+## Shared complex-request integration (0.196)
+
+The dispatcher can now consume `prepareRequestBatch` plans across area capabilities, retaining complete schema graphs and explicit dependencies. `requestBatchFrontier` blocks dependants of unverified/refused outcomes while keeping independent work available. This addresses multi-request orchestration together with quantifiers, selector/result graphs, relations and questions structurally, rather than defining another sentence profile. Predicate execution, natural-language coverage and cross-request referent resolution remain explicit consumer/reader obligations; no graph preparation result is an effect claim.

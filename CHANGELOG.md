@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.196.0
+
+- Prepare complete request batches with explicit dependency DAGs and derive execution frontiers without implicit ordering or treating unverified effects as semantic success. Existing complex request graphs remain intact.
+
 ## 0.195.0
 
 - Add typed historical population and presence evidence with `assessExistenceChange` and retained `std.reply.existence` claims. Partial absence and filtered-view transitions cannot claim creation or deletion.

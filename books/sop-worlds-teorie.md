@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 46, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 47, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -1382,6 +1382,40 @@ Graficul nu se schimbă singur când se schimbă calendarul. Dacă o ședință 
 Un grafic al ședințelor pe persoană este construit dintr-o stare identificată a calendarului. Diagrama păstrează proveniența citirii, astfel încât o întrebare ulterioară să poată primi un răspuns despre datele folosite. Dacă ședințele se schimbă, graficul nu trebuie prezentat drept imagine a calendarului actual fără o nouă citire.
 
 „Update the chart” produce o actualizare explicită, verificabilă și anulabilă. Anularea ei restaurează graficul anterior; nu anulează schimbările calendarului care au avut loc între cele două citiri. Această separare a responsabilităților împiedică o operație de prezentare să modifice accidental sursa.
+
+### 6.1.2 Proiecția declarativă între lumi
+
+O **proiecție (projection)** construiește o descriere în lumea destinație dintr-o selecție explicită a lumii sursă. Ea nu schimbă felul lucrurilor originale: ședința rămâne ședință în calendar, iar nodul care o reprezintă este un lucru nou în diagramă. Corespondența dintre ele este cunoaștere declarată, nu o asemănare dedusă din numele sloturilor. Două sloturi numite `start` pot însemna un moment și, respectiv, un nod inițial; copierea lor după nume ar fi greșită.
+
+Contractul propus folosește regulile din capitolul 3 într-un context de compoziție: sursele sunt citiri versionate, iar concluziile sunt candidați ai destinației. `collect` recuperează faptele și regulile necesare; nu inventează corespondența dintre domenii și nu dovedește singur că selecția este completă. Evaluarea regulilor nu publică efecte în unealtă. Candidații trec mai întâi prin schema și constrângerile destinației, apoi prin planificarea și execuția din secțiunile 6.7–6.9. Mecanismele de reguli există; integrarea completă a acestui contract de proiecție este propusă.
+
+| Declarație necesară | Ce fixează și de ce |
+|---|---|
+| Selecția sursei | Instanța, versiunea de stare, intervalul și filtrul; pentru o săptămână, și fusul orar în care se stabilesc limitele zilelor. |
+| Corespondența obiectelor | Felul sursă, condițiile de potrivire și felul destinație; cheia rezultatului distinge obiectele cu aceeași etichetă. |
+| Corespondența valorilor | Slotul citit, transformarea, unitatea și slotul scris. Poziția pe o axă temporală cere origine și scară, nu simpla copiere a orei. |
+| Regula relațiilor | Condiția exactă pentru o legătură: succesiune temporală, participant comun sau altă relație declarată. Aceste sensuri nu sunt interschimbabile. |
+| Agregarea | Gruparea, identitatea elementului numărat, tratamentul duplicatelor și dovada acoperirii colecției. |
+| Proveniența rezultatului | Selecția, valorile consumate, identitățile sursă, versiunea regulilor și parametrii transformării care permit explicarea rezultatului. |
+
+Să cerem „draw a diagram of my week”. Cererea fixează sursa și destinația, dar nu spune ce înseamnă legăturile. O proiecție de succesiune și una de participanți comuni sunt alternative reale. Alegerea urmează secțiunea 6.7.1: poate fi susținută de contextul deja acceptat sau poate cere clarificare. Nu se desenează săgeți al căror sens nu poate fi explicat. Presupunem aici că omul a ales reprezentarea ședințelor fără legături, cu poziție pe axa timpului.
+
+Instantaneul săptămânii conține `m1`, de la 11:00 la 11:30, cu Ana și Dan, și `m2`, de la 14:00 la 15:00 în aceeași zi, numai cu Ana. Regula de obiect produce câte un nod pentru fiecare identitate de apariție a ședinței. Pentru o serie recurentă se folosește identitatea apariției, nu numai identitatea seriei. Eticheta rezultă din intervalul citit. Dacă originea axei este 09:00 și scara aleasă este două unități de desen pe minut, pozițiile sunt `(660 − 540) × 2 = 240`, respectiv `(840 − 540) × 2 = 600`. Calculul presupune aceeași zi fără schimbare de fus; cazul general calculează diferența dintre momente rezolvate, nu dintre două ore locale izolate.
+
+Corespondența nu este completă până când schema destinației nu spune ce înseamnă această poziție: aici este coordonata orizontală a centrului nodului, într-un cadru declarat al diagramei. Scara aparține prezentării și rămâne în proveniență; nu modifică durata ședinței. Un alt layout poate folosi aceeași selecție cu altă scară. Dacă nodurile se suprapun, constrângerile de layout cer o altă așezare sau o altă scară; nu mută ședințele în calendar pentru a face loc în desen.
+
+| Rezultatul urmărit | Regula aplicată instantaneului |
+|---|---|
+| Nod pentru `m1` | Identitate nouă în diagramă, proveniență către apariția `m1`, etichetă `11:00–11:30`, poziție orizontală `240` în cadrul ales. |
+| Nod pentru `m2` | Identitate distinctă, proveniență către apariția `m2`, etichetă `14:00–15:00`, poziție orizontală `600` în același cadru. |
+| Numărul ședințelor Anei | Grupul de identități distincte este `{m1, m2}`; rezultatul este `2`. |
+| Numărul ședințelor lui Dan | Grupul este `{m1}`; rezultatul este `1`. |
+
+Ultimele două rânduri aparțin altei proiecții, „a bar chart of meetings per person”. Regula formează perechi distincte `(persoană, apariție)`, grupează după persoană și numără aparițiile din fiecare grup. Ședința comună contribuie o dată fiecărei persoane; suma barelor este deci numărul participărilor, nu numărul ședințelor. Dacă selecția este incompletă, valorile nu pot fi prezentate drept totalurile săptămânii. O bară zero pentru o persoană fără ședințe cere și mulțimea persoanelor care trebuie afișate; absența ei din grupurile găsite nu furnizează singură această informație.
+
+Fiecare fapt produs păstrează justificarea sa: un nod indică apariția citită, o legătură indică ambele capete și regula relației, iar o bară indică grupul și acoperirea selecției. Proveniența locală de tip `source.snapshot`, exemplificată în secțiunea 8.6, păstrează valorile consumate; o referință activă temporară către calendar nu este exportată ca și cum ar fi o dovadă autonomă. Identitatea rezultatului ține cont de proiecție și de cheia sursă sau a grupului, astfel încât două ședințe cu aceeași etichetă să nu se contopească.
+
+Actualizarea explicită recitește sursa, reevaluează aceleași reguli versionate și compară rezultatele după aceste chei. Nodul dispărut din selecție poate fi eliminat din rezultatul proiecției, dar nu din calendar. Modificările manuale ale diagramei trebuie identificate separat: planul nu le suprascrie tacit. Dacă ele contrazic noul rezultat, prezintă conflictul și alternativa de păstrare sau regenerare. Publicarea noii diagrame este verificată ca un întreg, iar anularea restaurează instantaneul precedent al destinației, conform R59.
 
 ## 6.2 Drumul unui mesaj, pe etape
 

@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 19, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 20, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -85,7 +85,7 @@ Identificatorul firului este `f1`. Tipul lui este `fish`. Are trei chei. Cheia `
 
 ## 2.2 Categorii lexicale și valori
 
-Analiza lexicală separă textul în unități numite token-uri. La acest nivel, o valoare aparține uneia dintre categoriile de mai jos. Categoria lexicală nu este încă tipul semantic al valorii: `10:30` este recunoscut ca atom, apoi schema poate cere interpretarea lui ca oră.
+Analiza lexicală separă textul în unități lexicale (tokens). La acest nivel, o valoare aparține uneia dintre categoriile de mai jos. Categoria lexicală nu este încă tipul semantic al valorii: `10:30` este recunoscut ca atom, apoi schema poate cere interpretarea lui ca oră.
 
 | Felul | Cum se scrie și ce este |
 |---|---|
@@ -172,7 +172,7 @@ Regulile de mai jos separă identitatea persistentă de rezolvarea unei referin�
 | R7 — Rezolvarea referințelor | Contextul distinge ținta factuală de pattern-ul unei reguli. |
 | R8 — Integritatea legăturilor | O țintă factuală trebuie rezolvată înainte de acceptarea schimbării. |
 
-Identitatea persistentă a unui fapt este perechea dintre identitatea imutabilă a instanței și identificatorul local al faptului. **(Propus)** Numele afișat al lumii, numele modulului și calea pe disc nu sunt această identitate. Încărcătorul poate deduce un nume inițial din calea relativă, dar salvează separat identitatea instanței. Un namespace lizibil precum `calendar` se rezolvă în contextul proiectului la această identitate. Redenumirea ori mutarea directorului păstrează referințele; copierea independentă remapează identitățile și referințele interne împreună. Secțiunea 2.6 descrie contractul și deosebirea față de prefixele textuale actuale.
+Identitatea persistentă a unui fapt este perechea dintre identitatea imutabilă a instanței și identificatorul local al faptului. **(Propus)** Numele afișat al lumii, numele modulului și calea pe disc nu sunt această identitate. Încărcătorul poate deduce un nume inițial din calea relativă, dar salvează separat identitatea instanței. Un spațiu de nume lizibil precum `calendar` se rezolvă în contextul proiectului la această identitate. Redenumirea ori mutarea directorului păstrează referințele; copierea independentă remapează identitățile și referințele interne împreună. Secțiunea 2.6 descrie contractul și deosebirea față de prefixele textuale actuale.
 
 Într-un fapt, `$x` este o referință locală, rezolvată în contextul instanței. Forma calificată `$calendar::m1` poate desemna un fapt din altă instanță, conform secțiunii 2.6. În declarația unei reguli, `when=$p.node` numește un pattern din schemă; într-o condiție legată de acel pattern, referința poate desemna faptul găsit la evaluare. Rezolvarea identității declarației și legarea la un fapt sunt etape distincte, urmărite în secțiunea 3.5.
 
@@ -208,9 +208,13 @@ Un **spațiu de nume (namespace)** stabilește contextul în care un nume este r
 
 Aceste patru informații nu sunt identice. Calea unui fișier este adresa de stocare. Modulul este unitatea de schemă reutilizabilă. Instanța este o stare concretă construită cu acea schemă. Identificatorul local numește un fapt în acea instanță. Același modul al diagramei poate fi folosit de două diagrame diferite; o diagramă poate fi salvată în mai multe fișiere.
 
+În aplicația demonstrativă, desenul, diagrama, documentul și calendarul au fiecare câte o instanță distinctă. Descriptorul proiectului leagă numele lor lizibile de identități persistente, fișiere și scheme. Chiar dacă desenul și diagrama au amândouă un obiect `n1`, acestea nu sunt același lucru. La cererea unui grafic din calendar, aplicația citește instanța calendarului și creează obiecte în instanța diagramei; aici calificarea referințelor face vizibilă trecerea dintre cele două stări.
+
+Exemplele locale din capitolul 7 folosesc schema proprie a aplicației, deci păstrează tipuri precum `node` și `meeting`. Directorul `worlds/diagram/` din organizarea propusă nu califică singur tipul `node`. Dacă schema este publicată și importată printr-un modul calificat, tipul poate deveni `diagram.node`; atunci și sloturile, pattern-urile și folosirile sale trebuie calificate consecvent la import. Această operație asupra numelor de schemă este separată de prefixul `diagram::` al faptelor unei instanțe.
+
 ### 2.6.1 Calificarea referințelor
 
-În mecanismul existent al bibliotecii sopworld, programul gazdă furnizează un namespace la încărcarea faptelor. `@n1 node` încărcat în namespace-ul `diagram` devine faptul `diagram::n1`. O referință locală `$n1` din același context îl numește pe acesta. O referință calificată `$calendar::m1` numește un fapt al calendarului. `$::x` numește un fapt din contextul fără prefix.
+În mecanismul existent al bibliotecii sopworld, programul gazdă furnizează un spațiu de nume la încărcarea faptelor. `@n1 node` încărcat în spațiul de nume `diagram` devine faptul `diagram::n1`. O referință locală `$n1` din același context îl numește pe acesta. O referință calificată `$calendar::m1` numește un fapt al calendarului. `$::x` numește un fapt din contextul fără prefix.
 
 ```
 @n1 node label="Review" source=$calendar::m1
@@ -222,27 +226,42 @@ Aceste patru informații nu sunt identice. Calea unui fișier este adresa de sto
 
 ### 2.6.2 Organizarea pe disc — contract propus
 
-Organizarea proiectului trebuie să poată furniza namespace-uri implicite. Propunerea este ca încărcătorul proiectului să citească un manifest: o declarație a rădăcinii proiectului, modulelor, importurilor și instanțelor. Manifestul poate deduce numele inițiale din căi relative. Forma concretă a manifestului rămâne de stabilit; tabelul următor descrie contractul, nu o funcționalitate implementată.
+Organizarea proiectului trebuie să poată furniza spații de nume implicite. Propunerea este ca încărcătorul proiectului să citească un descriptor de proiect (manifest): o declarație a rădăcinii proiectului, modulelor, importurilor și instanțelor. Descriptorul poate deduce numele inițiale din căi relative. Forma concretă a descriptorului rămâne de stabilit; tabelul următor descrie contractul, nu o funcționalitate implementată.
 
 | Cale relativă | Rol declarat în proiect |
 |---|---|
 | `worlds/diagram/schema.sop` | Schema modulului diagramei; numele public este explicit și rămâne stabil. |
 | `worlds/diagram/rules.sop` | Reguli ale aceluiași modul, nu altă instanță pentru că sunt în alt fișier. |
 | `instances/diagram/main.sop` | Fapte ale unei instanțe cu identitate persistentă. |
-| `instances/diagram/parts/nodes.sop` | Alte fapte ale aceleiași instanțe, dacă manifestul spune aceasta. |
+| `instances/diagram/parts/nodes.sop` | Alte fapte ale aceleiași instanțe, dacă descriptorul spune aceasta. |
 | `instances/calendar/main.sop` | Fapte ale instanței calendarului, legate explicit de diagramă când este nevoie. |
 
 Încărcătorul rezolvă întâi calea relativ la rădăcina declarată, apoi rolul fișierului. Două căi normalizate care desemnează același fișier nu îl încarcă de două ori. Un import care iese din rădăcinile permise se refuză; o dependență publicată se identifică prin modul și versiune, nu prin calea absolută de pe calculatorul autorului.
 
 Numele dedus din cale este o convenție de inițializare, nu identitatea permanentă a faptelor. La prima salvare, instanța primește și păstrează o identitate imutabilă. Mutarea directorului nu creează altă instanță. Copierea unui proiect trebuie să aleagă explicit între continuarea aceleiași identități și crearea unei copii independente cu remaparea referințelor. La coliziune între identități, încărcătorul refuză îmbinarea implicită.
 
+Persistența cere și o regulă de atribuire a fișierului de destinație. Pentru fiecare fapt existent, descriptorul identifică fișierul care îl deține; pentru un fapt nou, declară o destinație implicită sau o regulă deterministă de repartizare. În exemplul diagramei, nodurile noi pot merge în `parts/nodes.sop`, iar restul faptelor în `main.sop`. O repartizare absentă sau ambiguă oprește salvarea, fără să suprascrie fișierele existente.
+
+| Situație la încărcare sau copiere | Comportamentul propus |
+|---|---|
+| Două căi diferite deduc același nume de instanță | Se refuză deducerea ambiguă; descriptorul trebuie să declare nume distincte. Regula acoperă și diferențele numai de majuscule pe un sistem de fișiere care nu le distinge. |
+| Calendarul este mutat în afara rădăcinilor declarate, iar diagrama conține `$calendar::m1` | Activarea contextului care conține referința se refuză, cu sursa și ținta lipsă în diagnostic. Nu se alterează fișierele salvate și nu se prezintă contextul ca valid. |
+| O copie independentă are referințe spre o instanță din afara copiei | Referințele externe își păstrează ținta originală numai dacă descriptorul copiei declară explicit dependența externă. Altfel copierea se refuză înainte de publicarea copiei. |
+| Aceeași instanță este repartizată în mai multe fișiere | Fiecare fapt are o singură destinație declarată. Salvarea nu dublează faptul în fișiere concurente. |
+
+Coliziunea de nume și coliziunea de identități sunt erori diferite. `instances/diagram/main.sop` și `instances/diagram.sop` pot deduce amândouă numele `diagram` fără să reprezinte aceeași instanță. Încărcătorul nu rezolvă această situație alegând primul fișier găsit. De asemenea, numele diferite nu autorizează încărcarea de două ori a aceleiași identități cu stări incompatibile.
+
+Politica referinței lipsă păstrează cerința R8: o legătură factuală activă trebuie să aibă țintă. Un grafic salvat ca instantaneu poate rămâne consultabil fără calendar dacă proveniența lui este o înregistrare istorică autonomă, cu identitatea sursei, versiunea citită și valorile folosite. Acea înregistrare nu este o referință factuală activă spre un obiect absent. Formatul ei trebuie declarat distinct; exemplul `source=$calendar::m1` presupune încă ținta disponibilă. Afișarea unui rezultat istoric nu autorizează actualizarea lui fără reîncărcarea sursei.
+
 ### 2.6.3 Sublumi și limitele vizibilității
 
 Un subdirector nu este automat o sublume. Putem împărți o diagramă în fișiere doar pentru organizare, fără să schimbăm ce văd regulile. O **sublume (subworld)** există când este declarată o instanță distinctă, cu stare și identitate proprii, legată de instanța care o conține. Conținerea nu înseamnă automat import, moștenire de tipuri sau acces la toate faptele.
 
-Pentru a reuni date din două instanțe, un context de compunere declară ce scheme și ce fapte citește, la ce versiuni și cu ce drept de modificare. Referințele între lumi sunt explicite. Nu se leagă două fapte numai fiindcă numele local sau o valoare textuală coincid. Excepțiile intenționate, precum tipurile partajate, trebuie declarate; mecanismul existent folosește `shared=true` pentru participarea faptelor unui tip între namespace-uri.
+În demo, cele patru zone nu cer automat o ierarhie de sublumi. Un document care încorporează un desen poate justifica o asemenea compunere: documentul păstrează locul și dimensiunea inserției, iar desenul își păstrează propria schemă și stare. O imagine statică inserată în document este însă doar o resursă; nu devine sublume pentru că are un fișier separat.
 
-Firele schemei au identități în module; namespace-ul faptelor nu trebuie confundat cu calificarea tipurilor. `diagram.node` poate fi un tip public, iar `diagram::n1` un fapt. Punctul și `::` au roluri distincte. Nici `core.namespace`, în implementarea de astăzi, nu declară un namespace de instanță: el permite un prefix de chei. Acest nume istoric trebuie schimbat sau explicat până la migrare.
+Pentru a reuni date din două instanțe, un context de compunere declară ce scheme și ce fapte citește, la ce versiuni și cu ce drept de modificare. Referințele între lumi sunt explicite. Nu se leagă două fapte numai fiindcă numele local sau o valoare textuală coincid. Excepțiile intenționate, precum tipurile partajate, trebuie declarate; mecanismul existent folosește `shared=true` pentru participarea faptelor unui tip între spații de nume.
+
+Firele schemei au identități în module; spațiul de nume al faptelor nu trebuie confundat cu calificarea tipurilor. `diagram.node` poate fi un tip public, iar `diagram::n1` un fapt. Punctul și `::` au roluri distincte. Nici `core.namespace`, în implementarea de astăzi, nu declară un spațiu de nume de instanță: el permite un prefix de chei. Acest nume istoric trebuie schimbat sau explicat până la migrare.
 
 
 ---
@@ -2157,7 +2176,7 @@ Rândurile de mai jos sunt alegeri de politică. Prima coloană trimite la regul
 | Regula | Ce este de hotărât |
 |---|---|
 | R5 | Dacă lipsa de ordine a unei chei cu mai multe valori se declară cu `order=ignored` sau altfel. |
-| R6 | Identitatea imutabilă separată de nume este decisă; rămân formatul manifestului și reprezentarea persistentă a referințelor, conform 2.6. |
+| R6 | Identitatea imutabilă separată de nume este decisă; rămân formatul descriptorului de proiect și reprezentarea persistentă a referințelor, conform 2.6. |
 | R9 | Dacă „se știe că nu are” se scrie `none`, și pe ce sloturi este permis. |
 | R31 | Mărimea pașilor: 1,25 pentru mărimi; 30 de minute pentru oră. |
 | R34 | Dacă ce se învață poate trece vreodată în cunoașterea comună, și cine aprobă. |

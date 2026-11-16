@@ -919,7 +919,7 @@ PSys2 control 13:30 agrees with scope decisions already integrated in v16; no ru
 
 Owner finds table-only sections and titles such as “Cele patru semne” superficial. Rewrote §§2.3, 2.6, 3.4–3.5 with syntax versus semantics, facts versus patterns, explicit bindings and a full trace of when=$p.node. Renamed chapter-2 subsections using technical terminology. Namespace section separates paths, modules and instance identity, and proposes a project loader/manifest with path-derived initial names, stable saved identities and explicit subworld boundaries. This is a proposal for review, not a claim of current loader support.
 
-Please challenge: whether the matching trace matches actual engine behavior; whether proposed filesystem organization has a relocation or copy counterexample; whether a reader can explain what p.node/node/n1/$p.node mean without consulting implementation. Extend the same prose-first treatment to the rest of the book in review. Earlier F items remain tracked; this batch prioritizes the owner's direct clarification.
+Open follow-up: review the filesystem relocation/copy contract developed below. Matching-trace and p.node/node/n1/$p.node readability questions are resolved by the reviewer's independently executed traces at eaab9be and the explicit context explanation in §2.3. Earlier F items remain tracked.
 
 ### Review request — v19, contracts integrated into the relevant concepts
 
@@ -930,3 +930,9 @@ Review the explanations in context: point semantics (§2.2.1), identity (§2.4.1
 In particular challenge the calendar's corrected 9:30 alternative, learning factor versus realised-size arithmetic, qualified-reference semantics, and recurrence edit scope/finite checking/undo (§4.4.3, F34). Known-absence serialization is explicitly provisional rather than presented as implemented atom behavior. Other architecture/representation review items remain open; this rewrite does not close them implicitly.
 
 Integrated reviewer commits eaab9be and 999f682: F41 matches the owner-directed dissolution now completed; F35 also has an explicit forward explanation in §2.3. F36–F40 remain open for the namespace/terminology cycle. Please review the final integrated structure, not the intermediate standalone-chapter rewrite.
+
+### Review request — v20, concrete project loading and persistence
+
+Addressed F36–F40 in §2.6: Romanian namespace terminology, lexical-unit/project-descriptor definitions, the four demo instances, local versus module-qualified types, embedded drawing versus static resource, and deterministic persistence destinations. Added explicit decisions for name/case collisions, unresolved external targets and independent copies.
+
+F38(b) counterproposal: reject activation of a context containing an unresolved active factual reference, preserving R8; retain saved files unchanged. A standalone historical chart can be viewed only with self-contained provenance data, not by treating an active source=$calendar::m1 reference as resolved. Please counter with a concrete case if this distinction loses required demo behavior. F38(c): external references are preserved only as explicitly declared external dependencies of the copy; otherwise refuse before publishing it. Check that this contract is sufficient before a concrete manifest/provenance wire schema is written.

@@ -268,7 +268,7 @@ La cererea proprietarului, sesiunea worker redactează cartea și aceste planuri
 | Livrabil | Referință și dovada cerută la review |
 |---|---|
 | Spații și operații | 8.1–8.2, B24: lista operațiilor generale, schema completă, unități, metrică și operație nesuportată. |
-| Organizarea proiectului | 2.6 și R6: manifest, rădăcini de import, fișiere ale aceluiași modul, namespace-uri de instanțe și sublumi explicite. Probe de mutare fără schimbarea identității, copie independentă cu remapare, coliziune refuzată și import ciclic; formatul manifestului trebuie definit înainte de implementare. |
+| Organizarea proiectului | 2.6 și R6: manifest, rădăcini de import, fișiere ale aceluiași modul, namespace-uri de instanțe și sublumi explicite. Probe de mutare fără schimbarea identității, copie independentă cu remapare și dependențe externe explicite, coliziuni de nume/case refuzate, referință activă lipsă, destinație unică la salvare și import ciclic; formatul manifestului trebuie definit înainte de implementare. |
 | Reguli și interpretare | 2.2–2.5, 3.4–3.5 și 8.3, B25–B26: condiții și efecte structurate; traseu text–valori–referințe–regulă, cu erori localizate. |
 | Acces la cunoaștere | 8.4, B27–B28: dependențe directe și inverse, ciclu, fragment de bază lipsă, completitudine și invalidare. |
 | Motoare | 8.5, B29–B30: două motoare, rezultate distincte, verificare comună și buget epuizat. |

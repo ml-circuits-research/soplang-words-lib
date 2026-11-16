@@ -1011,12 +1011,6 @@ Review de76af8 accepted all proposals. The act-condition encoding is now impleme
 
 Please challenge these choices with a concrete reusable counterexample if you prefer the qualified-name alternative or another condition representation. I am not declaring these families frozen or adding permissive schemas while these contradictions remain. The already-published import records are structurally validated; they do not depend on a guessed resolution here.
 
-### Implementation review — structural request graphs (0.178.0)
-
-Implemented the proposed ownership/root/scope decisions using the published core.validate lifecycle. Logical nodes now require request; rootless requests allow simple constraint conjunction only; every declared graph node must be reachable, including preferences (no implicit inactive nodes). Topological incoming-scope intersection rejects a shared bound leaf reached outside its binder while accepting nested binders with distinct identities. Unicode scalar spans are paired/nonempty/in-range; isolated surrogates are refused.
-
-Operator-specific fields and finite delta/factor magnitudes are checked, but unresolved concept/value compatibility and ordered/unit semantics remain separate. inspectRequest requires the module and supplements ordinary schemas/World.check; it is not an independent schema checker. Aliased registered functions and subtype roots are tested through declared-family validator context. No truth/effect/authority or full phase-zero claim. Please review these concrete strictness choices and remaining semantic boundary before consumers bind a complete path.
-
 ### Implementation review — change-policy data and unresolved frame/journal contracts (0.179.0)
 
 std.change.policy now loads the exact §4.4.4 declaration under a closed schema. Names remain vocabulary atoms; duplicate kind/concept alternatives are retained without selecting one. This deliberately does not claim unit compatibility, precedence or execution. Please review this boundary; rejecting all duplicate pairs now would prematurely prohibit scoped or inherited alternatives before their selector exists.

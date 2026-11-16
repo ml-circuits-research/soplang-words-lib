@@ -118,3 +118,16 @@ retainPointSpace captures a validated axes space, ordered axes, numeric paramete
 ### Increment 0.187.0 — declarative parse-tree composition
 
 composeParses maps exact production IDs and lexical categories to structured JSON templates, independently for each parse candidate. Required child/feature mappings fail closed; alternatives and source ranges remain separate. Explicit syntax-only mappings are author assertions, not semantic coverage proofs. Own-property copying rejects exotic/non-JSON containers and accessors; budgets bound traversal. This mechanism does not itself emit or validate std.request wires, resolve domain references, rank alternatives or authorize execution. Knowledge declarations and a validated request adapter are separate follow-up work.
+
+
+### Review 10 — accepted publication and migration boundary
+
+Reviewer 53bafc4 accepted original source ranges and retained point-space capture after running their tests. Native binding must refuse a slot revision change while values exist unless a complete-value migration explicitly runs; declaring a new slot is the safe alternative. This accepted guard is still an implementation obligation, not a delivered native point feature. The exposed provisional reader set is development material; freeze a fresh independent final set only after development rules freeze, with its semantic review kept away from rule authors.
+
+### Increment 0.188.0 — composition equality guards
+
+composeParses accepts per-production template pairs that must compare equal after child composition and before parent construction. Structural JSON equality preserves primitive types and array order while ignoring object key order. All guard declarations are checked before returning candidates, including unused rules, and share the traversal budget. Guards reject incompatible proposals; they do not infer concept equivalence, convert units or validate a complete request. The SOP adapter must faithfully translate every agreement declaration to these guards.
+
+### Native point integration checklist from engine inspection
+
+The next runtime slice must cover the entire value path: matrix slot compilation and inherited bindings; World._iv canonical indexing; _same and _unifyValue (including a variable reused across incompatible point slots); _matchPaths named-axis reads; domain validation; index rebuilding after schema changes; and persisted binding identity across fork/replay/adoption. A canonical comma token alone cannot carry its binding through the generic string substitution environment. Keep literal comparison local to its slot and preserve/check binding compatibility for shared variables. The accepted migration guard must also cover changing type inheritance or removing/readding a declaration, rather than only direct edits to space.revision. Cross-binding conversion remains explicit; no implicit unit/frame conversion is authorized by numeric equality.

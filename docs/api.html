@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="5dee0608dcde">
+<meta name="source-hash" content="21dc887c0669">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.187.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.188.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -457,14 +457,17 @@ const np = nounPhrase(p[0].tree, { det: &#x27;DET&#x27;, head: &#x27;N&#x27;, pp
 print([np.rule, np.head, np.pp[0].words, parseText(w, &#x27;the moon&#x27;, { start: &#x27;NP&#x27;, types: { rule: &#x27;my.rule&#x27; }, classes: { DET: &#x27;my.det&#x27; } }).unknown]);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;r2&quot;,&quot;star&quot;,[&quot;next to&quot;,&quot;the&quot;,&quot;house&quot;],[{&quot;word&quot;:&quot;moon&quot;,&quot;at&quot;:1}]]</code></pre></figure>
 <h3 id="composeparsesparses-options">composeParses(parses, options?)</h3>
-<p><code>composeParses(parses, { rules, lexical, budget, maxDepth })</code> evaluates declarative semantic templates over each parse independently. <code>rules</code> maps exact production IDs; <code>lexical</code> maps lexical categories. Ordinary JSON objects/arrays assemble a record. <code>{$get: path}</code> copies an own-property path from <code>{node, children}</code>, where <code>children</code> contains already composed child values. <code>{$literal: value}</code> quotes JSON containing reserved keys. Every child must have a mapping; an explicit <code>{$literal: null}</code> can acknowledge syntax-only material.</p>
+<p><code>composeParses(parses, { rules, lexical, guards, budget, maxDepth })</code> evaluates declarative semantic templates over each parse independently. <code>rules</code> maps exact production IDs; <code>lexical</code> maps lexical categories. Ordinary JSON objects/arrays assemble a record. <code>{$get: path}</code> copies an own-property path from <code>{node, children}</code>, where <code>children</code> contains already composed child values. <code>{$literal: value}</code> quotes JSON containing reserved keys. Every child must have a mapping; an explicit <code>{$literal: null}</code> can acknowledge syntax-only material.</p>
+<p><code>guards</code> maps production IDs to arrays of <code>{left, right}</code> template pairs. Each pair is evaluated in the same <code>{node, children}</code> context after the children compose and before the parent's output template is evaluated. Both operands must exist and be structurally equal JSON. Object key insertion order does not matter; arrays are ordered, primitive types do not coerce, and JSON numeric zero has one value (<code>-0</code> and <code>0</code> agree). No approximate numeric or domain-specific equality is inferred. Several pairs are conjunctive; an empty array imposes no condition.</p>
+<p>All guard declarations are validated before any candidate is produced, including those for productions absent from this batch. Guard keys must name a declared <code>rules</code> entry; malformed maps/pairs/templates cannot silently disable a check. A valid unused guard's binding paths are resolved only when its production occurs. Unequal operands report <code>guard-rejected</code>; missing paths report <code>missing-binding</code>; malformed pairs or unknown production IDs report <code>invalid-guard</code>. Other existing JSON/path errors remain explicit. Declaration validation, operand evaluation and structural comparison share the composition budget. A declaration error has no parse <code>index</code>; later exhaustion may retain candidates already completed.</p>
 <p>The result contains <code>candidates: [{index, value}]</code> and <code>failures: [{index, reason}]</code>. Templates and copied values must be plain JSON: special object prototypes, sparse arrays, extra array properties, symbols, accessors and non-enumerable object properties are rejected. Accessors are never executed by binding/copy evaluation. The input is a <code>parseText</code> result; arbitrary malformed outer parse containers are not an alternate input format. Missing mappings/features reject that parse. Alternatives are retained without merging or ranking. Unmapped coordination is rejected. <code>budget</code> defaults to 20000 traversal/copy steps; <code>maxDepth</code> defaults to 64 (allowed range 1–256). Exhaustion retains earlier candidates and marks <code>truncated: true</code>; parser truncation also propagates. A candidate is a declared interpretation, not proof of completeness, exhaustive parsing, vocabulary validity or successful instance resolution.</p>
 <figure class="code"><figcaption>js</figcaption><pre><code>const w = new World();
 w.tell(&#x27;@n g.word text=ko cat=N kind=vessel @r g.rule lhs=M rhs=N&#x27;);
 const p = parseText(w, &#x27;ko&#x27;, { start: &#x27;M&#x27; });
 const composed = composeParses(p, {
   lexical: { N: { kind: { $get: [&#x27;node&#x27;, &#x27;feat&#x27;, &#x27;kind&#x27;] } } },
-  rules: { r: { target: { $get: [&#x27;children&#x27;, 0] } } }
+  rules: { r: { target: { $get: [&#x27;children&#x27;, 0] } } },
+  guards: { r: [{ left: { $get: [&#x27;children&#x27;, 0, &#x27;kind&#x27;] }, right: &#x27;vessel&#x27; }] }
 });
 print(composed.candidates);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[{&quot;index&quot;:0,&quot;value&quot;:{&quot;target&quot;:{&quot;kind&quot;:&quot;vessel&quot;}}}]</code></pre></figure>
@@ -1427,7 +1430,7 @@ print(retainPointSpace(w, &#x27;s&#x27;).created);</code></pre></figure>
 false</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.187.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.188.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

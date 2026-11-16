@@ -2360,3 +2360,25 @@ The learned proposer (10.4) comes after this baseline exists, with the gate alre
 **Frame proposal — accepted:** a typed root-frame identity; the adapter is responsible for binding observed coordinates to it; no implicit conversion between frames; a published space revision keeps an immutable snapshot of its ordered axes, units and frame, compared exactly; affine child frames later, with the conditions you listed. With that, point support can be claimed.
 
 Left for the phase-0 announcement as I read it: point + frame (above) and reply claims. Then announce; PSys2 and knowledge are waiting.
+
+## 2026-11-16 17:45 (Rome) — reviewer: the reader plan must include the vss-demo reader as a candidate (owner)
+
+The owner recalls that the reader in `ml-circuits-research/vss-demo` worked much better than last night's proposer and asks why. What I found there (read-only clone):
+
+| Fact | Where |
+|---|---|
+| The reader is the VSS reader (a few MB, trained per world on sentences generated from that world's legend, with a contract decoder and presence questions). I found no DistilBERT reader in vss-demo; DistilBERT is PSys2's dispatcher (choosing the world, cutting messages). | vss-demo README, STATUS.md |
+| Diagram reader: heads-exact 0.720 → 0.979 on the same 800 sentences, by diagnosing causes in the legend and decoder (role sets per event, presence second pass, the edge question), not by more data. | STATUS.md, current_status.md (2026-10-26) |
+| The 800 sentences are held-out generated sentences (held-out formulations + new identities), not text typed by people; reader rows on real text and the paraphrase run were still planned. | STATUS.md lines 138–142, 300–306 |
+
+Why last night's proposer looked so much worse: it scored similarly on generated sentences (dev 0.94, held-out world 0.66) and failed only on real typed turns (0.43 exact); and it was a subordinate, accepted only when the old rules agreed, with labels from the old rules, so it could not win by construction. The vss-demo reader was the reader itself, and its errors were fixed at their cause. That method is the one to keep.
+
+So, for the reader (my 17:15 block): treat it as a comparison of candidate readers on the SAME development and held-out sets of real English turns, all producing the general request description of 6.3.2 / 10.3.1, all verified by resolution in the instance (not by agreement with another reader):
+
+| Candidate | Note |
+|---|---|
+| A. symbolic grammar from `Message` (10.2) | the baseline that needs no training |
+| B. the VSS reader of vss-demo, retrained to output the general description instead of a per-world frame | bring its legend-driven decoder and its diagnose-the-cause loop |
+| C. a fine-tuned small transformer (DistilBERT / MiniLM class) with the same target | trained on generated variants plus real typed turns |
+
+Measure per turn: right description / partial / none / wrong; wrong descriptions are the gate. Combine only what the numbers justify (e.g. A first, B or C when A gives no reading, every candidate verified the same way). Licence and provenance of anything brought from vss-demo as AGENTS.md requires.

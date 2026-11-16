@@ -1367,6 +1367,9 @@ true r
 
 ### compileGrammarOverlay(world, options?)
 
+Since 0.197 a feature may declare `from_id=true` to carry the exact selected provider wire ID. This is mutually exclusive with `from_key` and `value`; false or any other flag value is rejected. It works uniformly for ordinary providers and `core.word`, respects source filters and `source_id`, and preserves distinct identities when providers share the same text. The value is the actual wire identity, not a display name, binding ID or synthesized semantic label. Source-family mappings can therefore use one binding for a declared family while retaining the exact lexical sense used by each candidate.
+
+
 Compiles a loaded SOP declaration module into explicit grammar options and semantic
 composition templates. The caller supplies all eight type identities in `types`:
 `binding`, `feature`, `filter`, `rule`, `map`, `node`, `step`, `agreement`. These roles
@@ -1375,7 +1378,7 @@ have fixed field names; the compiler contains no language or domain vocabulary.
 | Role | Fields | Meaning |
 | --- | --- | --- |
 | binding | name, source_type, text_key, cat; optional source_id | Select a loaded vocabulary provider and lexical category. |
-| feature | binding, key; exactly one of from_key/value | Copy a provider value or supply an explicit constant. |
+| feature | binding, key; exactly one of from_key/from_id/value | Copy a provider value, its exact wire identity (`from_id=true`), or an explicit constant. |
 | filter | binding, key, value | Conjunctive equality filter on provider values. |
 | rule | name, lhs, repeated rhs | Ordered category production. |
 | map | name, root; exactly one of rule/cat | Assign a template to a production or lexical category. |

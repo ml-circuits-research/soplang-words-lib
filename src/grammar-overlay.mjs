@@ -4,7 +4,7 @@ import { valueText } from './parser.mjs';
 // vocabulary remains in provider wires, never in this compiler.
 const SHAPES = {
   binding: ['name', 'source_type', 'text_key', 'cat', 'source_id?'],
-  feature: ['binding', 'key', 'from_key?', 'value?'],
+  feature: ['binding', 'key', 'from_key?', 'from_id?', 'value?'],
   filter: ['binding', 'key', 'value'],
   rule: ['name', 'lhs', 'rhs+'],
   map: ['name', 'rule?', 'cat?', 'root'],
@@ -172,7 +172,7 @@ export function compileGrammarOverlay(world, { types = {}, budget = 100000, maxD
       const defs = features.get(name) || [], checks = filters.get(name) || [], keys = new Set();
       for (const feature of defs) {
         tick(feature); const key = one(feature, 'key');
-        if (!key || keys.has(key) || has(feature, 'from_key') === has(feature, 'value')) fail('invalid-feature', feature);
+        if (!key || keys.has(key) || ['from_key', 'from_id', 'value'].filter(field => has(feature, field)).length !== 1 || (has(feature, 'from_id') && one(feature, 'from_id') !== 'true')) fail('invalid-feature', feature);
         keys.add(key);
       }
       let emitted = 0;
@@ -193,7 +193,7 @@ export function compileGrammarOverlay(world, { types = {}, budget = 100000, maxD
           let variants = [[]];
           for (const feature of defs) {
             tick(feature); const key = one(feature, 'key'), from = one(feature, 'from_key');
-            const values = has(feature, 'value') ? [one(feature, 'value')] : from === textKey ? [text] : vals(from);
+            const values = has(feature, 'from_id') ? [source.id] : has(feature, 'value') ? [one(feature, 'value')] : from === textKey ? [text] : vals(from);
             if (!values.length) fail('missing-provider-feature', source);
             const next = [];
             for (const variant of variants) for (const value of values) { tick(source); next.push([...variant, [key, value]]); }

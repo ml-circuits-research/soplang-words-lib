@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="555210841696">
+<meta name="source-hash" content="ed100b9ba903">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.196.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.197.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html" aria-current="page">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -784,9 +784,11 @@ print(builtins.time_add([&#x27;10:40&#x27;, &#x27;35min&#x27;]), builtins.div([&
 <p><code>prepareRequestBatch({entries:[{id,request,wires,after}]}, {budget?,graphBudget?})</code> preflights all complete request graphs and their explicit dependency DAG. Returns a detached frozen plan with canonical per-entry wires and topological layers. It preserves the complete published request schema, including quantification, relations, selector/result distinctions and questions. No implicit sequence, cross-entry target binding, host capability promise or execution is introduced. One invalid graph rejects the entire preparation. Batch and per-graph budgets are independent.</p>
 <h2 id="requestbatchfrontier">requestBatchFrontier</h2>
 <p><code>requestBatchFrontier(plan, outcomes?, {budget?})</code> derives ready, waiting, blocked and terminal entries without mutating the prepared plan. Only reported confirmed semantic success satisfies dependencies; unverified effects block descendants. Independent entries remain schedulable. Histories that execute dependent entries before confirmation are invalid. The scheduler trusts outcome reports and does not manufacture assessments. Plans are module-instance handles; restore by preparing the original batch again. See <a href="api.html#preparerequestbatchinput-options">the API example</a>.</p>
+<h3 id="provider-identity-features">Provider identity features</h3>
+<p>In a grammar overlay feature declaration, <code>from_id=true</code> copies the exact selected provider wire ID. Exactly one of <code>from_id</code>, <code>from_key</code> and <code>value</code> is permitted. Other flag values are invalid. Text aliases and provider filters retain their existing behavior; two providers with identical text remain distinct alternatives. The same rule applies to <code>core.word</code> providers. This is source identity, not inferred semantic identity or a new vocabulary lookup.</p>
 <p class="source">Generated from <code>docs/reference.md</code>.</p>
 </main>
-<footer>sopworld 0.196.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.197.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

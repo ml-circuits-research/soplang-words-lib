@@ -85,3 +85,16 @@ test('compilation records exact source instance and fact/schema revision, with r
  const fork=w.fork();assert.notEqual(c.source.world,fork,'a fork is not the compiled source even when revisions coincide');
  w.load('@extra core.type of=v.extra');assert.notEqual(c.source.stamp,w.stamp,'schema changes invalidate the source revision');
 });
+
+test('source-identity features preserve exact provider senses across aliases and filtered families',()=>{
+ const text=declarations.replace('from_key=kind','from_id=true')+'\n@a2 v.item text=ko text=ka kind=vessel';
+ const c=compile(text);assert.equal(c.ok,true,JSON.stringify(c));
+ assert.deepEqual(new Set(c.grammar.lexicon.ko.map(x=>x.feat.kind)),new Set(['a','a2']));
+ assert.deepEqual(c.grammar.lexicon.ka.map(x=>x.feat.kind),['a2']);
+ for(const item of c.grammar.lexicon.ko)assert.equal(item.feat.kind,c.provenance[item.origin].wire);
+ const filtered=compile(text+'\n@filter toy.filter binding=names key=text value=ka');assert.equal(filtered.ok,true);assert.equal(filtered.grammar.lexicon.ko,undefined);assert.equal(filtered.grammar.lexicon.ka[0].feat.kind,'a2');
+ const core=compile(text.replaceAll('v.item','core.word'));assert.equal(core.ok,true);assert.deepEqual(new Set(core.grammar.lexicon.ko.map(x=>x.feat.kind)),new Set(['a','a2']));
+ const restricted=compile(text.replace('cat=N\n@f','cat=N source_id=a\n@f'));assert.equal(restricted.ok,true);assert.deepEqual(restricted.grammar.lexicon.ko.map(x=>x.feat.kind),['a']);
+ for(const declaration of ['from_id=false','from_id=anything','from_id=true value=literal','from_id=true from_key=kind','from_id=true from_id=false'])assert.equal(compile(declarations.replace('from_key=kind',declaration)).ok,false,declaration);
+ assert.equal(compileGrammarOverlay(make(text),{types,budget:1}).ok,false);
+});

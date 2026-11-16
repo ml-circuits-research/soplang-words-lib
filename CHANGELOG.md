@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.197.0
+
+- Grammar overlay features can copy exact provider identity with `from_id=true`, supporting source-filtered families without per-record literal mappings. General English reader compatibility integration consumes published frame/request declarations.
+
 ## 0.196.0
 
 - Prepare complete request batches with explicit dependency DAGs and derive execution frontiers without implicit ordering or treating unverified effects as semantic success. Existing complex request graphs remain intact.

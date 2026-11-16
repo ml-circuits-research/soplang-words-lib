@@ -2094,3 +2094,7 @@ The closed `std.reply.existence` claim has owner, revision and status: made, rem
 ## requestBatchFrontier
 
 `requestBatchFrontier(plan, outcomes?, {budget?})` derives ready, waiting, blocked and terminal entries without mutating the prepared plan. Only reported confirmed semantic success satisfies dependencies; unverified effects block descendants. Independent entries remain schedulable. Histories that execute dependent entries before confirmation are invalid. The scheduler trusts outcome reports and does not manufacture assessments. Plans are module-instance handles; restore by preparing the original batch again. See [the API example](api.md#preparerequestbatchinput-options).
+
+### Provider identity features
+
+In a grammar overlay feature declaration, `from_id=true` copies the exact selected provider wire ID. Exactly one of `from_id`, `from_key` and `value` is permitted. Other flag values are invalid. Text aliases and provider filters retain their existing behavior; two providers with identical text remain distinct alternatives. The same rule applies to `core.word` providers. This is source identity, not inferred semantic identity or a new vocabulary lookup.

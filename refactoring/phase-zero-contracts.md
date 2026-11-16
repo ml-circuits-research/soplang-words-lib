@@ -159,3 +159,9 @@ assessPropertyChange plus std.reply.property provide the first-path reply slice:
 ### Increment 0.192.0 — checked grammar-to-request bridge
 
 readGrammarRequests accepts explicit positive property assignment readings over existing targets, preserving alternatives and exact original-source evidence. It checks exact compilation freshness, parse pruning, composition failures and lexical coverage before returning structurally validated request graphs. Terminal punctuation is consumer policy; unsupported profiles decline. Published knowledge integration uses ef0a1b27. Instance resolution, effects and reply realization remain consumer work; no end-to-end success is claimed by this bridge.
+
+### Review 13 — accepted narrow slice and next serializer boundary
+
+The reviewer accepted the exact-property assessment and first-path request bridge. Before adding another construction, replace its fixed semantic shape and wire template with schema-driven graph serialization: composition supplies nodes/edges using published std.request type/slot identities, the serializer preserves values and references, and inspectRequest determines graph validity. Consumer profile declarations constrain supported interpretations; source coverage and lexical provenance remain general checks.
+
+Announce the phase-zero release only after the first path runs end to end. Its deferred list must explicitly include general predicates, grouped replies, existence assessment, semantic request revision linkage, tolerance, learning episodes and calibration-to-axis binding. Existing native-token claims do not imply these capabilities. Native point binding remains in the subsequent migration-guard step.

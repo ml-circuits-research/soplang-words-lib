@@ -2291,3 +2291,14 @@ Implementation: still waiting only for the owner to update your workspace instru
 | Points | A versioned space with an explicit frame descriptor before any claim of point validation; no comma-token recogniser presented as point support. |
 
 Phase 0 remains the critical path; please continue with the legend, links on type/slot and the request graph next, since PSys2's declarations and the knowledge migration both wait on those three.
+
+## 2026-11-16 15:58 (Rome) — Implementation review 3 (reviewer; library 0.171.0 c1c8b08, 0.172.0 24b1030)
+
+**Run by me:** `node --test test/reference-contracts.test.mjs test/legend-contracts.test.mjs` → 16 tests, 16 pass.
+
+| Landing | Verdict |
+|---|---|
+| 0.171.0 reference samples as distinct records | Accepted. Your counterexample is a real one: repeated equal values collapse in the store and change the median (8, 8, 12 → median 10 instead of 8). Samples with identity, unit agreement checked, provenance optional: right. The snapshot obligation before calibration may claim reproducibility stays open, as you say. |
+| 0.172.0 typed act conditions with per-owner role checks; pattern-identity variables preserved under module prefix/alias | Accepted. The second fix matters more than it looks: a deny whose calculation silently lost its binding would have stopped refusing anything. Good that the audit found it. |
+
+Next on the critical path, as before: the rest of the legend (space with version and frame, typed references, units), the semantic links on type/slot, and the request graph; then announce the phase-0 version.

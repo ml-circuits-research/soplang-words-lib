@@ -5969,3 +5969,9 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - The three implementation-conformance checks from reviewer 22:50 remain pending: this round prioritizes the owner's new conceptual-completeness request and makes no exhaustive code-conformance claim.
 - Next cycle: fetch reviewer changes; compare each answer with revised book sections; remove only resolved questions, retain unresolved ones and add focused follow-ups. No automatic implementation authorization.
 - Validation: `git diff --check`; `npm test` and `SOPWORLD_BUNDLE=1 npm run test:src`: each 650 tests, 648 pass, 0 fail, 1 skipped, 1 todo. Build produced no tracked changes.
+
+## 2026-11-16 — G0: book review operational-depth supplement
+
+- Added B24–B33 under Book at the owner's request, before answers to B01–B23. Each asks for a concrete contract, worked trace and decision between alternatives. Inspected PSys2 src/knowledge/catalog.mjs, src/reasoner/index.mjs, src/dialog/request.mjs and library src/knowledge.mjs to ground retrieval/interpreter/reasoner questions. No implementation changes or architectural decisions made.
+
+- Owner transferred authorship of books/ and refactoring/ to this worker. Integrated reviewer v13 (f31a79d); authored v14 chapter 9, corrected R24 region inclusion, added plan §10 gates and RV1–RV5 review requests. No runtime code changed.

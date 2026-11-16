@@ -257,3 +257,20 @@ Durata nu o pot promite. Estimarea mea, cu cele două sesiuni de lucru: pașii 1
 | învățarea factorilor | Unde se ține ce învață sistemul despre „mare” pentru un om și un fel de lume: numai în instanță, sau și în cunoașterea felului de lume. Propun: întâi în instanță; trecerea în cunoaștere, mai târziu, cu o regulă scrisă. |
 | harta | Se elimină deocamdată, ca muzica, sau trece pe declarații după calendar. |
 | avatarul | Rămâne al cincilea domeniu, sau devine parte a desenului. |
+
+
+## 10. Predarea redactării și poarta de proiectare (versiunea cărții 14)
+
+La cererea proprietarului, sesiunea worker redactează cartea și aceste planuri; sesiunea de control le face review. Feedbackul este cerut prin `questions.md`, secțiunea Book. Implementarea refactoringului nu este încă autorizată.
+
+Înainte de pasul 3 din secțiunea 8 se închid următoarele livrabile. Capitolul 9 al cărții este prima explicație a contractelor, nu o dovadă că sunt deja implementate.
+
+| Livrabil | Referință | Dovada cerută la review |
+|---|---|---|
+| Schema unui spațiu nou și a operațiilor lui | 9.1–9.2, B24 | Exemplu complet, unități, metrică, limite și operație nesuportată. |
+| Reprezentarea regulilor și interpretarea unică a firelor | 9.3, B25–B26 | Traseu text–valori–referințe–regulă, cu erori localizate. |
+| Accesul la cunoașterea relevantă și completitudinea | 9.4, B27–B28 | Dependențe directe și inverse, ciclu, shard lipsă și invalidare. |
+| Contractele motoarelor și coordonarea lor | 9.5, B29–B30 | Două motoare, rezultate distincte, verificare și buget epuizat. |
+| Refolosirea între domenii | 9.6, B31–B33 | Identități păstrate, exemplu numeric complet, eșec și recuperare. |
+
+Ordinea este contract semantic, reprezentare, exemple manuale și review, apoi implementare după aprobare. Scăderea numărului de constante sau de rânduri nu înlocuiește aceste probe.

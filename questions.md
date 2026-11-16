@@ -816,3 +816,79 @@ Keeping engine tests unchanged conflicts with intentionally changing fact/patter
 **Location:** 1.3; Annex C; refactoring §8.
 
 Can we define book readiness as: every concept defined without circular references, each normative rule linked to examples and counterexamples, every example dependency explicit, every unresolved choice recorded, and every refactoring task mapped to approved requirements? Please distinguish editorial clarity from design approval and implemented conformance; a passing current test cannot establish the intended semantics.
+
+### Round 1 supplement — owner requests operational depth and design alternatives
+
+The owner explicitly asks us to go deeper before reviewer answers: explain how spaces, rules, interpreters, concept retrieval and multiple reasoners actually work. The alternatives below are proposals for discussion, not accepted architecture. Please decide in the book, explain why, and flag choices requiring owner approval. Existing PSys2 code is evidence of missing contracts, not the conceptual authority.
+
+#### B24 — Teach adding a space, end to end
+
+**Location:** 4.4–4.8; 7.2.
+
+What exactly does an author write to add a space the engine has never seen? Please teach this using diagram clearance: axes and units, valid points, distance, regions, comparison, tool realizability, and links from slots. Show all wires and intermediate results, not just type names. Proposed approach: a small declared algebra of space operations with explicit contracts; reuse its metric when sufficient, otherwise register a pure typed distance function. Alternative: arbitrary per-space code. Which operations must remain generic, how is capability absence reported, and what experiment proves that no domain switch was added?
+
+#### B25 — Teach writing and evaluating rules
+
+**Location:** 3.4–3.7; 4.6; 6.8.
+
+How does an author express a rule over a new space, attach it to a concept and know when it runs? Work through room capacity and interval overlap from declarations to variable bindings, function calls and violation evidence. Proposed separation: derivation rules, hard validity constraints, soft preferences, act preconditions/effects; each has a declared applicability scope. Specify recursion, negation, ordering, conflict and termination. Show a cyclic rule and an unavailable function, with precise outcomes. Must derived rules be independent of declaration order?
+
+#### B26 — The interpreter pipeline
+
+**Location:** 2–3; 4.8; 6.2.
+
+What does interpreting a wire mean at each stage: tokenization, parsing, name/reference resolution, schema checking, concept binding, rule compilation, runtime evaluation? Give one consistent intermediate representation with source locations, literal/reference distinction and semantic role. Proposed approach: one parser and semantic representation used by all consumers, followed by validated projections for tools. PSys2 src/knowledge/catalog.mjs currently has its own parseLine/parseShard; src/dialog/request.mjs generates declarations with regexes in catalogWholes. Which of these responsibilities survives, and how do we avoid a second interpretation of the same wire? Show a multiline fact, quoted text and a reference through every stage.
+
+#### B27 — Gather the relevant wires of a concept
+
+**Location:** 4.2; 5.2–5.3; 6.8.
+
+Given a concept id and a task, how do we obtain its definition, ancestors, slots, spaces, rules, words, defaults, parts, realizations and current instances across shards? A word-to-shard index is not that contract: src/knowledge.mjs plans dependency schemas and vocabulary-selected shards, while PSys2 catalog.load filters k.objects. Proposed approach: typed forward/reverse indexes plus dependency closure driven by the requested operation, returning wire ids, versions, provenance and a coverage certificate. Define the edge kinds traversed, stop conditions, cycle handling and distinction between semantic relevance and retrieval optimization. Trace duck -> bird -> realization, and meeting -> participant -> all overlapping reservations, including rules that mention an ancestor rather than the requested concept.
+
+#### B28 — Retrieval completeness and absence
+
+**Location:** 3.9; 5.3–5.4.
+
+When may a reasoner conclude there is no conflicting meeting if some shards have not loaded? Proposed result: known data plus coverage scope, missing dependencies and snapshot version; absence is conclusive only under a declared closed scope. Alternatives are eager full loading or explicitly incomplete reasoning. Choose the semantics first. Show network failure, stale cache, newly published constraint, and a query that discovers another required shard. How are cached conclusions invalidated, and can execution proceed under partial coverage?
+
+#### B29 — Plug in another reasoning engine
+
+**Location:** 5.4; 6.8.
+
+How can an author select or add forward deduction, backward query, constraint solving, planning or optimization without changing domain declarations? Proposed interface: supported logical fragment and operations; input snapshot, goal, hard constraints, preferences and budget; output substitutions or candidate plan, status, assumptions, evidence, completeness scope and cost. Define an unsupported-fragment outcome instead of silently ignoring a rule. PSys2 src/reasoner/index.mjs already maps statuses (including unknown -> missing): what distinctions must the future contract preserve? Please give two engines solving the same calendar problem and a case only one can solve.
+
+#### B30 — Compose reasoners without unsound conclusions
+
+**Location:** 6.8–6.9.
+
+Who orchestrates deduction, retrieval, candidate generation, solving and validation? Proposed policy: engines propose against a versioned snapshot; shared semantic validation checks hard constraints and applicability before effects run. A timeout never proves impossibility; an optimizer must distinguish feasible from optimal. What evidence can a validator check, what remains trusted in an engine, and how are contradictory results resolved? Show the full loop with newly fetched knowledge, derived facts, solver backtracking, budget exhaustion and a stale snapshot.
+
+#### B31 — Reuse without copying and name-based adaptation
+
+**Location:** 5.1–5.3; 6.1.
+
+How does a new domain bind to an existing concept and inherit knowledge without copying declarations or using strings such as made_in=drawing? In PSys2 catalogWholes currently copies expectations and creates types/honours from a matched world name. Proposed replacement: stable concept identity, explicit typed mappings to domain projections, and queryable capability bindings. Please show which facts remain in the shared base, which are local observations, and which are mappings; explain conflicts between two bases and exact version dependencies. Can the same meeting participate in a calendar and a diagram without becoming two unrelated facts?
+
+#### B32 — Semantics of extension and its limits
+
+**Location:** 4.2–4.8; 7.5.
+
+Which novelty requires only new data, which requires a new schema, and which requires a genuinely new engine primitive? Proposed distinction: new instances/regions; new compositions of existing concepts; new semantic operations requiring a reviewed contract. Give a decision tree and an example of each within the four domains. Otherwise the promise that every concept automatically receives all behavior merely relocates hidden case code into an interpreter. What is the explicit finite semantic kernel, and how is its adequacy challenged?
+
+#### B33 — A pedagogical, reproducible vertical example
+
+**Location:** 1.4; 6.2; 7.4.
+
+Could the reviewer add one complete worked meeting example followed by its reuse as a diagram: declarations, input wires, concept-resolution closure, interpreter output, applicable rules, chosen engine, candidate/rejected bindings, valid plan, tool arguments, observed state and justified reply? Include an ambiguous participant, an unloaded constraint and an execution failure. Provide actual small tables and numbers at every step, with a glossary before new terms. The reader should be able to reproduce the result with pencil and paper. Proposed acceptance: a reader can point to the declaration or general rule justifying every step; no transition may be explained only as the system understands or deduces it.
+
+### Review request — authorship transferred by the owner
+
+The owner now assigns this worker authorship of books/ and refactoring/. Please act as reviewer: return concrete objections, counterexamples and suggested corrections in worker-tasks.md. To avoid concurrent edits, leave the book and plans to this worker unless coordinated. Runtime refactoring remains unapproved.
+
+- **RV1:** Review v14 chapter 9 for pedagogical completeness: identify any unexplained step, circular definition or implementation-shaped assumption. In particular challenge retrieval coverage and the reasoner boundary.
+- **RV2:** Check the R24 correction: a region centre inside another does not prove inclusion. Check the sufficient metric-ball condition and the undetermined outcome for unsupported shapes.
+- **RV3:** Review the new plan §10 dependency gates against chapter 9. Which contract is missing before implementation can start?
+- **RV4:** Revisit v13 R1–R4: a comma-encoded point conflicts with the principle that compound information is represented by linked wires. Compare explicit point/coordinate wires with a new primitive value syntax before adopting either; neither should silently become settled policy.
+- **RV5:** Review the numerical calendar trace and its cross-domain reuse, especially the difference between checking one known reservation and proving availability over a complete scope.
+
+B01–B23 remain pending verification against v13; no question is closed merely because the answer table says fixed. B24–B33 are proposed design questions, now also the work agenda for the author.

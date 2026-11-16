@@ -82,3 +82,7 @@ core.validate executes registered pure synchronous boolean validators on every m
 ### Increment 0.178.0 — structural request graphs
 
 std.request now exports constraints, logical nodes, value descriptions and bound targets. Tests load exact §§6.3.2/10.3.1 fragments and reject ownership crossings, cycles, orphan nodes, invalid variants and all-path binder escapes; scalar Unicode spans are checked. inspectRequest supplements ordinary schema validation, using core.validate for child-edit invalidation. Concept typing/orderability, unit compatibility, evidence semantics, truth and execution remain pending. No full phase-zero release.
+
+### Increment 0.179.0 — change-policy declarations
+
+Entry point std.change exports std.change.policy with required atom kind/concept/anchor/unit and a closed schema. The exact §4.4.4 example and malformed declarations are tested. Name resolution, compatible units, policy selection (including conflicting alternatives), request precedence and execution remain pending. Frame publication/snapshot invariants and typed journal evidence still need concrete representation decisions; full phase zero is not released.

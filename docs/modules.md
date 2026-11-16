@@ -135,3 +135,9 @@ Each bound target has one quantifier, distinct from its collection. A topologica
 `inspectRequest(world, id, {family?, budget?})` supplements loaded schemas and World.check with detailed graph issues. It requires the request contract module. The standard validator uses core.validate and runs on final state, including child edits; aliases and root subtypes preserve family identity. Generic module loading now registers aliased function names transactionally.
 
 Vocabulary names, eq/comparison value typing and orderability, dimensional unit compatibility, source-evidence truth, assumption justification, three-valued evaluation, effects and permission remain separate. For example an atom NaN as an eq value is structurally a literal, not proof of a valid numerical quantity. No complete phase-zero or runnable-domain release is claimed.
+
+## Change-policy declarations
+
+Added with 0.179.0, `core.use world=std.change` publishes `std.change.policy`. Each closed record requires four unquoted vocabulary names: `kind`, `concept`, `anchor`, and `unit`. These identify the applicable kind/property, the part held fixed, and the quantity unit. Quoted prose, references, missing fields, unknown keys and conflicting singleton values are rejected. The exact book §4.4.4 fixture is tested.
+
+This contract stores declarations only. Names are not yet resolved against the legend; compatible units, inherited policies, explicit-request precedence and ambiguous alternatives require the future selector/evaluator. Multiple records for one kind/concept remain distinct data; their successful loading is not evidence that selection would succeed. There is no default anchor, arithmetic, interval update or effect execution.

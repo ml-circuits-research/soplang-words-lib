@@ -905,13 +905,13 @@ Pentru recurență, „move the Monday meeting” nu stabilește singur dacă se
 
 O schimbare relativă nu numește direct valoarea finală: o definește față de o valoare observată. Contractul trebuie să precizeze operația, cantitatea, unitatea, starea de referință și, pentru o întindere, ancora păstrată. Altfel, „shorten by 15 minutes” ar putea muta începutul, sfârșitul sau ambele. Regula generală se declară pe felul și însușirea relevante, iar cererea o poate particulariza explicit.
 
-Pentru durata unei întâlniri, politica propusă păstrează începutul. Pentru dimensiunea unui nod, o altă politică poate păstra centrul. Niciuna nu se deduce din numele numeric al axei. Politica pentru întâlniri poate fi scrisă astfel; tipul și cheile sunt propuse, nu o funcție de intervale deja livrată:
+Pentru durata unei întâlniri, politica propusă păstrează începutul. Pentru dimensiunea unui nod, o altă politică poate păstra centrul. Niciuna nu se deduce din numele numeric al axei. Politica pentru întâlniri se poate încărca prin `core.use world=std.change`, începând cu versiunea 0.179.0. Schema verifică prezența celor patru nume de vocabular; nu selectează politica și nu execută schimbarea:
 
 ```sop
 @policy.duration std.change.policy kind=meeting concept=duration anchor=start unit=minute
 ```
 
-`kind` și `concept` stabilesc domeniul regulii, `anchor` numește reperul care rămâne fix, iar `unit` stabilește unitatea duratei. Ancora dintr-o cerere explicită are prioritate față de această politică. O cerere incompatibilă, precum păstrarea ambelor capete și scurtarea duratei, nu este rezolvată prin ignorarea uneia dintre condiții.
+`kind` și `concept` stabilesc domeniul regulii, `anchor` numește reperul care rămâne fix, iar `unit` stabilește unitatea duratei. În implementarea structurală actuală, aceste nume nu sunt încă rezolvate la declarațiile legendei. Două politici pentru aceeași pereche fel–concept rămân două înregistrări distincte: încărcarea lor nu dovedește că selecția este neambiguă. Mecanismul viitor de selecție trebuie să justifice alegerea și să refuze alternativele incompatibile, fără să ia arbitrar primul fir. Ancora dintr-o cerere explicită are prioritate față de această politică. O cerere incompatibilă, precum păstrarea ambelor capete și scurtarea duratei, nu este rezolvată prin ignorarea uneia dintre condiții.
 
 Pentru „shorten the review by 15 minutes”, descrierea de cerere poate folosi extensia următoare a constrângerii din secțiunea 6.3.2. Review este presupus numele unei singure întâlniri identificate în instanță.
 

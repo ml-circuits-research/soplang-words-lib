@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.179.0
+
+- Publish std.change.policy with required kind, concept, anchor and unit vocabulary names. This is a structural contract; policy selection, unit compatibility and change execution remain pending.
+
 ## 0.178.0
 
 - Publish structural request graph schemas and inspectRequest: owner-local edges/targets, operator variants, Unicode source spans, acyclicity, reachability and all-path quantifier scope.

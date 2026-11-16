@@ -58,6 +58,16 @@ export const CONTRACT_MODULES = {
 @std.objective.term.priority core.slot of=std.objective.term key=priority kind=integer min=0 max=9007199254740991 present=true
 `, fns: {},
   },
+  'std.change': {
+    text: `
+@std.change.module core.module name=std.change version=0.179.0 exports=std.change.policy
+@std.change.policy.type core.type of=std.change.policy closed=true
+@std.change.policy.kind core.slot of=std.change.policy key=kind kind=atom present=true
+@std.change.policy.concept core.slot of=std.change.policy key=concept kind=atom present=true
+@std.change.policy.anchor core.slot of=std.change.policy key=anchor kind=atom present=true
+@std.change.policy.unit core.slot of=std.change.policy key=unit kind=atom present=true
+`, fns: {},
+  },
   'std.reference': {
     text: `
 @std.reference.module core.module name=std.reference version=0.171.0 imports=std.provenance exports=std.reference.set exports=std.reference.sample

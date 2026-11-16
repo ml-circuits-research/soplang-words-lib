@@ -2424,3 +2424,31 @@ Licence: diagram-vss-demo is AGPL-3.0, like PSys2; code and model brought into P
 ## 2026-11-16 18:05 (Rome) — owner: licence is not an issue; SOP-BERT goes to PSys2
 
 Owner: the repositories are all his; licences do not matter; SOP-BERT belongs in PSys2. The port and retargeting task is in PSys2 `worker-tasks.md` (18:05). In this library only the general request contracts it targets, which already exist.
+
+## 2026-11-16 18:15 (Rome) — Implementation review 9 (reviewer; library 0.184.0 05e8599; reader corpus 2ba0259, fe810ca)
+
+**Run by me:** `node --test test/reader-corpus.test.mjs` plus the 0.184.0 tests → 17 / 17.
+
+**0.184.0 retained revisions — accepted.** Definitions kept outside ordinary fact history, so undo or rewind cannot erase a published revision; identical reuse idempotent, conflicting reuse refused; the partial-rewind loss the audit found is fixed transactionally. That is what point binding needs.
+
+**Held-out rows, review by ID (no sentence content here; the rule author must not use this paragraph to write rules).**
+
+| ID | Verdict on the label |
+|---|---|
+| `independent.diagram.2` | Structure right. One vocabulary point: the act names a compound (`connect`) that the book derives from the basic acts (a link is made with source and goal roles). Either declare `connect` as a compound act in the legend with its decomposition, or label it with the basic act and the roles; decide once for all labels. |
+| `independent.diagram.5` | Change: it is a question about the current state, so `mood=ask` (information), not `check` (feasibility of an act); and the property asked about should be the content of a question node, not a result constraint (nothing is required of a result). This needs the question representation of RDR2 below. |
+| `independent.documents.5` | Change: drafting the text IS the act here, so `mood=do`; `propose` is for presenting a plan without executing it (as in the calendar). The rest of the label is fine. |
+| `independent.calendar.4` | Acceptable: act remove on an existing named event. The extra constraint that restates the act (change occurred, act remove) is redundant; drop it unless the schema requires a root. The ambiguity your audit saw (remove versus marking as cancelled) has no second reading in our calendar, which has no status field; note it and keep remove. |
+
+**RDR1** — resolved by 0.183.0 selectors; relabel the owner's colour-change rows with selector + result.
+
+**RDR2 — non-action turns and fragments.** As the book's 6.11.1 says, a message about the conversation is a request whose target is in the journal:
+
+| Turn kind | Label |
+|---|---|
+| objection or frustration with no stated correction | `std.request` with an act on the journal (e.g. `act=object`), target `mode=existing kind=trace.reply` (the previous reply), `mood=ask`: the system must say what it understood and what it did not. No domain act invented. |
+| objection with a stated correction ("I expected 5–10 nodes, arrows, a nice layout") | the same, plus a corrective new version of the previous request (as the "in the sky" example of 6.3.2): its constraints replaced or added, identity of the request kept. |
+| question "why?" / "how come?" | `mood=ask`, target the previous reply or step in the journal. |
+| fragment ("down", "more", "on the lake") | label it as the corrective version of the previous row's request: the label references that row's request id as its context and states which constraint is added or replaced. The previous row's label is the context snapshot; no free-text context. |
+
+**RDR3 — accepted:** English rows only in the acceptance set; turns whose actual text is Romanian are kept with their metadata for the translation subject, not labelled as English; unknown areas stay unassigned rather than guessed. The seven proposed labels: relabel with selectors where a current property selects the target, then I will review them row by row.

@@ -969,3 +969,7 @@ Chapter 12 distinguishes observations, request bounds, unit conversions, normali
 Also incorporated the reviewer's verified geometric callback details (token-array arguments and calc before neq). E4 remains the next standalone chapter; full drawing/description declarations remain pending.
 
 Read review 11 at e6a8e96. Removed the accepted holiday-exception counterproposal. F55 is corrected: chapters precede the Anexe heading. F56 now records the nearest almost-matching construction and tests category-level extensions on minimal pairs; F58 offers evidenced readings instead of asking the user to simplify. F57 and F59–F61 remain explicit follow-ups; the grammatical probe acceptance does not close the full reader design.
+
+### Review request — v33, reply composition (E4)
+
+Chapter 13 defines evidence-backed claims, selection/order, grouping by act/status/roles with unique object counts, whole/part compression, meaningful assumptions/adaptations, reference choice and English realisation with semantic coverage checks. Replaced §6.10's infallible-source claim and one-frame wording with correlated evidence and equivalent frame families. Please challenge mixed confirmed/unknown outcomes, duplicate attempts, different destinations/properties and creating a whole versus editing its parts: these must not produce broader success claims. The reply-wire fragment is explicitly proposed; no runtime evaluator is claimed.

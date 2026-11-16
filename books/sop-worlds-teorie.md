@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 32, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 33, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -1788,7 +1788,7 @@ Ordinea globală a istoricului permite anularea ultimei acțiuni chiar dacă ea 
 
 Ultima etapă compune ce i se spune omului. Greșeala la îndemână este să scrii propoziții gata făcute pentru fiecare situație: „I added a fish.”, „I could not add the fish.” Aceasta duce la sute de rânduri și, mai rău, la răspunsuri care spun ce ar fi trebuit să se întâmple, nu ce s-a întâmplat.
 
-Aici răspunsul se compune din două surse care nu pot minți: **diferența de stare**, adică ce este acum altfel față de dinainte, și **evidența execuției**, adică ce a reușit și ce nu. Fiecare act are un singur **cadru de propoziție**, general, completat cu rolurile care s-au schimbat. Cuvintele pentru roluri, relații și regiuni vin din lumea limbii. Un domeniu nu scrie nicio propoziție.
+Aici răspunsul se compune din două surse care trebuie corelate și verificate: **diferența de stare**, adică ce este acum altfel față de dinainte, și **evidența execuției**, adică ce a reușit și ce nu. Fiecare act are o familie de **cadre de propoziție** generale, completate cu rolurile care s-au schimbat; variantele păstrează aceeași semnificație. Selecția, gruparea și realizarea lor sunt explicate în capitolul 13. Cuvintele pentru roluri, relații și regiuni vin din lumea limbii. Un domeniu nu scrie nicio propoziție.
 
 | Partea răspunsului | De unde vine |
 |---|---|
@@ -2917,6 +2917,112 @@ Parametrii se aleg pe un set de calibrare și se verifică pe cazuri independent
 
 Un parametru învățat este supus aceleiași discipline de proveniență și verificare, cu contextul local adăugat. Versiunea spațiului și a politicii numerice intră în justificarea planului; o explicație veche se reproduce cu acea versiune. Astfel, îmbunătățirea calibrării rămâne compatibilă cu un sistem care poate explica de ce a ales altfel ieri.
 
+# 13. Compunerea răspunsului din efecte și dovezi
+
+Un răspuns util nu recită lista apelurilor unei unelte. El spune ce s-a schimbat pentru om, ce a rămas nerezolvat și, când este necesar, ce alegere a făcut aplicația. Pentru aceasta se construiește mai întâi un plan de răspuns din afirmații justificate și abia apoi se aleg formulările engleze. Același mecanism servește un desen, un document sau un calendar; domeniul furnizează identități, concepte și observații, nu replici particulare.
+
+## 13.1 De la jurnal la afirmații care pot fi comunicate
+
+Datele de intrare sunt cererea situată, versiunea stării de dinainte, observațiile de după, rezultatele apelurilor și verificările constrângerilor. Fiecare afirmație candidată pentru răspuns are un conținut, un statut și sursele care îl susțin. Identificatorul unei operații permite corelarea confirmării cu observația corespunzătoare; simplul fapt că două evenimente sunt apropiate în timp nu dovedește că descriu același efect.
+
+| Afirmație candidată | Dovada necesară și formularea permisă |
+|---|---|
+| Schimbare confirmată | Confirmarea operației și diferența observată satisfac cerința; se poate afirma efectul realizat. |
+| Condiție deja satisfăcută | Verificarea de dinainte susține condiția; se spune că era deja așa, fără a pretinde o acțiune nouă. |
+| Propunere | Planul sau candidatul a fost verificat, dar nu executat; se exprimă o posibilitate ori o propunere, nu un fapt îndeplinit. |
+| Rezultat parțial | Există efecte independente confirmate și cerințe rămase; sunt păstrate ambele categorii. |
+| Efect necunoscut | Observația lipsește, este incompletă sau nu poate fi corelată cu apelul; se spune ce nu s-a putut confirma. |
+| Alegere presupusă | Valoarea folosită are caracter de presupunere și sursă în plan; se explică alegerea când influențează rezultatul. |
+| Răspuns factual | Faptele citite ori derivate și acoperirea întrebării justifică afirmația; rezultatul nu este atribuit unei acțiuni a asistentului. |
+
+Observațiile și confirmările pot fi întârziate sau incomplete. De aceea un „success” tehnic nu este transformat direct în „I moved it”. O contradicție între confirmare și stare produce o afirmație despre incertitudine și poate cere recitire, potrivit politicii execuției. Sistemul nu inventează o cauză doar pentru a face răspunsul să pară complet.
+
+Afirmația internă păstrează rolurile actului și cerințele pe care le acoperă. O mutare are obiect, locul rezultat și relația verificată; o creare are identitatea nouă și întregul din care face parte. Rolurile sunt legate de obiecte și concepte, nu de numele unui mesaj de interfață. Această reprezentare permite gruparea înaintea realizării textului.
+
+## 13.2 Selectarea conținutului și ordinea lui
+
+Planul de răspuns are două categorii de conținut: ceea ce trebuie spus pentru a nu induce în eroare și detaliile care pot fi desfășurate la cerere. Bugetul de lungime se aplică detaliilor, nu adevărului rezultatului. O cerință fermă neîndeplinită, un efect neconfirmat ori o modificare neașteptată nu poate fi ascunsă pentru a obține un răspuns scurt.
+
+| Prioritate de comunicare | Cum se aplică |
+|---|---|
+| Incertitudine sau efect neașteptat relevant | Apare devreme, înainte ca o formulare de succes global să creeze o impresie greșită. |
+| Răspunsul la întrebarea ori scopul principal | Numește rezultatul la nivelul cerut de om, nu fiecare etapă tehnică. |
+| Părți rămase și clarificarea necesară | Leagă lipsa de cerința ei și pune întrebarea care permite continuarea. |
+| Adaptări și presupuneri semnificative | Explică diferența față de ce era explicit sau decizia care influențează interpretarea rezultatului. |
+| Justificări detaliate | Rămân accesibile prin jurnal și „why?”, fără a încărca automat confirmarea obișnuită. |
+
+Ordinea depinde de structura rezultatului. Pentru o reușită completă, răspunsul începe cu efectul principal. Pentru un rezultat parțial, începe cu delimitarea lui și spune imediat ce s-a realizat și ce nu. Pentru o întrebare, începe cu informația cerută. Nu se prefixează fiecare mesaj cu o formulă identică precum „Done” ori „I understood”; dacă nu adaugă informație, formula poate lipsi.
+
+Un exemplu de rezultat parțial într-un document este: „I shortened the introduction; I could not confirm the change to the conclusion.” Prima parte are suport observat, a doua păstrează statutul necunoscut. Formularea „I shortened the document” ar generaliza peste partea neverificată. O propoziție în plus este justificată dacă evită această eroare.
+
+## 13.3 Gruparea efectelor fără pierderea întinderii lor
+
+Mai multe afirmații pot deveni o singură propoziție dacă au același act, același statut și roluri compatibile. Gruparea folosește identități unice și acoperirea cerințelor; nu numără câte apeluri au fost făcute. O reîncercare a aceleiași operații nu dublează numărul obiectelor, iar actualizarea unei părți nu înseamnă că întregul a fost recreat.
+
+Forma următoare este o propunere pentru planul de răspuns, nu o schemă deja implementată. `section.a`, `section.b` și `section.c` sunt obiecte observate în raportul `report`; `evidence.a`–`evidence.c` desemnează dovezile corelate ale creării lor. Declarațiile externe nu sunt reproduse aici: exemplul izolează gruparea afirmațiilor, fără să pretindă că este un jurnal complet încărcabil.
+
+```sop
+@claim.a std.reply.claim act=make status=confirmed object=$section.a whole=$report evidence=$evidence.a
+@claim.b std.reply.claim act=make status=confirmed object=$section.b whole=$report evidence=$evidence.b
+@claim.c std.reply.claim act=make status=confirmed object=$section.c whole=$report evidence=$evidence.c
+@unit.sections std.reply.unit act=make status=confirmed member=$claim.a member=$claim.b member=$claim.c
+```
+
+`member` păstrează legătura către fiecare afirmație acoperită. Numărul comunicat se calculează din obiectele distincte ale membrilor confirmați, nu este copiat din cantitatea cerută. Dacă toate trei sunt secțiuni nou create în același raport, formularea poate fi „I added three sections to the report.” Dacă există numai două confirmări și un efect necunoscut, nu mai poate fi folosit același număr într-o propoziție de succes.
+
+| Situația afirmațiilor | Regula de grupare |
+|---|---|
+| Același act, statut și întreg | Grupează obiectele unice și exprimă cantitatea observată. |
+| Aceeași proprietate și aceeași valoare | Poate coordona obiectele; valoarea este spusă o singură dată. |
+| Valori sau destinații diferite | Păstrează distribuția pe subgrupuri; nu atribuie tuturor reuniunea valorilor. |
+| Întreg și părți create în același pas | Poate prezenta întregul cu părțile sale, dacă acoperă cerințele; nu enumeră redundant crearea întregului și apoi fiecare componentă. |
+| Statut diferit între obiecte | Separă reușita, condiția deja satisfăcută și efectul necunoscut. |
+| Parte modificată într-un întreg existent | Numește partea și schimbarea; nu afirmă refacerea întregului dacă diferența nu o dovedește. |
+
+Pentru un document creat cu secțiunile sale, „I created the report with three sections” poate acoperi atât întregul, cât și structura cerută. Dacă raportul exista și numai secțiunile au fost adăugate, se folosește formularea despre adăugare. Astfel se elimină repetiția „I created a report. I created three sections” prin relația dintre efecte, fără o listă de excepții pentru genul report.
+
+Condițiile diferite nu se amestecă în aceeași descriere colectivă. Dacă o secțiune a devenit mai scurtă și alta mai formală, „I made both sections shorter and more formal” ar fi fals. Gruparea poate spune separat cele două schimbări într-o propoziție coordonată, păstrând legătura fiecărui predicat cu obiectul său.
+
+## 13.4 Presupuneri, adaptări și denumirea obiectelor
+
+O presupunere este relevantă când decide o proprietate pe care omul ar putea dori să o corecteze sau când explică o diferență semnificativă a rezultatului. Nu se recită fiecare valoare tehnică aleasă de adaptor. Planul de răspuns marchează de ce detaliul este relevant: a completat un rol important, a ales între alternative cu efecte diferite sau a folosit o realizare aproximată. Această clasificare este generală și poate fi verificată în jurnal.
+
+| Informație | Cum se exprimă fără repetiție inutilă |
+|---|---|
+| Valoare importantă completată | Leagă alegerea de rezultat: „I used a one-hour duration.” Nu prezintă presupunerea ca cerință explicită a omului. |
+| Realizare împrumutată | Spune adaptarea relevantă o dată în contextul ei și păstrează felul semantic al obiectului. |
+| Aceeași adaptare neschimbată la pasul următor | Nu repetă explicația dacă referentul, politica și diferența relevantă sunt aceleași; dovada rămâne accesibilă. |
+| Adaptare nouă ori schimbată | O comunică din nou, deoarece explicația anterioară nu mai descrie rezultatul curent. |
+| Nume tehnic intern | Îl înlocuiește prin forma lexicală declarată ori printr-o descriere identificabilă; nu inventează un nume aparent cunoscut. |
+
+Pronumele sunt folosite numai dacă antecedentul este unic în contextul răspunsului. Altfel, o descriere precum „the introduction” sau numele obiectului este mai clară decât „it”. Pentru obiecte similare, descrierea include proprietatea distinctivă necesară identificării, nu toate sloturile lor. La numirea unei valori aproximative se păstrează diferența dintre „în regiunea cerută” și „cea mai apropiată realizare disponibilă”.
+
+Presupunerile nu justifică renunțarea la cerințe explicite. O excepție cerută într-un calendar nu poate apărea în răspuns ca „I assumed no exceptions” după ce a fost omisă. Planificarea trebuie întâi să rezolve incompatibilitatea; formularea nu poate repara retroactiv o acțiune cu sens schimbat.
+
+## 13.5 Realizarea în engleză și verificarea formulării
+
+Din planul de răspuns, realizatorul alege o familie de cadre pentru act și statut, apoi construiește grupurile nominale, acordul, cuantitatea, timpul verbal și relațiile. Cadrele sunt date ale limbii și pot avea variante care păstrează aceeași structură semantică. Un domeniu nou furnizează concepte și forme lexicale; nu primește o colecție de propoziții pentru fiecare combinație de obiect și situație.
+
+Realizarea păstrează o mapare între fragmentele textului și afirmațiile planului. Aceasta permite verificarea că fiecare propoziție are suport și că fiecare informație obligatorie a fost comunicată. Cantitățile, negațiile, numele, relațiile și statutul execuției sunt comparate structural cu planul, nu doar prin asemănarea globală a textului. O parafrază care pierde „not” sau schimbă „proposed” în „done” este respinsă chiar dacă restul cuvintelor seamănă.
+
+| Verificare înainte de afișare | Ce previne |
+|---|---|
+| Fiecare afirmație textuală are suport | Adăugarea unei cauze, a unei calități ori a unei reușite neobservate. |
+| Informația obligatorie este acoperită | Omiterea unui eșec parțial sau a unei incertitudini pentru a scurta mesajul. |
+| Numere și întinderi păstrate | Confundarea cantității cerute cu cea realizată ori distribuirea greșită a unei proprietăți. |
+| Referințe identificabile | Pronume ambigue și nume interne neexplicate. |
+| Forma lingvistică este coerentă | Dezacorduri, repetiții și propoziții fragmentare rezultate din concatenări de șabloane. |
+
+Un model de limbaj poate realiza sau reformula un plan de răspuns prin același contract: primește afirmațiile și dovezile, iar rezultatul este verificat înainte de afișare. Validarea de sens și cea de stil rămân distincte. Dacă o formulare candidată pierde informație, se reconstruiește din cadrul semantic sau se generează altă variantă; nu se inventează o propoziție de succes ca rezervă. Aceasta permite îmbunătățirea exprimării fără schimbarea sursei adevărului comunicat.
+
+## 13.6 Concizie, explicație la cerere și evaluare
+
+Răspunsul obișnuit comunică rezultatul și excepțiile relevante; explicația la cerere desfășoară dovezile. Concizia nu este un număr universal de cuvinte: o cerere simplă poate necesita o propoziție, iar un rezultat parțial cu efect necunoscut poate necesita mai mult. Prioritatea este ca omul să poată distinge ce s-a întâmplat și ce decizie mai este necesară.
+
+Evaluarea separă corectitudinea factuală, acoperirea cerințelor și calitatea comunicării. Se folosesc perechi care schimbă numai statutul (confirmat sau necunoscut), un număr, o negație, un subgrup ori o relație parte–întreg. O formulare scurtă care trece peste aceste diferențe este mai slabă decât una puțin mai lungă care le păstrează. Repetiția se măsoară semantic: două propoziții despre același efect nu devin utile doar pentru că folosesc sinonime.
+
+Pentru fiecare problemă de răspuns se păstrează planul semantic, textul generat și diferența identificată de verificare ori de om. Cazul conduce la o regulă generală de selecție, grupare sau realizare. Nu se adaugă o replică fixă pentru obiectele din acel exemplu. Aceasta închide legătura dintre explicația din secțiunea 6.11 și un răspuns natural: dovezile rămân complete, iar textul spune numai ceea ce este relevant pentru pasul curent.
+
 # Anexe
 
 ## Anexa A. Cu ce seamănă
@@ -3030,7 +3136,7 @@ Această anexă adună într-un loc tot ce în document poartă semnul (propus),
 | `on` cu chei fixe pe `std.schema.honours` | `role`, cu nume de concepte. |
 | `std.schema.region` și `std.schema.relation` declarate de fiecare lume | Regiuni și relații declarate o dată. |
 | cele unsprezece chei fixe ale cererii din programul bibliotecii | Cererea scrisă în concepte (secțiunea 6.3). |
-| propozițiile de răspuns scrise pe situație (84 în engleză și 55 în română, în aplicație) | Un cadru de propoziție pentru fiecare act (secțiunea 6.10). |
+| propozițiile de răspuns scrise pe situație (84 în engleză și 55 în română, în aplicație) | Familii de cadre semantice pe act și statut, cu gruparea efectelor și verificarea acoperirii (capitolul 13). |
 | domeniile separate pentru grafice și pentru muzică | Graficele devin un fel de diagramă; muzica este scoasă deocamdată. |
 
 **Nume de îndreptat.**

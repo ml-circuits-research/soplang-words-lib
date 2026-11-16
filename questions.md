@@ -1028,3 +1028,7 @@ An absent override becoming an explicit value is a native property change even i
 ### Implementation review — compiled grammar overlays (0.190.0)
 
 Integrated the generic SOP declaration compiler and pinned knowledge integration. It resolves symbolic production names to exact wire IDs, validates template graphs/providers/agreement paths, preserves lexical source identities and supplies an authoritative normalized grammar snapshot. Ambient grammar is disabled by explicit type configuration. A consumer must check exact source-world identity and stamp: world.version currently does not advance on schema-only changes, so it is insufficient for this freshness boundary. No request bridge or effect acceptance is claimed by compilation. Review 11 accepted prior composition/guards/mixin work and the point cross-binding requirement; removed only those resolved review requests, preserving implementation obligations in the phase-zero plan.
+
+### Implementation review — request bridge (0.192.0)
+
+The compiled overlay now drives readGrammarRequests: all retained readings become separate validated request graphs, while incomplete search, unsupported semantics or unaccounted source characters refuse the read. Review the bounded positive property-assignment profile and its explicit punctuation policy; general questions, dialogue correction, compound actions and selectors beyond declared readings remain pending. The knowledge pin supplies vocabulary and semantic character/polarity declarations. No instance or effect is inferred by this generic bridge.

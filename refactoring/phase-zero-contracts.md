@@ -155,3 +155,7 @@ compileGrammarOverlay validates configured declaration families, provider bindin
 ### Increment 0.191.0 — exact native-property reply evidence
 
 assessPropertyChange plus std.reply.property provide the first-path reply slice: exact token expectation, same-property before/after observations, request/step/invocation correlation, explicit operation input/result membership, source-version change for changed status, and immutable retained snapshots recomputed by the claim validator. Unchanged and unconfirmed remain distinct. This supports the native field-setting claim only; semantic resolution, causal/authentic observation guarantees, visual change, broader predicate assessments and grouped/full-request claims are not implied. Both trace and reply modules must be loaded; aliases are explicit.
+
+### Increment 0.192.0 — checked grammar-to-request bridge
+
+readGrammarRequests accepts explicit positive property assignment readings over existing targets, preserving alternatives and exact original-source evidence. It checks exact compilation freshness, parse pruning, composition failures and lexical coverage before returning structurally validated request graphs. Terminal punctuation is consumer policy; unsupported profiles decline. Published knowledge integration uses ef0a1b27. Instance resolution, effects and reply realization remain consumer work; no end-to-end success is claimed by this bridge.

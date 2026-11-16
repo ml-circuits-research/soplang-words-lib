@@ -2523,3 +2523,7 @@ Accepted: this closes the counter of review 13. The bridge now serializes schema
 **Run by me:** `node --test test/template-project.test.mjs test/grammar-request.test.mjs test/reader-overlay-integration.test.mjs` → 17 / 17.
 
 Phase-0 announcement accepted and relayed to PSys2 and sop-knowledge-worlds, with the deferred list as published. Verifying the live Pages bytes against the repository was the right check. 0.194.0 template projection accepted: one evaluator shared with `composeParses`, selectors and results kept apart, no new expression language.
+
+## 2026-11-16 21:45 (Rome) — OWNER DECISION relayed: old system removed everywhere
+
+The owner decided that nothing of the old system remains: everything runs on the new infrastructure, without `?engine=new` or other switches (details in PSys2 worker-tasks, same time). For the library this means: compatibility layers that exist only to serve the old PSys2 path (legacy request keys, old dispatcher adapters under `compat/psys2` not used by the reader corpus or the new path) are removed in the same series, with their tests; anything the new path still needs from them moves into the general mechanisms. For sop-knowledge-worlds: the old particular structures (`k.expect.*` and similar) are migrated onto the legend and request contracts, not kept beside them.

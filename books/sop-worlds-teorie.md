@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 43, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 44, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -2410,7 +2410,26 @@ Pentru răspunsul pierdut, adaptorul caută efectul după identitatea operației
 
 Anularea citește versiunea curentă a întâlnirii create și o compară cu starea consemnată după execuție. Dacă între timp întâlnirea a fost modificată independent, nu se șterge automat acea muncă sub pretextul restaurării stării vechi; conflictul urmează politica de compensare din secțiunea 6.9.2. Anularea adaugă în jurnal o operație compensatoare cu rezultatul observat, nu elimină episodul care explică de ce întâlnirea a existat. Aceste ramuri aplică același contract de execuție în toate domeniile; calendarul furnizează identitățile și observațiile concrete.
 
-O diagramă poate folosi apoi aceleași identități de ședințe pentru a arăta numărul lor pe participant. Ea produce noduri grafice, nu copii ale persoanelor. Trebuie declarat dacă desenul este un instantaneu sau o vedere actualizată; această alegere schimbă dependențele și invalidarea rezultatului.
+După crearea confirmată, întâlnirea poate fi reprezentată printr-un nod al unei diagrame. Alegerea acestui exemplu este un instantaneu, conform R58–R59: citim o versiune coerentă, salvăm valorile consumate și proveniența lor, apoi desenăm din acele date. Referința activă spre calendar și proveniența istorică au roluri diferite, ca în secțiunea 2.6.
+
+În contextul temporar de citire, ambele instanțe sunt încărcate și aliasul `calendar` este legat de identitatea imutabilă a calendarului. Firul următor este o propunere de intrare pentru proiecție; `m1` este întâlnirea nou creată, nu rezervarea mai veche:
+
+```sop
+@input.meeting std.projection.input source=$calendar::m1
+```
+
+`source` este aici o referință reală: trebuie să rezolve întâlnirea și tipul ei. Ea permite citirea, dar nu este copiată drept dependență activă în diagrama salvată. Adaptorul citește într-o singură versiune începutul, durata și identitatea participantului. Pentru versiunea ilustrativă `state-18`, rezultatul local poate fi:
+
+```sop
+@snapshot.meeting source.snapshot source.instance="calendar-instance-id" source.id="m1" source.version="state-18" captured.start=660 captured.duration=30 captured.participant="ana-id"
+@node.meeting node label="11:00–11:30" provenance=$snapshot.meeting
+```
+
+Primul fir păstrează identitatea sursei și valorile care au justificat eticheta, inclusiv participantul. `ana-id` este identitatea rezolvată, nu o nouă persoană creată în diagramă. Pentru acest fragment, ziua și fusul orar sunt cele deja fixate în scenariu; un instantaneu exportat independent trebuie să le păstreze explicit împreună cu unitatea timpului. Eticheta este calculată din începutul 660 și durata 30, nu copiată din intenția inițială de a începe la 10:30.
+
+Nodul se referă activ numai la înregistrarea locală `$snapshot.meeting`. Calendarul poate fi închis după citire fără a invalida această proveniență istorică. Dacă întâlnirea este mutată ulterior, diagrama rămâne descrierea versiunii `state-18`; nu pretinde că arată starea curentă. Actualizarea explicită reîncarcă sursa și produce un nou instantaneu verificat. O vedere care urmărește automat calendarul ar necesita un contract separat de dependență și invalidare.
+
+Un grafic cu numărul întâlnirilor pe participant cere toate întâlnirile din domeniul agregării, nu doar acest fir. Pentru el se păstrează colecția surselor, versiunea și acoperirea citirii; fiecare întâlnire se numără o singură dată după identitate. Exemplul de nod individual nu este dovada completitudinii acelui grafic. Acest fapt localizează exact munca suplimentară a proiecțiilor agregate, fără să transforme nodurile în copii ale persoanelor.
 
 ## 8.7 Ce trebuie verificat înainte de implementare
 

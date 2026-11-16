@@ -5956,3 +5956,9 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 ## 2026-11-16 0.167.0 (reviewer 09:25)
 - A said length grade scales the expected words with the parts (genres too), origin `said`; "longer"/"shorter" step a genre text and a length the tool cannot extend says `nothing.same.limit` (a primitive may return `{ length }`); revisions say no count/kinds/length assumptions. Three tests in `test/genre-parts.test.mjs`.
 - `npm test`: 650 tests, 648 pass, 0 fail; bundle run of genre-parts green.
+
+## 2026-11-16 — G0: worker commit/push access probe (done)
+
+- Owner request: verify a minor documentation commit and push. Added `WORKER-HANDOFF.md` with links to the existing control-task and progress protocol; runtime unchanged.
+- Base commit: `294a59003051`. Checks: `npm test` and `SOPWORLD_BUNDLE=1 npm run test:src` both passed (648 pass, 0 fail, 1 skip, 1 todo each); `npm test` rebuilt docs. `git diff --check` and `git push --dry-run origin main` passed.
+- The entry and document share one commit, identifiable with `git log -- WORKER-HANDOFF.md`.

@@ -24,6 +24,7 @@ One key of one type: what it may hold, and whether it must be there.
 | `of` | type | required | | the type the key belongs to |
 | `key` | name | required | | the key |
 | `required` | flag | false | | a wire of the type without this key has an open key |
+| `present` | flag | false | | structural presence: a missing or empty exact key rejects the transaction after deduction; unlike `required`, it cannot remain an open completion question. Not allowed with `prefix=true`. |
 | `many` | flag | false | | the key may hold several values |
 | `id` | flag | false | | the key is an identity key of the type |
 | `prefix` | flag | false | | `key` is a prefix: every key that starts with it is this slot |

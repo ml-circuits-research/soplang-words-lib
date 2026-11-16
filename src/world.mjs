@@ -2247,6 +2247,12 @@ export class World {
       const w = this.wires.get(id);
       if (!w) continue;
       this._b.tick('validate');
+      // Presence is a structural invariant, unlike required (an open completion key).
+      // Use the effective slots so inheritance and explicit overrides behave normally.
+      for (const [key, slot] of c.slots.get(w.type) || []) if (slot.present) {
+        this._b.tick('validate');
+        if (!w.attrs[key]?.length) res.violations.push({ kind: 'missing-key', id, key, why: `${w.type}.${key} must be present` });
+      }
       for (const k of Object.keys(w.attrs)) {
         const s = c.slotOf(w.type, k);
         if (!s) {

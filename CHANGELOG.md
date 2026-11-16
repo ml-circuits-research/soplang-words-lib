@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.168.0
+
+- Added opt-in `core.slot present=true`: structural presence validated transactionally after deduction, including inherited slots and atomic patches. Existing `required=true` completion semantics are unchanged.
+- Reject malformed presence flags and prefix-presence declarations. This is a phase-zero foundation, not a completed contract-family release.
+
 ## 0.167.0
 
 PSys2 reviewer 09:25 [LIB]. Properties in `test/genre-parts.test.mjs`.

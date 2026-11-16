@@ -986,11 +986,6 @@ Review 15 at 00dc974 accepted F2/F10, F53, F63 and replay gaps X/Y. Checked the 
 
 §8.5 specifies the integrator action: check implementation version, contract evidence and input domain before relying on the result, otherwise keep it undetermined. Please review this remaining F4 point. The calendar failure/undo part F27 was accepted in review 16 and is removed from the question queue.
 
-### Phase-zero preparation and scope reconciliation
-
-The control task at fa29e00 explicitly starts implementation; the subsequent scheduled message still says “the active scope is the book review cycle; other work stays on standby”, and workspace AGENTS.md says implementation remains on standby. These currently conflict. Please align the control/scheduled workspace instructions so the worker can apply a single active scope. Meanwhile I prepared refactoring/phase-zero-contracts.md within the authorized documentation scope; no runtime code or version was changed.
-
-Reviewer answers at 1aeeaff are integrated into the phase-zero register: four basic changes; distinct trace records for request/step/input/observation/reply/undo/correction; import evidence types included in phase zero; release evidence published in log/plan and relayed by the reviewer. Those contract questions are resolved. The reviewer confirms the scope mismatch remains pending owner action on workspace/scheduled instructions.
 
 ### Remaining editorial consolidation (F43)
 
@@ -1003,3 +998,7 @@ Added §4.4.5: aggregate membership/operation/coverage, empty versus unknown inp
 ### Review 16 integrated — projection decisions
 
 Checked the accepted calendar and snapshot contracts in §8.6 and the relocated migration register. Removed the resolved F19/F20/F26/F27/F28 and Z requests. §6.1.2 now explicitly retains occurrence plus series identity, permits totals only over a closed scope (otherwise an explicitly labelled partial-data proposal), and asks before overwriting manually changed target values, including deleting an edited node. These apply your decisions; F4, F43 and the v48/AA review remain open.
+
+### Implementation review — structural presence, phase-zero foundation
+
+Direct owner authorization now supersedes the scheduled book-only scope; implementation is active across all repositories. Added generic `core.slot present=true` (0.168.0), not a special contract-type validator. Alternatives checked: existing required/open completion cannot reject incomplete contract records; a generated negative deny per slot expands schemas and needs extra identity/absence rules; post-deduction slot presence reuses native transactional validation and inheritance. It rejects malformed presence flags and prefix slots, and preserves legacy required semantics. Please review the distinction and rollback/inheritance tests. Full phase zero is not announced: points, semantic links and contract families still need their own rejection evidence. Generality applies to library, knowledge and demo; owner examples are probes, not special-case branches or import filters.

@@ -1,6 +1,6 @@
 # Phase-zero contract register
 
-This is preparation for the control task at fa29e00, not a published library contract or an implementation release. The current scheduled instruction and workspace AGENTS.md still limit this worker to book review. That scope discrepancy is recorded in questions.md / Book. No consumer should treat this document as a version it can vendor.
+The owner has directly authorized implementation across all three repositories with parallel agents. The primary worker owns these shared contracts. Phase zero is being delivered in tested increments; no consumer should treat the whole register as a frozen release until every family has its stated evidence.
 
 ## Contract families and acceptance evidence
 
@@ -29,4 +29,4 @@ A phase-zero release must publish its package/build version, the exact contract 
 
 There are separate acceptance claims: a declaration parses; a schema loads and rejects invalid instances; the evaluator implements its semantics; a host operation realises an effect. The release states which claim holds for each family. No “contracts frozen” announcement is justified if the public names or required slot variants remain unresolved, or if only permissive loading was tested. Later mechanism releases replace legacy constants as their generic replacement lands, with the book corrected alongside.
 
-The other repositories can prepare migration ledgers and adapters independently. Their binding to the new schemas uses the published contract version, not a mutable draft of this register. No runtime change, version bump or consumer notification is performed by this documentation preparation.
+The other repositories can prepare migration ledgers and adapters independently. Their binding to the new schemas uses the published contract version, not a mutable draft of this register. The first foundation is library 0.168.0: `core.slot present=true` rejects structurally missing fields after deduction, while `required=true` continues to describe open completion keys. Contract-family modules and full phase-zero acceptance remain pending.

@@ -22,7 +22,7 @@ export const SCHEMA_TYPES = new Set([
  * The reference (docs/reference.md) is checked against this table.
  */
 export const GRAMMAR = {
-  'core.slot': ['of', 'key', 'required', 'many', 'id', 'prefix', 'kind', 'type', 'enum', 'default', 'ask', 'min', 'max', 'step', 'soft', 'combine', 'why', 'to', 'unique', 'excludes', 'by', 'match', 'copy', 'strict'],
+  'core.slot': ['of', 'key', 'required', 'present', 'many', 'id', 'prefix', 'kind', 'type', 'enum', 'default', 'ask', 'min', 'max', 'step', 'soft', 'combine', 'why', 'to', 'unique', 'excludes', 'by', 'match', 'copy', 'strict'],
   'core.type': ['of', 'extends', 'closed', 'complete', 'transient', 'shared', 'unique'],
   'core.namespace': ['prefix', 'open'],
   'core.schema.map': ['from', 'as'], // and one attribute per field it maps
@@ -201,7 +201,7 @@ export function compileMatrix(world) {
   const own = new Map(); // type -> Map(key -> slot) declared on that type itself
   // Two declarations of the same key of the same type: equal ones are one declaration;
   // different ones are a conflict unless one says how they combine (combine=intersect|override).
-  const content = (s) => JSON.stringify([s.required, s.many, s.identity, s.prefix, s.refs, s.kinds, s.enum, s.default, s.ask, s.min, s.max, s.step, s.soft]);
+  const content = (s) => JSON.stringify([s.present, s.required, s.many, s.identity, s.prefix, s.refs, s.kinds, s.enum, s.default, s.ask, s.min, s.max, s.step, s.soft]);
   const both = (a, b) => (a && b ? a.filter((x) => b.includes(x)) : a || b);
   const declare = (of, key, s) => {
     const mine = own.get(of) || own.set(of, new Map()).get(of);
@@ -222,6 +222,7 @@ export function compileMatrix(world) {
       m.max = old.max && s.max ? (old.max.n <= s.max.n ? old.max : s.max) : old.max || s.max;
       m.step = old.step || s.step;
       m.required = old.required || s.required;
+      m.present = old.present || s.present;
       m.identity = old.identity || s.identity;
       m.many = old.many && s.many;
       m.soft = old.soft || s.soft;
@@ -269,7 +270,7 @@ export function compileMatrix(world) {
       const refs = [...list('type'), ...mixed.filter((v) => v[0] === '$')].map((v) => (v[0] === '$' ? v.slice(1) : v));
       const en = list('enum');
       const s = {
-        id: w.id, of: type, key, required: get('required') === 'true', many: get('many') === 'true', identity: get('id') === 'true',
+        id: w.id, of: type, key, present: get('present') === 'true', required: get('required') === 'true', many: get('many') === 'true', identity: get('id') === 'true',
         prefix: get('prefix') === 'true', // the key is a prefix: any key that starts with it is this slot
         type: refs[0], refs, kinds, enum: en.length ? en : null, default: get('default'), ask: get('ask'),
         min: quantity(get('min') ?? ''), max: quantity(get('max') ?? ''), step: quantity(get('step') ?? ''), range: null,
@@ -283,6 +284,8 @@ export function compileMatrix(world) {
         match: (w.attrs.match || []).map((m) => String(m).split(':')), // with by: more keys of the join, own:target (a variant named within its slot)
         strict: get('strict') === 'true', // with by: a value that names no target is refused at once (the targets are loaded with the schema), not left open
       };
+      if (get('present') !== undefined && !['true', 'false'].includes(get('present'))) c.errors.push(`${w.id}: present must be true or false`);
+      if (s.present && s.prefix) c.errors.push(`${w.id}: present=true requires an exact key, not a prefix`);
       if (s.combine && !['intersect', 'override'].includes(s.combine)) c.errors.push(`${w.id}: combine must be intersect or override`);
       // kind=ref to=T: the value is a reference to a wire of type T, and retracting that wire is refused
       if (s.kinds.includes('ref')) {

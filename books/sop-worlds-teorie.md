@@ -395,6 +395,8 @@ Valorile posibile ale cheii `kind`:
 
 **Moștenirea sloturilor.** Un slot declarat pentru un tip este valabil pentru toate tipurile care se trag din el. Un tip mai particular poate declara din nou aceeași cheie; atunci este valabilă declarația cea mai apropiată.
 
+În biblioteca 0.168.0, `present=true` pe un `core.slot` cere ca cheia exactă să existe la validarea tranzacției, după deducție. Lipsa ei produce `missing-key` și anulează schimbarea. `required=true` păstrează sensul existent: cheia lipsă este o întrebare deschisă pentru completare, nu automat o eroare structurală. Contractele publicate folosesc prima proprietate pentru câmpurile fără de care înregistrarea nu are sens; o valoare încă necunoscută a unei instanțe poate folosi a doua. Proprietatea de prezență se moștenește cu slotul și nu se combină cu un prefix de chei, fiindcă un prefix nu numește o cheie exactă obligatorie.
+
 ## 3.3 Cheile deschise
 
 **Ce sunt.** Să presupunem că schema declară cheia `at` a tipului `drawn` ca obligatorie, iar în lume apare faptul `@f2 drawn size=1`, fără `at`. Biblioteca nu refuză acest fapt. Îl primește și ține minte că îi lipsește ceva. O cheie pe care schema o declară obligatorie și care nu are încă valoare pe un fapt se numește **cheie deschisă (open key)**.

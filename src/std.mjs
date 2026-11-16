@@ -862,6 +862,7 @@ ${calcs.join('\n')}
 @k.kind.needs core.slot of=std.schema.kind key=needs many=true
 @k.kinds.aspects core.slot of=std.schema.kinds key=aspects many=true
 @k.kinds.as core.slot of=std.schema.kinds key=as
+@k.kinds.single core.slot of=std.schema.kinds key=single
 @k.view.name core.slot of=std.schema.view key=name id=true
 @k.view.shows core.slot of=std.schema.view key=shows many=true
 @k.view.state core.slot of=std.schema.view key=state

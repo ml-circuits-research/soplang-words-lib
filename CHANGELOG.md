@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.163.0
+
+What the avatar's thirteen owner turns still failed on (PSys2 Q99). Properties in `test/face-world.test.mjs` over `FACE` (new
+preset `king`, parts joined `single=true`) and the shelf.
+
+### New
+- `std.schema.kinds single=true`: at most one thing of each joined kind. "put a hat" with a hat on replaces its variant (said) or says
+  `refused.already`; it never asks where.
+- Replies `nothing.same.value` ("The eyes are already green."), `refused.already`, `refused.no_default` (English built in).
+
+### Fixed
+- A part joined `as=part` keeps its kind in the mirror; "bigger" steps from the size it has (Q99 1).
+- "make it happy" after a preset goes to the whole (the thing with the key), not to the parts the preset added (Q99 3); a value goes
+  to the things that take its key.
+- A reset gives each thing its own declared defaults; none declared: said, not asked "to what value?" (Q99 5).
+- A value carried over from the last turn is not carried to another kind (a hat's variant to the glasses).
+- "the next mouth" and "big smile" are properties now (Q99 4, 6): the act is read from the noun phrase, the variant is chosen at the size said.
+
 ## 0.162.0
 
 A whole with slots of parts, from the avatar's turns (PSys2 Q96 slice A1, Q97, Q98) and two wrong executions (r0019, r0129).

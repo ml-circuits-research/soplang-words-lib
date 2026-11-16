@@ -29,7 +29,7 @@ const sourceIds = new WeakMap();
  * each row of the type `from` (its `key`, default name) a declared kind with those acts, and each row of `stand_in`
  * a kind drawn as the base its `drawing=` names (a `from` row's own `drawing=` says it too); `as` names a type of the
  * world the joined kinds are kinds of (they take its slots and its lineage: the parts of a whole, the presets of a
- * whole). Returns Map kind -> { acts: Set, world, from, as?, standIn? }; explicit kinds are not in it. `sources`: the live world and the catalog.
+ * whole); `single=true` says there is at most one thing of each joined kind (a part's slot). Returns Map kind -> { acts: Set, world, from, as?, single?, standIn? }; explicit kinds are not in it. `sources`: the live world and the catalog.
  */
 export function joinedKinds(live, catalog = []) {
   const srcs = [live, ...[].concat(catalog ?? [])].filter(Boolean);
@@ -37,7 +37,7 @@ export function joinedKinds(live, catalog = []) {
     const out = new Map();
     for (const j of rowsOf(live, 'std.schema.kinds')) {
       const acts = new Set(j.acts ?? []), from = first(j, 'from'), key = first(j, 'key') ?? 'name', world = first(j, 'world'), stand = first(j, 'stand_in'), as = first(j, 'as');
-      const was = as !== undefined ? { as: String(as) } : {}; // `as=<type of the world>`: the joined kinds are kinds of that type (its slots, its lineage)
+      const was = { ...(as !== undefined ? { as: String(as) } : {}), ...(['true', 'yes'].includes(String(first(j, 'single'))) ? { single: true } : {}) }; // `single=true`: one thing of each joined kind at a time (a slot of a whole)
       if (from) for (const r of rowsOf(srcs, from)) for (const n of r[key] ?? []) if (!out.has(String(n))) out.set(String(n), { acts, world, from, ...was, ...(first(r, 'drawing') ? { standIn: String(first(r, 'drawing')) } : {}) });
       if (stand) for (const r of rowsOf(srcs, stand)) for (const n of r.name ?? []) if (!out.has(String(n)) && first(r, 'drawing')) out.set(String(n), { acts, world, from: stand, ...was, standIn: String(first(r, 'drawing')) });
     }

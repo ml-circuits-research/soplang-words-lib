@@ -54,13 +54,13 @@ test("a world's own value beats a catalog kind of the same spelling; kinds of se
   assert.equal(say(s, 'make an old woman'), 'The face is an old woman now.');
   assert.equal(say(s, 'make the eyes big'), 'The eyes are big now.');
   assert.equal(say(s, 'take off the glasses'), 'Nothing changed. There are no glasses here.');
-  assert.match(say(s, 'what can you do?'), /I can make: boys, robots, old women, mouths, eyes, noses, hats, glasses\./);
+  assert.match(say(s, 'what can you do?'), /I can make: boys, robots, old women, kings, mouths, eyes, noses, hats, glasses\./);
 });
 
 test('an unknown kind named for a whole is refused with what it can be; a world whose things can be nothing else says it did not understand', { skip: offline }, () => {
   const { tool, s } = face();
-  assert.equal(say(s, 'make the puppet an emoji'), 'The puppet cannot be an emoji; it can be a boy, a robot, an old woman.');
-  assert.equal(say(s, 'make the face an emoji'), 'The face cannot be an emoji; it can be a boy, a robot, an old woman.');
+  assert.equal(say(s, 'make the puppet an emoji'), 'The puppet cannot be an emoji; it can be a boy, a robot, an old woman, a king.');
+  assert.equal(say(s, 'make the face an emoji'), 'The face cannot be an emoji; it can be a boy, a robot, an old woman, a king.');
   assert.equal(tool.view()[0].kind, 'face');
   assert.equal(say(s, 'make the face a robot'), 'The face is a robot now.');
   const shelf = session(SHELF, shelfTool).s;
@@ -167,4 +167,69 @@ test('the one a thing is for is no topic: its words stay unread and nothing runs
   assert.equal(plan(exp, 'move the fish in the corner on the right').steps[0].args.place, 'bottom_right', 'the expectation decides');
   assert.equal(plan(exp, 'draw a fish in the right corner').steps[0].args.place, 'bottom_right');
   assert.equal(plan('', 'draw a fish in the right corner').ok, false, 'never made without its side');
+});
+
+test('0.163: a size step of a part continues from the size it has, the kind kept in the mirror (as=part)', { skip: offline }, () => {
+  const { tool, s } = face();
+  assert.equal(say(s, 'make the eyes bigger'), 'The eyes are big now.');
+  assert.equal(say(s, 'bigger'), 'The eyes are huge now.');
+  assert.equal(say(s, 'smaller'), 'The eyes are big now.');
+  const r = s.say('bigger');
+  assert.deepEqual(r.plan.roles.byKind, { eyes: 1 }, 'the plan names the kind, not the type part');
+  assert.equal(tool.view().find((x) => x.kind === 'eyes').size, 'huge');
+});
+
+test('0.163: "it" after a preset is the whole; a whole-level value goes to the whole, not to the parts the preset added', { skip: offline }, () => {
+  const { tool, s } = face();
+  assert.match(say(s, 'make a king'), /I added a hat\. The face is a king now\./);
+  assert.equal(say(s, 'make it happy'), 'The king is happy now.');
+  assert.equal(tool.view()[0].mood, 'happy');
+  assert.ok(tool.view().slice(1).every((x) => x.mood === undefined), 'no part got a mood');
+  s.say('make everything red'); assert.equal(say(s, 'make it sad'), 'The king is sad now.', 'a value goes to the things that take its key');
+});
+
+test('0.163: a kind declared single is there once: put a hat again replaces its variant or says it is there, never asks where', { skip: offline }, () => {
+  const { tool, s } = face();
+  assert.equal(say(s, 'put a hat'), 'I added a hat.');
+  assert.equal(say(s, 'put a hat'), 'Nothing changed. The hat is already there.');
+  assert.equal(say(s, 'put a cap'), 'The hat is cap now.');
+  assert.equal(say(s, 'put a crown'), 'The hat is crown now.');
+  assert.equal(say(s, 'put a crown'), 'Nothing changed. The hat is already crown.');
+  assert.equal(tool.view().filter((x) => x.kind === 'hat').length, 1);
+  assert.equal(say(s, 'put on glasses'), 'I added glasses.');
+  assert.equal(say(s, 'put glasses'), 'Nothing changed. The glasses are already there.');
+  assert.equal(tool.view().find((x) => x.kind === 'glasses').variant, null, 'the hat\'s variant is not carried to the glasses');
+});
+
+test('0.163: the next / previous of a noun phrase alone steps the variant of the part', { skip: offline }, () => {
+  const { tool, s } = face();
+  assert.equal(say(s, 'the next mouth'), 'The mouth is grin now.');
+  assert.equal(say(s, 'next mouth'), 'The mouth is pout now.');
+  assert.equal(say(s, 'previous mouth'), 'The mouth is grin now.');
+  assert.equal(say(s, 'the next eyes'), 'The eyes are sleepy now.');
+  s.say('put a hat'); assert.equal(say(s, 'the next hat'), 'The hat is cap now.');
+});
+
+test('0.163: reset gives each thing its own declared defaults; with none declared it says so instead of asking to what value', { skip: offline }, () => {
+  const { tool, s } = face();
+  s.say('make it angry'); s.say('make the eyes huge'); s.say('make the nose red');
+  assert.equal(say(s, 'reset everything'), 'The face is calm now. The eyes are default now.');
+  assert.deepEqual(tool.view().map((x) => [x.id, x.mood, x.size]), [['face', 'calm', undefined], ['mouth', undefined, 'default'], ['eyes', undefined, 'default'], ['nose', undefined, 'default']], 'no thing got another thing\'s default');
+  assert.equal(say(s, 'reset the face'), 'Nothing changed. The face is already calm.');
+  const shelf = session(SHELF, shelfTool).s; shelf.say('add a novel');
+  assert.equal(say(shelf, 'reset the novel'), 'Nothing changed. The novel has no default to go back to.');
+});
+
+test('0.163: a variant said with a size is chosen at that size (a smile, big); a value already there says why nothing changed', { skip: offline }, () => {
+  const { tool, s } = face();
+  s.say('a grin');
+  assert.match(say(s, 'big smile'), /The mouth is smile now\. The mouth is big now\./);
+  assert.deepEqual(tool.view().find((x) => x.kind === 'mouth'), { id: 'mouth', kind: 'mouth', variant: 'smile', size: 'big' });
+  assert.match(say(s, 'big smile'), /^Nothing changed\. The mouth is already big smile\./);
+  assert.equal(say(s, 'make the eyes green'), 'The eyes are green now.');
+  assert.equal(say(s, 'make the eyes green'), 'Nothing changed. The eyes are already green.');
+  s.say('make the eyes huge');
+  assert.equal(say(s, 'make the eyes bigger'), 'Nothing changed. The eyes are already huge.');
+  const shelf = session(SHELF, shelfTool).s; shelf.say('add a novel'); shelf.say('paint the novel blue');
+  assert.equal(say(shelf, 'paint the novel blue'), 'Nothing changed. The novel is already blue.');
 });

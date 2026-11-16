@@ -840,6 +840,10 @@ function composePlace(slots, placeC, kind, ctx) {
 /** The slots of a kind: its type's, else (a kind taken by join with as=) those of the type it is a kind of. */
 const slotsOf = (live, kind, catalog = []) => { const c = live?._compiled?.(); if (!c) return new Map(); const own = c.slots.get(kind); if (own) return own; const as = joinedKinds(live, catalog).get(String(kind))?.as; return (as !== undefined && c.slots.get(as)) || new Map(); };
 /** The slots of a thing of a view: those of its type (a mirrored joined kind is told as its as= type), else of its kind. */
+/** The kind of a thing of a view: the kind a joined thing keeps (as=: its type is the world's, its kind its own), else its type. */
+const kindOfId = (view, id) => { const t = view.thing(id); return t?.attrs?.get?.('kind')?.[0] ?? t?.kinds?.[0]; };
+/** The value a thing has now for a key: a plain value, else the one a join names (held as an open relation). */
+const nowOf = (view, id, key) => view.values(id, key)[0] ?? view.thing(id)?.rels?.find((r) => r.relation === key)?.value;
 const thingSlots = (live, view, id, catalog = []) => { const t = view.thing(id); const c = live?._compiled?.(); return (t && c?.slots.get(t.type)) || slotsOf(live, t?.kinds?.[0], catalog); };
 /**
  * The things of the state that have every attribute key the request says with no thing named (its attribute
@@ -851,6 +855,14 @@ function valueOwners(live, request, opts) {
   const view = factsOf(live);
   const ids = stateIds(live, view).filter((id) => { const sl = thingSlots(live, view, id, opts.catalog); return keys.every((k) => sl.has(k)); });
   return ids.length === 1 ? ids : null;
+}
+
+/** Whether a thing of the last result takes every attribute key the request says (then "it" is those things). */
+function wholeKeyOfLast(live, request, opts) {
+  const keys = [...new Set(request.constraints.filter((c) => c.on === 'attribute' && (c.want ?? 'yes') === 'yes' && c.attribute).map((c) => c.attribute))];
+  if (!keys.length) return true;
+  const view = factsOf(live);
+  return [...(opts.dialogue?.lastRun?.made ?? opts.dialogue?.result?.things ?? [])].map(strip).filter((id) => view.thing(id)).some((id) => { const sl = thingSlots(live, view, id, opts.catalog); return keys.every((k) => sl.has(k)); });
 }
 
 /** A seeded integer in [lo, hi]; with `notMin`, never lo when hi > lo ("random" varies within the range, never the minimum). */
@@ -886,6 +898,16 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   const notHonoured = [], assumed = [];
   const out = { ok: false, act, ...(request.fresh ? { fresh: true } : {}), target: null, roles: {}, steps: [], assumed, notHonoured, seed, sources: [...sources] };
   if (!act) { notHonoured.push({ on: 'act', words: request.text, why: 'no act was read', code: 'no_act' }); return out; }
+  // a make or put of a kind the join declares single (`std.schema.kinds single=true`: a slot of a whole) that is there already:
+  // the values said replace what the one thing has (the variant of the hat), else it is said to be there; never "where"
+  { const one = said0 && (act === 'make' || act === 'place') && !request.constraints.some((c) => c.on === 'place' || (c.on === 'count' && c.number > 1)) && !['last', 'named', 'all'].includes(request.refers) ? joinedKinds(live, opts.catalog).get(said0) : null;
+    const there = one?.single ? stateOfKind(live, factsOf(live), said0) : [];
+    if (there.length === 1) {
+      const Hc = cap.honours.filter((h) => h.act === 'change');
+      if (Hc.length && request.constraints.some((c) => (c.on === 'attribute' || c.on === 'size') && (c.want ?? 'yes') === 'yes')) { out.act = 'change'; out.sense = 'change'; return referencePlan(live, request, opts, out, Hc, 'change', there); }
+      out.target = said0; out.replies = [{ reply: 'refused.already', roles: { thing: plain(said0) } }]; return out;
+    }
+  }
   const H = cap.honours.filter((h) => h.act === act);
   if (!H.length) { notHonoured.push({ on: 'act', words: act, why: `this world does not ${act}`, code: 'act' }); return out; }
   if (!['said', 'phrase', 'recipient', 'absent'].includes(actFrom)) assumed.push({ key: 'act', value: act, from: actFrom }); // an act read from the shape of the turn is no assumption
@@ -894,7 +916,10 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   // says only their new values; decided by reference over the view, planned as the act change when the world honours it
   if (act === 'make' && changeSense(live, request, opts)) {
     const Hc = cap.honours.filter((h) => h.act === 'change');
-    if (Hc.length) { out.act = 'change'; out.sense = 'change'; return referencePlan(live, request, opts, out, Hc, 'change'); }
+    // "it" is the last result's things; a value whose key none of them has ("make it happy" after a preset added parts) is a
+    // value of the whole that has it (the one thing of the state with that key), not of the parts the last act added
+    const whole = request.refers === 'last' && Hc.length && !wholeKeyOfLast(live, request, opts) ? valueOwners(live, request, opts) : null;
+    if (Hc.length) { out.act = 'change'; out.sense = 'change'; return referencePlan(live, request, opts, out, Hc, 'change', whole); }
   }
   // values said with no thing named ("make it happy", "make her angry"): they are values of the one thing of the state that
   // has those keys (the whole), never a kind made; several such things: the question which
@@ -1212,7 +1237,7 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   // a manner other than random is soft: a slot takes it where there is one
   for (const c of C('manner')) if (c.value !== 'random') placeRole('manner', c.value);
   // attribute values the dialogue state gives (the last request's), for the keys this request leaves open
-  if (has('dialogue') && opts.dialogue?.last) for (const c of opts.dialogue.last.constraints ?? []) if (c.on === 'attribute' && c.want === 'yes' && keys.has('attribute') && !C('attribute').some((x) => x.attribute === c.attribute) && itemArgs[c.attribute] === undefined && wholeArgs[c.attribute] === undefined) { if (placeRole(c.attribute, c.value) === 'put') assumed.push({ key: c.attribute, value: c.value, from: 'dialogue' }); }
+  if (has('dialogue') && opts.dialogue?.last) for (const c of opts.dialogue.last.constraints ?? []) if (c.on === 'attribute' && c.want === 'yes' && keys.has('attribute') && !C('attribute').some((x) => x.attribute === c.attribute) && itemArgs[c.attribute] === undefined && wholeArgs[c.attribute] === undefined && !(c.of && request.constraints.some((k) => k.on === 'kind' && (k.want ?? 'yes') === 'yes' && k.value) && !request.constraints.some((k) => k.on === 'kind' && k.value === c.of))) { if (placeRole(c.attribute, c.value) === 'put') assumed.push({ key: c.attribute, value: c.value, from: 'dialogue' }); }
   // the common pattern of this world's things of the kinds made (anti-unification), for the keys still open
   const inducedKeys = new Set();
   if (has('induced') && hints.attrs) for (const [key, value] of Object.entries(hints.attrs)) {
@@ -1338,7 +1363,7 @@ function referencePlan(live, request, opts, out, H, act, forced = null) {
   if (act === 'connect') { // things named, joined in the order said: the first to the second, the second to the third
     if (ids.length < 2) { out.notHonoured.push({ on: 'target', words: request.text, why: 'two things are needed to connect', code: 'no_target' }); return out; }
     out.steps = ids.slice(1).map((b, i) => ({ action: 'connect', args: { a: `$${ids[i]}`, b: `$${b}` } }));
-    const byKind = {}; for (const id of ids) { const k = view.thing(id)?.kinds?.[0]; if (k) byKind[k] = (byKind[k] ?? 0) + 1; }
+    const byKind = {}; for (const id of ids) { const k = kindOfId(view, id); if (k) byKind[k] = (byKind[k] ?? 0) + 1; }
     out.roles = { count: ids.length, things: ids, byKind, links: out.steps.length };
     out.ok = true; out.reference = true;
     return out;
@@ -1348,8 +1373,16 @@ function referencePlan(live, request, opts, out, H, act, forced = null) {
   if (ids.length > 1 && !several) { out.ask = true; return reply('refused.which', { kind: plain(kind), number: ids.length }); }
   const set = {};
   for (const c of values) set[c.attribute ?? 'colour'] = c.value;
+  if (values.length && ids.length > 1) { // a value goes to the things that take its key ("make it sad": the face has a mood, its parts have none)
+    const takes = (id) => { const sl = thingSlots(live, view, id, opts.catalog); return !sl.size || values.every((c) => sl.has(c.attribute ?? 'colour')); };
+    if (ids.some(takes) && !ids.every(takes)) ids = ids.filter(takes);
+  }
   // a verb whose sense gives the value (k.actions.verb value=default: "reset the face"): every key of the thing with a declared default, back to it
-  if (act !== 'remove' && request.actValue === 'default' && !values.length) for (const id of ids) for (const sl of thingSlots(live, view, id, opts.catalog).values()) if (sl.default !== undefined && sl.default !== null && !['kind', 'world'].includes(sl.key)) set[sl.key] = V(sl.default);
+  const own = new Map(); // what only one thing takes: the declared defaults of its own slots (a reset gives each thing its own, never another's)
+  if (act !== 'remove' && request.actValue === 'default' && !values.length) {
+    for (const id of ids) { const m = {}; for (const sl of thingSlots(live, view, id, opts.catalog).values()) if (sl.default !== undefined && sl.default !== null && !['kind', 'world'].includes(sl.key)) m[sl.key] = V(sl.default); if (Object.keys(m).length) own.set(id, m); }
+    if (!own.size) return reply('refused.no_default', { thing: plain(kind ?? kindOfId(view, ids[0]) ?? 'it') }); // nothing declares a value to go back to: said, not asked "to what value?"
+  }
   const nextOf = ordered ? (id) => orderedNext(live, view, id, ordered.step, opts.catalog) : null;
   if (ordered && ids.some((id) => !nextOf(id))) return reply('refused.missing_value', { key: 'value' });
   const sizeC = request.constraints.find((c) => c.on === 'size' && (c.value || c.step) && keys.has('size'));
@@ -1371,12 +1404,17 @@ function referencePlan(live, request, opts, out, H, act, forced = null) {
   }
   // a size said as a step ("smaller"): one grade of the scale from the size each thing has now
   const stepped = sizeC && !sizeC.value && sizeC.step && act !== 'remove' ? scaleOf([live, ...[].concat(opts.catalog ?? [])]) ?? true : null;
-  const sizeOf = (id) => { const now = view.values(id, 'size')[0]; return stepNext(stepped === true ? null : stepped, now === undefined ? 'default' : String(now), sizeC.step); };
-  if (act !== 'remove' && !Object.keys(set).length && !stepped && !ordered) return reply('refused.missing_value', { key: act === 'place' ? 'place' : 'value' });
+  const sizeOf = (id) => { const now = nowOf(view, id, 'size'); return stepNext(stepped === true ? null : stepped, now === undefined ? 'default' : String(now), sizeC.step); };
+  if (act !== 'remove' && !Object.keys(set).length && !own.size && !stepped && !ordered) return reply('refused.missing_value', { key: act === 'place' ? 'place' : 'value' });
   if (act === 'remove' && ids.length > 1) { const set = new Set(ids); const held = (id) => view.inbound(id).some((x) => set.has(x.thing ?? x)); ids = [...ids.filter((id) => !held(id)), ...ids.filter(held)]; } // what other things are in goes last
-  out.steps = ids.map((id) => ({ action: act, args: { thing: `$${id}`, ...set, ...(stepped ? { size: sizeOf(id) } : {}), ...(nextOf ? { [nextOf(id).key]: nextOf(id).value } : {}) }, ...(stepped ? { stepped: { size: { from: String(view.values(id, 'size')[0] ?? 'default'), dir: sizeC.step } } } : {}) }));
-  const byKind = {}; for (const id of ids) { const k = view.thing(id)?.kinds?.[0]; if (k) byKind[k] = (byKind[k] ?? 0) + 1; }
-  out.roles = { count: ids.length, things: ids, byKind, ...set, ...(stepped ? { size: sizeOf(ids[0]) } : {}), ...(nextOf ? { [nextOf(ids[0]).key]: nextOf(ids[0]).value } : {}) };
+  out.steps = ids.map((id) => ({ action: act, args: { thing: `$${id}`, ...set, ...(own.get(id) ?? {}), ...(stepped ? { size: sizeOf(id) } : {}), ...(nextOf ? { [nextOf(id).key]: nextOf(id).value } : {}) }, ...(stepped ? { stepped: { size: { from: String(nowOf(view, id, 'size') ?? 'default'), dir: sizeC.step } } } : {}) }));
+  const byKind = {}; for (const id of ids) { const k = kindOfId(view, id); if (k) byKind[k] = (byKind[k] ?? 0) + 1; }
+  out.roles = { count: ids.length, things: ids, byKind, ...set, ...Object.assign({}, ...own.values()), ...(stepped ? { size: sizeOf(ids[0]) } : {}), ...(nextOf ? { [nextOf(ids[0]).key]: nextOf(ids[0]).value } : {}) };
+  // a change that asks for what one thing has already: the reply says why nothing changed ("The eyes are already green.")
+  if (act === 'change' && ids.length === 1) {
+    const asked = Object.entries(out.steps[0].args).filter(([k, v]) => !['thing', 'region', 'relation', 'side'].includes(k) && v !== undefined);
+    if (asked.length && asked.every(([k, v]) => String(nowOf(view, ids[0], k)) === String(v))) out.already = { thing: plain(kindOfId(view, ids[0]) ?? kind ?? ''), value: [...asked.filter(([k]) => k === 'size'), ...asked.filter(([k]) => k !== 'size')].map(([, v]) => plain(String(v))).join(' ') };
+  }
   out.ok = true; out.reference = true;
   return out;
 }
@@ -1656,7 +1694,7 @@ const pluralIn = (language, lang, w) => { if (!language) return w; if (pluralNou
 const PLURAL_REPLIES = Object.freeze({
   'done.change': 'The {thing} are {value} now.', 'done.change.size': 'The {thing} are {value} now.', 'done.change.place': 'I moved the {thing} to the {value}.',
   'done.add': 'I added {kind}.', 'done.add.value': 'I added {value} {kind}.', 'done.make': 'I made {kind}.', 'done.make.value': 'I made {value} {kind}.',
-  'done.remove': 'I removed the {thing}.', 'refused.no_such': 'There are no {thing} here.', 'state.count': 'There are {kind}.', 'state.count.value': 'There are {value} {kind}.',
+  'done.remove': 'I removed the {thing}.', 'refused.no_such': 'There are no {thing} here.', 'nothing.same.value': 'The {thing} are already {value}.', 'refused.already': 'The {thing} are already there.', 'refused.no_default': 'The {thing} have no default to go back to.', 'state.count': 'There are {kind}.', 'state.count.value': 'There are {value} {kind}.',
 });
 
 
@@ -1668,6 +1706,9 @@ const WHOLE_REPLIES = Object.freeze({
   'done.about': [{ roles: ['whole', 'topic'], text: 'The {whole} is about {topic}.' }],
   'state.count.named': [{ roles: ['kind', 'name'], text: 'There is one {kind}, \u201c{name}\u201d.' }],
   'done.title': [{ roles: ['whole', 'title'], text: 'The {whole} is called {title}.' }],
+  'nothing.same.value': [{ roles: ['thing', 'value'], text: 'The {thing} is already {value}.' }],
+  'refused.already': [{ roles: ['thing'], text: 'The {thing} is already there.' }],
+  'refused.no_default': [{ roles: ['thing'], text: 'The {thing} has no default to go back to.' }],
   'refused.can_be': [{ roles: ['thing', 'value', 'kinds'], text: 'The {thing} cannot be {value}; it can be {kinds}.' }],
   'short_of': [{ roles: ['made', 'asked', 'kind'], text: 'I could only make {made} of the {asked} {kind} you asked for.' }, { roles: ['made', 'asked', 'unit'], text: 'I could only make {made} {unit} of the {asked} you asked for.' }],
 });
@@ -1733,7 +1774,8 @@ export function sayRequest(request, outcome = {}, opts = {}) {
     const nothing = !d.added.length && !d.removed.length && !d.changed.length;
     if (nothing && !tool.question && !outcome.ask && !outcome.refused && !(tool.ok && (tool.undo || tool.redo))) {
       facts.push({ reply: 'why.nothing', roles: {} });
-      if (tool.failed?.reply && tool.failed.reply !== 'why.nothing') facts.push({ reply: tool.failed.reply, roles: tool.failed.roles ?? {}, code: tool.failed.code }); // said once
+      if (tool.failed?.reply && tool.failed.reply !== 'why.nothing') facts.push(tool.failed.code === 'same' && tool.failed.roles?.value ? { reply: 'nothing.same.value', fallback: ['nothing.same'], roles: tool.failed.roles, code: 'same' } : { reply: tool.failed.reply, roles: tool.failed.roles ?? {}, code: tool.failed.code }); // said once; a value already there is said with its thing
+      else if (outcome.already) facts.push({ reply: 'nothing.same.value', fallback: ['nothing.same'], roles: outcome.already, code: 'same' });
       else if (tool.same) facts.push({ reply: 'nothing.same', roles: {}, code: 'same' }); // a revision that asks for what is there
     }
   }

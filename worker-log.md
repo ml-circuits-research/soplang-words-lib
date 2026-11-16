@@ -5936,3 +5936,8 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 ## 0.162.0 (2026-11-16)
 - PSys2 Q96 slice A1 [LIB] 1-6, 8, 10-12; Q97 (stand-ins, quoted names, shared join map, lexicon memo); Q98 (`as=`); r0019, r0129. Example world `FACE` (puppet face: parts joined `as=part`, presets `as=face`, variants by `match=kind:slot`, mood). Properties: `test/face-world.test.mjs` (11).
 - Open (questions.md Q95): Q96 (7)(9) second step from the current value; `raise` direction data; KNOW rows (step cues, refused.can_be, plural-noun pairs and replies).
+
+## 2026-11-16 0.163.0 (Q99 of the avatar's 13 owner turns)
+- Q99 (1): a part joined `as=part` keeps its kind in the mirror; a relative size steps from the size it has (big, huge). (2): "it" after a preset: a value whose key the last things lack goes to the whole that has it; a value goes to the things that take its key. (3): `std.schema.kinds single=true`; "put a hat" with a hat on replaces the variant said or says "The hat is already there." (4): next/previous of a noun phrase alone is a property over FACE (needs the cue `step=up|down takes=thing`, still proposed). (5): a reset gives each thing its own defaults; none declared: `refused.no_default`. (6): variant plus size ("big smile") is one change, a property. (7): "The eyes are already green." (`nothing.same.value`).
+- Also fixed: a variant carried from the last turn to another kind (a hat's crown to the glasses). Decision left open: "reset the face" resets the face's own slots only; "reset everything" resets all things.
+- Tests: face-world 16 (6 new), acts-on-things 1 text; `npm test` 634 pass, 0 fail; bundle run of the two files green.

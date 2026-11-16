@@ -509,7 +509,11 @@ function effectUnmet(bind, args, kind, d, view) {
   if (bind.changes.length && !d.changed.some((x) => bind.changes.includes(x.key))) {
     const things = [].concat(args.ids ?? args.thing ?? []).map(strip);
     const already = things.length && bind.changes.every((k) => args[k] === undefined || things.every((id) => String(view.get(id)?.attrs[k]) === String(args[k])));
-    return already ? { code: 'same', reply: 'nothing.same', roles: { kind } } : { code: 'no_effect', reply: 'why.nothing', roles: { kind } }; // asked for what is there already
+    if (already) { // asked for what is there already: said with the thing and the value it has (the reason, not only "nothing changed")
+      const rec = view.get(things[0]), said = bind.changes.filter((k) => args[k] !== undefined).map((k) => String(args[k]).replace(/_/g, ' '));
+      return { code: 'same', reply: 'nothing.same', roles: { kind, ...(said.length && things.length === 1 ? { thing: String(rec?.attrs?.kind ?? rec?.kind ?? kind ?? '').replace(/_/g, ' '), value: said.join(' and ') } : {}) } };
+    }
+    return { code: 'no_effect', reply: 'why.nothing', roles: { kind } };
   }
   return null;
 }

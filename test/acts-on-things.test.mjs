@@ -65,7 +65,7 @@ test('the change sense of make, by reference over the view; done.change says its
   // a move says the place: the key the binding took the value from (arg=end<-step.place)
   r = s.say('move the atlas to the left');
   assert.deepEqual([r.reply.facts[0].roles.key, r.reply.text], ['place', 'I moved the atlas to the left.']);
-  assert.equal(s.say('move the atlas to the left').reply.text, 'Nothing changed. That is what is there already.');
+  assert.equal(s.say('move the atlas to the left').reply.text, 'Nothing changed. The atlas is already left.');
 });
 
 test('a change the view cannot show is said from the call (a move inside the same region)', () => {

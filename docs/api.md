@@ -2474,7 +2474,7 @@ print(runPlan({ act: 'undo' }, toolBindings(w), tool, { timeline }).ok, balls.le
 true 0
 ```
 
-### A whole with slots of parts: joined kinds as a type, values from a catalog, what a thing can be (0.162.0), canBe(live, predicate, catalog?)
+### A whole with slots of parts: joined kinds as a type, values from a catalog, what a thing can be (0.162.0, 0.163.0), canBe(live, predicate, catalog?)
 
 A world instance that takes its kinds from a knowledge base by join can say which of its own types the joined kinds are:
 `std.schema.kinds world= from=<type> key=name acts=... as=<type of the world>`. The joined kinds are then kinds of that
@@ -2527,6 +2527,26 @@ right") keeps the side: the declared value of the place slot that holds it is th
 expectation (`k.expect.value of= on=place when.side=`), else asked (`refused.which`); a slot with no enum takes the side in a
 `side` slot, else the side is named as not taken. `stateDiff` reports a change of a thing's kind (`key: 'kind'`), and the
 reply says it once, naming the thing by the kind it had ("The face is a boy now.").
+
+Added in 0.163.0 (properties in `test/face-world.test.mjs`; the example world `FACE` has a preset `king` that wears a crown):
+- a part joined `as=part` keeps its kind in the mirror, and a relative size is stepped from the size the thing has ("bigger"
+  twice: big, then huge); the plan's `byKind` names `eyes`, not `part`;
+- "it" after a preset is the last result's things; a value whose key none of them has ("make it happy": a mood, only the
+  face has one) is a value of the whole that has the key, never of the parts the preset added; a value said of several things
+  goes to those that take its key;
+- `std.schema.kinds ... single=true` declares that there is at most one thing of each joined kind (a slot of a whole). A make or
+  put of such a kind that is there already, with no place said, replaces what the values say ("put a crown": the hat's variant,
+  said as a change) or, with no value, says `refused.already` ("The hat is already there."); it never asks where. A value
+  carried over from the last turn is not carried to a kind other than the one it was said of (the hat's variant is not the
+  glasses' variant);
+- "the next mouth", "next mouth", "previous eyes": a noun phrase with next/previous alone, with the cue `on=attribute step=
+  takes=thing` of the language, is a change by one step through the ordered values of the part's variants;
+- a reset gives each thing its own declared defaults (never another's); when no slot of the things named declares a default the
+  reply is `refused.no_default` ("The novel has no default to go back to."), not "To what value?";
+- a variant said with a size ("big smile") is chosen at that size (variant and size, one change); a change that asks for what
+  the thing has says why nothing changed: `nothing.same.value` ("The eyes are already green.", "The mouth is already big
+  smile."), with `nothing.same` as the fallback. Built-in English texts exist for `nothing.same.value`, `refused.already` and
+  `refused.no_default`; a language world may say them in its own words (`.plural` for a plural-noun kind).
 
 Joined kinds at scale: the join map is built once per version of the join rows and the sources and shared by every fork
 and mirror; the reader's lexicon is kept per version of the world, its language and its catalog, so a world that joins

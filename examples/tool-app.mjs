@@ -134,6 +134,7 @@ export const FACE_BASE = String.raw`
 @pr.boy k.demo.preset name=boy
 @pr.robot k.demo.preset name=robot
 @pr.old k.demo.preset name=old_woman
+@pr.king k.demo.preset name=king
 @mo.calm k.demo.mood name=calm
 @mo.happy k.demo.mood name=happy
 @mo.angry k.demo.mood name=angry
@@ -151,7 +152,7 @@ export const FACE = String.raw`
 @s.part.colour core.slot of=part key=colour enum=red enum=blue enum=green enum=black
 @s.part.size core.slot of=part key=size type=k.expect.scale by=step default=default
 @s.part.variant core.slot of=part key=variant type=k.demo.variant by=name match=kind:slot
-@j.part std.schema.kinds world=puppet from=k.demo.slot key=name acts=make acts=remove acts=change as=part
+@j.part std.schema.kinds world=puppet from=k.demo.slot key=name acts=make acts=remove acts=change as=part single=true
 @h.make std.schema.honours world=puppet act=make on=kind on=attribute on=size
 @h.change std.schema.honours world=puppet act=change on=kind on=attribute on=size
 @h.remove std.schema.honours world=puppet act=remove on=kind
@@ -172,7 +173,7 @@ export function faceTool() {
     { id: 'eyes', kind: 'eyes', variant: 'round', size: 'default' },
     { id: 'nose', kind: 'nose', variant: 'button', size: 'default' }];
   return {
-    wear({ preset, mood }) { face = { ...face, kind: preset }; if (mood) face.mood = mood; },
+    wear({ preset, mood }) { face = { ...face, kind: preset }; if (mood) face.mood = mood; if (preset === 'king' && !parts.some((x) => x.kind === 'hat')) parts.push({ id: 'hat', kind: 'hat', variant: 'crown', size: 'default' }); }, // a king wears a crown
     put({ part, variant, colour, size }) { const p = parts.find((x) => x.kind === part); if (p) { if (variant) p.variant = variant; if (colour) p.colour = colour; if (size) p.size = size; } else parts.push({ id: part, kind: part, variant: variant ?? null, size: size ?? 'default', ...(colour ? { colour } : {}) }); },
     off({ ids }) { parts = parts.filter((p) => !ids.includes(p.id)); },
     set({ ids, colour, size, variant, mood }) { for (const t of [face, ...parts]) if (ids.includes(t.id)) { if (colour) t.colour = colour; if (size) t.size = size; if (variant) t.variant = variant; if (mood) t.mood = mood; } },

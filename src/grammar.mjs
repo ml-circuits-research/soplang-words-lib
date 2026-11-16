@@ -70,13 +70,14 @@ function tokenize(text, g) {
  * With sourceSpans, source reports original Unicode-scalar token ranges and nodes
  * gain sourceRanges when mapping succeeds; token-index span never changes.
  */
-export function parseText(world, text, { start = 'S', max = 8, budget = 20000, alternations, sourceSpans = false, sourceBudget = 20000, ...grammar } = {}) {
+export function parseText(world, text, { start = 'S', max = 8, budget = 20000, alternations, sourceSpans = false, sourceBudget = 20000, reportLimits = false, ...grammar } = {}) {
   const original = sourceSpans ? String(text) : null;
   if (sourceSpans) text = original;
   let applied = null, mode = null; // the alternation rules of the language world bring a variant to its canonical form first
   if (alternations) { const n = normalise(world, text, alternations === true ? {} : alternations); if (n.applied.length) { text = n.text; applied = n.applied; mode = n.mode ?? null; } }
   const g = grammarOf(world, grammar), tok = tokenize(text, g);
-  const memo = new Map();
+  const memo = new Map(), limits = new Set();
+  const limited = reason => { if (reportLimits) limits.add(reason); };
   let steps = 0;
   let over = false;
   const tick = () => { if (++steps > budget) over = true; }; // past the budget the chart stops growing: what is complete is returned, with truncated=true
@@ -85,7 +86,8 @@ export function parseText(world, text, { start = 'S', max = 8, budget = 20000, a
   function at(cat, i) {
     const key = `${cat}\u0001${i}`;
     if (memo.has(key)) return memo.get(key);
-    if (active.has(key) || over) return [];
+    if (active.has(key)) { limited('recursion'); return []; }
+    if (over) return [];
     active.add(key);
     tick();
     const out = [];
@@ -98,6 +100,7 @@ export function parseText(world, text, { start = 'S', max = 8, budget = 20000, a
       for (const part of rhs) { // bounded: the parts of one rule
         const next = [];
         for (const p of partial) for (const r of at(part, p.end)) { tick(); next.push({ end: r.end, children: [...p.children, r.at] }); }
+        if (next.length > max * 4) limited('chart');
         partial = next.slice(0, max * 4);
         if (!partial.length) break;
       }
@@ -108,10 +111,11 @@ export function parseText(world, text, { start = 'S', max = 8, budget = 20000, a
       const base = out[k];
       for (const rhs of left) {
         let partial = [{ end: base.end, children: [base.at] }];
-        for (const part of rhs.slice(1)) { const next = []; for (const p of partial) for (const r of at(part, p.end)) { tick(); next.push({ end: r.end, children: [...p.children, r.at] }); } partial = next.slice(0, max * 4); if (!partial.length) break; }
+        for (const part of rhs.slice(1)) { const next = []; for (const p of partial) for (const r of at(part, p.end)) { tick(); next.push({ end: r.end, children: [...p.children, r.at] }); } if (next.length > max * 4) limited('chart'); partial = next.slice(0, max * 4); if (!partial.length) break; }
         for (const p of partial) out.push({ end: p.end, at: { cat, span: [i, p.end], ...(rhs.rule ? { rule: rhs.rule } : {}), ...(rhs.head ? { head: rhs.head } : {}), ...(rhs.priority ? { priority: rhs.priority } : {}), children: p.children.flatMap((c) => (c.cat.endsWith('+') ? c.children || [c] : [c])) } });
       }
     }
+    if (left.length && out.length > max * 8) limited('left-growth');
     // coordination: C coord C (coord C ...), when the grammar declares coordinating words
     if (g.coord.size && !cat.endsWith('+')) for (const first of out.slice()) {
       let items = [first];
@@ -120,6 +124,7 @@ export function parseText(world, text, { start = 'S', max = 8, budget = 20000, a
         if (!g.coord.has(tok[last.end])) break;
         const more = at(cat, last.end + 1).filter((r) => !r.at.coord);
         if (!more.length) break;
+        if (more.length > 1) limited('coordination');
         items = [...items, more.sort((a, b) => b.end - a.end)[0]];
         out.push({ end: items[items.length - 1].end, at: { cat, span: [i, items[items.length - 1].end], conj: tok[items[0].end], coord: items.map((x) => x.at) } });
       }
@@ -141,10 +146,11 @@ export function parseText(world, text, { start = 'S', max = 8, budget = 20000, a
   const unknown = tok.map((word, at) => ({ word, at })).filter(({ word }) => !g.lex.has(word) && !literal.has(word) && !g.coord.has(word) && !(g.digits && /^\d+$/.test(word)));
   const parses = full.filter((p) => { const k = JSON.stringify(p.tree); if (seen.has(k)) return false; seen.add(k); return true; })
     .sort((a, b) => JSON.stringify(a.tree).localeCompare(JSON.stringify(b.tree))); // a stable order first, so ties keep it
+  if (parses.length > max) limited('results');
   const chosen = choose(world, 'parse', parses, { seed: null }).order.slice(0, max).map(({ depth, prio: _p, lits: _l, ...p }) => p); // one way to choose (std.decide, kind parse): priority, literal words, size, depth
   // no noun is owned: a word the lexicon does not have is reported, not judged
   const source = sourceSpans ? grammarSource(original, tok, chosen, { rewritten: !!applied, budget: sourceBudget }) : null;
-  return Object.assign(chosen, { ...(sourceSpans ? { source } : {}), tokens: tok, ...(unknown.length ? { unknown } : {}), ...(over ? { truncated: true, steps } : {}), ...(applied ? { applied, normalised: text } : {}), ...(mode ? { mode } : {}) });
+  return Object.assign(chosen, { ...(reportLimits ? { limits: { pruned: limits.size > 0, reasons: [...limits] } } : {}), ...(sourceSpans ? { source } : {}), tokens: tok, ...(unknown.length ? { unknown } : {}), ...(over ? { truncated: true, steps } : {}), ...(applied ? { applied, normalised: text } : {}), ...(mode ? { mode } : {}) });
 }
 
 /** A noun phrase node read as roles: { det, num, mods, head, lemma, span, pp? } (categories named by the grammar: `cats`). */

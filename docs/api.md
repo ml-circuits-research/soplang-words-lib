@@ -1164,6 +1164,14 @@ coordination as `{ coord: [...] }`; `parts` are the phrases inside it of the sam
 such as the owner in "the house's door"); the category names are the grammar's (`cats`).
 Verbs and argument frames are next (questions.md Q32).
 
+`reportLimits: true` adds `limits: {pruned, reasons}` without changing the default
+result shape. Reasons identify chart truncation (`chart`), final result capping
+(`results`), bounded left-recursive growth (`left-growth`), active recursion cuts
+(`recursion`) or discarded coordination choices (`coordination`). Pruning in an
+unsuccessful branch still matters: one surviving parse does not prove there was
+only one interpretation. The request bridge refuses any pruning marker or budget
+truncation. An unmarked result is still not a proof of semantic correctness.
+
 With `sourceSpans: true`, the result also has `source: { text, unit:
 'unicode-scalar', status, tokenRanges, reason? }`. `text` is the exact original
 message, including casing, punctuation and whitespace. `tokenRanges[i]` lists
@@ -1238,6 +1246,65 @@ print([np.rule, np.head, np.pp[0].words, parseText(w, 'the moon', { start: 'NP',
 ```output
 ["r2","star",["next to","the","house"],[{"word":"moon","at":1}]]
 ```
+
+### readGrammarRequests(world, text, options?)
+
+Projects explicitly declared readings into structurally checked `std.request`
+candidates. `compiled` must be a successful `compileGrammarOverlay` result bound
+to this exact knowledge World and its current `stamp`; foreign or stale results
+are refused. Keep this knowledge World separate from mutable application state.
+The bridge parses with original Unicode provenance and limit reporting enabled,
+then composes semantic templates. It does not resolve instances or mutate the world.
+
+This first profile accepts a closed record: `act`, `mood`, `target`, `constraint`,
+`evidence`. The target explicitly supplies `mode`, `kind` and optional `determiner`.
+The constraint explicitly supplies `concept`, `operator`, `value`, `character`,
+`polarity`, `evidence`. Supported values are `mood=do`, `mode=existing`, `operator=eq`,
+`character=requirement`, `polarity=positive`. Act/kind/concept identities remain
+caller-declared symbols; no domain or action name is built into this profile.
+Missing fields, extra unsupported meanings (including selectors), and other
+profiles decline rather than being converted to defaults or silently dropped.
+
+`start` defaults to `S`. `terminalPunctuation` defaults to an empty list; it is an
+explicit language policy, not a list of marks the mechanism guesses harmless.
+Only whitespace may occur between evidenced lexical ranges. The trailing trimmed
+gap must be empty or exactly a configured punctuation string. Question marks,
+negation or internal punctuation cannot disappear merely because tokenization
+omitted them. English configuration lives outside the generic source module.
+
+`max` defaults to 32; parser, source-mapping, composition and bridge budgets default
+to 20000 (`budget`, `sourceBudget`, `compositionBudget`, `bridgeBudget`). Any parse
+pruning or budget truncation declines. Composition failures also decline, except
+readings rejected by declared equality guards. Remaining semantic alternatives
+stay separate. Unknown symbols, missing provenance, malformed request graphs or
+unaccounted source gaps yield no candidates.
+
+The result has `candidates`, `failures` and `coverage: {complete}`. Each candidate
+contains `{request, wires, evidence, origins, coverage}`. `wires` preserves the exact
+original source text, an explicit existing target, and a desired-result constraint
+under `request.root`. A single lexical-value range becomes a request source span;
+disjoint ranges remain in `evidence.constraint`, with no invented enclosing span.
+Keep that evidence and the per-leaf origin records alongside the wires. Each graph
+passes `inspectRequest`; this establishes structural consistency only. Coverage
+means the source material was accounted for, not that the reading is true, the
+instance exists, the value is applicable or any effect succeeded. Instance
+resolution, execution and reply evidence remain separate mandatory stages.
+
+An absent compiled declaration cannot produce a request:
+
+```js
+const w = new World();
+const result = readGrammarRequests(w, 'ko');
+print(result.candidates.length, result.failures[0].reason, result.coverage.complete);
+```
+
+```output
+0 stale-or-foreign-compilation false
+```
+
+For a complete published-data example, see the reader overlay integration test:
+it compiles the knowledge declarations and projects both colour and shape
+assignments while retaining source evidence and refusing unsupported readings.
 
 ### compileGrammarOverlay(world, options?)
 

@@ -2057,3 +2057,12 @@ to its exact source world and fact/schema revision; see [the API contract](api.m
 ## assessPropertyChange
 
 Assesses exact native property tokens against an explicit resolved expectation using correlated std.trace before/after observations and operation inputs/results. The immutable retained snapshot supports a typed std.reply.property claim with changed/unchanged/unconfirmed status, recomputed on validation. This is neither semantic intent resolution nor a whole-request or perceptual-success guarantee. See the API for correlation, version, alias, budget and trust boundaries.
+
+### readGrammarRequests
+
+Bridges explicit declarative readings to structurally validated `std.request`
+property-assignment candidates. It requires a fresh exact-world compilation,
+accounts for source gaps through a configured punctuation policy, refuses pruning
+and incomplete interpretations, and preserves alternative readings and provenance.
+It neither resolves live instances nor executes effects or claims successful replies.
+See [the bounded profile and API](api.md#readgrammarrequestsworld-text-options).

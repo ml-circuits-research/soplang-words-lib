@@ -12,3 +12,6 @@ export const ENGLISH_READER_FACTS = {
   'k.genres': ['k.genres.genre'],
   'k.actions': ['k.actions.verb'],
 };
+
+// Language policy for this bounded imperative profile; other punctuation declines.
+export const ENGLISH_REQUEST_OPTIONS = Object.freeze({ start: 'Message', terminalPunctuation: Object.freeze(['.']) });

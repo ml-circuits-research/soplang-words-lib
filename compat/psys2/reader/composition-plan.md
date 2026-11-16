@@ -65,3 +65,26 @@ and its rollback-restored `stamp`: inspection found that `world.version` alone d
 not change on every schema-only edit. The subsequent bridge must reject stale or
 foreign-world compilation, preserve unresolved alternatives and account for ignored
 source gaps through an explicit language policy.
+
+## First request-graph bridge
+
+`readGrammarRequests` now projects explicitly declared positive equality assignments
+into standalone `std.request` graphs. The bridge requires original source mapping,
+complete source coverage under an explicit terminal-punctuation policy, no reported
+parser pruning, and no unresolved composition alternatives. It validates every graph
+with `inspectRequest`, retains disjoint lexical evidence without inventing a hull,
+and preserves per-leaf source origins. Exact knowledge-world identity and mutation
+stamp are checked before and after reading.
+
+The supported profile is deliberately explicit: imperative mood, existing target,
+equality operator, requirement character and positive polarity all come from the
+semantic record. Unknown fields, unsupported selectors, negation, quantified or
+indefinite target forms and other profiles decline. No target instance or successful
+effect is inferred. Local graph IDs belong to each detached candidate; persistent
+journals must retain/import the whole graph under their own request identity.
+
+Knowledge pin `ef0a1b27` adds the complete shape-kind provider and explicit constraint
+character/polarity. Published-data integration checks the owner development phrase
+“Change the colour of the circle to purple.” and a separate shape assignment. These
+are request-description checks, not Drawing execution claims or heldout scores.
+PSys2 owns instance resolution, host effects, observations and typed reply evidence.

@@ -2314,3 +2314,14 @@ Next on the critical path, as before: the rest of the legend (space with version
 | 0.175.0 generic `core.schema.link` descriptors; `semanticLinks()` | Accepted, and the design is the right one: one generic mechanism for "this key's value must name a declaration of that type", with the legend registering `is`/`means`/`space` as data and any other vocabulary able to do the same; final-state checks so forward declarations and later edits are both handled; global name lookup, references to disambiguate. It matches the boundary policy agreed at 15:40. For migration, keep "a slot without `means` is rejected" as an opt-in per world (strict mode) until the domains are migrated, then make it the default. |
 
 Remaining for the phase-0 announcement, as I read the register: the frame descriptor and point; the request graph (source, target, constraint, logical nodes, mood); typed trace records; reply claims; change policy and calibration snapshot. The request graph is what PSys2 and the knowledge migration need most; if you must order, do it next.
+
+## 2026-11-16 16:40 (Rome) — Implementation review 5 (reviewer; library 0.176.0 8275b1d, 0.177.0 d0ea3d6)
+
+**Run by me:** `node --test test/request-envelope.test.mjs test/final-validation.test.mjs` → 16 / 16.
+
+| Landing | Verdict |
+|---|---|
+| 0.176.0 request foundation (source, request, target; mandatory mood, no implicit `do`) | Accepted. No implicit `do` is right at the contract level; the reader decides the mood (10.2), the contract only refuses a request without one. |
+| 0.177.0 `core.validate on=<type> fn=<pure function>`, rerun uncached on the final state | Accepted. It is a declared function used as an invariant check, which the owner's rule allows; the alternatives you rejected (a deny that misses child edits, a dummy negative pattern) would each have hidden the invariant. |
+
+**Your graph proposals — all accepted, no counter:** a typed `request` on every logical node with all dependencies owned by it; implicit conjunction only without logical nodes, otherwise a required `root`, orphans rejected; scope checked per incoming edge, one binder per bound target, no rebinding; Unicode scalar offsets into the exact source text, converted at the JavaScript boundary; the graph validator as a `core.validate` function, with the test list you wrote (cross-request edges, cycles by edit, shared out-of-scope leaves, nested binders, orphans, operator variants). Go ahead.

@@ -1,3 +1,5 @@
+> **Notă, 16 noiembrie 2026.** Acest plan este mai vechi decât `refactoring/sop-worlds-schimbari.md`, care este planul de lucru valabil. Unde diferă (avatarul printre domenii, limba citită din fiecare mesaj, trimiterile la lecțiile vechiului curs), acest document nu mai este valabil. Vezi regula R75 din `books/sop-worlds-teorie.md`.
+
 # Plan de generalizare: bibliotecă, date, domenii
 
 *Propunere a revizorului, 16 noiembrie 2026, pentru aprobarea proprietarului. Nimic din fazele 1–4 nu pornește fără aprobare. Faza 0 este numai măsurare și poate porni imediat.*

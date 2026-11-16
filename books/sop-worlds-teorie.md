@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 44, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 45, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -2385,6 +2385,33 @@ O funcție geometrică sau numerică declarată poate rămâne o dependență de
 ## 8.6 O ședință, urmărită cu numere
 
 Fixăm pentru exemplu o zi și un fus orar deja rezolvate. Minutele se numără de la miezul nopții. Ana are o rezervare [600, 660), adică 10:00–11:00. Cererea este o ședință de 30 de minute, cu Ana, începând exact la 10:30. Interpretarea produce participantul identificat, începutul 630 și durata 30. Sfârșitul calculat este 660.
+
+Sala este și ea un rol al ședinței. În acest exemplu, `room1` este o sală deja aleasă prin completarea cererii și acceptată în plan; nu folosim valoarea textuală `none` și nu lăsăm rolul nerezolvat când verificăm candidatul. Dacă nu există o sală identificată, planul rămâne incomplet. Același interval trebuie să fie disponibil atât pentru Ana, cât și pentru sală.
+
+Fragmentul executabil de mai jos izolează verificarea conflictelor, folosind mecanismele existente. Tipul `candidate` desemnează numai propunerea de testat; nu este încă o rezervare executată. Schema completă a rolurilor și unităților aparține declarației domeniului. Datele sunt un instantaneu local ilustrativ: singura rezervare existentă este `busy`, pentru aceeași persoană și aceeași sală.
+
+```sop
+@ana person
+@room1 room
+@busy meeting people=$ana room=$room1 start=600 length=60
+@p.old meeting people=?person start=?old.start length=?old.length
+@p.new candidate people=?person start=?new.start length=?new.length
+@p.room.old meeting room=?room start=?old.start length=?old.length
+@p.room.new candidate room=?room start=?new.start length=?new.length
+@c.old.end core.calc out=?old.end fn=add args=?old.start args=?old.length
+@c.new.end core.calc out=?new.end fn=add args=?new.start args=?new.length
+@c.left core.check fn=lt args=?new.start args=?old.end
+@c.right core.check fn=lt args=?old.start args=?new.end
+@d.person core.deny when=$p.old when=$p.new with=$c.old.end with=$c.new.end if=$c.left if=$c.right why="participant overlap"
+@d.room core.deny when=$p.room.old when=$p.room.new with=$c.old.end with=$c.new.end if=$c.left if=$c.right why="room overlap"
+@t.meeting core.type of=meeting complete=true
+```
+
+Primele trei fire sunt datele observate. Cele două perechi de pattern-uri leagă, separat, participantul comun și sala comună. Calculele `c.old.end` și `c.new.end` adună începutul și durata intervalului potrivit; variabilele se leagă pentru fiecare pereche, fără a amesteca două rezervări. Condițiile `c.left` și `c.right` sunt cele două inegalități stricte ale suprapunerii. Fiecare interdicție folosește ambele calcule și ambele condiții; verificarea unei resurse nu înlocuiește verificarea celeilalte.
+
+Ultimul fir marchează tipul meeting complet numai în această instanță locală, după încărcarea integrală a rezervărilor relevante pentru ambele resurse și intervalul cercetat. Nu afirmă că sursa externă nu se poate modifica și nu închide toate calendarele. O citire incompletă nu primește această declarație doar ca să permită găsirea unei ore. Verificarea la execuție folosește versiunea sursei, nu numai acest indicator.
+
+Pe lumi de test separate încărcate cu fragmentul, `tell` pentru `@trial candidate people=$ana room=$room1 start=630 length=30` întoarce `ok=false`, cu motivele `participant overlap` și `room overlap`. Cu începutul 660 întoarce `ok=true`. Aceste rezultate au fost executate pe bibliotecă. Acceptarea candidatului este numai acceptarea acestei probe de conflicte; nu înseamnă că unealta a rezervat ceva ori că toate celelalte condiții ale domeniului au fost verificate.
 
 Pentru două intervale [a,b) și [c,d), suprapunerea este adevărată când a < d și c < b. Aici 630 < 660 și 600 < 660: există conflict. Acesta este un calcul explicit, nu o concluzie obținută din cuvântul „ședință”. Regula leagă întâi rezervările care împart un participant, apoi aplică testul intervalelor.
 

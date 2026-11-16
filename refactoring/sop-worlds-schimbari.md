@@ -263,18 +263,18 @@ Durata nu o pot promite. Estimarea mea, cu cele două sesiuni de lucru: pașii 1
 
 La cererea proprietarului, sesiunea worker redactează cartea și aceste planuri; sesiunea de control le face review. Feedbackul este cerut prin `questions.md`, secțiunea Book. Implementarea refactoringului nu este încă autorizată.
 
-Înainte de pasul 3 din secțiunea 8 se închid următoarele livrabile. Capitolul 9 al cărții este prima explicație a contractelor, nu o dovadă că sunt deja implementate.
+Înainte de pasul 3 din secțiunea 8 se închid următoarele livrabile. Capitolul 8 al cărții este prima explicație a contractelor, nu o dovadă că sunt deja implementate.
 
 | Livrabil | Referință și dovada cerută la review |
 |---|---|
-| Spații și operații | 9.1–9.2, B24: lista operațiilor generale, schema completă, unități, metrică și operație nesuportată. |
+| Spații și operații | 8.1–8.2, B24: lista operațiilor generale, schema completă, unități, metrică și operație nesuportată. |
 | Organizarea proiectului | 2.6 și R6: manifest, rădăcini de import, fișiere ale aceluiași modul, namespace-uri de instanțe și sublumi explicite. Probe de mutare fără schimbarea identității, copie independentă cu remapare, coliziune refuzată și import ciclic; formatul manifestului trebuie definit înainte de implementare. |
-| Reguli și interpretare | 2.2–2.5, 3.4–3.5 și 9.3, B25–B26: condiții și efecte structurate; traseu text–valori–referințe–regulă, cu erori localizate. |
-| Acces la cunoaștere | 9.4, B27–B28: dependențe directe și inverse, ciclu, fragment de bază lipsă, completitudine și invalidare. |
-| Motoare | 9.5, B29–B30: două motoare, rezultate distincte, verificare comună și buget epuizat. |
+| Reguli și interpretare | 2.2–2.5, 3.4–3.5 și 8.3, B25–B26: condiții și efecte structurate; traseu text–valori–referințe–regulă, cu erori localizate. |
+| Acces la cunoaștere | 8.4, B27–B28: dependențe directe și inverse, ciclu, fragment de bază lipsă, completitudine și invalidare. |
+| Motoare | 8.5, B29–B30: două motoare, rezultate distincte, verificare comună și buget epuizat. |
 | Cerere și răspuns | 6.3, R71: cererea în concepte, cu identitatea fiecărei cerințe, și formele generale de răspuns. |
-| Observarea uneltei | R70, 9.6: identități, versiune, conținut observat, efect necunoscut și eșec verificabil. |
-| Refolosire | 9.6, B31–B33: identități păstrate între domenii, exemplu numeric complet, eșec și recuperare. |
+| Observarea uneltei | R70, 8.6: identități, versiune, conținut observat, efect necunoscut și eșec verificabil. |
+| Refolosire | 8.6, B31–B33: identități păstrate între domenii, exemplu numeric complet, eșec și recuperare. |
 | Migrarea stării | B22: format vechi și nou, păstrarea identității, incompatibilitate detectată și recuperare fără pierderea originalului. |
 | Acceptarea aplicației | 7: cele trei sesiuni ale proprietarului, cu numitor fix și rezultate corect / parțial / refuz justificat / greșit. Ținta este zero greșite, fără a ascunde cazurile eliminate. Aceasta este poarta finală a implementării; la proiectare se aprobă verificările intenției, nu se pretinde că rezultatul viitor este deja măsurat. |
 
@@ -290,3 +290,26 @@ Blocul de control 00:15 fixează refacerea completă, calendarul cu recurență,
 Cerința nouă de acceptare este R80 și secțiunea 6.11: fiecare răspuns poate fi explicat printr-o urmă care numește datele, declarațiile, calculele și observațiile reale. Implementarea trebuie să păstreze urma de la interpretare până la execuție și răspuns. Reviewerul verifică dacă explicația citează concepte și reguli generale sau ascunde un caz particular. Explicația completează testele intenției; nu le înlocuiește.
 
 Pentru recurență se proiectează seria, identitatea aparițiilor, excepțiile, fusul orar, editarea unei apariții versus a seriei și verificarea conflictelor pe un interval explicit. Pentru uneltele demo, anularea verificabilă este parte obligatorie a contractului.
+
+
+## 12. Contractul de redactare, acceptare și migrare
+
+Materialul de mai jos a fost mutat din fostul §8.20 al cărții: descrie procesul proiectului și criteriile de acceptare, nu semantica limbajului. Identificatorii R73–R81 se păstrează aici pentru compatibilitatea trimiterilor. Cerința tehnică a justificării răspunsurilor rămâne explicată în carte, §§6.11 și 6.10.1.
+
+**R73. Cartea spune ce trebuie să facă tehnologia.** Unde cartea și programul de astăzi spun lucruri diferite, câștigă cartea, iar diferența se trece în anexa C. Capitolele 2 și 3 descriu ce există și ce rămâne valabil; unde propunerea schimbă ceva din ele, schimbarea este marcată pe loc.
+
+**R74. Patru feluri de enunțuri.** O regulă numerotată din acest capitol este o cerință. Un exemplu ilustrează și nu adaugă cerințe. O regulă marcată (de confirmat) este o alegere de politică, valabilă până când proprietarul spune altfel. Un rând din anexa D este o hotărâre care încă nu s-a luat.
+
+**R75. Care plan este valabil.** Planul de lucru este `refactoring/sop-worlds-schimbari.md`. `refactoring/plan-generalizare.md` este mai vechi; unde cele două diferă (avatarul printre domenii, limba citită din fiecare mesaj, trimiterile la lecții), nu mai este valabil. După ce proprietarul corectează planul de lucru, fiecare sarcină din el va numi regulile de aici pe care le îndeplinește.
+
+**R76. Trei stări diferite, care nu se amestecă.** Claritatea: cartea se poate citi și înțelege; o judecă proprietarul și sesiunea bibliotecii. Aprobarea: proprietarul este de acord cu ce spune. Conformitatea: programul face ce spune cartea; o arată testele. Un test care trece astăzi nu dovedește că o regulă a cărții este cea dorită.
+
+**R77. Cartea este gata** când fiecare termen este definit înainte de a fi folosit, fără cerc; fiecare regulă are un exemplu și un contraexemplu; fiecare exemplu își spune dependențele; fiecare alegere nehotărâtă este în anexa D; și fiecare sarcină din plan numește o regulă aprobată.
+
+**R78. Ce teste rămân și ce teste se schimbă.** Testele bibliotecii care verifică regulile din capitolele 2 și 3 rămân neschimbate. Cele atinse de propuneri (punctul ca valoare, al treilea rezultat al verificării, `means` obligatoriu, `none`) se schimbă cu bună știință și sunt enumerate în plan înainte de a fi atinse.
+
+**R79. Numărătoarea nu își schimbă numitorul.** Mesajele din sesiunile omului care țin de domeniile scoase (grafice ca domeniu, muzică) rămân în numărătoare, într-o coloană separată, pentru ca procentele să nu crească prin scoaterea de cazuri.
+
+**R80. Dovada cerută este explicația textuală verificabilă.** Pentru fiecare răspuns se poate urmări ce a spus omul, ce declarații generale și fapte au fost folosite, ce calcule au rezultat și ce s-a observat. Secțiunea 6.11 fixează contractul. Nu există un al cincilea domeniu de probă. O explicație nu demonstrează singură generalitatea: ea face vizibile dependențele pentru ca reviewerul să poată detecta o regulă scrisă pentru un caz particular. Testele intenției și contraexemplele verifică în continuare comportamentul.
+
+**R81. Trecerea.** Drumul vechi de citire rămâne în aplicație până când drumul nou are, pe aceleași sesiuni, cel puțin tot atâtea mesaje corecte și niciunul greșit. Fiecare depozit își fixează versiunile celorlalte două; versiunile se mută numai împreună, cu testele celor trei trecute.

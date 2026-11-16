@@ -1,4 +1,4 @@
-> **Notă, 16 noiembrie 2026.** Acest plan este mai vechi decât `refactoring/sop-worlds-schimbari.md`, care este planul de lucru valabil. Unde diferă (avatarul printre domenii, limba citită din fiecare mesaj, trimiterile la lecțiile vechiului curs), acest document nu mai este valabil. Vezi regula R75 din `books/sop-worlds-teorie.md`.
+> **Notă, 16 noiembrie 2026.** Acest plan este mai vechi decât `refactoring/sop-worlds-schimbari.md`, care este planul de lucru valabil. Unde diferă (avatarul printre domenii, limba citită din fiecare mesaj, trimiterile la lecțiile vechiului curs), acest document nu mai este valabil. Vezi regula R75 din secțiunea 12 a `refactoring/sop-worlds-schimbari.md`.
 
 # Plan de generalizare: bibliotecă, date, domenii
 

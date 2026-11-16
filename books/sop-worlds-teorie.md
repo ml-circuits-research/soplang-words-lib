@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 18, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 19, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -30,7 +30,7 @@ Capitolele 2 și 3 descriu **limbajul și biblioteca așa cum sunt astăzi**. To
 
 Capitolul 4 descrie **lumea legendelor, care este o propunere** și nu există încă. Capitolele 5, 6 și 7 descriu cum arată folosirea când propunerea este pusă la lucru; ele amestecă lucruri care există cu lucruri propuse. Peste tot, ce este propus poartă cuvântul **(propus)**. Anexa C adună într-un singur loc tot ce este propus și tot ce există astăzi și ar trebui schimbat.
 
-Capitolul 8 fixează regulile exacte, numerotate, cu exemple cu numere și cu cazurile-limită. Cartea spune ce trebuie să facă tehnologia: unde cartea și programul de astăzi diferă, câștigă cartea, iar diferența este trecută în anexa C (regulile R73–R77 din secțiunea 8.20). Alegerile care încă nu s-au luat sunt în anexa D.
+Contractele semantice sunt explicate lângă conceptele pe care le precizează: valori și identitate în capitolul 2, validare în capitolul 3, spații și acte în capitolul 4, moștenire în capitolul 5, interpretare și execuție în capitolul 6. Identificatorii R servesc trimiterilor între text și plan, fără a forma un capitol separat. Diferențele dintre comportamentul țintă și programul actual sunt consemnate în anexa C. Alegerile tehnice încă deschise sunt în anexa D.
 
 ## 1.4 Un exemplu, de la un capăt la altul
 
@@ -57,7 +57,7 @@ Omul scrie apoi numai **„in the sky”**. Nu este o propoziție întreagă. Ap
 
 # 2. Limbajul SOP Lang
 
-Capitolul acesta introduce sintaxa declarațiilor, categoriile de valori și regulile de interpretare. Descriem mecanismul existent și marcăm separat contractul propus pentru organizarea proiectelor.
+Capitolul acesta introduce sintaxa declarațiilor, categoriile de valori și regulile de interpretare. Descriem mecanismul existent și marcăm separat contractele propuse pentru valori compuse, identitate persistentă și organizarea proiectelor.
 
 ## 2.1 Sintaxa unei declarații
 
@@ -96,6 +96,36 @@ Analiza lexicală separă textul în unități numite token-uri. La acest nivel,
 
 De exemplu, `label="Review"` furnizează un text, `source=$m1` furnizează o referință, iar `label=?text` cere legarea unei variabile în timpul potrivirii. Textul `"$m1"` rămâne text: ghilimelele împiedică interpretarea lui ca referință. Schimbarea categoriei schimbă sensul declarației, chiar dacă literele din interior sunt aceleași.
 
+### 2.2.1 Reprezentarea valorilor compuse și semantica ordinii
+
+O poziție pe pagină și o listă de participanți conțin amândouă mai multe componente, dar au semantici diferite. Poziția este o singură valoare: coordonatele ei au sens împreună, în spațiul declarat. Participanții sunt mai multe valori ale aceleiași chei, fiecare desemnând separat o persoană. Această distincție determină ce verifică schema, cum se compară două valori și ce înseamnă înlocuirea lor.
+
+Tabelul separă aceste operații. Reprezentarea `kind=point` este propusă; regulile explică contractul urmărit, nu disponibilitatea lui în motorul actual.
+
+| Contract | Principiul urmărit |
+|---|---|
+| R1 — Valoarea punctului | Coordonatele formează o valoare în spațiul declarat de slot. |
+| R2 — Ordinea axelor | Poziția coordonatei în serializare corespunde axei declarate cu acel ordin. |
+| R3 — Egalitatea punctelor | Comparația este numerică, axă cu axă, în același spațiu. |
+| R4 — Dimensiunea punctului | Numărul coordonatelor trebuie să coincidă cu numărul axelor. |
+| R5 — Ordinea valorilor unui slot | Ordinea se păstrează, exceptând sloturile declarate explicit fără ordine semantică. |
+
+Un punct este o singură valoare. Se scrie ca un atom făcut din numere despărțite prin virgulă, fără spații: `at=120,540`. Slotul lui spune `kind=point` și numește spațiul: `space=page`.
+
+Axele se recunosc după ordine. Numerele unui punct sunt în ordinea în care sunt declarate axele spațiului. Pentru aceasta fiecare fir `w.legend.axis` poartă cheia `order` (1, 2, 3). Pentru spațiul paginii, axa 1 este orizontala și axa 2 verticala; `120,540` înseamnă orizontală 120, verticală 540.
+
+Două puncte sunt egale când au același număr de numere și numerele sunt egale ca numere, axă cu axă. `120,540` și `120.0,540` sunt același punct. `540,120` este alt punct.
+
+Un punct incomplet sau prea lung este refuzat. Într-un fapt, `at=120` sau `at=120,540,3` pentru spațiul paginii este o încălcare de felul `domain`. O cerere poate vorbi despre o singură axă („move it up”), dar aceea este o cerință a cererii asupra unei axe, nu un punct pe un fapt (secțiunea 6.3).
+
+O cheie cu mai multe valori este o listă ordonată. Aceasta este regula limbajului de astăzi: valorile sunt ținute în ordinea în care au fost scrise. Când ordinea nu are înțeles (participanții unei ședințe), slotul o spune cu `order=ignored` **(propus)**; atunci două fapte cu aceleași valori în altă ordine sunt egale, iar o valoare scrisă de două ori este ținută o dată.
+
+Astăzi biblioteca nu are `kind=point`; un punct se ține ca două numere sub o cheie cu `many=true` sau ca valoare `json`. Trecerea la R1 este o schimbare de făcut.
+
+Pentru un nod aflat la `120,540`, cererea „move it up” modifică numai coordonata verticală. Planul citește poziția existentă, calculează noua valoare verticală și construiește din nou un punct complet. Nu salvează `at=120` ca prescurtare pentru o poziție incompletă. Astfel, un cititor al stării nu trebuie să ghicească ce coordonată lipsește.
+
+În schimb, schimbarea ordinii participanților nu trebuie să schimbe sensul unei ședințe când slotul declară ordinea nerelevantă. Aceeași operație asupra paragrafelor unui document schimbă documentul. Schema trebuie deci să declare sensul ordinii pentru fiecare slot; motorul nu îl deduce din numele cheii.
+
 ## 2.3 Marcatori sintactici și referințe
 
 **Sintaxa (syntax)** stabilește ce secvențe de caractere sunt declarații corecte. **Semantica (semantics)** stabilește ce înseamnă o declarație și cum influențează lumea. `@n1 node` poate fi corect sintactic înainte să știm ce proprietăți are tipul `node`. Dacă un slot obligatoriu lipsește, aceasta este o problemă semantică de completitudine, nu un caracter scris greșit.
@@ -108,6 +138,8 @@ Marcatorii de mai jos sunt interpretați de analizorul lexical. Ei disting decla
 | `$` | Trimite la un fir, prin identificatorul lui. Stă numai la începutul unei valori. |
 | `?` | Este o variabilă. Stă numai la începutul unei valori, în reguli și în întrebări. |
 | `#` | Începe un comentariu, care ține până la sfârșitul rândului. |
+
+Contextul stabilește ținta referinței: într-un fapt, `$x` desemnează un fapt; în `when=$p.node`, desemnează pattern-ul declarat, iar în condițiile legate de el poate desemna faptul găsit la potrivire. Secțiunea 3.5 urmărește aceste utilizări pe același exemplu.
 
 Mai există semnul `::`, care apare în interiorul unui identificator; este explicat în secțiunea 2.6.
 
@@ -127,6 +159,36 @@ Identificatorii, tipurile și cheile sunt nume, scrise după aceeași regulă: l
 | nimic | Un tip propriu lumii în care apare: `fish`, `node`, `meeting`. |
 
 Un lucru trebuie spus limpede, fiindcă produce confuzie: **un tip nu este un fir și nu are identificator.** Un tip este un nume. Oriunde limbajul așteaptă un tip, se scrie numele lui, fără `$`: ca al doilea cuvânt al unui fir (`@f1 fish`), sau ca valoare a unor chei care cer un tip (`of=fish`, `extends=fish`, `type=fish`). Un tip nici nu trebuie declarat ca să fie folosit: firul `@f1 fish size=1.6` este primit și într-o lume care nu a auzit de `fish`. Declararea unui tip adaugă informații despre el; cum se face este în secțiunea 3.1.
+
+### 2.4.1 Identitate, referințe și ciclul de viață al faptelor
+
+Identitatea permite recunoașterea aceluiași lucru după ce i se schimbă numele, poziția sau fișierul în care este salvat. O etichetă servește cititorului; o referință servește legăturilor dintre fapte. Dacă o ședință este redenumită din „Review” în „Planning”, nodul diagramei care o reprezintă trebuie să continue să indice aceeași ședință.
+
+Regulile de mai jos separă identitatea persistentă de rezolvarea unei referințe și de verificarea existenței țintei. Acestea sunt trei operații distincte: un identificator poate fi bine format și totuși să nu desemneze niciun fapt disponibil.
+
+| Contract | Principiul urmărit |
+|---|---|
+| R6 — Identitatea persistentă | Identitatea instanței și identificatorul local rămân stabile la redenumire. |
+| R7 — Rezolvarea referințelor | Contextul distinge ținta factuală de pattern-ul unei reguli. |
+| R8 — Integritatea legăturilor | O țintă factuală trebuie rezolvată înainte de acceptarea schimbării. |
+
+Identitatea persistentă a unui fapt este perechea dintre identitatea imutabilă a instanței și identificatorul local al faptului. **(Propus)** Numele afișat al lumii, numele modulului și calea pe disc nu sunt această identitate. Încărcătorul poate deduce un nume inițial din calea relativă, dar salvează separat identitatea instanței. Un namespace lizibil precum `calendar` se rezolvă în contextul proiectului la această identitate. Redenumirea ori mutarea directorului păstrează referințele; copierea independentă remapează identitățile și referințele interne împreună. Secțiunea 2.6 descrie contractul și deosebirea față de prefixele textuale actuale.
+
+Într-un fapt, `$x` este o referință locală, rezolvată în contextul instanței. Forma calificată `$calendar::m1` poate desemna un fapt din altă instanță, conform secțiunii 2.6. În declarația unei reguli, `when=$p.node` numește un pattern din schemă; într-o condiție legată de acel pattern, referința poate desemna faptul găsit la evaluare. Rezolvarea identității declarației și legarea la un fapt sunt etape distincte, urmărite în secțiunea 3.5.
+
+O referință trebuie să se rezolve până la sfârșitul schimbării în care apare. Altfel schimbarea este refuzată (`dangling-ref`). Singura excepție este un slot cu `by=` (secțiunea 3.2): valoarea rămâne în așteptare până când este spus firul numit, iar lumea o ține într-o listă de legături neînchise.
+
+| Întâmplarea | Ce se întâmplă cu identitatea și cu referințele |
+|---|---|
+| ștergerea unui lucru | Relațiile care au nevoie de el dispar odată cu el: săgețile unui nod șters. Un lucru care doar trimite la el (o ședință la sala ei) blochează ștergerea, cu motivul spus. |
+| copierea | Copia are identificator nou. Păstrează felul și însușirile. Nu păstrează referințele la alte lucruri, în afară de cele ale căror sloturi spun `copy=keep`. |
+| importul unei scheme | Identificatorii firelor de schemă primesc numele modulului în față. Faptele nu sunt atinse. |
+| schimbarea numelui | Identificatorul nu se schimbă niciodată. Numele văzut de om este o cheie (`label`, `title`), deci schimbarea lui nu atinge nicio referință. |
+| salvarea și reîncărcarea | Identificatorii se păstrează întocmai. |
+
+Tabelul ciclului de viață trebuie citit în funcție de rolul relației. O săgeată nu poate exista fără capetele sale; ștergerea unui nod poate elimina și săgețile sale. O ședință însă are existență proprie față de sala indicată. Ștergerea sălii nu autorizează ștergerea ședinței și nici alegerea tacită a altei săli. Politica fiecărei relații trebuie declarată în schema domeniului.
+
+La copiere se separă identitatea nouă de conținutul reutilizat. Copierea unei diagrame întregi cere remaparea referințelor dintre nodurile copiate; păstrarea unei legături către calendar este o altă decizie, explicită. Regulile pentru un obiect copiat nu trebuie confundate cu importul unui modul sau cu mutarea fișierelor aceleiași instanțe.
 
 ## 2.5 Semantica declarațiilor: fapte, schemă și pattern-uri
 
@@ -187,7 +249,7 @@ Firele schemei au identități în module; namespace-ul faptelor nu trebuie conf
 
 # 3. Schema unei lumi
 
-Capitolul acesta descrie, tot așa cum sunt astăzi, tipurile predefinite ale limbajului: tipurile de fire cu care se scrie o schemă. Pentru fiecare se spune la ce folosește, se dă tabelul complet al cheilor și un exemplu. Ordinea este de la cele folosite cel mai des.
+Capitolul acesta descrie tipurile predefinite existente ale limbajului și, separat, contractele propuse de validare: tipurile de fire cu care se scrie o schemă. Pentru fiecare se spune la ce folosește, se dă tabelul complet al cheilor și un exemplu. Ordinea este de la cele folosite cel mai des.
 
 ## 3.1 `core.type`: declararea unui tip
 
@@ -375,7 +437,7 @@ Pentru a urmări execuția, încărcăm regula împreună cu schema tipurilor, a
 
 Dacă se adaugă o legătură spre `n1`, justificarea concluziei despre `n1` dispare. Motorul retrage valoarea dedusă dacă nu mai există alt temei pentru ea. Un fapt declarat explicit de utilizator și o valoare dedusă trebuie păstrate distinct în evidența justificării.
 
-`not` exprimă lipsa unei potriviri în starea evaluată, nu o dovadă despre legături care încă nu au fost încărcate. Dacă diagrama este incomplet încărcată, nu putem prezenta rezultatul ca definiție definitivă a începutului ei. Regulile de completitudine din 3.9 și 9.4 precizează când concluzia poate fi folosită pentru validare sau execuție.
+`not` exprimă lipsa unei potriviri în starea evaluată, nu o dovadă despre legături care încă nu au fost încărcate. Dacă diagrama este incomplet încărcată, nu putem prezenta rezultatul ca definiție definitivă a începutului ei. Regulile de completitudine din 3.9 și 8.4 precizează când concluzia poate fi folosită pentru validare sau execuție.
 
 | Cheie | Semantica în evaluarea regulii |
 |---|---|
@@ -425,6 +487,33 @@ Primele două fire sunt modele de ședință. Variabila `?p` apare în amândou�
 | `variable` | O variabilă într-un fapt. |
 | `deny` | O interdicție tare se potrivește. |
 | `schema` | O declarație de schemă greșită sau în conflict cu alta. |
+
+### 3.6.1 Constrângeri, norme și valori implicite
+
+O afirmație despre ce se întâmplă de obicei nu are aceeași forță cu o condiție fără de care starea nu poate exista. Cunoașterea poate spune că peștii stau în apă; o aplicație de desen poate permite intenționat un pește pe cer. Calendarul poate însă declara suprapunerea rezervărilor unei persoane drept interdicție tare.
+
+Tăria aparține utilizării unei afirmații într-un tipar de lume. Tabelul distinge refuzul unei schimbări, semnalarea unei abateri și simpla completare a unei valori nespecificate. Un sistem care confundă aceste roluri fie refuză prea mult, fie ascunde încălcări reale.
+
+| Contract | Principiul urmărit |
+|---|---|
+| R49 — Rolul afirmației | Tiparul stabilește folosirea constrângătoare a unei afirmații. |
+| R50 — Interdicțiile tari | Integritatea reprezentării și interdicțiile explicite limitează execuția. |
+
+Cunoașterea spune felul afirmației; tiparul de lume îi dă tăria. O bază de cunoaștere nu declară nimic tare sau slab. Tiparul de lume care folosește afirmația o face.
+
+| Felul afirmației | Tăria, dacă tiparul nu spune altfel |
+|---|---|
+| fapt de domeniu („peștele stă în apă”) | Slabă. |
+| normă („o scrisoare are semnătură”; „un flux are un singur început”) | Slabă în timpul lucrului. La o verificare cerută anume („check the letter”), fiecare normă neîndeplinită este raportată. |
+| valoare obișnuită, euristică | Nu este o constrângere. Servește numai la completare și la alegere. |
+
+Tari sunt numai două feluri de reguli: cele fără de care starea nu poate fi reprezentată (o săgeată fără capete) și cele pe care tiparul le declară anume ca tari (un om în două ședințe deodată).
+
+Un pește pe cer este o problemă slabă, nu o stare nevalidă. O ședință trasă cu mâna peste alta a aceluiași om este o încălcare tare dacă tiparul interzice suprapunerea.
+
+O normă slabă permite lucrul intermediar. Scrisoarea fără semnătură poate fi editată și salvată, iar verificarea explicită raportează ce îi lipsește. Verificarea nu ar trebui să adauge o semnătură inventată doar pentru a elimina problema. O valoare implicită are un scop și mai limitat: propune o completare și nu dovedește că alte valori sunt greșite.
+
+Dacă o schimbare făcută manual produce o încălcare tare, observația trebuie păstrată ca descriere a stării reale. Aplicația raportează conflictul și poate propune o reparare; nu falsifică observația pentru a face schema să pară satisfăcută. Această situație este diferită de validarea preventivă a unui plan încă neexecutat.
 
 ## 3.7 Calcule, condiții și funcții
 
@@ -522,6 +611,45 @@ Regula care decurge: înainte de a executa ceva, interdicțiile tari care prives
 **Anularea.** O lume ține minte fiecare schimbare și o poate anula sau reface.
 
 **Copia de încercare.** O lume poate fi copiată. O **copie (fork)** este o a doua lume, la început identică, în care se poate încerca o schimbare fără a atinge originalul. Aplicația o folosește ca să încerce un plan înainte de a-l executa.
+
+### 3.9.1 Informație incompletă, negație și validare
+
+Absența unei valori nu spune de ce lipsește aceasta. Într-un calendar, sala poate să nu fie aleasă încă sau ședința poate să nu aibă nevoie de sală. Prima situație cere completare; a doua este o informație pozitivă despre lipsa unei resurse. Dacă le confundăm, fie întrebăm inutil, fie declarăm disponibilă o rezervare pe care încă nu o putem verifica.
+
+Trebuie separate și două întrebări: „am găsit o încălcare?” și „am suficiente informații ca să dovedesc validitatea?”. Un rezultat fără încălcări găsite nu răspunde automat afirmativ la a doua întrebare. Tabelul regulilor distinge starea valorii, potrivirea unui pattern și concluzia verificării.
+
+| Contract | Principiul urmărit |
+|---|---|
+| R9 — Stările unei valori | Valoarea cunoscută, necunoașterea și absența cunoscută au sensuri diferite. |
+| R10 — Potrivirea în prezența lipsei | Un pattern care cere o valoare nu inventează valoarea lipsă. |
+| R11 — Negația asupra stării curente | Lipsa unei potriviri privește starea citită și poate fi infirmată ulterior. |
+| R12 — Răspunsul existențial | Lipsa unei potriviri înseamnă „nu” numai într-un domeniu complet. |
+| R13 — Domeniul verificării | Se verifică și faptele neatinse care participă la aceleași restricții. |
+| R14 — Validarea nedeterminată | Lipsa unei intrări necesare împiedică demonstrarea validității. |
+
+O cheie a unui fapt este în una din trei stări semantice. Are o valoare. Nu are valoare, și atunci valoarea este necunoscută. Sau se știe că nu are: aceasta se scrie cu valoarea `none` **(propus)**, permisă numai dacă slotul spune `none=allowed`. În această notație provizorie, o ședință fără sală este scrisă `room=none`; lipsa cheii `room` înseamnă că nu știm încă sala. Forma finală trebuie să distingă absența cunoscută de atomul obișnuit `none`, care ar putea fi un nume valid. Exemplele de aici explică distincția semantică; nu stabilesc încă serializarea finală.
+
+Potrivirea unui pattern depinde de informația efectiv prezentă. Un pattern care cere `room=?r` se potrivește numai cu fapte a căror cheie `room` are o valoare. În contractul propus, nu se potrivește nici cu „necunoscut”, nici cu absența cunoscută. Extinderea testului `core.absent=room` la ambele stări trebuie legată de reprezentarea finală a absenței; un atom obișnuit `none` nu are astăzi această semantică specială.
+
+`not=` vorbește despre ce ține lumea acum. O regulă cu `not=$p` se aplică atunci când niciun fapt de acum nu se potrivește cu `p`. Nu afirmă că așa ceva nu există în realitate. De aceea un fir dedus printr-un `not=` este retras de îndată ce apare faptul care lipsea.
+
+Întrebarea „există?” are trei răspunsuri. Da, dacă un fapt se potrivește. Nu, dacă niciunul nu se potrivește și tipul este declarat `complete`. Nu se știe, în rest.
+
+Verificarea unei schimbări privește toate interdicțiile ale căror modele se pot potrivi cu cel puțin un fir atins de schimbare (adăugat, modificat sau șters). Fiindcă modelele unei interdicții se leagă între ele prin variabile, aici intră și firele neatinse: la mutarea unei ședințe sunt verificate toate ședințele care au aceeași sală sau un participant comun.
+
+Verificarea unei interdicții este nedeterminată când un fir atins se potrivește cu un model al ei la toate cheile pe care le are, dar îi lipsește o cheie pe care modelul sau o condiție a interdicției o citește.
+
+| Starea ședinței noi | Rezultatul verificării suprapunerii |
+|---|---|
+| are început și durată; nu se suprapune | Validă. |
+| are început și durată; se suprapune cu alta a Anei | Nevalidă, cu încălcarea care numește cele două ședințe. |
+| are început, dar durata este necunoscută | Nedeterminată. Nu se execută; se cere durata. |
+| are `room=none` | Interdicția despre săli nu o privește. Cea despre oameni rămâne. |
+| primește două ore de început diferite | Refuzată ca `conflict`, înainte de orice interdicție. |
+
+În tabelul ședinței, „nedeterminată” este un rezultat propriu al verificării. Nu este o eroare de parsare și nici o interdicție demonstrată. De exemplu, începutul 10:30 fără durată nu spune dacă ședința ajunge până la următoarea rezervare. Aplicația păstrează cererea incompletă și caută informația necesară, fără să pretindă că a rezervat intervalul.
+
+Completitudinea privește un domeniu de căutare identificat: instanța, tipurile și starea încărcată. O listă completă de ședințe pentru un calendar nu dovedește că au fost încărcate toate regulile de cunoaștere. Similar, `not` poate produce o concluzie revocabilă despre starea curentă, dar aceasta nu poate fi prezentată ca adevăr despre date pe care sistemul nu le-a citit.
 
 ## 3.10 Câteva precizări
 
@@ -627,9 +755,106 @@ Conceptele sunt puține, fiindcă sunt foarte abstracte. Se găsesc întrebând 
 | grafic cu bare | Un fel de diagramă: bare a căror înălțime este o cantitate, așezate pe o axă. |
 | iaz, ca scenă | Apă; în ea, pești și nuferi; pe margine, stuf. |
 
-Apropierea dintre două asemenea concepte se calculează tot: câte părți și legături au în comun grafurile lor. Calculul are sens numai între două concepte cunoscute; ce se face cu un fel necunoscut sau fără graf propriu este în secțiunea 8.6.
+Apropierea dintre două asemenea concepte se calculează tot: câte părți și legături au în comun grafurile lor. Calculul are sens numai între două concepte cunoscute; ce se face cu un fel necunoscut sau fără graf propriu este în secțiunea 4.4.2.
 
 **Excepții.** Câteva lucruri rămân liste închise, fiindcă țin de un sistem formal care are într-adevăr numai câteva valori: adevărat sau fals; persoana unui verb. Pentru acestea cheia `enum` rămâne potrivită. Fiecare excepție se declară cu motivul ei.
+
+### 4.4.1 Metrici, apartenență și includerea regiunilor
+
+Un spațiu conceptual devine utilizabil numai după ce știm cum comparăm valorile lui. „Aproape” nu are aceeași unitate pentru o nuanță, o poziție și o durată. Normalizarea face comparabile diferențele în interiorul metricii declarate; ponderile exprimă contribuția fiecărei axe la acea metrică.
+
+Apartenența întreabă dacă un punct respectă descrierea unei regiuni. Includerea întreabă dacă toate punctele unei regiuni aparțin alteia. A doua afirmație este mai puternică: verificarea unui singur punct, chiar centrul, nu o dovedește. Tabelul separă calculul distanței de utilizările lui.
+
+| Contract | Principiul urmărit |
+|---|---|
+| R18 — Normalizarea axelor | Diferențele numerice se raportează la o scară declarată. |
+| R19 — Distanța circulară | Distanța circulară folosește drumul cel mai scurt peste originea axei. |
+| R20 — Metrica spațiului | Distanța multidimensională combină diferențele normalizate și ponderile. |
+| R21 — Axele libere ale regiunii | O axă omisă nu restrânge apartenența la regiune. |
+| R22 — Apartenența la regiune | Distanța față de centru trebuie să fie cel mult raza declarată. |
+| R23 — Suprapunerea și numirea | Apartenențele multiple sunt permise; alegerea unui nume este separată. |
+| R24 — Includerea regiunilor | Includerea cere o dovadă pentru regiune, nu numai pentru centrul ei. |
+| R25 — Egalitatea distanțelor | O egalitate la alegerea unei cerințe explicite trebuie clarificată. |
+
+Fiecare axă este adusă la aceeași scară. Pentru o axă liniară cu limite finite distincte, diferența se normalizează ca `delta = abs(a − b) / (max − min)`. Când ambele valori sunt în limite, rezultatul este între 0 și 1. O axă poate avea o pondere, `weight`, implicit 1.
+
+Pe o axă circulară (`kind=angle`, cu perioada 360), diferența este drumul cel mai scurt pe cerc, împărțit la jumătate de perioadă. Între nuanțele 350 și 0 diferența este 10/180, adică 0,056.
+
+Distanța dintre două puncte este `sqrt(sum(weight_i * delta_i²))`, unde `delta_i` este diferența normalizată pe axa `i`. Ponderile trebuie să fie pozitive; o axă nerelevantă pentru o regiune este omisă din restricția acelei regiuni, nu transformată într-o axă cu distanță nedefinită.
+
+O regiune poate lăsa axe nespuse. „Dark” spune numai `centre.lightness=0.25`; orice nuanță și orice saturație sunt primite. Distanța până la o asemenea regiune se calculează numai pe axele spuse.
+
+Un punct este în regiune când distanța lui până la centru este cel mult `spread`. Marginea face parte din regiune. Exemplu: nuanța 350, saturația 0,9, luminozitatea 0,5 față de „red” (centrul 0; 0,9; 0,5; `spread` 0,12): distanța este 0,056, deci punctul este roșu.
+
+Regiunile se pot suprapune. Un punct poate fi și „red”, și „orange”. La căutare („the red fish”) contează apartenența. La numire, în răspuns, se folosește regiunea cu centrul cel mai apropiat. O regiune din mai multe bucăți se scrie ca mai multe fire cu același nume.
+
+Includerea unei regiuni în alta se calculează. Centrul dinăuntru nu este o dovadă suficientă. Pe o axă, intervalul [4, 8] are centrul 6 în [0, 7], dar punctul 8 este în afară. Pentru două bile în aceeași metrică, o condiție suficientă este `distanța dintre centre + raza interioară ≤ raza exterioară`. Pentru intervale se compară ambele capete. Pentru forme generale, verificatorul trebuie să poată demonstra includerea prin operațiile declarate ale spațiului. Dacă nu poate, rezultatul este nedeterminat; relația nu se folosește ca adevăr demonstrat. Eșantionarea câtorva puncte poate găsi un contraexemplu, dar nu dovedește includerea. La aplicarea testului trebuie comparate aceleași axe, în aceeași metrică. O axă omisă din regiunea interioară rămâne liberă în limitele spațiului: dacă regiunea exterioară o restrânge, includerea nu rezultă din testul centrelor și razelor. De exemplu, „dark” lasă nuanța liberă și nu este inclus în „blue”, chiar dacă alegem pentru ilustrare un centru albastru.
+
+Relația de includere este un rezultat calculat, nu o afirmație primită fără dovadă. Poate servi la explicarea relației dintre două regiuni; găsirea unui pește albastru folosește direct apartenența punctului său la regiunea albastră. Cheia `inside` se retrage din propunerea de declarație: o relație derivată poate fi memorată împreună cu dovada și versiunile regiunilor, apoi invalidată când acestea se schimbă.
+
+Când două valori posibile sunt la fel de aproape de cea cerută, se face una din două, după caracterul valorii (secțiunea 6.6). Dacă valoarea este o cerință a omului, aplicația le oferă pe amândouă și întreabă: la zece și jumătate cerut, cu zece și unsprezece libere, „10:00 or 11:00?”. Dacă este o presupunere a aplicației, se ia cea mai mică pe prima axă și se spune.
+
+De exemplu, pe o axă liniară cu limitele 0 și 100, valorile 20 și 30 au diferența normalizată 0,1. Pe un cerc, 350 și 0 sunt apropiate deoarece trecerea prin origine este permisă; scăderea obișnuită ar produce greșit o distanță mare. Formula trebuie aleasă din tipul axei, nu din numele cuvântului căutat.
+
+Când „dark” nu restrânge nuanța, aceasta este o libertate a regiunii, nu o valoare lipsă a punctului. Un obiect poate fi simultan întunecat și roșu. La numire alegem o descriere conform regulii de selecție, dar nu ștergem celelalte apartenențe. Pentru o axă fără limite finite, normalizarea prin `max−min` nu este definită: este necesar un contract suplimentar de scară, înainte ca această metrică să poată fi folosită.
+
+### 4.4.2 Structura conceptelor și reutilizarea prin specializare
+
+Nu toate conceptele sunt descrise prin coordonate. Un document are părți și relații de ordine, iar o diagramă are noduri și legături. Un graf conceptual descrie această structură: ce părți pot apărea, câte sunt necesare și cum sunt legate. El nu este graful obiectelor concrete dintr-un document anume, ci schema structurii pe care acestea o pot realiza.
+
+Comparația structurală cere două descrieri disponibile. Dacă sistemul nu cunoaște deloc un gen, nu poate calcula distanța până la el. Lipsa unei descrieri și lipsa unei realizări specifice au consecințe diferite, separate în regulile și cazurile de mai jos.
+
+| Contract | Principiul urmărit |
+|---|---|
+| R26 — Structura grafului | Părțile, cardinalitățile și legăturile descriu structura permisă. |
+| R27 — Comparația structurală | Scorul compară structuri cunoscute și părți puse în corespondență. |
+| R28 — Conceptul fără descriere | Lipsa conceptului nu permite inventarea unei structuri asemănătoare. |
+
+Graful unui concept cuprinde o mulțime de părți, fiecare cu felul ei, cu un număr minim și maxim de apariții (minimul 1 înseamnă obligatorie), și o mulțime de legături între părți, fiecare cu o etichetă: `before` (ordine), `in` (cuprindere), `to` (săgeată).
+
+Apropierea a două grafuri este partea comună împărțită la tot: se numără părțile și legăturile care apar în amândouă și se împart la cele care apar în cel puțin unul. O parte obligatorie contează dublu în calculul atât al intersecției, cât și al reuniunii. Rezultatul este între 0 și 1. Calculul are sens numai între două grafuri cunoscute; se folosește la întrebări ca „cu ce gen seamănă acest document?”.
+
+Un fel necunoscut nu este înlocuit. Față de un concept fără descriere nu se poate calcula apropierea structurală. Sunt relevante următoarele cazuri, după cunoașterea disponibilă.
+
+| Ce se știe despre felul cerut | Ce face aplicația |
+|---|---|
+| nu este în arborele felurilor | Nu a înțeles cuvântul. Spune: „I do not know what a memo is.” Nu face nimic. |
+| este în arbore, dar nu are graf propriu | Folosește graful celui mai apropiat strămoș care are unul (un memo este un text) și spune o dată ce a folosit. Lucrul rămâne de felul cerut. |
+| are graf propriu | Îl folosește. |
+
+Dacă doi strămoși la aceeași depărtare au grafuri diferite, aplicația întreabă.
+
+Moștenirea unei structuri nu schimbă identitatea semantică a obiectului. Un gen cunoscut ca specializare a textului poate primi structura disponibilă pentru text și poate rămâne de genul cerut. Sistemul trebuie să spună ce structură a reutilizat și ce particularități nu sunt cunoscute; nu poate afirma că a respectat cerințe pe care nu le deține.
+
+Pentru a calcula apropierea a două grafuri, părțile trebuie aliniate prin conceptele lor, nu prin identificatorii locali ai declarațiilor. Două secțiuni numite diferit pot realiza același rol, iar două părți cu aceeași etichetă pot avea roluri diferite. Formula de suprapunere presupune această corespondență; în lipsa ei, un scor numeric ar ascunde o comparație nedefinită.
+
+### 4.4.3 Sisteme de coordonate și semantica timpului
+
+Un număr de poziție nu poate fi interpretat fără un reper, iar o oră locală nu identifică singură un moment. În ambele cazuri, sistemul trebuie să cunoască regulile prin care reprezentarea este legată de spațiul sau timpul folosit de aplicație. Aceste reguli trebuie păstrate și atunci când datele trec între lumi.
+
+Poziția, relația geometrică, momentul și seria recurentă sunt niveluri distincte. Tabelul le grupează pentru a arăta ce trebuie declarat înaintea unui calcul și ce ambiguități trebuie rezolvate înaintea unei acțiuni.
+
+| Contract | Principiul urmărit |
+|---|---|
+| R44 — Reperul spațial | Originea, sensul axelor și unitatea dau sens coordonatelor. |
+| R45 — Testarea relațiilor | Relația geometrică este verificată prin funcția ei declarată. |
+| R46 — Momente și intervale | Momentele absolute și duratele definesc intervale semideschise. |
+| R47 — Ore locale ambigue | O oră locală inexistentă se refuză; una dublă cere dezambiguizare. |
+| R48 — Serii recurente | Seria, aparițiile și excepțiile se verifică pe un interval explicit. |
+
+Fiecare spațiu de loc își declară reperul: originea, sensul axelor și unitatea. Pagina are originea în colțul din stânga sus, axa orizontală spre dreapta, axa verticală în jos, iar unitatea este unitatea paginii. „Above” înseamnă deci un număr mai mic pe axa verticală. Poziția unui lucru este întotdeauna în reperul paginii, chiar dacă lucrul este „în” altul.
+
+Relațiile de loc sunt definite prin numere, în funcția `test` a fiecărei relații (R15). „Near”: distanța dintre marginile celor două lucruri este mai mică decât o fracțiune din diagonala paginii (propus 0,15). „Above”: mai sus pe axa verticală și suprapus pe cea orizontală.
+
+În calendar, o ședință ține un moment absolut de început și o durată. Calendarul își declară fusul orar; orele spuse de om sunt înțelese în acel fus. Un interval își cuprinde începutul și nu își cuprinde sfârșitul: o ședință care se termină la 11:00 și una care începe la 11:00 nu se suprapun, deci sala este liberă.
+
+La trecerea între orele sezoniere, dacă ora cerută nu există în ziua aceea, aplicația refuză și spune de ce. Dacă există de două ori, întreabă care dintre ele.
+
+Recurența descrie o serie de apariții ale unei ședințe. Seria păstrează regula de repetare, fusul orar și excepțiile; fiecare apariție are identitate stabilă. Modificarea uneia trebuie deosebită de modificarea întregii serii. Verificarea conflictelor privește aparițiile din intervalul verificat, nu o expansiune infinită. O serie fără sfârșit nu poate fi declarată liberă pentru tot viitorul după verificarea unui număr finit de apariții. Reprezentarea persistentă trebuie să lege fiecare apariție de serie și de excepțiile aplicabile. Formatul complet al acestor declarații rămâne deschis; comportamentul editării și al verificării este descris mai jos.
+
+Pentru calendar, intervalul semideschis `[început, sfârșit)` permite rezervări consecutive fără conflict la graniță. O ședință de la 10:00 cu durata de o oră ocupă momentele dinainte de 11:00, nu și momentul 11:00. Durata și fusul orar trebuie cunoscute înainte de compararea momentelor; textul „Monday at ten” singur nu este o reprezentare persistentă suficientă.
+
+Pentru recurență, „move the Monday meeting” nu stabilește singur dacă se modifică o apariție, întreaga serie sau aparițiile de acum înainte. Dacă întinderea editării nu rezultă explicit din cerere și context, aplicația cere această alegere. O verificare pe următoarele opt zile de luni se raportează ca atare, nu ca disponibilitate perpetuă. Anularea restaurează regula seriei, excepțiile și aparițiile afectate de editare, păstrând identitățile aparițiilor neschimbate.
 
 ## 4.5 Cuvintele de grad
 
@@ -649,6 +874,39 @@ Apropierea dintre două asemenea concepte se calculează tot: câte părți și 
 **Învățarea.** Fiecare cuvânt de grad are un factor de pornire: „big” înseamnă de aproximativ 1,6 ori față de clasa de comparație. Dacă omul scrie „bigger” imediat după ce a primit ceva „big”, factorul a fost prea mic, iar el este mărit, pentru acel fel de lume. Se învață deci numere, nu cuvinte.
 
 **Comparativele** („bigger”, „shorter”, „later”) nu au nevoie de clasă de comparație: se compară cu valoarea pe care lucrul o are acum. Sunt un pas pe axă.
+
+### 4.5.1 Comparație contextuală și adaptarea valorilor de grad
+
+„Big” nu numește o mărime universală. El compară obiectul cu o clasă relevantă și transformă o valoare de referință. Clasa, sursa valorii și factorul trebuie să fie vizibile în justificare; altfel aceeași cerere ar putea produce rezultate diferite fără o explicație verificabilă.
+
+Trebuie deosebite alegerea inițială a unei mărimi, deplasarea cu un pas și învățarea unei preferințe. O cerere nouă de mărire schimbă obiectul. Numai în contextul definit de regulă poate constitui și o corecție a factorului folosit anterior.
+
+| Contract | Principiul urmărit |
+|---|---|
+| R29 — Referința comparației | Mediana clasei furnizează referința când există observații relevante. |
+| R30 — Scări de raport și de interval | Factorii multiplicativi și deplasările aditive se aplică pe scări diferite. |
+| R31 — Pasul comparativ | Mărimea pasului este dată de axă, nu ascunsă în codul unui domeniu. |
+| R32 — Limitele realizării | Plafonarea la limita uneltei poate produce o operație fără efect. |
+| R33 — Adaptarea factorului | O corecție contextuală poate modifica factorul, pe lângă obiect. |
+| R34 — Persistența preferinței | Preferința are sursă, context și istoric de anulare. |
+
+Valoarea de referință a unei clase de comparație este mediana valorilor lucrurilor din clasă. Cu un singur lucru, este valoarea lui. Fără niciun lucru, se trece la sursa următoare din secțiunea 4.5.
+
+Scara unei axe determină operațiile permise. O axă cu zero firesc (mărimea, lungimea, durata, numărul) se declară `scale=ratio`; pe ea cuvântul de grad înmulțește: referința ori factorul. O axă fără zero firesc (poziția, ora) se declară `scale=interval`; pe ea nu se înmulțește, iar cuvinte ca „late” sau „high” sunt regiuni ale axei, nu cuvinte de grad.
+
+Pasul unui comparativ este declarat pe axă, cu `step`. Pe o axă `ratio` este un factor (propus 1,25); pe o axă `interval` este o mărime în unitățile axei (propus: 30 de minute pentru oră, o zecime din pagină pentru poziție). „Much bigger” face doi pași.
+
+După calcul, rezultatul este adus între marginile pe care le poate realiza unealta. Dacă prin aceasta nu se schimbă nimic, nu se execută nimic, iar răspunsul este „It is already as big as it can be.”
+
+În adaptarea preferințelor, „bigger” este întotdeauna o cerere nouă: lucrul crește cu un pas. Este în plus un semn că factorul a fost prea mic numai dacă urmează imediat după o valoare pe care aplicația a calculat-o dintr-un cuvânt de grad. Atunci factorul se mută la jumătatea drumului dintre cel vechi și cel acceptat de om.
+
+Exemplu complet. Peștii din iaz au mărimile 0,8 și 1,2; mediana este 1,0. „A big fish”: 1,0 × 1,6 = 1,6. Omul scrie „bigger”: 1,6 × 1,25 = 2,0. Factorul lui „big”, pentru desene, devine (1,6 + 2,0) / 2 = 1,8. Următorul „big fish”, cu aceeași mediană, are mărimea 1,8.
+
+Pentru a păstra justificarea adaptării, factorul învățat este un fapt, cu proveniența lui (din ce mesaj), ținut pentru omul care folosește aplicația și pentru felul de lume (desen, calendar). Anularea pasului care l-a produs îl anulează și pe el. Nu trece niciodată singur în cunoașterea comună.
+
+În exemplul numeric, mediana este 1,0, astfel încât mărimea finală 2,0 coincide numeric cu factorul acceptat. În cazul general, factorul acceptat se obține împărțind mărimea acceptată la referință. Dacă referința ar fi 2,0 și mărimea acceptată 4,0, factorul ar rămâne 2,0, nu 4,0. Referința folosită la învățare trebuie păstrată împreună cu proveniența calculului.
+
+Limitele uneltei contează separat de preferință. Dacă unealta plafonează mărimea, rezultatul nu dovedește că omul preferă exact plafonul. O operație fără schimbare nu trebuie să producă nici mesaj de execuție, nici o actualizare arbitrară a preferinței. Anularea trebuie să refacă atât obiectul, cât și factorul modificat în același pas.
 
 ## 4.6 Schimbări și acte
 
@@ -679,6 +937,48 @@ Apropierea dintre două asemenea concepte se calculează tot: câte părți și 
 Apoi, **verificarea de după execuție**. Condiția „după” este ce trebuie să se vadă în stare când actul s-a încheiat. Dacă nu se vede, răspunsul nu are voie să spună „am făcut”. Aceasta este apărarea împotriva răspunsurilor care pretind că s-a făcut ceva când nu s-a făcut nimic.
 
 În sfârșit, **cuvintele**. „Draw”, „add”, „create”, „write”, „schedule” sunt nume diferite ale aceluiași act, „a face”. Ele stau în lumea limbii, o dată, nu în fiecare domeniu.
+
+### 4.6.1 Semantica actelor și compunerea schimbărilor
+
+Un act descrie diferența dorită dintre două stări. „A așeza” cere o relație între un obiect și o țintă; „a schimba” cere o valoare nouă a unei însușiri. Planificatorul folosește aceste condiții pentru a decide ce trebuie pregătit, iar verificatorul le folosește după execuție pentru a decide ce poate fi afirmat în răspuns.
+
+Rolurile sunt locurile numite din descrierea actului. La construirea unui plan, fiecare rol se leagă de un obiect, o valoare sau o cerință concretă. Formele din tabel exprimă verificări asupra acestor legături; nu sunt propoziții pe care motorul le interpretează liber.
+
+| Contract | Principiul urmărit |
+|---|---|
+| R35 — Condițiile actului | Condițiile se evaluează asupra rolurilor legate de date concrete. |
+| R36 — Limitele efectului | Diferențele neprevăzute nu pot fi ascunse în confirmarea actului. |
+| R37 — Crearea referentului lipsă | O referință la un obiect anume nu autorizează crearea altuia. |
+| R38 — Compunerea actelor | Copierea, schimbul și înlocuirea se descompun în schimbări explicite. |
+| R39 — Terminarea descompunerii | Planificarea detectează repetarea aceleiași cerințe de act. |
+
+Condițiile unui act nu sunt texte. Formularea în limbaj natural explică intenția, dar evaluarea cere o reprezentare structurată. Forma exactă folosește patru feluri de condiții, câte una pentru fiecare schimbare de bază.
+
+| Condiția | Ce afirmă |
+|---|---|
+| `exists=<rol>` | Lucrul din acel rol există în stare. |
+| `absent=<rol>` | Lucrul din acel rol nu există în stare. |
+| `has=<rol>,<rol>` | Lucrul din primul rol are, la însușirea din al doilea rol, valoarea cerută. |
+| `holds=<rol>,<rol>` | Relația cerută ține între lucrurile din cele două roluri. |
+
+```
+@act.make   w.legend.act name=make   change=appear    role=result              after.exists=result
+@act.remove w.legend.act name=remove change=disappear role=object              before.exists=object after.absent=object
+@act.change w.legend.act name=change change=quality   role=object role=quality before.exists=object after.has=object,quality
+@act.place  w.legend.act name=place  change=relation  role=object role=goal    before.exists=object after.holds=object,goal
+```
+
+Ce nu este numit nu se schimbă. După un act, singurele diferențe permise în stare sunt cele din condiția „după” și cele care decurg din ea prin reguli. Orice altă diferență este spusă în răspuns ca schimbare neașteptată.
+
+Crearea unui referent care lipsește este permisă numai când cererea îl introduce nehotărât, în loc să desemneze un obiect existent. „Put **a** child on the swing”: nu există copil, se face unul. „Put **the** child on the swing” sau „put Tom on the swing”: omul vorbește despre un lucru anume; dacă nu există, aplicația spune „There is no child in the picture.” și nu face nimic.
+
+Actele compuse reutilizează condițiile actelor de bază. „Copy” este „a face” un lucru cu felul și însușirile celui copiat; identitatea este nouă, iar referințele urmează politica de copiere din secțiunea 2.4.1. „Swap” este de două ori „a așeza”, cu țintele luate din starea dinainte: fiecare lucru primește locul pe care îl avea celălalt. „Replace A with B” este „a face” B la locul lui A, mutarea pe B a relațiilor lui A și „a șterge” A.
+
+Descompunerea se oprește. Singura condiție „înainte” care poate cere un alt act este `exists`, iar actul care o îndeplinește, „a face”, nu are nicio condiție „înainte”. Lanțul are deci cel mult doi pași pentru fiecare rol. Dacă un domeniu adaugă acte cu alte condiții, planificarea refuză un plan în care aceeași pereche de act și lucruri apare a doua oară.
+
+În exemplul `act.place`, `object` desemnează lucrul mutat și `goal` ținta cerută. Verificarea existenței obiectului nu dovedește că relația finală este realizabilă; planul trebuie să verifice și ținta, capabilitatea uneltei și restricțiile relevante. După execuție, `holds` se verifică pe starea observată, nu pe argumentele trimise uneltei.
+
+Pentru un schimb de poziții, ambele poziții se citesc înaintea primei mutări. Dacă a doua mutare ar citi poziția deja schimbată a primului obiect, ambele ar ajunge în același loc. Compunerea păstrează deci o stare de referință și o unitate de anulare. La înlocuire, transferul relațiilor este permis numai dacă noul obiect satisface tipurile și restricțiile acelor relații.
 
 ## 4.7 Legarea unei lumi de lumea legendelor
 
@@ -779,6 +1079,37 @@ Un exemplu din fiecare:
 
 Primul fir declară spațiul culorilor. Al doilea, una dintre axele lui. Al treilea, regiunea numită „red”, cu centrul ei. Al patrulea, cuvântul de grad „big”. Al cincilea, actul „a așeza”: o schimbare de relație, cu două roluri, lucrul și ținta, cu condiția dinainte și cu cea de după.
 
+### 4.8.1 Metamodelul conceptual și ordinea de încărcare
+
+Lumea legendelor este vocabularul prin care schemele unor domenii diferite își declară semnificația. Fără această legătură, `at`, `position` și `start` sunt doar nume locale. Legarea lor de concepte permite alegerea operațiilor potrivite: poziția se măsoară într-un spațiu, începutul este un moment, iar participantul joacă un rol într-un act.
+
+Metamodelul trebuie să poată fi încărcat fără a presupune că el există deja. De aceea distingem primitivele limbajului de conceptele descrise cu acele primitive. Tabelul tipurilor arată ce informații declară autorul cunoașterii; regulile de încărcare arată în ce ordine pot fi interpretate.
+
+| Contract | Principiul urmărit |
+|---|---|
+| R15 — Tipurile metamodelului | Conceptele, rolurile, relațiile și unitățile au declarații distincte. |
+| R16 — Ordinea straturilor | Primitivele permit definirea metamodelului înaintea schemelor de domeniu. |
+| R17 — Specializarea conceptelor | Un concept principal poate permite mai multe operații prin spațiul său. |
+
+Tipurile de fire ale lumii legendelor sunt cele din secțiunea 4.8, la care se adaugă patru, pentru ca toate conceptele din secțiunea 4.3 să aibă unde fi declarate.
+
+| Tipul | Ce declară și cu ce chei |
+|---|---|
+| `w.legend.concept` | Un concept general. Chei: `name`; `group` (grupa din care face parte); `specialises` (conceptul mai general, dacă are unul); `question` (întrebarea generală: „Where?”). |
+| `w.legend.role` | Un rol. Chei: `name`; `of` (actul sau relația în care apare). |
+| `w.legend.relation` | O relație generală. Chei: `name` (`in`, `on`, `next_to`); `space` (în ce spațiu se măsoară); `inverse`; `test` (funcția care spune, din pozițiile a două lucruri, dacă relația ține). |
+| `w.legend.unit` | O unitate de măsură. Chei: `name`; `of` (axa); `factor` (câte unități de bază face). |
+
+Felurile de afirmații, cuprinderea și negația sunt fire `w.legend.concept`. O resursă nu are tip propriu: un tip de lucruri se declară resursă cu `resource=true` pe firul lui `core.type`.
+
+Încărcarea urmează patru straturi, fiecare scris numai cu ce este sub el. Tipurile `core.` sunt fixe, fac parte din limbaj și nu sunt descrise de nimic. Lumea legendelor este scrisă cu `core.type` și `core.slot`; sloturile tipurilor `w.legend.` sunt singurele scutite de cheia `means`. Tiparele și bazele de cunoaștere folosesc lumea legendelor. Instanțele folosesc tiparele.
+
+Suprapunerile aparente sunt specializări. Durata este timp (`means=time part=duration`); fiindcă timpul are o axă, pe ea funcționează și „longer”, ca pentru orice însușire. Participantul este un rol (`role=participant`); că ședința „este a” participanților se deduce, nu se declară a doua oară. Locul unei secțiuni în text este un loc, în spațiul `order`. Regula generală: un slot are un singur `means`; ce mai decurge vine din faptul că acel concept are un spațiu.
+
+Un `w.legend.unit` care declară un factor de conversie furnizează date pentru o operație numerică deja definită; nu inventează singur operația de conversie. În același fel, cheia `test` a unei relații trebuie să desemneze o funcție cu intrări și rezultat cunoscute. Un nume precum `near` fără o asemenea definiție nu permite verificarea distanței.
+
+Ordinea straturilor evită o definiție circulară a cheii `means`: tipurile de bază ale metamodelului sunt definite prin primitive, apoi celelalte scheme își exprimă semnificația prin ele. O durată are un singur concept principal; faptul că permite comparații numerice rezultă din axa asociată, fără duplicarea aceleiași informații în sloturi concurente.
+
 ---
 
 # 5. Feluri de lumi și compunerea lor
@@ -824,6 +1155,39 @@ Pe acest arbore se moștenesc patru lucruri, de sus în jos. Datorită lor, un f
 Cuvântul **realizare** din al doilea rând va reveni: înseamnă felul concret în care un domeniu face un lucru, de exemplu imaginea cu care desenul arată o rață sau forma cu care diagrama arată un început.
 
 Din aceeași cunoaștere vin și părțile lucrurilor: o față are ochi și gură; o pădure are copaci; o scrisoare are formulă de început. Un domeniu nu le scrie din nou.
+
+### 5.2.1 Moștenire structurală, cunoaștere și realizare
+
+Un tip stabilește forma faptelor, un fel clasifică lucrurile din cunoaștere, iar o realizare spune cum poate un domeniu să le prezinte sau să le construiască. Aceste niveluri pot colabora, dar nu sunt interschimbabile. O rață poate rămâne semantic rață chiar când unealta folosește o imagine generică de pasăre.
+
+Comparația mecanismelor arată ce transmite fiecare. Contractele precizează cum se alege o informație moștenită și ce limite nu pot fi slăbite. Fără această separare, împrumutarea unei imagini ar putea modifica greșit cunoașterea despre obiect.
+
+| Contract | Principiul urmărit |
+|---|---|
+| R40 — Părintele semantic | Arborele felurilor are un părinte; alte clasificări se exprimă separat. |
+| R41 — Precedența specializării | Declarația mai specifică înlocuiește valoarea implicită moștenită. |
+| R42 — Restrângerea validă | Specializarea nu poate permite o valoare interzisă de o constrângere tare. |
+| R43 — Informația specifică | O declarație specifică trebuie să aducă informație față de strămoș. |
+
+Moștenirea structurală, specializarea semantică și împrumutarea unei realizări transmit informații diferite, după cum arată comparația următoare.
+
+| Ce | Unde stă și ce transmite |
+|---|---|
+| moștenirea tipurilor | În schemă (`core.type extends=`). Transmite chei, reguli și interdicții. |
+| moștenirea felurilor | În cunoaștere (arborele felurilor: o rață este o pasăre). Transmite ce se știe: părți, valori obișnuite, cuvinte. |
+| înlocuitorul | În domeniu. Este o realizare împrumutată: imaginea păsării pentru o rață. Nu schimbă felul lucrului. |
+
+Un fel are un singur părinte. Alte împărțiri ale lucrurilor nu sunt feluri. „Lucrurile roșii” sunt o regiune a unui spațiu. „Nodurile de început” sunt un rol dedus de o regulă. „Lucrurile care plutesc” sunt o afirmație de cunoaștere despre mai multe feluri.
+
+Ce este declarat mai aproape câștigă. O valoare obișnuită sau o normă spusă despre un fel o înlocuiește pe cea spusă despre un strămoș. Fiindcă există un singur părinte, nu pot veni două valori de la aceeași depărtare.
+
+O restrângere este corectă dacă tot ce permite ea era permis și înainte: o regiune aflată în regiunea părintelui, margini între marginile părintelui. Se verifică la încărcare. O constrângere tare nu poate fi slăbită nici de un descendent, nici de om. Una slabă poate fi depășită de o cerință a omului.
+
+Un rând particular este legitim când spune ceva diferit de ce ar da strămoșul. „Peștele stă în apă” este legitim, fiindcă animalele stau de obicei pe pământ. Verificarea refuză numai rândurile care repetă ce spune un strămoș sau care sunt scrise pentru mai multe feluri surori cu aceeași valoare, semn că locul lor era pe părinte.
+
+O valoare obișnuită poate fi specializată deoarece ajută la alegere când omul nu a cerut altceva. O constrângere tare delimitează stările admise și are alt rol. Dacă părintele permite mărimi între 1 și 5, un descendent poate restrânge la intervalul 2–4; intervalul 0–6 ar introduce valori interzise de părinte și trebuie respins.
+
+Absența unei realizări specifice nu este absența conceptului. Explicația pentru o rață desenată prin imaginea păsării trebuie să numească traseul de specializare și realizarea disponibilă, păstrând felul cerut. O regulă locală „desenează întotdeauna rața ca pasăre” ar pierde motivul reutilizării și nu ar explica ce se întâmplă pentru alt fel fără imagine proprie.
 
 ## 5.3 Cum se compun lumile
 
@@ -909,7 +1273,29 @@ Două lucruri merită observate. Parametrul nu spune doar ce nume are, ci în ce
 
 **Alte module standard.** Mai există astăzi: `std.fill`, care alege valoarea unei chei lăsate nespuse dintre mai multe surse puse în ordine (omul, focusul, scena, cunoașterea, valoarea implicită); `std.focus`, care ține minte despre ce se vorbește; `std.dialogue`, care recunoaște felul unui mesaj; `std.know`, care completează din cunoaștere; `std.turn`, care declară etapele prin care trece un mesaj.
 
-**Care domeniu răspunde.** Capabilitățile spun care domenii pot îndeplini o cerere. „Schedule a meeting with Ana”, spus în timp ce omul se uită la desen, ajunge la calendar, fiindcă numai calendarul promite că poate face ședințe. Zona deschisă pe ecran nu hotărăște deci cine poate. Când pot mai multe domenii („a red circle” poate fi făcut și de desen, și de diagramă), se alege în ordinea din secțiunea 8.14: domeniul numit în mesaj, apoi cel al lucrului despre care se vorbește, apoi cel la care omul se uită; dacă tot rămân mai multe, aplicația întreabă.
+**Care domeniu răspunde.** Capabilitățile spun care domenii pot îndeplini o cerere. „Schedule a meeting with Ana”, spus în timp ce omul se uită la desen, ajunge la calendar, fiindcă numai calendarul promite că poate face ședințe. Zona deschisă pe ecran nu hotărăște deci cine poate. Când pot mai multe domenii („a red circle” poate fi făcut și de desen, și de diagramă), se alege în ordinea din secțiunea 6.1.1: domeniul numit în mesaj, apoi cel al lucrului despre care se vorbește, apoi cel la care omul se uită; dacă tot rămân mai multe, aplicația întreabă.
+
+### 6.1.1 Selectarea domeniului și transferul între lumi
+
+O capabilitate răspunde la întrebarea „cine poate realiza această cerere?”. Contextul răspunde la întrebarea „în care dintre aceste locuri vrea omul să lucreze?”. Alegerea domeniului combină cele două informații, fără ca simpla deschidere a unei zone pe ecran să creeze capabilități pe care ea nu le are.
+
+Cererile între lumi introduc încă o distincție: lumea din care se citesc datele poate fi diferită de lumea în care se creează rezultatul. Regulile separă selectarea destinației de politica de actualizare a rezultatului.
+
+| Contract | Principiul urmărit |
+|---|---|
+| R57 — Alegerea domeniului | Capabilitățile filtrează; referentul și contextul aleg destinația. |
+| R58 — Citirea între lumi | Sursa și versiunea citită se păstrează în proveniența rezultatului. |
+| R59 — Actualizarea rezultatului | Rezultatul este un instantaneu actualizat numai printr-o cerere explicită. |
+
+Capabilitățile aleg cine poate; nu ajung ca să aleagă cine răspunde. Dintre domeniile care pot îndeplini cererea, se alege în această ordine: cel numit în mesaj („in the diagram”); cel al lucrului la care trimite mesajul sau al focusului; cel la care omul se uită acum. Dacă tot rămân mai multe, aplicația întreabă. În această alegere, zona deschisă pe ecran nu hotărăște cine poate, dar desparte egalitățile. „A red circle” poate fi făcut și de desen, și de diagramă, deci merge la cel la care se uită omul.
+
+O cerere peste două lumi citește dintr-una și scrie în cealaltă. „A bar chart of meetings per person” citește calendarul și scrie în diagramă. Citirea se face o singură dată, la alcătuirea planului. Graficul ține minte de unde vine: sursa și momentul citirii.
+
+Graficul nu se schimbă singur când se schimbă calendarul. Dacă o ședință este ștearsă, graficul rămâne cum era, iar la întrebare spune când a fost făcut. „Update the chart” îl reface.
+
+Un grafic al ședințelor pe persoană este construit dintr-o stare identificată a calendarului. Diagrama păstrează proveniența citirii, astfel încât o întrebare ulterioară să poată primi un răspuns despre datele folosite. Dacă ședințele se schimbă, graficul nu trebuie prezentat drept imagine a calendarului actual fără o nouă citire.
+
+„Update the chart” produce o actualizare explicită, verificabilă și anulabilă. Anularea ei restaurează graficul anterior; nu anulează schimbările calendarului care au avut loc între cele două citiri. Această separare a responsabilităților împiedică o operație de prezentare să modifice accidental sursa.
 
 ## 6.2 Drumul unui mesaj, pe etape
 
@@ -961,6 +1347,33 @@ Aceste legări le face lumea limbii, prin reguli generale de gramatică, nu fiec
 
 **Ce se face când ceva nu a fost înțeles.** Dacă rămân cuvinte necitite într-un loc care contează, cererea nu se execută; aplicația spune ce nu a înțeles, cu cuvintele omului. A executa jumătate de propoziție și a tăcea despre rest este mai rău decât a refuza. Un cuvânt scris greșit este corectat numai dacă nu este cunoscut de nicio sursă și există un singur candidat limpede; altfel „villa” ar deveni „via”. Limba mesajului este cea pe care omul a ales-o în aplicație.
 
+### 6.3.1 Interpretări candidate și clarificarea ambiguității
+
+Interpretarea unei propoziții produce ipoteze despre intenție. Fiecare ipoteză trebuie să păstreze corespondența cu mesajul: obiectele desemnate, cerințele și cuvintele care nu au fost încă interpretate. Altfel, eliminarea unei interpretări ar putea însemna eliminarea tacită a unei cerințe a omului.
+
+Filtrarea folosește starea și capabilitățile declarate, apoi preferințele limbii. Când două interpretări încă posibile ar produce schimbări diferite, o alegere arbitrară nu este o rezolvare a ambiguității. Regulile de mai jos precizează când se poate continua și când trebuie formulată o întrebare.
+
+| Contract | Principiul urmărit |
+|---|---|
+| R51 — Interpretările candidate | Fiecare interpretare păstrează cerințele și legăturile cu mesajul. |
+| R52 — Filtrarea interpretărilor | Diferențele de efect rămase între candidați cer clarificare. |
+| R53 — Conținutul neinterpretat | Conținutul nerecunoscut nu poate fi eliminat tacit din intenție. |
+| R54 — Contextul clarificării | Răspunsul se interpretează în contextul întrebării încă deschise. |
+
+Citirea dă una sau mai multe cereri candidate. Fiecare ține cerințele ei, cuvintele rămase necitite și legarea fiecărui cuvânt de un lucru.
+
+Alegerea între candidate se face în această ordine. Cad cele care trimit la lucruri ce nu există în stare. Cad cele pe care niciun domeniu nu le poate îndeplini. Dintre cele rămase câștigă cea preferată de o regulă declarată a limbii. Dacă rămân două care ar schimba lumea diferit, nu se execută nimic și aplicația întreabă.
+
+Exemplu: „make the red and blue nodes bigger”. Prima citire: nodurile roșii și nodurile albastre. A doua: nodurile care sunt și roșii, și albastre. Dacă niciun nod nu este în amândouă regiunile, a doua citire nu găsește nimic și cade. Contraexemplu: „add red and blue nodes”. Prima citire: câte un nod din fiecare culoare. A doua: noduri în două culori. Dacă unealta diagramei declară că nu poate realiza un nod în două culori, a doua interpretare cade. Limitarea trebuie să vină din contractul uneltei, nu dintr-o presupunere despre toate diagramele.
+
+Un cuvânt cu conținut (substantiv, adjectiv, verb, număr) rămas necitit oprește execuția. Un cuvânt fără contribuție semantică, recunoscut astfel de gramatică, nu o oprește.
+
+O întrebare de clarificare rămâne deschisă până când omul îi răspunde, până când aplicația pune alta sau până când se execută o cerere nouă. Un mesaj care se potrivește ca răspuns (are felul de valoare așteptat) este luat ca răspuns. Unul care nu se potrivește este o cerere nouă și închide întrebarea.
+
+În exemplul cu nodurile roșii și albastre, diferența este între reuniunea a două grupuri și intersecția lor. Interpretările trebuie păstrate separat până la rezolvarea referințelor. Faptul că intersecția este goală poate elimina o citire a unei referințe la obiecte existente, dar nu justifică eliminarea unei culori dintr-o cerere de creare.
+
+Un cuvânt neinterpretat poate părea mic și totuși să schimbe cererea: „not” inversează o condiție. De aceea categoria „cuvânt de legătură” nu este o autorizație de a ignora negația, ordinea ori întinderea unei expresii. Ignorarea este admisibilă numai când gramatica îi declară rolul nerelevant pentru cererea structurată. Întrebarea de clarificare păstrează candidații și valoarea așteptată, pentru ca răspunsul următor să poată fi legat de problema corectă.
+
 ## 6.4 Situarea: ce este acest mesaj față de ce s-a spus înainte
 
 Oamenii nu vorbesc în propoziții întregi. După „draw three fish” urmează „bigger”, „in the sky”, „two more”, „not that one”. Fiecare dintre acestea are sens numai față de ce s-a spus înainte. Etapa aceasta hotărăște ce fel de mesaj a sosit.
@@ -1011,6 +1424,34 @@ Cererea conține încă cuvinte: „big”, „red”, „afternoon”. Uneltele
 Cât de departe este „prea departe” se declară, și se numește **toleranță (tolerance)**: câtă abatere este primită între ce s-a cerut și ce se poate face.
 
 Regula comună este cea hotărâtă pentru întreaga aplicație: aplicația face cât poate de bine și spune ce a făcut altfel; nu oprește omul cu o întrebare pentru o înlocuire măruntă. Cerința omului nu este înlocuită în cerere. Ea rămâne așa cum a fost spusă, cu transformarea notată lângă ea, pentru ca răspunsul să poată spune adevărul și pentru ca „the duck” să găsească mai târziu rața.
+
+### 6.5.1 Exactitate, aproximare și toleranță
+
+Aproximarea este o permisiune semantică, nu doar un calcul de distanță. O oră cerută exact nu poate fi înlocuită cu cea mai apropiată oră liberă fără acord. O cerere precum „in the afternoon” autorizează alegerea în interiorul unei regiuni, dar nu în afara ei doar pentru că o altă oră este convenabilă.
+
+Tabelul clasifică sursa valorii. Această clasificare trebuie păstrată de la interpretare până la execuție, deoarece două planuri cu aceeași valoare numerică pot avea libertăți diferite în funcție de ce a spus omul.
+
+| Contract | Principiul urmărit |
+|---|---|
+| R55 — Permisiunea aproximării | Libertatea de alegere depinde de exactitatea cerinței inițiale. |
+| R56 — Toleranța numerică | Distanța admisă nu poate încălca exactitatea sau restricțiile tari. |
+
+Ce se poate apropia depinde de cât de exact a vorbit omul.
+
+| Cum a fost spusă valoarea | Ce are voie aplicația |
+|---|---|
+| exact: un număr, o oră, un nume („at ten thirty”, „Ana”) | Nimic altceva fără acordul omului. Dacă nu se poate întocmai, explică și propune. |
+| vag: o regiune sau un cuvânt de grad („in the afternoon”, „big”) | Orice punct din regiune, respectiv din jurul valorii calculate, în toleranță. |
+| ca pas: un comparativ („later”, „bigger”) | Aplicația poate ajusta mărimea pasului, păstrând direcția cerută și restricțiile. „Later” nu permite o oră mai devreme. |
+| nespusă: o presupunere | Orice valoare permisă. Se spune dacă contează. |
+
+Toleranța este o distanță, în unitățile din secțiunea 4.4.1. Fiecare spațiu declară una implicită; un parametru al unei unelte poate declara alta. Toleranța zero înseamnă numai întocmai. Omul o poate schimba pe loc: „exactly” o face zero; „about” o dublează.
+
+Exemple de margine, în spațiul formelor, cu toleranța 0,15. „Oval”, când unealta are elipsă: distanța 0,05; se face elipsa. „Triangle”, când cea mai apropiată formă a uneltei este rombul: distanța 0,4; nu se face romb, ci se spune că triunghiul nu este posibil și ce forme sunt.
+
+Toleranța se aplică numai după verificarea permisiunii de aproximare. Ea nu slăbește o interdicție tare și nu transformă un nume exact într-o persoană asemănătoare. Dacă durata cerută este exact o oră, o rezervare de 55 de minute nu devine acceptabilă doar pentru că diferența numerică este mică.
+
+Distanțele din exemplul formelor presupun un spațiu și o metrică declarate. Valorile 0,05 și 0,4 sunt date ilustrative pentru acel calcul, nu proprietăți universale ale cuvintelor „oval” și „triangle”. În lipsa reprezentării formelor, sistemul nu poate inventa aceste scoruri pentru a justifica un înlocuitor.
 
 ## 6.6 Completarea: ce facem cu ce omul nu a spus
 
@@ -1079,6 +1520,31 @@ Toate mecanismele de raționament lucrează pe același lucru: starea lumii văz
 
 **Căutările proprii unui domeniu.** Unele căutări țin de meseria domeniului și sunt făcute de program: găsirea unui loc liber pe pagină; așezarea nodurilor unei diagrame; compunerea textului unui paragraf. Sunt permise ca funcții declarate (secțiunea 3.7). Împărțirea este limpede: planul hotărăște ce se face și cu ce valori; funcția găsește numai cum.
 
+### 6.8.1 Planificarea semantică și funcțiile specializate
+
+Planificatorul alege o intenție realizabilă: ce obiecte sunt implicate, ce relații trebuie obținute și ce constrângeri trebuie păstrate. O funcție specializată caută o realizare concretă în interiorul acelei alegeri. Separarea permite reutilizarea raționamentului fără a pretinde că geometria desenului și compunerea unui text sunt aceeași operație.
+
+Tabelul funcțiilor trebuie citit ca un contract de intrare, rezultat și verificare. Un rezultat furnizat de o funcție nu este adevărat doar pentru că funcția l-a returnat; verificatorul îl compară cu cerința și starea relevantă.
+
+| Contract | Principiul urmărit |
+|---|---|
+| R67 — Limita funcției specializate | Funcția caută o realizare în limitele alegerii semantice a planului. |
+| R68 — Verificarea compunerii | Textul produs trebuie verificat față de surse și proprietățile măsurabile. |
+
+Planul alege între lucruri cu înțeles diferit; funcția caută înăuntrul alegerii. Planul hotărăște că peștii stau în iaz, nu pe cer. Funcția desenului găsește în iaz trei poziții libere.
+
+| Funcția | Ce primește, ce dă și cum este verificată |
+|---|---|
+| `free_spot` (desen) | Primește regiunea sau relația aleasă de plan, mărimea lucrului și lucrurile de acolo. Dă un punct, sau eșecul „nu este loc”. Planul verifică punctul cu `test`-ul relației (R45). |
+| `layout` (diagrame) | Primește nodurile și săgețile. Dă câte un punct pentru fiecare nod. Verificare: niciun nod peste altul. |
+| `compose` (documente) | Primește partea de scris, lista afirmațiilor pe care cunoașterea le are despre subiect, lungimea cerută și punctul de ton. Dă textul și lista afirmațiilor folosite. |
+
+`compose` nu inventează. Are voie să folosească numai afirmațiile primite și formule legate de partea scrisă (salutul, încheierea). Lungimea se verifică prin numărare. Afirmațiile folosite se verifică față de lista dată. Dacă lista este goală, se scriu numai formulele, iar răspunsul spune că despre subiect nu se știe nimic. **Tonul nu poate fi verificat automat în prima versiune;** răspunsul nu afirmă că tonul cerut a fost atins (anexa D).
+
+Dacă planul cere ca peștele să fie în iaz, `free_spot` nu poate răspunde cu o poziție pe cer pentru că acolo a găsit loc. Poate returna un punct verificabil în regiunea permisă sau poate declara că nu a găsit o soluție. Distincția dintre căutare epuizată și imposibilitate demonstrată rămâne cea din secțiunea 8.5.
+
+Pentru `compose`, verificarea afirmațiilor cere identificarea surselor, nu doar compararea unor cuvinte. Dacă această verificare nu este disponibilă pentru o proprietate, răspunsul trebuie limitat la proprietățile efectiv verificate. Lungimea măsurată a textului nu dovedește că tonul cerut a fost respectat și nici că afirmațiile sunt justificate.
+
 ## 6.9 Execuția
 
 Planul este o listă de schimbări. Fiecare este dusă la unealta ei prin legătura declarată (secțiunea 6.1), iar unealta primește numere și referințe.
@@ -1088,6 +1554,62 @@ Greutatea este că lumea reală nu ascultă întotdeauna. Unealta poate eșua, s
 După fiecare pas, starea este citită din nou și comparată cu condiția „după” a actului (secțiunea 4.6). Rezultatul unei execuții este unul din cinci: executat; executat în parte; desfăcut, adică s-a dat înapoi tot; efect necunoscut; desfacere eșuată. Ultimele două sunt rare, dar trebuie să aibă nume, fiindcă în ele aplicația nu are voie să spună nici „am făcut”, nici „nu am făcut”.
 
 Pentru om, o cerere executată este un singur pas care se poate anula, oricâte unelte au pornit pentru ea. O reacție („bigger”) înlocuiește pasul pe care îl corectează, nu adaugă altul. O întrebare pusă de aplicație nu este un pas.
+
+### 6.9.1 Consistența execuției și recuperarea după eșec
+
+Un plan verificat descrie ce ar trebui să se întâmple pornind de la o anumită stare. Între verificare și execuție, starea poate fi schimbată de om sau de o altă operație. În plus, o unealtă poate eșua după ce a aplicat numai o parte din modificări. Execuția trebuie deci să urmărească atât versiunile citite, cât și efectele confirmate.
+
+Tabelul distinge independența semantică a operațiilor de simpla lor separare în apeluri. Două apeluri sunt dependente dacă împart o restricție sau o resursă, chiar când modifică identificatori diferiți.
+
+| Contract | Principiul urmărit |
+|---|---|
+| R60 — Independența operațiilor | Lipsa interacțiunilor prin date, restricții și resurse trebuie demonstrată. |
+| R61 — Revalidarea planului | Schimbarea datelor citite invalidează verificarea planului anterior. |
+| R62 — Recuperarea pașilor | Pașii confirmați se desfac în ordine inversă, cu verificarea efectului. |
+| R63 — Eșecul recuperării | Starea rămasă se observă și se raportează, fără confirmare fictivă. |
+| R64 — Contractul anulării | Operațiile demo trebuie să ofere datele necesare restaurării. |
+
+Două părți ale unui plan sunt independente dacă nu citesc și nu scriu aceleași fire, dacă nicio interdicție nu se poate potrivi cu fire din amândouă și dacă nu ocupă aceeași resursă. Dacă una dintre aceste condiții nu poate fi dovedită, părțile sunt socotite dependente: se execută amândouă sau niciuna.
+
+Starea este citită din nou chiar înainte de execuție. Dacă firele pe care planul le citește s-au schimbat de când a fost făcut, planul este refăcut o dată. Dacă s-au schimbat din nou, cererea este oprită și omului i se spune de ce.
+
+La eșecul unui pas, pașii executați ai aceleiași părți sunt desfăcuți în ordine inversă, fiecare prin actul lui invers. O operație nu este încercată a doua oară decât dacă unealta o declară fără urmări la repetare.
+
+Dacă desfacerea eșuează, starea este citită din nou și spusă omului așa cum este: ce a rămas făcut și ce nu. Aplicația nu pretinde nici că a făcut, nici că nu a făcut.
+
+Uneltele celor patru domenii trebuie să permită anularea. Contractul fiecărei operații include informația necesară refacerii stării dinainte și verificarea rezultatului anulării. Un eșec al anulării se raportează conform R63. O unealtă viitoare fără anulare are nevoie de o politică explicită; nu moștenește automat permisiunea de a executa.
+
+Două ședințe nou create pentru aceeași persoană pot avea identificatori complet diferiți și totuși să fie dependente: interdicția suprapunerii le privește împreună. În schimb, două modificări fără date, reguli sau resurse comune pot fi tratate separat dacă această independență este demonstrată. Lipsa unei dovezi cere tratarea conservatoare ca operații dependente.
+
+Recuperarea este o succesiune de operații observabile, nu o presupunere că apelul invers a reușit. După fiecare anulare se verifică efectul; la eșec se recitește starea. Reîncercarea unei operații cere garanția de idempotență, adică repetarea ei nu dublează efectul. Un răspuns pierdut după crearea unei ședințe nu autorizează crearea alteia identice.
+
+### 6.9.2 Istoricul operațiilor, corectarea și anularea
+
+Istoricul păstrează unitățile de lucru pe care omul le poate corecta sau anula. O reacție imediată precum „bigger” poate ajusta rezultatul tocmai creat, dar nu trebuie să rescrie retroactiv o stare pe care altcineva a modificat-o între timp. Diferența privește gruparea în istoric, nu existența unei cereri noi de modificare.
+
+Tabelul cronologic arată când se înlocuiește ultimul pas și când se adaugă unul. Pentru fiecare pas trebuie păstrate starea anterioară, efectele și eventualele preferințe învățate, ca anularea să aibă un rezultat determinat.
+
+| Contract | Principiul urmărit |
+|---|---|
+| R65 — Gruparea corectărilor | O corectare se grupează doar cu ultimul pas nealterat între timp. |
+| R66 — Ordinea între domenii | Anularea urmează istoricul global și numește domeniul afectat. |
+
+O reacție înlocuiește un pas numai în două condiții: pasul este ultimul din istorie și lucrurile lui nu au fost schimbate de altcineva între timp. Altfel reacția este un pas nou.
+
+| Ce se întâmplă, în ordine | Pașii din istorie |
+|---|---|
+| „draw a fish” | Pasul 1: un pește, mărimea 1,0. |
+| „bigger” | Pasul 1 este înlocuit: un pește, mărimea 1,25. |
+| omul trage peștele cu mâna | Pasul 2: mutarea, luată din starea observată. |
+| „bigger” | Pasul 3: mărimea 1,56. Nu înlocuiește nimic, fiindcă ultimul pas nu este al aplicației. |
+
+Anularea, de trei ori la rând, duce mărimea la 1,25, apoi peștele la locul dinainte, apoi șterge peștele. Ce s-a învățat într-un pas (R34) dispare odată cu el.
+
+O schimbare făcută în alt domeniu este un pas al acelui domeniu. Anularea desface ultimul pas, oricare ar fi domeniul lui, și spune ce a desfăcut.
+
+În exemplu, prima mărire este inclusă în pasul de creare. Anularea acelui pas elimină peștele, fiindcă aceasta este starea dinaintea întregii unități de lucru. Mutarea manuală întrerupe această continuitate: mărirea următoare devine un pas separat și anularea ei nu trebuie să mute peștele înapoi.
+
+Ordinea globală a istoricului permite anularea ultimei acțiuni chiar dacă ea a fost făcută în alt domeniu. Răspunsul numește domeniul și efectul anulat pentru ca omul să poată verifica operația. Dacă starea observată nu mai permite restaurarea sigură, se aplică regulile de eșec; istoricul nu este o autorizație de a suprascrie schimbări intervenite.
 
 ## 6.10 Răspunsul
 
@@ -1108,8 +1630,39 @@ Aici răspunsul se compune din două surse care nu pot minți: **diferența de s
 
 Fiecare valoare ține minte de unde vine; aceasta se numește **proveniență (provenance)** și din ea se poate răspunde la „de ce este peștele acolo?”. Ce nu poate fi rezolvat cu mecanismele existente se trece în **registrul cazurilor nerezolvate**, împreună cu conceptul sau mecanismul general care lipsește. Registrul este lista de lucru pentru partea generală, nu o listă de petice de scris.
 
----
+### 6.10.1 Observarea efectelor și justificarea răspunsurilor
 
+Răspunsul este concluzia unei verificări a cererii și a efectului, nu o reformulare a apelului trimis uneltei. „Am mutat” cere o schimbare observată; „era deja acolo” cere constatarea aceleiași condiții înaintea execuției. Dacă observația lipsește, niciunul dintre aceste răspunsuri nu este justificat.
+
+Tabelul formelor de răspuns leagă formularea de dovezile disponibile. El nu este o listă de replici fixe pentru fiecare domeniu. Aceeași distincție între executat, deja satisfăcut, refuzat și necunoscut se aplică desenului, diagramei, documentului și calendarului.
+
+| Contract | Principiul urmărit |
+|---|---|
+| R69 — Condiția deja îndeplinită | O condiție finală deja adevărată elimină necesitatea execuției. |
+| R70 — Efectul confirmat | Confirmarea cere atât succesul uneltei, cât și efectul observat. |
+| R71 — Clasele de răspuns | Forma răspunsului depinde de rezultatul verificat, nu de intenția planului. |
+
+Înaintea fiecărui pas se verifică dacă condiția „după” ține deja. Dacă da, unealta nu este pornită, iar răspunsul este „The duck is already on the lake.”
+
+„Am făcut” se spune când sunt îndeplinite două lucruri: unealta a confirmat operația și diferența dintre starea citită chiar înainte și cea citită chiar după conține schimbarea cerută.
+
+Formele de răspuns sunt cadrele celor patru acte și șapte forme generale.
+
+| Forma | Când se folosește |
+|---|---|
+| deja așa | Condiția „după” ținea dinainte. |
+| făcut în parte | Unele părți independente s-au făcut, altele nu; fiecare este numită. |
+| refuz cu motiv | O interdicție tare, sau o cerință care nu se poate îndeplini. |
+| întrebare | Lipsește o valoare, sau sunt mai mulți candidați. |
+| efect necunoscut | Vezi R63. |
+| răspuns despre stare | „What is on Friday?” |
+| explicație | „Why is the fish there?”, din proveniența valorilor. |
+
+O confirmare tehnică a uneltei poate arăta că cererea a fost primită fără să dovedească rezultatul. Pentru „put the duck on the lake”, sistemul trebuie să regăsească rața și lacul în observația de după și să verifice relația cerută. Dacă poziția nu s-a schimbat și relația nu ținea înainte, mesajul „done” ar fi fals chiar dacă apelul a returnat succes.
+
+Explicația ulterioară reconstruiește aceeași justificare: cerința, faptele citite, regula aplicată și observația finală. Ea trebuie să poată distinge un efect confirmat de o presupunere de planificare. Într-o execuție parțială numește separat părțile independente reușite și cele rămase, fără a prezenta întregul plan ca realizat.
+
+---
 
 ## 6.11 Cum explică sistemul un răspuns
 
@@ -1286,6 +1839,41 @@ Calendarul este domeniul de probă al întregii construcții, din două motive. 
 | „who is in the review?” | Întrebarea generală a rolului de participant, răspunsă din stare (secțiunea 6.10). |
 | „what is on Friday?” | Se răspunde din stare (secțiunea 6.10). |
 
+### 7.4.1 Aplicarea contractelor într-un scenariu de calendar
+
+Un scenariu complet leagă reprezentarea datelor, interpretarea, verificarea și efectul observat. Exemplele de declarații din capitolul 7 ilustrează componentele, dar nu conțin singure toate importurile și contractele necesare rulării unui domeniu. Tabelul dependențelor arată ce cunoaștere trebuie să fie disponibilă înainte ca un exemplu să poată susține concluzii.
+
+Calendarul de mai jos este un exemplu de aplicare a contractelor. Cazurile pornesc separat din starea descrisă; cazul ambiguu adaugă explicit o a doua ședință, iar anularea continuă cazul de reușită. Astfel, rezultatul unui caz nu devine accidental premisa altuia.
+
+| Contract | Conținut |
+|---|---|
+| R72 — Dependențele exemplului | Exemplul executabil cere scheme, cunoaștere, unelte și observații. |
+
+Blocurile de fire din capitolul 7 sunt extrase schematice, nu declarații complete. Un domeniu complet are în plus: importul lumii legendelor și al bazelor de cunoaștere folosite; parametrii și legăturile fiecărei unelte; citirea stării; funcțiile proprii, cu argumentele lor.
+
+| Domeniul | De ce depinde |
+|---|---|
+| desen | Lumea legendelor; arborele felurilor; regiunile de culoare și de mărime; părțile scenelor; cuvintele engleze. |
+| diagrame | Lumea legendelor; regiunile de formă și de culoare; grafurile felurilor de diagrame. |
+| documente | Lumea legendelor; grafurile genurilor; regiunile de ton; afirmațiile despre subiecte. |
+| calendar | Lumea legendelor; tiparul persoanelor; regiunile zilei; unitățile de timp. |
+
+Scenariile următoare arată cum aceleași date pot conduce la execuție, clarificare, refuz sau anulare, în funcție de cerere.
+
+Starea de pornire, aceeași pentru toate: Ana are ședința `m1`, „Review”, luni, de la 10:00 la 11:00, în sala `r1`. Sălile `r1` și `r2` sunt altfel libere.
+
+| Cazul | Ce se întâmplă, pas cu pas |
+|---|---|
+| reușită | „a meeting with Ana on Monday at 14:00 for an hour”. Cererea: a face; ședință; participant Ana; început luni 14:00, exact; durată 1 oră. Sala nu este spusă: este o cheie deschisă; candidate sunt `r1` și `r2`, amândouă libere; se ia prima și se notează ca presupunere. Verificare: validă. Execuție: apare `m2`. Răspuns: „I put a 1-hour meeting with Ana on Monday at 14:00, in room 1.” |
+| două înțelesuri | „move Ana's meeting to Tuesday”, când Ana are două ședințe luni. Trimiterea „Ana's meeting” găsește două. Nu se execută nimic. „Which one? 1. Review, 10:00, 2. the meeting at 14:00.” |
+| valoare lipsă | „a meeting with Ana on Monday”. Începutul lipsește. Valoarea obișnuită pentru durată este o oră. Pentru început nu există o presupunere rezonabilă, fiindcă ziua are multe ore libere. Întrebarea conceptului de timp: „When on Monday?” |
+| refuz | „a meeting with Ana on Monday at 10:30”. Ora este exactă. Interdicția despre oameni se potrivește cu `m1`. Nu se execută. Pentru durata presupusă de o oră, 9:30 nu este liber: intervalul 9:30–10:30 se suprapune cu rezervarea existentă. 11:00 permite întreaga durată, în ipoteza calendarului complet citit. „Ana is busy from 10 to 11. The nearest free time is 11:00. Shall I put it there?” |
+| anulare | După cazul de reușită, „undo”. Pasul șters este facerea lui `m2`. Starea citită din nou are numai `m1`. „I removed the meeting on Monday at 14:00.” |
+
+În cazul de reușită, alegerea sălii este o presupunere explicită, iar ora este o cerință exactă. Aceste două valori pot apărea în aceeași rezervare, dar au justificări diferite. În cazul ambiguu, lipsa unei identități unice oprește execuția înainte de orice mutare. În cazul incomplet, durata presupusă nu rezolvă lipsa începutului.
+
+Refuzul cere verificarea întregii durate, nu doar a momentului de început. O ședință de o oră începută la 9:30 s-ar suprapune cu rezervarea 10:00–11:00; nu este o alternativă liberă. Anularea se verifică prin recitire și prin dispariția rezervării create, nu prin simpla confirmare a comenzii de ștergere.
+
 ## 7.5 Ce are voie să fie program și cum știm că nu ne păcălim
 
 Toată construcția are rost numai dacă programul unui domeniu rămâne mic și nu ia, pe ascuns, hotărâri care trebuiau declarate. Altfel am avea declarații frumoase și, lângă ele, program care face de fapt treaba, pentru fiecare caz în parte.
@@ -1314,349 +1902,17 @@ Regula: programul unui domeniu face numai trei lucruri. Îndeplinește operații
 
 ---
 
-# 8. Reguli precise și cazuri-limită
-
-Capitolele 2–7 explică ideile. Capitolul acesta le fixează: pentru fiecare temă spune regula exactă, dă un exemplu cu numere, un contraexemplu și ce se întâmplă când regula nu poate fi îndeplinită. Fiecare regulă are un număr (R1, R2 și așa mai departe), ca planul de refactorizare să poată trimite la ea. Unde o regulă este o alegere de politică pe care trebuie să o confirme proprietarul, este scris **(de confirmat)**; alegerile nehotărâte sunt adunate în anexa D.
-
-## 8.1 Puncte și chei cu mai multe valori
-
-**R1. Un punct este o singură valoare.** Se scrie ca un atom făcut din numere despărțite prin virgulă, fără spații: `at=120,540`. Slotul lui spune `kind=point` și numește spațiul: `space=page`.
-
-**R2. Axele se recunosc după ordine.** Numerele unui punct sunt în ordinea în care sunt declarate axele spațiului. Pentru aceasta fiecare fir `w.legend.axis` poartă cheia `order` (1, 2, 3). Pentru spațiul paginii, axa 1 este orizontala și axa 2 verticala; `120,540` înseamnă orizontală 120, verticală 540.
-
-**R3. Două puncte sunt egale** când au același număr de numere și numerele sunt egale ca numere, axă cu axă. `120,540` și `120.0,540` sunt același punct. `540,120` este alt punct.
-
-**R4. Un punct incomplet sau prea lung este refuzat.** Într-un fapt, `at=120` sau `at=120,540,3` pentru spațiul paginii este o încălcare de felul `domain`. O cerere poate vorbi despre o singură axă („move it up”), dar aceea este o cerință a cererii asupra unei axe, nu un punct pe un fapt (secțiunea 6.3).
-
-**R5. O cheie cu mai multe valori este o listă ordonată.** Aceasta este regula limbajului de astăzi: valorile sunt ținute în ordinea în care au fost scrise. Când ordinea nu are înțeles (participanții unei ședințe), slotul o spune cu `order=ignored` **(propus)**; atunci două fapte cu aceleași valori în altă ordine sunt egale, iar o valoare scrisă de două ori este ținută o dată.
-
-Astăzi biblioteca nu are `kind=point`; un punct se ține ca două numere sub o cheie cu `many=true` sau ca valoare `json`. Trecerea la R1 este o schimbare de făcut.
-
-## 8.2 Identitatea și viața unui fir
-
-**R6. Identitatea persistentă a unui fapt este perechea dintre identitatea imutabilă a instanței și identificatorul local al faptului.** **(Propus)** Numele afișat al lumii, numele modulului și calea pe disc nu sunt această identitate. Încărcătorul poate deduce un nume inițial din calea relativă, dar salvează separat identitatea instanței. Un namespace lizibil precum `calendar` se rezolvă în contextul proiectului la această identitate. Redenumirea ori mutarea directorului păstrează referințele; copierea independentă remapează identitățile și referințele interne împreună. Secțiunea 2.6 descrie contractul și deosebirea față de prefixele textuale actuale.
-
-**R7. La ce trimite o referință.** Într-un fapt, `$x` trimite întotdeauna la un fapt, din aceeași lume. Într-o regulă, `$x` trimite întotdeauna la un model sau la un fir de construit al aceleiași reguli. Cele două nu se pot confunda, deși un fapt și un fir de schemă pot avea același identificator, fiindcă locul în care este scrisă referința hotărăște unde este căutată.
-
-**R8. O referință trebuie să se rezolve până la sfârșitul schimbării în care apare.** Altfel schimbarea este refuzată (`dangling-ref`). Singura excepție este un slot cu `by=` (secțiunea 3.2): valoarea rămâne în așteptare până când este spus firul numit, iar lumea o ține într-o listă de legături neînchise.
-
-| Întâmplarea | Ce se întâmplă cu identitatea și cu referințele |
-|---|---|
-| ștergerea unui lucru | Relațiile care au nevoie de el dispar odată cu el: săgețile unui nod șters. Un lucru care doar trimite la el (o ședință la sala ei) blochează ștergerea, cu motivul spus. |
-| copierea | Copia are identificator nou. Păstrează felul și însușirile. Nu păstrează referințele la alte lucruri, în afară de cele ale căror sloturi spun `copy=keep`. |
-| importul unei scheme | Identificatorii firelor de schemă primesc numele modulului în față. Faptele nu sunt atinse. |
-| schimbarea numelui | Identificatorul nu se schimbă niciodată. Numele văzut de om este o cheie (`label`, `title`), deci schimbarea lui nu atinge nicio referință. |
-| salvarea și reîncărcarea | Identificatorii se păstrează întocmai. |
-
-## 8.3 Necunoscut, fals și complet
-
-**R9. O cheie a unui fapt este în una din trei stări.** Are o valoare. Nu are valoare, și atunci valoarea este necunoscută. Sau se știe că nu are: aceasta se scrie cu valoarea `none` **(propus)**, permisă numai dacă slotul spune `none=allowed`. O ședință ținută la distanță are `room=none`; o ședință fără cheia `room` are o sală pe care nu o știm încă.
-
-**R10. Cum se potrivește un model.** Un model care cere `room=?r` se potrivește numai cu fapte a căror cheie `room` are o valoare. Nu se potrivește nici cu „necunoscut”, nici cu `none`. `core.absent=room` se potrivește cu amândouă.
-
-**R11. `not=` vorbește despre ce ține lumea acum.** O regulă cu `not=$p` se aplică atunci când niciun fapt de acum nu se potrivește cu `p`. Nu afirmă că așa ceva nu există în realitate. De aceea un fir dedus printr-un `not=` este retras de îndată ce apare faptul care lipsea.
-
-**R12. Întrebarea „există?” are trei răspunsuri.** Da, dacă un fapt se potrivește. Nu, dacă niciunul nu se potrivește și tipul este declarat `complete`. Nu se știe, în rest.
-
-**R13. Ce interdicții privesc o schimbare.** Toate interdicțiile ale căror modele se pot potrivi cu cel puțin un fir atins de schimbare (adăugat, modificat sau șters). Fiindcă modelele unei interdicții se leagă între ele prin variabile, aici intră și firele neatinse: la mutarea unei ședințe sunt verificate toate ședințele care au aceeași sală sau un participant comun.
-
-**R14. Când este o interdicție nedeterminată.** Când un fir atins se potrivește cu un model al ei la toate cheile pe care le are, dar îi lipsește o cheie pe care modelul sau o condiție a interdicției o citește.
-
-| Starea ședinței noi | Rezultatul verificării suprapunerii |
-|---|---|
-| are început și durată; nu se suprapune | Validă. |
-| are început și durată; se suprapune cu alta a Anei | Nevalidă, cu încălcarea care numește cele două ședințe. |
-| are început, dar durata este necunoscută | Nedeterminată. Nu se execută; se cere durata. |
-| are `room=none` | Interdicția despre săli nu o privește. Cea despre oameni rămâne. |
-| primește două ore de început diferite | Refuzată ca `conflict`, înainte de orice interdicție. |
-
-## 8.4 Ce conține lumea legendelor și cum pornește
-
-**R15. Tipurile de fire ale lumii legendelor** sunt cele din secțiunea 4.8, la care se adaugă patru, pentru ca toate conceptele din secțiunea 4.3 să aibă unde fi declarate.
-
-| Tipul | Ce declară și cu ce chei |
-|---|---|
-| `w.legend.concept` | Un concept general. Chei: `name`; `group` (grupa din care face parte); `specialises` (conceptul mai general, dacă are unul); `question` (întrebarea generală: „Where?”). |
-| `w.legend.role` | Un rol. Chei: `name`; `of` (actul sau relația în care apare). |
-| `w.legend.relation` | O relație generală. Chei: `name` (`in`, `on`, `next_to`); `space` (în ce spațiu se măsoară); `inverse`; `test` (funcția care spune, din pozițiile a două lucruri, dacă relația ține). |
-| `w.legend.unit` | O unitate de măsură. Chei: `name`; `of` (axa); `factor` (câte unități de bază face). |
-
-Felurile de afirmații, cuprinderea și negația sunt fire `w.legend.concept`. O resursă nu are tip propriu: un tip de lucruri se declară resursă cu `resource=true` pe firul lui `core.type`.
-
-**R16. Pornirea, fără cerc.** Sunt patru straturi, fiecare scris numai cu ce este sub el. Tipurile `core.` sunt fixe, fac parte din limbaj și nu sunt descrise de nimic. Lumea legendelor este scrisă cu `core.type` și `core.slot`; sloturile tipurilor `w.legend.` sunt singurele scutite de cheia `means`. Tiparele și bazele de cunoaștere folosesc lumea legendelor. Instanțele folosesc tiparele.
-
-**R17. Suprapunerile aparente sunt specializări.** Durata este timp (`means=time part=duration`); fiindcă timpul are o axă, pe ea funcționează și „longer”, ca pentru orice însușire. Participantul este un rol (`role=participant`); că ședința „este a” participanților se deduce, nu se declară a doua oară. Locul unei secțiuni în text este un loc, în spațiul `order`. Regula generală: un slot are un singur `means`; ce mai decurge vine din faptul că acel concept are un spațiu.
-
-## 8.5 Distanța și regiunile
-
-**R18. Fiecare axă este adusă la aceeași scară.** O valoare este împărțită la întinderea axei (`max` minus `min`), deci diferența dintre două valori pe o axă este un număr între 0 și 1. O axă poate avea o pondere, `weight`, implicit 1.
-
-**R19. Pe o axă circulară** (`kind=angle`, cu perioada 360), diferența este drumul cel mai scurt pe cerc, împărțit la jumătate de perioadă. Între nuanțele 350 și 0 diferența este 10/180, adică 0,056.
-
-**R20. Distanța dintre două puncte** este rădăcina pătrată a sumei pătratelor diferențelor pe axe, fiecare înmulțită cu ponderea axei.
-
-**R21. O regiune poate lăsa axe nespuse.** „Dark” spune numai `centre.lightness=0.25`; orice nuanță și orice saturație sunt primite. Distanța până la o asemenea regiune se calculează numai pe axele spuse.
-
-**R22. Un punct este în regiune** când distanța lui până la centru este cel mult `spread`. Marginea face parte din regiune. Exemplu: nuanța 350, saturația 0,9, luminozitatea 0,5 față de „red” (centrul 0; 0,9; 0,5; `spread` 0,12): distanța este 0,056, deci punctul este roșu.
-
-**R23. Regiunile se pot suprapune.** Un punct poate fi și „red”, și „orange”. La căutare („the red fish”) contează apartenența. La numire, în răspuns, se folosește regiunea cu centrul cel mai apropiat. O regiune din mai multe bucăți se scrie ca mai multe fire cu același nume.
-
-**R24. Includerea unei regiuni în alta se calculează.** Centrul dinăuntru nu este o dovadă suficientă. Pe o axă, intervalul [4, 8] are centrul 6 în [0, 7], dar punctul 8 este în afară. Pentru două bile în aceeași metrică, o condiție suficientă este `distanța dintre centre + raza interioară ≤ raza exterioară`. Pentru intervale se compară ambele capete. Pentru forme generale, verificatorul trebuie să poată demonstra includerea prin operațiile declarate ale spațiului. Dacă nu poate, rezultatul este nedeterminat; relația nu se folosește ca adevăr demonstrat. Eșantionarea câtorva puncte poate găsi un contraexemplu, dar nu dovedește includerea. La aplicarea testului trebuie comparate aceleași axe, în aceeași metrică. O axă omisă din regiunea interioară rămâne liberă în limitele spațiului: dacă regiunea exterioară o restrânge, includerea nu rezultă din testul centrelor și razelor. De exemplu, „dark” lasă nuanța liberă și nu este inclus în „blue”, chiar dacă alegem pentru ilustrare un centru albastru.
-
-Relația de includere este un rezultat calculat, nu o afirmație primită fără dovadă. Poate servi la explicarea relației dintre două regiuni; găsirea unui pește albastru folosește direct apartenența punctului său la regiunea albastră. Cheia `inside` se retrage din propunerea de declarație: o relație derivată poate fi memorată împreună cu dovada și versiunile regiunilor, apoi invalidată când acestea se schimbă.
-
-**R25. Egalitatea de distanță.** Când două valori posibile sunt la fel de aproape de cea cerută, se face una din două, după caracterul valorii (secțiunea 6.6). Dacă valoarea este o cerință a omului, aplicația le oferă pe amândouă și întreabă: la zece și jumătate cerut, cu zece și unsprezece libere, „10:00 or 11:00?”. Dacă este o presupunere a aplicației, se ia cea mai mică pe prima axă și se spune.
-
-## 8.6 Grafurile de părți și felurile necunoscute
-
-**R26. Ce este graful unui concept.** O mulțime de părți, fiecare cu felul ei, cu un număr minim și maxim de apariții (minimul 1 înseamnă obligatorie), și o mulțime de legături între părți, fiecare cu o etichetă: `before` (ordine), `in` (cuprindere), `to` (săgeată).
-
-**R27. Apropierea a două grafuri** este partea comună împărțită la tot: se numără părțile și legăturile care apar în amândouă și se împart la cele care apar în cel puțin unul. O parte obligatorie contează dublu. Rezultatul este între 0 și 1. Calculul are sens numai între două grafuri cunoscute; se folosește la întrebări ca „cu ce gen seamănă acest document?”.
-
-**R28. Un fel necunoscut nu este înlocuit.** Textul mai vechi al secțiunii 4.4 spunea că un „memo” fără graf este făcut ca o scrisoare scurtă, fiindcă este cel mai apropiat. Aceasta era greșit: față de ceva necunoscut nu se poate calcula nicio apropiere. Regula corectă are trei cazuri.
-
-| Ce se știe despre felul cerut | Ce face aplicația |
-|---|---|
-| nu este în arborele felurilor | Nu a înțeles cuvântul. Spune: „I do not know what a memo is.” Nu face nimic. |
-| este în arbore, dar nu are graf propriu | Folosește graful celui mai apropiat strămoș care are unul (un memo este un text) și spune o dată ce a folosit. Lucrul rămâne de felul cerut. |
-| are graf propriu | Îl folosește. |
-
-Dacă doi strămoși la aceeași depărtare au grafuri diferite, aplicația întreabă.
-
-## 8.7 Cuvintele de grad, pasul și învățarea
-
-**R29. Valoarea de referință a unei clase de comparație** este mediana valorilor lucrurilor din clasă. Cu un singur lucru, este valoarea lui. Fără niciun lucru, se trece la sursa următoare din secțiunea 4.5.
-
-**R30. Două feluri de axe.** O axă cu zero firesc (mărimea, lungimea, durata, numărul) se declară `scale=ratio`; pe ea cuvântul de grad înmulțește: referința ori factorul. O axă fără zero firesc (poziția, ora) se declară `scale=interval`; pe ea nu se înmulțește, iar cuvinte ca „late” sau „high” sunt regiuni ale axei, nu cuvinte de grad.
-
-**R31. Pasul unui comparativ** este declarat pe axă, cu `step`. Pe o axă `ratio` este un factor (propus 1,25); pe o axă `interval` este o mărime în unitățile axei (propus: 30 de minute pentru oră, o zecime din pagină pentru poziție). „Much bigger” face doi pași.
-
-**R32. Marginile.** Rezultatul este adus între marginile pe care le poate realiza unealta. Dacă prin aceasta nu se schimbă nimic, nu se execută nimic, iar răspunsul este „It is already as big as it can be.”
-
-**R33. Învățarea.** „Bigger” este întotdeauna o cerere nouă: lucrul crește cu un pas. Este în plus un semn că factorul a fost prea mic numai dacă urmează imediat după o valoare pe care aplicația a calculat-o dintr-un cuvânt de grad. Atunci factorul se mută la jumătatea drumului dintre cel vechi și cel acceptat de om.
-
-Exemplu complet. Peștii din iaz au mărimile 0,8 și 1,2; mediana este 1,0. „A big fish”: 1,0 × 1,6 = 1,6. Omul scrie „bigger”: 1,6 × 1,25 = 2,0. Factorul lui „big”, pentru desene, devine (1,6 + 2,0) / 2 = 1,8. Următorul „big fish”, cu aceeași mediană, are mărimea 1,8.
-
-**R34. Unde stă ce s-a învățat.** Factorul învățat este un fapt, cu proveniența lui (din ce mesaj), ținut pentru omul care folosește aplicația și pentru felul de lume (desen, calendar). Anularea pasului care l-a produs îl anulează și pe el. Nu trece niciodată singur în cunoașterea comună **(de confirmat)**.
-
-## 8.8 Actele, în formă structurată
-
-**R35. Condițiile unui act nu sunt texte.** Secțiunea 4.8 le-a scris ca texte pentru a fi ușor de citit. Forma exactă folosește patru feluri de condiții, câte una pentru fiecare schimbare de bază.
-
-| Condiția | Ce afirmă |
-|---|---|
-| `exists=<rol>` | Lucrul din acel rol există în stare. |
-| `absent=<rol>` | Lucrul din acel rol nu există în stare. |
-| `has=<rol>,<rol>` | Lucrul din primul rol are, la însușirea din al doilea rol, valoarea cerută. |
-| `holds=<rol>,<rol>` | Relația cerută ține între lucrurile din cele două roluri. |
-
-```
-@act.make   w.legend.act name=make   change=appear    role=result              after.exists=result
-@act.remove w.legend.act name=remove change=disappear role=object              before.exists=object after.absent=object
-@act.change w.legend.act name=change change=quality   role=object role=quality before.exists=object after.has=object,quality
-@act.place  w.legend.act name=place  change=relation  role=object role=goal    before.exists=object after.holds=object,goal
-```
-
-**R36. Ce nu este numit nu se schimbă.** După un act, singurele diferențe permise în stare sunt cele din condiția „după” și cele care decurg din ea prin reguli. Orice altă diferență este spusă în răspuns ca schimbare neașteptată.
-
-**R37. Când are voie aplicația să facă un lucru care lipsește.** Numai când omul l-a numit nehotărât. „Put **a** child on the swing”: nu există copil, se face unul. „Put **the** child on the swing” sau „put Tom on the swing”: omul vorbește despre un lucru anume; dacă nu există, aplicația spune „There is no child in the picture.” și nu face nimic.
-
-**R38. Actele derivate.** „Copy” este „a face” un lucru cu felul și însușirile celui copiat; identitatea este nouă, iar referințele urmează R8. „Swap” este de două ori „a așeza”, cu țintele luate din starea dinainte: fiecare lucru primește locul pe care îl avea celălalt. „Replace A with B” este „a face” B la locul lui A, mutarea pe B a relațiilor lui A și „a șterge” A.
-
-**R39. Descompunerea se oprește.** Singura condiție „înainte” care poate cere un alt act este `exists`, iar actul care o îndeplinește, „a face”, nu are nicio condiție „înainte”. Lanțul are deci cel mult doi pași pentru fiecare rol. Dacă un domeniu adaugă acte cu alte condiții, planificarea refuză un plan în care aceeași pereche de act și lucruri apare a doua oară.
-
-## 8.9 Feluri, tipuri și înlocuitori
-
-Trei lucruri au fost numite „moștenire” și trebuie ținute deosebite.
-
-| Ce | Unde stă și ce transmite |
-|---|---|
-| moștenirea tipurilor | În schemă (`core.type extends=`). Transmite chei, reguli și interdicții. |
-| moștenirea felurilor | În cunoaștere (arborele felurilor: o rață este o pasăre). Transmite ce se știe: părți, valori obișnuite, cuvinte. |
-| înlocuitorul | În domeniu. Este o realizare împrumutată: imaginea păsării pentru o rață. Nu schimbă felul lucrului. |
-
-**R40. Un fel are un singur părinte.** Alte împărțiri ale lucrurilor nu sunt feluri. „Lucrurile roșii” sunt o regiune a unui spațiu. „Nodurile de început” sunt un rol dedus de o regulă. „Lucrurile care plutesc” sunt o afirmație de cunoaștere despre mai multe feluri.
-
-**R41. Ce este declarat mai aproape câștigă.** O valoare obișnuită sau o normă spusă despre un fel o înlocuiește pe cea spusă despre un strămoș. Fiindcă există un singur părinte, nu pot veni două valori de la aceeași depărtare.
-
-**R42. O restrângere este corectă** dacă tot ce permite ea era permis și înainte: o regiune aflată în regiunea părintelui, margini între marginile părintelui. Se verifică la încărcare. O constrângere tare nu poate fi slăbită nici de un descendent, nici de om. Una slabă poate fi depășită de o cerință a omului.
-
-**R43. Un rând particular este legitim** când spune ceva diferit de ce ar da strămoșul. „Peștele stă în apă” este legitim, fiindcă animalele stau de obicei pe pământ. Verificarea refuză numai rândurile care repetă ce spune un strămoș sau care sunt scrise pentru mai multe feluri surori cu aceeași valoare, semn că locul lor era pe părinte.
-
-## 8.10 Repere pentru loc și pentru timp
-
-**R44. Fiecare spațiu de loc își declară reperul:** originea, sensul axelor și unitatea. Pagina are originea în colțul din stânga sus, axa orizontală spre dreapta, axa verticală în jos, iar unitatea este unitatea paginii. „Above” înseamnă deci un număr mai mic pe axa verticală. Poziția unui lucru este întotdeauna în reperul paginii, chiar dacă lucrul este „în” altul.
-
-**R45. Relațiile de loc sunt definite prin numere,** în funcția `test` a fiecărei relații (R15). „Near”: distanța dintre marginile celor două lucruri este mai mică decât o fracțiune din diagonala paginii (propus 0,15). „Above”: mai sus pe axa verticală și suprapus pe cea orizontală.
-
-**R46. Timpul din calendar.** O ședință ține un moment absolut de început și o durată. Calendarul își declară fusul orar; orele spuse de om sunt înțelese în acel fus. Un interval își cuprinde începutul și nu își cuprinde sfârșitul: o ședință care se termină la 11:00 și una care începe la 11:00 nu se suprapun, deci sala este liberă.
-
-**R47. Schimbarea orei.** Dacă ora cerută nu există în ziua aceea, aplicația refuză și spune de ce. Dacă există de două ori, întreabă care dintre ele.
-
-**R48. Repetarea ședințelor intră în proiect.** O serie păstrează regula de repetare, fusul orar și excepțiile; fiecare apariție are identitate stabilă. Modificarea uneia trebuie deosebită de modificarea întregii serii. Verificarea conflictelor privește aparițiile din intervalul verificat, nu o expansiune infinită. O serie fără sfârșit nu poate fi declarată liberă pentru tot viitorul după verificarea unui număr finit de apariții. Forma firelor, intervalul verificat și politica de extindere sunt contracte de proiectare încă de scris; recurența nu este exclusă din implementarea țintă.
-
-## 8.11 Fapt, normă, obișnuit; tare și slab
-
-**R49. Cunoașterea spune felul afirmației; tiparul de lume îi dă tăria.** O bază de cunoaștere nu declară nimic tare sau slab. Tiparul de lume care folosește afirmația o face.
-
-| Felul afirmației | Tăria, dacă tiparul nu spune altfel |
-|---|---|
-| fapt de domeniu („peștele stă în apă”) | Slabă. |
-| normă („o scrisoare are semnătură”; „un flux are un singur început”) | Slabă în timpul lucrului. La o verificare cerută anume („check the letter”), fiecare normă neîndeplinită este raportată. |
-| valoare obișnuită, euristică | Nu este o constrângere. Servește numai la completare și la alegere. |
-
-**R50. Tari sunt numai două feluri de reguli:** cele fără de care starea nu poate fi reprezentată (o săgeată fără capete) și cele pe care tiparul le declară anume ca tari (un om în două ședințe deodată).
-
-**Îndreptare.** Un pește pe cer este o problemă slabă, nu o stare nevalidă; secțiunea 6.9 dădea greșit acest exemplu. Exemplul corect de stare observată nevalidă este o ședință trasă cu mâna peste alta a aceluiași om.
-
-## 8.12 Citirea unei propoziții cu mai multe înțelesuri
-
-**R51. Citirea dă una sau mai multe cereri candidate.** Fiecare ține cerințele ei, cuvintele rămase necitite și legarea fiecărui cuvânt de un lucru.
-
-**R52. Alegerea între candidate** se face în această ordine. Cad cele care trimit la lucruri ce nu există în stare. Cad cele pe care niciun domeniu nu le poate îndeplini. Dintre cele rămase câștigă cea preferată de o regulă declarată a limbii. Dacă rămân două care ar schimba lumea diferit, nu se execută nimic și aplicația întreabă.
-
-Exemplu: „make the red and blue nodes bigger”. Prima citire: nodurile roșii și nodurile albastre. A doua: nodurile care sunt și roșii, și albastre. Dacă niciun nod nu este în amândouă regiunile, a doua citire nu găsește nimic și cade. Contraexemplu: „add red and blue nodes”. Prima citire: câte un nod din fiecare culoare. A doua: noduri în două culori. Unealta diagramei nu poate face un nod în două culori, deci a doua cade.
-
-**R53. Cuvintele necitite.** Un cuvânt cu conținut (substantiv, adjectiv, verb, număr) rămas necitit oprește execuția. Un cuvânt de legătură necitit nu o oprește.
-
-**R54. Viața unei întrebări deschise.** Întrebarea rămâne deschisă până când omul îi răspunde, până când aplicația pune alta sau până când se execută o cerere nouă. Un mesaj care se potrivește ca răspuns (are felul de valoare așteptat) este luat ca răspuns. Unul care nu se potrivește este o cerere nouă și închide întrebarea.
-
-## 8.13 Când este permisă apropierea
-
-**R55. Ce se poate apropia depinde de cât de exact a vorbit omul.**
-
-| Cum a fost spusă valoarea | Ce are voie aplicația |
-|---|---|
-| exact: un număr, o oră, un nume („at ten thirty”, „Ana”) | Nimic altceva fără acordul omului. Dacă nu se poate întocmai, explică și propune. |
-| vag: o regiune sau un cuvânt de grad („in the afternoon”, „big”) | Orice punct din regiune, respectiv din jurul valorii calculate, în toleranță. |
-| ca pas: un comparativ („later”, „bigger”) | Mărimea pasului o alege aplicația, deci o poate potrivi la ce este liber sau posibil. |
-| nespusă: o presupunere | Orice valoare permisă. Se spune dacă contează. |
-
-**R56. Toleranța** este o distanță, în unitățile din secțiunea 8.5. Fiecare spațiu declară una implicită; un parametru al unei unelte poate declara alta. Toleranța zero înseamnă numai întocmai. Omul o poate schimba pe loc: „exactly” o face zero; „about” o dublează.
-
-Exemple de margine, în spațiul formelor, cu toleranța 0,15. „Oval”, când unealta are elipsă: distanța 0,05; se face elipsa. „Triangle”, când cea mai apropiată formă a uneltei este rombul: distanța 0,4; nu se face romb, ci se spune că triunghiul nu este posibil și ce forme sunt.
-
-## 8.14 Care domeniu răspunde și cererile peste două lumi
-
-**R57. Capabilitățile aleg cine poate; nu ajung ca să aleagă cine răspunde.** Dintre domeniile care pot îndeplini cererea, se alege în această ordine: cel numit în mesaj („in the diagram”); cel al lucrului la care trimite mesajul sau al focusului; cel la care omul se uită acum. Dacă tot rămân mai multe, aplicația întreabă. Secțiunea 6.1 a fost îndreptată în acest sens: zona deschisă pe ecran nu hotărăște cine poate, dar desparte egalitățile. „A red circle” poate fi făcut și de desen, și de diagramă, deci merge la cel la care se uită omul.
-
-**R58. O cerere peste două lumi citește dintr-una și scrie în cealaltă.** „A bar chart of meetings per person” citește calendarul și scrie în diagramă. Citirea se face o singură dată, la alcătuirea planului. Graficul ține minte de unde vine: sursa și momentul citirii.
-
-**R59. Graficul nu se schimbă singur** când se schimbă calendarul **(de confirmat)**. Dacă o ședință este ștearsă, graficul rămâne cum era, iar la întrebare spune când a fost făcut. „Update the chart” îl reface.
-
-## 8.15 Independență, execuție și eșec
-
-**R60. Două părți ale unui plan sunt independente** dacă nu citesc și nu scriu aceleași fire, dacă nicio interdicție nu se poate potrivi cu fire din amândouă și dacă nu ocupă aceeași resursă. Dacă una dintre aceste condiții nu poate fi dovedită, părțile sunt socotite dependente: se execută amândouă sau niciuna.
-
-**R61. Starea este citită din nou chiar înainte de execuție.** Dacă firele pe care planul le citește s-au schimbat de când a fost făcut, planul este refăcut o dată. Dacă s-au schimbat din nou, cererea este oprită și omului i se spune de ce.
-
-**R62. La eșecul unui pas,** pașii executați ai aceleiași părți sunt desfăcuți în ordine inversă, fiecare prin actul lui invers. O operație nu este încercată a doua oară decât dacă unealta o declară fără urmări la repetare.
-
-**R63. Dacă desfacerea eșuează,** starea este citită din nou și spusă omului așa cum este: ce a rămas făcut și ce nu. Aplicația nu pretinde nici că a făcut, nici că nu a făcut.
-
-**R64. Uneltele celor patru domenii trebuie să permită anularea.** Contractul fiecărei operații include informația necesară refacerii stării dinainte și verificarea rezultatului anulării. Un eșec al anulării se raportează conform R63. O unealtă viitoare fără anulare are nevoie de o politică explicită; nu moștenește automat permisiunea de a executa.
-
-## 8.16 Corectări și anulare
-
-**R65. O reacție înlocuiește un pas numai în două condiții:** pasul este ultimul din istorie și lucrurile lui nu au fost schimbate de altcineva între timp. Altfel reacția este un pas nou.
-
-| Ce se întâmplă, în ordine | Pașii din istorie |
-|---|---|
-| „draw a fish” | Pasul 1: un pește, mărimea 1,0. |
-| „bigger” | Pasul 1 este înlocuit: un pește, mărimea 1,25. |
-| omul trage peștele cu mâna | Pasul 2: mutarea, luată din starea observată. |
-| „bigger” | Pasul 3: mărimea 1,56. Nu înlocuiește nimic, fiindcă ultimul pas nu este al aplicației. |
-
-Anularea, de trei ori la rând, duce mărimea la 1,25, apoi peștele la locul dinainte, apoi șterge peștele. Ce s-a învățat într-un pas (R34) dispare odată cu el.
-
-**R66. O schimbare făcută în alt domeniu** este un pas al acelui domeniu. Anularea desface ultimul pas, oricare ar fi domeniul lui, și spune ce a desfăcut.
-
-## 8.17 Ce hotărăște planul și ce caută funcția unui domeniu
-
-**R67. Planul alege între lucruri cu înțeles diferit; funcția caută înăuntrul alegerii.** Planul hotărăște că peștii stau în iaz, nu pe cer. Funcția desenului găsește în iaz trei poziții libere.
-
-| Funcția | Ce primește, ce dă și cum este verificată |
-|---|---|
-| `free_spot` (desen) | Primește regiunea sau relația aleasă de plan, mărimea lucrului și lucrurile de acolo. Dă un punct, sau eșecul „nu este loc”. Planul verifică punctul cu `test`-ul relației (R45). |
-| `layout` (diagrame) | Primește nodurile și săgețile. Dă câte un punct pentru fiecare nod. Verificare: niciun nod peste altul. |
-| `compose` (documente) | Primește partea de scris, lista afirmațiilor pe care cunoașterea le are despre subiect, lungimea cerută și punctul de ton. Dă textul și lista afirmațiilor folosite. |
-
-**R68. `compose` nu inventează.** Are voie să folosească numai afirmațiile primite și formule legate de partea scrisă (salutul, încheierea). Lungimea se verifică prin numărare. Afirmațiile folosite se verifică față de lista dată. Dacă lista este goală, se scriu numai formulele, iar răspunsul spune că despre subiect nu se știe nimic. **Tonul nu poate fi verificat automat în prima versiune;** răspunsul nu afirmă că tonul cerut a fost atins (anexa D).
-
-## 8.18 Răspunsuri care spun adevărul
-
-**R69. Înaintea fiecărui pas se verifică dacă condiția „după” ține deja.** Dacă da, unealta nu este pornită, iar răspunsul este „The duck is already on the lake.”
-
-**R70. „Am făcut” se spune când sunt îndeplinite două lucruri:** unealta a confirmat operația și diferența dintre starea citită chiar înainte și cea citită chiar după conține schimbarea cerută.
-
-**R71. Formele de răspuns** sunt cadrele celor patru acte și șapte forme generale.
-
-| Forma | Când se folosește |
-|---|---|
-| deja așa | Condiția „după” ținea dinainte. |
-| făcut în parte | Unele părți independente s-au făcut, altele nu; fiecare este numită. |
-| refuz cu motiv | O interdicție tare, sau o cerință care nu se poate îndeplini. |
-| întrebare | Lipsește o valoare, sau sunt mai mulți candidați. |
-| efect necunoscut | Vezi R63. |
-| răspuns despre stare | „What is on Friday?” |
-| explicație | „Why is the fish there?”, din proveniența valorilor. |
-
-## 8.19 Exemplele pe domenii sunt extrase
-
-**R72.** Blocurile de fire din capitolul 7 sunt extrase schematice, nu declarații complete. Un domeniu complet are în plus: importul lumii legendelor și al bazelor de cunoaștere folosite; parametrii și legăturile fiecărei unelte; citirea stării; funcțiile proprii, cu argumentele lor.
-
-| Domeniul | De ce depinde |
-|---|---|
-| desen | Lumea legendelor; arborele felurilor; regiunile de culoare și de mărime; părțile scenelor; cuvintele engleze. |
-| diagrame | Lumea legendelor; regiunile de formă și de culoare; grafurile felurilor de diagrame. |
-| documente | Lumea legendelor; grafurile genurilor; regiunile de ton; afirmațiile despre subiecte. |
-| calendar | Lumea legendelor; tiparul persoanelor; regiunile zilei; unitățile de timp. |
-
-Mai jos sunt cinci urmăriri pentru calendar, cu date. Pentru celelalte trei domenii urmăririle vin în runda următoare a cărții.
-
-Starea de pornire, aceeași pentru toate: Ana are ședința `m1`, „Review”, luni, de la 10:00 la 11:00, în sala `r1`. Sălile `r1` și `r2` sunt altfel libere.
-
-| Cazul | Ce se întâmplă, pas cu pas |
-|---|---|
-| reușită | „a meeting with Ana on Monday at 14:00 for an hour”. Cererea: a face; ședință; participant Ana; început luni 14:00, exact; durată 1 oră. Sala nu este spusă: este o cheie deschisă; candidate sunt `r1` și `r2`, amândouă libere; se ia prima și se notează ca presupunere. Verificare: validă. Execuție: apare `m2`. Răspuns: „I put a 1-hour meeting with Ana on Monday at 14:00, in room 1.” |
-| două înțelesuri | „move Ana's meeting to Tuesday”, când Ana are două ședințe luni. Trimiterea „Ana's meeting” găsește două. Nu se execută nimic. „Which one? 1. Review, 10:00, 2. the meeting at 14:00.” |
-| valoare lipsă | „a meeting with Ana on Monday”. Începutul lipsește. Valoarea obișnuită pentru durată este o oră. Pentru început nu există o presupunere rezonabilă, fiindcă ziua are multe ore libere. Întrebarea conceptului de timp: „When on Monday?” |
-| refuz | „a meeting with Ana on Monday at 10:30”. Ora este exactă. Interdicția despre oameni se potrivește cu `m1`. Nu se execută. Cele mai apropiate ore libere sunt 9:30 și 11:00; 11:00 nu taie nimic din durata cerută. „Ana is busy from 10 to 11. The nearest free time is 11:00. Shall I put it there?” |
-| anulare | După cazul de reușită, „undo”. Pasul șters este facerea lui `m2`. Starea citită din nou are numai `m1`. „I removed the meeting on Monday at 14:00.” |
-
-## 8.20 Ce este cartea, ce este planul și când este gata cartea
-
-**R73. Cartea spune ce trebuie să facă tehnologia.** Unde cartea și programul de astăzi spun lucruri diferite, câștigă cartea, iar diferența se trece în anexa C. Capitolele 2 și 3 descriu ce există și ce rămâne valabil; unde propunerea schimbă ceva din ele, schimbarea este marcată pe loc.
-
-**R74. Patru feluri de enunțuri.** O regulă numerotată din acest capitol este o cerință. Un exemplu ilustrează și nu adaugă cerințe. O regulă marcată (de confirmat) este o alegere de politică, valabilă până când proprietarul spune altfel. Un rând din anexa D este o hotărâre care încă nu s-a luat.
-
-**R75. Care plan este valabil.** Planul de lucru este `refactoring/sop-worlds-schimbari.md`. `refactoring/plan-generalizare.md` este mai vechi; unde cele două diferă (avatarul printre domenii, limba citită din fiecare mesaj, trimiterile la lecții), nu mai este valabil. După ce proprietarul corectează planul de lucru, fiecare sarcină din el va numi regulile de aici pe care le îndeplinește.
-
-**R76. Trei stări diferite, care nu se amestecă.** Claritatea: cartea se poate citi și înțelege; o judecă proprietarul și sesiunea bibliotecii. Aprobarea: proprietarul este de acord cu ce spune. Conformitatea: programul face ce spune cartea; o arată testele. Un test care trece astăzi nu dovedește că o regulă a cărții este cea dorită.
-
-**R77. Cartea este gata** când fiecare termen este definit înainte de a fi folosit, fără cerc; fiecare regulă are un exemplu și un contraexemplu; fiecare exemplu își spune dependențele; fiecare alegere nehotărâtă este în anexa D; și fiecare sarcină din plan numește o regulă aprobată.
-
-**R78. Ce teste rămân și ce teste se schimbă.** Testele bibliotecii care verifică regulile din capitolele 2 și 3 rămân neschimbate. Cele atinse de propuneri (punctul ca valoare, al treilea rezultat al verificării, `means` obligatoriu, `none`) se schimbă cu bună știință și sunt enumerate în plan înainte de a fi atinse.
-
-**R79. Numărătoarea nu își schimbă numitorul.** Mesajele din sesiunile omului care țin de domeniile scoase (grafice ca domeniu, muzică) rămân în numărătoare, într-o coloană separată, pentru ca procentele să nu crească prin scoaterea de cazuri.
-
-**R80. Dovada cerută este explicația textuală verificabilă.** Pentru fiecare răspuns se poate urmări ce a spus omul, ce declarații generale și fapte au fost folosite, ce calcule au rezultat și ce s-a observat. Secțiunea 6.11 fixează contractul. Nu există un al cincilea domeniu de probă. O explicație nu demonstrează singură generalitatea: ea face vizibile dependențele pentru ca reviewerul să poată detecta o regulă scrisă pentru un caz particular. Testele intenției și contraexemplele verifică în continuare comportamentul.
-
-**R81. Trecerea.** Drumul vechi de citire rămâne în aplicație până când drumul nou are, pe aceleași sesiuni, cel puțin tot atâtea mesaje corecte și niciunul greșit. Fiecare depozit își fixează versiunile celorlalte două; versiunile se mută numai împreună, cu testele celor trei trecute.
-
----
-
-# 9. De la declarații la un rezultat: piesele care trebuie construite
+# 8. De la declarații la un rezultat: piesele care trebuie construite
 
 *Capitol nou, versiunea 14. Propunere de arhitectură pentru review. Explică un contract de construit; nu pretinde că implementarea curentă îl îndeplinește. Numele concrete ale noilor tipuri de fire rămân de stabilit prin schema completă.*
 
-## 9.1 Ce trebuie să știe programul general
+## 8.1 Ce trebuie să știe programul general
 
 A declara un concept nu înseamnă că programul îi înțelege automat numele. Numele „timp” nu execută un calcul. Programul poate lucra numai dacă declarația îl leagă de operații a căror semnificație este definită: comparație numerică, verificarea apartenenței, potrivirea unui model, aplicarea unei reguli sau căutarea unor valori.
 
 Sunt trei feluri de extensie. Un autor poate adăuga un fapt într-un spațiu existent, poate construi un spațiu sau o regulă din operațiile existente, sau poate avea nevoie de o operație nouă. Primele două sunt date. A treia cere un contract nou și o implementare verificată. Sistemul trebuie să spună „operație nesuportată” dacă aceasta lipsește. Nu o înlocuiește cu o presupunere despre numele conceptului.
 
-## 9.2 Cum se introduce un spațiu nou
+## 8.2 Cum se introduce un spațiu nou
 
 Să vrem distanța liberă dintre nodurile unei diagrame. Alegem o axă numită `clearance`, în pixeli ai paginii, cu valori nenegative. Declarăm separat unitatea, valorile permise și măsura distanței. Pentru două valori a și b, distanța este valoarea absolută a diferenței. „Cel puțin 12 pixeli” este regiunea [12, infinit), nu un cuvânt pe care o unealtă îl interpretează singură.
 
@@ -1675,7 +1931,7 @@ Dacă distanța observată este 8, cerința este încălcată cu 4 pixeli. Dacă
 
 Pentru spațiul nou nu trebuie o ramură de program „dacă numele este clearance”. Operațiile numerice sunt aceleași ca pentru durata unei ședințe. În schimb, calculul geometric al distanței dintre contururile nodurilor este o funcție declarată, cu intrări și rezultat verificabile. Refolosirea privește contractul operațiilor, nu presupunerea că toate domeniile au aceeași geometrie.
 
-## 9.3 Ce înseamnă interpretarea firelor
+## 8.3 Ce înseamnă interpretarea firelor
 
 Textul trece prin etape distincte. Mai întâi este citit ca sintaxă: identificatori, tipuri, chei, atomi, texte și referințe. Apoi referințele și numele sunt rezolvate în modulele și instanțele potrivite. Schema verifică valorile și multiplicitatea lor. Legăturile conceptuale arată ce operații se aplică. Abia apoi regulile pot fi evaluate.
 
@@ -1683,7 +1939,7 @@ Un text între ghilimele rămâne text. `before="object exists"` nu este o condi
 
 Propunerea este o singură reprezentare semantică a firului, care păstrează identitatea, tipul, valorile tipizate, proveniența și locul din text. Componenta care desenează pe ecran (renderer) poate primi o proiecție, adică numai câmpurile de care are nevoie din acea reprezentare. Nu recitește textul SOP cu reguli proprii. Astfel, o referință și un text care seamănă cu o referință nu ajung confundate în două componente diferite.
 
-## 9.4 Cum strângem firele relevante
+## 8.4 Cum strângem firele relevante
 
 „Toate firele unui concept” nu înseamnă toate firele care conțin același cuvânt. Pentru desenarea unei rațe avem nevoie de felul rață, strămoșii lui, realizările disponibile, proprietățile și regulile aplicabile. Pentru găsirea unei ședințe libere avem nevoie și de alte ședințe ale participanților, chiar dacă acestea nu conțin cuvintele cererii.
 
@@ -1717,7 +1973,7 @@ Sunt două versiuni diferite. **Versiunea stării (state version)** este un iden
 
 Prin **sfera de completitudine (coverage scope)** înțelegem faptele și intervalul pentru care sursa garantează că nimic relevant nu lipsește. Nu o numim „domeniu”, fiindcă domeniul este zona de lucru a aplicației. Pentru calendarul local, sfera poate fi toate faptele `meeting` din instanța citită; pentru o serie recurentă este necesară și verificarea aparițiilor în intervalul cerut, conform R48.
 
-## 9.5 Cum se schimbă motorul de raționament
+## 8.5 Cum se schimbă motorul de raționament
 
 Un motor primește o stare cu versiune, un scop, constrângeri, preferințe și un buget. Declară ce operații și ce **fragment de logică (logical fragment)** suportă: de exemplu, reguli fără negație, constrângeri liniare sau reguli care pot apela anumite funcții pure. Un motor care nu știe negație nu are voie să ignore interdicția negativă și să raporteze succes.
 
@@ -1741,7 +1997,7 @@ Pentru fiecare candidat, coordonatorul face o copie de încercare a instanței, 
 
 O funcție geometrică sau numerică declarată poate rămâne o dependență de încredere: verificatorul îi controlează argumentele, tipul rezultatului și proprietățile verificabile, dar nu poate dovedi corectitudinea oricărui program arbitrar. Contractul numește funcția și versiunea ei; testele ei și limitele metodei sunt parte din justificare. O funcție lipsă nu se consideră adevărată implicit.
 
-## 9.6 O ședință, urmărită cu numere
+## 8.6 O ședință, urmărită cu numere
 
 Fixăm pentru exemplu o zi și un fus orar deja rezolvate. Minutele se numără de la miezul nopții. Ana are o rezervare [600, 660), adică 10:00–11:00. Cererea este o ședință de 30 de minute, cu Ana, începând exact la 10:30. Interpretarea produce participantul identificat, începutul 630 și durata 30. Sfârșitul calculat este 660.
 
@@ -1755,7 +2011,7 @@ Unealta primește identitatea Anei, începutul 660 și durata 30. După operați
 
 O diagramă poate folosi apoi aceleași identități de ședințe pentru a arăta numărul lor pe participant. Ea produce noduri grafice, nu copii ale persoanelor. Trebuie declarat dacă desenul este un instantaneu sau o vedere actualizată; această alegere schimbă dependențele și invalidarea rezultatului.
 
-## 9.7 Ce trebuie verificat înainte de implementare
+## 8.7 Ce trebuie verificat înainte de implementare
 
 Acest capitol descrie mecanismele și limitele lor. Mai trebuie scrise schemele complete ale declarațiilor noi, reprezentarea structurală a condițiilor și protocolul verificabil de completitudine. Acestea sunt livrabile de proiectare, nu detalii pe care implementatorul le poate inventa separat în fiecare domeniu. Reviewerul trebuie să încerce să găsească o tranziție din exemplu care nu este justificată de date, o regulă sau un contract explicit.
 
@@ -1910,4 +2166,3 @@ Rândurile de mai jos sunt alegeri de politică. Prima coloană trimite la regul
 | R59 | Dacă un grafic făcut din calendar rămâne o fotografie sau se ține la zi. |
 | R64 | Ce se face cu o unealtă care nu poate desface: se execută și se spune, sau se cere acordul înainte. |
 | R68 | Cum se verifică tonul unui text; până atunci răspunsul nu îl afirmă. |
-| R80 | Decis: explicații textuale verificabile, fără al cincilea domeniu. |

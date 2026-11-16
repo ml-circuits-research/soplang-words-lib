@@ -2535,3 +2535,17 @@ Library lane, now and in parallel with the four area lanes: typed reply assessme
 ## 2026-11-16 22:55 (Rome) — OWNER DECISION relayed: SOP-BERT is the only reader of the app
 
 See PSys2 worker-tasks (same time). Stop widening the grammar reader for the app; the generic composition mechanisms may stay in the library but are not the app path. Library effort goes to the request, resolution and assessment mechanisms that every SOP-BERT reading passes through, and to complex commands (several requests, selectors and results, quantifiers, relations).
+
+## 2026-11-16 23:05 (Rome) — OWNER: what SOP-BERT reads vs what the general worlds resolve (top-down lane)
+
+SOP-BERT reads what the text says into the request graph. Everything that depends on state and context, not on the words, is resolved by general declared mechanisms, never by rules about sentences. The owner wants this top-down lane explicit; it is what the book already describes (chapters 4–6), now to be implemented on the phase-0 contracts, in parallel with the area lanes:
+
+| Mechanism | Book | What it does for a reading |
+|---|---|---|
+| Conversation / journal world | 6.11, mechanism 4 | Resolves `fill=context` ("it", "them", "the other one", "again", "down") and fragments as corrective versions of the previous request, from the journal, not from the text. |
+| Instance resolution | 6.4 | Turns selectors, ordinals and quantifiers into the actual things; ambiguity or absence becomes one precise question. |
+| Knowledge completion | 4.4–4.7, 6.8 | Fills what the sentence leaves open: degree words against the comparison class ("long meeting", "big room"), defaults and expected places ("put a duck" → on water), nearest free slot / free spot (mechanisms 1–3). |
+| World composition | 5.3 | Links the concrete worlds: a chart of meetings per person, sending a chart into a document. |
+| Questions to the user | 6.x, 13 | When a required value is missing or two readings survive, ask exactly what is missing; the reply is composed from the journal. |
+
+Each lands as a library mechanism with tests on the request graph and is used by all four areas; none names an area or a sentence.

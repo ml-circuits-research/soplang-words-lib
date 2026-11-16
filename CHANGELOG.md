@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.165.0
+
+PSys2 Q102 [LIB]. Properties in `test/genre-parts.test.mjs`.
+
+### Fixed
+- The parts of a whole come from its own kind's knowledge: a joined genre carries `plan.parts` (k.genres.part / step), named, scaled by short / long; reply `done.parts`.
+- The topic / title of every text joined as a genre is said (`done.about` / `done.title`).
+- "short" / "long" scale the parts of a text.
+- A step with no other value says `refused.no_other` ("The nose has no other variant.") instead of "To what value?".
+- Example session passes the catalog to `runPlan` (joined kinds run). Not done: Q102 (1) (spell guard) and (4) (offline word list), still the knowledge base's / the reviewer's.
+
 ## 0.164.0
 
 PSys2 Q100 (and Q98 checked). Properties in `test/referent-turns.test.mjs`; `repos.pin` knowledge pin b57c4633 (the published step cues).

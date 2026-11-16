@@ -71,6 +71,23 @@ export const STORIES = String.raw`
 @w.tale core.word text=story text=tale means=story
 `;
 
+// An example knowledge base of genres (the shape of the published `k.genres`): two genres whose parts differ. A letter is a
+// greeting, a body of one to three paragraphs and a closing; a report is three to eight chapters. Joined to a world of texts
+// (`std.schema.kinds from=k.demo.genre as=<type>`), each is planned with its own parts, by name.
+export const GENRES = String.raw`
+@t.genre core.type of=k.demo.genre
+@g.letter k.demo.genre name=letter
+@g.report k.demo.genre name=report
+@p.l1 k.genres.part genre=letter name=greeting n=1 min=1 max=1
+@p.l2 k.genres.part genre=letter name=body n=2 min=1 max=3
+@p.l3 k.genres.part genre=letter name=closing n=3 min=1 max=1
+@s.l1 k.genres.step genre=letter part=greeting n=1 move=greet min=1 max=1
+@s.l2 k.genres.step genre=letter part=body n=1 move=generalise min=1 max=2
+@s.l3 k.genres.step genre=letter part=closing n=1 move="sign off" min=1 max=1
+@p.r1 k.genres.part genre=report name=chapter n=1 min=3 max=8
+@s.r1 k.genres.step genre=report part=chapter n=1 move=tell min=1 max=2
+`;
+
 // An example: a meadow, one whole of several kinds of parts (flowers, a tree, a bird), each part with its own range. A
 // count said of one kind ("fewer flowers", "a meadow with a pond") is that kind's count inside the whole, not the whole's.
 export const MEADOW = String.raw`
@@ -143,7 +160,7 @@ export function requestSession(live, { language, catalog = [], revisions = null 
       if (!rev.request) return { request, revision: rev, plan: null, run: null, reply: sayRequest(request, { reply: rev.reply }, { language }) };
       const replace = (rev.replace || rev.undo) && dialogue.lastRun ? dialogue.lastRun.made : [];
       const plan = planRequest(live, rev.request, { catalog, dialogue, seed: rev.seed, vary: rev.vary, replace });
-      const run = plan.ok ? runPlan(live, plan, { replace }) : null;
+      const run = plan.ok ? runPlan(live, plan, { replace, catalog }) : null;
       if (run?.ok) {
         const step = rev.does?.find((d) => d.does === 'step'); // a correction ("too many", "bigger"), for induction over the session
         if (step) dialogue.corrections.push({ on: step.on, step: step.direction });

@@ -2564,6 +2564,21 @@ Added with 0.163.0 (properties in `test/face-world.test.mjs`; the example world 
   smile."), with `nothing.same` as the fallback. Built-in English texts exist for `nothing.same.value`, `refused.already` and
   `refused.no_default`; a language world may say them in its own words (`.plural` for a plural-noun kind).
 
+Added with 0.165.0 (properties in `test/genre-parts.test.mjs`, example genres `GENRES` in `examples/request-app.mjs`):
+- The parts of a whole come from the knowledge of its own kind, never one default for every text. A kind joined from a catalog
+  of genres (`std.schema.kinds from=<type of the genres>`) whose genre the sources hold (`k.genres.part genre= name= n= min=
+  max=`, its moves from `k.genres.step`) is planned as one whole and the plan carries `plan.parts`
+  (`[{ name, n, min, max, count, moves }]`, in order, also on the whole's step as `step.parts`): a letter is a greeting, a body
+  of one to three paragraphs and a closing, a report is three to eight chapters. The host's tool and the reply use the names:
+  `done.parts` ("The letter has a greeting, 2 bodies, a closing."). A kind the world declares as a whole itself
+  (`k.expect.make` / `k.expect.part` of the world) keeps its own parts.
+- The topic and the title of any made text are said (`done.about` / `done.title`), a joined genre too, with the user's words.
+- "short" / "long" in a make request is a length for texts: the scale of `k.expect.scale` applies to the counts of the parts
+  of a genre (a short letter has one body, a long one three) and, for a world's own whole, to its length; `plan.roles.length`
+  holds the step said.
+- A step ("the next nose", "another nose") with no other value to go to says so: `refused.no_other` ("The nose has no other
+  variant."), never "To what value?"; with values it steps as before. A language world may say it in its own words.
+
 Joined kinds at scale: the join map is built once per version of the join rows and the sources and shared by every fork
 and mirror; the reader's lexicon is kept per version of the world, its language and its catalog, so a world that joins
 thousands of rows reads them from that index on every turn (the host need not pass the kinds a turn says). A stand-in kind

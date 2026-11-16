@@ -5945,3 +5945,6 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 ## 2026-11-16 0.164.0 (Q100, Q98)
 - Q100 (1) referent after refused.already / same; (2) turned act with untaken words runs nothing (`plan.turned`); (3) published variant_next / variant_previous read as a step (repos.pin knowledge b57c4633); (4) assumptions said by the world's key. Q98 (2) already held since 0.162 (property added).
 - Tests: `test/referent-turns.test.mjs` (5); `npm test` and bundle run below.
+
+## 2026-11-16 0.165.0 (Q102)
+- Joined genres carry `plan.parts` from k.genres (named, scaled by short/long, `done.parts`); topic/title said for every text; short/long scale parts; `refused.no_other` for a step with no further value. Tests: `test/genre-parts.test.mjs` (4). Q102 (1)(4) not mine (spell guard / word list).

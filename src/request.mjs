@@ -1315,6 +1315,10 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   }
   out.steps = steps;
   out.ok = items.length > 0;
+  { // a kind joined from a catalog of genres is a whole of that genre's own parts (a letter: greeting, body, closing; a report: chapters), by name, never one default for every text
+    const gp = !mk && !whole && cap.joined?.has(target) ? genreParts(target, [live, ...catalog], cf) : [];
+    if (gp.length) { out.parts = gp; out.partsOf = target; steps[0].parts = gp; if (lengthStep) out.roles.length = lengthStep; }
+  }
   if (short) out.short = short;
   out.bounds = { count: short && saidCount ? [short.made + withAdded, short.made + withAdded] : saidCount ? [saidCount[0] + withAdded, saidCount[1] + withAdded] : saidCount, not: [...noK] }; // what deduction checks the made items against
   return out;
@@ -1386,7 +1390,10 @@ function referencePlan(live, request, opts, out, H, act, forced = null) {
     if (!own.size) return reply('refused.no_default', { thing: plain(kind ?? kindOfId(view, ids[0]) ?? 'it') }); // nothing declares a value to go back to: said, not asked "to what value?"
   }
   const nextOf = ordered ? (id) => orderedNext(live, view, id, ordered.step, opts.catalog) : null;
-  if (ordered && ids.some((id) => !nextOf(id))) return reply('refused.missing_value', { key: 'value' });
+  { // a step with no further value to go to says so ("The nose has no other variant."), it never asks "to what value?"
+    const stuck = ordered ? ids.find((id) => !nextOf(id)) : undefined;
+    if (stuck !== undefined) { const sl = [...thingSlots(live, view, stuck, opts.catalog).values()].find((x) => x.by && x.type && x.type !== 'k.expect.scale'); return reply('refused.no_other', { thing: plain(kindOfId(view, stuck) ?? kind ?? 'it'), key: sl?.key ?? 'value' }); }
+  }
   const sizeC = request.constraints.find((c) => c.on === 'size' && (c.value || c.step) && keys.has('size'));
   if (sizeC?.value && act !== 'remove') set.size = sizeC.value;
   const placeC = request.constraints.find((c) => c.on === 'place' && c.value && keys.has('place'));
@@ -1426,6 +1433,19 @@ function referencePlan(live, request, opts, out, H, act, forced = null) {
  * by= whose rows have an `order` (with match=kind:<k>, the rows of the thing's kind), from the value the thing has, round
  * the order. Returns { key, value } or null.
  */
+/**
+ * The parts of a genre from the knowledge (`k.genres.part genre= name= n= min= max=`, its moves from `k.genres.step`): in
+ * order, each with how many times it occurs: the middle of its range scaled by the length said (short, long), within it.
+ * `[{ name, n, min, max, count, moves }]`, empty when no source holds a genre of that name.
+ */
+function genreParts(genre, sources, cf = 1) {
+  const steps = rowsOf(sources, 'k.genres.step').filter((r) => first(r, 'genre') === genre).sort((a, b) => num(first(a, 'n')) - num(first(b, 'n')));
+  return rowsOf(sources, 'k.genres.part').filter((r) => first(r, 'genre') === genre).sort((a, b) => num(first(a, 'n')) - num(first(b, 'n'))).map((r) => {
+    const min = num(first(r, 'min')) ?? 1, max = Math.max(min, num(first(r, 'max')) ?? min), name = String(first(r, 'name'));
+    return { name, n: num(first(r, 'n')), min, max, count: Math.min(max, Math.max(min, Math.round(((min + max) / 2) * cf))), moves: [...new Set(steps.filter((x) => first(x, 'part') === name).map((x) => String(first(x, 'move'))))] };
+  });
+}
+
 function orderedNext(live, view, id, step, catalog = []) {
   const rec = view.thing(id), kind = rec?.attrs?.get?.('kind')?.[0] ?? rec?.kinds?.[0];
   for (const sl of thingSlots(live, view, id, catalog).values()) {
@@ -1703,7 +1723,7 @@ const pluralIn = (language, lang, w) => { if (!language) return w; if (pluralNou
 const PLURAL_REPLIES = Object.freeze({
   'done.change': 'The {thing} are {value} now.', 'done.change.size': 'The {thing} are {value} now.', 'done.change.place': 'I moved the {thing} to the {value}.',
   'done.add': 'I added {kind}.', 'done.add.value': 'I added {value} {kind}.', 'done.make': 'I made {kind}.', 'done.make.value': 'I made {value} {kind}.',
-  'done.remove': 'I removed the {thing}.', 'refused.no_such': 'There are no {thing} here.', 'nothing.same.value': 'The {thing} are already {value}.', 'refused.already': 'The {thing} are already there.', 'refused.no_default': 'The {thing} have no default to go back to.', 'state.count': 'There are {kind}.', 'state.count.value': 'There are {value} {kind}.',
+  'done.remove': 'I removed the {thing}.', 'refused.no_such': 'There are no {thing} here.', 'nothing.same.value': 'The {thing} are already {value}.', 'refused.already': 'The {thing} are already there.', 'refused.no_default': 'The {thing} have no default to go back to.', 'refused.no_other': 'The {thing} have no other {key}.', 'state.count': 'There are {kind}.', 'state.count.value': 'There are {value} {kind}.',
 });
 
 
@@ -1718,6 +1738,8 @@ const WHOLE_REPLIES = Object.freeze({
   'nothing.same.value': [{ roles: ['thing', 'value'], text: 'The {thing} is already {value}.' }],
   'refused.already': [{ roles: ['thing'], text: 'The {thing} is already there.' }],
   'refused.no_default': [{ roles: ['thing'], text: 'The {thing} has no default to go back to.' }],
+  'refused.no_other': [{ roles: ['thing', 'key'], text: 'The {thing} has no other {key}.' }],
+  'done.parts': [{ roles: ['whole', 'parts'], text: 'The {whole} has {parts}.' }],
   'refused.can_be': [{ roles: ['thing', 'value', 'kinds'], text: 'The {thing} cannot be {value}; it can be {kinds}.' }],
   'short_of': [{ roles: ['made', 'asked', 'kind'], text: 'I could only make {made} of the {asked} {kind} you asked for.' }, { roles: ['made', 'asked', 'unit'], text: 'I could only make {made} {unit} of the {asked} you asked for.' }],
 });
@@ -1743,9 +1765,12 @@ export function sayRequest(request, outcome = {}, opts = {}) {
     if (c.on?.length) facts.push({ reply: 'can.say', roles: { act: c.act, keys: c.on.join(', ') } });
   }
   for (const f of outcome.answer ?? []) facts.push({ reply: f.reply, ...(f.fallback ? { fallback: f.fallback } : {}), roles: { ...f.roles, ...(f.roles.kind ? { kind: plain(f.roles.kind) } : {}) } }); // facts of the live world (askWorld)
-  const wholeFact = (kinds) => { // the net state of a whole: its parts by kind ("5 trees, 2 butterflies, a bird")
+  const partsText = (kinds) => { // parts by kind ("5 trees, 2 butterflies, a bird")
     const art = (w) => (o.language && articleFor(o.language, w, { types: { det: `${lang}.det`, onset: `${lang}.onset` } })) || (/^[aeiou]/i.test(w) ? 'an' : 'a');
-    const text = kinds.map(([kind, n]) => (n === 1 ? `${art(plain(kind))} ${plain(kind)}` : `${n} ${pluralIn(o.language, lang, plain(kind))}`)).join(', ');
+    return kinds.map(([kind, n]) => (n === 1 ? `${art(plain(kind))} ${plain(kind)}` : `${n} ${pluralIn(o.language, lang, plain(kind))}`)).join(', ');
+  };
+  const wholeFact = (kinds) => { // the net state of a whole
+    const text = partsText(kinds);
     for (let i = facts.length - 1; i >= 0; i--) if (facts[i].reply === 'done.revise') facts.splice(i, 1);
     facts.push({ reply: 'done.whole', roles: { whole: plain(outcome.target), parts: text }, kinds: kinds.map(([k]) => plain(k)), numbers: kinds.map(([, n]) => n) });
   };
@@ -1810,8 +1835,9 @@ export function sayRequest(request, outcome = {}, opts = {}) {
     const ranOk = tool ? tool.ok && !tool.same && !tool.undo && !tool.redo : outcome.run?.ok !== false && !!run;
     const w0 = outcome.steps?.[0];
     const saidAs = (key, v) => plain(String((request?.constraints ?? []).find((c) => c.on === key && c.said && String(c.value) === String(v))?.said ?? v)); // the user's own words when the value was said
-    if (ranOk && !outcome.reference && !outcome.revised && outcome.target && (run?.whole || tool?.result?.whole) && w0?.args?.kind === outcome.target)
+    if (ranOk && !outcome.reference && !outcome.revised && outcome.target && (run?.whole || tool?.result?.whole || outcome.parts?.length) && w0?.args?.kind === outcome.target)
       for (const [key, reply, role] of [['about', 'done.about', 'topic'], ['title', 'done.title', 'title']]) if (!unsayable(w0.args[key]) && !facts.some((f) => f.roles?.key === key && /^done\.change/.test(f.reply))) facts.push({ reply, roles: { whole: plain(outcome.target), [role]: saidAs(key, w0.args[key]) } });
+    if (ranOk && outcome.parts?.length && !outcome.reference && !outcome.revised && w0?.args?.kind === outcome.target) facts.push({ reply: 'done.parts', roles: { whole: plain(outcome.target), parts: partsText(outcome.parts.filter((x) => x.count > 0).map((x) => [x.name, x.count])) } }); // the genre's own parts, by name
     if (ranOk) for (const sh of [].concat(outcome.short ?? [])) if (sh && sh.made < sh.asked) facts.push({ reply: 'short_of', roles: { made: sh.made, asked: sh.asked, ...(sh.unit ? { unit: String(sh.unit) } : { kind: pluralIn(o.language, lang, plain(sh.kind)) }) } });
   }
   if (outcome.unread?.length && tool?.failed?.code !== 'unread') facts.push({ reply: 'not_understood', roles: { words: outcome.unread.join(', ') } }); // a part that matters was not read: said, nothing was done

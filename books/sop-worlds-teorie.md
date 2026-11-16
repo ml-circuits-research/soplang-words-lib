@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 41, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 42, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -896,6 +896,53 @@ Durata și fusul orar trebuie cunoscute înainte de compararea momentelor; textu
 
 Pentru recurență, „move the Monday meeting” nu stabilește singur dacă se modifică o apariție, întreaga serie sau aparițiile de acum înainte. Dacă întinderea editării nu rezultă explicit din cerere și context, aplicația cere această alegere. O verificare pe următoarele opt zile de luni se raportează ca atare, nu ca disponibilitate perpetuă. Anularea restaurează regula seriei, excepțiile și aparițiile afectate de editare, păstrând identitățile aparițiilor neschimbate.
 
+### 4.4.4 Modificări cu cantitate explicită și relații măsurate
+
+O schimbare relativă nu numește direct valoarea finală: o definește față de o valoare observată. Contractul trebuie să precizeze operația, cantitatea, unitatea, starea de referință și, pentru o întindere, ancora păstrată. Altfel, „shorten by 15 minutes” ar putea muta începutul, sfârșitul sau ambele. Regula generală se declară pe felul și însușirea relevante, iar cererea o poate particulariza explicit.
+
+Pentru durata unei întâlniri, politica propusă păstrează începutul. Pentru dimensiunea unui nod, o altă politică poate păstra centrul. Niciuna nu se deduce din numele numeric al axei. Politica pentru întâlniri poate fi scrisă astfel; tipul și cheile sunt propuse, nu o funcție de intervale deja livrată:
+
+```sop
+@policy.duration std.change.policy kind=meeting concept=duration anchor=start unit=minute
+```
+
+`kind` și `concept` stabilesc domeniul regulii, `anchor` numește reperul care rămâne fix, iar `unit` stabilește unitatea duratei. Ancora dintr-o cerere explicită are prioritate față de această politică. O cerere incompatibilă, precum păstrarea ambelor capete și scurtarea duratei, nu este rezolvată prin ignorarea uneia dintre condiții.
+
+Pentru „shorten the review by 15 minutes”, descrierea de cerere poate folosi extensia următoare a constrângerii din secțiunea 6.3.2. Review este presupus numele unei singure întâlniri identificate în instanță.
+
+```sop
+@source.shorten std.request.source text="shorten the review by 15 minutes"
+@request.shorten std.request act=change mood=do source=$source.shorten
+@target.review std.request.target request=$request.shorten mode=existing kind=meeting name=review
+@change.duration std.request.constraint request=$request.shorten target=$target.review concept=duration operator=delta value=-15 unit=minute baseline=before anchor=start character=requirement polarity=positive source=$source.shorten
+```
+
+`operator=delta` înseamnă valoare finală egală cu valoarea de referință plus cantitatea semnată, după conversia unităților. `baseline=before` cere observația de dinaintea pasului, cu versiunea ei; nu cere recitirea și aplicarea repetată a scăderii la fiecare încercare. `anchor=start` fixează începutul, iar durata determină noul sfârșit. Rerularea unui plan trebuie corelată cu identitatea operației din jurnal, nu interpretată ca încă o cerere de scurtare.
+
+| Observație sau variantă | Calculul și obligația |
+|---|---|
+| Intervalul [10:00, 11:00), scurtare cu 15 minute | Durata 60 devine 45; începutul rămâne 10:00, sfârșitul devine 10:45. |
+| Aceeași scurtare, cu sfârșitul păstrat explicit | Durata devine 45, sfârșitul rămâne 11:00 și începutul devine 10:15. |
+| Durata inițială 10 minute, scurtare cu 15 | Rezultatul −5 nu este o durată validă. Cerința nu se aproximează tacit la zero; se explică incompatibilitatea. |
+| „Twice as long” | `operator=factor value=2` înmulțește durata de referință; factorul este adimensional și cere o scară de raport. |
+| „20% shorter” | Factorul este 0,8. Nu înseamnă scăderea a 20 de minute și nu se mai aplică pasul implicit. |
+
+Pentru „every meeting on Friday”, selecția întâlnirilor se rezolvă în data și fusul orar cererii, apoi aceeași constrângere se aplică fiecărui membru prin cuantificarea din secțiunea 10.3.1. Verificarea include toate cerințele fiecărui candidat, nu doar durata: participanți, resurse și eventuale limite minime. Apartenența la o zi folosește timpul civil, pe când calculul duratei folosește momentele rezolvate și unitatea declarată; nu se presupune că orice zi are aceeași durată. Un membru incompatibil nu este omis din „every” pentru a raporta succesul grupului.
+
+O relație măsurată cere, suplimentar față de relație și țintă, punctele ori marginile între care se măsoară și unitatea. Pentru „put a reminder 10 minutes before the review”, condiția asupra rezultatului poate fi:
+
+```sop
+@source.reminder std.request.source text="put a reminder 10 minutes before the review"
+@request.reminder std.request act=make mood=do source=$source.reminder
+@target.reminder std.request.target request=$request.reminder mode=new kind=reminder
+@target.meeting std.request.target request=$request.reminder mode=existing kind=meeting name=review
+@relation.reminder std.request.constraint request=$request.reminder target=$target.reminder concept=time operator=relation relation=before goal=$target.meeting measure=10 unit=minute from=instant to=start character=requirement polarity=positive source=$source.reminder
+```
+
+`from=instant` desemnează momentul reminderului, `to=start` începutul întâlnirii, iar `measure=10` cere exact diferența orientată de 10 minute. Dacă întâlnirea începe la 10:00, rezultatul trebuie să fie 09:50 în aceeași cronologie. Un simplu test „mai devreme” ar accepta și 09:00, deci nu satisface această cerere. O cerință „at least 10 minutes before” adaugă `comparison=greater.equal`; fără acea precizare, valoarea măsurii este exactă. Funcția de verificare a relației primește aceste argumente tipizate și întoarce nedeterminat dacă reperul sau momentul lipsește.
+
+Aceeași structură servește „2 cm left of the house”, dar contractul geometric trebuie să numească marginile între care măsoară distanța și conversia în reperul paginii. Pentru „two paragraphs after the introduction”, măsura este o distanță discretă în ordinea părților, nu o lungime în centimetri. Unitățile, capetele și ordinea sunt ale relației declarate; nu sunt alese tacit de funcția gazdei după cuvintele mesajului. Un reminder astfel creat fixează momentul calculat la versiunea citită; urmărirea automată a unei întâlniri mutate ulterior cere o dependență persistentă explicită, nu rezultă numai din proveniența cererii.
+
 ## 4.5 Cuvintele de grad
 
 **Problema.** „Red” are un centru fix. „Big” nu are. Un pește mare și o casă mare nu au aceeași mărime; un pește mare printre pești mici nu este cât unul mare printre pești mari. Cuvinte ca „big”, „small”, „huge”, „short”, „long”, „many”, „late” se numesc **cuvinte de grad (degree words)** și sunt subiective prin natura lor.
@@ -1436,7 +1483,7 @@ Următoarea formă este propusă pentru mesajul „draw three big red fish in th
 
 `operator` selectează verificarea cerinței, nu o unealtă: egalitate de cantitate, calcul de grad, apartenență la regiune sau relație. `polarity=positive` cere satisfacerea ei; `negative` cere ca predicatul să fie fals. `character=requirement` exprimă obligația, `preference` o preferință care poate ceda cerințelor, iar `assumption` o alegere a aplicației pentru o informație omisă. Negarea nu slăbește obligația: „no circles” poate fi o cerință negativă tare a cererii. O presupunere nu inventează un interval în mesaj: ea indică declarația sau pasul de justificare care a propus-o.
 
-Schema trebuie să verifice variantele operatorului. Extensia logică din secțiunea 10.3.1 adaugă predicatul `occurred`, care cere un act, faza verificată și o valoare booleană și citește dovezile unei schimbări; nu se tratează ca egalitate numerică. `relation` cere `relation` și `goal`; `eq`, `less.equal`, `greater.equal`, `degree` și `region` cer o valoare de tipul acceptat de concept; operatorii `less.equal` și `greater.equal` sunt admiși numai pe valori ordonabile, în unități compatibile. O cheie `goal` rămasă pe o egalitate numerică este o eroare de schemă a cererii. Rezolvitorul păstrează separat descrierea țintei, identitățile găsite și versiunea stării citite. Această legare permite verificarea fiecărui rezultat și explicarea unei ambiguități fără modificarea sensului inițial al cererii.
+Schema trebuie să verifice variantele operatorului. Secțiunea 4.4.4 propune `delta` și `factor`, cu observația de referință și ancora schimbării, precum și argumentele măsurate ale relațiilor; o unitate incompatibilă sau capete de măsurare nedefinite sunt erori ale cererii, nu valori implicite ale uneltei. Extensia logică din secțiunea 10.3.1 adaugă predicatul `occurred`, care cere un act, faza verificată și o valoare booleană și citește dovezile unei schimbări; nu se tratează ca egalitate numerică. `relation` cere `relation` și `goal`; `eq`, `less.equal`, `greater.equal`, `degree` și `region` cer o valoare de tipul acceptat de concept; operatorii `less.equal` și `greater.equal` sunt admiși numai pe valori ordonabile, în unități compatibile. O cheie `goal` rămasă pe o egalitate numerică este o eroare de schemă a cererii. Rezolvitorul păstrează separat descrierea țintei, identitățile găsite și versiunea stării citite. Această legare permite verificarea fiecărui rezultat și explicarea unei ambiguități fără modificarea sensului inițial al cererii.
 
 Să urmeze mesajul „in the sky”. Situarea din secțiunea 6.4 îl leagă de locul grupului de pești din ultima cerere. În versiunea nouă a acelei cereri, se adaugă sursa și ținta cerute de corectare, iar `c.place` este înlocuit, păstrându-și identitatea:
 

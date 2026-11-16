@@ -6167,3 +6167,8 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 
 - Checked current instructions, origin/main and task snapshots against the published log/questions; no new reviewer answer and no local changes to preserve. Continued AA with aggregate coverage, empty/unknown collections, ties, typed same-as reference, palette equality versus inclusion and target feasibility. Aligned the refactoring plan and phase-zero register; requested review without claiming runtime support. Other queues remain on standby.
 - Validation: `python3 ../.session-control/check-book-v21.py` and `git diff --check` passed. `npm test` rebuilt docs and passed; `SOPWORLD_BUNDLE=1 npm run test:src` passed. `tail -n 9 ../.session-control/book-v48-tests.log ../.session-control/book-v48-bundle.log` reports in each log 650 tests, 648 pass, 0 fail, 1 skip, 1 todo.
+
+## 2026-11-16 — G0: integrate Book review 16
+
+- Pulled 063ba6f and checked accepted calendar/snapshot sections and migration tracking against the actual text. Removed resolved review requests and integrated occurrence/series identity, closed-scope aggregates and explicit confirmation before overwriting manual target edits. Retained unresolved F4/F43/AA questions. The owner subsequently requested pausing further book expansion until implementation validates the ideas; this landing only finishes the review integration already made.
+- Validation: `python3 ../.session-control/check-book-v21.py` and `git diff --check` passed. `npm test` rebuilt docs and passed; `SOPWORLD_BUNDLE=1 npm run test:src` passed. `tail -n 9 ../.session-control/book-v49-tests.log ../.session-control/book-v49-bundle.log` reports in each log 650 tests, 648 pass, 0 fail, 1 skip, 1 todo.

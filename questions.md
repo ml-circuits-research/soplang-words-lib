@@ -982,11 +982,9 @@ Review 14 at 8a7a2de accepted the measured inventory (F62) and the shared-resour
 
 Review 15 at 00dc974 accepted F2/F10, F53, F63 and replay gaps X/Y. Checked the actual sections and removed their resolved requests; the reviewer independently executed the §8.3 example. Source boundaries were accepted without a counter. Implementation remains unauthorised; other book and consolidation items remain open.
 
-### Review request — v43, calendar failure/undo branches (F27) and trusted functions (F4)
+### Review request — trusted functions (F4, remaining)
 
-§8.6 now follows participant ambiguity, exact-time conflict/alternative, confirmed creation, confirmed no-effect refusal, unknown effect after transport failure, compensation and unconfirmed compensation with English replies. Clarified that equal meeting values cannot prove operation identity, retries retain the operation key and undo cannot erase independent edits. Please test whether every reply is supported by its stated evidence and whether the pending participant choice preserves the original time/duration.
-
-§8.5 already defined a trusted-function dependency; added the practical integrator action: check the implementation version, contract evidence and input domain before relying on the result, otherwise keep it undetermined. F19/F26/F28 and architecture consolidation remain open; this is not a complete calendar declaration or runtime implementation.
+§8.5 specifies the integrator action: check implementation version, contract evidence and input domain before relying on the result, otherwise keep it undetermined. Please review this remaining F4 point. The calendar failure/undo part F27 was accepted in review 16 and is removed from the question queue.
 
 ### Phase-zero preparation and scope reconciliation
 
@@ -994,22 +992,14 @@ The control task at fa29e00 explicitly starts implementation; the subsequent sch
 
 Reviewer answers at 1aeeaff are integrated into the phase-zero register: four basic changes; distinct trace records for request/step/input/observation/reply/undo/correction; import evidence types included in phase zero; release evidence published in log/plan and relayed by the reviewer. Those contract questions are resolved. The reviewer confirms the scope mismatch remains pending owner action on workspace/scheduled instructions.
 
-### Review request — v44, calendar projection reference and snapshot (F28)
+### Remaining editorial consolidation (F43)
 
-Replaced §8.6's deferred snapshot/live choice with the existing R58–R59 snapshot decision. A temporary projection input references $calendar::m1 while both instances are loaded; the saved node references only local source.snapshot evidence with consumed time/participant values. Explicitly distinguished an individual meeting node from an aggregate count, which requires the full source set and coverage. Please check that the active reading reference never leaks into the saved snapshot, that time context is preserved on independent export, and that later calendar edits cannot silently make the historical node current. Full cross-world projection rules (Z) remain pending; this closes the concrete calendar-example gap only when accepted.
-
-### Review request — v45, concrete calendar arithmetic and closure (F19/F26)
-
-§8.6 now states the room is selected and resolved, gives actual add calculations and strict overlap checks in person/room denies, and marks meeting complete only for the fully read local snapshot. `node ../.session-control/book-v45-probe.mjs` ran the displayed declarations: start 630 is rejected for both resources, start 660 accepted on a separate world. This is a candidate-conflict probe, explicitly not the complete domain schema or a booking effect. Please check the closure perimeter includes both resources and the full searched interval, and that room selection is no longer left implicit. No new reviewer answers were available to close; existing scope reconciliation remains pending.
-
-### Review request — v46, remove project tracking from the book (F20/F43, partial)
-
-Moved former appendices C/D and §8.7 into refactoring/book-migration-register.md; updated book/plan references and removed the stale chapter-8 “new in v14 / for review” preamble. The book retains semantic contracts, implemented/proposed distinctions, all examples and stable R labels. Corrected stale open-decision rows for R59 (snapshot) and R64 (undo required for the four domains). This is the first consolidation cut, not a claim that all repetition between chapters 4–6 and 8–9 is gone. Please check that no unique technical obligation was lost and that the plan now owns migration tracking rather than the reader's exposition.
-
-### Review request — v47, cross-world projection semantics (Z)
-
-Added §6.1.2 beside cross-world destination/snapshot semantics: explicit source selection, object/value/relation mappings, distinct occurrence identity, target coordinate frame and scale, per-person grouping, completeness and zero-group universe, per-result provenance and update conflicts. Worked the same two meetings through nodes and counts, distinguishing participation totals from meeting totals. No runtime claim: rules/collect are ingredients, not an implemented projection module. Please review whether the mapping contract is sufficiently precise, especially recurrence identity, incomplete selections and manual target edits; the complete declarative module format remains to be specified. F28's concrete snapshot example stays linked rather than duplicated.
+Review 16 accepts F20 and the move of project tracking into refactoring/book-migration-register.md. The broader F43 repetition cut remains open; acceptance of the move does not claim the rest of that consolidation is complete.
 
 ### Review request — v48, derived whole qualities and same-as (AA)
 
 Added §4.4.5: aggregate membership/operation/coverage, empty versus unknown input, ties, units, palette equality versus subset, and a proposed typed value reference for operator=same. The worked palette request distinguishes the unresolved value description from its versioned observation and from the target assignment. Please review whether std.request.value is the right shared representation, whether exact set equality matches the accepted interpretation, and the conflict case where the destination cannot realise both colours. No live dependency or runtime support is claimed; remaining source-content work BB is separate.
+
+### Review 16 integrated — projection decisions
+
+Checked the accepted calendar and snapshot contracts in §8.6 and the relocated migration register. Removed the resolved F19/F20/F26/F27/F28 and Z requests. §6.1.2 now explicitly retains occurrence plus series identity, permits totals only over a closed scope (otherwise an explicitly labelled partial-data proposal), and asks before overwriting manually changed target values, including deleting an edited node. These apply your decisions; F4, F43 and the v48/AA review remain open.

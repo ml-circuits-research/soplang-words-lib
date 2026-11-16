@@ -1378,7 +1378,7 @@ De observat că în această etapă „big” și „red” rămân cuvinte: cer
 | „do not move all the meetings” față de „do not move any meeting” | „Nu pe toate” față de „pe niciuna”. |
 | „put the duck next to the red house” | Roșie este casa, nu rața. |
 
-Aceste legări folosesc lexicul, gramatica și regulile de compunere semantică descrise în secțiunile 6.3.3–6.3.6; ele sunt comune domeniilor.
+Aceste legări folosesc lexicul, gramatica și regulile de compunere semantică descrise în secțiunile 10.1–10.4; ele sunt comune domeniilor.
 
 **Cum știm că citirea este bună.** Sunt două verificări diferite și niciuna nu o înlocuiește pe cealaltă. Prima se face la fiecare mesaj: cererea este spusă înapoi în cuvinte și citită din nou; dacă iese altă cerere, citirea este nesigură. A doua se face la măsurare: citirea este comparată cu interpretarea corectă, scrisă de un om, pe exemple și mai ales pe perechi ca cele din tabel.
 
@@ -1450,114 +1450,7 @@ Dacă peștii au fost deja creați, legarea grupului `fish1` la acele identită�
 
 Aceeași structură permite ca mesajul real cu două case diferite să aibă o țintă pentru case și o cantitate a acelui grup. Dar semnificația lui „diferite” și părțile complete ale peisajului trebuie declarate separat. Exemplul de aici nu închide aceste lacune din replay și nu face, singur, un domeniu executabil.
 
-### 6.3.3 Lexicul: forme de limbă legate de concepte
-
-Cititorul primește text englez și întoarce descrieri candidate, nu comenzi de unealtă. Pentru aceasta are nevoie de trei lucruri distincte: un lexic care leagă formele de sensuri, o gramatică ce construiește relații între fragmente și reguli de compunere semantică ce transformă acele relații în cerințe. Recunoașterea tuturor cuvintelor nu dovedește că relația dintre ele a fost înțeleasă. „Before” și „after” pot folosi aceleași obiecte, dar cer schimbări opuse.
-
-Lumea limbii deține formele și construcțiile engleze, iar bazele conceptuale dețin felurile, regiunile și relațiile desemnate. Numele introduse într-o instanță completează lexicul local, fără să modifice vocabularul tuturor lumilor. O intrare lexicală păstrează forma, lema, categoria gramaticală, trăsăturile relevante și unul sau mai multe sensuri. Fiecare sens indică un concept sau un rol; simpla coincidență a numelor nu este legătura semantică.
-
-| Categoria de intrări | Ce trebuie declarat și cum este folosit |
-|---|---|
-| Substantive și nume | Legătura cu felul conceptual sau identitatea numită; forma de plural nu schimbă felul. Un nume al instanței poate acoperi mai multe cuvinte. |
-| Verbe de act | Actul general și cadrele sale de argumente: care rol este obligatoriu, care poate fi omis și ce complement îl realizează. Verbul nu selectează singur o unealtă. |
-| Adjective și grade | Conceptul modificat și regiunea sau operatorul de grad; sensurile incompatibile rămân candidate separate. |
-| Prepoziții și relații | Sensurile posibile, rolurile relației și tipurile de complemente admise. Aceeași formă poate avea sens temporal sau spațial. |
-| Determinanți, numere și cuantificatori | Referință existentă sau introducere, cantitate, distribuție și întinderea cuantificării. „Each” nu este un cuvânt de ignorat. |
-| Pronume și cuvinte de dialog | Rolul de referire, persoana, numărul sau legătura cu o întrebare deschisă; obiectul concret se rezolvă în context. |
-| Negație și coordonare | Operatorul logic și construcția asupra căreia se aplică; nu doar un indicator global că propoziția conține „not” ori „and”. |
-
-Lexicul poate da mai multe categorii sau sensuri aceleiași forme. Alegerea se face împreună cu structura propoziției și tipurile conceptelor. „Light” poate modifica o culoare sau greutatea unui obiect; o listă de cuvinte care îl transformă mereu în același număr pierde această distincție. În schimb, un nume exact al unui obiect nu trebuie reparat ortografic doar pentru că seamănă cu un cuvânt comun.
-
-### 6.3.4 Gramatica și arborele sintactic
-
-O regulă gramaticală descrie cum se construiește o expresie din componente. Un grup nominal poate conține un determinant, o cantitate, modificatori și un substantiv principal. Arborele rezultat păstrează fiecare componentă și intervalul ei în text. Acesta este diferit de modelul de fire din secțiunea 3.4: arborele descrie organizarea textului, iar un pattern SOP caută potriviri într-o lume. Arborele poate fi reprezentat ulterior prin fire, dar cele două operații nu trebuie confundate.
-
-Forma următoare este o schemă gramaticală propusă pentru cititor, în notație de gramatică, nu cod SOP încărcabil. `NP` înseamnă grup nominal, `PP` grup prepozițional, `V` verb, `N` substantiv, `Adj` modificator, iar `?`, `*` și `+` înseamnă opțional, zero sau mai multe, respectiv una sau mai multe apariții. `Name`, `Pron`, `Det`, `Num`, `Prep` și `Coord` sunt categorii ale lexicului.
-
-```text
-Command  := V NP Complement*
-NP       := Name | Pron | Det? Num? Adj* N Modifier*
-Modifier := PP | Relative
-PP       := Prep NP
-Relative := "that" Predicate
-Group    := NP (Coord NP)+
-Fragment := PP | Adj | Num | NP Complement+
-```
-
-Această schemă arată componentele, nu închide toate regulile. `Complement` este un rol permis de cadrul verbului, iar `Predicate` este o proprietate sau o relație din construcțiile suportate. Coordonarea trebuie introdusă în locurile permise de gramatică, cu tipul ei de grup; nu înseamnă tăierea mesajului la fiecare „and”. O gramatică livrată trebuie să definească toate categoriile utilizate și să declare limitele sale de recursie și calcul.
-
-| Construcția vizată | Structura și obligația semantică |
-|---|---|
-| Imperativ | Leagă verbul de act și complementele de rolurile cadrului; un rol lipsă rămâne deschis. |
-| Grup nominal cu adjective și PP | Păstrează substantivul principal și modificatorii lui; o prepoziție poate modifica substantivul sau actul, deci atașamentele se păstrează separat. |
-| Coordonare | Construiește grupuri distincte sau condiții comune conform categoriei coordonate; cantitatea unui membru nu se transferă celuilalt. |
-| Relativă restrictivă | Adaugă un predicat de selecție asupra referentului: „the section that contains the table”. Nu execută actul numit în relativă. |
-| Pronume | Produce o cerință de referire cu trăsături; nu alege obiectul înainte de consultarea focusului și selecției. |
-| Elipsă și fragment | Produce rolul spus și rolurile omise; situarea decide ce se poate moșteni din dialog. |
-| Negație și distribuție | Construiește întinderea operatorului: negarea actului, a unei proprietăți sau a cuantificării au rezultate diferite. |
-
-Biblioteca actuală oferă deja `parseText`, `grammarOf` și `nounPhrase`. Exemplul complet de mai jos folosește numai mecanismul sintactic existent, cu un lexic minimal. Rezultatul a fost rulat pe biblioteca actuală; el nu pretinde că toate construcțiile din tabel sunt deja declarate în lumea limbii.
-
-```js
-import { World, parseText, nounPhrase } from 'sopworld';
-const w = new World();
-w.tell(`
-  @two g.word text=two lemma=2 cat=Num
-  @red g.word text=red lemma=red cat=Adj
-  @cards g.word text=cards lemma=card cat=N
-  @note g.word text=note lemma=note cat=N
-  @a g.word text=a lemma=a cat=Det
-  @np g.rule lhs=NP rhs=Det? rhs=Num? rhs=Adj* rhs=N
-  @and g.coord word=and
-`);
-const result = parseText(w, 'two red cards and a note', { start: 'NP' });
-console.log(JSON.stringify(nounPhrase(result[0].tree).coord
-  .map(x => [x.num ?? x.det, x.mods, x.lemma])));
-```
-
-Rezultatul este `[["2",["red"],"card"],["a",[],"note"]]`. Cantitatea și culoarea aparțin grupului de carduri; nota are alt grup. Un nod sintactic are categoria, intervalul de tokenuri și copiii săi; poate păstra și regula care l-a construit. Pozițiile tokenurilor din arbore nu sunt automat pozițiile caracterelor din `std.request.source`. Transformarea semantică trebuie să păstreze maparea dintre cele două pentru proveniența cerinței.
-
-Cu același lexic, `parseText(w, 'two red cards except a note', { start: 'NP' })` nu produce nicio analiză completă și raportează cuvântul `except` la poziția de token 3. Nu este permis să dispară „except a note” și să fie executată doar prima parte. Tot astfel, o construcție necunoscută alcătuită numai din cuvinte cunoscute poate să nu aibă analiză: absența cuvintelor necunoscute nu înseamnă succes sintactic.
-
-`parseText` limitează numărul analizelor returnate și bugetul; `truncated` semnalează întreruperea la buget. Prima analiză din listă nu dovedește unicitatea semantică. Pentru contractul propus al cititorului, limitarea listei trebuie păstrată explicit ca informație despre exhaustivitatea căutării: nu se poate autoriza o acțiune riscant diferită doar fiindcă a doua citire nu a încăput în lista returnată. Implementarea actuală a API-ului sintactic nu oferă singură această garanție completă a stratului conversațional.
-
-### 6.3.5 Compunerea semantică, atașamentul și întinderea condițiilor
-
-După analiză, regulile de compunere transformă fiecare arbore într-o descriere. Substantivul introduce o țintă; numărul produce o cerință asupra grupului acelei ținte; adjectivul produce o cerință asupra conceptului și țintei indicate de atașament; prepoziția produce o relație cu roluri explicite. Verbul introduce actul, iar cadrul său leagă ținta de rolul obiectului sau rezultatului. Fiecare regulă consumă un nod identificat și produce fire cu sursa acelui nod. Nu caută liber un cuvânt oriunde în mesaj pentru a umple o cheie globală.
-
-Pentru „make two red cards and a note”, coordonarea din exemplul sintactic produce două ținte ale actului de creare. Grupul de carduri primește cantitatea 2 și culoarea red; grupul notei primește cantitatea 1 din determinantul singular. Sursa fiecărei cerințe rămâne fragmentul care a introdus-o. Transformarea nu aplică red notei și nu interpretează numărul 2 ca număr total al tuturor rezultatelor. Acestea sunt consecințe ale arborelui, nu reguli scrise pentru carduri.
-
-| Structură a textului | Cum devine descriere și ce se păstrează |
-|---|---|
-| Număr în interiorul unui grup nominal | Constrângere de cantitate cu ținta acelui grup și `scope=group`. |
-| Adjectiv al unui substantiv | Constrângere asupra conceptului lexical al adjectivului, de regulă cu `scope=each` pentru membrii grupului. |
-| PP legat de obiect | Relație care restrânge referința sau descrierea obiectului; nu este automat destinația unei mutări. |
-| PP legat de cadrul actului | Valoare pentru rolul de loc, timp, participant sau alt rol admis de cadru. |
-| Coordonare de grupuri | Ținte separate și relația dintre ele; condițiile locale rămân locale. |
-| Negare a unui cuantificator | Arbore logic al cuantificării, nu distribuirea negației peste fiecare obiect. |
-
-„Move the note beside the heading” poate selecta nota care este deja lângă titlu sau poate cere să fie mutată lângă titlu. Cadrul verbului și contextul pot elimina o citire dacă îi lipsesc roluri obligatorii ori dacă nu are referent, dar preferința pentru o analiză mai scurtă nu este o dovadă suficientă despre intenție. Dacă ambele citiri rămân aplicabile și schimbă starea diferit, întrebarea precizează diferența: „Do you mean the note already beside the heading, or should I move it there?”
-
-Există o limită reală a schemei de cerere din secțiunea 6.3.2. `scope=each` sau `scope=group`, împreună cu o polaritate, descriu cerințe simple; nu reprezintă singure orice alternanță de cuantificatori. „Do not move all the notes” cere negarea mutării întregului set, pe când „do not move any note” interzice mutarea fiecărui membru. Contractul complet necesită noduri logice explicite pentru grupare, negație și cuantificare, cu legarea variabilelor și ținta fiecărui operator. Până la definirea și verificarea acelei extensii, cititorul nu aplatizează aceste cazuri într-o constrângere care schimbă sensul; păstrează structura sau cere reformulare. Această lipsă nu poate fi reparată printr-un scor de potrivire mai bun.
-
-Verificarea semantică are loc în etape: tipurile și rolurile trebuie să fie coerente; referințele trebuie rezolvate sau marcate deschise; fiecare fragment cu efect asupra intenției trebuie acoperit; apoi se verifică realizabilitatea. O cerere imposibilă poate fi totuși citită corect. Lipsa unei capabilități trebuie raportată ca atare și nu este motiv suficient pentru a înlocui o intenție explicită cu alta, executabilă. Reformularea și recitirea pot detecta pierderi de informație, dar două componente care repetă aceeași eroare pot trece acest test; comparația cu interpretări independente rămâne necesară.
-
-### 6.3.6 Acoperire, degradare controlată și propuneri de model
-
-Cititorul propus are un domeniu declarat de construcții și vocabular. Nu este o promisiune de înțelegere nelimitată a englezei: ironia, referințele la evenimente necunoscute, discursul lung, sensurile nedeclarate și cuantificarea încă nereprezentabilă pot rămâne nerezolvate. Comportamentul util este să localizeze lipsa și să ceară informația potrivită, fără să pretindă că o schemă validă dovedește fidelitatea față de mesaj.
-
-| Rezultatul citirii | Răspunsul și continuarea permise |
-|---|---|
-| Cuvânt necunoscut într-un rol necesar | Numește cuvântul și rolul așteptat; oferă numai alternative susținute de vocabular sau context. |
-| Cuvinte cunoscute, construcție neacoperită | Arată fragmentul pe care nu l-a putut lega și cere o formulare mai simplă; nu execută subfragmente alese tacit. |
-| Mai multe descrieri cu efecte diferite | Formulează întrebarea care separă interpretările și păstrează candidații până la răspuns. |
-| Referent sau valoare lipsă | Cere identitatea sau valoarea respectivă, păstrând celelalte cerințe deja înțelese. |
-| Cerere înțeleasă, dar nerealizabilă | Explică restricția sau capabilitatea lipsă; o alternativă care schimbă o cerință fermă rămâne propunere. |
-| Căutare întreruptă | Spune că nu a obținut o citire suficient verificată; nu transformă bugetul epuizat în „nu există acest sens”. |
-
-Decizia de proiectare este ca un model statistic să poată propune descrieri printr-o interfață separată, dar să nu fie o dependență necesară și să nu primească acces direct la unelte. Propunerea include sursele în text și necunoscutele, trece aceleași verificări ca analiza gramaticală și rămâne candidată. În configurația de bază acest mecanism nu este activat ca soluție presupusă a lipsei de gramatică. Introducerea lui cere o măsurare separată pe expresii reale și domenii nefolosite la pregătire, cu numărarea execuțiilor greșite, nu numai a descrierilor care trec validarea.
-
-Un model poate produce o cerere perfect validă pentru o intenție pe care omul nu a exprimat-o. Verificatorul lumii poate constata că obiectele există și acțiunea este permisă, fără să poată demonstra că tocmai acea acțiune a fost cerută. De aceea proveniența lexicală, comparația interpretărilor și clarificarea rămân necesare. O creștere numai pe reformulări generate din aceleași cadre nu justifică înlocuirea cititorului pe mesaje reale.
+Cititorul englez este dezvoltat în capitolul 10: lexic, gramatică, compunere semantică și limitele interpretării.
 
 ## 6.4 Situarea: ce este acest mesaj față de ce s-a spus înainte
 
@@ -2715,6 +2608,117 @@ Micul exemplu declară un singur fel de obiect și vocabularul minim. Cititorul 
 Contractul actual al constrângerilor folosește chei din `REQUEST_KEYS` și forme proprii ale stratului conversațional. `requestWires` serializează forma actuală în fire `w.request`; nu produce implicit schema `std.request.*` propusă în secțiunea 6.3.2. Acea schemă cere descrieri și concepte rezolvate generic, identitatea stabilă a cerințelor și proveniența lor prin corecții. Adaptarea API-urilor existente la acest contract necesită o mapare explicită și verificarea fiecărui rezultat intermediar.
 
 Pentru API-ul conversațional viitor trebuie fixate trei frontiere: citirea întoarce descrierea cererii și ce rămâne necunoscut; planificarea întoarce pașii, precondițiile și proprietățile neverificate; execuția întoarce efectele observate și dovezile. Numele și semnăturile finale nu sunt încă stabilite. Un capitol care le-ar prezenta ca implementate ar ascunde exact diferența dintre mecanismele disponibile și proiectul pe care vrem să îl construim.
+
+# 10. Cititorul englez: de la text la descriere
+
+## 10.1 Lexicul: forme de limbă legate de concepte
+
+Cititorul primește text englez și întoarce descrieri candidate, nu comenzi de unealtă. Pentru aceasta are nevoie de trei lucruri distincte: un lexic care leagă formele de sensuri, o gramatică ce construiește relații între fragmente și reguli de compunere semantică ce transformă acele relații în cerințe. Recunoașterea tuturor cuvintelor nu dovedește că relația dintre ele a fost înțeleasă. „Before” și „after” pot folosi aceleași obiecte, dar cer schimbări opuse.
+
+Lumea limbii deține formele și construcțiile engleze, iar bazele conceptuale dețin felurile, regiunile și relațiile desemnate. Numele introduse într-o instanță completează lexicul local, fără să modifice vocabularul tuturor lumilor. O intrare lexicală păstrează forma, lema, categoria gramaticală, trăsăturile relevante și unul sau mai multe sensuri. Fiecare sens indică un concept sau un rol; simpla coincidență a numelor nu este legătura semantică.
+
+| Categoria de intrări | Ce trebuie declarat și cum este folosit |
+|---|---|
+| Substantive și nume | Legătura cu felul conceptual sau identitatea numită; forma de plural nu schimbă felul. Un nume al instanței poate acoperi mai multe cuvinte. |
+| Verbe de act | Actul general și cadrele sale de argumente: care rol este obligatoriu, care poate fi omis și ce complement îl realizează. Verbul nu selectează singur o unealtă. |
+| Adjective și grade | Conceptul modificat și regiunea sau operatorul de grad; sensurile incompatibile rămân candidate separate. |
+| Prepoziții și relații | Sensurile posibile, rolurile relației și tipurile de complemente admise. Aceeași formă poate avea sens temporal sau spațial. |
+| Determinanți, numere și cuantificatori | Referință existentă sau introducere, cantitate, distribuție și întinderea cuantificării. „Each” nu este un cuvânt de ignorat. |
+| Pronume și cuvinte de dialog | Rolul de referire, persoana, numărul sau legătura cu o întrebare deschisă; obiectul concret se rezolvă în context. |
+| Negație și coordonare | Operatorul logic și construcția asupra căreia se aplică; nu doar un indicator global că propoziția conține „not” ori „and”. |
+
+Lexicul poate da mai multe categorii sau sensuri aceleiași forme. Alegerea se face împreună cu structura propoziției și tipurile conceptelor. „Light” poate modifica o culoare sau greutatea unui obiect; o listă de cuvinte care îl transformă mereu în același număr pierde această distincție. În schimb, un nume exact al unui obiect nu trebuie reparat ortografic doar pentru că seamănă cu un cuvânt comun.
+
+## 10.2 Gramatica și arborele sintactic
+
+O regulă gramaticală descrie cum se construiește o expresie din componente. Un grup nominal poate conține un determinant, o cantitate, modificatori și un substantiv principal. Arborele rezultat păstrează fiecare componentă și intervalul ei în text. Acesta este diferit de modelul de fire din secțiunea 3.4: arborele descrie organizarea textului, iar un pattern SOP caută potriviri într-o lume. Arborele poate fi reprezentat ulterior prin fire, dar cele două operații nu trebuie confundate.
+
+Forma următoare este o schemă gramaticală propusă pentru cititor, în notație de gramatică, nu cod SOP încărcabil. `NP` înseamnă grup nominal, `PP` grup prepozițional, `V` verb, `N` substantiv, `Adj` modificator, iar `?`, `*` și `+` înseamnă opțional, zero sau mai multe, respectiv una sau mai multe apariții. `Name`, `Pron`, `Det`, `Num`, `Prep` și `Coord` sunt categorii ale lexicului.
+
+```text
+Command  := V NP Complement*
+NP       := Name | Pron | Det? Num? Adj* N Modifier*
+Modifier := PP | Relative
+PP       := Prep NP
+Relative := "that" Predicate
+Group    := NP (Coord NP)+
+Fragment := PP | Adj | Num | NP Complement+
+```
+
+Această schemă arată componentele, nu închide toate regulile. `Complement` este un rol permis de cadrul verbului, iar `Predicate` este o proprietate sau o relație din construcțiile suportate. Coordonarea trebuie introdusă în locurile permise de gramatică, cu tipul ei de grup; nu înseamnă tăierea mesajului la fiecare „and”. O gramatică livrată trebuie să definească toate categoriile utilizate și să declare limitele sale de recursie și calcul.
+
+| Construcția vizată | Structura și obligația semantică |
+|---|---|
+| Imperativ | Leagă verbul de act și complementele de rolurile cadrului; un rol lipsă rămâne deschis. |
+| Grup nominal cu adjective și PP | Păstrează substantivul principal și modificatorii lui; o prepoziție poate modifica substantivul sau actul, deci atașamentele se păstrează separat. |
+| Coordonare | Construiește grupuri distincte sau condiții comune conform categoriei coordonate; cantitatea unui membru nu se transferă celuilalt. |
+| Relativă restrictivă | Adaugă un predicat de selecție asupra referentului: „the section that contains the table”. Nu execută actul numit în relativă. |
+| Pronume | Produce o cerință de referire cu trăsături; nu alege obiectul înainte de consultarea focusului și selecției. |
+| Elipsă și fragment | Produce rolul spus și rolurile omise; situarea decide ce se poate moșteni din dialog. |
+| Negație și distribuție | Construiește întinderea operatorului: negarea actului, a unei proprietăți sau a cuantificării au rezultate diferite. |
+
+Biblioteca actuală oferă deja `parseText`, `grammarOf` și `nounPhrase`. Exemplul complet de mai jos folosește numai mecanismul sintactic existent, cu un lexic minimal. Rezultatul a fost rulat pe biblioteca actuală; el nu pretinde că toate construcțiile din tabel sunt deja declarate în lumea limbii.
+
+```js
+import { World, parseText, nounPhrase } from 'sopworld';
+const w = new World();
+w.tell(`
+  @two g.word text=two lemma=2 cat=Num
+  @red g.word text=red lemma=red cat=Adj
+  @cards g.word text=cards lemma=card cat=N
+  @note g.word text=note lemma=note cat=N
+  @a g.word text=a lemma=a cat=Det
+  @np g.rule lhs=NP rhs=Det? rhs=Num? rhs=Adj* rhs=N
+  @and g.coord word=and
+`);
+const result = parseText(w, 'two red cards and a note', { start: 'NP' });
+console.log(JSON.stringify(nounPhrase(result[0].tree).coord
+  .map(x => [x.num ?? x.det, x.mods, x.lemma])));
+```
+
+Rezultatul este `[["2",["red"],"card"],["a",[],"note"]]`. Cantitatea și culoarea aparțin grupului de carduri; nota are alt grup. Un nod sintactic are categoria, intervalul de tokenuri și copiii săi; poate păstra și regula care l-a construit. Pozițiile tokenurilor din arbore nu sunt automat pozițiile caracterelor din `std.request.source`. Transformarea semantică trebuie să păstreze maparea dintre cele două pentru proveniența cerinței.
+
+Cu același lexic, `parseText(w, 'two red cards except a note', { start: 'NP' })` nu produce nicio analiză completă și raportează cuvântul `except` la poziția de token 3. Nu este permis să dispară „except a note” și să fie executată doar prima parte. Tot astfel, o construcție necunoscută alcătuită numai din cuvinte cunoscute poate să nu aibă analiză: absența cuvintelor necunoscute nu înseamnă succes sintactic.
+
+`parseText` limitează numărul analizelor returnate și bugetul; `truncated` semnalează întreruperea la buget. Prima analiză din listă nu dovedește unicitatea semantică. Pentru contractul propus al cititorului, limitarea listei trebuie păstrată explicit ca informație despre exhaustivitatea căutării: nu se poate autoriza o acțiune riscant diferită doar fiindcă a doua citire nu a încăput în lista returnată. Implementarea actuală a API-ului sintactic nu oferă singură această garanție completă a stratului conversațional.
+
+## 10.3 Compunerea semantică, atașamentul și întinderea condițiilor
+
+După analiză, regulile de compunere transformă fiecare arbore într-o descriere. Substantivul introduce o țintă; numărul produce o cerință asupra grupului acelei ținte; adjectivul produce o cerință asupra conceptului și țintei indicate de atașament; prepoziția produce o relație cu roluri explicite. Verbul introduce actul, iar cadrul său leagă ținta de rolul obiectului sau rezultatului. Fiecare regulă consumă un nod identificat și produce fire cu sursa acelui nod. Nu caută liber un cuvânt oriunde în mesaj pentru a umple o cheie globală.
+
+Pentru „make two red cards and a note”, coordonarea din exemplul sintactic produce două ținte ale actului de creare. Grupul de carduri primește cantitatea 2 și culoarea red; grupul notei primește cantitatea 1 din determinantul singular. Sursa fiecărei cerințe rămâne fragmentul care a introdus-o. Transformarea nu aplică red notei și nu interpretează numărul 2 ca număr total al tuturor rezultatelor. Acestea sunt consecințe ale arborelui, nu reguli scrise pentru carduri.
+
+| Structură a textului | Cum devine descriere și ce se păstrează |
+|---|---|
+| Număr în interiorul unui grup nominal | Constrângere de cantitate cu ținta acelui grup și `scope=group`. |
+| Adjectiv al unui substantiv | Constrângere asupra conceptului lexical al adjectivului, de regulă cu `scope=each` pentru membrii grupului. |
+| PP legat de obiect | Relație care restrânge referința sau descrierea obiectului; nu este automat destinația unei mutări. |
+| PP legat de cadrul actului | Valoare pentru rolul de loc, timp, participant sau alt rol admis de cadru. |
+| Coordonare de grupuri | Ținte separate și relația dintre ele; condițiile locale rămân locale. |
+| Negare a unui cuantificator | Arbore logic al cuantificării, nu distribuirea negației peste fiecare obiect. |
+
+„Move the note beside the heading” poate selecta nota care este deja lângă titlu sau poate cere să fie mutată lângă titlu. Cadrul verbului și contextul pot elimina o citire dacă îi lipsesc roluri obligatorii ori dacă nu are referent, dar preferința pentru o analiză mai scurtă nu este o dovadă suficientă despre intenție. Dacă ambele citiri rămân aplicabile și schimbă starea diferit, întrebarea precizează diferența: „Do you mean the note already beside the heading, or should I move it there?”
+
+Există o limită reală a schemei de cerere din secțiunea 6.3.2. `scope=each` sau `scope=group`, împreună cu o polaritate, descriu cerințe simple; nu reprezintă singure orice alternanță de cuantificatori. „Do not move all the notes” cere negarea mutării întregului set, pe când „do not move any note” interzice mutarea fiecărui membru. Contractul complet necesită noduri logice explicite pentru grupare, negație și cuantificare, cu legarea variabilelor și ținta fiecărui operator. Până la definirea și verificarea acelei extensii, cititorul nu aplatizează aceste cazuri într-o constrângere care schimbă sensul; păstrează structura sau cere reformulare. Această lipsă nu poate fi reparată printr-un scor de potrivire mai bun.
+
+Verificarea semantică are loc în etape: tipurile și rolurile trebuie să fie coerente; referințele trebuie rezolvate sau marcate deschise; fiecare fragment cu efect asupra intenției trebuie acoperit; apoi se verifică realizabilitatea. O cerere imposibilă poate fi totuși citită corect. Lipsa unei capabilități trebuie raportată ca atare și nu este motiv suficient pentru a înlocui o intenție explicită cu alta, executabilă. Reformularea și recitirea pot detecta pierderi de informație, dar două componente care repetă aceeași eroare pot trece acest test; comparația cu interpretări independente rămâne necesară.
+
+## 10.4 Acoperire, degradare controlată și propuneri de model
+
+Cititorul propus are un domeniu declarat de construcții și vocabular. Nu este o promisiune de înțelegere nelimitată a englezei: ironia, referințele la evenimente necunoscute, discursul lung, sensurile nedeclarate și cuantificarea încă nereprezentabilă pot rămâne nerezolvate. Comportamentul util este să localizeze lipsa și să ceară informația potrivită, fără să pretindă că o schemă validă dovedește fidelitatea față de mesaj.
+
+| Rezultatul citirii | Răspunsul și continuarea permise |
+|---|---|
+| Cuvânt necunoscut într-un rol necesar | Numește cuvântul și rolul așteptat; oferă numai alternative susținute de vocabular sau context. |
+| Cuvinte cunoscute, construcție neacoperită | Arată fragmentul pe care nu l-a putut lega și cere o formulare mai simplă; nu execută subfragmente alese tacit. |
+| Mai multe descrieri cu efecte diferite | Formulează întrebarea care separă interpretările și păstrează candidații până la răspuns. |
+| Referent sau valoare lipsă | Cere identitatea sau valoarea respectivă, păstrând celelalte cerințe deja înțelese. |
+| Cerere înțeleasă, dar nerealizabilă | Explică restricția sau capabilitatea lipsă; o alternativă care schimbă o cerință fermă rămâne propunere. |
+| Căutare întreruptă | Spune că nu a obținut o citire suficient verificată; nu transformă bugetul epuizat în „nu există acest sens”. |
+
+Decizia de proiectare este ca un model statistic să poată propune descrieri printr-o interfață separată, dar să nu fie o dependență necesară și să nu primească acces direct la unelte. Ținta propunerii este descrierea conceptuală generală, nu setul de chei fixe al cititorului vechi și nici vocabularul unui singur domeniu. Legarea la schema domeniului are loc ulterior. Datele pentru evaluare trebuie separate atât pe domenii, cât și pe familii de formulări. Propunerea include sursele în text și necunoscutele, trece aceleași verificări ca analiza gramaticală și rămâne candidată. În configurația de bază acest mecanism nu este activat ca soluție presupusă a lipsei de gramatică. Introducerea lui cere o măsurare separată pe expresii reale și domenii nefolosite la pregătire, cu numărarea execuțiilor greșite, nu numai a descrierilor care trec validarea.
+
+Un model poate produce o cerere perfect validă pentru o intenție pe care omul nu a exprimat-o. Verificatorul lumii poate constata că obiectele există și acțiunea este permisă, fără să poată demonstra că tocmai acea acțiune a fost cerută. De aceea proveniența lexicală, comparația interpretărilor și clarificarea rămân necesare. O creștere numai pe reformulări generate din aceleași cadre nu justifică înlocuirea cititorului pe mesaje reale.
 
 ## Anexa A. Cu ce seamănă
 

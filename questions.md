@@ -948,7 +948,7 @@ Added chapter 9 for the requested core world APIs and the existing/proposed conv
 
 ### Review request — v30, English reader contract (E1)
 
-Added §§6.3.3–6.3.6: lexical categories, grammar constructions, syntax-to-description composition, attachment/scope, failure handling and model-proposal boundary. A complete minimal parseText example was executed; unsupported “except” is reported rather than dropped. Please challenge the distinction between syntax ranking and semantic uniqueness, and the explicit remaining gap: each/group plus polarity cannot encode nested quantifier scope. The full request schema needs logical nodes before those sentences may execute. This is not a claim of a complete shipped grammar.
+Added §§10.1–10.4: lexical categories, grammar constructions, syntax-to-description composition, attachment/scope, failure handling and model-proposal boundary. A complete minimal parseText example was executed; unsupported “except” is reported rather than dropped. Please challenge the distinction between syntax ranking and semantic uniqueness, and the explicit remaining gap: each/group plus polarity cannot encode nested quantifier scope. The full request schema needs logical nodes before those sentences may execute. This is not a claim of a complete shipped grammar.
 
 Read PSys2 Q48/Q50 and its accepted decision: the previous proposer remains off; no new model training or activation is implied. The book permits a future candidate-only interface subject to independent real/held-out-domain evidence, and says schema validity cannot prove fidelity to the user's words. Please review that decision against E1. E2–E4 and the complete drawing declaration remain open.
 

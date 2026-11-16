@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld The standard modules</title>
-<meta name="source-hash" content="f993605b23e5">
+<meta name="source-hash" content="c4a500bf27f8">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.181.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.182.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html" aria-current="page">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -81,9 +81,12 @@
 <p>Step status is <code>planned</code>, <code>confirmed</code>, <code>refused</code>, <code>unknown</code> or <code>partial</code>: it records an asserted individual-call status, not the final outcome of a multi-operation request. Planned steps reserve an invocation identifier; the record does not launch a call. Observation invocation text must match its explicit owning step. Input records carry individual source versions; independent sources need not share a revision counter. Invocation strings do not establish a global identity registry or deduplicate calls.</p>
 <p>Final-state checks reject dependency cycles, even across requests, and validate reply membership against the reply's request. A clarification reply may have no steps. Correction links describe an accepted replacement lineage rather than proposed alternatives: no self-links, cycles or multiple direct successors for one target. A correction may be a new request about an old step. Undo observations belong to the new undo execution, not the original invocation. The execution step carries the undo attempt's status; the undo link adds no redundant status field.</p>
 <p>The validator scans the module family's records for each trace request under the reasoning budget, including when only a child changes. No persisted or incremental graph cache is claimed. These checks do not prove that a snapshot was actually observed, that <code>confirmed</code> means the requested effect occurred, that a reply is supported, or that an undo restored state. They do not verify the temporal/concurrency preconditions for accepting a correction, impose immutable history, or perform execution. The exact §6.11 fragment loads; its example success text still requires the omitted geometric/effect evidence before an application may emit it.</p>
+<h3 id="detached-reference-calibration">Detached reference calibration</h3>
+<p>Added with 0.182.0, <code>calibrateReference(world, id, options?)</code> captures a reference set into detached, deeply frozen JSON-serializable data and computes its positive median. Samples retain identities, multiplicity, original numeric tokens and units. Optional provenance includes its complete factual dependency closure. The source may change afterward without altering an existing snapshot. This is a calculation over captured input, not a claim that source observations are true.</p>
+<p>The API checks the world and charges validation/capture/sort work to the reasoning budget. It avoids midpoint overflow for extreme finite samples and preserves subnormal equal samples. It refuses a nonpositive normalization. Its result does not freeze source records or register immutable published revisions, and loading JSON back does not authenticate it. Axis calibration linkage, the std.calibration wire contract and retained revision verification remain pending.</p>
 <p class="source">Generated from <code>docs/modules.md</code>.</p>
 </main>
-<footer>sopworld 0.181.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.182.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

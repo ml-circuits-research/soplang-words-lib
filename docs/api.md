@@ -4240,3 +4240,22 @@ print(inspectRequest(w, 'r').ok);
 ```output
 true
 ```
+
+### calibrateReference(world, id, options?)
+
+Capture a valid `std.reference.set` and calculate its positive median normalization. `options.family` supports an aliased reference module; `options.budget` bounds world validation, capture and sorting. Returns `{ok, snapshot, issues}`; failure has no snapshot. The source world is checked first, so unrelated invalid state also prevents capture.
+
+The detached, deeply frozen snapshot has format `sop.reference.calibration`, schemaVersion 1, method `median`, value/unit, historical reference identity/version/property, sample identities/numeric values/original tokens/units, and the complete factual provenance closure reachable from supplied sample provenance. Distinct equal samples count separately; repeated references to the same sample do not. Every reference in copied evidence resolves inside that copied closure. Missing optional provenance remains missing, not invented. A finite positive result is required for normalization.
+
+The snapshot can be serialized as JSON and retained after source changes. Freezing protects the returned object only: JSON parsing does not preserve that protection, and neither freezing nor a recorded version authenticates observations or prevents a host replacing a persisted revision. No publication registry, verified restore API, axis binding, unit conversion or `std.calibration` wire schema is supplied by this function.
+
+```js
+const w = new World();
+w.load('@use core.use world=std.reference\n@a std.reference.sample value=8 unit=unit\n@b std.reference.sample value=12 unit=unit\n@r std.reference.set version=1 property=width unit=unit member=$a member=$b');
+const result = calibrateReference(w, 'r');
+print(result.snapshot.value);
+```
+
+```output
+10
+```

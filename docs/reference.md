@@ -1891,6 +1891,10 @@ print(inspectRequest(w, 'r').ok);
 true
 ```
 
+## Reference calibration capture
+
+`calibrateReference(world, id, options?)` captures the named std.reference set and computes a positive median with sample identities, original tokens and provenance closure. `family` selects an aliased module; `budget` bounds work. The returned snapshot is detached and deeply frozen, so later source edits do not change it. Serialization is supported, but persisted revision verification, axis linkage and evidence truth remain separate. See the API entry for the exact data and failure contract.
+
 ## Functions
 
 A function is called with its arguments as text and returns text (or true/false for a

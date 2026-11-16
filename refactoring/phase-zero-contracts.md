@@ -94,3 +94,7 @@ std.trace exports only request/message and input/source/version/source.type/key/
 ### Increment 0.181.0 — typed trace operation linkage
 
 std.trace now exports request/input/step/observation/reply/undo/correction. Final-state checks enforce DAG dependencies, invocation text correlation, reply request membership, separate undo execution evidence, and acyclic nonforking correction lineage; historical dependencies/corrections can cross requests. Observations require input snapshots with per-source versions. Full §6.11 example is structurally executable. No evaluator truth, evidence-supported reply, actual undo, immutable storage or structured semantic-request linkage is implied; full phase zero is still pending.
+
+### Increment 0.182.0 — detached reference capture and median
+
+calibrateReference validates the world, captures typed reference samples and their factual provenance closure into detached frozen JSON-serializable data, and computes a positive median under budget. Distinct equal measurements survive; same sample references are deduplicated. Source changes do not mutate prior captures. Extreme finite midpoint cases are tested. This does not register published immutable revisions, authenticate restored JSON, implement std.calibration/axis linkage or release phase zero.

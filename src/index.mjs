@@ -41,7 +41,7 @@ export { storyState } from './story-focus.mjs';
 export { planner, factStore, PlanLive, readMethods, PLAN_LIMITS, solveChoices } from './plan.mjs';
 export { inflectBy, articleFor, morphOf, generate, analyse, fold, splitClitics, dictionary, realise, templateFor } from './morph.mjs';
 export { ledgerAppend, ledgerGroups, ledgerKey, stageOf, STAGES } from './ledger.mjs';
-export const version = '0.181.0';
+export const version = '0.182.0';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)
  * tools/build.mjs fills in `hash`, a fingerprint of the bundled sources, and `date`,
@@ -65,3 +65,5 @@ export { repairWords, editCost, worldWords, languageWords, SPELL, SPELL_SOURCES,
 export { factsOf, kindFactsOf, deduceState, induceStyle, induceCorrections, REASONING, KIND_FACTS, REASON_RULES } from './reason.mjs';
 
 export { inspectRequest } from './request-contracts.mjs';
+
+export { calibrateReference } from './reference-calibration.mjs';

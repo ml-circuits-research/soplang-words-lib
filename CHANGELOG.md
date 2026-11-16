@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.182.0
+
+- Add calibrateReference: validate and capture reference samples/provenance into detached frozen data, preserving multiplicity and original tokens, then compute a finite positive median under the reasoning budget.
+- Handle extreme finite midpoint arithmetic. Publication registry, persisted revision verification and axis binding remain pending.
+
 ## 0.181.0
 
 - Add typed trace step, observation, reply, undo and correction records. Validate dependency/replacement acyclicity, reply request membership, invocation correlation and undo evidence ownership in final state.

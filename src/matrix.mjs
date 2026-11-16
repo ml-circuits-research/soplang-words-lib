@@ -466,7 +466,10 @@ export function compileMatrix(world) {
     if (r === undefined) sharedCache.set(type, (r = c.lineage(type).some((t) => c.shared.has(t))));
     return r;
   };
-  c.hierarchy = [...c.parent].map(([t, p]) => `${t}<${p}`).sort().join(' ');
+  // Mixin membership and order affect inherited slots and indexed lineage too.
+  // Preserve each ordered extends list; sort only the declaring type identities.
+  c.hierarchy = JSON.stringify([...new Set([...c.parent.keys(), ...c.mixins.keys()])].sort()
+    .map(t => [t, c.parent.get(t) ?? null, c.mixins.get(t) || []]));
   for (const [t, p] of c.parent) {
     let x = p;
     for (let n = 0; x && n < 1000; n++) { if (x === t) { c.errors.push(`${t}: the type extends itself through ${p}`); break; } x = c.parent.get(x); }

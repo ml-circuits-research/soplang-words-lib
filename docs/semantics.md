@@ -560,3 +560,10 @@ Notes that refuse nothing are in `world.warnings`: `deprecated` (a pattern decla
 old way), `unknown-attribute` (an attribute a matrix wire type does not read),
 `ambiguous-key` (a short key that two modules declare along one type's lineage, with
 both qualified names), `unknown-word` (a `core.word` whose `means=` names nothing; words are in the world's one language, with no `lang=`), `undeclared-function` (a registered host function with no `core.function`) `unregistered-function` (a declared function that is not registered; noted again, with `called`, when a calc or check calls it and gets no result), and, with the option `advise`, `advice` (a kind or a rule with the shape of another module's).
+
+## Structural inheritance index consistency
+
+Changing only an additional `extends` group (mixin) rebuilds the type/value indexes of stored instances and their descendants, even when the primary parent remains unchanged. The hierarchy fingerprint includes the ordered mixin lists as well as primary parents. Queries and newly applicable rules therefore observe the same effective lineage. Refused changes restore the old indexes, forks remain isolated, and undo/redo and snapshot replay remain consistent. Added with 0.189; this is not a point-space migration mechanism.
+*Test:* `changing only a mixin rebuilds descendant type and value indexes`
+*Test:* `mixin index changes roll back with a refused transaction and isolate forks`
+*Test:* `a newly inherited rule can see already stored facts through rebuilt indexes`

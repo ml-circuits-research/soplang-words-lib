@@ -1371,6 +1371,8 @@ Moștenirea structurală, specializarea semantică și împrumutarea unei realiz
 | moștenirea felurilor | În cunoaștere (arborele felurilor: o rață este o pasăre). Transmite ce se știe: părți, valori obișnuite, cuvinte. |
 | înlocuitorul | În domeniu. Este o realizare împrumutată: imaginea păsării pentru o rață. Nu schimbă felul lucrului. |
 
+În schema structurală a motorului, declarațiile suplimentare `extends` pot importa grupuri de sloturi (mixins). Ele nu adaugă părinți arborelui semantic al felurilor. Dacă se schimbă un asemenea grup, faptele deja stocate și descendenții lor trebuie să apară imediat în căutările după noua structură, iar regulile să vadă aceleași fapte ca interogările. De exemplu, dacă tipul `item` păstrează părintele `base`, dar înlocuiește grupul `left` cu `right`, un fapt `item` trebuie găsit prin `right` și nu prin vechiul `left`. Din versiunea 0.189, reconstruirea indexurilor ține cont și de lista ordonată a acestor grupuri, nu numai de primul părinte. O tranzacție refuzată restaurează atât schema, cât și indexurile. Această corecție menține coerentă moștenirea structurală; nu autorizează reinterpretarea valorilor unui spațiu de puncte când se schimbă schema lor.
+
 Un fel are un singur părinte. Alte împărțiri ale lucrurilor nu sunt feluri. „Lucrurile roșii” sunt o regiune a unui spațiu. „Nodurile de început” sunt un rol dedus de o regulă. „Lucrurile care plutesc” sunt o afirmație de cunoaștere despre mai multe feluri. *(R40)*
 
 Ce este declarat mai aproape câștigă. O valoare obișnuită sau o normă spusă despre un fel o înlocuiește pe cea spusă despre un strămoș. Fiindcă există un singur părinte, nu pot veni două valori de la aceeași depărtare. *(R41)*

@@ -1031,3 +1031,7 @@ The accepted migration guard is recorded in the phase-zero plan. A second implem
 ### Implementation review — composition agreement guards (0.188.0)
 
 Integrated guards over composed children before the parent result is built. All declarations validate before any candidate is returned, including unknown rule keys and malformed unused guards; missing bindings and false equality have different failure reasons. Object field order is irrelevant, array order and primitive types remain significant, and there is no approximate/domain equivalence. Budgets cover validation, operands and comparisons. The knowledge bridge must translate every agreement faithfully rather than omit unsupported conditions. Please review this generic mechanism alongside the overlay without treating the illustrative tests as end-to-end reader coverage.
+
+### Implementation review — mixin index invalidation (0.189.0)
+
+Point-binding audit exposed a current general bug: changing a type's additional extends group while keeping its primary parent changed effective lineage but not the hierarchy fingerprint. Stored facts were missing from queries and rules for the new group. The fingerprint now includes ordered mixins and uses the existing transactional reindex path. Regressions cover descendants, indexed literals, rule activation, refusal/fork isolation and replay. This is a prerequisite repair, not a claim that point migration or typed variable propagation has landed.

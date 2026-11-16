@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 35, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 36, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -2870,10 +2870,10 @@ Pachetul comun este reutilizat între domenii. Un domeniu adaugă numai structur
 |---|---|
 | Desen | Feluri reprezentabile, realizări proprii ori moștenite, părți editabile, relații de susținere/conținere, întinderi și straturi, culori și proporții obișnuite. Fără rolul părții de sprijin, o verificare geometrică nu poate decide locul funcțional potrivit. |
 | Diagrame | Feluri de noduri și legături, structuri de graf, roluri de început/sfârșit, ordine, forme și reguli de așezare. Un desen frumos al unui graf nu dovedește corectitudinea relațiilor lui. |
-| Documente | Genuri, structura secțiunilor, roluri de conținut, regiuni de lungime și ton, plus afirmațiile despre subiect cu sursele lor. Un șablon de scrisoare fără informații despre subiect produce structură, nu conținut factual justificat. |
+| Documente | Genuri, structura secțiunilor, roluri de conținut, regiuni de lungime și ton, proceduri de măsurare a tonului cu incertitudine, plus afirmațiile despre subiect cu sursele lor. Un șablon de scrisoare fără informații despre subiect produce structură, nu conținut factual justificat. |
 | Calendar | Tipuri de evenimente și resurse, durate, disponibilitate, relații temporale, repere și grupuri numite. Persoanele, întâlnirile și disponibilitatea curentă sunt date ale instanței; nu se deduc dintr-o bază generală. |
 
-Aceste dependențe produc diferențe practice. O relație temporală poate fi verificată exact după citirea completă a rezervărilor relevante, pe când tonul unui document poate rămâne o proprietate neverificată. În desen, geometria unei părți poate fi disponibilă fără ca numele ei semantic să fie cunoscut. Pachetul nu ascunde aceste diferențe sub o singură etichetă „concept suportat”.
+Aceste dependențe produc diferențe practice. O relație temporală poate fi verificată exact după citirea completă a rezervărilor relevante, pe când tonul unui document este măsurat pe axele declarate, cu procedură, dovezi textuale și incertitudine, conform secțiunii 6.8.1. Dacă intervalul măsurării traversează frontiera regiunii cerute, rezultatul rămâne nedeterminat; aceasta este o proprietate a măsurării concrete, nu o excludere a tonului din mecanismele de verificare. În desen, geometria unei părți poate fi disponibilă fără ca numele ei semantic să fie cunoscut. Pachetul nu ascunde aceste diferențe sub o singură etichetă „concept suportat”.
 
 Datele obligatorii ale instanței nu trebuie confundate cu cunoașterea generală. O sursă generală despre sărbători are nevoie de regiune și interval de valabilitate; nu spune automat ce zile sunt nelucrătoare pentru o persoană. Dacă o excepție cerută nu poate fi verificată, cererea rămâne incompletă. Absența sursei nu autorizează eliminarea excepției din plan.
 
@@ -2896,6 +2896,21 @@ Un import de relații de tip „parte din” poate furniza candidați pentru str
 Înainte de folosirea și redistribuirea unei surse se consemnează condițiile aplicabile exact versiunii preluate, atribuirea și transformările permise. Faptul că un fișier este accesibil public nu dovedește că poate fi republicat. Verificarea aparține importatorului și reviewerului sursei; cartea nu declară o licență potrivită pentru un set de date fără analiza lui. Importurile cu condiții diferite își păstrează proveniența și separarea necesară distribuirii.
 
 O etichetă produsă de model poate economisi redactare, dar trebuie verificată tocmai la frontierele care schimbă comportamentul: roluri obligatorii, imposibilități, relații folosite pentru acțiuni și atribuiri de sens. Verificarea unui eșantion poate estima calitatea lotului; nu dovedește că fiecare fapt rămas este corect. Faptele cu efect critic cer o verificare potrivită consecinței lor sau rămân propuneri slabe.
+
+### 11.3.1 Un fapt importat și lanțul lui de proveniență
+
+Pentru a putea verifica un import, afirmația și dovada provenienței sunt obiecte distincte. Fragmentul următor propune o schemă generală de proveniență. Este un exemplu didactic al unei surse redactate pentru exemplu, nu o afirmație că o anumită bază externă publicată conține această înregistrare. Felurile `bird` și `duck` sunt presupuse declarate în vocabularul conceptual.
+
+```sop
+@source.toy std.source name=toy.kind.table version=1 status=illustrative
+@map.kind std.import.mapping name=kind.parent version=1
+@origin.duck std.provenance source=$source.toy record=duck.row mapping=$map.kind
+@fact.duck std.knowledge.parent child=duck parent=bird provenance=$origin.duck status=candidate
+```
+
+Primul fir fixează versiunea sursei. Al doilea identifică transformarea aplicată, care trebuie să poată fi regăsită și repetată; numele singur nu înlocuiește definiția mapării. Al treilea leagă o înregistrare originală de acea transformare. Ultimul exprimă relația conceptuală obținută și păstrează legătura cu dovada. `candidate` nu înseamnă fals, ci încă neadmis în cunoașterea activă. Reviewerul verifică sensul relației, identitatea conceptelor și condițiile sursei înainte de admitere.
+
+În depozitul actual de cunoaștere, firele importate păstrează deja sursa prin `core.source`; nodul separat propus aici adaugă posibilitatea de a urmări înregistrarea și maparea versionată. Migrarea trebuie să păstreze informația existentă. Două surse pentru aceeași relație produc două dovezi, nu două păsări sau două relații cu sens diferit. Dacă o sursă este retrasă, se revalidează afirmația și concluziile dependente; o dovadă independentă rămasă poate continua să o susțină. Proveniența și verificarea semantică sunt necesare separat: un import perfect reproductibil poate reproduce o afirmație greșită.
 
 ## 11.4 Cine verifică și ce înseamnă acceptarea
 
@@ -2971,6 +2986,18 @@ Tabelul arată de ce normalizarea și toleranța se revizuiesc împreună. Numit
 
 Pe un graf de feluri, o muchie de specializare poate avea un cost inițial uniform numai ca politică explicită. Numărul de muchii depinde de felul în care a fost redactată taxonomia: introducerea unui nod intermediar nu trebuie să facă două concepte semantic mai îndepărtate fără o decizie. O migrare poate conserva costul total al drumului prin împărțirea costului vechi între muchiile noi, ori poate recalibra metrica și reverifica selecțiile afectate. Distanța grafică nu înlocuiește filtrele de identitate sau proveniență.
 
+### 12.2.1 Declararea reperului de normalizare
+
+Aceeași axă `clearance` din secțiunea 8.2 poate păstra explicit sursa normalizării. Următoarele fire sunt propuse; setul este ilustrativ, în unități de pagină, iar proprietatea `width` desemnează mărimea măsurată. Setul real ar păstra identitățile observațiilor și versiunile stării din care au fost citite.
+
+```sop
+@reference.widths std.reference.set version=1 property=width unit=page.unit value=8 value=10 value=12
+@normalisation.clearance std.calibration reference=$reference.widths method=median value=10 unit=page.unit version=1
+@ax.clearance w.legend.axis of=clearance name=distance min=0 scale=ratio normalisation=10 calibration=$normalisation.clearance unit=page.unit
+```
+
+Valorile repetate formează eșantionul; mediana lui este 10. Nodul de calibrare consemnează metoda și rezultatul, iar axa folosește rezultatul ca lungime de referință. Valoarea de pe axă este copia materializată a rezultatului, nu o a doua alegere independentă: încărcarea verifică egalitatea și unitatea. O modificare a setului produce o versiune nouă și recalcularea rezultatului, urmate de probele din secțiunea 12.5. Dacă referința sau metoda nu poate fi reconstituită, parametrul nu este declarat verificat doar fiindcă are o valoare pozitivă.
+
 ## 12.3 Toleranțe și pași comparativi
 
 Toleranța se stabilește pentru o familie de substituții care păstrează intenția. Se pornește de la perechi de rezultate judecate ca acceptabile sau neacceptabile în contexte declarate, nu de la dorința de a executa cât mai multe comenzi. Se verifică separat cererile exacte, cele regionale și cele comparative. Pentru o valoare cerută exact, permisiunea de aproximare este absentă chiar dacă două valori sunt foarte apropiate numeric.
@@ -2987,6 +3014,25 @@ Un pas comparativ este alegerea implicită când omul spune numai „mai mare”
 
 Calibrarea poate produce o politică diferită pentru contexte diferite când există dovezi pentru această diferență. Nu produce o regulă distinctă pentru fiecare propoziție din test. Dacă o familie are prea puține observații, parametrul rămâne o ipoteză explicită de proiectare și se caută date suplimentare; sistemul nu transformă lipsa datelor într-o limită de principiu a capabilității.
 
+### 12.3.1 Politica de toleranță și factorul local învățat
+
+Politica numește distanța căreia i se aplică. Exemplul păstrează toleranța ilustrativă 0,5 din secțiunea 12.2; nu o recomandă pentru producție. `regional` desemnează cererile care permit aproximarea regională, iar `exact=forbid` exclude relaxarea cerințelor exacte. Aceste chei au semantica propusă aici, nu sunt o politică deja executată de bibliotecă.
+
+```sop
+@policy.clearance std.tolerance axis=$ax.clearance metric=normalised.absolute bound=0.5 comparison=less.equal applies=regional exact=forbid calibration=$normalisation.clearance version=1
+```
+
+Distanța este `abs(a−b)/10`, iar acceptarea cere să fie cel mult 0,5 și să fie permisă aproximarea în cererea concretă. Legătura cu versiunea calibrării împiedică folosirea aceleiași toleranțe pe o scară schimbată în tăcere. Politica nu anulează o limită fermă precum „cel puțin 12”.
+
+Factorul învățat are altă proveniență: un episod local. Firele următoare înregistrează exact calculul din secțiunea 4.5.1, presupunând instanța `drawing` și obiectul `fish` deja identificate. Valorile de mărime folosesc aceeași scară de raport; factorii sunt adimensionali.
+
+```sop
+@episode.size std.learning.episode instance=$drawing object=$fish concept=size reference=1 initial.factor=1.6 final.value=2.5 status=closed closure=next.unrelated.message valid=true
+@factor.big std.learned.factor instance=$drawing kind=fish concept=size word=big value=2.05 method=mean.initial.accepted episode=$episode.size
+```
+
+`closed` consemnează că un mesaj ulterior a încheiat corecțiile, nu că tăcerea a fost interpretată ca acord. `valid=true` trebuie susținut de jurnalul episodului: schimbările au fost observate, nu a intervenit o editare externă și episodul nu a fost anulat. Calculul este factor acceptat `2,5/1`, apoi media cu 1,6, adică 2,05. Un indicator de validitate scris fără acele dovezi nu autorizează învățarea. Instanța, felul și conceptul delimitează aplicarea; firul nu schimbă preferințele altor instanțe și nu devine automat fapt general despre pești.
+
 ## 12.4 Costuri, ponderi și egalități între candidați
 
 Un obiectiv combină termeni definiți și comparabili, după eliminarea candidaților care încalcă cerințe tari. O suprapunere interzisă nu este un cost mare pe care un avantaj suficient de mare îl poate compensa. Pentru preferințe slabe se poate folosi o sumă ponderată; pentru priorități care nu trebuie compensate se folosește o ordine lexicografică declarată. Alegerea uneia dintre aceste politici este parte din semantica obiectivului.
@@ -3002,6 +3048,20 @@ Să avem doi candidați valizi, cu doi termeni deja normalizați: deplasare și 
 | Criteriul de oprire | Distinge cel mai bun candidat încercat de un optim demonstrat. |
 
 O pondere modificată poate schimba mai multe cereri care folosesc același obiectiv. De aceea explicația păstrează descompunerea costului, nu doar scorul total. Un reviewer poate vedea ce termen a schimbat ordinea candidaților și poate verifica dacă aceasta corespunde preferinței declarate. Optimizarea unui număr opac nu oferă această justificare.
+
+### 12.4.1 Un obiectiv cu ponderi și priorități
+
+Un obiectiv poate combina priorități lexicografice cu sume ponderate în interiorul fiecărui nivel. Fragmentul propus separă obiectivul de termeni, astfel încât ordinea, ponderea și normalizarea fiecărui termen să poată fi citite. `displacement` și `crowding` numesc evaluatori declarați, ale căror rezultate sunt deja normalizate; declarațiile evaluatorilor nu sunt reproduse în acest fragment.
+
+```sop
+@objective.layout std.objective order=lexicographic direction=minimise term=$term.move term=$term.crowding
+@term.move std.objective.term evaluator=displacement normalisation=declared.by.evaluator weight=2 priority=1
+@term.crowding std.objective.term evaluator=crowding normalisation=declared.by.evaluator weight=1 priority=2
+```
+
+Prioritățile mai mici se compară întâi. Pentru fiecare prioritate se însumează termenii ponderați de la acel nivel; apoi vectorii se compară lexicografic. Cu A=(0,2; 0,6) și B=(0,5; 0,2), vectorii devin (0,4; 0,6) și (1,0; 0,2), deci A câștigă la primul nivel. Aglomerarea nu poate compensa deplasarea în această politică. Dacă ambii termeni primesc prioritatea 1, vectorul are o singură componentă și obținem sumele 1,0 și 1,2 discutate mai sus. Cu ponderi egale și aceeași prioritate, câștigă B prin 0,7 față de 0,8.
+
+Ponderile au astfel efect de compromis între termenii aceluiași nivel; o pondere pozitivă aplicată singurului termen al unui nivel nu îi schimbă ordinea candidaților. Evaluatorii trebuie să fixeze formula, referința și versiunea normalizării. `declared.by.evaluator` cere această rezolvare și nu permite alegerea unei scări după observarea câștigătorului. O valoare lipsă nu este cost zero: candidatul rămâne incomplet evaluat. Cerințele tari se verifică înaintea obiectivului și nu apar ca termeni compensabili ai lui.
 
 ## 12.5 Calibrare și verificarea unei modificări
 
@@ -3041,6 +3101,20 @@ Datele de intrare sunt cererea situată, versiunea stării de dinainte, observa�
 Observațiile și confirmările pot fi întârziate sau incomplete. De aceea un „success” tehnic nu este transformat direct în „I moved it”. O contradicție între confirmare și stare produce o afirmație despre incertitudine și poate cere recitire, potrivit politicii execuției. Sistemul nu inventează o cauză doar pentru a face răspunsul să pară complet.
 
 Afirmația internă păstrează rolurile actului și cerințele pe care le acoperă. O mutare are obiect, locul rezultat și relația verificată; o creare are identitatea nouă și întregul din care face parte. Rolurile sunt legate de obiecte și concepte, nu de numele unui mesaj de interfață. Această reprezentare permite gruparea înaintea realizării textului.
+
+### 13.1.1 Răspunsuri pentru propuneri, verificări și informație lipsă
+
+Modul cererii din secțiunea 10.2 determină ce fel de rezultat trebuie comunicat. Pentru `check` sau `propose`, un plan satisfăcător nu este un efect realizat. Dovezile pot veni din disponibilitatea citită ori din verificarea unui candidat pe fork, fără apeluri care modifică starea reală.
+
+| Rezultat și mod | Formulare engleză justificată |
+|---|---|
+| `check`, disponibilitate verificată pentru ambii participanți | „Monday 14:00 and Tuesday 10:00 are free for both.” Nu afirmă că o întâlnire a fost creată. |
+| `propose`, aceleași două opțiuni | „I suggest Monday at 14:00; Tuesday at 10:00 also works.” Preferința pentru prima opțiune trebuie susținută de obiectiv, altfel opțiunile sunt prezentate fără clasament. |
+| `ask`, informația necesară lipsește | „I have no information about your holiday calendar. Loading that calendar would let me check the dates.” Numește lipsa concretă și sursa care ar permite continuarea. |
+
+În primele două exemple, săptămâna, fusul orar, durata și participanții trebuie să fie deja rezolvați în cerere; dacă nu sunt, formularea îi precizează sau cere datele lipsă. Dovada disponibilității poartă versiunea sursei și intervalul verificat. O eventuală confirmare ulterioară revalidează disponibilitatea înainte de rezervare, deoarece starea poate să se fi schimbat.
+
+Lipsa informației nu devine negația faptului: „nu am date despre sărbători” nu înseamnă „nu există sărbători”. Nici nu este o afirmație de imposibilitate a sistemului în principiu. Sursa propusă trebuie să fie relevantă pentru informația cerută; dacă nu este cunoscută, sistemul cere o sursă potrivită fără să inventeze un fișier sau să pretindă că l-a consultat. Aceleași reguli se aplică unei proprietăți de desen, structurii unui document sau unui fapt dintr-o diagramă.
 
 ## 13.2 Selectarea conținutului și ordinea lui
 

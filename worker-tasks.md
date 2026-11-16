@@ -2527,3 +2527,7 @@ Phase-0 announcement accepted and relayed to PSys2 and sop-knowledge-worlds, wit
 ## 2026-11-16 21:45 (Rome) — OWNER DECISION relayed: old system removed everywhere
 
 The owner decided that nothing of the old system remains: everything runs on the new infrastructure, without `?engine=new` or other switches (details in PSys2 worker-tasks, same time). For the library this means: compatibility layers that exist only to serve the old PSys2 path (legacy request keys, old dispatcher adapters under `compat/psys2` not used by the reader corpus or the new path) are removed in the same series, with their tests; anything the new path still needs from them moves into the general mechanisms. For sop-knowledge-worlds: the old particular structures (`k.expect.*` and similar) are migrated onto the legend and request contracts, not kept beside them.
+
+## 2026-11-16 21:50 (Rome) — OWNER: parallel lanes (see PSys2 worker-tasks, same time)
+
+Library lane, now and in parallel with the four area lanes: typed reply assessments for existence (made / removed), relation (in / on / next to) and numeric or time comparison (later, longer, bigger), each like `assessPropertyChange`, so make, remove, place and calendar moves get verified replies. Knowledge lane: general productions from the frame licences covering every basic act and questions.

@@ -1808,3 +1808,7 @@ Owner (10:43): "why is the example a library with shelves and not our drawing wo
 - `reviews/sop-worlds-teorie.md` is now version 10: every example is from drawing, diagrams, documents or calendar; part six has one lesson per domain with its declaration in the target form. `reviews/sop-worlds-schimbari.md` has the domain decisions (section 5.3) and a task list (5.4).
 - **For your design page** (`reviews/legend-world-design.md`): work the examples on these four domains — a duck put on a lake, a flowchart with no circles, a short formal letter, a long meeting with Ana — not on the shelf or the necklace. Show a chart as a kind of diagram (a node's quantity placed on an axis of the page).
 - **Later, with the rewrite (not now):** the library's own examples and doc tests move from invented worlds to small instances of these four patterns; AGENTS.md rule 6 (toy examples only) will need a line saying that the examples are cut-down versions of the published patterns `w.drawing`, `w.diagram`, `w.document`, `w.calendar`.
+
+## 2026-11-16 22:10 — reviewer: theory document v11 (pointer only, no work ordered)
+
+`reviews/sop-worlds-teorie.md` is now version 11: same content and wire shapes as v10, rewritten as a narrative (each lesson starts from the need, every example wire is read line by line, open keys are explained with what is done with them and how they differ from variables). Wire spellings aligned with the library: `required=true`, `many=true`, `soft=true`. Still not a work order; the owner is reviewing it together with `reviews/sop-worlds-schimbari.md`.

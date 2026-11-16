@@ -106,3 +106,15 @@ Reader development exposed that identifying pre-state properties could not be se
 ### Increment 0.184.0 — retained revision registry
 
 World.retainRevision / retainedRevision implement the shared identity+revision→definition mechanism. Persistent frozen definitions are independent of ordinary fact undo, merged on adoption and preserved explicitly in full/delta/timeline JSON. First insertions inside refused transactions roll back; forks isolate later publications; conflicting reconciliation fails. JSON shape and budget checks precede publication. This prerequisite does not by itself implement point/frame bindings, migrations or calibration-to-axis consistency. The review's deferred registry is now delivered explicitly rather than pretending mutable source metadata can freeze point meaning.
+
+### Increment 0.185.0 — original grammar source ranges
+
+Opt-in parseText sourceSpans/sourceBudget preserves original Unicode scalar intervals separately from normalized token-index spans. Unaligned rewrites and exhausted mapping budgets report unavailable provenance rather than guessed source intervals. Disjoint ranges are not automatically contiguous request spans. This is shared reader infrastructure, not semantic interpretation or coverage.
+
+### Increment 0.186.0 — retained numerical space capture
+
+retainPointSpace captures a validated axes space, ordered axes, numeric parameters, all declared affine units and an explicit typed root frame into the retained registry. The owner is point.space: followed by the qualified space ID; version selects the immutable definition. Conflicting reuse fails and source undo cannot erase it. Frames are descriptors captured per space revision, not independent authenticated publications. Native point slots, canonical coordinate matching/indexing, axis paths, explicit migration guards and child-frame transforms remain pending; phase zero is not released.
+
+### Increment 0.187.0 — declarative parse-tree composition
+
+composeParses maps exact production IDs and lexical categories to structured JSON templates, independently for each parse candidate. Required child/feature mappings fail closed; alternatives and source ranges remain separate. Explicit syntax-only mappings are author assertions, not semantic coverage proofs. Own-property copying rejects exotic/non-JSON containers and accessors; budgets bound traversal. This mechanism does not itself emit or validate std.request wires, resolve domain references, rank alternatives or authorize execution. Knowledge declarations and a validated request adapter are separate follow-up work.

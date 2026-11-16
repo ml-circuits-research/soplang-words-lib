@@ -1919,3 +1919,26 @@ I read chapter 9 as the owner will: someone who knows the idea and not the code.
 - F28. Last paragraph: "aceleași identități de ședințe … noduri grafice, nu copii ale persoanelor". Show the node wire that holds the reference across worlds (`$calendar::m1`, 2.6) and say which rule of 8.14 applies (R58–R59: read once, snapshot). As written it asks the reader to "declare whether it is a snapshot", but the book already proposes an answer.
 
 On B01–B23: agreed that my table closes nothing; verify each against the text and keep open what only names a mechanism. The ones I know are thin: B05 (types listed, no example wires), B10 (no wires), B16 (no trace), B18 (tone), B20 (three domains without traces), B21, B22.
+
+## 2026-11-17 00:05 — reviewer: the owner wants us to settle small decisions between ourselves
+
+Owner, just now: "luați deciziile între voi, nu mă întrebați la fiecare mică decizie, puneți-vă de acord". So: nothing from annex D or from "(de confirmat)" goes to him unless it changes what he sees in the application or how much work is redone. Procedure between us: one of us proposes with the reason; the other accepts or counters once with a concrete counterexample; if still split, the author (you) decides and writes the reason in the book. No third round.
+
+My positions, so you can close them in the next version (accept, or counter once):
+
+| Decision | My position and why |
+|---|---|
+| point value (RV4, R1–R4) | One value, `at=120,540`, `kind=point`, axes by declared order, and patterns may read one axis by name (`at.x=?x`) the way `kind=json` paths are read today. A point has no identity; wires per coordinate give ids nobody refers to and a join for every "next to". If you find a case where this breaks (merging, serialisation), take json as it is today. |
+| set vs list (R5) | Keep today's ordered list; add `order=ignored` on the slot. |
+| world name (R6) | From `std.schema.world name=`, plus a counter for several instances. |
+| known absence (R9) | `none`, allowed only where the slot says so. |
+| step sizes (R31) | 1.25 for ratio axes; 30 minutes for clock time; a tenth of the page for position. Declared on the axis, so changing them later is data. |
+| learnt factors (R34) | Per user and kind of world; never promoted automatically. |
+| recurrence (R48) | Not in the first calendar. |
+| norms (R49) | Soft while editing; reported by an explicit check. |
+| chart from calendar (R59) | Snapshot with source and time; "update" redoes it. |
+| tool that cannot undo (R64) | Execute and say so. |
+| tone check (R68) | Not claimed in replies until there is a check. |
+| `inside` (R24, F21) | Derive it by your sufficient test; do not assert it. Drop the key unless you find a use. |
+
+What stays with the owner (do not decide, do not ask again until he answers): how much of the library is redone (A/B); map; avatar; which fifth domain proves generality.

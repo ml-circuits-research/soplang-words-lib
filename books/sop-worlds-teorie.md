@@ -808,7 +808,7 @@ Apartenența întreabă dacă un punct respectă descrierea unei regiuni. Includ
 
 Fiecare axă este adusă la aceeași scară. Pentru o axă liniară cu limite finite distincte și fără scară explicită `normalisation`, diferența se normalizează ca `delta = abs(a − b) / (max − min)`. Când ambele valori sunt în limite, rezultatul este între 0 și 1. O axă poate avea o pondere, `weight`, implicit 1. *(R18)*
 
-Pe o axă circulară (`kind=angle`, cu perioada 360), diferența este drumul cel mai scurt pe cerc, împărțit la jumătate de perioadă. Între nuanțele 350 și 0 diferența este 10/180, adică 0,056. *(R19)*
+Pe o axă circulară (`kind=angle`, cu `period=360` în exemplul nuanței), diferența este drumul cel mai scurt pe cerc, împărțit la jumătate de perioadă. Între nuanțele 350 și 0 diferența este 10/180, adică 0,056. *(R19)*
 
 Distanța dintre două puncte este `sqrt(sum(weight_i * delta_i²))`, unde `delta_i` este diferența normalizată pe axa `i`. Ponderile trebuie să fie pozitive; o axă nerelevantă pentru o regiune este omisă din restricția acelei regiuni, nu transformată într-o axă cu distanță nedefinită. *(R20)*
 
@@ -1173,7 +1173,7 @@ La fel, un slot cu `means=quality` și un spațiu primește comparativele, super
 
 ## 4.8 Tipurile de fire ale lumii legendelor
 
-Aceste tipuri descriu lumea legendelor și conținutul legat de ea. Contractele pentru acte și condiții sunt implementate prin `core.use world=w.legend`, conform §4.6.1. Contractele pentru spații, axe, regiuni și grade rămân propuse; exemplul mixt de mai jos nu este încă un modul executabil integral.
+Aceste tipuri descriu lumea legendelor și conținutul legat de ea. Contractele structurale pentru acte, condiții, spații, axe și unități sunt implementate prin `core.use world=w.legend`. Regiunile, gradele, reperele și valorile de tip punct rămân propuse.
 
 **`w.legend.space`** declară un spațiu conceptual.
 
@@ -1181,25 +1181,30 @@ Aceste tipuri descriu lumea legendelor și conținutul legat de ea. Contractele 
 |---|---|
 | `name` | Numele spațiului: `colour`, `size`, `shape`, `page`, `tone`. |
 | `form` | `axes` sau `graph`: cu axe numerice sau ca graf de părți. |
+| `version` | Versiunea declarată, obligatorie; nu garantează imutabilitatea. |
 
 **`w.legend.axis`** declară o axă a unui spațiu.
 
 | Cheia | Ce spune |
 |---|---|
-| `of` | Numele spațiului. |
+| `of` | Referință tipizată la declarația spațiului. |
 | `name` | Numele axei: `hue`, `saturation`, `lightness`. |
 | `min`, `max` | Marginile axei. |
-| `kind` | `angle` pentru o axă circulară, cum este nuanța; altfel lipsește. |
+| `kind` | Obligatoriu: `angle` pentru o axă circulară, `linear` pentru una liniară. |
+| `period` | Număr pozitiv obligatoriu numai pentru `angle`, exprimat în unitatea canonică. |
+| `unit` | Referință obligatorie la unitatea canonică a axei. |
 | `scale` | `ratio` pentru pași multiplicativi; `interval` pentru pași aditivi. |
 | `step` | Factorul sau deplasarea unui pas, conform scării; vezi 4.5.1. |
-| `order`, `weight` | Poziția axei în serializarea unui punct și ponderea pozitivă în metrică. |
+| `order`, `weight` | Ordine întreagă sigur reprezentabilă, nenegativă și unică în spațiu, obligatorie; pondere pozitivă opțională. |
 | `normalisation` | Lungimea pozitivă de normalizare, în unitatea axei; înlocuiește numitorul `max−min` când este declarată. Pentru o axă liniară fără limite finite este obligatorie dacă se cere distanța normalizată. Vezi 8.2.1. |
+
+Parametrii numerici trebuie să fie finiți. Dacă ambele limite există, `min` trebuie să fie strict mai mic decât `max`. `scale` și `step` apar împreună: pasul este o mărime pozitivă pentru `interval`, iar pentru `ratio` este un factor strict mai mare decât 1; direcția cererii va selecta adunarea/scăderea sau multiplicarea/împărțirea. Schema nu execută acele operații. Unitățile alternative pot avea o deplasare semnată, astfel încât descrierea să nu excludă conversiile afine; executarea conversiei rămâne un mecanism separat.
 
 **`w.legend.region`** declară o regiune a unui spațiu, adică înțelesul unui cuvânt. Firele de acest tip stau în bazele de cunoaștere.
 
 | Cheia | Ce spune |
 |---|---|
-| `of` | Numele spațiului. |
+| `of` | Referință tipizată la declarația spațiului. |
 | `name` | Numele regiunii: `red`, `circle`, `formal`, `morning`. |
 | `centre.<axă>` | Valoarea centrului pe fiecare axă. |
 | `spread` | Întinderea în jurul centrului. |
@@ -1225,19 +1230,29 @@ Aceste tipuri descriu lumea legendelor și conținutul legat de ea. Contractele 
 | `before` | Referințe repetabile la condiții `w.legend.condition` pentru starea inițială; opționale. |
 | `after` | Referințe repetabile la condiții `w.legend.condition` pentru starea finală; cel puțin una obligatorie. |
 
-Un exemplu din fiecare:
+Exemplu executabil al declarațiilor de culoare, fără afirmație de validare a punctelor:
 
-```
-@sp.colour w.legend.space  name=colour form=axes
-@ax.hue    w.legend.axis   of=colour name=hue kind=angle
-@rg.red    w.legend.region of=colour name=red centre.hue=0 centre.saturation=0.9 centre.lightness=0.5 spread=0.12
-@dg.big    w.legend.degree word=big direction=up factor=1.6
-@condition.exists w.legend.condition kind=exists object=object
-@condition.relation w.legend.condition kind=holds object=object goal=goal
-@act.place w.legend.act name=place change=relation role=object role=goal before=$condition.exists after=$condition.relation
+```sop
+@sp.colour w.legend.space name=colour form=axes version=1
+@ax.hue w.legend.axis of=$sp.colour name=hue order=0 kind=angle period=360 unit=$unit.degree min=0 max=360
+@ax.saturation w.legend.axis of=$sp.colour name=saturation order=1 kind=linear unit=$unit.saturation min=0 max=1
+@ax.lightness w.legend.axis of=$sp.colour name=lightness order=2 kind=linear unit=$unit.lightness min=0 max=1
+@unit.degree w.legend.unit name=degree of=$ax.hue factor=1 offset=0
+@unit.saturation w.legend.unit name=ratio of=$ax.saturation factor=1 offset=0
+@unit.lightness w.legend.unit name=ratio of=$ax.lightness factor=1 offset=0
 ```
 
-Primul fir declară spațiul culorilor. Al doilea, una dintre axele lui. Al treilea, regiunea numită „red”, cu centrul ei. Al patrulea, cuvântul de grad „big”. Ultimele trei fire declară două condiții și actul „a așeza”: o schimbare de relație, cu două roluri, lucrul și ținta, cu condiția dinainte și cu cea de după.
+Referințele `of` și `unit` leagă declarații, nu caută texte similare. Cele două unități numite `ratio` aparțin unor axe diferite și nu sunt contopite. Ordinea axelor este dată de întregi unici în spațiul lor; nu este necesar ca numerele să fie consecutive. Unitatea canonică trebuie să aparțină exact axei care o referă și să aibă factor 1 și deplasare 0. Referințele circulare axă–unitate se încarcă atomic, în același lot. Tipurile declarațiilor de axe și unități sunt partajate între namespace-uri: mutarea unei declarații în alt namespace nu permite dublarea aceleiași axe într-un spațiu comun. Două spații cu identități diferite pot folosi aceleași nume.
+
+Modulul validează prezența câmpurilor, referințele și restricțiile numerice. `version` este metadată; nu blochează editările. Un spațiu poate fi declarat înaintea axelor sale, dar nu poate fi folosit ca punct complet numai pentru că declarația este validă. Spațiile `graph` nu acceptă axe numerice; reprezentarea grafului rămâne de implementat. Reperul cu origine, orientare și transformări din §4.4.3 nu este furnizat de acest increment. Valorile de tip punct, dimensiunile, metricile și transformările dintre repere rămân separat de implementat.
+
+Fragment propus de regiune, dependent de toate axele declarate mai sus:
+
+```sop
+@rg.red w.legend.region of=$sp.colour name=red centre.hue=0 centre.saturation=0.9 centre.lightness=0.5 spread=0.12
+```
+
+Schema regiunii și verificarea coordonatelor ei rămân propuse. Declarațiile actelor și condițiilor sunt exemplificate executabil în §4.6.1; numirea unui cuvânt de grad nu implementează încă transformarea unui punct.
 
 ### 4.8.1 Metamodelul conceptual și ordinea de încărcare
 
@@ -1252,7 +1267,7 @@ Tipurile de fire ale lumii legendelor sunt cele din secțiunea 4.8, la care se a
 | `w.legend.concept` | Un concept general. Chei: `name`; `group` (grupa din care face parte); `specialises` (conceptul mai general, dacă are unul); `question` (întrebarea generală: „Where?”). |
 | `w.legend.role` | Un rol. Chei: `name`; `of` (actul sau relația în care apare). |
 | `w.legend.relation` | O relație generală. Chei: `name` (`in`, `on`, `next_to`); `space` (în ce spațiu se măsoară); `inverse`; `test` (funcția care spune, din pozițiile a două lucruri, dacă relația ține). |
-| `w.legend.unit` | O unitate de măsură. Chei: `name`; `of` (axa); `factor` (câte unități de bază face). |
+| `w.legend.unit` | Unitate declarată prin `name`, `of` (referință la axă), `factor` pozitiv și `offset` finit, toate obligatorii. Conversia declarată este `valoare_canonică = factor × valoare + offset`. |
 
 Felurile de afirmații, cuprinderea și negația sunt fire `w.legend.concept`. O resursă nu are tip propriu: un tip de lucruri se declară resursă cu `resource=true` pe firul lui `core.type`.
 
@@ -2194,7 +2209,7 @@ Genurile (scrisoare, raport, poveste, notă) și părțile fiecăruia sunt grafu
 
 ## 7.4 Calendarul
 
-**Starea implementării.** PSys2 publică în `a0987918` un adaptor local de calendar, documentat în [contractul gazdei](../../psys2/specs/29-calendar-host.md). El primește persoane, săli și ședințe cu identități și momente deja rezolvate, verifică referințele și suprapunerile, aplică modificări atomic și întoarce observația stării efective. Versiunile previn scrierile pornite dintr-o stare veche; identitatea operației împiedică repetarea efectului la reluare; anularea condiționată restaurează ultima schimbare fără să șteargă editări independente. Observația completă privește numai depozitul local al acestei instanțe. Adaptorul și vederea tabelară nu implementează încă citirea conversațională, recurența, persistența sau legarea la zona activă a aplicației; acestea se construiesc pe contractele comune, nu sunt presupuse realizate de existența operațiilor.
+**Starea implementării.** PSys2 publică în `214802c7` un adaptor local de calendar, documentat în [contractul gazdei](../../psys2/specs/29-calendar-host.md). El primește persoane, săli și ședințe cu identități și momente deja rezolvate, verifică integritatea structurală și referințele, păstrează inclusiv suprapunerile deja observate, aplică modificări atomic și întoarce observația stării efective. Versiunile previn scrierile pornite dintr-o stare veche; identitatea operației împiedică repetarea efectului la reluare; anularea condiționată restaurează ultima schimbare fără să șteargă editări independente. Politica de suprapunere aparține regulilor declarate ale lumii, nu codului adaptorului. Observația completă privește numai depozitul local al acestei instanțe. Adaptorul și vederea tabelară nu implementează încă citirea conversațională, recurența, persistența sau legarea la zona activă a aplicației; acestea se construiesc pe contractele comune, nu sunt presupuse realizate de existența operațiilor.
 
 ```
 @w          std.schema.world name=calendar

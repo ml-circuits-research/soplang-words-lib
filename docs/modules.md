@@ -84,8 +84,18 @@ A declarative deny requires exact unit-label agreement between each set and its 
 
 ## Legend acts and conditions
 
-Added with 0.172.0: `core.use world=w.legend` publishes closed `w.legend.act` and `w.legend.condition` records. This increment covers act declarations only; spaces, axes, points and semantic links are still pending.
+Added with 0.172.0: `core.use world=w.legend` publishes closed `w.legend.act` and `w.legend.condition` records. This initial increment covers act declarations; the structural space/axis/unit extension is described below. Points and semantic links remain pending.
 
 Acts require an atomic name, a change (`appear`, `disappear`, `quality`, `relation`), nonempty role names and at least one typed `after` condition reference. `before` is optional. Conditions require `kind` and an `object` role name. `exists` and `absent` prohibit other arguments; `has` requires `quality`; `holds` requires `goal`. The latter receives its concrete relation from the eventual request. Unknown keys and wrong variants are rejected.
 
 Every condition argument must name a role of every referring act; an unrelated act cannot supply that role. Edits are checked transactionally. Orphan conditions may be stored for reuse, and role names are not limited to the example vocabulary. The contract validates declarations, not request binding, planning, observed effects or closed-world absence.
+
+## Legend spaces, axes and units
+
+Added with 0.173.0: `w.legend` also exports closed `w.legend.space`, `w.legend.axis` and `w.legend.unit` records. Spaces require `name`, `version` and `form=axes|graph`. Axes require a typed `of` space, `name`, safe nonnegative integer `order`, explicit `kind=linear|angle` and a typed canonical `unit`. Names and orders are unique per space; gaps in order are valid. Axis and unit declaration types are shared across namespaces, so uniqueness cannot be bypassed by declaring a second member in another namespace. Distinct owner identities still permit the same public vocabulary. Graph spaces reject numerical axes.
+
+Canonical units must reference their own axis, with factor one and offset zero. Alternative units require finite positive `factor` and finite signed `offset`; their declaration means `canonical = factor * value + offset`. Unit names are unique per axis. Forward axis/unit references load in one atomic batch.
+
+Optional bounds must satisfy min < max when both exist; weights and normalization lengths are positive. Circular axes require an explicit positive `period`; linear axes forbid it. `scale` and `step` occur together: ratio step > 1, interval step > 0, with direction selecting multiplication/division or addition/subtraction in the future evaluator. Finite scalar parsing and reference checks apply throughout.
+
+This validates declarations only. Frame transformations, point values, region coordinates, metric evaluation, unit conversion and semantic name resolution remain pending. Space version is metadata, not enforced immutability. Empty spaces can be declared before their axes; that does not make them complete point schemas.

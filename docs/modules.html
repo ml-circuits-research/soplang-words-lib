@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld The standard modules</title>
-<meta name="source-hash" content="50047857be54">
+<meta name="source-hash" content="8958497c95e5">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.172.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.173.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html" aria-current="page">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -41,12 +41,17 @@
 <p>A declarative deny requires exact unit-label agreement between each set and its members, including edits to shared samples. This is not unit conversion or dimensional resolution. The optional provenance link is type-checked and protected against dangling deletion, but its absence does not prove a measured source. Version is recorded metadata: replacing a sample may change every referencing set without changing the recorded version. Immutable snapshots, calibration recomputation, median checking and normalization validity are not implemented by this structural module.</p>
 <p><code>test/reference-contracts.test.mjs</code> loads the exact executable reference fragment of book §12.2.1 and tests multiplicity, invalid references, missing fields, unit conflicts, transactional edits, provenance and aliases. The calibration and axis fragment remains explicitly proposed.</p>
 <h2 id="legend-acts-and-conditions">Legend acts and conditions</h2>
-<p>Added with 0.172.0: <code>core.use world=w.legend</code> publishes closed <code>w.legend.act</code> and <code>w.legend.condition</code> records. This increment covers act declarations only; spaces, axes, points and semantic links are still pending.</p>
+<p>Added with 0.172.0: <code>core.use world=w.legend</code> publishes closed <code>w.legend.act</code> and <code>w.legend.condition</code> records. This initial increment covers act declarations; the structural space/axis/unit extension is described below. Points and semantic links remain pending.</p>
 <p>Acts require an atomic name, a change (<code>appear</code>, <code>disappear</code>, <code>quality</code>, <code>relation</code>), nonempty role names and at least one typed <code>after</code> condition reference. <code>before</code> is optional. Conditions require <code>kind</code> and an <code>object</code> role name. <code>exists</code> and <code>absent</code> prohibit other arguments; <code>has</code> requires <code>quality</code>; <code>holds</code> requires <code>goal</code>. The latter receives its concrete relation from the eventual request. Unknown keys and wrong variants are rejected.</p>
 <p>Every condition argument must name a role of every referring act; an unrelated act cannot supply that role. Edits are checked transactionally. Orphan conditions may be stored for reuse, and role names are not limited to the example vocabulary. The contract validates declarations, not request binding, planning, observed effects or closed-world absence.</p>
+<h2 id="legend-spaces-axes-and-units">Legend spaces, axes and units</h2>
+<p>Added with 0.173.0: <code>w.legend</code> also exports closed <code>w.legend.space</code>, <code>w.legend.axis</code> and <code>w.legend.unit</code> records. Spaces require <code>name</code>, <code>version</code> and <code>form=axes|graph</code>. Axes require a typed <code>of</code> space, <code>name</code>, safe nonnegative integer <code>order</code>, explicit <code>kind=linear|angle</code> and a typed canonical <code>unit</code>. Names and orders are unique per space; gaps in order are valid. Axis and unit declaration types are shared across namespaces, so uniqueness cannot be bypassed by declaring a second member in another namespace. Distinct owner identities still permit the same public vocabulary. Graph spaces reject numerical axes.</p>
+<p>Canonical units must reference their own axis, with factor one and offset zero. Alternative units require finite positive <code>factor</code> and finite signed <code>offset</code>; their declaration means <code>canonical = factor * value + offset</code>. Unit names are unique per axis. Forward axis/unit references load in one atomic batch.</p>
+<p>Optional bounds must satisfy min &lt; max when both exist; weights and normalization lengths are positive. Circular axes require an explicit positive <code>period</code>; linear axes forbid it. <code>scale</code> and <code>step</code> occur together: ratio step &gt; 1, interval step &gt; 0, with direction selecting multiplication/division or addition/subtraction in the future evaluator. Finite scalar parsing and reference checks apply throughout.</p>
+<p>This validates declarations only. Frame transformations, point values, region coordinates, metric evaluation, unit conversion and semantic name resolution remain pending. Space version is metadata, not enforced immutability. Empty spaces can be declared before their axes; that does not make them complete point schemas.</p>
 <p class="source">Generated from <code>docs/modules.md</code>.</p>
 </main>
-<footer>sopworld 0.172.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.173.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

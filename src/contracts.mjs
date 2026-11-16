@@ -80,7 +80,88 @@ export const CONTRACT_MODULES = {
   },
   'w.legend': {
     text: `
-@w.legend.module core.module name=w.legend version=0.172.0 exports=w.legend.act exports=w.legend.condition
+@w.legend.module core.module name=w.legend version=0.173.0 exports=w.legend.act exports=w.legend.condition exports=w.legend.space exports=w.legend.axis exports=w.legend.unit
+@w.legend.space.type core.type of=w.legend.space closed=true
+@w.legend.axis.type core.type of=w.legend.axis closed=true shared=true
+@w.legend.unit.type core.type of=w.legend.unit closed=true shared=true
+@w.legend.space.name core.slot of=w.legend.space key=name kind=atom present=true
+@w.legend.space.version core.slot of=w.legend.space key=version kind=string present=true
+@w.legend.space.form core.slot of=w.legend.space key=form kind=atom enum=axes enum=graph present=true
+@w.legend.axis.of core.slot of=w.legend.axis key=of kind=ref to=w.legend.space present=true
+@w.legend.axis.name core.slot of=w.legend.axis key=name kind=atom present=true
+@w.legend.axis.order core.slot of=w.legend.axis key=order kind=integer min=0 max=9007199254740991 present=true
+@w.legend.axis.kind core.slot of=w.legend.axis key=kind kind=atom enum=linear enum=angle present=true
+@w.legend.axis.unit core.slot of=w.legend.axis key=unit kind=ref to=w.legend.unit present=true
+@w.legend.axis.min core.slot of=w.legend.axis key=min kind=number
+@w.legend.axis.max core.slot of=w.legend.axis key=max kind=number
+@w.legend.axis.weight core.slot of=w.legend.axis key=weight kind=number
+@w.legend.axis.normalisation core.slot of=w.legend.axis key=normalisation kind=number
+@w.legend.axis.period core.slot of=w.legend.axis key=period kind=number
+@w.legend.axis.scale core.slot of=w.legend.axis key=scale kind=atom enum=ratio enum=interval
+@w.legend.axis.step core.slot of=w.legend.axis key=step kind=number
+@w.legend.unit.name core.slot of=w.legend.unit key=name kind=atom present=true
+@w.legend.unit.of core.slot of=w.legend.unit key=of kind=ref to=w.legend.axis present=true
+@w.legend.unit.factor core.slot of=w.legend.unit key=factor kind=number present=true
+@w.legend.unit.offset core.slot of=w.legend.unit key=offset kind=number present=true
+@w.legend.guard.graph.axis.p0 w.legend.space form=graph
+@w.legend.guard.graph.axis.p1 w.legend.axis of=$w.legend.guard.graph.axis.p0
+@w.legend.guard.graph.axis.deny core.deny when=$w.legend.guard.graph.axis.p0 when=$w.legend.guard.graph.axis.p1  why="invalid legend axis"
+@w.legend.guard.positive.weight.p0 w.legend.axis weight=?v
+@w.legend.guard.positive.weight.c0 core.check fn=lte args=?v args=0
+@w.legend.guard.positive.weight.deny core.deny when=$w.legend.guard.positive.weight.p0 if=$w.legend.guard.positive.weight.c0 why="invalid legend weight"
+@w.legend.guard.positive.normalisation.p0 w.legend.axis normalisation=?v
+@w.legend.guard.positive.normalisation.c0 core.check fn=lte args=?v args=0
+@w.legend.guard.positive.normalisation.deny core.deny when=$w.legend.guard.positive.normalisation.p0 if=$w.legend.guard.positive.normalisation.c0 why="invalid legend normalisation"
+@w.legend.guard.positive.period.p0 w.legend.axis period=?v
+@w.legend.guard.positive.period.c0 core.check fn=lte args=?v args=0
+@w.legend.guard.positive.period.deny core.deny when=$w.legend.guard.positive.period.p0 if=$w.legend.guard.positive.period.c0 why="invalid legend period"
+@w.legend.guard.positive.factor.p0 w.legend.unit factor=?v
+@w.legend.guard.positive.factor.c0 core.check fn=lte args=?v args=0
+@w.legend.guard.positive.factor.deny core.deny when=$w.legend.guard.positive.factor.p0 if=$w.legend.guard.positive.factor.c0 why="invalid legend factor"
+@w.legend.guard.bounds.p0 w.legend.axis min=?lo max=?hi
+@w.legend.guard.bounds.c0 core.check fn=gte args=?lo args=?hi
+@w.legend.guard.bounds.deny core.deny when=$w.legend.guard.bounds.p0 if=$w.legend.guard.bounds.c0 why="invalid legend bounds"
+@w.legend.guard.angle.period.p0 w.legend.axis kind=angle core.absent=period
+@w.legend.guard.angle.period.deny core.deny when=$w.legend.guard.angle.period.p0  why="invalid legend period"
+@w.legend.guard.linear.period.p0 w.legend.axis kind=linear period=?v
+@w.legend.guard.linear.period.deny core.deny when=$w.legend.guard.linear.period.p0  why="invalid legend period"
+@w.legend.guard.step.scale.p0 w.legend.axis step=?v core.absent=scale
+@w.legend.guard.step.scale.deny core.deny when=$w.legend.guard.step.scale.p0  why="invalid legend scale"
+@w.legend.guard.scale.step.p0 w.legend.axis scale=?s core.absent=step
+@w.legend.guard.scale.step.deny core.deny when=$w.legend.guard.scale.step.p0  why="invalid legend step"
+@w.legend.guard.step.ratio.p0 w.legend.axis scale=ratio step=?v
+@w.legend.guard.step.ratio.c0 core.check fn=lte args=?v args=1
+@w.legend.guard.step.ratio.deny core.deny when=$w.legend.guard.step.ratio.p0 if=$w.legend.guard.step.ratio.c0 why="invalid legend ratio"
+@w.legend.guard.step.interval.p0 w.legend.axis scale=interval step=?v
+@w.legend.guard.step.interval.c0 core.check fn=lte args=?v args=0
+@w.legend.guard.step.interval.deny core.deny when=$w.legend.guard.step.interval.p0 if=$w.legend.guard.step.interval.c0 why="invalid legend interval"
+@w.legend.unique.axis.name.a w.legend.axis of=?space name=?value
+@w.legend.unique.axis.name.b w.legend.axis of=?space name=?value
+@w.legend.unique.axis.name.ca core.calc out=?left fn=concat args=identity. args=?w.legend.unique.axis.name.a
+@w.legend.unique.axis.name.cb core.calc out=?right fn=concat args=identity. args=?w.legend.unique.axis.name.b
+@w.legend.unique.axis.name.different core.check fn=neq args=?left args=?right
+@w.legend.unique.axis.name.deny core.deny when=$w.legend.unique.axis.name.a when=$w.legend.unique.axis.name.b with=$w.legend.unique.axis.name.ca with=$w.legend.unique.axis.name.cb if=$w.legend.unique.axis.name.different why="duplicate axis name within owner"
+@w.legend.unique.axis.order.a w.legend.axis of=?space order=?value
+@w.legend.unique.axis.order.b w.legend.axis of=?space order=?value
+@w.legend.unique.axis.order.ca core.calc out=?left fn=concat args=identity. args=?w.legend.unique.axis.order.a
+@w.legend.unique.axis.order.cb core.calc out=?right fn=concat args=identity. args=?w.legend.unique.axis.order.b
+@w.legend.unique.axis.order.different core.check fn=neq args=?left args=?right
+@w.legend.unique.axis.order.deny core.deny when=$w.legend.unique.axis.order.a when=$w.legend.unique.axis.order.b with=$w.legend.unique.axis.order.ca with=$w.legend.unique.axis.order.cb if=$w.legend.unique.axis.order.different why="duplicate axis order within owner"
+@w.legend.unique.unit.name.a w.legend.unit of=?space name=?value
+@w.legend.unique.unit.name.b w.legend.unit of=?space name=?value
+@w.legend.unique.unit.name.ca core.calc out=?left fn=concat args=identity. args=?w.legend.unique.unit.name.a
+@w.legend.unique.unit.name.cb core.calc out=?right fn=concat args=identity. args=?w.legend.unique.unit.name.b
+@w.legend.unique.unit.name.different core.check fn=neq args=?left args=?right
+@w.legend.unique.unit.name.deny core.deny when=$w.legend.unique.unit.name.a when=$w.legend.unique.unit.name.b with=$w.legend.unique.unit.name.ca with=$w.legend.unique.unit.name.cb if=$w.legend.unique.unit.name.different why="duplicate unit name within owner"
+@w.legend.canonical.axis w.legend.axis unit=$w.legend.canonical.unit
+@w.legend.canonical.unit w.legend.unit factor=?factor offset=?offset
+@w.legend.canonical.allowed w.legend.unit of=$w.legend.canonical.axis
+@w.legend.canonical.identity core.calc out=?w.legend.canonical.allowed fn=concat args=?w.legend.canonical.unit
+@w.legend.canonical.factor core.check fn=neq args=?factor args=1
+@w.legend.canonical.offset core.check fn=neq args=?offset args=0
+@w.legend.canonical.deny.owner core.deny when=$w.legend.canonical.axis when=$w.legend.canonical.unit with=$w.legend.canonical.identity not=$w.legend.canonical.allowed why="canonical unit must belong to its axis"
+@w.legend.canonical.deny.factor core.deny when=$w.legend.canonical.axis when=$w.legend.canonical.unit if=$w.legend.canonical.factor why="canonical unit factor must equal one"
+@w.legend.canonical.deny.offset core.deny when=$w.legend.canonical.axis when=$w.legend.canonical.unit if=$w.legend.canonical.offset why="canonical unit offset must equal zero"
 @w.legend.act.type core.type of=w.legend.act closed=true
 @w.legend.condition.type core.type of=w.legend.condition closed=true
 @w.legend.act.name core.slot of=w.legend.act key=name kind=atom present=true

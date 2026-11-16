@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.173.0
+
+- Extend the legend contract with versioned spaces, ordered axes and typed canonical/alternative units; validate ownership, unique names/orders and numerical parameters.
+- Exercise the book's complete colour-axis fixture and transactional rejection cases. Frame/point semantics and conversion remain pending.
+
+
 ## 0.172.0
 
 - Publish opt-in legend act/condition schemas, variant guards and owning-act role validation with executable book fixtures.

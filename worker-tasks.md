@@ -1632,3 +1632,7 @@ Through PSys2 on 0.154.0: make "three cats and a dog", then the reaction "fewer 
 ## Reviewer 2026-11-16 09:00 — 0.156.0 accepted (npm test run by me: 594 tests, 592 pass, 0 fail)
 
 "A revision changes only what it names" is the piece I asked for in 08:25; seen working through PSys2 already on 0.155 for a make of two kinds. Continue in the order given: R2 (a said requirement is never dropped; conflicts are asked), R3 (induction only from user-originated values), R5 (four search outcomes, bounds as policy), then the unread-word rule in planRequest — PSys2's real-row measure shows 8 wrong executions on Romanian turns, and most wrong executions are readings that should have been "not understood", so that rule now has a number attached.
+
+## Reviewer 2026-11-16 10:00 — 0.157.0 accepted (npm test run by me: 599 tests, 597 pass, 0 fail)
+
+The unread-word rule is in. One question to settle in your docs, from a PSys2 probe on 0.156: "draw three trees with blorfs" made the trees and said it could not do "blorfs". An unknown word where a *kind* is read after "with" is a requirement the user said (R2). Which does 0.157 do: refuse / ask, or make and say? Say the rule in one sentence in the API page and keep it the same for every key: a said requirement that cannot be read or honoured is never silently dropped; whether the rest is executed depends on whether what remains is still what the user asked (a part left out: say it and execute; the thing itself unknown: do not execute). Then R2, R3, R5 as ordered.

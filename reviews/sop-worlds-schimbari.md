@@ -36,7 +36,7 @@ Trei reguli sunt valabile peste tot.
 | întrebările și cadrele de răspuns | Pentru fiecare concept, întrebarea generală („Where?”, „How big?”, „Which one?”). Pentru fiecare act, un cadru de propoziție. |
 | legătura | Două chei noi pe declarațiile oricărei lumi: pe `core.type`, ce concept este; pe `core.slot`, ce concept realizează, cu precizarea lui (spațiu, relație, rol). |
 
-**Cum se verifică.** O pagină de proiect, `reviews/legend-world-design.md`, cu firele scrise și cu patru exemple lucrate de mână: raftul, o ședință în calendar, o rață în desen și unul dintr-un domeniu pe care nu îl avem. Proprietarul o aprobă înainte de orice program.
+**Cum se verifică.** O pagină de proiect, `reviews/legend-world-design.md`, cu firele scrise și cu câte un exemplu lucrat de mână din fiecare dintre cele patru domenii: o rață pusă pe un lac în desen, un flux fără cercuri în diagrame, o scrisoare scurtă și formală în documente, o ședință lungă cu Ana în calendar. Proprietarul o aprobă înainte de orice program.
 
 **Ce este de hotărât aici.** Numele exacte ale tipurilor și cheilor (`is=`, `means=`, `space=` sunt propunerea mea). Ce rămâne discret ca excepție motivată (persoana și timpul verbului, da sau nu, starea unei cereri).
 
@@ -95,7 +95,7 @@ Aici se reface. Fișierele și constantele sunt cele din depozit, numărate de m
 
 **Ce se șterge din bibliotecă.** Toate rândurile de răspuns pe situație adăugate între versiunile 0.152 și 0.167; mecanismele separate pentru pasul de mărime, de lungime, de cantitate și de loc; listele de mai sus.
 
-**Cum se verifică.** Testele motorului rămân și trebuie să treacă neschimbate. Pentru stratul nou: proprietăți pe roluri, pe exemplele bibliotecii, în cel puțin trei domenii diferite; perechi minimale pentru citire; verificarea că un răspuns spune „am făcut” numai pentru o schimbare aflată în stare.
+**Cum se verifică.** Testele motorului rămân și trebuie să treacă neschimbate. Pentru stratul nou: proprietăți pe roluri, pe exemple mici din cele patru domenii (desen, diagramă, document, calendar), nu pe lumi inventate; perechi minimale pentru citire; verificarea că un răspuns spune „am făcut” numai pentru o schimbare aflată în stare.
 
 **Ce este de hotărât.** Varianta A (se reface stratul conversației, motorul rămâne cu precizările de la 3.1) sau varianta B (se reface tot). Recomandarea mea este A; motivele sunt în secțiunea 9.
 
@@ -168,9 +168,32 @@ Numerele din această secțiune sunt din inventarul sesiunii aplicației, din 16
 | Verificarea „am făcut” numără și contoarele de pași ca schimbare. | Numără numai conținutul stării. |
 | Traducerea din română: reguli proprii (un fișier de 1791 de linii și un vocabular de 1329), cu un consum care a blocat o propoziție cu enumerare. | Rămâne o problemă separată. Hotărârea proprietarului: limba este cea aleasă în selector; se folosesc traducerea browserului când există, apoi modelul de pe dispozitiv, apoi regulile; se alege varianta pe care citirea o înțelege cel mai bine. Răspunsurile în română nu citează fragmente în engleză. |
 
-### 5.3 Domeniul nou: calendarul
+### 5.3 Ce domenii rămân
 
-Se face numai după ce lumea legendelor și stratul nou există. Declarația lui este în teorie, lecția 30. Este proba: nu are voie să aducă niciun rând de răspuns, nicio întrebare, niciun indiciu, nicio listă de valori.
+Hotărârea proprietarului (16 noiembrie): aplicația are patru domenii — **desen, diagrame, documente, calendar** — și toată documentația dă exemple numai din ele.
+
+| Domeniu | Ce se face |
+|---|---|
+| desen | Rămâne; se rescrie peste lumea legendelor (teoria, lecția 29). |
+| diagrame | Rămâne; se rescrie (lecția 30). **Graficele intră aici**, ca fel de diagramă: nodurile sunt bare sau puncte, iar o cantitate a fiecăruia este pusă pe o axă a paginii. |
+| documente | Rămâne; se rescrie (lecția 31). |
+| calendar | Domeniu nou (lecția 32). Există un tipar publicat `w.calendar`; se rescrie peste concepte și primește unelte și o înfățișare pe pagină. Se face după ce lumea legendelor și stratul nou există. Este și proba: nu are voie să aducă niciun rând de răspuns, nicio întrebare, niciun indiciu, nicio listă de valori. |
+| grafice (domeniu separat) | **Se elimină.** Cele 481 de tipare de propoziții și programul lui ies din aplicație; ce merită păstrat (desenarea barelor și a liniilor) devine unealtă a diagramelor. |
+| muzică | **Se elimină deocamdată.** Cele 477 de tipare și programul lui ies din aplicație; tiparul din cunoaștere rămâne publicat, nefolosit. |
+| hartă | Nehotărât. Este în întregime pe drumul vechi (582 de tipare). De hotărât: se elimină deocamdată, ca muzica, sau trece pe declarații după calendar. |
+| avatar | Nehotărât ca loc în listă. Este deja pe declarații; proprietarul a cerut să meargă pe același drum ca restul. De hotărât dacă rămâne ca al cincilea domeniu sau ca parte a desenului (o față este un lucru desenat, cu părți). |
+
+### 5.4 Sarcini de actualizare, ca listă de lucru
+
+| Sarcină | Unde |
+|---|---|
+| Scoaterea domeniului de grafice: filă, tipare, program, teste, rânduri din jurnalul de teste vechi. | aplicație |
+| Graficele ca fel de diagramă: grafurile lor în cunoaștere (grafic cu bare, cu linie), slotul de cantitate al nodului, unealta care așază barele pe o axă. | cunoaștere, aplicație |
+| Scoaterea domeniului de muzică: filă, tipare, program, teste. | aplicație |
+| Calendarul: tiparul rescris, uneltele (adaugă, mută, schimbă, șterge), vederea stării, înfățișarea pe pagină. | cunoaștere, aplicație |
+| Exemplele și testele bibliotecii mutate de pe lumile inventate pe exemple mici din cele patru domenii. | bibliotecă |
+| Sesiunile de măsură: rândurile despre grafice, muzică și hartă se scot din numărătoare sau se marchează „domeniu eliminat”. | aplicație |
+| Hotărârea despre hartă și avatar, apoi sarcinile care decurg. | proprietar |
 
 **Cum se verifică aplicația.** Cele trei sesiuni ale proprietarului, cu verificări care afirmă intenția. Punctul de pornire, din jurnalul aplicației: sesiunea din 16 noiembrie, 51 de replici, 11 corecte, 12 parțiale, 23 de refuzuri, 5 greșite; sesiunea în română din 15 noiembrie, 43 de replici, 8, 5, 26, 4; sesiunea în engleză, 16 replici, 7, 2, 5, 2. Greșitele trebuie să ajungă la zero; corectele trebuie să crească fără ca sesiunile să fie folosite la scrierea declarațiilor.
 
@@ -182,7 +205,7 @@ Se face numai după ce lumea legendelor și stratul nou există. Declarația lui
 |---|---|
 | teoria | `reviews/sop-worlds-teorie.md` este sursa. După aprobare se traduce în engleză și se împarte în paginile documentației bibliotecii. |
 | paginile bibliotecii | `glossary`, `kinds-of-worlds`, `language`, `reference`, `api`, `capabilities`, `host-contract`, `patterns`, `literature` se rescriu cu numele noi (tipar de lume, bază de cunoaștere, instanță de lume; schemă în loc de *matrix*) și cu lumea legendelor. O pagină nouă, `semantics`, închide hotărârile de limbaj de la 3.1. |
-| exemplele din pagini | Fiecare exemplu rulează ca test. Raftul și calendarul din teorie devin exemple rulate. |
+| exemplele din pagini | Fiecare exemplu rulează ca test. Exemplele sunt numai din cele patru domenii; lumile inventate de până acum (raftul, colierul) ies din documentație. |
 | skill-urile | `author-live-world` devine „cum declari un domeniu”: sloturi legate de concepte, unelte, nimic altceva. `audit-knowledge` verifică nivelul de generalitate și listele de cuvinte. `propose-generic-method`, `consolidate`, `improve-world-from-failures`, `expand-and-test-case`, `learn-language-rules`, `learn-world-from-examples` se rescriu pe regula „de la general la particular”. Lista cazurilor nerezolvate se numește „register of unsupported cases”. |
 | verificatorul automat al skill-urilor | Semnalează: un slot fără concept; o listă de cuvinte într-un slot sau într-un parametru; o declarație pe un fel particular când un strămoș o putea purta; un rând de răspuns pe situație; o constantă de program care ține cunoaștere. |
 | documentele aplicației | Regulile ei de lucru și specificația punctului de intrare se aliniază la teorie; termenul „ușă” rămâne numai în cod. |
@@ -201,6 +224,7 @@ Se face numai după ce lumea legendelor și stratul nou există. Declarația lui
 | tipare de propoziții care execută | Peste două mii în șapte domenii, spre zero. |
 | constante de program care țin cunoaștere, în bibliotecă | Cele din tabelul de la 3.3, spre zero. |
 | costul unui domeniu nou, cu motorul înghețat | Calendarul: rânduri de declarații, linii de unelte, ore; niciun mecanism schimbat și niciun rând din clasele de mai sus. |
+| domenii | De la șapte (desen, diagrame, documente, avatar, grafice, hartă, muzică) la patru, plus hotărârile despre hartă și avatar. |
 | fidelitatea citirii | Un set de perechi minimale și de propoziții ținute deoparte, scris de mână, care nu se folosește la scrierea declarațiilor. |
 
 ---
@@ -216,7 +240,7 @@ Se face numai după ce lumea legendelor și stratul nou există. Declarația lui
 | 4 | Stratul conversației rescris peste concepte, pe exemplele bibliotecii. Mecanismele vechi se șterg în aceeași livrare. |
 | 5 | În paralel cu 4: bazele de cunoaștere, în ordinea `k.kinds`, `k.colours`, `k.space` și `k.time`, `k.expect`, `k.parts` și grafurile, apoi restul. |
 | 6 | Cele patru domenii ale aplicației rescrise; rândurile locale și tiparele vechi șterse; alegerea domeniului din capabilități. **Proprietarul rulează o sesiune.** |
-| 7 | Calendarul, ca probă. **Proprietarul rulează o sesiune.** |
+| 7 | Graficele mutate în diagrame; domeniile de grafice și de muzică scoase. Calendarul, ca domeniu nou și ca probă. **Proprietarul rulează o sesiune.** |
 | 8 | Documentația și skill-urile, în engleză, din teorie. |
 
 Durata nu o pot promite. Estimarea mea, cu cele două sesiuni de lucru: pașii 1 și 2, una până la două zile; pașii 3–5, între trei și cinci zile; pașii 6 și 7, două până la trei zile.
@@ -231,4 +255,5 @@ Durata nu o pot promite. Estimarea mea, cu cele două sesiuni de lucru: pașii 1
 | numele firelor lumii legendelor | `w.legend.*` cu cheile `is=`, `means=`, `space=`, `relation=`, `role=` sunt propunerea mea; biblioteca poate propune altele în pagina de proiect. |
 | excepțiile discrete | Care liste închise rămân (gramatica, da sau nu, starea unei cereri) și cu ce motiv. Se hotărăște pe pagina de proiect. |
 | învățarea factorilor | Unde se ține ce învață sistemul despre „mare” pentru un om și un fel de lume: numai în instanță, sau și în cunoașterea felului de lume. Propun: întâi în instanță; trecerea în cunoaștere, mai târziu, cu o regulă scrisă. |
-| harta, graficele, muzica | Trec pe declarații după calendar, sau se scot din aplicație până atunci. Azi sunt în întregime pe drumul vechi. |
+| harta | Se elimină deocamdată, ca muzica, sau trece pe declarații după calendar. |
+| avatarul | Rămâne al cincilea domeniu, sau devine parte a desenului. |

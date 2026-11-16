@@ -1762,3 +1762,16 @@ With the legend-world design page, close these and write them in `docs/semantics
 2. **What must be verified before an act runs.** Hard constraints about the things the act changes must be completely verified; if one is undetermined the act does not run and the missing value is asked. Hard constraints about other things do not block. Soft ones may stay undetermined and are said. A domain may exempt a constraint explicitly, with a reason, counted. Reversibility plays no part in this rule.
 3. **Fact and pattern.** Patterns and templates belong to the schema. A wire that exists as a fact cannot be named by a rule's `when=` / `then=`: a load error. Loading a rule never changes the role of a fact.
 4. **Independence is checked in the plan, not read from "and".** Two things asked together are independent when they share no resource or limit, no rule links them, and the user did not ask for "both" / "only together". Partial execution is the stated policy for independent things only.
+
+## Reviewer 2026-11-16 19:20 — OWNER on values: no enums of degree words at the general level; numbers on a dimension, meaning from context
+
+Owner (10:22): "huge / big must be obtained from the context of the current world instance, or from other worlds; they must be operationalised and learned in each type of world. They are subjective and have no place at the ontological level. At that level wires have keys with numeric values; these enums seem stupidly limited."
+
+I agree, with one precision, and it changes point 1 of block 19:00 and the legend-world brief:
+1. **A value is a number on a dimension, or a reference to a concept** (a colour, a shape, a genre — a row of a knowledge base, with coordinates where it has them). No closed list of words in a slot or a parameter (`enum=small enum=big`, `accepts=small accepts=big` go).
+2. **Degree words are language, not values.** "small", "big", "huge", "short", "a few", "many" give a factor relative to a **comparison class**, resolved in this order: the things of the same kind now in the world instance; what the user has done so far in this instance (corrections shift his "big"); what is usual for that kind in this kind of world (knowledge, and learnable from use per kind of world); the space available. The result is a number. `k.expect.scale` already holds factors: that is the right shape; the five named steps as values of a slot are not.
+3. **A comparative is a numeric step from the thing's present value** on that dimension, the step size relative to the same comparison class.
+4. **Tolerance is a numeric distance** on the dimension (or in the concept's space: nearest colour), declared by the parameter; a tool that can realise only some sizes takes the nearest within tolerance, else refuses.
+5. **Learning:** where the user corrects a result ("bigger" right after "big"), the factor for that word in that kind of world moves; keep it as a fact of the instance, and say how it could become knowledge for the kind of world.
+
+In the design page: `quality` has a dimension with a unit (or is concept-valued); `scale` as a list of steps is removed as a concept; show "a big tree" in a drawing with five trees, "a short letter", "a huge dictionary" on the shelf and "a long meeting" in the calendar worked by hand with numbers.

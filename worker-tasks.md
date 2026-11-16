@@ -1812,3 +1812,11 @@ Owner (10:43): "why is the example a library with shelves and not our drawing wo
 ## 2026-11-16 22:10 — reviewer: theory document v11 (pointer only, no work ordered)
 
 `reviews/sop-worlds-teorie.md` is now version 11: same content and wire shapes as v10, rewritten as a narrative (each lesson starts from the need, every example wire is read line by line, open keys are explained with what is done with them and how they differ from variables). Wire spellings aligned with the library: `required=true`, `many=true`, `soft=true`. Still not a work order; the owner is reviewing it together with `reviews/sop-worlds-schimbari.md`.
+
+## 2026-11-16 22:50 — reviewer: theory v12 has reference tables; three report-only checks (no code)
+
+`reviews/sop-worlds-teorie.md` is version 12: chapters instead of lessons; chapters 2 and 3 describe the language and the `core.*` types AS THEY ARE TODAY, taken from `docs/language.md` and `docs/reference.md` (complete key tables for `core.type`, `core.slot`, `core.rule`, `core.deny`, `core.check`, `core.calc`, `core.function`; one line for every other `core.*` type; section 6.1 lists `std.schema.*` and `std.tool.*`). Everything proposed is marked "(propus)" and collected in annex C. The owner will decide from these tables, so they must be true. Report only, in `worker-log.md`:
+
+1. Read chapters 2, 3 and section 6.1 against the code and the tests. List every statement that the implementation does not do as written (a key missing from a table, a key that behaves differently, a type left out). Do not change the document; list the differences.
+2. Section 2.6 says how fact namespaces are set (by the host, `new World({ ns })`, never by a wire) and notes that `core.namespace` is a different thing (an open key prefix) with a misleading name. Say what a rename would cost (aliases, deprecation note), on paper.
+3. The id of a `core.type` / `core.slot` wire is free and carries no meaning; the owner finds this confusing. Say what is cheaper: a lint that checks the convention `t.<type>` / `s.<type>.<key>`, or letting `core.schema.map` (`owner=id.prefix key=id.suffix`) become the standard way so the id does carry the meaning. On paper.

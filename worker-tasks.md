@@ -1878,8 +1878,6 @@ I read chapter 9 as the owner will: someone who knows the idea and not the code.
 
 **RV1 — chapter 9**
 
-- F19. 9.6 (missing). The meeting in 7.4 has a room; the trace never mentions it. Either the room is an open key filled as in 8.19, or this meeting has `room=none` (R9) — say which. The sum 630+30 is "calculat": by a `core.calc fn=add` in the deny? Show that wire; the owner asked that no step be "the system computes".
-- F20. Structure (suggestion). Chapter 9 re-explains, at a third level, things chapters 3–6 and 8 already cover (rules, checks, stages, outcomes). Three layers on the same subject is what the owner found unreadable. Consider moving each 9.x into the section it deepens (9.2 → 4.4/4.8, 9.3 → 2.5 + 3.9, 9.4 → 5.3, 9.5 → 6.8, 9.6 → 8.19) instead of a parallel chapter.
 
 **RV2 — R24**
 
@@ -1892,9 +1890,6 @@ I read chapter 9 as the owner will: someone who knows the idea and not the code.
 
 **RV5 — the calendar trace**
 
-- F26. The arithmetic and the half-open rule are right and agree with R46. The distinction "one known reservation is not availability" is correct and is the best part; make it concrete with F13 (in the demo the scope is closed by `complete=true` on the instance).
-- F27. Missing from the trace, and asked by your own B33: the ambiguous participant (two Anas → R8 table / 5.3), the execution failure, and the undo. Also the reply sentences in English for each ending.
-- F28. Last paragraph: "aceleași identități de ședințe … noduri grafice, nu copii ale persoanelor". Show the node wire that holds the reference across worlds (`$calendar::m1`, 2.6) and say which rule of 8.14 applies (R58–R59: read once, snapshot). As written it asks the reader to "declare whether it is a snapshot", but the book already proposes an answer.
 
 On B01–B23: agreed that my table closes nothing; verify each against the text and keep open what only names a mechanism. The ones I know are thin: B05 (types listed, no example wires), B10 (no wires), B16 (no trace), B18 (tone), B20 (three domains without traces), B21, B22.
 
@@ -2262,3 +2257,11 @@ I review every landing in the three repositories against its book section and ru
 | Import evidence types of 11.3.2 | Include them in phase 0: the book's examples use them, and the knowledge migration (which runs in parallel) needs them from its first fact. |
 | Release announcement | Publish version, entry points, names and test results in `worker-log.md` and the plan; I relay them to the three `worker-tasks.md` files the same cycle. |
 | Acceptance claims per family | Agreed: say for each family which claim holds (parses / loads and rejects invalid instances / evaluator implements it / host realises it). "Contracts frozen" means names and slot variants fixed and the rejection tests in place, not more. |
+
+## 2026-11-16 14:55 (Rome) — Book review 16 (reviewer; book v47 at 1e8f6c1)
+
+Read in your notes and checked against the text sections named: 8.6 (calendar with room, explicit `add`, both denies, closure over both resources and the searched interval; your probe rejects 630 and accepts 660), the snapshot that keeps only local provenance after the reading reference, 6.1.2 (projection), and the move of annexes C/D and 8.7 to `refactoring/book-migration-register.md`. Resolved and deleted: F19, F20, F26, F27, F28; replay gap Z is in the book. Moving the project tracking out of the book is right: the owner reads the book, the plan holds the bookkeeping.
+
+On your three projection questions, one rule each: recurrence — each occurrence projects with its occurrence identity and the series identity, so "the Monday stand-up" can be one node or many by the grouping the request asks for; incomplete selection — an aggregate (counts per person) is produced only over a closed scope and says the scope in its provenance, otherwise it is a proposal with "based on what is loaded"; manual edits of the target — they are the user's changes to the snapshot, kept, and "update the chart" re-reads the source and asks before overwriting values the user changed by hand.
+
+Implementation: still waiting only for the owner to update your workspace instructions; the repositories' tasks (14:30, 14:35) stand.

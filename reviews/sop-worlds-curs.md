@@ -1,6 +1,6 @@
 # SOP Worlds: curs de început
 
-*Versiunea 8.1, 16 noiembrie 2026. Text de lucru în română, sursă pentru documentația și skill-urile din sopworld. Termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 8.2, 16 noiembrie 2026. Text de lucru în română, sursă pentru documentația și skill-urile din sopworld. Termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 *Cursul descrie cum trebuie să lucreze tehnologia. Sub titlul fiecărei lecții, rândul „Stare” spune ce există azi și ce este numai propus. Starea implementării este în Anexa A. Partea a patra (lecțiile 27–30) este propunerea de generalizare: lumea legendelor și ce se reface din bibliotecă. Exemplele de fire nu au fost încă rulate una câte una; biblioteca le va trece prin teste și cursul se corectează unde un exemplu nu rulează.*
 
@@ -660,7 +660,7 @@ Cuvântul de grad dă un factor față de clasa de comparație („mare” înse
 
 Urmarea pentru aproximare: toleranța este o distanță numerică pe dimensiune, declarată de parametru. Dacă unealta poate desena numai la câteva mărimi, se ia cea mai apropiată numeric, în limita toleranței; dincolo de ea se refuză cu explicație.
 
-Pentru valorile care sunt trimiteri la concepte (o culoare), „cea mai apropiată” se calculează în spațiul conceptului: culorile au coordonate, deci „turquoise” are o cea mai apropiată culoare disponibilă.
+Nici culoarea, forma sau genul nu sunt categorii rigide. Fiecare este o regiune într-un spațiu conceptual (lecția 28): culorile au coordonate, deci „turquoise” are o cea mai apropiată culoare disponibilă, iar „mai închis” este un pas pe axa luminozității; o formă are trăsături măsurabile; un gen de text este un graf de părți și reguli. O categorie fără o asemenea interpretare nu poate fi comparată, apropiată sau generalizată, și de aceea nu este primită la nivelul general.
 
 Dacă pentru o valoare nu există nici echivalență, nici toleranță, cerința nu poate fi îndeplinită. Ce se întâmplă cu restul cererii depinde de structura ei (lecția 20).
 
@@ -1009,7 +1009,8 @@ Sunt șase grupe. Lista este gândită să fie completă la acest nivel de abstr
 
 | Concept | Ce este |
 |---|---|
-| însușire (quality) | O proprietate a unui lucru. Valoarea ei este de două feluri și numai de două: un **număr pe o dimensiune** (mărime, lungime, poziție, durată, cantitate), sau o **trimitere la un concept** dintr-o bază de cunoaștere (o culoare, o formă, un gen). Nu există liste închise de cuvinte scrise în slot. |
+| însușire (quality) | O proprietate a unui lucru. Valoarea ei este un **punct într-un spațiu**: pe o singură dimensiune (lungime, durată, număr) sau pe mai multe (o culoare are nuanță, saturație și luminozitate; o formă are număr de laturi, rotunjime, alungire). Nu există liste închise de cuvinte scrise în slot. |
+| spațiu conceptual (conceptual space) | Spațiul în care stau valorile unei însușiri. Un cuvânt ca „roșu”, „oval” sau „tânăr” nu este o categorie rigidă, ci o **regiune** în acest spațiu, cu un centru tipic. Din aceasta decurg, prin calcul: cât de apropiate sunt două valori, care este cea mai apropiată valoare disponibilă, ce este „între”, ce este „mai roșu”. Pentru conceptele care nu se măsoară pe axe (un gen de text, un fel de diagramă), spațiul este un **graf de relații și constrângeri**: din ce părți este făcut, în ce ordine, ce este obligatoriu; apropierea se calculează pe acest graf. |
 | dimensiune (dimension) | Axa numerică a unei însușiri care se măsoară. Orice dimensiune primește aceleași operații: mai mult, mai puțin, cel mai, la fel de. Cuvinte ca „mic”, „mare”, „uriaș” **nu** sunt valori și nu stau la acest nivel: sunt cuvinte ale limbii, iar înțelesul lor numeric se află din context (lecția 19). |
 | cantitate (quantity) | Un număr, cu sau fără unitate: trei cărți, 150 de cuvinte, două ore. |
 | stare (state) | Valorile însușirilor și relațiilor unui lucru la un moment. |
@@ -1184,7 +1185,7 @@ Etichete: **bibliotecă** = făcut și testat în sopworld; **aplicație** = fol
 | „schemă” în loc de *matrix* în program | Treptat, ca la numele lumilor. |
 | numele firelor de unealtă | Rămân `std.tool.*`. |
 | limba textelor din nucleu, inclusiv `ask=` | Numai engleză; ajung în alte limbi prin drumul răspunsurilor. |
-| valorile însușirilor | La nivelul general, o valoare este un număr pe o dimensiune sau o trimitere la un concept. Fără liste închise de cuvinte în sloturi. Cuvintele de grad („mare”, „uriaș”) se înțeleg din contextul instanței și al felului de lume și se pot învăța pentru fiecare fel de lume. |
+| valorile însușirilor | La nivelul general, o valoare este un punct într-un spațiu conceptual: axe numerice sau un graf de relații și constrângeri. Categoriile sunt regiuni în acest spațiu, nu etichete. Fără liste închise de cuvinte în sloturi. Cuvintele de grad („mare”, „uriaș”) se înțeleg din contextul instanței și al felului de lume și se pot învăța pentru fiecare fel de lume. |
 | termeni | „Trasabilitate” și „explicabilitate”; „registrul cazurilor nerezolvate”. |
 
 ## Anexa C. Cu ce seamănă

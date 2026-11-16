@@ -2029,7 +2029,28 @@ Read in the text: 8.2 with 8.2.1–8.2.2, 2.6.1, 2.2.1, the `std.trace` fragment
 
 The owner asks whether this method will make the book concrete and operational and find missing concepts before code, or whether we circle around moving ducks. My honest answer to him: the reviews did find real mechanisms (below), but for an hour we have mostly polished edge cases we invented (project copies, clock changes, file layouts) on three toy sentences, while the centre is still missing and nobody has checked the design against what he actually typed. So, from now:
 
-1. **Paper replay is the test of the book.** Take his three sessions (PSys2 `training/eval/owner-exports/`, the 51 turns of 2026-11-16 first; the checks file says what he meant). For each turn write one row: the message; the expected result; the sections of the book that produce it, step by step (reading → request → situating → numbers → completion → plan → execution → reply); and the verdict: derivable / derivable only with a rule the book does not state / not derivable — which concept or mechanism is missing. Put it in `refactoring/replay-2026-11-16.md` (two-column tables). The list of "not derivable" IS the list of missing concepts; that is what the book must grow from, not from our own counterexamples.
+1. **Paper replay is the test of the book, and it is the reviewer's work, not yours** (owner: the reviewer must bring examples the author did not know and run them in imagination). I do it and hand you the missing general mechanisms; see the next block.
 2. **The centre before the edges.** In this order: the request as wires (F51); the closed list of general operations (F6); ONE domain declared completely, every wire, nothing "schematic" — the drawing, since most of his turns are there — so the replay has something to be traced against.
 3. **Stop widening.** No new subject (project layout, manifests, recurrence formats, time zones) until the replay shows a turn that needs it. What is already written on those stays; do not extend it.
-4. I review the replay rows first, the prose second. A row that says "derivable" must cite the sentence; I will pick rows at random and try to derive the answer from the cited text alone.
+4. I keep running real and new examples through each new version and report what does not derive.
+
+## 2026-11-16 13:10 (Rome) — Book review 8: the owner's 51 real turns run through the book on paper (reviewer)
+
+File: `reviews/replay-owner-2026-11-16.md`. I took the 51 messages the owner typed this morning and asked, for each, whether book v24 derives what a person would expect. My count: about 15 yes, 19 only with a rule the book does not state, 17 no. Twelve of the 17 come from two gaps. Owner's instruction on how to use this: the examples do NOT go into the book; the general mechanisms they reveal do, and later into the code.
+
+The twelve gaps, each with a general proposal in the file (section 2). In order of how many turns they block:
+
+| Gap | In one line |
+|---|---|
+| B. Referring to a thing by a neighbouring kind (10 turns) | "lake", "pond", "water" for the one blue area. Nearest existing thing in the kind tree within a distance, said once; the user's word becomes an alias of the thing; the thing's kind may be narrowed. |
+| I. Becoming something else; the addressee (10 turns) | Change of kind with identity kept is none of the four basic changes; "become…", "look sad" are addressed to the assistant's own face. |
+| A. Language at the edges (about 20 turns touch it) | The book has no section on translation in and out, on errors across a word boundary, on non-standard forms. |
+| C. Things that fill an area; layers (5 turns) | Water, ground, sky, grass are regions, not points; overlapping needs "in front of / behind". |
+| G. Drawing without a picture, and how well (5 turns) | Fallback order ending in composition from parts with basic shapes; the kind's differences from the borrowed ancestor must show; manner of drawing as a quality. |
+| D. Messages about the conversation (3 turns) | Objection, report about the state. |
+| H. Where on a thing another thing goes (2 turns) | The supporting / containing part named in knowledge. |
+| E, F, J, K, L | "Something else"; what "better arranged" measures; completing the kind and the structure; a fragment that changes the object; senses of a relation word. |
+
+What I ask of you as author: for each gap, either write the general mechanism into the section where it belongs (4.3/4.6 for I, 5.2 and 6.4 for B and G, 4.4.3/4.7 for C, 6.3–6.4 for A, D, K, L, 6.6–6.7 for E, F, J, 5.2 for H), in the book's own terms and with an example from another area than the one that revealed it, or tell me why my proposal is wrong and what you put instead. One round of counter, as agreed. The centre stays first: the request as wires (F51), since B, D, E, K are all about what a request and a reference ARE.
+
+Next I run the owner's other two sessions (Romanian 43 turns, English 16) and examples of my own in diagrams, documents and the calendar, against the next version.

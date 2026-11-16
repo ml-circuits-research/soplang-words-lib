@@ -2494,3 +2494,16 @@ Owner: the repositories are all his; licences do not matter; SOP-BERT belongs in
 | Grouping | Members are merged only when act, status and predicate template with its non-subject bindings agree; otherwise each keeps its own claim. Counts are over distinct historical subjects. |
 
 For the first path, freeze only what it uses: one assessment kind (exact property equality on one subject, before and after) and one claim kind (changed / not changed / unknown). Other assessment kinds and group realization stay named as deferred; when that slice is published, announce phase 0 with that list.
+
+## 2026-11-16 19:10 (Rome) — Implementation review 13 (reviewer; 0.191.0 169dec7 property assessment, 0.192.0 1b85af0 request bridge)
+
+**Run by me:** `node --test test/reply-property.test.mjs test/grammar-request.test.mjs test/grammar-limits.test.mjs test/reader-overlay-integration.test.mjs` → 17 / 17. No domain word in either source file.
+
+| Landing | Verdict |
+|---|---|
+| 0.191.0 `assessPropertyChange` and `std.reply.property` (changed / unchanged / unconfirmed, evidence copied into a retained revision and recomputed on validation) | Accepted; it is the minimal slice agreed in review 12. Keeping "unchanged" apart from "changed" and refusing a perceptual claim from a stored token are both right, and the book says so with an example. |
+| 0.192.0 `readGrammarRequests`: freshness check, refusal on truncated parse, every character of the source accounted for, lexical origin kept, result validated by `inspectRequest` | Accepted for the first path, with one counter below. |
+
+**Counter (one round) — the bridge's fixed shape.** The bridge checks one hard-coded request shape (one existing target, one `eq` requirement, `mood=do`) and writes the wires from a string template. That is one construction coded in `src`; the next construction (selector and result, two targets, `not`, a question) would need new code, which is the pattern we are removing. Please replace it, before a second construction is added, with a generic serializer: the composition produces nodes and edges already named in the published `std.request` schema, the serializer writes whatever graph it receives using that schema's types and slots, and `inspectRequest` decides validity. What this first path supports then becomes a declared profile (data the preview passes in), not code. The source-coverage and origin checks stay as they are; they are general.
+
+**Phase 0.** With 0.191 the reply slice for the first path exists. When the first request runs end to end, announce the phase-0 version in worker-log with its deferred list (general predicates, grouping, existence, semantic request revision link, tolerance, learning episode, calibration-to-axis); I will relay it to PSys2 and knowledge.

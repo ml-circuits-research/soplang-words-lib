@@ -2038,6 +2038,8 @@ print(builtins.time_add(['10:40', '35min']), builtins.div(['6m', '2m']), builtin
 Evaluates declared semantic templates over grammar parse trees. Production IDs and
 lexical categories select templates; own-property paths copy lexical features or
 already composed child values. Every surviving alternative retains its parse index.
-Missing bindings fail explicitly, and bounded evaluation reports truncation. This
+Per-production equality guards compare declared operands before parent composition,
+using structural JSON equality without type coercion. Missing bindings fail
+explicitly, and bounded evaluation reports truncation. This
 produces interpretation proposals, not proof of meaning or instance resolution.
 See [the API and runnable example](api.md#composeparsesparses-options).

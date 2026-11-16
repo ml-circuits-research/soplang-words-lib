@@ -1235,13 +1235,31 @@ print([np.rule, np.head, np.pp[0].words, parseText(w, 'the moon', { start: 'NP',
 
 ### composeParses(parses, options?)
 
-`composeParses(parses, { rules, lexical, budget, maxDepth })` evaluates declarative
+`composeParses(parses, { rules, lexical, guards, budget, maxDepth })` evaluates declarative
 semantic templates over each parse independently. `rules` maps exact production
 IDs; `lexical` maps lexical categories. Ordinary JSON objects/arrays assemble a
 record. `{$get: path}` copies an own-property path from `{node, children}`, where
 `children` contains already composed child values. `{$literal: value}` quotes
 JSON containing reserved keys. Every child must have a mapping; an explicit
 `{$literal: null}` can acknowledge syntax-only material.
+
+`guards` maps production IDs to arrays of `{left, right}` template pairs. Each
+pair is evaluated in the same `{node, children}` context after the children compose
+and before the parent's output template is evaluated. Both operands must exist and
+be structurally equal JSON. Object key insertion order does not matter; arrays are
+ordered, primitive types do not coerce, and JSON numeric zero has one value (`-0`
+and `0` agree). No approximate numeric or domain-specific equality is inferred.
+Several pairs are conjunctive; an empty array imposes no condition.
+
+All guard declarations are validated before any candidate is produced, including
+those for productions absent from this batch. Guard keys must name a declared
+`rules` entry; malformed maps/pairs/templates cannot silently disable a check.
+A valid unused guard's binding paths are resolved only when its production occurs.
+Unequal operands report `guard-rejected`; missing paths report `missing-binding`;
+malformed pairs or unknown production IDs report `invalid-guard`. Other existing
+JSON/path errors remain explicit. Declaration validation, operand evaluation and
+structural comparison share the composition budget. A declaration error has no
+parse `index`; later exhaustion may retain candidates already completed.
 
 The result contains `candidates: [{index, value}]` and `failures: [{index, reason}]`.
 Templates and copied values must be plain JSON: special object prototypes, sparse
@@ -1261,7 +1279,8 @@ w.tell('@n g.word text=ko cat=N kind=vessel @r g.rule lhs=M rhs=N');
 const p = parseText(w, 'ko', { start: 'M' });
 const composed = composeParses(p, {
   lexical: { N: { kind: { $get: ['node', 'feat', 'kind'] } } },
-  rules: { r: { target: { $get: ['children', 0] } } }
+  rules: { r: { target: { $get: ['children', 0] } } },
+  guards: { r: [{ left: { $get: ['children', 0, 'kind'] }, right: 'vessel' }] }
 });
 print(composed.candidates);
 ```

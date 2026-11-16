@@ -31,3 +31,19 @@ Source-token coverage alone is insufficient: the grammar tokenizer drops punctua
 Use independently selected development variants to vary the object, property and value, including concepts outside drawing. Preserve alternative lexical meanings. Unknown values or incompatible property/value concepts must not produce a guessed request. Negation, questions and unsupported coordination must decline until explicit semantics exist. A selector's current colour and the desired colour must not become two result constraints. Case, punctuation, multiword lexical evidence and missing source alignment must retain honest provenance.
 
 These are planned probes, not achieved reader-coverage results. The initial mechanism tests use an invented language and test binding preservation, alternative retention, failure reasons and resource limits. No heldout sentence or reviewer concern selects these rules.
+
+## Equality guards for declared composition agreements
+
+The generic mechanism now accepts `guards[productionWireId] = [{left, right}]`,
+using the same binding templates as composition. It validates all guard declarations
+before producing candidates, then compares each production's operands after its
+children compose and before accepting its parent template. Missing bindings fail;
+unequal JSON values report a distinct rejection. Objects compare by key/value
+structure independent of insertion order, arrays remain ordered, and primitive types
+do not coerce. Declaration checks, copying and comparison share the composition
+budget. No property compatibility rule or domain concept is inferred by this API.
+
+The knowledge adapter still needs to resolve symbolic rule names to actual production
+wire IDs and compile agreement-node references to templates. This mechanism change
+alone does not make the pending English overlay an executable reader or resolve
+instances in a domain world.

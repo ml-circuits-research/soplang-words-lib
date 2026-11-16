@@ -74,3 +74,53 @@ test('JSON copying rejects exotic objects, sparse arrays, symbols and accessors 
  assert.deepEqual(result.__proto__,{value:1});
  assert.equal(Object.prototype.value,undefined);
 });
+
+test('per-production guards reject only mismatching alternatives before parent evaluation',()=>{
+ const guarded={...mapping,guards:{r:[{left:get('children',1,'concept'),right:'tint'}]}};
+ const result=composeParses(parses(),guarded);
+ assert.equal(result.candidates.length,1);
+ assert.equal(result.candidates[0].value.result.concept,'tint');
+ assert.equal(result.failures[0].reason,'guard-rejected');
+ const rejected=composeParses(parses(),{...guarded,rules:{r:get('absent')},guards:{r:[{left:1,right:2}]}});
+ assert.ok(rejected.failures.every(f=>f.reason==='guard-rejected'),'parent template is not evaluated after rejection');
+ assert.ok(composeParses(parses(),{...guarded,guards:{r:[{left:get('children',1,'absent'),right:null}]}}).failures.every(f=>f.reason==='missing-binding'));
+ assert.deepEqual(composeParses(parses(),{...mapping,rules:{...mapping.rules,unrelated:'unused'},guards:{unrelated:[{left:1,right:2}]}}),composeParses(parses(),mapping));
+});
+
+test('guard equality is structural JSON equality, insensitive to object order but strict on types and array order',()=>{
+ const p=[{tree:{cat:'M',rule:'r',children:[]}}];
+ const check=(left,right)=>composeParses(p,{rules:{r:'accepted'},guards:{r:[{left:{$literal:left},right:{$literal:right}}]}});
+ assert.equal(check({a:[1,{x:false,y:null}],b:'v'},{b:'v',a:[1,{y:null,x:false}]}).candidates.length,1);
+ assert.equal(check(-0,0).candidates.length,1,'JSON has one zero value');
+ assert.equal(check(Object.assign(Object.create(null),{a:1}),{a:1}).candidates.length,1);
+ for(const [a,b] of [[1,'1'],[false,0],[[1,2],[2,1]],[{},[]],[{a:1},{b:1}],[null,{}],['A','a']]) assert.equal(check(a,b).failures[0].reason,'guard-rejected');
+ assert.equal(check(JSON.parse('{"__proto__":1}'),{}).failures[0].reason,'guard-rejected');
+});
+
+test('guard declarations and operands fail closed and use the shared budget',()=>{
+ const p=[{tree:{cat:'M',rule:'r',children:[]}}];
+ const check=guards=>composeParses(p,{rules:{r:'accepted'},guards:{r:guards}});
+ for(const guard of [null,{},[{left:1}],[{left:1,right:1,operator:'coerce'}],Array(1)]) assert.equal(check(guard).candidates.length,0);
+ let called=0;const operand={get x(){called++;return 1;}};
+ assert.equal(check([{left:{$literal:operand},right:{x:1}}]).failures[0].reason,'accessor-property');
+ assert.equal(called,0);
+ const guards={r:[{left:Array(20).fill(1),right:Array(20).fill(1)}]};
+ assert.equal(composeParses(p,{rules:{r:'accepted'},budget:30}).candidates.length,1);
+ const bounded=composeParses(p,{rules:{r:'accepted'},guards,budget:30});
+ assert.equal(bounded.truncated,true);assert.equal(bounded.failures[0].reason,'budget');assert.deepEqual(bounded.candidates,[]);
+ const halfway=composeParses([...p,...p],{rules:{r:'accepted'},guards:{r:[{left:1,right:1}]},budget:30});
+ assert.deepEqual(halfway,{candidates:[{index:0,value:'accepted'}],failures:[{index:1,reason:'budget'}],truncated:true});
+});
+
+
+test('all guard declarations validate before any candidate, including unused rules and inherited/accessor maps',()=>{
+ const p=[{tree:{cat:'M',rule:'r',children:[]}}];
+ const rules={r:'accepted',unused:'unused'};
+ for(const guards of [null,{typo:[{left:1,right:1}]},{unused:[{left:1}]},Object.create({r:[{left:1,right:2}]}),{unused:[{left:{$get:[]},right:1}]}]) {
+  const out=composeParses(p,{rules,guards});assert.deepEqual(out.candidates,[]);assert.equal(out.failures.length,1);assert.equal(out.failures[0].index,undefined);
+ }
+ let calls=0;const guards={get unused(){calls++;return [];}};
+ assert.equal(composeParses(p,{rules,guards}).failures[0].reason,'accessor-property');assert.equal(calls,0);
+ const valid=composeParses(p,{rules,guards:{unused:[{left:get('missing','in','this','batch'),right:0}]}});
+ assert.deepEqual(valid.candidates,[{index:0,value:'accepted'}]);
+});

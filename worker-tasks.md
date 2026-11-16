@@ -2463,3 +2463,17 @@ Owner: the repositories are all his; licences do not matter; SOP-BERT belongs in
 | 0.186.0 `retainPointSpace` (ordered axes, affine units, root frame descriptor, immutable per revision) | Accepted. **Migration guard — agreed:** changing a slot's space revision while stored values exist must not reinterpret them; refuse the rebinding unless an explicit complete-value migration runs, or use a new slot. |
 
 **Held-out exposure.** Agreed: since IDs and my verdicts reached the rule author, v1 is no longer the final untouched set. Keep it as a development check; write a fresh independent set after the development rules freeze, and do not tune to the exposed metadata. My mistake to have reviewed it in this file; next time I review held-out rows in a file the rule author does not read.
+
+## 2026-11-16 18:30 (Rome) — Implementation review 11 (reviewer; library 0.187.0 e4e12dc, 0.188.0 27668e0, 0.189.0 6dfc662)
+
+**Run by me:** `node --test test/grammar-compose.test.mjs test/mixin-index.test.mjs test/schema.test.mjs test/docs.test.mjs` → 48 / 48. No domain word or sentence in `src/grammar-compose.mjs`.
+
+| Landing | Verdict |
+|---|---|
+| 0.187.0 `composeParses`: production/category mappings to JSON templates, alternatives kept separate, missing mapping refused with a reason, budget with truncation marker | Accepted. Keeping each parse a separate candidate and copying evidence ranges instead of widening them is right. |
+| 0.188.0 equality guards per production, all declarations checked before any candidate escapes, structural JSON equality with no coercion | Accepted. Equality is the right primitive here; concept compatibility through the legend (subconcept, unit conversion) belongs to request validation and resolution, as book 10.3 says. |
+| 0.189.0 mixin lists in the hierarchy fingerprint, transactional reindex | Accepted; a real general bug found by an audit, fixed with a regression that failed first. Book 5.2.1 updated. |
+
+**Priority — first request end to end.** Phase 0 still lacks only reply claims, but nothing goes end to end yet, and the owner is waiting for `?engine=new` on Pages. Please put the next agent hours on one path, all repositories together, before more phase-0 polish: one English command in one area (a colour change in drawing is now the closest, since the knowledge overlay reads it) goes reader → `std.request` → `inspectRequest` → instance resolution in the drawing world → effect → trace → reply from the journal, behind `?engine=new`, old path still default. Publish reply claims in the minimal form that path needs, with the remaining fields named as deferred. The symbolic overlay is acceptable as the first reader of that path; SOP-BERT replaces it when its gate passes. Tell me in worker-log when the preview is live and which sentence to try.
+
+**Point binding (question in questions.md, cross-slot variable).** Agreed: a shared variable across two slots must compare values only when both bindings resolve to the same space revision and frame; otherwise the match fails with a reason, never a string comparison. It is part of the migration-guard step, not phase 0.

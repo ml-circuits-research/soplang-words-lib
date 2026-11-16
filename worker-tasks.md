@@ -1874,12 +1874,10 @@ I read chapter 9 as the owner will: someone who knows the idea and not the code.
 
 **Form (owner's rules, all of chapter 9 and plan §10)**
 
-- F2. Chapter 9 contains no wire at all. The owner's rule is: the general rule, then ONE example in wires, read line by line. 9.2 says "declarăm separat unitatea, valorile permise și măsura distanței" and shows a table of what the declarations allow, never the declarations. Until the wires are on the page the reader cannot tell a declaration from a wish.
 - F4. Words used without a definition: "renderer", "proiecție", "fragment de logică", "coordonator", "catalog", "index invers", "shard" (plan), "versiunea V", "autoritate de calcul". Define each at first use in plain Romanian or drop it.
 
 **RV1 — chapter 9**
 
-- F10. 9.3 (missing). The stages are listed; your own B26 asks for one multi-line fact, one quoted text and one reference carried through every stage. Put that table in. And say what the "reprezentare semantică" of ONE concrete wire looks like, field by field; today 2.x says a wire in memory is `{ id, type, attrs }` with value tokens (language.md §3) — say what is added to that and why.
 - F19. 9.6 (missing). The meeting in 7.4 has a room; the trace never mentions it. Either the room is an open key filled as in 8.19, or this meeting has `room=none` (R9) — say which. The sum 630+30 is "calculat": by a `core.calc fn=add` in the deny? Show that wire; the owner asked that no step be "the system computes".
 - F20. Structure (suggestion). Chapter 9 re-explains, at a third level, things chapters 3–6 and 8 already cover (rules, checks, stages, outcomes). Three layers on the same subject is what the owner found unreadable. Consider moving each 9.x into the section it deepens (9.2 → 4.4/4.8, 9.3 → 2.5 + 3.9, 9.4 → 5.3, 9.5 → 6.8, 9.6 → 8.19) instead of a parallel chapter.
 
@@ -2016,7 +2014,6 @@ Read in the text: 8.2 with 8.2.1–8.2.2, 2.6.1, 2.2.1, the `std.trace` fragment
 
 **New items**
 
-- F53 (consistency). New type and key names use camelCase (`gapObservation`, `layoutCandidate`, `embeddedDrawing`, `sourceSnapshot`) while every existing name in the book and the library is lower case with dots (`node.start`, `std.schema.kind`, `core.function.arg`). One convention; say it once in 2.4.
 
 **Still open:** F2 (now only 8.1 and 8.3: no wires, no worked example), F4 (part), F6 (closed list of general operations — the one thing 8.1 exists to give), F10 (one wire carried through every stage of 8.3), F19, F20 (8.3–8.6 as a parallel layer), F25 (three-way comparison for points), F26–F28 (the calendar trace of 8.6 vs 7.4.1: two traces of the same case in two chapters), F43 (part).
 
@@ -2179,7 +2176,6 @@ Still open: F2, F4 (part), F10, F19, F20, F26–F28, F43 (part), F52–F54; repl
 
 **Items.**
 
-- F63. Chapter 11, 11.3 (missing: concrete sources). The book says what an import must keep, not where knowledge could come from. Name candidate open sources per family, each marked "licence to be verified by the importer" as you require: a lexical kind tree (WordNet: synonym sets and hypernyms), relations between objects in pictures (Visual Genome: "on", "in", "has", region annotations), common-sense part and use relations (ConceptNet), and the existing knowledge repository. For each: which family of 11.1 it can feed, what it cannot give (cardinalities, the supporting part, geometry), and how its output is checked. Without names the chapter reads as "someone will write it".
 
 **Book size.** The book is now about 3,100 lines. The owner reads on a phone. When the remaining items are in, I will propose where the text can be cut (repetitions between chapter 8 and chapters 4–6, the parts of 9 that restate 3), not more.
 
@@ -2218,3 +2214,15 @@ Still open: F2 (8.3), F4 (part), F10, F19, F20, F26–F28, F43 (part), F53, F62 
 The added rule, for that last row: when the mood stays unresolved, take `check` and offer the act in the same reply ("Friday 10:00 is free for everyone; shall I move it?"). Checking is free and reversible and costs the user one word; executing on an unresolved mood is not. That keeps ordinary indirect requests executing and never turns a feasibility question into an action.
 
 Still open: F2 (8.3), F4 (part), F10, F19, F20, F26–F28, F43 (part), F53, F63 (named sources); replay gaps C, G, T, X, Y, Z, AA, BB; the complete drawing declaration.
+
+## 2026-11-16 14:25 (Rome) — Book review 15 (reviewer; book v42 at a43424e)
+
+**Run by me.** The 8.3 example: `parse(source)[1]` gives exactly the object printed in the book; `readValue('$page1')` gives `{"kind":"ref","v":"page1"}`; the data load against the four slots with no violation. True to the engine.
+
+**Resolved and deleted:** F2 (8.3 has a concrete wire carried through every stage), F10, F53 (lower-case dotted names), F63 (named sources, each with what it can feed and what it cannot justify alone; the local `SOURCE.md` facts are checked, not assumed). Replay gaps X (explicit amount and anchor, 4.4.4) and Y (measured relation) are in the book: the duration table (10:00–11:00 shortened by 15 keeps the start → 10:45; with the end kept → 10:15; 10 minutes minus 15 → explained, not clipped to zero; "twice as long" a factor; "20% shorter" 0.8) is right and general.
+
+**Your questions on sources.** The boundaries you drew are right: an observed `on` is a candidate for support, not support; `HasA` may be possession; repeated observations become contextual usual values, never requirements. No counter.
+
+**Status for the owner.** I told him at 14:16 (Rome) that the paper review has done what it can and recommended validating by implementation on a vertical slice (the calendar first, then the drawing with his 106 turns replayed turn by turn), with the remaining content items closed alongside. That decision is his; until he answers, continue the book items below and do not start the implementation.
+
+Still open: F4 (part), F19, F20, F26–F28, F43 (part); replay gaps C (region-valued things, layers), G (composition from parts), T, Z (projection between worlds), AA, BB; the complete drawing declaration; and, before the owner reads it, a cut of repetitions (the book is now about 3,500 lines).

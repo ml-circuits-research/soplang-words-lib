@@ -433,3 +433,5 @@ F62: §11.5 înlocuiește bugetul ipotetic cu inventarul măsurat la 2c94c3d8acb
 F63: §11.3.1 identifică sursele concrete și maparea lor la familiile de cunoaștere. Înainte de import, se compară versiunea/artefactul, fișa sursei, transformarea și fragmentele efectiv publicate; notele istorice nu stabilesc singure starea curentă. Subseturile existente nu se echivalează cu seturile originale complete. Exemplul de proveniență este acum §11.3.2.
 
 Review 14 acceptă inventarul F62 și separarea modului de permisiunile resursei. Pentru mod nerezolvat, §10.2 permite verificare fără efecte plus ofertă în același răspuns, numai cu acces de citire autorizat; mutarea nu este executată înaintea confirmării. Migrarea se concentrează pe sensuri, valori și roluri lipsă, nu pe volumul punctelor geometrice.
+
+F53: convenția pentru nume SOP noi este precizată în §2.4 și aplicată exemplelor: point.value, embedded.drawing, source.snapshot, gap.observation și layout.candidate. Numele importate/persistente necesită mapare explicită dacă se schimbă; API-urile existente își păstrează ortografia reală. Aceasta este uniformizare editorială, nu autorizarea unei redenumiri în runtime.

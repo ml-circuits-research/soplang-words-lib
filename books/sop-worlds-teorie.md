@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 39, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 40, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -126,7 +126,7 @@ Exemplul JSON existent arată cele două niveluri de citire: ghilimelele exterio
 
 ```sop
 @n1 node at=$position1
-@position1 pointValue space=page
+@position1 point.value space=page
 @coordx coordinate of=$position1 axis=x value=120
 @coordy coordinate of=$position1 axis=y value=540
 ```
@@ -170,6 +170,8 @@ Mai există semnul `::`, care apare în interiorul unui identificator; este expl
 ## 2.4 Identificatori, nume de tipuri și calificarea numelor
 
 Identificatorii, tipurile și cheile sunt nume, scrise după aceeași regulă: litere, cifre, liniuțe, și puncte între bucăți. `f1`, `fish`, `core.type` și `s.drawn.at` sunt nume corecte.
+
+Pentru numele SOP noi, convenția proiectului este scrierea cu litere mici și separarea cuvintelor prin puncte: `gap.observation`, `source.snapshot`, `point.value`. Ea se aplică identificatorilor redactați, tipurilor și cheilor, inclusiv folosirilor lor în referințe, `of`, `kind` sau `type`. Este o convenție de redactare, nu o operație automată de schimbare a literelor la încărcare. Numele importate și identificatorii persistenți se păstrează ori primesc o mapare explicită; nu se redenumesc tacit. Valorile textuale și etichetele pot avea majuscule. API-urile JavaScript existente, precum `solveReport` și `readRequest`, își păstrează numele reale în capitolul 9: ele nu sunt nume de tipuri SOP.
 
 **Punctul nu are niciun înțeles pentru limbaj.** `core.type` este un singur nume, la fel ca `fish`. Punctele sunt folosite după o convenție, pentru cititor: începutul numelui unui tip spune cine a definit acel tip.
 
@@ -237,15 +239,15 @@ Exemplele locale din capitolul 7 folosesc schema proprie a aplicației, deci pă
 O legătură activă este potrivită când documentul încorporează un desen care trebuie să rămână accesibil ca stare distinctă. În exemplul propus, încărcat în instanța documentului, inserția desemnează scena din instanța desenului:
 
 ```sop
-@insert1 embeddedDrawing drawing=$drawing::scene1
+@insert1 embedded.drawing drawing=$drawing::scene1
 ```
 
-`insert1` este obiectul documentului care deține inserția; `embeddedDrawing` este tipul propus al inserției, nu un cuvânt rezervat. Cheia `drawing` trebuie declarată ca referință la tipul scenei. `$drawing::scene1` desemnează o țintă activă care trebuie încărcată și rezolvată. Referința nu importă singură desenul. Modificările lui pot fi afișate de document numai după citirea unei versiuni coerente a acelei scene.
+`insert1` este obiectul documentului care deține inserția; `embedded.drawing` este tipul propus al inserției, nu un cuvânt rezervat. Cheia `drawing` trebuie declarată ca referință la tipul scenei. `$drawing::scene1` desemnează o țintă activă care trebuie încărcată și rezolvată. Referința nu importă singură desenul. Modificările lui pot fi afișate de document numai după citirea unei versiuni coerente a acelei scene.
 
 Graficul derivat din calendar este diferit: el prezintă datele citite la un moment dat. Următorul fragment propus, încărcat în diagramă, păstrează un fapt local de proveniență și valorile consumate, fără referință activă spre calendar:
 
 ```sop
-@snapshot1 sourceSnapshot source.instance="calendar-instance-id" source.id="m1" source.version="state-17" captured.label="Review"
+@snapshot1 source.snapshot source.instance="calendar-instance-id" source.id="m1" source.version="state-17" captured.label="Review"
 @n1 node label="Review" provenance=$snapshot1
 ```
 
@@ -282,7 +284,7 @@ Persistența cere și o regulă de atribuire a fișierului de destinație. Pentr
 
 Coliziunea de nume și coliziunea de identități sunt erori diferite. `instances/diagram/main.sop` și `instances/diagram.sop` pot deduce amândouă numele `diagram` fără să reprezinte aceeași instanță. Încărcătorul nu rezolvă această situație alegând primul fișier găsit. De asemenea, numele diferite nu autorizează încărcarea de două ori a aceleiași identități cu stări incompatibile.
 
-Politica referinței lipsă păstrează cerința R8: o legătură factuală activă trebuie să aibă țintă. Un grafic salvat ca instantaneu poate rămâne consultabil fără calendar dacă proveniența lui este o înregistrare istorică autonomă, cu identitatea sursei, versiunea citită și valorile folosite. Acea înregistrare nu este o referință factuală activă spre un obiect absent. Formatul ei trebuie declarat distinct; exemplul `drawing=$drawing::scene1` presupune ținta disponibilă, în timp ce `sourceSnapshot` păstrează date istorice locale. Afișarea unui rezultat istoric nu autorizează actualizarea lui fără reîncărcarea sursei.
+Politica referinței lipsă păstrează cerința R8: o legătură factuală activă trebuie să aibă țintă. Un grafic salvat ca instantaneu poate rămâne consultabil fără calendar dacă proveniența lui este o înregistrare istorică autonomă, cu identitatea sursei, versiunea citită și valorile folosite. Acea înregistrare nu este o referință factuală activă spre un obiect absent. Formatul ei trebuie declarat distinct; exemplul `drawing=$drawing::scene1` presupune ținta disponibilă, în timp ce `source.snapshot` păstrează date istorice locale. Afișarea unui rezultat istoric nu autorizează actualizarea lui fără reîncărcarea sursei.
 
 ### 2.6.3 Sublumi și limitele vizibilității
 
@@ -2165,11 +2167,11 @@ Următoarele declarații arată contractul propus pentru spațiu și două utili
 ```sop
 @sp.clearance w.legend.space name=clearance form=axes
 @ax.clearance w.legend.axis of=clearance name=distance min=0 scale=ratio normalisation=10
-@s.observed.value core.slot of=gapObservation key=value kind=number min=0
-@s.candidate.gap core.slot of=layoutCandidate key=gap kind=number min=0
+@s.observed.value core.slot of=gap.observation key=value kind=number min=0
+@s.candidate.gap core.slot of=layout.candidate key=gap kind=number min=0
 @source.gap std.request.source text="at least 12 page units apart"
 @request.gap std.request act=place source=$source.gap
-@target.gap std.request.target request=$request.gap mode=existing kind=gapObservation
+@target.gap std.request.target request=$request.gap mode=existing kind=gap.observation
 @constraint.gap std.request.constraint request=$request.gap target=$target.gap concept=clearance operator=greater.equal value=12 unit=page.unit scope=each polarity=positive character=requirement source=$source.gap
 ```
 
@@ -2205,7 +2207,7 @@ Funcția geometrică primește date deja observate; nu citește singură ecranul
 @p.b node bounds=?b
 @c.distinct core.check fn=neq args=$p.a args=$p.b
 @c.gap core.calc fn=page.gap args=?a args=?b out=?gap
-@t.gap gapObservation first=$p.a second=$p.b value=?gap
+@t.gap gap.observation first=$p.a second=$p.b value=?gap
 @r.gap core.rule when=$p.a when=$p.b if=$c.distinct with=$c.gap then=$t.gap
 ```
 

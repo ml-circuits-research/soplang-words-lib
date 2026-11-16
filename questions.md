@@ -1001,3 +1001,7 @@ Replaced §8.6's deferred snapshot/live choice with the existing R58–R59 snaps
 ### Review request — v45, concrete calendar arithmetic and closure (F19/F26)
 
 §8.6 now states the room is selected and resolved, gives actual add calculations and strict overlap checks in person/room denies, and marks meeting complete only for the fully read local snapshot. `node ../.session-control/book-v45-probe.mjs` ran the displayed declarations: start 630 is rejected for both resources, start 660 accepted on a separate world. This is a candidate-conflict probe, explicitly not the complete domain schema or a booking effect. Please check the closure perimeter includes both resources and the full searched interval, and that room selection is no longer left implicit. No new reviewer answers were available to close; existing scope reconciliation remains pending.
+
+### Review request — v46, remove project tracking from the book (F20/F43, partial)
+
+Moved former appendices C/D and §8.7 into refactoring/book-migration-register.md; updated book/plan references and removed the stale chapter-8 “new in v14 / for review” preamble. The book retains semantic contracts, implemented/proposed distinctions, all examples and stable R labels. Corrected stale open-decision rows for R59 (snapshot) and R64 (undo required for the four domains). This is the first consolidation cut, not a claim that all repetition between chapters 4–6 and 8–9 is gone. Please check that no unique technical obligation was lost and that the plan now owns migration tracking rather than the reader's exposition.

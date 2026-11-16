@@ -297,15 +297,15 @@ Pentru recurență se proiectează seria, identitatea aparițiilor, excepțiile,
 
 Materialul de mai jos a fost mutat din fostul §8.20 al cărții: descrie procesul proiectului și criteriile de acceptare, nu semantica limbajului. Identificatorii R73–R81 se păstrează aici pentru compatibilitatea trimiterilor. Cerința tehnică a justificării răspunsurilor rămâne explicată în carte, §§6.11 și 6.10.1.
 
-**R73. Cartea spune ce trebuie să facă tehnologia.** Unde cartea și programul de astăzi spun lucruri diferite, câștigă cartea, iar diferența se trece în anexa C. Capitolele 2 și 3 descriu ce există și ce rămâne valabil; unde propunerea schimbă ceva din ele, schimbarea este marcată pe loc.
+**R73. Cartea spune ce trebuie să facă tehnologia.** Unde cartea și programul de astăzi spun lucruri diferite, câștigă cartea, iar diferența se trece în registrul book-migration-register.md. Capitolele 2 și 3 descriu ce există și ce rămâne valabil; unde propunerea schimbă ceva din ele, schimbarea este marcată pe loc.
 
-**R74. Patru feluri de enunțuri.** O regulă numerotată din acest capitol este o cerință. Un exemplu ilustrează și nu adaugă cerințe. O regulă marcată (de confirmat) este o alegere de politică, valabilă până când proprietarul spune altfel. Un rând din anexa D este o hotărâre care încă nu s-a luat.
+**R74. Patru feluri de enunțuri.** O regulă numerotată din acest capitol este o cerință. Un exemplu ilustrează și nu adaugă cerințe. O regulă marcată (de confirmat) este o alegere de politică, valabilă până când proprietarul spune altfel. Un rând din registrul book-migration-register.md este o hotărâre care încă nu s-a luat.
 
 **R75. Care plan este valabil.** Planul de lucru este `refactoring/sop-worlds-schimbari.md`. `refactoring/plan-generalizare.md` este mai vechi; unde cele două diferă (avatarul printre domenii, limba citită din fiecare mesaj, trimiterile la lecții), nu mai este valabil. După ce proprietarul corectează planul de lucru, fiecare sarcină din el va numi regulile de aici pe care le îndeplinește.
 
 **R76. Trei stări diferite, care nu se amestecă.** Claritatea: cartea se poate citi și înțelege; o judecă proprietarul și sesiunea bibliotecii. Aprobarea: proprietarul este de acord cu ce spune. Conformitatea: programul face ce spune cartea; o arată testele. Un test care trece astăzi nu dovedește că o regulă a cărții este cea dorită.
 
-**R77. Cartea este gata** când fiecare termen este definit înainte de a fi folosit, fără cerc; fiecare regulă are un exemplu și un contraexemplu; fiecare exemplu își spune dependențele; fiecare alegere nehotărâtă este în anexa D; și fiecare sarcină din plan numește o regulă aprobată.
+**R77. Cartea este gata** când fiecare termen este definit înainte de a fi folosit, fără cerc; fiecare regulă are un exemplu și un contraexemplu; fiecare exemplu își spune dependențele; fiecare alegere nehotărâtă este în registrul book-migration-register.md; și fiecare sarcină din plan numește o regulă aprobată.
 
 **R78. Ce teste rămân și ce teste se schimbă.** Testele bibliotecii care verifică regulile din capitolele 2 și 3 rămân neschimbate. Cele atinse de propuneri (punctul ca valoare, al treilea rezultat al verificării, `means` obligatoriu, `none`) se schimbă cu bună știință și sunt enumerate în plan înainte de a fi atinse.
 
@@ -449,3 +449,5 @@ F28: §8.6 fixează proiecția exemplului ca instantaneu R58–R59, cu intrare t
 F19/F26: §8.6 include acum sala rezolvată, calcule core.calc pentru capetele intervalelor și interdicții separate pentru persoană/sală, executate pe biblioteca actuală. complete=true se aplică instantaneului local complet citit, nu sursei externe permanent. Exemplul testează conflictele candidatului; schema integrală și operația gazdei rămân livrabile distincte.
 
 Deciziile 1aeeaff sunt integrate în registrul fazei 0: patru schimbări de bază; înregistrări de jurnal distincte; proveniența importurilor inclusă; reviewerul retransmite versiunea publicată din jurnal/plan. Limita curentă la documentație rămâne până la actualizarea instrucțiunii directe sau a contextului programat, conform răspunsului reviewerului.
+
+Consolidare editorială: fostele anexe C/D și secțiunea 8.7 sunt în [book-migration-register.md](book-migration-register.md). Cartea păstrează contractele lângă concepte, distincțiile existent/propus și exemplele; registrul păstrează migrarea, deciziile și verificările de livrare. R59/R64 sunt consemnate ca decizii, nu redeschise. Aceasta este o primă reducere pentru F20/F43, nu închiderea întregii revizii de repetiții.

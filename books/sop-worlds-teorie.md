@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 45, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 46, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -28,9 +28,9 @@ Documentul descrie două lucruri și le ține deosebite, pentru ca o hotărâre 
 
 Capitolele 2 și 3 descriu **limbajul și biblioteca așa cum sunt astăzi**. Tot ce este acolo a fost luat din documentația normativă a bibliotecii (`docs/language.md` și `docs/reference.md`) și este verificat de testele ei. Tabelele din aceste capitole sunt complete: toate tipurile predefinite ale limbajului, cu toate cheile lor.
 
-Capitolul 4 descrie **lumea legendelor, care este o propunere** și nu există încă. Capitolele 5, 6 și 7 descriu cum arată folosirea când propunerea este pusă la lucru; ele amestecă lucruri care există cu lucruri propuse. Peste tot, ce este propus poartă cuvântul **(propus)**. Anexa C adună într-un singur loc tot ce este propus și tot ce există astăzi și ar trebui schimbat.
+Capitolul 4 descrie **lumea legendelor, care este o propunere** și nu există încă. Capitolele 5, 6 și 7 descriu cum arată folosirea când propunerea este pusă la lucru; ele amestecă lucruri care există cu lucruri propuse. Peste tot, ce este propus poartă cuvântul **(propus)**. Registrul diferențelor față de implementare este păstrat în [planul de migrare](../refactoring/book-migration-register.md).
 
-Contractele semantice sunt explicate lângă conceptele pe care le precizează: valori și identitate în capitolul 2, validare în capitolul 3, spații și acte în capitolul 4, moștenire în capitolul 5, interpretare și execuție în capitolul 6. Identificatorii R servesc trimiterilor între text și plan, fără a forma un capitol separat. Diferențele dintre comportamentul țintă și programul actual sunt consemnate în anexa C. Alegerile tehnice încă deschise sunt în anexa D.
+Contractele semantice sunt explicate lângă conceptele pe care le precizează: valori și identitate în capitolul 2, validare în capitolul 3, spații și acte în capitolul 4, moștenire în capitolul 5, interpretare și execuție în capitolul 6. Identificatorii R servesc trimiterilor între text și plan, fără a forma un capitol separat. Diferențele față de programul actual și alegerile tehnice încă deschise sunt urmărite în același registru de migrare; contractele și justificările lor rămân în capitolele relevante.
 
 ## 1.4 Un exemplu, de la un capăt la altul
 
@@ -2195,9 +2195,9 @@ Regula: programul unui domeniu face numai trei lucruri. Îndeplinește operații
 
 ---
 
-# 8. De la declarații la un rezultat: piesele care trebuie construite
+# 8. De la declarații la un rezultat: exemple de integrare
 
-*Capitol nou, versiunea 14. Propunere de arhitectură pentru review. Explică un contract de construit; nu pretinde că implementarea curentă îl îndeplinește. Numele concrete ale noilor tipuri de fire rămân de stabilit prin schema completă.*
+Exemplele acestui capitol leagă spațiile, interpretarea, căutarea și execuția explicate anterior. Fiecare distinge declarațiile existente de extensiile propuse; acceptarea unui candidat în lumea de fire rămâne separată de efectul observat într-o unealtă.
 
 ## 8.1 Ce trebuie să știe programul general
 
@@ -2457,11 +2457,6 @@ Primul fir păstrează identitatea sursei și valorile care au justificat etiche
 Nodul se referă activ numai la înregistrarea locală `$snapshot.meeting`. Calendarul poate fi închis după citire fără a invalida această proveniență istorică. Dacă întâlnirea este mutată ulterior, diagrama rămâne descrierea versiunii `state-18`; nu pretinde că arată starea curentă. Actualizarea explicită reîncarcă sursa și produce un nou instantaneu verificat. O vedere care urmărește automat calendarul ar necesita un contract separat de dependență și invalidare.
 
 Un grafic cu numărul întâlnirilor pe participant cere toate întâlnirile din domeniul agregării, nu doar acest fir. Pentru el se păstrează colecția surselor, versiunea și acoperirea citirii; fiecare întâlnire se numără o singură dată după identitate. Exemplul de nod individual nu este dovada completitudinii acelui grafic. Acest fapt localizează exact munca suplimentară a proiecțiilor agregate, fără să transforme nodurile în copii ale persoanelor.
-
-## 8.7 Ce trebuie verificat înainte de implementare
-
-Acest capitol descrie mecanismele și limitele lor. Mai trebuie scrise schemele complete ale declarațiilor noi, reprezentarea structurală a condițiilor și protocolul verificabil de completitudine. Acestea sunt livrabile de proiectare, nu detalii pe care implementatorul le poate inventa separat în fiecare domeniu. Reviewerul trebuie să încerce să găsească o tranziție din exemplu care nu este justificată de date, o regulă sau un contract explicit.
-
 
 # 9. API-ul bibliotecii: construirea, interogarea și modificarea unei lumi
 
@@ -3482,73 +3477,3 @@ Fiecare termen are o explicație de un rând și secțiunea în care este explic
 | cadrul unui act | Forma generală a propoziției de răspuns pentru un act. Secțiunea 6.10. |
 | proveniență (provenance) | De unde vine fiecare valoare. Secțiunea 6.10. |
 | registrul cazurilor nerezolvate | Lista a ce nu se poate face încă, cu mecanismul general care lipsește. Secțiunea 6.10. |
-
-## Anexa C. Ce este propus și ce trebuie schimbat
-
-Această anexă adună într-un loc tot ce în document poartă semnul (propus), plus ce există astăzi și ar trebui să dispară. Este lista pe care se poate lua o hotărâre. Amănuntele pe fișiere sunt în `refactoring/sop-worlds-schimbari.md`.
-
-**Lucruri noi, care nu există astăzi.**
-
-| Ce | Unde este descris |
-|---|---|
-| lumea legendelor, cu lista conceptelor | Secțiunile 4.2 și 4.3. |
-| tipurile `w.legend.space`, `w.legend.axis`, `w.legend.region`, `w.legend.degree`, `w.legend.act` | Secțiunea 4.8. |
-| cheia `is` pe `core.type` | Secțiunile 3.1 și 4.7. |
-| cheile `means`, `space`, `relation`, `role`, `part`, `unit` pe `core.slot`; refuzul unui slot fără `means` | Secțiunile 3.2 și 4.7. |
-| felul de valoare `kind=point` | Secțiunea 3.2. |
-| al treilea rezultat al verificării, „nedeterminată” | Secțiunea 3.9. |
-| actele definite cu „înainte” și „după”; actele compuse deduse; verificarea de după execuție | Secțiunea 4.6. |
-| clasa de comparație și factorii care se învață | Secțiunea 4.5. |
-| cheile `realises` pe `std.tool.op`, `space` pe `std.tool.param`, `role` pe `std.schema.honours` | Secțiunea 6.1. |
-| `resource=true` pe un tip și `counts=` pe un slot, pentru resurse | Secțiunea 7.4. |
-| domeniul calendar | Secțiunea 7.4. |
-
-**Lucruri care există astăzi și nu se mai folosesc în forma propusă.**
-
-| Ce | Ce îi ia locul |
-|---|---|
-| `enum` pe sloturi, pentru cuvinte (336 de sloturi în 40 de lumi publicate) | Regiuni în spații conceptuale. `enum` rămâne numai pentru excepțiile declarate. |
-| `ask` pe fiecare slot | Întrebarea generală a conceptului. |
-| `default` pe sloturi | Valori obișnuite în cunoaștere, ca regiuni. |
-| `accepts` și `scale` pe `std.tool.param` | `space`, cu partea din spațiu pe care o poate realiza unealta. |
-| `effect` pe `std.tool.op` | `realises`, cu numele actului. |
-| `on` cu chei fixe pe `std.schema.honours` | `role`, cu nume de concepte. |
-| `std.schema.region` și `std.schema.relation` declarate de fiecare lume | Regiuni și relații declarate o dată. |
-| cele unsprezece chei fixe ale cererii din programul bibliotecii | Cererea scrisă în concepte (secțiunea 6.3). |
-| propozițiile de răspuns scrise pe situație (84 în engleză și 55 în română, în aplicație) | Familii de cadre semantice pe act și statut, cu gruparea efectelor și verificarea acoperirii (capitolul 13). |
-| domeniile separate pentru grafice și pentru muzică | Graficele devin un fel de diagramă; muzica este scoasă deocamdată. |
-
-**Nume de îndreptat.**
-
-| Ce | De ce |
-|---|---|
-| `core.namespace` | Nu are legătură cu spațiile de nume ale faptelor (secțiunea 2.6); declară un prefix de chei. Un nume ca `core.keys.open` ar spune ce face. |
-| *matrix*, în program și în documentația bibliotecii | Se trece treptat la „schema”. |
-| identificatorul firelor `core.type` și `core.slot` | Este liber și nu poartă înțeles, ceea ce încurcă la citire. De hotărât: rămâne liber, cu convenția `t.<tip>` și `s.<tip>.<cheie>` verificată de un instrument, sau biblioteca îl verifică ea însăși. |
-
-**Hotărâri care așteaptă.**
-
-| Întrebarea | Variantele |
-|---|---|
-| amploarea refacerii | Decis: refacere completă, inclusiv motorul unde contractele o cer; implementarea începe după aprobarea proiectului. |
-| harta | Decis: scoasă din demo. |
-| avatarul | Fața este un lucru desenat cu părți; nu un domeniu separat. |
-| numele tipurilor `w.legend.*` | Cele din secțiunea 4.8 sau altele. |
-| unde stau factorii învățați ai cuvintelor de grad | În instanța de lume, sau într-o bază de cunoaștere a omului. |
-
-## Anexa D. Hotărâri care încă nu s-au luat
-
-Rândurile de mai jos sunt alegeri de politică. Prima coloană trimite la regula care ține locul hotărârii până atunci.
-
-| Regula | Ce este de hotărât |
-|---|---|
-| R5 | Dacă lipsa de ordine a unei chei cu mai multe valori se declară cu `order=ignored` sau altfel. |
-| R6 | Identitatea imutabilă separată de nume este decisă; referințele persistă perechea de identități, iar numele lizibile sunt aliasuri. Rămâne sintaxa serializării, conform 2.4.1 și 2.6. |
-| R9 | Dacă „se știe că nu are” se scrie `none`, și pe ce sloturi este permis. |
-| R31 | Mărimea pașilor: 1,25 pentru mărimi; 30 de minute pentru oră. |
-| R34 | Dacă ce se învață poate trece vreodată în cunoașterea comună, și cine aprobă. |
-| R48 | Recurența este inclusă; rămân de proiectat reprezentarea seriei, excepțiile și verificarea pe intervale finite. |
-| R49 | Dacă normele sunt slabe în timpul lucrului sau unele sunt tari. |
-| R59 | Dacă un grafic făcut din calendar rămâne o fotografie sau se ține la zi. |
-| R64 | Ce se face cu o unealtă care nu poate desface: se execută și se spune, sau se cere acordul înainte. |
-| R68 | Calibrarea măsurării în spațiul de ton, toleranțele și tratarea incertitudinii, prin mecanismul din 6.8.1. |

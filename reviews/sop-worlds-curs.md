@@ -1,8 +1,8 @@
 # SOP Worlds: curs de început
 
-*Versiunea 6.1, 16 noiembrie 2026. Text de lucru în română, sursă pentru documentația și skill-urile din sopworld. Termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 7, 16 noiembrie 2026. Text de lucru în română, sursă pentru documentația și skill-urile din sopworld. Termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
-*Cursul descrie cum trebuie să lucreze tehnologia. Unde un lucru este stabilit numai ca intenție, lecția o spune pe loc cu cuvântul „propus”. Starea implementării este în Anexa A. Exemplele de fire nu au fost încă rulate una câte una; biblioteca le va trece prin teste și cursul se corectează unde un exemplu nu rulează.*
+*Cursul descrie cum trebuie să lucreze tehnologia. Unde un lucru este stabilit numai ca intenție, lecția o spune pe loc cu cuvântul „propus”. Starea implementării este în Anexa A. Partea a patra (lecțiile 27–30) este propunerea de generalizare: lumea legendelor și ce se reface din bibliotecă. Exemplele de fire nu au fost încă rulate una câte una; biblioteca le va trece prin teste și cursul se corectează unde un exemplu nu rulează.*
 
 ---
 
@@ -893,6 +893,177 @@ Ce trece neschimbat de la un domeniu la altul este dovada cea mai directă.
 | felurile de lucruri, sloturile, capabilitățile, legăturile | Proprii fiecărui domeniu: rafturi și cărți; evenimente și persoane; texte și părțile lor. |
 | unelte și vederea stării | Proprii fiecărui domeniu. |
 | funcții de calcul | Calendarul aduce `overlaps`; celelalte două nu au nevoie. |
+
+---
+
+# Partea a patra. Lumea legendelor și refacerea bibliotecii
+
+*Această parte este o propunere, scrisă pentru ca proprietarul să poată hotărî în cunoștință de cauză. Nimic din ea nu este încă făcut.*
+
+## Lecția 27. De ce o lume a legendelor
+
+Lecțiile de până aici au un cusur comun, găsit pe sesiunile reale: multe declarații sunt scrise pe lucrul particular. Întrebarea pentru raftul unei cărți este „Which shelf should it go on?”. Rața are un rând care spune că se desenează ca o pasăre. Fiecare fel de răspuns are rândul lui. De aceea fiecare caz nou a cerut un rând nou, iar rândurile noi au fost, de fapt, petice.
+
+Regula care îndreaptă aceasta: **se pornește de la general spre particular, întotdeauna.** Fiecare declarație stă pe conceptul cel mai general pentru care este adevărată și se moștenește în jos. O lume particulară declară numai ce are ea diferit.
+
+Pentru aceasta este nevoie de un singur loc în care stau conceptele generale: **lumea legendelor (the legend world)**. Este un tipar de lume (lecția 11). Nu conține lucruri; conține conceptele abstracte prin care se descrie orice lume. Orice tip de fir și orice slot din orice altă lume se leagă de un concept din ea.
+
+Conceptele generale nu sunt multe. Un fel simplu de a le găsi pe toate este să ne întrebăm ce se poate întreba despre orice lucru sau despre orice întâmplare.
+
+| Întrebarea | Conceptul general |
+|---|---|
+| ce este? | lucru și fel |
+| care anume? | identitate și trimitere |
+| din ce este făcut? al cui întreg este? | parte și întreg |
+| câte? cât? | cantitate, cu unitate |
+| cum este? | însușire, cu valorile și scara ei |
+| unde? | loc |
+| când? cât timp? | timp |
+| al cui? | apartenență |
+| cu ce se leagă? | relație |
+| ce s-a întâmplat? | schimbare |
+| ce se face? | act |
+| cine? cui? cu ce? de unde? încotro? | roluri ale unui act |
+| cum? în ce fel? | mod |
+| de ce? pentru ce? | cauză și scop |
+| este adevărat? trebuie? se poate? de obicei? | felul unei afirmații |
+| toate? unele? niciunul? fiecare? | cuprindere |
+
+## Lecția 28. Conceptele lumii legendelor
+
+Sunt șase grupe. Lista este gândită să fie completă la acest nivel de abstracție: un concept nou ar trebui să apară rar, iar dacă apar multe, înseamnă că am coborât prea jos.
+
+**Grupa întâi: ce există.**
+
+| Concept | Ce este |
+|---|---|
+| lucru (thing) | Orice despre care se poate vorbi și care poate fi arătat: o carte, o ședință, un nor, un capitol. |
+| fel (kind) | Ce este un lucru. Felurile formează un singur arbore: o rață este o pasăre, o pasăre este un animal. Ce se spune despre un fel este valabil pentru toate felurile de sub el. |
+| parte și întreg (part, whole) | Un lucru făcut din alte lucruri: o pădure din copaci, o scrisoare din părțile ei, o față din ochi și gură. |
+| grup și ordine (collection, sequence) | Mai multe lucruri luate împreună, cu sau fără ordine: cărțile de pe un raft, pașii unei rețete. |
+| nume și semn (name, sign) | Cuvântul sau semnul prin care un lucru sau un fel este numit. Aici se leagă limba. |
+
+**Grupa a doua: cum este.**
+
+| Concept | Ce este |
+|---|---|
+| însușire (quality) | O proprietate a unui lucru, cu valori dintr-un spațiu al ei: culoare, mărime, formă, stare de spirit. |
+| scară (scale) | Ordinea valorilor unei însușiri, când există: minuscul, mic, obișnuit, mare, uriaș. Orice însușire cu scară primește aceleași operații: mai mult, mai puțin, cel mai. |
+| cantitate (quantity) | Un număr, cu sau fără unitate: trei cărți, 150 de cuvinte, două ore. |
+| stare (state) | Valorile însușirilor și relațiilor unui lucru la un moment. |
+
+**Grupa a treia: cum se leagă.**
+
+| Concept | Ce este |
+|---|---|
+| relație (relation) | Ceva care ține între două lucruri. Familiile de mai jos sunt relații. |
+| loc (place) | Unde este un lucru: o regiune (sus, jos, stânga, dreapta, centru, margine), o relație cu alt lucru (pe, în, lângă, deasupra, sub, între), o direcție, o distanță. |
+| timp (time) | Când: un moment, un interval, o durată, o ordine (înainte, după, în timpul), o repetare. |
+| apartenență (belonging) | Al cui este un lucru; cine face parte dintr-un grup. |
+| asemănare și comparație (likeness, comparison) | La fel ca, altfel decât, mai mult decât. |
+| dependență (dependence) | Un lucru are nevoie de altul ca să existe sau să fie valabil. |
+
+**Grupa a patra: ce se întâmplă.**
+
+| Concept | Ce este |
+|---|---|
+| schimbare (change) | Trecerea de la o stare la alta. Sunt patru schimbări de bază: un lucru apare, un lucru dispare, o însușire își schimbă valoarea, o relație se schimbă (de exemplu locul). |
+| act (act) | O schimbare cerută sau făcută de cineva. Fiecare act se definește o singură dată: ce roluri are, ce trebuie să fie adevărat înainte, ce este adevărat după. „A face”, „a șterge”, „a schimba”, „a muta” sunt cele patru schimbări de bază; celelalte acte se compun din ele. |
+| rol (role) | Locul unui lucru într-un act: cine face, asupra a ce, ce rezultă, cu ce unealtă, de unde, încotro, pentru cine. |
+| mod (manner) | Cum este făcut un act: cu grijă, la întâmplare, repede. |
+| cauză și scop (cause, purpose) | De ce s-a întâmplat ceva; pentru ce se face ceva. |
+
+**Grupa a cincea: ce se știe și ce se vrea.**
+
+| Concept | Ce este |
+|---|---|
+| afirmație (statement) | Ceva spus despre lucruri. Felul ei: fapt, normă (cum trebuie să fie), valoare obișnuită, preferință, cerință a omului, presupunere a sistemului. |
+| siguranță și sursă (certainty, source) | Cât de sigură este o afirmație și de unde vine. |
+| negație și cuprindere (negation, scope) | Nu; toate, unele, niciunul, fiecare. |
+| condiție și limită (condition, limit) | Când este valabilă o afirmație; între ce margini poate fi o valoare. |
+| întrebare și răspuns (question, answer) | Ce nu se știe și se cere; ce se dă înapoi. |
+
+**Grupa a șasea: cine și cu ce.**
+
+| Concept | Ce este |
+|---|---|
+| cel care acționează (agent) | Omul, sistemul, o altă parte. |
+| capabilitate (capability) | Ce acte poate îndeplini cineva sau ceva, și asupra a ce. |
+| unealtă și resursă (tool, resource) | Cu ce se îndeplinește un act; ce se consumă sau se ocupă (o sală, un loc pe raft, o oră). |
+
+Ce avem deja din acestea, ca bucăți nelegate între ele: arborele felurilor (`k.kinds`), însușirile (`k.attributes`), locul (`k.space`), părțile (`k.parts`), unitățile și valorile (`k.units`, `k.values`), verbele și actele (`k.actions`), timpul (`k.time`). Lipsesc ca concepte: relația, rolul, schimbarea, scara ca mecanism unic, felul unei afirmații. Și lipsește legătura obligatorie de la celelalte lumi spre acestea.
+
+## Lecția 29. Cum se leagă o lume de lumea legendelor
+
+Fiecare tip spune ce concept este. Fiecare slot spune ce concept realizează. Forma firelor de mai jos este propusă; biblioteca o va stabili.
+
+Biblioteca cu rafturi:
+
+```
+@t.book        core.type of=book  extends=std.schema.thing is=thing
+@t.shelf       core.type of=shelf extends=std.schema.thing is=thing
+@s.book.title  core.slot of=book  key=title kind=string     means=name
+@s.book.cover  core.slot of=book  key=cover type=k.colours.basic by=name means=quality quality=colour
+@s.book.size   core.slot of=book  key=size  kind=atom enum=small enum=big means=quality quality=size
+@s.book.on     core.slot of=book  key=on    type=shelf required=true means=place relation=on
+@s.shelf.room  core.slot of=shelf key=room  kind=integer    means=quantity counts=book resource=true
+```
+
+Slotul `on` nu mai are o întrebare scrisă de mână. Spune că realizează conceptul **loc**, cu relația **pe**. De aici decurg, fără niciun rând în plus, lucrurile care până acum erau scrise pe caz.
+
+| Ce decurge din `means=place relation=on` | Cum |
+|---|---|
+| întrebarea când lipsește valoarea | Întrebarea generală a locului, „Where should it go?”, cu tipul valorii: „Which shelf?”. |
+| un fragment al omului | „on the top shelf”, spus singur după „add a novel”, completează rolul loc rămas deschis. |
+| trimiterea | „the book on the top shelf” găsește cartea prin aceeași relație. |
+| mutarea | „move it up” este un pas pe direcția „sus” a locului; răspunsul vine din propoziția generală a mutării. |
+| verificarea | Locul are capacitate fiindcă `room` este o resursă care numără cărți. |
+
+Un calendar, cu aceleași concepte și alte lucruri:
+
+```
+@t.meeting      core.type of=meeting extends=std.schema.thing is=thing
+@s.meet.title   core.slot of=meeting key=title  kind=string    means=name
+@s.meet.start   core.slot of=meeting key=start  kind=time.moment means=time part=start
+@s.meet.long    core.slot of=meeting key=length kind=quantity.time means=time part=duration
+@s.meet.room    core.slot of=meeting key=room   type=room      means=place relation=in
+@s.meet.people  core.slot of=meeting key=people type=w.person  means=role role=participant
+@t.room         core.type of=room extends=std.schema.thing is=thing resource=true
+```
+
+„Move the meeting later” este același pas pe o scară, de data aceasta scara timpului. „Who is in the meeting?” este întrebarea generală a rolului. „In which room?” este întrebarea generală a locului. Nimic din acestea nu se scrie pentru calendar.
+
+Desenul: o rață este un fel de pasăre în arborele felurilor. Dacă desenul nu are o imagine pentru rață, o ia pe a păsării; lucrul rămâne o rață. Pentru aceasta nu este nevoie de niciun rând despre rațe.
+
+## Lecția 30. Straturile bibliotecii și ce înseamnă „refacem”
+
+Biblioteca sopworld are trei straturi, unul peste altul. Pentru a hotărî ce se reface, trebuie văzut ce face fiecare și unde sunt greșelile.
+
+| Strat | Ce face | O asemănare |
+|---|---|---|
+| 1. Motorul limbajului | Citește firele; ține tipurile și sloturile; verifică regulile și interdicțiile la fiecare schimbare; ține minte ce a dedus și din ce; anulează; face copii; caută valori cu rezolvitorul. Nu știe nimic despre propoziții, cereri sau domenii. | Motorul unei baze de date: păstrează datele corecte, oricare ar fi ele. |
+| 2. Modulele generale | Capabilități, limite, capacități, legarea de altă lume, descrierea uneltelor. Sunt scrise ca fire, peste motor. | Tabelele de sistem ale bazei de date. |
+| 3. Stratul conversației | Citește propoziția într-o cerere; hotărăște dacă este cerere nouă sau reacție; completează ce lipsește; face planul; pornește uneltele; compune răspunsul. | Programul care folosește baza de date pentru o aplicație anume. |
+
+Unde sunt greșelile găsite:
+
+| Strat | Ce am găsit |
+|---|---|
+| 1. Motorul | Nicio greșeală de felul celor din sesiuni. Sunt câteva lucruri de lămurit (ce înseamnă o valoare care lipsește, câte valori poate avea o cheie); acestea sunt precizări, nu refaceri. |
+| 2. Modulele generale | Sunt bune ca formă, dar nu se leagă de concepte generale: un slot nu spune ce concept realizează. |
+| 3. Stratul conversației | Aici sunt aproape toate: o listă fixă de unsprezece chei scrisă în program; câte un mecanism adăugat pentru fiecare comparativ; câte un rând de răspuns pentru fiecare situație; reguli despre o propoziție anume. |
+| datele (bazele de cunoaștere) | Multe fapte sunt scrise pe lucrul particular; bucățile generale există, dar nu sunt legate între ele. |
+
+Cele două variante și urmările lor:
+
+| Variantă | Urmări |
+|---|---|
+| A. Refacem stratul 3 și datele; stratul 2 primește legătura spre concepte; motorul rămâne, cu precizările lui. | Cele peste șase sute de teste ale motorului rămân valabile. Se pierde numai ce era oricum greșit ca abordare. După estimarea mea, câteva zile de lucru. Riscul: dacă o greșeală este totuși în motor, o vom găsi mai târziu. |
+| B. Refacem totul, inclusiv motorul. | Se pierde un motor verificat, fără un câștig pe care să-l pot arăta, fiindcă greșelile nu sunt acolo. Săptămâni în loc de zile. Riscul: greșeli noi într-o parte care azi merge. |
+
+Recomandarea revizorului este varianta A. În ambele variante, lucrul începe cu lumea legendelor (lecțiile 27–29), aprobată pe hârtie înainte de orice program, și se încheie cu o probă: calendarul, făcut numai din lumea legendelor, lucrurile lui și uneltele lui, fără niciun rând scris pe caz.
+
+Ce se schimbă pentru cine folosește aplicația, în varianta A: câteva zile aplicația nu arată mai bine; apoi cele patru domenii și calendarul merg pe același strat general, iar o cerere nouă este rezolvată printr-un concept, nu printr-un rând.
 
 ---
 

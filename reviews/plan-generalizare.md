@@ -46,7 +46,7 @@ Cele șapte piese nu trebuie să fie șapte tipare separate. Proprietarul a prop
 | Ce lipsește | Conceptul de rol și de relație; legătura obligatorie de la fiecare slot la un concept; un singur loc din care citesc toate mecanismele. |
 | Ce conține lumea legendelor | Fel de lucru; însușire, cu spațiul ei de valori și, dacă are, ordinea; relație, cu cele două capete; rol; act, cu ce cere și ce produce; întreg și parte; cantitate și unitate; loc și regiune; timp; eveniment. Piesele A–G din secțiunea 3 sunt capitolele ei. |
 | Cum se leagă celelalte lumi | Fiecare `core.type` spune ce concept este; fiecare `core.slot` spune ce concept realizează. Un slot fără concept este refuzat la verificare. |
-| Cât de mare | Nu „tot ce ne putem imagina” de la început. Pornește cu ce cer cele trei sesiuni și crește după regula: un concept intră când îl folosesc cel puțin două domenii. |
+| Cât de mare | Hotărârea proprietarului: pornește de la început cu toate conceptele generale, de la general spre particular, ca să nu le mai învățăm pe parcurs. Sunt puține fiindcă sunt foarte abstracte: lista este în cursul SOP Worlds, lecția 28 (șase grupe). Dacă lista crește mult, înseamnă că am coborât prea jos. |
 | Cu ce seamănă | Ontologiile de nivel înalt (DOLCE, SUMO, BFO), schema.org, rolurile tematice. Deosebirea: aici mecanismele chiar o citesc la fiecare cerere. |
 
 ## 4. Fazele
@@ -80,7 +80,7 @@ Durata nu o pot promite. Estimarea mea, cu cele două sesiuni de lucru: faza 1 u
 |---|---|
 | O regulă generală este greșită pentru un caz particular. | Excepția se declară jos, cu motiv, și se numără. Multe excepții la aceeași regulă arată că regula este pusă prea sus. |
 | Câteva zile fără îmbunătățiri vizibile. | Trei reparații generale rămân în lucru și în acest timp: „am făcut” fals (făcut), avatarul și cererile între domenii, detectarea limbii pe mesaj. |
-| Stratul general crește fără măsură. | Începe cu ce cer cele trei sesiuni; un concept intră numai dacă îl folosesc cel puțin două domenii. |
+| Lista de concepte coboară în detalii. | Conceptele rămân foarte abstracte; un concept nou trebuie să fie adevărat pentru orice domeniu, nu pentru unul. |
 | Traducerea rămâne slabă și ascunde câștigul. | Se măsoară separat sesiunea în engleză și cea în română. |
 
 ## 7. Ce are de hotărât proprietarul
@@ -91,3 +91,12 @@ Durata nu o pot promite. Estimarea mea, cu cele două sesiuni de lucru: faza 1 u
 | Cât refacem din bibliotecă? | Stratul de cerere, dialog, plan și răspuns. Nucleul rămâne. |
 | Cine aprobă lista de roluri, acte și feluri de întreguri? | Proprietarul, pe câte o pagină pentru fiecare piesă, înainte de program. |
 | Domeniul de probă | Calendarul: are timp, resurse și conflicte, deci folosește alte roluri decât desenul. |
+
+## 8. Hotărâri primite (16 noiembrie, 10:16)
+
+| Subiect | Hotărâre |
+|---|---|
+| lucrul pe cazuri | Se oprește. Întâi se curăță și se generalizează abordarea. |
+| cât se reface din bibliotecă | Nehotărât. Explicația straturilor și a celor două variante este în curs, lecția 30. |
+| lista de concepte | Toate conceptele generale de la început, foarte abstracte; de la general spre particular întotdeauna. |
+| domeniul de probă | Calendarul, ca domeniu nou al aplicației. |

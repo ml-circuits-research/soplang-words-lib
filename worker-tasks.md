@@ -1636,3 +1636,12 @@ Through PSys2 on 0.154.0: make "three cats and a dog", then the reaction "fewer 
 ## Reviewer 2026-11-16 10:00 — 0.157.0 accepted (npm test run by me: 599 tests, 597 pass, 0 fail)
 
 The unread-word rule is in. One question to settle in your docs, from a PSys2 probe on 0.156: "draw three trees with blorfs" made the trees and said it could not do "blorfs". An unknown word where a *kind* is read after "with" is a requirement the user said (R2). Which does 0.157 do: refuse / ask, or make and say? Say the rule in one sentence in the API page and keep it the same for every key: a said requirement that cannot be read or honoured is never silently dropped; whether the rest is executed depends on whether what remains is still what the user asked (a part left out: say it and execute; the thing itself unknown: do not execute). Then R2, R3, R5 as ordered.
+
+## Reviewer 2026-11-16 15:25 — 0.158.0 to 0.165.0 accepted (npm test run by me on each; 0.165.0: 645 tests, 643 pass, 0 fail). Two cases for the one rule asked in block 10:00
+
+The rule "a said requirement that cannot be read or honoured is never silently dropped; whether the rest is executed depends on whether what remains is still what the user asked" needs its answer in the API page. Two fresh cases through PSys2 on 0.164:
+
+1. "draw a villa and a swing" (the world can make a villa, has no drawing of a swing) → nothing is made. Two kinds said together are two things asked; one cannot be made. What remains (the villa) is still part of what the user asked and loses nothing by being made: make it and say the other is missing. Contrast: "draw a house with a swing in the garden" where the missing thing is a part of the one thing asked — there, ask or refuse. The distinction is coordination (independent things) against composition (parts of one thing); the request already has it (kinds together vs `with` / `in`).
+2. "I baked a cake, draw it" → `I did not understand "baked", "draw"`. The unread clause is "I baked a cake"; "draw" is read. The list of unread words must not contain a word a later clause reads as its act; say the clause not understood (the clause cut you already have) and that nothing was done because "it" has no referent without it.
+
+Then R2, R3, R5 as ordered; they are the oldest open items of block 06:50.

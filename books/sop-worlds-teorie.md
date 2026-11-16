@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 25, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 26, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -1350,7 +1350,7 @@ Lucrul important despre cerere este în ce termeni este scrisă. Nu are chei pro
 
 De observat că în această etapă „big” și „red” rămân cuvinte: cererea ține minte că omul a spus „big”. Numărul vine abia în etapa 4, fiindcă depinde de ce este pe pagină.
 
-**Cerințele.** Fiecare lucru pe care omul îl vrea este o **cerință (constraint)** a cererii. Ca să poată fi urmărită până la capăt și pomenită în răspuns, o cerință ține minte mai mult decât valoarea ei. Ține minte despre ce concept este (mărime, loc, culoare); dacă omul o vrea sau nu o vrea („no circles”); despre care lucru din cerere este vorba; dacă privește fiecare lucru în parte sau pe toate la un loc; dacă este o cerință sau doar o preferință („if possible”); și cuvintele din care a fost citită. Toate acestea împreună sunt **identitatea** cerinței. Datorită ei, când omul scrie mai târziu „red, actually”, aplicația știe ce cerință anume se schimbă.
+**Cerințele.** Fiecare lucru pe care omul îl vrea este o **cerință (constraint)** a cererii. Ca să poată fi urmărită până la capăt și pomenită în răspuns, o cerință ține minte mai mult decât valoarea ei. Ține minte despre ce concept este (mărime, loc, culoare); dacă omul o vrea sau nu o vrea („no circles”); despre care lucru din cerere este vorba; dacă privește fiecare lucru în parte sau pe toate la un loc; dacă este o cerință sau doar o preferință („if possible”); și cuvintele din care a fost citită. Acestea sunt conținutul și proveniența cerinței; **identitatea** ei este un identificator stabil, care rămâne același când omul o corectează. Datorită ei, când omul scrie mai târziu „red, actually”, aplicația știe ce cerință anume se schimbă.
 
 **De ce lucru se leagă fiecare cuvânt.** Partea grea a interpretării nu este recunoașterea cuvintelor, ci legarea lor. Tabelul arată perechi de propoziții în care o mică diferență schimbă înțelesul.
 
@@ -1387,6 +1387,52 @@ O întrebare de clarificare rămâne deschisă până când omul îi răspunde, 
 În exemplul cu nodurile roșii și albastre, diferența este între reuniunea a două grupuri și intersecția lor. Interpretările trebuie păstrate separat până la rezolvarea referințelor. Faptul că intersecția este goală poate elimina o citire a unei referințe la obiecte existente, dar nu justifică eliminarea unei culori dintr-o cerere de creare.
 
 Un cuvânt neinterpretat poate părea mic și totuși să schimbe cererea: „not” inversează o condiție. De aceea categoria „cuvânt de legătură” nu este o autorizație de a ignora negația, ordinea ori întinderea unei expresii. Ignorarea este admisibilă numai când gramatica îi declară rolul nerelevant pentru cererea structurată. Întrebarea de clarificare păstrează candidații și valoarea așteptată, pentru ca răspunsul următor să poată fi legat de problema corectă.
+
+### 6.3.2 Reprezentarea cererii și identitatea unei cerințe
+
+Cererea este o stare distinctă de desen: faptul că omul cere trei pești nu înseamnă că aceștia există deja. Un obiect al cererii poate desemna un grup de rezultate încă de creat sau un lucru existent care trebuie găsit. Planificarea leagă aceste ținte de identități concrete; nu folosește identificatorul unui obiect al cererii drept identificatorul unui pește real.
+
+Următoarea formă este propusă pentru mesajul „draw three big red fish in the pond”. Tipurile `std.request.*` de mai jos descriu contractul de proiectare; nu sunt o afirmație că motorul actual implementează această schemă. Câmpurile fixe descriu structura generală a cererii, iar conceptele precum culoare, loc sau cantitate sunt date rezolvate prin vocabularul conceptual, nu chei noi în program pentru fiecare domeniu.
+
+```sop
+@src1 std.request.source text="draw three big red fish in the pond"
+@r1 std.request act=make source=$src1
+@fish1 std.request.target request=$r1 mode=new kind=fish
+@pond1 std.request.target request=$r1 mode=existing kind=pond determiner=definite
+@c.count std.request.constraint request=$r1 target=$fish1 concept=quantity operator=eq value=3 scope=group polarity=positive character=requirement source=$src1 source.start=5 source.end=10
+@c.size std.request.constraint request=$r1 target=$fish1 concept=size operator=degree value=big scope=each polarity=positive character=requirement source=$src1 source.start=11 source.end=14
+@c.colour std.request.constraint request=$r1 target=$fish1 concept=colour operator=region value=red scope=each polarity=positive character=requirement source=$src1 source.start=15 source.end=18
+@c.place std.request.constraint request=$r1 target=$fish1 concept=place operator=relation relation=in goal=$pond1 scope=each polarity=positive character=requirement source=$src1 source.start=24 source.end=35
+```
+
+`src1` păstrează textul de intrare după traducerea de la granița sistemului, dacă traducerea a fost necesară. Intervalele de proveniență sunt poziții de caractere, de la zero, cu sfârșitul exclus, în acest text exact. Într-o implementare multilingvă, legătura cu fragmentul original trebuie păstrată de traducător; aceste intervale nu se aplică automat textului original într-o altă limbă. `r1` identifică cererea și actul general `make`.
+
+`fish1` desemnează grupul de rezultate noi, nu un pește deja creat. `pond1` este o descriere de căutare: iazul trebuie să existe și să fie identificat univoc. Dacă sunt două iazuri și contextul nu le deosebește, cererea rămâne nerezolvată și aplicația întreabă; nu schimbă `mode=existing` în `mode=new` pentru a evita ambiguitatea.
+
+| Cerință | Interpretare și verificare |
+|---|---|
+| `c.count` | Cantitatea grupului este exact trei. `scope=group` numără rezultatele, nu cere trei copii pentru fiecare pește. |
+| `c.size` | Fiecare rezultat primește mărimea calculată din conceptul de grad `big`, clasa de comparație și sursa ei. `degree` amână calculul numeric până când există context. |
+| `c.colour` | Culoarea fiecărui rezultat trebuie să aparțină regiunii `red`; numele se rezolvă la declarația regiunii și versiunea ei. |
+| `c.place` | Pentru fiecare rezultat trebuie să țină relația `in` cu iazul găsit pentru `pond1`. Locul nu este dedus din cuvântul fish, fiindcă omul l-a cerut explicit. |
+
+`operator` selectează verificarea cerinței, nu o unealtă: egalitate de cantitate, calcul de grad, apartenență la regiune sau relație. `polarity=positive` cere satisfacerea ei; `negative` cere ca predicatul să fie fals. `character=requirement` exprimă obligația, `preference` o preferință care poate ceda cerințelor, iar `assumption` o alegere a aplicației pentru o informație omisă. Negarea nu slăbește obligația: „no circles” poate fi o cerință negativă tare a cererii. O presupunere nu inventează un interval în mesaj: ea indică declarația sau pasul de justificare care a propus-o.
+
+Schema trebuie să verifice variantele operatorului. `relation` cere `relation` și `goal`; `eq`, `degree` și `region` cer o valoare de tipul acceptat de concept. O cheie `goal` rămasă pe o egalitate numerică este o eroare de schemă a cererii. Rezolvitorul păstrează separat descrierea țintei, identitățile găsite și versiunea stării citite. Această legare permite verificarea fiecărui rezultat și explicarea unei ambiguități fără modificarea sensului inițial al cererii.
+
+Să urmeze mesajul „in the sky”. Situarea din secțiunea 6.4 îl leagă de locul grupului de pești din ultima cerere. În versiunea nouă a acelei cereri, se adaugă sursa și ținta cerute de corectare, iar `c.place` este înlocuit, păstrându-și identitatea:
+
+```sop
+@src2 std.request.source text="in the sky"
+@sky1 std.request.target request=$r1 mode=existing kind=sky determiner=definite
+@c.place std.request.constraint request=$r1 target=$fish1 concept=place operator=relation relation=in goal=$sky1 scope=each polarity=positive character=requirement source=$src2 source.start=0 source.end=10
+```
+
+Acest bloc descrie schimbarea dintre două versiuni ale stării cererii. Nu se concatenează cu declarația veche `c.place` în același text de încărcare: două declarații diferite cu același identificator ar fi o eroare. Cantitatea, mărimea și culoarea rămân neschimbate, la fel ca identitatea grupului vizat. Jurnalul păstrează versiunea anterioară și legătura cu mesajul corectiv.
+
+Dacă peștii au fost deja creați, legarea grupului `fish1` la acele identități se păstrează, iar planul mută acei pești. Nu execută din nou `make` pentru încă trei. Dacă prima cerere nu a ajuns la execuție, corectarea schimbă locul în planul încă neexecutat. Aplicarea asupra ultimului grup, distincția dintre corectare și repetare și controlul efectelor sunt obligații separate ale situării și planificării; schimbarea unui fir nu le rezolvă singură.
+
+Aceeași structură permite ca mesajul real cu două case diferite să aibă o țintă pentru case și o cantitate a acelui grup. Dar semnificația lui „diferite” și părțile complete ale peisajului trebuie declarate separat. Exemplul de aici nu închide aceste lacune din replay și nu face, singur, un domeniu executabil.
 
 ## 6.4 Situarea: ce este acest mesaj față de ce s-a spus înainte
 

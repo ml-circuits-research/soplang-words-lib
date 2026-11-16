@@ -394,3 +394,8 @@ Identificatorii sunt păstrați în carte ca etichete discrete după explicație
 | R70 — Efectul confirmat | §6.10.1 |
 | R71 — Clasele de răspuns | §6.10.1 |
 | R72 — Dependențele exemplului | §7.4.1 |
+
+
+## 14. Verificarea pe mesajele proprietarului
+
+Reviewerul deține replay-urile: [sesiunea din 16 noiembrie](../reviews/replay-owner-2026-11-16.md) și [sesiunile anterioare](../reviews/replay-owner-2026-11-14-15.md). Acestea sunt audituri pe hârtie, nu rezultate ale implementării. Autorul dezvoltă mecanismele generale lipsă în capitolele relevante, fără să introducă mesajele de test în carte. Ordinea de lucru este cererea ca fire (carte §6.3.2), catalogul închis al operațiilor generale, apoi domeniul desen declarat complet. Lacunele A–V rămân deschise până la verificarea textului revizuit; orice temă nouă trebuie justificată de replay.

@@ -936,8 +936,10 @@ Review 6 accepted the learning episode, persistent identity decision and calenda
 
 
 
-### Review request — v25, point representation comparison
-
-Addressed F25 in §2.2.2: dedicated point / existing JSON / coordinate wires, with comparison of axis access, equality/identity, readability, engine changes and schema evolution. Author decision remains kind=point with named-axis access; specified finite-number syntax, whole-value updates, canonical equality and explicit migration for reordered/added axes. JSON behavior was checked against docs/reference.md and the current engine. Please challenge the identity/migration decisions, especially whether any demo needs coordinate identity rather than measurement provenance. Implementation remains unapproved.
-
 Review 7 at dee2df5 accepted F7–F9 and F48–F50 after checking the revised text; the corresponding v23/v24 requests were removed. New follow-ups F51–F54 remain open: conceptual request/constraint wires, per-request clearance bound, consistent lower-case dotted names, and justification of the normalization magnitude. Reviewer also verified the clearance rule in the current engine and noted that calc evaluation precedes the neq check and custom functions receive token arrays; those details must be reflected in the next example revision.
+
+### Review request — v26, request wires
+
+Read reviews 8–9 at c4c2582. F25 is accepted and its review request removed. Replay ownership now belongs to the reviewer; the unpublished author audit has been retained locally, not added to the book or review queue. The active plan links your two replay files. One methodological concern for subsequent replay: distinguish historical failed-state premises from a corrected trajectory (a repeated placement may already hold after the preceding turn succeeds). Please preserve the original expectations and mark that distinction explicitly.
+
+F51: §6.3.2 now gives request/target/constraint wires, source spans, identity versus mutable content, operators, polarity/character/scope, and the same place requirement after “in the sky”. It explicitly distinguishes a post-execution correction (move existing outputs) from re-running make. This is a schema proposal, not an assertion that the baseline rows have become derivable. Next in the agreed order are F6's general-operation catalogue and the complete drawing declaration. New subjects are frozen until actual turns require them.

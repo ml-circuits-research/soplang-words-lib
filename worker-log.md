@@ -5928,3 +5928,7 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Acts that run a plan find joined rows through `catalog`: `runWorldPlan(..., { catalog })`, the planner's fork, `pickBind` (join `from`, stand-in), `mirrorState(live, view, { catalog })` (without it "remove the goats" said "no goat here").
 - `sayRequest` says values per kind (`done.add.value`, fallback `done.make.value`, `done.add`); `askWorld` names said attributes for at most `STATE_FEW` (4) things (`state.count.value`). Test edited: tool.test.mjs shelf now expects "I added 3 red novels." (the value said is said).
 - Tests: `test/joined-kinds.test.mjs` (6); `npm test` 617 run, 615 pass, 0 fail; bundle run of the touched suites green. Needs from the knowledge repository: replies `done.add.value`, `state.count.value` (en, ro); from psys2: the join rows + the explicit whole rows for what it draws as wholes, and addThings through the lazy loader for joined kinds.
+
+## 0.161.0 (2026-11-16)
+- Q96 (8): `about` / `place` constraints keep `said` (operand words); `done.about` takes them. Q96 (9): `askWorld` says `state.count.named` for one thing with a title / name (`opts.nameKeys`); English default before fallback rows. Q96 (2): topic / title changed is said once. Test: `test/said-words.test.mjs` (3).
+- Not done (to Q): (1) title from the made whole's diff attributes, (3) net state of a shortened text, (4) `done.make.whole`, (5) unit plural by default, (6)(7) knowledge-base rows.

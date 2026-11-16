@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.161.0
+
+A reply says what the person said in their own words, and a state answer names a lone thing. Properties in `test/said-words.test.mjs` over the example worlds (STORIES, MEADOW, SKETCH, NOTES).
+
+### Added
+- `about` and `place` constraints of `readRequest` carry `said`: the words of the operand as the person wrote them ("a fox", "ancient hobbits"). `sayRequest` takes them for `done.about` (and any said value named by a constraint of the same `on`), so "The story is about a fox." No article rule in code.
+- `askWorld`: when there is one thing of a kind and it has a `title` or `name` (`opts.nameKeys`, default `['title','name']`), it says `state.count.named { kind, number, name }` (fallback `state.count`); the English library default is "There is one story, \u201cAll about the fox\u201d.". The library default is tried before the fallback rows.
+
+### Fixed
+- A topic or title changed by a replacing act is said once (`done.change`), not again as `done.about` / `done.title`.
+
 ## 0.160.0
 
 Kinds taken by join (`std.schema.kinds`) work end to end for a world instance that joins a knowledge base; properties in

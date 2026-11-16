@@ -2409,7 +2409,10 @@ kinds wanted and the kinds a count is of, else every kind word said, a unit such
 counted only when its kind is said). With few things in the view (`STATE_FEW`, 4, or `opts.few`) a state answer names each
 thing's said attributes, grouped per kind: `state.count.value { kind, number, value }` ("There is a red boat. There is a blue
 house."; the keys are those of `VALUE_TYPES`, `opts.valueTypes`, and the attributes the question names; a language without the
-reply says `state.count`); many things are only counted. `mirrorState(live, view, { catalog })`
+reply says `state.count`); many things are only counted. 0.161: one thing of a kind with a `title` or `name` (`opts.nameKeys`) is
+named by it: `state.count.named { kind, number, name }` ("There is one story, \u201cAll about the fox\u201d."). A world pattern's `about` and
+`place` constraints keep `said`, the person's own words of the operand, and a reply fact names a said value by them
+("The story is about a fox."). `mirrorState(live, view, { catalog })`
 tells the tool's things into a fork of the declarations so that the planner's reasoning (induction, places, deny
 rules) sees them. `toolSession(live, primitives, { language, catalog, revisions })` is the door with no code per
 world: read, a question (a reaction of the language world named in `WORLD_QUESTIONS`), undo / redo (the acts), revise,

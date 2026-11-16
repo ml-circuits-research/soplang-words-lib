@@ -596,7 +596,10 @@ export function askWorld(question, request, { live, bindings = null, view = null
   // `valueTypes` (default VALUE_TYPES: colour) and of the attributes the request names, grouped per kind; many things are only counted
   const few = things.length > 0 && things.length <= (opts.few ?? STATE_FEW);
   const keys = few ? [...new Set([...Object.keys(opts.valueTypes ?? VALUE_TYPES), ...(request?.constraints ?? []).filter((c) => c.on === 'attribute' && c.attribute).map((c) => c.attribute)])] : [];
+  const nameKeys = opts.nameKeys ?? ['title', 'name']; // a thing's own name: said when there is one thing of its kind
   const count = (kind, list) => {
+    const nm = list.length === 1 ? nameKeys.map((k) => list[0].attrs?.[k]).find((x) => x !== undefined && x !== null && x !== '' && typeof x !== 'object') : undefined;
+    if (nm !== undefined) { facts.push({ reply: 'state.count.named', fallback: ['state.count'], roles: { kind, number: 1, name: String(nm) } }); return; }
     if (!keys.length) { facts.push({ reply: 'state.count', roles: { kind, number: list.length } }); return; }
     const groups = new Map();
     for (const t of list) { const v = keys.map((k) => t.attrs?.[k]).filter((x) => x !== undefined && x !== null && x !== '' && typeof x !== 'object').map(String).join(' '); groups.set(v, (groups.get(v) ?? 0) + 1); }

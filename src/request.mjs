@@ -357,8 +357,8 @@ export function readRequest(world, text, ctx = {}) {
       else { const v = o.value?.entry?.find((x) => !c.attribute || x.attribute === c.attribute) ?? o.value?.entry?.[0]; if (v) constraints.push({ ...base, attribute: c.attribute ?? v.attribute, value: v.value }); else for (let k = m.from; k < o.to; k++) used[k] = false; } // no readable value: the words stay unread
     }
     else if (c.on === 'layout') constraints.push({ ...base, value: c.value ?? o.value?.entry[0]?.value });
-    else if (c.on === 'about') constraints.push({ ...base, value: o.topic.text });
-    else if (c.on === 'place') { if (!(o.kind?.entry.world && c.value === undefined)) constraints.push({ ...base, value: c.value ?? o.kind?.entry.kind, relation: c.relation }); } // a place that names the world itself is where everything is: no constraint
+    else if (c.on === 'about') constraints.push({ ...base, value: o.topic.text, said: words(m.to, o.to - m.to) }); // `said`: the person's own words of the operand ("a fox"), kept for the reply
+    else if (c.on === 'place') { if (!(o.kind?.entry.world && c.value === undefined)) constraints.push({ ...base, value: c.value ?? o.kind?.entry.kind, relation: c.relation, ...(o.kind ? { said: words(m.to, o.to - m.to) } : {}) }); } // a place that names the world itself is where everything is: no constraint
     else constraints.push({ ...base, ...(c.value !== undefined ? { value: c.value } : {}), ...(c.step ? { step: c.step } : {}) });
     } catch { // a cue whose operand cannot be read (a declaration of a shape the reader does not take): nothing of it is kept, its words stay unread; readRequest never throws on a cue
       constraints.length = nC; reactions.length = nR; for (let k = m.from; k < o.to; k++) used[k] = false; // bounded: the cue's tokens
@@ -1465,6 +1465,7 @@ const unsayable = (v) => v === undefined || v === null || (typeof v === 'number'
 const WHOLE_REPLIES = Object.freeze({
   'done.whole': [{ roles: ['whole', 'parts'], text: 'The {whole} now has {parts}.' }],
   'done.about': [{ roles: ['whole', 'topic'], text: 'The {whole} is about {topic}.' }],
+  'state.count.named': [{ roles: ['kind', 'name'], text: 'There is one {kind}, \u201c{name}\u201d.' }],
   'done.title': [{ roles: ['whole', 'title'], text: 'The {whole} is called {title}.' }],
   'short_of': [{ roles: ['made', 'asked', 'kind'], text: 'I could only make {made} of the {asked} {kind} you asked for.' }, { roles: ['made', 'asked', 'unit'], text: 'I could only make {made} {unit} of the {asked} you asked for.' }],
 });
@@ -1552,8 +1553,9 @@ export function sayRequest(request, outcome = {}, opts = {}) {
   { // what was said of a made whole (its topic, its title) and where the knowledge ran short of what was asked: made N of M (a plan's `short`, or the host's own: { made, asked, kind | unit })
     const ranOk = tool ? tool.ok && !tool.same && !tool.undo && !tool.redo : outcome.run?.ok !== false && !!run;
     const w0 = outcome.steps?.[0];
+    const saidAs = (key, v) => plain(String((request?.constraints ?? []).find((c) => c.on === key && c.said && String(c.value) === String(v))?.said ?? v)); // the user's own words when the value was said
     if (ranOk && !outcome.reference && !outcome.revised && outcome.target && (run?.whole || tool?.result?.whole) && w0?.args?.kind === outcome.target)
-      for (const [key, reply, role] of [['about', 'done.about', 'topic'], ['title', 'done.title', 'title']]) if (!unsayable(w0.args[key])) facts.push({ reply, roles: { whole: plain(outcome.target), [role]: plain(String(w0.args[key])) } });
+      for (const [key, reply, role] of [['about', 'done.about', 'topic'], ['title', 'done.title', 'title']]) if (!unsayable(w0.args[key]) && !facts.some((f) => f.roles?.key === key && /^done\.change/.test(f.reply))) facts.push({ reply, roles: { whole: plain(outcome.target), [role]: saidAs(key, w0.args[key]) } });
     if (ranOk) for (const sh of [].concat(outcome.short ?? [])) if (sh && sh.made < sh.asked) facts.push({ reply: 'short_of', roles: { made: sh.made, asked: sh.asked, ...(sh.unit ? { unit: String(sh.unit) } : { kind: pluralIn(o.language, lang, plain(sh.kind)) }) } });
   }
   if (outcome.unread?.length && tool?.failed?.code !== 'unread') facts.push({ reply: 'not_understood', roles: { words: outcome.unread.join(', ') } }); // a part that matters was not read: said, nothing was done
@@ -1587,6 +1589,6 @@ export function sayRequest(request, outcome = {}, opts = {}) {
   if (request?.unread?.length && !outcome.unread?.length && (run || outcome.revised || (tool && !tool.question && tool.failed?.code !== 'unread'))) facts.push({ reply: 'unread', roles: { words: request.unread.map((w) => `"${w}"`).join(', ') } });
   for (let i = facts.length - 1; i >= 0; i--) if (Object.values(facts[i].roles ?? {}).some(unsayable)) facts.splice(i, 1); // a reply is never said with a missing value or an empty slot
   const missing = [];
-  const texts = o.language ? facts.map((f) => { const say = (name) => replyFrom(o.language, name, f.roles, { lang, dictionary: o.dictionary }); let t = (f.roles?.key ? say(`${f.reply}.${f.roles.key}`) : null) ?? say(f.reply); for (const alt of f.fallback ?? []) if (t == null) t = say(alt); if (t == null) t = fallbackReply(f, lang); if (t == null) missing.push(f.reply); return t; }).filter((t) => t && !/\b(undefined|null|NaN)\b|\{\w+\}/.test(t)) : []; // a fact with a key: the reply named for that key first (done.change.place), else the general one
+  const texts = o.language ? facts.map((f) => { const say = (name) => replyFrom(o.language, name, f.roles, { lang, dictionary: o.dictionary }); let t = (f.roles?.key ? say(`${f.reply}.${f.roles.key}`) : null) ?? say(f.reply); if (t == null) t = fallbackReply(f, lang); for (const alt of f.fallback ?? []) if (t == null) t = say(alt); if (t == null) missing.push(f.reply); return t; }).filter((t) => t && !/\b(undefined|null|NaN)\b|\{\w+\}/.test(t)) : []; // a fact with a key: the reply named for that key first (done.change.place), else the general one
   return { facts, text: texts.join(' '), missing: [...new Set(missing)] };
 }

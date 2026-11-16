@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.198.0
+
+- Add explicit owned read-only request projections for values, count, existence and selected members, with request/target ownership, ask mood and source-span validation. Query intent is separate from desired constraints.
+
 ## 0.197.0
 
 - Grammar overlay features can copy exact provider identity with `from_id=true`, supporting source-filtered families without per-record literal mappings. General English reader compatibility integration consumes published frame/request declarations.

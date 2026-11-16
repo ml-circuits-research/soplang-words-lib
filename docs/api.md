@@ -1367,7 +1367,7 @@ true r
 
 ### compileGrammarOverlay(world, options?)
 
-Since 0.197 a feature may declare `from_id=true` to carry the exact selected provider wire ID. This is mutually exclusive with `from_key` and `value`; false or any other flag value is rejected. It works uniformly for ordinary providers and `core.word`, respects source filters and `source_id`, and preserves distinct identities when providers share the same text. The value is the actual wire identity, not a display name, binding ID or synthesized semantic label. Source-family mappings can therefore use one binding for a declared family while retaining the exact lexical sense used by each candidate.
+A feature may declare `from_id=true` to carry the exact selected provider wire ID. This is mutually exclusive with `from_key` and `value`; false or any other flag value is rejected. It works uniformly for ordinary providers and `core.word`, respects source filters and `source_id`, and preserves distinct identities when providers share the same text. The value is the actual wire identity, not a display name, binding ID or synthesized semantic label. Source-family mappings can therefore use one binding for a declared family while retaining the exact lexical sense used by each candidate.
 
 
 Compiles a loaded SOP declaration module into explicit grammar options and semantic
@@ -4786,3 +4786,27 @@ true
 ["independent"]
 ["dependent"]
 ```
+
+#### Explicit questions in inspectRequest
+
+The opt-in `std.request` contract includes owned query projections. They are distinct from desired result constraints and valid only in ask mood. Example:
+
+```js
+const w = new World();
+w.load('@use core.use world=std.request');
+const result = w.tell(`@s std.request.source text="What values?"
+@r std.request act=inspect mood=ask source=$s query=$q
+@t std.request.target request=$r mode=existing kind=toy.item
+@q std.request.query request=$r target=$t operation=values concept=tint`);
+print(result.ok);
+print(inspectRequest(w, 'r').ok);
+print(w.ofType('std.request.constraint').length);
+```
+
+```output
+true
+true
+0
+```
+
+Operations count, exists and members omit concept and project the selected target population, not a property named by an application convention. Multiple queries use repeated request.query references. Inspection verifies ownership and scope but does not evaluate observations or grant permission for host mutation. See the reference's read-only request projections for completeness and unknown-result boundaries.

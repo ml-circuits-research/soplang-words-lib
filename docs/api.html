@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="bdd585477479">
+<meta name="source-hash" content="58ff022281be">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.197.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.198.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -482,7 +482,7 @@ print(result.candidates.length, result.failures[0].reason, result.coverage.compl
 print(result.ok, result.request);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true r</code></pre></figure>
 <h3 id="compilegrammaroverlayworld-options">compileGrammarOverlay(world, options?)</h3>
-<p>Since 0.197 a feature may declare <code>from_id=true</code> to carry the exact selected provider wire ID. This is mutually exclusive with <code>from_key</code> and <code>value</code>; false or any other flag value is rejected. It works uniformly for ordinary providers and <code>core.word</code>, respects source filters and <code>source_id</code>, and preserves distinct identities when providers share the same text. The value is the actual wire identity, not a display name, binding ID or synthesized semantic label. Source-family mappings can therefore use one binding for a declared family while retaining the exact lexical sense used by each candidate.</p>
+<p>A feature may declare <code>from_id=true</code> to carry the exact selected provider wire ID. This is mutually exclusive with <code>from_key</code> and <code>value</code>; false or any other flag value is rejected. It works uniformly for ordinary providers and <code>core.word</code>, respects source filters and <code>source_id</code>, and preserves distinct identities when providers share the same text. The value is the actual wire identity, not a display name, binding ID or synthesized semantic label. Source-family mappings can therefore use one binding for a declared family while retaining the exact lexical sense used by each candidate.</p>
 <p>Compiles a loaded SOP declaration module into explicit grammar options and semantic composition templates. The caller supplies all eight type identities in <code>types</code>: <code>binding</code>, <code>feature</code>, <code>filter</code>, <code>rule</code>, <code>map</code>, <code>node</code>, <code>step</code>, <code>agreement</code>. These roles have fixed field names; the compiler contains no language or domain vocabulary.</p>
 <div class="table"><table><thead><tr><th>Role</th><th>Fields</th><th>Meaning</th></tr></thead><tbody><tr><td>binding</td><td>name, source_type, text_key, cat; optional source_id</td><td>Select a loaded vocabulary provider and lexical category.</td></tr><tr><td>feature</td><td>binding, key; exactly one of from_key/from_id/value</td><td>Copy a provider value, its exact wire identity (<code>from_id=true</code>), or an explicit constant.</td></tr><tr><td>filter</td><td>binding, key, value</td><td>Conjunctive equality filter on provider values.</td></tr><tr><td>rule</td><td>name, lhs, repeated rhs</td><td>Ordered category production.</td></tr><tr><td>map</td><td>name, root; exactly one of rule/cat</td><td>Assign a template to a production or lexical category.</td></tr><tr><td>node</td><td>name, kind; optional parent plus field/index, value</td><td>Object, array, copy, literal or null template node.</td></tr><tr><td>step</td><td>of, at; exactly one of key/index</td><td>Ordered component of a copy path.</td></tr><tr><td>agreement</td><td>rule, left, right</td><td>Two copy roots that must agree before production composition.</td></tr></tbody></table></div>
 <p>All fields are single-valued except <code>rule.rhs</code>. Unknown fields are rejected except <code>core.*</code> metadata. References use declaration names; production mappings compile to actual wire IDs. Categories are ASCII identifiers beginning with an uppercase letter, followed by letters, digits, <code>_</code>, <code>.</code> or <code>-</code>. Each RHS entry names a declared production or provider category. This compiler subset uses explicit productions; implicit literal RHS words, repetition and optional markers are not accepted.</p>
@@ -1553,9 +1553,24 @@ print(next.blocked.map(entry =&gt; entry.id));</code></pre></figure>
 [&quot;first&quot;,&quot;independent&quot;]
 [&quot;independent&quot;]
 [&quot;dependent&quot;]</code></pre></figure>
+<h4 id="explicit-questions-in-inspectrequest">Explicit questions in inspectRequest</h4>
+<p>The opt-in <code>std.request</code> contract includes owned query projections. They are distinct from desired result constraints and valid only in ask mood. Example:</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>const w = new World();
+w.load(&#x27;@use core.use world=std.request&#x27;);
+const result = w.tell(`@s std.request.source text=&quot;What values?&quot;
+@r std.request act=inspect mood=ask source=$s query=$q
+@t std.request.target request=$r mode=existing kind=toy.item
+@q std.request.query request=$r target=$t operation=values concept=tint`);
+print(result.ok);
+print(inspectRequest(w, &#x27;r&#x27;).ok);
+print(w.ofType(&#x27;std.request.constraint&#x27;).length);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true
+true
+0</code></pre></figure>
+<p>Operations count, exists and members omit concept and project the selected target population, not a property named by an application convention. Multiple queries use repeated request.query references. Inspection verifies ownership and scope but does not evaluate observations or grant permission for host mutation. See the reference's read-only request projections for completeness and unknown-result boundaries.</p>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.197.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.198.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

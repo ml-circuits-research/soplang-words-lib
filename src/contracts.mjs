@@ -386,13 +386,22 @@ export const CONTRACT_MODULES = {
   },
   'std.request': {
     text: `
-@std.request.module core.module name=std.request version=0.183.0 exports=std.request exports=std.request.source exports=std.request.target exports=std.request.constraint exports=std.request.not exports=std.request.group exports=std.request.quant exports=std.request.value
+@std.request.module core.module name=std.request version=0.198.0 exports=std.request.query exports=std.request exports=std.request.source exports=std.request.target exports=std.request.constraint exports=std.request.not exports=std.request.group exports=std.request.quant exports=std.request.value
 @std.request.type core.type of=std.request closed=true
 @std.request.act core.slot of=std.request key=act kind=atom present=true
 @std.request.mood core.slot of=std.request key=mood kind=atom enum=do enum=propose enum=check enum=ask present=true
 @std.request.source core.slot of=std.request key=source kind=ref to=std.request.source present=true
 @std.request.source.type core.type of=std.request.source closed=true
 @std.request.source.text core.slot of=std.request.source key=text kind=string present=true
+@std.request.query core.slot of=std.request key=query kind=ref to=std.request.query many=true
+@std.request.query.type core.type of=std.request.query closed=true
+@std.request.query.request core.slot of=std.request.query key=request kind=ref to=std.request present=true
+@std.request.query.target core.slot of=std.request.query key=target kind=ref to=std.request.target present=true
+@std.request.query.operation core.slot of=std.request.query key=operation kind=atom enum=values enum=count enum=exists enum=members present=true
+@std.request.query.concept core.slot of=std.request.query key=concept kind=atom
+@std.request.query.source core.slot of=std.request.query key=source kind=ref to=std.request.source
+@std.request.query.source.start core.slot of=std.request.query key=source.start kind=integer min=0 max=9007199254740991
+@std.request.query.source.end core.slot of=std.request.query key=source.end kind=integer min=0 max=9007199254740991
 @std.request.target.type core.type of=std.request.target closed=true
 @std.request.target.request core.slot of=std.request.target key=request kind=ref to=std.request present=true
 @std.request.target.mode core.slot of=std.request.target key=mode kind=atom enum=new enum=existing enum=bound present=true

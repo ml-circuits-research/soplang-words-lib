@@ -48,6 +48,31 @@ function inspect(world, id, family) {
     return chars;
   };
   if (sourceText(get(first(request, 'source'))) === null) fail(request, 'source must contain valid Unicode text');
+  const queries = new Map();
+  for (const query of world.ofType(family + '.query')) { tick(); if (owned(query)) queries.set(query.id, query); }
+  const referencedQueries = new Set();
+  for (const ref of request.attrs.query || []) {
+    tick(); const query = get(ref);
+    if (!query || !queries.has(query.id)) fail(request, 'query must belong to this request');
+    else referencedQueries.add(query.id);
+  }
+  for (const query of queries.values()) {
+    tick();
+    if (first(request, 'mood') !== 'ask') fail(query, 'query projections require ask mood');
+    if (!referencedQueries.has(query.id)) fail(query, 'query must be explicitly referenced by its request');
+    const target = targetOf(query, 'target');
+    if (target && first(target, 'mode') !== 'existing') fail(query, 'query target must be existing; bound targets cannot escape their quantifier');
+    const operation = first(query, 'operation'), concept = first(query, 'concept');
+    if (!['values', 'count', 'exists', 'members'].includes(operation)) fail(query, 'unknown query operation');
+    if (operation === 'values' ? !concept : concept !== undefined) fail(query, 'only values queries require a concept');
+    const sourceRef = first(query, 'source'), source = get(sourceRef);
+    if (sourceRef !== undefined && sourceText(source) === null) fail(query, 'invalid query source');
+    const start = first(query, 'source.start'), end = first(query, 'source.end');
+    if (start !== undefined || end !== undefined) {
+      const text = sourceText(source), a = Number(start), b = Number(end);
+      if (!text || !Number.isSafeInteger(a) || !Number.isSafeInteger(b) || a < 0 || b <= a || b > text.length) fail(query, 'query source span must be a nonempty in-range Unicode scalar interval');
+    }
+  }
   for (const target of targets.values()) {
     tick(); const mode = first(target, 'mode');
     if (mode !== 'bound' && !first(target, 'kind')) fail(target, 'new/existing targets require kind');

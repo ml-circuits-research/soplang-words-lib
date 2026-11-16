@@ -193,3 +193,8 @@ The owner decision relayed in PSys2 at 21:45 supersedes the historical legacy-de
 ## Shared complex-request integration (0.196)
 
 The dispatcher can now consume `prepareRequestBatch` plans across area capabilities, retaining complete schema graphs and explicit dependencies. `requestBatchFrontier` blocks dependants of unverified/refused outcomes while keeping independent work available. This addresses multi-request orchestration together with quantifiers, selector/result graphs, relations and questions structurally, rather than defining another sentence profile. Predicate execution, natural-language coverage and cross-request referent resolution remain explicit consumer/reader obligations; no graph preparation result is an effect claim.
+
+
+## Question/check class integration (0.198)
+
+Ask requests can now carry explicitly owned query projections (values/count/exists/members), preserving selected population and requested concept independently of result constraints. The generic observation consumer owns evaluation and completeness evidence; no query execution is claimed by structural validation. Check requests continue to describe their predicates. This allows the same question class across all area adapters without reparsing language or inventing asked-property fields in the host.

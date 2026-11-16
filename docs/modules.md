@@ -66,3 +66,18 @@ Added with 0.170.0: `core.use world=std.objective` loads closed `std.objective` 
 A zero weight explicitly disables the contribution; it does not turn missing observations for active terms into zero costs. Distinct term identities remain distinct even if they name the same evaluator. The safe-integer priority bound prevents accidental numeric collisions in the current representation.
 
 These schemas reject malformed records and protect referenced terms. They do not resolve evaluator names, check the referenced normalization definition, execute an optimizer or select a candidate. The actual book example and counterexamples are exercised in `test/objective-contracts.test.mjs`. Other numerical/change-policy families and the full phase-zero freeze remain pending.
+
+## Reference sample sets
+
+Added with 0.171.0: `core.use world=std.reference` loads closed `std.reference.set` and `std.reference.sample` records and imports the provenance contracts.
+
+| Record | Fields |
+| --- | --- |
+| `std.reference.set` | Mandatory `version` literal, `property` atom, `unit` atom, and one or more typed `member` references. |
+| `std.reference.sample` | Mandatory finite numeric `value` and `unit` atom; optional typed `provenance` reference. Negative and zero measurements are allowed. |
+
+Each sample identity represents one observation. Equal values on distinct samples retain multiplicity; repeating the same member reference contributes once. The old repeated-value form lost equal observations through store deduplication and is rejected by this closed schema.
+
+A declarative deny requires exact unit-label agreement between each set and its members, including edits to shared samples. This is not unit conversion or dimensional resolution. The optional provenance link is type-checked and protected against dangling deletion, but its absence does not prove a measured source. Version is recorded metadata: replacing a sample may change every referencing set without changing the recorded version. Immutable snapshots, calibration recomputation, median checking and normalization validity are not implemented by this structural module.
+
+`test/reference-contracts.test.mjs` loads the exact executable reference fragment of book §12.2.1 and tests multiplicity, invalid references, missing fields, unit conflicts, transactional edits, provenance and aliases. The calibration and axis fragment remains explicitly proposed.

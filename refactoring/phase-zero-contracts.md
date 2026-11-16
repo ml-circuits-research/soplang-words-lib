@@ -46,3 +46,7 @@ Implementation review 1 (974160e) accepts 0.168.0 structural presence and 0.169.
 ## Increment: objective records (0.170.0)
 
 Entry point `core.use world=std.objective`; canonical types std.objective and std.objective.term. The exact §12.4.1 wires load with typed forward references. Missing fields, invalid variants/numeric values, unsafe priority integers and wrong/deleted term references are rejected. Repeated term identity references are deduplicated; equal priorities and explicit zero weights are allowed. Structural-only acceptance: evaluator binding, normalization evidence, cost computation and optimization remain phase-one obligations. Other numerical policies are still pending.
+
+## Increment: reference sample records (0.171.0)
+
+Entry point std.reference; types std.reference.set and std.reference.sample. Replaced repeated literal values with typed member identities because the existing store deduplicates equal values and would corrupt sample multiplicity. Presence, numeric fields, optional provenance, references and unit-label agreement are validated, including shared-member edits. The exact executable reference fragment is tested separately from the proposed calibration/axis fragment. Version remains recorded metadata; immutable publication and calibration validation remain pending.

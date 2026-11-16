@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld The standard modules</title>
-<meta name="source-hash" content="1ac5e05d96e9">
+<meta name="source-hash" content="94e1d0e76221">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.170.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.171.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html" aria-current="page">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -34,9 +34,15 @@
 <div class="table"><table><thead><tr><th>Record</th><th>Fields</th></tr></thead><tbody><tr><td><code>std.objective</code></td><td><code>order=lexicographic</code>; <code>direction=minimise</code> or <code>maximise</code>; one or more typed <code>term</code> references. Repeated references to the same identity are deduplicated by the store.</td></tr><tr><td><code>std.objective.term</code></td><td><code>evaluator</code> atom; <code>normalisation=declared.by.evaluator</code>; finite nonnegative <code>weight</code>; integer <code>priority</code> from zero through Number.MAX_SAFE_INTEGER. Equal priorities are allowed.</td></tr></tbody></table></div>
 <p>A zero weight explicitly disables the contribution; it does not turn missing observations for active terms into zero costs. Distinct term identities remain distinct even if they name the same evaluator. The safe-integer priority bound prevents accidental numeric collisions in the current representation.</p>
 <p>These schemas reject malformed records and protect referenced terms. They do not resolve evaluator names, check the referenced normalization definition, execute an optimizer or select a candidate. The actual book example and counterexamples are exercised in <code>test/objective-contracts.test.mjs</code>. Other numerical/change-policy families and the full phase-zero freeze remain pending.</p>
+<h2 id="reference-sample-sets">Reference sample sets</h2>
+<p>Added with 0.171.0: <code>core.use world=std.reference</code> loads closed <code>std.reference.set</code> and <code>std.reference.sample</code> records and imports the provenance contracts.</p>
+<div class="table"><table><thead><tr><th>Record</th><th>Fields</th></tr></thead><tbody><tr><td><code>std.reference.set</code></td><td>Mandatory <code>version</code> literal, <code>property</code> atom, <code>unit</code> atom, and one or more typed <code>member</code> references.</td></tr><tr><td><code>std.reference.sample</code></td><td>Mandatory finite numeric <code>value</code> and <code>unit</code> atom; optional typed <code>provenance</code> reference. Negative and zero measurements are allowed.</td></tr></tbody></table></div>
+<p>Each sample identity represents one observation. Equal values on distinct samples retain multiplicity; repeating the same member reference contributes once. The old repeated-value form lost equal observations through store deduplication and is rejected by this closed schema.</p>
+<p>A declarative deny requires exact unit-label agreement between each set and its members, including edits to shared samples. This is not unit conversion or dimensional resolution. The optional provenance link is type-checked and protected against dangling deletion, but its absence does not prove a measured source. Version is recorded metadata: replacing a sample may change every referencing set without changing the recorded version. Immutable snapshots, calibration recomputation, median checking and normalization validity are not implemented by this structural module.</p>
+<p><code>test/reference-contracts.test.mjs</code> loads the exact executable reference fragment of book §12.2.1 and tests multiplicity, invalid references, missing fields, unit conflicts, transactional edits, provenance and aliases. The calibration and axis fragment remains explicitly proposed.</p>
 <p class="source">Generated from <code>docs/modules.md</code>.</p>
 </main>
-<footer>sopworld 0.170.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.171.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

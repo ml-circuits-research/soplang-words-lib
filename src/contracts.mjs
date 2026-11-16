@@ -57,4 +57,25 @@ export const CONTRACT_MODULES = {
 @std.objective.term.priority core.slot of=std.objective.term key=priority kind=integer min=0 max=9007199254740991 present=true
 `, fns: {},
   },
+  'std.reference': {
+    text: `
+@std.reference.module core.module name=std.reference version=0.171.0 imports=std.provenance exports=std.reference.set exports=std.reference.sample
+@std.reference.set.type core.type of=std.reference.set closed=true
+@std.reference.set.version core.slot of=std.reference.set key=version kind=string present=true
+@std.reference.set.property core.slot of=std.reference.set key=property kind=atom present=true
+@std.reference.set.unit core.slot of=std.reference.set key=unit kind=atom present=true
+@std.reference.set.member core.slot of=std.reference.set key=member kind=ref to=std.reference.sample many=true present=true
+@std.reference.sample.type core.type of=std.reference.sample closed=true
+@std.reference.sample.value core.slot of=std.reference.sample key=value kind=number present=true
+@std.reference.sample.unit core.slot of=std.reference.sample key=unit kind=atom present=true
+@std.reference.sample.provenance core.slot of=std.reference.sample key=provenance kind=ref to=std.provenance
+@std.reference.p.sample std.reference.sample unit=?sample.unit
+@std.reference.p.set std.reference.set member=$std.reference.p.sample unit=?set.unit
+# Compare unit identifiers lexically, not as numbers or clock tokens.
+@std.reference.c.sample.label core.calc out=?sample.label fn=concat args=identifier. args=?sample.unit
+@std.reference.c.set.label core.calc out=?set.label fn=concat args=identifier. args=?set.unit
+@std.reference.c.unit core.check fn=neq args=?sample.label args=?set.label
+@std.reference.d.unit core.deny when=$std.reference.p.set when=$std.reference.p.sample with=$std.reference.c.sample.label with=$std.reference.c.set.label if=$std.reference.c.unit why="reference sample unit must match the set unit"
+`, fns: {},
+  },
 };

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.171.0
+
+- Added std.reference sample/set structural contracts: distinct equal observations keep multiplicity, references and mandatory fields are checked, and a declarative deny enforces member/set unit agreement.
+- Optional typed provenance is supported. Calibration and immutable version enforcement are not claimed.
+
 ## 0.170.0
 
 - Added opt-in `std.objective` structural contracts with typed term references, required fields, finite nonnegative weights and exactly representable nonnegative integer priorities. Same-priority terms and zero-weight contributions are explicit.

@@ -3267,12 +3267,22 @@ Pe un graf de feluri, o muchie de specializare poate avea un cost inițial unifo
 Aceeași axă `clearance` din secțiunea 8.2 poate păstra explicit sursa normalizării. Următoarele fire sunt propuse; setul este ilustrativ, în unități de pagină, iar proprietatea `width` desemnează mărimea măsurată. Setul real ar păstra identitățile observațiilor și versiunile stării din care au fost citite.
 
 ```sop
-@reference.widths std.reference.set version=1 property=width unit=page.unit value=8 value=10 value=12
+@sample.width.a std.reference.sample value=8 unit=page.unit
+@sample.width.b std.reference.sample value=10 unit=page.unit
+@sample.width.c std.reference.sample value=12 unit=page.unit
+@reference.widths std.reference.set version=1 property=width unit=page.unit member=$sample.width.a member=$sample.width.b member=$sample.width.c
+```
+
+Contractul structural de mai sus este disponibil în biblioteca 0.171.0 prin `core.use world=std.reference`. Fiecare măsurare are o identitate, separată de valoarea ei: două măsurări egale rămân două observații dacă au identificatori distincți. Repetarea aceleiași referințe `member` nu o numără de două ori. Reprezentarea anterioară, prin `value` repetat direct pe set, nu era adecvată: magazia bibliotecii deduplică valori identice, ceea ce ar schimba eșantionul și mediana lui. Câmpurile setului și valoarea/unitatea fiecărei observații sunt obligatorii structural; setul are cel puțin un membru, iar unitățile membrilor trebuie să coincidă cu unitatea declarată a setului. Biblioteca nu convertește implicit unități cu nume diferite. Un membru poate indica prin `provenance` un fir `std.provenance` valid, cu sursa și versiunea ei; lipsa provenienței în exemplul ilustrativ nu transformă valorile inventate în măsurări verificate. Câmpul `version` al setului consemnează o versiune, dar acest modul structural nu împiedică încă modificarea valorii unui membru și nu creează automat o versiune nouă. Pentru o calibrare reproductibilă, publicarea instantaneelor imuabile și verificarea provenienței rămân obligații de implementat înainte de folosirea rezultatelor ca dovezi.
+
+Legarea calibrării de această colecție și verificarea rezultatului pe axă rămân propuse în fragmentul următor; existența contractului setului nu pretinde că ele sunt deja implementate:
+
+```sop
 @normalisation.clearance std.calibration reference=$reference.widths method=median value=10 unit=page.unit version=1
 @ax.clearance w.legend.axis of=clearance name=distance min=0 scale=ratio normalisation=10 calibration=$normalisation.clearance unit=page.unit
 ```
 
-Valorile repetate formează eșantionul; mediana lui este 10. Nodul de calibrare consemnează metoda și rezultatul, iar axa folosește rezultatul ca lungime de referință. Valoarea de pe axă este copia materializată a rezultatului, nu o a doua alegere independentă: încărcarea verifică egalitatea și unitatea. O modificare a setului produce o versiune nouă și recalcularea rezultatului, urmate de probele din secțiunea 12.5. Dacă referința sau metoda nu poate fi reconstituită, parametrul nu este declarat verificat doar fiindcă are o valoare pozitivă.
+Valorile membrilor distincți formează eșantionul; mediana lui este 10. Nodul de calibrare consemnează metoda și rezultatul, iar axa folosește rezultatul ca lungime de referință. Valoarea de pe axă este copia materializată a rezultatului, nu o a doua alegere independentă: încărcarea verifică egalitatea și unitatea. O modificare a setului produce o versiune nouă și recalcularea rezultatului, urmate de probele din secțiunea 12.5. Dacă referința sau metoda nu poate fi reconstituită, parametrul nu este declarat verificat doar fiindcă are o valoare pozitivă.
 
 ## 12.3 Toleranțe și pași comparativi
 

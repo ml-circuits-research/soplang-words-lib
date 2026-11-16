@@ -1,26 +1,13 @@
-# compat/psys2 — one consumer's material, as a compatibility check
+# PSys2 consumer integration
 
-A small sample from PSys2 (https://github.com/ml-circuits-research/psys2, same owner, copied with permission), the first large user of this library. It is test material for the *compatibility suite* only: the library does not import from it and it is not in the npm package.
+Only the new reader integration and its development/evaluation provenance remain here.
+The owner retired the old PSys2 execution path; its legend adapters, typed-reader sample,
+legacy dialogue matrices, recorded answer fixtures and replay runner were removed.
+Their historical results remain in Git and worker-log.md, not as current acceptance gates.
 
-PSys2's own files are **not kept here** (reviewer 04:40): its specifications and the six
-worlds the sample uses (`core`, `kids.common`, `lang.common`, `kids.shop`, `kids.arith`,
-`kids.tasks`) are read from PSys2 at the commit in `repos.pin` (45ac4bf, the one the
-matrices were built against), through `tools/worlds.mjs` (a checkout in `.cache/psys2`,
-fetched on first use; the tests are skipped offline).
+`reader/` contains the declared grammar/profile adapters, source-pinned integration
+configuration, reader corpus and evidence records used by the new request path.
+Generic mechanisms remain in the library; application-specific vocabulary and source
+joins remain consumer configuration. The library never imports this directory.
 
-| Path | What it is |
-| --- | --- |
-| `cases/<world>.cases.jsonl` | For each test, in run order: `input`, `session`, `expect`, `expectStatus`, the `wires` PSys2 added for the turn. These are PSys2's answers recorded by running it, which PSys2 does not keep, so they stay here as the test data of the compatibility check. |
-| `tools/dump-cases.mjs` | The script that produced the cases (runs inside a PSys2 checkout). |
-
-## What is built on it
-
-| Path | What it is |
-| --- | --- |
-| `mapping.sop` | How the library reads PSys2's legend wires (`core.schema.map`); the legends load unchanged. |
-| `matrices/<world>/matrix.sop` | The three sample worlds rebuilt as matrices: rules, states, aggregates, denies, actions. `kids.tasks` also has `fns.mjs`, its actions. |
-| `run.mjs` | `node compat/psys2/run.mjs [world ...] [--failures] [--json]`: runs every test dialogue against the matrices and compares status and value with PSys2's answers. |
-| `demo.mjs` | `node compat/psys2/demo.mjs`: five things the matrices give beyond the answers (a question for a missing argument, a default withdrawn, undo, an explanation, an abduction). |
-| `*.test.mjs` | The same checks as tests (`npm test` runs them). |
-
-Nothing here is imported by the library, and nothing in `src/` names PSys2.
+Run the active source suite with `npm test`; reader integration tests are under `test/`.

@@ -153,30 +153,17 @@ failure in the report with its reason. A failure is usually one of three things:
 still to write, a convention of the old system that is not a fact (worth dropping), or
 logic that rules do not express (keep it in an action, and say so).
 
-## Worked example: `compat/psys2/`
+## Current consumer integration: `compat/psys2/reader/`
 
-PSys2 is a dialogue system with its own legends (schema), question wires, and
-operations written in JavaScript. Nothing in `src/` names it.
+The owner retired the old PSys2 execution path. Its legend-dialect adapter,
+legacy dialogue matrices, recorded answer fixtures and replay runner are no longer
+maintained or shipped as compatibility checks. Historical measurements remain in
+Git and worker-log.md; they are not acceptance criteria for the new application.
 
-| Step | File | What it shows |
-| --- | --- | --- |
-| 1 | `compat/psys2/mapping.sop` | Three `core.schema.map` wires read its legends unchanged (0 violations) |
-| 2, 4 | `compat/psys2/matrices/kids.shop/matrix.sop` | Prices as states with an identity key, baskets summed with aggregates, the wallet as a state changed by events, answers put on supposed question wires with `core.on=`, denies for "not enough" |
-| 4 | `compat/psys2/matrices/kids.arith/matrix.sop` | Counts per person as states with `min=0`, "everybody or the two named" with `core.absent=`, operator precedence as rules over step wires |
-| 4.7 | `compat/psys2/matrices/kids.tasks/` | Lists whose logic is text handling: 18 lines of matrix declare the actions, 86 lines of functions do them on wires |
-| 7 | `compat/psys2/run.mjs` | The runner; `refused` is mapped to that system's `conflicting` |
-| | `compat/psys2/demo.mjs` | A question for a missing argument, a default withdrawn, undo, an explanation, an abduction |
-
-Result of `node compat/psys2/run.mjs` (cases passed of total; lines without blanks and
-comments against the JavaScript replaced):
-
-| World | Cases | Matrix + functions | Replaced JavaScript |
-| --- | --- | --- | --- |
-| kids.shop | 147 of 147 | 71 + 0 | 148 |
-| kids.arith | 207 of 217 | 114 + 0 | 217 |
-| kids.tasks | 231 of 232 | 18 + 86 | 192 |
-
-The eleven failures and their reasons are listed in `worker-log.md` (G8): three are an
-impossible event that the library refuses when told and the old system reports when
-asked; four are a reply convention; the rest are a rounding rule, a division by zero, a
-tie, and an operation of another world.
+The active reader integration uses declarations from the pinned knowledge repository,
+explicit request profiles and the public request schema. The application resolves
+validated requests against observed instances, executes declared tools, and supports
+replies with retained evidence. See `compat/psys2/reader/README.md` for corpus and
+provenance boundaries, and `test/reader-overlay-integration.test.mjs` for the published
+knowledge integration. Generic schema mapping remains a library capability; removing
+one retired consumer adapter does not remove that mechanism.

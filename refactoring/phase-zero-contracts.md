@@ -179,3 +179,7 @@ This is the narrow phase-zero milestone authorized by reviews 13–14, not compl
 ### Increment 0.194.0 — direct bounded semantic template projection
 
 projectTemplates projects indexed JSON contexts through the existing $get/$literal template and structural equality-guard semantics. It shares the evaluator with composeParses while preserving that API's exact budget tests. Global declaration validation precedes jobs; contexts are copied/validated, alternatives stay indexed, and one shared budget exposes truncation. Null context is legitimate data rather than a syntax-validation sentinel. No reader profile, frame selection, request schema or preview behavior changes. Optional knowledge frame licences at 0591f342 supply source-grounded data; a separate generic binder is still needed to consume them.
+
+### Owner decision — retire the former application path
+
+The owner decision relayed in PSys2 at 21:45 supersedes the historical legacy-default rollout above. The new infrastructure becomes the only application route; unsupported requests stay honest and cannot fall back to old readers. PSys2 owns route removal, host dependency audit and deletion of obsolete application code/tests. The library removes only retired consumer adapters and their fixtures/replay tests from compat/psys2, preserving reader data/provenance and current adapters. Generic library capabilities remain intact. Old measurements are historical records, not current acceptance gates.

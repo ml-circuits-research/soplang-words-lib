@@ -313,3 +313,83 @@ Materialul de mai jos a fost mutat din fostul §8.20 al cărții: descrie proces
 **R80. Dovada cerută este explicația textuală verificabilă.** Pentru fiecare răspuns se poate urmări ce a spus omul, ce declarații generale și fapte au fost folosite, ce calcule au rezultat și ce s-a observat. Secțiunea 6.11 fixează contractul. Nu există un al cincilea domeniu de probă. O explicație nu demonstrează singură generalitatea: ea face vizibile dependențele pentru ca reviewerul să poată detecta o regulă scrisă pentru un caz particular. Testele intenției și contraexemplele verifică în continuare comportamentul.
 
 **R81. Trecerea.** Drumul vechi de citire rămâne în aplicație până când drumul nou are, pe aceleași sesiuni, cel puțin tot atâtea mesaje corecte și niciunul greșit. Fiecare depozit își fixează versiunile celorlalte două; versiunile se mută numai împreună, cu testele celor trei trecute.
+
+
+## 13. Indexul regulilor tehnice
+
+Identificatorii sunt păstrați în carte ca etichete discrete după explicație. Acest index servește urmăririi implementării; nu înlocuiește textul sau exemplele.
+
+| Regulă | Locul explicației în carte |
+|---|---|
+| R1 — Valoarea punctului | §2.2.1 |
+| R2 — Ordinea axelor | §2.2.1 |
+| R3 — Egalitatea punctelor | §2.2.1 |
+| R4 — Dimensiunea punctului | §2.2.1 |
+| R5 — Ordinea valorilor unui slot | §2.2.1 |
+| R6 — Identitatea persistentă | §2.4.1 |
+| R7 — Rezolvarea referințelor | §2.4.1 |
+| R8 — Integritatea legăturilor | §2.4.1 |
+| R9 — Stările unei valori | §3.9.1 |
+| R10 — Potrivirea în prezența lipsei | §3.9.1 |
+| R11 — Negația asupra stării curente | §3.9.1 |
+| R12 — Răspunsul existențial | §3.9.1 |
+| R13 — Domeniul verificării | §3.9.1 |
+| R14 — Validarea nedeterminată | §3.9.1 |
+| R15 — Tipurile metamodelului | §4.8.1 |
+| R16 — Ordinea straturilor | §4.8.1 |
+| R17 — Specializarea conceptelor | §4.8.1 |
+| R18 — Normalizarea axelor | §4.4.1 |
+| R19 — Distanța circulară | §4.4.1 |
+| R20 — Metrica spațiului | §4.4.1 |
+| R21 — Axele libere ale regiunii | §4.4.1 |
+| R22 — Apartenența la regiune | §4.4.1 |
+| R23 — Suprapunerea și numirea | §4.4.1 |
+| R24 — Includerea regiunilor | §4.4.1 |
+| R25 — Egalitatea distanțelor | §4.4.1 |
+| R26 — Structura grafului | §4.4.2 |
+| R27 — Comparația structurală | §4.4.2 |
+| R28 — Conceptul fără descriere | §4.4.2 |
+| R29 — Referința comparației | §4.5.1 |
+| R30 — Scări de raport și de interval | §4.5.1 |
+| R31 — Pasul comparativ | §4.5.1 |
+| R32 — Limitele realizării | §4.5.1 |
+| R33 — Adaptarea factorului | §4.5.1 |
+| R34 — Persistența preferinței | §4.5.1 |
+| R35 — Condițiile actului | §4.6.1 |
+| R36 — Limitele efectului | §4.6.1 |
+| R37 — Crearea referentului lipsă | §4.6.1 |
+| R38 — Compunerea actelor | §4.6.1 |
+| R39 — Terminarea descompunerii | §4.6.1 |
+| R40 — Părintele semantic | §5.2.1 |
+| R41 — Precedența specializării | §5.2.1 |
+| R42 — Restrângerea validă | §5.2.1 |
+| R43 — Informația specifică | §5.2.1 |
+| R44 — Reperul spațial | §4.4.3 |
+| R45 — Testarea relațiilor | §4.4.3 |
+| R46 — Momente și intervale | §4.4.3 |
+| R47 — Ore locale ambigue | §4.4.3 |
+| R48 — Serii recurente | §4.4.3 |
+| R49 — Rolul afirmației | §3.6.1 |
+| R50 — Interdicțiile tari | §3.6.1 |
+| R51 — Interpretările candidate | §6.3.1 |
+| R52 — Filtrarea interpretărilor | §6.3.1 |
+| R53 — Conținutul neinterpretat | §6.3.1 |
+| R54 — Contextul clarificării | §6.3.1 |
+| R55 — Permisiunea aproximării | §6.5.1 |
+| R56 — Toleranța numerică | §6.5.1 |
+| R57 — Alegerea domeniului | §6.1.1 |
+| R58 — Citirea între lumi | §6.1.1 |
+| R59 — Actualizarea rezultatului | §6.1.1 |
+| R60 — Independența operațiilor | §6.9.1 |
+| R61 — Revalidarea planului | §6.9.1 |
+| R62 — Recuperarea pașilor | §6.9.1 |
+| R63 — Eșecul recuperării | §6.9.1 |
+| R64 — Contractul anulării | §6.9.1 |
+| R65 — Gruparea corectărilor | §6.9.2 |
+| R66 — Ordinea între domenii | §6.9.2 |
+| R67 — Limita funcției specializate | §6.8.1 |
+| R68 — Verificarea compunerii | §6.8.1 |
+| R69 — Condiția deja îndeplinită | §6.10.1 |
+| R70 — Efectul confirmat | §6.10.1 |
+| R71 — Clasele de răspuns | §6.10.1 |
+| R72 — Dependențele exemplului | §7.4.1 |

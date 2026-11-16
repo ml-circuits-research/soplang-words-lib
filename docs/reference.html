@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="d296ce49ad8d">
+<meta name="source-hash" content="28a74a37f6e3">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.189.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.190.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html" aria-current="page">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -767,9 +767,11 @@ print(builtins.time_add([&#x27;10:40&#x27;, &#x27;35min&#x27;]), builtins.div([&
 <p><code>retainPointSpace(world, id, options?)</code> captures a valid explicitly framed numerical legend space into the generic retained registry. Its definition preserves ordered axes, canonical and alternative affine units, and root frame identity/version. Reusing a revision with changed meaning fails; undo and persistence preserve the old meaning. This publication step does not yet implement native point slots, coordinate matching or migrations. See the API for the exact fields, owner key, alias support and budget/dry behavior.</p>
 <h2 id="composeparses">composeParses</h2>
 <p>Evaluates declared semantic templates over grammar parse trees. Production IDs and lexical categories select templates; own-property paths copy lexical features or already composed child values. Every surviving alternative retains its parse index. Per-production equality guards compare declared operands before parent composition, using structural JSON equality without type coercion. Missing bindings fail explicitly, and bounded evaluation reports truncation. This produces interpretation proposals, not proof of meaning or instance resolution. See <a href="api.html#composeparsesparses-options">the API and runnable example</a>.</p>
+<h3 id="compilegrammaroverlay">compileGrammarOverlay</h3>
+<p>Compiles explicitly named SOP declaration roles into a detached grammar snapshot, lexical entries with source identities, composition templates and equality guards. Provider filters, repeated-value alternatives, template graph integrity and missing providers are checked without language or domain vocabulary in the mechanism. Compilation is bounded and fails as a whole. Consumers must bind cached compilation to its exact source world and fact/schema revision; see <a href="api.html#compilegrammaroverlayworld-options">the API contract</a>.</p>
 <p class="source">Generated from <code>docs/reference.md</code>.</p>
 </main>
-<footer>sopworld 0.189.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.190.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

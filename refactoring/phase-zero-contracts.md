@@ -147,3 +147,7 @@ The book's proposed live object/whole references cannot preserve history after d
 ### Review 11 — first end-to-end path takes priority
 
 The reviewer accepted composition, equality guards and mixin reindexing and explicitly moved native point binding to the migration-guard step, outside the immediate phase-zero boundary. The next shared deliverable is Drawing property change behind ?engine=new: symbolic overlay, std.request validation, instance resolution, actual effect, correlated trace and a minimal evidence-backed reply. Old engine remains default. Implement the exact property-change evidence contract needed by this path first; broader claim kinds and group realization stay named deferred rather than blocking the preview or being falsely implied by a confirmed status.
+
+### Increment 0.190.0 — validated SOP grammar overlay compiler
+
+compileGrammarOverlay validates configured declaration families, provider bindings, graph attachments/paths, agreement roots and mappings; emits a normalized production snapshot, lexical alternatives with origin IDs, composition templates/guards and detached provenance. Knowledge1c4f32ea integration exercises broad provider families and property/value agreement. Exact source-world identity plus stamp is the freshness boundary (version alone misses schema-only edits). The request bridge and real Drawing effect remain subsequent work, not compiler coverage claims.

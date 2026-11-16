@@ -6135,3 +6135,9 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 
 - Pulled 00dc974 and checked accepted F2/F10/F53/F63/X/Y against the book; removed the resolved review requests. Continued F27 with participant ambiguity, confirmed/unknown execution and undo branches, evidence-qualified English replies, operation identity and concurrent-edit handling. Clarified F4's practical trusted-function check. Runtime and other repositories remain on standby.
 - Validation: `python3 ../.session-control/check-book-v21.py` and `git diff --check` passed. `npm test` rebuilt docs and passed; `SOPWORLD_BUNDLE=1 npm run test:src` passed. `tail -n 9 ../.session-control/book-v43-tests.log ../.session-control/book-v43-bundle.log` reports in each log 650 tests, 648 pass, 0 fail, 1 skip, 1 todo.
+
+## 2026-11-16 — G0: phase-zero contract preparation
+
+- Read workspace and library instructions/current tasks, plus the other repositories' inbox task snapshots. The implementation directive in fa29e00 conflicts with the subsequent scheduled book-only scope and unchanged workspace AGENTS.md. Recorded the discrepancy in questions.md rather than asking in chat; continued authorized documentation preparation.
+- Added a concrete phase-zero register covering module families, examples/counterexamples, validation levels, unresolved journal declarations, the four-versus-five change-category discrepancy and reviewer-owned release announcements. No runtime, version, scheduler or other-repository change.
+- Validation: `python3 ../.session-control/check-book-v21.py` and `git diff --check` passed. `npm test` rebuilt docs and passed; `SOPWORLD_BUNDLE=1 npm run test:src` passed. `tail -n 9 ../.session-control/phase-zero-prep-tests.log ../.session-control/phase-zero-prep-bundle.log` reports in each log 650 tests, 648 pass, 0 fail, 1 skip, 1 todo.

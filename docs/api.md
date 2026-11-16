@@ -4707,3 +4707,32 @@ print(w.tell('@claim std.reply.property owner=reply.1 revision=1 status=changed'
 changed
 true
 ```
+
+### assessExistenceChange(world, options)
+
+Added with 0.195. Assesses a historical lifecycle membership transition. Load `std.trace` and `std.reply`. Required options are `request`, `step`, `expectation`, `before`, `after` (record IDs) and `owner`, `revision` (retained identity). Optional `family`, `replyFamily`, `dry` and `budget` have the same meaning as for `assessPropertyChange`. Returns `{ok, created, retained?, assessment?, claim?, violations}`. The claim is `std.reply.existence` with owner, revision and status, recomputed from immutable retained evidence whenever validated, including after restore without live trace records.
+
+The expectation is a `std.trace.presence` containing source identity, source.type, scope and desired=present|absent. Each `std.trace.population` declares its step, invocation, before|after phase, population source/version, scope, coverage=complete|partial and semantics=lifecycle|view. Its optional repeated member references point to `std.trace.subject` historical source/version/source.type descriptors. Empty populations are valid; duplicate source identities are not. The step explicitly references the expectation through `presence` and both observations through repeated `population` slots. Their request, invocation, scope and population identity must agree. These additions do not alter the existing property-input contract.
+
+Positive membership proves presence even in a partial observation; absence requires complete coverage. Unknown presence gives unconfirmed/incomplete-population. An after state that misses the desired presence gives unconfirmed/after-mismatch. Both states already matching in a lifecycle population give unchanged. A transition gives made or removed only for lifecycle populations with a confirmed step and different population revisions. A filtered view yields unconfirmed/view-membership-only: moving outside a viewport does not prove deletion. Unconfirmed execution and unchanged population revision remain explicit reasons. Inconsistent correlation refuses publication entirely.
+
+Population semantics, completeness, authentic observations and the semantic request-to-expectation mapping are trusted host responsibilities. This mechanism does not authenticate supplied facts or establish causation against concurrent external writers. Scope must identify the same lifecycle universe in both observations; a scope label is not a query evaluator. Subject source identity must include an incarnation when native IDs can be reused. Removed objects are described by their historical before member, never by a fabricated after object. Grouping, relation predicates, numeric comparisons and request-revision linkage remain separate mechanisms.
+
+```js
+const w = new World();
+w.load('@t core.use world=std.trace\n@p core.use world=std.reply');
+w.load(`@r std.trace.request message="Create a thing."
+@e std.trace.presence source=toy.lifetime.1 source.type=toy.item scope=store desired=present
+@m std.trace.subject source=toy.lifetime.1 source.type=toy.item version=1
+@s std.trace.step request=$r operation=create operation.version=1 invocation=call status=confirmed presence=$e population=$b population=$a
+@b std.trace.population step=$s invocation=call phase=before source=store.lifetime.1 version=1 scope=store coverage=complete semantics=lifecycle
+@a std.trace.population step=$s invocation=call phase=after source=store.lifetime.1 version=2 scope=store coverage=complete semantics=lifecycle member=$m`);
+const result = assessExistenceChange(w, {request:'r', step:'s', expectation:'e', before:'b', after:'a', owner:'reply', revision:'1'});
+print(result.assessment.status);
+print(w.tell('@claim std.reply.existence owner=reply revision=1 status=made').ok);
+```
+
+```output
+made
+true
+```

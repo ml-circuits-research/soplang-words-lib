@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.195.0
+
+- Add typed historical population and presence evidence with `assessExistenceChange` and retained `std.reply.existence` claims. Partial absence and filtered-view transitions cannot claim creation or deletion.
+
 ## 0.185.0
 
 - Add opt-in original Unicode source ranges to parseText, preserving existing token-index spans and default outputs. Multiword tokens retain disjoint contributing intervals.

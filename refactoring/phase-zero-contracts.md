@@ -183,3 +183,8 @@ projectTemplates projects indexed JSON contexts through the existing $get/$liter
 ### Owner decision — retire the former application path
 
 The owner decision relayed in PSys2 at 21:45 supersedes the historical legacy-default rollout above. The new infrastructure becomes the only application route; unsupported requests stay honest and cannot fall back to old readers. PSys2 owns route removal, host dependency audit and deletion of obsolete application code/tests. The library removes only retired consumer adapters and their fixtures/replay tests from compat/psys2, preserving reader data/provenance and current adapters. Generic library capabilities remain intact. Old measurements are historical records, not current acceptance gates.
+
+
+## Parallel implementation update: existence evidence (0.195)
+
+`assessExistenceChange` adds closed trace subject/presence/population records and retained existence claims. Area adapters can consume it after publication, with complete lifecycle observations, stable incarnated subjects and explicit step references. Filtered membership cannot verify deletion; incomplete absence remains unknown. This does not complete relation/numeric assessments, semantic request revision linkage or complex-command execution. Those continue alongside area hosts and training, not as serial prerequisites.

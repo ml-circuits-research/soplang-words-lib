@@ -2080,3 +2080,9 @@ Applies the existing composition template/guard language directly to indexed
 semantic JSON jobs under one shared budget. It preserves alternatives, whole
 selector records and ordered role arrays without parse wrappers or a new expression
 language. See [direct projection and failure semantics](api.md#projecttemplatesjobs-options).
+
+## assessExistenceChange
+
+`assessExistenceChange(world, {request, step, expectation, before, after, owner, revision, family?, replyFamily?, dry?, budget?})` evaluates correlated historical lifecycle populations and retains its evidence. The `std.trace` module provides closed `subject` (source/version/source.type), `presence` (source/source.type/scope/desired) and `population` (step/invocation/phase/source/version/scope/coverage/semantics/member*) records. A step cites expectations through `presence*` and observations through `population*`. These slots are opt-in additions, independent of property inputs/results.
+
+The closed `std.reply.existence` claim has owner, revision and status: made, removed, unchanged or unconfirmed. Its validator recomputes the retained evidence; neither a claimed verdict nor a mutable live object is proof. Missing membership proves absence only with complete coverage. Lifecycle transitions require the same population source/scope, a confirmed step and a changed revision; view membership alone remains unconfirmed. Duplicate subject source identities, conflicting captured record identities and wrong correlation reject publication. Host completeness and lifecycle semantics are explicit trusted assertions, not inferred from labels. See the runnable API example and limitations in [api.md](api.md#assessexistencechangeworld-options).

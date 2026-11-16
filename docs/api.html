@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="69de1449263f">
+<meta name="source-hash" content="4774f8356df4">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.194.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.195.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -1506,9 +1506,27 @@ print(result.assessment.status);
 print(w.tell(&#x27;@claim std.reply.property owner=reply.1 revision=1 status=changed&#x27;).ok);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>changed
 true</code></pre></figure>
+<h3 id="assessexistencechangeworld-options">assessExistenceChange(world, options)</h3>
+<p>Added with 0.195. Assesses a historical lifecycle membership transition. Load <code>std.trace</code> and <code>std.reply</code>. Required options are <code>request</code>, <code>step</code>, <code>expectation</code>, <code>before</code>, <code>after</code> (record IDs) and <code>owner</code>, <code>revision</code> (retained identity). Optional <code>family</code>, <code>replyFamily</code>, <code>dry</code> and <code>budget</code> have the same meaning as for <code>assessPropertyChange</code>. Returns <code>{ok, created, retained?, assessment?, claim?, violations}</code>. The claim is <code>std.reply.existence</code> with owner, revision and status, recomputed from immutable retained evidence whenever validated, including after restore without live trace records.</p>
+<p>The expectation is a <code>std.trace.presence</code> containing source identity, source.type, scope and desired=present|absent. Each <code>std.trace.population</code> declares its step, invocation, before|after phase, population source/version, scope, coverage=complete|partial and semantics=lifecycle|view. Its optional repeated member references point to <code>std.trace.subject</code> historical source/version/source.type descriptors. Empty populations are valid; duplicate source identities are not. The step explicitly references the expectation through <code>presence</code> and both observations through repeated <code>population</code> slots. Their request, invocation, scope and population identity must agree. These additions do not alter the existing property-input contract.</p>
+<p>Positive membership proves presence even in a partial observation; absence requires complete coverage. Unknown presence gives unconfirmed/incomplete-population. An after state that misses the desired presence gives unconfirmed/after-mismatch. Both states already matching in a lifecycle population give unchanged. A transition gives made or removed only for lifecycle populations with a confirmed step and different population revisions. A filtered view yields unconfirmed/view-membership-only: moving outside a viewport does not prove deletion. Unconfirmed execution and unchanged population revision remain explicit reasons. Inconsistent correlation refuses publication entirely.</p>
+<p>Population semantics, completeness, authentic observations and the semantic request-to-expectation mapping are trusted host responsibilities. This mechanism does not authenticate supplied facts or establish causation against concurrent external writers. Scope must identify the same lifecycle universe in both observations; a scope label is not a query evaluator. Subject source identity must include an incarnation when native IDs can be reused. Removed objects are described by their historical before member, never by a fabricated after object. Grouping, relation predicates, numeric comparisons and request-revision linkage remain separate mechanisms.</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>const w = new World();
+w.load(&#x27;@t core.use world=std.trace\n@p core.use world=std.reply&#x27;);
+w.load(`@r std.trace.request message=&quot;Create a thing.&quot;
+@e std.trace.presence source=toy.lifetime.1 source.type=toy.item scope=store desired=present
+@m std.trace.subject source=toy.lifetime.1 source.type=toy.item version=1
+@s std.trace.step request=$r operation=create operation.version=1 invocation=call status=confirmed presence=$e population=$b population=$a
+@b std.trace.population step=$s invocation=call phase=before source=store.lifetime.1 version=1 scope=store coverage=complete semantics=lifecycle
+@a std.trace.population step=$s invocation=call phase=after source=store.lifetime.1 version=2 scope=store coverage=complete semantics=lifecycle member=$m`);
+const result = assessExistenceChange(w, {request:&#x27;r&#x27;, step:&#x27;s&#x27;, expectation:&#x27;e&#x27;, before:&#x27;b&#x27;, after:&#x27;a&#x27;, owner:&#x27;reply&#x27;, revision:&#x27;1&#x27;});
+print(result.assessment.status);
+print(w.tell(&#x27;@claim std.reply.existence owner=reply revision=1 status=made&#x27;).ok);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>made
+true</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.194.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.195.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

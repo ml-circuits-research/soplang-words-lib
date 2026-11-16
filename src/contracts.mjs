@@ -1,3 +1,4 @@
+import { replyExistenceValidator } from './reply-existence.mjs';
 import { replyPropertyValidator } from './reply-property.mjs';
 import { traceInputValidator, traceGraphValidator } from './trace-contracts.mjs';
 import { requestValidator } from './request-contracts.mjs';
@@ -62,7 +63,28 @@ export const CONTRACT_MODULES = {
   },
   'std.trace': {
     text: `
-@std.trace.module core.module name=std.trace version=0.181.0 exports=std.trace.request exports=std.trace.input exports=std.trace.step exports=std.trace.observation exports=std.trace.reply exports=std.trace.undo exports=std.trace.correction
+@std.trace.module core.module name=std.trace version=0.195.0 exports=std.trace.subject exports=std.trace.presence exports=std.trace.population exports=std.trace.request exports=std.trace.input exports=std.trace.step exports=std.trace.observation exports=std.trace.reply exports=std.trace.undo exports=std.trace.correction
+@std.trace.subject.type core.type of=std.trace.subject closed=true
+@std.trace.subject.source core.slot of=std.trace.subject key=source kind=string present=true
+@std.trace.subject.version core.slot of=std.trace.subject key=version kind=string present=true
+@std.trace.subject.source.type core.slot of=std.trace.subject key=source.type kind=atom present=true
+@std.trace.presence.type core.type of=std.trace.presence closed=true
+@std.trace.presence.source core.slot of=std.trace.presence key=source kind=string present=true
+@std.trace.presence.source.type core.slot of=std.trace.presence key=source.type kind=atom present=true
+@std.trace.presence.scope core.slot of=std.trace.presence key=scope kind=string present=true
+@std.trace.presence.desired core.slot of=std.trace.presence key=desired kind=atom enum=present enum=absent present=true
+@std.trace.population.type core.type of=std.trace.population closed=true
+@std.trace.population.step core.slot of=std.trace.population key=step kind=ref to=std.trace.step present=true
+@std.trace.population.invocation core.slot of=std.trace.population key=invocation kind=string present=true
+@std.trace.population.phase core.slot of=std.trace.population key=phase kind=atom enum=before enum=after present=true
+@std.trace.population.source core.slot of=std.trace.population key=source kind=string present=true
+@std.trace.population.version core.slot of=std.trace.population key=version kind=string present=true
+@std.trace.population.scope core.slot of=std.trace.population key=scope kind=string present=true
+@std.trace.population.coverage core.slot of=std.trace.population key=coverage kind=atom enum=complete enum=partial present=true
+@std.trace.population.semantics core.slot of=std.trace.population key=semantics kind=atom enum=lifecycle enum=view present=true
+@std.trace.population.member core.slot of=std.trace.population key=member kind=ref to=std.trace.subject many=true
+@std.trace.step.population core.slot of=std.trace.step key=population kind=ref to=std.trace.population many=true
+@std.trace.step.presence core.slot of=std.trace.step key=presence kind=ref to=std.trace.presence many=true
 @std.trace.request.type core.type of=std.trace.request closed=true
 @std.trace.request.message core.slot of=std.trace.request key=message kind=string present=true
 @std.trace.input.type core.type of=std.trace.input closed=true
@@ -107,7 +129,14 @@ export const CONTRACT_MODULES = {
   },
   'std.reply': {
     text: `
-@std.reply.module core.module name=std.reply version=0.191.0 exports=std.reply.property
+@std.reply.module core.module name=std.reply version=0.195.0 exports=std.reply.property exports=std.reply.existence
+@std.reply.existence.type core.type of=std.reply.existence closed=true
+@std.reply.existence.owner core.slot of=std.reply.existence key=owner kind=string present=true
+@std.reply.existence.revision core.slot of=std.reply.existence key=revision kind=string present=true
+@std.reply.existence.status core.slot of=std.reply.existence key=status kind=atom enum=made enum=removed enum=unchanged enum=unconfirmed present=true
+@std.reply.existence.valid.function core.function name=std.reply.existence.valid out.kind=boolean pure=true
+@std.reply.existence.valid.arg core.function.arg of=$std.reply.existence.valid.function name=claim kind=ref
+@std.reply.existence.validation core.validate on=std.reply.existence fn=std.reply.existence.valid why="existence claim must match retained correlated population evidence"
 @std.reply.property.type core.type of=std.reply.property closed=true
 @std.reply.property.owner core.slot of=std.reply.property key=owner kind=string present=true
 @std.reply.property.revision core.slot of=std.reply.property key=revision kind=string present=true
@@ -115,7 +144,7 @@ export const CONTRACT_MODULES = {
 @std.reply.property.valid.function core.function name=std.reply.property.valid out.kind=boolean pure=true
 @std.reply.property.valid.arg core.function.arg of=$std.reply.property.valid.function name=claim kind=ref
 @std.reply.property.validation core.validate on=std.reply.property fn=std.reply.property.valid why="property claim must match its retained correlated evidence and recomputed assessment"
-`, fns: { 'std.reply.property.valid': replyPropertyValidator },
+`, fns: { 'std.reply.property.valid': replyPropertyValidator, 'std.reply.existence.valid': replyExistenceValidator },
   },
   'std.change': {
     text: `

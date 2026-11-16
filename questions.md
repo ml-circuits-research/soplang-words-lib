@@ -915,11 +915,6 @@ Addressed F12–F17 in §§9.4–9.5: typed dependency/index table, explicit loc
 
 PSys2 control 13:30 agrees with scope decisions already integrated in v16; no runtime work started. F2/F6–F10 and calendar trace F18–F19/F26–F28 remain for subsequent writing; this batch is not a claim that all chapter-9 feedback is closed.
 
-### Review request — v18, owner's syntax/pattern/namespace clarification
-
-Owner finds table-only sections and titles such as “Cele patru semne” superficial. Rewrote §§2.3, 2.6, 3.4–3.5 with syntax versus semantics, facts versus patterns, explicit bindings and a full trace of when=$p.node. Renamed chapter-2 subsections using technical terminology. Namespace section separates paths, modules and instance identity, and proposes a project loader/manifest with path-derived initial names, stable saved identities and explicit subworld boundaries. This is a proposal for review, not a claim of current loader support.
-
-Open follow-up: review the filesystem relocation/copy contract developed below. Matching-trace and p.node/node/n1/$p.node readability questions are resolved by the reviewer's independently executed traces at eaab9be and the explicit context explanation in §2.3. Earlier F items remain tracked.
 
 ### Review request — v19, contracts integrated into the relevant concepts
 
@@ -931,22 +926,18 @@ In particular challenge the calendar's corrected 9:30 alternative, learning fact
 
 Integrated reviewer commits eaab9be and 999f682: F41 matches the owner-directed dissolution now completed; F35 also has an explicit forward explanation in §2.3. F36–F40 remain open for the namespace/terminology cycle. Please review the final integrated structure, not the intermediate standalone-chapter rewrite.
 
-### Review request — v20, concrete project loading and persistence
-
-Addressed F36–F40 in §2.6: Romanian namespace terminology, lexical-unit/project-descriptor definitions, the four demo instances, local versus module-qualified types, embedded drawing versus static resource, and deterministic persistence destinations. Added explicit decisions for name/case collisions, unresolved external targets and independent copies.
-
-F38(b) counterproposal: reject activation of a context containing an unresolved active factual reference, preserving R8; retain saved files unchanged. A standalone historical chart can be viewed only with self-contained provenance data, not by treating an active source=$calendar::m1 reference as resolved. Please counter with a concrete case if this distinction loses required demo behavior. F38(c): external references are preserved only as explicitly declared external dependencies of the copy; otherwise refuse before publishing it. Check that this contract is sufficient before a concrete manifest/provenance wire schema is written.
 
 ### Review request — v21, examples instead of rule-index tables
 
 Addressed F42: moved the R1–R72 index to the active plan §13 and placed each identifier after its explanatory paragraph; retained real comparison/state tables and added concrete value, region, geometry and learning-episode examples. Addressed the named duplications in F43 (degree introduction, dark axes, half-open intervals), though further consolidation with parent sections remains reviewable. F44 now has proposed region, axis and relation wires with line-by-line semantics and explicit dependency on the geometric function contract, not a claim of implemented support.
 
-Accepted F45's counterexample: learn once when the chain closes, from the final value and original reference; intermediate steps do not repeatedly update the factor. Text specifies silence, external mutation, failure and undo boundaries, and states that an incorrect reference and an incorrect factor cannot be inferred separately from “bigger” alone. F46: persistent references store immutable instance/local-ID pairs; readable aliases are resolved on input/display. Old textual aliases require explicit import mapping. F47: the calendar proposal now discloses the assumed hour. Please verify these decisions and the worked numbers in the actual text. Earlier unaddressed architecture items remain open.
+Review 6 accepted the learning episode, persistent identity decision and calendar assumption. Remaining follow-up here is F43 consolidation; F50 adds the concrete point/value rewrite. Other unaddressed architecture items remain open.
 
-### Review request — v22, persistent justification and worked traces
 
-Addressed F30–F32 in §6.11: a queryable session-journal instance, immutable captured inputs versus live references, reply/request selection for delayed why, append-only undo evidence separate from restoration of domain state and learnt preferences, and a clearly proposed minimal wire fragment. Added full duck execution and letter-length assumption tables plus good/bad explanations of inherited rendering. The fragment explicitly omits full observations and is not falsely presented as proof of confirmation by itself.
+### Review request — v23, clearance space without handwaved measurement
 
-Counterproposal to F31's literal “every declaration must be at least as general” test: specific facts are legitimate inputs; require the decision rule to be general and traceable, rather than forbidding specific knowledge. Otherwise the duck-is-a-bird fact and user-selected identity would themselves fail the test. Please review that distinction and whether historical evidence surviving undo is sufficiently separated from facts usable for current planning.
+Addressed F7–F9 in §8.2: page units instead of screen pixels; the minimum is a lower bound on a candidate, not an undeclared infinite ball region; observations can retain violations. Added proposed normalisation > 0 (distinct from scale=ratio/interval), precedence over finite bounds, explicit 8/12/14 arithmetic and no clamping at one. Added core.function/arg, core.calc and rule/template wires, a precise rectangle-gap contract, the link to layout and verification against post-execution observation. Extended the axis key table and the earlier metric explanation consistently.
 
-F33: §§7.4/8.4 now show the same full meeting type declaration and explain that it is quoted, not an additive duplicate; activation follows full loading. F4's remaining trust term now tells the domain author what to do with the function contract. Full trace schemas, retention and unsupported-operation coverage remain design work; no implementation authorization or claim of completed conformance.
+Please challenge the separation between observation and candidate, the per-request scope of min=12, and the explicit normalization semantics. The geometric example is deliberately axis-aligned rectangles; other contours require a declared implementation contract rather than a silent approximation. Full domain schemas and the closed primitive operation catalogue F6 remain open.
+
+Review 6 at 20a322c was checked against the actual revised text. Removed resolved v18 namespace/trace follow-up and v20/v22 review requests after explicit acceptance of F30–F33/F36–F40 and the counterproposals. F48–F50 remain pending: live embedding versus historical chart example, trace act/operation naming and journal persistence across sessions, and consolidated point/value prose. F4 remains partially open per reviewer; it is not closed by the removed v22 request.

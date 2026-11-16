@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 22, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 23, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -761,7 +761,7 @@ Un spațiu conceptual devine utilizabil numai după ce știm cum comparăm valor
 
 Apartenența întreabă dacă un punct respectă descrierea unei regiuni. Includerea întreabă dacă toate punctele unei regiuni aparțin alteia. A doua afirmație este mai puternică: verificarea unui singur punct, chiar centrul, nu o dovedește. Calculul distanței și utilizările lui sunt explicate separat mai jos.
 
-Fiecare axă este adusă la aceeași scară. Pentru o axă liniară cu limite finite distincte, diferența se normalizează ca `delta = abs(a − b) / (max − min)`. Când ambele valori sunt în limite, rezultatul este între 0 și 1. O axă poate avea o pondere, `weight`, implicit 1. *(R18)*
+Fiecare axă este adusă la aceeași scară. Pentru o axă liniară cu limite finite distincte și fără scară explicită `normalisation`, diferența se normalizează ca `delta = abs(a − b) / (max − min)`. Când ambele valori sunt în limite, rezultatul este între 0 și 1. O axă poate avea o pondere, `weight`, implicit 1. *(R18)*
 
 Pe o axă circulară (`kind=angle`, cu perioada 360), diferența este drumul cel mai scurt pe cerc, împărțit la jumătate de perioadă. Între nuanțele 350 și 0 diferența este 10/180, adică 0,056. *(R19)*
 
@@ -796,7 +796,7 @@ Când două valori posibile sunt la fel de aproape de cea cerută, se face una d
 
 De exemplu, pe o axă liniară cu limitele 0 și 100, valorile 20 și 30 au diferența normalizată 0,1. Pe un cerc, 350 și 0 sunt apropiate deoarece trecerea prin origine este permisă; scăderea obișnuită ar produce greșit o distanță mare. Formula trebuie aleasă din tipul axei, nu din numele cuvântului căutat.
 
-Pentru o axă fără limite finite, normalizarea prin `max−min` nu este definită: este necesar un contract suplimentar de scară, înainte ca această metrică să poată fi folosită.
+Pentru o axă liniară fără limite finite, normalizarea prin `max−min` nu este definită; se folosește scara explicită `normalisation`, conform secțiunii 8.2.1. Pe axele circulare rămâne valabilă normalizarea prin jumătate de perioadă.
 
 ### 4.4.2 Structura conceptelor și reutilizarea prin specializare
 
@@ -1039,6 +1039,7 @@ Acestea sunt tipurile de fire propuse pentru a scrie lumea legendelor și conți
 | `scale` | `ratio` pentru pași multiplicativi; `interval` pentru pași aditivi. |
 | `step` | Factorul sau deplasarea unui pas, conform scării; vezi 4.5.1. |
 | `order`, `weight` | Poziția axei în serializarea unui punct și ponderea pozitivă în metrică. |
+| `normalisation` | Lungimea pozitivă de normalizare, în unitatea axei; înlocuiește numitorul `max−min` când este declarată. Pentru o axă liniară fără limite finite este obligatorie dacă se cere distanța normalizată. Vezi 8.2.1. |
 
 **`w.legend.region`** declară o regiune a unui spațiu, adică înțelesul unui cuvânt. Firele de acest tip stau în bazele de cunoaștere.
 
@@ -1916,24 +1917,62 @@ A declara un concept nu înseamnă că programul îi înțelege automat numele. 
 
 Sunt trei feluri de extensie. Un autor poate adăuga un fapt într-un spațiu existent, poate construi un spațiu sau o regulă din operațiile existente, sau poate avea nevoie de o operație nouă. Primele două sunt date. A treia cere un contract nou și o implementare verificată. Sistemul trebuie să spună „operație nesuportată” dacă aceasta lipsește. Nu o înlocuiește cu o presupunere despre numele conceptului.
 
-## 8.2 Cum se introduce un spațiu nou
+## 8.2 Introducerea unui spațiu: distanța liberă dintre noduri
 
-Să vrem distanța liberă dintre nodurile unei diagrame. Alegem o axă numită `clearance`, în pixeli ai paginii, cu valori nenegative. Declarăm separat unitatea, valorile permise și măsura distanței. Pentru două valori a și b, distanța este valoarea absolută a diferenței. „Cel puțin 12 pixeli” este regiunea [12, infinit), nu un cuvânt pe care o unealtă îl interpretează singură.
+Să vrem o diagramă în care două noduri au cel puțin 12 unități ale paginii între contururile lor. Pentru a verifica cerința, sistemul are nevoie de două informații diferite: distanța observată și limita impusă rezultatului dorit. Distanța poate fi 8 într-o diagramă reală, chiar dacă planul trebuie să producă cel puțin 12. Modelul observației trebuie să poată reprezenta această încălcare; altfel ar ascunde exact situația pe care vrem să o reparăm.
 
-Autorul declară apoi ce însușire folosește spațiul, cum se măsoară acea însușire din vederea diagramei și ce operație poate schimba pozițiile nodurilor. Măsurarea și schimbarea sunt responsabilități diferite: un sistem poate verifica o diagramă chiar dacă nu are unealta care o repară.
+Spațiul `clearance` are o singură axă, cu valori nenegative, în unitatea paginii. Nu folosim aici pixelul ecranului: schimbarea măririi de afișare nu trebuie să schimbe distanța din document. „Cel puțin 12” este o limită inferioară asupra candidatului. Nu o declarăm ca regiune de forma centru–rază, deoarece o asemenea bilă cu rază finită nu reprezintă intervalul fără capăt superior `[12, infinit)`.
 
-| Declarație necesară | Ce permite programului |
+Următoarele declarații arată contractul propus pentru spațiu și două utilizări distincte ale valorii. Cheia nouă `normalisation` este explicată imediat după exemplu. Fragmentele presupun tipurile și celelalte sloturi ale observației și candidatului declarate în schema aplicației.
+
+```sop
+@sp.clearance w.legend.space name=clearance form=axes
+@ax.clearance w.legend.axis of=clearance name=distance min=0 scale=ratio normalisation=10
+@s.observed.value core.slot of=gapObservation key=value kind=number min=0
+@s.candidate.gap core.slot of=layoutCandidate key=gap kind=number min=12
+```
+
+Primul fir introduce numele spațiului. Al doilea definește axa, limita zero și scara numerică folosită la comparație. Lipsa lui `max` înseamnă că acest exemplu nu fixează un plafon al distanței. Unitatea de măsură a axei este unitatea paginii, declarată prin mecanismul `w.legend.unit` din secțiunea 4.8.1; nici `normalisation=10`, nici numele `distance` nu definesc singure acea unitate.
+
+Al treilea fir permite înregistrarea unei distanțe observate de 8. Al patrulea permite candidatului numai distanțe de cel puțin 12. Limita 12 din acest exemplu provine din cerere; într-o implementare generală, ea se atașează constrângerii acelei cereri sau copiei de validare, nu rescrie permanent schema tuturor diagramelor. Observația și candidatul nu sunt două adevăruri despre aceeași stare: primul descrie ce am citit, al doilea ce propunem să obținem.
+
+### 8.2.1 Normalizarea unei axe fără plafon
+
+Pe o axă cu limite finite distincte, secțiunea 4.4.1 folosește diferența împărțită la `max−min`. Aici nu există `max`, deci acea formulă nu poate fi aplicată. Propunerea este o lungime de normalizare pozitivă, declarată pe axă prin `normalisation`, în aceeași unitate cu valorile. Pentru valori `a` și `b`, diferența normalizată este `abs(a−b)/normalisation`. Dacă sunt declarate atât limite finite, cât și `normalisation`, scara explicită are prioritate; zero și valorile negative sunt refuzate la încărcarea schemei.
+
+Această cheie nu este `scale`. `scale=ratio` stabilește dacă un pas comparativ multiplică valoarea; `normalisation=10` stabilește numitorul distanței dintre valori. Niciuna nu este limita minimă cerută. În acest spațiu, distanțele normalizate pot depăși 1 și nu sunt trunchiate: distanța dintre 0 și 25 este 2,5. Schimbarea scării schimbă comparațiile și toleranțele, deci versiunea axei face parte din justificare.
+
+| Valori comparate | Calcul și semnificație |
 |---|---|
-| axă și unitate | Să refuze compararea pixelilor cu minute fără o transformare declarată. |
-| domeniu numeric | Să refuze o distanță negativă. |
-| metrică | Să compare două distanțe; normalizarea cere o scară explicită dacă axa nu are margine finită. |
-| regiune | Să verifice cerința „cel puțin 12”. |
-| măsurare din stare | Să obțină valoarea reală după executare. |
-| capabilitate de modificare | Să caute o așezare, dacă aceasta este cerută și disponibilă. |
+| Observație 8, limită 12 | Lipsesc 4 unități; diferența normalizată este `4/10 = 0,4`. Cerința minimă este încălcată. |
+| Candidat 14, limită 12 | Candidatul depășește limita cu 2 și o satisface; distanța numerică față de limită este 0,2, dar încălcarea este zero. |
+| Observație 8, candidat 14 | Modificarea distanței este 6 unități, adică 0,6 normalizat. Aceasta nu măsoară deplasarea fiecărui nod. |
 
-Dacă distanța observată este 8, cerința este încălcată cu 4 pixeli. Dacă o așezare nouă dă 14, cerința este satisfăcută. Nu rezultă că acea așezare este cea mai frumoasă sau optimă: asemenea afirmații cer obiective și dovezi separate.
+Tabelul separă distanța față de limită de mărimea încălcării. Pentru o limită inferioară, încălcarea este `max(0, limită−valoare)`. Un candidat la distanța 14 nu trebuie penalizat ca încălcare doar pentru că nu este exact la 12. Alegerea celui mai bun candidat cere un obiectiv separat, cum ar fi deplasarea totală minimă; satisfacerea limitei nu demonstrează optimalitatea.
 
-Pentru spațiul nou nu trebuie o ramură de program „dacă numele este clearance”. Operațiile numerice sunt aceleași ca pentru durata unei ședințe. În schimb, calculul geometric al distanței dintre contururile nodurilor este o funcție declarată, cu intrări și rezultat verificabile. Refolosirea privește contractul operațiilor, nu presupunerea că toate domeniile au aceeași geometrie.
+### 8.2.2 Măsurarea geometrică și validarea candidatului
+
+Funcția geometrică primește date deja observate; nu citește singură ecranul și nu mută noduri. În exemplul simplificat, fiecare nod are un dreptunghi de încadrare în reperul paginii, cu marginile `left`, `right`, `top`, `bottom`. Pentru contururi curbe sau rotite este necesar alt contract geometric; aproximarea prin dreptunghiuri trebuie declarată, nu ascunsă sub același rezultat.
+
+```sop
+@f.gap core.function name=page.gap out.kind=number pure=true doc="distance between axis-aligned rectangles in page units"
+@f.gap.a core.function.arg of=$f.gap name=a kind=json
+@f.gap.b core.function.arg of=$f.gap name=b kind=json
+@p.a node bounds=?a
+@p.b node bounds=?b
+@c.distinct core.check fn=neq args=$p.a args=$p.b
+@c.gap core.calc fn=page.gap args=?a args=?b out=?gap
+@t.gap gapObservation first=$p.a second=$p.b value=?gap
+@r.gap core.rule when=$p.a when=$p.b if=$c.distinct with=$c.gap then=$t.gap
+```
+
+`f.gap` declară numele și puritatea funcției; următoarele două fire declară argumentele, în ordine. Autorul adaptorului geometric trebuie să furnizeze implementarea conformă. Cele două pattern-uri leagă dreptunghiurile unor noduri din aceeași versiune observată. `c.distinct` exclude compararea unui nod cu el însuși, iar `c.gap` pune rezultatul în `?gap`. Șablonul `t.gap` păstrează valoarea și nodurile măsurate. Pentru simplitate, regula produce ambele perechi ordonate; implementarea poate evita duplicarea numai păstrând simetria rezultatului. Sloturile `bounds`, `first` și `second` trebuie declarate în schema exemplului; fragmentul explică fluxul calculului, nu este un domeniu complet de încărcat singur.
+
+Pentru dreptunghiurile A și B, calculăm `dx = max(0, A.left−B.right, B.left−A.right)` și analog `dy` pentru marginile verticale. Rezultatul este `sqrt(dx²+dy²)`. Dreptunghiurile care se ating sau se suprapun au distanța zero. Dacă lipsesc margini sau ele sunt inconsistente, măsurarea nu este disponibilă; nu se întoarce zero ca substitut pentru date lipsă.
+
+De exemplu, A are intervalul orizontal [0,10], B are [18,28], iar proiecțiile verticale se suprapun: rezultă `dx=8`, `dy=0`, deci distanța 8. Dacă planul mută B la [24,34], valoarea devine 14. Funcția `layout` din secțiunea 6.8.1 poate propune această mutare, dar aceeași funcție de măsurare trebuie aplicată candidatului și apoi observației de după execuție. Valoarea promisă de plan nu înlocuiește măsurarea efectului.
+
+Introducerea spațiului folosește astfel mecanisme generale pentru limite, calcule, potrivire și validare. Programul specific rămâne calculul geometric declarat și unealta care poate muta nodurile. Un sistem care are numai funcția de măsurare poate verifica diagrama, fără să pretindă că știe și să o repare.
 
 ## 8.3 Ce înseamnă interpretarea firelor
 

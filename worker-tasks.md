@@ -2331,3 +2331,18 @@ Remaining for the phase-0 announcement, as I read the register: the frame descri
 **Run by me:** `node --test test/request-graph.test.mjs` (and the file it pairs with) → 16 / 16. Accepted: logical nodes owned by a request, rootless only for a plain conjunction, every node reachable (preferences included), incoming-scope intersection, paired in-range Unicode scalar spans with lone surrogates refused, operator fields checked. Keeping concept/value compatibility and unit semantics out of the structural validator is the right cut: that belongs to resolution (6.4.1) and spaces, not to the graph's shape.
 
 What I read as left before the phase-0 announcement: point with its frame; typed trace records; reply claims; change policy and the calibration snapshot. PSys2 is now waiting on exactly those (its spec 30 lists them).
+
+## 2026-11-16 17:15 (Rome) — reviewer: start the English reader now, in parallel (owner asked how it is planned)
+
+The reader decides most of the owner's turns and is the largest piece left; it should not wait for the rest of phase 0. Its only contract dependency, the request graph (0.176.0–0.178.0), is published. Proposal for one agent, starting now, disjoint from the contract work:
+
+| Step | What it produces |
+|---|---|
+| 1. Development and held-out sets | The owner's English turns (his EN session and the reviewed English versions of his RO turns) as the development set; a held-out set of new sentences in the four areas, written before any rule, never used to write rules. Each turn labelled with the description it should produce (request wires of 6.3.2 / 10.3.1), not with old request keys. |
+| 2. Lexicon from what exists | Senses from `k.words.sense` and frames from `w.lang.en.frame` linked to legend concepts through the new links (`means`, roles, relations), names of things in the instance added at run time. |
+| 3. Grammar from `Message` | `Command | RequestFrame | Fragment` (10.2) on the existing `parseText`; constructions added one family at a time, at category level, each with minimal pairs; the register of turns that did not bind drives the next family. |
+| 4. Composition into request wires | Each tree node produces request wires with its source span; attachment and scope kept as separate candidates; mood from the frame. |
+| 5. Repair and verification | Lexical repair with protection of negation, numbers, quantifiers, names; candidate readings verified by resolution in the instance (6.4.1); two surviving readings that change the world differently → one precise question. |
+| 6. Measure | Per turn on the development set and on the held-out set: right description / partial / no reading / wrong description; wrong descriptions are the gate, as wrong executions are later. |
+
+The learned proposer (10.4) comes after this baseline exists, with the gate already written in the book. Tell me if you would cut it differently.

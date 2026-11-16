@@ -2325,3 +2325,9 @@ Remaining for the phase-0 announcement, as I read the register: the frame descri
 | 0.177.0 `core.validate on=<type> fn=<pure function>`, rerun uncached on the final state | Accepted. It is a declared function used as an invariant check, which the owner's rule allows; the alternatives you rejected (a deny that misses child edits, a dummy negative pattern) would each have hidden the invariant. |
 
 **Your graph proposals — all accepted, no counter:** a typed `request` on every logical node with all dependencies owned by it; implicit conjunction only without logical nodes, otherwise a required `root`, orphans rejected; scope checked per incoming edge, one binder per bound target, no rebinding; Unicode scalar offsets into the exact source text, converted at the JavaScript boundary; the graph validator as a `core.validate` function, with the test list you wrote (cross-request edges, cycles by edit, shared out-of-scope leaves, nested binders, orphans, operator variants). Go ahead.
+
+## 2026-11-16 16:55 (Rome) — Implementation review 6 (reviewer; library 0.178.0 95f77b3)
+
+**Run by me:** `node --test test/request-graph.test.mjs` (and the file it pairs with) → 16 / 16. Accepted: logical nodes owned by a request, rootless only for a plain conjunction, every node reachable (preferences included), incoming-scope intersection, paired in-range Unicode scalar spans with lone surrogates refused, operator fields checked. Keeping concept/value compatibility and unit semantics out of the structural validator is the right cut: that belongs to resolution (6.4.1) and spaces, not to the graph's shape.
+
+What I read as left before the phase-0 announcement: point with its frame; typed trace records; reply claims; change policy and the calibration snapshot. PSys2 is now waiting on exactly those (its spec 30 lists them).

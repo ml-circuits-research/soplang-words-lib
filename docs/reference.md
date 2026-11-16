@@ -2073,3 +2073,10 @@ Serializes explicit schema-named nodes and literal/string/reference tokens into 
 checked request graph. Loaded schema slots, local reference closure and
 `inspectRequest` validate structure; no construction or action is selected by the
 serializer. See [graph data and limits](api.md#serializerequestgraphinput-options).
+
+### projectTemplates
+
+Applies the existing composition template/guard language directly to indexed
+semantic JSON jobs under one shared budget. It preserves alternatives, whole
+selector records and ordered role arrays without parse wrappers or a new expression
+language. See [direct projection and failure semantics](api.md#projecttemplatesjobs-options).

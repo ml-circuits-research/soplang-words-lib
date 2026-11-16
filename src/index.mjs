@@ -17,6 +17,7 @@ export { turn, TURN_STAGES, turnFlow, arbitrate } from './turn.mjs';
 export { serializeRequestGraph } from './request-serialize.mjs';
 export { readGrammarRequests } from './grammar-request.mjs';
 export { compileGrammarOverlay } from './grammar-overlay.mjs';
+export { projectTemplates } from './template-project.mjs';
 export { composeParses } from './grammar-compose.mjs';
 export { parseText, grammarOf, nounPhrase, grammarView, viewDiff, grammarCheck } from './grammar.mjs';
 export { resolve } from './resolve.mjs';

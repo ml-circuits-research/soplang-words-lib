@@ -1443,6 +1443,59 @@ print(c.ok, composeParses(p, c.composition).candidates[0].value);
 true {"kind":"vessel"}
 ```
 
+### projectTemplates(jobs, options?)
+
+Projects an already composed semantic JSON context without requiring a parse tree.
+Each job is exactly `{template, context}`: `template` names a declaration in
+`options.templates`, and `context` is ordinary finite JSON. Jobs are alternatives,
+not instructions to merge their results. Output is `{candidates, failures}` with
+`{index, value}` candidates and `{index?, reason}` failures. Indices refer to the
+original job positions; successful alternatives remain separate and ordered.
+
+The template language is exactly the one used by `composeParses`: ordinary JSON
+builds objects/arrays, `{$get: ['path', 0, 'key']}` copies an own-property path from
+the supplied context, and `{$literal: value}` quotes data containing directive
+keys. There are no additional operators, callbacks, conversions or implicit
+bindings. Optional `guards: {templateName: [{left, right}]}` compares projected
+operands using structural JSON equality before producing a candidate. Object key
+order is irrelevant; array order and primitive types matter. A missing path yields
+`missing-binding`; unequal operands yield `guard-rejected`. These are different
+failures, not a substituted null or default value. Null is a valid context: a
+constant template can project it, but a path lookup against it fails.
+
+All template and guard declarations are checked before any job can succeed,
+including unused declarations. Unknown guard keys and malformed templates yield
+an unindexed failure with no candidates. Each context is fully validated/copied
+before its guards run: sparse arrays, accessors, symbols, hidden properties,
+non-plain objects, nonfinite numbers and cyclic/deep data are refused, including
+unsafe fields that a template would not read. No accessor is executed. Outputs
+are detached from input contexts and other candidates.
+
+`budget` defaults to 20000 and `maxDepth` to 64 (maximum 256). One evaluator budget
+covers declaration checks, job enumeration, context copying, guards and projection
+for the entire batch. Exhaustion adds `truncated: true`; earlier candidates may
+remain, but are not evidence that all alternatives were considered. A depth failure
+is explicit and indexed when caused by one context. Applications must account for
+all failures and upstream enumeration limits before acting on a candidate. The
+existing `composeParses` traversal and its budget accounting remain unchanged;
+projection's additional full-context/declaration checks are deliberately charged.
+
+Role arrays can preserve a selected object's entire selector alongside a separate
+result, or retain a marker and argument sharing the same semantic role. The
+projector does not select frames, validate licences, infer role semantics or build
+request graphs by itself. Such declarations remain the adapter's responsibility.
+
+```js
+const result = projectTemplates([
+  {template:'pair', context:{selected:{kind:'toy.item', selector:{value:'old'}}, desired:{value:'new'}}},
+], {templates:{pair:{target:{$get:['selected']}, result:{$get:['desired']}}}});
+print(result.candidates[0].value.target.selector.value, result.candidates[0].value.result.value, result.failures.length);
+```
+
+```output
+old new 0
+```
+
 ### composeParses(parses, options?)
 
 `composeParses(parses, { rules, lexical, guards, budget, maxDepth })` evaluates declarative

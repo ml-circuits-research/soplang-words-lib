@@ -118,3 +118,22 @@ numeric native values. Consumers compare decoded labels, then retain the resolve
 native value separately. This corrects the initial literal-only profile regression
 without a spelling-based quoting guess. Other value families must declare their
 own token semantics rather than inherit this name-label profile blindly.
+
+## Direct projection of normalized argument records
+
+`projectTemplates` exposes the same template, safe-copy and equality evaluator as
+`composeParses` over indexed `{template, context}` jobs. This addresses the concrete
+frame-licence contract: copy a selected object whole, including its selector, while
+keeping the result predicate separate; preserve a role array when a marker and an
+object share one semantic role. Projection has one call-wide budget and explicit
+partial-enumeration reporting. It adds no expression operators or implicit frame
+selection, and does not itself validate licences or produce executable effects.
+
+The existing composition traversal and its tested operation counts are unchanged.
+The new public entry validates every declaration and each complete semantic context,
+so its budget includes work that the earlier parse traversal did not perform. The
+preview compatibility profile therefore retains its current bounded wrapper path;
+replacing that path merely to remove a wrapper would change resource behavior.
+A separately validated frame binder can use direct projection once its versioned
+knowledge declarations are selected and compiled. No broader parsing or execution
+coverage follows from this mechanism alone.

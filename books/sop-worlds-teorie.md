@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 27, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 28, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -1006,7 +1006,7 @@ Condițiile unui act nu sunt texte. Formularea în limbaj natural explică inten
 
 Ce nu este numit nu se schimbă. După un act, singurele diferențe permise în stare sunt cele din condiția „după” și cele care decurg din ea prin reguli. Orice altă diferență este spusă în răspuns ca schimbare neașteptată. *(R36)*
 
-Crearea unui referent care lipsește este permisă numai când cererea îl introduce nehotărât, în loc să desemneze un obiect existent. „Put **a** child on the swing”: nu există copil, se face unul. „Put **the** child on the swing” sau „put Tom on the swing”: omul vorbește despre un lucru anume; dacă nu există, aplicația spune „There is no child in the picture.” și nu face nimic. *(R37)*
+Crearea unui referent care lipsește este permisă numai când cererea îl introduce nehotărât, în loc să desemneze un obiect existent. „Put **a** child on the swing”: nu există copil, se face unul. „Put **the** child on the swing” sau „put Tom on the swing”: omul vorbește despre un lucru anume; dacă nu există, aplicația spune „There is no child in the picture.” și nu face nimic, cu excepția completării unui rol structural explicit autorizat, descrisă în secțiunea 6.4.1. *(R37)*
 
 Actele compuse reutilizează condițiile actelor de bază. „Copy” este „a face” un lucru cu felul și însușirile celui copiat; identitatea este nouă, iar referințele urmează politica de copiere din secțiunea 2.4.1. „Swap” este de două ori „a așeza”, cu țintele luate din starea dinainte: fiecare lucru primește locul pe care îl avea celălalt. „Replace A with B” este „a face” B la locul lui A, mutarea pe B a relațiilor lui A și „a șterge” A. *(R38)*
 
@@ -1015,6 +1015,22 @@ Descompunerea se oprește. Singura condiție „înainte” care poate cere un a
 În exemplul `act.place`, `object` desemnează lucrul mutat și `goal` ținta cerută. Verificarea existenței obiectului nu dovedește că relația finală este realizabilă; planul trebuie să verifice și ținta, capabilitatea uneltei și restricțiile relevante. După execuție, `holds` se verifică pe starea observată, nu pe argumentele trimise uneltei.
 
 Pentru un schimb de poziții, ambele poziții se citesc înaintea primei mutări. Dacă a doua mutare ar citi poziția deja schimbată a primului obiect, ambele ar ajunge în același loc. Compunerea păstrează deci o stare de referință și o unitate de anulare. La înlocuire, transferul relațiilor este permis numai dacă noul obiect satisface tipurile și restricțiile acelor relații.
+
+### 4.6.2 Schimbarea felului cu păstrarea identității
+
+Felul semantic poate fi tratat ca o valoare în spațiul felurilor, deci schimbarea lui este un caz al actului `change`. Aceasta nu înseamnă că orice tip structural se poate înlocui prin atribuirea unui cuvânt. Tipul firului stabilește sloturile și validarea; felul semantic spune ce reprezintă obiectul. Un obiect generic poate avea un slot `kind` legat de conceptul de fel, fără să schimbe tipul structural al firului. Dacă noul fel cere altă structură, schimbarea include o migrare verificată. Identitatea obiectului rămâne aceeași numai dacă această migrare este posibilă fără încălcarea cerințelor păstrate.
+
+| Componenta stării | Regula schimbării de fel |
+|---|---|
+| Identitatea și proveniența obiectului | Se păstrează. Noua clasificare primește propria sursă și versiune. |
+| Valori încă admise | Se păstrează numai dacă au același sens, unități compatibile și satisfac schema nouă. Egalitatea numelor de slot nu ajunge. |
+| Valori sau părți incompatibile | Sunt identificate în diferența propusă. O presupunere poate fi retrasă prin politica declarată; o cerință a omului nu dispare tacit. |
+| Relații către și dinspre obiect | Sunt verificate în ambele direcții. Identitatea păstrată nu face automat validă fiecare relație veche. |
+| Informații nou obligatorii | Se completează din surse declarate sau rămân întrebări deschise; migrarea nu produce o stare acceptată înainte de validare. |
+
+De exemplu, transformarea unui paragraf în titlu poate păstra identitatea și textul, dar nu păstrează automat un rol de notă de subsol incompatibil cu titlul. Planul arată ce relație trebuie schimbată și verifică trimiterile la acel obiect. La eșec, nu șterge paragraful pentru a crea pe ascuns un alt obiect. `replace` rămâne operația cu identitate nouă din secțiunea 4.6.1.
+
+Această tratare a felului nu confundă clasificarea cu realizarea: folosirea unei imagini moștenite nu schimbă felul semantic al obiectului. Nici apropierea dintre două feluri nu autorizează o migrare. Referirea aproximativă din secțiunea 6.4.1 găsește un candidat; schimbarea felului este un efect separat, care trebuie cerut sau justificat prin politica explicită a aplicației.
 
 ## 4.7 Legarea unei lumi de lumea legendelor
 
@@ -1466,6 +1482,28 @@ Dacă se potrivesc mai multe lucruri și omul a vorbit la singular, aplicația n
 
 **Întrebările.** Întrebările pe care le pune aplicația nu sunt scrise de mână pentru fiecare cheie. Fiecare concept are întrebarea lui generală („Where?”, „How big?”, „Which one?”, „When?”, „With whom?”), făcută mai precisă de tipul valorii așteptate. Aplicația pune cel mult o întrebare pe mesaj și numai când nu are nicio presupunere rezonabilă. Întrebarea pusă este ținută minte ca **întrebare deschisă** până vine răspunsul, pentru ca „room 2”, scris de om în mesajul următor, să fie înțeles ca răspuns la ea.
 
+### 6.4.1 Descrieri și rezolvarea referințelor
+
+O descriere este un graf de ținte și condiții: feluri, însușiri, relații și surse. Structura cererii din secțiunea 6.3.2 folosește o asemenea descriere și îi adaugă actul. O referință o folosește pentru a găsi ceva; un subiect de document o poate folosi pentru a descrie ceva despre care se va scrie. Aceste utilizări au aceeași formă de bază, dar angajamente diferite: descrierea unui personaj într-o poveste nu afirmă că există în lumea observată și nu autorizează crearea lui acolo. Rolul descrierii este declarat, nu dedus din simpla prezență a unui fir.
+
+Rezolvarea urmează un mecanism comun: stabilește mulțimea de candidați, aplică filtrele obligatorii, apoi ordonează potrivirile admisibile folosind distanțele declarate. Nu există o singură distanță universală care să poată compensa orice nepotrivire. Un nume exact, o identitate, o proveniență cerută sau o limită temporală sunt filtre tari; distanța de culoare nu poate compensa încălcarea lor. Aproximarea se aplică numai componentelor pentru care este permisă, cu toleranța lor. O potrivire exactă are prioritate față de relaxarea aceleiași descrieri. Dacă nu rămâne un candidat unic justificat, sistemul păstrează ambiguitatea și întreabă.
+
+| Ce se caută | Candidați, filtrare și criteriu de alegere |
+|---|---|
+| Un obiect descris prin fel și însușiri | Obiectele vizibile în context; identitățile și cerințele exacte filtrează; aproximarea felului sau a unei însușiri cere o politică și o metrică declarate. |
+| Un obiect după proveniență | Obiectele cu dovezi despre creare sau modificare; „adăugat de aplicație” selectează evenimentul și autorul cerut, nu obiectul cel mai asemănător. |
+| O valoare din trecut | Valorile aceluiași obiect și aceleiași proprietăți din jurnal; momentul indicat filtrează. „Înainte” fără alt reper selectează valoarea dinaintea ultimei schimbări relevante, dacă aceasta este cunoscută. |
+| Un membru după ordine | Membrii întregului, sub o ordine declarată: flux, timp, text sau lectură. Fără ordine unică aplicabilă, „primul” rămâne ambiguu. |
+| Partea care participă la o relație | Părțile obiectului, filtrate prin rolul declarat de susținere, conținere sau atașare; nu se alege automat partea cu coordonata extremă. |
+| Un sens sau un cuvânt reparat | Sensurile din vocabular, respectiv formele engleze admise și numele instanței; compatibilitatea gramaticală și semantică filtrează înaintea costului reparației. |
+| O realizare disponibilă | Realizările declarate compatibile cu felul și cerințele; distanța pe arbore poate ordona împrumutul, dar capabilitatea uneltei trebuie verificată separat. |
+
+Distanța pe arborele felurilor poate propune o potrivire apropiată numai când politica domeniului permite asta. De exemplu, „the box” poate desemna un nod dreptunghiular într-o diagramă dacă este singurul candidat admisibil, iar aplicația spune ce a înțeles. Acest rezultat nu schimbă nodul în alt tip și nu introduce automat o echivalență generală între box și node. Un alias local necesită o înregistrare separată, cu obiect, context și sursă. La folosirea ulterioară, aliasul nu trebuie să ascundă o nouă ambiguitate între obiecte.
+
+O parte așteptată, dar absentă, nu este un referent observat. Sistemul poate găsi în graful unui întreg rolul cerut și poate propune crearea lui când actul este de editare, rolul este declarat construibil, întregul este identificat și nu există o constrângere de absență. Astfel, „add the signature” poate completa rolul semnăturii unei scrisori fără să pretindă că semnătura exista. O întrebare despre semnătură nu o creează. Pentru un rol opțional sau o intenție neclară, constatarea că rolul este posibil nu este suficientă: se cere clarificarea. Aceasta este excepția controlată de completare structurală la regula R37, nu o regulă „nu găsesc, deci fac”.
+
+Reparația unui cuvânt poate traversa o limită de cuvinte, dar trebuie să producă o citire completă și compatibilă, cu modificarea păstrată în proveniență. Un cuvânt necunoscut poate fi un nume propriu; costul mic de editare nu autorizează rescrierea lui. Pentru o realizare lipsă, compunerea din părți rămâne o capabilitate de implementat, nu un efect al acestei metode de selecție. Pentru o valoare istorică lipsă, răspunsul este că istoricul nu o conține, nu alegerea unei valori recente de la alt obiect.
+
 ## 6.5 Înțelesul numeric și potrivirea cu ce poate unealta
 
 Cererea conține încă cuvinte: „big”, „red”, „afternoon”. Uneltele primesc numai numere. Etapa aceasta face trecerea, în doi pași.
@@ -1532,6 +1570,21 @@ O valoare obișnuită umple numai un gol. Nu are voie să înlocuiască ce a cer
 
 **Mai multe lucruri într-o cerere.** Când omul cere mai multe lucruri deodată („a house and a swing”), aplicația verifică dacă sunt independente: nu se bat pe aceeași resursă, nicio regulă nu le leagă și omul nu a spus că le vrea numai împreună. Dacă sunt independente și unul nu se poate face, celelalte se fac, iar omului i se spune ce a rămas nefăcut.
 
+### 6.6.1 Cunoaștere locală și învățarea unei preferințe
+
+O instanță poate primi nume, regiuni, valori obișnuite și factori folosind aceleași structuri ca bazele de cunoaștere. Reutilizarea formei nu înseamnă reutilizarea necondiționată a autorității. Fiecare fapt local păstrează cine l-a introdus, ce afirmație îl susține, domeniul de aplicare și versiunea. O corectare a rezultatului curent schimbă acel rezultat; pentru a deveni preferință aplicabilă cererilor viitoare, trebuie fie formulată explicit ca preferință, fie să îndeplinească regula de învățare declarată. Nu se promovează automat în cunoaștere comună.
+
+| Fapt local | Condiția de introducere și limita lui |
+|---|---|
+| Nume pentru un obiect | Obiect identificat și nume atribuit sau confirmat; aliasul este local și nu schimbă felul obiectului. |
+| Regiune numită | Spațiu și limite cunoscute ori construite printr-o regulă declarată; numele și ordinea regiunilor devin referibile în instanță. |
+| Valoare obișnuită | Felul și contextul sunt explicite; o singură cerință pentru un obiect nu este o regulă pentru toate obiectele de acel fel. |
+| Factor de grad | Episodul de ajustare îndeplinește condițiile din secțiunea 4.5.1; factorul rămâne legat de acea justificare. |
+
+„For my reports, use a short introduction” poate introduce o preferință pentru introducerile rapoartelor utilizatorului. „Shorten this introduction” autorizează numai schimbarea introducerii indicate. Ambele pot folosi aceeași regiune de lungime; întinderea învățării diferă. La o cerere viitoare exactă, acea preferință umple numai ce rămâne liber, fără să înlocuiască cerința nouă.
+
+Anularea retrage efectul învățat legat de pasul anulat, fără să șteargă dovada că a existat. Dacă preferința a fost revizuită ulterior pe alte dovezi, sistemul nu suprascrie acea revizie cu o valoare veche: recalculează contribuția retractată sau raportează conflictul. Aceeași regulă protejează un alias și o regiune editate între timp.
+
 ## 6.7 Întregul și părțile
 
 Omul cere adesea un lucru mare: un iaz, un flux, o scrisoare. Uneltele fac lucruri mici: o imagine, un nod, un paragraf. Între ele trebuie cineva care să știe din ce este făcut întregul. Acest „cineva” este cunoașterea: graful conceptului (secțiunea 4.4) spune din ce părți este făcut un **întreg (whole)** și cum se leagă ele.
@@ -1557,6 +1610,25 @@ Omul cere apoi schimbări ale întregului, cu cuvinte foarte scurte: „fewer”
 | așază mai bine | Mută părțile spre locurile pe care cunoașterea le socotește potrivite: apa jos, cerul sus, rața pe apă; nodurile așezate astfel încât săgețile să se încrucișeze cât mai puțin. |
 
 Rezultatul acestei etape este un **plan (plan)**: o listă de schimbări de bază (secțiunea 4.6), fiecare cu rolurile ei completate. Planul este încă pe hârtie; nimic nu s-a executat.
+
+### 6.7.1 Recompletarea sub constrângeri
+
+Multe operații asupra unui întreg pot folosi aceeași procedură: pornesc de la rezultatul existent, fixează ce trebuie păstrat, eliberează numai rolurile autorizate pentru schimbare, adaugă condițiile noi și caută o atribuire validă cu un cost declarat. Aceasta este **recompletarea**. Mai întâi se satisfac constrângerile tari; costul compară numai candidații care le respectă. O condiție de păstrare, o cantitate exactă sau o relație cerută nu devine negociabilă fiindcă altă variantă ar avea un scor mai bun.
+
+| Familia de operații | Roluri schimbabile și condiții |
+|---|---|
+| Reașezarea unui întreg | Locurile părților autorizate; identitățile, numărul și valorile protejate rămân fixe. Obiectivul poate combina încălcări slabe, intersecții nedorite și aglomerare. |
+| Așezarea după o structură | Locurile și atribuirea la pozițiile structurii declarate; apartenența cerută și excepțiile explicite sunt condiții tari, iar deplasarea totală poate fi cost. |
+| O alternativă la rezultat | Alegerile lăsate aplicației; cerințele omului rămân. Se adaugă o distanță minimă față de rezultatul respins în dimensiunile declarate relevante. |
+| Completarea felului sau a părților | Felurile și părțile permise de graf, cu limite de cardinalitate; varietatea folosește un generator declarat și păstrează sursa alegerii. |
+| Ajustarea unei valori | Rolul indicat și direcția cerută; un pas vine din axă. Fără dimensiune numită, se compară abaterile normalizate numai pe dimensiunile declarate comparabile. |
+| Păstrarea explicită | Rolurile numite sunt fixate la starea de referință; optimizarea celorlalte nu le poate elibera. |
+
+Într-un document cu trei secțiuni, a cere două coloane poate elibera locurile secțiunilor și fixa textul și ordinea logică. O secțiune cerută pe întreaga lățime este o excepție explicită a structurii, nu un caz pe care optimizatorul îl poate aproxima printr-o coloană îngustă. Schema trebuie să ofere pozițiile permise și regula de repartizare; cuvântul „coloane” singur nu furnizează aceste date.
+
+Nu orice reacție înseamnă aceeași recompletare. „Another one” poate cere adăugarea unui obiect, în timp ce „something else instead” cere înlocuirea rezultatului respins. Interpretarea stabilește identitatea rezultatului și dacă se adaugă sau se înlocuiește înainte de căutare. Costul nu poate hotărî această intenție. „Too much” fără dimensiune oferă un candidat de corectare numai dacă o abatere comparabilă este clar dominantă; altfel se întreabă, fără mutarea arbitrară a unei alte proprietăți.
+
+Pentru varietate, jurnalul păstrează generatorul și alegerile efective. Dacă nu există alternativă validă la distanța cerută, aplicația raportează limita căutării sau imposibilitatea dovedită, după caz. Nu modifică cerințele ferme pentru a garanta un rezultat diferit. Explicația numește condițiile îmbunătățite și ce s-a păstrat; faptul că un cost a scăzut nu dovedește singur că întregul este „frumos”.
 
 ## 6.8 Raționamentul: când și cum alege aplicația
 
@@ -1846,9 +1918,26 @@ Acest traseu explică alegerea unei ținte, nu dovedește că textul final are 1
 
 Pentru toate domeniile, explicația scurtă poate fi desfășurată în pașii ei, cu identitățile și versiunile reale. Numele de reguli dintr-un exemplu al cărții nu sunt dovezi dintr-o execuție. Dacă urma s-a pierdut, răspunsul corect este că justificarea nu mai este disponibilă, nu o reconstrucție prezentată ca certitudine.
 
+### 6.11.1 Mesaje despre conversație și referințe la istoric
+
+Jurnalul este o lume de fapte și poate fi interogat prin aceleași modele, referințe și surse ca celelalte lumi. Un mesaj despre conversație poate desemna o cerere, un rezultat sau o afirmație anterioară. Reutilizarea privește reprezentarea și accesul la dovezi; nu dă voie ca ștergerea unui fir din jurnal să fie confundată cu anularea efectului lui în aplicație. O corectare se înregistrează ca eveniment nou și verifică separat starea observabilă.
+
+| Intenția mesajului | Date consultate și efect permis |
+|---|---|
+| Explicație sau obiecție la o afirmație | Pasul și dovezile care au produs afirmația; explică justificarea sau corectează afirmația nefondată. |
+| Raport despre o nepotrivire a stării | Afirmația omului, ultima observație și o citire nouă; păstrează diferența dintre ce spune omul și ce poate confirma adaptorul. |
+| Corectarea cererii anterioare | Cererea și rolul schimbat; reconstruiește planul pentru efectul corectat, respectând condițiile de istoric și concurență din secțiunea 6.9.2. |
+| Restaurarea unei valori trecute | Identitatea obiectului, proprietatea și valoarea istorică justificată; face o schimbare nouă numai asupra acelei proprietăți. |
+| Întrebare despre cunoaștere | Faptele relevante și sursele lor; răspunde cu ce este susținut sau spune că informația lipsește. |
+| Nemulțumire fără corecție determinată | Ultima cerere și rezultatul; spune ce a înțeles și ce rămâne neclar, fără modificarea stării doar pentru a produce un efect. |
+
+Într-un calendar, „put the title back” poate restaura titlul anterior al unei ședințe, păstrând o schimbare mai recentă a orei. Acesta este un nou act `change`, nu anularea tuturor operațiilor care au urmat titlului. Dacă istoricul nu conține titlul vechi, sistemul nu îl reconstruiește dintr-o presupunere.
+
+Un raport că rezultatul nu se vede nu autorizează automat repetarea operației. Dacă recitirea confirmă obiectul, problema poate fi de vizibilitate sau de întârziere a adaptorului; dacă citirea este incompletă, efectul rămâne necunoscut. Sistemul corectează ce poate justifica și nu creează o copie pentru a face să dispară contradicția din dialog. La fel, o obiecție care conține o corecție explicită trebuie separată în afirmația despre trecut și cerința nouă.
+
 # 7. Cele patru domenii
 
-Capitolul acesta arată cum arată fiecare domeniu când tot ce s-a explicat este pus la lucru. Fiecare secțiune are aceeași formă: declarația întreagă a domeniului, citită pe scurt; ce rămâne program; și un tabel cu propoziții ale omului, fiecare cu ce se întâmplă și cu secțiunea din care decurge.
+Capitolul acesta arată cum arată fiecare domeniu când tot ce s-a explicat este pus la lucru. Secțiunile prezintă fragmentele de declarații disponibile, ce rămâne program și exemple de utilizare. Fragmentele actuale nu sunt încă domenii complete: dependențele, parametrii uneltelor și legăturile lipsă trebuie declarate înainte de a putea verifica întregul traseu. Secțiunea 7.4.1 precizează aceste dependențe.
 
 De urmărit este cât de puțin declară un domeniu. Declară felurile lui de fire, sloturile lor legate de concepte, ce poate face, uneltele și legăturile. Nu are cuvinte de mărime, liste de culori sau de forme, întrebări, propoziții de răspuns ori valori obișnuite proprii.
 

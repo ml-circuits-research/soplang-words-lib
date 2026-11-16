@@ -1,14 +1,13 @@
 import { parseText } from './grammar.mjs';
 import { composeParses } from './grammar-compose.mjs';
-import { World } from './world.mjs';
-import { inspectRequest } from './request-contracts.mjs';
-import { quote } from './parser.mjs';
+import { serializeRequestGraph } from './request-serialize.mjs';
+import { retainedDefinition } from './retained-revisions.mjs';
+import { valueText } from './parser.mjs';
 
-const atom = value => typeof value === 'string' && /^[\p{L}_][\p{L}\p{N}_.:-]*$/u.test(value);
 const own = (value, key) => value && typeof value === 'object' && Object.hasOwn(value, key);
 
-/** Bounded bridge for explicitly declared positive property assignments. No effects. */
-export function readGrammarRequests(world, text, { compiled, start = 'S', terminalPunctuation = [], max = 32, budget = 20000, sourceBudget = 20000, compositionBudget = 20000, bridgeBudget = 20000 } = {}) {
+/** Bounded schema graph bridge. Construction semantics come from templates. No effects. */
+export function readGrammarRequests(world, text, { compiled, profile, start = 'S', terminalPunctuation = [], max = 32, budget = 20000, sourceBudget = 20000, compositionBudget = 20000, bridgeBudget = 20000 } = {}) {
   const refused = (reason, details = {}) => ({ candidates: [], failures: [{ reason, ...details }], coverage: { complete: false } });
   if (typeof text !== 'string' || typeof start !== 'string' || !start || ![max, budget, sourceBudget, compositionBudget, bridgeBudget].every(n => Number.isSafeInteger(n) && n > 0)) return refused('invalid-input');
   if (!Array.isArray(terminalPunctuation) || terminalPunctuation.some(mark => typeof mark !== 'string' || !/^[\p{P}\p{S}]+$/u.test(mark))) return refused('invalid-punctuation-policy');
@@ -52,36 +51,77 @@ export function readGrammarRequests(world, text, { compiled, start = 'S', termin
     return tree.children ? tree.children.flatMap(leaves) : [tree];
   };
   try {
-    for (const candidate of composed.candidates) { // bounded: parse max and bridge steps
-      tick(); const value = candidate.value, tree = parsed[candidate.index].tree;
-      shape(value, ['act', 'mood', 'target', 'constraint', 'evidence']);
-      shape(value.target, ['mode', 'kind'], ['determiner']);
-      shape(value.constraint, ['concept', 'operator', 'value', 'character', 'polarity', 'evidence']);
-      const target = value.target, condition = value.constraint;
-      if (value.mood !== 'do' || target.mode !== 'existing' || condition.operator !== 'eq' || condition.character !== 'requirement' || condition.polarity !== 'positive') fail('unsupported-request-profile');
-      for (const term of [value.act, target.kind, condition.concept, ...(own(target, 'determiner') ? [target.determiner] : [])]) { tick(); if (!atom(term)) fail('unresolved-symbol'); }
-      if (typeof condition.value !== 'string' || !condition.value) fail('unresolved-value');
-      const commandEvidence = ranges(value.evidence), constraintEvidence = ranges(condition.evidence);
+    let mapped = composed.candidates;
+    if (profile !== undefined) {
+      const mapping = retainedDefinition(profile, tick);
+      shape(mapping, ['rules', 'guards']);
+      if (!mapping.rules || Array.isArray(mapping.rules) || typeof mapping.rules !== 'object') fail('invalid-profile');
+      const variants = Object.keys(mapping.rules), inputs = [];
+      if (!variants.length) fail('invalid-profile');
+      for (const candidate of composed.candidates) {
+        for (const rule of variants) {
+          tick(); inputs.push({ tree: { rule, value: candidate.value, source: { text } }, original: candidate.index });
+        }
+      }
+      const result = composeParses(inputs, { ...mapping, budget: compositionBudget });
+      if (result.truncated || result.failures.some(f => !['missing-binding', 'guard-rejected'].includes(f.reason))) fail('profile-incomplete');
+      mapped = result.candidates.map(candidate => { tick(); return { index: inputs[candidate.index].original, value: candidate.value }; });
+      if (composed.candidates.some(candidate => !mapped.some(item => item.index === candidate.index))) fail('unsupported-request-profile');
+    }
+    for (const candidate of mapped) { // bounded: parse/profile expansion and bridge steps
+      tick(); const value = retainedDefinition(candidate.value, tick), tree = parsed[candidate.index].tree;
+      shape(value, ['request', 'source', 'nodes', 'evidence']);
+      shape(value.evidence, ['command', 'nodes']);
+      if (!Array.isArray(value.nodes) || !Array.isArray(value.evidence.nodes)) fail('invalid-graph-envelope');
+      const commandEvidence = ranges(value.evidence.command);
       if (JSON.stringify(commandEvidence) !== JSON.stringify(tree.sourceRanges)) fail('incomplete-command-evidence');
       const covered = coverage(commandEvidence), lexical = leaves(tree);
-      if (!lexical.some(node => JSON.stringify(node.sourceRanges) === JSON.stringify(constraintEvidence))) fail('nonlexical-value-evidence');
+      const treeRanges = new Set();
+      const collect = node => { // bounded: each tree node is charged
+        tick(); treeRanges.add(JSON.stringify(node.sourceRanges));
+        for (const child of node.children || []) collect(child);
+      };
+      collect(tree);
+      const checked = serializeRequestGraph({ request: value.request, nodes: value.nodes }, { budget: bridgeBudget });
+      if (!checked.ok) fail(checked.issues[0].reason);
+      const source = checked.world.get(value.source), request = checked.world.get(value.request);
+      if (!source || !checked.world.schema(source.type)?.lineage.includes('std.request.source') || source.attrs.text?.length !== 1 || valueText(source.attrs.text[0]) !== text || request.attrs.source?.length !== 1 || request.attrs.source[0] !== '$' + value.source) fail('foreign-source-evidence');
+      const anchors = new Map();
+      for (const anchor of value.evidence.nodes) {
+        tick(); shape(anchor, ['id', 'source', 'ranges']);
+        if (typeof anchor.id !== 'string' || anchor.source !== value.source || anchors.has(anchor.id) || !checked.world.get(anchor.id)) fail('invalid-node-evidence');
+        const evidence = ranges(anchor.ranges);
+        if (!treeRanges.has(JSON.stringify(evidence))) fail('unverified-node-evidence');
+        anchors.set(anchor.id, { id: anchor.id, source: anchor.source, ranges: evidence });
+      }
+      const nodes = value.nodes.map(node => {
+        tick(); const attrs = { ...node.attrs }, schema = checked.world.schema(node.type), anchor = anchors.get(node.id);
+        if (schema.lineage.includes('std.request.source') && node.id !== value.source) fail('foreign-source-evidence');
+        if (own(attrs, 'source') && JSON.stringify(attrs.source) !== JSON.stringify([{ kind: 'ref', value: value.source }])) fail('foreign-source-evidence');
+        const spanKeys = ['source.start', 'source.end'];
+        if (spanKeys.some(key => own(attrs, key))) fail('predeclared-source-span');
+        if (anchor && own(schema.keys, 'source')) {
+          if (own(attrs, 'source') && JSON.stringify(attrs.source) !== JSON.stringify([{ kind: 'ref', value: anchor.source }])) fail('foreign-source-evidence');
+          attrs.source = [{ kind: 'ref', value: anchor.source }];
+          if (anchor.ranges.length === 1 && spanKeys.every(key => own(schema.keys, key))) {
+            attrs['source.start'] = [{ kind: 'literal', value: String(anchor.ranges[0][0]) }];
+            attrs['source.end'] = [{ kind: 'literal', value: String(anchor.ranges[0][1]) }];
+          }
+        }
+        return { ...node, attrs };
+      });
       const origins = lexical.map(node => {
         tick(); const origin = own(compiled.provenance, node.origin) ? compiled.provenance[node.origin] : null;
         if (typeof node.origin !== 'string' || !origin) fail('missing-lexical-origin');
         return { origin: node.origin, binding: origin.binding, wire: origin.wire, type: origin.type, metadata: Object.fromEntries(Object.entries(origin.metadata).map(([key, values]) => [key, values.map(item => { tick(); return item; })])), ranges: ranges(node.sourceRanges) };
       });
-      const scalar = atom(condition.value) ? condition.value : quote(condition.value);
-      const span = constraintEvidence.length === 1 ? ` source.start=${constraintEvidence[0][0]} source.end=${constraintEvidence[0][1]}` : '';
-      const wires = `@source std.request.source text=${quote(text)}\n@r std.request act=${value.act} mood=${value.mood} source=$source root=$condition\n@target std.request.target request=$r mode=${target.mode} kind=${target.kind}${own(target, 'determiner') ? ` determiner=${target.determiner}` : ''}\n@condition std.request.constraint request=$r target=$target concept=${condition.concept} operator=${condition.operator} value=${scalar} character=${condition.character} polarity=${condition.polarity} source=$source${span}`;
-      const graph = new World({ budget: { steps: bridgeBudget } });
-      if (!graph.tell('@use core.use world=std.request').ok) fail('request-validation-incomplete');
-      if (!graph.tell(wires).ok || !inspectRequest(graph, 'r', { budget: { steps: bridgeBudget } }).ok) fail('invalid-request-graph');
-      candidates.push({ request: 'r', wires, evidence: { unit: 'unicode-scalar', command: commandEvidence, constraint: constraintEvidence }, origins, coverage: covered });
+      const graph = serializeRequestGraph({ request: value.request, nodes }, { budget: bridgeBudget });
+      if (!graph.ok) fail(graph.issues[0].reason);
+      candidates.push({ request: value.request, wires: graph.wires, evidence: { unit: 'unicode-scalar', command: commandEvidence, nodes: [...anchors.values()] }, origins, coverage: covered });
     }
     if (compiled.source.world !== world || compiled.source.stamp !== world.stamp) fail('source-changed-during-read');
     return { candidates, failures: composed.failures, coverage: { complete: true } };
   } catch (error) {
-    if (!error?.bridge) throw error;
-    return refused(error.reason);
+    return refused(error?.bridge ? error.reason : 'invalid-graph-data');
   }
 }

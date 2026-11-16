@@ -2061,8 +2061,15 @@ Assesses exact native property tokens against an explicit resolved expectation u
 ### readGrammarRequests
 
 Bridges explicit declarative readings to structurally validated `std.request`
-property-assignment candidates. It requires a fresh exact-world compilation,
+graph candidates with construction semantics declared in templates. It requires a fresh exact-world compilation,
 accounts for source gaps through a configured punctuation policy, refuses pruning
 and incomplete interpretations, and preserves alternative readings and provenance.
 It neither resolves live instances nor executes effects or claims successful replies.
 See [the bounded profile and API](api.md#readgrammarrequestsworld-text-options).
+
+### serializeRequestGraph
+
+Serializes explicit schema-named nodes and literal/string/reference tokens into a
+checked request graph. Loaded schema slots, local reference closure and
+`inspectRequest` validate structure; no construction or action is selected by the
+serializer. See [graph data and limits](api.md#serializerequestgraphinput-options).

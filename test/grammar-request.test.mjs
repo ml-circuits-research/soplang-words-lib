@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { World, readGrammarRequests, inspectRequest, valueText } from '../tools/lib-under-test.mjs';
+import { World, readGrammarRequests, inspectRequest, valueText, composeParses } from '../tools/lib-under-test.mjs';
+import { PROPERTY_CHANGE_REQUEST_PROFILE } from '../compat/psys2/reader/request-profile.mjs';
 const get=(...path)=>({$get:path});
 // Invented three-word language; adapter knowledge is explicit data, not English rules.
 const fixture=()=>{
@@ -8,7 +9,7 @@ const fixture=()=>{
  const lexical={A:get('node','feat'),K:get('node','feat'),V:{concept:get('node','feat','concept'),operator:get('node','feat','operator'),value:get('node','feat','value'),evidence:get('node','sourceRanges')}};
  const rule={act:get('children',0,'act'),mood:'do',target:{mode:'existing',kind:get('children',1,'kind')},constraint:{concept:get('children',2,'concept'),operator:get('children',2,'operator'),value:get('children',2,'value'),character:'requirement',polarity:'positive',evidence:get('children',2,'evidence')},evidence:get('node','sourceRanges')};
  const compiled={ok:true,source:{world,stamp:world.stamp},grammar:{types:{word:null,coord:null},productions:[{id:'r',attrs:{lhs:['M'],rhs:['A','K','V']}}],lexicon:{mo:{cat:'A',feat:{act:'modify'},origin:'a'},ko:{cat:'K',feat:{kind:'vessel'},origin:'k'},za:{cat:'V',feat:{concept:'tint',operator:'eq',value:'amber'},origin:'v'}}},composition:{rules:{r:rule},lexical},provenance:Object.fromEntries(['a','k','v'].map(id=>[id,{binding:'toy',wire:id,type:'toy.term',metadata:{'core.source':['invented']}}]))};
- return {world,compiled,options:{compiled,start:'M',terminalPunctuation:['.']}};
+ return {world,compiled,options:{profile:PROPERTY_CHANGE_REQUEST_PROFILE,compiled,start:'M',terminalPunctuation:['.']}};
 };
 const graph=candidate=>{const w=new World();w.load('@u core.use world=std.request');w.load(candidate.wires);return w;};
 
@@ -46,6 +47,33 @@ test('bridge refuses stale schema stamps and foreign worlds, retaining freshness
 
 test('disjoint lexical evidence remains disjoint, and serialization cannot inject extra wires',()=>{
  const f=fixture();f.compiled.grammar.lexicon['za zi']=f.compiled.grammar.lexicon.za;delete f.compiled.grammar.lexicon.za;
- const result=readGrammarRequests(f.world,'mo ko za zi',f.options);assert.equal(result.candidates.length,1,JSON.stringify(result));const c=result.candidates[0];assert.deepEqual(c.evidence.constraint,[[6,8],[9,11]]);assert.equal(graph(c).get('condition').attrs['source.start'],undefined);
- const x=fixture();x.compiled.grammar.lexicon.za.feat.value='odd "value"\n@injected bad';const answer=readGrammarRequests(x.world,'mo ko za',x.options);assert.equal(answer.candidates.length,1);const w=graph(answer.candidates[0]);assert.equal(w.get('injected'),undefined);assert.equal(valueText(w.get('condition').attrs.value[0]),'odd "value"\n@injected bad');
+ const result=readGrammarRequests(f.world,'mo ko za zi',f.options);assert.equal(result.candidates.length,1,JSON.stringify(result));const c=result.candidates[0];assert.deepEqual(c.evidence.nodes[0].ranges,[[6,8],[9,11]]);assert.equal(graph(c).get('condition').attrs['source.start'],undefined);
+ const x=fixture();x.compiled.grammar.lexicon.za.feat.value='odd "value"\n@injected bad';const answer=readGrammarRequests(x.world,'mo ko za',x.options);assert.equal(answer.candidates.length,0,'literal-token profile rejects token injection');
+});
+
+const direct = () => {
+ const f=fixture(), value={act:'modify',mood:'do',target:{mode:'existing',kind:'vessel'},constraint:{concept:'tint',operator:'eq',value:'amber',character:'requirement',polarity:'positive',evidence:[[6,8]]},evidence:[[0,2],[3,5],[6,8]]};
+ const mapped=composeParses([{tree:{rule:'bare',value,source:{text:'mo ko za'}}}],PROPERTY_CHANGE_REQUEST_PROFILE).candidates[0].value;
+ f.compiled.composition.rules.r={$literal:mapped};delete f.options.profile;return {...f,mapped};
+};
+test('composition can emit a schema graph directly; envelope evidence is verified independently',()=>{
+ const f=direct(),result=readGrammarRequests(f.world,'mo ko za',f.options);assert.equal(result.candidates.length,1,JSON.stringify(result));assert.deepEqual(result.candidates[0].evidence.nodes,[{id:'condition',source:'source',ranges:[[6,8]]}]);
+ const changes=[
+  x=>{x.mapped.extra='discard me';},
+  x=>{x.mapped.evidence.nodes[0].ranges=[[5,8]];},
+  x=>{x.mapped.evidence.nodes.push({...x.mapped.evidence.nodes[0]});},
+  x=>{x.mapped.nodes[3].attrs['source.start']=[{kind:'literal',value:'6'}];x.mapped.nodes[3].attrs['source.end']=[{kind:'literal',value:'8'}];},
+  x=>{x.mapped.nodes[0].attrs.text[0].value='different input';},
+  x=>{x.mapped.evidence.command=[[0,8]];},
+ ];
+ for(const change of changes){const x=direct();change(x);assert.equal(readGrammarRequests(x.world,'mo ko za',x.options).candidates.length,0,change.toString());}
+});
+
+test('profiles retain alternatives and fail closed for malformed or incomplete interpretation data',()=>{
+ const f=fixture(),profile=structuredClone(PROPERTY_CHANGE_REQUEST_PROFILE);profile.rules.alternative=profile.rules.bare;profile.guards.alternative=profile.guards.bare;
+ assert.equal(readGrammarRequests(f.world,'mo ko za',{...f.options,profile}).candidates.length,2);
+ profile.rules.alternative={bad:'graph'};assert.equal(readGrammarRequests(f.world,'mo ko za',{...f.options,profile}).candidates.length,0);
+ const invalid=structuredClone(PROPERTY_CHANGE_REQUEST_PROFILE);invalid.guards.bare[0].left={$get:[]};assert.equal(readGrammarRequests(f.world,'mo ko za',{...f.options,profile:invalid}).failures[0].reason,'profile-incomplete');
+ let invoked=false;const access={rules:{},guards:{}};Object.defineProperty(access,'extra',{enumerable:true,get(){invoked=true;return 1;}});assert.equal(readGrammarRequests(f.world,'mo ko za',{...f.options,profile:access}).candidates.length,0);assert.equal(invoked,false);
+ assert.equal(readGrammarRequests(f.world,'mo ko za',{...f.options,profile:{rules:{},guards:{}}}).candidates.length,0);
 });

@@ -14,6 +14,7 @@ export { PatternIndex } from './patterns.mjs';
 export { schemaCard, schemaExamples, actReply, schemaGrid, gridTests } from './schema-words.mjs';
 export { createCatalog, createCatalogs, bundleReader, bundleThenRead, listOf, loadBundles } from './knowledge.mjs';
 export { turn, TURN_STAGES, turnFlow, arbitrate } from './turn.mjs';
+export { serializeRequestGraph } from './request-serialize.mjs';
 export { readGrammarRequests } from './grammar-request.mjs';
 export { compileGrammarOverlay } from './grammar-overlay.mjs';
 export { composeParses } from './grammar-compose.mjs';

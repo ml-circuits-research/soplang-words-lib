@@ -1256,14 +1256,29 @@ are refused. Keep this knowledge World separate from mutable application state.
 The bridge parses with original Unicode provenance and limit reporting enabled,
 then composes semantic templates. It does not resolve instances or mutate the world.
 
-This first profile accepts a closed record: `act`, `mood`, `target`, `constraint`,
-`evidence`. The target explicitly supplies `mode`, `kind` and optional `determiner`.
-The constraint explicitly supplies `concept`, `operator`, `value`, `character`,
-`polarity`, `evidence`. Supported values are `mood=do`, `mode=existing`, `operator=eq`,
-`character=requirement`, `polarity=positive`. Act/kind/concept identities remain
-caller-declared symbols; no domain or action name is built into this profile.
-Missing fields, extra unsupported meanings (including selectors), and other
-profiles decline rather than being converted to defaults or silently dropped.
+Composition normally emits a schema graph envelope:
+`{request, source, nodes, evidence: {command, nodes}}`. Each graph node is
+`{id, type, attrs}`; each attribute is a nonempty array of explicit
+`{kind, value}` tokens as described under `serializeRequestGraph` below. `request`
+and `source` identify the sole request and its exact original-text source node.
+Evidence node entries are `{id, source, ranges}`. Their ranges must equal a verified
+parse-tree node's original ranges; the command ranges must equal the whole parse.
+No action, target mode, operator, logical shape or domain symbol is built into the
+bridge. `inspectRequest` remains the structural authority.
+
+For older or intermediate semantic records, optional `profile: {rules, guards}`
+uses the existing `composeParses` template API as a second bounded mapping stage.
+Each rule is a candidate interpretation variant; its context is
+`{node: {rule, value, source: {text}}, children: []}`, where `value` is the first
+composition result. Missing bindings or failed equality guards make that variant
+inapplicable. Every first-stage candidate must retain at least one interpretation;
+otherwise the entire read declines. Other mapping failures and exhausted budgets
+also decline. Surviving variants remain separate, even if equal. Profiles cannot
+supply callbacks or additional keys. They are trusted semantic declarations, not
+proof that the text means the resulting graph. The caller can use equality guards
+to reconstruct and compare the entire input record, refusing unhandled fields.
+The existing property-change interpretation is now declared only in
+`compat/psys2/reader/request-profile.mjs`; `ENGLISH_REQUEST_OPTIONS` selects it.
 
 `start` defaults to `S`. `terminalPunctuation` defaults to an empty list; it is an
 explicit language policy, not a list of marks the mechanism guesses harmless.
@@ -1281,9 +1296,12 @@ unaccounted source gaps yield no candidates.
 
 The result has `candidates`, `failures` and `coverage: {complete}`. Each candidate
 contains `{request, wires, evidence, origins, coverage}`. `wires` preserves the exact
-original source text, an explicit existing target, and a desired-result constraint
-under `request.root`. A single lexical-value range becomes a request source span;
-disjoint ranges remain in `evidence.constraint`, with no invented enclosing span.
+original source text. Evidence is `{unit: 'unicode-scalar', command, nodes}`, with
+node entries `{id, source, ranges}`. For schema types declaring the source and span
+slots, a single verified range becomes `source.start`/`source.end`; disjoint ranges
+remain external evidence, with no invented enclosing span. The reader rejects
+predeclared spans and foreign source nodes/references instead of trusting offsets
+supplied by a mapping. Types without span slots retain their external evidence.
 Keep that evidence and the per-leaf origin records alongside the wires. Each graph
 passes `inspectRequest`; this establishes structural consistency only. Coverage
 means the source material was accounted for, not that the reading is true, the
@@ -1305,6 +1323,47 @@ print(result.candidates.length, result.failures[0].reason, result.coverage.compl
 For a complete published-data example, see the reader overlay integration test:
 it compiles the knowledge declarations and projects both colour and shape
 assignments while retaining source evidence and refusing unsupported readings.
+
+### serializeRequestGraph(input, options?)
+
+Serializes `{request, nodes}` into a detached, structurally checked request graph.
+Each node is exactly `{id, type, attrs}`. Types must belong to the loaded
+`std.request` module (including schema-declared inheritance), and attributes must
+be actual schema slots. Attribute values are nonempty arrays of closed tokens:
+
+| Token kind | Meaning of its string `value` |
+| --- | --- |
+| `literal` | Exactly one raw SOP atom/literal token, validated by parsing roundtrip. Numeric, boolean and `none` spellings remain lexical tokens without JavaScript coercion. |
+| `string` | Text to quote, including punctuation, newlines or text beginning with `$`. |
+| `ref` | An exact node ID in this graph, never an external reference. |
+
+No token kind is guessed from its spelling. Duplicate/reserved IDs, unknown types
+or slots, extra object fields, sparse arrays, accessors, symbols and non-JSON data
+are refused. Exactly one designated request is required. Request-owned nodes and
+nodes reached through graph references must account for the entire graph; an
+unused source/value node is rejected while a legitimately shared source is allowed.
+Schema validation and `inspectRequest` run before returning success. They establish
+structural consistency, not resolution, execution, source authenticity or intent.
+The reader adds its separate source-evidence checks; this serializer alone accepts
+caller-authored source content.
+
+`budget` defaults to 20000 and bounds canonical data copying, nodes, attributes,
+tokens and reachability. Schema loading, graph insertion and inspection each run
+under that step limit too. Failure returns `{ok:false, issues:[{reason}]}`;
+success returns `{ok:true, request, wires, world, issues:[]}`, where `world` is the
+detached validation world. It does not mutate a caller's knowledge world.
+
+```js
+const result = serializeRequestGraph({ request: 'r', nodes: [
+  { id: 's', type: 'std.request.source', attrs: { text: [{kind:'string', value:'an invented utterance'}] } },
+  { id: 'r', type: 'std.request', attrs: { act: [{kind:'literal', value:'inspect'}], mood: [{kind:'literal', value:'ask'}], source: [{kind:'ref', value:'s'}] } },
+] });
+print(result.ok, result.request);
+```
+
+```output
+true r
+```
 
 ### compileGrammarOverlay(world, options?)
 

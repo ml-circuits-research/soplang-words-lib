@@ -34,7 +34,7 @@ test('published imperative family yields the owner development colour request an
   assert.equal(graph.get('target').attrs.mode[0],'existing');assert.equal(graph.get('target').attrs.kind[0],'circle');assert.equal(graph.get('target').attrs.selector,undefined);
   assert.equal(graph.get('r').attrs.root[0],'$condition');assert.equal(graph.get('condition').attrs.concept[0],concept);assert.equal(graph.get('condition').attrs.value[0],value);
   assert.equal(graph.get('condition').attrs.character[0],'requirement');assert.equal(graph.get('condition').attrs.polarity[0],'positive');
-  const start=Array.from(text.slice(0,text.indexOf(value))).length;assert.deepEqual(candidate.evidence.constraint,[[start,start+Array.from(value).length]]);
+  const start=Array.from(text.slice(0,text.indexOf(value))).length;assert.deepEqual(candidate.evidence.nodes[0].ranges,[[start,start+Array.from(value).length]]);
   assert.ok(candidate.origins.some(origin=>origin.wire==='k.shapes.shape.circle'));
  }
  for(const text of ['Change the colour of the green circle to purple.','Change the colour of the circle to purple?','Do not change the colour of the circle to purple.'])assert.equal(readGrammarRequests(world,text,{compiled,...ENGLISH_REQUEST_OPTIONS}).candidates.length,0,text);

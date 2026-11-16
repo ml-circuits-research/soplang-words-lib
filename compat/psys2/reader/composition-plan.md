@@ -76,7 +76,7 @@ with `inspectRequest`, retains disjoint lexical evidence without inventing a hul
 and preserves per-leaf source origins. Exact knowledge-world identity and mutation
 stamp are checked before and after reading.
 
-The supported profile is deliberately explicit: imperative mood, existing target,
+The compatibility profile is deliberately explicit: imperative mood, existing target,
 equality operator, requirement character and positive polarity all come from the
 semantic record. Unknown fields, unsupported selectors, negation, quantified or
 indefinite target forms and other profiles decline. No target instance or successful
@@ -88,3 +88,32 @@ character/polarity. Published-data integration checks the owner development phra
 “Change the colour of the circle to purple.” and a separate shape assignment. These
 are request-description checks, not Drawing execution claims or heldout scores.
 PSys2 owns instance resolution, host effects, observations and typed reply evidence.
+
+## Schema graph serialization and declared interpretation profiles
+
+`serializeRequestGraph` now consumes schema-named nodes and explicit literal,
+string or reference tokens. Actual loaded schema types/slots, local graph closure,
+one request root and `inspectRequest` decide structural validity. Selector graphs,
+logical result groups and additional targets need no serializer branches. Numeric,
+boolean and `none` token spellings retain their lexical identity without coercion.
+
+`readGrammarRequests` accepts this graph directly from composition, or invokes an
+optional second `composeParses` mapping with declared variants and equality guards.
+`request-profile.mjs` holds the first assignment interpretation, including its
+closed-record guard and accepted mood/mode/operator/character/polarity. The library
+contains none of those construction restrictions. Selecting this profile through
+`ENGLISH_REQUEST_OPTIONS` preserves the initial published overlay path; it does not
+claim the overlay can already parse a second construction.
+
+Evidence is keyed by graph node: `{unit, command, nodes: [{id, source, ranges}]}`.
+Only verified single contiguous ranges become schema span slots. Disjoint ranges
+stay external; caller-supplied spans and foreign source references decline. Profiles
+are trusted author interpretations, not semantic proof or live instance resolution.
+No heldout sentences or outcomes were read for this mechanism change.
+
+The compatibility profile explicitly declares canonical property values as SOP
+literal tokens. Multiword/string-valued provider names decline until their mapping
+supplies an explicit string token; the old spelling-based quoting guess is not
+retained. Direct graph composition already supports explicit string tokens. This
+limit preserves the first Drawing path, but does not claim parity for every string
+that the earlier fixed bridge could quote.

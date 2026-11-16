@@ -1011,26 +1011,6 @@ Review de76af8 accepted all proposals. The act-condition encoding is now impleme
 
 Please challenge these choices with a concrete reusable counterexample if you prefer the qualified-name alternative or another condition representation. I am not declaring these families frozen or adding permissive schemas while these contradictions remain. The already-published import records are structurally validated; they do not depend on a guessed resolution here.
 
-### Implementation review — space/axis/unit subset (0.173.0)
-
-Published typed ownership and canonical units, with complete colour fixture in §4.8. Explicit positive angle period replaces the implicit 360-only convention; the hue example still declares 360. Unit metadata admits affine conversion (positive factor, signed offset), with canonical factor=1 and offset=0. Steps are direction-free magnitudes: ratio > 1 and interval > 0, direction later chooses inverse operation. Please challenge these concrete choices if reusable cases require a broader contract.
-
-No frame descriptor is claimed from a free-text origin/direction string: a meaningful affine frame requires typed parent, origin/basis, dimension, invertibility and acyclicity checks. This remains pending before point support. Space version is metadata; graph contents, regions, conversion, metric evaluation and strict boundary name resolution also remain pending. Earlier accepted legend rows stay open until their complete behavior and remaining partial examples are reconciled.
-
-Namespace counterexample found in audit: two namespaces could declare the same axis name/order for a shared referenced space because ordinary value joins are namespace-local. Axis/unit declaration types now use shared=true so ownership invariants span namespaces; distinct owner identities still allow repeated vocabulary. Tests reject both cross-namespace duplicates and retain distinct-owner reuse. These are schema declarations, not private application instances.
-
-### Implementation review — conceptual legend declarations (0.174.0)
-
-Published concept/degree/relation/role schemas with acyclic typed specialization and role owner union. Existing type= reference unions need kind=ref as well to protect target deletion; the test caught that boundary. Optional group/question are categorization/explanatory metadata. Relation test remains an unbound function name; inverse declarations may be one-sided or self-inverse, but declared pairs cannot disagree or name different spaces.
-
-Degree factor is only finite positive metadata here, including subunitary values, pending an explicit application/calibration rule. This avoids silently treating direction and factor as two competing direction encodings. Specialization closure uses transient shared helper records and the existing reasoning budget (quadratic worst-case materialized closure); it does not claim the future generic name-resolution or point/frame contracts. Please review these concrete boundaries against §4.8.1.
-
-### Implementation review — schema-link identity resolution (0.175.0)
-
-The new mechanism uses generic core.schema.link descriptors (on/key/target/by), not runtime branches naming legend types. w.legend registers is/means/space; arbitrary other annotation vocabularies use the same mechanism. Alternative approaches were a fixed legend-name table (would break aliases and extensibility) or compile-time binding (rejects atomic forward facts and goes stale on edits). Final transactional resolution checks every authored annotation, without caching. The actual book §4.7 fragment and an unrelated custom vocabulary are tested.
-
-Compatibility is explicit: annotations are optional, but present links are strict; all loaded target names are considered globally and ambiguities require references. Quoted text is not a reference. Duplicate declarations cannot discard different annotations; intersect requires identical authored links, explicit override selects a slot while every authored link remains valid. Mandatory means, full refinements, mapped notations, behavioral inheritance and point/frame support are not claimed. Please review the generic descriptor and global-name policy before the remaining semantic migration.
-
 ### Implementation review — request foundation and complete graph obligations (0.176.0)
 
 Published only source/request/target with mandatory mood and no implicit do; act/kind remain unresolved names. Existing proposed graph examples omitting mood need explicit modes when migrated. This foundation intentionally does not export constraints/logical nodes or bound targets.

@@ -72,3 +72,5 @@ Generic core.schema.link descriptors register native type/slot annotations; w.le
 ### Increment 0.176.0 — request source/envelope/target foundation
 
 std.request exports only source, request and target records, with explicit mandatory mood, unresolved act/kind names and typed source/request ownership. Target modes new/existing are supported; bound/root/logical/constraint contracts are not exported. The minimal §6.3.2 fixture is tested; the full graph examples remain proposed. No phase-zero gate is released to consumers. Full graphs need owned logical nodes, all-path binder scope, cycle/orphan checks and typed operator variants; questions.md records concrete implementation choices.
+
+Review 292e8dd accepts 0.173.0–0.175.0 and prioritizes the complete request graph next. Mandatory means is to become opt-in per world during migration, then the default after migration; that strict profile is not yet implemented. Frames/points, traces, replies and change/calibration snapshots remain required before the phase-zero announcement.

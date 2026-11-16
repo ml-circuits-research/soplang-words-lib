@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 38, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 39, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -2714,9 +2714,9 @@ Conținutul actului și modul cererii sunt distincte. Contractul propus adaugă 
 | Solicitare adresată asistentului pentru un rezultat propriu, în zona de editare | `do`; se construiește planul și se execută după verificările obișnuite, fără o întrebare redundantă despre intenția de a cere. |
 | Întrebare despre posibilitate ori efecte ipotetice; marcaj explicit precum `just check` | `check`; se verifică planul fără efecte asupra stării reale. |
 | Cerere de variante sau recomandare | `propose`; se prezintă opțiunile și justificarea lor. |
-| Context insuficient care lasă două scopuri conversaționale plauzibile | Se clarifică diferența dintre efectuare și verificare, păstrând conținutul deja înțeles. |
+| Context insuficient care lasă două scopuri conversaționale plauzibile | Se verifică fără efecte, când citirea este disponibilă și autorizată, apoi se oferă acțiunea în același răspuns; altfel se clarifică informația lipsă. |
 
-Modul și dreptul de a modifica o resursă sunt două verificări diferite. Într-un calendar partajat, „can I move the review to Friday?” poate întreba despre disponibilitate, iar contextul poate susține `check`; „could you move the review to Friday?” poate fi o solicitare indirectă `do`. Faptul că întâlnirea implică alte persoane nu schimbă singur sensul cererii. Planificarea verifică separat drepturile, disponibilitatea și eventualele acorduri cerute de politica calendarului. În lipsa lor, cererea rămâne o solicitare de modificare încă neexecutată, nu este rescrisă tacit ca întrebare informativă. În mod simetric, o cerere `check` nu devine `do` doar pentru că toate verificările trec. Schema este propusă pentru stratul conversațional; API-ul actual de parsare nu implementează această autorizare.
+Modul și dreptul de a modifica o resursă sunt două verificări diferite. Într-un calendar partajat, „can I move the review to Friday?” poate întreba despre disponibilitate, iar contextul poate susține `check`; „could you move the review to Friday?” poate fi o solicitare indirectă `do`. Faptul că întâlnirea implică alte persoane nu schimbă singur sensul cererii. Planificarea verifică separat drepturile, disponibilitatea și eventualele acorduri cerute de politica calendarului. În lipsa lor, cererea rămâne o solicitare de modificare încă neexecutată, nu este rescrisă tacit ca întrebare informativă. În mod simetric, o cerere `check` nu devine `do` doar pentru că toate verificările trec. Când modul intenționat rămâne nerezolvat, continuarea operațională este `check`, fără a pretinde că ambiguitatea a dispărut. De exemplu: „Friday 10:00 is free for everyone; shall I move it?”. Oferta nu execută mutarea; confirmarea ulterioară cere revalidarea disponibilității. Această continuare presupune acces de citire autorizat și o verificare fără efecte externe; simplul nume `check` nu garantează că o unealtă este gratuită ori lipsită de efecte. Schema este propusă pentru stratul conversațional; API-ul actual de parsare nu implementează această autorizare.
 
 Biblioteca actuală oferă deja `parseText`, `grammarOf` și `nounPhrase`. Exemplul complet de mai jos folosește numai mecanismul sintactic existent, cu un lexic minimal. Rezultatul a fost rulat pe biblioteca actuală; el nu pretinde că toate construcțiile din tabel sunt deja declarate în lumea limbii.
 
@@ -2908,7 +2908,26 @@ Un import de relații de tip „parte din” poate furniza candidați pentru str
 
 O etichetă produsă de model poate economisi redactare, dar trebuie verificată tocmai la frontierele care schimbă comportamentul: roluri obligatorii, imposibilități, relații folosite pentru acțiuni și atribuiri de sens. Verificarea unui eșantion poate estima calitatea lotului; nu dovedește că fiecare fapt rămas este corect. Faptele cu efect critic cer o verificare potrivită consecinței lor sau rămân propuneri slabe.
 
-### 11.3.1 Un fapt importat și lanțul lui de proveniență
+### 11.3.1 Surse concrete și alegerea informației utile
+
+Sursele se aleg după relația de care avem nevoie. Un lexic poate lega numele de un sens, o adnotare de imagine poate susține o observație spațială, iar o bază de bun-simț poate sugera o utilizare obișnuită. Niciuna nu este preluată ca autoritate universală asupra tuturor familiilor din secțiunea 11.1. În tabel, restricțiile de utilizare sunt reguli de proiectare a importului: ele arată ce nu trebuie dedus numai din tipul informației disponibile.
+
+| Sursa candidată | Contribuția și verificarea înainte de folosire |
+|---|---|
+| [Princeton WordNet](https://wordnet.princeton.edu/front) — licență de verificat de importator pentru versiunea preluată | Grupurile de sinonime pe sensuri (synsets), hiperonimele și relațiile parte–întreg alimentează vocabularul, felurile și candidații pentru structuri. Se păstrează identitatea sensului și tipul relației. O parte lexicală nu stabilește singură cardinalitatea obligatorie, suprafața de sprijin sau geometria editabilă. |
+| [Visual Genome](https://visualgenome.org/api/v0/api_readme) — licență de verificat de importator pentru fiecare artefact preluat | Obiectele, atributele, relațiile și descrierile regiunilor pot alimenta observații despre scene și exemple de relații precum on/in/has. Se păstrează imaginea, obiectele, regiunea și predicatul original. O casetă de încadrare în pixeli nu este o regulă geometrică generală sau un contur editabil; o observație într-o imagine nu devine o obligație pentru toate obiectele acelui fel. |
+| [ConceptNet](https://github.com/commonsense/conceptnet5/wiki/Relations) — licență de verificat de importator pentru subsetul preluat | Relații precum PartOf, HasA, UsedFor și CapableOf oferă candidați pentru părți, utilizări și comportamente obișnuite. Se verifică sensurile și orientarea relației, fără a trata o pondere ca probabilitate a adevărului. HasA poate exprima și posesie, iar IsA poate include instanțe: maparea nu le transformă automat în parte structurală, respectiv specializare de fel. |
+| Depozitul existent `sop-knowledge-worlds` — licență de verificat de importator pe sursele și fragmentele reutilizate | Oferă deja vocabular, relații, scene, părți și realizări, inventariate în secțiunea 11.5. Catalogul și câmpurile de proveniență permit localizarea subsetului. Încărcarea fără erori de schemă nu dovedește că relațiile satisfac noul contract conceptual. |
+
+Importatorul începe cu o obligație concretă din inventar, alege înregistrările care o pot susține și scrie maparea sensurilor și a relațiilor. Pentru o relație de sprijin, o adnotare on este un candidat de verificat: poate desemna contact, acoperire sau o expresie care cere alt sens. Reviewerul verifică obiectele și contextul înainte de a o admite drept sprijin funcțional. Geometria și partea care suportă greutatea se adaugă prin declarații sau măsurări justificate; nu rezultă doar din asemănarea cuvântului.
+
+Pe aceeași cale, un nume de fel apropiat nu este suficient pentru transfer. Relația parte–întreg și relația de specializare rămân distincte, iar o observație frecventă se păstrează ca valoare obișnuită, cu context și proveniență. Numai după verificare poate alimenta completarea. Cerințele obligatorii au nevoie de o justificare separată; majoritatea observațiilor dintr-un lot nu stabilește necesitatea unei proprietăți.
+
+În instantaneul depozitului folosit în secțiunea 11.5, fișele `sources/wordnet/SOURCE.md`, `sources/visual-genome/SOURCE.md` și `sources/conceptnet/SOURCE.md` descriu versiuni, transformări și selecții. WordNet este deja folosit pentru sensuri și părți. Subsetul Visual Genome descris acolo privește atribute agregate și selecția unor culori, nu importul complet al relațiilor dintre obiecte. Fișa ConceptNet conține o notă istorică despre lipsa descărcării, urmată de înregistrarea unui import parțial; firele publicate despre atribute, utilizări și materiale confirmă existența subsetului. De aceea se verifică împreună fișa, importatorul și fragmentele publicate, nu se decide starea curentă dintr-o singură propoziție veche.
+
+Condițiile surselor se verifică pentru artefactul exact: adnotări, imagini și rezultate derivate nu sunt presupuse interschimbabile. Referințele de mai sus identifică surse și formate de cercetat; nu autorizează un import nou și nu declară că toate componentele lor pot fi redistribuite în același mod. Informația admisă urmează lanțul de proveniență explicat în secțiunea următoare.
+
+### 11.3.2 Un fapt importat și lanțul lui de proveniență
 
 Pentru a putea verifica un import, afirmația și dovada provenienței sunt obiecte distincte. Fragmentul următor propune o schemă generală de proveniență. Este un exemplu didactic al unei surse redactate pentru exemplu, nu o afirmație că o anumită bază externă publicată conține această înregistrare. Felurile `bird` și `duck` sunt presupuse declarate în vocabularul conceptual.
 

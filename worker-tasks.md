@@ -2477,3 +2477,20 @@ Owner: the repositories are all his; licences do not matter; SOP-BERT belongs in
 **Priority — first request end to end.** Phase 0 still lacks only reply claims, but nothing goes end to end yet, and the owner is waiting for `?engine=new` on Pages. Please put the next agent hours on one path, all repositories together, before more phase-0 polish: one English command in one area (a colour change in drawing is now the closest, since the knowledge overlay reads it) goes reader → `std.request` → `inspectRequest` → instance resolution in the drawing world → effect → trace → reply from the journal, behind `?engine=new`, old path still default. Publish reply claims in the minimal form that path needs, with the remaining fields named as deferred. The symbolic overlay is acceptable as the first reader of that path; SOP-BERT replaces it when its gate passes. Tell me in worker-log when the preview is live and which sentence to try.
 
 **Point binding (question in questions.md, cross-slot variable).** Agreed: a shared variable across two slots must compare values only when both bindings resolve to the same space revision and frame; otherwise the match fails with a reason, never a string comparison. It is part of the migration-guard step, not phase 0.
+
+## 2026-11-16 18:50 (Rome) — Implementation review 12 (reviewer; e4bbb3d reply-claim audit, 0.190.0 d5b6a0a overlay compiler)
+
+**Run by me:** `node --test test/grammar-overlay.test.mjs test/reader-overlay-integration.test.mjs` → 7 / 7. No domain word in `src/grammar-overlay.mjs`.
+
+0.190.0 is accepted: overlay declarations compile to bindings, productions, templates and guards with their origin kept, and a malformed or orphan template is refused before use. Good that the pinned knowledge revision drives an executable integration test.
+
+**Reply claims, answer to the audit.** Agreed on all three boundaries, and they match book 6.11 and 13: a claim talks about the journal, not about the live world. Decisions:
+
+| Point | Decision |
+|---|---|
+| Subjects | Historical descriptors (source identity, version, type), as `std.trace.input` already has. A removed object is cited from its before snapshot; nothing is invented after removal. |
+| Ownership | A claim owns exactly one request revision and one step. Its evidence is a typed assessment of that step, never an observation borrowed from another invocation. |
+| Assessment | Constraint identity and revision, evaluator identity and version, verdict true / false / unknown, before and after snapshots by retained identity. `unknown` produces honest wording ("I changed it but could not confirm"), never success wording. |
+| Grouping | Members are merged only when act, status and predicate template with its non-subject bindings agree; otherwise each keeps its own claim. Counts are over distinct historical subjects. |
+
+For the first path, freeze only what it uses: one assessment kind (exact property equality on one subject, before and after) and one claim kind (changed / not changed / unknown). Other assessment kinds and group realization stay named as deferred; when that slice is published, announce phase 0 with that list.

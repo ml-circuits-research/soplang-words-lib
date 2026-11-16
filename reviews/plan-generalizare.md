@@ -36,6 +36,19 @@ Stratul general este un set mic de tipare publicate, în engleză, pe care le ci
 
 La acestea se adaugă o regulă de aplicație, nu de bibliotecă: **domeniul care răspunde este cel care poate îndeplini cererea**, ales din capabilități, nu cel deschis pe ecran.
 
+## 3a. O singură lume a legendelor (propunerea proprietarului)
+
+Cele șapte piese nu trebuie să fie șapte tipare separate. Proprietarul a propus forma potrivită: **o singură lume de tip tipar, „lumea legendelor”, care definește conceptele abstracte, iar orice tip de fir și orice slot din orice altă lume se leagă de un concept din ea.**
+
+| Întrebare | Răspuns |
+|---|---|
+| Avem așa ceva? | Nu ca un întreg. Avem bucăți nelegate: `k.kinds` (arborele felurilor), `k.attributes` (însușiri, cu ce fel de valoare țin), `k.space`, `k.parts`, `k.values`, `k.units`, `k.actions`. În aplicație fiecare domeniu are un fișier de legendă, dar el descrie numai domeniul acela și nu trimite la nimic general. |
+| Ce lipsește | Conceptul de rol și de relație; legătura obligatorie de la fiecare slot la un concept; un singur loc din care citesc toate mecanismele. |
+| Ce conține lumea legendelor | Fel de lucru; însușire, cu spațiul ei de valori și, dacă are, ordinea; relație, cu cele două capete; rol; act, cu ce cere și ce produce; întreg și parte; cantitate și unitate; loc și regiune; timp; eveniment. Piesele A–G din secțiunea 3 sunt capitolele ei. |
+| Cum se leagă celelalte lumi | Fiecare `core.type` spune ce concept este; fiecare `core.slot` spune ce concept realizează. Un slot fără concept este refuzat la verificare. |
+| Cât de mare | Nu „tot ce ne putem imagina” de la început. Pornește cu ce cer cele trei sesiuni și crește după regula: un concept intră când îl folosesc cel puțin două domenii. |
+| Cu ce seamănă | Ontologiile de nivel înalt (DOLCE, SUMO, BFO), schema.org, rolurile tematice. Deosebirea: aici mecanismele chiar o citesc la fiecare cerere. |
+
 ## 4. Fazele
 
 | Fază | Ce se face și ce iese |

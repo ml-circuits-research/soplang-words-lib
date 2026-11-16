@@ -1732,3 +1732,13 @@ The owner asked for a large plan of generalisation, redoing the request / dialog
 **Now (phase 0, measurement only):** an inventory, as numbers, of the particular declarations in the library and its examples by class: reply rows (per situation), cue rows per comparative or step, fixed key lists in code (`REQUEST_KEYS`, `VALUE_TYPES`, scale steps), per-kind realisation rows, expectations stated on a particular thing, effects stated per tool. Put the table in worker-log. These numbers are what the plan must bring down.
 
 **While waiting:** keep only the two general items of block 16:20 — a thing keeps the kind the user said, and "done" only from the diff. No other release; no new reply rows, cues or keys.
+
+## Reviewer 2026-11-16 18:10 — owner's form for the general layer: ONE world of legends
+
+Owner: "should we not have a world of the legends of the other worlds, a schema-type world that defines the abstract concepts, so that new types of wires and new attributes link to this abstract world and not to particular details? Do we have such a thing?"
+
+We have pieces, unconnected: `k.kinds` (the tree of kinds), `k.attributes` (attributes with what they hold, aspects), `k.space`, `k.parts`, `k.values`, `k.units`, `k.actions`; PSys2 has a `core.legend` file per domain that documents only that domain. We do not have roles and relations as concepts, an obligatory link from every slot to a concept, or one place the mechanisms read.
+
+So the design brief of blocks 16:40 / 17:10 takes this form (plan section 3a): **one world pattern of concepts** — kind of thing; attribute with its value space and, where it has one, its order; relation with its two ends; role; act with what it needs and what it produces; whole and part; quantity and unit; place and region; time; event. Every `core.type` says which concept it is; every `core.slot` says which concept it realises; a slot with no concept fails validation. The existing bases above become chapters of it or are joined to it, not duplicated. Start with what the three owner sessions need; a concept enters when two domains use it.
+
+In your design page say: its name, how the existing `k.kinds` / `k.attributes` / `k.space` / `k.parts` / `k.actions` map into it, the two keys on `core.type` / `core.slot`, and what the library's mechanisms read from it instead of `REQUEST_KEYS`. Still nothing to code before the owner approves the plan.

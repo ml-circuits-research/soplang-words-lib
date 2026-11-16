@@ -1677,3 +1677,20 @@ The review's main point is right: the course promised stronger guarantees than t
 **Tests of fidelity (replaces my wording in R7).** The read-back round trip checks *consistency of recoding*, not fidelity: a wrong reading can pass it. For fidelity add reference interpretations written by hand, and minimal pairs: two sentences that differ in a negation, a target or a quantifier must give different requests.
 
 Tell me in questions.md which of S1–S12 you think are wrong or already done.
+
+## Reviewer 2026-11-16 16:20 — owner decisions, and a change of working mode after his session of this morning
+
+The owner ran 51 turns on the page this morning and sees no real improvement; some replies said "done" with nothing done. My assessment is in PSys2 worker-tasks, block 10:20: about 12 right of 51. I accepted your releases on your tests; they were right as far as they went, but a release every half hour in answer to one probe sentence is case-driven work. From now: fewer, larger releases, each chosen by how many turns of the owner's three sessions it unlocks (PSys2 will publish right / honest / wrong per session), not by my probes.
+
+**Owner decisions (2026-11-16 08:56):**
+1. **Substitution: do not ask. Do the best you can and say it** (this replaces S10's "needs the user's acceptance" and the course's row). Equivalence silent; approximation and substitution both executed and said once, in the result line.
+2. **A thing keeps the kind the user said.** "put a duck" drawn with the bird's picture is a duck in the state: `drawn as` (and any substitution of realisation) changes how it is made, never what it is. References ("the duck"), attributes said and later acts use the said kind. This is the generic piece behind three turns of the session ("there is no duck here" right after making one). First item for you.
+3. **Everything uniform:** no domain keeps a path of its own; do not ask whether to generalise.
+4. **matrix → schema in code: gradually,** like the world names (new and edited code and docs use `schema`; no mass rename).
+5. **`std.tool.*` stays.** Tools and schemas are different things.
+6. **`ask=` texts are English only, as everything in the core;** they reach other languages through the reply path.
+7. **Terms aligned with ordinary research usage:** "traceability" and "explainability" instead of "honesty"; "register of unsupported cases" instead of "honest list" (same gradual rule as the names; `skills/HONEST-LIST.md` keeps its file name until it is next edited).
+
+**The invariant that must hold in the library, not only in the host:** `sayRequest` cannot produce a "done" line for a change that is not in the diff it was given; a move whose view diff is empty is `nothing_changed` with the reason; a count said ("6 flowers") is the count in the diff. PSys2 found four such replies on the page this morning.
+
+Order now: (a) item 2 above; (b) the invariant; (c) "put X on Y" where X does not exist = make with a place; a fragment continues the last request with the same thing and direction ("down" after "move the house down"); (d) R2, R3, R5; then the rest of R and S as listed.

@@ -2144,3 +2144,18 @@ Open: F2 (8.3), F4 (part), F10, F19, F20, F26–F28, F43 (part), F52–F54; repl
 | Stage 0 of the same experiment: phrasing was only about 12 % of the losses; the rest was missing knowledge, capability and concepts. | No reader, symbolic or learned, rescues a turn whose meaning the description cannot hold. That is why gaps A–BB come before a model. |
 
 So the E1 chapter should say: what the description can hold (from 6.3.2, extended by the replay gaps); the English constructions a symbolic reader covers and how it decides attachment and scope; that a small encoder (DistilBERT/MiniLM class worked well last week for routing: few classes, much data) may propose descriptions in that general vocabulary, never particular keys; that every proposal is verified by resolution in the instance; and what happens when nothing resolves (a precise question, never an execution).
+
+## 2026-11-16 13:45 (Rome) — reviewer: OWNER RULE — no declared limits, no "it cannot be done"
+
+**Owner, just now:** it is forbidden to set limits on what the system can do compared with a language model. We do not know them; declaring them is imposing them. We never declare ourselves beaten in principle; that is unacceptable and harms the project publicly. We do the maximum and look for general solutions. (Stories and poetry like a language model are not the aim; drawing and moving three ducks and running a calendar cannot be that hard.)
+
+What this changes:
+
+| Where | Change |
+|---|---|
+| my 13:35 block, E1 | Withdrawn: "the honest boundary … what this reader will not cover". The reader chapter states what it covers and HOW it is extended to the next construction (data, rule, learned proposer in the general vocabulary), never a list of what it will not do. |
+| the book, R68 (6.8.1) and 6.11 | "Tonul nu poate fi verificat automat în prima versiune" becomes the mechanism for checking tone (a tone space with axes, a measure from the text — word choice, forms of address, sentence length, hedges — compared with the region asked for) and its tolerance. |
+| my review gap BB | "Or an honest refusal" withdrawn: content from another text is a capability to design (statements extracted from the source with their spans, checked against it), not a boundary. |
+| annex D and any "not in the first version", "out of scope", "unsupported" written as a design limit | Replaced by the general solution or by the open design question it is. |
+
+What does NOT change: at run time, for a single request the system cannot yet fulfil, a precise question or a clear statement of what it did is still better than a wrong execution (owner, earlier). That is behaviour on one turn, not a limit of the design; the book must keep the two apart. And every such turn goes to the register of unsupported cases as work to do, with the general mechanism that is missing.

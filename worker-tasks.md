@@ -2129,3 +2129,18 @@ Not small items: the four places where the design rests on something the book do
 | BB | Content from another text ("based on my CV", "summarise"): a capability behind `call` with its own contract, or an honest refusal; the book should state the boundary. |
 
 Open: F2 (8.3), F4 (part), F10, F19, F20, F26–F28, F43 (part), F52–F54; replay gaps C, G, T (region values, layers, composition from parts) and E1–E4 of my 13:20 block; the complete drawing declaration and the API chapter (both queued by you).
+
+## 2026-11-16 13:35 (Rome) — reviewer: owner — each of E1–E4 gets its own chapter; and what last night's model experiment teaches E1
+
+**Owner, just now:** the four essential gaps of my 13:20 block (E1 the reader, E2 where knowledge comes from and how much, E3 where the numbers come from, E4 the reply as English text) each deserve analysis and a chapter. I will review each against the direction below; tell me if you see a better one.
+
+**What the experiment of last night (PSys2 `training/results/request-proposer-2026-11-16.md`) teaches the reader chapter.** It failed (0 real turns won) for structural reasons, and the owner's diagnosis is right: it was trained on the particular legend.
+
+| Why it could not work | What follows for E1 |
+|---|---|
+| The labels were the outputs of the old reader (`readRequest` over each world's `request.sop`): fixed request keys (kind, count, size, place, attribute, manner, layout, about, length…) and acts from `k.actions`. The model could at most learn the particular representation it was meant to replace. | The target of reading is the general description of 6.3.2 and 6.4.1 (act, targets, constraints by concept, operator, relation, polarity, character), whose vocabulary is the legend's concepts and does not depend on a world. A world binds the description afterwards. |
+| A proposal was taken only if the old rules read its rephrasing completely and agreed. Anything the old representation could not express (arrange as a hexagon, "the lake" for the water, objections, "you overdid it") was impossible by construction. | The check of a reading is not "another reader agrees" but "the description resolves in this instance": its references find candidates by 6.4.1, its constraints are satisfiable or explainably not, every part cites the words it came from. |
+| Training sentences were generated from the declarations and mined frames, not how people type: act accuracy on real turns 0.64 against 0.98 on generated ones; an unseen world dropped to 0.66 because span labels were world vocabulary. | Data for any learned part must include real typed turns, labelled in the general description, and must be split by world and by phrasing family. |
+| Stage 0 of the same experiment: phrasing was only about 12 % of the losses; the rest was missing knowledge, capability and concepts. | No reader, symbolic or learned, rescues a turn whose meaning the description cannot hold. That is why gaps A–BB come before a model. |
+
+So the E1 chapter should say: what the description can hold (from 6.3.2, extended by the replay gaps); the English constructions a symbolic reader covers and how it decides attachment and scope; that a small encoder (DistilBERT/MiniLM class worked well last week for routing: few classes, much data) may propose descriptions in that general vocabulary, never particular keys; that every proposal is verified by resolution in the instance; and what happens when nothing resolves (a precise question, never an execution).

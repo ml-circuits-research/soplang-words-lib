@@ -2531,3 +2531,7 @@ The owner decided that nothing of the old system remains: everything runs on the
 ## 2026-11-16 21:50 (Rome) — OWNER: parallel lanes (see PSys2 worker-tasks, same time)
 
 Library lane, now and in parallel with the four area lanes: typed reply assessments for existence (made / removed), relation (in / on / next to) and numeric or time comparison (later, longer, bigger), each like `assessPropertyChange`, so make, remove, place and calendar moves get verified replies. Knowledge lane: general productions from the frame licences covering every basic act and questions.
+
+## 2026-11-16 22:55 (Rome) — OWNER DECISION relayed: SOP-BERT is the only reader of the app
+
+See PSys2 worker-tasks (same time). Stop widening the grammar reader for the app; the generic composition mechanisms may stay in the library but are not the app path. Library effort goes to the request, resolution and assessment mechanisms that every SOP-BERT reading passes through, and to complex commands (several requests, selectors and results, quantifiers, relations).

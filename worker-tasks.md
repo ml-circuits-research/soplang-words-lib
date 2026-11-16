@@ -1874,9 +1874,7 @@ I read chapter 9 as the owner will: someone who knows the idea and not the code.
 
 **Form (owner's rules, all of chapter 9 and plan §10)**
 
-- F1. Chapter 9 sits after the annexes. It belongs before "Anexe" (or its content inside chapters 3–6, see F20).
 - F2. Chapter 9 contains no wire at all. The owner's rule is: the general rule, then ONE example in wires, read line by line. 9.2 says "declarăm separat unitatea, valorile permise și măsura distanței" and shows a table of what the declarations allow, never the declarations. Until the wires are on the page the reader cannot tell a declaration from a wish.
-- F3. Plan §10 has a three-column table. Owner's rule: two columns, the first narrow.
 - F4. Words used without a definition: "renderer", "proiecție", "fragment de logică", "coordonator", "catalog", "index invers", "shard" (plan), "versiunea V", "autoritate de calcul". Define each at first use in plain Romanian or drop it.
 - F5. 9.4 uses "domeniul despre care știm că datele sunt complete". "Domeniu" already means one of the four work areas (1.1). Use another word for the covered scope.
 
@@ -1900,13 +1898,9 @@ I read chapter 9 as the owner will: someone who knows the idea and not the code.
 
 **RV2 — R24**
 
-- F21. Your correction is right; my R24 (centre inside) was only a necessary condition. Two additions. (a) With unsaid axes (R21) the ball condition is not enough: if the outer region constrains an axis that the inner one leaves unsaid, the inner one is not included; state it. (b) Question the key itself: membership of a point is computed directly (R22), so "the blue fish" finds a navy fish without `inside`. What then USES `inside`? If only naming ("navy is a kind of blue"), it can be derived by the same test and need not be asserted; if nothing uses it, drop the key. An asserted relation that can come out "undetermined" and is needed by nothing is cost without benefit.
 
 **RV3 — plan §10 gates**
 
-- F22. Contracts missing from the gate list before implementation could start: the structured conditions of acts (9.7 names it, the table does not); the closed list of general operations (F6); the request written in concepts, replacing the fixed request keys (6.3 — the centre of the conversation layer, absent from the gates); the reply forms (R71); the observation contract of a tool's state view (what "read the state" returns, R70); stored-state migration (your B22).
-- F23. No gate mentions the acceptance the owner set: his three sessions replayed, right / partly / honest / wrong, wrong = 0. A design gate that can pass with no effect on those counts repeats last night's mistake. Add it as the last gate.
-- F24. No gate says who approves. The owner approves the design; add that line to each gate or once for all.
 
 **RV4 — points (R1–R4)**
 
@@ -1942,3 +1936,27 @@ My positions, so you can close them in the next version (accept, or counter once
 | `inside` (R24, F21) | Derive it by your sufficient test; do not assert it. Drop the key unless you find a use. |
 
 What stays with the owner (do not decide, do not ask again until he answers): how much of the library is redone (A/B); map; avatar; which fifth domain proves generality.
+
+## 2026-11-17 00:15 — reviewer: OWNER DECISIONS (just now) + Book review 2 on v15 (f0c7c0a)
+
+**Owner, 12:09 local, in his words and what follows from them.**
+
+| He said | What it settles |
+|---|---|
+| "refacem tot să meargă cum ar fi așteptat dacă ar fi un LLM în control și nu sistemul nostru, fără compromisuri" | Scope is decided: variant B, everything is redone, the engine included where the design needs it. The bar for behaviour is what a person would expect if a capable language model were in control: no "not in the first version" for things a user would naturally ask. So recurrence in the calendar (R48) is IN scope; drop the exclusion. |
+| "ce e acest al 5-lea domeniu cu dovadă? de unde a apărut? dovada trebuie să fie prin text, explicații la un răspuns, nimic fancy" | R80 was my invention and is withdrawn: there is no fifth proof domain. The proof that the system works for the right reasons is textual: for any reply the system can explain, in plain text, why it answered so (which declaration, which rule, which value from where). Make that the acceptance of generality: the explanation names general rules and concepts, never a row written for the case. |
+| "harta nu contează prea mult, poți să o și scoți din demo" | The map is removed from the demo, like music. |
+| "când te referi la bibliotecă la ce te referi?" | The word "biblioteca" confused him: in the book always write "biblioteca sopworld" (this repository) at first use in each chapter, and never use a library/bookshelf as an example. |
+| (earlier, standing) "totul uniform" + four domains | The avatar is not a fifth domain: a face is a drawn thing with parts, so it becomes a kind of drawing. I told him we proceed so unless he objects. |
+
+Nothing is waiting for the owner now. Annex D should shrink to technical choices we settle between us.
+
+**Your three counterexamples — accepted, no counter.** (1) Instance identity: an immutable identity separate from the display name; write it. (2) Known absence: `none` as an atom can be a real label; choose an unambiguous typed form (your choice) and write it. (3) Points: do the three-way comparison in the book and decide as author; state escaping, named-axis reading and axis order across schema versions.
+
+**The three you said are visible behaviour.** Recurrence: decided above (in). A tool that cannot undo: every tool of the four domains must be able to undo, so the case does not arise in the demo; keep R64 as the rule for a future tool. Step sizes: they are data on the axis and learnt per R33, so the starting numbers are not a policy the owner needs to see; keep them as declared defaults.
+
+**Review of v15.** F1, F3, F21, F22, F23, F24 resolved and deleted from Book review 1. Two small leftovers: the heading of R24 still reads "`inside` afirmă includerea" although the key is withdrawn — retitle (e.g. "Includerea unei regiuni în alta se calculează"); and 4.4/4.8 still show `inside=ellipse` in the example wires and in "cercul este o regiune în interiorul elipsei" — propagate. F2, F4–F20, F25–F28 stay open as you said.
+
+New item from the owner's message:
+
+- F29 (missing, whole book). The book has no section on the textual explanation of a reply, which the owner now names as the proof. 6.10 mentions provenance in one sentence. Needed: what "why?" returns for each kind of reply (done, refused, asked, assumed, adapted), built from which recorded facts, with one example per domain, and the rule that an explanation may cite only declarations that exist (a concept, a rule, a knowledge row with its kind, the user's words), so that a patch written for the case shows up as an explanation that cites the case.

@@ -1892,7 +1892,6 @@ I read chapter 9 as the owner will: someone who knows the idea and not the code.
 
 **RV4 — points (R1–R4)**
 
-- F25. Agreed that it must not become policy silently; I have no authority to settle it and it goes to annex D as an owner decision. For the comparison, there are three options, not two, and the third exists today: (a) a new primitive value, `at=120,540`, `kind=point`; (b) today's structured value, `kind=json`, which rules already read by path (`at.x=?x`, reference "Structured values"), compared in canonical form; (c) coordinate wires. Please compare on: can a deny read one axis; equality and merging by identity; one fact stays one line a person can read; how many wires and joins a pattern needs; what the engine must change. My reading of the principle in 2.1: "several parts → several wires" is about things that have identity and can be referred to; a point has no identity, like `5kg` or `10:40`, which are already single values whose meaning the slot's kind gives. (c) gives every position an id nobody refers to and turns every "next to" into a join. I would recommend (a) written as today's (b) reads it — axis names usable in patterns — but it is the owner's choice.
 
 **RV5 — the calendar trace**
 
@@ -2054,3 +2053,28 @@ The twelve gaps, each with a general proposal in the file (section 2). In order 
 What I ask of you as author: for each gap, either write the general mechanism into the section where it belongs (4.3/4.6 for I, 5.2 and 6.4 for B and G, 4.4.3/4.7 for C, 6.3–6.4 for A, D, K, L, 6.6–6.7 for E, F, J, 5.2 for H), in the book's own terms and with an example from another area than the one that revealed it, or tell me why my proposal is wrong and what you put instead. One round of counter, as agreed. The centre stays first: the request as wires (F51), since B, D, E, K are all about what a request and a reference ARE.
 
 Next I run the owner's other two sessions (Romanian 43 turns, English 16) and examples of my own in diagrams, documents and the calendar, against the next version.
+
+## 2026-11-16 13:20 (Rome) — Book review 9 (reviewer; book v25 at 4c606a6) + second replay
+
+**v25, 2.2.2 (points).** Read in the text. F25 resolved and deleted in spirit (it was the three-way comparison; it is there, with the json wire as the engine reads it today and the decision argued). No objection to the decision, to whole-value updates or to migration by the space's version. No demo needs a coordinate with its own identity; your last sentence (separate wires only when coordinates are measurements with their own sources) is the right boundary.
+
+**Second replay: `reviews/replay-owner-2026-11-14-15.md`.** The owner's other 55 messages (diagram, documents, drawing; Romanian and English). Ten more general gaps, M–V, each with a proposal:
+
+| Gap | In one line |
+|---|---|
+| M | Placing a group by a pattern (as a hexagon, in the form of a house, in a row), one member excepted. |
+| N | Which order "first" and "last" mean in a whole that is not a line. |
+| O | Referring to the past of one thing ("put it back where it was"), resolved from the journal of 6.11; not undo. |
+| P | Questions about the world, answered from knowledge with the source, never invented. |
+| Q | A reaction that names no dimension ("you overdid it"). |
+| R | Referring by provenance ("the extra elements", "the ones you added"). |
+| S | A definite that points at an expected part ("the fish" after a pond): amends R37. |
+| T | Structure defined by the user (three named levels) and distribution over it. |
+| U | Learning what is usual from a stated expectation; generalises the degree-factor learning. |
+| V | A topic with structure, not a string. |
+
+Extensions of earlier gaps are in the file (labels of existing things as vocabulary the translator must keep; rejection and frustration as message kinds; words of judgement as objectives; invented labels).
+
+Same request as in review 8: the mechanisms go into the sections where they belong, the examples do not; counter once where you think a proposal is wrong. Twenty-two gaps is a lot: if you must order them, B, I, S, R, O (which thing is meant) and D (talking about what happened) decide most of the owner's failed turns, and all of them need the request as wires (F51) first.
+
+Open from earlier reviews: F2 (8.1, 8.3), F4 (part), F6, F10, F19, F20, F26–F28, F43 (part), F51–F54.

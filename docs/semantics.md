@@ -531,6 +531,7 @@ registers ([reference](reference.md#coredeny)).
 | `excludes` | a wire has a key and a key its slot `excludes` | any change |
 | `open-join` | an issue: a `by=` join whose target with that value is not told yet (shards load in any order); refused only by `check(undefined, { strict: true })`, after `world.closeType(type)`, or at once when the slot says `strict=true` | `world.check()`, a tell's `openJoins` |
 | `retained-revision` | invalid retained JSON or conflicting definition under an existing identity/revision; publication from a validator is refused | retainRevision, state adoption, snapshot restoration |
+| `point-space` | numerical space publication lacks loaded contracts, axes, an explicit root frame or nonempty revisions | retainPointSpace |
 | `reference-calibration` | reference capture lacks its contract/data, has incompatible samples or a nonpositive normalization median | calibrateReference |
 | `request-graph` | structural request inspection found an ownership, variant, span, cycle, reachability or binding issue; not a truth verdict | inspectRequest (transactional failure uses validation) |
 | `validation` | a final-state validator is unavailable, rejects its record, returns an invalid result, throws or attempts reentrant validation | any change or check |

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="dd4fa2c019d5">
+<meta name="source-hash" content="f101409b8e27">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.185.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.186.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -1401,9 +1401,21 @@ print(w.retainRevision(&#x27;example.space&#x27;, &#x27;1&#x27;, {axes: [&#x27;y
 <figure class="code"><figcaption>prints</figcaption><pre><code>true
 [&quot;x&quot;,&quot;y&quot;]
 false</code></pre></figure>
+<h3 id="retainpointspaceworld-id-options">retainPointSpace(world, id, options?)</h3>
+<p>Added with 0.186. Captures a numerical <code>w.legend.space</code> and publishes its immutable definition through <code>world.retainRevision</code>. <code>family</code> selects an aliased legend module; <code>budget</code> bounds validation, capture and retention; <code>dry:true</code> checks publication without inserting it. The result is <code>{ok, created, retained?, violations}</code>. An invalid world, graph space, empty axes, missing root frame or empty space/frame revision is refused.</p>
+<p>The owner key is <code>point.space:</code> followed by the fully qualified space ID; the revision is its decoded <code>version</code>. The deeply frozen definition has <code>format:'sop.point.space'</code>, <code>schemaVersion:1</code>, <code>space:{id,name,version}</code>, <code>frame:{id,name,version}</code>, and <code>axes</code> ordered by declared numeric <code>order</code> (gaps are allowed). Each axis records id/name/order/kind/canonical unit ID, supplied numeric bounds/weight/normalisation/period/step, optional scale, and all its declared units as <code>{id,name,factor,offset}</code> sorted by qualified ID. Missing optional fields stay absent. Numeric spellings normalize to numbers; source declaration order does not affect publication. Subtype-specific extra metadata is not a coordinate contract and is not captured.</p>
+<p><code>w.legend.frame</code> declares a root identity with required <code>name</code> and <code>version</code>; it has no implicit parent or transform. A space's optional typed <code>frame</code> reference becomes mandatory for point publication. Its adapter must explicitly associate that root with its coordinates: the identity alone does not establish an origin in a display, axis orientation, physical truth, or a transformation between roots. Frames can be shared. Their descriptor is captured per space revision, not independently published by this operation.</p>
+<p>Changing axes, units or frame metadata under a published space revision yields a retained-definition conflict. Publish a distinct space revision for changed meaning. Old definitions survive source edits, undo and persistence. This API publishes definitions only: native <code>kind=point</code>, slot revision binding, coordinate indexing, migration, circular metrics and child-frame transforms remain pending. In particular, changing a slot annotation is not yet a supported point migration.</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>const w = new World();
+w.load(&#x27;@use core.use world=w.legend\n@f w.legend.frame name=example.root version=1\n@s w.legend.space name=example.line version=1 form=axes frame=$f\n@a w.legend.axis of=$s name=x order=0 kind=linear unit=$u\n@u w.legend.unit of=$a name=unit factor=1 offset=0&#x27;);
+const result = retainPointSpace(w, &#x27;s&#x27;);
+print(result.retained.owner, result.retained.definition.axes[0].name);
+print(retainPointSpace(w, &#x27;s&#x27;).created);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>point.space:s x
+false</code></pre></figure>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.185.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.186.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

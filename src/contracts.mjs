@@ -137,10 +137,14 @@ export const CONTRACT_MODULES = {
   },
   'w.legend': {
     text: `
-@w.legend.module core.module name=w.legend version=0.175.0 exports=w.legend.act exports=w.legend.condition exports=w.legend.space exports=w.legend.axis exports=w.legend.unit exports=w.legend.concept exports=w.legend.degree exports=w.legend.relation exports=w.legend.role
+@w.legend.module core.module name=w.legend version=0.186.0 exports=w.legend.act exports=w.legend.condition exports=w.legend.space exports=w.legend.axis exports=w.legend.unit exports=w.legend.concept exports=w.legend.degree exports=w.legend.relation exports=w.legend.role exports=w.legend.frame
 @w.legend.link.is core.schema.link on=core.type key=is target=w.legend.concept by=name
 @w.legend.link.means core.schema.link on=core.slot key=means target=w.legend.concept by=name
 @w.legend.link.space core.schema.link on=core.slot key=space target=w.legend.space by=name
+@w.legend.frame.type core.type of=w.legend.frame closed=true shared=true
+@w.legend.frame.name core.slot of=w.legend.frame key=name kind=atom present=true
+@w.legend.frame.version core.slot of=w.legend.frame key=version kind=string present=true
+@w.legend.space.frame core.slot of=w.legend.space key=frame kind=ref to=w.legend.frame
 @w.legend.space.type core.type of=w.legend.space closed=true
 @w.legend.axis.type core.type of=w.legend.axis closed=true shared=true
 @w.legend.unit.type core.type of=w.legend.unit closed=true shared=true

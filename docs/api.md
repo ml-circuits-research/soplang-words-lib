@@ -4332,3 +4332,26 @@ true
 ["x","y"]
 false
 ```
+
+### retainPointSpace(world, id, options?)
+
+Added with 0.186. Captures a numerical `w.legend.space` and publishes its immutable definition through `world.retainRevision`. `family` selects an aliased legend module; `budget` bounds validation, capture and retention; `dry:true` checks publication without inserting it. The result is `{ok, created, retained?, violations}`. An invalid world, graph space, empty axes, missing root frame or empty space/frame revision is refused.
+
+The owner key is `point.space:` followed by the fully qualified space ID; the revision is its decoded `version`. The deeply frozen definition has `format:'sop.point.space'`, `schemaVersion:1`, `space:{id,name,version}`, `frame:{id,name,version}`, and `axes` ordered by declared numeric `order` (gaps are allowed). Each axis records id/name/order/kind/canonical unit ID, supplied numeric bounds/weight/normalisation/period/step, optional scale, and all its declared units as `{id,name,factor,offset}` sorted by qualified ID. Missing optional fields stay absent. Numeric spellings normalize to numbers; source declaration order does not affect publication. Subtype-specific extra metadata is not a coordinate contract and is not captured.
+
+`w.legend.frame` declares a root identity with required `name` and `version`; it has no implicit parent or transform. A space's optional typed `frame` reference becomes mandatory for point publication. Its adapter must explicitly associate that root with its coordinates: the identity alone does not establish an origin in a display, axis orientation, physical truth, or a transformation between roots. Frames can be shared. Their descriptor is captured per space revision, not independently published by this operation.
+
+Changing axes, units or frame metadata under a published space revision yields a retained-definition conflict. Publish a distinct space revision for changed meaning. Old definitions survive source edits, undo and persistence. This API publishes definitions only: native `kind=point`, slot revision binding, coordinate indexing, migration, circular metrics and child-frame transforms remain pending. In particular, changing a slot annotation is not yet a supported point migration.
+
+```js
+const w = new World();
+w.load('@use core.use world=w.legend\n@f w.legend.frame name=example.root version=1\n@s w.legend.space name=example.line version=1 form=axes frame=$f\n@a w.legend.axis of=$s name=x order=0 kind=linear unit=$u\n@u w.legend.unit of=$a name=unit factor=1 offset=0');
+const result = retainPointSpace(w, 's');
+print(result.retained.owner, result.retained.definition.axes[0].name);
+print(retainPointSpace(w, 's').created);
+```
+
+```output
+point.space:s x
+false
+```

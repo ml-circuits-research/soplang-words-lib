@@ -138,6 +138,7 @@ export function stateDiff(before, after, { match = false, keys = null } = {}) {
   for (const [id, t] of A) {
     const o = B.get(id);
     if (!o) continue;
+    if (o.kind !== undefined && t.kind !== undefined && o.kind !== t.kind) changed.push({ id, kind: o.kind, key: 'kind', from: o.kind, to: t.kind }); // a thing that became another kind (a whole made a preset) keeps its id
     for (const k of new Set([...Object.keys(o.attrs), ...Object.keys(t.attrs)])) if (!same(o.attrs[k], t.attrs[k])) changed.push({ id, kind: t.kind, key: k, from: o.attrs[k], to: t.attrs[k] });
   }
   if (!match) return { added, removed, changed };
@@ -151,7 +152,7 @@ export function stateDiff(before, after, { match = false, keys = null } = {}) {
   for (const p of pairs) { if (usedR.has(p.i) || usedA.has(p.j)) continue; usedR.add(p.i); usedA.add(p.j); redone.push({ id: added[p.j].id, was: removed[p.i].id, kind: added[p.j].kind, keys: p.d, r: removed[p.i], a: added[p.j] }); }
   const keySet = keys ? new Set(typeof keys === 'string' ? [keys] : keys) : null;
   const said = [], unsaid = [];
-  for (const x of changed) (keySet && !keySet.has(x.key) ? unsaid : said).push(x);
+  for (const x of changed) (keySet && !keySet.has(x.key) && x.key !== 'kind' ? unsaid : said).push(x); // a change of kind is always said
   for (const x of redone) for (const k of x.keys) (keySet && !keySet.has(k) ? unsaid : said).push({ id: x.id, was: x.was, kind: x.kind, key: k, from: x.r.attrs[k], to: x.a.attrs[k] });
   const out = { added: added.filter((_, j) => !usedA.has(j)), removed: removed.filter((_, i) => !usedR.has(i)), changed: said };
   if (!out.added.length && !out.removed.length && !out.changed.length) out.changed.push(...unsaid.map((x) => ({ ...x, unsaid: true }))); // nothing else changed: the differences are the change (marked `unsaid`: no key asked for changed)
@@ -184,15 +185,18 @@ export function mirrorState(live, view, { catalog = [] } = {}) {
   const joined = joinedKinds(live, catalog); // a thing of a kind taken by join (std.schema.kinds) is an open std.schema.thing of the join's world
   const skipped = [];
   for (const t of readView(view).values()) { // bounded: the things of the view
-    const slots = c.slots.get(t.kind), j = !worldOf.has(t.kind) ? joined.get(String(t.kind)) : undefined;
+    const j = !worldOf.has(t.kind) ? joined.get(String(t.kind)) : undefined;
+    const typed = j?.as !== undefined && c.slots.get(j.as) ? j.as : null; // a joined kind of a type of the world (as=): a thing of that type, with its slots
+    const slots = typed ? c.slots.get(typed) : c.slots.get(t.kind);
     if (!j && (!slots || !worldOf.has(t.kind))) { skipped.push(t.id); continue; }
-    const type = j ? 'std.schema.thing' : t.kind, world = j ? j.world : worldOf.get(t.kind);
-    const attrs = Object.entries(t.attrs).filter(([k, v]) => (j ? !/[^\w.-]/.test(k) : slots.has(k) && !slots.get(k).refs?.length) && k !== 'kind' && k !== 'world' && v !== undefined && v !== null && typeof v !== 'object');
+    const type = typed ?? (j ? 'std.schema.thing' : t.kind), world = j ? j.world : worldOf.get(t.kind);
+    const valueSlot = (k) => slots?.has(k) && (!slots.get(k).refs?.length || slots.get(k).by); // a slot typed by a catalog type with by= holds a value (a name), not a thing
+    const attrs = Object.entries(t.attrs).filter(([k, v]) => (j && !typed ? !/[^\w.-]/.test(k) : valueSlot(k)) && k !== 'kind' && k !== 'world' && v !== undefined && v !== null && typeof v !== 'object');
     const id = /^[A-Za-z_][\w.-]*$/.test(t.id) && !w.has(t.id) ? t.id : null;
     if (!id) { skipped.push(t.id); continue; }
     const line = (list) => `@${id} ${type} kind=${quote(t.kind)} world=${quote(world)}${list.map(([k, v]) => ` ${k}=${typeof v === 'number' ? v : quote(v)}`).join('')}`;
     let r = w.tell(line(attrs));
-    if (r?.ok === false && attrs.length && j) r = w.tell(line([])); // an open thing the world's slots do not take: its kind and world alone
+    if (r?.ok === false && attrs.length && (j || typed)) r = w.tell(line([])); // an open thing the world's slots do not take: its kind and world alone
     if (r?.ok === false) skipped.push(t.id);
   }
   return { world: w, skipped };

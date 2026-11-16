@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.162.0
+
+A whole with slots of parts, from the avatar's turns (PSys2 Q96 slice A1, Q97, Q98) and two wrong executions (r0019, r0129).
+Properties in `test/face-world.test.mjs` over a new example world (`FACE`: one puppet face, parts joined from a small base,
+variants, moods, presets) and the other example worlds.
+
+### New
+- `std.schema.kinds ... as=<type>`: joined kinds are kinds of a type of the world (its slots, its lineage); std.acts makes them
+  as things of it and `mirrorState` tells them so. `canBe(live, predicate, catalog)`.
+- Values of a slot typed by a catalog type (`type= by= match=kind:<k>`) are read, and name their kind ("a big smile").
+- A value with no thing named is a value of the one thing that has its key ("make it happy"); a pronoun never asks for a
+  kind of the world.
+- `refused.can_be` for an unknown kind named for a thing ("make the puppet an emoji"), with what it can be.
+- Phrasal make and remove ("put a hat", "put on glasses", "take off the glasses"), "give her a crown" as a make in a world
+  with no giving, "make the face a robot", the verb's value (`reset` = the declared defaults), "the next / previous <part>"
+  (a cue `on=attribute step= takes=thing`, proposed for w.lang.en), a noun phrase alone as a make.
+- Plural-noun kinds (the language's irregular pair singular = plural) and their replies; plurals of kinds of several words.
+- `stateDiff` reports a change of kind; the reply names the thing by the kind it had.
+- A place with a side ("the corner on the right") keeps the side: composed with the place slot's values, decided by an
+  expectation or asked.
+
+### Fixed
+- The world's own kinds and words come before the catalog's; a world value beats a catalog-only kind of the same spelling.
+- Joined names of several words (quoted in the base) are found by std.acts; a stand-in is planned with its base's whole.
+- The join map is built once per version and shared by forks; the reader's lexicon is memoised with the catalog.
+- "for their grandma do it": the one a thing is for is no topic; its words stay unread and nothing runs (r0019).
+- A fragment that says what the last act cannot take no longer continues it (a remove).
+
 ## 0.161.0
 
 A reply says what the person said in their own words, and a state answer names a lone thing. Properties in `test/said-words.test.mjs` over the example worlds (STORIES, MEADOW, SKETCH, NOTES).

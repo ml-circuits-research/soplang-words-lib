@@ -642,3 +642,33 @@ Open, each with whose it is:
    refuse the whole turn, say so: one line in `planOnce` (act place with a not-honoured place constraint -> `ok: false`).
 3. [KNOW] The reply `done.place.<relation>` rows (into, next to, ...) belong in w.lang.en / w.lang.ro replies; on a
    Romanian turn the move still comes out in English until the region value has a word for `done.change.place`.
+
+## Q95 (worker, 0.162.0) — the avatar's PSys2 Q96 [LIB] list (slice A1), Q97, Q98: what became generic, what is open
+
+Built (CHANGELOG 0.162.0, `test/face-world.test.mjs`, example `FACE` in `examples/tool-app.mjs`): Q96 (1) joined kinds in
+the reader's lexicon; (2) the world's own kinds and words before the catalog's (a std.schema.drawn row is no longer needed
+for a joined kind the world names itself); (3) values of a slot typed by a catalog type, and a value with no thing named is
+a value of the one thing that has its key, never a make of a kind ("make her angry"); (4) joined kinds of several words;
+(5) the verb's value (`reset` = the declared defaults); (6) and (12) phrasal make / remove ("put a hat", "put on X",
+"take off X"); (8) plural-noun kinds and their replies, a change of kind said as the whole ("The face is a boy now.");
+(10) "give her a crown" as a make; (11) joined kinds of a type of the world: `std.schema.kinds ... as=part` (the host's
+world instance should add `as=part` to `j.part` and `as=face` to `j.preset`; then "make green eyes" finds the colour slot).
+Q97 (a) stand-ins and quoted names, a stand-in planned as its base, (b) the join map shared by forks and the lexicon
+memoised per catalog version (a 2,000-row join: first turn ~130 ms, later turns a few ms here); the host can drop its
+stand-in that passes the kinds a turn says. Q98: a joined kind takes the slots of the type it is joined as (`as=`).
+r0019 "for their grandma do it" (unread, nothing runs), r0129 a place with a side.
+
+Open, and why:
+1. Q96 (7) and (9): a second step after a change ("bigger" after "make the eyes bigger", "move it up" twice) — the step is
+   reaction-driven and re-runs the last plan; it needs the reaction to step from the value the thing has now
+   (referencePlan's `stepped` does that for a said size step). Next release, with a property over the shelf and the face.
+2. Q96 (10) second half: "raise the eyebrows" — the verb's own direction (k.actions place `raise`) has no data link to a
+   direction value yet; I propose `k.actions.verb ... direction=up` (as `value=` for reset) [KNOW], and then the library
+   reads it as the place of the step.
+3. [KNOW] rows I used as proposals in `examples/tool-app.mjs` PROPOSED_EN: the cues `step.next` / `step.previous`
+   (`on=attribute step=up|down takes=thing lead=next|previous`), the reply `refused.can_be`, plural-noun irregular pairs
+   (`w.lang.en.irregular singular=eyes plural=eyes`, glasses, ears, eyebrows, cheeks ...), and `<reply>.plural` rows
+   (`done.change.plural` "The {thing} are {value} now.", `refused.no_such.plural`, `done.add.plural` ...: English fallbacks
+   in the library until then). The `about` cue lists `for` as a lead; with prep `for` role=beneficiary the library now keeps
+   "for <possessive> X" unread; a purpose "for the water cycle" stays a topic.
+4. [HOST] Q96 DECISION (the popup's view) is the host's.

@@ -25,25 +25,43 @@ const num = (x) => (x === undefined || x === null || x === '' ? undefined : Numb
 
 const sourceIds = new WeakMap();
 /**
- * The kinds a world takes by join: every `std.schema.kinds world= from=<type> key=name acts= stand_in=<type>` row makes
+ * The kinds a world takes by join: every `std.schema.kinds world= from=<type> key=name acts= stand_in=<type> as=<type>` row makes
  * each row of the type `from` (its `key`, default name) a declared kind with those acts, and each row of `stand_in`
- * a kind drawn as the base its `drawing=` names (a `from` row's own `drawing=` says it too). Returns
- * Map kind -> { acts: Set, world, from, standIn? }; explicit kinds are not in it. `sources`: the live world and the catalog.
+ * a kind drawn as the base its `drawing=` names (a `from` row's own `drawing=` says it too); `as` names a type of the
+ * world the joined kinds are kinds of (they take its slots and its lineage: the parts of a whole, the presets of a
+ * whole). Returns Map kind -> { acts: Set, world, from, as?, standIn? }; explicit kinds are not in it. `sources`: the live world and the catalog.
  */
 export function joinedKinds(live, catalog = []) {
   const srcs = [live, ...[].concat(catalog ?? [])].filter(Boolean);
   const build = () => {
     const out = new Map();
     for (const j of rowsOf(live, 'std.schema.kinds')) {
-      const acts = new Set(j.acts ?? []), from = first(j, 'from'), key = first(j, 'key') ?? 'name', world = first(j, 'world'), stand = first(j, 'stand_in');
-      if (from) for (const r of rowsOf(srcs, from)) for (const n of r[key] ?? []) if (!out.has(String(n))) out.set(String(n), { acts, world, from, ...(first(r, 'drawing') ? { standIn: String(first(r, 'drawing')) } : {}) });
-      if (stand) for (const r of rowsOf(srcs, stand)) for (const n of r.name ?? []) if (!out.has(String(n)) && first(r, 'drawing')) out.set(String(n), { acts, world, from: stand, standIn: String(first(r, 'drawing')) });
+      const acts = new Set(j.acts ?? []), from = first(j, 'from'), key = first(j, 'key') ?? 'name', world = first(j, 'world'), stand = first(j, 'stand_in'), as = first(j, 'as');
+      const was = as !== undefined ? { as: String(as) } : {}; // `as=<type of the world>`: the joined kinds are kinds of that type (its slots, its lineage)
+      if (from) for (const r of rowsOf(srcs, from)) for (const n of r[key] ?? []) if (!out.has(String(n))) out.set(String(n), { acts, world, from, ...was, ...(first(r, 'drawing') ? { standIn: String(first(r, 'drawing')) } : {}) });
+      if (stand) for (const r of rowsOf(srcs, stand)) for (const n of r.name ?? []) if (!out.has(String(n)) && first(r, 'drawing')) out.set(String(n), { acts, world, from: stand, ...was, standIn: String(first(r, 'drawing')) });
     }
     return out;
   };
-  if (!rowsOf(live, 'std.schema.kinds').length) return new Map();
-  const id = srcs.slice(1).map((c) => { if (!sourceIds.has(c)) sourceIds.set(c, sourceIds.size + 1); return sourceIds.get(c) + ':' + (c.version ?? ''); }).join(',');
-  return memoPerWorld(live, `expect|joined|${id}`, build);
+  const rows = rowsOf(live, 'std.schema.kinds');
+  if (!rows.length) return new Map();
+  const id = sourcesKey(srcs.slice(1));
+  return memoPerWorld(live, `expect|joined|${id}`, () => {
+    // shared by every world with the same join rows over the same sources (a fork of the world, the mirror of a state):
+    // built once per version of the sources, not once per fork
+    const types = [...new Set(rows.flatMap((j) => [first(j, 'from'), first(j, 'stand_in')]).filter(Boolean))];
+    const sig = `${id}|${JSON.stringify(rows)}|${types.map((t) => rowsOf(live, t).length).join(',')}`;
+    if (JOINED.has(sig)) return JOINED.get(sig);
+    const out = build();
+    if (JOINED.size >= 64) JOINED.delete(JOINED.keys().next().value); // bounded: the oldest goes
+    JOINED.set(sig, out);
+    return out;
+  });
+}
+const JOINED = new Map();
+/** A key for a list of sources (Worlds or factStores): their identities and versions, for caches built from them. */
+export function sourcesKey(list) {
+  return [].concat(list ?? []).filter(Boolean).map((c) => { if (typeof c !== 'object') return String(c); if (!sourceIds.has(c)) sourceIds.set(c, sourceIds.size + 1); return sourceIds.get(c) + ':' + (c.version ?? ''); }).join(',');
 }
 
 /**
@@ -59,6 +77,8 @@ export function kindLineage(kind, { live = null, catalog = [], drawn = false } =
   add(kind);
   const c = live?._compiled?.();
   if (c) for (const t of c.lineage(String(kind))) if (!/^(std|core)\./.test(t)) add(t);
+  const as = joinedKinds(live, catalog).get(String(kind))?.as; // a joined kind is a kind of the type its join names (as=)
+  if (as !== undefined) { add(as); if (c) for (const t of c.lineage(as)) if (!/^(std|core)\./.test(t)) add(t); }
   const stand = drawn ? joinedKinds(live, catalog).get(String(kind))?.standIn : undefined; // a joined kind drawn as a base (villa -> house): the base and its lineage
   if (stand !== undefined) { add(stand); if (c) for (const t of c.lineage(stand)) if (!/^(std|core)\./.test(t)) add(t); }
   const parents = rowsOf([].concat(catalog ?? []), 'k.kinds.parent');

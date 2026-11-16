@@ -107,8 +107,83 @@ export function necklaceTool() {
   };
 }
 
+// A third example: one puppet face, a whole with slots of parts. Its kinds come from a small catalog by join: every slot
+// is a kind of part (as=part: they take the part's slots), every preset a kind of the face (as=face); each part is worn
+// in a variant of its slot (a slot typed by the catalog's variants, matched by the part's kind), the face has a mood (a
+// value of a whole-level key). FACE_BASE stands for the knowledge base the world joins.
+export const FACE_BASE = String.raw`
+@t.slot core.type of=k.demo.slot
+@t.variant core.type of=k.demo.variant
+@t.variant.slot core.slot of=k.demo.variant key=slot type=k.demo.slot by=name
+@t.preset core.type of=k.demo.preset
+@t.mood core.type of=k.demo.mood
+@sl.mouth k.demo.slot name=mouth
+@sl.eyes k.demo.slot name=eyes
+@sl.nose k.demo.slot name=nose
+@sl.hat k.demo.slot name=hat optional=true
+@sl.glasses k.demo.slot name=glasses optional=true
+@va.smile k.demo.variant slot=mouth name=smile order=1
+@va.grin k.demo.variant slot=mouth name=grin order=2
+@va.pout k.demo.variant slot=mouth name=pout order=3
+@va.round k.demo.variant slot=eyes name=round order=1
+@va.sleepy k.demo.variant slot=eyes name=sleepy order=2
+@va.button k.demo.variant slot=nose name=button order=1
+@va.cap k.demo.variant slot=hat name=cap order=1
+@va.crown k.demo.variant slot=hat name=crown order=2
+@va.specs k.demo.variant slot=glasses name=specs order=1
+@pr.boy k.demo.preset name=boy
+@pr.robot k.demo.preset name=robot
+@pr.old k.demo.preset name=old_woman
+@mo.calm k.demo.mood name=calm
+@mo.happy k.demo.mood name=happy
+@mo.angry k.demo.mood name=angry
+@mo.sad k.demo.mood name=sad`;
+
+export const FACE = String.raw`
+@acts core.use world=std.acts
+@tool core.use world=std.tool
+@w std.schema.world name=puppet doc="an example world: one puppet face; its parts are the slots of a catalog, each worn in a variant"
+@t.face core.type of=face extends=std.schema.thing closed=true
+@s.face.mood core.slot of=face key=mood type=k.demo.mood by=name default=calm
+@k.face std.schema.kind of=face world=puppet acts=change
+@j.preset std.schema.kinds world=puppet from=k.demo.preset key=name acts=make as=face
+@t.part core.type of=part extends=std.schema.thing closed=true
+@s.part.colour core.slot of=part key=colour enum=red enum=blue enum=green enum=black
+@s.part.size core.slot of=part key=size type=k.expect.scale by=step default=default
+@s.part.variant core.slot of=part key=variant type=k.demo.variant by=name match=kind:slot
+@j.part std.schema.kinds world=puppet from=k.demo.slot key=name acts=make acts=remove acts=change as=part
+@h.make std.schema.honours world=puppet act=make on=kind on=attribute on=size
+@h.change std.schema.honours world=puppet act=change on=kind on=attribute on=size
+@h.remove std.schema.honours world=puppet act=remove on=kind
+@op.wear std.tool.op name=wear world=puppet param=preset param=mood effect=changes
+@b.wear std.tool.bind world=puppet act=make of=k.demo.preset op=wear arg=preset<-step.kind arg=mood<-step.mood
+@op.put std.tool.op name=put world=puppet param=part param=variant param=colour param=size effect=changes
+@b.put std.tool.bind world=puppet act=make of=k.demo.slot op=put arg=part<-step.kind arg=variant<-step.variant arg=colour<-step.colour arg=size<-step.size
+@op.off std.tool.op name=off world=puppet param=ids effect=removes
+@b.off std.tool.bind world=puppet act=remove op=off arg=ids<-step.things needs=exists(ids) removes=ids
+@op.set std.tool.op name=set world=puppet param=ids param=colour param=size param=variant param=mood effect=changes
+@b.set std.tool.bind world=puppet act=change op=set arg=ids<-step.things arg=colour<-step.colour arg=size<-step.size arg=variant<-step.variant arg=mood<-step.mood needs=exists(ids)
+`;
+
+/** The face tool: four primitives (a preset worn, a part put on, parts taken off, values set) and its state as facts. */
+export function faceTool() {
+  let face = { id: 'face', kind: 'face', mood: 'calm' }, parts = [
+    { id: 'mouth', kind: 'mouth', variant: 'smile', size: 'default' },
+    { id: 'eyes', kind: 'eyes', variant: 'round', size: 'default' },
+    { id: 'nose', kind: 'nose', variant: 'button', size: 'default' }];
+  return {
+    wear({ preset, mood }) { face = { ...face, kind: preset }; if (mood) face.mood = mood; },
+    put({ part, variant, colour, size }) { const p = parts.find((x) => x.kind === part); if (p) { if (variant) p.variant = variant; if (colour) p.colour = colour; if (size) p.size = size; } else parts.push({ id: part, kind: part, variant: variant ?? null, size: size ?? 'default', ...(colour ? { colour } : {}) }); },
+    off({ ids }) { parts = parts.filter((p) => !ids.includes(p.id)); },
+    set({ ids, colour, size, variant, mood }) { for (const t of [face, ...parts]) if (ids.includes(t.id)) { if (colour) t.colour = colour; if (size) t.size = size; if (variant) t.variant = variant; if (mood) t.mood = mood; } },
+    view: () => [{ ...face }, ...parts.map((p) => ({ ...p }))],
+  };
+}
+
 /** A world from its text. */
 export function exampleWorld(text) { const w = new World(); const r = w.load(text); if (!r.ok) throw new Error(JSON.stringify(r.violations?.[0] ?? r)); return w; }
+/** The catalog rows the face world joins, as a world. */
+export const faceBase = () => exampleWorld(FACE_BASE);
 
 /**
  * Proposed for w.lang.en (not yet published, questions.md Q87): the cue of a question about what a world can do, and
@@ -133,6 +208,11 @@ export const PROPOSED_EN = String.raw`
 @w.lang.en.reply.done.place.into.other w.lang.en.reply name=done.place.into count=other role=thing role=number role=value text="I moved {number} {thing:num=pl} into the {value}."
 @w.lang.en.reply.done.change.size.one w.lang.en.reply name=done.change.size count=one role=thing role=value text="The {thing} is {value} now."
 @w.lang.en.reply.done.change.size.other w.lang.en.reply name=done.change.size count=other role=thing role=number role=value text="I made {number} {thing:num=pl} {value}."
+@w.lang.en.cue.step.next w.lang.en.cue name=step.next on=attribute step=up lead=next takes=thing priority=3
+@w.lang.en.cue.step.previous w.lang.en.cue name=step.previous on=attribute step=down lead=previous takes=thing priority=3
+@w.lang.en.reply.refused.can_be.one w.lang.en.reply name=refused.can_be count=one role=thing role=value role=kinds text="The {thing} cannot be {value}; it can be {kinds}."
+@w.lang.en.irregular.eyes w.lang.en.irregular singular=eyes plural=eyes
+@w.lang.en.irregular.glasses w.lang.en.irregular singular=glasses plural=glasses
 `;
 
 /** The published words a tool session needs, with the proposed ones; null offline. */
@@ -158,5 +238,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   for (const t of ['make a necklace', 'too many', 'more', 'undo', 'what is there?']) {
     const r = n.say(t);
     console.log(`> ${t}\n  ${r.reply.text}\n  beads: ${beads.view().filter((b) => b.kind !== 'tie').map((b) => b.kind + (b.colour ? '/' + b.colour : '')).join(' ')}; ties ${beads.view().filter((b) => b.kind === 'tie').length}`);
-  }
+  }  const face = faceTool();
+  const f = toolSession(exampleWorld(FACE), face, { language, catalog: [language, faceBase()] });
+  for (const t of ['make it happy', 'make an angry boy', 'make the puppet an emoji', 'put a hat', 'give her a crown', 'take off the hat', 'a big smile', 'the next mouth', 'make the eyes big', 'reset the face']) console.log(`> ${t}\n  ${f.say(t).reply.text}`);
+
 }

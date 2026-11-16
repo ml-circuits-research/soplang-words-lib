@@ -2474,9 +2474,85 @@ print(runPlan({ act: 'undo' }, toolBindings(w), tool, { timeline }).ok, balls.le
 true 0
 ```
 
+### A whole with slots of parts: joined kinds as a type, values from a catalog, what a thing can be (0.162.0), canBe(live, predicate, catalog?)
+
+A world instance that takes its kinds from a knowledge base by join can say which of its own types the joined kinds are:
+`std.schema.kinds world= from=<type> key=name acts=... as=<type of the world>`. The joined kinds are then kinds of that
+type: they take its slots (a part's colour, size and variant; a preset's mood), `kindLineage` holds the type, std.acts makes
+them as things of it, and `mirrorState` tells the tool's things of those kinds as things of it, with the values its slots
+take. Without `as=` a joined kind stays an open `std.schema.thing`, as before.
+
+Values the reader takes from declarations and the catalog (`readRequest`):
+- a slot typed by a catalog type and named by a key of its rows (`core.slot of=part key=variant type=<T> by=name`): every
+  row's name is a value of that key. With `match=kind:<k>` a value belongs to the kind its row names by `<k>` (the variant
+  `smile` of the slot `mouth`), so the value alone names the kind: "a big smile" is the mouth, worn as a smile, big. The
+  grades of `k.expect.scale` are read by their cues, not as values;
+- a value of a whole-level key ("make it happy", "make her angry") with no thing named is a value of the one thing of the
+  state that has that key: a change of it. Several such things: not guessed. A pronoun never asks for a kind of the world:
+  with nothing in focus the target is not guessed from the world's declarations, so a value word is never read as a kind
+  made ("make her angry" never makes the world's first kind);
+- the world's own kinds come first: its declared kinds, the kinds it joins, its own `core.word`, then the catalog's
+  expectations; a value of the world beats a kind only the catalog knows of the same spelling ("a crown" of a hat, not the
+  catalog's crown of a tree). Joined names of several words are read and made ("an old woman", "a water lily"; std.acts finds
+  a quoted name);
+- a kind named by a plural noun (the language's irregular pair `singular=eyes plural=eyes`) is one thing: it has no plural
+  of its own, and a reply about one of it is said in the plural (`<reply>.plural` of the language, else an English
+  fallback: "The eyes are big now.", "There are no glasses here."). A capability list says plurals of several words by their
+  last word ("old women").
+
+The verb and the shape of the turn:
+- a verb's sense with a value (`k.actions.verb value=default`: "reset") sets every key of the thing that has a declared
+  default back to it ("reset the face": the mood calm);
+- "put a hat", "put on glasses": a place act said of a kind none of which is there, with no place said, is a make when the
+  world makes that kind (placing needs the thing; making it is how it comes there). A particle of the verb ("put on",
+  "take off") is no preposition;
+- "give her a crown": a verb whose act the world does not have, said with the one it is for (an object pronoun or a
+  reflexive right after the verb) and the thing given, is a make of that thing, when the world makes it;
+- "make the face a robot": a thing there, then a kind of it with an indefinite determiner: the thing is made that kind.
+  "make the puppet an emoji" (a word for the world or a kind, an indefinite determiner, then words the world does not have):
+  `planRequest` refuses with `refused.can_be { thing, value, kinds }` from the declarations (`canBe`): "The puppet cannot be
+  an emoji; it can be a boy, a robot, an old woman." Nothing runs. A world whose things can be nothing else says it did not
+  understand;
+- a noun phrase alone that is no reference to things there ("a big smile") asks for the thing (make), when the dialogue has
+  no act that takes what it says; a value or a step said of things there with no verb ("the next mouth") is a change;
+- "the next mouth" / "the previous mouth" (a cue `on=attribute step=up|down takes=thing`): the thing's slot typed by a
+  catalog type whose rows (of its kind, by `match=`) have an `order` steps to the next or previous value, round the order;
+- a fragment that says what the last act cannot take (values after a remove) does not continue that act; a turn with no verb
+  naming a definite kind other than the last thing is a request of its own.
+
+Two readings that keep words unread rather than guess: a topic cue whose lead is a preposition of the one a thing is for
+(`prep role=beneficiary`: "for") before a possessive determiner ("for their grandma") is no topic, its words stay unread and
+nothing runs; a topic ends before a verb or a pronoun. A place said with a side (a cue's `attribute=`: "the corner on the
+right") keeps the side: the declared value of the place slot that holds it is the place; several are told apart by an
+expectation (`k.expect.value of= on=place when.side=`), else asked (`refused.which`); a slot with no enum takes the side in a
+`side` slot, else the side is named as not taken. `stateDiff` reports a change of a thing's kind (`key: 'kind'`), and the
+reply says it once, naming the thing by the kind it had ("The face is a boy now.").
+
+Joined kinds at scale: the join map is built once per version of the join rows and the sources and shared by every fork
+and mirror; the reader's lexicon is kept per version of the world, its language and its catalog, so a world that joins
+thousands of rows reads them from that index on every turn (the host need not pass the kinds a turn says). A stand-in kind
+(`stand_in=`, a villa drawn as a house) is planned with its base's expectation (`k.expect.make` / `k.expect.part`) when the
+world declares that whole. Example world: `FACE` / `faceTool` / `faceBase` in `examples/tool-app.mjs`; properties in
+`test/face-world.test.mjs`.
+
+```js run
+const base = new World();
+base.load('@t.p core.type of=k.demo.preset\n@p1 k.demo.preset name=boy\n@p2 k.demo.preset name=old_woman');
+const w = new World();
+w.load(`@acts core.use world=std.acts\n@w std.schema.world name=puppet
+@t.face core.type of=face extends=std.schema.thing closed=true\n@s.mood core.slot of=face key=mood default=calm
+@k.face std.schema.kind of=face world=puppet acts=change
+@j std.schema.kinds world=puppet from=k.demo.preset key=name acts=make as=face`);
+print(canBe(w, { of: 'puppet', world: true }, [base]), kindLineage('boy', { live: w, catalog: [base] }));
+```
+
+```output
+["boy","old woman"] ["boy","face"]
+```
+
 ### kindLineage(kind, opts?), joinedKinds(live, catalog?), expectedValue(kind, key, known?, opts?), cutToCount(items, links, n), fillToCount(kinds, n, opts?), notAllOneKind(kinds, pool?), EXPECT_TYPES
 
-`joinedKinds(live, catalog)` is the Map of kinds taken by join (`std.schema.kinds`): kind to `{ acts, world, from, standIn? }`.
+`joinedKinds(live, catalog)` is the Map of kinds taken by join (`std.schema.kinds`): kind to `{ acts, world, from, as?, standIn? }`.
 Knowledge a planner and a binding share (src/expect.mjs). `kindLineage` is the kind and its parents, nearest first
 (see above). `expectedValue` reads conditional expectations, rows `k.expect.when of= key= value= [min= max=
 typical=] if.<key>=<v> if.<key>.min= if.<key>.max=` (and the review's form `k.expect.value [of=] on=<key> value=

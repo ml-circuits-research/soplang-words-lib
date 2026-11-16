@@ -25,8 +25,11 @@ function kindsOf(w, kind) {
   for (const k of w.ofType('std.schema.kind')) if (k.attrs.of?.[0] === kind) for (const world of k.attrs.world) out.push({ type: kind, world, acts: k.attrs.acts || [], aspects: k.attrs.aspects || [] });
   if (!out.length) for (const k of w.ofType('std.schema.kinds')) { // bounded: the declarations, one index lookup each (any kind a knowledge type names)
     const from = k.attrs.from[0], key = k.attrs.key?.[0] || 'name';
-    const look = (q) => [w, ...(w._actCatalog ?? [])].flatMap((src) => (typeof src._matching === 'function' ? src._matching(q) : [])); // the world's own rows, then the catalog's (runWorldPlan sets `_actCatalog`)
-    if (look({ type: from, where: { [key]: kind } }).length) out.push({ type: 'std.schema.thing', world: k.attrs.world[0], acts: k.attrs.acts || [], aspects: k.attrs.aspects || [], open: true });
+    const look0 = (q) => [w, ...(w._actCatalog ?? [])].flatMap((src) => (typeof src._matching === 'function' ? src._matching(q) : [])); // the world's own rows, then the catalog's (runWorldPlan sets `_actCatalog`)
+    const look = (q) => { const r = look0(q); if (r.length) return r; const [[k, v]] = Object.entries(q.where); return /\s/.test(String(v)) ? look0({ ...q, where: { [k]: JSON.stringify(String(v)) } }) : r; }; // a name of several words is stored quoted
+    const as = k.attrs.as?.[0]; // `as=<type>`: the joined kinds are things of that type of the world (its slots), not open things
+    const typed = as && w._compiled().slots.get(as) ? { type: as, open: false } : { type: 'std.schema.thing', open: true };
+    if (look({ type: from, where: { [key]: kind } }).length) out.push({ ...typed, world: k.attrs.world[0], acts: k.attrs.acts || [], aspects: k.attrs.aspects || [] });
     else if (k.attrs.stand_in) { // a kind the catalog does not draw, with a stand-in that it does
       const s = look({ type: k.attrs.stand_in[0], where: { name: kind } })[0];
       if (s) out.push({ type: 'std.schema.thing', world: k.attrs.world[0], acts: k.attrs.acts || [], aspects: k.attrs.aspects || [], open: true, standIn: s.attrs.drawing?.[0] });
@@ -858,6 +861,7 @@ ${calcs.join('\n')}
 @k.kind.aspects core.slot of=std.schema.kind key=aspects many=true
 @k.kind.needs core.slot of=std.schema.kind key=needs many=true
 @k.kinds.aspects core.slot of=std.schema.kinds key=aspects many=true
+@k.kinds.as core.slot of=std.schema.kinds key=as
 @k.view.name core.slot of=std.schema.view key=name id=true
 @k.view.shows core.slot of=std.schema.view key=shows many=true
 @k.view.state core.slot of=std.schema.view key=state

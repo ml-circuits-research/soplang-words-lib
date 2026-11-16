@@ -706,7 +706,9 @@ export function askWorld(question: string, request: Request | null, opts?: { liv
 export function toolSession(live: World, primitives: ToolPrimitives, opts?: { language?: World | null; catalog?: unknown; revisions?: unknown; lang?: string; seed?: number; mirror?: boolean; bindings?: ToolBindings | null }): { say(text: string): { request: Request; revision: object | null; plan: RequestPlan | null; run: ToolRun | null; reply: { facts: object[]; text: string; missing: string[] } }; timeline: ToolTimeline; dialogue: RequestDialogue; bindings: ToolBindings };
 /** A kind and its parents (the world's lineage, the catalog's k.kinds.parent; with `drawn`, what it is drawn as first). */
 export function kindLineage(kind: string, opts?: { live?: World | null; catalog?: unknown; drawn?: boolean }): string[];
-export function joinedKinds(live: World, catalog?: unknown): Map<string, { acts: Set<string>; world?: string; from: string; standIn?: string }>;
+export function joinedKinds(live: World, catalog?: unknown): Map<string, { acts: Set<string>; world?: string; from: string; as?: string; standIn?: string }>;
+/** What a thing can be (0.162.0): the kinds the world makes whose lineage holds the kind named, or, for a word for the world itself (`world: true`), one of its declared kinds. Plain names. */
+export function canBe(live: World, predicate: { of: string; world?: boolean }, catalog?: unknown): string[];
 /** The value a conditional expectation (k.expect.when) gives a key of a thing of a kind. */
 export function expectedValue(kind: string, key: string, known?: Record<string, unknown>, opts?: { live?: World | null; catalog?: unknown; sources?: string[]; lineage?: string[] | null }): { value: unknown; min?: number; max?: number; typical?: number; from: string; because: string[]; of?: string } | null;
 /** The row types of conditional expectations (k.expect.value, k.expect.when). */

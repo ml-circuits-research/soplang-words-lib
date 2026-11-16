@@ -5932,3 +5932,7 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 ## 0.161.0 (2026-11-16)
 - Q96 (8): `about` / `place` constraints keep `said` (operand words); `done.about` takes them. Q96 (9): `askWorld` says `state.count.named` for one thing with a title / name (`opts.nameKeys`); English default before fallback rows. Q96 (2): topic / title changed is said once. Test: `test/said-words.test.mjs` (3).
 - Not done (to Q): (1) title from the made whole's diff attributes, (3) net state of a shortened text, (4) `done.make.whole`, (5) unit plural by default, (6)(7) knowledge-base rows.
+
+## 0.162.0 (2026-11-16)
+- PSys2 Q96 slice A1 [LIB] 1-6, 8, 10-12; Q97 (stand-ins, quoted names, shared join map, lexicon memo); Q98 (`as=`); r0019, r0129. Example world `FACE` (puppet face: parts joined `as=part`, presets `as=face`, variants by `match=kind:slot`, mood). Properties: `test/face-world.test.mjs` (11).
+- Open (questions.md Q95): Q96 (7)(9) second step from the current value; `raise` direction data; KNOW rows (step cues, refused.can_be, plural-noun pairs and replies).

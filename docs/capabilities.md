@@ -871,7 +871,7 @@ make
 
 ## Read, revise, plan and say a request from what a world declares
 
-*In `readRequest`, `requestWires`, `reviseRequest`, `planRequest`, `runPlan`, `capabilitiesOf`, `declares`, `honoursKind`, `joinedKinds`, `sayRequest`, `ASSUMED_SAY`, `ASSUMED_MAX`, `REQUEST_SOURCES`, `REQUEST_KEYS`, `VALUE_TYPES`; since 0.149.*
+*In `readRequest`, `requestWires`, `reviseRequest`, `planRequest`, `runPlan`, `capabilitiesOf`, `canBe`, `declares`, `honoursKind`, `joinedKinds`, `sayRequest`, `ASSUMED_SAY`, `ASSUMED_MAX`, `REQUEST_SOURCES`, `REQUEST_KEYS`, `VALUE_TYPES`; since 0.149.*
 *Works on: the published w.request, w.dialogue (its revision facts), k.expect and the w.lang.en cues; any live world that declares `std.schema.honours`.*
 
 What was asked is a world: "draw a sketch, not circles" is a w.request with act make, target picture and a

@@ -2078,3 +2078,26 @@ Extensions of earlier gaps are in the file (labels of existing things as vocabul
 Same request as in review 8: the mechanisms go into the sections where they belong, the examples do not; counter once where you think a proposal is wrong. Twenty-two gaps is a lot: if you must order them, B, I, S, R, O (which thing is meant) and D (talking about what happened) decide most of the owner's failed turns, and all of them need the request as wires (F51) first.
 
 Open from earlier reviews: F2 (8.1, 8.3), F4 (part), F6, F10, F19, F20, F26–F28, F43 (part), F51–F54.
+
+## 2026-11-16 13:30 (Rome) — reviewer: three instructions from the owner, and the 22 gaps reduced to five
+
+**Owner, just now.**
+
+| He said | What it means for the book |
+|---|---|
+| Only English is part of the core; translation is not the book's problem; a little spell-checking may be. | Gap A is withdrawn except for misspelt and non-standard ENGLISH words. No section on translation. |
+| The library's APIs, described in detail, should be part of the book. | The book needs a chapter on the API of the sopworld library: for each call, what it is for, what it takes and returns, one example with its output, and its place among the mechanisms explained before (the world: load, tell, ask, query, open keys, complete, solve, fork, undo, register; the conversation layer as it will be). Today's calls are in `docs/api.md`; mark what exists and what is proposed, as in chapters 2–3. Explained, not listed: the owner rejected lists. |
+| 22 mechanisms seem too many; are there generalisations of which they are particular cases? Tell the session to generalise where possible. | See below. |
+
+**My attempt at the generalisation: `reviews/replay-generalisation.md`.** Five mechanisms and one shared structure:
+
+| Mechanism | What it absorbs |
+|---|---|
+| 1. One rule for finding what was named: the nearest match within a tolerance — the rule the book already has for values, applied to things, sources, past values, order, parts, expected parts, senses, words, realisations. | B, R, O, N, H, S, L, G, what is left of A. |
+| 2. Whatever has values is a space, the kind included; a value may be a point or a region. | I (becoming something else is a change of the kind slot: no fifth basic change), C (area-like things), T. |
+| 3. Every operation on a whole and every reaction is a re-completion under a cost: which roles are freed, which cost term is added. | F, M, E, Q, J, "keep". |
+| 4. The journal is a world: messages about what happened are ordinary acts, references and questions on it. | D, K, O, P. |
+| 5. The user teaches the instance with the same kinds of fact knowledge has (names, regions, usual values, factors). | B (alias), T, U. |
+| Shared structure: the description (kind, qualities, relations), the same for a request, a reference and a topic. | V, and it is what F51 asks to see as wires. |
+
+What I ask of you: test this reduction, do not adopt it on my word. For each of the five, try to state it in the book's terms in one paragraph plus one table; find the gap that does NOT fit and tell me; if you see a better cut (fewer, or differently divided), take yours and say why. The check for any version: every owner turn of the two replay files still derives, and no table row needs a sentence about its own example.

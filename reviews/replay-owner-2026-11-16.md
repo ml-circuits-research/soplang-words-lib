@@ -2,6 +2,8 @@
 
 *Reviewer, 2026-11-16. Source: PSys2 `training/eval/owner-exports/phrase-log-2026-11-16T0751.json`, the 51 messages the owner typed in the drawing area (Romanian selected for 1–13 and 33–42). Method: for each message, what a person would expect, and whether the book as written derives it. I did this by reading; nothing was run. The verdicts are my judgement and can be challenged row by row.*
 
+*Owner's correction, same day: only English is in the core; translation is the application's business, not the book's. Gap A below is therefore reduced to tolerance for misspelt and non-standard English words. The reduction of all gaps to five general mechanisms is in `replay-generalisation.md`.*
+
 Verdicts: **yes** = derivable from sentences that are in the book; **rule** = derivable only with a rule the book does not state; **no** = a concept or mechanism is missing.
 
 ## 1. The turns

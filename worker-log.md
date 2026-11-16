@@ -5962,3 +5962,10 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Owner request: verify a minor documentation commit and push. Added `WORKER-HANDOFF.md` with links to the existing control-task and progress protocol; runtime unchanged.
 - Base commit: `294a59003051`. Checks: `npm test` and `SOPWORLD_BUNDLE=1 npm run test:src` both passed (648 pass, 0 fail, 1 skip, 1 todo each); `npm test` rebuilt docs. `git diff --check` and `git push --dry-run origin main` passed.
 - The entry and document share one commit, identifiable with `git log -- WORKER-HANDOFF.md`.
+
+## 2026-11-16 — G0: book review, round 1
+
+- Owner authorized the book/question/reviewer cycle; runtime refactoring remains unapproved. Reviewed book v12 and both refactoring plans at de1175d. Published B01–B23 under questions.md / Book: conceptual contracts, counterexamples, domain completeness, conflicting plan decisions and acceptance traceability. The book and reviewer task list were not edited.
+- The three implementation-conformance checks from reviewer 22:50 remain pending: this round prioritizes the owner's new conceptual-completeness request and makes no exhaustive code-conformance claim.
+- Next cycle: fetch reviewer changes; compare each answer with revised book sections; remove only resolved questions, retain unresolved ones and add focused follow-ups. No automatic implementation authorization.
+- Validation: `git diff --check`; `npm test` and `SOPWORLD_BUNDLE=1 npm run test:src`: each 650 tests, 648 pass, 0 fail, 1 skipped, 1 todo. Build produced no tracked changes.

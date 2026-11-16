@@ -672,3 +672,147 @@ Open, and why:
    in the library until then). The `about` cue lists `for` as a lead; with prep `for` role=beneficiary the library now keeps
    "for <possessive> X" unread; a purpose "for the water cycle" stays a topic.
 4. [HOST] Q96 DECISION (the popup's view) is the host's.
+
+## Book
+
+### Round 1 — specification completeness and refactoring alignment
+
+Reviewed book version 12 at `de1175d`, together with both refactoring documents. Owner instruction: prioritize a conceptually independent, explanatory specification; the reviewer improves the book. These are open questions, not implementation orders. Please answer through revised book text and a response in worker-tasks.md. Questions remain until the revised text resolves them.
+
+#### B01 — Specification authority
+
+**Location:** 1.3; refactoring changes §3.1, §8.
+
+Chapters 2–3 describe the implementation today; chapters 5–7 mix present and proposed behavior. Can the book state the intended semantics independently of current code, with implementation status in a separate conformance appendix? Which statement wins when current behavior contradicts a target rule? Please distinguish required behavior, example, policy choice and unresolved decision. Otherwise refactoring cannot use this as its acceptance specification.
+
+#### B02 — Points and repeated values
+
+**Location:** 2.1–2.2; 3.2; 4.8.
+
+The fish example gives `at=120,540` geometric meaning, while §2.2 calls it an atom and §3.2 uses repeated numbers. What is the canonical point representation, axis identity and equality? Are repeated values a set, multiset or ordered sequence? Show two equal coordinates, reordered coordinates, an omitted axis and an extra axis. This determines whether position survives serialization and composition.
+
+#### B03 — Identity and lifetime
+
+**Location:** 2.4–2.6; 5.3.
+
+Types are names, facts and schema have separate ids, and cross-world links identify concrete things. What does a reference denote when a fact and schema wire share an id? What happens on deletion, copying, import, rename and reload? Can a reference be unresolved temporarily, and when must it fail? Please specify identity without relying on a host constructor.
+
+#### B04 — Unknown, false and completeness
+
+**Location:** 3.3–3.6; 3.9–3.10.
+
+An absent value is unknown and an explicit negative must be written, but what is its exact form and scope? How do explicit negation, absence of a match, a complete type and an open slot interact? Give truth tables and a meeting example with unknown duration, known absence and contradictory evidence. Define which constraints are relevant to a change, including other meetings sharing its room.
+
+#### B05 — Ontology coverage and bootstrap
+
+**Location:** 4.2–4.3; 4.7–4.8.
+
+The concept list is called complete, yet §4.8 declares only spaces, axes, regions, degrees and acts. Where are concept identity, roles, relation endpoints, quantities/units, statements, scope, resources and constraints declared? How does the legend describe its own types without infinite recursion? Please give a dependency map and explain which apparent overlaps are specializations (duration as quality/time, participant as role/belonging, order as place).
+
+#### B06 — Numeric metric and regions
+
+**Location:** 4.4; 4.8.
+
+Distance and nearest realizable point are promised, but axes have no unit/weight and a region has one `spread`. How are units normalized, circular distances computed, missing dimensions handled and boundary membership decided? Can regions overlap or be disconnected? Is `inside` asserted or proven? Show the numeric result for a circular hue boundary and a tie between equally near feasible values.
+
+#### B07 — Graph meaning and unknown concepts
+
+**Location:** 4.4.
+
+The book says that if no graph for memo is known, the closest is a short letter. Against what representation can distance to an unknown memo be computed? Specify graph identity, required versus optional parts, edge labels, graph distance, ties and refusal when evidence is absent. A shared number of parts must not silently substitute a different intent.
+
+#### B08 — Comparison and learning
+
+**Location:** 4.5; 6.5.
+
+The first comparison source with something to say wins; comparative steps allegedly need no comparison class. What statistic defines the reference for several objects, what determines the numeric step, and what happens with zero, negative, extreme or single observations? Does bigger mean an additional request or evidence that the previous interpretation was wrong? Specify learning scope, provenance, undo and promotion to shared knowledge with one numeric worked example.
+
+#### B09 — Formal acts and authorization
+
+**Location:** 4.6; 4.8.
+
+`before="object exists"` and `after="object is at goal"` are prose. What structured propositions express conditions, effects, unchanged properties and role binding? Does asking to move an absent named object authorize creating it, or require clarification? Show how copy/swap are derived, including preservation of identity and references, and how planning terminates when prerequisites cycle.
+
+#### B10 — Inheritance and exceptions
+
+**Location:** 5.2–5.3.
+
+All kinds form one tree, with inherited capabilities, realizations and defaults. How are orthogonal classifications represented, and how are conflicting inherited defaults resolved? Distinguish semantic kind inheritance from type inheritance and a visual substitute. What proves that a restriction is compatible, and which hard rules may never be overridden? Give a legitimate particular exception so the generality lint does not reject useful knowledge.
+
+#### B11 — Spatial frames and time
+
+**Location:** 4.7; 7.4.
+
+Near, above, afternoon and later need a reference frame. Define origins, axis direction, units, containing frames and conversion. For calendar specify date, time zone, daylight-saving ambiguity, interval boundaries and recurrence exceptions. Is a room free when one meeting ends exactly when the next begins? What happens when tomorrow has two occurrences of the requested local time?
+
+#### B12 — Norms versus facts
+
+**Location:** 1.4; 5.1; 6.9.
+
+Fish in the sky is an allowed override of common sense in §1.4, but §6.9 uses it as an example of invalid observed state. Is this a soft issue or a hard violation? Which declaration turns a fact/norm into hard or soft policy, for which context? Likewise are every letter signature and every single-start flow structural requirements or defaults?
+
+#### B13 — Interpretation and ambiguity
+
+**Location:** 6.2–6.4.
+
+What is the contract from utterance to request when several readings are possible? Define attachment, quantifier/negation scope, unread words and confidence independently of the current parser. Show two readings of a request about red and blue nodes, and state when execution must wait. How does a user answer an old question after changing topic, and when does its context expire?
+
+#### B14 — Approximation policy
+
+**Location:** 1.4; 6.1; 6.5; 7.4.
+
+An occupied explicit time requires confirmation, while later can choose a nearby free time. Exactly what authorizes approximation, where is tolerance declared, and can a user override it? Distinguish hard intent from preference, numerical closeness from semantic acceptability, and zero tolerance from an absent tolerance. Give acceptance/refusal boundaries.
+
+#### B15 — Domain and cross-world selection
+
+**Location:** 2.6; 5.3; 6.1.
+
+Capabilities select a domain, but what if drawing and diagram both support red circles, or a chart reads calendar and writes diagram? Define ambiguity handling, explicit target precedence, read/write ownership and snapshot consistency across worlds. Is the chart a snapshot or a live view, and what happens when a source meeting is removed?
+
+#### B16 — Independence and transactions
+
+**Location:** 6.6; 6.9.
+
+Partial execution is permitted for independent requests. How is independence proven across resources, shared derived facts and indirect constraints? Unknown dependence must have an outcome. Define when the snapshot becomes stale, revalidation, retries/idempotence, compensation failure and observable state after each failure. How does one undo step work if one participating tool cannot undo?
+
+#### B17 — Revisions and undo
+
+**Location:** 6.4; 6.9.
+
+A reaction replaces the corrected step rather than adding one. After make, bigger, a manual move, and bigger again, which objects and properties does undo restore? Does learned preference revert too? Define boundaries between revision, a new act and an answer to a question, including changes from another domain.
+
+#### B18 — General reasoning versus domain functions
+
+**Location:** 6.8; 7.3; 7.5.
+
+§6.8 permits domain searches for a free position, layout and composing text; §7.5 forbids domain code from choosing place and values. Where exactly is the boundary? Define function inputs, outputs, constraints, evidence and failure. What knowledge allows compose to produce a letter without inventing claims, and how is its output checked for topic, length and tone?
+
+#### B19 — Honest answers and observability
+
+**Location:** 4.6; 6.9–6.10.
+
+A postcondition can already hold before execution, and another actor can cause a matching change. How do responses distinguish already satisfied, changed by this request, partial success and unknown outcome? Define the observation contract, relevant unchanged fields, provenance and non-action reply forms (questions, refusals, explanations). One frame per act alone does not explain these outputs.
+
+#### B20 — Complete domain examples
+
+**Location:** 7.1–7.4.
+
+Chapter 7 calls each block the whole declaration, and the calendar says nothing more is needed after the denies. Yet executable contracts require imported concepts, units, resources, tool bindings, state observation and language/knowledge dependencies. Can each example identify every dependency and trace one success, ambiguity, missing value, hard failure and undo, with concrete before/request/plan/after data? Mark schematic excerpts explicitly until complete.
+
+#### B21 — Refactoring traceability and stale decisions
+
+**Location:** refactoring/plan-generalizare.md §§4,6; sop-worlds-schimbari.md §§5.3,8; book §§1.3,7.
+
+The phase plan still orders avatar among four domains and per-message language detection, whereas the changes document has drawing/diagrams/documents/calendar, leaves avatar undecided and uses the language selector. It also points to old course lessons. Which plan is authoritative? Please reconcile both and map every task to stable book requirement ids, dependencies, evidence and an approval gate. Phase 0 marked done needs its actual inventory references.
+
+#### B22 — Acceptance and migration
+
+**Location:** refactoring changes §§3.1,7–8; book §7.5.
+
+Keeping engine tests unchanged conflicts with intentionally changing fact/pattern semantics and validation outcomes. Which tests assert enduring semantics and which record old behavior? Specify version/pin migration, stored-state compatibility and failure recovery across the three repositories before removing the old path. Keep removed-domain cases separately counted so improved percentages cannot come from changing the denominator. How will the calendar demonstrate generality when it already guides the design?
+
+#### B23 — Completion criterion for this review
+
+**Location:** 1.3; Annex C; refactoring §8.
+
+Can we define book readiness as: every concept defined without circular references, each normative rule linked to examples and counterexamples, every example dependency explicit, every unresolved choice recorded, and every refactoring task mapped to approved requirements? Please distinguish editorial clarity from design approval and implemented conformance; a passing current test cannot establish the intended semantics.

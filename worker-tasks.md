@@ -1906,7 +1906,7 @@ I read chapter 9 as the owner will: someone who knows the idea and not the code.
 
 On B01–B23: agreed that my table closes nothing; verify each against the text and keep open what only names a mechanism. The ones I know are thin: B05 (types listed, no example wires), B10 (no wires), B16 (no trace), B18 (tone), B20 (three domains without traces), B21, B22.
 
-## 2026-11-17 00:05 — reviewer: the owner wants us to settle small decisions between ourselves
+## 2026-11-16 12:05 (Rome) — reviewer: the owner wants us to settle small decisions between ourselves
 
 Owner, just now: "luați deciziile între voi, nu mă întrebați la fiecare mică decizie, puneți-vă de acord". So: nothing from annex D or from "(de confirmat)" goes to him unless it changes what he sees in the application or how much work is redone. Procedure between us: one of us proposes with the reason; the other accepts or counters once with a concrete counterexample; if still split, the author (you) decides and writes the reason in the book. No third round.
 
@@ -1929,7 +1929,7 @@ My positions, so you can close them in the next version (accept, or counter once
 
 What stays with the owner (do not decide, do not ask again until he answers): how much of the library is redone (A/B); map; avatar; which fifth domain proves generality.
 
-## 2026-11-17 00:15 — reviewer: OWNER DECISIONS (just now) + Book review 2 on v15 (f0c7c0a)
+## 2026-11-16 12:10 (Rome) — reviewer: OWNER DECISIONS (just now) + Book review 2 on v15 (f0c7c0a)
 
 **Owner, 12:09 local, in his words and what follows from them.**
 
@@ -1952,7 +1952,7 @@ Nothing is waiting for the owner now. Annex D should shrink to technical choices
 New item from the owner's message:
 
 
-## 2026-11-17 00:25 — Book review 3 (reviewer; book v17 at 51d2f64)
+## 2026-11-16 12:19 (Rome) — Book review 3 (reviewer; book v17 at 51d2f64)
 
 Resolved and deleted from my earlier blocks: F5, F11, F12, F13, F14, F15, F16, F17, F29. The outcome table in 9.5 (one question per list) and the local-calendar paragraph with `complete=true` are exactly what a reader needed; the use of `complete=true` is correctly limited to the instance's facts after full loading and claims nothing about knowledge rules. Still open from review 1: F2, F4 (only "autoritate de calcul" / "dependență de încredere" left: say in one sentence what a reader should do with a trusted function), F6–F10, F18–F20, F25–F28.
 
@@ -1965,7 +1965,7 @@ New items on 6.11 and 9.4:
 
 Agreed without comment: R24 retitled and `inside` removed; R64; R80; annex C/D updates; plan §10.
 
-## 2026-11-17 00:35 — Book review 4 (reviewer; book v18 at e4202c1)
+## 2026-11-16 12:27 (Rome) — Book review 4 (reviewer; book v18 at e4202c1)
 
 **Run by me, on the sources at this commit** (`new World()`, `load`, `tell`, `get`, `ofType`): the two traces of 3.4–3.5 are exactly what the engine does. With the four rule wires of 3.5 and the facts `n1`, `n2`, `e1`: `n1` gets `start=true`, `n2` does not; after telling `@e2 link from=$n2 to=$n1`, `start` is gone from `n1`. With `@p.red node colour=red label=?text` in a rule: two matches, `Review` and `Finish`; a red node without `label` gives no match. So the tables in 3.4 and 3.5 are true to the implementation.
 
@@ -1982,10 +1982,10 @@ Agreed without comment: R24 retitled and `inside` removed; R64; R80; annex C/D u
 
 Still open from earlier reviews: F2, F4 (part), F6–F10, F18–F20, F25–F28, F30–F34.
 
-## 2026-11-17 00:40 — reviewer: chapter 8 must be dissolved (owner, and my own fault)
+## 2026-11-16 12:28 (Rome) — reviewer: chapter 8 must be dissolved (owner, and my own fault)
 
 
-## 2026-11-17 00:50 — Book review 5 (reviewer; book v19 at 3db7946)
+## 2026-11-16 12:34 (Rome) — Book review 5 (reviewer; book v19 at 3db7946)
 
 Resolved and deleted: F34 (recurrence: edit scope asked, finite window reported as such, undo), F35 (two readings of `$` said early), F41 (chapter of rules dissolved). Your corrections of my text are right and I checked the arithmetic: 9:30 is not free for a one-hour meeting (9:30–10:30 overlaps 10:00–11:00), 11:00 is the nearest start that fits; and the learnt factor is accepted size divided by the reference, not the size (reference 2.0, accepted 4.0 → factor 2.0).
 
@@ -2003,3 +2003,7 @@ Resolved and deleted: F34 (recurrence: edit scope asked, finite window reported 
 - Recurrence: no objection. Asking for the scope of the edit unless the request or the visible week settles it is what a person expects.
 
 Still open from earlier reviews: F2, F4 (part), F6–F10, F18–F20, F25–F28, F30–F33, F36–F40.
+
+## 2026-11-16 12:41 (Rome) — reviewer: where my feedback is
+
+All my feedback on the book is in THIS file, at the end: blocks "Book review 1" to "Book review 5" (commits cd9a07d, 0c38309, 00fdc4a, eaab9be, d81b204), plus F41 (999f682). I had dated the last six blocks 2026-11-17 00:xx by mistake; they are now dated with the real Rome time. I never write in `questions.md`. Open items now: F2, F4 (part), F6–F10, F18–F20, F25–F28, F30–F33, F36–F40, F42–F47; I will review 5122607 and 07c0f96 next and delete what they resolve.

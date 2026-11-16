@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 26, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 27, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -1366,7 +1366,7 @@ Aceste legări le face lumea limbii, prin reguli generale de gramatică, nu fiec
 
 **Cum știm că citirea este bună.** Sunt două verificări diferite și niciuna nu o înlocuiește pe cealaltă. Prima se face la fiecare mesaj: cererea este spusă înapoi în cuvinte și citită din nou; dacă iese altă cerere, citirea este nesigură. A doua se face la măsurare: citirea este comparată cu interpretarea corectă, scrisă de un om, pe exemple și mai ales pe perechi ca cele din tabel.
 
-**Ce se face când ceva nu a fost înțeles.** Dacă rămân cuvinte necitite într-un loc care contează, cererea nu se execută; aplicația spune ce nu a înțeles, cu cuvintele omului. A executa jumătate de propoziție și a tăcea despre rest este mai rău decât a refuza. Un cuvânt scris greșit este corectat numai dacă nu este cunoscut de nicio sursă și există un singur candidat limpede; altfel „villa” ar deveni „via”. Limba mesajului este cea pe care omul a ales-o în aplicație.
+**Ce se face când ceva nu a fost înțeles.** Dacă rămân cuvinte necitite într-un loc care contează, cererea nu se execută; aplicația spune ce nu a înțeles, cu cuvintele omului. A executa jumătate de propoziție și a tăcea despre rest este mai rău decât a refuza. Un cuvânt scris greșit este corectat numai dacă nu este cunoscut de nicio sursă și există un singur candidat limpede; altfel „villa” ar deveni „via”. Nucleul citește engleză; alegerea limbii interfeței și traducerea sunt responsabilități ale aplicației, în afara acestui contract.
 
 ### 6.3.1 Interpretări candidate și clarificarea ambiguității
 
@@ -1405,7 +1405,7 @@ Următoarea formă este propusă pentru mesajul „draw three big red fish in th
 @c.place std.request.constraint request=$r1 target=$fish1 concept=place operator=relation relation=in goal=$pond1 scope=each polarity=positive character=requirement source=$src1 source.start=24 source.end=35
 ```
 
-`src1` păstrează textul de intrare după traducerea de la granița sistemului, dacă traducerea a fost necesară. Intervalele de proveniență sunt poziții de caractere, de la zero, cu sfârșitul exclus, în acest text exact. Într-o implementare multilingvă, legătura cu fragmentul original trebuie păstrată de traducător; aceste intervale nu se aplică automat textului original într-o altă limbă. `r1` identifică cererea și actul general `make`.
+`src1` păstrează textul englez primit de nucleu. Intervalele de proveniență sunt poziții de caractere, de la zero, cu sfârșitul exclus, în acest text exact. `r1` identifică cererea și actul general `make`.
 
 `fish1` desemnează grupul de rezultate noi, nu un pește deja creat. `pond1` este o descriere de căutare: iazul trebuie să existe și să fie identificat univoc. Dacă sunt două iazuri și contextul nu le deosebește, cererea rămâne nerezolvată și aplicația întreabă; nu schimbă `mode=existing` în `mode=new` pentru a evita ambiguitatea.
 
@@ -1418,7 +1418,7 @@ Următoarea formă este propusă pentru mesajul „draw three big red fish in th
 
 `operator` selectează verificarea cerinței, nu o unealtă: egalitate de cantitate, calcul de grad, apartenență la regiune sau relație. `polarity=positive` cere satisfacerea ei; `negative` cere ca predicatul să fie fals. `character=requirement` exprimă obligația, `preference` o preferință care poate ceda cerințelor, iar `assumption` o alegere a aplicației pentru o informație omisă. Negarea nu slăbește obligația: „no circles” poate fi o cerință negativă tare a cererii. O presupunere nu inventează un interval în mesaj: ea indică declarația sau pasul de justificare care a propus-o.
 
-Schema trebuie să verifice variantele operatorului. `relation` cere `relation` și `goal`; `eq`, `degree` și `region` cer o valoare de tipul acceptat de concept. O cheie `goal` rămasă pe o egalitate numerică este o eroare de schemă a cererii. Rezolvitorul păstrează separat descrierea țintei, identitățile găsite și versiunea stării citite. Această legare permite verificarea fiecărui rezultat și explicarea unei ambiguități fără modificarea sensului inițial al cererii.
+Schema trebuie să verifice variantele operatorului. `relation` cere `relation` și `goal`; `eq`, `less.equal`, `degree` și `region` cer o valoare de tipul acceptat de concept; `less.equal` este admis numai pe valori ordonabile, în unități compatibile. O cheie `goal` rămasă pe o egalitate numerică este o eroare de schemă a cererii. Rezolvitorul păstrează separat descrierea țintei, identitățile găsite și versiunea stării citite. Această legare permite verificarea fiecărui rezultat și explicarea unei ambiguități fără modificarea sensului inițial al cererii.
 
 Să urmeze mesajul „in the sky”. Situarea din secțiunea 6.4 îl leagă de locul grupului de pești din ultima cerere. În versiunea nouă a acelei cereri, se adaugă sursa și ținta cerute de corectare, iar `c.place` este înlocuit, păstrându-și identitatea:
 
@@ -1594,6 +1594,57 @@ Planul alege între lucruri cu înțeles diferit; funcția caută înăuntrul al
 Dacă planul cere ca peștele să fie în iaz, `free_spot` nu poate răspunde cu o poziție pe cer pentru că acolo a găsit loc. Poate returna un punct verificabil în regiunea permisă sau poate declara că nu a găsit o soluție. Distincția dintre căutare epuizată și imposibilitate demonstrată rămâne cea din secțiunea 8.5.
 
 Pentru `compose`, verificarea afirmațiilor cere identificarea surselor, nu doar compararea unor cuvinte. Dacă această verificare nu este disponibilă pentru o proprietate, răspunsul trebuie limitat la proprietățile efectiv verificate. Lungimea măsurată a textului nu dovedește că tonul cerut a fost respectat și nici că afirmațiile sunt justificate.
+
+### 6.8.2 Catalogul operațiilor generale
+
+Un concept nou nu adaugă singur o putere nouă programului. Dacă autorul declară o culoare, sistemul o poate folosi fiindcă știe deja să compare valori și să verifice apartenența la o regiune. Dacă autorul scrie numele unei operații de recunoaștere a unei imagini, acel nume nu produce un recognoscător. Pentru a deosebi aceste situații trebuie fixat vocabularul de operații pe care declarațiile îl pot cere.
+
+Catalogul de mai jos este contractul propus al programului general. Este închis pentru această versiune a proiectului: o declarație poate compune operațiile din el, dar nu poate introduce printr-un nume nou o semantică executabilă. Nu este lista API-urilor implementării actuale și nici lista verbelor omului. `make`, de exemplu, este un act definit prin condiții; realizarea lui folosește potrivire, verificare, planificare și apelul unei unelte. Operațiile de mai jos lucrează cu valori tipizate, fire, scheme și versiuni de stare.
+
+| Operația generală | Intrări și rezultat |
+|---|---|
+| `value` | Un operator scalar din lista `add`, `subtract`, `multiply`, `divide`, `min`, `max`, `equal`, `less`, `less.equal`, `and`, `or`, `not`, plus operanzi tipizați. Întoarce o valoare ori o eroare de tip/domeniu; nu modifică starea. |
+| `collect` | O colecție finită, o selecție și una dintre operațiile `filter`, `project`, `distinct`, `join`, `count`, `sum`, `median`, `order`. Întoarce colecția, scalarul sau ordinea cerută, cu identitățile și sursele păstrate. |
+| `match` | O stare identificată prin versiune, un model de fire și legături inițiale pentru variabile. Întoarce legături compatibile și firele care le susțin, plus dacă enumerarea este completă. |
+| `traverse` | Un graf declarat, nodurile de pornire, direcția și etichetele admise ale muchiilor, limita de adâncime. Întoarce noduri și căi justificative; vizitele repetate nu deschid o buclă infinită. |
+| `space` | Un spațiu declarat, valori compatibile și una dintre operațiile `contains`, `distance`, `step`, `convert`. Întoarce apartenență, distanță, valoare deplasată sau valoare convertită, conform axelor, metricii și conversiei declarate. |
+| `derive` | O stare, reguli și un buget. Întoarce faptele derivate și proveniența lor, indicând dacă a atins punctul fix sau s-a oprit la buget. |
+| `validate` | O stare sau o cerere, schema și constrângerile aplicabile. Întoarce încălcările, proprietățile neverificate și domeniul verificării; absența încălcărilor nu ascunde o verificare incompletă. |
+| `fork` | O versiune de stare și un set propus de inserări, înlocuiri ori retrageri de fire, cu precondiții. Întoarce o stare izolată și diferența ei față de bază; nu apelează unelte. |
+| `enumerate` | Variabile tipizate și domenii finite explicite ori generatoare declarate cu limită. Întoarce atribuiri candidate și informația dacă domeniul declarat a fost epuizat. |
+| `rank` | Candidați verificați, criterii de cost declarate și o regulă explicită de departajare. Întoarce ordinea, costurile și egalitățile rămase; nu inventează un criteriu pentru „mai bine”. |
+| `search` | Variabile, generatorul candidaților, constrângeri, obiectiv și buget. Întoarce candidați, justificarea verificărilor și una dintre încheierile căutării din secțiunea 6.8. |
+| `plan` | O cerere situată, legarea țintelor, acte declarate, capabilități și starea de bază. Întoarce pași dependenți cu condiții înainte/după, efecte permise și sursele deciziilor, ori condițiile încă nerezolvate. |
+| `call` | O funcție sau unealtă înregistrată, declarația contractului ei și argumente tipizate. Întoarce rezultatul și statutul apelului; verificarea efectului aparține lui `observe` și `validate`. |
+| `observe` | Un adaptor declarat și domeniul de stare cerut. Întoarce fire observate, versiune și acoperire, sau o eroare explicită de citire. |
+| `compare` | Două versiuni de stare și identitățile relevante. Întoarce aparițiile, disparițiile și valorile/relațiile schimbate, inclusiv diferențele din afara efectului permis. |
+| `record` | Un eveniment și sursele lui, conform schemei jurnalului. Întoarce identitatea înregistrării persistate sau eșecul; nu rescrie evenimentele anterioare. |
+| `realise` | Un cadru de limbă declarat, legături de roluri și afirmații justificate. Întoarce textul și legătura fragmentelor cu sursele; dacă lipsesc roluri obligatorii, raportează lipsa în loc să inventeze conținut. |
+
+În această listă, `value` nu primește un fragment de program. Operatorul este unul dintre numele enumerate și are o aritate cunoscută. Împărțirea la zero este eroare, iar o comparație între valori cu unități incompatibile nu este falsă: trebuie întâi o conversie declarată. `collect` nu interpretează o funcție arbitrară scrisă în text; selecția și proiecția folosesc modele și expresii alcătuite din aceleași operații. O ordine cere cheile și sensurile de sortare; identitatea poate departaja numai dacă politica o declară, nu pentru a ascunde o ambiguitate semantică.
+
+`match` caută corespondențe între un model și firele unei stări. Nu este recunoaștere liberă a sensului unei propoziții. Regulile de limbă pot folosi această operație asupra firelor care reprezintă cuvinte și roluri, dar regulile și vocabularul trebuie furnizate. În mod similar, `traverse` știe să urmeze muchii; faptul că o anumită muchie înseamnă „este un fel de” vine din schema grafului. Distanța între două feluri nu autorizează singură înlocuirea unui referent cu altul: alegerea are nevoie de politica de referire.
+
+`space` este o familie închisă de cereri către spațiile definite în secțiunea 4.4. Apartenența verifică regiunea declarată; distanța folosește metrica și normalizarea ei; pasul folosește scara și sensul axei; conversia folosește transformarea declarată între repere sau unități compatibile. Un spațiu a cărui metrică nu se poate exprima cu operațiile existente cere o funcție înregistrată prin `call`. Fără ea, rezultatul este „operație nesuportată”, nu o distanță aleasă după numele spațiului.
+
+`derive`, `validate` și `search` au obligații diferite. Deducția produce consecințe, verificarea caută încălcări și necunoscute, iar căutarea propune atribuiri. Un candidat găsit de căutare trece prin verificare pe un `fork`. Abia după aceasta poate deveni parte a planului. Nici deducția, nici încercarea unui candidat nu are voie să execute o unealtă cu efecte. O funcție pură poate participa la calcul; o funcție cu efecte este rezervată execuției autorizate a planului.
+
+Catalogul nu ascunde o căutare infinită în `enumerate`. Pe un interval numeric continuu, un generator care încearcă puncte pe o grilă explorează numai acea grilă. Epuizarea ei dovedește cel mult că nu există candidat pe grila respectivă. Pentru o concluzie despre întregul interval trebuie un algoritm cu acel contract și o justificare a concluziei. `rank` nu transformă cel mai bun candidat încercat în optimul global.
+
+`plan` compune acte folosind condițiile și politica de descompunere din secțiunea 4.6.1. Nu poate satisface orice precondiție prin inventarea unei acțiuni. `call` este singura trecere din catalog către un calcul sau un efect furnizat de gazdă; numele, tipurile argumentelor, puritatea și condițiile rezultatului trebuie declarate. În execuție se compun `observe`, `call`, `compare`, `validate` și `record`, cu regulile de recuperare din secțiunea 6.9. Anularea este un plan de compensare verificat prin aceleași operații, nu o ștergere a jurnalului.
+
+Un exemplu propus arată diferența dintre compunere și operație nouă. Într-un document, vrem ca o secțiune deja identificată să aibă cel mult 120 de cuvinte. Citirea stării oferă textul și versiunea lui; numărarea cuvintelor cere o segmentare declarată, apoi `collect` cu `count`. Limita este o cerință a cererii, nu limita permanentă a tipului secțiune. O propunere mai scurtă se verifică pe o copie izolată:
+
+```sop
+@source.limit std.request.source text="at most 120 words"
+@request.limit std.request act=change source=$source.limit
+@target.section std.request.target request=$request.limit mode=existing kind=section
+@constraint.length std.request.constraint request=$request.limit target=$target.section concept=length operator=less.equal value=120 unit=word scope=each polarity=positive character=requirement source=$source.limit source.start=0 source.end=17
+```
+
+Aceste fire descriu ce se verifică, nu generează rezumatul. `target.section` trebuie legat separat la identitatea secțiunii alese. Operatorul `less.equal` compară numărul observat cu limita; metadatele conceptului stabilesc că lungimea se măsoară aici în cuvinte, prin segmentarea declarată. Dacă textul candidat are 117 cuvinte, condiția numerică este adevărată. Aceasta nu dovedește că sensul a fost păstrat: acea proprietate cere propriul contract și poate rămâne neverificată. Dacă nu există un compozitor capabil să propună textul, numărarea singură nu rezolvă cererea.
+
+Cazul permite delimitarea concretă a extensiilor. O altă limită, de 90 de cuvinte, este o dată nouă. O regulă care verifică aceeași lungime numai pentru introduceri este o declarație nouă compusă din operațiile existente. Un nou algoritm care produce text sau măsoară o proprietate încă nesuportată cere o implementare de funcție, declarată și înregistrată; numirea ei într-un fir nu ajunge. Extinderea programului general însuși este necesară dacă apar valori, condiții sau efecte care nu pot fi reprezentate prin contractele catalogului. În acel caz se revizuiește explicit catalogul și se verifică din nou compatibilitatea declarațiilor.
 
 ## 6.9 Execuția
 
@@ -1999,9 +2050,7 @@ Regula: programul unui domeniu face numai trei lucruri. Îndeplinește operații
 
 ## 8.1 Ce trebuie să știe programul general
 
-A declara un concept nu înseamnă că programul îi înțelege automat numele. Numele „timp” nu execută un calcul. Programul poate lucra numai dacă declarația îl leagă de operații a căror semnificație este definită: comparație numerică, verificarea apartenenței, potrivirea unui model, aplicarea unei reguli sau căutarea unor valori.
-
-Sunt trei feluri de extensie. Un autor poate adăuga un fapt într-un spațiu existent, poate construi un spațiu sau o regulă din operațiile existente, sau poate avea nevoie de o operație nouă. Primele două sunt date. A treia cere un contract nou și o implementare verificată. Sistemul trebuie să spună „operație nesuportată” dacă aceasta lipsește. Nu o înlocuiește cu o presupunere despre numele conceptului.
+Catalogul închis al operațiilor generale, intrările, rezultatele și limita dintre o declarație nouă și o implementare nouă sunt definite în secțiunea 6.8.2, lângă mecanismele de raționament. Exemplul de mai jos aplică această delimitare unui spațiu geometric.
 
 ## 8.2 Introducerea unui spațiu: distanța liberă dintre noduri
 

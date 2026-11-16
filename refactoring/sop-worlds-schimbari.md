@@ -267,7 +267,7 @@ La cererea proprietarului, sesiunea worker redactează cartea și aceste planuri
 
 | Livrabil | Referință și dovada cerută la review |
 |---|---|
-| Spații și operații | 8.1–8.2, B24: lista operațiilor generale, schema completă, unități, metrică și operație nesuportată. |
+| Spații și operații | 6.8.2 și 8.2, B24: catalogul operațiilor generale, schema completă, unități, metrică și operație nesuportată. |
 | Organizarea proiectului | 2.6 și R6: manifest, rădăcini de import, fișiere ale aceluiași modul, namespace-uri de instanțe și sublumi explicite. Probe de mutare fără schimbarea identității, copie independentă cu remapare și dependențe externe explicite, coliziuni de nume/case refuzate, referință activă lipsă, destinație unică la salvare și import ciclic; formatul manifestului trebuie definit înainte de implementare. |
 | Reguli și interpretare | 2.2–2.5, 3.4–3.5 și 8.3, B25–B26: condiții și efecte structurate; traseu text–valori–referințe–regulă, cu erori localizate. |
 | Acces la cunoaștere | 8.4, B27–B28: dependențe directe și inverse, ciclu, fragment de bază lipsă, completitudine și invalidare. |
@@ -399,3 +399,7 @@ Identificatorii sunt păstrați în carte ca etichete discrete după explicație
 ## 14. Verificarea pe mesajele proprietarului
 
 Reviewerul deține replay-urile: [sesiunea din 16 noiembrie](../reviews/replay-owner-2026-11-16.md) și [sesiunile anterioare](../reviews/replay-owner-2026-11-14-15.md). Acestea sunt audituri pe hârtie, nu rezultate ale implementării. Autorul dezvoltă mecanismele generale lipsă în capitolele relevante, fără să introducă mesajele de test în carte. Ordinea de lucru este cererea ca fire (carte §6.3.2), catalogul închis al operațiilor generale, apoi domeniul desen declarat complet. Lacunele A–V rămân deschise până la verificarea textului revizuit; orice temă nouă trebuie justificată de replay.
+
+Contractul propus din carte §6.8.2 delimitează operațiile generale de funcțiile gazdei. Implementarea viitoare trebuie să verifice fiecare contract (intrări, rezultat, eșec, buget și efecte); simpla existență a unui apel cu nume asemănător nu demonstrează conformitatea. F6 este trimis la review; domeniul desen declarat complet rămâne următorul livrabil.
+
+Direcția transmisă la afad461 adaugă un capitol API: fiecare apel existent se verifică în `docs/api.md` și în surse, apoi se explică prin scop, argumente, rezultat și exemplu cu rezultat verificat; API-ul conversațional propus trebuie marcat separat. Nucleul lucrează în engleză, iar traducerea rămâne în aplicație. Reducerea lacunelor la mecanisme comune se verifică împotriva replay-urilor, păstrând separat autorizarea, constrângerile tari, efectele și dovezile; nu este încă o concluzie de conformitate.

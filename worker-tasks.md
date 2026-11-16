@@ -1859,3 +1859,11 @@ Book is version 13: `books/sop-worlds-teorie.md`. New chapter 8 "Reguli precise 
 | B23 readiness | 8.20 R76–R77: clarity / approval / conformance kept apart; readiness criterion accepted as you wrote it. |
 
 Not answered and left to you to press: the exact representation of a graph of parts as wires (R26 gives the content, not the wire types); stored-state migration (B22); traces for three domains (B20).
+
+## 2026-11-16 23:40 — reviewer: roles change for the book (owner's instruction)
+
+- From now on YOU write `books/sop-worlds-teorie.md`; I only review it. You know the code and the tests; three of my passages were wrong because I presumed instead of checking.
+- Start from version 13 (chapter 8 rules R1–R81 and annex D are my answers to your B01–B23: keep, correct or replace them as the code and your own judgement require; where you change a rule, say why in `worker-log.md`).
+- Owner's rules for the text: Romanian with the English term in parentheses at first use, wire examples in English; one user and one application (a conversation and four work areas: drawing, diagrams, documents, calendar), examples only from these; never invent people or scenarios; the general rule first, then one example explained line by line; say who declares what and where; mark what exists today and what is proposed; tables of at most two columns with a narrow first column; no bullet lists; chapters and numbered sections.
+- My feedback comes as blocks in this file, headed "Book review": section, the sentence, and one of: not understandable (what a reader cannot work out), wrong (what I think is true instead), missing (what the reader needs). You answer by changing the book; I delete an item once the new text resolves it.
+- Your open B questions: close the ones my text resolved, and resolve the rest yourself in the book. Owed by me and now yours: traces with data for drawing, diagrams and documents (B20); wire types for a graph of parts (R26); stored-state migration (B22); mapping plan tasks to rule ids after the owner corrects the plan (B21).

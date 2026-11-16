@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 23, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 24, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -98,19 +98,9 @@ De exemplu, `label="Review"` furnizează un text, `source=$m1` furnizează o ref
 
 ### 2.2.1 Reprezentarea valorilor compuse și semantica ordinii
 
-O poziție pe pagină și o listă de participanți conțin amândouă mai multe componente, dar au semantici diferite. Poziția este o singură valoare: coordonatele ei au sens împreună, în spațiul declarat. Participanții sunt mai multe valori ale aceleiași chei, fiecare desemnând separat o persoană. Această distincție determină ce verifică schema, cum se compară două valori și ce înseamnă înlocuirea lor.
+O poziție pe pagină este o singură valoare: coordonatele ei au sens împreună, în spațiul declarat de slot. În reprezentarea propusă, `at=120,540` are `kind=point` și `space=page`; coordonatele urmează ordinea axelor declarată prin `order`, orizontala înaintea verticalei. Egalitatea este numerică, axă cu axă: `120,540` și `120.0,540` sunt egale, dar `540,120` este alt punct. Un punct cu prea puține sau prea multe coordonate este refuzat ca încălcare `domain`. Cererea „move it up” poate viza numai verticala, însă planul citește poziția existentă și construiește un punct complet după modificare; nu salvează `at=120` ca poziție incompletă. Motorul actual nu are `kind=point`: folosește numere repetate sub o cheie `many=true` sau valori `json`. Forma propusă păstrează punctul ca valoare unitară și îi explicitează spațiul. *(R1)* *(R2)* *(R3)* *(R4)*
 
-Reprezentarea `kind=point` este propusă; regulile explică contractul urmărit, nu disponibilitatea lui în motorul actual.
-
-Un punct este o singură valoare. Se scrie ca un atom făcut din numere despărțite prin virgulă, fără spații: `at=120,540`. Slotul lui spune `kind=point` și numește spațiul: `space=page`. *(R1)*
-
-Axele se recunosc după ordine. Numerele unui punct sunt în ordinea în care sunt declarate axele spațiului. Pentru aceasta fiecare fir `w.legend.axis` poartă cheia `order` (1, 2, 3). Pentru spațiul paginii, axa 1 este orizontala și axa 2 verticala; `120,540` înseamnă orizontală 120, verticală 540. *(R2)*
-
-Două puncte sunt egale când au același număr de numere și numerele sunt egale ca numere, axă cu axă. `120,540` și `120.0,540` sunt același punct. `540,120` este alt punct. *(R3)*
-
-Un punct incomplet sau prea lung este refuzat. Într-un fapt, `at=120` sau `at=120,540,3` pentru spațiul paginii este o încălcare de felul `domain`. O cerere poate vorbi despre o singură axă („move it up”), dar aceea este o cerință a cererii asupra unei axe, nu un punct pe un fapt (secțiunea 6.3). *(R4)*
-
-O cheie cu mai multe valori este o listă ordonată. Aceasta este regula limbajului de astăzi: valorile sunt ținute în ordinea în care au fost scrise. Când ordinea nu are înțeles (participanții unei ședințe), slotul o spune cu `order=ignored` **(propus)**; atunci două fapte cu aceleași valori în altă ordine sunt egale, iar o valoare scrisă de două ori este ținută o dată. *(R5)*
+Mai multe valori ale aceleiași chei reprezintă altceva: o colecție de elemente independente. Limbajul actual le păstrează ca listă ordonată. Pentru participanții unei ședințe, ordinea poate fi declarată nerelevantă prin `order=ignored` **(propus)**: aceeași colecție de persoane rămâne egală după reordonare, iar duplicatele se reduc la o singură apariție. Pentru paragrafele unui document, ordinea rămâne semnificativă. Schema decide această proprietate a slotului; faptul că ambele cazuri folosesc valori repetate nu le dă automat aceeași semantică. *(R5)*
 
 | Valori comparate | Interpretarea în schema declarată |
 |---|---|
@@ -118,12 +108,6 @@ O cheie cu mai multe valori este o listă ordonată. Aceasta este regula limbaju
 | `at=120,540` și `at=540,120` | Puncte diferite: coordonatele nu sunt o mulțime fără ordine. |
 | Aceiași participanți, enumerați invers | Aceeași colecție numai dacă slotul declară ordinea nerelevantă. |
 | Aceleași paragrafe, enumerate invers | Alt document când slotul păstrează ordinea textului. |
-
-Astăzi biblioteca nu are `kind=point`; un punct se ține ca două numere sub o cheie cu `many=true` sau ca valoare `json`. Trecerea la R1 este o schimbare de făcut.
-
-Pentru un nod aflat la `120,540`, cererea „move it up” modifică numai coordonata verticală. Planul citește poziția existentă, calculează noua valoare verticală și construiește din nou un punct complet. Nu salvează `at=120` ca prescurtare pentru o poziție incompletă. Astfel, un cititor al stării nu trebuie să ghicească ce coordonată lipsește.
-
-În schimb, schimbarea ordinii participanților nu trebuie să schimbe sensul unei ședințe când slotul declară ordinea nerelevantă. Aceeași operație asupra paragrafelor unui document schimbă documentul. Schema trebuie deci să declare sensul ordinii pentru fiecare slot; motorul nu îl deduce din numele cheii.
 
 ## 2.3 Marcatori sintactici și referințe
 
@@ -209,11 +193,24 @@ Exemplele locale din capitolul 7 folosesc schema proprie a aplicației, deci pă
 
 În mecanismul existent al bibliotecii sopworld, programul gazdă furnizează un spațiu de nume la încărcarea faptelor. `@n1 node` încărcat în spațiul de nume `diagram` devine faptul `diagram::n1`. O referință locală `$n1` din același context îl numește pe acesta. O referință calificată `$calendar::m1` numește un fapt al calendarului. `$::x` numește un fapt din contextul fără prefix.
 
-```
-@n1 node label="Review" source=$calendar::m1
+O legătură activă este potrivită când documentul încorporează un desen care trebuie să rămână accesibil ca stare distinctă. În exemplul propus, încărcat în instanța documentului, inserția desemnează scena din instanța desenului:
+
+```sop
+@insert1 embeddedDrawing drawing=$drawing::scene1
 ```
 
-Încărcat în contextul `diagram`, firul declară nodul `diagram::n1`. `node` este tipul obiectului grafic; `label` este textul afișat; `source` este o referință explicită spre ședința `m1` din calendar. Schema nodului trebuie să declare cheia `source` și tipul țintei. Exemplul arată o legătură, nu importă singur calendarul și nu garantează că ținta a fost încărcată.
+`insert1` este obiectul documentului care deține inserția; `embeddedDrawing` este tipul propus al inserției, nu un cuvânt rezervat. Cheia `drawing` trebuie declarată ca referință la tipul scenei. `$drawing::scene1` desemnează o țintă activă care trebuie încărcată și rezolvată. Referința nu importă singură desenul. Modificările lui pot fi afișate de document numai după citirea unei versiuni coerente a acelei scene.
+
+Graficul derivat din calendar este diferit: el prezintă datele citite la un moment dat. Următorul fragment propus, încărcat în diagramă, păstrează un fapt local de proveniență și valorile consumate, fără referință activă spre calendar:
+
+```sop
+@snapshot1 sourceSnapshot source.instance="calendar-instance-id" source.id="m1" source.version="state-17" captured.label="Review"
+@n1 node label="Review" provenance=$snapshot1
+```
+
+`source.instance` păstrează identitatea imutabilă a calendarului; `source.id` și `source.version` identifică faptul și versiunea citite. Sunt valori istorice, nu legături `$` care ar cere existența curentă a ședinței. `captured.label` este valoarea copiată pentru acest exemplu. Nodul `n1` are o singură referință activă, `$snapshot1`, către înregistrarea locală existentă. Schema finală a instantaneului trebuie să declare toate valorile utilizate la construire; pentru un grafic agregat nu ar ajunge numai eticheta unei ședințe.
+
+Dacă sursa dispare, nodul și proveniența sa rămân consultabile. „Update the chart” cere o nouă citire a calendarului; în lipsa lui, actualizarea este refuzată, iar graficul istoric se păstrează. În schimb, inserția activă a desenului nu poate fi activată fără ținta sa. Deosebirea rezultă din tipurile de date declarate, nu din tratarea arbitrară a unei referințe nerezolvate drept text.
 
 Într-o regulă, o referință la un pattern, precum `$p.node`, are un rol diferit: identifică pattern-ul declarat în schemă. La evaluare poate desemna faptul găsit de acel pattern. Secțiunile 3.4–3.5 urmăresc exact această legare. Numele fișierului nu schimbă sensul lui `$`.
 
@@ -244,7 +241,7 @@ Persistența cere și o regulă de atribuire a fișierului de destinație. Pentr
 
 Coliziunea de nume și coliziunea de identități sunt erori diferite. `instances/diagram/main.sop` și `instances/diagram.sop` pot deduce amândouă numele `diagram` fără să reprezinte aceeași instanță. Încărcătorul nu rezolvă această situație alegând primul fișier găsit. De asemenea, numele diferite nu autorizează încărcarea de două ori a aceleiași identități cu stări incompatibile.
 
-Politica referinței lipsă păstrează cerința R8: o legătură factuală activă trebuie să aibă țintă. Un grafic salvat ca instantaneu poate rămâne consultabil fără calendar dacă proveniența lui este o înregistrare istorică autonomă, cu identitatea sursei, versiunea citită și valorile folosite. Acea înregistrare nu este o referință factuală activă spre un obiect absent. Formatul ei trebuie declarat distinct; exemplul `source=$calendar::m1` presupune încă ținta disponibilă. Afișarea unui rezultat istoric nu autorizează actualizarea lui fără reîncărcarea sursei.
+Politica referinței lipsă păstrează cerința R8: o legătură factuală activă trebuie să aibă țintă. Un grafic salvat ca instantaneu poate rămâne consultabil fără calendar dacă proveniența lui este o înregistrare istorică autonomă, cu identitatea sursei, versiunea citită și valorile folosite. Acea înregistrare nu este o referință factuală activă spre un obiect absent. Formatul ei trebuie declarat distinct; exemplul `drawing=$drawing::scene1` presupune ținta disponibilă, în timp ce `sourceSnapshot` păstrează date istorice locale. Afișarea unui rezultat istoric nu autorizează actualizarea lui fără reîncărcarea sursei.
 
 ### 2.6.3 Sublumi și limitele vizibilității
 
@@ -1619,6 +1616,8 @@ O **urmă de justificare (justification trace)** este înregistrarea acestei leg
 
 În proiectul propus, urma este alcătuită din fapte într-o instanță de jurnal a sesiunii. Nu este numai un obiect temporar al componentei de răspuns. Instanța jurnalului are o schemă publicată, astfel încât pașii să poată fi căutați prin pattern-uri, salvați și reîncărcați. Nu introducem aceste fapte ca obiecte desenate sau ca ședințe: ele descriu cererea și evaluarea ei, nu domeniul asupra căruia s-a lucrat.
 
+Jurnalul se salvează cu proiectul și se reîncarcă la redeschidere, cu aceleași identități de cereri și pași. Închiderea sesiunii nu îl golește. Astfel, o întrebare de a doua zi poate selecta o acțiune anterioară. Dacă istoricul a fost eliminat explicit sau lipsește din proiectul încărcat, sistemul declară că justificarea nu este disponibilă; nu o reconstruiește ca și cum ar fi fost păstrată.
+
 Fiecare răspuns păstrează identificatorul cererii și al pasului care îl justifică. „Why?” se leagă de ultimul răspuns relevant din contextul conversației; o întrebare explicită despre o acțiune mai veche selectează răspunsul acelei acțiuni. Dacă sunt mai multe candidate, sistemul cere precizarea. El nu înlocuiește explicația unei acțiuni vechi cu justificarea stării curente numai pentru că aceasta este mai ușor de obținut.
 
 | Date păstrate în jurnal | Rol în explicație |
@@ -1639,12 +1638,12 @@ Reprezentarea următoare este o propunere minimală pentru legături, nu schema 
 ```sop
 @req1 std.trace.request message="put the duck on the lake"
 @input1 std.trace.input source="drawing-instance/duck1" version="state-17" key=at value="120,540"
-@step1 std.trace.step request=$req1 operation=place status=confirmed input=$input1
+@step1 std.trace.step request=$req1 act=place operation=move status=confirmed input=$input1
 @reply1 std.trace.reply request=$req1 step=$step1 text="I moved the duck onto the lake."
-@undo1 std.trace.undo target=$step1 status=confirmed afterVersion="state-19"
+@undo1 std.trace.undo target=$step1 status=confirmed after.version="state-19"
 ```
 
-`req1` identifică mesajul, iar `input1` fixează o valoare citită din starea 17. `source` este aici o valoare istorică explicită, nu o referință `$` către un obiect care ar trebui să existe pentru totdeauna. `step1` și `reply1` folosesc referințe reale către înregistrările jurnalului. `undo1` păstrează legătura cu pasul anulat și versiunea observată după anulare. Tipurile și valorile complete ale intrărilor trebuie păstrate în schema finală; textul din `value` ilustrează valoarea, fără a decide serializarea generală a punctelor. Fragmentul omite observațiile detaliate: singur, `status=confirmed` nu este o dovadă suficientă pentru răspuns.
+`req1` identifică mesajul, iar `input1` fixează o valoare citită din starea 17. `source` este aici o valoare istorică explicită, nu o referință `$` către un obiect care ar trebui să existe pentru totdeauna. `step1` distinge actul semantic `place` de operația uneltei `move`; împreună cu `reply1`, folosește referințe reale către înregistrările jurnalului. `undo1` păstrează legătura cu pasul anulat și versiunea observată după anulare. Tipurile și valorile complete ale intrărilor trebuie păstrate în schema finală; textul din `value` ilustrează valoarea, fără a decide serializarea generală a punctelor. Fragmentul omite observațiile detaliate: singur, `status=confirmed` nu este o dovadă suficientă pentru răspuns.
 
 Autorul tiparului declară regulile; motorul înregistrează potrivirile și calculele; unealta raportează efectele observate. Componenta de răspuns selectează din această urmă pașii necesari explicației și le exprimă sensul în cuvinte. Ea nu este autorizată să adauge o cauză pentru care nu există un pas înregistrat.
 

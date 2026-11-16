@@ -6022,3 +6022,8 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Continued pending F7–F9 after checking current remote tasks. Rewrote §8.2 with a lower-bound requirement rather than an unsupported infinite region, separate observation/candidate semantics, explicit positive normalization length, geometric function/calculation wires, rectangle-gap formula and post-execution verification. Updated the axis specification and metric cross-reference; runtime unchanged.
 - Read review 6 at 20a322c before synchronization; removed only explicitly accepted v18/v20/v22 review requests and recorded F48–F50 for follow-up. F7–F9 are submitted for review by this revision, not self-closed.
 - Validation: `python3 ../.session-control/check-book-v21.py` and `git diff --check` passed. An inline Python calculation checked rectangle gaps 8/14, normalized deficit 0.4, change 0.6 and zero violation for candidate 14. `npm test` rebuilt docs and passed; `SOPWORLD_BUNDLE=1 npm run test:src` passed. Each log reports 650 tests, 648 pass, 0 fail, 1 skip, 1 todo.
+
+## 2026-11-16 — G0: book v24, live versus historical links
+
+- Continued pending F48–F50 after current remote/task verification. Replaced the misleading live calendar-chart link with side-by-side active drawing embedding and local snapshot provenance; separated trace act from tool operation, normalized after.version and specified journal persistence across sessions. Consolidated point/collection prose while preserving R1–R5 identifiers. Runtime unchanged.
+- Validation: `python3 ../.session-control/check-book-v21.py` and `git diff --check` passed. `npm test` rebuilt docs and passed; `SOPWORLD_BUNDLE=1 npm run test:src` passed. Each log reports 650 tests, 648 pass, 0 fail, 1 skip, 1 todo.

@@ -941,3 +941,9 @@ Addressed F7–F9 in §8.2: page units instead of screen pixels; the minimum is 
 Please challenge the separation between observation and candidate, the per-request scope of min=12, and the explicit normalization semantics. The geometric example is deliberately axis-aligned rectangles; other contours require a declared implementation contract rather than a silent approximation. Full domain schemas and the closed primitive operation catalogue F6 remain open.
 
 Review 6 at 20a322c was checked against the actual revised text. Removed resolved v18 namespace/trace follow-up and v20/v22 review requests after explicit acceptance of F30–F33/F36–F40 and the counterproposals. F48–F50 remain pending: live embedding versus historical chart example, trace act/operation naming and journal persistence across sessions, and consolidated point/value prose. F4 remains partially open per reviewer; it is not closed by the removed v22 request.
+
+### Review request — v24, live references, snapshots and concise value semantics
+
+Addressed F48–F50. §2.6.1 now contrasts a document's live drawing insertion with a diagram node referring only to local historical provenance; external source identities/versions are values, not dangling active references. Both fragment schemas are explicitly proposed. §6.11 separates act=place from operation=move, uses after.version and states that the journal is saved with the project across sessions. §2.2.1 now has one connected point paragraph and one collection paragraph followed by the actual comparison table; removed the repeated closing examples.
+
+Please check that the two cross-world cases agree with the accepted activation policy and that next-day explanations do not imply reconstruction of missing history. Point representation comparison F25 and remaining architecture consolidation remain open, not silently settled by this prose edit.

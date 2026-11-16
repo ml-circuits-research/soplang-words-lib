@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="d48785a32e9d">
+<meta name="source-hash" content="0cc4fe404091">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.198.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.199.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html" aria-current="page">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -787,12 +787,16 @@ print(builtins.time_add([&#x27;10:40&#x27;, &#x27;35min&#x27;]), builtins.div([&
 <h3 id="provider-identity-features">Provider identity features</h3>
 <p>In a grammar overlay feature declaration, <code>from_id=true</code> copies the exact selected provider wire ID. Exactly one of <code>from_id</code>, <code>from_key</code> and <code>value</code> is permitted. Other flag values are invalid. Text aliases and provider filters retain their existing behavior; two providers with identical text remain distinct alternatives. The same rule applies to <code>core.word</code> providers. This is source identity, not inferred semantic identity or a new vocabulary lookup.</p>
 <h2 id="read-only-request-projections">Read-only request projections</h2>
-<p>Since 0.198, <code>std.request.query</code> declares what an <code>ask</code> request wants to learn. Its required slots are <code>request</code>, <code>target</code> and <code>operation</code>; <code>operation</code> is values, count, exists or members. Only values requires <code>concept</code>; the other operations forbid it. The owning request explicitly lists its queries through repeated <code>query</code> references. Each target must belong to that request and have mode existing. A quantifier's bound variable cannot escape into an external query projection.</p>
+<p><code>std.request.query</code> declares what an <code>ask</code> request wants to learn. Its required slots are <code>request</code>, <code>target</code> and <code>operation</code>; <code>operation</code> is values, count, exists or members. Only values requires <code>concept</code>; the other operations forbid it. The owning request explicitly lists its queries through repeated <code>query</code> references. Each target must belong to that request and have mode existing. A quantifier's bound variable cannot escape into an external query projection.</p>
 <p>Queries refer to the selected target population: members asks for its historical member identities, count for its cardinality, exists for whether it has a member, and values for the declared concept values of those members. This does not introduce arbitrary membership-relation traversal. Target selectors remain selection conditions; the requested concept is not a desired equality constraint. Multiple queries can refer to the same target without duplicating or changing it. Optional source/source.start/source.end use Unicode-scalar provenance, with the same nonempty interval checks as constraints.</p>
 <p><code>inspectRequest</code> validates ownership, operation fields, mode and source bounds; it does not answer the question or authenticate observation completeness. Counts, exhaustive membership and negative existence require a complete resolved population. Unknown selection or missing property values must not become zero, false or an empty answer. A positive existence witness can be meaningful in a partial population, but the consumer must retain the exact witness and scope. <code>check</code> continues to use its complete predicate graph rather than query projections. Older underspecified ask graphs remain structurally valid for compatibility; consumers must refuse to invent the missing projection. Query graphs serialize through the standard graph and batch APIs without a special application encoding.</p>
+<h2 id="three-valued-request-predicate-evaluation">Three-valued request predicate evaluation</h2>
+<p><code>evaluateRequestPredicates</code> interprets the existing logical graph without reading source text. Its result can be true, false or unknown. It preserves selector and result closures, lexical quantifier bindings and historical snapshot identity. Leaf semantics come from synchronous declared callbacks; a positive leaf result is negated only by the graph's polarity/negation operators. Combining unknown with a decisive false in a conjunction gives false; combining it with a decisive true in a disjunction gives true.</p>
+<p>Population coverage is a separate assertion supplied by the resolver. A partial population can witness existence or a counterexample, but it cannot establish exhaustive absence or universal success. Complete empty populations make all/each/none true and any false. An empty request result has unknown truth rather than a success claim. Each historical subject retains a typed native ID plus source, source type and version inside an explicit instance/scope/version context. The evaluator never treats a historical identity as a live object or authorizes an effect from structural validity.</p>
+<p>Callbacks must be pure for a fixed graph and binding context: shared DAG nodes are memoized. Callback truth, observation authenticity, stable external snapshots and semantic population completeness are trusted boundaries. Budget exhaustion, excessive depth and public world mutations invalidate the whole result; failure is unknown. The returned trace records supplied evidence and decisions, and is not a retained authenticated reply assessment. Application adapters still own declared comparisons, unit/frame compatibility and interpretation of context-dependent references.</p>
 <p class="source">Generated from <code>docs/reference.md</code>.</p>
 </main>
-<footer>sopworld 0.198.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.199.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

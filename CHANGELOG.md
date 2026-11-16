@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.199.0
+
+- Evaluate request predicate graphs with bounded three-valued logic, scoped historical bindings and explicit population coverage. Source parsing, host truth and reply assessments remain separate.
+
 ## 0.198.0
 
 - Add explicit owned read-only request projections for values, count, existence and selected members, with request/target ownership, ask mood and source-span validation. Query intent is separate from desired constraints.

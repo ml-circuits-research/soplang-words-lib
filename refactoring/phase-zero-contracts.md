@@ -198,3 +198,7 @@ The dispatcher can now consume `prepareRequestBatch` plans across area capabilit
 ## Question/check class integration (0.198)
 
 Ask requests can now carry explicitly owned query projections (values/count/exists/members), preserving selected population and requested concept independently of result constraints. The generic observation consumer owns evaluation and completeness evidence; no query execution is claimed by structural validation. Check requests continue to describe their predicates. This allows the same question class across all area adapters without reparsing language or inventing asked-property fields in the host.
+
+### Increment 0.199.0 — graph-only predicate evaluation
+
+The shared evaluator traverses published result/selector, group/not and scoped quantifier graphs with strong three-valued logic. Explicit historical bindings and population coverage preserve ambiguity and incomplete observations. It contains no sentence/domain rules, effect executor or implicit conversion. Semantic leaf truth and population completeness come from declared callbacks and are not independently proved. Stateful context references, ordinal order bases and corrective request revisions remain distinct pending contracts, as recorded in questions.md.

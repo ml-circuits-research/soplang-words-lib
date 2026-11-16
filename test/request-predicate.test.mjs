@@ -1,6 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {World} from '../src/index.mjs';
-import {evaluateRequestPredicates} from '../src/request-predicate.mjs';
+import {World,evaluateRequestPredicates} from '../tools/lib-under-test.mjs';
 const context=(version='1',instanceId='toy.instance',scope='items')=>({instanceId,scope,version});
 const subject=(id='one',version='1')=>({id,source:'toy.source.'+id,sourceType:'toy.item',version});
 const binding=(id='one',version='1')=>({context:context(version),subject:subject(id,version)});

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="58ff022281be">
+<meta name="source-hash" content="c34f3e61c4bf">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.198.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.199.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -1568,9 +1568,28 @@ print(w.ofType(&#x27;std.request.constraint&#x27;).length);</code></pre></figure
 true
 0</code></pre></figure>
 <p>Operations count, exists and members omit concept and project the selected target population, not a property named by an application convention. Multiple queries use repeated request.query references. Inspection verifies ownership and scope but does not evaluate observations or grant permission for host mutation. See the reference's read-only request projections for completeness and unknown-result boundaries.</p>
+<h3 id="evaluaterequestpredicatesworld-request-options">evaluateRequestPredicates(world, request, options?)</h3>
+<p>Evaluates the published request predicate graph with three-valued logic. It consumes graph nodes and historical bindings; it does not read text or execute effects. Supply synchronous <code>evaluateConstraint</code> and <code>resolvePopulation</code> callbacks for the application's declared semantics. Callback truth and population coverage remain trusted inputs.</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>const w = new World();
+w.load(&#x27;@use core.use world=std.request&#x27;);
+w.load(`@s std.request.source text=&quot;Check a property&quot;
+@r std.request act=inspect mood=check source=$s
+@t std.request.target request=$r mode=existing kind=toy.item
+@c std.request.constraint request=$r target=$t concept=tint operator=eq value=blue character=requirement polarity=positive`);
+const result = evaluateRequestPredicates(w, &#x27;r&#x27;, {
+  bindings: {t: {context: {instanceId: &#x27;toy&#x27;, scope: &#x27;all&#x27;, version: &#x27;v1&#x27;},
+    subject: {id: &#x27;item1&#x27;, source: &#x27;toy.item1&#x27;, sourceType: &#x27;toy.item&#x27;, version: &#x27;v1&#x27;}}},
+  evaluateConstraint: () =&gt; ({truth: &#x27;true&#x27;, evidence: [&#x27;declared evaluator result&#x27;]})
+});
+print(result.ok);
+print(result.truth);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true
+true</code></pre></figure>
+<p><code>selector</code> names a target whose selector closure should be evaluated; by default the request's result closure is evaluated. Without an explicit result root, non-selector flat constraints form a conjunction. An empty result is unknown. The callback evaluates a positive proposition; the evaluator applies the constraint's polarity and the graph's logical negations. Missing bindings, unknown leaves, incomplete populations and callback failures preserve uncertainty.</p>
+<p>A population callback returns an explicit snapshot context, distinct historical subjects, a completeness flag and evidence. A witnessed existential can be true in an incomplete population; a witnessed counterexample can make a universal false. Exhaustive absence and universal success require complete populations. Empty complete populations follow the usual quantifier rules. The evaluator records decisions and reasons, enforces finite work/depth bounds and rejects public world mutations during evaluation. It does not publish a retained reply claim or verify the authenticity of supplied observations.</p>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.198.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.199.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

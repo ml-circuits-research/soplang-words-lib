@@ -940,3 +940,16 @@ export function assessExistenceChange(world: World, options: { request: string; 
 export interface PreparedRequestBatch { readonly entries: ReadonlyArray<{readonly id:string; readonly request:string; readonly wires:string; readonly after:ReadonlyArray<string>}>; readonly layers:ReadonlyArray<ReadonlyArray<string>>; }
 export function prepareRequestBatch(input:{entries:Array<{id:string;request:string;wires:string;after:string[]}>},options?:{budget?:number;graphBudget?:number}):{ok:boolean;plan?:PreparedRequestBatch;issues:Array<{reason:string;id?:string}>};
 export function requestBatchFrontier(plan:PreparedRequestBatch,outcomes?:Array<{id:string;status:'confirmed'|'unverified'|'refused'|'failed'|'unknown'}>,options?:{budget?:number}):{ok:boolean;ready:string[];waiting:string[];blocked:Array<{id:string;dependencies:string[]}>;complete:Array<{id:string;status:string}>;issues:Array<{reason:string}>};
+
+
+export type RequestTruth = 'true' | 'false' | 'unknown';
+export interface RequestBindingContext { instanceId: string; scope: string; version: string; }
+export interface RequestHistoricalSubject { id: string | number; source: string; sourceType: string; version: string; }
+export interface RequestGroundBinding { context: RequestBindingContext; subject: RequestHistoricalSubject; }
+/** Graph truth only; callback semantics and population coverage are trusted. */
+export function evaluateRequestPredicates(world: World, request: string, options?: {
+  family?: string; selector?: string; budget?: number; maxDepth?: number;
+  bindings?: Record<string, RequestGroundBinding>;
+  evaluateConstraint?: (input: Readonly<Record<string, unknown>>) => { truth: RequestTruth; evidence: unknown[]; reason?: string };
+  resolvePopulation?: (input: Readonly<Record<string, unknown>>) => { context: RequestBindingContext; complete: boolean; subjects: RequestHistoricalSubject[]; evidence: unknown[] };
+}): { ok: boolean; truth: RequestTruth; request: string | null; sourceStamp: number; evidence: unknown[]; reasons: unknown[]; unknownReasons: unknown[]; trace: unknown[]; failures: unknown[]; provenance: unknown; steps: number; trust: string };

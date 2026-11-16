@@ -4810,3 +4810,32 @@ true
 ```
 
 Operations count, exists and members omit concept and project the selected target population, not a property named by an application convention. Multiple queries use repeated request.query references. Inspection verifies ownership and scope but does not evaluate observations or grant permission for host mutation. See the reference's read-only request projections for completeness and unknown-result boundaries.
+
+### evaluateRequestPredicates(world, request, options?)
+
+Evaluates the published request predicate graph with three-valued logic. It consumes graph nodes and historical bindings; it does not read text or execute effects. Supply synchronous `evaluateConstraint` and `resolvePopulation` callbacks for the application's declared semantics. Callback truth and population coverage remain trusted inputs.
+
+```js
+const w = new World();
+w.load('@use core.use world=std.request');
+w.load(`@s std.request.source text="Check a property"
+@r std.request act=inspect mood=check source=$s
+@t std.request.target request=$r mode=existing kind=toy.item
+@c std.request.constraint request=$r target=$t concept=tint operator=eq value=blue character=requirement polarity=positive`);
+const result = evaluateRequestPredicates(w, 'r', {
+  bindings: {t: {context: {instanceId: 'toy', scope: 'all', version: 'v1'},
+    subject: {id: 'item1', source: 'toy.item1', sourceType: 'toy.item', version: 'v1'}}},
+  evaluateConstraint: () => ({truth: 'true', evidence: ['declared evaluator result']})
+});
+print(result.ok);
+print(result.truth);
+```
+
+```output
+true
+true
+```
+
+`selector` names a target whose selector closure should be evaluated; by default the request's result closure is evaluated. Without an explicit result root, non-selector flat constraints form a conjunction. An empty result is unknown. The callback evaluates a positive proposition; the evaluator applies the constraint's polarity and the graph's logical negations. Missing bindings, unknown leaves, incomplete populations and callback failures preserve uncertainty.
+
+A population callback returns an explicit snapshot context, distinct historical subjects, a completeness flag and evidence. A witnessed existential can be true in an incomplete population; a witnessed counterexample can make a universal false. Exhaustive absence and universal success require complete populations. Empty complete populations follow the usual quantifier rules. The evaluator records decisions and reasons, enforces finite work/depth bounds and rejects public world mutations during evaluation. It does not publish a retained reply claim or verify the authenticity of supplied observations.

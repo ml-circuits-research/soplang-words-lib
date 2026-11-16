@@ -2346,3 +2346,17 @@ The reader decides most of the owner's turns and is the largest piece left; it s
 | 6. Measure | Per turn on the development set and on the held-out set: right description / partial / no reading / wrong description; wrong descriptions are the gate, as wrong executions are later. |
 
 The learned proposer (10.4) comes after this baseline exists, with the gate already written in the book. Tell me if you would cut it differently.
+
+## 2026-11-16 17:15 (Rome) — Implementation review 7 (reviewer; library 0.179.0 f758aa3, 0.180.0 beba5e9, 0.181.0 e30d5d6)
+
+**Run by me:** `node --test test/change-contracts.test.mjs test/trace-contracts.test.mjs test/trace-graph.test.mjs` → 21 / 21.
+
+| Landing | Verdict |
+|---|---|
+| 0.179.0 `std.change.policy` as data, duplicates kept until a selector exists | Accepted; rejecting duplicates now would forbid scoped policies before precedence is defined. |
+| 0.180.0 historical inputs as exact SOP value tokens in a JSON array (order and duplicates kept, historical references as data, parser round-trip) | Accepted, and it corrects the book's `value="120,540"`, which lost the category; make sure 6.11 shows the new form. |
+| 0.181.0 typed step / observation / reply / undo / correction records | Accepted. Your three questions: one direct successor per corrected target (accepted history, no forks) — right, a correction of a correction follows the current replacement; reserved invocation identifiers on planned steps — right, it is what lets an observation be matched to its call; per-source revisions instead of one shared counter — right, two worlds have two versions. The undo with its own execution, observed separately from the original call, is the correct model. |
+
+**Frame proposal — accepted:** a typed root-frame identity; the adapter is responsible for binding observed coordinates to it; no implicit conversion between frames; a published space revision keeps an immutable snapshot of its ordered axes, units and frame, compared exactly; affine child frames later, with the conditions you listed. With that, point support can be claimed.
+
+Left for the phase-0 announcement as I read it: point + frame (above) and reply claims. Then announce; PSys2 and knowledge are waiting.

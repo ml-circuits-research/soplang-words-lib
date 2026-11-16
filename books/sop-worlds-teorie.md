@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 47, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 48, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -943,6 +943,41 @@ O relație măsurată cere, suplimentar față de relație și țintă, punctele
 
 Aceeași structură servește „2 cm left of the house”, dar contractul geometric trebuie să numească marginile între care măsoară distanța și conversia în reperul paginii. Pentru „two paragraphs after the introduction”, măsura este o distanță discretă în ordinea părților, nu o lungime în centimetri. Unitățile, capetele și ordinea sunt ale relației declarate; nu sunt alese tacit de funcția gazdei după cuvintele mesajului. Un reminder astfel creat fixează momentul calculat la versiunea citită; urmărirea automată a unei întâlniri mutate ulterior cere o dependență persistentă explicită, nu rezultă numai din proveniența cererii.
 
+### 4.4.5 Însușiri agregate și egalitatea cu o valoare de referință
+
+O însușire a unui întreg poate fi calculată din părțile lui. Paleta unui desen, durata totală a ședințelor unei zile și ziua cu cele mai multe ședințe sunt rezultate derivate, dar folosesc operații diferite. Contractul însușirii declară ce părți intră în calcul, ce valoare contribuie fiecare, operația de agregare și condițiile în care rezultatul este cunoscut. `core.aggregate` oferă un mecanism de agregare; sensul unei palete sau al unei zile aglomerate trebuie declarat de domeniu.
+
+Să definim aici paleta ca mulțimea culorilor de umplere distincte ale formelor vizibile dintr-un desen, într-un spațiu de culoare declarat. Contururile, fundalul și formele ascunse nu intră în această definiție. Este o definiție explicită pentru exemplu, nu singurul sens posibil al cuvântului „paletă”. Dacă aplicația folosește o distribuție ponderată după suprafață, ea declară altă însușire, cu altă regulă de comparare. Egalitatea mulțimilor de culori nu garantează egalitatea proporțiilor lor.
+
+| Date și operație | Rezultat și interpretare |
+|---|---|
+| Forme vizibile cu umpleri roșu, roșu și albastru; mulțime distinctă | Paleta este `{roșu, albastru}`. Repetarea roșului nu adaugă o culoare. |
+| Durate de 30 și 60 de minute; sumă | Totalul este 90 de minute de ședințe. Dacă ele se suprapun, acesta nu este timpul ocupat pe ceas; acela cere reuniunea intervalelor. |
+| Două zile cu același număr maxim de ședințe; selecția maximului | Rezultatul conține ambele zile. Alegerea uneia cere un criteriu suplimentar, nu ordinea accidentală de încărcare. |
+| Colecție complet citită, fără membri | Mulțimea culorilor este vidă și suma duratelor este zero; un maxim nu are element câștigător. |
+| Formă relevantă cu umplere necunoscută | Paleta completă este necunoscută. Culorile observate sunt o mulțime parțială, nu dovada că alte culori lipsesc. |
+
+Culorile se compară ca valori în spațiul conceptual, după normalizarea reprezentărilor, nu după ortografia etichetelor. Două nume pentru aceeași valoare nu produc două culori. O apropiere perceptuală poate folosi metrica și toleranța din secțiunea 4.4.1, dar atunci contractul spune „suficient de apropiat”, nu pretinde egalitate exactă. La fel, o durată de o oră și una de șaizeci de minute se compară după conversie.
+
+Pentru „make the diagram's colours match the drawing”, sursa comparației este o însușire a unui obiect identificat. Ea nu este un nume de culoare. Extensia propusă a cererii din secțiunea 6.3.2 separă descrierea valorii de referință de valoarea observată ulterior:
+
+```sop
+@source.match std.request.source text="make the diagram's colours match the drawing"
+@request.match std.request act=change mood=do source=$source.match
+@target.diagram std.request.target request=$request.match mode=existing kind=diagram determiner=definite
+@target.drawing std.request.target request=$request.match mode=existing kind=drawing determiner=definite
+@reference.palette std.request.value target=$target.drawing concept=palette
+@constraint.palette std.request.constraint request=$request.match target=$target.diagram concept=palette operator=same value=$reference.palette scope=group polarity=positive character=requirement source=$source.match
+```
+
+`std.request.value` este aici o propunere de tip pentru descrierea unei valori căutate: `target` numește ținta de rezolvat, iar `concept` însușirea de citit sau derivat. Nu este valoarea paletei și nu este o observație. Varianta `operator=same` cere o astfel de referință; un atom precum `red` în locul ei nu satisface schema. Rezolvitorul identifică desenul, calculează paleta pe o colecție cu acoperire cunoscută și păstrează separat rezultatul tipizat, identitatea instanței, versiunea stării și regulile folosite. Abia această observație fixează valoarea cerută diagramei. Două desene candidate sau un concept incompatibil lasă comparația nerezolvată, fără a inventa o valoare implicită.
+
+Presupunem că interpretarea acceptată cere egalitatea exactă a paletelor, iar desenul are paleta `{roșu, albastru}`. Pentru o diagramă cu trei noduri, culorile roșu, albastru, albastru satisfac cererea; roșu, roșu, roșu nu o satisfac, deși fiecare culoare folosită aparține paletei sursă. Egalitatea cere ambele incluziuni. Cererea „use only colours from the drawing” ar cere doar incluziunea paletei destinație în cea sursă și trebuie reprezentată ca alt predicat, nu confundată cu `same`.
+
+Egalitatea paletelor nu stabilește care nod devine roșu. Planificatorul alege o distribuire care respectă și celelalte cerințe, inclusiv lizibilitatea; preferința pentru schimbarea cât mai puținor culori poate departaja alternativele numai dacă este declarată. Dacă schema unui singur nod permite o singură umplere și diagrama nu are alte elemente colorabile, paleta cu două culori nu poate fi realizată fără alte schimbări. Sistemul explică incompatibilitatea sau propune o alternativă; nu creează un nod suplimentar doar pentru a ascunde conflictul.
+
+Valoarea sursă este un instantaneu la planificare, ca în secțiunea 6.1.2. Modificarea ulterioară a desenului nu recolorează automat diagrama. O nouă cerere de actualizare recitește și recalculează paleta. Dacă o comparație depinde circular de însușirea pe care ar trebui să o determine, evaluatorul trebuie să detecteze dependența; lipsa unei valori ancorate nu se rezolvă prin alegerea arbitrară a unei culori. Execuția schimbă numai destinația autorizată și verifică apoi paleta efectiv observată, nu doar culorile promise de plan.
+
 ## 4.5 Cuvintele de grad
 
 **Problema.** „Red” are un centru fix. „Big” nu are. Un pește mare și o casă mare nu au aceeași mărime; un pește mare printre pești mici nu este cât unul mare printre pești mari. Cuvinte ca „big”, „small”, „huge”, „short”, „long”, „many”, „late” se numesc **cuvinte de grad (degree words)** și sunt subiective prin natura lor.
@@ -1517,7 +1552,7 @@ Următoarea formă este propusă pentru mesajul „draw three big red fish in th
 
 `operator` selectează verificarea cerinței, nu o unealtă: egalitate de cantitate, calcul de grad, apartenență la regiune sau relație. `polarity=positive` cere satisfacerea ei; `negative` cere ca predicatul să fie fals. `character=requirement` exprimă obligația, `preference` o preferință care poate ceda cerințelor, iar `assumption` o alegere a aplicației pentru o informație omisă. Negarea nu slăbește obligația: „no circles” poate fi o cerință negativă tare a cererii. O presupunere nu inventează un interval în mesaj: ea indică declarația sau pasul de justificare care a propus-o.
 
-Schema trebuie să verifice variantele operatorului. Secțiunea 4.4.4 propune `delta` și `factor`, cu observația de referință și ancora schimbării, precum și argumentele măsurate ale relațiilor; o unitate incompatibilă sau capete de măsurare nedefinite sunt erori ale cererii, nu valori implicite ale uneltei. Extensia logică din secțiunea 10.3.1 adaugă predicatul `occurred`, care cere un act, faza verificată și o valoare booleană și citește dovezile unei schimbări; nu se tratează ca egalitate numerică. `relation` cere `relation` și `goal`; `eq`, `less.equal`, `greater.equal`, `degree` și `region` cer o valoare de tipul acceptat de concept; operatorii `less.equal` și `greater.equal` sunt admiși numai pe valori ordonabile, în unități compatibile. O cheie `goal` rămasă pe o egalitate numerică este o eroare de schemă a cererii. Rezolvitorul păstrează separat descrierea țintei, identitățile găsite și versiunea stării citite. Această legare permite verificarea fiecărui rezultat și explicarea unei ambiguități fără modificarea sensului inițial al cererii.
+Schema trebuie să verifice variantele operatorului. Secțiunea 4.4.5 propune `same`, cu o referință tipizată la însușirea altei ținte și cu observația versionată rezolvată separat. Secțiunea 4.4.4 propune `delta` și `factor`, cu observația de referință și ancora schimbării, precum și argumentele măsurate ale relațiilor; o unitate incompatibilă sau capete de măsurare nedefinite sunt erori ale cererii, nu valori implicite ale uneltei. Extensia logică din secțiunea 10.3.1 adaugă predicatul `occurred`, care cere un act, faza verificată și o valoare booleană și citește dovezile unei schimbări; nu se tratează ca egalitate numerică. `relation` cere `relation` și `goal`; `eq`, `less.equal`, `greater.equal`, `degree` și `region` cer o valoare de tipul acceptat de concept; operatorii `less.equal` și `greater.equal` sunt admiși numai pe valori ordonabile, în unități compatibile. O cheie `goal` rămasă pe o egalitate numerică este o eroare de schemă a cererii. Rezolvitorul păstrează separat descrierea țintei, identitățile găsite și versiunea stării citite. Această legare permite verificarea fiecărui rezultat și explicarea unei ambiguități fără modificarea sensului inițial al cererii.
 
 Să urmeze mesajul „in the sky”. Situarea din secțiunea 6.4 îl leagă de locul grupului de pești din ultima cerere. În versiunea nouă a acelei cereri, se adaugă sursa și ținta cerute de corectare, iar `c.place` este înlocuit, păstrându-și identitatea:
 

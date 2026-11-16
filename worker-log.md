@@ -6162,3 +6162,8 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 
 - Read workspace/library instructions, current reviewer tasks and other repository task snapshots; no new reviewer answer. Continued the authorized book cycle with projection selection, mappings, coordinate semantics, grouping, provenance and update conflicts. Added a worked calendar-to-diagram comparison and focused review request; kept the complete declarative module format explicitly pending. Runtime and other repository queues remain on standby.
 - Validation: `python3 ../.session-control/check-book-v21.py` and `git diff --check` passed. `npm test` rebuilt docs and passed; `SOPWORLD_BUNDLE=1 npm run test:src` passed. `tail -n 9 ../.session-control/book-v47-tests.log ../.session-control/book-v47-bundle.log` reports in each log 650 tests, 648 pass, 0 fail, 1 skip, 1 todo.
+
+## 2026-11-16 — G0: explain derived qualities and value-reference equality
+
+- Checked current instructions, origin/main and task snapshots against the published log/questions; no new reviewer answer and no local changes to preserve. Continued AA with aggregate coverage, empty/unknown collections, ties, typed same-as reference, palette equality versus inclusion and target feasibility. Aligned the refactoring plan and phase-zero register; requested review without claiming runtime support. Other queues remain on standby.
+- Validation: `python3 ../.session-control/check-book-v21.py` and `git diff --check` passed. `npm test` rebuilt docs and passed; `SOPWORLD_BUNDLE=1 npm run test:src` passed. `tail -n 9 ../.session-control/book-v48-tests.log ../.session-control/book-v48-bundle.log` reports in each log 650 tests, 648 pass, 0 fail, 1 skip, 1 todo.

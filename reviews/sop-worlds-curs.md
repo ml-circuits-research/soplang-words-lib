@@ -1,6 +1,6 @@
 # SOP Worlds: curs de început
 
-*Versiunea 6, 16 noiembrie 2026. Text de lucru în română, sursă pentru documentația și skill-urile din sopworld. Termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 6.1, 16 noiembrie 2026. Text de lucru în română, sursă pentru documentația și skill-urile din sopworld. Termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 *Cursul descrie cum trebuie să lucreze tehnologia. Unde un lucru este stabilit numai ca intenție, lecția o spune pe loc cu cuvântul „propus”. Starea implementării este în Anexa A. Exemplele de fire nu au fost încă rulate una câte una; biblioteca le va trece prin teste și cursul se corectează unde un exemplu nu rulează.*
 
@@ -598,13 +598,13 @@ Când întreabă, sistemul nu execută nimic și ține minte o **întrebare desc
 
 ## Lecția 19. Adaptarea valorilor
 
-Uneori omul spune o valoare pe care domeniul nu o primește întocmai. Sunt trei situații, cu trei politici. Reversibilitatea unei acțiuni nu este o dovadă că omul ar fi de acord cu înlocuirea.
+Uneori omul spune o valoare pe care domeniul nu o primește întocmai. Sunt trei situații. Regula comună: sistemul face cât poate de bine și spune ce a făcut altfel; nu oprește omul cu întrebări pentru o înlocuire.
 
 | Fel de adaptare | Ce este și când este permisă |
 |---|---|
 | echivalență | Alt cuvânt pentru același lucru **în vocabularul domeniului**: domeniul declară că „oval” este felul lui `ellipse`. Sensul se păstrează. Se face fără a fi anunțat. |
 | aproximare | Cea mai apropiată valoare: „tiny” devine mic, „turquoise” devine culoarea disponibilă cea mai apropiată. Este permisă când parametrul declară o toleranță (o scară pe care valorile sunt ordonate) sau când valoarea era o preferință. Se face și se spune ce s-a luat în loc. |
-| substituție | Alt lucru în locul celui cerut. Este permisă numai cu acordul omului: sistemul propune și întreabă. |
+| substituție | Alt lucru în locul celui cerut, când domeniul nu are altceva: o rață desenată cu imaginea unei păsări. Se face și se spune o dată ce s-a folosit în loc. Lucrul își păstrează felul spus de om: în stare este o rață, deci „rața” poate fi mutată sau colorată apoi. |
 
 Aproximarea se sprijină pe cunoaștere. Scara mărimilor:
 
@@ -937,16 +937,17 @@ Etichete: **bibliotecă** = făcut și testat în sopworld; **aplicație** = fol
 | legarea răspunsului de întrebarea deschisă; cheile cerințelor ca declarații | comandat |
 | exemplele cursului rulate ca teste; pagina de semantică | comandat |
 
-## Anexa B. De hotărât de către proprietar
+## Anexa B. Hotărâri ale proprietarului (16 noiembrie 2026)
 
-| Întrebare | Explicație |
+| Subiect | Hotărâre |
 |---|---|
-| fereastra avatarului prin drumul nou | Avatarul declarat a ajuns, pe cele 13 replici de probă, la 6 corecte fără execuții greșite. Comutatorul este pregătit, oprit. |
-| „schemă” ca nume unic | Înlocuiește *matrix* în programul bibliotecii. |
-| numele firelor de unealtă | `std.tool.*`, cum sunt acum, sau în familia `std.schema.*`. |
-| limba întrebărilor din `ask=` | Engleză în schemă și traducere, sau fapte de răspuns în fiecare limbă. |
-| „registrul cazurilor nerezolvate” în loc de „lista cinstită” | Cursul folosește numele nou; depozitele folosesc încă *honest list*. |
-| substituția cere mereu acordul omului | Cursul spune da. Azi aplicația face unele înlocuiri și le anunță. |
+| un singur drum pentru toate domeniile | Da, fără excepții; avatarul trece pe același drum ca celelalte. Uniformizarea nu se mai întreabă. |
+| substituția | Nu se întreabă. Se face cât se poate de bine și se anunță. |
+| traducerea | Se folosesc mecanismele de traducere ale browserului când există; apoi modelul de pe dispozitiv; apoi regulile. Se alege traducerea pe care citirea o înțelege cel mai bine. |
+| „schemă” în loc de *matrix* în program | Treptat, ca la numele lumilor. |
+| numele firelor de unealtă | Rămân `std.tool.*`. |
+| limba textelor din nucleu, inclusiv `ask=` | Numai engleză; ajung în alte limbi prin drumul răspunsurilor. |
+| termeni | „Trasabilitate” și „explicabilitate”; „registrul cazurilor nerezolvate”. |
 
 ## Anexa C. Cu ce seamănă
 

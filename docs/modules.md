@@ -113,3 +113,11 @@ Roles require name and a reference to an act or relation, using the existing ref
 Added with 0.175.0: loading w.legend registers generic core.schema.link descriptors for core.type is, core.slot means (concepts), and core.slot space (spaces). Present annotations resolve strictly by explicit reference or unquoted globally unique public name. Final transactional checks allow forward declarations and reject target deletion, rename and newly ambiguous names. `semanticLinks()` exposes authored values and resolved identities without a cache.
 
 Legacy schemas may omit annotations. Mandatory means, semantic refinements, point typing, inferred questions/defaults and behavior are not implemented. Existing ask/enum/default remain. Conflicting duplicate type/slot annotations cannot be silently dropped; intersect requires identical annotations, while explicit slot override chooses a declaration. Every authored link is validated, including overridden declarations. Module aliases preserve declared target types. The generic descriptor is usable with other annotation/target vocabularies without a legend-specific runtime branch.
+
+## Request source, mode and targets
+
+Added with 0.176.0: `core.use world=std.request` exports closed std.request.source, std.request and std.request.target records. Sources require text; requests require an atomic act name, explicit mood=do|propose|check|ask and a typed source reference. Targets require a typed request, mode=new|existing and an atomic kind name; optional name and determiner=definite|indefinite describe the target.
+
+Mood has no default and grants no execution authority. Act/kind names are not resolved to capabilities or concepts by this increment. Sources may be reused. Referenced requests/sources cannot be deleted; forward references and edits are transactional. The executable book fixture covers this foundation only.
+
+The module does not export constraint/logical/value schemas, root edges or bound targets yet. Unknown fact types remain governed by the library's existing open-world behavior; their acceptance is not proof of a request contract. Consumers must use published exports and must not infer that full graph validation or phase zero is complete.

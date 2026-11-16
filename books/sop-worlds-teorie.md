@@ -1593,6 +1593,20 @@ Un cuvânt neinterpretat poate părea mic și totuși să schimbe cererea: „no
 
 Cererea este o stare distinctă de desen: faptul că omul cere trei pești nu înseamnă că aceștia există deja. Un obiect al cererii poate desemna un grup de rezultate încă de creat sau un lucru existent care trebuie găsit. Planificarea leagă aceste ținte de identități concrete; nu folosește identificatorul unui obiect al cererii drept identificatorul unui pește real.
 
+Baza structurală implementată se încarcă prin `core.use world=std.request`. Ea păstrează sursa, actul numit, modul explicit al cererii și descrierile țintelor. Următorul exemplu minimal este executabil; nu conține încă un graf de condiții:
+
+```sop
+@request.sample std.request act=make mood=propose source=$source.sample
+@target.sample std.request.target request=$request.sample mode=new kind=sample name="illustrative sample"
+@source.sample std.request.source text="propose a new sample"
+```
+
+`mood=propose` consemnează solicitarea unei propuneri, nu autorizează execuția. Modul este obligatoriu în acest contract: absența sa nu se transformă implicit în `do`. Celelalte variante declarate sunt `do`, `check` și `ask`; nici una nu înlocuiește verificarea drepturilor sau a efectului. `act` și `kind` sunt încă nume nerezolvate, nu dovezi că există o capabilitate ori o schemă cu acel nume.
+
+Fiecare țintă are o referință tipizată la cererea sa; fiecare cerere are o referință tipizată la sursă. Ștergerea țintei nu șterge cererea, dar ștergerea unei cereri încă referite sau a unei surse folosite este refuzată. Mai multe cereri pot păstra aceeași sursă. Numele unei ținte descrie căutarea ori rezultatul dorit; nu este identitatea unui obiect creat sau găsit. Variantele `new` și `existing` sunt validate structural; o țintă `existing` fără referent concret nu este rezolvată prin simpla încărcare a acestor fire.
+
+Acest increment nu exportă contracte pentru constrângeri, noduri logice, `root` sau ținte `bound`. Acestea necesită verificarea apartenenței la cerere, a accesibilității și a domeniului legărilor, separat de evaluator. Exemplele complete de mai jos rămân propuneri până la implementarea acelei validări.
+
 Următoarea formă este propusă pentru mesajul „draw three big red fish in the pond”. Tipurile `std.request.*` de mai jos descriu contractul de proiectare; nu sunt o afirmație că motorul actual implementează această schemă. Câmpurile fixe descriu structura generală a cererii, iar conceptele precum culoare, loc sau cantitate sunt date rezolvate prin vocabularul conceptual, nu chei noi în program pentru fiecare domeniu.
 
 ```sop

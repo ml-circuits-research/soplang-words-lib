@@ -281,4 +281,21 @@ export const CONTRACT_MODULES = {
 @w.legend.role.after.goal.deny core.deny when=$w.legend.role.after.goal.owner when=$w.legend.role.after.goal.condition with=$w.legend.role.after.goal.same not=$w.legend.role.after.goal.allowed why="condition goal must name a role of its owning act"
 `, fns: {},
   },
+  'std.request': {
+    text: `
+@std.request.module core.module name=std.request version=0.176.0 exports=std.request exports=std.request.source exports=std.request.target
+@std.request.type core.type of=std.request closed=true
+@std.request.act core.slot of=std.request key=act kind=atom present=true
+@std.request.mood core.slot of=std.request key=mood kind=atom enum=do enum=propose enum=check enum=ask present=true
+@std.request.source core.slot of=std.request key=source kind=ref to=std.request.source present=true
+@std.request.source.type core.type of=std.request.source closed=true
+@std.request.source.text core.slot of=std.request.source key=text kind=string present=true
+@std.request.target.type core.type of=std.request.target closed=true
+@std.request.target.request core.slot of=std.request.target key=request kind=ref to=std.request present=true
+@std.request.target.mode core.slot of=std.request.target key=mode kind=atom enum=new enum=existing present=true
+@std.request.target.kind core.slot of=std.request.target key=kind kind=atom present=true
+@std.request.target.name core.slot of=std.request.target key=name kind=string
+@std.request.target.determiner core.slot of=std.request.target key=determiner kind=atom enum=definite enum=indefinite
+`, fns: {},
+  },
 };

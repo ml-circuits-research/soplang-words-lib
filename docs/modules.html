@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld The standard modules</title>
-<meta name="source-hash" content="59b260406019">
+<meta name="source-hash" content="18206c0424e8">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.175.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.176.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html" aria-current="page">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -56,9 +56,13 @@
 <h2 id="resolved-legend-schema-annotations">Resolved legend schema annotations</h2>
 <p>Added with 0.175.0: loading w.legend registers generic core.schema.link descriptors for core.type is, core.slot means (concepts), and core.slot space (spaces). Present annotations resolve strictly by explicit reference or unquoted globally unique public name. Final transactional checks allow forward declarations and reject target deletion, rename and newly ambiguous names. <code>semanticLinks()</code> exposes authored values and resolved identities without a cache.</p>
 <p>Legacy schemas may omit annotations. Mandatory means, semantic refinements, point typing, inferred questions/defaults and behavior are not implemented. Existing ask/enum/default remain. Conflicting duplicate type/slot annotations cannot be silently dropped; intersect requires identical annotations, while explicit slot override chooses a declaration. Every authored link is validated, including overridden declarations. Module aliases preserve declared target types. The generic descriptor is usable with other annotation/target vocabularies without a legend-specific runtime branch.</p>
+<h2 id="request-source-mode-and-targets">Request source, mode and targets</h2>
+<p>Added with 0.176.0: <code>core.use world=std.request</code> exports closed std.request.source, std.request and std.request.target records. Sources require text; requests require an atomic act name, explicit mood=do|propose|check|ask and a typed source reference. Targets require a typed request, mode=new|existing and an atomic kind name; optional name and determiner=definite|indefinite describe the target.</p>
+<p>Mood has no default and grants no execution authority. Act/kind names are not resolved to capabilities or concepts by this increment. Sources may be reused. Referenced requests/sources cannot be deleted; forward references and edits are transactional. The executable book fixture covers this foundation only.</p>
+<p>The module does not export constraint/logical/value schemas, root edges or bound targets yet. Unknown fact types remain governed by the library's existing open-world behavior; their acceptance is not proof of a request contract. Consumers must use published exports and must not infer that full graph validation or phase zero is complete.</p>
 <p class="source">Generated from <code>docs/modules.md</code>.</p>
 </main>
-<footer>sopworld 0.175.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.176.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

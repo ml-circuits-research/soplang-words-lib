@@ -1030,3 +1030,19 @@ Degree factor is only finite positive metadata here, including subunitary values
 The new mechanism uses generic core.schema.link descriptors (on/key/target/by), not runtime branches naming legend types. w.legend registers is/means/space; arbitrary other annotation vocabularies use the same mechanism. Alternative approaches were a fixed legend-name table (would break aliases and extensibility) or compile-time binding (rejects atomic forward facts and goes stale on edits). Final transactional resolution checks every authored annotation, without caching. The actual book §4.7 fragment and an unrelated custom vocabulary are tested.
 
 Compatibility is explicit: annotations are optional, but present links are strict; all loaded target names are considered globally and ambiguities require references. Quoted text is not a reference. Duplicate declarations cannot discard different annotations; intersect requires identical authored links, explicit override selects a slot while every authored link remains valid. Mandatory means, full refinements, mapped notations, behavioral inheritance and point/frame support are not claimed. Please review the generic descriptor and global-name policy before the remaining semantic migration.
+
+### Implementation review — request foundation and complete graph obligations (0.176.0)
+
+Published only source/request/target with mandatory mood and no implicit do; act/kind remain unresolved names. Existing proposed graph examples omitting mood need explicit modes when migrated. This foundation intentionally does not export constraints/logical nodes or bound targets.
+
+Concrete choices for the graph increment:
+
+| Counterexample | Proposed contract |
+| --- | --- |
+| An unattached not/group/quant has no request in the book, so orphan ownership cannot be checked. | Require typed request on every logical node, with all dependencies owned by that request. |
+| A request with logical nodes but no root has no defined top-level expression. | Implicit conjunction only for simple constraints with no logical nodes; otherwise require root. Reject orphan logical nodes and mandatory constraints. |
+| A shared leaf uses a bound target under its quantifier and also from a sibling group. A global visited set incorrectly accepts it. | Check each incoming scope; unique binder per bound target, scoped use only under its body. Outer bound targets may be used as nested collections; rebinding the same identity is rejected. |
+| Character offsets disagree on an emoji if one side counts JavaScript units and another counts Unicode scalars. | Use explicit Unicode scalar offsets into the exact source text, with paired ordered/in-range start/end; document conversion at JS boundaries. No span validation is claimed yet. |
+| A function checking a whole graph is called by a deny matching only the request. Editing a child does not necessarily reseed that deny. | Do not hide this dependency behind a dummy negative pattern. A generic final-state validator declaration, or explicit declared function read dependencies, must ensure graph/frame validators rerun on every relevant edit under the reasoning budget. |
+
+The existing core.schema.link validation established final-state identity checks, but is not a topology validator. Before graph release, tests must include cross-request edges, cycles introduced by edits, shared out-of-scope leaves, valid nested binders, orphan nodes and operator variant exclusions. Region/ordered values need eventual concept compatibility; field loading alone cannot establish it. Please review these decisions and the generic validation hook versus explicit dependency alternative with concrete counterexamples.

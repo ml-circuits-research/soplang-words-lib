@@ -68,3 +68,7 @@ Closed shared declaration schemas with typed references, acyclic single-parent s
 ### Increment 0.175.0 — resolved schema annotation identities
 
 Generic core.schema.link descriptors register native type/slot annotations; w.legend provides is/means/space target mappings. Final-state validation rejects missing/ambiguous/wrong-type identities and invalidating edits. semanticLinks() exposes current resolutions without cached fact dependencies. Explicit references disambiguate global public names; module aliases work through descriptor remapping. Mandatory means, all semantic refinements, mapped-notation semantics and behavior remain pending; no full phase-zero release claim.
+
+### Increment 0.176.0 — request source/envelope/target foundation
+
+std.request exports only source, request and target records, with explicit mandatory mood, unresolved act/kind names and typed source/request ownership. Target modes new/existing are supported; bound/root/logical/constraint contracts are not exported. The minimal §6.3.2 fixture is tested; the full graph examples remain proposed. No phase-zero gate is released to consumers. Full graphs need owned logical nodes, all-path binder scope, cycle/orphan checks and typed operator variants; questions.md records concrete implementation choices.

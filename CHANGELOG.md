@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.176.0
+
+- Publish request source/envelope/target structural contracts with mandatory explicit mood and typed ownership. No missing mode defaults to execution.
+- Test the actual minimal book fixture, forward references, source reuse, aliases and transactional edits/deletion. Logical request graphs remain pending.
+
+
 ## 0.175.0
 
 - Add generic core.schema.link descriptors, transactional reference/name resolution and semanticLinks() inspection. Legend registers is/means/space annotations with strict missing/ambiguous rejection.

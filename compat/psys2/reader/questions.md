@@ -17,3 +17,9 @@ The complete imported evidence is 205 rows, with seven proposed request descript
 The initial literal-only profile caused a real coverage regression for multiword provider names. The corrected property-name profile declares every provider name as a string, including single-word names. This matches the published colour/shape name fields and the consumer's decoded-name lookup; native RGB values are resolved and retained separately. It does not guess token type from spelling or change generic serialization.
 
 Please review this family-specific label contract. Future numeric/identity-valued provider families still need explicit token-kind declarations and cannot silently use this text-name profile. Exhaustive published colour-name coverage and unchanged decoded-value/effect checks are required before adoption.
+
+## General request composition review
+
+The new declarative compiler executes all four currently graphable frame licences together, with explicit existing/new modes, separate selectors/results and relational goals. Please review the authoritative `w.reader.en.requests` joins and the source-exact spatial preposition admission, including refusal of incomplete multiword fragments. Lifecycle acts deliberately do not invent an existence concept.
+
+Remaining shared data obligations: quantity/head NP composition with declared units/baselines/anchors for increment; question construction/mood; coordination with explicit request dependencies; quantified binding; and dialogue-context reference records. Propose source-backed constructions across these families rather than example-specific rules. The consumer currently refuses numeric-index role paths pending exact array context reconstruction; lower-level projection already supports them. Native capabilities and request batching must not be presented as proof these English constructions are implemented.

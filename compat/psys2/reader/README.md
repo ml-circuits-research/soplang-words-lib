@@ -55,3 +55,8 @@ same previously disclosed heldout-ID review metadata. Sentence files remain
 unopened; this repeat exposure changes neither the existing provisional status nor
 the requirement for fresh independent final evaluation. No review metadata was
 used in binder design or tests.
+
+The [general frame reader](general.md) compiles the published phrase/frame/request
+mapping declarations into complete schema-validated request graphs across the
+currently mapped construction families. It preserves alternatives and source
+coverage; unsupported quantity/question/context constructions remain explicit.

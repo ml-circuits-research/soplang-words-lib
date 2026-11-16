@@ -55,3 +55,28 @@
 - Pinned knowledge to `0591f3424a0f61d98215d2808c031f04f977e409` and exercised all five published licences. Tests check the increment frame's change act despite its make verb part, marker/object duplication, missing roles/paths, bad source joins, alternative licences, stale worlds, unknown versions/modes, resource limits and detached provenance. Optional documented version-2 target modes are admitted explicitly; absent mode remains unresolved. Every candidate states roles-projected/requestReady:false, with typing and unit obligations unresolved. The preview parser is unchanged.
 - A read-only smoke of the knowledge author's uncommitted phrase draft through the published compiler confirmed the agreed transitive/resultative/oblique envelope and was reported to that author. No draft facts or sentence acceptance tests were added to this pinned milestone. Separate static source views keep frame paths out of the syntax compiler's template-root scope. A repeated exposure to the already disclosed heldout-ID review metadata was recorded in README; no heldout sentence file was opened and no review metadata informed these source-join tests.
 - Validation: `node --test test/reader-frame-integration.test.mjs` passes six tests. Early test setup attempted duplicate-ID loads; corrected to explicit replacements/new worlds, after which malformed-source cases exercise the adapter as intended. `python3 tools/build_docs.py` rebuilt documentation. Final `npm test` and `SOPWORLD_BUNDLE=1 npm run test:src` pass after the provenance isolation regression; `tail -n 9 /home/salboaie/work/sopworlds/.session-control/reader-frames-tests.log /home/salboaie/work/sopworlds/.session-control/reader-frames-bundle.log` reports each 869 tests, 867 pass, zero fail, one skip and one TODO. `git diff --check` passes. Root owns main integration and publication.
+
+## General frame-to-request integration
+
+Consumer compiler now expands source-grounded target/predicate/relation mappings across
+all four graphable published licences. It retains exact phrase/frame world freshness,
+all parse alternatives, lexical origins, frame provenance, Unicode scalar evidence and
+standard graph validation. Unsupported alternatives refuse the reading; no action-name
+or sentence-specific dispatch was introduced. Source-exact spatial admission excludes
+incomplete preposition fragments without a lexical special case.
+
+Validation on the final source content: `npm test` with the isolated request-mapping
+knowledge checkout (same 9e08ed80 base plus additive module): 888 tests, 886 passed,
+0 failed, 1 skipped, 1 todo. `SOPWORLD_BUNDLE=1 node --test 'test/**/*.test.mjs'` with the
+same checkout: identical totals. Six new integration tests cover construction families,
+selector/result/goal separation, missing language contracts, stale/invalid sources,
+ambiguous and ungraphable alternatives, generated-ID collisions and unsafe declarations.
+Published-pin verification is recorded with the final integration commit.
+
+Final dependency pin: `7fbcf774e21c168e1c1b5f9dbd4e95b51a186825`, published on knowledge
+main after its sync/regeneration/pre-push checks. The command
+`node --test test/reader-general-integration.test.mjs test/reader-frame-integration.test.mjs test/reader-overlay-integration.test.mjs`
+against that exact committed checkout passed 15/15 on source and again 15/15 with
+`SOPWORLD_BUNDLE=1`. This also verifies the previous property-family reader remains
+unchanged by the new separately scoped declarations. Core source, public exports,
+version and generated library files are unchanged in this consumer-only increment.

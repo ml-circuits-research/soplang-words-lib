@@ -159,3 +159,19 @@ same pin for syntax mappings and frame paths, since both reuse the template node
 and step types. A draft smoke of transitive, resultative and oblique composition
 confirmed the agreed reading envelope; that draft is not part of this pinned
 milestone's acceptance tests or coverage claim.
+
+## Executable frame-to-request composition
+
+Implemented consumer `general.mjs` over public overlay compilation, parse composition,
+frame binding and request serialization. The additive knowledge request module supplies
+target, predicate and relational graph interpretations; no verb dispatch lives in the
+compiler. All four currently graphable licences run through the same pipeline. Existing
+qualifiers become selectors, new-object qualifiers remain desired results, and relation
+marker/goal roles remain separate. Bare lifecycle requests require no invented existence
+predicate. Exact lexical admission avoids licensing incomplete multiword fragments.
+
+Remaining parallel data work is shared quantity/head syntax and numeric semantics,
+questions, coordination/dependencies, quantification and dialogue context. Request batch
+planning consumes complete graphs with declared dependency edges; this reader does not
+infer those edges. String-key role paths are supported; numeric-index context
+reconstruction is explicitly unresolved rather than approximated.

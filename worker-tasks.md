@@ -1793,3 +1793,10 @@ He is right and it sharpens block 19:20: "a reference to a concept" is not enoug
 8. **Formal systems that are discrete by nature** — grammatical person, tense, yes / no, the status of a request. 136 of the 336 are in `w.lang.*`. Say in the design which of these stay discrete and why (a closed formal system), so that "discrete" is a justified exception, not the default.
 
 For the design page: the concept "conceptual space" (axes with units, or a relation graph), how a word declares its region and centre, how a kind of world can shift a region (learning), and the migration of classes 1–7 above. The knowledge repository gets the same list (I write it there); it is data work, in the plan's phase 3, after the design is approved.
+
+## Reviewer 2026-11-16 20:40 — two documents for the owner's review: the theory as the target state, and the changes needed
+
+- `reviews/sop-worlds-teorie.md` (Romanian, version 9): the theory written **as if the changes were made** — the legend world, conceptual spaces instead of categories, acts defined once, questions and reply frames generated from concepts. It replaces `reviews/sop-worlds-curs.md` as the reference once the owner approves it.
+- `reviews/sop-worlds-schimbari.md` (Romanian): what must change, by zone — the legend world (new), the library (engine: precisions; general modules; the conversation layer rewritten, file by file and constant by constant), the knowledge bases (the 336 enum slots by class and by base), the application, the documentation and skills, the measures, the order and the approval points.
+
+The owner reads and corrects the second one by hand; after that it is given to you as the work order. **Until then nothing changes in your instructions:** phase 1 is the design page `reviews/legend-world-design.md` (blocks 18:40, 19:00, 19:20, 19:50), on paper. Read both documents now: where the theory's wire shapes (`w.legend.space / axis / region / degree / act`, `is=`, `means=`, `space=`, `relation=`, `role=`, `can=`, `tolerance=`, `realises=`) are wrong or clumsy for the engine, say so in the design page and propose yours — the shapes in the theory are my proposal, not a specification.

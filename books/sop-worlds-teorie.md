@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 28, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 29, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -2285,6 +2285,327 @@ O diagramă poate folosi apoi aceleași identități de ședințe pentru a arăt
 Acest capitol descrie mecanismele și limitele lor. Mai trebuie scrise schemele complete ale declarațiilor noi, reprezentarea structurală a condițiilor și protocolul verificabil de completitudine. Acestea sunt livrabile de proiectare, nu detalii pe care implementatorul le poate inventa separat în fiecare domeniu. Reviewerul trebuie să încerce să găsească o tranziție din exemplu care nu este justificată de date, o regulă sau un contract explicit.
 
 # Anexe
+
+# 9. API-ul bibliotecii: construirea, interogarea și modificarea unei lumi
+
+Acest capitol leagă mecanismele cărții de apelurile care există în biblioteca `sopworld`, versiunea 0.167.0. Exemplele au fost rulate pe sursele acestei versiuni; rezultatele sunt redate explicit. Numele propuse în capitolele anterioare nu devin API-uri existente prin simpla lor apariție în carte. La sfârșit este delimitat contractul conversațional care mai trebuie construit.
+
+Aici sunt explicate apelurile de bază pentru un traseu complet prin lume. [Referința API](../docs/api.md) inventariază și familiile specializate; acest capitol nu pretinde încă să înlocuiască explicațiile tuturor exporturilor ei. Codul se poate importa din pachet prin `import { World, readRequest, planRequest } from 'sopworld'`. Într-un checkout al depozitului, aceleași nume sunt exportate de `src/index.mjs`, iar în browser de fișierul construit `docs/sopworld.mjs`.
+
+## 9.1 Instanța `World` și exemplul comun
+
+`new World(options?)` construiește o lume goală. Schema și faptele se încarcă separat; constructorul nu deduce domeniul din numele unei variabile JavaScript. Opțiunile pot furniza biblioteca de module (`library`), funcții ale gazdei, un namespace și limite de calcul. `version` identifică o versiune de stare și este potrivit pentru invalidarea cache-urilor; `stamp` este intern și nu identifică unic stări din lumi diferite. Un fork pornește cu versiunea bazei, iar modificarea sa efectivă primește o versiune diferită.
+
+Exemplele următoare construiesc fiecare o lume nouă cu funcția de mai jos. Nu depind de efectele exemplului anterior. Micul inventar are produse cu preț și linii care indică produsul și cantitatea. Regula calculează costul unei linii prin înmulțire. Aceasta folosește schema, potrivirea și deducția din capitolul 3, fără strat conversațional.
+
+```js
+const inventory = () => {
+  const w = new World();
+  w.load(`
+    @s.name core.slot of=item key=name id=true
+    @s.price core.slot of=item key=price kind=number min=0 required=true ask="What does it cost?"
+    @s.item core.slot of=line key=item type=item required=true
+    @s.qty core.slot of=line key=qty kind=integer min=1 default=1
+    @p.item item price=?p
+    @p.line line item=$p.item qty=?q
+    @calc core.calc out=?cost fn=mul args=?q args=?p
+    @result line core.on=$p.line cost=?cost
+    @rule core.rule when=$p.line when=$p.item with=$calc then=$result
+  `);
+  return w;
+};
+```
+
+În rezultate, `attrs` conține liste de tokenuri SOP: un preț poate apărea ca `["2"]`, deși slotul îl verifică numeric. Nu este un șir JavaScript convertit automat în număr. Exemplul afișează valorile cu `print(...values)`, definit ca `console.log(...values.map(v => JSON.stringify(v)))`; astfel se disting numerele, tokenurile și listele. Pentru un calcul al gazdei, conversia trebuie făcută conform tipului declarat, nu aplicată orbește oricărei valori.
+
+## 9.2 `load` și `tell`: încărcarea și afirmarea faptelor
+
+Ambele metode primesc text SOP sau o listă de fire deja parsate. `tell(input, options?)` afirmă fapte sau declarații, aplică regulile relevante și verifică schimbarea. Întoarce un rezultat cu `ok`, identificatorii adăugați, derivările, completările și încălcările. `ok: false` trebuie tratat ca refuz; faptul că apelul JavaScript s-a încheiat nu dovedește că afirmația a intrat în lume. Textul care nu poate fi parsat poate arunca o excepție.
+
+`load(input)` folosește aceeași modificare, dar aruncă o eroare dacă lumea o refuză. Este util la pornire, când o schemă invalidă este o problemă de configurare ce nu trebuie trecută cu vederea. Rezultatul la succes este tot rezultatul schimbării, nu o lume nouă.
+
+```js
+const w = inventory();
+const r = w.tell('@pen item name=pen price=2 @order line item=$pen qty=3');
+print(r.ok, r.added, w.get('order').attrs.cost);
+const bad = w.tell('@ink item name=ink price=-1');
+print(bad.ok, w.has('ink'));
+try { w.load('@ink item name=ink price=-1'); }
+catch (e) { print(e.message.startsWith('sopworld: refused')); }
+```
+
+Rezultatul verificat:
+
+```text
+true ["pen","order"] ["6"]
+false false
+true
+```
+
+Prima afirmație introduce produsul și linia, iar regula produce costul 6. Prețul negativ nu este acceptat și firul `ink` nu rămâne în stare. Ultimul `true` arată că `load` a aruncat eroarea de refuz. Diferența dintre metode este cum semnalează refuzul, nu dacă schema trebuie respectată.
+
+Opțiunile importante ale lui `tell` sunt `dry` pentru o probă fără păstrarea schimbării, `tier` pentru nivelul de proveniență, `ns` pentru namespace și `budget` pentru calcul. O probă reușită nu rezervă starea: înainte de execuția reală trebuie reverificată versiunea. La depășirea bugetului, schimbarea este refuzată; bugetul epuizat nu trebuie prezentat drept contradicție logică.
+
+## 9.3 `fill` și `revise`: completare sau corectare explicită
+
+`fill(id, key, value, options?)` furnizează o valoare unui slot. Pentru un slot cu o singură valoare deja afirmată, o valoare diferită produce conflict; metoda nu înseamnă „suprascrie orice”. `revise(id, key, value, options?)` exprimă tocmai corectarea explicită. Există și forma `revise(id, values, options?)` pentru un obiect de valori. Ambele întorc rezultatul schimbării și aplică validarea și deducția relevante.
+
+```js
+const w = inventory();
+w.tell('@pen item name=pen');
+print(w.fill('pen', 'price', 2).ok);
+print(w.fill('pen', 'price', 3).violations[0].kind);
+print(w.revise('pen', 'price', 3).ok, w.get('pen').attrs.price);
+```
+
+Rezultatul verificat:
+
+```text
+true
+"conflict"
+true ["3"]
+```
+
+Prețul lipsă poate fi completat cu 2. Încercarea de a-l completa încă o dată cu 3 nu retrage afirmația anterioară. Corectarea explicită reușește și prețul devine 3. Distincția este importantă pentru cererile omului: o nouă dovadă sau o corecție trebuie exprimată ca atare; nu trebuie ascunsă într-o completare. Sloturile fluente și presupunerile au reguli suplimentare de revizuire descrise în referința API.
+
+## 9.4 `ask`: potrivirea unor modele de fire
+
+`ask(patterns, options?)` primește modele SOP, nu o întrebare liberă în engleză. Întoarce câte un obiect de legături pentru fiecare potrivire. Identificatorul modelului se leagă la identificatorul firului găsit, iar variabilele se leagă la tokenurile din acesta. Modelele pot omite identificatorul dacă nu este necesar în rezultat.
+
+```js
+const w = inventory();
+w.tell('@pen item name=pen price=2 @ink item name=ink price=3');
+print(w.ask('@x item name=?name price=3'));
+print(w.ask('@x item price=99'));
+```
+
+Rezultatul verificat:
+
+```text
+[{"x":"ink","name":"ink"}]
+[]
+```
+
+`x` numește firul găsit, iar `name` valoarea slotului: coincidența lor în acest exemplu nu le face același rol. Lista goală pentru prețul 99 spune că nu s-a găsit o potrivire în domeniul citit. Nu dovedește că niciun obiect din afara acelei lumi nu poate avea acel preț. `ns` limitează namespace-ul, iar `at` permite citirea la un punct din istoric.
+
+La depășirea bugetului, rezultatul are informație de buget și nu trebuie tratat ca enumerare completă. În particular, serializarea simplă a unui array poate ascunde proprietăți atașate lui: apelantul verifică și `rows.budget`. O interfață care prezintă doar lista, fără statutul calculului, poate transforma o căutare întreruptă într-un răspuns aparent definitiv.
+
+## 9.5 `query`: o valoare împreună cu statutul și justificarea ei
+
+`query(question, options?)` primește fie `{ about, seek }` pentru proprietatea unui fir cunoscut, fie o descriere `{ type, where, seek, mode }`; poate primi și un fir `core.question`. Spre deosebire de `ask`, organizează răspunsul ca valoare căutată cu statut, surse și nivel de proveniență. Modul implicit este `value`; modurile `list`, `count`, `exists`, `check` și `abduce` schimbă întrebarea adresată motorului.
+
+```js
+const w = inventory();
+w.tell('@pen item name=pen price=2 @order line item=$pen qty=3');
+const q = w.query({ about: 'order', seek: 'cost' }, { suppose: false });
+print(q.status, q.value, q.via, q.tier);
+print(w.query({ type: 'item', where: { name: 'ink' }, seek: 'price' }, { suppose: false }).status);
+```
+
+Rezultatul verificat:
+
+```text
+"supported" "6" ["rule"] "derived"
+"missing"
+```
+
+Costul este susținut de regula `rule`, la nivelul `derived`. Tokenul `"6"` nu vine dintr-o presupunere a interfeței. Pentru produsul absent rezultatul este `missing`, nu prețul zero. Apelantul citește `status` înainte de `value` și păstrează câmpurile explicative ale statutului primit. Un rezultat ambiguu, condiționat sau necunoscut nu se transformă într-o valoare prin alegerea arbitrară a primului candidat.
+
+Exemplul folosește `suppose: false` pentru a cere răspunsul fără presupuneri ipotetice. În mod obișnuit `suppose` este activ; acest comportament trebuie ales conștient atunci când răspunsul va fi prezentat ca fapt. `record: true` poate înregistra întrebarea și răspunsul ca fire. Aceste fire nu constituie singure întregul jurnal de execuție propus în secțiunea 6.11.
+
+## 9.6 `open` și `next`: a observa lipsurile fără a le umple
+
+`open(id?)` enumeră sloturile obligatorii care nu au valoare, în întreaga lume sau pe firul indicat. Fiecare rezultat identifică obiectul, tipul, cheia și întrebarea declarată. Un slot opțional cu valoare implicită nu este o lipsă obligatorie, deci poate lipsi din `open` și totuși să apară în propunerile lui `next`.
+
+`next(options?)` întoarce `fills`, `questions` și `dead`: valori forțate sau implicite propuse, întrebări rămase și sloturi fără candidat posibil. Nu aplică propunerile. Cu `review: true` poate întoarce și presupunerile care merită revăzute.
+
+```js
+const w = inventory();
+w.tell('@pen item name=pen @order line item=$pen');
+print(w.open());
+const n = w.next();
+print(n.fills.map(f => [f.id, f.key, f.value, f.kind]));
+print(n.questions.map(q => [q.attrs.about[0], q.attrs.seek[0]]));
+print(w.get('order').attrs.qty ?? null);
+```
+
+Rezultatul verificat:
+
+```text
+[{"id":"pen","type":"item","key":"price","ask":"What does it cost?"}]
+[["order","qty","1","default"]]
+[["$pen","price"]]
+null
+```
+
+Prețul produsului este obligatoriu și lipsește. Cantitatea liniei nu este obligatorie, dar schema îi oferă valoarea implicită 1. `next` propune acea cantitate și întrebarea despre preț. Ultimul `null` arată că propunerea nu a fost încă scrisă în stare. Interfața poate astfel afișa opțiunile fără să modifice lumea doar prin inspectare.
+
+`canComplete(id?)` este o verificare ieftină că există candidați de încercat; un rezultat adevărat nu dovedește că aceștia trec toate constrângerile. `suggest(id, key, options?)` oferă candidați verificați pentru un slot, cu sursele lor. Aceste două apeluri sunt auxiliare selecției, nu aprobări automate de execuție.
+
+## 9.7 `complete`: aplicarea completărilor și proveniența lor
+
+`complete(options?)` aplică valorile forțate; cu `defaults: true` aplică și valorile implicite, iar cu `choose: true` poate alege o soluție pentru ce rămâne. Întoarce `filled`, `questions`, `dead` și `pending`, plus informația de buget dacă este cazul. Spre deosebire de `next`, modifică lumea. Nu trebuie confundat cu actul standard numit tot `complete`, care folosește mecanismul `std.fill` al stratului conversațional.
+
+```js
+const w = inventory();
+w.tell('@pen item name=pen price=2 @order line item=$pen');
+const result = w.complete({ defaults: true });
+print(result.filled.map(f => [f.id, f.key, f.value]));
+print(w.get('order').attrs.cost, w.tier('order', 'cost'));
+```
+
+Rezultatul verificat:
+
+```text
+[["order","qty","1"],["order","cost","2"]]
+["2"] "default"
+```
+
+Cantitatea implicită 1 permite regulii să calculeze costul 2. Costul rezultat are aici nivelul `default`: depinde de cantitatea presupusă, chiar dacă înmulțirea este deterministă. Aceasta explică de ce „a fost calculat printr-o regulă” nu înseamnă întotdeauna „toate premisele lui au fost afirmate de om”. Aplicația păstrează proveniența până în răspuns și poate revizui completarea când apare o cerință explicită.
+
+Completarea implementată folosește domeniile de valori, valorile implicite și constrângerile existente. Nu este încă implementarea întregii politici conceptuale propuse de carte, cu regiuni și descrieri generice. Exemplul demonstrează mecanismul existent pe o schemă concretă, nu închiderea lacunelor proiectului viitor.
+
+## 9.8 `solveReport`, `solve` și `apply`: căutare separată de modificare
+
+`solveReport(options?)` caută o atribuire comună pentru cheile deschise pe care motorul le poate reprezenta. Raportul are `status` (`sat`, `unsat` sau `unknown`), atribuirea când este disponibilă și informații despre motiv, solver și costul căutării. `sat` spune că s-a găsit o atribuire acceptată, `unsat` că problema reprezentată nu are soluție, iar `unknown` că nu există o concluzie. Domeniile și acoperirea problemei trebuie cunoscute înainte de a generaliza concluzia la lumea reală.
+
+`solve(options?)` este forma simplificată: întoarce atribuirea, `null` pentru `unsat` și poate întoarce `[]` pentru `unknown`. Prin urmare, lista goală nu este o dovadă de succes. `satisfiable()` este fals numai pentru `unsat`; adevărat nu exclude `unknown`. Pentru decizii și explicații se folosește raportul explicit. Opțiunile solverului sunt `solver`, `budget` pentru solver și `limit` pentru bugetul apelului general; acestea nu trebuie confundate.
+
+```js
+const w = new World();
+w.load(`
+  @s core.slot of=seat key=who enum=ann enum=bob required=true
+  @a seat who=?who
+  @b seat who=?who
+  @different core.check fn=neq args=$a args=$b
+  @unique core.deny when=$a when=$b if=$different why="a person sits twice"
+`);
+w.tell('@s1 seat @s2 seat who=bob');
+const report = w.solveReport();
+print(report.status, report.assignment);
+print(w.open().map(x => [x.id, x.key]));
+if (report.status === 'sat') print(w.apply(report.assignment).ok);
+print(w.get('s1').attrs.who);
+```
+
+Rezultatul verificat:
+
+```text
+"sat" [{"id":"s1","key":"who","value":"ann"}]
+[["s1","who"]]
+true
+["ann"]
+```
+
+Regula de interdicție nu permite aceleiași persoane să ocupe două locuri. Bob este deja la `s2`, deci căutarea propune Ann pentru `s1`. După raport, `open` încă arată cheia lipsă: căutarea nu a aplicat-o. `apply(assignment, options?)` aplică atribuirea ca o schimbare verificată. Ramura `if` împiedică folosirea unui rezultat necunoscut drept soluție.
+
+O soluție aparține stării pe care a fost calculată. Dacă acea stare se schimbă înainte de `apply`, atribuirea trebuie din nou validată; nu este o rezervare. Nici `apply`, nici `solveReport` nu înseamnă că o unealtă externă a mutat un obiect ori a creat o rezervare. Ele lucrează asupra lumii de fire.
+
+## 9.9 `fork`: starea candidatului și starea de bază
+
+`fork()` întoarce o lume independentă cu același conținut inițial. Implementarea partajează structurile nemodificate și copiază ce este schimbat, dar contractul observabil este izolarea modificărilor. Această operație permite verificarea unui plan fără să modifice baza.
+
+```js
+const w = inventory();
+w.tell('@pen item name=pen price=2');
+const candidate = w.fork();
+candidate.revise('pen', 'price', 4);
+print(w.get('pen').attrs.price, candidate.get('pen').attrs.price);
+print(w.version === candidate.version);
+```
+
+Rezultatul verificat:
+
+```text
+["2"] ["4"]
+false
+```
+
+Prețul bazei rămâne 2, în timp ce candidatul are 4. Versiunile diferă după schimbare. Fork-ul nu rezervă fișiere, unelte sau servicii externe. Dacă o funcție a gazdei produce efecte externe în timpul unei probe, izolarea firelor nu le anulează; tocmai de aceea calculele folosite în simulare trebuie să respecte contractul de puritate.
+
+## 9.10 `undo` și `redo`: istoricul bibliotecii
+
+`undo(n = 1, options?)` retrage ultimele afirmații din istoricul lumii și întoarce rezultatul, identificatorii afectați și încălcările. `redo(n = 1, options?)` reface afirmațiile retrase, dacă mai sunt disponibile și valide. Afirmațiile care ating numai tipuri tranzitorii sunt tratate separat, conform referinței API. O operație nouă obișnuită poate invalida posibilitatea de redo.
+
+```js
+const w = inventory();
+w.tell('@pen item name=pen price=2');
+w.tell('@ink item name=ink price=3');
+const undone = w.undo();
+print(undone.ok, undone.removed, w.has('ink'));
+print(w.redo().ok, w.has('ink'));
+```
+
+Rezultatul verificat:
+
+```text
+true ["ink"] false
+true true
+```
+
+A doua afirmație, despre `ink`, este retrasă și apoi refăcută. Această unitate de istoric este o afirmație a bibliotecii; o cerere a omului poate necesita mai multe afirmații și apeluri de unealtă. Anularea conversațională din secțiunea 6.9 trebuie să le grupeze, să compenseze efectele reale și să le observe din nou. Un apel la `world.undo()` nu garantează anularea unei acțiuni deja executate într-un editor sau calendar extern.
+
+## 9.11 `register`: legătura dintre declarație și calculul gazdei
+
+`register(kind, name, fn, options?)` înregistrează o funcție JavaScript și întoarce lumea. Pentru `kind='function'`, funcția primește `(args, world)`: primul argument este lista tokenurilor, nu câte un argument JavaScript pentru fiecare parametru SOP. Declarația `core.function` și argumentele ei spun motorului ce contract are funcția; înregistrarea furnizează implementarea. Sunt necesare ambele pentru un contract inspectabil.
+
+```js
+const w = new World();
+w.register('function', 'half', ([x]) => Number(x) / 2);
+w.load(`
+  @fn core.function name=half out.kind=number pure=true
+  @arg core.function.arg of=$fn name=x kind=number
+  @p measure value=?v
+  @c core.calc out=?h fn=half args=?v
+  @t measure core.on=$p half=?h
+  @r core.rule when=$p with=$c then=$t
+`);
+w.tell('@m measure value=8');
+print(w.get('m').attrs.half, w.functions()[0].registered);
+```
+
+Rezultatul verificat:
+
+```text
+["4"] true
+```
+
+Regula calculează jumătatea valorii 8 și o pune pe același fir. `functions()` confirmă că funcția declarată este înregistrată. `Number(x)` este potrivit aici deoarece parametrul este numeric; pentru `json`, funcția trebuie să decodeze tokenul conform reprezentării, nu să presupună că primește direct un obiect JavaScript.
+
+`pure=true` este o obligație a implementării gazdei, nu o verificare automată că JavaScript nu are efecte. O funcție folosită în deducție trebuie să tolereze toate intrările admise de contract, inclusiv combinații care vor fi ulterior eliminate de alte condiții. Înlocuirea unei funcții predefinite este refuzată fără opțiunea explicită `override`. Celelalte categorii înregistrabile (`action`, `producer`, `filter`, `context`, `lemma`) au semnături proprii; nu se apelează toate ca o funcție de calcul.
+
+## 9.12 Citirea unei cereri există deja, dar contractul conceptual este propus
+
+Biblioteca exportă deja `readRequest`, `requestWires`, `reviseRequest`, `planRequest` și `runPlan`. `readRequest(world, text, context?)` întoarce o cerere cu act, țintă, constrângeri, referințe și cuvinte necitite. Contextul furnizează lumea limbii, catalogul și starea relevantă; cititorul nu primește sensul tuturor cuvintelor prin simplul apel. `planRequest(live, request, options?)` folosește declarațiile de capabilități și sursele disponibile pentru a construi pași. Planificarea nu trebuie confundată cu executarea prin `runPlan`.
+
+```js
+const language = new World();
+language.tell('@d ex.det text=a text=the');
+const w = new World();
+w.load(`
+  @acts core.use world=std.acts
+  @world std.schema.world name=toy
+  @type core.type of=box extends=std.schema.thing closed=true
+  @kind std.schema.kind of=box world=toy acts=make
+`);
+const request = readRequest(w, 'make a box blorp', { language, lang: 'ex' });
+print(request.act, request.target, request.unread);
+const plan = planRequest(w, request);
+print(plan.ok, plan.steps, plan.unread);
+```
+
+Rezultatul verificat:
+
+```text
+"make" "box" ["blorp"]
+false [] ["blorp"]
+```
+
+Micul exemplu declară un singur fel de obiect și vocabularul minim. Cititorul recunoaște actul și ținta, dar păstrează `blorp` ca necitit. Planificatorul refuză să execute doar partea înțeleasă: lista pașilor este goală. Acesta este un comportament existent și verificat, nu o promisiune a refactoringului.
+
+Contractul actual al constrângerilor folosește chei din `REQUEST_KEYS` și forme proprii ale stratului conversațional. `requestWires` serializează forma actuală în fire `w.request`; nu produce implicit schema `std.request.*` propusă în secțiunea 6.3.2. Acea schemă cere descrieri și concepte rezolvate generic, identitatea stabilă a cerințelor și proveniența lor prin corecții. Adaptarea API-urilor existente la acest contract necesită o mapare explicită și verificarea fiecărui rezultat intermediar.
+
+Pentru API-ul conversațional viitor trebuie fixate trei frontiere: citirea întoarce descrierea cererii și ce rămâne necunoscut; planificarea întoarce pașii, precondițiile și proprietățile neverificate; execuția întoarce efectele observate și dovezile. Numele și semnăturile finale nu sunt încă stabilite. Un capitol care le-ar prezenta ca implementate ar ascunde exact diferența dintre mecanismele disponibile și proiectul pe care vrem să îl construim.
 
 ## Anexa A. Cu ce seamănă
 

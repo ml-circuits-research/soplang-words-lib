@@ -2032,3 +2032,12 @@ print(builtins.time_add(['10:40', '35min']), builtins.div(['6m', '2m']), builtin
 ## Retained point-space definitions
 
 `retainPointSpace(world, id, options?)` captures a valid explicitly framed numerical legend space into the generic retained registry. Its definition preserves ordered axes, canonical and alternative affine units, and root frame identity/version. Reusing a revision with changed meaning fails; undo and persistence preserve the old meaning. This publication step does not yet implement native point slots, coordinate matching or migrations. See the API for the exact fields, owner key, alias support and budget/dry behavior.
+
+## Declarative parse composition
+
+Evaluates declared semantic templates over grammar parse trees. Production IDs and
+lexical categories select templates; own-property paths copy lexical features or
+already composed child values. Every surviving alternative retains its parse index.
+Missing bindings fail explicitly, and bounded evaluation reports truncation. This
+produces interpretation proposals, not proof of meaning or instance resolution.
+See [the API and runnable example](api.md#composeparsesparses-options).

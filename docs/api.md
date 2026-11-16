@@ -1233,6 +1233,43 @@ print([np.rule, np.head, np.pp[0].words, parseText(w, 'the moon', { start: 'NP',
 ["r2","star",["next to","the","house"],[{"word":"moon","at":1}]]
 ```
 
+### composeParses(parses, options?)
+
+`composeParses(parses, { rules, lexical, budget, maxDepth })` evaluates declarative
+semantic templates over each parse independently. `rules` maps exact production
+IDs; `lexical` maps lexical categories. Ordinary JSON objects/arrays assemble a
+record. `{$get: path}` copies an own-property path from `{node, children}`, where
+`children` contains already composed child values. `{$literal: value}` quotes
+JSON containing reserved keys. Every child must have a mapping; an explicit
+`{$literal: null}` can acknowledge syntax-only material.
+
+The result contains `candidates: [{index, value}]` and `failures: [{index, reason}]`.
+Templates and copied values must be plain JSON: special object prototypes, sparse
+arrays, extra array properties, symbols, accessors and non-enumerable object
+properties are rejected. Accessors are never executed by binding/copy evaluation.
+The input is a `parseText` result; arbitrary malformed outer parse containers are
+not an alternate input format. Missing mappings/features reject that parse.
+Alternatives are retained without merging or ranking. Unmapped coordination is rejected. `budget` defaults to 20000
+traversal/copy steps; `maxDepth` defaults to 64 (allowed range 1–256). Exhaustion
+retains earlier candidates and marks `truncated: true`; parser truncation also
+propagates. A candidate is a declared interpretation, not proof of completeness,
+exhaustive parsing, vocabulary validity or successful instance resolution.
+
+```js
+const w = new World();
+w.tell('@n g.word text=ko cat=N kind=vessel @r g.rule lhs=M rhs=N');
+const p = parseText(w, 'ko', { start: 'M' });
+const composed = composeParses(p, {
+  lexical: { N: { kind: { $get: ['node', 'feat', 'kind'] } } },
+  rules: { r: { target: { $get: ['children', 0] } } }
+});
+print(composed.candidates);
+```
+
+```output
+[{"index":0,"value":{"target":{"kind":"vessel"}}}]
+```
+
 ### grammarCheck(world, options?)
 
 Checks of a grammar that a host would otherwise find the hard way. It reports:

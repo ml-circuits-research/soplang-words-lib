@@ -1,0 +1,33 @@
+# First symbolic composition boundary
+
+SOP-BERT remains the primary reader. The symbolic path is a fallback and an explainer; both paths propose general request graphs and must pass instance resolution. Neither agreement with the symbolic path nor a valid graph proves the intended reading.
+
+## Development scope
+
+The first family was selected from development labels `owner-en-2026-11-15:005`, `:011`, `:012`, `:013` and `:014`: explicit assignment of a property to an existing target. These five rows contain four distinct texts. They are proposed labels, not approved semantic gold. The two creation labels are outside this increment. Published knowledge may initially support only the colour cases; size requires a declared degree interpretation, and fill requires its own value-domain binding. Do not derive those meanings from test expectations.
+
+Existing `acts.change.of` declares attribute, thing and value roles, but its unrestricted word captures do not establish canonical concept identity or compatible value domains. Its output is therefore not a ready request graph. The knowledge repository owns the grammar, lexical bindings and semantic declarations; the library owns their general evaluation.
+
+## Declarative composition
+
+`composeParses(parses, {rules, lexical, budget, maxDepth})` evaluates each returned `parseText` tree independently. A production is selected by exact rule ID; lexical nodes use their declared category. Ordinary JSON objects and arrays assemble semantic records. `{$get: ['children', 0, 'kind']}` reads a composed child field, while `{$get: ['node', 'feat', 'kind']}` reads a declared lexical feature. `{$literal: value}` quotes JSON, including reserved keys. Paths access own properties only.
+
+Every child must have a mapping. A declaration may explicitly acknowledge grammatical material with `{$literal: null}`. Missing declarations, absent features, unmapped coordination or invalid templates reject that tree with a reason. All surviving alternatives retain their parse indices; none is merged, ranked or called a complete understanding. An author can still write an incorrect mapping or ignore a meaningful child: structural evaluation cannot certify that knowledge claim.
+
+The mechanism copies evidence rather than fabricating it. `node.sourceRanges` comes from published original Unicode scalar provenance. A request adapter may emit a single interval only for justified contiguous evidence. Disjoint evidence remains in explanations or requires a separately justified representation; taking its bounding interval would falsely include ignored material. Unaligned rewrites cannot supply exact evidence.
+
+Evaluation bounds both traversal and JSON copying. Budget exhaustion retains already composed candidates and marks truncation. The parser's truncation marker propagates. The parser may also cap alternatives; an unmarked result is not a proof of semantic exhaustiveness.
+
+## Knowledge and request adapter
+
+The knowledge author will publish language productions plus lexical bindings into existing source worlds. Bindings name the source type, text key, category and literal/copied feature fields. Vocabulary remains in its owning worlds. A mapping-fact tree may compile to the JSON template interface; no executable callbacks or generated sentence rules are required.
+
+The bounded request adapter will require explicit act/mood, existing-target identity/determiner, property concept and a value with declared operator and compatible concept. It will build ordinary published `std.request` wires, validate them with `inspectRequest`, and return candidates for instance resolution. Target-selection constraints and desired-result constraints remain separate. No legacy request keys are silently translated into the new graph.
+
+Source-token coverage alone is insufficient: the grammar tokenizer drops punctuation. A reader must explicitly account for relevant punctuation and unresolved material before claiming an interpretation; a question mark cannot disappear and turn a question into an imperative. This generic transducer makes no such completeness claim.
+
+## Development probes before a reader claim
+
+Use independently selected development variants to vary the object, property and value, including concepts outside drawing. Preserve alternative lexical meanings. Unknown values or incompatible property/value concepts must not produce a guessed request. Negation, questions and unsupported coordination must decline until explicit semantics exist. A selector's current colour and the desired colour must not become two result constraints. Case, punctuation, multiword lexical evidence and missing source alignment must retain honest provenance.
+
+These are planned probes, not achieved reader-coverage results. The initial mechanism tests use an invented language and test binding preservation, alternative retention, failure reasons and resource limits. No heldout sentence or reviewer concern selects these rules.

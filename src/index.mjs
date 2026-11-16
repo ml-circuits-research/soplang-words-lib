@@ -13,6 +13,7 @@ export { PatternIndex } from './patterns.mjs';
 export { schemaCard, schemaExamples, actReply, schemaGrid, gridTests } from './schema-words.mjs';
 export { createCatalog, createCatalogs, bundleReader, bundleThenRead, listOf, loadBundles } from './knowledge.mjs';
 export { turn, TURN_STAGES, turnFlow, arbitrate } from './turn.mjs';
+export { composeParses } from './grammar-compose.mjs';
 export { parseText, grammarOf, nounPhrase, grammarView, viewDiff, grammarCheck } from './grammar.mjs';
 export { resolve } from './resolve.mjs';
 export { needsOf } from './std.mjs';

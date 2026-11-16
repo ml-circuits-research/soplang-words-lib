@@ -953,3 +953,13 @@ export function evaluateRequestPredicates(world: World, request: string, options
   evaluateConstraint?: (input: Readonly<Record<string, unknown>>) => { truth: RequestTruth; evidence: unknown[]; reason?: string };
   resolvePopulation?: (input: Readonly<Record<string, unknown>>) => { context: RequestBindingContext; complete: boolean; subjects: RequestHistoricalSubject[]; evidence: unknown[] };
 }): { ok: boolean; truth: RequestTruth; request: string | null; sourceStamp: number; evidence: unknown[]; reasons: unknown[]; unknownReasons: unknown[]; trace: unknown[]; failures: unknown[]; provenance: unknown; steps: number; trust: string };
+
+
+/** Resolve explicit target populations without parsing text or executing effects. */
+export function resolveRequestTargets(world: World, request: string, options?: {
+  family?: string; budget?: number; bindings?: Record<string, RequestGroundBinding>;
+  populations?: Record<string, { kind: string; context: RequestBindingContext; complete: boolean; subjects: RequestHistoricalSubject[]; evidence: unknown[] }>;
+  policies?: Record<string, 'one' | 'all'>;
+  evaluateTarget?: (input: Readonly<Record<string, unknown>>) => { truth: RequestTruth; evidence: unknown[]; reason?: string };
+  evaluateConstraint?: (input: Readonly<Record<string, unknown>>) => { truth: RequestTruth; evidence: unknown[]; reason?: string };
+}): { ok: boolean; request: string | null; sourceStamp?: number; targets: Array<Record<string, unknown>>; steps: number; trust?: string; issues?: unknown[] };

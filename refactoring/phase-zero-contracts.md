@@ -202,3 +202,7 @@ Ask requests can now carry explicitly owned query projections (values/count/exis
 ### Increment 0.199.0 — graph-only predicate evaluation
 
 The shared evaluator traverses published result/selector, group/not and scoped quantifier graphs with strong three-valued logic. Explicit historical bindings and population coverage preserve ambiguity and incomplete observations. It contains no sentence/domain rules, effect executor or implicit conversion. Semantic leaf truth and population completeness come from declared callbacks and are not independently proved. Stateful context references, ordinal order bases and corrective request revisions remain distinct pending contracts, as recorded in questions.md.
+
+### Increment 0.200.0 — explicit target population resolution
+
+Canonical snapshot populations, explicit one/all policies and the shared predicate evaluator now produce target resolutions with retained ambiguity/unknown choices. Named-target semantics are delegated explicitly and may not disappear when there is no selector. Result requirements remain separate. Canonical membership, semantic callback truth and population coverage remain trusted adapter declarations; this is not subtype inference, conversation resolution, ordinal selection or creation authority.

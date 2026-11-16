@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="0cc4fe404091">
+<meta name="source-hash" content="6e321ca4efc6">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.199.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.200.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html" aria-current="page">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -794,9 +794,13 @@ print(builtins.time_add([&#x27;10:40&#x27;, &#x27;35min&#x27;]), builtins.div([&
 <p><code>evaluateRequestPredicates</code> interprets the existing logical graph without reading source text. Its result can be true, false or unknown. It preserves selector and result closures, lexical quantifier bindings and historical snapshot identity. Leaf semantics come from synchronous declared callbacks; a positive leaf result is negated only by the graph's polarity/negation operators. Combining unknown with a decisive false in a conjunction gives false; combining it with a decisive true in a disjunction gives true.</p>
 <p>Population coverage is a separate assertion supplied by the resolver. A partial population can witness existence or a counterexample, but it cannot establish exhaustive absence or universal success. Complete empty populations make all/each/none true and any false. An empty request result has unknown truth rather than a success claim. Each historical subject retains a typed native ID plus source, source type and version inside an explicit instance/scope/version context. The evaluator never treats a historical identity as a live object or authorizes an effect from structural validity.</p>
 <p>Callbacks must be pure for a fixed graph and binding context: shared DAG nodes are memoized. Callback truth, observation authenticity, stable external snapshots and semantic population completeness are trusted boundaries. Budget exhaustion, excessive depth and public world mutations invalidate the whole result; failure is unknown. The returned trace records supplied evidence and decisions, and is not a retained authenticated reply assessment. Application adapters still own declared comparisons, unit/frame compatibility and interpretation of context-dependent references.</p>
+<h2 id="explicit-canonical-target-populations">Explicit canonical target populations</h2>
+<p><code>resolveRequestTargets</code> selects from populations keyed by request target identity. A population names the exact canonical kind and its historical instance/scope/version; each subject retains source, source type, typed native ID and revision. Canonical membership and completeness are trusted assertions from the declared adapter. The resolver does not infer subtyping, ordinals or a focus from strings.</p>
+<p>Selectors use the existing three-valued predicate evaluator. The resolver never applies requested result predicates as selectors. A separate target callback evaluates declared descriptor semantics such as a name; without that callback a named target remains unknown. Under policy one, two known matching subjects establish ambiguity even when a population is incomplete. One known match still needs complete coverage with no unknown candidate to establish uniqueness. Policy all preserves known members but cannot claim an exhaustive result from partial coverage.</p>
+<p>Each target reports a resolved, ambiguous, missing, unknown, requires-creation or lexically-bound status. Structured clarification records retain historical choices without inventing user-facing wording. A successful computation is not a promise that every target resolved. One finite budget covers schema checks, callbacks, copied evidence and every repeated selector evaluation. Public world mutation invalidates the whole operation. No result authorizes an effect, creates an object or replaces an authenticated journal assessment.</p>
 <p class="source">Generated from <code>docs/reference.md</code>.</p>
 </main>
-<footer>sopworld 0.199.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.200.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

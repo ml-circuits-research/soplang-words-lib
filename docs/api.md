@@ -4839,3 +4839,29 @@ true
 `selector` names a target whose selector closure should be evaluated; by default the request's result closure is evaluated. Without an explicit result root, non-selector flat constraints form a conjunction. An empty result is unknown. The callback evaluates a positive proposition; the evaluator applies the constraint's polarity and the graph's logical negations. Missing bindings, unknown leaves, incomplete populations and callback failures preserve uncertainty.
 
 A population callback returns an explicit snapshot context, distinct historical subjects, a completeness flag and evidence. A witnessed existential can be true in an incomplete population; a witnessed counterexample can make a universal false. Exhaustive absence and universal success require complete populations. Empty complete populations follow the usual quantifier rules. The evaluator records decisions and reasons, enforces finite work/depth bounds and rejects public world mutations during evaluation. It does not publish a retained reply claim or verify the authenticity of supplied observations.
+
+### resolveRequestTargets(world, request, options?)
+
+Selects historical subjects from explicitly declared canonical populations, using the shared predicate evaluator for selectors. `policies` supplies `one` or `all` per existing target; it is never inferred from surface text. Canonical kind membership, population coverage and semantic callbacks remain trusted adapter declarations.
+
+```js
+const w = new World();
+w.load('@use core.use world=std.request');
+w.load(`@s std.request.source text="Select an item"
+@r std.request act=inspect mood=check source=$s
+@t std.request.target request=$r mode=existing kind=toy.item`);
+const result = resolveRequestTargets(w, 'r', {
+  policies: {t: 'one'},
+  populations: {t: {kind: 'toy.item', context: {instanceId: 'toy', scope: 'all', version: 'v1'},
+    complete: true, subjects: [{id: 'item1', source: 'toy.item1', sourceType: 'toy.item', version: 'v1'}], evidence: []}}
+});
+print(result.ok);
+print(result.targets[0].status);
+```
+
+```output
+true
+resolved
+```
+
+A unique match resolves under policy one only when coverage is complete and no candidate remains unknown. Multiple known matches are ambiguous even in a partial population. Zero matches indicate absence only with complete coverage. Policy all retains known matches and resolves only with complete coverage. Structured clarification choices preserve historical instance/scope/version identity. A named target requires a declared target evaluator; matching only its kind cannot resolve its name. Result requirements never filter a target selection. New targets require creation, and bound targets remain inside lexical quantifier evaluation. No effects are performed.

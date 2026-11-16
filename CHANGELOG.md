@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.200.0
+
+- Resolve request targets from explicit canonical snapshot populations, preserving ambiguity, unknown membership, named-target semantics and one/all cardinality policies. Reuses the three-valued selector evaluator without reading text or executing effects.
+
 ## 0.199.0
 
 - Evaluate request predicate graphs with bounded three-valued logic, scoped historical bindings and explicit population coverage. Source parsing, host truth and reply assessments remain separate.

@@ -102,3 +102,7 @@ calibrateReference validates the world, captures typed reference samples and the
 ### Increment 0.183.0 — target selector contexts
 
 Reader development exposed that identifying pre-state properties could not be separated from desired results. Existing targets now have selector graph roots, with independent scope and disjoint full closures; implicit result conjunction excludes selectors. Selector-only logical graphs need no result root. Exact §6.3.1 example is structurally executable. Candidate binding, joint target resolution, predicate truth and historical-event selectors remain pending. This corrects a shared contract instead of hardcoding reading exceptions.
+
+### Increment 0.184.0 — retained revision registry
+
+World.retainRevision / retainedRevision implement the shared identity+revision→definition mechanism. Persistent frozen definitions are independent of ordinary fact undo, merged on adoption and preserved explicitly in full/delta/timeline JSON. First insertions inside refused transactions roll back; forks isolate later publications; conflicting reconciliation fails. JSON shape and budget checks precede publication. This prerequisite does not by itself implement point/frame bindings, migrations or calibration-to-axis consistency. The review's deferred registry is now delivered explicitly rather than pretending mutable source metadata can freeze point meaning.

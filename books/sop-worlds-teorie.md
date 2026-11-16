@@ -3391,6 +3391,10 @@ Din versiunea 0.182.0, `calibrateReference(world, 'reference.widths')` calculeaz
 
 Acest mecanism nu este încă registrul de publicare a reviziilor. După reîncărcarea JSON, aplicația trebuie să verifice și să protejeze definiția păstrată; simplul număr de versiune sau înghețarea unui obiect în memorie nu împiedică înlocuirea fișierului. Instantaneul păstrează proveniența disponibilă, fără să dovedească adevărul măsurării. Legarea la axă și verificarea reutilizării aceleiași revizii rămân obligații distincte.
 
+Biblioteca 0.184.0 adaugă separat registrul generic `world.retainRevision(identitate, revizie, definiție)`. Prima publicare fixează definiția JSON; repetarea ei identică este permisă, iar alte conținuturi sub aceeași pereche sunt refuzate. Definiția rămâne disponibilă prin `retainedRevision` după anularea sau revenirea faptelor la o stare mai veche. Salvarea lumii o păstrează separat de istoricul obișnuit, iar reîncărcarea verifică eventualele conflicte. Astfel, anularea unei operații nu șterge sensul unei revizii care a fost deja publicată.
+
+Registrul poate servi atât spațiilor de puncte, cât și calibrării, dar nu construiește singur definiția lor și nu garantează autenticitatea unui fișier modificat extern. Două copii independente pot publica definiții incompatibile; reunirea lor trebuie să refuze conflictul. Legarea concretă a axelor, unităților și reperului la definiția păstrată rămâne următorul pas. Pentru calibrare, instantaneul calculat poate fi păstrat explicit ca definiție, fără să pretindem că axa îl folosește deja.
+
 Legarea calibrării de această colecție și verificarea rezultatului pe axă rămân propuse în fragmentul următor; existența contractului setului nu pretinde că ele sunt deja implementate:
 
 ```sop

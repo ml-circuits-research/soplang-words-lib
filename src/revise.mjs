@@ -112,6 +112,7 @@ export const revision = {
       }
     }
     const next = new this.constructor(this.options);
+    next._retained = this._retained;
     const refused = next._replay(this.log, (e) => {
       if (e.op === 'tell') {
         const ws = e.wires.filter((w) => !(e.facts.includes(w.id) && gone.has(w.id)));
@@ -120,12 +121,15 @@ export const revision = {
       return gone.has(this.resolve(e.id)) || !this.has(e.id) ? null : e;
     });
     if (refused) return { ok: false, removed: [], violations: refused.violations };
-    const removed = this._adopt(next, 'retract');
+    const retained = this._mergeRetained(next);
+    if (!retained.ok) return { ok: false, removed: [], violations: retained.violations };
+    const removed = this._adopt(next, 'retract', null, retained.entries);
     return { ok: true, removed, violations: [] };
   },
 
   /** Take over the state of a world that was rebuilt from (part of) this one's log. Returns the wire ids that are gone. */
-  _adopt(next, op, gone = null) {
+  _adopt(next, op, gone = null, retained = this._retained) {
+    this._retained = retained;
     const before = gone ? null : new Set(this.wires.keys());
     if (this._shared) this._shared.holders--;
     for (const k of ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'seq', '_c', '_logOf', '_fills', '_lastOrder', '_nsUsed']) this[k] = next[k];
@@ -162,14 +166,17 @@ export const revision = {
       if (!undoing.length) return { ok: false, undone: [], removed: [], added: [], changed: [], violations: [{ kind: 'nothing-to-undo', why: 'nothing has been told' }] };
       const keep = undoing[0].from;
       const next = new this.constructor(this.options);
+      next._retained = this._retained;
       const refused = next._replay(this.log.slice(0, keep));
       if (refused) return { ok: false, undone: [], removed: [], added: [], changed: [], violations: refused.violations };
       for (const st of kept) next._replay(this.log.slice(st.from, st.to + 1)); // transient state after them, where it still fits
+      const retained = this._mergeRetained(next);
+      if (!retained.ok) return { ok: false, undone: [], removed: [], added: [], changed: [], violations: retained.violations };
       const was = this.fork();
       const entries = undoing.flatMap((st) => this.log.slice(st.from, st.to + 1));
       const undone = [...entries].reverse().map((e) => (e.op === 'tell' ? { op: 'tell', ids: e.wires.map((w) => w.id) } : { op: e.op, id: e.id, key: e.key, value: e.value }));
       const redo = this._redo || [];
-      this._adopt(next, 'undo');
+      this._adopt(next, 'undo', null, retained.entries);
       this._redo = [...redo, entries];
       const d = was.diff(this);
       return { ok: true, undone, removed: d.removed.map((x) => x.id), added: d.added.map((x) => x.id), changed: d.changed, violations: [] };
@@ -278,9 +285,15 @@ export const revision = {
    * one unit (the told wires of a type or an id prefix) is put back, as one statement;
    * redo() then puts the unit back as it was before the rewind.
    */
-  rewind(mark, { only } = {}) {
+  rewind(mark, opts = {}) {
+    return this._guard(opts, () => this._rewind(mark, opts), v => ({ ok: false, removed: [], added: [], changed: [], violations: [v] }));
+  },
+
+  _rewind(mark, { only } = {}) {
     if (!mark || !mark.world || typeof mark.world.fork !== 'function') throw new Error('sopworld: rewind needs a mark from world.mark()');
     if (this._tx) throw new Error('sopworld: rewind inside a transaction');
+    const retained = this._mergeRetained(mark.world);
+    if (!retained.ok) return { ok: false, removed: [], added: [], changed: [], violations: retained.violations };
     if (only) {
       // one unit only: the told wires of a type (or an id prefix) become what they were at
       // the mark, everything else stays; one transaction, like sync
@@ -288,7 +301,14 @@ export const revision = {
       const c = this._compiled();
       const inside = (w) => (coll.type ? c.isA(w.type, coll.type) : w.id.startsWith(coll.prefix));
       const before = this.told().filter(inside);
-      const r = this.sync(coll, mark.world.told().filter(inside), { raw: true });
+      const retainedMark = this._begin(true), previousRetained = this._retained;
+      this._retained = retained.entries;
+      this._do(() => { this._retained = previousRetained; });
+      let r;
+      try {
+        r = this.sync(coll, mark.world.told().filter(inside), { raw: true });
+        if (r.ok) this._commit(); else this._rollback(retainedMark);
+      } catch (error) { if (this._tx) this._rollback(retainedMark); throw error; }
       if (r.ok && (r.retracted.length || r.told.length || r.replaced.length)) {
         // redo() puts the unit back as it was: the statements that would, computed on a fork
         const f = this.fork();
@@ -317,7 +337,7 @@ export const revision = {
         for (const e of since) for (const x of [e.id, e.into, ...(e.ids || [])]) if (x) touched.add(x); // bounded: the events since the mark
       }
     }
-    this._adopt(copy, 'rewind', touched ? [...touched] : null);
+    this._adopt(copy, 'rewind', touched ? [...touched] : null, retained.entries);
     if (back) this._redo = [...(this._redo || []), back];
     this.events = layerList(events);
     this.events.push({ seq: this.seq, op: 'rewind', to: mark.seq, ...(touched ? {} : { rebuilt: true }) });
@@ -338,6 +358,7 @@ export const revision = {
     share.holders++;
     if (this.wires instanceof CowMap) this.wires.frozen = true; // nobody writes it again, not even a read that copies
     for (const k of STATE) copy[k] = this[k];
+    copy._retained = this._retained; // persistent map, insertion replaces rather than mutates
     // the host functions too: those registered later and those a standard module brought
     copy.fns = { ...this.fns }; copy.actions = { ...this.actions }; copy.producers = { ...this.producers };
     if (this.filters) copy.filters = { ...this.filters };

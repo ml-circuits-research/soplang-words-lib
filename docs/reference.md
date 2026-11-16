@@ -1895,6 +1895,10 @@ true
 
 `calibrateReference(world, id, options?)` captures the named std.reference set and computes a positive median with sample identities, original tokens and provenance closure. `family` selects an aliased module; `budget` bounds work. The returned snapshot is detached and deeply frozen, so later source edits do not change it. Serialization is supported, but persisted revision verification, axis linkage and evidence truth remain separate. See the API entry for the exact data and failure contract.
 
+## Retained definitions
+
+`world.retainRevision(owner, revision, definition, options?)` retains exact JSON meaning outside ordinary fact history. `world.retainedRevision(owner, revision)` reads the frozen record. Identical publication is idempotent; conflicting reuse fails. Undo/rewind and full/delta/timeline persistence preserve retained definitions. Forks isolate later insertions and reject conflicting reconciliation. See the API for JSON restrictions, dry/budget behavior and the boundary between persistence and authenticity. This generic mechanism does not itself define point spaces or calibrations.
+
 ## Functions
 
 A function is called with its arguments as text and returns text (or true/false for a

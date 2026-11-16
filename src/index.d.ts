@@ -225,7 +225,8 @@ export interface NextStep {
 export interface Explanation { assume: Wire[]; fills: { id: string; key: string; value: string }[]; text: string; cost: number }
 export interface StepResult extends Result { questions: Wire[]; dead: OpenKey[]; pending: object[] }
 export interface WorldEvent { seq: number; op: string; [key: string]: unknown }
-export interface Snapshot { format: 'sopworld'; version: number; log: object[]; /** with toJSON({ since }): the base the log continues */ base?: { length: number; last: string | null }; /** with toJSON({ timeline: true }) */ timeline?: { marks: { label?: string; seq: number; /** a position in log */ at?: number; log?: object[]; whole?: boolean }[]; redo: object[][] } }
+export interface RetainedRevision { readonly owner: string; readonly revision: string; readonly definition: unknown }
+export interface Snapshot { format: 'sopworld'; version: number; log: object[]; retained?: readonly RetainedRevision[]; /** with toJSON({ since }): the base the log continues */ base?: { length: number; last: string | null }; /** with toJSON({ timeline: true }) */ timeline?: { marks: { label?: string; seq: number; retained?: readonly RetainedRevision[]; /** a position in log */ at?: number; log?: object[]; whole?: boolean }[]; redo: object[][] } }
 export type Fn = (args: string[], world: World) => string | number | boolean | undefined;
 export interface WorldOptions {
   /** for authors: advice at load (a kind with the shape of another module's, a rule already in a module), as warnings of kind 'advice' */
@@ -332,7 +333,7 @@ export class World {
   marks(): { label?: string; seq: number; mark: Mark }[];
   /** make the world exactly what it was at the mark */
   /** only: take back one unit (a type, or { prefix }), keeping everything else */
-  rewind(mark: Mark, options?: { only?: string | { type?: string; prefix?: string } }): { violations?: Violation[]; ok: boolean; removed: string[]; added: string[]; changed: Difference['changed'] };
+  rewind(mark: Mark, options?: { only?: string | { type?: string; prefix?: string }; budget?: { steps?: number; ms?: number } }): { violations?: Violation[]; ok: boolean; removed: string[]; added: string[]; changed: Difference['changed'] };
   /** the facts as they were stated, without what rules, defaults or searches added */
   told(): Wire[];
   /** how solid a value is: told, derived, forced, default, guessed, or a tier the matrix declares */
@@ -346,6 +347,8 @@ export class World {
   stats(): Stats;
   on(listener: (events: WorldEvent[], world: World) => void): () => void;
   /** timeline: also the open marks and the redo stack */
+  retainRevision(owner: string, revision: string, definition: unknown, options?: { dry?: boolean; budget?: { steps?: number; ms?: number } }): { ok: boolean; created: boolean; retained?: RetainedRevision; violations: Violation[] };
+  retainedRevision(owner: string, revision: string): RetainedRevision | null;
   toJSON(options?: { timeline?: boolean; /** only what came after this world's log */ since?: World }): Snapshot;
   static fromJSON(data: Snapshot, options?: WorldOptions & { /** the base a snapshot with since= was written against */ base?: World }): World;
   get(id: string): Wire | undefined;

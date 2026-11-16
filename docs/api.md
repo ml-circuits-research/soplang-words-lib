@@ -4259,3 +4259,29 @@ print(result.snapshot.value);
 ```output
 10
 ```
+
+### world.retainRevision(owner, revision, definition, options?) and world.retainedRevision(owner, revision)
+
+Retain a definition under two nonempty string keys. The first successful publication fixes its canonical JSON contents. Identical reuse returns `created:false`; a different definition returns a `retained-revision` violation. Reads return the deeply frozen `{owner, revision, definition}` record, or null. Publication returns `{ok, created, retained?, violations}`. `dry:true` validates without retention; `budget` bounds copying, canonicalization and comparisons. Definitions inserted inside a refused transaction roll back. A validation function cannot publish definitions as a hidden side effect.
+
+Definitions accept finite JSON primitives, dense arrays and plain objects, to 64 nested container levels. Object key order is irrelevant, array order matters, and negative zero normalizes to JSON zero. Accessors, cycles, sparse arrays, hidden/symbol properties, nonfinite numbers and non-JSON objects are refused. Unicode strings are preserved without normalization. Inputs are detached; returned nested objects/arrays are frozen.
+
+Retained definitions are outside the ordinary fact log: undo, redo, partial/full rewind and replay-based retraction cannot erase them. Forks share immutable entries but isolate subsequent insertions; state adoption merges registries and refuses conflicting reuse before changing facts. A successful partial rewind also preserves publications made by its commit listeners. Retention itself is not an undoable domain operation and does not append a fact-history step.
+
+`toJSON()` includes retained definitions when present, also for delta and timeline snapshots. `World.fromJSON()` restores and checks them before fact replay; conflicts with a delta base or within retained entries are refused. Older snapshots without the registry still load, but cannot prove an omitted publication history. JSON persistence is not authenticity: an attacker or external editor can replace the only copy of a definition, and independent forks have no global publication authority until reconciled. No space/point interpretation, axis migration or automatic calibration binding is supplied by retention alone.
+
+```js
+const w = new World();
+print(w.retainRevision('example.space', '1', {axes: ['x', 'y'], unit: 'u'}).created);
+const before = w.mark();
+w.load('@x example.item value=1');
+w.rewind(before);
+print(w.retainedRevision('example.space', '1').definition.axes);
+print(w.retainRevision('example.space', '1', {axes: ['y', 'x'], unit: 'u'}).ok);
+```
+
+```output
+true
+["x","y"]
+false
+```

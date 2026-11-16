@@ -1,3 +1,4 @@
+import { retainedKey, retainedDefinition, mergeRetained } from './retained-revisions.mjs';
 import { validateRecords } from './validate-records.mjs';
 import { schemaLinks } from './schema-links.mjs';
 // World: fact wires kept consistent with a consistency matrix.
@@ -112,6 +113,7 @@ export class World {
     this.stamp = 0;            // identifies the current state; restored when a change is rolled back
     this._clock = 0;
     this._emitted = 0;
+    this._retained = new Map(); // persistent definitions, outside undoable fact history
     this._journal = [];
     this._tx = 0;
     this._c = null;
@@ -268,6 +270,44 @@ export class World {
 
   _refusal(v) {
     return { ok: false, added: [], derived: [], filled: [], merged: [], removed: [], violations: [v] };
+  }
+
+  /** Retain exact JSON meaning independently of ordinary fact undo/rewind. */
+  retainRevision(owner, revision, definition, opts = {}) {
+    return this._guard(opts, () => {
+      const fail = why => ({ ok: false, created: false, violations: [{ kind: 'retained-revision', owner, revision, why }] });
+      if (this._runningValidator) { this._validatorMutation = true; return fail('a validator cannot publish retained definitions'); }
+      if (typeof owner !== 'string' || !owner || typeof revision !== 'string' || !revision) return fail('owner and revision must be nonempty strings');
+      const tick = () => this._b.tick('validate');
+      for (let i = 0; i < owner.length + revision.length; i++) tick();
+      let copy;
+      try { copy = retainedDefinition(definition, tick); }
+      catch (error) { if (error === this._b.signal) throw error; return fail(error.message); }
+      const key = retainedKey(owner, revision), canonical = JSON.stringify(copy), previous = this._retained.get(key);
+      for (let i = 0; i < canonical.length; i++) tick();
+      if (previous) return previous.canonical === canonical ? { ok: true, created: false, retained: previous.record, violations: [] } : fail('identity and revision already retain a different definition');
+      const record = Object.freeze({ owner, revision, definition: copy });
+      if (opts.dry) return { ok: true, created: false, retained: record, violations: [] };
+      const entries = new Map();
+      for (const [k, v] of this._retained) { tick(); entries.set(k, v); }
+      entries.set(key, { canonical, record });
+      const mark = this._begin(true), old = this._retained;
+      try { this._retained = entries; this._do(() => { this._retained = old; }); this._commit(); }
+      catch (error) { if (this._tx) this._rollback(mark); throw error; }
+      return { ok: true, created: true, retained: record, violations: [] };
+    }, violation => ({ ok: false, created: false, violations: [violation] }));
+  }
+
+  retainedRevision(owner, revision) { return this._retained.get(retainedKey(owner, revision))?.record || null; }
+
+  _mergeRetained(next) { return mergeRetained(this._retained, next._retained, () => this._b.tick('validate')); }
+
+  _restoreRetained(records) {
+    if (!Array.isArray(records)) throw new Error('World.fromJSON: retained definitions must be an array');
+    for (const record of records) {
+      const result = this.retainRevision(record?.owner, record?.revision, record?.definition);
+      if (!result.ok) throw new Error('World.fromJSON: refused retained definition: ' + result.violations[0].why);
+    }
   }
 
   /** Justification tree of a wire: who told it, or which rule derived it from what. */
@@ -452,11 +492,12 @@ export class World {
     const n = since ? since.log.length : 0;
     if (since && !this._startsWith(since.log)) throw new Error('toJSON: since= must be a world this one grew from (its log is not the beginning of this log)');
     const out = { format: 'sopworld', version: 1, log: this.log.slice(n).map((e) => ({ ...e })) };
+    if (this._retained.size) out.retained = [...this._retained.values()].map(e => e.record);
     if (since) out.base = { length: n, last: n ? fingerprint(JSON.stringify(since.log[n - 1])) : null };
     if (opts && typeof opts === 'object' && opts.timeline) {
       out.timeline = {
         marks: (this._marks || []).map((m) => {
-          const head = { ...(m.label !== undefined ? { label: m.label } : {}), seq: m.seq };
+          const head = { ...(m.label !== undefined ? { label: m.label } : {}), seq: m.seq, ...(m.world._retained.size ? { retained: [...m.world._retained.values()].map(e => e.record) } : {}) };
           const L = m.world.log.length;
           if (L >= n && this._startsWith(m.world.log)) return { ...head, at: L - n };
           if (since && L >= n && m.world._startsWith(since.log)) return { ...head, log: m.world.log.slice(n).map((e) => ({ ...e })) };
@@ -493,7 +534,8 @@ export class World {
       if (base.log.length !== n || (n && fingerprint(JSON.stringify(base.log[n - 1])) !== data.base.last)) throw new Error('World.fromJSON: the base given is not the one the snapshot was written against');
       w = base.fork();
     } else w = new World(rest);
-    const fresh = () => (data.base ? base.fork() : new World(rest));
+    if (data.retained !== undefined) w._restoreRetained(data.retained);
+    const fresh = () => { const copy = data.base ? base.fork() : new World(rest); if (data.retained !== undefined) copy._restoreRetained(data.retained); return copy; };
     // the log once, in order; a mark at a position is a fork taken when the replay gets there
     const marks = data.timeline?.marks || [];
     const at = marks.map((m, i) => [m.at, i]).filter(([p]) => p !== undefined).sort((a, b) => a[0] - b[0]);
@@ -511,9 +553,11 @@ export class World {
         let world = made[i];
         if (!world) { // a mark that is not on the way: its own log
           world = m.whole || !data.base ? new World(rest) : fresh();
+          if (data.retained !== undefined) world._restoreRetained(data.retained);
           const r = world._replay(m.log);
           if (r) throw new Error('World.fromJSON: a mark of the snapshot is refused by the matrix: ' + JSON.stringify(r.violations[0]));
         }
+        if (m.retained !== undefined) world._restoreRetained(m.retained);
         return { world, seq: m.seq, ...(m.label !== undefined ? { label: m.label } : {}) };
       });
       w._redo = data.timeline.redo.map((g) => g.map((e) => ({ ...e })));

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.184.0
+
+- Add generic retained revisions: exact detached frozen JSON definitions keyed by identity and revision, idempotent reuse and conflict rejection.
+- Preserve definitions through forks, undo/rewind and full/delta/timeline snapshots, with transactional rollback and budget accounting. Point-space and calibration bindings remain separate.
+
 ## 0.183.0
 
 - Separate existing-target selector graphs from desired-result graphs. Validate complete context closures, independent binding scopes, ownership and operator boundaries; implicit result conjunction excludes selectors.

@@ -2302,3 +2302,15 @@ Phase 0 remains the critical path; please continue with the legend, links on typ
 | 0.172.0 typed act conditions with per-owner role checks; pattern-identity variables preserved under module prefix/alias | Accepted. The second fix matters more than it looks: a deny whose calculation silently lost its binding would have stopped refusing anything. Good that the audit found it. |
 
 Next on the critical path, as before: the rest of the legend (space with version and frame, typed references, units), the semantic links on type/slot, and the request graph; then announce the phase-0 version.
+
+## 2026-11-16 16:20 (Rome) — Implementation review 4 (reviewer; library 0.173.0 10821d8, 0.174.0 555f78e, 0.175.0 ce052d6)
+
+**Run by me:** `node --test test/legend-spaces.test.mjs test/legend-concepts.test.mjs test/schema-links.test.mjs` → 28 tests, 28 pass.
+
+| Landing | Verdict |
+|---|---|
+| 0.173.0 spaces, axes, typed unit ownership | Accepted: explicit angle period instead of an implicit 360; affine units (factor, offset); steps as direction-free magnitudes (ratio > 1, interval > 0); axis/unit declaration types `shared=true` so ownership holds across namespaces — the namespace counterexample was a good find. Frame descriptor correctly not claimed from a free-text origin. |
+| 0.174.0 concepts, degrees, relations, roles | Accepted: acyclic specialisation, role owner union, consistent inverses, degree factor as metadata until its application rule lands. |
+| 0.175.0 generic `core.schema.link` descriptors; `semanticLinks()` | Accepted, and the design is the right one: one generic mechanism for "this key's value must name a declaration of that type", with the legend registering `is`/`means`/`space` as data and any other vocabulary able to do the same; final-state checks so forward declarations and later edits are both handled; global name lookup, references to disambiguate. It matches the boundary policy agreed at 15:40. For migration, keep "a slot without `means` is rejected" as an opt-in per world (strict mode) until the domains are migrated, then make it the default. |
+
+Remaining for the phase-0 announcement, as I read the register: the frame descriptor and point; the request graph (source, target, constraint, logical nodes, mood); typed trace records; reply claims; change policy and calibration snapshot. The request graph is what PSys2 and the knowledge migration need most; if you must order, do it next.

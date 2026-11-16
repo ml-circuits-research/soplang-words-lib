@@ -150,4 +150,22 @@ The array preserves duplicates, order and token categories. Numeric `12`, quoted
 
 A final-state validator parses each token with the language parser and requires exactly one concrete canonical value. It rejects variables (including `$?x`), non-string JSON elements, additional keys/wires, comments appended to a token and noncanonical string escapes. Canonical refers to quoted-string spelling, not numeric normalization: `01` and `1` retain their source tokens. Payload traversal consumes validation budget; existing JSON size/depth limits also apply. Invalid edits roll back.
 
-This foundation does not export step, observation, reply, undo or correction types, establish a structured-request link, generate evidence, make records append-only, or save a journal. Those contracts and persistence remain required before a full trace-family release. A stored `message` is not execution authorization.
+The 0.180.0 foundation does not establish a structured-request link, generate evidence, make records append-only, or save a journal. A stored `message` is not execution authorization. The 0.181.0 extension below supplies structural operation records; evidence verification and persistence remain separate obligations.
+
+### Trace operation linkage
+
+Added with 0.181.0, the same `std.trace` module also exports these closed records:
+
+| Type | Required fields | Optional repeated links or vocabulary |
+| --- | --- | --- |
+| `std.trace.step` | `request` reference, `operation`, `operation.version`, `invocation` strings, `status` atom | `act` atom; `input` and `result` input references; `depends` step references |
+| `std.trace.observation` | `step` reference, `invocation` string, `phase=before/after`, nonempty `input` references | None |
+| `std.trace.reply` | `request` reference, `text` string | `step` references |
+| `std.trace.undo` | Original `target` step, distinct `execution` step | `observation` references belonging to the execution step |
+| `std.trace.correction` | Original `target` step, distinct `replacement` step | None |
+
+Step status is `planned`, `confirmed`, `refused`, `unknown` or `partial`: it records an asserted individual-call status, not the final outcome of a multi-operation request. Planned steps reserve an invocation identifier; the record does not launch a call. Observation invocation text must match its explicit owning step. Input records carry individual source versions; independent sources need not share a revision counter. Invocation strings do not establish a global identity registry or deduplicate calls.
+
+Final-state checks reject dependency cycles, even across requests, and validate reply membership against the reply's request. A clarification reply may have no steps. Correction links describe an accepted replacement lineage rather than proposed alternatives: no self-links, cycles or multiple direct successors for one target. A correction may be a new request about an old step. Undo observations belong to the new undo execution, not the original invocation. The execution step carries the undo attempt's status; the undo link adds no redundant status field.
+
+The validator scans the module family's records for each trace request under the reasoning budget, including when only a child changes. No persisted or incremental graph cache is claimed. These checks do not prove that a snapshot was actually observed, that `confirmed` means the requested effect occurred, that a reply is supported, or that an undo restored state. They do not verify the temporal/concurrency preconditions for accepting a correction, impose immutable history, or perform execution. The exact §6.11 fragment loads; its example success text still requires the omitted geometric/effect evidence before an application may emit it.

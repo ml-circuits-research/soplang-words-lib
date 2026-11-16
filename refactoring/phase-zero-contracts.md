@@ -90,3 +90,7 @@ Entry point std.change exports std.change.policy with required atom kind/concept
 ### Increment 0.180.0 — historical request/input trace foundation
 
 std.trace exports only request/message and input/source/version/source.type/key/values. Historical inputs preserve concrete canonical SOP token strings inside a JSON array, including multiplicity/order and references whose live targets may no longer exist. Existing JSON limits and budgeted final-state parsing reject malformed, noncanonical or variable tokens. The revised first two §6.11 records are executable; the remaining fragment is explicitly proposed. Structured request linkage, step/observation/reply/undo/correction contracts, evidence truth and immutable persistence remain pending. This is not full trace or phase-zero acceptance.
+
+### Increment 0.181.0 — typed trace operation linkage
+
+std.trace now exports request/input/step/observation/reply/undo/correction. Final-state checks enforce DAG dependencies, invocation text correlation, reply request membership, separate undo execution evidence, and acyclic nonforking correction lineage; historical dependencies/corrections can cross requests. Observations require input snapshots with per-source versions. Full §6.11 example is structurally executable. No evaluator truth, evidence-supported reply, actual undo, immutable storage or structured semantic-request linkage is implied; full phase zero is still pending.

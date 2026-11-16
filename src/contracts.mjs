@@ -1,4 +1,4 @@
-import { traceInputValidator } from './trace-contracts.mjs';
+import { traceInputValidator, traceGraphValidator } from './trace-contracts.mjs';
 import { requestValidator } from './request-contracts.mjs';
 // Opt-in structural contracts. These schemas validate records; they do not establish
 // the truth, licensing suitability or semantic correctness of the recorded evidence.
@@ -61,7 +61,7 @@ export const CONTRACT_MODULES = {
   },
   'std.trace': {
     text: `
-@std.trace.module core.module name=std.trace version=0.180.0 exports=std.trace.request exports=std.trace.input
+@std.trace.module core.module name=std.trace version=0.181.0 exports=std.trace.request exports=std.trace.input exports=std.trace.step exports=std.trace.observation exports=std.trace.reply exports=std.trace.undo exports=std.trace.correction
 @std.trace.request.type core.type of=std.trace.request closed=true
 @std.trace.request.message core.slot of=std.trace.request key=message kind=string present=true
 @std.trace.input.type core.type of=std.trace.input closed=true
@@ -73,7 +73,36 @@ export const CONTRACT_MODULES = {
 @std.trace.input.valid.function core.function name=std.trace.input.valid out.kind=boolean pure=true
 @std.trace.input.valid.arg core.function.arg of=$std.trace.input.valid.function name=input kind=ref
 @std.trace.input.validation core.validate on=std.trace.input fn=std.trace.input.valid why="trace values must be a JSON array of canonical concrete SOP value tokens"
-`, fns: { 'std.trace.input.valid': traceInputValidator },
+@std.trace.step.type core.type of=std.trace.step closed=true
+@std.trace.step.operation core.slot of=std.trace.step key=operation kind=string present=true
+@std.trace.step.operation.version core.slot of=std.trace.step key=operation.version kind=string present=true
+@std.trace.step.invocation core.slot of=std.trace.step key=invocation kind=string present=true
+@std.trace.step.request core.slot of=std.trace.step key=request kind=ref to=std.trace.request present=true
+@std.trace.step.act core.slot of=std.trace.step key=act kind=atom
+@std.trace.step.status core.slot of=std.trace.step key=status kind=atom enum=planned enum=confirmed enum=refused enum=unknown enum=partial present=true
+@std.trace.step.input core.slot of=std.trace.step key=input kind=ref to=std.trace.input many=true
+@std.trace.step.result core.slot of=std.trace.step key=result kind=ref to=std.trace.input many=true
+@std.trace.step.depends core.slot of=std.trace.step key=depends kind=ref to=std.trace.step many=true
+@std.trace.observation.type core.type of=std.trace.observation closed=true
+@std.trace.observation.step core.slot of=std.trace.observation key=step kind=ref to=std.trace.step present=true
+@std.trace.observation.invocation core.slot of=std.trace.observation key=invocation kind=string present=true
+@std.trace.observation.phase core.slot of=std.trace.observation key=phase kind=atom enum=before enum=after present=true
+@std.trace.observation.input core.slot of=std.trace.observation key=input kind=ref to=std.trace.input many=true present=true
+@std.trace.reply.type core.type of=std.trace.reply closed=true
+@std.trace.reply.request core.slot of=std.trace.reply key=request kind=ref to=std.trace.request present=true
+@std.trace.reply.step core.slot of=std.trace.reply key=step kind=ref to=std.trace.step many=true
+@std.trace.reply.text core.slot of=std.trace.reply key=text kind=string present=true
+@std.trace.undo.type core.type of=std.trace.undo closed=true
+@std.trace.undo.target core.slot of=std.trace.undo key=target kind=ref to=std.trace.step present=true
+@std.trace.undo.execution core.slot of=std.trace.undo key=execution kind=ref to=std.trace.step present=true
+@std.trace.undo.observation core.slot of=std.trace.undo key=observation kind=ref to=std.trace.observation many=true
+@std.trace.correction.type core.type of=std.trace.correction closed=true
+@std.trace.correction.target core.slot of=std.trace.correction key=target kind=ref to=std.trace.step present=true
+@std.trace.correction.replacement core.slot of=std.trace.correction key=replacement kind=ref to=std.trace.step present=true
+@std.trace.graph.valid.function core.function name=std.trace.graph.valid out.kind=boolean pure=true
+@std.trace.graph.valid.arg core.function.arg of=$std.trace.graph.valid.function name=request kind=ref
+@std.trace.graph.validation core.validate on=std.trace.request fn=std.trace.graph.valid why="invalid trace dependencies, invocation correlation, reply ownership or replacement lineage"
+`, fns: { 'std.trace.input.valid': traceInputValidator, 'std.trace.graph.valid': traceGraphValidator },
   },
   'std.change': {
     text: `

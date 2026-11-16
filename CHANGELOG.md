@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.181.0
+
+- Add typed trace step, observation, reply, undo and correction records. Validate dependency/replacement acyclicity, reply request membership, invocation correlation and undo evidence ownership in final state.
+- Distinguish an original step from the separate undo execution; retain per-source snapshot versions. Structural acceptance does not verify execution effects or response claims.
+
 ## 0.180.0
 
 - Add std.trace.request and std.trace.input foundations. Historical inputs preserve canonical SOP token categories, duplicates and order inside JSON, without live reference dependencies. Reject malformed or variable tokens transactionally under the validation budget.

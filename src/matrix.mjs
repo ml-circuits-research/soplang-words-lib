@@ -124,7 +124,11 @@ export function prefixModule(wires, name) {
     const c = cloneWire(w);
     c.id = `${name}.${w.id}`;
     for (const k of Object.keys(c.attrs)) {
-      c.attrs[k] = c.attrs[k].map((v) => (v[0] === '$' && ids.has(v.slice(1)) ? `$${name}.${v.slice(1)}` : v));
+      c.attrs[k] = c.attrs[k].map((v) => {
+        const marker = v.startsWith('$?') ? '$?' : /^[?$]/.test(v) ? v[0] : '';
+        const id = v.slice(marker.length);
+        return marker && ids.has(id) ? `${marker}${name}.${id}` : v;
+      });
     }
     return c;
   });

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.172.0
+
+- Publish opt-in legend act/condition schemas, variant guards and owning-act role validation with executable book fixtures.
+- Preserve explicit pattern-identity variables through module prefixing and aliases; ordinary variables and quoted text remain unchanged.
+
+
 ## 0.171.0
 
 - Added std.reference sample/set structural contracts: distinct equal observations keep multiplicity, references and mandatory fields are checked, and a declarative deny enforces member/set unit agreement.

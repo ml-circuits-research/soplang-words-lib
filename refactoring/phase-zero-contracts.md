@@ -50,3 +50,7 @@ Entry point `core.use world=std.objective`; canonical types std.objective and st
 ## Increment: reference sample records (0.171.0)
 
 Entry point std.reference; types std.reference.set and std.reference.sample. Replaced repeated literal values with typed member identities because the existing store deduplicates equal values and would corrupt sample multiplicity. Presence, numeric fields, optional provenance, references and unit-label agreement are validated, including shared-member edits. The exact executable reference fragment is tested separately from the proposed calibration/axis fragment. Version remains recorded metadata; immutable publication and calibration validation remain pending.
+
+### Increment 0.172.0 — legend acts and conditions
+
+Published subset: w.legend.act/condition through core.use world=w.legend. Variant arguments and owning-act role names are checked with existing declarative denies; no planner or effect evaluator. Spaces, axes, semantic links and request graphs remain pending. Implementation exposed missing qualification of explicit pattern-identity variables, now corrected in generic module loading.

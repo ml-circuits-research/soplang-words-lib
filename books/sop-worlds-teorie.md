@@ -1081,17 +1081,28 @@ Condițiile unui act nu sunt texte. Formularea în limbaj natural explică inten
 
 | Condiția | Ce afirmă |
 |---|---|
-| `exists=<rol>` | Lucrul din acel rol există în stare. |
-| `absent=<rol>` | Lucrul din acel rol nu există în stare. |
-| `has=<rol>,<rol>` | Lucrul din primul rol are, la însușirea din al doilea rol, valoarea cerută. |
-| `holds=<rol>,<rol>` | Relația cerută ține între lucrurile din cele două roluri. |
+| `kind=exists object=<rol>` | Lucrul din rol există în starea observată. |
+| `kind=absent object=<rol>` | Lucrul din rol nu există în domeniul verificat complet. |
+| `kind=has object=<rol> quality=<rol>` | Lucrul are valoarea cerută pentru însușirea legată de al doilea rol. |
+| `kind=holds object=<rol> goal=<rol>` | Relația furnizată de cerere ține între cele două roluri. |
 
+```sop
+@condition.result w.legend.condition kind=exists object=result
+@condition.exists w.legend.condition kind=exists object=object
+@condition.absent w.legend.condition kind=absent object=object
+@condition.quality w.legend.condition kind=has object=object quality=quality
+@condition.relation w.legend.condition kind=holds object=object goal=goal
+@act.make w.legend.act name=make change=appear role=result after=$condition.result
+@act.remove w.legend.act name=remove change=disappear role=object before=$condition.exists after=$condition.absent
+@act.change w.legend.act name=change change=quality role=object role=quality before=$condition.exists after=$condition.quality
+@act.place w.legend.act name=place change=relation role=object role=goal before=$condition.exists after=$condition.relation
 ```
-@act.make   w.legend.act name=make   change=appear    role=result              after.exists=result
-@act.remove w.legend.act name=remove change=disappear role=object              before.exists=object after.absent=object
-@act.change w.legend.act name=change change=quality   role=object role=quality before.exists=object after.has=object,quality
-@act.place  w.legend.act name=place  change=relation  role=object role=goal    before.exists=object after.holds=object,goal
-```
+
+Fiecare condiție are identitate proprie. Cheile `object`, `quality` și `goal` conțin numele rolurilor, nu identitățile obiectelor dintr-o aplicație. De exemplu, `object=object` spune că argumentul condiției este rolul numit `object`; cererea concretă va lega acel rol de lucrul mutat. `holds` primește relația din cerere, astfel încât aceeași definiție poate descrie așezarea în, pe sau lângă o țintă fără să inventeze o relație implicită.
+
+Modulul `core.use world=w.legend` validează acum aceste două tipuri. Fiecare act trebuie să declare cel puțin un rol și o condiție finală; condițiile inițiale sunt opționale. O condiție poate fi reutilizată de mai multe acte, dar fiecare rol pe care îl numește trebuie declarat de fiecare act care o referă. Condițiile fără act pot fi încărcate în vederea reutilizării. Lipsa unui argument obligatoriu, un argument nepotrivit variantei și referințele fără țintă validă sunt erori structurale. Exemplul de mai sus este verificat direct din carte.
+
+Această validare nu execută actele și nu dovedește condițiile asupra unei lumi concrete. Legarea cererii, planificarea și verificarea efectului observat rămân mecanisme distincte. Nici `kind=absent`, singur, nu dovedește că observația acoperă toate obiectele relevante.
 
 Ce nu este numit nu se schimbă. După un act, singurele diferențe permise în stare sunt cele din condiția „după” și cele care decurg din ea prin reguli. Orice altă diferență este spusă în răspuns ca schimbare neașteptată. *(R36)*
 
@@ -1162,7 +1173,7 @@ La fel, un slot cu `means=quality` și un spațiu primește comparativele, super
 
 ## 4.8 Tipurile de fire ale lumii legendelor
 
-Acestea sunt tipurile de fire propuse pentru a scrie lumea legendelor și conținutul legat de ea. Numele și cheile sunt o propunere pe care sesiunea bibliotecii o va fixa.
+Aceste tipuri descriu lumea legendelor și conținutul legat de ea. Contractele pentru acte și condiții sunt implementate prin `core.use world=w.legend`, conform §4.6.1. Contractele pentru spații, axe, regiuni și grade rămân propuse; exemplul mixt de mai jos nu este încă un modul executabil integral.
 
 **`w.legend.space`** declară un spațiu conceptual.
 
@@ -1202,6 +1213,8 @@ Acestea sunt tipurile de fire propuse pentru a scrie lumea legendelor și conți
 | `direction` | `up` sau `down`. |
 | `factor` | Factorul de pornire față de clasa de comparație. |
 
+**`w.legend.condition`** declară o condiție structurată, cu variantele și argumentele din §4.6.1. O referință la o condiție leagă actul de o declarație verificabilă; textul explicativ nu înlocuiește acea declarație.
+
 **`w.legend.act`** declară un act.
 
 | Cheia | Ce spune |
@@ -1209,8 +1222,8 @@ Acestea sunt tipurile de fire propuse pentru a scrie lumea legendelor și conți
 | `name` | Numele actului: `make`, `remove`, `change`, `place`. |
 | `change` | Schimbarea de bază: `appear`, `disappear`, `quality`, `relation`. |
 | `role` | Un rol al actului. Repetată. |
-| `before` | Ce trebuie să fie adevărat înainte. |
-| `after` | Ce trebuie să fie adevărat după. |
+| `before` | Referințe repetabile la condiții `w.legend.condition` pentru starea inițială; opționale. |
+| `after` | Referințe repetabile la condiții `w.legend.condition` pentru starea finală; cel puțin una obligatorie. |
 
 Un exemplu din fiecare:
 
@@ -1219,10 +1232,12 @@ Un exemplu din fiecare:
 @ax.hue    w.legend.axis   of=colour name=hue kind=angle
 @rg.red    w.legend.region of=colour name=red centre.hue=0 centre.saturation=0.9 centre.lightness=0.5 spread=0.12
 @dg.big    w.legend.degree word=big direction=up factor=1.6
-@act.place w.legend.act    name=place change=relation role=object role=goal before="object exists" after="object is at goal"
+@condition.exists w.legend.condition kind=exists object=object
+@condition.relation w.legend.condition kind=holds object=object goal=goal
+@act.place w.legend.act name=place change=relation role=object role=goal before=$condition.exists after=$condition.relation
 ```
 
-Primul fir declară spațiul culorilor. Al doilea, una dintre axele lui. Al treilea, regiunea numită „red”, cu centrul ei. Al patrulea, cuvântul de grad „big”. Al cincilea, actul „a așeza”: o schimbare de relație, cu două roluri, lucrul și ținta, cu condiția dinainte și cu cea de după.
+Primul fir declară spațiul culorilor. Al doilea, una dintre axele lui. Al treilea, regiunea numită „red”, cu centrul ei. Al patrulea, cuvântul de grad „big”. Ultimele trei fire declară două condiții și actul „a așeza”: o schimbare de relație, cu două roluri, lucrul și ținta, cu condiția dinainte și cu cea de după.
 
 ### 4.8.1 Metamodelul conceptual și ordinea de încărcare
 

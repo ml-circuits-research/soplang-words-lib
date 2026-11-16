@@ -81,3 +81,11 @@ Each sample identity represents one observation. Equal values on distinct sample
 A declarative deny requires exact unit-label agreement between each set and its members, including edits to shared samples. This is not unit conversion or dimensional resolution. The optional provenance link is type-checked and protected against dangling deletion, but its absence does not prove a measured source. Version is recorded metadata: replacing a sample may change every referencing set without changing the recorded version. Immutable snapshots, calibration recomputation, median checking and normalization validity are not implemented by this structural module.
 
 `test/reference-contracts.test.mjs` loads the exact executable reference fragment of book §12.2.1 and tests multiplicity, invalid references, missing fields, unit conflicts, transactional edits, provenance and aliases. The calibration and axis fragment remains explicitly proposed.
+
+## Legend acts and conditions
+
+Added with 0.172.0: `core.use world=w.legend` publishes closed `w.legend.act` and `w.legend.condition` records. This increment covers act declarations only; spaces, axes, points and semantic links are still pending.
+
+Acts require an atomic name, a change (`appear`, `disappear`, `quality`, `relation`), nonempty role names and at least one typed `after` condition reference. `before` is optional. Conditions require `kind` and an `object` role name. `exists` and `absent` prohibit other arguments; `has` requires `quality`; `holds` requires `goal`. The latter receives its concrete relation from the eventual request. Unknown keys and wrong variants are rejected.
+
+Every condition argument must name a role of every referring act; an unrelated act cannot supply that role. Edits are checked transactionally. Orphan conditions may be stored for reuse, and role names are not limited to the example vocabulary. The contract validates declarations, not request binding, planning, observed effects or closed-world absence.

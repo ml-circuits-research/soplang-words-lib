@@ -1251,14 +1251,17 @@ export class World {
       if (this.used.has(key)) return;
       this.used.add(key);
       this._do(() => this.used.delete(key));
+      const mod = parse(this.options.library[name]);
+      const moduleIds = new Set(mod.map((wire) => wire.id));
       // Rename parsed identifiers, never text inside a quoted literal.
       const rename = (value) => {
         if (!as) return value;
-        const ref = value.startsWith('$'), token = ref ? value.slice(1) : value;
+        const marker = value.startsWith('$?') ? '$?' : /^[?$]/.test(value) ? value[0] : '';
+        const token = value.slice(marker.length);
+        if (marker.includes('?') && !moduleIds.has(token)) return value;
         return token === name || token.startsWith(name + '.')
-          ? (ref ? '$' : '') + as + token.slice(name.length) : value;
+          ? marker + as + token.slice(name.length) : value;
       };
-      const mod = parse(this.options.library[name]);
       if (as) for (const wire of mod) {
         wire.id = rename(wire.id);
         wire.type = rename(wire.type);

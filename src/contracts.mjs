@@ -78,4 +78,66 @@ export const CONTRACT_MODULES = {
 @std.reference.d.unit core.deny when=$std.reference.p.set when=$std.reference.p.sample with=$std.reference.c.sample.label with=$std.reference.c.set.label if=$std.reference.c.unit why="reference sample unit must match the set unit"
 `, fns: {},
   },
+  'w.legend': {
+    text: `
+@w.legend.module core.module name=w.legend version=0.172.0 exports=w.legend.act exports=w.legend.condition
+@w.legend.act.type core.type of=w.legend.act closed=true
+@w.legend.condition.type core.type of=w.legend.condition closed=true
+@w.legend.act.name core.slot of=w.legend.act key=name kind=atom present=true
+@w.legend.act.change core.slot of=w.legend.act key=change kind=atom enum=appear enum=disappear enum=quality enum=relation present=true
+@w.legend.act.role core.slot of=w.legend.act key=role kind=atom many=true present=true
+@w.legend.act.before core.slot of=w.legend.act key=before kind=ref to=w.legend.condition many=true
+@w.legend.act.after core.slot of=w.legend.act key=after kind=ref to=w.legend.condition many=true present=true
+@w.legend.condition.kind core.slot of=w.legend.condition key=kind kind=atom enum=exists enum=absent enum=has enum=holds present=true
+@w.legend.condition.object core.slot of=w.legend.condition key=object kind=atom present=true
+@w.legend.condition.quality core.slot of=w.legend.condition key=quality kind=atom
+@w.legend.condition.goal core.slot of=w.legend.condition key=goal kind=atom
+@w.legend.variant.exists.quality.p w.legend.condition kind=exists quality=?value
+@w.legend.variant.exists.quality.deny core.deny when=$w.legend.variant.exists.quality.p why="exists condition forbids quality"
+@w.legend.variant.exists.goal.p w.legend.condition kind=exists goal=?value
+@w.legend.variant.exists.goal.deny core.deny when=$w.legend.variant.exists.goal.p why="exists condition forbids goal"
+@w.legend.variant.absent.quality.p w.legend.condition kind=absent quality=?value
+@w.legend.variant.absent.quality.deny core.deny when=$w.legend.variant.absent.quality.p why="absent condition forbids quality"
+@w.legend.variant.absent.goal.p w.legend.condition kind=absent goal=?value
+@w.legend.variant.absent.goal.deny core.deny when=$w.legend.variant.absent.goal.p why="absent condition forbids goal"
+@w.legend.variant.has.quality.p w.legend.condition kind=has core.absent=quality
+@w.legend.variant.has.quality.deny core.deny when=$w.legend.variant.has.quality.p why="has condition requires quality"
+@w.legend.variant.has.goal.p w.legend.condition kind=has goal=?value
+@w.legend.variant.has.goal.deny core.deny when=$w.legend.variant.has.goal.p why="has condition forbids goal"
+@w.legend.variant.holds.quality.p w.legend.condition kind=holds quality=?value
+@w.legend.variant.holds.quality.deny core.deny when=$w.legend.variant.holds.quality.p why="holds condition forbids quality"
+@w.legend.variant.holds.goal.p w.legend.condition kind=holds core.absent=goal
+@w.legend.variant.holds.goal.deny core.deny when=$w.legend.variant.holds.goal.p why="holds condition requires goal"
+@w.legend.role.before.object.owner w.legend.act before=$w.legend.role.before.object.condition
+@w.legend.role.before.object.condition w.legend.condition object=?role
+@w.legend.role.before.object.allowed w.legend.act role=?role
+@w.legend.role.before.object.same core.calc out=?w.legend.role.before.object.allowed fn=concat args=?w.legend.role.before.object.owner
+@w.legend.role.before.object.deny core.deny when=$w.legend.role.before.object.owner when=$w.legend.role.before.object.condition with=$w.legend.role.before.object.same not=$w.legend.role.before.object.allowed why="condition object must name a role of its owning act"
+@w.legend.role.before.quality.owner w.legend.act before=$w.legend.role.before.quality.condition
+@w.legend.role.before.quality.condition w.legend.condition quality=?role
+@w.legend.role.before.quality.allowed w.legend.act role=?role
+@w.legend.role.before.quality.same core.calc out=?w.legend.role.before.quality.allowed fn=concat args=?w.legend.role.before.quality.owner
+@w.legend.role.before.quality.deny core.deny when=$w.legend.role.before.quality.owner when=$w.legend.role.before.quality.condition with=$w.legend.role.before.quality.same not=$w.legend.role.before.quality.allowed why="condition quality must name a role of its owning act"
+@w.legend.role.before.goal.owner w.legend.act before=$w.legend.role.before.goal.condition
+@w.legend.role.before.goal.condition w.legend.condition goal=?role
+@w.legend.role.before.goal.allowed w.legend.act role=?role
+@w.legend.role.before.goal.same core.calc out=?w.legend.role.before.goal.allowed fn=concat args=?w.legend.role.before.goal.owner
+@w.legend.role.before.goal.deny core.deny when=$w.legend.role.before.goal.owner when=$w.legend.role.before.goal.condition with=$w.legend.role.before.goal.same not=$w.legend.role.before.goal.allowed why="condition goal must name a role of its owning act"
+@w.legend.role.after.object.owner w.legend.act after=$w.legend.role.after.object.condition
+@w.legend.role.after.object.condition w.legend.condition object=?role
+@w.legend.role.after.object.allowed w.legend.act role=?role
+@w.legend.role.after.object.same core.calc out=?w.legend.role.after.object.allowed fn=concat args=?w.legend.role.after.object.owner
+@w.legend.role.after.object.deny core.deny when=$w.legend.role.after.object.owner when=$w.legend.role.after.object.condition with=$w.legend.role.after.object.same not=$w.legend.role.after.object.allowed why="condition object must name a role of its owning act"
+@w.legend.role.after.quality.owner w.legend.act after=$w.legend.role.after.quality.condition
+@w.legend.role.after.quality.condition w.legend.condition quality=?role
+@w.legend.role.after.quality.allowed w.legend.act role=?role
+@w.legend.role.after.quality.same core.calc out=?w.legend.role.after.quality.allowed fn=concat args=?w.legend.role.after.quality.owner
+@w.legend.role.after.quality.deny core.deny when=$w.legend.role.after.quality.owner when=$w.legend.role.after.quality.condition with=$w.legend.role.after.quality.same not=$w.legend.role.after.quality.allowed why="condition quality must name a role of its owning act"
+@w.legend.role.after.goal.owner w.legend.act after=$w.legend.role.after.goal.condition
+@w.legend.role.after.goal.condition w.legend.condition goal=?role
+@w.legend.role.after.goal.allowed w.legend.act role=?role
+@w.legend.role.after.goal.same core.calc out=?w.legend.role.after.goal.allowed fn=concat args=?w.legend.role.after.goal.owner
+@w.legend.role.after.goal.deny core.deny when=$w.legend.role.after.goal.owner when=$w.legend.role.after.goal.condition with=$w.legend.role.after.goal.same not=$w.legend.role.after.goal.allowed why="condition goal must name a role of its owning act"
+`, fns: {},
+  },
 };

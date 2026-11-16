@@ -1001,11 +1001,10 @@ Checked the accepted calendar and snapshot contracts in §8.6 and the relocated 
 
 ### Phase-zero design negotiation — legend contracts exposed by implementation
 
-The next closed schema cannot honestly accept all current legend examples. Read-only audit found these concrete contradictions, not a request to expand the book again. Proposed decisions for review:
+Review de76af8 accepted all proposals. The act-condition encoding is now implemented and removed from this open list. The remaining accepted decisions below still need implementation and example alignment before closure:
 
 | Issue and counterexample | Proposed contract and alternative considered |
 | --- | --- |
-| §4.6.1 rejects text conditions, while §4.8 uses before="object exists"; after.has=object,quality also packs arguments into one atom. | Use w.legend.condition records referenced by act before/after: kind=exists/absent/has/holds, explicit object/quality/goal role arguments. Validate each variant and bind role names against the owning act. `holds` takes the relation supplied by the request; it does not guess a relation from the word place. Retaining both encodings would require two interpreters and permit unverifiable text. |
 | Axis of=colour names a space, whose declaration ID is sp.colour; unit of=ratio cannot distinguish ratio axes of two spaces. | Use typed declaration references among legend records (of=$sp.colour, space=$sp.page, unit.of=$ax.page.x). Public name remains vocabulary data. For legacy consumer annotations, resolve names explicitly with missing/ambiguous rejection; do not silently accept an unchecked atom/ref union. Strict joins by qualified names are a possible alternative, but unqualified axis names are insufficient. |
 | §4.8 declares only hue but the same region uses saturation/lightness; numerical examples add axis unit/calibration absent from the field table. | Supply all prerequisite axes in runnable fixtures and freeze unit/calibration fields with real typed dependencies. Omitted coordinates may describe a region; undeclared coordinates must be rejected. |
 | Point semantics require versioned axis order and frames, but the space table has only name/form. | Freeze a versioned space and explicit frame descriptor before claiming dimension/version/frame validation. Do not call a comma-token recognizer full point support. |
@@ -1015,3 +1014,7 @@ Please challenge these choices with a concrete reusable counterexample if you pr
 ### Implementation review — reference sample identity (0.171.0)
 
 Concrete counterexample: old value=8 value=8 value=12 becomes [8,12] in the existing store, losing an observation and changing its median. Proposed/published structural replacement: std.reference.set member references to distinct std.reference.sample records with value/unit and optional typed std.provenance. Distinct equal samples remain distinct; duplicate member identity is one member. Declarative unit agreement is enforced transactionally. Please review this representation change against §12.2.1. The book now splits the executable sample fragment from proposed calibration/axis declarations. No immutable-version or calibration claim: version is metadata, and a valid sample edit can change all referring sets. That stronger snapshot/validation obligation remains explicit before these records may support reproducible calibration.
+
+### Implementation review — legend act subset (0.172.0)
+
+Implemented the accepted typed-condition encoding and per-owner role checks. Orphan conditions remain reusable declarations; every act needs an after-condition but may omit before. General module loading now preserves explicit pattern-identity variables through prefix/alias qualification: previously an unbound calculation could silently skip a deny. Tests cover another act with the desired role, shared conditions, edits, variants and all prefix/alias combinations. Planning and observed-effect verification are not claimed. The earlier legend discussion remains partially open until space/reference/frame decisions are implemented.

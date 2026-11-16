@@ -2250,3 +2250,15 @@ Correction to my 14:30 blocks: the owner says ONE session (the one on the DGX) w
 | Acceptance | Unchanged: the owner's sessions replayed turn by turn, wrong stays 0; failed turns go to the register with the missing general mechanism. |
 
 I review every landing in the three repositories against its book section and run the examples.
+
+## 2026-11-16 14:45 (Rome) — reviewer: answers to the phase-zero register (4d02805)
+
+**Scope.** The owner authorised implementation at 14:21 (Rome), in his words: "de ce nu facem top-down, să putem paraleliza lumile, să facem mecanismele generale, ce ne blochează?", and at 14:24 confirmed that one session works all three repositories with agents. Your workspace AGENTS.md and your scheduled message are on the DGX, outside the repositories, and I cannot change them; I have asked the owner to update them or tell you directly. Until he does, your caution is right; the register you wrote is exactly the right preparation.
+
+| Your point | Answer |
+|---|---|
+| Four basic changes, not five | Mine was wrong. The book's four stand (appear, disappear, quality change, relation change); a kind change is a quality change on the kind slot with migration checks (4.6.2). Freeze four. |
+| `std.trace.*` | Concrete typed declarations, one per kind of record (request, step, input, observation, reply, undo, correction), with their slots; no catch-all type. |
+| Import evidence types of 11.3.2 | Include them in phase 0: the book's examples use them, and the knowledge migration (which runs in parallel) needs them from its first fact. |
+| Release announcement | Publish version, entry points, names and test results in `worker-log.md` and the plan; I relay them to the three `worker-tasks.md` files the same cycle. |
+| Acceptance claims per family | Agreed: say for each family which claim holds (parses / loads and rejects invalid instances / evaluator implements it / host realises it). "Contracts frozen" means names and slot variants fixed and the rejection tests in place, not more. |

@@ -1,6 +1,6 @@
 # SOP Worlds: curs de început
 
-*Versiunea 8, 16 noiembrie 2026. Text de lucru în română, sursă pentru documentația și skill-urile din sopworld. Termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 8.1, 16 noiembrie 2026. Text de lucru în română, sursă pentru documentația și skill-urile din sopworld. Termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 *Cursul descrie cum trebuie să lucreze tehnologia. Sub titlul fiecărei lecții, rândul „Stare” spune ce există azi și ce este numai propus. Starea implementării este în Anexa A. Partea a patra (lecțiile 27–30) este propunerea de generalizare: lumea legendelor și ce se reface din bibliotecă. Exemplele de fire nu au fost încă rulate una câte una; biblioteca le va trece prin teste și cursul se corectează unde un exemplu nu rulează.*
 
@@ -644,22 +644,23 @@ Uneori omul spune o valoare pe care domeniul nu o primește întocmai. Sunt trei
 | Fel de adaptare | Ce este și când este permisă |
 |---|---|
 | echivalență | Alt cuvânt pentru același lucru **în vocabularul domeniului**: domeniul declară că „oval” este felul lui `ellipse`. Sensul se păstrează. Se face fără a fi anunțat. |
-| aproximare | Cea mai apropiată valoare: „tiny” devine mic, „turquoise” devine culoarea disponibilă cea mai apropiată. Are nevoie de două declarații diferite: o **scară**, care spune cum se compară valorile, și o **toleranță**, care spune câtă abatere este primită. Fără toleranță declarată, sau dincolo de ea, nu se aproximează. Se face și se spune ce s-a luat în loc. |
+| aproximare | Cea mai apropiată valoare pe care unealta o poate realiza: un număr apropiat pe dimensiune, sau conceptul cel mai apropiat. Are nevoie de o **toleranță** declarată: câtă abatere este primită. Dincolo de ea nu se aproximează. Se face și se spune ce s-a luat în loc. |
 | substituție | Alt lucru în locul celui cerut, când domeniul nu are altceva: o rață desenată cu imaginea unei păsări. Se face și se spune o dată ce s-a folosit în loc. Lucrul își păstrează felul spus de om: în stare este o rață, deci „rața” poate fi mutată sau colorată apoi. |
 
-Aproximarea se sprijină pe cunoaștere. Scara mărimilor:
+**Cuvintele de grad se înțeleg din context, nu dintr-o listă** (hotărârea proprietarului, 16 noiembrie). „Mare”, „mic”, „uriaș”, „scurt” sunt subiective: un șoarece mare este mai mic decât un elefant mic. Ele nu sunt valori ale lucrului și nu stau în schema lui. În schemă, mărimea este un număr pe o dimensiune. Înțelesul cuvântului se calculează de fiecare dată, față de o **clasă de comparație**, luată în această ordine:
 
-```
-@sc.1 k.expect.scale step=tiny    order=1
-@sc.2 k.expect.scale step=small   order=2
-@sc.3 k.expect.scale step=default order=3
-@sc.4 k.expect.scale step=big     order=4
-@sc.5 k.expect.scale step=huge    order=5
-```
+| De unde vine clasa de comparație | Exemplu |
+|---|---|
+| lucrurile de același fel care sunt acum în instanța de lume | „a big tree” într-un desen cu cinci copaci: mai mare decât cei de acolo. |
+| ce a făcut omul până acum în această instanță | Dacă a micșorat de două ori casele, „mare” pentru el este mai puțin decât obișnuitul. |
+| ce este obișnuit pentru acel fel în acest fel de lume | Mărimea obișnuită a unui copac într-un desen; lungimea obișnuită a unei scrisori. Vine din cunoaștere și se poate învăța din folosire, pentru fiecare fel de lume. |
+| spațiul disponibil | O pagină, un raft, o zi: „uriaș” nu poate depăși ce încape. |
 
-Scara nu este o toleranță. Dacă unealta primește numai `tiny` și `small`, existența scării nu îndreptățește transformarea lui „huge” în `small`: sunt trei trepte distanță. Toleranța se declară pe parametru, de exemplu „cel mult o treaptă”; „huge” spre `big` este primit, „huge” spre `small` este refuzat cu explicație.
+Cuvântul de grad dă un factor față de clasa de comparație („mare” înseamnă vizibil peste obișnuit, „uriaș” mult peste), iar rezultatul este un număr. Unealta primește numărul. Tot așa, „mai mare” este un pas numeric față de valoarea de acum a lucrului.
 
-Cerința originală a omului se păstrează în cerere; transformarea se notează lângă ea. Răspunsul le poate arăta pe amândouă.
+Urmarea pentru aproximare: toleranța este o distanță numerică pe dimensiune, declarată de parametru. Dacă unealta poate desena numai la câteva mărimi, se ia cea mai apropiată numeric, în limita toleranței; dincolo de ea se refuză cu explicație.
+
+Pentru valorile care sunt trimiteri la concepte (o culoare), „cea mai apropiată” se calculează în spațiul conceptului: culorile au coordonate, deci „turquoise” are o cea mai apropiată culoare disponibilă.
 
 Dacă pentru o valoare nu există nici echivalență, nici toleranță, cerința nu poate fi îndeplinită. Ce se întâmplă cu restul cererii depinde de structura ei (lecția 20).
 
@@ -1008,8 +1009,8 @@ Sunt șase grupe. Lista este gândită să fie completă la acest nivel de abstr
 
 | Concept | Ce este |
 |---|---|
-| însușire (quality) | O proprietate a unui lucru, cu valori dintr-un spațiu al ei: culoare, mărime, formă, stare de spirit. |
-| scară (scale) | Ordinea valorilor unei însușiri, când există: minuscul, mic, obișnuit, mare, uriaș. Orice însușire cu scară primește aceleași operații: mai mult, mai puțin, cel mai. |
+| însușire (quality) | O proprietate a unui lucru. Valoarea ei este de două feluri și numai de două: un **număr pe o dimensiune** (mărime, lungime, poziție, durată, cantitate), sau o **trimitere la un concept** dintr-o bază de cunoaștere (o culoare, o formă, un gen). Nu există liste închise de cuvinte scrise în slot. |
+| dimensiune (dimension) | Axa numerică a unei însușiri care se măsoară. Orice dimensiune primește aceleași operații: mai mult, mai puțin, cel mai, la fel de. Cuvinte ca „mic”, „mare”, „uriaș” **nu** sunt valori și nu stau la acest nivel: sunt cuvinte ale limbii, iar înțelesul lor numeric se află din context (lecția 19). |
 | cantitate (quantity) | Un număr, cu sau fără unitate: trei cărți, 150 de cuvinte, două ore. |
 | stare (state) | Valorile însușirilor și relațiilor unui lucru la un moment. |
 
@@ -1052,7 +1053,7 @@ Sunt șase grupe. Lista este gândită să fie completă la acest nivel de abstr
 | capabilitate (capability) | Ce acte poate îndeplini cineva sau ceva, și asupra a ce. |
 | unealtă și resursă (tool, resource) | Cu ce se îndeplinește un act; ce se consumă sau se ocupă (o sală, un loc pe raft, o oră). |
 
-Ce avem deja din acestea, ca bucăți nelegate între ele: arborele felurilor (`k.kinds`), însușirile (`k.attributes`), locul (`k.space`), părțile (`k.parts`), unitățile și valorile (`k.units`, `k.values`), verbele și actele (`k.actions`), timpul (`k.time`). Lipsesc ca concepte: relația, rolul, schimbarea, scara ca mecanism unic, felul unei afirmații. Și lipsește legătura obligatorie de la celelalte lumi spre acestea.
+Ce avem deja din acestea, ca bucăți nelegate între ele: arborele felurilor (`k.kinds`), însușirile (`k.attributes`), locul (`k.space`), părțile (`k.parts`), unitățile și valorile (`k.units`, `k.values`), verbele și actele (`k.actions`), timpul (`k.time`). Lipsesc ca concepte: relația, rolul, schimbarea, dimensiunea numerică în locul listelor de cuvinte, felul unei afirmații. Exemplele din lecțiile 7, 15 și 25 folosesc încă liste (`enum=small enum=big`); ele arată starea de azi și se rescriu când forma nouă este stabilită. Și lipsește legătura obligatorie de la celelalte lumi spre acestea.
 
 ## Lecția 29. Cum se leagă o lume de lumea legendelor
 
@@ -1183,6 +1184,7 @@ Etichete: **bibliotecă** = făcut și testat în sopworld; **aplicație** = fol
 | „schemă” în loc de *matrix* în program | Treptat, ca la numele lumilor. |
 | numele firelor de unealtă | Rămân `std.tool.*`. |
 | limba textelor din nucleu, inclusiv `ask=` | Numai engleză; ajung în alte limbi prin drumul răspunsurilor. |
+| valorile însușirilor | La nivelul general, o valoare este un număr pe o dimensiune sau o trimitere la un concept. Fără liste închise de cuvinte în sloturi. Cuvintele de grad („mare”, „uriaș”) se înțeleg din contextul instanței și al felului de lume și se pot învăța pentru fiecare fel de lume. |
 | termeni | „Trasabilitate” și „explicabilitate”; „registrul cazurilor nerezolvate”. |
 
 ## Anexa C. Cu ce seamănă

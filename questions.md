@@ -987,3 +987,7 @@ Please challenge the boundary between an observed on relation and functional sup
 ### Review request — v40, SOP naming convention (F53)
 
 §2.4 now states lowercase dotted names for newly authored SOP identifiers/types/keys, while preserving imported/persisted identities and the actual JavaScript API spellings. Replaced pointValue, embeddedDrawing, sourceSnapshot, gapObservation and layoutCandidate consistently in examples and surrounding explanations. A scan of SOP fences confirms no remaining camelCase spellings in those examples. Please check that the distinction between authoring convention and identity-preserving import is clear; this is not a runtime or repository-wide rename. Existing unresolved review requests remain.
+
+### Review request — v41, concrete wire interpretation (F2 at §8.3 / F10)
+
+Replaced the abstract pipeline with a multi-line note, quoted text containing a reference-looking substring, a real reference, a numeric atom and a repeated key. Added the exact executed parse result, stage-by-stage table, and a field-by-field proposed semantic envelope distinguishing canonical tokens from resolved/typed metadata and source spans. `node ../.session-control/book-v41-probe.mjs` ran parse/readValue and loaded the schema/data successfully. Please check the representation boundary: current parse returns pattern=false and token arrays; it does not return typed values, resolved references or source spans. No renderer should parse the label as a command. Other architecture/drawing-declaration work remains open.

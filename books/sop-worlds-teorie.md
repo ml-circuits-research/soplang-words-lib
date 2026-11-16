@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 40, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 41, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -2219,13 +2219,61 @@ De exemplu, A are intervalul orizontal [0,10], B are [18,28], iar proiecțiile v
 
 Introducerea spațiului folosește astfel mecanisme generale pentru limite, calcule, potrivire și validare. Programul specific rămâne calculul geometric declarat și unealta care poate muta nodurile. Un sistem care are numai funcția de măsurare poate verifica diagrama, fără să pretindă că știe și să o repare.
 
-## 8.3 Ce înseamnă interpretarea firelor
+## 8.3 De la textul SOP la interpretarea unui fir
 
-Textul trece prin etape distincte. Mai întâi este citit ca sintaxă: identificatori, tipuri, chei, atomi, texte și referințe. Apoi referințele și numele sunt rezolvate în modulele și instanțele potrivite. Schema verifică valorile și multiplicitatea lor. Legăturile conceptuale arată ce operații se aplică. Abia apoi regulile pot fi evaluate.
+Interpretarea separă forma scrisă de sensul stabilit prin schemă. Parsarea identifică declarații, chei și tokenuri. Rezolvarea leagă numele de instanțe și referenți. Validarea verifică valorile, tipurile și multiplicitatea; legăturile conceptuale precizează operațiile aplicabile. Aceste distincții sunt obligații ale contractului, nu afirmația că motorul actual execută intern toate verificările în aceeași ordine liniară.
 
-Un text între ghilimele rămâne text. `before="object exists"` nu este o condiție executabilă prin simplul fapt că este scris ca text. R35 propune condițiile structurate; acestea trebuie validate și legate de rolurile actului. Explicația în limbaj natural poate însoți condiția, dar nu îi ține locul.
+Exemplul următor folosește sintaxa și sloturile existente. O notă aparține unei pagini; eticheta ei conține intenționat un text care seamănă cu o comandă și cu o referință. Schema este:
 
-Propunerea este o singură reprezentare semantică a firului, care păstrează identitatea, tipul, valorile tipizate, proveniența și locul din text. Componenta care desenează pe ecran (renderer) poate primi o proiecție, adică numai câmpurile de care are nevoie din acea reprezentare. Nu recitește textul SOP cu reguli proprii. Astfel, o referință și un text care seamănă cu o referință nu ajung confundate în două componente diferite.
+```sop
+@s.note.label core.slot of=note key=label kind=string
+@s.note.page core.slot of=note key=page kind=ref to=page
+@s.note.count core.slot of=note key=count kind=integer min=0
+@s.note.tag core.slot of=note key=tag kind=atom many=true
+```
+
+Prima declarație cere text pentru etichetă. A doua cere o referință către un fir de tip `page`, nu numele paginii ca text. A treia verifică un întreg nenegativ, iar ultima permite mai multe etichete atomice. Tipurile sunt folosite fără declarații suplimentare de închidere; exemplul verifică sloturile declarate, nu pretinde că alte chei sunt interzise. Datele sunt:
+
+```sop
+@page1 page
+@note1 note
+  label="Move $page1 later"
+  page=$page1
+  count=2
+  tag=red tag=round
+```
+
+`@page1` introduce ținta referinței. Declarația începută prin `@note1` continuă pe liniile următoare până la sfârșit; indentarea este numai pentru cititor. `label` conține un singur token de text, iar `$page1` din interiorul lui nu este extras ca referință. În schimb, valoarea cheii `page` este o referință. `count` este încă tokenul atomic `2` la parsare. Repetarea cheii `tag` produce două valori, fără a o suprascrie pe prima.
+
+| Etapa | Rezultatul pentru aceeași notă |
+|---|---|
+| Tokenizare | `label="Move $page1 later"` este o singură intrare; sfârșiturile de linie dintre intrări nu încheie declarația. Pozițiile din text pot localiza fiecare token. |
+| Parsare | `id=note1`, `type=note`; `attrs` conține listele de tokenuri pentru label, page, count și tag. Nu există încă o deducție că eticheta cere o mutare. |
+| Clasificarea valorilor | `readValue` recunoaște string, ref și atom. Atomul `2` nu devine număr doar pentru că are cifre. |
+| Rezolvarea referinței | `$page1` este legat de identitatea paginii din instanța încărcată. Textul din label nu participă la această căutare. |
+| Validarea prin schemă | Slotul count verifică întregul nenegativ; slotul page verifică tipul țintei; many permite cele două tag-uri. Lipsa țintei nu este reparată prin crearea automată a unei pagini. |
+| Interpretare și folosire | Nota și relația ei pot fi interogate sau afișate. Nicio regulă ori capabilitate din exemplu nu cere mutarea paginii: eticheta rămâne conținut. |
+
+Pentru textul de date, `parse(source)[1]` întoarce efectiv următorul obiect în biblioteca actuală; exemplul și încărcarea lui după schemă au fost executate. Ghilimelele escapate sunt reprezentarea JSON a tokenului SOP de text, nu ghilimele suplimentare în eticheta afișată.
+
+```json
+{"id":"note1","type":"note","attrs":{"label":["\"Move $page1 later\""],"page":["$page1"],"count":["2"],"tag":["red","round"]},"pattern":false}
+```
+
+`pattern=false` este un indicator produs de parser în această formă; nota este un fapt, nu un pattern de regulă. `readValue` aplicat lui `$page1` dă `{"kind":"ref","v":"page1"}`: clasifică tokenul, dar nu demonstrează că ținta există. Validarea numerică a lui count nu înlocuiește în `attrs` tokenul `"2"` cu numărul JavaScript `2`. Acestea sunt responsabilități diferite, explicate și în [specificația valorilor](../docs/language.md#3-values).
+
+Reprezentarea semantică propusă păstrează acest fir canonic și îi asociază metadate, fără un al doilea parser pentru fiecare consumator. Pentru nota concretă, câmpurile suplimentare au următorul conținut și rol; numele din prima coloană sunt descriptive, nu un API deja livrat.
+
+| Câmp semantic propus | Conținut și motiv |
+|---|---|
+| Identitate rezolvată | Perechea dintre identitatea persistentă a instanței și `note1`; previne confundarea cu o notă din altă instanță. |
+| Tip și schemă aplicată | Tipul `note`, declarațiile sloturilor și versiunea lor; arată de unde vine interpretarea numerică a lui count. |
+| Valori interpretate | Label ca text decodat, count ca întreg 2 și tag ca lista ordonată red/round; fiecare valoare păstrează tokenul și slotul care a justificat interpretarea. |
+| Legături rezolvate | Pentru page, identitatea țintei, tipul verificat și versiunea stării citite; nu o adresă de memorie tratată drept identitate persistentă. |
+| Origine textuală | Identitatea și versiunea sursei plus intervalele declarației și intrărilor; localizează eroarea sau explicația. `parse` nu adaugă astăzi aceste intervale obiectului returnat, deși tokenizarea furnizează poziții. |
+| Proveniență și statut | Afirmație introdusă explicit, verificările efectuate și eventualele obligații nerezolvate; un fapt derivat ar păstra regula și premisele sale. |
+
+Metadatele dependente de schemă sau stare se invalidează când versiunea respectivă se schimbă; textul canonic și identitatea nu sunt rescrise pentru a ascunde schimbarea interpretării. Un consumator grafic primește numai câmpurile necesare din această reprezentare, nu recitește eticheta cu reguli proprii. La fel, `before="object exists"` rămâne text până când o schemă și un mecanism explicit îl tratează altfel: condițiile executabile structurate sunt contractul R35, nu rezultatul implicit al prezenței unei fraze.
 
 ## 8.4 Cum strângem firele relevante
 

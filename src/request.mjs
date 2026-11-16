@@ -98,7 +98,11 @@ function languageOf(language, lang) {
     const modals = new Set(rowsOf(language, `${lang}.aux`).filter((r) => (r.modal ?? []).length).flatMap((r) => r.text ?? []).map((t) => String(t).toLowerCase()));
     if (!modals.size) for (const t of ['would', 'could', 'd']) modals.add(t);
     const desire = new Set(rowsOf(language, `${lang}.skip`).filter((r) => first(r, 'class') === 'desire').flatMap((r) => r.text ?? []).map((t) => String(t).toLowerCase()));
-    return { stop, numbers, anaphors, placeRefs, dets, definite, indefinite, joiners, everything, all, speaker, modals, desire, preps, cues, plural, wh, hasInflect: rowsOf(language, `${lang}.inflect`).length > 0 };
+    // a modifier that says a kind is made afresh (the language's det kind=modifier meaning=one-more: "new", "another"); its row's `act` (default make) is what a bare noun phrase with it asks for
+    const freshRows = rowsOf(language, `${lang}.det`).filter((r) => first(r, 'kind') === 'modifier' && first(r, 'meaning') === 'one-more');
+    const fresh = new Set(freshRows.flatMap((r) => [...(r.text ?? []), ...(r.form ?? [])]).map((t) => String(t).toLowerCase()).filter((t) => !t.includes(' ')));
+    const freshAct = freshRows.map((r) => first(r, 'act')).find(Boolean) ?? 'make';
+    return { fresh, freshAct, stop, numbers, anaphors, placeRefs, dets, definite, indefinite, joiners, everything, all, speaker, modals, desire, preps, cues, plural, wh, hasInflect: rowsOf(language, `${lang}.inflect`).length > 0 };
   });
 }
 
@@ -344,8 +348,8 @@ export function readRequest(world, text, ctx = {}) {
     } else if (c.on === 'with') for (const it of o.items) {
       const kind = it.entry?.kind ?? it.text, w1 = words(it.from, it.to - it.from);
       if (it.n !== undefined) constraints.push({ ...base, on: 'count', number: it.n, of: kind, words: w1 }); // "with 5 shapes": a count of them
-      else if (it.entry && !it.entry.plural && !it.entry.unit && L.indefinite.has(ws[it.from])) constraints.push({ ...base, on: 'count', number: 1, of: kind, words: w1, det: true }); // "with a lake": one, said
-      if (it.n === undefined || (it.entry && !it.entry.unit)) constraints.push({ ...base, value: kind, words: w1 });
+      else if (it.entry && !it.entry.plural && !(it.entry.unit && !it.entry.made) && L.indefinite.has(ws[it.from])) constraints.push({ ...base, on: 'count', number: 1, of: kind, words: w1, det: true }); // "with a lake": one, said
+      if (it.n === undefined || (it.entry && !(it.entry.unit && !it.entry.made))) constraints.push({ ...base, value: kind, words: w1 });
     }
     else if (c.on === 'attribute') {
       const n = m.n ?? o.n; // an attribute that takes a number (and a unit): "by 30 degrees"
@@ -380,6 +384,7 @@ export function readRequest(world, text, ctx = {}) {
 
   // kinds, wholes, numbers and values left: the target, wanted kinds, bare counts and attributes
   let target = null, refers = null, refersAt = null;
+  let actFrom0 = null, freshAt = -1; // the place of a modifier that says a kind is made afresh ("a new page"): a trace in the reading, never dropped
   const mentions = []; // every kind word read (units and the world's own words too), for a question about the state
   const pending = []; // values waiting for the kind they describe
   for (let i = 0; i < ws.length; i++) { // bounded: the tokens
@@ -405,11 +410,14 @@ export function readRequest(world, text, ctx = {}) {
       // a definite determiner before the kind (the language's definite=yes), over the modifiers between: it refers to things there
       let d = i - 1; while (d >= 0 && d >= i - 4 && !L.dets.has(ws[d]) && !L.joiners.has(ws[d]) && (used[d] || X.values.has(ws[d]))) d--; // bounded: four tokens
       const definite = d >= 0 && L.definite.has(ws[d]), indefinite = d >= 0 && L.indefinite.has(ws[d]);
+      let f = i - 1; while (f >= 0 && f >= i - 4 && !L.joiners.has(ws[f]) && (L.dets.has(ws[f]) || used[f] || X.values.has(ws[f]))) { if (L.fresh.has(ws[f])) break; f--; } // bounded: four tokens
+      const freshK = f >= 0 && f >= i - 4 && L.fresh.has(ws[f]);
+      if (freshK) freshAt = f;
       // "all the fish", "all birds": every thing of the kind, several whatever the form (a plural equal to its singular too)
       let q = i - 1; while (q >= 0 && q >= i - 4 && !L.all.has(ws[q]) && (L.dets.has(ws[q]) || used[q] || X.values.has(ws[q]))) q--; // bounded: four tokens
       const every = q >= 0 && q >= i - 4 && L.all.has(ws[q]) && !used[q] && !countOf;
       if (every) take(q);
-      const kc = { on: 'kind', want: 'yes', value: k.entry.kind, words: k.text, origin: 'said', at: i, ...((k.entry.plural || every) && !countOf ? { plural: true } : {}), ...(every ? { all: true } : {}), ...(definite ? { definite: true } : {}), ...(indefinite ? { indefinite: true } : {}), ...(k.entry.world ? { world: true } : {}) };
+      const kc = { on: 'kind', want: 'yes', value: k.entry.kind, words: k.text, origin: 'said', at: i, ...((k.entry.plural || every) && !countOf ? { plural: true } : {}), ...(every ? { all: true } : {}), ...(definite ? { definite: true } : {}), ...(indefinite ? { indefinite: true } : {}), ...(freshK ? { fresh: true } : {}), ...(k.entry.world ? { world: true } : {}) };
       if (k.entry.whole && !target && !afterPlace) { target = k.entry.kind; refers = 'kind'; if (!constraints.some((c) => c.on === 'kind' && c.value === k.entry.kind)) constraints.push(kc); continue; } // the target keeps its kind constraint, with the place of its word
       for (const p of pending.splice(0)) p.of = k.entry.kind;
       if (k.entry.unit && !k.entry.made) continue; // "5 nodes": the unit of a whole, counted, not a kind
@@ -465,10 +473,12 @@ export function readRequest(world, text, ctx = {}) {
       for (let x = constraints.length - 1; x >= 0; x--) if (constraints[x].on === 'place' && constraints[x].relation === verb) constraints.splice(x, 1); // the verb is no preposition here
     }
   }
+  const freshKind = freshAt >= 0 ? constraints.find((c) => c.on === 'kind' && c.fresh) : null;
+  if (freshKind && !act && !statement && !refers?.startsWith?.('last') && !(/\?\s*$/.test(String(text ?? '')) || L.wh.has(ws[0]))) { act = L.freshAct; actFrom0 = 'fresh'; } // "a new page": no verb, a new thing: it is made
   const unreadAt = [];
   for (let i = 0; i < ws.length; i++) if (!used[i] && (!L.stop.has(ws[i]) || i === verbAt) && !/^[-,]$/.test(ws[i])) unreadAt.push({ text: ws[i], n: i + 1 }); // bounded: the tokens
   const question = /\?\s*$/.test(String(text ?? '')) || L.wh.has(ws[0]); // a turn that asks: never an act's fragment
-  const req = { act, mode, target, refers, ...(refersAt !== null ? { refersAt } : {}), ...(named.length ? { named } : {}), mentions, ...(question ? { question: true } : {}), ...(statement ? { statement: true } : {}), text: String(text ?? ''), constraints, reactions, unread: [...new Set(unreadAt.map((u) => u.text))], unreadAt, used: ws.filter((_, i) => used[i]), ...(spell ? { spell: { repairs: spell.repairs, asks: spell.asks } } : {}) };
+  const req = { act, ...(actFrom0 ? { actFrom: actFrom0 } : {}), ...(freshKind ? { fresh: true } : {}), mode, target, refers, ...(refersAt !== null ? { refersAt } : {}), ...(named.length ? { named } : {}), mentions, ...(question ? { question: true } : {}), ...(statement ? { statement: true } : {}), text: String(text ?? ''), constraints, reactions, unread: [...new Set(unreadAt.map((u) => u.text))], unreadAt, used: ws.filter((_, i) => used[i]), ...(spell ? { spell: { repairs: spell.repairs, asks: spell.asks } } : {}) };
   return withFacts(req);
 }
 
@@ -614,12 +624,19 @@ export function reviseRequest(dialogue, request, opts = {}) {
   if (does.every((d) => d.does === 'none')) return { sort: 'reaction', reaction, does, request: null, replace: false, seed, reply };
   const scale = scaleOf([].concat(opts.catalog ?? []));
   let cs = last.constraints.map((c) => ({ ...c }));
+  const lengthyLast = !!last.target && rowsOf([opts.live, ...[].concat(opts.catalog ?? [])].filter(Boolean), 'k.expect.make').some((m) => first(m, 'thing') === last.target && first(m, 'length') !== undefined); // the expectation of the last whole has a length: a text
   const put = (c) => { cs = cs.filter((x) => !sameKey(x, c) || (c.on === 'kind' && c.want === 'yes' && x.want !== 'yes')); if (c.on === 'kind' && c.want === 'yes') cs = cs.filter((x) => !(x.on === 'kind' && x.want === 'yes')); cs.push(c); };
   const stepped = new Set(does.filter((d) => d.does === 'step').map((d) => d.on));
   const turn = request.constraints.filter((c) => !(c.step && stepped.has(c.on)) && !(c.on === 'kind' && stepKinds.includes(c.value)));
   if (expectation) cs = cs.filter((c) => c.on === 'kind' && c.want !== 'yes' && false); // the expectation carries the whole set
   for (const c of turn) {
     if (c.step && ['size', 'extent'].includes(c.on)) { const now = cs.find((x) => x.on === c.on && x.value)?.value ?? 'default'; const { step, ...rest } = c; put({ ...rest, value: stepNext(scale, now, step), origin: 'said' }); continue; }
+    // "shorter" / "longer" on a text (the expectation of the last whole has a length): the comparative steps the length key from where it was, as "bigger" steps a size; the cue's own value only gives the direction
+    if (c.on === 'length' && !c.unit && c.value && !c.step && lengthyLast && !request.act && !request.target) {
+      const order = scale ? scale.map((x) => x.step) : STEPS, mid = order.indexOf('default');
+      const now = cs.find((x) => x.on === 'length' && x.value && !x.unit)?.value ?? 'default';
+      put({ ...c, value: stepNext(scale, now, order.indexOf(c.value) < mid ? 'down' : 'up'), origin: 'said' }); continue;
+    }
     put({ ...c, origin: 'said' });
   }
   let nextSeed = seed, vary = false;
@@ -636,7 +653,11 @@ export function reviseRequest(dialogue, request, opts = {}) {
     }
     if (d.does === 'step') {
       const cur = cs.find((c) => c.on === 'size' && c.value)?.value ?? 'default';
-      if (d.on === 'count' && byKind) {
+      if (d.on === 'count' && lengthyLast && !byKind) { // "shorter" / "longer" on a text: the length key steps (its units follow by the scale), not a count
+        const now = cs.find((c) => c.on === 'length' && c.value && !c.unit)?.value ?? 'default';
+        put({ on: 'length', want: 'yes', value: stepNext(scale, now, d.direction), words: request.reactions[0]?.words ?? reaction, origin: 'reaction' });
+        cs = cs.filter((c) => c.on !== 'count' || c.of);
+      } else if (d.on === 'count' && byKind) {
         const to = stepNext(scale, cur, d.direction);
         const f0 = factor(scale, cur), f1 = factor(scale, to), up = d.direction === 'up';
         const stepOne = (n) => { let m = f0 && f1 ? Math.round(n * f1 / f0) : n + (up ? 1 : -1); if (up && m <= n) m = n + 1; if (!up && m >= n) m = n - 1; return Math.max(1, m); };
@@ -737,7 +758,7 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
     else if (acts.length === 1) { act = acts[0]; actFrom = 'world'; }
   }
   const notHonoured = [], assumed = [];
-  const out = { ok: false, act, target: null, roles: {}, steps: [], assumed, notHonoured, seed, sources: [...sources] };
+  const out = { ok: false, act, ...(request.fresh ? { fresh: true } : {}), target: null, roles: {}, steps: [], assumed, notHonoured, seed, sources: [...sources] };
   if (!act) { notHonoured.push({ on: 'act', words: request.text, why: 'no act was read', code: 'no_act' }); return out; }
   const H = cap.honours.filter((h) => h.act === act);
   if (!H.length) { notHonoured.push({ on: 'act', words: act, why: `this world does not ${act}`, code: 'act' }); return out; }
@@ -856,8 +877,10 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
 
   // the count: said (a number, a range, an amount), else the expectation scaled by the size, else one
   const wholeC = whole ? C('count').find((c) => c.of === target && c.of !== unit && c.number > 1 && !c.bound) ?? null : null; // "3 necklaces": that many wholes, each planned alike
-  const withCounted = (c) => !!whole && !!c.of && c.of !== target && c.of !== unit && withs.some((w) => w.value === c.of); // "a picture with 3 circles": 3 of them inside the whole, not the whole's count
-  const countC = C('count').find((c) => c !== wholeC && !withCounted(c) && (!c.of || c.of === unit || c.of === target || pool.includes(c.of))) ?? null;
+  const withCounted = (c) => !!whole && !!c.of && c.of !== target && withs.some((w) => w.value === c.of); // "a picture with 3 circles": 3 of them inside the whole, not the whole's count
+  const ofWhole = (c) => !!whole && !!mk && c.of === target && c.of !== unit; // the count of a whole is a count of wholes ("a story with 5 chapters": one story), never of its parts
+  const ofPart = (c) => !!whole && !!c.of && c.of !== target && c.of !== unit && parts.some((p) => first(p, 'part') === c.of) && parts.filter((p) => !isLink(p)).length > 1 && !shaped; // a count said of one part of a whole with several kinds of parts is that part's own count, never the whole's ("fewer flowers" of a meadow)
+  const countC = C('count').find((c) => c !== wholeC && !withCounted(c) && !ofWhole(c) && !ofPart(c) && (!c.of || c.of === unit || c.of === target || pool.includes(c.of))) ?? null;
   let lo, hi, typ, countFrom;
   // a plural kind said with no number: several, as the expectations say for that kind (k.expect.value on=count, given
   // plural=yes), else the amount "some" of the catalog, else two to four
@@ -905,6 +928,7 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   if (random && !countC) countFrom = 'sampled';
   if (mode === 'shapes' && notAll.length && n < 2) n = 2;
 
+  let short = null;
   const items = []; // { kind, part }
   let kindsFrom = poolFrom;
   if (coordinated) for (const x of coordinated) for (let i = 0; i < x.n; i++) items.push({ kind: x.kind }); // bounded: the counts said
@@ -929,7 +953,7 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
       const part = first(p, 'part'), min = num(first(p, 'min')) ?? 0, max = num(first(p, 'max')) ?? min, typical = num(first(p, 'typical')) ?? min;
       const must = first(p, 'needed') === 'yes' || wantK.some((c) => c.value === part) || withs.some((c) => c.value === part);
       const fixed = C('count').find((c) => c.of === part);
-      const lo1 = must ? Math.max(1, Math.round(min * Math.min(cf, 1)) || 1) : Math.round(min * Math.min(cf, 1));
+      const lo1 = countFrom === 'said' ? (must ? 1 : 0) : must ? Math.max(1, Math.round(min * Math.min(cf, 1)) || 1) : Math.round(min * Math.min(cf, 1)); // a count said gives way to no part's own minimum
       const hi1 = Math.max(lo1, Math.round(max * cf));
       const c0 = fixed ? fixed.number ?? fixed.min : random ? pick(rnd, lo1, hi1) : Math.min(hi1, Math.max(lo1, Math.round(typical * cf)));
       return { part, lo: fixed ? c0 : lo1, hi: fixed ? c0 : hi1, n: c0, must, fixed: !!fixed };
@@ -944,6 +968,8 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
       r.n += up ? 1 : -1; sum += up ? 1 : -1;
     }
     if (notAll.length && rows.filter((r) => r.n > 0).length < 2) { const r = rows.find((x) => x.n === 0); if (r) { r.n = 1; sum += 1; } }
+    if (rows.length && rows.every((r) => r.fixed)) countFrom = 'said'; // every part counted by its own number: the total is their sum, nothing assumed
+    else if (sum < target1 && rows.length && !rows.some((r) => r.fixed)) short = { made: sum, asked: target1, kind: unit ?? rows[0].part, from: countFrom }; // the knowledge holds no more parts than this: made N of M, said (reply `short_of`)
     n = sum;
     for (const r of rows) for (let i = 0; i < r.n; i++) items.push({ kind: r.part, part: r.part }); // bounded: the counts planned
     kindsFrom = random ? 'sampled' : mkFrom;
@@ -1104,7 +1130,8 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
   }
   out.steps = steps;
   out.ok = items.length > 0;
-  out.bounds = { count: saidCount ? [saidCount[0] + withAdded, saidCount[1] + withAdded] : saidCount, not: [...noK] }; // what deduction checks the made items against
+  if (short) out.short = short;
+  out.bounds = { count: short && saidCount ? [short.made + withAdded, short.made + withAdded] : saidCount ? [saidCount[0] + withAdded, saidCount[1] + withAdded] : saidCount, not: [...noK] }; // what deduction checks the made items against
   return out;
 }
 
@@ -1134,7 +1161,7 @@ function referencePlan(live, request, opts, out, H, act) {
     if (amb) { out.ask = true; return reply('refused.which', { kind: amb.words, number: amb.ids.length }); }
     ids = objects.map((n) => n.ids[0]);
   } else if (request.refers === 'last') ids = [...(opts.dialogue?.lastRun?.made ?? opts.dialogue?.result?.things ?? [])].map(strip).filter((id) => view.thing(id));
-  else if (wholeWorld) ids = worldThings(live, view, act, H);
+  else if (wholeWorld) ids = worldThings(live, view, act, H, opts.catalog);
   else if (kind) ids = stateOfKind(live, view, kind);
   else { out.notHonoured.push({ on: 'target', words: request.text, why: 'nothing named was read', code: 'no_target' }); return out; }
   const kindAt = request.refers === 'named' ? request.refersAt ?? -1 : kindC.find((c) => c.value === kind)?.at ?? kindC[0]?.at ?? (request.refers === 'last' || wholeWorld ? request.refersAt ?? -1 : Infinity);
@@ -1185,9 +1212,9 @@ function referencePlan(live, request, opts, out, H, act) {
 }
 
 /** The things of the world an act takes when it is said of the whole world: the things of its state (stateIds: never a declaration row such as std.schema.drawn) of a declared kind (std.schema.kind) the act is declared for, or of a kind its honours name, along the lineage. */
-function worldThings(live, view, act, H) {
-  const declared = capabilitiesOf(live).kinds, of = new Set(H.flatMap((h) => h.of));
-  return stateIds(live, view).filter((id) => (view.thing(id)?.kinds ?? []).some((k) => declared.has(k) && (declared.get(k).has(act) || kindLineage(k, { live }).some((x) => of.has(x)))));
+function worldThings(live, view, act, H, catalog = []) { // `catalog`: the sources whose kinds the world joins (capabilitiesOf)
+  const declared = capabilitiesOf(live, { catalog }).kinds, of = new Set(H.flatMap((h) => h.of));
+  return stateIds(live, view).filter((id) => (view.thing(id)?.kinds ?? []).some((k) => declared.has(k) && (declared.get(k).has(act) || kindLineage(k, { live, catalog }).some((x) => of.has(x)))));
 }
 
 /**
@@ -1203,7 +1230,7 @@ function changeSense(live, request, opts) {
   let at = null;
   if (request.refers === 'last') { if ([...(opts.dialogue?.lastRun?.made ?? opts.dialogue?.result?.things ?? [])].some((id) => view.thing(strip(id)))) at = request.refersAt ?? -1; }
   else if (request.refers === 'named') { if ((request.named ?? []).some((n) => stateIds(live, view, n.ids.map(strip)).length)) at = request.refersAt ?? -1; }
-  else if (request.refers === 'all' || kinds[0]?.world) { if (worldThings(live, view, 'change', capabilitiesOf(live).honours.filter((h) => h.act === 'change')).length) at = request.refersAt ?? kinds[0]?.at ?? -1; }
+  else if (request.refers === 'all' || kinds[0]?.world) { if (worldThings(live, view, 'change', capabilitiesOf(live, { catalog: opts.catalog }).honours.filter((h) => h.act === 'change'), opts.catalog).length) at = request.refersAt ?? kinds[0]?.at ?? -1; }
   else if (kinds[0]?.definite && stateOfKind(live, view, kinds[0].value).length) at = kinds[0].at;
   if (at === null) return false;
   const values = request.constraints.filter((c) => (c.on === 'attribute' || c.on === 'size') && (c.want ?? 'yes') === 'yes');
@@ -1425,7 +1452,12 @@ const pluralIn = (language, lang, w) => { if (!language) return w; try { return 
 /** A value a reply cannot say: nothing, a failed number, or the word of a missing value. */
 const unsayable = (v) => v === undefined || v === null || (typeof v === 'number' && !Number.isFinite(v)) || /^\s*(undefined|null|NaN)?\s*$/.test(String(v));
 /** The reply sentences of the revision of a whole, used when the language world has no `done.whole` of its own (English only; the language worlds say them in their language). */
-const WHOLE_REPLIES = Object.freeze({ 'done.whole': [{ roles: ['whole', 'parts'], text: 'The {whole} now has {parts}.' }] });
+const WHOLE_REPLIES = Object.freeze({
+  'done.whole': [{ roles: ['whole', 'parts'], text: 'The {whole} now has {parts}.' }],
+  'done.about': [{ roles: ['whole', 'topic'], text: 'The {whole} is about {topic}.' }],
+  'done.title': [{ roles: ['whole', 'title'], text: 'The {whole} is called {title}.' }],
+  'short_of': [{ roles: ['made', 'asked', 'kind'], text: 'I could only make {made} of the {asked} {kind} you asked for.' }, { roles: ['made', 'asked', 'unit'], text: 'I could only make {made} {unit} of the {asked} you asked for.' }],
+});
 const fallbackReply = (f, lang) => { if (lang !== 'w.lang.en') return null; const row = (WHOLE_REPLIES[f.reply] ?? []).find((r) => r.roles.every((k) => !unsayable(f.roles?.[k]))); return row ? row.text.replace(/\{(\w+)\}/g, (_, k) => f.roles[k]).replace(/^./, (c) => c.toUpperCase()) : null; };
 const wordsOf = (v) => String(v ?? '').split(/,\s*/).filter(Boolean);
 
@@ -1493,6 +1525,13 @@ export function sayRequest(request, outcome = {}, opts = {}) {
     if (run.whole && outcome.revised && outcome.target && Object.keys(run.kinds ?? {}).length) wholeFact(Object.entries(run.kinds));
     else if (run.whole) facts.push({ reply: 'done.make', roles: { kind: plain(outcome.target), number: 1 } });
     else if (!(run.whole && outcome.revised && Object.keys(run.kinds ?? {}).length)) for (const [kind, n] of Object.entries(run.kinds)) { const v = outcome.roles?.colour; facts.push({ reply: v ? 'done.make.value' : 'done.make', roles: { kind: plain(kind), number: n, ...(v ? { value: v } : {}) } }); }
+  }
+  { // what was said of a made whole (its topic, its title) and where the knowledge ran short of what was asked: made N of M (a plan's `short`, or the host's own: { made, asked, kind | unit })
+    const ranOk = tool ? tool.ok && !tool.same && !tool.undo && !tool.redo : outcome.run?.ok !== false && !!run;
+    const w0 = outcome.steps?.[0];
+    if (ranOk && !outcome.reference && !outcome.revised && outcome.target && (run?.whole || tool?.result?.whole) && w0?.args?.kind === outcome.target)
+      for (const [key, reply, role] of [['about', 'done.about', 'topic'], ['title', 'done.title', 'title']]) if (!unsayable(w0.args[key])) facts.push({ reply, roles: { whole: plain(outcome.target), [role]: plain(String(w0.args[key])) } });
+    if (ranOk) for (const sh of [].concat(outcome.short ?? [])) if (sh && sh.made < sh.asked) facts.push({ reply: 'short_of', roles: { made: sh.made, asked: sh.asked, ...(sh.unit ? { unit: String(sh.unit) } : { kind: pluralIn(o.language, lang, plain(sh.kind)) }) } });
   }
   if (outcome.unread?.length && tool?.failed?.code !== 'unread') facts.push({ reply: 'not_understood', roles: { words: outcome.unread.join(', ') } }); // a part that matters was not read: said, nothing was done
   const assumed = [...(outcome.assumed ?? [])];

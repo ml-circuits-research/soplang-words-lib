@@ -5915,3 +5915,8 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 - Numeric attribute cue read (`attribute.rotation`: value 30, unit degree); readRequest never throws on a cue (a cue with no readable operand is no match, words unread). "what is in / on" + the world's whole noun: mention `inside`, `askWorld` skips it (art.draw reads were already right; the count came from askWorld).
 - Join: `capabilitiesOf(live, { catalog })` + `joined`, `declares`, `honoursKind`, `joinedKinds`; stand-in via `kindLineage drawn`; `type=kind` param with no `accepts` takes declared kinds. Not changed: `toolCapabilities` and `worldThings` read only the live world's kinds (no catalog argument yet).
 - Tests: `test/cues-robust.test.mjs` (6; property over every cue of the w.lang.en shards, 10 s); `repos.pin` knowledge pin 7042ea70.
+
+## 0.159.0 whole counts, reply topic and short_of, text length, "new", catalog in toolCapabilities
+- Whole count never checked against parts; "fewer flowers" steps one part; "with a chapter" is one; length steps for "shorter"/"longer" on a text; `done.about`/`done.title`/`short_of` reply facts; `fresh` trace of "new" and a bare "new X" is a make; `toolCapabilities`/`worldThings` take the catalog. New example worlds STORIES, MEADOW.
+- Q93 (3) "a picture with a lake" already gave one lake in the example worlds (general whole, singular `with`); the case that gave two was a unit kind said with "a" (no det count): fixed and tested. Not reproduced with the host's own catalog.
+- Tests: `test/whole-counts.test.mjs` (6).

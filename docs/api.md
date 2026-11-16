@@ -2306,7 +2306,7 @@ const r = repairWords(['show', 'the', 'trubine'], { worlds: [openWorld, otherWor
 The reply of a request as reply facts, each a reply name of the language world with its roles, and their
 text by `replyFrom`: the revision's reply (`outcome.reply`: sorry, welcome), `done.revise` (`outcome.revised`, not after a step such as "fewer" or "bigger": that is said by its net result, 0.157),
 `done.make` / `done.make.value` (the whole made, or each kind with its number), `assumed` (`{ key, value }`, each
-default used), `not_honoured` (`{ words, why }`, also for each reason of `outcome.cannot`), `unread` (`{ words }`, after a turn that made something), `not_understood` (`{ words }`, a plan not made for unread words), and `done.place.<relation>` (`{ thing, number, value }`) for a move to a thing of the view when the language has that reply ("I moved 2 fish into the lake."), else the change as before.
+default used), `not_honoured` (`{ words, why }`, also for each reason of `outcome.cannot`), `unread` (`{ words }`, after a turn that made something), `not_understood` (`{ words }`, a plan not made for unread words), `done.about` / `done.title` (`{ whole, topic | title }`, what was said of a made whole: "The story is about ancient hobbits", 0.159), `short_of` (`{ made, asked, kind | unit }`: the knowledge held fewer parts than asked, or the host's composer wrote fewer words; from `outcome.short`, a plan's `short` `{ made, asked, kind, from }` or the host's own), and `done.place.<relation>` (`{ thing, number, value }`) for a move to a thing of the view when the language has that reply ("I moved 2 fish into the lake."), else the change as before.
 `outcome` is the plan with `run` (runPlan's result). `options`: `language`, `lang` (or a language code such as
 'en'), `dictionary`, `say` (the sources of an assumption that are said; default the language world's
 `<lang>.reply name=assumed say=` values when it has them, else `ASSUMED_SAY`: every source but `default`, a tool
@@ -2343,7 +2343,7 @@ print(sayRequest(q, outcome, { language: words, lang: 'ex' }).text);
 I made a heap. I took 6 for the count. Not at the top: a heap has no place here.
 ```
 
-### runPlan(plan, bindings, primitives, opts?), toolBindings(live, opts?), toolTimeline(), toolSession(live, primitives, opts?), toolCapabilities(live, bindings?), askWorld(question, request, opts?), nearestAccepted(value, param, opts?), readView(view), stateDiff(before, after, opts?), mirrorState(live, view), runWorldPlan(live, plan, options?), TOOL_ARG_SOURCES, WORLD_QUESTIONS
+### runPlan(plan, bindings, primitives, opts?), toolBindings(live, opts?), toolTimeline(), toolSession(live, primitives, opts?), toolCapabilities(live, bindings?, opts?), askWorld(question, request, opts?), nearestAccepted(value, param, opts?), readView(view), stateDiff(before, after, opts?), mirrorState(live, view), runWorldPlan(live, plan, options?), TOOL_ARG_SOURCES, WORLD_QUESTIONS
 
 Tool binding as wires (0.152; owner 2026-11-15: the glue between a live world and the generic mechanisms is
 declarative, only the tool's concrete actions are code). A world declares its tool in the `std.tool` module
@@ -2389,7 +2389,7 @@ Returns `{ ok, diff: { added, removed, changed }, same, replaced, calls, assumed
 the world's own `act`, as before.
 
 `toolBindings(live)` reads and checks the declarations (`problems`: an op, a parameter, a source or a custom
-function named and not declared, a required parameter without a source). `toolCapabilities(live, bindings)`: the acts
+function named and not declared, a required parameter without a source). `toolCapabilities(live, bindings, { catalog })` (0.159: the kinds a world joins from the catalog are offered, as `capabilitiesOf` lists them; `askWorld` passes its catalog): the acts
 a world offers (honoured and bound) with their kinds and keys. `askWorld(question, request, { live, bindings, view })`
 says facts of the live world for the questions of `WORLD_QUESTIONS`: `capabilities` (the declarations) and `state`
 (the things of the kinds asked, by lineage, counted per kind: `state.count`, `state.empty`; the kinds asked are the

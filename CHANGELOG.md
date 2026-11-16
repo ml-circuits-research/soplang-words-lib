@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.159.0
+
+The count of a whole is a count of wholes; what a reply says of a made whole; a text's length; "new" leaves a trace;
+properties in `test/whole-counts.test.mjs` over the new example worlds `STORIES` (a story with chapters as parts) and
+`MEADOW` (a whole of several kinds of parts).
+
+### Fixed
+- A count of the target whole ("a story with 5 chapters": one story) is never the count of its parts: no "3 made, the request
+  said 1". A count said of one part of a whole with several kinds of parts ("fewer flowers" of a meadow) is that part's
+  own count, the other parts keep theirs ("no 7 made, the request said 3"). A count said with "with" wins over the part's own
+  expectation, a unit kind too ("with a chapter" is one chapter); a said count gives way to no part's own minimum.
+- "shorter" / "longer" on a text (the whole's expectation has a `length`) steps the `length` key from where it was, never a count.
+- `toolCapabilities(live, bindings, { catalog })` and the planner's whole-world things take the catalog (joined kinds), as
+  `capabilitiesOf` does since 0.158.
+
+### New
+- `sayRequest`: `done.about` / `done.title` name the topic or title said of a made whole; `short_of` says "made N of M"
+  when the knowledge holds fewer parts than asked (a plan's `short`, `outcome.short` from the host for a length it fell short of).
+- "new" (a language world `det kind=modifier meaning=one-more`) leaves `fresh: true` on the kind's constraint, the request and
+  the plan; a bare "new page" with no verb asks for the row's `act` (default `make`, `actFrom: 'fresh'`, not said as an assumption).
+
 ## 0.158.0
 
 Cues of the catalog at 7042ea70 no longer break the reader; kinds taken by join count as declared (psys2 re-pin);

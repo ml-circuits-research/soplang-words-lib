@@ -555,12 +555,12 @@ function move(act, timeline, ctx, before) {
 
 // ---- what this world can do, from its declarations and its bindings ------------------------------------------------
 /** The acts a tool world offers: those it honours (std.schema.honours) and binds (std.tool.bind): [{ act, kinds, on, op }] (kinds: the declared kinds of the act its bindings cover; on: the constraints it honours). */
-export function toolCapabilities(live, bindings = null) {
+export function toolCapabilities(live, bindings = null, { catalog = [] } = {}) { // `catalog`: the sources whose kinds the world joins, as capabilitiesOf takes them
   const B = bindings ?? toolBindings(live);
-  const cap = capabilitiesOf(live);
+  const cap = capabilitiesOf(live, { catalog });
   const out = [];
   for (const b of B.binds) {
-    const kinds = [...cap.kinds.entries()].filter(([k, acts]) => acts.has(b.act) && (!b.of.length || kindLineage(k, { live }).some((x) => b.of.includes(x)))).map(([k]) => k);
+    const kinds = [...cap.kinds.entries()].filter(([k, acts]) => acts.has(b.act) && (!b.of.length || b.of.includes(k) || b.of.includes(cap.joined.get(k)?.from) || kindLineage(k, { live, catalog }).some((x) => b.of.includes(x)))).map(([k]) => k);
     const on = [...new Set(cap.honours.filter((h) => h.act === b.act && (!h.of.length || !b.of.length || h.of.some((o) => b.of.includes(o) || kinds.includes(o)))).flatMap((h) => [...h.on]))];
     const e = out.find((x) => x.act === b.act);
     if (e) { for (const k of kinds) if (!e.kinds.includes(k)) e.kinds.push(k); for (const o of on) if (!e.on.includes(o)) e.on.push(o); }
@@ -577,7 +577,7 @@ export const WORLD_QUESTIONS = Object.freeze(['capabilities', 'state']);
  * per kind (`state.count` { kind, number }; `state.empty` when there is nothing). Returns { facts, capabilities }.
  */
 export function askWorld(question, request, { live, bindings = null, view = null, catalog = [] } = {}) {
-  if (question === 'capabilities') return { capabilities: toolCapabilities(live, bindings), facts: [] };
+  if (question === 'capabilities') return { capabilities: toolCapabilities(live, bindings, { catalog }), facts: [] };
   const things = [...readView(view).values()];
   // the kinds asked about: the kinds wanted, the kinds a count is of, else every kind word said (a unit such as "nodes"
   // too); a whole or a link is counted only when its kind is said

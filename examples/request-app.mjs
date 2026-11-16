@@ -51,6 +51,51 @@ export const NOTES = String.raw`
 @w.write core.word text=write text=jot means=make
 `;
 
+// An example: stories and a mixed garden of text and scenery. A story has a topic (`about`), a length in words and is
+// made of chapters (its parts); a story is one whole, its chapters are many. The knowledge says a story has 3 to 8
+// chapters and at most so many words per chapter, so a long request can come out short.
+export const STORIES = String.raw`
+@acts core.use world=std.acts
+@w std.schema.world name=stories doc="an example world: stories made of chapters"
+@t.story core.type of=story extends=std.schema.thing closed=true
+@s.about core.slot of=story key=about kind=string
+@s.length core.slot of=story key=length kind=integer min=1
+@t.chapter core.type of=chapter extends=std.schema.thing closed=true
+@s.in core.slot of=chapter key=in
+@k.story std.schema.kind of=story world=stories acts=make acts=remove
+@k.chapter std.schema.kind of=chapter world=stories acts=make acts=remove
+@h.make std.schema.honours world=stories act=make on=about on=length on=count on=size on=with of=story of=chapter
+@e.story k.expect.make thing=story unit=chapter length_unit=word length=60 min=3 max=8 typical=4
+@e.chap k.expect.part of=story part=chapter group=text min=3 max=8 typical=4 needed=yes
+@w.write core.word text=write text=tell means=make
+@w.tale core.word text=story text=tale means=story
+`;
+
+// An example: a meadow, one whole of several kinds of parts (flowers, a tree, a bird), each part with its own range. A
+// count said of one kind ("fewer flowers", "a meadow with a pond") is that kind's count inside the whole, not the whole's.
+export const MEADOW = String.raw`
+@acts core.use world=std.acts
+@w std.schema.world name=meadow doc="an example world: meadows of flowers, trees, birds and ponds"
+@t.meadow core.type of=meadow extends=std.schema.thing closed=true
+@t.item core.type of=item extends=std.schema.thing closed=true
+@s.in core.slot of=item key=in type=meadow
+@t.flower core.type of=flower extends=item closed=true
+@t.tree core.type of=tree extends=item closed=true
+@t.bird core.type of=bird extends=item closed=true
+@t.pond core.type of=pond extends=item closed=true
+@k.meadow std.schema.kind of=meadow world=meadow acts=make acts=remove
+@k.flower std.schema.kind of=flower world=meadow acts=make acts=remove
+@k.tree std.schema.kind of=tree world=meadow acts=make acts=remove
+@k.bird std.schema.kind of=bird world=meadow acts=make acts=remove
+@k.pond std.schema.kind of=pond world=meadow acts=make acts=remove
+@h.make std.schema.honours world=meadow act=make on=kind on=count on=with on=size of=meadow of=flower of=tree of=bird of=pond
+@e.meadow k.expect.make thing=meadow unit=item min=6 max=14 typical=9
+@p.flower k.expect.part of=meadow part=flower group=plant min=3 max=8 typical=5 needed=yes
+@p.tree k.expect.part of=meadow part=tree group=plant min=1 max=3 typical=2 needed=yes
+@p.bird k.expect.part of=meadow part=bird group=animal min=0 max=2 typical=1
+@p.pond k.expect.part of=meadow part=pond group=water min=0 max=2 typical=2
+`;
+
 // An example: animals put in the areas of a garden. A pond has room for so many fish; where an animal goes is not
 // declared anywhere: the planner tries the areas there are and keeps the one the catalog's kind facts expect.
 export const GARDEN = String.raw`

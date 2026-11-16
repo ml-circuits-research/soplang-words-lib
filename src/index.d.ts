@@ -689,7 +689,7 @@ export function toolBindings(live: World, opts?: { catalog?: unknown }): ToolBin
 /** A new timeline. */
 export function toolTimeline(): ToolTimeline;
 /** The acts a tool world offers (honoured and bound). */
-export function toolCapabilities(live: World, bindings?: ToolBindings | null): { act: string; kinds: string[]; on: string[]; op: string }[];
+export function toolCapabilities(live: World, bindings?: ToolBindings | null, opts?: { catalog?: unknown[] }): { act: string; kinds: string[]; on: string[]; op: string }[];
 /** A value as a parameter takes it, translated by knowledge (range, kind lineage, ordered scale). */
 export function nearestAccepted(value: unknown, param: ToolParam | undefined, opts?: { live?: World | null; catalog?: unknown; look?: (() => Map<string, ViewThing>) | null; toward?: { from: string; dir: "up" | "down" } | null }): { value?: unknown; translated?: boolean; was?: unknown; by?: string; refused?: boolean; values?: string[] };
 /** A tool's state as a Map of things. */

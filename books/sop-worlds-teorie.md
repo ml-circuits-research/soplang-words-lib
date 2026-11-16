@@ -3154,7 +3154,7 @@ Condițiile surselor se verifică pentru artefactul exact: adnotări, imagini ș
 
 ### 11.3.2 Un fapt importat și lanțul lui de proveniență
 
-Pentru a putea verifica un import, afirmația și dovada provenienței sunt obiecte distincte. Fragmentul următor propune o schemă generală de proveniență. Este un exemplu didactic al unei surse redactate pentru exemplu, nu o afirmație că o anumită bază externă publicată conține această înregistrare. Felurile `bird` și `duck` sunt presupuse declarate în vocabularul conceptual.
+Pentru a putea verifica un import, afirmația și dovada provenienței sunt obiecte distincte. Fragmentul următor folosește contractele structurale publicate în biblioteca 0.169.0. Se încarcă prin `core.use world=std.knowledge`, care importă modulele `std.provenance`, `std.source` și `std.import`. Este un exemplu didactic al unei surse redactate pentru exemplu, nu o afirmație că o anumită bază externă publicată conține această înregistrare. Felurile `bird` și `duck` sunt presupuse declarate în vocabularul conceptual. În această etapă biblioteca verifică structura și referințele lanțului de proveniență; `child` și `parent` sunt nume atomice, iar rezolvarea lor în vocabularul conceptual rămâne o obligație semantică separată.
 
 ```sop
 @source.toy std.source name=toy.kind.table version=1 status=illustrative
@@ -3162,6 +3162,9 @@ Pentru a putea verifica un import, afirmația și dovada provenienței sunt obie
 @origin.duck std.provenance source=$source.toy record=duck.row mapping=$map.kind
 @fact.duck std.knowledge.parent child=duck parent=bird provenance=$origin.duck status=candidate
 ```
+
+Modulele resping câmpurile structurale lipsă, cheile nedeclarate, cardinalitățile greșite și referințele care nu indică tipul cerut. Ștergerea unei surse încă referite este refuzată tranzacțional. `std.source` cere name, version și status (`illustrative` sau `published`); license, url și digest sunt metadate opționale. `std.import.mapping` cere name și version; description și digest pot explica transformarea. `std.provenance` cere source, record și mapping. `std.knowledge.parent` cere child, parent, provenance și status (`candidate`, `accepted` sau `rejected`). Aceste stări descriu înregistrarea; biblioteca nu promovează automat un candidat. Încărcarea corectă nu verifică licența, adevărul relației ori adecvarea mapării: verificarea publicării și evaluarea semantică rămân distincte.
+
 
 Primul fir fixează versiunea sursei. Al doilea identifică transformarea aplicată, care trebuie să poată fi regăsită și repetată; numele singur nu înlocuiește definiția mapării. Al treilea leagă o înregistrare originală de acea transformare. Ultimul exprimă relația conceptuală obținută și păstrează legătura cu dovada. `candidate` nu înseamnă fals, ci încă neadmis în cunoașterea activă. Reviewerul verifică sensul relației, identitatea conceptelor și condițiile sursei înainte de admitere.
 

@@ -1251,9 +1251,19 @@ export class World {
       if (this.used.has(key)) return;
       this.used.add(key);
       this._do(() => this.used.delete(key));
-      // as=: the module under another name: its own prefix renamed in ids, types and references
-      const text = as ? this.options.library[name].replace(new RegExp(`(^|[\\s$@=])${name.replace(/\./g, '\\.')}\\.`, 'gm'), `$1${as}.`) : this.options.library[name];
-      const mod = parse(text);
+      // Rename parsed identifiers, never text inside a quoted literal.
+      const rename = (value) => {
+        if (!as) return value;
+        const ref = value.startsWith('$'), token = ref ? value.slice(1) : value;
+        return token === name || token.startsWith(name + '.')
+          ? (ref ? '$' : '') + as + token.slice(name.length) : value;
+      };
+      const mod = parse(this.options.library[name]);
+      if (as) for (const wire of mod) {
+        wire.id = rename(wire.id);
+        wire.type = rename(wire.type);
+        wire.attrs = Object.fromEntries(Object.entries(wire.attrs).map(([k, vs]) => [rename(k), vs.map(rename)]));
+      }
       // a module of the standard pack brings its functions (pure, declared in it); a host's function of the same name stays
       if (STD[name] && this.options.library[name] === STD[name].text) {
         for (const [f, fn] of Object.entries(STD[name].fns)) if (!this.fns[f]) this.fns[f] = fn;

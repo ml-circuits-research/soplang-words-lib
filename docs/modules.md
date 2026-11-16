@@ -40,3 +40,16 @@ wanted (see [patterns](patterns.md), the parameterised world).
 | `PatternIndex` | a host's sentence patterns indexed by the words they need | the host's matcher | `node bench/patterns.mjs`: 51.5 of 3,000 patterns tried per sentence |
 
 Tools: `tools/validate.mjs`, `tools/reuse.mjs`, `tools/ledger.mjs`, `tools/build-bundle.mjs`.
+
+## Import-evidence contracts
+
+Since 0.169.0, `core.use world=std.knowledge` loads the closed `std.knowledge.parent` record and its typed dependencies: `std.provenance`, `std.source` and `std.import.mapping` (module `std.import`). Each module can also be loaded independently. These are structural contracts: mandatory fields use `present=true`, unknown fields and wrong reference types are refused, and referenced evidence cannot be deleted while still used. Atomic batches may contain forward references.
+
+| Record | Fields |
+| --- | --- |
+| `std.source` | Required `name`, `version`, `status` (`illustrative` or `published`); optional `license`, `url`, `digest`. |
+| `std.import.mapping` | Required `name`, `version`; optional `description`, `digest`. |
+| `std.provenance` | Required `source` reference, `record` literal, `mapping` reference. |
+| `std.knowledge.parent` | Required `child`, `parent` atoms, `provenance` reference and `status` (`candidate`, `accepted`, `rejected`). |
+
+A loaded candidate is not an accepted inference. The contracts do not resolve concept names, prove source truth, enforce publication licences or implement the remaining phase-zero families. The executable book example and rejection cases are in `test/import-contracts.test.mjs`. This incremental release must not be treated as the full phase-zero freeze.

@@ -4,6 +4,7 @@
 // built-ins (min, max, add, abs, round, clamp, between, sign, lt, ...), the aggregates
 // (count, sum, min, max, argmin, argmax, collect) or core.rank already do.
 
+import { CONTRACT_MODULES } from './contracts.mjs';
 import { parse, valueText } from './parser.mjs';
 import { quantity } from './builtins.mjs';
 const num = (v) => Number(v);
@@ -552,6 +553,7 @@ ACTIONS.acts_load = Object.assign((w, args) => { // the things as they were save
 }, { outside: true });
 
 export const STD = {
+  ...CONTRACT_MODULES,
   'std.numbers': {
     text: `
 @average core.function name=average out.kind=number pure=true doc="the mean of two to eight numbers"

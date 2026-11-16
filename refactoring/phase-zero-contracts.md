@@ -30,3 +30,9 @@ A phase-zero release must publish its package/build version, the exact contract 
 There are separate acceptance claims: a declaration parses; a schema loads and rejects invalid instances; the evaluator implements its semantics; a host operation realises an effect. The release states which claim holds for each family. No “contracts frozen” announcement is justified if the public names or required slot variants remain unresolved, or if only permissive loading was tested. Later mechanism releases replace legacy constants as their generic replacement lands, with the book corrected alongside.
 
 The other repositories can prepare migration ledgers and adapters independently. Their binding to the new schemas uses the published contract version, not a mutable draft of this register. The first foundation is library 0.168.0: `core.slot present=true` rejects structurally missing fields after deduction, while `required=true` continues to describe open completion keys. Contract-family modules and full phase-zero acceptance remain pending.
+
+## Increment: import-evidence records (0.169.0)
+
+Entry point: `core.use world=std.knowledge`, importing `std.provenance`, `std.source`, `std.import`. Canonical record names: std.source, std.import.mapping, std.provenance, std.knowledge.parent. The exact book example loads under closed schemas; paired tests reject missing fields, wrong reference targets, quoted reference-looking strings, duplicate singleton values, unknown fields/statuses and deletion of referenced evidence. Atomic forward references and module aliases are tested.
+
+Acceptance: these records parse, load and reject structural invalidity. Concept-name resolution, truth of relations, source licence policy and semantic acceptance are not implemented by these records. No full phase-zero freeze: legend, point, semantic links, request, trace, reply and numerical/change families remain pending.

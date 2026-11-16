@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.169.0
+
+- Added opt-in closed import-evidence modules: `std.source`, `std.import`, `std.provenance`, `std.knowledge`, with structural presence and typed references. No truth, licensing or concept-resolution claim.
+- Module aliases now rename a type equal to the module name as well as its dotted descendants.
+
 ## 0.168.0
 
 - Added opt-in `core.slot present=true`: structural presence validated transactionally after deduction, including inherited slots and atomic patches. Existing `required=true` completion semantics are unchanged.

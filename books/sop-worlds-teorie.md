@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 16, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 17, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -1613,29 +1613,67 @@ Pentru spațiul nou nu trebuie o ramură de program „dacă numele este clearan
 
 Textul trece prin etape distincte. Mai întâi este citit ca sintaxă: identificatori, tipuri, chei, atomi, texte și referințe. Apoi referințele și numele sunt rezolvate în modulele și instanțele potrivite. Schema verifică valorile și multiplicitatea lor. Legăturile conceptuale arată ce operații se aplică. Abia apoi regulile pot fi evaluate.
 
-Un text între ghilimele rămâne text. `before="object exists"` nu este o condiție executabilă până când cartea nu dă o reprezentare structurală a condiției. Explicația în limbaj natural poate însoți condiția, dar nu îi ține locul.
+Un text între ghilimele rămâne text. `before="object exists"` nu este o condiție executabilă prin simplul fapt că este scris ca text. R35 propune condițiile structurate; acestea trebuie validate și legate de rolurile actului. Explicația în limbaj natural poate însoți condiția, dar nu îi ține locul.
 
-Propunerea este o singură reprezentare semantică a firului, care păstrează identitatea, tipul, valorile tipizate, proveniența și locul din text. Un renderer poate primi o proiecție simplă a ei. Nu recitește textul SOP cu reguli proprii. Astfel, o referință și un text care seamănă cu o referință nu ajung confundate în două componente diferite.
+Propunerea este o singură reprezentare semantică a firului, care păstrează identitatea, tipul, valorile tipizate, proveniența și locul din text. Componenta care desenează pe ecran (renderer) poate primi o proiecție, adică numai câmpurile de care are nevoie din acea reprezentare. Nu recitește textul SOP cu reguli proprii. Astfel, o referință și un text care seamănă cu o referință nu ajung confundate în două componente diferite.
 
 ## 9.4 Cum strângem firele relevante
 
 „Toate firele unui concept” nu înseamnă toate firele care conțin același cuvânt. Pentru desenarea unei rațe avem nevoie de felul rață, strămoșii lui, realizările disponibile, proprietățile și regulile aplicabile. Pentru găsirea unei ședințe libere avem nevoie și de alte ședințe ale participanților, chiar dacă acestea nu conțin cuvintele cererii.
 
-Propunerea este un catalog de identități și legături tipizate. Pentru fiecare concept se pot căuta definiția, părinții, sloturile, spațiile, regulile care îl folosesc, realizările și sursele de fapte. Un index invers găsește regulile care menționează conceptul sau strămoșii lui. Indexul este un mijloc de acces, nu o nouă sursă de adevăr.
+Un **catalog (catalog)** este aici o evidență a declarațiilor și a locului de unde pot fi încărcate. Programul îl construiește din firele validate. Nu ghicește legături din asemănarea numelor. O bază mare poate fi împărțită în **fragmente (shards)**: fișiere care se încarcă separat, dar aparțin aceleiași versiuni publicate.
 
-Căutarea pornește din operația cerută și urmează dependențele acesteia. Memorează identitățile deja vizitate, ca un ciclu să nu provoace o buclă. Dacă descoperă o regulă care cere alte date, le solicită și continuă. O limită de timp oprește căutarea cu rezultat incomplet; nu transformă datele lipsă în inexistență.
+| Legătura citită | Ce poate fi găsit prin ea |
+|---|---|
+| `extends` | Declarațiile tipului părinte și regulile aplicabile descendenților. |
+| `is`, `means` | Conceptul realizat de tip sau de slot; sunt legături propuse, nu disponibile implicit astăzi. |
+| `of`, `type` ale slotului | Tipul care deține slotul și tipul faptului la care valoarea lui poate trimite. |
+| `space` | Definiția axelor și operațiile spațiului valorii. |
+| `when`, `not`, `if`, `with` | Modelele, condițiile și calculele de care depinde o regulă. |
+| `realises` și legătura uneltei | Actul promis de unealtă și parametrii necesari. |
+| referință între fapte | Lucrul concret numit, inclusiv într-o altă instanță. |
 
-Rezultatul conține firele, versiunile surselor, dependențele lipsă și domeniul despre care știm că datele sunt complete. Pentru calendar, acest domeniu poate fi „toate rezervările Anei între 09:00 și 12:00 la versiunea V”. Completitudinea trebuie garantată de sursa care deține rezervările. Nu poate fi dedusă doar fiindcă o cerere de rețea s-a terminat.
+Același text `of` pe alt tip de fir nu este automat aceeași legătură. Semnificația vine din schema tipului. Un **index invers (reverse index)** este tabelul care răspunde la întrebarea inversă: „ce reguli sau declarații folosesc acest tip?”. Dacă o regulă privește animale, indexul permite să o găsim și când verificăm o rață, după urmărirea părinților.
+
+Căutarea pornește din operația cerută și urmează aceste dependențe. Memorează identitățile deja vizitate, ca un ciclu să nu provoace o buclă. Dacă descoperă o regulă care cere alte date, le solicită și continuă. La fiecare fapt inclus păstrează motivul includerii. O limită de timp oprește căutarea cu rezultat incomplet; nu transformă datele lipsă în inexistență.
+
+În demo, calendarul este o instanță locală. Toate ședințele ei sunt în starea citită; nu presupunem un serviciu extern de rezervări. Autorul tiparului poate declara această închidere printr-un fir existent al limbajului:
+
+```
+@t.meeting core.type of=meeting complete=true
+```
+
+Firul spune că tipul despre care vorbim este `meeting`, iar `complete=true` permite răspunsul „nu” când nu există o potrivire în acea instanță. Programul care încarcă instanța trebuie să asigure că toate faptele ei au fost citite înainte să folosească această proprietate. Declarația nu produce faptele lipsă. Ea nu spune nici că toate bazele de cunoaștere ale lumii au fost încărcate.
+
+Separat, o regulă de cunoaștere poate sta într-un fragment încă neîncărcat. Contractul propus completează `std.schema.needs`, care declară ce date trebuie încărcate: catalogul urmărește și dependențele regulilor, iar încărcătorul raportează ce dependențe a satisfăcut. Fără regulile necesare nu afirmăm validitatea, chiar dacă lista locală a ședințelor este completă. Un fragment care nu se poate citi produce „verificare incompletă”, nu „nicio restricție”.
+
+Sunt două versiuni diferite. **Versiunea stării (state version)** este un identificator care se schimbă la fiecare modificare semantică a instanței și permite detectarea unui plan învechit. **Versiunea publicată (published version)** identifică exact un pachet de scheme și cunoaștere, de exemplu prin amprenta conținutului. Rezultatul unei verificări reține amândouă. „Verificat la V” fără să spună care dintre ele este insuficient.
+
+Prin **sfera de completitudine (coverage scope)** înțelegem faptele și intervalul pentru care sursa garantează că nimic relevant nu lipsește. Nu o numim „domeniu”, fiindcă domeniul este zona de lucru a aplicației. Pentru calendarul local, sfera poate fi toate faptele `meeting` din instanța citită; pentru o serie recurentă este necesară și verificarea aparițiilor în intervalul cerut, conform R48.
 
 ## 9.5 Cum se schimbă motorul de raționament
 
-Un motor primește o stare cu versiune, un scop, constrângeri, preferințe și un buget. Declară ce operații și ce fragment de logică suportă. Un motor care nu știe negație nu are voie să ignore interdicția negativă și să raporteze succes.
+Un motor primește o stare cu versiune, un scop, constrângeri, preferințe și un buget. Declară ce operații și ce **fragment de logică (logical fragment)** suportă: de exemplu, reguli fără negație, constrângeri liniare sau reguli care pot apela anumite funcții pure. Un motor care nu știe negație nu are voie să ignore interdicția negativă și să raporteze succes.
 
 Un motor de deducție poate produce consecințe. Un rezolvitor poate căuta începutul unei ședințe. Un planificator poate propune o succesiune de operații. Ele au roluri diferite; nu sunt variante interschimbabile doar fiindcă toate se numesc reasoning.
 
-Rezultatul unui motor trebuie să distingă cel puțin: candidat găsit, candidat verificat, contradicție demonstrată, lipsă de date, operație nesuportată și buget epuizat. Optimizarea adaugă distincția dintre soluție fezabilă și optim demonstrat. Fiecare rezultat numește presupunerile și datele pe care se bazează.
+Rezultatele se citesc după întrebarea la care răspund. Nu introducem încă o listă de succese echivalente.
 
-Un coordonator conduce pașii: obține datele, cere deducțiile, generează candidați, verifică restricțiile și pregătește execuția. Motoarele nu modifică direct uneltele. Verificarea comună controlează rezultatul pe aceeași stare. Pentru operații externe, contractul trebuie să spună ce rezultat se poate verifica și ce funcție este acceptată ca autoritate de calcul; expresia „verificator general” nu elimină această responsabilitate.
+| Întrebarea | Rezultatul și legătura cu celelalte etape |
+|---|---|
+| Este candidatul valid? | Verificarea din 3.9: valid, nevalid sau nedeterminat. Un candidat găsit încă nu este valid. |
+| Ce a stabilit căutarea? | Cele cinci rezultate din 6.8: plan valid; plan neverificat complet; cerere nevalidă; inexistență demonstrată; oprire fără concluzie. |
+| Poate motorul face operația? | Operația nesuportată este un diagnostic: se poate încerca alt motor declarat compatibil; dacă niciunul nu există, căutarea se oprește fără concluzie. |
+| Au fost suficiente date și timp? | Datele lipsă duc la plan neverificat, dacă există un candidat, sau la oprire fără concluzie. Bugetul epuizat nu dovedește inexistența soluției. |
+| Ce s-a întâmplat efectiv? | Execuția din 6.9: executat, executat în parte, desfăcut, efect necunoscut sau desfacere eșuată. |
+
+O soluție fezabilă satisface constrângerile; o soluție optimă are în plus o dovadă că niciun candidat admis nu are cost mai mic. Motorul nu are voie să schimbe primul cuvânt în al doilea doar fiindcă s-a terminat timpul.
+
+**Coordonatorul (coordinator)** este programul care execută etapele deja descrise în 6.2, nu un al doilea sistem care înțelege cererea. Etapa 1 citește starea; etapele 2–3 citesc și situează mesajul; etapa 4 rezolvă valorile; etapele 5–6 completează și aleg un plan; etapa 7 execută; etapa 8 răspunde. În etapele 5–6 poate cere încărcarea unor dependențe, deducții sau o căutare. `std.turn` este mecanismul existent pentru declararea etapelor; contractele descrise aici precizează ce trebuie să circule între ele.
+
+Pentru fiecare candidat, coordonatorul face o copie de încercare a instanței, conform 3.9, aplică schimbările propuse și cere verificarea lumii asupra copiei. Este aceeași semantică de validare ca la o schimbare scrisă de mână. Copia include aceleași versiuni de schemă și cunoaștere. Un plan care rămâne nedeterminat nu ajunge la unelte. Abia un plan valid poate trece în etapa 7, după verificarea că starea originală nu s-a schimbat între timp.
+
+O funcție geometrică sau numerică declarată poate rămâne o dependență de încredere: verificatorul îi controlează argumentele, tipul rezultatului și proprietățile verificabile, dar nu poate dovedi corectitudinea oricărui program arbitrar. Contractul numește funcția și versiunea ei; testele ei și limitele metodei sunt parte din justificare. O funcție lipsă nu se consideră adevărată implicit.
 
 ## 9.6 O ședință, urmărită cu numere
 

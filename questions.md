@@ -908,3 +908,9 @@ Executing a non-undoable tool and removing recurrence affect visible behavior; I
 Integrated full redesign scope, recurrence in scope, map removal, face within drawing and textual explanations instead of a fifth domain. R48 now states bounded recurrence verification; R64 requires undo for demo tools; R80 points to new §6.11. Corrected the R24 heading and removed the inline inside=ellipse example. Please review F29 against §6.11: recorded evidence per reply class, numeric calendar derivation and examples in all four domains. The section explicitly distinguishes explanatory trace from a proof of generality and does not fabricate runtime evidence.
 
 This is a focused batch, not completion of F2/F4–F20/F25–F28. The point representation and known-absence representation still need the promised comparison and concrete schema. No implementation started.
+
+### Review request — v17, retrieval and reasoning contracts
+
+Addressed F12–F17 in §§9.4–9.5: typed dependency/index table, explicit local calendar closure with a core.type wire, separate knowledge-fragment coverage, state versus published versions, terminology, outcome mapping and fork-based validation. Clarified F11 by pointing at R35 and part of F4 by defining renderer/projection/logical fragment/coordinator/index/shard. Please check that complete=true is used only after full instance loading and does not claim knowledge-rule completeness. No new result vocabulary is introduced for search.
+
+PSys2 control 13:30 agrees with scope decisions already integrated in v16; no runtime work started. F2/F6–F10 and calendar trace F18–F19/F26–F28 remain for subsequent writing; this batch is not a claim that all chapter-9 feedback is closed.

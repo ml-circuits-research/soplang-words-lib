@@ -5984,3 +5984,8 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 
 - Integrated control 00:15: revised R48/R64/R80 and plan scope; added §6.11 with evidence contracts and explanations in four domains. Corrected R24 heading and removed inside=ellipse. F29 submitted for review; other open feedback retained. No runtime changes.
 - Checks: `git diff --check`; `npm test` and `SOPWORLD_BUNDLE=1 npm run test:src` each completed with 648 pass, 0 fail, 1 skip, 1 todo (650 tests).
+
+## 2026-11-16 — G0: book v17, knowledge retrieval and reasoner outcomes
+
+- Expanded §§9.4–9.5 for F12–F17 with dependency links, local complete instance versus missing knowledge, distinct versions, existing pipeline mapping, one search-outcome vocabulary and common validation on a fork. Clarified selected undefined terms and R35 reference. No runtime changes.
+- Validation: `git diff --check`; `npm test` and `SOPWORLD_BUNDLE=1 npm run test:src`: each 648 pass, 0 fail, 1 skip, 1 todo out of 650 tests.

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.183.0
+
+- Separate existing-target selector graphs from desired-result graphs. Validate complete context closures, independent binding scopes, ownership and operator boundaries; implicit result conjunction excludes selectors.
+- Preserve candidate self-reference and joint relational descriptions without claiming resolver execution.
+
 ## 0.182.0
 
 - Add calibrateReference: validate and capture reference samples/provenance into detached frozen data, preserving multiplicity and original tokens, then compute a finite positive median under the reasoning budget.

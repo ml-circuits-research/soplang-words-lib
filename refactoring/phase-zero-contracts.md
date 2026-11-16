@@ -98,3 +98,7 @@ std.trace now exports request/input/step/observation/reply/undo/correction. Fina
 ### Increment 0.182.0 — detached reference capture and median
 
 calibrateReference validates the world, captures typed reference samples and their factual provenance closure into detached frozen JSON-serializable data, and computes a positive median under budget. Distinct equal measurements survive; same sample references are deduplicated. Source changes do not mutate prior captures. Extreme finite midpoint cases are tested. This does not register published immutable revisions, authenticate restored JSON, implement std.calibration/axis linkage or release phase zero.
+
+### Increment 0.183.0 — target selector contexts
+
+Reader development exposed that identifying pre-state properties could not be separated from desired results. Existing targets now have selector graph roots, with independent scope and disjoint full closures; implicit result conjunction excludes selectors. Selector-only logical graphs need no result root. Exact §6.3.1 example is structurally executable. Candidate binding, joint target resolution, predicate truth and historical-event selectors remain pending. This corrects a shared contract instead of hardcoding reading exceptions.

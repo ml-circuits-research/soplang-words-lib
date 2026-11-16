@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld The standard modules</title>
-<meta name="source-hash" content="c4a500bf27f8">
+<meta name="source-hash" content="197a1ccfcb68">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.182.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.183.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html" aria-current="page">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -63,7 +63,7 @@
 <h2 id="final-state-contract-validation">Final-state contract validation</h2>
 <p>Added with 0.177.0: core.validate provides a generic hook for invariants that read multiple records. It runs registered synchronous pure boolean callbacks after ingestion, without cached results or a dependency on the parent being touched. This is a prerequisite for request topology and frame consistency, not their implementation. See the reference for strict signatures, failure behavior, cooperative budget ticks and trusted-host purity limits.</p>
 <h2 id="structural-request-graphs">Structural request graphs</h2>
-<p>Added with 0.178.0: std.request exports constraint, not, group, quant and value records, plus root links and bound targets. Every logical node/constraint has a typed request owner. Edges, target references, root and value-description dependencies must stay within that owner. Explicit graphs reject cycles and every unreachable node; logical nodes require a root. Rootless simple constraints form an implicit conjunction. Groups are nonempty.</p>
+<p>Added with 0.178.0: std.request exports constraint, not, group, quant and value records, plus root links and bound targets. Every logical node/constraint has a typed request owner. Edges, target references, root and value-description dependencies must stay within that owner. Explicit graphs reject cycles and every unreachable node. Result logical nodes require a request root; selector logical nodes have their own roots (0.183.0 below). Rootless result constraints form an implicit conjunction excluding selector nodes. Groups are nonempty.</p>
 <p>Each bound target has one quantifier, distinct from its collection. A topological scope intersection checks all incoming DAG paths, allowing valid nested use but rejecting scope escape through shared nodes. Literal/operator variants require their fields and reject unrelated fields; same requires a typed value-description reference, occurred a boolean/result phase, delta a finite number, factor a positive number, and measured relations all four measurement fields. Source spans use nonempty Unicode scalar intervals into a declared exact source; unpaired surrogates are refused.</p>
 <p><code>inspectRequest(world, id, {family?, budget?})</code> supplements loaded schemas and World.check with detailed graph issues. It requires the request contract module. The standard validator uses core.validate and runs on final state, including child edits; aliases and root subtypes preserve family identity. Generic module loading now registers aliased function names transactionally.</p>
 <p>Vocabulary names, eq/comparison value typing and orderability, dimensional unit compatibility, source-evidence truth, assumption justification, three-valued evaluation, effects and permission remain separate. For example an atom NaN as an eq value is structurally a literal, not proof of a valid numerical quantity. No complete phase-zero or runnable-domain release is claimed.</p>
@@ -84,9 +84,13 @@
 <h3 id="detached-reference-calibration">Detached reference calibration</h3>
 <p>Added with 0.182.0, <code>calibrateReference(world, id, options?)</code> captures a reference set into detached, deeply frozen JSON-serializable data and computes its positive median. Samples retain identities, multiplicity, original numeric tokens and units. Optional provenance includes its complete factual dependency closure. The source may change afterward without altering an existing snapshot. This is a calculation over captured input, not a claim that source observations are true.</p>
 <p>The API checks the world and charges validation/capture/sort work to the reasoning budget. It avoids midpoint overflow for extreme finite samples and preserves subnormal equal samples. It refuses a nonpositive normalization. Its result does not freeze source records or register immutable published revisions, and loading JSON back does not authenticate it. Axis calibration linkage, the std.calibration wire contract and retained revision verification remain pending.</p>
+<h3 id="target-selection-versus-desired-results">Target selection versus desired results</h3>
+<p>Added with 0.183.0, an existing target may declare <code>selector</code> as a reference to a constraint/not/group/quant root. It describes candidate pre-state, while <code>request.root</code> describes the desired result. A self-reference to the selector's target means the current candidate, not a previously resolved identity. Rootless requests conjoin only constraints outside selector closures. Selector-only logical graphs do not require a separate result root.</p>
+<p>All descendants belong to exactly one context: one particular target's selector or the result graph. Shared descendants across contexts are rejected, as are cross-request roots, selectors on new/bound targets, cycles, orphans and binder escape between roots. Selectors may quantify and combine predicates; delta/factor/occurred are unavailable there until historical-event semantics exists. The same predicates explicitly required in both pre-state and result need distinct constraint identities.</p>
+<p>This closes a representation gap exposed by the independent reader corpus work: an identifying old property and its desired replacement must not become contradictory result constraints. Logical validation does not perform candidate selection, resolve mutually dependent targets, evaluate predicates or authorize execution. Joint relational target descriptions remain structurally admissible; their satisfiability and ambiguity are resolver concerns.</p>
 <p class="source">Generated from <code>docs/modules.md</code>.</p>
 </main>
-<footer>sopworld 0.182.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.183.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

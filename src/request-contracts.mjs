@@ -111,10 +111,44 @@ function inspect(world, id, family) {
     edges.set(key, [...new Set(children)]);
   }
   for (const t of targets.values()) if (first(t, 'mode') === 'bound' && !binders.has(t.id)) fail(t, 'bound target has no binder');
-  const logical = [...kinds.values()].some(k => k !== 'constraint');
+  // Selectors read candidate pre-state; the request root describes desired
+  // results. A node has one context, including shared descendants of DAG roots.
+  const contexts = new Map(), roots = [];
+  const claim = (start, context) => {
+    const pending = [start], visited = new Set();
+    while (pending.length) {
+      tick(); const key = pending.pop();
+      if (visited.has(key)) continue;
+      visited.add(key);
+      if (contexts.has(key) && contexts.get(key) !== context) { fail(nodes.get(key), 'graph node belongs to more than one selection/result context'); continue; }
+      contexts.set(key, context);
+      for (const child of edges.get(key) || []) { tick(); pending.push(child); }
+    }
+  };
+  for (const target of targets.values()) {
+    tick(); const selectorValue = first(target, 'selector');
+    if (selectorValue === undefined) continue;
+    const selector = get(selectorValue);
+    if (first(target, 'mode') !== 'existing') fail(target, 'only existing targets can have selectors');
+    if (!selector || !nodes.has(selector.id)) fail(target, 'selector must belong to this request');
+    else { roots.push(selector.id); claim(selector.id, 'selection:' + target.id); }
+  }
   const rootValue = first(request, 'root'), root = get(rootValue);
-  if (rootValue !== undefined && (!root || !nodes.has(root.id))) fail(request, 'root must belong to this request');
-  if (logical && !rootValue) fail(request, 'logical nodes require an explicit root');
+  if (rootValue !== undefined) {
+    if (!root || !nodes.has(root.id)) fail(request, 'root must belong to this request');
+    else { roots.push(root.id); claim(root.id, 'result'); }
+  } else {
+    for (const [key, kind] of kinds) {
+      tick(); if (contexts.has(key)) continue;
+      if (kind !== 'constraint') fail(nodes.get(key), 'result logical nodes require an explicit request root');
+      else { roots.push(key); claim(key, 'result'); }
+    }
+  }
+  for (const [key, node] of nodes) {
+    tick(); const context = contexts.get(key);
+    if (!context) fail(node, 'node is unreachable from result or selector roots');
+    else if (context !== 'result' && kinds.get(key) === 'constraint' && ['delta', 'factor', 'occurred'].includes(first(node, 'operator'))) fail(node, 'selector cannot assert a requested change or event result');
+  }
   if (issues.length) return { ok: false, issues };
   // Kahn order checks all owned nodes, including disconnected cycles.
   const indegree = new Map([...nodes.keys()].map(k => [k, 0]));
@@ -129,8 +163,7 @@ function inspect(world, id, family) {
   // merely the first path that reaches a shared DAG node.
   const scopes = new Map();
   const copyScope = scope => { const copy = new Set(); for (const binding of scope) { tick(); copy.add(binding); } return copy; };
-  if (root) scopes.set(root.id, new Set());
-  else for (const key of nodes.keys()) scopes.set(key, new Set());
+  for (const key of roots) { tick(); scopes.set(key, new Set()); }
   for (const key of order) {
     tick(); const scope = scopes.get(key), node = nodes.get(key);
     if (!scope) { fail(node, 'node is unreachable from the request root'); continue; }

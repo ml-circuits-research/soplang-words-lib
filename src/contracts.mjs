@@ -340,7 +340,7 @@ export const CONTRACT_MODULES = {
   },
   'std.request': {
     text: `
-@std.request.module core.module name=std.request version=0.178.0 exports=std.request exports=std.request.source exports=std.request.target exports=std.request.constraint exports=std.request.not exports=std.request.group exports=std.request.quant exports=std.request.value
+@std.request.module core.module name=std.request version=0.183.0 exports=std.request exports=std.request.source exports=std.request.target exports=std.request.constraint exports=std.request.not exports=std.request.group exports=std.request.quant exports=std.request.value
 @std.request.type core.type of=std.request closed=true
 @std.request.act core.slot of=std.request key=act kind=atom present=true
 @std.request.mood core.slot of=std.request key=mood kind=atom enum=do enum=propose enum=check enum=ask present=true
@@ -353,6 +353,7 @@ export const CONTRACT_MODULES = {
 @std.request.target.kind core.slot of=std.request.target key=kind kind=atom
 @std.request.target.name core.slot of=std.request.target key=name kind=string
 @std.request.target.determiner core.slot of=std.request.target key=determiner kind=atom enum=definite enum=indefinite
+@std.request.target.selector core.slot of=std.request.target key=selector kind=ref type=std.request.constraint type=std.request.not type=std.request.group type=std.request.quant
 @std.request.root core.slot of=std.request key=root kind=ref type=std.request.constraint type=std.request.not type=std.request.group type=std.request.quant
 @std.request.constraint.type core.type of=std.request.constraint closed=true
 @std.request.constraint.request core.slot of=std.request.constraint key=request kind=ref to=std.request present=true

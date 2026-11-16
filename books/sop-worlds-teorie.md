@@ -1581,6 +1581,22 @@ Alegerea între candidate se face în această ordine. Cad cele care trimit la l
 
 Exemplu: „make the red and blue nodes bigger”. Prima citire: nodurile roșii și nodurile albastre. A doua: nodurile care sunt și roșii, și albastre. Dacă niciun nod nu este în amândouă regiunile, a doua citire nu găsește nimic și cade. Contraexemplu: „add red and blue nodes”. Prima citire: câte un nod din fiecare culoare. A doua: noduri în două culori. Dacă unealta diagramei declară că nu poate realiza un nod în două culori, a doua interpretare cade. Limitarea trebuie să vină din contractul uneltei, nu dintr-o presupunere despre toate diagramele.
 
+Identificarea lucrului și rezultatul dorit sunt două contexte de evaluare. În „make the red objects blue”, roșul identifică obiectele în starea observată înaintea schimbării, iar albastrul descrie rezultatul. Dacă am pune ambele culori în aceeași conjuncție de rezultate, am cere greșit ca obiectul să ajungă simultan roșu și albastru.
+
+Din versiunea 0.183.0, o țintă `mode=existing` poate avea `selector`, o referință către rădăcina grafului care filtrează candidații. În acest graf, referirea la ținta însăși înseamnă candidatul curent din starea observată; nu este o dependență circulară de o identitate deja rezolvată. `request.root` rămâne rădăcina rezultatului dorit. Fără ea, numai constrângerile care nu aparțin selectorilor formează conjuncția implicită a rezultatului. Exemplul este structural executabil; nu realizează încă filtrarea în instanță sau schimbarea culorii:
+
+```sop
+@source.selection std.request.source text="make the red objects blue"
+@request.selection std.request act=change mood=do source=$source.selection
+@target.selection std.request.target request=$request.selection mode=existing kind=object selector=$condition.selected
+@condition.selected std.request.constraint request=$request.selection target=$target.selection concept=colour operator=region value=red polarity=positive character=requirement
+@condition.desired std.request.constraint request=$request.selection target=$target.selection concept=colour operator=region value=blue polarity=positive character=requirement
+```
+
+Selectorul poate folosi aceleași noduri logice de conjuncție, disjuncție, negație și cuantificare. Unirea sau intersecția obiectelor existente roșii și albastre din exemplul anterior se exprimă în selector, nu prin cerințe care le recolorează. Fiecare nod și descendent al său aparține unui singur context: unui selector anume sau rezultatului. Refolosirea aceluiași nod între contexte este refuzată; dacă omul cere explicit aceeași proprietate înainte și după, reprezentarea folosește două constrângeri distincte. Variabilele legate de un cuantificator nu ies din acel context.
+
+Selectorii nu acceptă încă operatorii de schimbare `delta`, `factor` sau `occurred`: aceștia descriu schimbarea cerută ori rezultatul unui act, nu o proprietate simplă a candidatului observat. Selectarea după evenimente istorice necesită un contract separat. Relațiile și descrierile `same` pot lega mai multe ținte; un graf logic aciclic nu dovedește că acele identități pot fi rezolvate. Două descrieri relaționale pot fi căutate împreună, fără să refuzăm automat orice dependență reciprocă. Resolverul trebuie să verifice candidații și ambiguitatea; validatorul structural nu pretinde că această etapă este implementată.
+
 Un cuvânt cu conținut (substantiv, adjectiv, verb, număr) rămas necitit oprește execuția. Un cuvânt fără contribuție semantică, recunoscut astfel de gramatică, nu o oprește. *(R53)*
 
 O întrebare de clarificare rămâne deschisă până când omul îi răspunde, până când aplicația pune alta sau până când se execută o cerere nouă. Un mesaj care se potrivește ca răspuns (are felul de valoare așteptat) este luat ca răspuns. Unul care nu se potrivește este o cerere nouă și închide întrebarea. *(R54)*

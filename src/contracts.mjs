@@ -1,3 +1,4 @@
+import { requestValidator } from './request-contracts.mjs';
 // Opt-in structural contracts. These schemas validate records; they do not establish
 // the truth, licensing suitability or semantic correctness of the recorded evidence.
 // Each module owns its namespace and can be imported independently through core.use.
@@ -283,7 +284,7 @@ export const CONTRACT_MODULES = {
   },
   'std.request': {
     text: `
-@std.request.module core.module name=std.request version=0.176.0 exports=std.request exports=std.request.source exports=std.request.target
+@std.request.module core.module name=std.request version=0.178.0 exports=std.request exports=std.request.source exports=std.request.target exports=std.request.constraint exports=std.request.not exports=std.request.group exports=std.request.quant exports=std.request.value
 @std.request.type core.type of=std.request closed=true
 @std.request.act core.slot of=std.request key=act kind=atom present=true
 @std.request.mood core.slot of=std.request key=mood kind=atom enum=do enum=propose enum=check enum=ask present=true
@@ -292,10 +293,52 @@ export const CONTRACT_MODULES = {
 @std.request.source.text core.slot of=std.request.source key=text kind=string present=true
 @std.request.target.type core.type of=std.request.target closed=true
 @std.request.target.request core.slot of=std.request.target key=request kind=ref to=std.request present=true
-@std.request.target.mode core.slot of=std.request.target key=mode kind=atom enum=new enum=existing present=true
-@std.request.target.kind core.slot of=std.request.target key=kind kind=atom present=true
+@std.request.target.mode core.slot of=std.request.target key=mode kind=atom enum=new enum=existing enum=bound present=true
+@std.request.target.kind core.slot of=std.request.target key=kind kind=atom
 @std.request.target.name core.slot of=std.request.target key=name kind=string
 @std.request.target.determiner core.slot of=std.request.target key=determiner kind=atom enum=definite enum=indefinite
-`, fns: {},
+@std.request.root core.slot of=std.request key=root kind=ref type=std.request.constraint type=std.request.not type=std.request.group type=std.request.quant
+@std.request.constraint.type core.type of=std.request.constraint closed=true
+@std.request.constraint.request core.slot of=std.request.constraint key=request kind=ref to=std.request present=true
+@std.request.constraint.target core.slot of=std.request.constraint key=target kind=ref to=std.request.target present=true
+@std.request.constraint.concept core.slot of=std.request.constraint key=concept kind=atom present=true
+@std.request.constraint.operator core.slot of=std.request.constraint key=operator kind=atom enum=eq enum=less.equal enum=greater.equal enum=degree enum=region enum=relation enum=same enum=occurred enum=delta enum=factor present=true
+@std.request.constraint.character core.slot of=std.request.constraint key=character kind=atom enum=requirement enum=preference enum=assumption present=true
+@std.request.constraint.polarity core.slot of=std.request.constraint key=polarity kind=atom enum=positive enum=negative present=true
+@std.request.constraint.scope core.slot of=std.request.constraint key=scope kind=atom enum=each enum=group
+@std.request.constraint.source core.slot of=std.request.constraint key=source kind=ref to=std.request.source
+@std.request.constraint.source.start core.slot of=std.request.constraint key=source.start kind=integer min=0 max=9007199254740991
+@std.request.constraint.source.end core.slot of=std.request.constraint key=source.end kind=integer min=0 max=9007199254740991
+@std.request.constraint.value core.slot of=std.request.constraint key=value
+@std.request.constraint.relation core.slot of=std.request.constraint key=relation kind=atom
+@std.request.constraint.goal core.slot of=std.request.constraint key=goal kind=ref to=std.request.target
+@std.request.constraint.act core.slot of=std.request.constraint key=act kind=atom
+@std.request.constraint.phase core.slot of=std.request.constraint key=phase kind=atom enum=result
+@std.request.constraint.unit core.slot of=std.request.constraint key=unit kind=atom
+@std.request.constraint.baseline core.slot of=std.request.constraint key=baseline kind=atom enum=before
+@std.request.constraint.anchor core.slot of=std.request.constraint key=anchor kind=atom
+@std.request.constraint.measure core.slot of=std.request.constraint key=measure kind=number
+@std.request.constraint.from core.slot of=std.request.constraint key=from kind=atom
+@std.request.constraint.to core.slot of=std.request.constraint key=to kind=atom
+@std.request.not.type core.type of=std.request.not closed=true
+@std.request.not.request core.slot of=std.request.not key=request kind=ref to=std.request present=true
+@std.request.not.of core.slot of=std.request.not key=of kind=ref type=std.request.constraint type=std.request.not type=std.request.group type=std.request.quant present=true
+@std.request.group.type core.type of=std.request.group closed=true
+@std.request.group.request core.slot of=std.request.group key=request kind=ref to=std.request present=true
+@std.request.group.operator core.slot of=std.request.group key=operator kind=atom enum=and enum=or present=true
+@std.request.group.member core.slot of=std.request.group key=member kind=ref type=std.request.constraint type=std.request.not type=std.request.group type=std.request.quant many=true present=true
+@std.request.quant.type core.type of=std.request.quant closed=true
+@std.request.quant.request core.slot of=std.request.quant key=request kind=ref to=std.request present=true
+@std.request.quant.kind core.slot of=std.request.quant key=kind kind=atom enum=all enum=any enum=each enum=none present=true
+@std.request.quant.target core.slot of=std.request.quant key=target kind=ref to=std.request.target present=true
+@std.request.quant.bind core.slot of=std.request.quant key=bind kind=ref to=std.request.target present=true
+@std.request.quant.body core.slot of=std.request.quant key=body kind=ref type=std.request.constraint type=std.request.not type=std.request.group type=std.request.quant present=true
+@std.request.value.type core.type of=std.request.value closed=true
+@std.request.value.target core.slot of=std.request.value key=target kind=ref to=std.request.target present=true
+@std.request.value.concept core.slot of=std.request.value key=concept kind=atom present=true
+@std.request.valid.function core.function name=std.request.valid out.kind=boolean pure=true
+@std.request.valid.arg core.function.arg of=$std.request.valid.function name=request kind=ref
+@std.request.validation core.validate on=std.request fn=std.request.valid why="request graph is invalid; inspectRequest reports structural issues"
+`, fns: { 'std.request.valid': requestValidator },
   },
 };

@@ -4226,3 +4226,17 @@ print(w.semanticLinks().links[0].target);
 ```output
 c
 ```
+
+### inspectRequest(world, id, options?)
+
+Returns `{ok, issues}` for graph/variant checks of a loaded std.request contract. Options: `family` for a module alias, `budget` for bounded traversal. Use with the loaded schemas and World.check; this helper does not replace schema typing or resolve conceptual value compatibility, truth, permissions or effects.
+
+```js run
+const w = new World();
+w.load('@use core.use world=std.request\n@s std.request.source text="inspect a sample"\n@r std.request act=inspect mood=check source=$s\n@t std.request.target request=$r mode=existing kind=sample');
+print(inspectRequest(w, 'r').ok);
+```
+
+```output
+true
+```

@@ -1605,13 +1605,13 @@ Baza structurală implementată se încarcă prin `core.use world=std.request`. 
 
 Fiecare țintă are o referință tipizată la cererea sa; fiecare cerere are o referință tipizată la sursă. Ștergerea țintei nu șterge cererea, dar ștergerea unei cereri încă referite sau a unei surse folosite este refuzată. Mai multe cereri pot păstra aceeași sursă. Numele unei ținte descrie căutarea ori rezultatul dorit; nu este identitatea unui obiect creat sau găsit. Variantele `new` și `existing` sunt validate structural; o țintă `existing` fără referent concret nu este rezolvată prin simpla încărcare a acestor fire.
 
-Acest increment nu exportă contracte pentru constrângeri, noduri logice, `root` sau ținte `bound`. Acestea necesită verificarea apartenenței la cerere, a accesibilității și a domeniului legărilor, separat de evaluator. Exemplele complete de mai jos rămân propuneri până la implementarea acelei validări.
+Extensia grafului exportă acum constrângeri, descrieri de valori, noduri logice, `root` și ținte `bound`. Verifică apartenența la cerere, accesibilitatea, ciclurile și domeniul legărilor. Aceasta nu evaluează adevărul cerințelor și nu autorizează execuția. Modurile din exemple sunt declarate pentru intenția descrisă de context; nu reprezintă o regulă care atribuie automat `do` unui fragment fără mod.
 
-Următoarea formă este propusă pentru mesajul „draw three big red fish in the pond”. Tipurile `std.request.*` de mai jos descriu contractul de proiectare; nu sunt o afirmație că motorul actual implementează această schemă. Câmpurile fixe descriu structura generală a cererii, iar conceptele precum culoare, loc sau cantitate sunt date rezolvate prin vocabularul conceptual, nu chei noi în program pentru fiecare domeniu.
+Următoarea formă pentru mesajul „draw three big red fish in the pond” trece validarea structurală implementată prin `std.request`. Numele actelor, felurilor și conceptelor rămân de rezolvat înaintea evaluării și planificării. Câmpurile fixe descriu structura generală a cererii, iar conceptele precum culoare, loc sau cantitate sunt date rezolvate prin vocabularul conceptual, nu chei noi în program pentru fiecare domeniu.
 
 ```sop
 @src1 std.request.source text="draw three big red fish in the pond"
-@r1 std.request act=make source=$src1
+@r1 std.request act=make mood=do source=$src1
 @fish1 std.request.target request=$r1 mode=new kind=fish
 @pond1 std.request.target request=$r1 mode=existing kind=pond determiner=definite
 @c.count std.request.constraint request=$r1 target=$fish1 concept=quantity operator=eq value=3 scope=group polarity=positive character=requirement source=$src1 source.start=5 source.end=10
@@ -1620,7 +1620,7 @@ Următoarea formă este propusă pentru mesajul „draw three big red fish in th
 @c.place std.request.constraint request=$r1 target=$fish1 concept=place operator=relation relation=in goal=$pond1 scope=each polarity=positive character=requirement source=$src1 source.start=24 source.end=35
 ```
 
-`src1` păstrează textul englez primit de nucleu. Intervalele de proveniență sunt poziții de caractere, de la zero, cu sfârșitul exclus, în acest text exact. `r1` identifică cererea și actul general `make`.
+`src1` păstrează textul englez primit de nucleu. Intervalele de proveniență numără scalari Unicode, de la zero, cu sfârșitul exclus, în acest text exact. Un emoji format dintr-un singur punct de cod ocupă o poziție, chiar dacă JavaScript îl stochează în două unități UTF-16. Capetele apar împreună, intervalul este nevid și inclus în sursă; sursa cu surogate izolate este refuzată. `r1` identifică cererea și actul general `make`.
 
 `fish1` desemnează grupul de rezultate noi, nu un pește deja creat. `pond1` este o descriere de căutare: iazul trebuie să existe și să fie identificat univoc. Dacă sunt două iazuri și contextul nu le deosebește, cererea rămâne nerezolvată și aplicația întreabă; nu schimbă `mode=existing` în `mode=new` pentru a evita ambiguitatea.
 
@@ -1921,7 +1921,7 @@ Un exemplu propus arată diferența dintre compunere și operație nouă. Într-
 
 ```sop
 @source.limit std.request.source text="at most 120 words"
-@request.limit std.request act=change source=$source.limit
+@request.limit std.request act=change mood=do source=$source.limit
 @target.section std.request.target request=$request.limit mode=existing kind=section
 @constraint.length std.request.constraint request=$request.limit target=$target.section concept=length operator=less.equal value=120 unit=word scope=each polarity=positive character=requirement source=$source.limit source.start=0 source.end=17
 ```
@@ -2371,7 +2371,7 @@ Următoarele declarații arată contractul propus pentru spațiu și două utili
 @s.observed.value core.slot of=gap.observation key=value kind=number min=0
 @s.candidate.gap core.slot of=layout.candidate key=gap kind=number min=0
 @source.gap std.request.source text="at least 12 page units apart"
-@request.gap std.request act=place source=$source.gap
+@request.gap std.request act=place mood=do source=$source.gap
 @target.gap std.request.target request=$request.gap mode=existing kind=gap.observation
 @constraint.gap std.request.constraint request=$request.gap target=$target.gap concept=clearance operator=greater.equal value=12 unit=page.unit scope=each polarity=positive character=requirement source=$source.gap
 ```
@@ -3078,28 +3078,32 @@ Verificarea semantică are loc în etape: tipurile și rolurile trebuie să fie 
 
 ### 10.3.1 Noduri logice și legarea cuantificatorilor
 
-Pentru a păstra întinderea negației și a cuantificării, cererea folosește un graf logic explicit. Frunzele sunt condiții asupra țintelor; nodurile interioare combină condițiile. Propunerea adaugă tipurile de mai jos, fără a schimba sensul unei constrângeri simple. Numele sunt un contract de proiectare, nu tipuri deja implementate.
+Pentru a păstra întinderea negației și a cuantificării, cererea folosește un graf logic explicit. Frunzele sunt condiții asupra țintelor; nodurile interioare combină condițiile. Tipurile de mai jos sunt implementate ca declarații structurale, fără a schimba sensul unei constrângeri simple. Evaluarea adevărului descrisă în continuare rămâne de implementat; un graf valid nu este încă o cerere evaluată.
 
-| Tipul propus | Câmpuri și semnificație |
+| Tipul | Câmpuri și semnificație |
 |---|---|
-| `std.request.not` | `of` indică exact condiția negată. Inversează adevărat/fals și păstrează rezultatul nedeterminat. |
-| `std.request.group` | `operator=and` sau `operator=or`, cu `member` repetat. Combină membrii în aceeași întindere de variabile. |
-| `std.request.quant` | `kind=all`, `any`, `each` sau `none`; `target` este colecția, `bind` este ținta locală legată la fiecare membru, iar `body` condiția evaluată. |
+| `std.request.not` | `request` referă cererea proprietară; `of` indică exact condiția negată. Inversează adevărat/fals și păstrează rezultatul nedeterminat. |
+| `std.request.group` | `request` referă cererea proprietară; `operator=and` sau `operator=or`, cu `member` repetat. Combină membrii în aceeași întindere de variabile. |
+| `std.request.quant` | `request` referă cererea proprietară; `kind=all`, `any`, `each` sau `none`; `target` este colecția, `bind` este ținta locală legată la fiecare membru, iar `body` condiția evaluată. |
 
 `all` cere ca fiecare membru să satisfacă corpul; `any` cere existența cel puțin unui membru care îl satisface; `none` neagă această existență. `each` are aceeași condiție de adevăr ca `all`, dar păstrează distribuția cerinței și a dovezilor pe fiecare membru pentru planificare și explicație. El nu reprezintă încă o cantitate: „two for each section” cere o țintă de rezultate locală fiecărei secțiuni și o constrângere de cantitate în corpul cuantificatorului.
 
-O țintă cu `mode=bound` nu caută singură un obiect în lume. Ea primește pe rând identitățile din colecția cuantificatorului care o leagă. Un cuantificator interior are propria legare; nu poate captura accidental ținta altuia. Cererea indică rădăcina prin `root`. Când aceasta există, condițiile obligatorii trebuie să fie accesibile din ea; o condiție orfană, un ciclu, o referință lipsă ori o țintă legată folosită în afara corpului său sunt erori de schemă. Cererile simple fără rădăcină explicită păstrează conjuncția condițiilor de nivel superior din secțiunea 6.3.2.
+O țintă cu `mode=bound` nu caută singură un obiect în lume. Ea primește pe rând identitățile din colecția cuantificatorului care o leagă. Un cuantificator interior are propria legare; nu poate captura accidental ținta altuia. Cererea indică rădăcina prin `root`. Când aceasta există, toate condițiile și nodurile logice declarate trebuie să fie accesibile din ea; o condiție orfană, un ciclu, o referință lipsă ori o țintă legată folosită în afara corpului său sunt erori de schemă. Cererile simple fără rădăcină explicită păstrează conjuncția condițiilor din secțiunea 6.3.2 numai dacă nu conțin noduri logice. Un graf cu `not`, `group` sau `quant` cere o rădăcină explicită. Grupurile sunt nevide. Fiecare țintă legată are un singur cuantificator; numele sau determinantul unei căutări independente nu pot fi puse pe o țintă `bound`.
+
+Un nod poate fi partajat de mai multe ramuri, dar legările trebuie să fie valabile pe fiecare cale care ajunge la el. Dacă o condiție despre membrul local al unui cuantificator apare și direct într-o ramură exterioară, graful este refuzat. În schimb, un cuantificator interior poate utiliza ținta legată de cuantificatorul exterior drept colecție, apoi introduce propria țintă locală distinctă. O legare nu este validă doar fiindcă o traversare a găsit-o mai întâi pe o cale convenabilă.
+
+API-ul `inspectRequest(world, id)` raportează problemele structurale; pentru un modul cu alias se precizează `family`. Este un supliment la schema încărcată și `World.check()`, nu un înlocuitor al verificării câmpurilor și tipurilor. Verificatorul rulează și la editarea copiilor, prin `core.validate`, și respectă bugetul de calcul. Rezultatul nu dovedește compatibilitatea concept–valoare: de exemplu, un literal încă nerezolvat pentru `eq` sau o comparație nu este demonstrat numeric ori ordonabil. Rezolvarea vocabularului, unitățile compatibile, drepturile, proveniența presupunerilor și evaluarea în trei valori rămân etape distincte.
 
 Să comparăm „do not move all the notes” cu „do not move any note”. Colecția de note este rezolvată din aceeași stare de referință. Predicatul frunză spune că nota a fost mutată în pasul curent: la verificarea candidatului se citește diferența planificată, iar după execuție diferența observată și dovada operației. Nu înseamnă că nota a fost vreodată mutată în istoria ei. `concept=change operator=occurred act=place phase=result value=true` este forma propusă pentru acest predicat de eveniment.
 
 ```sop
 @source.notes std.request.source text="do not move all the notes"
-@request.notes std.request act=place source=$source.notes root=$not.all
+@request.notes std.request act=place mood=do source=$source.notes root=$not.all
 @notes std.request.target request=$request.notes mode=existing kind=note determiner=definite
 @member std.request.target request=$request.notes mode=bound
 @moved std.request.constraint request=$request.notes target=$member concept=change operator=occurred act=place phase=result value=true polarity=positive character=requirement source=$source.notes
-@all std.request.quant kind=all target=$notes bind=$member body=$moved
-@not.all std.request.not of=$all
+@all std.request.quant request=$request.notes kind=all target=$notes bind=$member body=$moved
+@not.all std.request.not request=$request.notes of=$all
 ```
 
 | Etapa primei cereri | Interpretarea păstrată |
@@ -3113,9 +3117,9 @@ Pentru a doua cerere se păstrează țintele și predicatul, dar se schimbă sur
 
 ```sop
 @source.notes std.request.source text="do not move any note"
-@request.notes std.request act=place source=$source.notes root=$not.any
-@any std.request.quant kind=any target=$notes bind=$member body=$moved
-@not.any std.request.not of=$any
+@request.notes std.request act=place mood=do source=$source.notes root=$not.any
+@any std.request.quant request=$request.notes kind=any target=$notes bind=$member body=$moved
+@not.any std.request.not request=$request.notes of=$any
 ```
 
 | Etapa celei de-a doua cereri | Interpretarea păstrată |

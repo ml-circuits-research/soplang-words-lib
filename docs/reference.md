@@ -240,11 +240,11 @@ unknown-key
 | `fn` | Required registered validator function name. |
 | `why` | Optional explanation when the validator returns false. |
 
-**Meaning.** The function must declare `pure=true`, `out.kind=boolean` and exactly one required `kind=ref` argument. The callback receives `(['$record.id'], world, {tick})` and must synchronously return JavaScript `true` to accept. `false`, exceptions, promises and all other values refuse validation. A missing registration refuses even an empty configuration. This is stricter than an ordinary unused function declaration.
+**Meaning.** The function must declare `pure=true`, `out.kind=boolean` and exactly one required `kind=ref` argument. The callback receives `(['$record.id'], world, {tick, type})` and must synchronously return JavaScript `true` to accept. `false`, exceptions, promises and all other values refuse validation. A missing registration refuses even an empty configuration. This is stricter than an ordinary unused function declaration.
 
 **When it is evaluated.** Every final-state validation checks every matching record, including untouched parents after child edits. Calls are uncached, so function re-registration cannot reuse an old result. Forward records in one atomic batch are available. `check()` and dry changes use the same invariants.
 
-**Interactions.** Callback traversal should call `tick()` for data-dependent work; descriptor/record iteration is also charged to the reasoning budget. Budget exhaustion keeps its normal transactional refusal. Callbacks must inspect records directly, not call validating APIs recursively. Ordinary nested mutations are refused, but purity remains a trusted host contract, not a sandbox against arbitrary JavaScript or external effects.
+**Interactions.** The context `type` is the declared `on` family, including module aliases. Callback traversal should call `tick()` for data-dependent work; descriptor/record iteration is also charged to the reasoning budget. Budget exhaustion keeps its normal transactional refusal. Callbacks must inspect records directly, not call validating APIs recursively. Ordinary nested mutations are refused, but purity remains a trusted host contract, not a sandbox against arbitrary JavaScript or external effects.
 
 **Violations.** `schema` for an invalid declaration/signature; `validation` for missing registration, false/invalid result, exception or reentrant validation. A `budget` refusal rolls back the transaction.
 
@@ -1874,6 +1874,22 @@ exhausted. **Advice:** a stage nobody provides, or placed after or before an und
 stage, is a soft issue (`world.check().issues`). **Fixed:** apply is one sentence (one
 undo step, all or nothing), budgets per call, the same input and state give the same path,
 a trace of every stage taken.
+
+## Request graph inspection
+
+`inspectRequest(world, id, {family = 'std.request', budget} = {})` returns `{ok, issues}` for the structural graph checks of a loaded request module. Issues identify a record and reason; budget exhaustion remains an explicit budget issue. The family option selects an aliased module. Ordinary schema typing and required fields are checked by World, not repeated by the inspector; use it with the loaded contract and World.check.
+
+The validator checks ownership, variants, source spans, cycles, reachability and all-path binder scope. It does not resolve vocabulary or evaluate truth, ordering, units, effects or authority. Standard request callbacks receive the declared family through core.validate context.type, so subtypes and aliases do not require fixed application names.
+
+```js run
+const w = new World();
+w.load('@use core.use world=std.request\n@s std.request.source text="inspect a sample"\n@r std.request act=inspect mood=check source=$s\n@t std.request.target request=$r mode=existing kind=sample');
+print(inspectRequest(w, 'r').ok);
+```
+
+```output
+true
+```
 
 ## Functions
 

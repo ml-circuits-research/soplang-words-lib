@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="5c2aa2defda7">
+<meta name="source-hash" content="3582b6e46040">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.177.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.178.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html" aria-current="page">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -98,9 +98,9 @@ unknown-key</code></pre></figure>
 <h3 id="corevalidate">core.validate</h3>
 <p><strong>Syntax.</strong> Register a final-state invariant over records.</p>
 <div class="table"><table><thead><tr><th>Attribute</th><th>Meaning</th></tr></thead><tbody><tr><td><code>on</code></td><td>Required record type; subtypes are included.</td></tr><tr><td><code>fn</code></td><td>Required registered validator function name.</td></tr><tr><td><code>why</code></td><td>Optional explanation when the validator returns false.</td></tr></tbody></table></div>
-<p><strong>Meaning.</strong> The function must declare <code>pure=true</code>, <code>out.kind=boolean</code> and exactly one required <code>kind=ref</code> argument. The callback receives <code>(['$record.id'], world, {tick})</code> and must synchronously return JavaScript <code>true</code> to accept. <code>false</code>, exceptions, promises and all other values refuse validation. A missing registration refuses even an empty configuration. This is stricter than an ordinary unused function declaration.</p>
+<p><strong>Meaning.</strong> The function must declare <code>pure=true</code>, <code>out.kind=boolean</code> and exactly one required <code>kind=ref</code> argument. The callback receives <code>(['$record.id'], world, {tick, type})</code> and must synchronously return JavaScript <code>true</code> to accept. <code>false</code>, exceptions, promises and all other values refuse validation. A missing registration refuses even an empty configuration. This is stricter than an ordinary unused function declaration.</p>
 <p><strong>When it is evaluated.</strong> Every final-state validation checks every matching record, including untouched parents after child edits. Calls are uncached, so function re-registration cannot reuse an old result. Forward records in one atomic batch are available. <code>check()</code> and dry changes use the same invariants.</p>
-<p><strong>Interactions.</strong> Callback traversal should call <code>tick()</code> for data-dependent work; descriptor/record iteration is also charged to the reasoning budget. Budget exhaustion keeps its normal transactional refusal. Callbacks must inspect records directly, not call validating APIs recursively. Ordinary nested mutations are refused, but purity remains a trusted host contract, not a sandbox against arbitrary JavaScript or external effects.</p>
+<p><strong>Interactions.</strong> The context <code>type</code> is the declared <code>on</code> family, including module aliases. Callback traversal should call <code>tick()</code> for data-dependent work; descriptor/record iteration is also charged to the reasoning budget. Budget exhaustion keeps its normal transactional refusal. Callbacks must inspect records directly, not call validating APIs recursively. Ordinary nested mutations are refused, but purity remains a trusted host contract, not a sandbox against arbitrary JavaScript or external effects.</p>
 <p><strong>Violations.</strong> <code>schema</code> for an invalid declaration/signature; <code>validation</code> for missing registration, false/invalid result, exception or reentrant validation. A <code>budget</code> refusal rolls back the transaction.</p>
 <p><strong>Example.</strong> A parent's invariant depends on its children, even when only a child is edited.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
@@ -705,6 +705,13 @@ print(r.diff.changed, w.act({ action: &#x27;remove&#x27;, args: { thing: &#x27;e
 <p><strong>Any catalog, any key.</strong> <code>std.know.fill from=&lt;type&gt; match=&lt;key&gt; key=&lt;key&gt; ...</code> (<code>match</code> defaults to <code>name</code>): when <code>make</code> leaves one of those keys out, the <code>from</code> wire whose <code>match</code> names the kind gives it, at tier <code>knowledge</code> with its <code>core.source</code> (or its id). A choice std.fill made at a better tier wins. One line replaces the rules a world would otherwise write per key (<code>examples/second-app/rooms.mjs</code>: <code>w</code>, <code>d</code> and <code>price</code> of a piece from <code>k.furniture</code>).</p>
 <h2 id="stdturn-the-request-pipeline-as-data">std.turn: the request pipeline as data</h2>
 <p><code>core.use world=std.turn</code>; run by <code>turnFlow</code>. A stage: <code>std.turn.stage name= after= before= per=candidate on_empty= skip_if= only= when=exhausted</code>; a provider: <code>std.turn.provider stage= name= tier=</code>. The order is the <code>after</code> chain from the stage that follows nothing (equal places by name); a stage with <code>before=</code> goes right before that one. Stages with <code>per=candidate</code> run for each candidate reading in turn; when one yields nothing, <code>on_empty</code> says what follows: <code>next</code> (the next candidate), <code>ask</code> (return the question it set), <code>fail</code>. <code>skip_if=&lt;key&gt;</code>: skipped when a request of the candidate has that argument (the message named the world, say); <code>only=&lt;action&gt;</code>: run only for those actions. <code>when=exhausted</code>: run when no candidate was taken (the graded fallback). Providers of one stage are tried by tier: the first that yields wins; a reader's candidates add up. <strong>The default:</strong> read (given) → dryrun → apply → reply per candidate; fallback when exhausted. <strong>Advice:</strong> a stage nobody provides, or placed after or before an undeclared stage, is a soft issue (<code>world.check().issues</code>). <strong>Fixed:</strong> apply is one sentence (one undo step, all or nothing), budgets per call, the same input and state give the same path, a trace of every stage taken.</p>
+<h2 id="request-graph-inspection">Request graph inspection</h2>
+<p><code>inspectRequest(world, id, {family = 'std.request', budget} = {})</code> returns <code>{ok, issues}</code> for the structural graph checks of a loaded request module. Issues identify a record and reason; budget exhaustion remains an explicit budget issue. The family option selects an aliased module. Ordinary schema typing and required fields are checked by World, not repeated by the inspector; use it with the loaded contract and World.check.</p>
+<p>The validator checks ownership, variants, source spans, cycles, reachability and all-path binder scope. It does not resolve vocabulary or evaluate truth, ordering, units, effects or authority. Standard request callbacks receive the declared family through core.validate context.type, so subtypes and aliases do not require fixed application names.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+w.load(&#x27;@use core.use world=std.request\n@s std.request.source text=&quot;inspect a sample&quot;\n@r std.request act=inspect mood=check source=$s\n@t std.request.target request=$r mode=existing kind=sample&#x27;);
+print(inspectRequest(w, &#x27;r&#x27;).ok);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true</code></pre></figure>
 <h2 id="functions">Functions</h2>
 <p>A function is called with its arguments as text and returns text (or true/false for a comparison). When it has no result it returns nothing and the rule does not fire. Host functions are added with <code>new World({ fns })</code>; a name from the tables below cannot be taken without <code>override</code>.</p>
 <p>A <strong>number</strong> is an integer or decimal, optionally followed by a unit (<code>5</code>, <code>2.5</code>, <code>3kg</code>, <code>10N/kg</code>). Arithmetic keeps 12 significant digits.</p>
@@ -754,7 +761,7 @@ print(builtins.time_add([&#x27;10:40&#x27;, &#x27;35min&#x27;]), builtins.div([&
 11:15 3 true tuesday</code></pre></figure>
 <p class="source">Generated from <code>docs/reference.md</code>.</p>
 </main>
-<footer>sopworld 0.177.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.178.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

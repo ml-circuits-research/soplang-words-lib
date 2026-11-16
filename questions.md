@@ -1011,24 +1011,8 @@ Review de76af8 accepted all proposals. The act-condition encoding is now impleme
 
 Please challenge these choices with a concrete reusable counterexample if you prefer the qualified-name alternative or another condition representation. I am not declaring these families frozen or adding permissive schemas while these contradictions remain. The already-published import records are structurally validated; they do not depend on a guessed resolution here.
 
-### Implementation review — request foundation and complete graph obligations (0.176.0)
+### Implementation review — structural request graphs (0.178.0)
 
-Published only source/request/target with mandatory mood and no implicit do; act/kind remain unresolved names. Existing proposed graph examples omitting mood need explicit modes when migrated. This foundation intentionally does not export constraints/logical nodes or bound targets.
+Implemented the proposed ownership/root/scope decisions using the published core.validate lifecycle. Logical nodes now require request; rootless requests allow simple constraint conjunction only; every declared graph node must be reachable, including preferences (no implicit inactive nodes). Topological incoming-scope intersection rejects a shared bound leaf reached outside its binder while accepting nested binders with distinct identities. Unicode scalar spans are paired/nonempty/in-range; isolated surrogates are refused.
 
-Concrete choices for the graph increment:
-
-| Counterexample | Proposed contract |
-| --- | --- |
-| An unattached not/group/quant has no request in the book, so orphan ownership cannot be checked. | Require typed request on every logical node, with all dependencies owned by that request. |
-| A request with logical nodes but no root has no defined top-level expression. | Implicit conjunction only for simple constraints with no logical nodes; otherwise require root. Reject orphan logical nodes and mandatory constraints. |
-| A shared leaf uses a bound target under its quantifier and also from a sibling group. A global visited set incorrectly accepts it. | Check each incoming scope; unique binder per bound target, scoped use only under its body. Outer bound targets may be used as nested collections; rebinding the same identity is rejected. |
-| Character offsets disagree on an emoji if one side counts JavaScript units and another counts Unicode scalars. | Use explicit Unicode scalar offsets into the exact source text, with paired ordered/in-range start/end; document conversion at JS boundaries. No span validation is claimed yet. |
-| A function checking a whole graph is called by a deny matching only the request. Editing a child does not necessarily reseed that deny. | Do not hide this dependency behind a dummy negative pattern. A generic final-state validator declaration, or explicit declared function read dependencies, must ensure graph/frame validators rerun on every relevant edit under the reasoning budget. |
-
-The existing core.schema.link validation established final-state identity checks, but is not a topology validator. Before graph release, tests must include cross-request edges, cycles introduced by edits, shared out-of-scope leaves, valid nested binders, orphan nodes and operator variant exclusions. Region/ordered values need eventual concept compatibility; field loading alone cannot establish it. Please review these decisions and the generic validation hook versus explicit dependency alternative with concrete counterexamples.
-
-### Implementation review — final-state invariant prerequisite (0.177.0)
-
-Implemented core.validate on=<type> fn=<pure synchronous boolean function>. Alternatives were an ordinary positive deny (misses edits to undeclared child dependencies) or a dummy negative pattern to force rescanning (hides the actual invariant). The explicit hook reruns uncached against final state, including untouched parent records, and protects against stale results after function re-registration. Missing registration fails even with no matching records.
-
-Probes cover child-only edits/deletion, atomic forward records, dry checks, rollback, subtype/namespace/alias handling, re-registration, malformed signatures, invalid results/promises/exceptions, cooperative budget exhaustion and reentrant mutation. A callback is trusted host code; no sandbox or arbitrary-loop preemption is claimed. Callback traversal consumes the supplied tick budget; it cannot recursively call validating APIs. The request-specific graph validator remains next, so this is not the phase-zero release. Please review this explicit lifecycle boundary before downstream integration.
+Operator-specific fields and finite delta/factor magnitudes are checked, but unresolved concept/value compatibility and ordered/unit semantics remain separate. inspectRequest requires the module and supplements ordinary schemas/World.check; it is not an independent schema checker. Aliased registered functions and subtype roots are tested through declared-family validator context. No truth/effect/authority or full phase-zero claim. Please review these concrete strictness choices and remaining semantic boundary before consumers bind a complete path.

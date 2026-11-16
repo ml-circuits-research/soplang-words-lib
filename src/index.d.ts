@@ -907,3 +907,5 @@ export function languageWords(language: World | null | undefined, lang?: string)
 export const SPELL: Readonly<{ minLength: number; maxCostShort: number; maxCostLong: number; margin: number; top: number; maxWords: number; recent: number }>;
 export const SPELL_SOURCES: readonly { source: string; prior: number }[];
 export const SPELL_COSTS: Readonly<{ near: number; accent: number; doubled: number; swap: number; other: number }>;
+
+export function inspectRequest(world: World, id: string, options?: { family?: string; budget?: { steps?: number; ms?: number } }): { ok: boolean; issues: Array<{ kind: string; id?: string; why?: string; [key: string]: unknown }> };

@@ -479,3 +479,5 @@ Incrementul 0.175.0 rezolvă is/means/space prin declarații generice core.schem
 Incrementul 0.176.0 publică sursa, cererea și ținta prin std.request, cu mood explicit și referințe tipizate. Absența modului este refuzată, fără presupunerea do. Exemplul minimal din §6.3.2 este executabil. Graful logic, țintele bound și constrângerile rămân de implementat; acest increment nu deschide poarta migrării consumatorilor.
 
 Incrementul 0.177.0 furnizează core.validate pentru invariante pe starea finală, fără cache și fără dependență de atingerea părintelui. Verificatorul grafului cererii rămâne de implementat pe acest mecanism generic. PSys2 23e5a048 retrage efectiv Map/Music din compoziția activă, păstrând fixture-urile sursă și toate rândurile istorice; Charts/Avatar/Calendar nu sunt declarate integrate.
+
+Incrementul 0.178.0 publică validarea structurală a grafului cererii: proprietar comun, referințe și variante, intervale Unicode, accesibilitate, aciclicitate și domeniul legărilor pe toate căile. Exemplele §§6.3.2/10.3.1 sunt testate direct. Validarea semantică a vocabularului/valorilor, evaluatorul și efectele rămân distincte; nu este anunțată faza 0 completă.

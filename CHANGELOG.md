@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.178.0
+
+- Publish structural request graph schemas and inspectRequest: owner-local edges/targets, operator variants, Unicode source spans, acyclicity, reachability and all-path quantifier scope.
+- Run request validation through core.validate; support aliased function registration and declared-family context for subtype roots. Truth, vocabulary compatibility and execution remain separate.
+
+
 ## 0.177.0
 
 - Add core.validate for uncached, synchronous final-state invariants over typed records, including untouched parents after child edits. Missing functions, invalid results, exceptions and reentrant validation fail closed.

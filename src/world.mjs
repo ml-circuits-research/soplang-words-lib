@@ -1274,7 +1274,10 @@ export class World {
       }
       // a module of the standard pack brings its functions (pure, declared in it); a host's function of the same name stays
       if (STD[name] && this.options.library[name] === STD[name].text) {
-        for (const [f, fn] of Object.entries(STD[name].fns)) if (!this.fns[f]) this.fns[f] = fn;
+        for (const [f, fn] of Object.entries(STD[name].fns)) {
+          const registered = rename(f);
+          if (!this.fns[registered]) { this.fns[registered] = fn; this._do(() => { delete this.fns[registered]; }); }
+        }
         for (const [f, fn] of Object.entries(STD[name].actions || {})) if (!this.actions[f]) this.actions[f] = fn; // and its actions
       }
       const ws = prefixed ? prefixModule(mod, key) : mod.map(cloneWire);

@@ -15,7 +15,7 @@ export function validateRecords(world, res) {
       world._validatorMutation = false;
       let result, error;
       try {
-        result = fn(['$' + record.id], world, { tick: () => world._b.tick('validate') });
+        result = fn(['$' + record.id], world, { type: d.on, tick: () => world._b.tick('validate') });
       } catch (e) {
         if (e === world._b.signal) throw e;
         error = e instanceof Error ? e.message : String(e);

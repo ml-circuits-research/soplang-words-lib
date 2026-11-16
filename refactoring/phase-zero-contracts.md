@@ -78,3 +78,7 @@ Review 292e8dd accepts 0.173.0–0.175.0 and prioritizes the complete request gr
 ### Increment 0.177.0 — final-state invariant hook
 
 core.validate executes registered pure synchronous boolean validators on every matching record after final-state ingestion, uncached and under the validation budget. This closes the invalidation gap for an untouched parent when a child changes. The request graph validator itself remains next; no topology or frame acceptance is claimed from the hook. Purity is a trusted host contract, not JavaScript sandboxing.
+
+### Increment 0.178.0 — structural request graphs
+
+std.request now exports constraints, logical nodes, value descriptions and bound targets. Tests load exact §§6.3.2/10.3.1 fragments and reject ownership crossings, cycles, orphan nodes, invalid variants and all-path binder escapes; scalar Unicode spans are checked. inspectRequest supplements ordinary schema validation, using core.validate for child-edit invalidation. Concept typing/orderability, unit compatibility, evidence semantics, truth and execution remain pending. No full phase-zero release.

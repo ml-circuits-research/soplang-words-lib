@@ -120,8 +120,18 @@ Added with 0.176.0: `core.use world=std.request` exports closed std.request.sour
 
 Mood has no default and grants no execution authority. Act/kind names are not resolved to capabilities or concepts by this increment. Sources may be reused. Referenced requests/sources cannot be deleted; forward references and edits are transactional. The executable book fixture covers this foundation only.
 
-The module does not export constraint/logical/value schemas, root edges or bound targets yet. Unknown fact types remain governed by the library's existing open-world behavior; their acceptance is not proof of a request contract. Consumers must use published exports and must not infer that full graph validation or phase zero is complete.
+This initial foundation did not export constraint/logical/value schemas, root edges or bound targets; the graph extension below adds their structural contracts. Unknown fact types remain governed by the library's existing open-world behavior; their acceptance is not proof of a request contract. Consumers must use published exports and must not infer that full graph validation or phase zero is complete.
 
 ## Final-state contract validation
 
 Added with 0.177.0: core.validate provides a generic hook for invariants that read multiple records. It runs registered synchronous pure boolean callbacks after ingestion, without cached results or a dependency on the parent being touched. This is a prerequisite for request topology and frame consistency, not their implementation. See the reference for strict signatures, failure behavior, cooperative budget ticks and trusted-host purity limits.
+
+## Structural request graphs
+
+Added with 0.178.0: std.request exports constraint, not, group, quant and value records, plus root links and bound targets. Every logical node/constraint has a typed request owner. Edges, target references, root and value-description dependencies must stay within that owner. Explicit graphs reject cycles and every unreachable node; logical nodes require a root. Rootless simple constraints form an implicit conjunction. Groups are nonempty.
+
+Each bound target has one quantifier, distinct from its collection. A topological scope intersection checks all incoming DAG paths, allowing valid nested use but rejecting scope escape through shared nodes. Literal/operator variants require their fields and reject unrelated fields; same requires a typed value-description reference, occurred a boolean/result phase, delta a finite number, factor a positive number, and measured relations all four measurement fields. Source spans use nonempty Unicode scalar intervals into a declared exact source; unpaired surrogates are refused.
+
+`inspectRequest(world, id, {family?, budget?})` supplements loaded schemas and World.check with detailed graph issues. It requires the request contract module. The standard validator uses core.validate and runs on final state, including child edits; aliases and root subtypes preserve family identity. Generic module loading now registers aliased function names transactionally.
+
+Vocabulary names, eq/comparison value typing and orderability, dimensional unit compatibility, source-evidence truth, assumption justification, three-valued evaluation, effects and permission remain separate. For example an atom NaN as an eq value is structurally a literal, not proof of a valid numerical quantity. No complete phase-zero or runnable-domain release is claimed.

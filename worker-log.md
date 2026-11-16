@@ -5952,3 +5952,7 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 ## 2026-11-16 0.166.0 (Q102 follow-ups)
 - `step.parts` read from the step; `done.parts` carries `kinds`/`numbers`; a primitive's returned `parts` written fewer than planned gives `short_of` per part. Test in `test/genre-parts.test.mjs`; `npm test` below.
 - Also: coordinated unread kind named and the rest made (`unknown_kind`); statement clause named whole in `not_understood` (reviewer 15:25). Test in genre-parts.test.mjs.
+
+## 2026-11-16 0.167.0 (reviewer 09:25)
+- A said length grade scales the expected words with the parts (genres too), origin `said`; "longer"/"shorter" step a genre text and a length the tool cannot extend says `nothing.same.limit` (a primitive may return `{ length }`); revisions say no count/kinds/length assumptions. Three tests in `test/genre-parts.test.mjs`.
+- `npm test`: 650 tests, 648 pass, 0 fail; bundle run of genre-parts green.

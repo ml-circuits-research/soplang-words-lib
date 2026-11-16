@@ -103,3 +103,73 @@ test('a thing no source reads, said together with a read kind, is named and the 
     assert.equal(u?.roles.words, 'I baked a cake', `${name}: ${c.reply.text}`);
   }
 });
+
+// 0.167.0 (PSys2 reviewer 09:25): a length grade scales the expected words with the parts, and says its origin `said`;
+// "longer" / "shorter" on a text a tool cannot lengthen says why; a revision keeps its topic and its counts quiet.
+const LEN = String.raw`
+@x.len k.expect.value of=letter on=length value=150
+@x.rep k.expect.value of=report on=length value=300
+`;
+const TEXTS = String.raw`
+@acts core.use world=std.acts
+@w std.schema.world name=texts
+@t.doc core.type of=doc extends=std.schema.thing closed=true
+@s.about core.slot of=doc key=about kind=string
+@s.length core.slot of=doc key=length kind=integer min=1
+@k.doc std.schema.kind of=doc world=texts acts=make acts=remove
+@h.make std.schema.honours world=texts act=make on=about on=length on=size on=count of=doc
+@op.write std.tool.op name=write world=texts param=kind param=about param=length param=parts effect=makes
+@b.make std.tool.bind world=texts act=make of=doc op=write
+@a.kind std.tool.arg bind=$b.make param=kind from=step.kind
+@a.about std.tool.arg bind=$b.make param=about from=step.about
+@a.length std.tool.arg bind=$b.make param=length from=step.length
+@a.parts std.tool.arg bind=$b.make param=parts from=step.parts
+@h.remove std.schema.honours world=texts act=remove on=kind of=doc
+@op.remove std.tool.op name=remove world=texts param=ids effect=removes
+@b.remove std.tool.bind world=texts act=remove of=doc op=remove arg=ids<-step.things needs=exists(ids) removes=ids
+@w.write core.word text=write means=make
+@j std.schema.kinds world=texts from=k.demo.genre key=name acts=make as=doc
+`;
+// the tool knows only so many words about a topic (`limit`): it writes at most that many
+function textTool(limit = Infinity) {
+  const things = [], seen = [];
+  return { seen, write({ kind, about, length, parts }) { seen.push({ kind, about, length }); things.push({ id: `d${seen.length}`, kind, about, length: Math.min(length ?? 100, limit) }); return { length: Math.min(length ?? 100, limit), parts: Object.fromEntries((parts ?? []).map((p) => [p.name, p.count])) }; }, remove({ ids }) { for (const i of [].concat(ids)) { const k = things.findIndex((t) => t.id === String(i)); if (k >= 0) things.splice(k, 1); } }, view: () => things.map((t) => ({ ...t })) };
+}
+const textSession = (tool) => toolSession(exampleWorld(`${TEXTS}${LEN}`), tool, { language, catalog: [language, kinds, exampleWorld(GENRES)], revisions: language });
+
+test('a said length grade scales the expected words with the parts and is not an assumption', { skip: offline }, () => {
+  const len = (said) => { const t = textTool(), r = textSession(t).say(said); return { r, length: t.seen[0].length }; };
+  for (const [a, b, kind] of [['write a short letter about a fox', 'write a long letter about a fox', 'letter'], ['write a short report about owls', 'write a long report about owls', 'report']]) {
+    const [s, l, d] = [len(a), len(b), len(`write a ${kind} about a fox`)];
+    assert.ok(s.length < d.length && d.length < l.length, `${kind}: ${s.length} < ${d.length} < ${l.length}`);
+    for (const x of [s, l]) assert.ok(!x.r.reply.facts.some((f) => f.reply === 'assumed' && f.roles.key === 'length'), x.r.reply.text);
+    assert.ok(d.r.reply.facts.some((f) => f.reply === 'assumed' && f.roles.key === 'length'), 'unsaid: still an assumption');
+  }
+});
+
+test('"longer" / "shorter" on a text scale it; a tool that cannot lengthen says what it knows', { skip: offline }, () => {
+  const t = textTool(), s = textSession(t);
+  s.say('write a short letter about a fox');
+  const a = s.say('longer'), b = s.say('longer'), c = s.say('shorter');
+  assert.ok(t.seen.length === 4 && t.seen[1].length > t.seen[0].length && t.seen[2].length > t.seen[1].length && t.seen[3].length < t.seen[2].length, JSON.stringify(t.seen));
+  for (const x of [a, b, c]) assert.ok(!/already/.test(x.reply.text), x.reply.text);
+  assert.ok(t.seen.every((x) => /fox/.test(x.about)), 'the topic is kept');
+  const lim = textTool(39), l = textSession(lim);
+  l.say('write a short letter about a fox');
+  const r = l.say('longer');
+  assert.ok(r.run.same, 'the text is the same');
+  const f = r.reply.facts.find((x) => x.reply === 'nothing.same.limit');
+  assert.ok(f && f.roles.made === 39 && f.roles.about === 'a fox' && f.short_of.asked > 39, r.reply.text);
+  assert.match(r.reply.text, /I know nothing more about a fox; it stays at 39 words\./);
+  assert.ok(!/already/.test(r.reply.text));
+});
+
+test('a revision does not say the count or the length the user did not ask about', { skip: offline }, () => {
+  const s = session(join(STORIES, 'story'));
+  s.say('write a story about a lake');
+  for (const said of ['longer', 'shorter']) {
+    const r = s.say(said);
+    assert.ok(!r.reply.facts.some((f) => f.reply === 'assumed'), `${said}: ${r.reply.text}`);
+    assert.ok(!r.reply.facts.some((f) => /^done\.(about|title)$/.test(f.reply)), r.reply.text);
+  }
+});

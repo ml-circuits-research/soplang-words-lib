@@ -2588,6 +2588,11 @@ Added with 0.166.0 (properties in `test/genre-parts.test.mjs`):
   Each part written fewer times than the plan named gives a `short_of` fact (`roles: { made, asked, kind }`, field `part`), and
   `done.parts` names the counts written. A tool that returns nothing of the kind is taken to have written what the plan named.
 
+Added with 0.167.0 (properties in `test/genre-parts.test.mjs`):
+- A said length grade ("short", "long", "longer") scales the length a world pattern or knowledge base expects (`k.expect.value on=length`) together with the part counts, for a declared text kind and for a joined genre alike. The length is then what the user asked, so no `assumed` fact ("I assumed 150 for the length") is said; without a grade the expected length is said as an assumption.
+- "longer" / "shorter" on a genre text steps the length grade from the one it has, as it does for a declared text. A primitive may return the length it wrote (`{ length: 39 }`, in the unit of the whole's length). When a length step leaves the text unchanged the reply is `nothing.same.limit` ("I know nothing more about a fox; it stays at 39 words.", with `short_of: { made, asked }` on the fact when the plan asked for more), or `nothing.same.length` when the tool said nothing about its length; never "That is what is there already."
+- A revision keeps the topic of the text (the plan's `about` is the same) and says no count, kinds or length that only the world instance's expectations gave ("I assumed 8 for the count"): the first turn said them.
+
 - One rule for a said requirement that cannot be read or honoured: it is never silently dropped, and whether the rest runs depends
   on whether what remains is still what was asked. Things said together ("a novel and a zorp": a determiner, a joining word, a
   word no source reads) are independent things asked: the others are made and the unread one is named (`not_honoured`, code

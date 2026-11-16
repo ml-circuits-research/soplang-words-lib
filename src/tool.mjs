@@ -401,7 +401,7 @@ function execute(steps, ctx) {
     if (typeof fn !== 'function') return { ok: false, ids, calls, assumed, translated, failed: { code: 'no_primitive', reply: 'refused.not_allowed', roles: { kind: g.kind ?? g.bind.act }, op: g.bind.op } };
     let r;
     try { r = fn(filled.args); } catch (e) { return { ok: false, ids, calls, assumed, translated, failed: { code: 'tool_error', reply: 'why.nothing', roles: {}, op: g.bind.op, detail: String(e?.message ?? e) } }; }
-    calls.push({ op: g.bind.op, args: filled.args, steps: g.idx, ...(wrote(r) ? { wrote: wrote(r) } : {}) });
+    calls.push({ op: g.bind.op, args: filled.args, steps: g.idx, ...(wrote(r) ? { wrote: wrote(r) } : {}), ...(r && typeof r === 'object' && Number.isFinite(Number(r.length)) ? { wroteLength: Number(r.length) } : {}) }); // a primitive may say the length it wrote (`{ length: 39 }`, in the unit of the whole's length)
     if (r === false || (r && typeof r === 'object' && r.ok === false)) return { ok: false, ids, calls, assumed, translated, failed: { code: r?.code ?? 'tool_refused', reply: r?.reply ?? 'why.nothing', roles: r?.roles ?? {}, op: g.bind.op } };
     const viewA = ctx.look(), d = stateDiff(viewB, viewA);
     const effect = effectUnmet(g.bind, filled.args, g.kind, d, viewA);
@@ -698,7 +698,7 @@ export function toolSession(live, primitives, { language = null, catalog = [], r
         const ids = (named ?? []).map(strip).filter((id) => view().some((t) => String(t.id) === id || state.thing?.(id)));
         if (ids.length) dialogue.lastRun = { made: ids };
       }
-      const reply = sayRequest(rev.request, { ...plan, run, revised: rev.sort === 'reaction' && run.ok && !run.same && !plan.reference, reply: rev.reply }, sayOpts);
+      const reply = sayRequest(rev.request, { ...plan, run, revised: rev.sort === 'reaction' && run.ok && !run.same && !plan.reference, reply: rev.reply, ...(rev.lengthStepped ? { lengthStepped: true } : {}) }, sayOpts);
       return { request: rev.request, revision: rev, plan, run, reply };
     },
   };

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.167.0
+
+PSys2 reviewer 09:25 [LIB]. Properties in `test/genre-parts.test.mjs`.
+
+### Fixed
+- A said length grade scales the expected length (words) with the part counts, for joined genres too; its origin is `said`, so "I assumed 150 for the length" is no longer said after "short".
+- "longer" / "shorter" step the length of a joined genre text; a length step the tool cannot carry out says `nothing.same.limit` / `nothing.same.length` (a primitive may return `{ length }`), never "That is what is there already."
+- A revision says no count, kinds or length assumptions the user did not ask about; the topic is kept.
+
 ## 0.166.0
 
 PSys2 Q102 follow-ups [LIB]. Properties in `test/genre-parts.test.mjs`.

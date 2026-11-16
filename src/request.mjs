@@ -712,18 +712,19 @@ export function reviseRequest(dialogue, request, opts = {}) {
   if (does.every((d) => d.does === 'none')) return { sort: 'reaction', reaction, does, request: null, replace: false, seed, reply };
   const scale = scaleOf([].concat(opts.catalog ?? []));
   let cs = last.constraints.map((c) => ({ ...c }));
-  const lengthyLast = !!last.target && rowsOf([opts.live, ...[].concat(opts.catalog ?? [])].filter(Boolean), 'k.expect.make').some((m) => first(m, 'thing') === last.target && first(m, 'length') !== undefined); // the expectation of the last whole has a length: a text
+  const lengthyLast = !!last.target && rowsOf([opts.live, ...[].concat(opts.catalog ?? [])].filter(Boolean), 'k.expect.make').some((m) => first(m, 'thing') === last.target && first(m, 'length') !== undefined) || (!!last.target && rowsOf([opts.live, ...[].concat(opts.catalog ?? [])].filter(Boolean), 'k.genres.part').some((g) => first(g, 'genre') === last.target)); // the expectation of the last whole has a length (a text), or its kind is a genre of parts
   const put = (c) => { cs = cs.filter((x) => !sameKey(x, c) || (c.on === 'kind' && c.want === 'yes' && x.want !== 'yes')); if (c.on === 'kind' && c.want === 'yes') cs = cs.filter((x) => !(x.on === 'kind' && x.want === 'yes')); cs.push(c); };
   const stepped = new Set(does.filter((d) => d.does === 'step').map((d) => d.on));
   const turn = request.constraints.filter((c) => !(c.step && stepped.has(c.on)) && !(c.on === 'kind' && stepKinds.includes(c.value)));
   if (expectation) cs = cs.filter((c) => c.on === 'kind' && c.want !== 'yes' && false); // the expectation carries the whole set
+  let lengthStepped = false;
   for (const c of turn) {
     if (c.step && ['size', 'extent'].includes(c.on)) { const now = cs.find((x) => x.on === c.on && x.value)?.value ?? 'default'; const { step, ...rest } = c; put({ ...rest, value: stepNext(scale, now, step), origin: 'said' }); continue; }
     // "shorter" / "longer" on a text (the expectation of the last whole has a length): the comparative steps the length key from where it was, as "bigger" steps a size; the cue's own value only gives the direction
     if (c.on === 'length' && !c.unit && c.value && !c.step && lengthyLast && !request.act && !request.target) {
       const order = scale ? scale.map((x) => x.step) : STEPS, mid = order.indexOf('default');
       const now = cs.find((x) => x.on === 'length' && x.value && !x.unit)?.value ?? 'default';
-      put({ ...c, value: stepNext(scale, now, order.indexOf(c.value) < mid ? 'down' : 'up'), origin: 'said' }); continue;
+      put({ ...c, value: stepNext(scale, now, order.indexOf(c.value) < mid ? 'down' : 'up'), origin: 'said' }); lengthStepped = true; continue;
     }
     put({ ...c, origin: 'said' });
   }
@@ -745,6 +746,7 @@ export function reviseRequest(dialogue, request, opts = {}) {
         const now = cs.find((c) => c.on === 'length' && c.value && !c.unit)?.value ?? 'default';
         put({ on: 'length', want: 'yes', value: stepNext(scale, now, d.direction), words: request.reactions[0]?.words ?? reaction, origin: 'reaction' });
         cs = cs.filter((c) => c.on !== 'count' || c.of);
+        lengthStepped = true;
       } else if (d.on === 'count' && byKind) {
         const to = stepNext(scale, cur, d.direction);
         const f0 = factor(scale, cur), f1 = factor(scale, to), up = d.direction === 'up';
@@ -783,7 +785,7 @@ export function reviseRequest(dialogue, request, opts = {}) {
   }
   const revised = withFacts({ ...last, constraints: cs, reactions: request.reactions, text: request.text, unread: request.unread, unreadAt: request.unreadAt, revises: last.id ?? null, revisedFrom: last.text, used: request.used });
   if (request.target && request.refers !== 'last' && !stepKinds.includes(request.target)) revised.target = request.target;
-  return { sort: 'reaction', reaction, does, request: revised, replace: does.some((d) => d.replaces), seed: nextSeed, vary, reply };
+  return { sort: 'reaction', reaction, does, request: revised, replace: does.some((d) => d.replaces), seed: nextSeed, vary, reply, ...(lengthStepped ? { lengthStepped: true } : {}) };
 }
 
 // ---- planning ----------------------------------------------------------------------------------------------------
@@ -1229,7 +1231,7 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
     else if (lengthC.unit && mk && lengthC.unit === first(mk, 'length_unit')) { if (placeRole('length', lengthC.number, { onItems: false }) !== 'put') nameIt(lengthC, 'nothing here has a length', 'no_slot'); }
     else if (!lengthC.unit && mk && first(mk, 'length')) { if (placeRole('length', Math.round(num(first(mk, 'length')) * cf), { onItems: false }) !== 'put') nameIt(lengthC, 'nothing here has a length', 'no_slot'); }
     else if (lengthC.unit) nameIt(lengthC, `the length is not counted in ${lengthC.unit}s here`, 'unit');
-  } else if (mk && first(mk, 'length') && wholeSlots.has('length')) { const v = Math.round(num(first(mk, 'length')) * cf); wholeArgs.length = v; assumed.push({ key: 'length', value: v, from: mkFrom }); }
+  } else if (mk && first(mk, 'length') && wholeSlots.has('length')) { const v = Math.round(num(first(mk, 'length')) * cf); wholeArgs.length = v; if (!sizeC) assumed.push({ key: 'length', value: v, from: mkFrom }); }
   // layout: said, the dialogue's, the world's expectation, the catalog's, the slot's default; "random" samples one
   const layoutSlot = whole ? wholeSlots.get('layout') : null;
   if ((layoutSlot || C('layout').length) && !(wholeArgs.layout !== undefined && C('attribute').some((x) => x.attribute === 'layout'))) { // a layout said as a value of the slot stands
@@ -1310,7 +1312,9 @@ function planOnce(live, request, opts = {}, hints = NO_HINTS) {
       if (induced && e.value === x.args[key]) continue;
       const s0 = slots.get(key);
       if (s0?.enum && !s0.enum.map(V).includes(e.value)) continue;
-      x.args[key] = e.value;
+      const lenScaled = key === 'length' && (lengthStep || sizeC) && Number.isFinite(Number(e.value)); // a length grade said scales the expected length (its words) as it scales the parts: the value is then what the user asked, not an assumption
+      x.args[key] = lenScaled ? Math.max(1, Math.round(Number(e.value) * cf)) : e.value;
+      if (lenScaled) continue;
       const k1 = `${key}=${e.value}`;
       if (!whenSeen.has(k1)) { const a = { key, value: e.value, from: e.from, ...(e.because.length ? { because: e.because.join(', ') } : {}) }; whenSeen.set(k1, a); assumed.push(a); }
     }
@@ -1753,6 +1757,8 @@ const WHOLE_REPLIES = Object.freeze({
   'done.whole': [{ roles: ['whole', 'parts'], text: 'The {whole} now has {parts}.' }],
   'done.about': [{ roles: ['whole', 'topic'], text: 'The {whole} is about {topic}.' }],
   'state.count.named': [{ roles: ['kind', 'name'], text: 'There is one {kind}, \u201c{name}\u201d.' }],
+  'nothing.same.limit': [{ roles: ['about', 'made', 'unit'], text: 'I know nothing more about {about}; it stays at {made} {unit}.' }, { roles: ['made', 'unit'], text: 'I cannot make it different; it stays at {made} {unit}.' }],
+  'nothing.same.length': [{ roles: [], text: 'I could not change the length; it stays as it was.' }],
   'done.title': [{ roles: ['whole', 'title'], text: 'The {whole} is called {title}.' }],
   'nothing.same.value': [{ roles: ['thing', 'value'], text: 'The {thing} is already {value}.' }],
   'refused.already': [{ roles: ['thing'], text: 'The {thing} is already there.' }],
@@ -1825,7 +1831,11 @@ export function sayRequest(request, outcome = {}, opts = {}) {
       for (const e of ch.values()) facts.push(relSaid && e.key === rel ? { reply: 'done.place', roles: { thing: plain(e.kind), number: e.n, key: rel, value: e.value } } : { reply: 'done.change', roles: { thing: plain(e.kind), number: e.n, key: String(e.key), value: e.value } }); // the key: said by the reply done.change.<key> when the language has one; a value that is missing is said by the direction of the request, or not said
     }
     const nothing = !d.added.length && !d.removed.length && !d.changed.length;
-    if (nothing && !tool.question && !outcome.ask && !outcome.refused && !(tool.ok && (tool.undo || tool.redo))) {
+    if (nothing && outcome.lengthStepped && tool.ok && tool.same && !tool.undo && !tool.redo) { // "longer" / "shorter" the tool could not carry out: said with the length it kept and why, never "that is what is there already"
+      const kept = (tool.calls ?? []).find((c) => c.wroteLength !== undefined)?.wroteLength, asked = Number(outcome.steps?.[0]?.args?.length), aboutArg = outcome.steps?.[0]?.args?.about, about = (request?.constraints ?? []).find((c) => c.on === 'about' && c.said && String(c.value) === String(aboutArg))?.said ?? aboutArg; // the topic in the user's words
+      if (kept !== undefined) facts.push({ reply: 'nothing.same.limit', roles: { ...(!unsayable(about) ? { about: plain(String(about)) } : {}), made: kept, unit: kept === 1 ? 'word' : 'words' }, code: 'same', ...(Number.isFinite(asked) && asked !== kept ? { short_of: { made: kept, asked } } : {}) });
+      else facts.push({ reply: 'nothing.same.length', roles: {}, code: 'same' });
+    } else if (nothing && !tool.question && !outcome.ask && !outcome.refused && !(tool.ok && (tool.undo || tool.redo))) {
       facts.push({ reply: 'why.nothing', roles: {} });
       if (tool.failed?.reply && tool.failed.reply !== 'why.nothing') facts.push(tool.failed.code === 'same' && tool.failed.roles?.value ? { reply: 'nothing.same.value', fallback: ['nothing.same'], roles: tool.failed.roles, code: 'same' } : { reply: tool.failed.reply, roles: tool.failed.roles ?? {}, code: tool.failed.code }); // said once; a value already there is said with its thing
       else if (outcome.already) facts.push({ reply: 'nothing.same.value', fallback: ['nothing.same'], roles: outcome.already, code: 'same' });
@@ -1876,7 +1886,8 @@ export function sayRequest(request, outcome = {}, opts = {}) {
   const sourceOf = (a) => (a.default ? 'default' : a.from);
   const stem = (k) => String(k).replace(/s$/, ''); // a list of kinds and a single kind are one fact
   const valuesOf = (a) => wordsOf(a.value).map((v) => plain(v));
-  const candidates = (tool && (!tool.ok || tool.same) ? [] : assumed).filter((a) => (a.from === undefined || sayFrom.has(sourceOf(a))) && !(a.key === 'target' && run?.whole) && !unsayable(a.value));
+  const revising = request?.revisedFrom !== undefined; // a revision does not repeat what the first turn said about the whole's own defaults (count, kinds, length): the user did not ask about them
+  const candidates = (tool && (!tool.ok || tool.same) ? [] : assumed).filter((a) => (a.from === undefined || sayFrom.has(sourceOf(a))) && !(a.key === 'target' && run?.whole) && !unsayable(a.value) && !(revising && ['count', 'kinds', 'length'].includes(a.key) && ['world', 'expect', 'sampled'].includes(sourceOf(a))));
   const stated = new Set(facts.filter((f) => /^done\./.test(f.reply)).flatMap((f) => [f.roles?.kind, f.roles?.thing, ...(f.kinds ?? [])].filter(Boolean).map((k) => plain(k)))); // what the result lines already say
   const planKinds = new Set((outcome.roles?.kinds ?? []).map((k) => plain(k)));
   const counted = facts.filter((f) => /^done\.(add|make)/.test(f.reply) && planKinds.has(f.roles?.kind)).reduce((n, f) => n + (f.roles.number ?? 0), 0) + facts.filter((f) => f.reply === 'done.whole').reduce((n, f) => n + f.numbers.reduce((x, y) => x + y, 0), 0);

@@ -2579,6 +2579,22 @@ Added with 0.165.0 (properties in `test/genre-parts.test.mjs`, example genres `G
 - A step ("the next nose", "another nose") with no other value to go to says so: `refused.no_other` ("The nose has no other
   variant."), never "To what value?"; with values it steps as before. A language world may say it in its own words.
 
+Added with 0.166.0 (properties in `test/genre-parts.test.mjs`):
+- `step.parts` is a source for a `std.tool.arg` (`from=step.parts`): the genre's parts, `[{ name, n, min, max, count, moves }]`, read
+  from the step.
+- The reply fact `done.parts` also carries `kinds` (the part names) and `numbers` (their counts), as `done.whole` does; a language
+  world pattern says each part with its own word. The `parts` role stays the English text for a language without them.
+- What the host's tool wrote: a primitive may return `{ parts: { greeting: 1, body: 1, closing: 1 } }` (or `[{ name, count }]`).
+  Each part written fewer times than the plan named gives a `short_of` fact (`roles: { made, asked, kind }`, field `part`), and
+  `done.parts` names the counts written. A tool that returns nothing of the kind is taken to have written what the plan named.
+
+- One rule for a said requirement that cannot be read or honoured: it is never silently dropped, and whether the rest runs depends
+  on whether what remains is still what was asked. Things said together ("a novel and a zorp": a determiner, a joining word, a
+  word no source reads) are independent things asked: the others are made and the unread one is named (`not_honoured`, code
+  `unknown_kind`). A part of one thing ("a tree with a zorp") or a word inside a clause stays a refusal. A statement before a
+  clause that begins with a verb the world knows ("I baked a cake, draw it") is what was not understood: `not_understood` names
+  that clause in the user's words ("I baked a cake"), never the known verb of the later clause, and nothing runs.
+
 Joined kinds at scale: the join map is built once per version of the join rows and the sources and shared by every fork
 and mirror; the reader's lexicon is kept per version of the world, its language and its catalog, so a world that joins
 thousands of rows reads them from that index on every turn (the host need not pass the kinds a turn says). A stand-in kind

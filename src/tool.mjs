@@ -401,7 +401,7 @@ function execute(steps, ctx) {
     if (typeof fn !== 'function') return { ok: false, ids, calls, assumed, translated, failed: { code: 'no_primitive', reply: 'refused.not_allowed', roles: { kind: g.kind ?? g.bind.act }, op: g.bind.op } };
     let r;
     try { r = fn(filled.args); } catch (e) { return { ok: false, ids, calls, assumed, translated, failed: { code: 'tool_error', reply: 'why.nothing', roles: {}, op: g.bind.op, detail: String(e?.message ?? e) } }; }
-    calls.push({ op: g.bind.op, args: filled.args, steps: g.idx });
+    calls.push({ op: g.bind.op, args: filled.args, steps: g.idx, ...(wrote(r) ? { wrote: wrote(r) } : {}) });
     if (r === false || (r && typeof r === 'object' && r.ok === false)) return { ok: false, ids, calls, assumed, translated, failed: { code: r?.code ?? 'tool_refused', reply: r?.reply ?? 'why.nothing', roles: r?.roles ?? {}, op: g.bind.op } };
     const viewA = ctx.look(), d = stateDiff(viewB, viewA);
     const effect = effectUnmet(g.bind, filled.args, g.kind, d, viewA);
@@ -411,6 +411,15 @@ function execute(steps, ctx) {
     g.idx.forEach((i, k) => { ids[i] = made[k] ?? (steps[i].args?.thing !== undefined ? strip(steps[i].args.thing) : null); });
   }
   return { ok: true, ids, calls, assumed, translated };
+}
+
+/** What a primitive says it wrote of a whole's parts: `{ parts: { name: count } }` or `{ parts: [{ name, count }] }` -> `{ name: count }`, else null. */
+function wrote(r) {
+  const p = r && typeof r === 'object' ? r.parts : null;
+  if (!p || typeof p !== 'object') return null;
+  const e = Array.isArray(p) ? p.map((x) => [x?.name, x?.count]) : Object.entries(p);
+  const out = Object.fromEntries(e.filter(([k, n]) => k !== undefined && Number.isFinite(Number(n))).map(([k, n]) => [String(k), Number(n)]));
+  return Object.keys(out).length ? out : null;
 }
 
 const SAID = new Set(['said']);
@@ -429,7 +438,7 @@ function sourceValue(src, name, kind, steps1, args, resolveV, ctx) {
   if (head === 'step') {
     if (path === 'count') return { value: steps1.length, ...provenance('count', ctx), plan: true };
     if (path === 'things') return { value: steps1.map((s) => resolveV(s.args?.thing)).filter((x) => x !== undefined && x !== null), from: 'said' };
-    const v = resolveV(steps1[0].args?.[path]);
+    const v = resolveV(steps1[0].args?.[path] ?? steps1[0][path]); // a value of the step's own (`parts` of a genre's whole) is read from the step as well
     return v === undefined ? null : { value: v, ...provenance(path, ctx), plan: true }; // the plan's own value: its assumption is the plan's
   }
   if (head === 'request') {

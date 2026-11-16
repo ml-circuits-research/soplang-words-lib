@@ -5948,3 +5948,7 @@ Gates: npm test 487 pass, 0 fail; pilot identical; psys2=0; scan clean; tsc ok.
 
 ## 2026-11-16 0.165.0 (Q102)
 - Joined genres carry `plan.parts` from k.genres (named, scaled by short/long, `done.parts`); topic/title said for every text; short/long scale parts; `refused.no_other` for a step with no further value. Tests: `test/genre-parts.test.mjs` (4). Q102 (1)(4) not mine (spell guard / word list).
+
+## 2026-11-16 0.166.0 (Q102 follow-ups)
+- `step.parts` read from the step; `done.parts` carries `kinds`/`numbers`; a primitive's returned `parts` written fewer than planned gives `short_of` per part. Test in `test/genre-parts.test.mjs`; `npm test` below.
+- Also: coordinated unread kind named and the rest made (`unknown_kind`); statement clause named whole in `not_understood` (reviewer 15:25). Test in genre-parts.test.mjs.

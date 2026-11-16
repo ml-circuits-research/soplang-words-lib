@@ -534,6 +534,22 @@ export function readRequest(world, text, ctx = {}) {
   if (freshKind && !act && !statement && !refers?.startsWith?.('last') && !(/\?\s*$/.test(String(text ?? '')) || L.wh.has(ws[0]))) { act = L.freshAct; actFrom0 = 'fresh'; } // "a new page": no verb, a new thing: it is made
   const unreadAt = [];
   for (let i = 0; i < ws.length; i++) if (!used[i] && (!L.stop.has(ws[i]) || i === verbAt) && !/^[-,]$/.test(ws[i])) unreadAt.push({ text: ws[i], n: i + 1 }); // bounded: the tokens
+  // a statement, then a clause that begins with a verb the world knows ("I baked a cake, draw it"): the statement's clause is what was not understood, never the word a later clause reads as its act
+  let unclear = null;
+  const clauseOf = (i) => ws.slice(0, i).filter((t) => t === ',').length;
+  if (statement) {
+    const later = (u) => clauseOf(u.n - 1) > 0 && !!longestAt(ws, u.n - 1, X.verbs, 3) && ws.slice(0, u.n - 1).lastIndexOf(',') >= 0 && ws.slice(ws.slice(0, u.n - 1).lastIndexOf(',') + 1, u.n - 1).every((t) => L.stop.has(t));
+    const verbs = unreadAt.filter(later), others = unreadAt.filter((u) => !later(u));
+    if (verbs.length && others.length) {
+      unclear = [...new Set(others.map((u) => clauseOf(u.n - 1)))].map((c) => String(text ?? '').split(',')[c]?.trim().replace(/[.!?]+$/, '') ?? ''); // the user's own words
+      unreadAt.splice(0, unreadAt.length, ...others);
+    }
+  }
+  // a word no source reads, standing as one of several things said together ("a novel and a zorp"): a thing of its own, not a part of another
+  for (const u of unreadAt) {
+    const i = u.n - 1, d = i - 1, j = i - 2; // "<read kind> and a <unread>": a determiner, a joining word, a word read
+    if (d >= 1 && L.dets.has(ws[d]) && L.joiners.has(ws[j]) && ws[j] !== ',' && j >= 1 && used[j - 1] && constraints.some((c) => c.on === 'kind') && !unclear && (i === ws.length - 1 || ws[i + 1] === ',' || L.stop.has(ws[i + 1]))) u.coordinate = true;
+  }
   const question = /\?\s*$/.test(String(text ?? '')) || L.wh.has(ws[0]); // a turn that asks: never an act's fragment
   // "make the puppet an emoji": a word for the world or a kind, then an indefinite determiner and only unread words up
   // to the end: what that thing should become, in words this world does not have (the planner says what it can be)
@@ -543,7 +559,7 @@ export function readRequest(world, text, ctx = {}) {
     if (!L.indefinite.has(ws[end] ?? '') || !unreadAt.every((u) => u.n - 1 > end)) continue;
     if (ws.slice(end + 1).every((t, k) => !used[end + 1 + k] && t !== ',' && !L.joiners.has(t))) predicate = { of: m.kind, words: m.words, value: words(end, ws.length - end), ...(m.world ? { world: true } : {}) };
   }
-  const req = { act, ...(actFrom0 ? { actFrom: actFrom0 } : {}), ...(actValue !== undefined ? { actValue } : {}), ...(recipient ? { recipient } : {}), ...(predicate ? { predicate } : {}), ...(freshKind ? { fresh: true } : {}), mode, target, refers, ...(refersAt !== null ? { refersAt } : {}), ...(named.length ? { named } : {}), mentions, ...(question ? { question: true } : {}), ...(statement ? { statement: true } : {}), text: String(text ?? ''), constraints, reactions, unread: [...new Set(unreadAt.map((u) => u.text))], unreadAt, used: ws.filter((_, i) => used[i]), ...(spell ? { spell: { repairs: spell.repairs, asks: spell.asks } } : {}) };
+  const req = { act, ...(actFrom0 ? { actFrom: actFrom0 } : {}), ...(actValue !== undefined ? { actValue } : {}), ...(recipient ? { recipient } : {}), ...(predicate ? { predicate } : {}), ...(freshKind ? { fresh: true } : {}), mode, target, refers, ...(refersAt !== null ? { refersAt } : {}), ...(named.length ? { named } : {}), mentions, ...(question ? { question: true } : {}), ...(statement ? { statement: true } : {}), text: String(text ?? ''), constraints, reactions, unread: [...new Set(unreadAt.map((u) => u.text))], unreadAt, ...(unclear ? { unclear } : {}), used: ws.filter((_, i) => used[i]), ...(spell ? { spell: { repairs: spell.repairs, asks: spell.asks } } : {}) };
   return withFacts(req);
 }
 
@@ -577,7 +593,8 @@ function withFacts(req) {
  * reaction. A turn that has one executes nothing and says what was not understood.
  */
 export function unreadThatMatters(request) {
-  const at = request?.unreadAt ?? (request?.unread ?? []).map((text) => ({ text }));
+  if (request?.unclear?.length) return request.unclear; // the clauses of statements, said whole
+  const at = (request?.unreadAt ?? (request?.unread ?? []).map((text) => ({ text }))).filter((x) => !x.coordinate);
   if (!at.length) return [];
   return [...new Set(at.map((x) => x.text))];
 }
@@ -1575,6 +1592,8 @@ export function planRequest(live, request, opts = {}) {
   const plan = planRequestOnce(live, request, opts);
   // the act read was turned into another act (a put of a thing there into a change of it) and a said constraint is not
   // taken by it ("put a heart on the chest": the place stays unread): nothing runs, what was not taken is said
+  const coord = [...new Set((request.unreadAt ?? []).filter((u) => u.coordinate).map((u) => u.text))];
+  if (coord.length && !plan.unread?.length && plan.ok) plan.notHonoured = [...(plan.notHonoured ?? []), ...coord.map((w) => ({ on: 'kind', words: w, why: `there is no ${w} here`, code: 'unknown_kind' }))]; // what remains is still what was asked: made, the other said
   if (plan.ok && request.act && plan.act && plan.act !== request.act && (plan.notHonoured ?? []).some((n) => n.code === 'not_declared')) return { ...plan, ok: false, turned: { from: request.act, to: plan.act } };
   return plan;
 }
@@ -1837,7 +1856,12 @@ export function sayRequest(request, outcome = {}, opts = {}) {
     const saidAs = (key, v) => plain(String((request?.constraints ?? []).find((c) => c.on === key && c.said && String(c.value) === String(v))?.said ?? v)); // the user's own words when the value was said
     if (ranOk && !outcome.reference && !outcome.revised && outcome.target && (run?.whole || tool?.result?.whole || outcome.parts?.length) && w0?.args?.kind === outcome.target)
       for (const [key, reply, role] of [['about', 'done.about', 'topic'], ['title', 'done.title', 'title']]) if (!unsayable(w0.args[key]) && !facts.some((f) => f.roles?.key === key && /^done\.change/.test(f.reply))) facts.push({ reply, roles: { whole: plain(outcome.target), [role]: saidAs(key, w0.args[key]) } });
-    if (ranOk && outcome.parts?.length && !outcome.reference && !outcome.revised && w0?.args?.kind === outcome.target) facts.push({ reply: 'done.parts', roles: { whole: plain(outcome.target), parts: partsText(outcome.parts.filter((x) => x.count > 0).map((x) => [x.name, x.count])) } }); // the genre's own parts, by name
+    if (ranOk && outcome.parts?.length && !outcome.reference && !outcome.revised && w0?.args?.kind === outcome.target) { // the genre's own parts, by name; the counts the tool wrote when it says so (fewer than named: `short_of`, once per part)
+      const wrote = (tool?.calls ?? []).find((c) => c.wrote)?.wrote;
+      const shown = outcome.parts.map((x) => [x.name, wrote && wrote[x.name] !== undefined ? Math.min(x.count, wrote[x.name]) : x.count]).filter(([, n]) => n > 0);
+      facts.push({ reply: 'done.parts', roles: { whole: plain(outcome.target), parts: partsText(shown) }, kinds: shown.map(([k]) => plain(k)), numbers: shown.map(([, n]) => n) });
+      if (wrote) for (const x of outcome.parts) if (wrote[x.name] !== undefined && wrote[x.name] < x.count) facts.push({ reply: 'short_of', roles: { made: wrote[x.name], asked: x.count, kind: pluralIn(o.language, lang, plain(x.name)) }, part: plain(x.name) });
+    }
     if (ranOk) for (const sh of [].concat(outcome.short ?? [])) if (sh && sh.made < sh.asked) facts.push({ reply: 'short_of', roles: { made: sh.made, asked: sh.asked, ...(sh.unit ? { unit: String(sh.unit) } : { kind: pluralIn(o.language, lang, plain(sh.kind)) }) } });
   }
   if (outcome.unread?.length && tool?.failed?.code !== 'unread') facts.push({ reply: 'not_understood', roles: { words: outcome.unread.join(', ') } }); // a part that matters was not read: said, nothing was done
@@ -1868,7 +1892,7 @@ export function sayRequest(request, outcome = {}, opts = {}) {
   for (const { a } of chosen) facts.push({ reply: 'assumed', roles: { key: a.key, value: String(a.value) }, from: a.from });
   for (const nh of outcome.notHonoured ?? []) facts.push({ reply: 'not_honoured', roles: { words: nh.words, why: nh.why }, code: nh.code });
   for (const c of outcome.cannot ?? []) facts.push({ reply: 'not_honoured', roles: { words: c.words ?? request?.text ?? '', why: c.why }, code: 'cannot' });
-  if (request?.unread?.length && !outcome.unread?.length && !outcome.refused && (run || outcome.revised || (tool && !tool.question && tool.failed?.code !== 'unread'))) facts.push({ reply: 'unread', roles: { words: request.unread.map((w) => `"${w}"`).join(', ') } });
+  if (request?.unread?.length && !request.unclear && (request.unreadAt ?? []).some((u) => !u.coordinate) && !outcome.unread?.length && !outcome.refused && (run || outcome.revised || (tool && !tool.question && tool.failed?.code !== 'unread'))) facts.push({ reply: 'unread', roles: { words: request.unread.map((w) => `"${w}"`).join(', ') } });
   for (let i = facts.length - 1; i >= 0; i--) if (Object.values(facts[i].roles ?? {}).some(unsayable)) facts.splice(i, 1); // a reply is never said with a missing value or an empty slot
   const missing = [];
   const texts = o.language ? facts.map((f) => {

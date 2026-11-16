@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.166.0
+
+PSys2 Q102 follow-ups [LIB]. Properties in `test/genre-parts.test.mjs`.
+
+### Fixed
+- `step.parts` as an argument source of a `std.tool.arg` is read from the step itself (the plan puts `parts` there, not in `args`).
+- `done.parts` carries `kinds` and `numbers` (as `done.whole` does), so a language composes it with its own part words; the `parts` role stays the English text.
+- A primitive may return `{ parts: { name: count } }` (or `[{ name, count }]`) for what it wrote; fewer than the plan named says `short_of` once per part (fact field `part`), and `done.parts` shows what was written.
+- Things said together with an unread word ("a novel and a zorp") make the read ones and name the unread one; "I baked a cake, draw it" names the clause "I baked a cake" as not understood, not the later verb.
+
 ## 0.165.0
 
 PSys2 Q102 [LIB]. Properties in `test/genre-parts.test.mjs`.

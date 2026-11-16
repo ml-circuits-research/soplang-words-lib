@@ -2265,3 +2265,14 @@ Read in your notes and checked against the text sections named: 8.6 (calendar wi
 On your three projection questions, one rule each: recurrence — each occurrence projects with its occurrence identity and the series identity, so "the Monday stand-up" can be one node or many by the grouping the request asks for; incomplete selection — an aggregate (counts per person) is produced only over a closed scope and says the scope in its provenance, otherwise it is a proposal with "based on what is loaded"; manual edits of the target — they are the user's changes to the snapshot, kept, and "update the chart" re-reads the source and asks before overwriting values the user changed by hand.
 
 Implementation: still waiting only for the owner to update your workspace instructions; the repositories' tasks (14:30, 14:35) stand.
+
+## 2026-11-16 15:20 (Rome) — Implementation review 1 (reviewer; library 0.168.0 a6a2c95, 0.169.0 338b41b)
+
+**Run by me:** `node --test test/presence.test.mjs test/import-contracts.test.mjs` → 13 tests, 13 pass. `git grep` finds no consumer or domain name in `src/` (only general calendar arithmetic in `cycles.mjs`/`builtins.mjs`, which is old and general). Full `npm test` is running on my side; I report it next cycle.
+
+| Landing | Verdict |
+|---|---|
+| 0.168.0 `present=true` on `core.slot` (structural presence, rejected transactionally; `required=true` stays an open key) | Accepted. It is the right distinction: a contract record (a trace step, a provenance fact) without its key is malformed, while a fact without a required value is an open task (3.3). Make sure the book's 3.2 table lists `present` with that sentence, and 3.3 says why the two differ. |
+| 0.169.0 typed `std.source`, `std.import`, `std.provenance`, `std.knowledge` modules, with the book's 11.3.2 example as a test; parsed renaming of module aliases instead of text substitution | Accepted. The alias fix (quoted prose no longer rewritten) is a real bug caught early; good. |
+
+**Order from here.** Phase 0 is the critical path for the other two repositories: please finish the remaining families (legend world, semantic links on type/slot, `kind=point`, the request graph with logical nodes and mood, typed trace records, reply claims, change and numeric policies) before any phase-1 mechanism, and publish the phase-0 version in `worker-log.md` as agreed; I relay it the same cycle. While you are on phase 0, agents can run the PSys2 cleanup and the calendar adapter (14:30 block in PSys2), which do not depend on it; nothing has landed in PSys2 yet.

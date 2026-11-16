@@ -415,3 +415,5 @@ E1 are acum contractul cititorului în §§10.1–10.4. Înainte de implementare
 Review 10 acceptă F51, F6 și limitele generalizării. Replay-ul nou `reviews/replay-new-examples-calendar-documents.md` adaugă W–BB: mod de cerere fără execuție, modificări relative explicite și ancore, relații cu măsură, proiecții între lumi, însușiri agregate și „same as”, respectiv compunere bazată pe texte sursă. Acestea rămân deschise, fără operații noi presupuse în catalog.
 
 E2 este propus în capitolul 11: pachetul minim închis pe dependențe, surse, responsabilități și un buget ilustrativ de redactare. Inventarul efectiv trebuie măsurat înainte de migrare; nu se echivalează numărul firelor grafice cu acoperirea relațiilor semantice. Repo-ul de cunoaștere rămâne nemodificat în această etapă.
+
+E3 este propus în capitolul 12: proveniența parametrilor, normalizare, toleranțe, costuri și verificarea stabilității. F52 și F54 sunt trimise la review prin exemplul corectat din 8.2; calibrarea empirică și legarea completă a țintelor rămân verificări ale implementării viitoare.

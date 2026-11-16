@@ -1,6 +1,6 @@
 # SOP Worlds: teoria
 
-*Versiunea 31, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*Versiunea 32, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
 
 ---
 
@@ -1434,7 +1434,7 @@ Următoarea formă este propusă pentru mesajul „draw three big red fish in th
 
 `operator` selectează verificarea cerinței, nu o unealtă: egalitate de cantitate, calcul de grad, apartenență la regiune sau relație. `polarity=positive` cere satisfacerea ei; `negative` cere ca predicatul să fie fals. `character=requirement` exprimă obligația, `preference` o preferință care poate ceda cerințelor, iar `assumption` o alegere a aplicației pentru o informație omisă. Negarea nu slăbește obligația: „no circles” poate fi o cerință negativă tare a cererii. O presupunere nu inventează un interval în mesaj: ea indică declarația sau pasul de justificare care a propus-o.
 
-Schema trebuie să verifice variantele operatorului. `relation` cere `relation` și `goal`; `eq`, `less.equal`, `degree` și `region` cer o valoare de tipul acceptat de concept; `less.equal` este admis numai pe valori ordonabile, în unități compatibile. O cheie `goal` rămasă pe o egalitate numerică este o eroare de schemă a cererii. Rezolvitorul păstrează separat descrierea țintei, identitățile găsite și versiunea stării citite. Această legare permite verificarea fiecărui rezultat și explicarea unei ambiguități fără modificarea sensului inițial al cererii.
+Schema trebuie să verifice variantele operatorului. `relation` cere `relation` și `goal`; `eq`, `less.equal`, `greater.equal`, `degree` și `region` cer o valoare de tipul acceptat de concept; operatorii `less.equal` și `greater.equal` sunt admiși numai pe valori ordonabile, în unități compatibile. O cheie `goal` rămasă pe o egalitate numerică este o eroare de schemă a cererii. Rezolvitorul păstrează separat descrierea țintei, identitățile găsite și versiunea stării citite. Această legare permite verificarea fiecărui rezultat și explicarea unei ambiguități fără modificarea sensului inițial al cererii.
 
 Să urmeze mesajul „in the sky”. Situarea din secțiunea 6.4 îl leagă de locul grupului de pești din ultima cerere. În versiunea nouă a acelei cereri, se adaugă sursa și ținta cerute de corectare, iar `c.place` este înlocuit, păstrându-și identitatea:
 
@@ -2166,16 +2166,22 @@ Următoarele declarații arată contractul propus pentru spațiu și două utili
 @sp.clearance w.legend.space name=clearance form=axes
 @ax.clearance w.legend.axis of=clearance name=distance min=0 scale=ratio normalisation=10
 @s.observed.value core.slot of=gapObservation key=value kind=number min=0
-@s.candidate.gap core.slot of=layoutCandidate key=gap kind=number min=12
+@s.candidate.gap core.slot of=layoutCandidate key=gap kind=number min=0
+@source.gap std.request.source text="at least 12 page units apart"
+@request.gap std.request act=place source=$source.gap
+@target.gap std.request.target request=$request.gap mode=existing kind=gapObservation
+@constraint.gap std.request.constraint request=$request.gap target=$target.gap concept=clearance operator=greater.equal value=12 unit=page.unit scope=each polarity=positive character=requirement source=$source.gap
 ```
 
 Primul fir introduce numele spațiului. Al doilea definește axa, limita zero și scara numerică folosită la comparație. Lipsa lui `max` înseamnă că acest exemplu nu fixează un plafon al distanței. Unitatea de măsură a axei este unitatea paginii, declarată prin mecanismul `w.legend.unit` din secțiunea 4.8.1; nici `normalisation=10`, nici numele `distance` nu definesc singure acea unitate.
 
-Al treilea fir permite înregistrarea unei distanțe observate de 8. Al patrulea permite candidatului numai distanțe de cel puțin 12. Limita 12 din acest exemplu provine din cerere; într-o implementare generală, ea se atașează constrângerii acelei cereri sau copiei de validare, nu rescrie permanent schema tuturor diagramelor. Observația și candidatul nu sunt două adevăruri despre aceeași stare: primul descrie ce am citit, al doilea ce propunem să obținem.
+Al treilea și al patrulea fir permit orice distanță nenegativă, inclusiv observația 8 și candidatul 14. Firele următoare păstrează limita 12 pe cerere, prin operatorul ordonat `greater.equal`. Ținta se leagă la măsurătorile perechilor de noduri vizate de cerere; legarea păstrează identitățile perechilor și versiunea stării, nu toate măsurătorile din proiect. Pe un fork al diagramei, verificatorul recalculează fiecare distanță și compară valoarea cu limita cererii: 8 nu trece, 14 trece. Schema candidatului rămâne neschimbată pentru o cerere ulterioară cu altă limită. Observația și candidatul descriu versiuni diferite ale stării; valoarea calculată pe fork nu este deja o observație a efectului real.
 
 ### 8.2.1 Normalizarea unei axe fără plafon
 
 Pe o axă cu limite finite distincte, secțiunea 4.4.1 folosește diferența împărțită la `max−min`. Aici nu există `max`, deci acea formulă nu poate fi aplicată. Propunerea este o lungime de normalizare pozitivă, declarată pe axă prin `normalisation`, în aceeași unitate cu valorile. Pentru valori `a` și `b`, diferența normalizată este `abs(a−b)/normalisation`. Dacă sunt declarate atât limite finite, cât și `normalisation`, scara explicită are prioritate; zero și valorile negative sunt refuzate la încărcarea schemei.
+
+Autorul spațiului alege lungimea de normalizare dintr-un reper declarat, de exemplu lățimea mediană 10 a obiectelor unui set de referință fixat. Cu numitorul 1, o diferență brută de 4 devine 4; cu 1000 devine 0,004. Aceeași toleranță ar produce alegeri radical diferite. Secțiunea 12.2 explică alegerea și verificarea scării; valoarea 10 de aici este o ipoteză ilustrativă, nu un prag ales pentru a face cerința să treacă.
 
 Această cheie nu este `scale`. `scale=ratio` stabilește dacă un pas comparativ multiplică valoarea; `normalisation=10` stabilește numitorul distanței dintre valori. Niciuna nu este limita minimă cerută. În acest spațiu, distanțele normalizate pot depăși 1 și nu sunt trunchiate: distanța dintre 0 și 25 este 2,5. Schimbarea scării schimbă comparațiile și toleranțele, deci versiunea axei face parte din justificare.
 
@@ -2203,7 +2209,7 @@ Funcția geometrică primește date deja observate; nu citește singură ecranul
 @r.gap core.rule when=$p.a when=$p.b if=$c.distinct with=$c.gap then=$t.gap
 ```
 
-`f.gap` declară numele și puritatea funcției; următoarele două fire declară argumentele, în ordine. Autorul adaptorului geometric trebuie să furnizeze implementarea conformă. Cele două pattern-uri leagă dreptunghiurile unor noduri din aceeași versiune observată. `c.distinct` exclude compararea unui nod cu el însuși, iar `c.gap` pune rezultatul în `?gap`. Șablonul `t.gap` păstrează valoarea și nodurile măsurate. Pentru simplitate, regula produce ambele perechi ordonate; implementarea poate evita duplicarea numai păstrând simetria rezultatului. Sloturile `bounds`, `first` și `second` trebuie declarate în schema exemplului; fragmentul explică fluxul calculului, nu este un domeniu complet de încărcat singur.
+`f.gap` declară numele și puritatea funcției; următoarele două fire declară argumentele, în ordine. Autorul adaptorului geometric trebuie să furnizeze implementarea conformă. În API-ul actual, implementarea primește lista tokenurilor argumentelor și lumea; un token `json` se decodează înainte de măsurare. Calculul poate fi evaluat înaintea filtrului `neq`, deci funcția trebuie să accepte și două dreptunghiuri identice și să întoarcă distanța zero. Filtrul elimină apoi observația despre aceeași identitate. Cele două pattern-uri leagă dreptunghiurile unor noduri din aceeași versiune observată. `c.distinct` exclude compararea unui nod cu el însuși, iar `c.gap` pune rezultatul în `?gap`. Șablonul `t.gap` păstrează valoarea și nodurile măsurate. Pentru simplitate, regula produce ambele perechi ordonate; implementarea poate evita duplicarea numai păstrând simetria rezultatului. Sloturile `bounds`, `first` și `second` trebuie declarate în schema exemplului; fragmentul explică fluxul calculului, nu este un domeniu complet de încărcat singur.
 
 Pentru dreptunghiurile A și B, calculăm `dx = max(0, A.left−B.right, B.left−A.right)` și analog `dy` pentru marginile verticale. Rezultatul este `sqrt(dx²+dy²)`. Dreptunghiurile care se ating sau se suprapun au distanța zero. Dacă lipsesc margini sau ele sunt inconsistente, măsurarea nu este disponibilă; nu se întoarce zero ca substitut pentru date lipsă.
 
@@ -2297,7 +2303,6 @@ O diagramă poate folosi apoi aceleași identități de ședințe pentru a arăt
 
 Acest capitol descrie mecanismele și limitele lor. Mai trebuie scrise schemele complete ale declarațiilor noi, reprezentarea structurală a condițiilor și protocolul verificabil de completitudine. Acestea sunt livrabile de proiectare, nu detalii pe care implementatorul le poate inventa separat în fiecare domeniu. Reviewerul trebuie să încerce să găsească o tranziție din exemplu care nu este justificată de date, o regulă sau un contract explicit.
 
-# Anexe
 
 # 9. API-ul bibliotecii: construirea, interogarea și modificarea unei lumi
 
@@ -2716,12 +2721,12 @@ Verificarea semantică are loc în etape: tipurile și rolurile trebuie să fie 
 
 ## 10.4 Acoperire, extindere și propuneri de model
 
-Cititorul are la fiecare versiune un inventar verificabil de construcții și vocabular. Inventarul descrie starea implementării, nu fixează un plafon al proiectului. O construcție nouă se tratează prin date lexicale, o regulă gramaticală și de compunere, o extensie a descrierii sau un propunător în vocabularul general, după cauza lipsurilor. Pentru mesajul concret încă nerezolvat se localizează lipsa și se cere informația potrivită; cazul intră în registrul de lucru cu interpretarea așteptată și mecanismul de generalizat. O schemă validă rămâne o verificare necesară, nu dovada suficientă a fidelității față de mesaj.
+Cititorul are la fiecare versiune un inventar verificabil de construcții și vocabular. Inventarul descrie starea implementării, nu fixează un plafon al proiectului. O construcție nouă se tratează prin date lexicale, o regulă gramaticală și de compunere, o extensie a descrierii sau un propunător în vocabularul general, după cauza lipsurilor. Pentru mesajul concret încă nerezolvat se localizează lipsa și se cere informația potrivită; cazul intră în registrul de lucru cu fragmentul, construcția apropiată care aproape s-a potrivit, interpretarea așteptată și mecanismul de generalizat. Registrul conduce la reguli formulate prin categorii, verificate pe perechi minimale și pe alte contexte, nu la reguli pentru o singură propoziție. O schemă validă rămâne o verificare necesară, nu dovada suficientă a fidelității față de mesaj.
 
 | Rezultatul citirii | Răspunsul și continuarea permise |
 |---|---|
 | Cuvânt necunoscut într-un rol necesar | Numește cuvântul și rolul așteptat; oferă numai alternative susținute de vocabular sau context. |
-| Cuvinte cunoscute, construcție neacoperită | Arată fragmentul pe care nu l-a putut lega și cere o formulare mai simplă; nu execută subfragmente alese tacit. |
+| Cuvinte cunoscute, construcție neacoperită | Arată fragmentul nelegat și ce a înțeles în jurul lui, oferă citirile susținute de construcțiile apropiate și înregistrează cazul; nu execută subfragmente alese tacit. |
 | Mai multe descrieri cu efecte diferite | Formulează întrebarea care separă interpretările și păstrează candidații până la răspuns. |
 | Referent sau valoare lipsă | Cere identitatea sau valoarea respectivă, păstrând celelalte cerințe deja înțelese. |
 | Cerere înțeleasă, dar nerealizabilă | Explică restricția sau capabilitatea lipsă; o alternativă care schimbă o cerință fermă rămâne propunere. |
@@ -2825,6 +2830,94 @@ Totalul acestui calcul este 822 de fire, înainte de sloturile metamodelului, co
 O bază existentă poate reutiliza mult din acest conținut, dar reutilizarea se acceptă semantic, nu prin potrivirea numelor. Conversia unei clase precum `small` în regiune numerică cere repere, unități și o justificare; nu este suficient ca un importator să înlocuiască eticheta cu o cifră. Capitolul despre parametrii numerici trebuie să stabilească această justificare separat.
 
 Măsurarea de acoperire urmărește pentru fiecare familie de probleme dacă lipsa apare la recunoaștere, descriere, referință, cunoaștere, realizare sau verificare. Se păstrează și rezultatele corecte de tip clarificare/refuz. Adăugarea unui catalog de nume poate îmbunătăți recunoașterea fără să câștige nicio execuție; raportul trebuie să arate acest lucru. Un număr de fire sau de megabytes nu poate ține locul acestei măsurători.
+
+# 12. Parametrii numerici: origine, calibrare și stabilitatea deciziilor
+
+Distanțele și costurile fac alegerile comparabile numai dacă numerele au o semnificație declarată. O pondere aleasă pentru a obține răspunsul dorit într-un singur exemplu poate ascunde aceeași regulă particulară pe care voiam să o eliminăm din program. Scopul acestui capitol este să arate cine stabilește un număr, la ce nivel se aplică și prin ce probe se verifică efectul lui. Parametrii sunt date versionate ale proiectului, nu constante fără sursă.
+
+## 12.1 Numere cu roluri diferite
+
+Înainte de a calcula, sistemul clasifică sursa și rolul valorii. Numărul măsurat descrie starea; limita cerută definește rezultatul dorit; normalizarea definește scara comparației. Ele pot apărea în aceeași formulă fără să devină interschimbabile. În particular, schimbarea unei ponderi de optimizare nu poate modifica o limită exactă a cererii.
+
+| Categoria | Unde se declară și de unde vine |
+|---|---|
+| Măsurare | Pe observație, cu unitate, reper, procedură și versiunea stării; exemplu: distanța efectivă dintre contururi. |
+| Cerință numerică | Pe cererea și ținta ei, cu sursa în mesaj; exemplu: cel puțin o anumită distanță, nu o limită permanentă pentru toate obiectele. |
+| Conversie de unități | În definiția unității și transformării; schimbarea reprezentării nu trebuie să schimbe rezultatul fizic. |
+| Normalizare | Pe axa sau metrica spațiului, cu populația ori convenția geometrică de referință; permite compararea unor diferențe. |
+| Toleranță | Pe politica de aproximare aplicabilă și, când este cazul, pe cerere; exprimă abaterea permisă, nu probabilitatea că rezultatul este adevărat. |
+| Pondere de cost | Pe obiectivul declarat; exprimă o preferință între candidați deja valizi. |
+| Pas comparativ | Pe axă și tipul scării; stabilește schimbarea implicită pentru un comparativ fără cantitate explicită. |
+| Valoare învățată | În instanță sau profilul declarat, cu episodul și contextul; nu modifică automat politica tuturor utilizatorilor. |
+
+Un număr se declară o singură dată la cel mai general nivel unde are același sens. Reutilizarea nu cere ca toate domeniile să aibă aceeași valoare: un pas de timp și un pas de poziție au unități și efecte diferite. O particularizare numește politica pe care o înlocuiește și contextul ei; nu copiază o constantă în fiecare regulă. Cerința explicită rămâne separată și are prioritate în problema curentă.
+
+## 12.2 Stabilirea scării unei distanțe
+
+Pentru o axă liniară, diferența normalizată este diferența brută împărțită la o lungime pozitivă de referință. Dacă axa are limite finite care definesc domeniul de comparație, lungimea poate fi amplitudinea lui. Dacă nu are un plafon semnificativ, autorul spațiului declară o mărime tipică, rezultată dintr-o convenție geometrică sau dintr-un eșantion de referință. Eșantionul se fixează înainte de verificarea cazurilor țintă; nu se schimbă după fiecare mesaj pentru a-l face să treacă.
+
+Să presupunem că o pagină folosește obiecte de referință cu lățimea mediană de 10 unități. Autorul spațiului poate declara normalizarea 10 pentru a exprima diferențele în raport cu această scară geometrică. Aceasta este o ipoteză ilustrativă explicită, nu o valoare universală pentru desen. Regula de alegere este „lățimea mediană a obiectelor din setul de referință declarat”, iar setul și versiunea lui sunt păstrate. Dacă mediana este zero sau setul lipsește, calculul nu inventează numitorul: se definește reperul lipsă înainte de activarea politicii.
+
+| Normalizare pentru aceeași diferență brută de 4 | Distanță și efect asupra unei toleranțe de 0,5 |
+|---|---|
+| 1 | Distanța este 4; diferența depășește toleranța. |
+| 10 | Distanța este 0,4; diferența este în toleranță. |
+| 1000 | Distanța este 0,004; diferențe fizice mult mai mari ar putea fi acceptate sub aceeași toleranță. |
+
+Tabelul arată de ce normalizarea și toleranța se revizuiesc împreună. Numitorul nu este doar un artificiu pentru a obține numere mici. Într-o cerere de tip „cel puțin 12”, însă, candidatul cu distanța 8 încalcă limita indiferent de normalizare: toleranța de selecție nu relaxează automat cerința exactă. Pentru conversia în altă unitate, atât diferența, cât și normalizarea se convertesc; raportul trebuie să rămână neschimbat.
+
+Pe un graf de feluri, o muchie de specializare poate avea un cost inițial uniform numai ca politică explicită. Numărul de muchii depinde de felul în care a fost redactată taxonomia: introducerea unui nod intermediar nu trebuie să facă două concepte semantic mai îndepărtate fără o decizie. O migrare poate conserva costul total al drumului prin împărțirea costului vechi între muchiile noi, ori poate recalibra metrica și reverifica selecțiile afectate. Distanța grafică nu înlocuiește filtrele de identitate sau proveniență.
+
+## 12.3 Toleranțe și pași comparativi
+
+Toleranța se stabilește pentru o familie de substituții care păstrează intenția. Se pornește de la perechi de rezultate judecate ca acceptabile sau neacceptabile în contexte declarate, nu de la dorința de a executa cât mai multe comenzi. Se verifică separat cererile exacte, cele regionale și cele comparative. Pentru o valoare cerută exact, permisiunea de aproximare este absentă chiar dacă două valori sunt foarte apropiate numeric.
+
+Un pas comparativ este alegerea implicită când omul spune numai „mai mare” ori „mai târziu”. Pe o axă de raport poate fi multiplicativ; pe una de interval este o deplasare în unități. Factorul ilustrativ 1,25 din secțiunea 4.5.1 este o ipoteză de calibrare: trebuie evaluată prin ajustările necesare, depășiri și stabilitatea rezultatului, nu păstrată doar fiindcă a funcționat într-un exemplu. O cantitate explicită, precum „by 15 minutes”, înlocuiește pasul implicit; o mărime de interval cere și ancora păstrată, care trebuie declarată în contractul schimbării.
+
+| Situația verificată | Ce trebuie să rămână adevărat |
+|---|---|
+| Pas pozitiv pe o axă orientată | Rezultatul merge în direcția cerută; limitarea la margine nu inversează sensul. |
+| Cantitate explicită | Se folosește cantitatea spusă, după conversia unităților; nu se multiplică suplimentar cu pasul implicit. |
+| Frontiera unei toleranțe | Cazurile imediat sub, la și peste frontieră au comportamentul definit de comparație. |
+| Incertitudine a măsurării | Un interval ce traversează frontiera nu este redus la centrul lui pentru a pretinde certitudine. |
+| Ajustare învățată | Schimbă politica numai în contextul și episodul autorizat; o cerință exactă ulterioară o poate înlocui. |
+
+Calibrarea poate produce o politică diferită pentru contexte diferite când există dovezi pentru această diferență. Nu produce o regulă distinctă pentru fiecare propoziție din test. Dacă o familie are prea puține observații, parametrul rămâne o ipoteză explicită de proiectare și se caută date suplimentare; sistemul nu transformă lipsa datelor într-o limită de principiu a capabilității.
+
+## 12.4 Costuri, ponderi și egalități între candidați
+
+Un obiectiv combină termeni definiți și comparabili, după eliminarea candidaților care încalcă cerințe tari. O suprapunere interzisă nu este un cost mare pe care un avantaj suficient de mare îl poate compensa. Pentru preferințe slabe se poate folosi o sumă ponderată; pentru priorități care nu trebuie compensate se folosește o ordine lexicografică declarată. Alegerea uneia dintre aceste politici este parte din semantica obiectivului.
+
+Să avem doi candidați valizi, cu doi termeni deja normalizați: deplasare și aglomerare. Candidatul A are valorile 0,2 și 0,6, iar B are 0,5 și 0,2. Cu ponderi egale, costurile sunt 0,8 și 0,7, deci B este preferat. Dacă deplasarea are ponderea 2, costurile devin 1,0 și 1,2, deci A este preferat. Aceste numere sunt un exemplu calculabil al sensibilității la politică, nu o calibrare recomandată pentru toate paginile.
+
+| Ce declară obiectivul | De ce este necesar |
+|---|---|
+| Termenii și normalizarea lor | Fără ele se pot aduna minute cu unități de pagină sau număr de obiecte fără semnificație comună. |
+| Ponderile și justificarea | Arată ce compromis este permis; se evaluează pe preferințe independente și familii de probleme. |
+| Priorități necompensabile | Împiedică o îmbunătățire pe alt termen să anuleze o obligație sau o prioritate declarată. |
+| Tratarea egalităților | Un identificator poate stabiliza afișarea, dar nu poate hotărî singur între intenții diferite. |
+| Criteriul de oprire | Distinge cel mai bun candidat încercat de un optim demonstrat. |
+
+O pondere modificată poate schimba mai multe cereri care folosesc același obiectiv. De aceea explicația păstrează descompunerea costului, nu doar scorul total. Un reviewer poate vedea ce termen a schimbat ordinea candidaților și poate verifica dacă aceasta corespunde preferinței declarate. Optimizarea unui număr opac nu oferă această justificare.
+
+## 12.5 Calibrare și verificarea unei modificări
+
+Parametrii se aleg pe un set de calibrare și se verifică pe cazuri independente, separate după familie de formulare și domeniu unde mecanismul este general. Replay-ul care a descoperit o lipsă poate deveni test de regresie, dar nu poate fi singurul criteriu după care se alege noua valoare. O reglare care câștigă exact acel caz și schimbă greșit o altă familie trebuie explicată sau retrasă.
+
+| Probă | Ce detectează |
+|---|---|
+| Schimbarea unității cu conversie consecventă | Decizii dependente accidental de reprezentarea numerică. |
+| Perturbarea fiecărui parametru în jurul valorii alese | Praguri fragile și candidați a căror ordine se inversează fără o diferență relevantă. |
+| Perechi minimale | Pierderea unui număr exact, a negației, a direcției sau a unui obiect protejat. |
+| Schimbarea taxonomiei fără schimbare de sens | Dependența distanței de numărul accidental al nodurilor intermediare. |
+| Cazuri noi în alte domenii | Un parametru care a memorat o situație în loc să servească mecanismul general. |
+| Reluarea cu aceeași versiune și aceleași intrări | Derivări sau alegeri care nu pot fi reproduse din datele consemnate. |
+
+Înregistrarea unei modificări conține definiția parametrului, unitatea, domeniul de aplicare, valoarea veche și cea nouă, sursa alegerii și cazurile în care decizia se schimbă. Nu se cere ca orice decizie să rămână identică: unele modificări corectează tocmai decizii greșite. Se cere ca diferențele să fie vizibile și evaluate, fără a ascunde pierderile într-o medie globală.
+
+Un parametru învățat este supus aceleiași discipline de proveniență și verificare, cu contextul local adăugat. Versiunea spațiului și a politicii numerice intră în justificarea planului; o explicație veche se reproduce cu acea versiune. Astfel, îmbunătățirea calibrării rămâne compatibilă cu un sistem care poate explica de ce a ales altfel ieri.
+
+# Anexe
 
 ## Anexa A. Cu ce seamănă
 

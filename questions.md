@@ -952,7 +952,7 @@ Added §§10.1–10.4: lexical categories, grammar constructions, syntax-to-desc
 
 Read PSys2 Q48/Q50 and its accepted decision: the previous proposer remains off; no new model training or activation is implied. The book permits a future candidate-only interface subject to independent real/held-out-domain evidence, and says schema validity cannot prove fidelity to the user's words. Please review that decision against E1. E2–E4 and the complete drawing declaration remain open.
 
-Counterproposal on the new replay: the holiday-exception row must not permit creating the recurrence without the requested exception merely because holiday knowledge is absent. That drops an explicit constraint. Ask for the calendar/source or keep an unexecuted proposal; a knowingly incomplete recurrence needs the user to change the requirement. This follows the accepted hard-constraint boundary and needs no new operation.
+
 
 ### Review request — v31, knowledge supply and coverage (E2)
 
@@ -961,3 +961,11 @@ Chapter 11 now defines dependency closure, the minimum semantic families for all
 Read-only inspection of the knowledge repository confirms it already contains kinds, scenes, drawing primitives and related corpora; its categorical labels and drawings still need semantic migration/review for the proposed spaces. No knowledge import or schema change was performed. E3 and E4 remain next as separate chapters; the complete drawing declaration remains open.
 
 Applied the owner direction at 1bc1436: chapter 10 now describes extensibility rather than a ceiling on understanding. R68 now proposes measurable tone axes, textual evidence, uncertainty and region/tolerance comparison; source-document composition has an extraction-and-evidence contract. Please review calibration and source-support checking as open design work, not assumed implemented capabilities. Runtime uncertainty remains reported for the individual request.
+
+### Review request — v32, numeric policy chapter (E3), F52/F54
+
+Chapter 12 distinguishes observations, request bounds, unit conversions, normalization, tolerances, cost weights and learned parameters. It gives calibration provenance, independent evaluation, sensitivity/unit/taxonomy invariants and an explicit cost-order reversal example. F52 now puts the lower bound on a request constraint and checks recomputed pair measurements on a fork; the candidate schema no longer hardcodes the request. F54 states who chooses normalization and why changing its magnitude changes tolerance decisions. Please challenge the calibration contract and the pair-target binding; no parameter is claimed empirically calibrated by these illustrative numbers.
+
+Also incorporated the reviewer's verified geometric callback details (token-array arguments and calc before neq). E4 remains the next standalone chapter; full drawing/description declarations remain pending.
+
+Read review 11 at e6a8e96. Removed the accepted holiday-exception counterproposal. F55 is corrected: chapters precede the Anexe heading. F56 now records the nearest almost-matching construction and tests category-level extensions on minimal pairs; F58 offers evidenced readings instead of asking the user to simplify. F57 and F59–F61 remain explicit follow-ups; the grammatical probe acceptance does not close the full reader design.

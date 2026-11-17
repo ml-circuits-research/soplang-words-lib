@@ -1573,6 +1573,9 @@ Aceste legări folosesc lexicul, gramatica și regulile de compunere semantică 
 
 ### 6.3.1 Interpretări candidate și clarificarea ambiguității
 
+Implementarea compară acum structura a două grafuri validate printr-o corespondență bijectivă a identificatorilor locali. Valorile, tipurile, referințele comune, ordinea valorilor repetate și proveniența rămân exacte. Această corespondență nu dovedește că cererea exprimă intenția utilizatorului sau că un efect s-a produs; acestea cer dovezi distincte. O comparație neîncheiată în buget rămâne necunoscută.
+
+
 Interpretarea unei propoziții produce ipoteze despre intenție. Fiecare ipoteză trebuie să păstreze corespondența cu mesajul: obiectele desemnate, cerințele și cuvintele care nu au fost încă interpretate. Altfel, eliminarea unei interpretări ar putea însemna eliminarea tacită a unei cerințe a omului.
 
 Filtrarea folosește starea și capabilitățile declarate, apoi preferințele limbii. Când două interpretări încă posibile ar produce schimbări diferite, o alegere arbitrară nu este o rezolvare a ambiguității. Regulile de mai jos precizează când se poate continua și când trebuie formulată o întrebare.

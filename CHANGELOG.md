@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.203.0
+
+- Compare validated request graphs under a root-preserving bijection of local identifiers, returning a checked mapping or explicit unknown on invalid/budgeted input. Tokens, repeated-value order and provenance remain exact; this does not assert intent or execution correctness.
+
 ## 0.202.0
 
 - Retain scope-specific empirical admission evidence with disjoint fit/evaluation sources, exact pipeline identities and explicit support/error policy. Read-only assessment refuses mismatched, unsupported or insufficient evidence without manufacturing individual prediction probabilities.

@@ -4942,3 +4942,27 @@ missing-calibration
 ```
 
 Eligibility must be fixed independently of correctness labels and reproduced by the same pinned runtime protocol. Marking wrong predictions ineligible after inspecting their labels invalidates the evidence even though source IDs remain distinct. The library validates record consistency; the C1 author and reviewer establish that labeling/protocol obligation.
+
+### compareRequestGraphs(left, right, options?)
+
+Compare two `{request, nodes}` packets accepted by `serializeRequestGraph`, under a root-preserving bijection of their local node IDs. Returns `{ok, equal, reason, mapping, steps}`. A true result includes the fully checked left-to-right mapping. Node order and attribute insertion order do not matter; types, all attributes, token kinds, literal/string values, repeated-value order, provenance and reference sharing remain exact.
+
+```js run
+const graph = {request: 'r', nodes: [
+  {id: 's', type: 'std.request.source', attrs: {text: [{kind: 'string', value: 'invented source'}]}},
+  {id: 'r', type: 'std.request', attrs: {act: [{kind: 'literal', value: 'inspect'}], mood: [{kind: 'literal', value: 'ask'}], source: [{kind: 'ref', value: 's'}]}}
+]};
+const renamed = {request: 'request', nodes: [
+  {id: 'origin', type: 'std.request.source', attrs: graph.nodes[0].attrs},
+  {id: 'request', type: 'std.request', attrs: {...graph.nodes[1].attrs, source: [{kind: 'ref', value: 'origin'}]}}
+]};
+print(compareRequestGraphs(graph, renamed).equal);
+```
+
+```output
+true
+```
+
+`equal=false` means the two valid graphs differ under this strict structural contract. `ok=false, equal=null, mapping=null` means unknown: invalid graph data or an exhausted bound is never an inequality/equality proof. `budget` bounds input copying, matching and witness construction (default 200,000 ticks); `graphBudget` bounds each independent serializer validation (default 20,000 ticks). These are separate caps. `maxNodes` defaults to 128 and may be set from 1 to 256. Search may be exponential on ambiguous graphs; exhaustion returns unknown. Inputs are not mutated and data accessors are refused without invocation.
+
+This operation does not rewrite or ignore semantic fields, prove logical equivalence, identify historical sources or subjects, establish intended meaning, or verify an effect. Even an AND-member reordering can compare false. C1 callers must retain source-unit identity and any separately justified comparison projection and evaluator identity. Graph equality alone must never be used as a correct-execution label or an admission decision.

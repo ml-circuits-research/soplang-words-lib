@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="fd738550a60e">
+<meta name="source-hash" content="77150a3e803b">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.202.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.203.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -1652,9 +1652,23 @@ print(assessSelectiveCalibration(w, {owner: &#x27;missing&#x27;, revision: &#x27
   {identity: {model: &#x27;toy@1&#x27;}, scope: &#x27;toy.whole-reading&#x27;, score: 1, eligible: true}).reason);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>missing-calibration</code></pre></figure>
 <p>Eligibility must be fixed independently of correctness labels and reproduced by the same pinned runtime protocol. Marking wrong predictions ineligible after inspecting their labels invalidates the evidence even though source IDs remain distinct. The library validates record consistency; the C1 author and reviewer establish that labeling/protocol obligation.</p>
+<h3 id="comparerequestgraphsleft-right-options">compareRequestGraphs(left, right, options?)</h3>
+<p>Compare two <code>{request, nodes}</code> packets accepted by <code>serializeRequestGraph</code>, under a root-preserving bijection of their local node IDs. Returns <code>{ok, equal, reason, mapping, steps}</code>. A true result includes the fully checked left-to-right mapping. Node order and attribute insertion order do not matter; types, all attributes, token kinds, literal/string values, repeated-value order, provenance and reference sharing remain exact.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const graph = {request: &#x27;r&#x27;, nodes: [
+  {id: &#x27;s&#x27;, type: &#x27;std.request.source&#x27;, attrs: {text: [{kind: &#x27;string&#x27;, value: &#x27;invented source&#x27;}]}},
+  {id: &#x27;r&#x27;, type: &#x27;std.request&#x27;, attrs: {act: [{kind: &#x27;literal&#x27;, value: &#x27;inspect&#x27;}], mood: [{kind: &#x27;literal&#x27;, value: &#x27;ask&#x27;}], source: [{kind: &#x27;ref&#x27;, value: &#x27;s&#x27;}]}}
+]};
+const renamed = {request: &#x27;request&#x27;, nodes: [
+  {id: &#x27;origin&#x27;, type: &#x27;std.request.source&#x27;, attrs: graph.nodes[0].attrs},
+  {id: &#x27;request&#x27;, type: &#x27;std.request&#x27;, attrs: {...graph.nodes[1].attrs, source: [{kind: &#x27;ref&#x27;, value: &#x27;origin&#x27;}]}}
+]};
+print(compareRequestGraphs(graph, renamed).equal);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>true</code></pre></figure>
+<p><code>equal=false</code> means the two valid graphs differ under this strict structural contract. <code>ok=false, equal=null, mapping=null</code> means unknown: invalid graph data or an exhausted bound is never an inequality/equality proof. <code>budget</code> bounds input copying, matching and witness construction (default 200,000 ticks); <code>graphBudget</code> bounds each independent serializer validation (default 20,000 ticks). These are separate caps. <code>maxNodes</code> defaults to 128 and may be set from 1 to 256. Search may be exponential on ambiguous graphs; exhaustion returns unknown. Inputs are not mutated and data accessors are refused without invocation.</p>
+<p>This operation does not rewrite or ignore semantic fields, prove logical equivalence, identify historical sources or subjects, establish intended meaning, or verify an effect. Even an AND-member reordering can compare false. C1 callers must retain source-unit identity and any separately justified comparison projection and evaluator identity. Graph equality alone must never be used as a correct-execution label or an admission decision.</p>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.202.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.203.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

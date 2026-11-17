@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="3a3a8b0bade8">
+<meta name="source-hash" content="9faf7e4ca556">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.202.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.203.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html" aria-current="page">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -804,9 +804,10 @@ print(builtins.time_add([&#x27;10:40&#x27;, &#x27;35min&#x27;]), builtins.div([&
 <h2 id="scope-specific-empirical-admission">Scope-specific empirical admission</h2>
 <p><code>retainSelectiveCalibration</code> binds immutable fit/evaluation evidence to an explicit complete pipeline identity and scope. It groups tied scores, selects a threshold solely on fit evidence and checks that exact threshold on evaluation evidence. Original-source identities cannot repeat across either split. Ineligible cases remain abstentions in the total; eligible unknown labels are invalid evidence. Explicit minimum acceptance and maximum empirical error prevent empty acceptance from becoming approval. No rounding can turn one error into zero.</p>
 <p><code>assessSelectiveCalibration</code> checks the exact identity/scope and recomputes restored evidence before using it. An immutable verification cache avoids repeating calibration work on every request. Changing the model, numeric backend, decoder, bindings, executor or score definition requires a different declared identity. C1 correctness labels and the completeness/independence of the evidence remain trusted obligations; matching strings alone do not authenticate them. The result is selective empirical admission, not a per-instance probability or a future-risk bound. Structural validation, live resolution, policy and effect assessment remain separate.</p>
+<p><code>compareRequestGraphs(left, right, options?)</code> validates two schema-named request graphs and compares exact rooted structure under a bijection of local node IDs. A checked mapping accompanies equality; invalid/budgeted input is unknown. Tokens, provenance and repeated-value order stay exact. This does not establish intent, historical identity or effects. See <a href="api.html#comparerequestgraphsleft-right-options">API</a>.</p>
 <p class="source">Generated from <code>docs/reference.md</code>.</p>
 </main>
-<footer>sopworld 0.202.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.203.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

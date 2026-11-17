@@ -38,7 +38,29 @@ test('data accessors, prototype objects, sparse arrays, dangling references and 
 test('restore rejects unrelated wires, duplicate identities, wrong scalar types and mutated stable identities',()=>{
  const wires=serializeInstanceState(state());assert.throws(()=>readInstanceState(wires+'\n@extra invented.node'),/unowned/);
  assert.throws(()=>readInstanceState(wires+wires),/duplicate-wire|declared twice/);
- assert.throws(()=>readInstanceState(wires.replace('value=12.5 kind="number"','value="twelve" kind="number"')),/scalar-type/);
+ const scalarRoot=serializeInstanceState({...state(),projection:12.5});assert.throws(()=>readInstanceState(scalarRoot.replace('value=12.5 kind="number"','value="twelve" kind="number"')),/scalar-type/);
  assert.throws(()=>readInstanceState(wires.replace('id="first id"','id="different"')),/object-identity/);
  const invalid=state();invalid.objects[0].type='std.instance.value';assert.throws(()=>serializeInstanceState(invalid),/object/);
+});
+
+test('compact projection stores scalars directly and preserves arbitrary keys, exact types and order',()=>{
+ const input=state();input.projection=Object.fromEntries([['name','r1'],['shape','rectangle'],['size',62],['color','white'],['outline',null],['label',null],['x',80],['y',70],['order',1],['',false],['__proto__','safe'],['key',['$not-a-reference',-0,true,null]],['member',{kind:'number',value:'still a string'}]]);
+ const wires=serializeInstanceState(input),restored=readInstanceState(wires);
+ assert.deepEqual(restored,input);assert.deepEqual(Object.keys(restored.projection),Object.keys(input.projection));assert.ok(Object.is(restored.projection.key[1],-0));
+ assert.match(wires,/format="sop.instance-state\/2"/);assert.match(wires,/key="name".*member="r1"/);assert.doesNotMatch(wires,/kind="(?:string|number|boolean|null)"/);
+ const projectionLines=wires.split('\n').filter(line=>line.includes('std.instance.value'));assert.equal(projectionLines.length,4);
+ assert.throws(()=>readInstanceState(wires.replace('key="name" key="shape"','key="name" key="name"')),/duplicate-object-key/);
+ assert.throws(()=>readInstanceState(wires.replace('key="name" ','')),/object-keys/);
+ assert.throws(()=>readInstanceState(wires.replace('member="r1"','member=$missing')),/reference/);
+});
+test('legacy instance-state/1 archives remain readable without reinterpretation',()=>{
+ const wires=`@legacy.child std.instance.value key="label" value="Old" kind="string"
+@legacy.number std.instance.value index=0 value=-0 kind="number"
+@legacy.null std.instance.value index=1 kind="null"
+@legacy.list std.instance.value key="values" member=$legacy.number member=$legacy.null kind="array"
+@legacy.root std.instance.value member=$legacy.child member=$legacy.list kind="object"
+@instance.snapshot std.instance.snapshot format="sop.instance-state/1" instance="old" world="invented.board" schema="invented.board/1" revision=0 projection=$legacy.root`;
+ const old=readInstanceState(wires);assert.deepEqual(old.projection,{label:'Old',values:[-0,null]});assert.ok(Object.is(old.projection.values[0],-0));
+ const compact=serializeInstanceState(old);assert.deepEqual(readInstanceState(compact),old);assert.ok(compact.split('\n').length<wires.split('\n').length);
+ assert.throws(()=>readInstanceState(wires.replace('index=1','index=0')),/array-order/);
 });

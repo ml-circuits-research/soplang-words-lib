@@ -1010,7 +1010,7 @@ export function lookupContextTargetBinding(world:World,reference:RequestRevision
 export interface InstanceStateObject { id: string; type: string; attributes?: Record<string, unknown[]>; relations?: Record<string, string[]>; metadata?: unknown; }
 export interface InstanceState { instanceId: string; world: string; schemaVersion: string; revision: string | number; objects: InstanceStateObject[]; projection: unknown; metadata?: unknown; }
 export interface InstanceStateLimits { maxNodes?: number; maxDepth?: number; maxBytes?: number; }
-export const INSTANCE_STATE_FORMAT: 'sop.instance-state/1';
+export const INSTANCE_STATE_FORMAT: 'sop.instance-state/2';
 export function serializeInstanceState(input: InstanceState, options?: InstanceStateLimits): string;
 export function readInstanceState(wires: string, options?: InstanceStateLimits): InstanceState;
 export function instanceStateWorld(wires: string, options?: InstanceStateLimits & { schema?: string }): World;

@@ -4990,10 +4990,10 @@ print(result.liveBinding); // null
 ### INSTANCE_STATE_FORMAT
 
 ```js
-INSTANCE_STATE_FORMAT; // "sop.instance-state/1"
+INSTANCE_STATE_FORMAT; // "sop.instance-state/2"
 ```
 
-The local archive version `sop.instance-state/1`. This is separate from the consumer schema/version and instance identity.
+The local archive write version `sop.instance-state/2`. Scalar members are direct literals on their container; object keys and array member order remain explicit. The reader also accepts legacy `sop.instance-state/1`. Archive format is separate from the consumer schema/version and instance identity.
 
 ### serializeInstanceState(input, options?)
 

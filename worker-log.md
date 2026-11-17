@@ -6550,3 +6550,7 @@ Final acceptance: `PYTHONDONTWRITEBYTECODE=1 TMPDIR=/home/salboaie/work/sopworld
 
 2026-11-17: 0.205.0 restores versioned instance state as ordinary typed SOP facts and explicit local relations, with a lossless typed implementation projection. Actual restored-world SOP deduction passes; full project loading and request completion remain outside this local archive.
 Checks: `node --test test/instance-state.test.mjs` (6 pass); `npm test > ../.session-control/instance-library-source-gate.log` and `SOPWORLD_BUNDLE=1 npm test > ../.session-control/instance-library-bundle-gate.log` each report 960 tests,958 pass,0 fail,1 skip,1 todo; `python3 tools/build_docs.py` rebuilt documentation.
+
+## G: Compact instance-state scalar members — 2026-11-17
+- Version 0.206.0 writes compact version-2 projection containers with direct scalar literals; version-1 archives still restore exactly. Semantic facts and native undo data are retained.
+- Checks: `python3 tools/build_docs.py`, `npm run build`, `npm test`, `SOPWORLD_BUNDLE=1 npm test`: each test gate 962 tests, 960 pass, 0 fail, 1 skip, 1 todo; `git diff --check` clean.

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.206.0
+
+- Compact instance projection containers store scalar members directly, with ordered object keys and array members. The lossless version-2 codec retains all native data and reads existing version-1 archives. Semantic fact attributes remain direct literals.
+
 ## 0.204.0
 
 - Look up an explicitly retained historical graph-target/trace-subject correlation with validated existence evidence and canonical membership. Host context and correlation remain trusted declarations; the result never supplies a live binding or incarnation proof.

@@ -2165,6 +2165,8 @@ Pentru toate domeniile, explicația scurtă poate fi desfășurată în pașii e
 
 ### 6.11.1 Mesaje despre conversație și referințe la istoric
 
+În implementarea 0.204, `lookupContextTargetBinding` verifică o legătură declarată explicit între ținta unei versiuni păstrate a cererii, subiectul din dovada istorică de existență și apartenența lui canonică. Declarația numește separat identitatea cererii, pasul, invocarea, contextul gazdei și instantaneul populației; nu confundă versiunile acestor înregistrări. Legătura pozitivă cu un membru cunoscut poate rămâne justificată într-o populație incompletă sau după eliminare, dar rezultatul este numai istoric. Autoritatea corelării rămâne o intrare de încredere; metoda nu dovedește continuitatea unei instanțe și nu autorizează reutilizarea identificatorului în starea curentă.
+
 Jurnalul este o lume de fapte și poate fi interogat prin aceleași modele, referințe și surse ca celelalte lumi. Un mesaj despre conversație poate desemna o cerere, un rezultat sau o afirmație anterioară. Reutilizarea privește reprezentarea și accesul la dovezi; nu dă voie ca ștergerea unui fir din jurnal să fie confundată cu anularea efectului lui în aplicație. O corectare se înregistrează ca eveniment nou și verifică separat starea observabilă.
 
 | Intenția mesajului | Date consultate și efect permis |

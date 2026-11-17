@@ -3,7 +3,7 @@ const FORMAT='sop.reply.existence';
 const shape=(v,keys)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length===keys.length&&keys.every(k=>Object.hasOwn(v,k));
 const strings=(v,keys)=>keys.every(k=>typeof v[k]==='string'&&v[k].length>0);
 const first=(w,k)=>w?.attrs[k]?.[0];
-function evaluate(s,tick){
+export function evaluateExistenceEvidence(s,tick){
  tick();
  if(!shape(s,['format','schemaVersion','request','step','expectation','before','after','status','reason'])||s.format!==FORMAT||s.schemaVersion!==1)return null;
  if(!shape(s.request,['id','message'])||!strings(s.request,['id'])||typeof s.request.message!=='string')return null;
@@ -35,10 +35,11 @@ function evaluate(s,tick){
  if(s.before.version===s.after.version)return {status:'unconfirmed',reason:'unchanged-version'};
  return {status:desired?'made':'removed',reason:'observed-lifecycle-change'};
 }
+// Shared internal checker for retained historical evidence; no live claim is required.
 export function replyExistenceValidator([ref],world,{tick}){
  const claim=world.get(ref.slice(1)),owner=first(claim,'owner'),revision=first(claim,'revision');if(owner===undefined||revision===undefined)return false;
  const saved=world.retainedRevision(str(owner),str(revision));if(!saved)return false;
- const result=evaluate(saved.definition,tick);
+ const result=evaluateExistenceEvidence(saved.definition,tick);
  return !!result&&result.status===saved.definition.status&&result.reason===saved.definition.reason&&first(claim,'status')===result.status;
 }
 /** Assess historical lifecycle membership, never absence from an open/filtered view. */
@@ -59,7 +60,7 @@ export function assessExistenceChange(world,options={}){
    return {id:p.id,step:first(p,'step')?.slice(1),invocation:str(first(p,'invocation')),phase:first(p,'phase'),source:str(first(p,'source')),version:str(first(p,'version')),scope:str(first(p,'scope')),coverage:first(p,'coverage'),semantics:first(p,'semantics'),members};
   };
   const snapshot={format:FORMAT,schemaVersion:1,request:{id:request.id,message:str(first(request,'message'))},step:{id:step.id,request:first(step,'request')?.slice(1),invocation:str(first(step,'invocation')),operation:str(first(step,'operation')),version:str(first(step,'operation.version')),status:first(step,'status'),expectations:refs(step,'presence'),populations:refs(step,'population')},expectation:{id:expectation.id,source:str(first(expectation,'source')),sourceType:first(expectation,'source.type'),scope:str(first(expectation,'scope')),desired:first(expectation,'desired')},before:capture(options.before),after:capture(options.after),status:'',reason:''};
-  const result=evaluate(snapshot,tick);if(!result)return fail('population evidence must correlate identities, scope, request, step and invocation');Object.assign(snapshot,result);
+  const result=evaluateExistenceEvidence(snapshot,tick);if(!result)return fail('population evidence must correlate identities, scope, request, step and invocation');Object.assign(snapshot,result);
   const saved=world.retainRevision(options.owner,options.revision,snapshot,{dry:options.dry});if(!saved.ok)return saved;
   return {...saved,assessment:saved.retained.definition,claim:{type:replyFamily+'.existence',attrs:{owner:[quote(options.owner)],revision:[quote(options.revision)],status:[result.status]}}};
  },issue=>({ok:false,created:false,violations:[issue]}));

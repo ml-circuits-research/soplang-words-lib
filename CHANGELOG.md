@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.204.0
+
+- Look up an explicitly retained historical graph-target/trace-subject correlation with validated existence evidence and canonical membership. Host context and correlation remain trusted declarations; the result never supplies a live binding or incarnation proof.
+
 ## 0.203.0
 
 - Compare validated request graphs under a root-preserving bijection of local identifiers, returning a checked mapping or explicit unknown on invalid/budgeted input. Tokens, repeated-value order and provenance remain exact; this does not assert intent or execution correctness.

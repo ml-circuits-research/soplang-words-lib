@@ -3,7 +3,7 @@
 // bundle read by the same code.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync, mkdtempSync, writeFileSync as require_write } from 'node:fs';
+import { readFileSync, existsSync, mkdtempSync, rmSync, writeFileSync as require_write } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
@@ -46,8 +46,9 @@ test('catalog: the lemma is the host\'s; a missing shard is an error and is read
   assert.equal((await flaky.fetch('fish')).length, flaky.plan(flaky.shardsOf('fish')).length, 'read again: all of it');
 });
 
-test('an offline bundle: tools/build-bundle.mjs writes the shards a list of words needs; bundleReader reads them', { skip }, async () => {
+test('an offline bundle: tools/build-bundle.mjs writes the shards a list of words needs; bundleReader reads them', { skip }, async (t) => {
   const dir = mkdtempSync(join(tmpdir(), 'bundle-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
   const cdir = join(dir, 'cat');
   execFileSync('mkdir', ['-p', cdir]);
   const plan = createCatalog({ index, vocab, read: () => null }).plan(['k.objects/shards/household']);

@@ -4966,3 +4966,21 @@ true
 `equal=false` means the two valid graphs differ under this strict structural contract. `ok=false, equal=null, mapping=null` means unknown: invalid graph data or an exhausted bound is never an inequality/equality proof. `budget` bounds input copying, matching and witness construction (default 200,000 ticks); `graphBudget` bounds each independent serializer validation (default 20,000 ticks). These are separate caps. `maxNodes` defaults to 128 and may be set from 1 to 256. Search may be exponential on ambiguous graphs; exhaustion returns unknown. Inputs are not mutated and data accessors are refused without invocation.
 
 This operation does not rewrite or ignore semantic fields, prove logical equivalence, identify historical sources or subjects, establish intended meaning, or verify an effect. Even an AND-member reordering can compare false. C1 callers must retain source-unit identity and any separately justified comparison projection and evaluator identity. Graph equality alone must never be used as a correct-execution label or an admission decision.
+
+
+### lookupContextTargetBinding(world, reference, options?)
+
+Read an exact retained `ContextTargetBindingDefinition` by `{owner, revision}`. The definition explicitly correlates a target of a retained `retainRequestRevision` graph, a member of retained `assessExistenceChange` evidence, a retained canonical population in the `resolveRequestTargets` input shape, and a host correlation witness. The lookup validates the graph and recomputes the existing existence-evidence checker without requiring live trace/claim wires. Retain each input with `world.retainRevision`; nothing is published by the lookup itself.
+
+The bridge contains `graph: {owner, revision, target}`, `evidence: {owner, revision, phase, member}`, `membership: {owner, revision}`, and `witness: {authority, graphRequest, traceRequest, step, invocation, context, population}`. `context` has `instanceId`, `scope`, `version`; `population` has `source`, `scope`, `version`. Each tuple must match its own retained snapshot. Their correlation is an explicit trusted declaration, not inferred equality of unrelated version namespaces. Graph and trace request identifiers may differ; the witness names both. `member` names the historical trace subject wire; native identity comes from the matching canonical descriptor.
+
+A successful result is `status='bound-historically'`, `historicalOnly=true`, `liveBinding=null`, with a frozen historical `binding`, canonical kind and retained evidence. A known selected member remains usable in a partial population or a removal/unconfirmed assessment. This does not prove successful effects. Missing/conflicting identities, kind or membership, invalid evidence and exhausted bounds return `status='unknown'`. Property-only evidence lacks the required population correlation.
+
+```js
+const history = new World();
+const result = lookupContextTargetBinding(history, {owner:'toy.history', revision:'missing'});
+print(result.status); // unknown
+print(result.liveBinding); // null
+```
+
+`budget` bounds copying/lookup and evidence checks (default 100000); `graphBudget` separately bounds the existing graph serializer (default 20000). The host's authority, context, canonical membership and correlation are trusted inputs. This method does not select a conversational antecedent, interpret text, prove incarnation identity or rebind a historical subject to today's state. A current resolution must separately revalidate context/identity and new selectors. Numeric ID reuse never establishes continuity.

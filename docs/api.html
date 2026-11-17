@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="77150a3e803b">
+<meta name="source-hash" content="e7354c9c82c5">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.203.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.204.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -1666,9 +1666,18 @@ print(compareRequestGraphs(graph, renamed).equal);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true</code></pre></figure>
 <p><code>equal=false</code> means the two valid graphs differ under this strict structural contract. <code>ok=false, equal=null, mapping=null</code> means unknown: invalid graph data or an exhausted bound is never an inequality/equality proof. <code>budget</code> bounds input copying, matching and witness construction (default 200,000 ticks); <code>graphBudget</code> bounds each independent serializer validation (default 20,000 ticks). These are separate caps. <code>maxNodes</code> defaults to 128 and may be set from 1 to 256. Search may be exponential on ambiguous graphs; exhaustion returns unknown. Inputs are not mutated and data accessors are refused without invocation.</p>
 <p>This operation does not rewrite or ignore semantic fields, prove logical equivalence, identify historical sources or subjects, establish intended meaning, or verify an effect. Even an AND-member reordering can compare false. C1 callers must retain source-unit identity and any separately justified comparison projection and evaluator identity. Graph equality alone must never be used as a correct-execution label or an admission decision.</p>
+<h3 id="lookupcontexttargetbindingworld-reference-options">lookupContextTargetBinding(world, reference, options?)</h3>
+<p>Read an exact retained <code>ContextTargetBindingDefinition</code> by <code>{owner, revision}</code>. The definition explicitly correlates a target of a retained <code>retainRequestRevision</code> graph, a member of retained <code>assessExistenceChange</code> evidence, a retained canonical population in the <code>resolveRequestTargets</code> input shape, and a host correlation witness. The lookup validates the graph and recomputes the existing existence-evidence checker without requiring live trace/claim wires. Retain each input with <code>world.retainRevision</code>; nothing is published by the lookup itself.</p>
+<p>The bridge contains <code>graph: {owner, revision, target}</code>, <code>evidence: {owner, revision, phase, member}</code>, <code>membership: {owner, revision}</code>, and <code>witness: {authority, graphRequest, traceRequest, step, invocation, context, population}</code>. <code>context</code> has <code>instanceId</code>, <code>scope</code>, <code>version</code>; <code>population</code> has <code>source</code>, <code>scope</code>, <code>version</code>. Each tuple must match its own retained snapshot. Their correlation is an explicit trusted declaration, not inferred equality of unrelated version namespaces. Graph and trace request identifiers may differ; the witness names both. <code>member</code> names the historical trace subject wire; native identity comes from the matching canonical descriptor.</p>
+<p>A successful result is <code>status='bound-historically'</code>, <code>historicalOnly=true</code>, <code>liveBinding=null</code>, with a frozen historical <code>binding</code>, canonical kind and retained evidence. A known selected member remains usable in a partial population or a removal/unconfirmed assessment. This does not prove successful effects. Missing/conflicting identities, kind or membership, invalid evidence and exhausted bounds return <code>status='unknown'</code>. Property-only evidence lacks the required population correlation.</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>const history = new World();
+const result = lookupContextTargetBinding(history, {owner:&#x27;toy.history&#x27;, revision:&#x27;missing&#x27;});
+print(result.status); // unknown
+print(result.liveBinding); // null</code></pre></figure>
+<p><code>budget</code> bounds copying/lookup and evidence checks (default 100000); <code>graphBudget</code> separately bounds the existing graph serializer (default 20000). The host's authority, context, canonical membership and correlation are trusted inputs. This method does not select a conversational antecedent, interpret text, prove incarnation identity or rebind a historical subject to today's state. A current resolution must separately revalidate context/identity and new selectors. Numeric ID reuse never establishes continuity.</p>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.203.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.204.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

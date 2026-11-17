@@ -2,7 +2,7 @@
 // stage, class and the host's cause signals) and validating a world in one command.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { writeFileSync, readFileSync, mkdtempSync } from 'node:fs';
+import { writeFileSync, readFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -33,8 +33,9 @@ test('ledger: the stage of a turn that failed', () => {
   ], ['reading', 'routing', 'filling', 'acting', null]); // a seat with no size here is the act's: no world has it
 });
 
-test('tools: ledger add / report on disk; validate a world in one command', () => {
+test('tools: ledger add / report on disk; validate a world in one command', (t) => {
   const dir = mkdtempSync(join(tmpdir(), 'ledger-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
   const L = join(dir, 'l.jsonl'), R = join(dir, 'r.jsonl');
   writeFileSync(R, [row('draw a cup', 'logs'), row('draw a cup', 'logs')].map((r) => JSON.stringify(r)).join('\n'));
   assert.match(execFileSync(process.execPath, ['tools/ledger.mjs', 'add', L, R], { encoding: 'utf8' }), /1 rows added/);

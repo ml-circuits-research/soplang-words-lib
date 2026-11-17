@@ -986,3 +986,22 @@ export function assessSelectiveCalibration(world:World,reference:{owner:string;r
 
 /** Strict rooted graph equality under local node ID renaming; no logical, intent or effect proof. */
 export function compareRequestGraphs(left:{request:string;nodes:RequestGraphNode[]},right:{request:string;nodes:RequestGraphNode[]},options?:{budget?:number;graphBudget?:number;maxNodes?:number}):{ok:boolean;equal:boolean|null;reason:string;mapping:Readonly<Record<string,string>>|null;steps:number};
+
+
+/** Explicit trusted correlation; independent population and host version namespaces. */
+export interface ContextTargetBindingDefinition {
+  format: 'sop.context-target.binding'; schemaVersion: 1;
+  graph: RequestRevisionIdentity & {target:string};
+  evidence: RequestRevisionIdentity & {phase:'before'|'after';member:string};
+  membership: RequestRevisionIdentity;
+  witness: {authority:string;graphRequest:string;traceRequest:string;step:string;invocation:string;
+    context:RequestBindingContext;population:{source:string;scope:string;version:string}};
+}
+/** Historical lookup only; no conversational selection, live identity or execution. */
+export function lookupContextTargetBinding(world:World,reference:RequestRevisionIdentity,options?:{budget?:number;graphBudget?:number}):{
+  ok:boolean;status:'bound-historically'|'unknown';historicalOnly:true;liveBinding:null;
+  binding?:Readonly<RequestGroundBinding>|null;canonicalKind?:string|null;reference?:RequestRevisionIdentity;
+  graph?:Readonly<Record<string,unknown>>;evidence?:Readonly<Record<string,unknown>>;
+  membership?:Readonly<Record<string,unknown>>;witness?:Readonly<ContextTargetBindingDefinition['witness']>;
+  steps:number;limits:{copyAndLookup:number;perGraph:number};trust?:string;issues?:Array<{reason:string}>;
+};

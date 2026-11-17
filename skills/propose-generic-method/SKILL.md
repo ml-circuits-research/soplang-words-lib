@@ -6,7 +6,8 @@ description: Turn an honest-list group whose piece is a method, a mechanism or a
 # Propose a generic method
 
 Ideas → adversarial review → proposal. The output is a written proposal (in the worker log, or a question to
-the reviewer) and, once accepted, a change in the library or the knowledge repository. It is never a fix for a
+the reviewer) and a change in the library or knowledge repository within the existing authorization.
+A proposal is not a new permission gate for work the owner already authorized. It is never a fix for a
 case.
 
 ## Parameters
@@ -46,7 +47,7 @@ rows of the group it would unlock.
 Try to kill each idea. Answer every question in writing:
 
 1. **Generic?** Does it work from declarations and knowledge only, or does it need to know the case?
-2. **Does it name** a world id, a sentence, a word list, a test, or a host in code? (Any yes is a patch.)
+2. **Does it name** a world id, a sentence, a word list, a test, or a host in code? (Sentence- or domain-specific semantic branching is a patch; declared import/tool routing by identity is not.)
 3. **Would it survive a new world?** Apply it in your head, then in a dry run, to a declared world it was not
    written for (the example worlds of `examples/request-app.mjs`, a published `w.*` schema).
 4. **Would it survive a new language?** Does it depend on English word order or words outside the language
@@ -55,7 +56,11 @@ Try to kill each idea. Answer every question in writing:
    patches off)?
 6. **Cost and bounds**: is it bounded (ticks, candidates, depth: see `REASONING`, `SPELL`)? Does it stay
    deterministic?
-7. **Is there a simpler piece** lower in the order (a declaration, a fact, a word) that does the same?
+7. **Authority and operation**: what actually reads and writes the state? Separate authoritative SOP
+   facts, native projections, declarations and executable functions. Identify the existing generic
+   executor or the implementation still needed. Preserve ranked alternatives, a chosen plausible action,
+   uncertainty evidence and undo; do not introduce a refusal-first confidence gate.
+8. **Is there a simpler piece** lower in the order (a declaration, a fact, a word) that does the same?
 
 ### Patch smells
 
@@ -87,12 +92,15 @@ Write the proposal with these headings:
 - **Probes**: the new sentences it is checked on, and how they were generated.
 - **Acceptance**: the phase (transition or steady), the expected wins and losses, and how patch-only losses
   were told apart (patches off).
-- **Review**: the answers to the seven questions and the smell checklist.
+- **Review**: the answers to the review questions and the smell checklist.
 
 Proposals that change the library go to the reviewer (questions.md and the worker log). Knowledge goes to the
 knowledge repository's review. The owner decides what a world should declare.
 
 ## Dry run
+
+This exercises the historical library request fixtures and smell checks, not the application reader or
+its current uncertainty policy. See [operational scope](../README.md#operational-scope-and-evidence).
 
 ```
 node skills/propose-generic-method/scripts/dry-run.mjs

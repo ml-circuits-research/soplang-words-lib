@@ -16,19 +16,25 @@ rule to the cases.
 
 ## Steps
 
-1. **Replay each turn on the generic path.** `readRequest(world, text, { language, catalog, dialogue, spell:
-   true })`, then `reviseRequest`, then `planRequest(live, request, { catalog, dialogue })`. Patches (legacy
-   readers, case-fitted rules) are off, so the replay shows what the generic path does.
-2. **Triage by evidence, not by sentence** (`triage(request, plan, { expected })` in `skills/lib/honest.mjs`):
+1. **Replay each turn on the actual operational path.** For the application, use its SOP-BERT reader,
+   formalizer, world resolver and declared tools; retain the actual packet, chosen hypothesis and ranked
+   alternatives, invocation/result and before/after authoritative state. For a library request-API case,
+   explicitly run `readRequest`, `reviseRequest`, then `planRequest`; label that as a library run. Do not
+   substitute a grammar dry run for application evidence. Apply the
+   [uncertainty policy](../README.md#operational-scope-and-evidence): best plausible action, short uncertainty
+   note, alternatives and undo; a needless question or avoidable refusal is a behavior failure.
+2. **Triage by evidence, not by sentence** (the codes below describe the library request API;
+   use actual neural/formalizer/binding evidence for the host) (`triage(request, plan, { expected })` in `skills/lib/honest.mjs`):
    - `unread` at the act: the act word is missing (language: a `k.actions` verb, a word of the world's action);
    - other `unread`: a cue, kind word or value word (language), or a kind or value no declared world has;
    - `spell.asks`: near words to choose between (library: a prior from the dialogue or the state);
-   - `notHonoured` `not_declared`: a correct named refusal, unless the user expected it (then a declaration);
+   - `notHonoured` `not_declared`: a missing declared interface or a genuinely unavailable operation; inspect compatible
+     worlds and alternatives before accepting refusal as the intended behavior;
    - `no_slot`: the world honours a key nothing takes (declaration: a slot);
    - `value`: a value outside the slot's domain (knowledge: a join by key instead of an enum);
    - `no_kind`: a kind this world lacks (declaration, or an explicit composition);
-   - `cannot`: a refusal with its reason; if the user expected a result, a planning method (more candidates,
-     plan repair) is the piece;
+   - `cannot`: inspect the reason, alternatives and executable bindings; a planning mechanism
+     (more candidates, plan repair) may be missing. An emitted refusal is not automatically a success;
    - what the evidence does not explain (a wrong reading that read everything, a wrong plan that was
      honoured): `piece: unknown`, to [propose-generic-method](../propose-generic-method/SKILL.md).
 3. **Write the rows** on the honest list with `needs <generic piece>` (`checkHonest` must report no problem).
@@ -49,10 +55,13 @@ rule to the cases.
 ## May change / must never do
 
 - May change the repository the piece belongs to, through its own review; may add rows to the honest list.
-- Never a rule learnt from the failing family and put in the host, never a phrase list, never a fallback that
+- Never a rule learnt from the failing family and put in the host, never an executable phrase list fitted to cases, never a fallback that
   hides an unread word, never editing tests or sets to pass, never restricted data.
 
 ## Dry run
+
+These historical fixtures exercise library triage only. Their refusal classifications do not set the
+application's behavior policy or measure its current SOP-BERT path.
 
 ```
 node skills/improve-world-from-failures/scripts/dry-run.mjs

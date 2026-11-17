@@ -5,10 +5,11 @@ description: Write or change a live world's rules and facts so that the library'
 
 # Author a live world
 
-readRequest, reviseRequest, planRequest (with its induce / propose / simulate / deduce / abduce cycle),
-runPlan, sayRequest and repairWords have no code per world. What a world can do is what it declares. A world
-written this way gets reading, gap filling, reasoning and refusals for free. A world that does not declare
-something gets an honest, named refusal, not a guess.
+Declare reusable kinds, constraints, relations and actions so existing generic mechanisms can use them.
+A declaration is an interface promise: demonstrate the matching reasoning, binding and executor in a real
+run before claiming the capability. See [operational scope](../README.md#operational-scope-and-evidence)
+for the application's SOP-BERT reader, uncertainty policy and native-code boundary. The library request
+APIs below describe explicit library workflows, not an alternative application reader.
 
 ## Parameters
 
@@ -39,10 +40,11 @@ something gets an honest, named refusal, not a guess.
 6. **Words in the language world.** Cues, verbs, synonyms and skip words belong in `w.lang.<lang>`,
    `k.actions` and `k.words`, where every world and every language gains them. A world keeps only its own
    names for its own kinds (`core.word` of a kind). Never sentences, never phrase patterns.
-7. **No world ids or sentences in host code.** The host passes worlds to the library. It never branches on a
-   world's id, a kind's name or a user's words.
+7. **No world ids or sentences in host code.** The host passes worlds and explicit bindings to the library. Routing by declared
+   identifiers is allowed; semantic decisions must not branch on a world's id, kind name or sentence.
 8. **State readable by factsOf.** Things are wires with a type, attributes and `$` references (or declared
-   joins). Then `factsOf`, `deduceState` and `induceStyle` see them. No state hidden in host variables.
+   joins). Then `factsOf`, `deduceState` and `induceStyle` see them. Name the operational state authority. Facts exported from native host state are an
+   observation, not proof that reasoning and tool writes operate on an authoritative SOP World.
 9. **Composition is explicit.** Two worlds work together only through a composite world that `core.use`s both
    and joins them by key, or through declared delegation. Never a silent merge, never one world reading
    another's internals.
@@ -52,10 +54,15 @@ something gets an honest, named refusal, not a guess.
    `type=` and `accepts=` (the values the tool takes; others are translated by knowledge: the nearest grade of
    k.expect.scale, the nearest kind of the lineage or `std.schema.drawn`), `std.tool.bind act= of= op=
    arg=<param><-<source>` with `needs=` / `makes=`, and `std.tool.custom` for a constraint or search no wire can
-   say. Defaults are `k.expect.when of= key= value= if.<key>=` rows, never code. The tool's JS holds only
-   primitives (typed, no request, no words, no defaults, no kind literals), the view (its state as facts) and the
-   declared custom functions; `toolSession` is the door. `examples/tool-app.mjs` is the pattern; the properties
-   of `test/tool.test.mjs` check a primitive names no kind of the world.
+   say. Conditional defaults use the schema actually loaded by the consumer: the library
+   supports `k.expect.value on= value= when.<key>=` and `k.expect.when key= value= if.<key>=`.
+   Verify the consuming mechanism and pinned declarations; do not assume either spelling is the
+   application contract merely because a library example uses it. Primitive calls take concrete typed
+   arguments; reasoning supplies defaults and semantic choices through the declared mechanisms. Expose
+   native rendering, storage and declared custom functions as implementation boundaries, and disclose
+   remaining semantic code rather than calling it world reasoning. `toolSession` is a library entry point;
+   verify that the host actually uses it before attributing its guarantees to that host.
+   `examples/tool-app.mjs` and `test/tool.test.mjs` demonstrate this particular library contract.
 
 ## Check it
 
@@ -75,7 +82,8 @@ something gets an honest, named refusal, not a guess.
 ## May change / must never do
 
 - May change the world's declarations through the host's or the knowledge repository's review.
-- Never code in a world, never value lists the knowledge has, never sentences or phrase patterns, never a
+- Never conceal arbitrary host logic as a world declaration; declared primitive/custom-function bindings
+  remain explicit implementation boundaries. Never value lists the knowledge has, never sentences or phrase patterns, never a
   declaration of a capability the world does not have.
 
 ## Dry run

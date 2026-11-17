@@ -12,6 +12,11 @@ description: The periodic cycle on the honest list. Bring in new real turns (not
 
 ## Steps
 
+Use the [operational scope](../README.md#operational-scope-and-evidence) throughout: the application's
+reader is SOP-BERT; library grammar fixtures are separately labeled. A plausible uncertain action with
+retained alternatives and undo is not a failure merely for being uncertain; needless clarification and
+avoidable refusal are behavior problems. Distinguish implemented effects from declarations and projections.
+
 1. **Bring in** the new turns, all of them. Learning uses every turn. Overlap between what is learnt from and
    what is measured is acceptable: a contaminated probe set is replaced by a fresh one, and nothing is frozen
    or held back (the host's data principle).
@@ -31,13 +36,16 @@ description: The periodic cycle on the honest list. Bring in new real turns (not
    - **fresh probes**: new sentences generated from the declarations and the language world, or written after
      the change by someone who did not see it;
    - the **honest list**: rows that left by the piece, rows that came (`honestDelta`);
-   - the corpora and curves, **reported**.
+   - the corpora and curves, **reported**;
+   - one actual host turn through reader, world resolution, binding and authoritative state change,
+     including an uncertainty/correction or undo check when that behavior changed.
 7. **Accept** by the phase's rule ([README.md](../README.md#acceptance-two-phases)):
    - transition (now): a lost case that passed only by a patch does not count. To tell, run it with the
      patches off: if it fails there, it is patch-only (`patchOnly`). Every other loss is listed;
    - steady (patches gone): a regression needs very good arguments; a loss is acceptable only for at least 10
      real turns won per 1 lost, net, each loss listed as "needs <generic piece>".
-8. **Open the change for review** in its repository, with the measurement and the rows moved.
+8. **Deliver under the existing authorization** and the repository's required checks/review, with the
+   actual measurement and rows moved. Do not stop at a source-only candidate when the task includes a run.
 9. **Write** what was tried, including pieces that did not land and why.
 
 ## May change / must never do

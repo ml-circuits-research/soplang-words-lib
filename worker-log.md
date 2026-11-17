@@ -6560,3 +6560,6 @@ Checks: npm test and SOPWORLD_BUNDLE=1 node --test 'test/**/*.test.mjs' —each9
 
 2026-11-17 delivered: version3 carriers emit short stable object IDs, direct scalar roots, field records and ordered sequences; no state.value/std.instance.value instance nodes. std.instance now has an explicit standard schema. Earlier semantic-world entry count corrected to963tests961pass.
 Checks: npm test; SOPWORLD_BUNDLE=1 node --test 'test/**/*.test.mjs' —each964tests962pass0fail1skip1todo. Actual five historical archives decode→version3→decode deep-equal every field, while new wire text contains no std.instance.value.
+
+2026-11-17 owner-requested skill correction: updated README and author-live-world/propose-generic-method/improve-world-from-failures/consolidate to distinguish actual SOP-BERT application reading from historical grammar fixtures; removed capability-for-free promises and refusal-first steering, documented ranked plausible effects/uncertainty/undo and real SOP authority/native boundaries. No runtime contract or library version changed.
+Checks: four existing skill dry runs exited0; `npm test` source964tests962pass0fail1skip1todo; `SOPWORLD_BUNDLE=1 node --test 'test/**/*.test.mjs'` same964/962/0/1/1; `git diff --check` clean.

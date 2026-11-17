@@ -1,14 +1,14 @@
-# sopworld 0.206.0
+# sopworld 0.207.0
 
 The single-file build in this folder.
 
 | | |
 | --- | --- |
-| Version | 0.206.0 |
-| Build | 7838937f22ce |
+| Version | 0.207.0 |
+| Build | 2b420a934af2 |
 | Built | 2026-11-17 |
-| `sopworld.mjs` (ES module) | 1538.2 kB, 434.1 kB gzipped |
-| `sopworld.js` (global `sopworld`, CommonJS) | 1534.8 kB, 433.5 kB gzipped |
+| `sopworld.mjs` (ES module) | 1539.1 kB, 434.4 kB gzipped |
+| `sopworld.js` (global `sopworld`, CommonJS) | 1535.7 kB, 433.8 kB gzipped |
 | Modules bundled | 95 |
 
 "Build" is a fingerprint of the bundled sources: two files with the same build are the
@@ -16,8 +16,8 @@ same code. The loaded library says the same thing about itself:
 
 ```js
 import { version, build } from './sopworld.mjs';
-version   // '0.206.0'
-build     // { version: '0.206.0', hash: '7838937f22ce', date: '2026-11-17' }
+version   // '0.207.0'
+build     // { version: '0.207.0', hash: '2b420a934af2', date: '2026-11-17' }
 ```
 
 In a page that loads `sopworld.js` it is `sopworld.version` and `sopworld.build`. The

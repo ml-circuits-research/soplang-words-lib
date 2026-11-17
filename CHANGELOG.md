@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.207.0
+
+- Instance Worlds load ordinary domain facts and their actual reference closure. Archive descriptors, native projections and observation metadata stay in the transport carrier; complete archive loading is an explicit diagnostic option.
+
+## 0.207.0
+
+- Instance state worlds load only ordinary domain facts and their explicit reference closure. Native implementation projections, archive descriptors and observation metadata remain in the lossless carrier, outside inference; full archive loading is an explicit diagnostic option.
+
 ## 0.206.0
 
 - Compact instance projection containers store scalar members directly, with ordered object keys and array members. The lossless version-2 codec retains all native data and reads existing version-1 archives. Semantic fact attributes remain direct literals.

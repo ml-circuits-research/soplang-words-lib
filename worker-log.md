@@ -6554,3 +6554,6 @@ Checks: `node --test test/instance-state.test.mjs` (6 pass); `npm test > ../.ses
 ## G: Compact instance-state scalar members — 2026-11-17
 - Version 0.206.0 writes compact version-2 projection containers with direct scalar literals; version-1 archives still restore exactly. Semantic facts and native undo data are retained.
 - Checks: `python3 tools/build_docs.py`, `npm run build`, `npm test`, `SOPWORLD_BUNDLE=1 npm test`: each test gate 962 tests, 960 pass, 0 fail, 1 skip, 1 todo; `git diff --check` clean.
+
+2026-11-17 delivered: instanceStateWorld now loads actual domain facts and their real reference closure; archive descriptors, native projection/history and observation binding copies stay outside the semantic World. Explicit includeArchive:true retains diagnostic access.
+Checks: npm test and SOPWORLD_BUNDLE=1 node --test 'test/**/*.test.mjs' —each964tests962pass0fail1skip1todo after regenerated docs; actual historical five-editor archive loading separately confirms only domain facts and necessary structured attributes enter Worlds.

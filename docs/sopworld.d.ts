@@ -1013,4 +1013,4 @@ export interface InstanceStateLimits { maxNodes?: number; maxDepth?: number; max
 export const INSTANCE_STATE_FORMAT: 'sop.instance-state/2';
 export function serializeInstanceState(input: InstanceState, options?: InstanceStateLimits): string;
 export function readInstanceState(wires: string, options?: InstanceStateLimits): InstanceState;
-export function instanceStateWorld(wires: string, options?: InstanceStateLimits & { schema?: string }): World;
+export function instanceStateWorld(wires: string, options?: InstanceStateLimits & { schema?: string; includeArchive?: boolean }): World;

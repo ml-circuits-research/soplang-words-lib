@@ -76,7 +76,19 @@ export function readInstanceState(wires,options={}){
  });
  const result={instanceId:literal(one(root,'instance')),world:literal(one(root,'world')),schemaVersion:literal(one(root,'schema')),revision:literal(one(root,'revision')),objects,projection:value(reference(one(root,'projection'))),...(root.attrs.metadata?{metadata:value(reference(one(root,'metadata')))}:{})};descriptor(result);need(nodes.every(n=>used.has(n.id)),'unowned-wire');return result;
 }
-/** A real SOP world over the saved facts. Schema/rules may be supplied by the caller; no private callback interprets them. */
-export function instanceStateWorld(wires,{schema='',...options}={}){
- readInstanceState(wires,options);const world=new World();if(schema)need(world.load(schema).ok,'schema');need(world.load(wires).ok,'facts');return world;
+/** A semantic SOP world: ordinary facts and their actual local reference closure.
+ * Archive descriptors, implementation projection, and observation metadata stay in the carrier.
+ * includeArchive is an explicit diagnostic opt-in, never the default inference context. */
+export function instanceStateWorld(wires,{schema='',includeArchive=false,...options}={}){
+ readInstanceState(wires,options);
+ const nodes=parse(wires),byId=new Map(nodes.map(node=>[node.id,node])),selected=new Set();
+ if(includeArchive)for(const node of nodes)selected.add(node.id);
+ else{
+  const pending=nodes.filter(node=>node.type==='std.instance.object').map(node=>str(node.attrs.fact[0]).slice(1));
+  // bounded: each node expands once; queued references are bounded by the validated maxBytes input.
+  while(pending.length){const id=pending.pop();if(selected.has(id))continue;const node=byId.get(id);need(node,'semantic-reference');selected.add(id);
+   for(const values of Object.values(node.attrs))for(const value of values)if(value[0]==='$')pending.push(value.slice(1));
+  }
+ }
+ const world=new World();if(schema)need(world.load(schema).ok,'schema');need(world.load(serialize(nodes.filter(node=>selected.has(node.id)))).ok,'facts');return world;
 }

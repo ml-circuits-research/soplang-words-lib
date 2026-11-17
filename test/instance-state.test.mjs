@@ -64,3 +64,16 @@ test('legacy instance-state/1 archives remain readable without reinterpretation'
  const compact=serializeInstanceState(old);assert.deepEqual(readInstanceState(compact),old);assert.ok(compact.split('\n').length<wires.split('\n').length);
  assert.throws(()=>readInstanceState(wires.replace('index=1','index=0')),/array-order/);
 });
+
+test('semantic instance worlds exclude native projection and observation metadata from inference',()=>{
+ const input=state();input.objects[0].metadata={inputs:{x:[{binding:'invented.x',unit:'pixel'}]}};input.metadata={private:'carrier-only'};
+ const wires=serializeInstanceState(input),world=instanceStateWorld(wires),facts=[...world.wires.values()];
+ assert.ok(facts.some(wire=>wire.type==='invented.node'));
+ assert.ok(facts.every(wire=>!['std.instance.snapshot','std.instance.object'].includes(wire.type)));
+ assert.ok(facts.every(wire=>!Object.values(wire.attrs).flat().some(token=>String(token).includes('carrier-only')||String(token).includes('invented.x'))));
+ assert.equal(readInstanceState(wires).metadata.private,'carrier-only');
+ assert.ok(instanceStateWorld(wires,{includeArchive:true}).get('instance.snapshot'));
+ const tags=facts.find(wire=>wire.type==='invented.node'&&str(wire.attrs.label[0])==='First').attrs.tags[0];
+ assert.ok(world.get(tags.slice(1)),'actual structured domain attribute retains its referenced container');
+});
+

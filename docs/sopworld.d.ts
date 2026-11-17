@@ -975,3 +975,11 @@ export function retainRequestRevision(world: World, input: RequestRevisionInput,
   ok: boolean; created: boolean; retained?: RetainedRevision; graph?: { request: string; nodes: RequestGraphNode[] }; wires?: string;
   steps?: number; limits?: { copy: number; perGraph: number; retention: number }; issues?: { reason: string }[]; violations?: Array<Record<string, unknown>>;
 };
+
+export type SelectiveCalibrationRow = {id:string;source:string} & ({eligible:true;score:number;correct:boolean}|{eligible:false;score:number|null;correct:null});
+export interface SelectiveAdmissionPolicy {minFitAccepted:number;minEvaluationAccepted:number;maxErrorRate:number;}
+export interface SelectiveAdmissionMetrics {total:number;eligible:number;ineligible:number;accepted:number;abstained:number;correct:number;wrong:number;coverage:number;risk:number|null;}
+export interface SelectiveAdmissionReport {threshold:number|null;approved:boolean;reason:string;fit:SelectiveAdmissionMetrics;evaluation:SelectiveAdmissionMetrics;}
+/** Empirical source-disjoint selective admission, not an individual probability. */
+export function retainSelectiveCalibration(world:World,input:{owner:string;revision:string;identity:Record<string,unknown>;scope:string;policy:SelectiveAdmissionPolicy;fitRows:SelectiveCalibrationRow[];evaluationRows:SelectiveCalibrationRow[]},options?:{dry?:boolean;budget?:{steps?:number;ms?:number}}):{ok:boolean;created:boolean;retained?:RetainedRevision;calibration?:SelectiveAdmissionReport;issues?:Array<{reason?:string;[key:string]:unknown}>;violations?:Array<{kind:string;[key:string]:unknown}>};
+export function assessSelectiveCalibration(world:World,reference:{owner:string;revision:string},candidate:{identity:Record<string,unknown>;scope:string;score:number|null;eligible:boolean},options?:{budget?:{steps?:number;ms?:number}}):{ok:boolean;admitted:boolean;reason:string;calibration?:{owner:string;revision:string};threshold?:number|null;policy?:SelectiveAdmissionPolicy;fit?:SelectiveAdmissionMetrics;evaluation?:SelectiveAdmissionMetrics;scope?:string;trust?:string;issues?:unknown[]};

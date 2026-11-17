@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.202.0
+
+- Retain scope-specific empirical admission evidence with disjoint fit/evaluation sources, exact pipeline identities and explicit support/error policy. Read-only assessment refuses mismatched, unsupported or insufficient evidence without manufacturing individual prediction probabilities.
+
 ## 0.201.0
 
 - Retain validated request graph revisions and explicit node changes against an exact historical parent. Existing source text identities cannot be overwritten; no fragment interpretation or execution is inferred.

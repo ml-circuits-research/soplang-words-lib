@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="c6a5ed83625b">
+<meta name="source-hash" content="fd738550a60e">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.201.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.202.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -1627,9 +1627,34 @@ true
 inspect</code></pre></figure>
 <p>Previous revisions are immutable. Existing source nodes cannot be overwritten with different text: add a new source identity and reference it explicitly. Unknown removals, contradictory changes, dangling ownership and invalid resulting graphs refuse without publishing a revision. The request root identity remains unchanged in a derived revision. Cross-owner branches are explicit historical links, not permission to edit another actor's live state.</p>
 <p><code>budget</code> bounds copying and revision processing; <code>graphBudget</code> bounds each serializer invocation independently; <code>retentionBudget</code> bounds retained publication. They are separate finite caps, not a single aggregate work count. <code>dry</code> validates and returns an ephemeral retained record. Reusing an owner/revision with different contents refuses; this function does not modify live request facts, infer a dialogue correction or publish evidence of execution.</p>
+<h3 id="retainselectivecalibrationworld-input-options">retainSelectiveCalibration(world, input, options?)</h3>
+<p>Retain an empirical selective-admission report under an immutable owner/revision. Input specifies an exact caller-declared pipeline <code>identity</code>, <code>scope</code>, explicit <code>policy</code>, <code>fitRows</code> and independent <code>evaluationRows</code>. Rows retain unique prediction and original source identities; duplicates across or within splits refuse. Eligible rows require finite scores and known boolean correctness labels. Ineligible rows retain null labels and remain in every coverage denominator.</p>
+<p>Fit chooses the largest accepted cohort satisfying <code>minFitAccepted</code> and <code>maxErrorRate</code>, including all equal-score predictions together. Evaluation applies that fixed threshold without retuning; it must meet <code>minEvaluationAccepted</code> and the same error policy. No adequate threshold or no evaluated acceptance yields a retained, unapproved report. Labels, original-source identities and completeness of the pipeline identity are trusted C1 declarations. This operation does not evaluate model correctness itself or prove statistical independence merely from distinct IDs.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+const identity = {model: &#x27;toy.model@1&#x27;, decoder: &#x27;toy.decoder@1&#x27;, scoreDefinition: &#x27;toy.margin@1&#x27;};
+const r = (id, score, correct) =&gt; ({id, source: id, score, correct, eligible: true});
+const saved = retainSelectiveCalibration(w, {
+  owner: &#x27;toy.gate&#x27;, revision: &#x27;1&#x27;, identity, scope: &#x27;toy.complete-reading&#x27;,
+  policy: {minFitAccepted: 2, minEvaluationAccepted: 2, maxErrorRate: 0},
+  fitRows: [r(&#x27;fit1&#x27;, 9, true), r(&#x27;fit2&#x27;, 8, true), r(&#x27;fit3&#x27;, 7, false)],
+  evaluationRows: [r(&#x27;eval1&#x27;, 10, true), r(&#x27;eval2&#x27;, 8, true), r(&#x27;eval3&#x27;, 6, false)]
+});
+print(saved.calibration.threshold);
+print(assessSelectiveCalibration(w, {owner: &#x27;toy.gate&#x27;, revision: &#x27;1&#x27;},
+  {identity, scope: &#x27;toy.complete-reading&#x27;, score: 9, eligible: true}).admitted);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>8
+true</code></pre></figure>
+<h3 id="assessselectivecalibrationworld-reference-candidate-options">assessSelectiveCalibration(world, reference, candidate, options?)</h3>
+<p>Assess against the exact retained evidence and require matching complete pipeline identity, scope, finite declared score and eligibility. Restored reports are recomputed before use; a forged threshold, status or summary refuses. Immutable verified evidence can be memoized. A new model, tokenizer, decoder, score extractor, bindings or executor requires a changed identity wherever it changes the measured behavior; the host must declare all such components.</p>
+<p>Returns an admission decision and measured fit/evaluation counts, not an individual prediction probability. Empirical precision of the admitted cohort must not be inserted as a model's whole-graph confidence. No future-error guarantee, host authentication, schema approval or execution authorization is established here. The policy belongs to the host; no support/error default is invented. <code>dry</code> and the world's finite work budget apply; each split accepts at most 50,000 rows. Rejected calibration evidence remains inspectable rather than disappearing from the denominator.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = new World();
+print(assessSelectiveCalibration(w, {owner: &#x27;missing&#x27;, revision: &#x27;1&#x27;},
+  {identity: {model: &#x27;toy@1&#x27;}, scope: &#x27;toy.whole-reading&#x27;, score: 1, eligible: true}).reason);</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>missing-calibration</code></pre></figure>
+<p>Eligibility must be fixed independently of correctness labels and reproduced by the same pinned runtime protocol. Marking wrong predictions ineligible after inspecting their labels invalidates the evidence even though source IDs remain distinct. The library validates record consistency; the C1 author and reviewer establish that labeling/protocol obligation.</p>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.201.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.202.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

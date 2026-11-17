@@ -1607,6 +1607,8 @@ O întrebare de clarificare rămâne deschisă până când omul îi răspunde, 
 
 Un cuvânt neinterpretat poate părea mic și totuși să schimbe cererea: „not” inversează o condiție. De aceea categoria „cuvânt de legătură” nu este o autorizație de a ignora negația, ordinea ori întinderea unei expresii. Ignorarea este admisibilă numai când gramatica îi declară rolul nerelevant pentru cererea structurată. Întrebarea de clarificare păstrează candidații și valoarea așteptată, pentru ca răspunsul următor să poată fi legat de problema corectă.
 
+În implementarea 0.202, poarta de admitere poate păstra un raport empiric pentru o identitate exactă a pipeline-ului și un domeniu declarat. Pragul se alege numai pe exemplele de ajustare; un set separat, fără surse comune, îl verifică fără să îl modifice. Raportul păstrează și abținerile, iar o aprobare cere suficiente predicții evaluate și respectarea politicii explicite de eroare. Rezultatul este o decizie de admitere pentru acel domeniu, nu probabilitatea că o anumită cerere este corectă. Corectitudinea etichetelor și identificarea completă a componentelor rămân obligații ale autorului probelor; schema și evaluarea efectelor se verifică separat.
+
 ### 6.3.2 Reprezentarea cererii și identitatea unei cerințe
 
 Cererea este o stare distinctă de desen: faptul că omul cere trei pești nu înseamnă că aceștia există deja. Un obiect al cererii poate desemna un grup de rezultate încă de creat sau un lucru existent care trebuie găsit. Planificarea leagă aceste ținte de identități concrete; nu folosește identificatorul unui obiect al cererii drept identificatorul unui pește real.

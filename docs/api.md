@@ -4898,3 +4898,47 @@ inspect
 Previous revisions are immutable. Existing source nodes cannot be overwritten with different text: add a new source identity and reference it explicitly. Unknown removals, contradictory changes, dangling ownership and invalid resulting graphs refuse without publishing a revision. The request root identity remains unchanged in a derived revision. Cross-owner branches are explicit historical links, not permission to edit another actor's live state.
 
 `budget` bounds copying and revision processing; `graphBudget` bounds each serializer invocation independently; `retentionBudget` bounds retained publication. They are separate finite caps, not a single aggregate work count. `dry` validates and returns an ephemeral retained record. Reusing an owner/revision with different contents refuses; this function does not modify live request facts, infer a dialogue correction or publish evidence of execution.
+
+### retainSelectiveCalibration(world, input, options?)
+
+Retain an empirical selective-admission report under an immutable owner/revision. Input specifies an exact caller-declared pipeline `identity`, `scope`, explicit `policy`, `fitRows` and independent `evaluationRows`. Rows retain unique prediction and original source identities; duplicates across or within splits refuse. Eligible rows require finite scores and known boolean correctness labels. Ineligible rows retain null labels and remain in every coverage denominator.
+
+Fit chooses the largest accepted cohort satisfying `minFitAccepted` and `maxErrorRate`, including all equal-score predictions together. Evaluation applies that fixed threshold without retuning; it must meet `minEvaluationAccepted` and the same error policy. No adequate threshold or no evaluated acceptance yields a retained, unapproved report. Labels, original-source identities and completeness of the pipeline identity are trusted C1 declarations. This operation does not evaluate model correctness itself or prove statistical independence merely from distinct IDs.
+
+```js run
+const w = new World();
+const identity = {model: 'toy.model@1', decoder: 'toy.decoder@1', scoreDefinition: 'toy.margin@1'};
+const r = (id, score, correct) => ({id, source: id, score, correct, eligible: true});
+const saved = retainSelectiveCalibration(w, {
+  owner: 'toy.gate', revision: '1', identity, scope: 'toy.complete-reading',
+  policy: {minFitAccepted: 2, minEvaluationAccepted: 2, maxErrorRate: 0},
+  fitRows: [r('fit1', 9, true), r('fit2', 8, true), r('fit3', 7, false)],
+  evaluationRows: [r('eval1', 10, true), r('eval2', 8, true), r('eval3', 6, false)]
+});
+print(saved.calibration.threshold);
+print(assessSelectiveCalibration(w, {owner: 'toy.gate', revision: '1'},
+  {identity, scope: 'toy.complete-reading', score: 9, eligible: true}).admitted);
+```
+
+```output
+8
+true
+```
+
+### assessSelectiveCalibration(world, reference, candidate, options?)
+
+Assess against the exact retained evidence and require matching complete pipeline identity, scope, finite declared score and eligibility. Restored reports are recomputed before use; a forged threshold, status or summary refuses. Immutable verified evidence can be memoized. A new model, tokenizer, decoder, score extractor, bindings or executor requires a changed identity wherever it changes the measured behavior; the host must declare all such components.
+
+Returns an admission decision and measured fit/evaluation counts, not an individual prediction probability. Empirical precision of the admitted cohort must not be inserted as a model's whole-graph confidence. No future-error guarantee, host authentication, schema approval or execution authorization is established here. The policy belongs to the host; no support/error default is invented. `dry` and the world's finite work budget apply; each split accepts at most 50,000 rows. Rejected calibration evidence remains inspectable rather than disappearing from the denominator.
+
+```js run
+const w = new World();
+print(assessSelectiveCalibration(w, {owner: 'missing', revision: '1'},
+  {identity: {model: 'toy@1'}, scope: 'toy.whole-reading', score: 1, eligible: true}).reason);
+```
+
+```output
+missing-calibration
+```
+
+Eligibility must be fixed independently of correctness labels and reproduced by the same pinned runtime protocol. Marking wrong predictions ineligible after inspecting their labels invalidates the evidence even though source IDs remain distinct. The library validates record consistency; the C1 author and reviewer establish that labeling/protocol obligation.

@@ -2139,3 +2139,7 @@ Source text identities are immutable within this operation: a correction adds a 
 
 
 `lookupContextTargetBinding` reads an explicitly retained graph-target/trace-member correlation, validates the historical request graph and existence evidence, and checks exact canonical membership and host-witness tuples. Its result is historical only, with no live binding; it does not authenticate caller declarations or prove an incarnation. Positive selected membership may survive a partial population or removal. Missing/conflicting evidence remains unknown. See [API](api.md#lookupcontexttargetbindingworld-reference-options).
+
+## Local instance archives
+
+`INSTANCE_STATE_FORMAT`, `serializeInstanceState`, `readInstanceState` and `instanceStateWorld` retain typed, queryable instance facts with stable local identities and a transparent, versioned implementation projection. This is a codec and a normal World loader, not request completion or execution authority. Explicit relation targets must exist locally. Consumers verify projection/fact agreement before adopting native caches; project loading and migrations remain explicit. See [API](api.md#serializeinstancestateinput-options) and [contract](instance-state.md).

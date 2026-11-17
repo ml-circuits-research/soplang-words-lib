@@ -1,0 +1,11 @@
+# SOP instance state and implementation projections
+
+`serializeInstanceState` writes one versioned instance with an immutable instance ID, schema identity/version, revision, ordinary typed object facts and explicit local relations. Native/local object IDs are retained separately; their SOP fact IDs are deterministic and do not change when population order changes. Copying to another instance requires an explicit new instance ID. External references and project namespace resolution are not implemented by this local archive.
+
+The descriptor supplies `objects: [{id,type,attributes,relations,metadata?}]` and a finite, acyclic `projection`. Attributes contain ordered literal values. Relations contain actual local object IDs; no literal equal to an ID becomes a reference by guessing. Structured attribute values, metadata and the implementation projection become typed SOP object/array/scalar nodes. Arrays retain explicit indices. There is no opaque JSON snapshot string.
+
+`readInstanceState` reconstructs the descriptor/projection and rejects malformed, cyclic, unowned or excessive data. Unknown formats are refused. The archive is a transport codec, not evidence that a consumer's projection agrees with its facts. A consumer must recreate its declared view and compare it with the saved facts before adopting that tool cache; mismatch leaves the saved instance intact. Schema/version changes require a declared migration rather than silent reinterpretation.
+
+`instanceStateWorld(wires,{schema})` loads the actual saved facts into a World with the caller's ordinary SOP declarations/rules. `factsOf`, matching and deduction see them. The tested example infers which restored node lacks an incoming link using `core.rule`, without a host callback for that decision. This does not implement arbitrary request completion or grant execution authority.
+
+The implementation projection exists for renderers/tools during migration. It is typed data, separate from the facts on which reasoning operates. Storage (files, IndexedDB or another carrier), native bindings and cross-instance project loading belong to the consumer. No storage API, domain name, UI or sentence interpretation is present in this mechanism.

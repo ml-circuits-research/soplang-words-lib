@@ -4984,3 +4984,43 @@ print(result.liveBinding); // null
 ```
 
 `budget` bounds copying/lookup and evidence checks (default 100000); `graphBudget` separately bounds the existing graph serializer (default 20000). The host's authority, context, canonical membership and correlation are trusted inputs. This method does not select a conversational antecedent, interpret text, prove incarnation identity or rebind a historical subject to today's state. A current resolution must separately revalidate context/identity and new selectors. Numeric ID reuse never establishes continuity.
+
+## Instance state archives
+
+### INSTANCE_STATE_FORMAT
+
+```js
+INSTANCE_STATE_FORMAT; // "sop.instance-state/1"
+```
+
+The local archive version `sop.instance-state/1`. This is separate from the consumer schema/version and instance identity.
+
+### serializeInstanceState(input, options?)
+
+```js
+const wires = serializeInstanceState({
+  instanceId: 'instance-1', world: 'invented', schemaVersion: '1', revision: 0,
+  objects: [{id:'a',type:'invented.item',attributes:{kind:['item'],value:[2]},relations:{}}],
+  projection: {items:[{id:'a',value:2}]},
+});
+```
+
+Returns SOP text for `{instanceId,world,schemaVersion,revision,objects,projection,metadata?}`. Each object supplies `{id,type,attributes?,relations?,metadata?}`; attributes map keys to ordered literal values, relations map keys to actual local object IDs. Native/local IDs map to stable SOP fact IDs. The finite implementation projection is transparent typed SOP data, not an opaque JSON string. Limits are `{maxNodes,maxDepth,maxBytes}`; unsafe, cyclic or excessive data throws before serialization. This does not choose actions or certify a native projection.
+
+### readInstanceState(wires, options?)
+
+```js
+const restored = readInstanceState(wires);
+restored.instanceId; // "instance-1"
+```
+
+Validates and reconstructs the local archive, preserving ordered structured data and explicit local relations. Unknown formats, identity conflicts, dangling refs, cycles, extra unowned wires and exceeded limits throw. The consumer must check its reconstructed tool view against the saved facts before adopting its cache. External-instance loading/migration is not inferred.
+
+### instanceStateWorld(wires, options?)
+
+```js
+const live = instanceStateWorld(wires);
+factsOf(live).ofKind('item'); // stable local SOP fact IDs
+```
+
+Returns an actual `World` containing the saved facts. Optional `{schema}` is ordinary SOP schema/rule text; normal matching, `factsOf` and deduction operate on the restored instance. Does not interpret language or authorize a tool effect. See [instance-state contract](instance-state.md).

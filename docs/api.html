@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="e7354c9c82c5">
+<meta name="source-hash" content="14385ef9f98c">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,8 +12,8 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.204.0</small></a>
-  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="playground.html">Playground</a></nav>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.205.0</small></a>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="instance-state.html">Instance state</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
 <h1>API: every public name, with what it takes and returns</h1>
@@ -1675,9 +1675,28 @@ const result = lookupContextTargetBinding(history, {owner:&#x27;toy.history&#x27
 print(result.status); // unknown
 print(result.liveBinding); // null</code></pre></figure>
 <p><code>budget</code> bounds copying/lookup and evidence checks (default 100000); <code>graphBudget</code> separately bounds the existing graph serializer (default 20000). The host's authority, context, canonical membership and correlation are trusted inputs. This method does not select a conversational antecedent, interpret text, prove incarnation identity or rebind a historical subject to today's state. A current resolution must separately revalidate context/identity and new selectors. Numeric ID reuse never establishes continuity.</p>
+<h2 id="instance-state-archives">Instance state archives</h2>
+<h3 id="instance_state_format">INSTANCE_STATE_FORMAT</h3>
+<figure class="code"><figcaption>js</figcaption><pre><code>INSTANCE_STATE_FORMAT; // &quot;sop.instance-state/1&quot;</code></pre></figure>
+<p>The local archive version <code>sop.instance-state/1</code>. This is separate from the consumer schema/version and instance identity.</p>
+<h3 id="serializeinstancestateinput-options">serializeInstanceState(input, options?)</h3>
+<figure class="code"><figcaption>js</figcaption><pre><code>const wires = serializeInstanceState({
+  instanceId: &#x27;instance-1&#x27;, world: &#x27;invented&#x27;, schemaVersion: &#x27;1&#x27;, revision: 0,
+  objects: [{id:&#x27;a&#x27;,type:&#x27;invented.item&#x27;,attributes:{kind:[&#x27;item&#x27;],value:[2]},relations:{}}],
+  projection: {items:[{id:&#x27;a&#x27;,value:2}]},
+});</code></pre></figure>
+<p>Returns SOP text for <code>{instanceId,world,schemaVersion,revision,objects,projection,metadata?}</code>. Each object supplies <code>{id,type,attributes?,relations?,metadata?}</code>; attributes map keys to ordered literal values, relations map keys to actual local object IDs. Native/local IDs map to stable SOP fact IDs. The finite implementation projection is transparent typed SOP data, not an opaque JSON string. Limits are <code>{maxNodes,maxDepth,maxBytes}</code>; unsafe, cyclic or excessive data throws before serialization. This does not choose actions or certify a native projection.</p>
+<h3 id="readinstancestatewires-options">readInstanceState(wires, options?)</h3>
+<figure class="code"><figcaption>js</figcaption><pre><code>const restored = readInstanceState(wires);
+restored.instanceId; // &quot;instance-1&quot;</code></pre></figure>
+<p>Validates and reconstructs the local archive, preserving ordered structured data and explicit local relations. Unknown formats, identity conflicts, dangling refs, cycles, extra unowned wires and exceeded limits throw. The consumer must check its reconstructed tool view against the saved facts before adopting its cache. External-instance loading/migration is not inferred.</p>
+<h3 id="instancestateworldwires-options">instanceStateWorld(wires, options?)</h3>
+<figure class="code"><figcaption>js</figcaption><pre><code>const live = instanceStateWorld(wires);
+factsOf(live).ofKind(&#x27;item&#x27;); // stable local SOP fact IDs</code></pre></figure>
+<p>Returns an actual <code>World</code> containing the saved facts. Optional <code>{schema}</code> is ordinary SOP schema/rule text; normal matching, <code>factsOf</code> and deduction operate on the restored instance. Does not interpret language or authorize a tool effect. See <a href="instance-state.html">instance-state contract</a>.</p>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.204.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.205.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

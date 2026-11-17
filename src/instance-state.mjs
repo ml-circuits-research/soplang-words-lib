@@ -1,0 +1,77 @@
+// Lossless instance persistence: ordinary queryable facts and a typed implementation projection.
+// No consumer, domain, action interpretation, storage API or rendering code belongs here.
+import {parse,serialize,quote,str} from './parser.mjs';
+import {World} from './world.mjs';
+export const INSTANCE_STATE_FORMAT='sop.instance-state/1';
+const IDENT=/^[A-Za-z_][A-Za-z0-9_-]*(?:\.[A-Za-z0-9_][A-Za-z0-9_-]*)*$/;
+const plain=x=>x!==null&&typeof x==='object'&&!Array.isArray(x)&&(Object.getPrototypeOf(x)===Object.prototype||Object.getPrototypeOf(x)===null);
+const scalar=x=>x===null||typeof x==='string'||typeof x==='boolean'||typeof x==='number'&&Number.isFinite(x);
+const token=x=>typeof x==='string'?quote(x):Object.is(x,-0)?'-0':String(x);
+const objectWireId=id=>'instance.item.u'+Array.from(new TextEncoder().encode(id),b=>b.toString(16).padStart(2,'0')).join('');
+function validateData(data,limits){let count=0,bytes=0;const active=new Set();const walk=(x,depth=0)=>{need(++count<=limits.maxNodes*4&&depth<=limits.maxDepth,'input-budget');if(typeof x==='string'){bytes+=x.length;need(bytes<=limits.maxBytes,'byte-budget');return;}if(scalar(x))return;need(x&&typeof x==='object'&&!active.has(x),'cyclic-or-invalid-value');const array=Array.isArray(x);need(array||plain(x),'value-prototype');const ds=Object.getOwnPropertyDescriptors(x),keys=Reflect.ownKeys(ds);if(array)need(keys.length===x.length+1&&Array.from({length:x.length},(_,i)=>Object.hasOwn(ds,String(i))).every(Boolean),'sparse-array');active.add(x);for(const key of keys){if(array&&key==='length')continue;const d=ds[key];need(typeof key==='string'&&d.enumerable&&Object.hasOwn(d,'value'),'accessor-property');bytes+=key.length;need(bytes<=limits.maxBytes,'byte-budget');walk(d.value,depth+1);}active.delete(x);};walk(data);}
+const need=(ok,reason)=>{if(!ok)throw new TypeError('instance-state:'+reason);};
+const identifier=x=>typeof x==='string'&&IDENT.test(x)&&!x.startsWith('core.');
+const shape=(x,keys)=>plain(x)&&Object.keys(x).every(k=>keys.includes(k));
+const descriptor=(x)=>{need(shape(x,['instanceId','world','schemaVersion','revision','objects','projection','metadata']),'descriptor');for(const key of ['instanceId','world','schemaVersion'])need(typeof x[key]==='string'&&x[key].length>0,'identity');need(typeof x.revision==='string'||Number.isSafeInteger(x.revision)&&x.revision>=0,'revision');need(Array.isArray(x.objects),'objects');};
+const limitsOf=({maxNodes=100000,maxDepth=64,maxBytes=32000000}={})=>{need([maxNodes,maxDepth,maxBytes].every(n=>Number.isSafeInteger(n)&&n>0),'limits');return {maxNodes,maxDepth,maxBytes};};
+/** objects: [{id,type,attributes:{key:[literal,...]},relations:{key:[localId,...]},metadata?}].
+ * The projection is structured tool data, encoded as typed SOP nodes, never an opaque JSON string.
+ * It is not an inference source or a substitute for the application's declared facts/schema. */
+export function serializeInstanceState(input,options={}){
+ const limits=limitsOf(options);validateData(input,limits);descriptor(input);const nodes=[],seen=new Set(),byId=new Map();let sequence=0;
+ const add=node=>{need(nodes.length<limits.maxNodes,'node-budget');nodes.push(node);return node.id;};
+ // bounded: each value is charged to maxNodes and recursion is limited by maxDepth.
+ const value=(data,location={},depth=0)=>{
+  need(depth<=limits.maxDepth,'depth-budget');const id='state.value.'+sequence++,attrs={...location};let kind;
+  if(scalar(data)){kind=data===null?'null':typeof data;if(kind!=='null')attrs.value=[token(data)];}
+  else{need(data&&typeof data==='object'&&!seen.has(data),'cyclic-or-invalid-value');const array=Array.isArray(data);need(array||plain(data),'value-prototype');kind=array?'array':'object';const own=Reflect.ownKeys(data);need(own.every(k=>typeof k==='string'),'symbol-property');seen.add(data);const keys=array?Array.from({length:data.length},(_,i)=>String(i)):own;
+   if(array)need(own.length===data.length+1&&keys.every(k=>Object.hasOwn(data,k)),'sparse-array');
+   attrs.member=keys.map((key,index)=>{const d=Object.getOwnPropertyDescriptor(data,key);need(d&&d.enumerable&&Object.hasOwn(d,'value'),'accessor-property');return '$'+value(d.value,array?{index:[String(index)]}:{key:[quote(key)]},depth+1);});seen.delete(data);
+  }
+  attrs.kind=[quote(kind)];return add({id,type:'std.instance.value',attrs});
+ };
+ for(const [index,object]of input.objects.entries()){need(shape(object,['id','type','attributes','relations','metadata'])&&typeof object.id==='string'&&object.id.length>0&&identifier(object.type)&&!object.type.startsWith('std.instance.'),'object');need(!byId.has(object.id),'duplicate-object-id');byId.set(object.id,objectWireId(object.id));}
+ const objects=[];
+ for(const [index,object]of input.objects.entries()){
+  const attrs={},attributes=object.attributes??{},relations=object.relations??{};need(plain(attributes)&&plain(relations),'object-fields');
+  for(const [key,values]of Object.entries(attributes)){need(identifier(key)&&Array.isArray(values)&&!Object.hasOwn(relations,key),'attribute');attrs[key]=values.map(v=>scalar(v)?token(v):'$'+value(v));}
+  for(const [key,targets]of Object.entries(relations)){need(identifier(key)&&Array.isArray(targets)&&targets.every(t=>byId.has(t)),'relation-target');attrs[key]=targets.map(t=>'$'+byId.get(t));}
+  const fact=add({id:byId.get(object.id),type:object.type,attrs}),id='instance.object.'+index;
+  const fields={id:[quote(object.id)],fact:['$'+fact],attribute:Object.keys(attributes).map(quote),relation:Object.keys(relations).map(quote)};
+  if(object.metadata!==undefined)fields.metadata=['$'+value(object.metadata)];
+  add({id,type:'std.instance.object',attrs:fields});objects.push('$'+id);
+ }
+ const projection=value(input.projection);
+ add({id:'instance.snapshot',type:'std.instance.snapshot',attrs:{format:[quote(INSTANCE_STATE_FORMAT)],instance:[quote(input.instanceId)],world:[quote(input.world)],schema:[quote(input.schemaVersion)],revision:[token(input.revision)],object:objects,projection:['$'+projection],...(input.metadata!==undefined?{metadata:['$'+value(input.metadata)]}:{})}});
+ const wires=serialize(nodes);need(wires.length<=limits.maxBytes,'byte-budget');return wires;
+}
+/** Restore bytes, local identities and explicit relations without selecting values or completing missing facts.
+ * The caller must validate the implementation projection against these facts before using a tool cache. */
+export function readInstanceState(wires,options={}){
+ const limits=limitsOf(options);need(typeof wires==='string'&&wires.length<=limits.maxBytes,'byte-budget');const nodes=parse(wires);need(nodes.length<=limits.maxNodes,'node-budget');need(nodes.every(n=>!n.pattern&&!n.legacy),'pattern');const byId=new Map(nodes.map(n=>[n.id,n]));need(byId.size===nodes.length,'duplicate-wire-id');
+ const used=new Set(),active=new Set();let visits=0;
+ const one=(node,key)=>{need(Array.isArray(node?.attrs?.[key])&&node.attrs[key].length===1,'single-'+key);return node.attrs[key][0];};
+ const reference=raw=>{need(typeof raw==='string'&&raw[0]==='$'&&byId.has(raw.slice(1)),'reference');return byId.get(raw.slice(1));};
+ const keys=(node,allowed)=>need(Object.keys(node.attrs).every(key=>allowed.includes(key)),'unknown-node-field');
+ const literal=raw=>{need(typeof raw==='string'&&raw[0]!=='$'&&raw[0]!=='?','literal');let value;try{value=JSON.parse(raw);}catch{throw new TypeError('instance-state:literal');}need(scalar(value),'literal-type');return value;};
+ // bounded: maxNodes visits, maxDepth and the active set prevent unbounded graph traversal.
+ const value=(node,depth=0)=>{
+  need(depth<=limits.maxDepth&&++visits<=limits.maxNodes,'value-budget');need(node?.type==='std.instance.value'&&!active.has(node.id),'cyclic-or-invalid-value');used.add(node.id);keys(node,['kind','value','member','key','index']);const kind=str(one(node,'kind'));active.add(node.id);let result;
+  if(['null','string','number','boolean'].includes(kind)){need(!node.attrs.member,'scalar-members');if(kind==='null'){need(!node.attrs.value,'null-value');result=null;}else{result=literal(one(node,'value'));need(typeof result===kind,'scalar-type');}}
+  else{need(kind==='array'||kind==='object','value-kind');need(!node.attrs.value,'container-value');const members=(node.attrs.member??[]).map(reference);if(kind==='array'){need(members.every((n,i)=>!n.attrs.key&&literal(one(n,'index'))===i),'array-order');result=members.map(n=>value(n,depth+1));}else{const names=members.map(n=>{need(!n.attrs.index,'object-index');const key=literal(one(n,'key'));need(typeof key==='string','object-key');return key;});need(new Set(names).size===names.length,'duplicate-object-key');result=Object.fromEntries(members.map((n,i)=>[names[i],value(n,depth+1)]));}}
+  active.delete(node.id);return result;
+ };
+ const roots=nodes.filter(n=>n.type==='std.instance.snapshot');need(roots.length===1,'one-snapshot');const root=roots[0];used.add(root.id);keys(root,['format','instance','world','schema','revision','object','projection','metadata']);need(str(one(root,'format'))===INSTANCE_STATE_FORMAT,'format');
+ const descriptors=(root.attrs.object??[]).map(reference),factIds=new Map(),nativeIds=new Set();
+ for(const object of descriptors){need(object.type==='std.instance.object','object-descriptor');keys(object,['id','fact','attribute','relation','metadata']);used.add(object.id);const id=literal(one(object,'id')),fact=reference(one(object,'fact'));need(typeof id==='string'&&id.length>0&&!nativeIds.has(id)&&!factIds.has(fact.id)&&fact.id===objectWireId(id)&&identifier(fact.type)&&!fact.type.startsWith('std.instance.'),'object-identity');nativeIds.add(id);factIds.set(fact.id,id);}
+ const objects=descriptors.map(object=>{const fact=reference(one(object,'fact'));used.add(fact.id);const attributes={},relations={},attrKeys=(object.attrs.attribute??[]).map(literal),relKeys=(object.attrs.relation??[]).map(literal);need([...attrKeys,...relKeys].every(identifier)&&new Set([...attrKeys,...relKeys]).size===attrKeys.length+relKeys.length,'object-keys');need(Object.keys(fact.attrs).every(k=>attrKeys.includes(k)||relKeys.includes(k)),'undeclared-object-field');
+  for(const key of attrKeys)attributes[key]=(fact.attrs[key]??[]).map(raw=>raw[0]==='$'?value(reference(raw)):literal(raw));
+  for(const key of relKeys)relations[key]=(fact.attrs[key]??[]).map(raw=>{const target=reference(raw);need(factIds.has(target.id),'foreign-object-reference');return factIds.get(target.id);});
+  return {id:literal(one(object,'id')),type:fact.type,attributes,relations,...(object.attrs.metadata?{metadata:value(reference(one(object,'metadata')))}:{})};
+ });
+ const result={instanceId:literal(one(root,'instance')),world:literal(one(root,'world')),schemaVersion:literal(one(root,'schema')),revision:literal(one(root,'revision')),objects,projection:value(reference(one(root,'projection'))),...(root.attrs.metadata?{metadata:value(reference(one(root,'metadata')))}:{})};descriptor(result);need(nodes.every(n=>used.has(n.id)),'unowned-wire');return result;
+}
+/** A real SOP world over the saved facts. Schema/rules may be supplied by the caller; no private callback interprets them. */
+export function instanceStateWorld(wires,{schema='',...options}={}){
+ readInstanceState(wires,options);const world=new World();if(schema)need(world.load(schema).ok,'schema');need(world.load(wires).ok,'facts');return world;
+}

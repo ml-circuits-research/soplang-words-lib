@@ -6556,4 +6556,7 @@ Checks: `node --test test/instance-state.test.mjs` (6 pass); `npm test > ../.ses
 - Checks: `python3 tools/build_docs.py`, `npm run build`, `npm test`, `SOPWORLD_BUNDLE=1 npm test`: each test gate 962 tests, 960 pass, 0 fail, 1 skip, 1 todo; `git diff --check` clean.
 
 2026-11-17 delivered: instanceStateWorld now loads actual domain facts and their real reference closure; archive descriptors, native projection/history and observation binding copies stay outside the semantic World. Explicit includeArchive:true retains diagnostic access.
-Checks: npm test and SOPWORLD_BUNDLE=1 node --test 'test/**/*.test.mjs' —each964tests962pass0fail1skip1todo after regenerated docs; actual historical five-editor archive loading separately confirms only domain facts and necessary structured attributes enter Worlds.
+Checks: npm test and SOPWORLD_BUNDLE=1 node --test 'test/**/*.test.mjs' —each963tests961pass0fail1skip1todo after regenerated docs; actual historical five-editor archive loading separately confirms only domain facts and necessary structured attributes enter Worlds.
+
+2026-11-17 delivered: version3 carriers emit short stable object IDs, direct scalar roots, field records and ordered sequences; no state.value/std.instance.value instance nodes. std.instance now has an explicit standard schema. Earlier semantic-world entry count corrected to963tests961pass.
+Checks: npm test; SOPWORLD_BUNDLE=1 node --test 'test/**/*.test.mjs' —each964tests962pass0fail1skip1todo. Actual five historical archives decode→version3→decode deep-equal every field, while new wire text contains no std.instance.value.

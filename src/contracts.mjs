@@ -6,6 +6,30 @@ import { requestValidator } from './request-contracts.mjs';
 // the truth, licensing suitability or semantic correctness of the recorded evidence.
 // Each module owns its namespace and can be imported independently through core.use.
 export const CONTRACT_MODULES = {
+  'std.instance': {
+    text: `
+@std.instance.module core.module name=std.instance version=0.208.0 exports=std.instance.snapshot exports=std.instance.object exports=std.instance.record exports=std.instance.sequence exports=std.instance.value
+@std.instance.snapshot.type core.type of=std.instance.snapshot closed=true
+@std.instance.snapshot.format core.slot of=std.instance.snapshot key=format kind=string present=true
+@std.instance.snapshot.instance core.slot of=std.instance.snapshot key=instance kind=string present=true
+@std.instance.snapshot.world core.slot of=std.instance.snapshot key=world kind=string present=true
+@std.instance.snapshot.schema core.slot of=std.instance.snapshot key=schema kind=string present=true
+@std.instance.snapshot.revision core.slot of=std.instance.snapshot key=revision kind=any present=true
+@std.instance.snapshot.object core.slot of=std.instance.snapshot key=object kind=ref to=std.instance.object many=true
+@std.instance.snapshot.projection core.slot of=std.instance.snapshot key=projection kind=any present=true
+@std.instance.snapshot.metadata core.slot of=std.instance.snapshot key=metadata kind=any
+@std.instance.object.type core.type of=std.instance.object closed=true
+@std.instance.object.id core.slot of=std.instance.object key=id kind=string present=true
+@std.instance.object.fact core.slot of=std.instance.object key=fact kind=ref present=true
+@std.instance.object.attribute core.slot of=std.instance.object key=attribute kind=string many=true
+@std.instance.object.relation core.slot of=std.instance.object key=relation kind=string many=true
+@std.instance.object.metadata core.slot of=std.instance.object key=metadata kind=any
+@std.instance.record.type core.type of=std.instance.record closed=false
+@std.instance.sequence.type core.type of=std.instance.sequence closed=true
+@std.instance.sequence.item core.slot of=std.instance.sequence key=item kind=any many=true
+@std.instance.value.type core.type of=std.instance.value closed=false
+`, fns: {},
+  },
   'std.source': {
     text: `
 @std.source.module core.module name=std.source version=0.169.0 exports=std.source

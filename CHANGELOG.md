@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.208.0
+
+- Version-3 instance carriers use short stable fact identities, direct scalar projections, typed field records and ordered sequences. No new `state.value` / `std.instance.value` nodes are emitted. The explicit std.instance schema describes carrier types; older carrier formats remain readable.
+
 ## 0.207.0
 
 - Instance Worlds load ordinary domain facts and their actual reference closure. Archive descriptors, native projections and observation metadata stay in the transport carrier; complete archive loading is an explicit diagnostic option.

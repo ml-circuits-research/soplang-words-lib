@@ -2106,6 +2106,10 @@ This also explains the role of an objective. It supplies a comparison among vali
 
 ## 6.8 Reasoning: when and how the library chooses
 
+Consider a speaker who says “put it by the door”. The reader may preserve two possible referents for “it” and several interpretations of “by”. Each reading is a hypothesis about this utterance. The compiler tests those hypotheses against the same observed scene before issuing a call. An attachment that requires contact has a different effect from leaving a gap. The current selection is evidence about the referent. A correction such as “by the door usually means leave a little room in my floor plans” can supply a preference about that speaker's wording, scoped to floor plans. Applying that preference to another person's diagram, or to an explicit request for contact, would change its meaning.
+
+A profile World stores a learned association alongside its scope and the evidence that supports it. A correction to a single placement can be reversed on its own. Promoting repeated corrections into a reusable preference requires a declared learning rule that identifies comparable episodes. At decision time, keep each candidate's source spans, unsatisfied constraints and applicable preferences. Compare feasible hypotheses, select one, and keep its alternatives in the explanation. If a bounded search stopped early, its winner is the best examined candidate.
+
 A fully specified tool instruction needs contract validation, not another interpretation. A high-level request needs elaboration whenever it has unresolved targets, missing required arguments, qualitative constraints, a composition, conflicting requirements or competing interpretations. These are properties of the request graph and declared interfaces, not a list of domain-specific sentences in JavaScript.
 
 Reasoning mechanisms share a representation: versioned instance facts, kinds, properties interpreted in declared spaces, and relationships. Reusable operators process this structure without being rewritten for each domain.

@@ -89,3 +89,19 @@ test('complete coverage and live occupancy guards apply by authored policy', () 
   world.load('@observed std.capability.signal scope=$scope name=locked');
   assert.equal(compile(world).result.attrs.reason[0], 'occupied');
 });
+
+test('a scoped preference breaks a tie in coverage and a hard guard selects the equally capable alternative',()=>{
+ const world=source();
+ world.load(`@tweak.samples std.capability.parameter operation=$limited name="samples" kind=array
+@scope2 std.capability.scope instance="other" version="1"
+@unrelated std.capability.preference scope=$scope2 operation=$limited weight=500`);
+ assert.equal(str(compile(world).call.attrs.operation[0]),'cell.change');
+ world.load('@user.choice std.capability.preference scope=$scope operation=$limited weight=3');
+ let result=compile(world);
+ assert.equal(str(result.call.attrs.operation[0]),'cell.tweak');
+ assert.ok(result.result.attrs.support.map(str).includes('user.choice'));
+ world.load('@lock std.capability.guard operation="cell.tweak" when=active.signal signal=locked reason=occupied\n@live std.capability.signal scope=$scope name=locked');
+ result=compile(world);
+ assert.equal(str(result.call.attrs.operation[0]),'cell.change');
+ assert.ok(result.result.attrs.alternative.map(result.dereference).some(row=>row.attrs.reason?.[0]==='occupied'));
+});

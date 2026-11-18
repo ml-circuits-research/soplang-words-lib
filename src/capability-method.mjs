@@ -89,6 +89,7 @@ function output(tick, status, data = {}, call, alternatives = []) {
   }
   fields.alternative = alternatives.map((alternative) => '$' + append(family + 'alternative', {
     operation: [quote(alternative.name)], status: [alternative.reason ? 'unavailable' : 'available'],
+    ...(alternative.preferences?.length ? { preference: [String(alternative.score)], support: alternative.preferences.map(id=>quote(id)) } : {}),
     ...(alternative.reason ? { reason: [alternative.reason] } : { applied: [String(alternative.applied.length)] }),
   }));
   return serialize([{ id: 'capability.result', type: family + 'result', attrs: fields, pattern: false }, ...wires]);
@@ -126,7 +127,7 @@ function records(world, scope, tick) {
     scope, modes: all('mode'), operations: scoped('operation').sort(byOrder),
     targets: scoped('target'), properties: scoped('property').sort(byOrder),
     objects: scoped('object').sort(byOrder), literals: all('value'),
-    seeds: all('seed').sort(byOrder), guards: all('guard'), signals: scoped('signal'),
+    preferences: scoped('preference'), seeds: all('seed').sort(byOrder), guards: all('guard'), signals: scoped('signal'),
     fields: byRef('field', 'object'), params: byRef('parameter', 'operation'),
   };
 }
@@ -355,16 +356,35 @@ function compile(world, request, nodes, context) {
   const operations = data.operations.filter((row) => flag(row, 'eligible') && get(row, 'act') === act &&
     (selected ? text(row, 'on') === text(selected, 'on') : types.has(text(row, 'on'))));
   const input = { scope, mode, target, labels, kinds, selected };
-  const alternatives = operations.map((row) => candidate(world, data, input, row,
-    mappings.find((mapping) => ref(world, mapping, 'operation')?.id === row.id), results, tick));
-  const viable = alternatives.filter((item) => !item.reason).sort((left, right) => right.applied.length - left.applied.length);
-  const chosen = viable[0];
-  const ranked = [...viable, ...alternatives.filter((item) => item.reason)];
-  if (!chosen) return output(tick, 'unavailable', { reason: 'native-binding-gap', act, kind: labels[0] }, null, ranked);
-  const guard = refuseChosen(data, chosen, tick);
-  if (guard) return output(tick, 'unavailable', { reason: get(guard, 'reason'), message: text(guard, 'message'),
-    act, kind: labels[0], support: [guard.id] }, null, ranked);
-
+  const alternatives = operations.map((row) => {
+    const item = candidate(world, data, input, row,
+      mappings.find((mapping) => ref(world, mapping, 'operation')?.id === row.id), results, tick);
+    if (item.reason) return item;
+    item.preferences = [];
+    item.score = 0;
+    for (const pref of data.preferences) {
+      tick();
+      if (ref(world, pref, 'operation')?.id !== row.id) continue;
+      item.preferences.push(pref.id);
+      item.support.add(pref.id);
+      item.score += number(pref, 'weight');
+    }
+    return item;
+  });
+  const viable = alternatives.filter(item=>!item.reason).sort((a,b)=>
+    b.applied.length-a.applied.length || b.score-a.score);
+  const preferred = viable[0];
+  if (!preferred) return output(tick,'unavailable',{reason:'native-binding-gap',act,kind:labels[0]},null,alternatives);
+  for (const item of viable) {
+    tick();
+    const guard=refuseChosen(data,item,tick);
+    if (guard) { item.guard=guard; item.reason=get(guard,'reason'); }
+  }
+  // A guard on an intended effect cannot authorize an operation that drops that effect.
+  const chosen=viable.find(item=>!item.reason && preferred.applied.every(id=>item.applied.includes(id)));
+  const ranked=[...viable,...alternatives.filter(item=>!item.applied)];
+  if (!chosen) return output(tick,'unavailable',{reason:preferred.reason,message:text(preferred.guard,'message'),
+    act,kind:labels[0],support:[preferred.guard.id]},null,ranked);
   const label = text(selected, 'kind') ?? kinds.values().next().value ?? labels[0];
   const skipped = [...listed(scope, 'unapplied').map(str),
     ...chosen.skipped.map((row) => `${text(row, 'concept')} ${text(row, 'value') ?? ''}`)];

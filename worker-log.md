@@ -6589,3 +6589,7 @@ Limit: runtime factsOnly enforces instance admission, not complete rule-template
 ## Compiler-visible tool effects
 - Book §1.3 distinguishes call shape from effect semantics through two-node placement. The migration plan requires SOP authority, native/compiler parity and interchangeable tool probes.
 - `npm run docs`, `node tools/audit-book-examples.mjs --published --strict`, `git diff --check` passed.
+
+## Ambiguous capabilities and effect selection
+- `npm test` and `SOPWORLD_BUNDLE=1 node --test 'test/**/*.test.mjs'` each ran 994 tests, 992 passed, one skipped, one TODO. Tests cover scoped preference, hard guard, declared provider and frame, resulting two-point geometry and undo.
+- `npm run docs`, `node tools/audit-book-examples.mjs --published --strict`, `git diff --check`. Language-hypothesis ranking and learned personal wording remain distinct from choosing among capabilities for one reading.

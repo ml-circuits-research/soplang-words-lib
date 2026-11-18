@@ -53,6 +53,11 @@ const types = {
     required: 'kind=boolean', parameterRequired: 'kind=boolean', unlessParameter: 'kind=string', replace: 'kind=boolean',
     notice: 'kind=string', order: 'kind=integer min=0 present=true',
   },
+  preference: {
+    scope: 'kind=ref to=std.capability.scope present=true',
+    operation: 'kind=ref to=std.capability.operation present=true',
+    weight: 'kind=integer min=-1000 max=1000 present=true',
+  },
   guard: {
     operation: 'kind=string present=true', when: 'kind=atom enum=incomplete.coverage enum=active.signal present=true',
     signal: 'kind=atom', reason: 'kind=atom present=true', message: 'kind=string',
@@ -69,7 +74,7 @@ const types = {
   },
   alternative: {
     operation: 'kind=string present=true', status: 'kind=atom enum=available enum=unavailable present=true',
-    applied: 'kind=integer min=0', reason: 'kind=atom',
+    preference: 'kind=integer', support: 'kind=string many=true', applied: 'kind=integer min=0', reason: 'kind=atom',
   },
   result: {
     status: 'kind=atom enum=compiled enum=unavailable enum=not-applicable present=true', reason: 'kind=atom',
@@ -89,7 +94,7 @@ const declarations = Object.entries(types).flatMap(([type, fields]) => {
     ...Object.entries(fields).map(([key, slots]) => `@${id}.slot.${key} core.slot of=${id} key=${key} ${slots}`),
   ];
 });
-const module = '@std.capability.module core.module name=std.capability version=0.211.0 imports=std.request ' +
+const module = '@std.capability.module core.module name=std.capability version=0.212.0 imports=std.request ' +
   Object.keys(types).map((type) => 'exports=' + prefix + type).join(' ');
 
 export const capabilityContracts = {

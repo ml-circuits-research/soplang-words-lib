@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.212.0
+
+- Compare equally covered capability candidates using scoped preference weights. Preserve the preference facts and suppressed alternatives. A guarded choice can yield to another compatible operation that covers the intended effects.
+- Exercise effect and frame selection with two equal-signature tool interfaces and two interchangeable providers. The selected tool preserves the two-point offset and undo restores both positions.
+
 ## 0.211.0
 
 - Compile a single-target request against declared capabilities, scoped observations and parameter policies. The result identifies the selected call, typed arguments and alternatives. Rule-circuit results reference their supporting evidence as SOP wires.

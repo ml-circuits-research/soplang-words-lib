@@ -6599,3 +6599,7 @@ Verified `npm test` (996 tests, 994 pass, 1 skip, 1 todo, 0 fail) and `SOPWORLD_
 
 - Added SOP-only comparison of alternative request graphs before tool execution. The selected plan and competing readings share a source-text identity. A focused regression actually executes the second reading and observes its numerical result.
 - `npm test` and `SOPWORLD_BUNDLE=1 node --test 'test/**/*.test.mjs'` each ran 997 tests, 995 passed, one skipped and one TODO. `npm run docs`, `git diff --check`.
+
+## 2026-11-18 — Mechanical SOP input for concrete capabilities
+- Project the selected call and its reachable typed arguments from a capability or interpretation result. The tool keeps operation, instance and revision validation. The private decoder preserves ordered lists, empty collections and nested records.
+- `npm test`: 998 passed. `SOPWORLD_BUNDLE=1 node --test`: 1,000 passed. Both had zero failures, one skip and one TODO. `npm run docs`, smell scan and `git diff --check` passed.

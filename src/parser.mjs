@@ -180,7 +180,8 @@ export function parse(text, { anonymous = false, lenient = false } = {}) {
     } else if (value[0] === '?') {
       if (!IDENT.test(value.slice(1))) { fail(`invalid identifier in the variable ${value}`, at); continue; }
     }
-    (cur.attrs[key] ||= []).push(value);
+    if (Object.hasOwn(cur.attrs, key)) cur.attrs[key].push(value);
+    else Object.defineProperty(cur.attrs, key, { value: [value], enumerable: true, writable: true, configurable: true });
   }
   if (errors.length) {
     errors.sort((a, b) => a.offset - b.offset);

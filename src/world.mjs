@@ -1,4 +1,5 @@
 import { compileRequest } from './request-compiler.mjs';
+import { compileToolInput } from './tool-input-compiler.mjs';
 import { retainedKey, retainedDefinition, mergeRetained } from './retained-revisions.mjs';
 import { validateRecords } from './validate-records.mjs';
 import { schemaLinks } from './schema-links.mjs';
@@ -62,6 +63,8 @@ function fingerprint(text) {
 export class World {
   /** Compile request SOP against this world without changing its state. */
   compileRequest(sop) { return compileRequest(this, sop); }
+  /** Project the selected concrete capability call into standard SOP tool input. */
+  compileToolInput(sop) { return compileToolInput(sop); }
 
   constructor(options = {}) {
     const {

@@ -170,6 +170,22 @@ const circuitSop = world.compileRequest(requestSop);
 const result = parse(circuitSop)[0];
 ```
 
+### world.compileToolInput(sop)
+
+Pass a concrete `std.capability.call` graph or a selected capability result from
+`compileRequest`. The method returns self-contained SOP with the operation and
+its reachable arguments, including nested records, ordered lists and empty
+collections. A malformed or ambiguous graph returns
+`std.compile.result status=unavailable` with its reason.
+
+```js
+const toolInputSop = world.compileToolInput(circuitSop);
+```
+
+The tool still checks its operation declaration, actual instance and revision,
+and arguments before applying the call. Keep the original compiler result for
+those checks and to inspect the selected reading.
+
 ### world.tell(input, options?)
 
 States wires: facts, matrix wires, or both. Options: `dry` (evaluate and undo), `strict`,

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { World, parse, str } from '../tools/lib-under-test.mjs';
+import { decodeCapabilityCall } from '../src/internal/capability-call.mjs';
 
 function source() {
   const world = new World();
@@ -42,7 +43,8 @@ function compile(world, extra = '', target = '') {
 @samples std.request.constraint request=$r target=$t concept=samples operator=eq character=requirement polarity=positive value="[3,3,8]"
 ${extra}
 `;
-  const wires = parse(world.compileRequest(input + '\n@context std.capability.context request=$r scope=$scope'));
+  const circuit = world.compileRequest(input + '\n@context std.capability.context request=$r scope=$scope');
+  const wires = parse(circuit);
   const byId = new Map(wires.map((wire) => [wire.id, wire]));
   const dereference = (token) => byId.get(token.slice(1));
   const result = wires[0];
@@ -51,7 +53,7 @@ ${extra}
     const arg = dereference(token);
     return [str(arg.attrs.name[0]), arg.attrs.value[0]];
   }));
-  return { result, call, args, dereference };
+  return { result, call, args, dereference, circuit };
 }
 
 test('capability selection follows observed recency, focus, names, and declared selector binding', () => {
@@ -75,6 +77,14 @@ test('capability ranking retains alternatives and repeated ordered array paramet
   assert.deepEqual(ranked.map((row) => [str(row.attrs.operation[0]), row.attrs.applied[0]]),
     [['cell.change', '2'], ['cell.tweak', '1']]);
   assert.deepEqual(result.attrs.covered.map(str), ['reading', 'samples']);
+});
+
+test('a compiled request supplies mechanical tool inputs without a host re-encoding its arguments', () => {
+  const world = source();
+  const input = world.compileToolInput(compile(world).circuit);
+  const { operation, args } = decodeCapabilityCall(parse(input));
+  assert.equal(operation, 'cell.change');
+  assert.deepEqual(args, { cell: 'last', level: 15, samples: [3, 3, 8] });
 });
 
 test('complete coverage and live occupancy guards apply by authored policy', () => {

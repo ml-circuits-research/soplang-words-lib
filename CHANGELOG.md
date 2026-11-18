@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.214.0
+
+- Project selected concrete capability calls into self-contained SOP tool input, preserving typed arguments and their list order. The tool checks its declaration and live instance before applying the call.
+
 ## 0.213.0
 
 - Compile several proposed readings of one utterance against the same observed World. The SOP result retains a decision for each reading and the concrete call circuit for the selected one. Compiling a proposal never invokes its tool.

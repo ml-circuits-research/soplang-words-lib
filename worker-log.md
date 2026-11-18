@@ -6634,3 +6634,6 @@ Strict book audit: 62 SOP blocks admitted against 57 schemas; 18 book and schema
 
 2026-11-18: Rule admission rejects unknown closed-type keys, incompatible slot literals and unbound conclusion variables for direct and imported declarations. Failure rolls back the matrix, import and facts. Inherited and prefix slots, open types, calculations, JSON paths and dependent templates still work.
 Checks: npm run docs and npm run test:full against exact KB a0e85384 passed 1011 source, 1011 bundle and 1009 COW, each with zero failures, one skip and one TODO. Strict audit admitted all 62 SOP book blocks against 58 published schemas.
+
+2026-11-18 — Narrowed the placement plan after testing moved-lake and Undo behavior on published Webchat 769b440387. Book §8.2.2 explains how observed support geometry supplies tool coordinates and what hull containment would require.
+Strict book audit admitted all 62 blocks against 58 pinned schemas. Source and bundled test files each passed 1009 with one skip and one TODO.

@@ -4,8 +4,7 @@ The [book](../books/sop-worlds-teorie.md) defines the request, tool, evidence an
 
 ## Complete implicit and relative placement
 
-- Supply missing placement arguments from applicable world knowledge, live supporting objects and current frame observations. Treat an ordinary layout or preferred alignment as a soft condition. Keep explicit constraints, required relations and frame validity in force. Exercise the same mechanism in the normal request route and when comparing proposed readings.
-- Replay the same authored creation in an empty scene, a scene with a matching support object and a scene with an occupied preferred location. Move the support object and repeat. Check the source of the preference, rejected or costed alternatives, explicit coordinate precedence, exact native call, observed placement and Undo. Use an independent editor to check that the declarations carry the scene and relation semantics.
+- Apply the composition declarations in a second editor. Move a supporting object there and verify the new tool circuit uses its observed geometry. Compare an ordinary request and competing readings under the same observations. Check that changing the relation in knowledge changes both decisions without an editor-specific branch.
 - Extend relative placement beyond one subject and one anchor. Compile a plural move with a bounded comparative step and a preserved property. Test attached members, independent peers and original styling. Verify every affected identity and explicitly report measurements the available geometry cannot establish.
 
 ## Compose dependent actions and read-only results
@@ -24,10 +23,11 @@ The [book](../books/sop-worlds-teorie.md) defines the request, tool, evidence an
 
 ## Remove application-owned reasoning
 
+- Replace the application’s explicit composition lookup in `src/dialog/composition-knowledge.mjs` and `scene-placement-defaults.mjs` with a library operation driven by declared observation and capability interfaces. Keep editor-specific extent measurement in the tool. Load a new placement relation through world declarations and exercise it through two tools without adding a JavaScript lookup.
 - Audit every JavaScript component reachable from a normal editor gesture or spoken request. Identify its input SOP, output SOP and owner. Migrate remaining editor-specific interpretation, ranking, planning and default choices into schema or knowledge worlds evaluated by the generic library. Keep the reader, renderer and concrete tool boundaries visible in Worlds. Verify a policy change on the same request without changing application JavaScript and trace the resulting call through its observed effect.
 - Audit the public library and tool entry points. Verify that external callers can load declared worlds and submit SOP requests, and that each mutating tool consumes only its documented SOP circuit. Remove public routes that let callers supply an internal plan or bypass the compiler with a JavaScript command object.
 
 ## Verify published application routes
 
-- Repeat learned and authored scoped removal with two different objects in the normal published editor. Check the selected identity, retained reader evidence, exact target-bound SOP call, surviving peer and Undo. Try an ambiguous same-kind pair and a bulk operation without scoped authorization.
-- Check natural count and existence questions against the published editor with changed state. Inspect the evidence and preserve state. Include an incomplete or unsupported query and verify that the reply does not claim a complete answer.
+- Resolve why “Delete the house” can lose its target after a question about houses. Repeat learned and authored scoped removal with two different objects in the normal published editor. Check the selected identity, retained reader evidence, exact target-bound SOP call, surviving peer and Undo. Try an ambiguous same-kind pair and a bulk operation without scoped authorization.
+- Preserve the grounded target when “Are there any red houses?” follows “How many red houses are there?”. Repeat both questions before and after a real state change in the published editor. Inspect the evidence and preserve state. Include an incomplete or unsupported query and verify that the reply does not claim a complete answer.

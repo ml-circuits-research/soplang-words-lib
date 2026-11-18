@@ -2750,6 +2750,10 @@ The instance supplies the geometry through its declared observation interface. A
 
 A placement method can generate several trial positions from the same observed anchor. Each trial carries its anchor identity and its resulting bounds. Apply hard conditions, then compare the measured costs of the surviving positions using the declared priority order. A manual move supplies a new observation and a new compilation. A tool can decline to apply an earlier circuit if the original observation has expired. Retain the rejected trials and the chosen coordinates so the decision can be inspected.
 
+Consider “Draw a boat” after the user moves a lake. Scene knowledge relates a boat to water. Layout knowledge identifies a water region within a lake. The composition rules join those facts by the shared role of water. They supply a preferred region in the lake’s local frame. The instance supplies the identity, position and extent of the lake on this particular canvas. Moving the lake changes that observation while leaving the knowledge declarations intact.
+
+For example, on a 1000 × 700 canvas with a lake centred at (260, 460), the Drawing tool can receive a creation instruction with kind `boat`, x = 260 and y = 460. Those coordinates locate the boat’s drawing origin. Its hull and mast have their own geometry. A claim that the entire hull fits inside the water would require comparing the hull outline with the water boundary. The centre of a preferred region alone establishes no such guarantee. To inspect the decision, follow the water relation, the observed lake, the chosen coordinates and the tool instruction in that order.
+
 **Schema World — `measured-gap/schema.sop`.**
 
 <!-- sop-world id=measured-gap.schema role=schema module=example -->

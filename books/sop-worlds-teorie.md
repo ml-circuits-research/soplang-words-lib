@@ -107,8 +107,11 @@ The **key/value pairs** carry its content. A key names a piece of information; i
 
 A wire ends when the next declaration starts; it can span several lines. The declaration syntax has no enclosing braces or nested wires. This compact syntax is deliberate. Give a part a separate fact when it needs identity, references or its own provenance. Ordinary scalar properties stay directly on their owner; a pair of coordinates does not require two value objects.
 
-A self-contained toy drawing schema and its facts:
+The following teaching example has two separately owned Worlds. The schema is a reusable module; the instance imports it and owns only its current objects. Supplying the module to a loader makes it available; the instance’s `core.use` declares the actual dependency:
 
+**Schema World — `fish/schema.sop`.**
+
+<!-- sop-world id=fish.schema role=schema module=example -->
 ```sop
 @t.pond core.type of=example.pond closed=true
 @t.fish core.type of=example.fish closed=true
@@ -116,11 +119,19 @@ A self-contained toy drawing schema and its facts:
 @s.fish.x core.slot of=example.fish key=x kind=number present=true
 @s.fish.y core.slot of=example.fish key=y kind=number present=true
 @s.fish.in core.slot of=example.fish key=in type=example.pond present=true
-@pond1 example.pond
-@f1 example.fish size=1.6 x=120 y=540 in=$pond1
+@book.fish.schema.module core.module name=example
 ```
 
-`f1` identifies the fish. Its type is `example.fish`; `size`, `x` and `y` are numeric values, while `in` is a typed reference to `pond1`. The schema makes the distinction explicit. The `example` prefix marks invented teaching types, not published drawing-tool operations.
+**Instance World — `fish/instance.sop`.**
+
+<!-- sop-world id=fish.instance role=instance uses=fish.schema -->
+```sop
+@pond1 example.pond
+@f1 example.fish size=1.6 x=120 y=540 in=$pond1
+@book.use.fish.instance.example core.use world=example prefix=false
+```
+
+`f1` identifies the fish. Its type is `example.fish`; `size`, `x` and `y` are numeric values, while `in` is a typed reference to `pond1`. The imported schema makes the distinction explicit. The `example` prefix marks teaching types, not published drawing-tool operations. The instance does not own or persist the imported type and slot declarations.
 
 ## 2.2 Lexical categories and values
 
@@ -137,13 +148,24 @@ For example, `label="Review"` supplies text, `source=$m1` supplies a reference, 
 
 ### 2.2.1 Compound values and order
 
-A position can be represented by two numeric slots on its owning object. There is no reason to give each coordinate a separate identity when it is only a value. This complete toy schema uses ordinary `core.type` and `core.slot` declarations:
+A position can be represented by two numeric slots on its owning object. There is no reason to give each coordinate a separate identity when it is only a value. The schema World declares the allowed values; a separate instance World imports it and supplies their concrete values:
 
+**Schema World — `dot/schema.sop`.**
+
+<!-- sop-world id=dot.schema role=schema module=example -->
 ```sop
 @t.example.dot core.type of=example.dot closed=true
 @s.example.dot.x core.slot of=example.dot key=x kind=number present=true
 @s.example.dot.y core.slot of=example.dot key=y kind=number present=true
+@book.dot.schema.module core.module name=example
+```
+
+**Instance World — `dot/instance.sop`.**
+
+<!-- sop-world id=dot.instance role=instance uses=dot.schema -->
+```sop
 @dot example.dot x=120 y=540
+@book.use.dot.instance.example core.use world=example prefix=false
 ```
 
 `x=120` and `y=540` are typed values on `dot`, not objects called `state.value.1` and `state.value.2`. A request to move the dot up changes `y` according to the declared coordinate frame and retains `x`. A missing mandatory coordinate is invalid; a number is not itself a position unless the relevant schema says which axis it represents. *(R1–R4)*
@@ -155,6 +177,27 @@ Repeated values preserve order. A document's paragraph references therefore reta
 Use scalar slots for independently typed coordinates. Use a typed referenced fact for an independently named point, reusable geometry or a measurement with its own source/history. Both choices keep the semantic structure available to rules. A point fact needs a declared type, slots and reference type; naming it `point.value` does not create a schema automatically.
 
 `kind=json` accepts structured native values, but an opaque implementation object must not stand in for inspectable world structure. If JSON is used at an adapter boundary, its schema and conversion into domain facts must be explicit. A generic JSON tag does not establish coordinate axes, units or equality between values in different frames. Domain reasoning uses the declared facts, not private JS object fields.
+
+### 2.2.3 Compact declarations without hidden meaning
+
+The dot example needs three structural declarations because it introduces a type and two numeric properties. Those declarations belong to the shared schema once. Adding another dot to an instance adds another fact; it does not repeat the schema or allocate objects for the two numbers:
+
+**Instance World — `dot/two-objects.sop`.** It reuses the schema from section 2.2.1.
+
+<!-- sop-world id=two-dots.instance role=instance uses=dot.schema -->
+```sop
+@two-dots.schema core.use world=example prefix=false
+@dot1 example.dot x=120 y=540
+@dot2 example.dot x=160 y=540
+```
+
+The one import establishes the dependency for the whole instance. Each dot is one wire with two direct values. Moving `dot2` changes its values; no coordinate-value facts need to be rebuilt. A numeric value becomes a separately identified fact only when that identity serves a declared relationship, independent evidence or lifecycle.
+
+The same approach applies to rules. A reusable rule is declared once in its owning schema or knowledge World and imported by instances. Its patterns and templates describe a method; repeating them in every command would increase size and obscure ownership. A concrete command already containing all arguments can remain one instruction wire under its declared tool schema. Source observations, confidence or history are separate linked records when needed, rather than copied text on every scalar.
+
+Shorter text is not always a smaller model. Writing several wires on one physical line saves line breaks but changes no structure. Replacing a typed reference with a string can lose identity. Placing an opaque expression in a value can hide undeclared computation. Abbreviating a type requires a declared naming/import convention; a convenient spelling cannot silently acquire field access or inference semantics.
+
+This book therefore uses compact literal properties, shared imported definitions and references to independently meaningful entities. It retains separate pattern, calculation, check and conclusion declarations where they identify different roles. Section 3.7.1 shows why those roles cannot be collapsed merely by removing lines: a calculation produces a value, a check tests a binding, and a rule decides which conclusion is justified.
 
 ## 2.3 Syntax markers and references
 
@@ -168,6 +211,8 @@ The lexer recognises the following markers. They distinguish identity declaratio
 | `$` | Refers to a wire by identifier; appears at the start of a value. |
 | `?` | Introduces a variable at the start of a value in a rule or query. |
 | `#` | Starts a comment extending to the end of the line. |
+
+A dot is part of a name, not a field-access operator. `$p.m1` refers to the whole wire whose identifier is `p.m1`; it does not read field `m1` from `p`. A variable such as `?person` is a different syntactic category. In a pattern fragment `meeting people=?person start=?start`, matching binds `?person` and `?start` to those named attribute values. Referring to the pattern as `$p.m1` inside its rule identifies the entire matched fact. Ordinary dot-containing keys and specialised JSON-path contracts must not be confused with automatic `$object.field` navigation.
 
 Context determines a reference's target. In a fact, `$x` denotes a fact. In `when=$p.node`, it names a declared pattern; within the rule's associated conditions it can denote the fact matched by that pattern. Section 3.5 follows these uses in one example. `::` can occur inside an identifier; section 2.6 explains its namespace role.
 
@@ -215,6 +260,14 @@ Lifecycle behaviour follows the declared role of each relationship. An edge cann
 Copying separates a new identity from reusable content. Copying a complete diagram requires remapping links between copied nodes. Keeping an external calendar reference is a separate explicit decision. Neither operation is equivalent to importing a module or moving the files of one unchanged instance.
 
 ## 2.5 Declaration semantics: facts, schemas and patterns
+
+**Separate ownership is mandatory.** A schema World owns type, slot, rule, pattern and constraint definitions. A knowledge World owns reusable concept, policy and interface declarations under imported schemas. An instance World owns current objects, requests, observations and relationships, with explicit imports of the definitions it uses. An import is a dependency, not an instruction to copy the imported declarations into the instance's stored facts. A temporary evaluation context may compose several sources; its combined contents must not be mistaken for one persisted instance World.
+
+An instance document can declare dependencies with `core.use`; these directives describe its place in the world graph, not mutable object state. The compiler resolves those declared dependencies into its evaluation context before admitting the document's instance facts. The mutable fact payload excludes imports and schema declarations: an ordinary state edit cannot introduce `core.use`, `core.type`, slots or rules. Saving the instance retains its dependency description and its owned facts separately from the imported definitions. This distinction applies equally to code, persisted state and the examples.
+
+Each teaching exercise is independent unless its declared dependencies connect it to another. Repeated module names in independent exercises are alternatives, not permission to merge their definitions into one catalog.
+
+Each SOP example below identifies its owning World. The `sop-world` comments give the same identity, role and source dependencies to the example checker; they do not add SOP syntax. A module becomes available by its declared name, and each consuming World still imports it through real `core.use` wires. A source file containing both definitions and current facts is not a substitute for this separation.
 
 Wires share a syntax but have different roles. A **fact** states what exists and its properties: a particular object or event. Facts change as the system works.
 
@@ -287,15 +340,20 @@ This chapter explains the declarations used to define and validate a schema. Eac
 
 ## 3.1 `core.type`: declaring a type
 
-**Purpose.** A `core.type` wire adds information about a type: its parent and structural properties. An open world can use a type without this declaration; the declaration supplies the constraints and relationships described here.
+A `core.type` wire adds information about a type: its parent and structural properties. An open world can use a type without this declaration; the declaration supplies the constraints and relationships described here.
 
-**Form.** `of` names the type being described. The declaration also has its own wire identifier, but **that identifier is not the type name**. It identifies the declaration. Examples prefix it with `t.` for readability.
+`of` names the type being described. The declaration also has its own wire identifier, but **that identifier is not the type name**. It identifies the declaration. Examples prefix it with `t.` for readability.
 
+**Schema World — `drawn-type/schema.sop`.**
+
+<!-- sop-world id=drawn-type.schema role=schema module=example -->
+```sop
+@t.drawn core.type of=example.drawn extends=std.schema.thing closed=true
+@book.use.drawn-type.schema.std.schema core.use world=std.schema
+@book.drawn-type.schema.module core.module name=example
 ```
-@t.drawn core.type of=drawn extends=std.schema.thing closed=true
-```
 
-The declaration's identifier is `t.drawn`. It describes `drawn`, declaring its parent `std.schema.thing` and closing its accepted keys.
+The declaration's identifier is `t.drawn`. It describes `example.drawn`, declaring its parent `std.schema.thing` and closing its accepted keys.
 
 | Key | Meaning |
 |---|---|
@@ -312,20 +370,25 @@ The declaration's identifier is `t.drawn`. It describes `drawn`, declaring its p
 
 ## 3.2 `core.slot`: declaring a type's key
 
-**Purpose.** To validate a property's values, a schema declares its value kind, whether it is required and its multiplicity. That declaration is a **slot**, expressed by `core.slot`.
+To validate a property's values, a schema declares its value kind, whether it is required and its multiplicity. That declaration is a **slot**, expressed by `core.slot`.
 
-The key and its slot are distinct. `size=1.6` is content on a fact. A slot is the schema wire stating that `drawn` has a numeric key named `size`.
+The key and its slot are distinct. `size=1.6` is content on a fact. A slot is the schema wire stating that `example.drawn` has a numeric key named `size`.
 
-**Form.** Slot declarations are separate wires linked to their owning type through the type-valued `of` key. A type with five explicitly declared slots therefore uses one type declaration and five slot declarations. Slot wire identifiers are free; examples use `s.` followed by the type and key.
+Slot declarations are separate wires linked to their owning type through the type-valued `of` key. A type with five explicitly declared slots therefore uses one type declaration and five slot declarations. Slot wire identifiers are free; examples use `s.` followed by the type and key.
 
+**Schema World — `drawn-slots/schema.sop`.**
+
+<!-- sop-world id=drawn-slots.schema role=schema module=example -->
+```sop
+@t.drawn      core.type of=example.drawn extends=std.schema.thing
+@s.drawn.at   core.slot of=example.drawn key=at     kind=number many=true required=true
+@s.drawn.size core.slot of=example.drawn key=size   kind=number min=0.3 max=3
+@s.drawn.in   core.slot of=example.drawn key=in     type=example.drawn
+@book.use.drawn-slots.schema.std.schema core.use world=std.schema
+@book.drawn-slots.schema.module core.module name=example
 ```
-@t.drawn      core.type of=drawn extends=std.schema.thing
-@s.drawn.at   core.slot of=drawn key=at     kind=number many=true required=true
-@s.drawn.size core.slot of=drawn key=size   kind=number min=0.3 max=3
-@s.drawn.in   core.slot of=drawn key=in     type=drawn
-```
 
-The second wire declares numeric `at` values, allows several of them and marks the key required. The third restricts `size` to numbers between 0.3 and 3. The fourth declares `in` as a reference to another `drawn` fact. This toy example demonstrates slot structure; coordinates in a production domain also need declared axes and frame semantics.
+In the schema block, the second wire declares numeric `at` values, allows several of them and marks the key required. The third restricts `size` to numbers between 0.3 and 3. The fourth declares `in` as a reference to another `example.drawn` fact. This toy example demonstrates slot structure; coordinates in a production domain also need declared axes and frame semantics.
 
 | Key | Meaning |
 |---|---|
@@ -377,11 +440,11 @@ The `kind` vocabulary distinguishes the following value domains:
 
 ## 3.3 Open keys
 
-**Definition.** Suppose a toy schema marks `drawn.at` with `required=true`, and the fact `@f2 drawn size=1` has no `at`. The fact can be retained with an explicit completion obligation. A required key without a value is an **open key**.
+Suppose a toy schema marks `drawn.at` with `required=true`, and the fact `@f2 example.drawn size=1` has no `at`. The fact can be retained with an explicit completion obligation. A required key without a value is an **open key**.
 
 This uses `required=true`, not `present=true`. The schema author chooses according to the record's meaning. The word “required” must not erase the difference between an incomplete goal and an unusable evidence record.
 
-**Why it matters.** An underspecified request is ordinary input. In a drawing example, “draw a fish” supplies neither size nor position. The system must retain that information without pretending it already has a complete drawable object. Open keys make the remaining obligations explicit.
+An underspecified request is ordinary input. In a drawing example, “draw a fish” supplies neither size nor position. The system must retain that information without pretending it already has a complete drawable object. Open keys make the remaining obligations explicit.
 
 LIB handles them through four internal activities. These explain its algorithm rather than introduce application-facing orchestration APIs:
 
@@ -402,34 +465,56 @@ A **pattern** is a structural condition for finding facts. It is not a machine-l
 
 A fact states that a particular object exists with particular properties. A pattern asks for objects satisfying conditions. Both use wire syntax, but their roles differ. A declaration named by a rule as a condition is registered in that rule's schema; it is not inserted as an instance object. The presence of `?` alone does not establish that role.
 
-Consider these toy diagram facts:
+For this toy diagram, the schema World and instance World are separate:
 
+**Schema World — `red-nodes/schema.sop`.**
+
+<!-- sop-world id=red-nodes.schema role=schema module=example -->
 ```sop
-@t.node core.type of=node closed=true
-@s.node.label core.slot of=node key=label kind=string
-@s.node.colour core.slot of=node key=colour kind=atom
-@n1 node label="Review" colour=red
-@n2 node label="Decision" colour=blue
-@n3 node label="Finish" colour=red
+@t.node core.type of=example.node closed=true
+@s.node.label core.slot of=example.node key=label kind=string
+@s.node.colour core.slot of=example.node key=colour kind=atom
+@book.red-nodes.schema.module core.module name=example
 ```
 
-`node` is a declared example type, not a reserved word. `n1`, `n2` and `n3` identify the three objects; their schema permits `label` and `colour`. The following complete example uses a pattern in a rule:
+**Instance World — `red-nodes/instance.sop`.**
 
+<!-- sop-world id=red-nodes.instance role=instance uses=red-nodes.schema -->
 ```sop
-@t.node core.type of=node closed=true
-@s.node.label core.slot of=node key=label kind=string
-@s.node.colour core.slot of=node key=colour kind=atom
+@n1 example.node label="Review" colour=red
+@n2 example.node label="Decision" colour=blue
+@n3 example.node label="Finish" colour=red
+@book.use.red-nodes.instance.example core.use world=example prefix=false
+```
+
+`example.node` is a declared example type, not a reserved word. `n1`, `n2` and `n3` identify the three objects; their schema permits `label` and `colour`. The next exercise owns its rule and patterns in a schema World. The instance World imports that schema and contains only the concrete nodes:
+
+**Schema World — `red-matches/schema.sop`.**
+
+<!-- sop-world id=red-matches.schema role=schema module=example -->
+```sop
+@t.node core.type of=example.node closed=true
+@s.node.label core.slot of=example.node key=label kind=string
+@s.node.colour core.slot of=example.node key=colour kind=atom
 @t.match core.type of=example.red.match closed=true
 @s.match.text core.slot of=example.red.match key=text kind=string present=true
-@p.red node colour=red label=?text
+@p.red example.node colour=red label=?text
 @t.red example.red.match text=?text
 @r.red core.rule when=$p.red then=$t.red
-@n1 node label="Review" colour=red
-@n2 node label="Decision" colour=blue
-@n3 node label="Finish" colour=red
+@book.red-matches.schema.module core.module name=example
 ```
 
-`p.red` names the search condition, not another diagram node. The rule derives one `example.red.match` for each matching label; `t.red` is its conclusion template. Matching searches `node` and its descendants. `colour=red` must agree with the fact; `?text` receives its `label`. Keys omitted from the pattern are not tested by that pattern.
+**Instance World — `red-matches/instance.sop`.**
+
+<!-- sop-world id=red-matches.instance role=instance uses=red-matches.schema -->
+```sop
+@n1 example.node label="Review" colour=red
+@n2 example.node label="Decision" colour=blue
+@n3 example.node label="Finish" colour=red
+@book.use.red-matches.instance.example core.use world=example prefix=false
+```
+
+`p.red` names the search condition, not another diagram node. The rule derives one `example.red.match` for each matching label; `t.red` is its conclusion template. Matching searches `example.node` and its descendants. `colour=red` must agree with the fact; `?text` receives its `label`. Keys omitted from the pattern are not tested by that pattern.
 
 | Candidate fact | Match |
 |---|---|
@@ -439,7 +524,7 @@ Consider these toy diagram facts:
 
 **Binding** is the concrete association between variables, values and matched facts for one result. There are two independent results here, not one global variable changing from `Review` to `Finish`. A repeated variable within a rule must agree across all conditions of a match. That equality provides a **join**. Equal variable names in different rules do not join those rules automatically.
 
-A fact without `label` does not satisfy `label=?text`; matching does not invent missing text. A pattern containing only `node colour=red` would not care about a missing label. Patterns can have no variables: a type and constants are sufficient conditions.
+A fact without `label` does not satisfy `label=?text`; matching does not invent missing text. A pattern containing only `example.node colour=red` would not care about a missing label. Patterns can have no variables: a type and constants are sufficient conditions.
 
 The following matching/construction metadata controls a pattern or conclusion template; it is not content on the described instance object:
 
@@ -451,21 +536,25 @@ The following matching/construction metadata controls a pattern or conclusion te
 
 ## 3.5 Deduction rules: premises, matching and conclusions
 
-A **deduction rule** states which conclusion follows from particular facts. It does not itself describe a sequence of drawing instructions. The engine finds satisfying bindings and instantiates the conclusion for each. Concrete tools are a separate boundary (chapter 6).
+A **deduction rule** states which conclusion follows from particular facts. It does not itself describe a sequence of drawing instructions. The engine finds satisfying bindings and instantiates the conclusion for each. Concrete tools are a separate boundary (chapter 6). Section 3.7.1 follows a complete rule from concrete input facts through variable binding and calculation to both a completed value and a newly generated wire.
 
-For a diagram example, define a start node as one with no incoming link. This is an explicit definition for the example, not a meaning hidden in `node`. Its rule schema is:
+For a diagram example, define a start node as one with no incoming link. This is an explicit definition for the example, not a meaning hidden in `example.node`. Its rule schema is:
 
+**Schema World — `start-node/schema.sop`.**
+
+<!-- sop-world id=start-node.schema role=schema module=example -->
 ```sop
-@t.node core.type of=node closed=true
-@s.node.label core.slot of=node key=label kind=string
-@s.node.start core.slot of=node key=start kind=boolean
-@t.link core.type of=link closed=true
-@s.link.from core.slot of=link key=from type=node present=true
-@s.link.to core.slot of=link key=to type=node present=true
-@p.node  node
-@p.in    link to=$p.node
-@t.start node core.on=$p.node start=true
+@t.node core.type of=example.node closed=true
+@s.node.label core.slot of=example.node key=label kind=string
+@s.node.start core.slot of=example.node key=start kind=boolean
+@t.link core.type of=example.link closed=true
+@s.link.from core.slot of=example.link key=from type=example.node present=true
+@s.link.to core.slot of=example.link key=to type=example.node present=true
+@p.node  example.node
+@p.in    example.link to=$p.node
+@t.start example.node core.on=$p.node start=true
 @r.start core.rule when=$p.node not=$p.in then=$t.start
+@book.start-node.schema.module core.module name=example
 ```
 
 After declaring the toy types and slots, `p.node` matches any node. `p.in` matches a link whose `to` endpoint is the fact bound to `p.node`. `$p.node` here is neither the text `p.node` nor a diagram object with that name; it identifies the rule's pattern and the fact bound to it.
@@ -474,18 +563,16 @@ After declaring the toy types and slots, `p.node` matches any node. `p.in` match
 
 `when=$p.node` is therefore a real schema reference, not an incomplete expression to interpret freely. The loader resolves the declaration in the rule's unit. A missing or unusable pattern rejects the schema. Prefixes `p.` and `t.` are readability conventions; the rule's use establishes the roles.
 
-Load the rule with its schema, then supply these facts:
+The instance imports the preceding schema World and supplies these facts. It does not redeclare the types or the rule:
 
+**Instance World — `start-node/instance.sop`.**
+
+<!-- sop-world id=start-node.instance role=instance uses=start-node.schema -->
 ```sop
-@t.node core.type of=node closed=true
-@s.node.label core.slot of=node key=label kind=string
-@s.node.start core.slot of=node key=start kind=boolean
-@t.link core.type of=link closed=true
-@s.link.from core.slot of=link key=from type=node present=true
-@s.link.to core.slot of=link key=to type=node present=true
-@n1 node label="Review"
-@n2 node label="Decision"
-@e1 link from=$n1 to=$n2
+@n1 example.node label="Review"
+@n2 example.node label="Decision"
+@e1 example.link from=$n1 to=$n2
+@book.use.start-node.instance.example core.use world=example prefix=false
 ```
 
 | Evaluation | Result |
@@ -506,30 +593,48 @@ Adding an incoming link to `n1` removes this justification. The engine retracts 
 | `then` | A conclusion template instantiated from the bound values and facts. |
 | `lazy` | Requests deduction on demand without changing its justification. |
 
+### 3.5.1 Constructing a rule, matching it and choosing an action
+
+A rule author chooses a relation to express and declares its premises and conclusion. The start-node rule above expresses one specific definition: no incoming link in the observed diagram. The engine does not discover that definition by enumerating every possible arrangement of keys. Its schema determines the vocabulary; the declared rule determines which arrangement has meaning.
+
+Before interpreting a rule, its declarations must form a closed, usable specification. The condition IDs must resolve to patterns; a pattern's type and keys must belong to the supplied schema; fixed values must have suitable kinds; and every value used in a conclusion must be supplied by a positive match or a declared calculation. A template cannot turn an unbound `?colour` into a justified colour. A negative premise can test absence within a binding, but absence must not invent a missing person or measured value. These checks concern the declaration's legality, not whether its conclusion is useful for a particular human request.
+
+Matching supplies the next distinction. In the red-node example, `n1` and `n3` both satisfy the same pattern. The rule has two independent bindings, one for each fact, and can derive a separate conclusion for each. It has not chosen which node to edit. An “all red nodes” request can use both identities; “the selected red node” needs a selection condition; “the other one” requires retained conversation evidence. A missing selection condition cannot be supplied by taking whichever matching fact happens to be returned first.
+
+Planning introduces alternatives of a different kind. A request can allow two objects, two placements or two methods to achieve its result. The compiler constructs candidates from applicable declared methods, available objects and permitted completion ranges. Hard constraints eliminate incompatible candidates; the declared objective ranks the survivors. If a calendar method minimises delay, 11:00 beats 11:30 after both intervals have been proved available. A different objective must be stated; no function named “best” supplies it by itself.
+
+Schema validity alone permits many useless or unintended results. A blue shape at coordinate 200 can be valid yet fail a request for a red shape near an identified house. The candidate must satisfy the request's bound target, result predicates and declared tolerances as well as structural validity. The compiler keeps which values came from the request and which were assumptions. A plausible reversible choice can be made under the application's policy, but the chosen interpretation, alternatives and uncertainty remain available for correction.
+
+Applying a rule is also different from learning a new rule. A deduction follows an existing declared implication. Completion searches assignments permitted by existing meanings and constraints. Proposing a new implication changes knowledge and requires its own evidence and review; it cannot be passed off as an ordinary conclusion of the old rules. The implementation plan tracks that distinction separately from reader training.
+
 ## 3.6 `core.deny`: forbidden combinations
 
-**Purpose.** A deny declaration forbids specified patterns from matching together. A change producing such a match is rejected atomically, preserving the earlier state.
+A deny declaration forbids specified patterns from matching together. A change producing such a match is rejected atomically, preserving the earlier state.
 
 **Example.** A scheduling schema can prohibit one participant from attending overlapping meetings:
 
+**Schema World — `meeting-deny/schema.sop`.**
+
+<!-- sop-world id=meeting-deny.schema role=schema module=example -->
 ```sop
-@t.meeting core.type of=meeting closed=true
-@s.meeting.people core.slot of=meeting key=people kind=string many=true
-@s.meeting.start core.slot of=meeting key=start kind=number present=true
-@s.meeting.length core.slot of=meeting key=length kind=number present=true
+@t.meeting core.type of=example.meeting closed=true
+@s.meeting.people core.slot of=example.meeting key=people kind=string many=true
+@s.meeting.start core.slot of=example.meeting key=start kind=number present=true
+@s.meeting.length core.slot of=example.meeting key=length kind=number present=true
 @f.over core.function name=overlaps out.kind=boolean pure=true
 @f.over.1 core.function.arg of=$f.over name=start1 kind=number
 @f.over.2 core.function.arg of=$f.over name=length1 kind=number
 @f.over.3 core.function.arg of=$f.over name=start2 kind=number
 @f.over.4 core.function.arg of=$f.over name=length2 kind=number
-@p.m1   meeting people=?p start=?s1 length=?l1
-@p.m2   meeting people=?p start=?s2 length=?l2
+@p.m1   example.meeting people=?person start=?s1 length=?l1
+@p.m2   example.meeting people=?person start=?s2 length=?l2
 @c.two  core.check fn=neq args=$p.m1 args=$p.m2
 @c.hit  core.check fn=overlaps args=?s1 args=?l1 args=?s2 args=?l2
-@d.busy core.deny when=$p.m1 when=$p.m2 if=$c.two if=$c.hit why="?p already has something at that time"
+@d.busy core.deny when=$p.m1 when=$p.m2 if=$c.two if=$c.hit why="?person already has something at that time"
+@book.meeting-deny.schema.module core.module name=example
 ```
 
-The block declares its toy meeting type and a typed pure `overlaps` primitive. That primitive tests half-open intervals: `s1 < s2+l2` and `s2 < s1+l1`; it does not choose people or times. The two meeting patterns share `?p`, so they bind the same participant. `c.two` requires distinct meetings; `c.hit` tests interval overlap. When both patterns and checks succeed, the deny rejects the change. `why` supplies the reason with the bound value substituted for `?p`.
+This schema World declares the toy meeting type, constraint and typed pure `overlaps` primitive. No concrete event is stored in it. That primitive tests half-open intervals: `s1 < s2+l2` and `s2 < s1+l1`; it does not choose people or times. The patterns are named `p.m1` and `p.m2`. Their `$p.m1` and `$p.m2` references denote the two entire matched meeting facts, allowing `neq` to test that they are distinct. Both patterns bind `people=?person`, so their common `?person` variable requires the same participant. Neither the dots in pattern IDs nor the shared variable read fields implicitly. `c.two` requires distinct meetings; `c.hit` tests interval overlap. When both patterns and checks succeed, the deny rejects the change. The declared `why` contract substitutes the bound `?person` into the explanatory message. This interpolation belongs to that field’s explanation semantics; ordinary quoted text does not generally evaluate variables or references.
 
 | Key | Meaning |
 |---|---|
@@ -553,6 +658,7 @@ The block declares its toy meeting type and a typed pure `overlaps` primitive. T
 | `variable` | A variable appears in a fact. |
 | `deny` | A hard deny's conditions match. |
 | `schema` | A malformed or conflicting schema declaration. |
+| `schema-ownership` | An instance-only payload attempts to introduce definitions, rules, templates or imports instead of referring to a separately prepared context. |
 
 ### 3.6.1 Constraints, norms and defaults
 
@@ -572,7 +678,7 @@ If a manual or external change produces a hard conflict, observation must still 
 
 ## 3.7 Calculations, checks and functions
 
-**Problem.** Structural matching alone cannot compute every needed value or condition: interval overlap, a sum or a word count. A schema can invoke a declared **function** for such calculations.
+Structural matching alone cannot compute every needed value or condition: interval overlap, a sum or a word count. A schema can invoke a declared **function** for such calculations.
 
 `core.check` calls a function returning a Boolean:
 
@@ -594,12 +700,16 @@ If a manual or external change produces a hard conflict, observation must still 
 
 **Function implementations.** Generic primitives include arithmetic (`add`, `sub`, `mul`), comparison (`eq`, `neq`, `gt`, `lt`), text/time operations and aggregation (`count`, `sum`, `min`, `max`). A capability provider can add a pure calculation under a declared `core.function` contract. It must declare its inputs and output, and perform only that computation without modifying state. This is an explicit computational boundary, not permission to conceal semantic choices in a callback.
 
-```
+**Schema World — `overlap-function/schema.sop`.**
+
+<!-- sop-world id=overlap-function.schema role=schema module=example -->
+```sop
 @f.over   core.function name=overlaps out.kind=boolean pure=true doc="two time intervals share a moment"
 @f.over.1 core.function.arg of=$f.over name=start1  kind=number
 @f.over.2 core.function.arg of=$f.over name=length1 kind=number
 @f.over.3 core.function.arg of=$f.over name=start2  kind=number
 @f.over.4 core.function.arg of=$f.over name=length2 kind=number
+@book.overlap-function.schema.module core.module name=example
 ```
 
 The first wire declares the pure Boolean function `overlaps`. The following four describe its ordered arguments and refer back to the function declaration through `of`. Declaring a function's interface does not create its implementation; an appropriate registered primitive supplies the calculation.
@@ -620,6 +730,68 @@ The first wire declares the pure Boolean function `overlaps`. The following four
 | `doc` | Argument explanation. |
 
 Tutorial examples include `overlaps` for time intervals, `covers` for overlapping shapes, `crossings` for diagram edges and `words` for text. These illustrate typed calculations; their names do not introduce implicit reasoning about a domain.
+
+### 3.7.1 Worked example: bind, calculate, check, then derive
+
+The connection between these declarations is a rule, not their order in the file. A pattern binds variables; a calculation produces another bound value; a check tests the current binding; the conclusion says what to assert. A calculation or check declared without a rule using it does not independently change an object.
+
+Consider a small scheduling model. Times are integer minutes after midnight within one identified day: 630 is 10:30 and 660 is 11:00. Duration is measured in the same minute unit. This teaching model deliberately allows zero duration so the false-check case is observable; a production scheduling schema can forbid it. The arithmetic primitives `add` and `gt` are supplied by LIB.
+
+**Schema World — `event-calculation/schema.sop`.** It defines only the accepted record structures.
+
+<!-- sop-world id=event-calculation.schema role=schema module=example -->
+```sop
+@event.type core.type of=example.event closed=true
+@event.start core.slot of=example.event key=start kind=integer min=0 present=true
+@event.length core.slot of=example.event key=length kind=integer min=0 present=true
+@event.end core.slot of=example.event key=end kind=integer min=0
+@interval.type core.type of=example.interval closed=true
+@interval.event core.slot of=example.interval key=event type=example.event present=true
+@interval.start core.slot of=example.interval key=start kind=integer present=true
+@interval.end core.slot of=example.interval key=end kind=integer present=true
+@event.schema.module core.module name=example
+```
+
+**Knowledge World — `event-calculation/rules.sop`.** It imports the structures and owns the reusable deduction rules, their patterns, calculations and templates. These declarations are not concrete meetings or intervals.
+
+<!-- sop-world id=event-calculation.knowledge role=knowledge module=example.rules uses=event-calculation.schema -->
+```sop
+@event.rules.schema core.use world=example prefix=false
+@p.event example.event start=?start length=?length
+@c.end core.calc out=?end fn=add args=?start args=?length
+@c.positive core.check fn=gt args=?length args=0
+@t.end example.event core.on=$p.event end=?end
+@r.end core.rule when=$p.event with=$c.end if=$c.positive then=$t.end
+@t.interval example.interval event=$p.event start=?start end=?end
+@r.interval core.rule when=$p.event with=$c.end if=$c.positive then=$t.interval
+@event.rules.module core.module name=example.rules
+```
+
+**Instance World — `event-calculation/instance.sop`.** Its dependency directive prepares the context; its mutable payload contains only the event.
+
+<!-- sop-world id=event-calculation.instance role=instance uses=event-calculation.knowledge -->
+```sop
+@event.instance.rules core.use world=example.rules prefix=false
+@meeting1 example.event start=630 length=30
+```
+
+The two rules share the pattern and calculation, but each has its own conclusion. For the instance above, LIB follows this binding:
+
+| Declaration or step | Concrete meaning in this match |
+|---|---|
+| `when=$p.event` | Match `meeting1`; bind `?start=630` and `?length=30`. `$p.event` denotes that entire matched fact within the rule. |
+| `with=$c.end` | Pass the two bound values to `add` in the order of `args`; bind `?end=660`. `out=?end` names the result variable, not a field to edit. |
+| `if=$c.positive` | Evaluate `gt(30,0)`; it is true, so this binding can produce a conclusion. |
+| `then=$t.end` in `r.end` | Substitute `?end` into the template. `core.on=$p.event` selects the existing `meeting1`, deriving its `end=660`. |
+| `then=$t.interval` in `r.interval` | Substitute the matched event reference and numeric bindings. There is no `core.on`, so derive a new `example.interval` fact pointing to `meeting1`, with `start=630` and `end=660`. |
+
+The resulting instance contains `meeting1` with `start=630`, `length=30`, `end=660`, and a derived interval referring to it. The engine allocates the new interval fact's identifier; `t.interval` identifies the template, not an instance object with that literal ID. Both consequences retain their rule and premise justifications. The schema and rule definitions remain in their owning Worlds.
+
+This demonstrates two distinct operations. **Completing a value** means asserting a justified property on an existing fact through `core.on`. **Generating a wire** means instantiating a conclusion template without `core.on`. The calculation supplies the same `660` to both. No drawing or calendar tool has been called; these are deductions over the instance. A later action request still needs compilation to concrete tool instructions when an external effect is required.
+
+If `length=0`, `gt(0,0)` is false. Neither rule derives an end or interval. A false `if` skips that rule's conclusion; it is not a rejection of the event. If the event lacks the required `length`, this schema rejects the structurally incomplete fact before these rules can use it. If length is changed from 30 to 45, the old deduction loses its premise and the new binding computes 675, or 11:15. An incompatible explicitly asserted `end` is a conflict to report, not a value the rule silently overwrites.
+
+The same mechanism can derive a price from quantity and unit cost, an object's right edge from its position and width, or a total from a declared population. Each example needs its own schema and meanings; the matching, calculation, checking and conclusion mechanism stays the same.
 
 ## 3.8 Other predefined types
 
@@ -717,11 +889,15 @@ The legend World declares meanings shared by otherwise independent schemas: iden
 
 Two slots can have the same primitive value type and still require different reasoning. Conversely, differently named slots can represent the same general concept. Consider four structural slots in tutorial examples:
 
-```
-@s1 core.slot of=drawn   key=at    kind=number many=true
-@s2 core.slot of=node    key=at    kind=number many=true
-@s3 core.slot of=section key=order kind=integer
-@s4 core.slot of=meeting key=room  type=room
+**Schema World — `structural-slots/schema.sop`.**
+
+<!-- sop-world id=structural-slots.schema role=schema module=example -->
+```sop
+@s1 core.slot of=example.drawn   key=at    kind=number many=true
+@s2 core.slot of=example.node    key=at    kind=number many=true
+@s3 core.slot of=example.section key=order kind=integer
+@s4 core.slot of=example.meeting key=room  type=example.room
+@book.structural-slots.schema.module core.module name=example
 ```
 
 These slots cannot be interchanged merely because they all answer “where?”. A page coordinate is a numeric point in a frame, document order is a discrete position in a sequence, and a meeting room is an identified resource. The shared concept identifies the semantic family. The declared space, units, ordering and target type determine the legal calculation. “Move up” may decrease a page coordinate; it cannot silently subtract one from a room identifier.
@@ -732,7 +908,11 @@ Without those declarations, a handler has to guess meaning from a slot or domain
 
 A **legend World** contains the concepts through which other Worlds describe meaning. The name follows a map legend: it explains what a sign represents. It contains concept declarations, not the current objects of an application instance.
 
-Each domain type and slot declares its semantic concept and the structure needed by that concept (§4.7). A link to `place` does not make every location numeric. The library selects operations whose declared argument types, frame and units match the slot. A room relation uses identity and availability; a page position uses geometry.
+A semantic link answers the first lookup question: which meaning does this type or property represent? It does not answer every later question. The library follows the link to the concept, then finds the declared operations for that concept and checks their input contracts against the supplied values. A room relation needs an identified resource and availability evidence; a page position needs coordinates and a frame. An operation requiring coordinates is not applicable to a room reference merely because both properties concern place.
+
+For example, suppose the reader has retained a relative upward move, context has bound its subject to object `o2`, and the supplied page profile declares a downward-positive vertical axis with an additive step of 12 page units. The instance says `o2` is at `(70,90)`. Following the position property's space identifies that axis and step; applying the requested upward direction gives `(70,78)`. The candidate keeps x unchanged, checks the allowed page region and any affected constraints, and supplies those coordinates to the move interface. Replacing that frame with an upward-positive one changes the calculation to `(70,102)`. The word “up” alone does not choose either convention.
+
+This chain explains what the declarations buy: the schema identifies the property and admissible values, the space identifies the calculation, the knowledge/profile supplies a default step, the instance supplies the baseline, and the tool interface identifies the final arguments. If any link required for that operation is absent, it is a named completion obligation rather than an invitation to guess from `x`, `y` or a tab name.
 
 ## 4.3 General concepts
 
@@ -799,6 +979,8 @@ Some concepts require structure rather than numeric coordinates. A letter, flow 
 
 Graph comparison requires two known descriptions and an alignment of their part roles (§4.4.2). An absent concept description is not a graph of zero parts. Closed enumerations remain appropriate for genuinely finite formal alternatives, such as Boolean truth values; using an enumeration must not discard meaningful comparison structure.
 
+A region test and a candidate generator have different jobs. Given a colour point, the region test decides whether it meets “red”. To choose a colour, the compiler still needs candidates: for a finite-palette tool these are its declared palette entries; for a continuous tool a declared method may propose the region centre and other permitted points. It tests those points and ranks admissible ones by the applicable preference, such as minimum change from the current colour. Knowing that a region exists does not by itself generate a point or choose a winner.
+
 ### 4.4.1 Metrics, membership and region inclusion
 
 A conceptual space is usable only after its comparison rules are declared. A hue difference, a spatial difference and a duration difference have different units. Normalization supplies the scale within a metric; axis weights state their contributions.
@@ -833,7 +1015,7 @@ Regions may overlap. Selection uses membership; naming a value in a reply can us
 
 Region inclusion needs more than checking the inner centre. Interval [4,8] has centre 6 inside [0,7], but endpoint 8 lies outside. For two balls in the same metric, `distance between centres + inner radius ≤ outer radius` is sufficient. Compare both endpoints for intervals. For more general shapes, use an inclusion proof supported by the space's operations; otherwise retain an undetermined result. Sampling may find a counterexample, but cannot establish universal inclusion. A free inner axis must also satisfy any outer restriction: `dark` is not included in `blue` simply because an illustrative centre is blue. *(R24)*
 
-The justification of inclusion names the definitions and metric and is invalidated when they change. Finding a blue object requires membership of its observed colour, not inclusion between two entire regions.
+The justification of inclusion names the definitions and metric and is invalidated when they change. Finding a blue object instead applies membership to that object's observed colour. The distinction prevents a common wrong shortcut: a blue centre in the definition of “dark” cannot make every dark object blue. The compiler chooses the test from the relation being asked about—point membership or region inclusion—not from whichever calculation is available.
 
 When admissible candidates tie, retain them and apply declared ranking policy. A reversible operation with an omitted value may choose a stable candidate, retain the alternative and report its assumption. An exact request for 10:30 is satisfied by neither 10:00 nor 11:00; those are alternatives, not silently revised requirements. *(R25)*
 
@@ -855,6 +1037,8 @@ Missing structural knowledge is different from missing a specialized realization
 
 Equally specific sources can supply different graphs. Retain both, rank their compatibility with the request and instance, and record the chosen graph and uncertainty. File order is not semantic evidence. Correspondence is based on concepts and roles, not local declaration IDs: differently labelled sections can play the same role, and identical labels can play different roles.
 
+To construct a whole from such a graph, bind each required role to either an existing part explicitly selected by the request or a new part goal. Cardinalities constrain how many bindings the role admits. Relationship requirements then connect those bindings: a flow edge needs the returned identities of its endpoint parts, and a signature role needs its declared parent document. Only after those obligations are instantiated do layout and other numerical methods receive the resulting parts. Structural resemblance can suggest a genre candidate; it does not authorise adding missing parts to a document that was only being classified.
+
 ### 4.4.3 Coordinate frames and temporal semantics
 
 A position needs a frame; a local clock time needs a date and timezone. These dependencies must survive transfer between Worlds. Position, geometric relation, instant and recurring series are separate structures with separate checks.
@@ -863,9 +1047,14 @@ Every spatial frame declares origin, axis directions and unit. In the page tutor
 
 Spatial relations have declared tests. In one tutorial policy, “near” bounds edge-to-edge distance by 0.15 of the page diagonal. In another, “above” requires vertical separation and horizontal overlap. Such thresholds and geometric choices belong to the relation definition, not a JS branch recognizing a word. *(R45)*
 
+**Knowledge World — `page-relations/knowledge.sop`.**
+
+<!-- sop-world id=page-relations.knowledge role=knowledge module=book.page-relations -->
 ```sop
 @space.page w.legend.space name=page form=axes version=1
 @rel.above w.legend.relation name=above space=$space.page test=page.above
+@book.use.page-relations.knowledge.w.legend core.use world=w.legend
+@book.page-relations.knowledge.module core.module name=book.page-relations
 ```
 
 Here `space` references the page space and `test=page.above` names the geometric function contract. The function needs observed bounds for object and target in the same frame. In this example it returns true when the object's bottom is no lower than the target's top and their horizontal projections overlap by a positive length. Missing bounds produce an undetermined result. Naming a test does not supply its implementation.
@@ -888,19 +1077,28 @@ A declared occurrence-level default can interpret an unqualified reversible “m
 
 A relative change defines its result from an observed baseline. Its contract identifies operation, amount, unit, reference state and any fixed anchor. Without an anchor, shortening an interval could move its start, end or both. The applicable policy belongs to the kind and property; the request may override a default explicitly.
 
+**Knowledge World — `duration-policy/knowledge.sop`.**
+
+<!-- sop-world id=duration-policy.knowledge role=knowledge module=book.duration-policy -->
 ```sop
 @policy.duration std.change.policy kind=meeting concept=duration anchor=start unit=minute
+@book.use.duration-policy.knowledge.std.change core.use world=std.change
+@book.duration-policy.knowledge.module core.module name=book.duration-policy
 ```
 
 This meeting-duration policy keeps the start fixed. A size policy could instead keep an object's centre fixed. `kind` and `concept` identify applicability, `anchor` names the fixed reference and `unit` fixes the measure. LIB resolves these declarations, filters incompatible policies and ranks compatible ones by specificity and context. An explicit anchor wins over a default. Both endpoints cannot stay fixed while duration changes.
 
 For “shorten the review by 15 minutes”, assume `review` identifies one event in the scheduling instance:
 
+**Instance World — `duration-change/request.sop`.**
+
+<!-- sop-world id=duration-change.request role=instance -->
 ```sop
 @source.shorten std.request.source text="shorten the review by 15 minutes"
 @request.shorten std.request act=change mood=do source=$source.shorten
 @target.review std.request.target request=$request.shorten mode=existing kind=meeting name=review
 @change.duration std.request.constraint request=$request.shorten target=$target.review concept=duration operator=delta value=-15 unit=minute baseline=before anchor=start character=requirement polarity=positive source=$source.shorten
+@book.use.duration-change.request.std.request core.use world=std.request
 ```
 
 `operator=delta` requires the final value to equal the baseline plus the signed amount after unit conversion. `baseline=before` means the observed pre-step version, not a freshly shortened value on each retry. `anchor=start` retains the start and derives the end. Retries correlate with the operation identity; they do not repeat the semantic subtraction.
@@ -917,17 +1115,23 @@ For “every meeting on Friday”, resolve the date and timezone, bind the selec
 
 A measured relation additionally identifies the endpoints or boundaries and the unit:
 
+**Instance World — `reminder/request.sop`.**
+
+<!-- sop-world id=reminder.request role=instance -->
 ```sop
 @source.reminder std.request.source text="put a reminder 10 minutes before the review"
 @request.reminder std.request act=make mood=do source=$source.reminder
 @target.reminder std.request.target request=$request.reminder mode=new kind=reminder
 @target.meeting std.request.target request=$request.reminder mode=existing kind=meeting name=review
 @relation.reminder std.request.constraint request=$request.reminder target=$target.reminder concept=time operator=relation relation=before goal=$target.meeting measure=10 unit=minute from=instant to=start character=requirement polarity=positive source=$source.reminder
+@book.use.reminder.request.std.request core.use world=std.request
 ```
 
-`from=instant` names the reminder's instant, `to=start` the event's start and `measure=10` the exact directed difference. An event starting at 10:00 therefore requires 09:50. A mere “earlier than” test would wrongly admit 09:00. “At least 10 minutes before” additionally uses `comparison=greater.equal`. Missing times or endpoint definitions leave the check undetermined.
+`from=instant` names the reminder's instant, `to=start` the event's start and `measure=10` the exact directed difference. An event starting at 10:00 therefore requires 09:50. A mere “earlier than” test would wrongly admit 09:00. “At least 10 minutes before” asks for a lower bound on that directed difference, not the equality represented by `measure=10`. Its request and method must explicitly represent and evaluate that bound; adding an undeclared `comparison` field to this example is not valid SOP. Missing times or endpoint definitions leave the check undetermined.
 
 The same mechanism supports “2 cm left of the house” after geometric endpoints and frame conversion are declared, or “two paragraphs after the introduction” with discrete sequence distance. The primitive does not infer units or endpoints from message words. A created reminder captures the calculated instant; automatically following a later event move requires an explicit persistent dependency.
+
+In both examples, interpretation fixes the relation and endpoints before arithmetic starts. A reminder's event-start role selects the observed start instant; subtracting ten minutes gives a concrete candidate time. A geometry example must first choose whether “left of” measures edges or centres. Running the same subtraction on the wrong endpoint can return a finite, typed number while still implementing the wrong relation.
 
 ### 4.4.5 Aggregated properties and equality to a reference value
 
@@ -947,6 +1151,9 @@ Compare typed values after normalization, not label spelling. Perceptual similar
 
 “Make the diagram's colours match the drawing” refers to a property of an existing source, not a literal colour:
 
+**Instance World — `palette-match/request.sop`.**
+
+<!-- sop-world id=palette-match.request role=instance -->
 ```sop
 @source.match std.request.source text="make the diagram's colours match the drawing"
 @request.match std.request act=change mood=do source=$source.match
@@ -954,6 +1161,7 @@ Compare typed values after normalization, not label spelling. Perceptual similar
 @target.drawing std.request.target request=$request.match mode=existing kind=drawing determiner=definite
 @reference.palette std.request.value target=$target.drawing concept=palette
 @constraint.palette std.request.constraint request=$request.match target=$target.diagram concept=palette operator=same value=$reference.palette scope=group polarity=positive character=requirement source=$source.match
+@book.use.palette-match.request.std.request core.use world=std.request
 ```
 
 `std.request.value` describes a value to obtain: `target` names the source and `concept` its property. It is neither the palette nor an observation. Resolve the source identity, obtain a typed palette over a collection with known coverage and retain its World, version and derivation. Only that result becomes the destination constraint. Multiple source drawings remain ranked hypotheses; missing evidence does not authorize inventing a palette.
@@ -974,16 +1182,21 @@ An initial degree factor is also declared data, not a universal constant: the ex
 
 ### 4.5.1 Contextual comparison and preference adaptation
 
-The tutorial baseline is the median measurement of compatible members. With one member, use that value; with none, try the next baseline source. Retain member identities and the selected source. *(R29)*
+The tutorial baseline is the median measurement of compatible members. With one member, use that value; with none, try the next baseline source. Retain member identities and the selected source. The matching conditions define compatibility before calculation: same measured property, compatible kind, unit and relevant context. Two equally applicable baseline sources remain alternatives under the declared precedence/tie policy; their file order does not choose the meaning of “big”. *(R29)*
 
 An axis's scale determines legal operations. A ratio scale has a meaningful zero and supports multiplicative factors. An interval scale supports additive differences. The names “late” and “high” can denote regions on an interval axis; multiplying a clock time by 1.6 would not interpret them. *(R30)*
 
 `step` declares a comparative step. For a ratio scale it is a factor, 1.25 in the example; for an interval scale it is an amount in the axis unit. A declared intensifier can request two steps. No such number follows from the word alone. *(R31)*
 
+**Knowledge World — `size/knowledge.sop`.**
+
+<!-- sop-world id=size.knowledge role=knowledge module=book.size -->
 ```sop
 @sp.size w.legend.space name=size form=axes version=1
 @ax.size w.legend.axis of=$sp.size name=ratio order=0 kind=linear unit=$unit.size min=0 max=10 scale=ratio step=1.25
 @unit.size w.legend.unit name=ratio of=$ax.size factor=1 offset=0
+@book.use.size.knowledge.w.legend core.use world=w.legend
+@book.size.knowledge.module core.module name=book.size
 ```
 
 The axis belongs to `$sp.size`; its canonical unit belongs to that exact axis. An upward step from 2 gives 2.5, and a downward step gives 1.6. Bounds 0 and 10 apply only to this example space. An interval-scale step would add or subtract rather than multiply or divide.
@@ -1038,6 +1251,9 @@ An act describes a desired difference between states. Roles are named positions 
 | `kind=has object=<role> quality=<role>` | It has the value bound to the property requirement. |
 | `kind=holds object=<role> goal=<role>` | The requested relation holds between the bound subjects. |
 
+**Knowledge World — `acts/knowledge.sop`.**
+
+<!-- sop-world id=acts.knowledge role=knowledge module=book.acts -->
 ```sop
 @condition.result w.legend.condition kind=exists object=result
 @condition.exists w.legend.condition kind=exists object=object
@@ -1048,11 +1264,15 @@ An act describes a desired difference between states. Roles are named positions 
 @act.remove w.legend.act name=remove change=disappear role=object before=$condition.exists after=$condition.absent
 @act.change w.legend.act name=change change=quality role=object role=quality before=$condition.exists after=$condition.quality
 @act.place w.legend.act name=place change=relation role=object role=goal before=$condition.exists after=$condition.relation
+@book.use.acts.knowledge.w.legend core.use world=w.legend
+@book.acts.knowledge.module core.module name=book.acts
 ```
 
 Conditions have their own declaration identities. Their role names are not object identities. `object=object` refers to the role called `object`; a concrete request later binds it. `holds` obtains the relation from the request, allowing containment, support or proximity without an invented default relation.
 
-Loading validates roles and condition references. Every role used by a condition must belong to the referring act; before conditions are optional and at least one final condition is required. This does not execute the act. LIB binds targets, checks preconditions, constructs concrete calls and compares observed effects with final conditions. An `absent` condition does not itself establish population completeness.
+An acceptable act definition has valid role and condition references: every role used by a condition belongs to its act, and the act has at least one final condition. This defines what a successful transition would mean. It does not yet provide a method for achieving it.
+
+A method must connect that desired transition to capabilities. For placement of a new object, the compiler first binds the requested object and destination roles. The placement precondition requires the object to exist. When the request authorises creation, an applicable creation method can produce that object; its returned identity then supplies the placement call. If the request refers to an existing named object, creation is not a substitute for failed reference resolution. Finally, observations are checked against the requested relation. An `absent` condition requires coverage evidence; merely failing to find a subject in a partial read cannot establish it.
 
 Only declared effects and their justified consequences may change. Any additional observed difference is an unexpected effect and must be retained and reported. *(R36)*
 
@@ -1063,6 +1283,8 @@ Creation to satisfy a missing referent requires authorization. “Put a child on
 Decomposition is bounded. In the basic existence-before-placement case, creation satisfies `exists` without requiring another existence-producing act. More general methods retain visited act/subject combinations, dependency cycles and search limits. A repeated unresolved subgoal must not recurse indefinitely. These mechanisms do not claim that every planning problem has a two-step solution. *(R39)*
 
 For a position swap, both positions are captured before either move. Reading the first object's new position during the second move would place both at the same location. The circuit therefore retains the baseline, dependencies and undo group. Existence of both subjects alone does not prove the moves feasible; tool capability, destination constraints and post-observations are still required.
+
+A decomposition therefore needs more than a list of act names. It binds roles between steps, states which observations are shared baselines, and specifies which returned values feed later arguments. In the swap, positions come from the same pre-state; in create-then-place, identity comes from the creation result. These are different data dependencies even if both circuits contain two calls.
 
 ### 4.6.2 Changing semantic kind while preserving identity
 
@@ -1084,15 +1306,29 @@ A type or slot participating in semantic elaboration must link to its declared c
 
 A semantic link must resolve unambiguously. Otherwise consumers could interpret the same number differently. Link validation proves the concept identity, while operation contracts define measurement and transformation.
 
+**Knowledge World — `sample-legend/knowledge.sop`.**
+
+<!-- sop-world id=sample-legend.knowledge role=knowledge module=book.sample-legend -->
 ```sop
-@type.sample core.type of=sample is=thing
-@slot.sample core.slot of=sample key=value kind=number means=quality space=size
 @concept.thing w.legend.concept name=thing
 @concept.quality w.legend.concept name=quality
 @space.size w.legend.space name=size form=axes version=1
+@book.use.sample-legend.knowledge.w.legend core.use world=w.legend
+@book.sample-legend.knowledge.module core.module name=book.sample-legend
 ```
 
-Load this block together with the `w.legend` schema. Forward references are permitted within the transaction. An atom such as `quality` resolves to exactly one public concept name; zero or multiple matches fail. `means=$concept.quality` chooses the exact identity and survives a public-label change. Quoted text does not become a reference. Names are resolved across the loaded World, without a hidden current-namespace preference.
+**Schema World — `sample-links/schema.sop`.**
+
+<!-- sop-world id=sample-links.schema role=schema module=example uses=sample-legend.knowledge -->
+```sop
+@type.sample core.type of=example.sample is=thing
+@slot.sample core.slot of=example.sample key=value kind=number means=quality space=size
+@book.use.sample-links.schema.book.sample-legend core.use world=book.sample-legend prefix=false
+@book.use.sample-links.schema.w.legend core.use world=w.legend
+@book.sample-links.schema.module core.module name=example
+```
+
+The schema block explicitly imports the preceding knowledge module and the `w.legend` metamodel. The knowledge module owns the concepts and size space; the schema only links its type and slot to them. An atom such as `quality` resolves to exactly one public concept name in that declared context; zero or multiple matches fail. `means=$concept.quality` chooses the exact identity and survives a public-label change. Quoted text does not become a reference. Names are resolved across the loaded World, without a hidden current-namespace preference.
 
 Revalidate links against the final transaction state. Deletion, renaming or introduction of a competing public name cannot leave the schema linked to a missing or ambiguous declaration; failure restores the previous state. The resolved identity is retained separately from the author's spelling. This check does not prove that a numeric value belongs to the space or that a comparison has been performed.
 
@@ -1122,6 +1358,8 @@ A semantic link locates applicable methods; it does not manufacture a grammar, s
 
 Place can be expressed as a point, named region, relation to another subject or change from the current position. Which forms are meaningful depends on its space: a resource relation is not a numeric axis. Temporal methods additionally distinguish instants, intervals, durations, order and repetition. “In the afternoon” uses the date and clock-time region; the general compiler does not carry a built-in definition of afternoon for every culture and context.
 
+In the small schema above, `means=quality` identifies the semantic family and `space=size` identifies the value space. Neither declaration says how to enlarge a value, which baseline to use or which tool field implements it. Those links must come from the applicable space operation, completion policy and capability binding. This intentionally small example proves link structure; the fuller calculations in §§4.5 and 6.6 show the additional premises needed for a concrete result.
+
 ## 4.8 Declaration types of the legend World
 
 The legend defines concepts, acts, conditions, spaces, axes, units, degrees, roles and relations. Valid declarations describe inputs to generic interpretation; they do not establish that a tool supports a requested effect.
@@ -1144,6 +1382,9 @@ A region description identifies its space, constrained axes and membership rule.
 
 The following colour declarations illustrate valid spaces, axes and units without claiming to perform a point-membership test:
 
+**Knowledge World — `colour/knowledge.sop`.**
+
+<!-- sop-world id=colour.knowledge role=knowledge module=book.colour -->
 ```sop
 @sp.colour w.legend.space name=colour form=axes version=1
 @ax.hue w.legend.axis of=$sp.colour name=hue order=0 kind=angle period=360 unit=$unit.degree min=0 max=360
@@ -1152,6 +1393,8 @@ The following colour declarations illustrate valid spaces, axes and units withou
 @unit.degree w.legend.unit name=degree of=$ax.hue factor=1 offset=0
 @unit.saturation w.legend.unit name=ratio of=$ax.saturation factor=1 offset=0
 @unit.lightness w.legend.unit name=ratio of=$ax.lightness factor=1 offset=0
+@book.use.colour.knowledge.w.legend core.use world=w.legend
+@book.colour.knowledge.module core.module name=book.colour
 ```
 
 `of` and `unit` are typed references, not approximate text matches. The two units named `ratio` belong to different axes and are not merged. Axis orders are unique within a space but need not be consecutive. The canonical unit belongs to the exact referring axis and has factor 1, offset 0. Circular axis/unit references load atomically. Shared axis declarations cannot evade uniqueness by moving to another namespace; different spaces may reuse the same labels.
@@ -1179,12 +1422,19 @@ The legend supplies vocabulary through which independent schemas declare meaning
 
 These declarations are written with the language primitives; they do not presuppose their own semantic interpretation. *(R15)*
 
+The loading chain begins with fixed language rules for `core.type`, `core.slot`, references and variables. Those rules let the `w.legend` schema define what a concept or axis record contains. A knowledge World then supplies particular concepts and spaces conforming to that schema. A domain schema links to those records, and instance facts conform to the domain schema. There is no recursive requirement to understand the word “concept” before the structural schema can be loaded.
+
+**Knowledge World — `concepts/knowledge.sop`.**
+
+<!-- sop-world id=concepts.knowledge role=knowledge module=book.concepts -->
 ```sop
 @concept.entity w.legend.concept name=entity group=basic question="What exists?"
 @concept.component w.legend.concept name=component specialises=$concept.entity
 @degree.large w.legend.degree word=large direction=up factor=1.6
 @relation.connected w.legend.relation name=connected inverse=$relation.connected
 @role.endpoint w.legend.role name=endpoint of=$relation.connected
+@book.use.concepts.knowledge.w.legend core.use world=w.legend
+@book.concepts.knowledge.module core.module name=book.concepts
 ```
 
 A concept has at most one specialization parent and no cycles. Removing an edge invalidates its dependent specialization conclusions. `group` organizes vocabulary and `question` explains a concept; neither answers a user's question by itself.
@@ -1196,6 +1446,8 @@ A symmetric relation may be its own inverse. If both sides declare inverses, the
 Loading follows dependency layers: language primitives define the metamodel; the metamodel supports schema/knowledge declarations; instance Worlds use those schemas. This order avoids defining `means` in terms of itself. It is a semantic dependency order, not a claim that every application has exactly four Worlds or four architectural boxes. *(R16)*
 
 A slot's principal concept and its refinements must be consistent. Duration specializes time; participation supplies a role; sequence position is a location in an ordered space. Consequences follow their declared relationships rather than competing annotations or duplicate facts. Notation in explanatory prose does not add undeclared slot keys. *(R17)*
+
+These sources also show where compactness comes from. The unit and axis are separate records because other declarations reference them and they have independent contracts. The numeric factor, offset, bounds and version remain direct values on those records; each number does not need another identity. A colour space is declared once in its knowledge World and imported by consumers. Repeating its full declaration beside every coloured instance would increase text without adding meaning.
 
 # 5. World roles and composition
 
@@ -1219,6 +1471,8 @@ An instance changes when an observed or authorized state change occurs, includin
 A statement's content and its strength in an application are distinct (§3.6.1). A fish habitat fact may support a soft drawing preference; it does not make a deliberately drawn fish in the sky structurally invalid. An ordinary one-hour duration is a candidate completion, not a universal event invariant.
 
 Reusable schemas and knowledge are published with stable names, versions, validated interfaces and licences. [sop-knowledge-worlds](https://github.com/ml-circuits-research/sop-knowledge-worlds) holds reusable declarations for this project. Application Worlds declare the relevant imports and bindings. A shared vocabulary may describe drawing as a concept; it must not depend on a particular demo tab or UI implementation.
+
+During one request, these roles meet in an evaluation context without losing their owners. If a schema requires duration, a knowledge policy proposes 30 minutes, and an instance records a free interval, the compiler can combine those premises into a candidate event. The chosen duration carries the policy as its source; it is not recast as something the user said or copied back into the shared policy. The eventual event and its observed times belong to the destination instance.
 
 ## 5.2 Semantic specialization and reuse
 
@@ -1263,11 +1517,15 @@ Composition combines reusable declarations and particular state without erasing 
 
 **Import.** `core.use` loads a published schema or knowledge module. Pin its version in the project dependency context so another author's update does not silently change an existing request's meaning.
 
-**Extension.** A World can add types or valid restrictions to imported declarations. Compatible refinements preserve the parent's contract; contradictory declarations produce a load/transaction conflict, not a later unexplained tool failure.
+**Extension.** A separately owned schema can add its own types based on imported types and declare valid refinements through the supported schema mechanisms. Extension is not an ordinary instance edit and must respect module ownership. Compatible refinements preserve the parent's contract; an incompatible definition must be rejected before it can guide dispatch.
 
 **Linking.** A typed slot can refer to a subject supplied by another World. The composition context makes the subject and its schema available and states permitted access. A bare label is not an identity. If a scheduling example has two people called Ana, retain both hypotheses, rank contextual evidence and pass the chosen identity to the tool. The primitive never receives “whichever Ana”.
 
 Rules requiring facts from two Worlds belong in a declared composition context that imports or binds both. A reference alone does not grant cross-World search or write authority. For tutorial examples, this can connect calendar aggregation to a chart, insert a drawing into a document, or produce a chart of events per person. Historical snapshots and live dependencies remain distinct (§2.6.1).
+
+For example, suppose a projection reads an event population and derives chart entries. Its rule binds each entry to a source event identity or aggregation key; it does not merge the event with a diagram node that happens to share its label. The candidate chart belongs to the destination context. After compilation, only the diagram calls may mutate that destination; the source remains a versioned read. The context's import and access links explain both which premises were available and where effects are allowed.
+
+Reuse is the main declaration-level simplification: import a common schema once, keep shared concept/property definitions in one knowledge World, and store only instance-specific values and relationships locally. A specialized schema should state a difference from its parent rather than repeat all inherited slots. Shortening these declarations must preserve ownership, applicability and references; inventing an abbreviated syntax that the schema cannot read would only move ambiguity elsewhere.
 
 ## 5.4 Reasoning without a conversation interface
 
@@ -1301,6 +1559,9 @@ A **capability** declares which general acts a domain can realise, over which ki
 
 A **binding** connects a capability to a tool operation and states which resolved request role supplies each operation parameter.
 
+**Knowledge World — `drawing-tools/knowledge.sop`.**
+
+<!-- sop-world id=drawing-tools.knowledge role=knowledge module=book.drawing-tools -->
 ```sop
 @use.schema core.use world=std.schema
 @use.tools core.use world=std.tool
@@ -1314,11 +1575,14 @@ A **binding** connects a capability to a tool operation and states which resolve
 @pa.size std.tool.param op=add name=size kind=number min=0.3 max=3 required=true
 @pa.colour std.tool.param op=add name=colour kind=string required=true
 @b.make std.tool.bind world=drawing act=make of=drawn op=add
+@book.drawing-tools.knowledge.module core.module name=book.drawing-tools
 ```
 
 This is a small illustrative interface, not a claim about a particular deployed Drawing tool. It declares a capability, an `add` operation, five typed required inputs and a binding. The library must supply `kind`, `x`, `y`, `size` and `colour` before dispatch. A full interface must also declare argument sources, coordinate meaning, output identity, preconditions, observations and undo. The `on` list describes capability coverage; it is not a replacement for ownership and scope in a structured request graph.
 
 The interface must distinguish accepted argument types, mandatory arguments, bounds, units and coordinate frames from semantic defaults. The library resolves meanings and defaults before dispatch. Each instruction must also identify expected observable effects, outputs, preconditions and undo behavior. An operation name or `effect=makes` label alone is not a full effect contract.
+
+Read the example from the request side. A creation goal over a compatible drawn kind can match `k.drawn` and `h.make`; `b.make` points to `add`; the five parameter records expose the arguments still required. A candidate with only `kind=fish` is therefore not executable: x, y, size and colour remain open. Completion supplies those values from separately identified policies and observations, and the argument binding must name how each resolved value reaches the operation. If that mapping is absent, the gap is the binding—not an instruction for the tool to interpret the original sentence. A capability declaration can thus help identify the next obligation without pretending the whole route is already supplied.
 
 **Reading the interface.** A capability describes which requests can be elaborated for a domain; a binding connects that capability to a concrete operation. A parameter declaration fixes the tool-side input. The tables below describe these responsibilities. The library validates actual operation and parameter declarations before generating calls; a conceptual role is not an undeclared tool argument.
 
@@ -1359,6 +1623,8 @@ Cross-world requests introduce another distinction: the source World read by a r
 
 Capability compatibility filters impossible destinations. Ranking then uses the explicit destination, the World containing a resolved referent, accepted context and declared relevance. The visible area is useful evidence, not a global type clamp. With a circle creation request and Drawing visible, Drawing can be selected while Diagram remains a recorded alternative. The chosen instance and reason become part of the elaboration trace. *(R57)*
 
+The filter is a join on declared contracts: requested act, target kind and required roles against the corresponding capability declarations. It is followed by ranking over compatible live instances. This order prevents two wrong shortcuts. A visible calendar cannot satisfy geometric creation merely because it is active, while an inactive calendar can still be the only compatible destination for an explicitly identified event. Conversely, the existence of a callable geometric primitive is not evidence that an ambiguous request meant that primitive.
+
 A request can read one World and write another. In the tutorial, “a bar chart of meetings per person” reads the calendar and creates a diagram. Under the snapshot policy used here, it reads once during elaboration and records the source and observation time. *(R58)*
 
 Under that snapshot policy, changing the calendar does not silently change the chart. Deleting a meeting leaves the chart intact; inspection identifies when its data was captured. “Update the chart” explicitly recomputes it. *(R59)*
@@ -1395,7 +1661,9 @@ The destination schema must define what those positions mean: here, the horizont
 | Ana’s meeting count | Distinct occurrence identities `{m1, m2}`; result `2`. |
 | Dan’s meeting count | Occurrence identities `{m1}`; result `1`. |
 
-The last two rows belong to a different projection, “a bar chart of meetings per person”. Its rule forms distinct `(person, occurrence)` pairs, groups by person and counts occurrences in each group. A shared meeting contributes once to each participant, so the bar sum counts participations, not meetings. An exact total requires a closed selection scope recorded in provenance: for example, all meetings of the selected people within the resolved week. Incomplete selection cannot yield verified weekly totals. A result explicitly labelled “based on what is loaded” can identify missing data, but is not a complete weekly chart. A zero bar also requires the intended population of people; absence from observed groups alone cannot supply it.
+The last two rows belong to a different projection, “a bar chart of meetings per person”. Its rule forms distinct `(person, occurrence)` pairs, groups by person and counts occurrences in each group.
+
+This is an ordinary relational computation: the participant reference supplies the grouping key, event identity supplies the distinct-count key, and the count becomes a typed value for a bar. The chart method must then declare the conversion from that value to bar extent and the placement of axes and labels. Aggregation produces 2 and 1; it does not by itself choose a 20-unit-per-meeting scale, horizontal positions or a chart family. A shared meeting contributes once to each participant, so the bar sum counts participations, not meetings. An exact total requires a closed selection scope recorded in provenance: for example, all meetings of the selected people within the resolved week. Incomplete selection cannot yield verified weekly totals. A result explicitly labelled “based on what is loaded” can identify missing data, but is not a complete weekly chart. A zero bar also requires the intended population of people; absence from observed groups alone cannot supply it.
 
 Each produced fact retains its justification: a node identifies the observed occurrence, an edge identifies both endpoints and its relation rule, and a bar identifies its group and selection coverage. Historical provenance records consumed values (§8.6); a temporary live calendar reference is not exported as autonomous evidence. Result identity incorporates the projection and source/group key, preventing meetings with equal labels from merging.
 
@@ -1422,15 +1690,28 @@ The application's public interaction with LIB supplies existing Worlds, declared
 
 A concrete instruction has the exact shape of its tool interface. This small invented interface uses only schema primitives; `example.move` is the tool's accepted wire type, not a new library operation:
 
+**Schema World — `move/schema.sop`.**
+
+<!-- sop-world id=move.schema role=schema module=example -->
 ```sop
 @move.type core.type of=example.move closed=true
 @move.object core.slot of=example.move key=object kind=string present=true
 @move.x core.slot of=example.move key=x kind=number present=true
 @move.y core.slot of=example.move key=y kind=number present=true
+@book.move.schema.module core.module name=example
+```
+
+**Instance World — `move/instance.sop`.**
+
+<!-- sop-world id=move.instance role=instance uses=move.schema -->
+```sop
 @move1 example.move object="o2" x=270.82 y=527.40
+@book.use.move.instance.example core.use world=example prefix=false
 ```
 
 For this example, `object` must resolve to a live object in the supplied instance, and `x,y` are centre coordinates in the declared page frame. The tool handler assigns those coordinates and returns its concrete result. The library checks the observed coordinates and records the previous values for undo. Source words, candidate referents and the reasoning trace stay linked outside the instruction; they need not become separate `value` wires inside every simple call. Removing that serialization noise does not remove the evidence.
+
+The call wire is short because its semantic work is already finished. The schema checks that `object` is a string and the coordinates are numbers; that alone does not establish that “o2” names a live object, that the supplied frame matches the page or that the requested move was intended. Those obligations use the instance binding and interface contract. A compact terminal instruction and a detailed justification therefore serve different purposes and need not have the same size.
 
 ## 6.3 Reading: from a sentence to a request
 
@@ -1447,11 +1728,15 @@ The important distinction is its vocabulary. A request is not an editor-specific
 
 Coordination preserves target roles. “Draw a tree and a house” introduces two new targets under the shared creation act:
 
+**Instance World — `coordinated-creation/request.sop`.**
+
+<!-- sop-world id=coordinated-creation.request role=instance -->
 ```sop
 @source.pair std.request.source text="draw a tree and a house"
 @request.pair std.request act=make mood=do source=$source.pair
 @target.tree std.request.target request=$request.pair mode=new kind=tree
 @target.house std.request.target request=$request.pair mode=new kind=house
+@book.use.coordinated-creation.request.std.request core.use world=std.request
 ```
 
 “Draw a tree near the house” is different: the tree is new, the house is an existing anchor, and `near` relates them. Splitting every noun into a separate creation would create a house the user did not ask for. Both the reader and the graph bridge must preserve this distinction; later tool execution cannot repair a lost target or ownership edge.
@@ -1495,12 +1780,16 @@ Target identification and desired result are different evaluation contexts. In �
 
 An existing target can have a `selector`, a reference to the predicate graph that filters observed candidates. A reference to that target inside its selector denotes the candidate under evaluation. `request.root` denotes desired-result conditions. Without an explicit root, constraints outside selectors form the implicit result conjunction. Selection and recolouring are separate operations even when they use the same property:
 
+**Instance World — `selector-change/request.sop`.**
+
+<!-- sop-world id=selector-change.request role=instance -->
 ```sop
 @source.selection std.request.source text="make the red objects blue"
 @request.selection std.request act=change mood=do source=$source.selection
 @target.selection std.request.target request=$request.selection mode=existing kind=object selector=$condition.selected
 @condition.selected std.request.constraint request=$request.selection target=$target.selection concept=colour operator=region value=red polarity=positive character=requirement
 @condition.desired std.request.constraint request=$request.selection target=$target.selection concept=colour operator=region value=blue polarity=positive character=requirement
+@book.use.selector-change.request.std.request core.use world=std.request
 ```
 
 A selector can use the same conjunction, disjunction, negation and quantifier nodes as a result condition. Union or intersection of existing red and blue objects belongs in the selector, not in constraints that recolour them. Each node and its descendants belong to one context: one particular selector or the result. Sharing a predicate node across contexts is rejected. If the same property is required before and after a change, use two distinct constraints. Quantified bindings cannot escape their context.
@@ -1523,10 +1812,14 @@ A request is distinct from the affected instance state: asking for three fish do
 
 The `std.request` declarations preserve source, named act, explicit mood and target descriptions. Here is a minimal request; the later example adds conditions:
 
+**Instance World — `proposal/request.sop`.**
+
+<!-- sop-world id=proposal.request role=instance -->
 ```sop
 @request.sample std.request act=make mood=propose source=$source.sample
 @target.sample std.request.target request=$request.sample mode=new kind=sample name="illustrative sample"
 @source.sample std.request.source text="propose a new sample"
+@book.use.proposal.request.std.request core.use world=std.request
 ```
 
 `mood=propose` requests a proposal and does not authorise execution. Mood is mandatory: absence does not default to `do`. The other declared modes are `do`, `check` and `ask`; none bypasses authority or effect checks. `act` and `kind` remain names to resolve, not proof of an applicable capability or schema.
@@ -1537,6 +1830,9 @@ The request graph includes constraints, value descriptions, logical nodes, `root
 
 The following request represents “draw three big red fish in the pond”. Act, kind and concept names must resolve before evaluation and elaboration. The fixed structural fields describe the generic graph; colour, place and quantity are vocabulary data rather than a new JavaScript field per domain.
 
+**Instance World — `fish-creation/request.sop`.**
+
+<!-- sop-world id=fish-creation.request role=instance -->
 ```sop
 @src1 std.request.source text="draw three big red fish in the pond"
 @r1 std.request act=make mood=do source=$src1
@@ -1546,6 +1842,7 @@ The following request represents “draw three big red fish in the pond”. Act,
 @c.size std.request.constraint request=$r1 target=$fish1 concept=size operator=degree value=big scope=each polarity=positive character=requirement source=$src1 source.start=11 source.end=14
 @c.colour std.request.constraint request=$r1 target=$fish1 concept=colour operator=region value=red scope=each polarity=positive character=requirement source=$src1 source.start=15 source.end=18
 @c.place std.request.constraint request=$r1 target=$fish1 concept=place operator=relation relation=in goal=$pond1 scope=each polarity=positive character=requirement source=$src1 source.start=24 source.end=35
+@book.use.fish-creation.request.std.request core.use world=std.request
 ```
 
 `src1` preserves the exact source. Source intervals count Unicode scalars from zero with an exclusive end, not UTF-16 code units. The bounds occur together and identify a nonempty in-range span. A multiword meaning may preserve separate contributing intervals rather than falsely claim intervening text. `r1` identifies the request, not a created object. Provenance remains distinct from whether the interpretation or requested effect is correct.
@@ -1565,6 +1862,9 @@ The schema checks operator variants. Section 4.4.5 defines `same` with a typed d
 
 The follow-up “in the sky” is bound by contextualisation (§6.4) to the placement of the fish group in the last request. The following complete revised snapshot preserves the group and unchanged requirements; `c.place` keeps its identity and receives the new source and destination:
 
+**Instance World — `fish-correction/request.sop`.**
+
+<!-- sop-world id=fish-correction.request role=instance -->
 ```sop
 @src2 std.request.source text="in the sky"
 @src1 std.request.source text="draw three big red fish in the pond"
@@ -1575,6 +1875,7 @@ The follow-up “in the sky” is bound by contextualisation (§6.4) to the plac
 @c.size std.request.constraint request=$r1 target=$fish1 concept=size operator=degree value=big scope=each polarity=positive character=requirement source=$src1 source.start=11 source.end=14
 @c.colour std.request.constraint request=$r1 target=$fish1 concept=colour operator=region value=red scope=each polarity=positive character=requirement source=$src1 source.start=15 source.end=18
 @c.place std.request.constraint request=$r1 target=$fish1 concept=place operator=relation relation=in goal=$sky1 scope=each polarity=positive character=requirement source=$src2 source.start=0 source.end=10
+@book.use.fish-correction.request.std.request core.use world=std.request
 ```
 
 This block is the complete revised request snapshot. It replaces the earlier snapshot rather than being concatenated with it: conflicting declarations under repeated identifiers would be an error. Count, size, colour and group identity remain unchanged. The journal retains the previous version and its link to the corrective message.
@@ -1614,6 +1915,8 @@ Fragments illustrate the value of shared concepts. “On the lake” describes p
 | Definite plural | “the fish”, “the arrows”: the selected compatible population when selection applies; otherwise the population supported by the declared reference policy. |
 
 When several objects match a singular description, the library ranks them using explicit identity, focus, accepted context and declared relevance. A reversible change may use the best candidate, retain the others and say which object changed. The tool receives one resolved identity. If there is no compatible candidate, the library reports the missing referent; it does not create an existing target merely to make the command run.
+
+Suppose the instance contains two red houses, `h1` and `h2`, and the current selection identifies `h2`. The kind and colour selector admits both. A declared selection-first reference policy ranks `h2` above `h1`; it does not make `h1` fail the colour test. The compiler binds the chosen target to `h2`, retains `h1` as an alternative and records the selection evidence. A subsequent “the other one” can exclude that prior binding and select `h1` if it still exists and remains compatible. Neither choice follows from object order in a file, and neither is proved to be the person's intention merely because a move is legal.
 
 **Missing information.** The concept and expected type identify the missing value; declared knowledge, accepted context and instance constraints supply candidates. The library uses a plausible reversible completion, records its source and explains material uncertainty. It does not ask one question per missing parameter. A response to an already-open question is still represented as a reference to that dialogue record; it must not be mistaken for an unrelated new creation.
 
@@ -1703,11 +2006,15 @@ Ordinary values may be regions rather than constants. A typical flow length can 
 
 Defaults fill omissions only. If the request names bread baking but knowledge supplies no baking steps, say so and offer empty steps or user-supplied content. Do not replace the topic with unrelated known steps.
 
+Completion is performed against the required arguments of a selected capability or subgoal. For each open role, the compiler collects applicable proposals and records why each applies: same object, kind lineage, user scope, region or resource context. It combines proposals only when their units and dependencies agree, tests resulting assignments against hard constraints, and ranks the valid candidates under the declared objective. A highest-ranked ordinary value that violates the instance constraints is not a fallback to execute anyway. The next compatible candidate or a newly generated assignment must satisfy them.
+
 **Several goals.** For “a house and a swing”, assess whether subgoals are independent: no shared constrained resource, no coupling rule and no requirement for all-or-nothing completion. If one independent part is unavailable, complete the authorised others and state what remains undone.
 
 ### 6.6.1 Local knowledge and learning preferences
 
-An instance can hold names, regions, defaults and factors using the same structures as published knowledge. Reusing structure does not grant equal authority. Each local fact retains its author, supporting evidence, scope and version. Correcting one result changes that result; becoming a future preference requires either an explicit preference request or satisfaction of a declared learning rule. Nothing is automatically promoted into shared knowledge.
+Local learning produces scoped facts, not new schema declarations inside an editor's object state. An instance can own an object's name or a bounded region it contains; a separately identified session or user-profile instance can own preference and factor assertions under the appropriate shared schemas. The evaluation context reads those sources through their declared links. Reusing the structure of a published knowledge record does not grant a local assertion the same authority or copy its policy into every editor.
+
+Each local fact retains its author, supporting evidence, scope and version. Correcting one result changes that result; becoming a future preference requires either an explicit preference request or satisfaction of a declared learning rule. The learned assertion stays with its named owner and applicability context. Nothing is automatically promoted into shared knowledge, and no type, slot or general rule is introduced through an ordinary instance edit.
 
 | Local fact | Admission condition and scope |
 |---|---|
@@ -1719,6 +2026,20 @@ An instance can hold names, regions, defaults and factors using the same structu
 “For my reports, use a short introduction” can introduce a preference for that person’s reports. “Shorten this introduction” authorises only the selected edit. Both use a length region, but their learning scopes differ. Future exact requirements take precedence over that preference.
 
 Undo retracts the learned contribution tied to the undone step, while retaining its historical evidence. If later evidence revised the preference, do not overwrite that revision with an old value: recompute the retracted contribution or report a conflict. The same rule protects subsequently edited aliases and regions.
+
+### 6.6.2 Following an omission through to concrete arguments
+
+Consider the tutorial request “add Review preparation on Monday”. Assume Monday's date and time zone and the destination calendar are already resolved. The reader supplies creation, the title and the day. The event interface still requires an absolute start and duration; no source span claims that either occurred in the sentence.
+
+The supplied knowledge declares a 30-minute ordinary duration, working hours 09:00–17:00, and earliest-free-start as the scheduling preference. The observed instance contains one reservation [10:00,11:00) and establishes complete coverage for that working interval. Completion first proposes duration 30 from the applicable policy. It then needs a feasible start rather than a general label such as “morning”.
+
+For this simple interval problem, merge occupied intervals, subtract them from the permitted working region, and keep free intervals at least 30 minutes long. The result is [09:00,10:00) and [11:00,17:00). Their earliest starts, 09:00 and 11:00, are candidate assignments under this objective. Both pass the duration and no-overlap checks; earliest-free-start ranks 09:00 first. The source facts, policy and calculations explain the choice without a calendar-specific sentence branch.
+
+The concrete creation instruction contains the resolved calendar reference, title, absolute Monday 09:00 start and 30-minute duration. It contains neither “Monday” awaiting interpretation nor “first free” awaiting tool judgement. Its assumed values point to the completion policies, while the title and day point to their source words. A later observation of the created identity and interval supports the reply; the chosen candidate alone does not.
+
+Change only the request to “after 10:30” and intersect the allowed start region with that new bound. The [10:30,11:00) trial conflicts with the reservation; 11:00 becomes the first feasible candidate. Change it to exact “at 10:30” and the start domain is a singleton: there is no authorised later substitute under the same request. Change only the ordinary duration to 90 minutes and the first free interval is too short, so 11:00 wins for a different declared reason. These variants use the same mechanism while making different premises decisive.
+
+The interval subtraction method is appropriate to this declared scheduling fragment. A two-dimensional placement problem needs its own declared candidate generator and geometric tests; calling both tasks search does not make their numerical algorithms identical.
 
 ## 6.7 Wholes and parts
 
@@ -1761,9 +2082,13 @@ Many whole-level edits share one procedure: start from the current result, fix p
 
 In a three-section document, a two-column request can release positions while protecting text and logical order. A full-width section is an explicit structural exception, not permission to approximate it with a narrow column. The schema supplies allowed positions and assignment rules; the word “columns” alone does not define them.
 
+The released variables determine the actual search problem. If the three sections have fixed identities, text and logical order, a layout candidate can assign their boxes to the declared column slots while retaining those protected values. The verifier checks assignment, extents and ordering for each candidate. It must not shorten text or remove a section to make the columns fit unless another requirement authorises that change. The objective compares only candidates that already respect the protected content.
+
 Different reactions require different recompletion goals. “Another one” can add an object; “something else instead” replaces a rejected result. Reading fixes addition versus replacement before search; cost cannot decide intent. For “too much” without a dimension, a clearly dominant comparable deviation can support a correction. Otherwise retain ranked interpretations; a declared reversible default may select a property if the response names that choice. No undeclared property changes silently.
 
 For variety, retain the generator and actual choices. If no valid sufficiently different result is found, distinguish budget exhaustion from proved impossibility. Do not alter firm requirements to guarantee novelty. Explain improved conditions and preserved content; lower cost alone does not prove the whole is “beautiful”.
+
+This also explains the role of an objective. It supplies a comparison among valid assignments, not a generator and not a definition of human intention. A layout method can generate two valid arrangements; a crossing-count evaluator and a displacement evaluator score them; their declared priorities choose one. “Improve” is meaningful only relative to those named criteria. If no such method or criterion applies, the request has an unresolved operation rather than an unspecified permission to alter anything.
 
 ## 6.8 Reasoning: when and how the library chooses
 
@@ -1787,6 +2112,8 @@ Reasoning mechanisms share a representation: versioned instance facts, kinds, pr
 The library selects a compatible interpretation and elaborates its goals. A registered pure function can calculate candidates inside declared bounds. It cannot select a different semantic goal or mutate the live state during search. Its result goes through the same generic constraint checking and ranking as any other candidate. Only the final concrete effectful calls are dispatched to tools.
 
 A function contract specifies input, output and verification. A returned candidate is not true or successful merely because a function returned it; the verifier compares it with the request and relevant state.
+
+For example, an ordinary-location rule can propose the existing water-containing region `pond1` for a new fish. The proposal binds the destination role to that actual identity; a named habitat alone does not locate a pond on the page. A selected creation method supplies the fish's extent, and the instance supplies `pond1`'s bounds and occupied objects. Only then can `free_spot` search for coordinates. Its result remains attached to the same destination, extent and observed revision. If there are two ponds, choosing one is a reference/completion decision retained as an alternative—not a hidden choice inside the coordinate calculator.
 
 The library selects the intended relation from request, knowledge and instance evidence. If the user did not specify a location, a declared ordinary-location rule may select the pond for fish. If the user explicitly requested the sky, that rule cannot override the request. A geometry function then searches inside the selected region and returns coordinates; it cannot change the destination because another region is easier. *(R67)*
 
@@ -1853,16 +2180,22 @@ The following catalogue fixes the generic operations that declared methods can c
 
 For a concrete composition example, require an identified document section to have at most 120 words. Observation supplies its versioned text. Counting uses declared segmentation, then `collect` with `count`. This is a request constraint, not a permanent limit on every section. A shorter candidate is checked in isolation:
 
+**Instance World — `section-limit/request.sop`.**
+
+<!-- sop-world id=section-limit.request role=instance -->
 ```sop
 @source.limit std.request.source text="at most 120 words"
 @request.limit std.request act=change mood=do source=$source.limit
 @target.section std.request.target request=$request.limit mode=existing kind=section
 @constraint.length std.request.constraint request=$request.limit target=$target.section concept=length operator=less.equal value=120 unit=word scope=each polarity=positive character=requirement source=$source.limit source.start=0 source.end=17
+@book.use.section-limit.request.std.request core.use world=std.request
 ```
 
 These wires describe the check; they do not generate a summary. `target.section` must separately bind the chosen section. `less.equal` compares observed count with the bound; concept metadata defines word units and segmentation. A candidate of 117 words satisfies that numeric condition but does not prove meaning preservation, which needs its own contract and may remain unchecked. Without a compatible composer, counting alone cannot fulfil the request.
 
 This distinguishes extension kinds. Changing the bound to 90 is new data. Applying the same check only to introductions is a declaration built from existing operators. Producing text or measuring an unsupported property requires a declared registered function implementation; its name alone is insufficient. Extending the generic engine is necessary only when required values, conditions or effects cannot be expressed by the operation contracts. Then revise the catalogue explicitly and recheck declaration compatibility.
+
+When several operators are composed, intermediate results keep their role. Counting produces a number; it does not produce shorter text. Ranking returns an order over candidates; it does not make a candidate satisfy an unchecked requirement. Planning connects accepted subgoal results to call arguments; it does not cause an effect. Keeping these typed boundaries explicit is what lets one general mechanism be reused without successive wrappers that only rename an unsupported result.
 
 ## 6.9 Execution
 
@@ -1960,6 +2293,8 @@ Response forms combine declared acts with general evidence statuses. *(R71)*
 
 A technical acknowledgement may confirm receipt without proving the effect. For “put the duck on the lake”, locate both objects in the post-observation and check their relation. If neither position nor relation changed and the condition was false before, reporting “done” is false even if the handler returned success.
 
+Conversely, a coordinate difference is not automatically the requested relation. If the duck moved from outside the lake to another outside position, the movement primitive did change state but the placement requirement remains false. The response can truthfully report the observed movement and failed destination condition; it cannot promote the primitive's narrower success into fulfilment of the higher-level request.
+
 A later explanation reconstructs the same chain: requirement, read facts, applied rule and final observation. It distinguishes confirmed effects from planning assumptions. For partial execution, identify successful independent parts and remaining obligations rather than calling the entire circuit completed.
 
 ---
@@ -1991,6 +2326,9 @@ Undo changes domain state and retracts tied learning, but retains evidence of th
 
 The `std.trace` schema distinguishes request, input, step, observation, reply, undo and correction. The following records express structural links. They are not sufficient evidence of the geometric relation: that requires the relevant geometry and a recorded relation check.
 
+**Instance World — `execution-trace/instance.sop`.**
+
+<!-- sop-world id=execution-trace.instance role=instance -->
 ```sop
 @req1 std.trace.request message="put the duck on the lake"
 @input1 std.trace.input source="drawing-instance/duck1" version="state-17" source.type=drawn key=at values="[\"120,540\"]"
@@ -2004,6 +2342,7 @@ The `std.trace` schema distinguishes request, input, step, observation, reply, u
 @input3 std.trace.input source="drawing-instance/duck1" version="state-19" source.type=drawn key=at values="[\"120,540\"]"
 @undo.after std.trace.observation step=$undo.step invocation=call.undo.1 phase=after input=$input3
 @undo1 std.trace.undo target=$step1 execution=$undo.step observation=$undo.after
+@book.use.execution-trace.instance.std.trace core.use world=std.trace
 ```
 
 `req1` identifies the message; `input1` preserves a value read from state 17. `source` is historical data, not an active `$` reference requiring the source object forever. `step1` distinguishes semantic act `place` from tool operation `move`; it and `reply1` link actual journal records. `undo1` distinguishes the undone step (`target`) from the restoring step (`execution`). The undo observation belongs to the latter invocation and retains its observed revision. Inputs preserve source type, key and an ordered JSON list of SOP tokens in `values`. Repeated tokens and categories remain distinct: numeric `12`, string `"12"` and historical reference `$object` differ. Historical references in that list do not require current objects. An empty list records no value at that key, not global completeness. Variables and injected extra keys/wires are rejected. Canonicalisation normalises string escaping, not numeric spelling: `1` and `1.0` retain their source tokens. `120,540` is a token here, not validated geometry. Trace immutability and project saving are separate obligations. The example omits lake geometry and the relation check, so `status=confirmed` alone cannot justify its reply text. Effect and claim verification remain evidence-evaluator obligations.
@@ -2138,6 +2477,8 @@ Tools: create/update nodes and links, group/ungroup, apply concrete positions, o
 
 The diagram model gives nodes, links and groups independent identities. An arrow's endpoints are references to the selected nodes; its label is editable content. Grouping preserves member identities and adds group properties. A layout request changes only the resolved group's coordinates according to declared constraints; a tool receives those concrete positions, not “make it nicer”.
 
+For example, creating an arrow from selected `n1` to selected `n2` binds two different endpoint roles. The call contains those identities and the chosen direction; reversing them would express a different relationship even if both calls were structurally legal. A “connect them all” request first needs an applicable topology method—chain, hub or another declared graph—and any relevant order. The existence of an edge-creation tool does not decide which graph the person intended.
+
 **Charts are diagram groups.** A chart groups typed data items and declares how values map to geometry. Changing bars to a line changes the group's layout while retaining data identities. LIB instantiates declared methods for axes, labels and positions; tools create or change concrete nodes and links. A new chart family using the same primitives requires declarations, not an application branch on its name. A new rendering primitive requires a documented tool extension.
 
 | Tutorial request | Elaboration and its declared basis |
@@ -2164,6 +2505,8 @@ Tools: create/update/remove/reorder concrete sections; compose under typed requi
 The document model distinguishes the whole document from ordered, optionally nested sections. A chapter and a subchapter share the section mechanism with different parent references. Moving a section changes its ordering relation; editing its label does not rename its persistent identity or replace its content.
 
 Genres, mandatory and optional parts, and defaults belong in knowledge Worlds. For “add a chapter called Results”, LIB resolves the document, creates a section goal with that parent and title, derives order from the declared insertion policy, and emits a section-creation call. Composition additionally requires concrete source material, topic, section role, target length and tone parameters. The composition primitive produces text under that contract; it does not choose the document or invent facts about a meeting.
+
+If the insertion policy says append after the last sibling, the instance's ordered sibling population supplies the predecessor. If a selected section supplies an explicit insertion anchor, that accepted context can instead determine the position under the policy. A subchapter request binds the selected chapter as parent rather than merely increasing an indentation number. Parent and sequence constraints are checked before the concrete section call; a title string alone cannot establish either relation.
 
 | Tutorial request | Elaboration and its declared basis |
 |---|---|
@@ -2263,6 +2606,8 @@ An avatar is a live instance with addressable hair, eyes, mouth, accessories and
 
 For “make the avatar happier”, the reader retains an expression degree change. Knowledge must relate expression measures to editable features. In an invented numerical example, observed smile is 0.2, a declared step is 0.1 and a declared feature mapping is `mouth.curvature = 2 × smile`. LIB derives smile 0.3 and curvature 0.6, validates a candidate and emits a change of the resolved mouth part. The tool receives the part reference and 0.6; it never receives “happy”. These numbers illustrate a mapping, not a universal psychological definition.
 
+The chain requires two different bindings: which avatar/part the request concerns, and which measurement/mapping the expression concept uses. A feature record called `mouth` in another avatar cannot satisfy the first binding just because its label matches. A curvature setter cannot satisfy the second merely because it accepts numbers. The declared expression method joins those bindings and states any other features to preserve or adjust; observations then check the resulting feature values.
+
 Observation confirms the mouth property, not that every viewer perceives happiness. A separate expression evaluator can support that interpretation with a measurement and uncertainty. “Give it a hat” instead expands a composition with a hat part, attachment relations and defaults. Direct UI resizing already supplies the part reference and concrete values and uses the same tool interface without semantic replanning.
 
 ---
@@ -2270,6 +2615,8 @@ Observation confirms the mouth property, not that every viewer perceives happine
 # 8. From declarations to results: integration examples
 
 These examples follow a concrete request through schema resolution, inference, candidate search, tool-call construction and observation. Accepting a candidate in a trial World remains distinct from observing an actual tool effect.
+
+Read the examples as linked sources, not a single large state dump. The schema gives the allowed records, imported knowledge gives interpretations or policies, and the instance gives the observations. Calculations name the exact values they consume. A proposed call refers to the candidate values; its result must still be checked against a new observation. The same distinction applies whether a displayed example isolates one calculation or follows a whole request.
 
 ## 8.1 What the general engine must know
 
@@ -2281,18 +2628,41 @@ Suppose a diagram request requires at least 12 page units between two node outli
 
 The `clearance` space has one nonnegative axis in page units. Screen pixels are inappropriate because display zoom must not change document geometry. “At least 12” constrains the candidate with a lower bound. A finite centre-radius ball cannot represent the unbounded interval `[12, infinity)`.
 
-The following declarations define a one-dimensional space and keep the observed gap separate from the requested lower bound. Load `w.legend` and `std.request`; `gap.observation` and `layout.candidate` are invented local toy types. Each declared slot constrains its value without imposing the request's lower bound on all observations.
+The following declarations define a one-dimensional space and keep the observed gap separate from the requested lower bound. Load `w.legend` and `std.request`; `example.gap.observation` and `example.layout.candidate` are invented local toy types. Each declared slot constrains its value without imposing the request's lower bound on all observations.
 
+**Schema World — `clearance/schema.sop`.**
+
+<!-- sop-world id=clearance.schema role=schema module=example -->
+```sop
+@book.gap.type core.type of=example.gap.observation closed=true
+@book.layout.type core.type of=example.layout.candidate closed=true
+@s.observed.value core.slot of=example.gap.observation key=value kind=number min=0
+@s.candidate.gap core.slot of=example.layout.candidate key=gap kind=number min=0
+@book.clearance.schema.module core.module name=example
+```
+
+**Knowledge World — `clearance/knowledge.sop`.**
+
+<!-- sop-world id=clearance.knowledge role=knowledge module=book.clearance -->
 ```sop
 @sp.clearance w.legend.space name=clearance version="1" form=axes
 @ax.clearance w.legend.axis of=$sp.clearance name=distance order=0 kind=linear unit=$unit.clearance min=0 normalisation=10
 @unit.clearance w.legend.unit of=$ax.clearance name=page.unit factor=1 offset=0
-@s.observed.value core.slot of=gap.observation key=value kind=number min=0
-@s.candidate.gap core.slot of=layout.candidate key=gap kind=number min=0
+@book.use.clearance.knowledge.w.legend core.use world=w.legend
+@book.clearance.knowledge.module core.module name=book.clearance
+```
+
+**Instance World — `clearance/instance.sop`.**
+
+<!-- sop-world id=clearance.instance role=instance uses=clearance.schema,clearance.knowledge -->
+```sop
 @source.gap std.request.source text="at least 12 page units apart"
 @request.gap std.request act=place mood=do source=$source.gap
-@target.gap std.request.target request=$request.gap mode=existing kind=gap.observation
+@target.gap std.request.target request=$request.gap mode=existing kind=example.gap.observation
 @constraint.gap std.request.constraint request=$request.gap target=$target.gap concept=clearance operator=greater.equal value=12 unit=page.unit scope=each polarity=positive character=requirement source=$source.gap
+@book.use.clearance.instance.example core.use world=example prefix=false
+@book.use.clearance.instance.book.clearance core.use world=book.clearance prefix=false
+@book.use.clearance.instance.std.request core.use world=std.request
 ```
 
 The space has a version. Its axis refers to the space and the unit by real references; the unit declares identity conversion (`factor=1`, `offset=0`). Axis order and linear kind are explicit. There is no maximum. The positive normalisation length is 10 page units, independently of the lower bound 12 on this request.
@@ -2319,16 +2689,19 @@ Distance from a bound differs from violation. For a lower bound, violation is `m
 
 The geometric function consumes observed data; it neither reads the screen nor moves nodes. This simplified example represents each node by page-frame bounds `left`, `right`, `top`, `bottom`. Curved or rotated outlines require a different geometry contract. A bounding-box approximation must be declared rather than silently presented as exact outline distance.
 
+**Schema World — `measured-gap/schema.sop`.**
+
+<!-- sop-world id=measured-gap.schema role=schema module=example -->
 ```sop
-@type.gap.node core.type of=node closed=true
-@slot.gap.left core.slot of=node key=left kind=number present=true
-@slot.gap.right core.slot of=node key=right kind=number present=true
-@slot.gap.top core.slot of=node key=top kind=number present=true
-@slot.gap.bottom core.slot of=node key=bottom kind=number present=true
-@type.gap.observation core.type of=gap.observation closed=true
-@slot.gap.first core.slot of=gap.observation key=first kind=ref to=node present=true
-@slot.gap.second core.slot of=gap.observation key=second kind=ref to=node present=true
-@slot.gap.value core.slot of=gap.observation key=value kind=number min=0 present=true
+@type.gap.node core.type of=example.node closed=true
+@slot.gap.left core.slot of=example.node key=left kind=number present=true
+@slot.gap.right core.slot of=example.node key=right kind=number present=true
+@slot.gap.top core.slot of=example.node key=top kind=number present=true
+@slot.gap.bottom core.slot of=example.node key=bottom kind=number present=true
+@type.gap.observation core.type of=example.gap.observation closed=true
+@slot.gap.first core.slot of=example.gap.observation key=first kind=ref to=example.node present=true
+@slot.gap.second core.slot of=example.gap.observation key=second kind=ref to=example.node present=true
+@slot.gap.value core.slot of=example.gap.observation key=value kind=number min=0 present=true
 @f.gap core.function name=page.gap out.kind=number pure=true doc="distance between axis-aligned rectangles in page units"
 @f.gap.0 core.function.arg of=$f.gap name=a.left kind=number
 @f.gap.1 core.function.arg of=$f.gap name=a.right kind=number
@@ -2338,12 +2711,13 @@ The geometric function consumes observed data; it neither reads the screen nor m
 @f.gap.5 core.function.arg of=$f.gap name=b.right kind=number
 @f.gap.6 core.function.arg of=$f.gap name=b.top kind=number
 @f.gap.7 core.function.arg of=$f.gap name=b.bottom kind=number
-@p.a node left=?a.left right=?a.right top=?a.top bottom=?a.bottom
-@p.b node left=?b.left right=?b.right top=?b.top bottom=?b.bottom
+@p.a example.node left=?a.left right=?a.right top=?a.top bottom=?a.bottom
+@p.b example.node left=?b.left right=?b.right top=?b.top bottom=?b.bottom
 @c.distinct core.check fn=neq args=$p.a args=$p.b
 @c.gap core.calc fn=page.gap args=?a.left args=?a.right args=?a.top args=?a.bottom args=?b.left args=?b.right args=?b.top args=?b.bottom out=?gap
-@t.gap gap.observation first=$p.a second=$p.b value=?gap
+@t.gap example.gap.observation first=$p.a second=$p.b value=?gap
 @r.gap core.rule when=$p.a when=$p.b if=$c.distinct with=$c.gap then=$t.gap
+@book.measured-gap.schema.module core.module name=example
 ```
 
 `f.gap` declares a pure geometric calculation and the argument declarations fix its eight ordered numeric arguments. The implementation accepts the four bounds of each rectangle and returns a finite nonnegative distance. Both patterns bind nodes in the same observed revision. `neq` removes the same-node case; because calculation can precede that filter, measuring identical bounds must be valid and return zero. The rule retains both subject references in the derived observation. The toy schemas declare numeric bounds and the two observation references explicitly. Missing or inconsistent bounds produce a diagnostic rather than an invented zero.
@@ -2358,24 +2732,35 @@ The space uses general bound, calculation, matching and validation mechanisms. N
 
 Interpretation separates written syntax from schema-defined meaning. Parsing identifies declarations, keys and tokens. Resolution binds names to instances and referents. Validation checks types, values and cardinality; conceptual links determine applicable operations. These are semantic responsibilities, not a requirement to run every check in one fixed linear order.
 
-The complete toy schema below defines a note belonging to a page. Its label deliberately resembles a command and reference, showing that content is not automatically executable:
+The next schema World defines a note belonging to a page. Its separate instance imports that schema and stores a label deliberately resembling a command and reference, showing that content is not automatically executable:
 
+**Schema World — `note/schema.sop`.**
+
+<!-- sop-world id=note.schema role=schema module=example -->
 ```sop
-@type.note.page core.type of=page closed=true
-@type.note.note core.type of=note closed=true
-@s.note.label core.slot of=note key=label kind=string
-@s.note.page core.slot of=note key=page kind=ref to=page
-@s.note.count core.slot of=note key=count kind=integer min=0
-@s.note.tag core.slot of=note key=tag kind=atom many=true
-@page1 page
-@note1 note
+@type.note.page core.type of=example.page closed=true
+@type.note.note core.type of=example.note closed=true
+@s.note.label core.slot of=example.note key=label kind=string
+@s.note.page core.slot of=example.note key=page kind=ref to=example.page
+@s.note.count core.slot of=example.note key=count kind=integer min=0
+@s.note.tag core.slot of=example.note key=tag kind=atom many=true
+@book.note.schema.module core.module name=example
+```
+
+**Instance World — `note/instance.sop`.**
+
+<!-- sop-world id=note.instance role=instance uses=note.schema -->
+```sop
+@page1 example.page
+@note1 example.note
   label="Move $page1 later"
   page=$page1
   count=2
   tag=red tag=round
+@book.use.note.instance.example core.use world=example prefix=false
 ```
 
-`@page1` introduces the reference target. The `@note1` declaration continues across subsequent lines; indentation is only presentational. `label` contains one string token, so the embedded `$page1` is not an active reference. The `page` value is a reference. At parse time `count` contains atom `2`; the slot supplies its integer meaning. Repeated `tag` entries retain both values.
+`@page1` introduces the reference target. The `@note1` declaration continues across subsequent lines; indentation is only presentational. `label` contains one string token, so the embedded `$page1` is not an active reference. The `example.page` value is a reference. At parse time `count` contains atom `2`; the slot supplies its integer meaning. Repeated `tag` entries retain both values.
 
 | Stage | Result for the same note |
 |---|---|
@@ -2420,19 +2805,23 @@ Collection starts from the requested operation and follows declared dependencies
 
 For a tutorial example, consider a local calendar whose relevant meetings are fully observed; no external booking service is assumed. Its type can declare that closed population:
 
+**Schema World — `complete-meeting-scope/schema.sop`.**
+
+<!-- sop-world id=complete-meeting-scope.schema role=schema module=example -->
 ```sop
-@t.meeting core.type of=meeting complete=true
+@t.meeting core.type of=example.meeting complete=true
+@book.complete-meeting-scope.schema.module core.module name=example
 ```
 
 This toy declaration states coverage only for the observed local population. It is justified after the relevant facts are loaded. A partially read calendar cannot be made complete by attaching this flag to its type; the loader/observer must establish the coverage claim.
 
-The declaration names type `meeting`; `complete=true` allows a negative existence answer when no matching fact exists in that observed instance. The observer must establish coverage before that claim is used. The declaration creates no missing facts and says nothing about whether all knowledge dependencies were loaded.
+The declaration names type `example.meeting`; `complete=true` allows a negative existence answer when no matching fact exists in that observed instance. The observer must establish coverage before that claim is used. The declaration creates no missing facts and says nothing about whether all knowledge dependencies were loaded.
 
 Knowledge rules have their own dependencies. The library follows declared imports and references to load those rules and their premises. A complete event population does not prove that all required policy declarations were loaded. An unavailable dependency yields an incomplete verification, not “no restriction applies”.
 
 Two version roles remain distinct. A **state version** changes with semantic instance changes and detects stale candidates. A **published version** identifies an exact schema/knowledge package, for example by content fingerprint. Assessment retains both; “checked at V” without identifying its role is insufficient.
 
-**Coverage scope** identifies the facts and interval for which the source establishes completeness. It differs from a capability domain. For a local calendar it may cover all relevant `meeting` facts; recurring events additionally require occurrence coverage for the requested interval (R48).
+**Coverage scope** identifies the facts and interval for which the source establishes completeness. It differs from a capability domain. For a local calendar it may cover all relevant `example.meeting` facts; recurring events additionally require occurrence coverage for the requested interval (R48).
 
 ## 8.5 Reasoning-engine contracts
 
@@ -2464,45 +2853,58 @@ Fix a resolved day and time zone for this exercise; minutes are counted from mid
 
 This example enables the optional resource profile. `room1` is already resolved, and the same interval must be checked for the participant and room. In the simpler single-calendar profile there is no room argument to fill. The need for a resource comes from the applicable schema and tool contract, not from a universal scheduling assumption.
 
-The following complete toy model isolates conflict checking. `candidate` denotes a trial, not a committed reservation. The domain contract separately defines absolute-time conversion and tool arguments. The local snapshot contains one existing reservation, `busy`, for the same person and room.
+The following separate schema and instance Worlds isolate conflict checking. `example.candidate` denotes a trial, not a committed reservation. The domain contract separately defines absolute-time conversion and tool arguments. The local snapshot contains one existing reservation, `busy`, for the same person and room.
 
+**Schema World — `scheduling/schema.sop`.**
+
+<!-- sop-world id=scheduling.schema role=schema module=example -->
 ```sop
-@type.time.person core.type of=person closed=true
-@type.time.room core.type of=room closed=true
-@type.time.meeting core.type of=meeting closed=true complete=true
-@type.time.candidate core.type of=candidate closed=true
-@slot.time.meeting.people core.slot of=meeting key=people kind=ref to=person present=true
-@slot.time.meeting.room core.slot of=meeting key=room kind=ref to=room present=true
-@slot.time.meeting.start core.slot of=meeting key=start kind=number present=true
-@slot.time.meeting.length core.slot of=meeting key=length kind=number min=0 present=true
-@slot.time.candidate.people core.slot of=candidate key=people kind=ref to=person present=true
-@slot.time.candidate.room core.slot of=candidate key=room kind=ref to=room present=true
-@slot.time.candidate.start core.slot of=candidate key=start kind=number present=true
-@slot.time.candidate.length core.slot of=candidate key=length kind=number min=0 present=true
-@ana person
-@room1 room
-@busy meeting people=$ana room=$room1 start=600 length=60
-@p.old meeting people=?person start=?old.start length=?old.length
-@p.new candidate people=?person start=?new.start length=?new.length
-@p.room.old meeting room=?room start=?old.start length=?old.length
-@p.room.new candidate room=?room start=?new.start length=?new.length
+@type.time.person core.type of=example.person closed=true
+@type.time.room core.type of=example.room closed=true
+@type.time.meeting core.type of=example.meeting closed=true complete=true
+@type.time.candidate core.type of=example.candidate closed=true
+@slot.time.meeting.people core.slot of=example.meeting key=people kind=ref to=example.person present=true
+@slot.time.meeting.room core.slot of=example.meeting key=room kind=ref to=example.room present=true
+@slot.time.meeting.start core.slot of=example.meeting key=start kind=number present=true
+@slot.time.meeting.length core.slot of=example.meeting key=length kind=number min=0 present=true
+@slot.time.candidate.people core.slot of=example.candidate key=people kind=ref to=example.person present=true
+@slot.time.candidate.room core.slot of=example.candidate key=room kind=ref to=example.room present=true
+@slot.time.candidate.start core.slot of=example.candidate key=start kind=number present=true
+@slot.time.candidate.length core.slot of=example.candidate key=length kind=number min=0 present=true
+@p.old example.meeting people=?person start=?old.start length=?old.length
+@p.new example.candidate people=?person start=?new.start length=?new.length
+@p.room.old example.meeting room=?room start=?old.start length=?old.length
+@p.room.new example.candidate room=?room start=?new.start length=?new.length
 @c.old.end core.calc out=?old.end fn=add args=?old.start args=?old.length
 @c.new.end core.calc out=?new.end fn=add args=?new.start args=?new.length
 @c.left core.check fn=lt args=?new.start args=?old.end
 @c.right core.check fn=lt args=?old.start args=?new.end
 @d.person core.deny when=$p.old when=$p.new with=$c.old.end with=$c.new.end if=$c.left if=$c.right why="participant overlap"
 @d.room core.deny when=$p.room.old when=$p.room.new with=$c.old.end with=$c.new.end if=$c.left if=$c.right why="room overlap"
+@book.scheduling.schema.module core.module name=example
 ```
 
-Initial type/slot declarations define the toy schema; the person, room and busy meeting are observed facts. Two pattern pairs join on shared participant and shared room separately. `c.old.end` and `c.new.end` compute each matched interval’s end, with local bindings preventing unrelated reservations from mixing. `c.left` and `c.right` express the strict overlap inequalities. Each deny uses both calculations and tests; checking one resource does not replace checking another.
+**Instance World — `scheduling/instance.sop`.**
+
+<!-- sop-world id=scheduling.instance role=instance uses=scheduling.schema -->
+```sop
+@ana example.person
+@room1 example.room
+@busy example.meeting people=$ana room=$room1 start=600 length=60
+@book.use.scheduling.instance.example core.use world=example prefix=false
+```
+
+The schema World owns the types, slots and constraints. The separate instance World imports it and owns the observed person, room and busy meeting. Two pattern pairs join on shared participant and shared room separately. `c.old.end` and `c.new.end` compute each matched interval’s end, with local bindings preventing unrelated reservations from mixing. `c.left` and `c.right` express the strict overlap inequalities. Each deny uses both calculations and tests; checking one resource does not replace checking another.
 
 The meeting population is complete only within this local exercise after loading all relevant reservations for both resources and the checked interval. This neither prevents external changes nor closes every calendar. Do not assert completeness merely to obtain a convenient free time. Dispatch checks the source version as well as its coverage.
 
-For the trial `@trial candidate people=$ana room=$room1 start=630 length=30`, both deny patterns match: participant and room overlap. For start 660 they do not match, because the half-open interval [660,690) starts exactly at the old interval's end. Passing these checks establishes only this constraint result; it does not create an event or establish every other precondition.
+For the trial `@trial example.candidate people=$ana room=$room1 start=630 length=30`, both deny patterns match: participant and room overlap. For start 660 they do not match, because the half-open interval [660,690) starts exactly at the old interval's end. Passing these checks establishes only this constraint result; it does not create an event or establish every other precondition.
 
 Half-open intervals [a,b) and [c,d) overlap exactly when a < d and c < b. Here 630 < 660 and 600 < 660, so there is a conflict. The rule first joins reservations by participant, then computes interval overlap; the word “meeting” does not itself establish that fact.
 
 A candidate beginning at 660 occupies [660,690). The test 660 < 660 is false, so the known booking does not block it. This alone does not prove availability: observe all relevant reservations through 690. An unavailable source leaves the result unknown.
+
+The concrete binding is worth following. `p.old` matches `busy`, giving `?person=$ana`, `?old.start=600` and `?old.length=60`. The trial binds `p.new` with the same person and proposed start 630, length 30. The two `add` calculations produce 660 and 660. Both `lt` checks succeed, so `d.person` identifies this exact pair as a violation. With start 660, `?new.end` becomes 690 and `660 < 660` fails; that pair no longer violates the rule. The room rule performs the same join using `room=$room1`. These bindings, not a name-based scheduling shortcut, connect the schema to the instance facts.
 
 The initial time was explicit. Under the declared no-overlap policy, 11:00 remains an alternative rather than a silent replacement for 10:30. A vague “later” request would instead allow LIB to choose the ranked feasible time and explain that choice. This difference follows the source and strength of the requirement, not a refusal-first treatment of all uncertainty.
 
@@ -2558,35 +2960,53 @@ The public semantic boundary is SOP Lang. A request circuit states a goal or que
 
 A question selects existing subjects and declares its projection separately. Asking for their colour does not require changing their colour. The following independent examples use the `std.request` schema. The invented kind `sample.item` names an application vocabulary concept; it does not give that kind a renderer or imply the existence of any instance.
 
+**Instance World — `values-query/request.sop`.**
+
+<!-- sop-world id=values-query.request role=instance -->
 ```sop
 @source.query.values std.request.source text="What colours are the items?"
 @request.query.values std.request act=inspect mood=ask source=$source.query.values query=$query.values
 @target.query.values std.request.target request=$request.query.values mode=existing kind=sample.item
 @query.values std.request.query request=$request.query.values target=$target.query.values operation=values concept=colour
+@book.use.values-query.request.std.request core.use world=std.request
 ```
 
+**Instance World — `count-query/request.sop`.**
+
+<!-- sop-world id=count-query.request role=instance -->
 ```sop
 @source.query.count std.request.source text="How many items are there?"
 @request.query.count std.request act=inspect mood=ask source=$source.query.count query=$query.count
 @target.query.count std.request.target request=$request.query.count mode=existing kind=sample.item
 @query.count std.request.query request=$request.query.count target=$target.query.count operation=count
+@book.use.count-query.request.std.request core.use world=std.request
 ```
 
+**Instance World — `existence-query/request.sop`.**
+
+<!-- sop-world id=existence-query.request role=instance -->
 ```sop
 @source.query.exists std.request.source text="Are there any items?"
 @request.query.exists std.request act=inspect mood=ask source=$source.query.exists query=$query.exists
 @target.query.exists std.request.target request=$request.query.exists mode=existing kind=sample.item
 @query.exists std.request.query request=$request.query.exists target=$target.query.exists operation=exists
+@book.use.existence-query.request.std.request core.use world=std.request
 ```
 
+**Instance World — `members-query/request.sop`.**
+
+<!-- sop-world id=members-query.request role=instance -->
 ```sop
 @source.query.members std.request.source text="Which items are there?"
 @request.query.members std.request act=inspect mood=ask source=$source.query.members query=$query.members
 @target.query.members std.request.target request=$request.query.members mode=existing kind=sample.item
 @query.members std.request.query request=$request.query.members target=$target.query.members operation=members
+@book.use.members-query.request.std.request core.use world=std.request
 ```
 
 LIB resolves the target kind against compatible instance Worlds and the schema's declared type relationships, selects a population from a coherent snapshot, evaluates any selectors, and applies the requested projection. Suppose a complete snapshot contains `a`, red, and `b`, blue. Values yields those property values with their subject identities; count yields 2; existence yields true; members yields `a` and `b`. Duplicated evidence for `a` does not create a third item. The answer retains the instance, snapshot version, selection evidence and declared coverage.
+
+The query record therefore determines a computation, not merely the wording of the reply. `target` supplies the selected subject population. `operation=count` counts its distinct identities; `operation=values` additionally follows `concept` through the applicable property binding and projects each subject's observed value. A missing property binding is a different obligation from an empty population. Neither case should be repaired by reading a similarly named private field from an arbitrary native object.
 
 For a partial snapshot containing only `a`, existence can still be true. Count is at least 1, not exactly 1; a full members list is unknown. If no member is observed in a partial population, existence is unknown rather than false. A values query must distinguish an absent property from a known empty value. These rules are generic consequences of coverage, independent of whether the subjects are drawing objects, calendar events or document chapters.
 
@@ -2594,12 +3014,16 @@ For a partial snapshot containing only `a`, existence can still be true. Count i
 
 “How many red items?” adds a selector to the target:
 
+**Instance World — `red-count-query/request.sop`.**
+
+<!-- sop-world id=red-count-query.request role=instance -->
 ```sop
 @source.query.red std.request.source text="How many red items?"
 @request.query.red std.request act=inspect mood=ask source=$source.query.red query=$query.red
 @target.query.red std.request.target request=$request.query.red mode=existing kind=sample.item selector=$selector.red
 @selector.red std.request.constraint request=$request.query.red target=$target.query.red concept=colour operator=eq value="red" polarity=positive character=requirement
 @query.red std.request.query request=$request.query.red target=$target.query.red operation=count
+@book.use.red-count-query.request.std.request core.use world=std.request
 ```
 
 The selector tests the observed colour. In “make the selected items red”, colour is instead a requirement on the result. Filtering out blue items before recolouring would lose exactly the objects that need changing. The compiler retains these roles through every transformation: bind subjects from the selector, then instantiate property-change calls for those subjects, then observe the result predicate. A type-valid graph that swaps these roles is semantically wrong.
@@ -2608,8 +3032,11 @@ Schema declares what colour means for that kind and how it maps to a concrete to
 
 ## 9.3 Rules, inference and search
 
-Rules derive facts from matching premises; they do not inspect arbitrary sentence fragments. The following complete toy model states that a selected item is eligible. It demonstrates a schema, instance facts and a rule in one small circuit; a production application can load those parts from separate Worlds with explicit imports.
+Rules derive facts from matching premises; they do not inspect arbitrary sentence fragments. The following toy model states that a selected item is eligible. Its schema World owns the types and rule; its instance World imports that schema and owns the concrete items. Their temporary evaluation context can contain both sources without changing their ownership.
 
+**Schema World — `eligibility/schema.sop`.**
+
+<!-- sop-world id=eligibility.schema role=schema module=sample -->
 ```sop
 @type.sample.item core.type of=sample.item closed=true
 @slot.sample.id core.slot of=sample.item key=id kind=string present=true
@@ -2619,11 +3046,21 @@ Rules derive facts from matching premises; they do not inspect arbitrary sentenc
 @pattern.sample.selected sample.item id=?id selected=true
 @template.sample.eligible sample.eligible id=?id
 @rule.sample.selected core.rule when=$pattern.sample.selected then=$template.sample.eligible
+@book.eligibility.schema.module core.module name=sample
+```
+
+**Instance World — `eligibility/instance.sop`.**
+
+<!-- sop-world id=eligibility.instance role=instance uses=eligibility.schema -->
+```sop
 @sample.a sample.item id="a" selected=true
 @sample.b sample.item id="b" selected=false
+@book.use.eligibility.instance.sample core.use world=sample prefix=false
 ```
 
 The matcher binds `?id` to `"a"`; the rule derives `sample.eligible id="a"` with the rule and matching fact as evidence. It does not derive eligibility for `b`. If the supporting selection changes, derived eligibility must be re-evaluated. A request that operates on eligible items can consume this conclusion; derivation alone does not issue a tool call.
+
+Notice what did not happen: the library did not infer the meaning of “eligible” from its spelling or choose a tool from that conclusion's name. The rule defines the condition, and an independently declared method can use the resulting population as an input. A second eligibility rule would add another justified route; it would not require a second sentence handler.
 
 Search is needed when rules constrain several possible completions without forcing a single value. For “place the group without overlap”, schema supplies dimensions and coordinate units; instance facts supply members and occupied regions; knowledge supplies candidate generation and the ranking objective. LIB generates candidate positions, measures collisions, rejects forbidden intersections and ranks feasible candidates. It emits coordinates for a selected candidate, with its assumptions. A pure geometric calculation can be native; which group, which constraints and which objective to use must be declared.
 
@@ -2658,6 +3095,8 @@ A symbolic reader can instead obtain candidate structure through declared lexica
 A reader receives text and returns candidate descriptions, not tool commands. The examples in this chapter use English. Reading requires three distinct kinds of information: a lexicon linking forms to meanings, a grammar relating fragments, and semantic composition rules that turn those relationships into requirements. Recognising every word does not establish that the relationship between the words was understood. “Before” and “after” can mention the same objects while requesting opposite changes.
 
 Language Worlds own language forms and constructions; conceptual knowledge Worlds own the kinds, regions and relations they denote. Names introduced in an instance extend its local vocabulary without changing every World's vocabulary. A lexical entry retains its form, lemma, grammatical category, relevant features and one or more senses. Each sense identifies a concept or role; coincidentally matching names do not establish a semantic link.
+
+The connection can be followed in either reading direction. A source form proposes a sense; that sense names a concept; a compatible schema/property binding tells the compiler how the concept applies in this World. In the other direction, a verified concept/value can select a lexical form for a reply. Both directions need an explicit lexical relation. A structural type named `red` would not by itself teach the reader the colour adjective, just as a colour word would not define a type's fields.
 
 | Entry category | What is declared and how it is used |
 |---|---|
@@ -2817,6 +3256,9 @@ Request validation checks structure, ownership, reference types and variable sco
 
 Compare “do not move all the notes” and “do not move any note”. Resolve both collections from the same reference state. The leaf predicate says that the current step moves a note: candidate assessment uses the proposed difference, while post-execution assessment uses the observed difference and correlated invocation evidence. It does not mean the note was moved at some point in its history. `concept=change operator=occurred act=place phase=result value=true` represents this event predicate.
 
+**Instance World — `not-all-notes/request.sop`.**
+
+<!-- sop-world id=not-all-notes.request role=instance -->
 ```sop
 @source.notes std.request.source text="do not move all the notes"
 @request.notes std.request act=place mood=do source=$source.notes root=$not.all
@@ -2825,6 +3267,7 @@ Compare “do not move all the notes” and “do not move any note”. Resolve 
 @moved std.request.constraint request=$request.notes target=$member concept=change operator=occurred act=place phase=result value=true polarity=positive character=requirement source=$source.notes
 @all std.request.quant request=$request.notes kind=all target=$notes bind=$member body=$moved
 @not.all std.request.not request=$request.notes of=$all
+@book.use.not-all-notes.request.std.request core.use world=std.request
 ```
 
 | First request stage | Preserved interpretation |
@@ -2836,6 +3279,9 @@ Compare “do not move all the notes” and “do not move any note”. Resolve 
 
 The second request preserves targets and predicate but changes the source and root; `any` and `not.any` replace `all` and `not.all`. The next block is an independent alternative revision, not declarations to concatenate with the preceding block under the same identities.
 
+**Instance World — `not-any-note/request.sop`.**
+
+<!-- sop-world id=not-any-note.request role=instance -->
 ```sop
 @source.notes std.request.source text="do not move any note"
 @request.notes std.request act=place mood=do source=$source.notes root=$not.any
@@ -2844,6 +3290,7 @@ The second request preserves targets and predicate but changes the source and ro
 @moved std.request.constraint request=$request.notes target=$member concept=change operator=occurred act=place phase=result value=true polarity=positive character=requirement source=$source.notes
 @any std.request.quant request=$request.notes kind=any target=$notes bind=$member body=$moved
 @not.any std.request.not request=$request.notes of=$any
+@book.use.not-any-note.request.std.request core.use world=std.request
 ```
 
 | Second request stage | Preserved interpretation |
@@ -2995,6 +3442,8 @@ A general mechanism cannot replace information about the things it handles. Inhe
 
 Determine the minimum package from declared capabilities and problem families. For each exposed concept, follow dependencies until required operations have known inputs: kind, relevant parents, spaces, regions, roles and realisations. This dependency closure does not require loading all knowledge about the world; it requires an offered concept not to end in a missing reference during planning.
 
+Closing dependencies for a capability is not an instruction to import only facts appearing in a few acceptance examples. Imports should preserve justified reusable families—such as specialization, part roles or property meanings—under an explicit source/mapping policy. Particular test requests probe those families and reveal gaps; they do not define a hidden list of individually favoured facts. Runtime relevance then chooses which admitted declarations a request actually needs.
+
 | Shared component | Information the system must obtain |
 |---|---|
 | Kinds and specialisations | Concept identity, parents and the meaning of each link; use distances only through a declared metric. |
@@ -3069,18 +3518,27 @@ Check source conditions for the exact artifact: annotations, images and derived 
 
 An imported assertion and its provenance are distinct facts. The following toy example uses `std.knowledge`, which imports `std.provenance`, `std.source` and `std.import`. It illustrates an authored table, not a claim about a real external record. `duck` and `bird` are conceptual vocabulary names whose semantic identity must be resolved separately from structural validation.
 
+**Knowledge World — `imported-kinds/knowledge.sop`.**
+
+<!-- sop-world id=imported-kinds.knowledge role=knowledge module=book.imported-kinds -->
 ```sop
 @source.toy std.source name=toy.kind.table version=1 status=illustrative
 @map.kind std.import.mapping name=kind.parent version=1
 @origin.duck std.provenance source=$source.toy record=duck.row mapping=$map.kind
 @fact.duck std.knowledge.parent child=duck parent=bird provenance=$origin.duck status=candidate
+@book.use.imported-kinds.knowledge.std.knowledge core.use world=std.knowledge
+@book.imported-kinds.knowledge.module core.module name=book.imported-kinds
 ```
 
 The schemas reject missing structural fields, undeclared keys, invalid cardinalities and wrongly typed references. Deleting a referenced source is rejected transactionally. `std.source` requires name, version and status (`illustrative` or `published`); license, url and digest are optional metadata. `std.import.mapping` requires name and version; description and digest can identify the transformation. `std.provenance` requires source, record and mapping. `std.knowledge.parent` requires child, parent, provenance and status (`candidate`, `accepted` or `rejected`). These describe record status; the library does not automatically admit a candidate. Successful loading does not check licence, relation truth or mapping suitability. Publication checks and semantic evaluation remain separate.
 
+The one explicit `std.knowledge` import is enough here because that module declares its dependency on `std.provenance`, which declares `std.source` and `std.import`. The loader follows that named chain; it does not preload every standard schema. Removing the three redundant direct imports shortens the document without omitting any dependency.
+
 The first wire fixes the source version. The second identifies the transformation, which must be recoverable and reproducible; its name does not replace its definition. The third links an original record to that transformation. The final wire expresses the resulting conceptual relation and retains its evidence link. `candidate` means not yet admitted to active knowledge, not false. The reviewer checks relation meaning, concept identity and source conditions before admission.
 
 Two independent sources for the same relation provide two pieces of evidence, not two ducks or two semantic relationships. Retracting a source revalidates dependent conclusions; remaining independent evidence can still support them. Reproducible provenance does not prove truth: a perfectly repeatable importer can faithfully reproduce a false statement.
+
+To use the illustrated parent relation, first establish that its status and source policy admit it, then resolve `duck` and `bird` to their semantic identities. A subtype traversal can follow that accepted edge and retain its provenance. A label lookup is a separate lexical dependency: the parent edge does not explain every surface form used to mention either concept. This separation keeps type declarations, semantic relations and word meanings from becoming interchangeable merely because some names coincide.
 
 ## 11.4 Review responsibilities and acceptance
 
@@ -3167,16 +3625,22 @@ In a kind graph, uniform specialisation-edge cost is valid only as an explicit p
 
 The clearance axis can derive its normalisation from an explicit reference sample. This invented sample is in page units and measures width. Independent samples retain distinct identities, including when their values are equal. Load the `std.reference` schema for the following declarations.
 
+**Instance World — `width-observations/instance.sop`.**
+
+<!-- sop-world id=width-observations.instance role=instance -->
 ```sop
 @sample.width.a std.reference.sample value=8 unit=page.unit
 @sample.width.b std.reference.sample value=10 unit=page.unit
 @sample.width.c std.reference.sample value=12 unit=page.unit
 @reference.widths std.reference.set version=1 property=width unit=page.unit member=$sample.width.a member=$sample.width.b member=$sample.width.c
+@book.use.width-observations.instance.std.reference core.use world=std.reference
 ```
 
 The sample values 8, 10 and 12 have median 10. The generic median algorithm sorts the finite values and selects the middle value, averaging the two central values for an even count without overflowing intermediate arithmetic. Duplicate member references do not increase sample size; distinct observations with equal values do. Unit consistency is checked before calculation, and a nonpositive normalisation is rejected.
 
 The calibration retains the exact sample identities, values, units, sources and definition version. Published evidence is a fixed revision: later changes to source measurements create another calibration rather than rewriting the meaning of an old explanation. The consuming axis records which calibration and unit conversion it uses. A version label alone does not make mutable data immutable or prove the measurements authentic.
+
+The resulting denominator is a value consumed by later calculations, not a new fact about the measured nodes. With this fixed normalisation, observed clearance 8 and requested clearance 12 differ by `abs(8−12)/10 = 0.4`. That number can measure deviation for an allowed comparison or objective. The exact requirement `clearance ≥ 12` is still evaluated on compatible clearance values and remains false at 8. Reusing a calibration must not blur the roles of observation, requirement and preference.
 
 ```text
 Pseudocode — calibration and its consumer
@@ -3251,10 +3715,15 @@ Changing a weight can affect many requests using the same objective. Explanation
 
 An objective combines lexicographic priorities with weighted sums inside each level. Load `std.objective` for this fragment. `displacement` and `crowding` name declared evaluators with normalised outputs; the objective does not define those measurement procedures merely by naming them.
 
+**Knowledge World — `layout-objective/knowledge.sop`.**
+
+<!-- sop-world id=layout-objective.knowledge role=knowledge module=book.layout-objective -->
 ```sop
 @objective.layout std.objective order=lexicographic direction=minimise term=$term.move term=$term.crowding
 @term.move std.objective.term evaluator=displacement normalisation=declared.by.evaluator weight=2 priority=1
 @term.crowding std.objective.term evaluator=crowding normalisation=declared.by.evaluator weight=1 priority=2
+@book.use.layout-objective.knowledge.std.objective core.use world=std.objective
+@book.layout-objective.knowledge.module core.module name=book.layout-objective
 ```
 
 The schema requires these fields and rejects unknown keys, wrongly typed references and incomplete structural terms. `order` is `lexicographic`; `direction` is `minimise` or `maximise`. A weight is finite and nonnegative. Zero disables a term's contribution; it does not let an active term's unknown value become zero. Priority is a nonnegative safe integer, at most 9007199254740991 in this representation, so rounding cannot merge distinct levels. That is a representation constraint, not a conceptual limit on the number of priorities.
@@ -3303,6 +3772,8 @@ Inputs are the situated request, prior state revision, subsequent observations, 
 Observations and confirmations can be delayed or incomplete. A technical “success” is therefore not directly rewritten as “I moved it”. Contradictory confirmation and state evidence yield uncertainty and can require another read under the execution policy. Do not invent a cause merely to make a reply appear complete.
 
 An internal claim retains act roles and covered requirements. Movement has an object, resulting location and checked relation; creation has a new identity and its parent whole. Roles bind objects and concepts, not UI message names. This structure permits grouping before textual realisation.
+
+For instance, suppose a confirmed move changes `o2` from `(70,90)` to `(70,78)` in the downward-positive frame from §4.2. The state difference supports a coordinate move upward. Claiming “placed above h1” additionally requires `h1`'s observed bounds and the declared above test. The reply planner keeps that extra condition separate instead of deriving it from the move operation's name. It can then choose a short wording that covers exactly the established predicates.
 
 Consider “Change the colour of the circle to purple”. The reader retains change, the circle description and the required colour. LIB binds the subject using instance evidence, resolves purple through knowledge and the tool's declared colour representation, and emits a concrete property-change instruction. If there are several circles, the context policy ranks them and retains alternatives; the selected identity and assumption are named. Observation checks the concrete property and the semantic mapping before claiming the effect.
 

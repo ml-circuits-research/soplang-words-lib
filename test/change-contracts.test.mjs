@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {World} from '../tools/lib-under-test.mjs';
 const make=()=>{const w=new World();w.load('@use core.use world=std.change');return w;};
 const book=readFileSync(new URL('../books/sop-worlds-teorie.md',import.meta.url),'utf8');
-const fixture=book.match(/```sop\n(@policy.duration std.change.policy[^\n]*)\n```/)[1];
+const fixture=book.match(/(@policy.duration std.change.policy[^\n]*)/)[1];
 test('the exact book change policy loads under its closed schema',()=>{
  const w=make();w.load(fixture);assert.equal(w.schema('std.change.policy').closed,true);
  assert.deepEqual(w.get('policy.duration').attrs.anchor,['start']);assert.equal(w.check().ok,true);

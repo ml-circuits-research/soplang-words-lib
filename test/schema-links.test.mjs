@@ -2,12 +2,13 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {World} from '../tools/lib-under-test.mjs';
+import {bookExampleWorld} from '../tools/audit-book-examples.mjs';
 const make=()=>{const w=new World();w.load('@use core.use world=w.legend');return w;};
 const facts='@thing w.legend.concept name=thing\n@quality w.legend.concept name=quality\n@size w.legend.space name=size version=1 form=axes';
 const schema='@t core.type of=item is=thing\n@s core.slot of=item key=value kind=number means=quality space=size';
-test('book schema links load atomically with forward declarations',()=>{
- const text=readFileSync(new URL('../books/sop-worlds-teorie.md',import.meta.url),'utf8');const fixture=text.match(/```sop\n(@type.sample core.type[\s\S]*?)\n```/)[1];
- const w=make();w.load(fixture);assert.equal(w.semanticLinks().links.length,3);assert.equal(w.check().ok,true);
+test('book schema links load with their explicitly owned knowledge dependency',()=>{
+ const text=readFileSync(new URL('../books/sop-worlds-teorie.md',import.meta.url),'utf8');
+ const w=bookExampleWorld(text,'sample-links.schema',{WorldClass:World});assert.equal(w.semanticLinks().links.length,3);assert.equal(w.check().ok,true);
  for(const text of [schema+'\n'+facts,facts+'\n'+schema]){const v=make();v.load(text);assert.equal(v.semanticLinks().links.length,3);}
 });
 test('missing ambiguous wrong-type and quoted links fail without committed changes',()=>{

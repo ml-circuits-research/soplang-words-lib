@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.219.0
+
+- Compile authored count, existence, member and property projections against scoped native observations. Return typed SOP answers, evidence and per-projection limitations without a tool call.
+
 ## 0.216.0
 
 - Compile measured SOP choices against trusted lexicographic criteria, with hard exclusions, deterministic ties and assessments for every supplied alternative.

@@ -3,7 +3,7 @@ const types = {
     request: 'kind=ref to=std.request present=true', scope: 'kind=ref to=std.capability.scope present=true',
   },
   scope: {
-    instance: 'kind=string present=true', version: 'kind=string present=true', focus: 'kind=string',
+    instance: 'kind=string present=true', version: 'kind=string present=true', populationComplete: 'kind=boolean', population: 'kind=string', focus: 'kind=string',
     newId: 'kind=string', targetUnique: 'kind=boolean', clock: 'kind=number', unapplied: 'kind=string many=true',
   },
   operation: {
@@ -79,6 +79,23 @@ const types = {
   selection: {
     id: 'kind=string present=true', status: 'kind=atom enum=match enum=mismatch enum=unknown present=true',
     support: 'kind=string many=true',
+  },
+  'query.result': {
+    status: 'kind=atom enum=answered enum=partial enum=unavailable present=true', reason: 'kind=atom',
+    instance: 'kind=string', version: 'kind=string', population: 'kind=string',
+    answer: 'kind=ref to=std.capability.query.answer many=true',
+  },
+  'query.answer': {
+    query: 'kind=string present=true', operation: 'kind=atom enum=count enum=exists enum=members enum=values present=true',
+    status: 'kind=atom enum=answered enum=unavailable present=true', reason: 'kind=atom', complete: 'kind=boolean present=true',
+    kind: 'kind=string', concept: 'kind=atom', value: 'kind=any',
+    member: 'kind=ref to=std.capability.query.member many=true',
+    selection: 'kind=ref to=std.capability.selection many=true', support: 'kind=string many=true',
+  },
+  'query.member': {
+    query: 'kind=string present=true', id: 'kind=string present=true', source: 'kind=string present=true',
+    kind: 'kind=string present=true', on: 'kind=string present=true', name: 'kind=string',
+    value: 'kind=any many=true', support: 'kind=string many=true',
   },
   result: {
     status: 'kind=atom enum=compiled enum=unavailable enum=not-applicable present=true', reason: 'kind=atom',

@@ -3,11 +3,11 @@ import { test } from 'node:test';
 import { World, parse, str } from '../tools/lib-under-test.mjs';
 import { decodeCapabilityCall } from '../src/internal/capability-call.mjs';
 
-function source() {
+function source({complete=true,missing=false}={}) {
   const world = new World();
   world.use('std.capability');
   world.load(`
-@scope std.capability.scope instance="example" version="3" newId="new-cell" clock=100
+@scope std.capability.scope instance="example" version="3" newId="new-cell" clock=100 population="all-cells" populationComplete=${complete}
 @make.mode std.capability.mode act=make target=new
 @change.mode std.capability.mode act=change target=existing requireResult=true selector=true
 @create std.capability.operation scope=$scope name="cell.make" act=make on="cell" order=0 eligible=true
@@ -29,7 +29,7 @@ function source() {
 @first std.capability.object scope=$scope id="first" source="cell-a" version="3" on="cell" kind="small" name="Left" order=0
 @last std.capability.object scope=$scope id="last" source="cell-b" version="3" on="cell" kind="small" name="Right" order=1
 @first.reading std.capability.field object=$first binding="cell.reading" key="reading" value=10
-@last.reading std.capability.field object=$last binding="cell.reading" key="reading" value=20
+${missing?'':'@last.reading std.capability.field object=$last binding="cell.reading" key="reading" value=20'}
 `);
   return world;
 }
@@ -133,4 +133,46 @@ test('strict selectors join declared lookup values and retain all considered obs
   assert.deepEqual(unknown.result.attrs.selection.map(unknown.dereference).map(row => row.attrs.status[0]), ['match', 'unknown']);
   world.load('@another std.capability.value concept=reading label="low" value=20');
   assert.equal(run().result.attrs.reason[0], 'value');
+});
+
+function observe(world, operations, value=10, concept='reading'){
+ const request=`@s std.request.source text="Observe the reading"
+@r std.request act=inspect mood=ask source=$s ${operations.map((op,i)=>'query=$q'+i).join(' ')}
+@t std.request.target request=$r mode=existing kind=small.cell selector=$filter
+@filter std.request.constraint request=$r target=$t concept=reading operator=eq character=requirement polarity=positive value=${value}
+${operations.map((op,i)=>'@q'+i+' std.request.query request=$r target=$t operation='+op+(op==='values'?' concept='+concept:'')).join('\n')}
+@context std.capability.context request=$r scope=$scope`;
+ const compiled=world.compileRequest(request),wires=parse(compiled);
+ return {compiled,result:wires[0],answers:wires.filter(row=>row.type==='std.capability.query.answer'),wires};
+}
+test('read-only scoped queries reuse the selector and answer all four projections without selecting a tool',()=>{
+ const world=source();
+ const before=world.toJSON();
+ const {compiled,result,answers,wires}=observe(world,['count','exists','members','values']);
+ assert.equal(result.attrs.status[0],'answered',compiled);
+ assert.deepEqual(answers.map(row=>row.attrs.value?.[0]),['1','true',undefined,undefined]);
+ const found=answers.slice(-2).map(row=>wires.find(member=>'$'+member.id===row.attrs.member[0]));
+ assert.deepEqual(found.map(row=>str(row.attrs.name[0])),['Left','Left']);
+ assert.deepEqual(found[1].attrs.value,['10']);
+ assert.equal(wires.some(wire=>wire.type==='std.capability.call'),false);
+ const unsupported=observe(world,['count','values'],10,'unknown.property');
+ assert.equal(unsupported.result.attrs.status[0],'partial');
+ assert.equal(unsupported.answers[1].attrs.reason[0],'unobserved-query-value');
+ assert.deepEqual(world.toJSON(),before);
+ const empty=observe(world,['count','exists','members'],25);
+ assert.deepEqual(empty.answers.map(row=>row.attrs.value?.[0]),['0','false',undefined]);
+ assert.equal(empty.answers[2].attrs.member,undefined);
+});
+test('unknown fields and incomplete populations retain limitations while witnessed existence remains valid',()=>{
+ const world=source({complete:false});
+ const {result,answers}=observe(world,['count','exists','members']);
+ assert.equal(result.attrs.status[0],'partial');
+ assert.deepEqual(answers.map(row=>row.attrs.reason?.[0]),['incomplete-query-population',undefined,'incomplete-query-population']);
+ assert.equal(answers[1].attrs.value[0],'true');
+ assert.equal(answers[1].attrs.complete[0],'false');
+ assert.equal(observe(world,['exists'],90).answers[0].attrs.reason[0],'incomplete-query-population');
+ const incomplete=source({missing:true});
+ assert.equal(observe(incomplete,['count']).answers[0].attrs.reason[0],'incomplete-query-population');
+ const missing=observe(incomplete,['values']);
+ assert.equal(missing.answers[0].attrs.reason[0],'incomplete-query-population');
 });

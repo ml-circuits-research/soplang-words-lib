@@ -6622,3 +6622,6 @@ Checks: npm run docs; npm test passed 1,002, SOPWORLD_BUNDLE=1 node --test passe
 
 2026-11-18: Explain competing reader evidence and durable journal scope in the book. Align the request-to-circuit plan with tested constructor defaults, history and remaining comparison work.
 Checks: strict published book audit admitted 61/61 SOP examples; npm run docs passed. Both worked examples were exercised in Chromium by the integrated application.
+
+2026-11-18 implemented read-only request projections over trusted capability observations. The compiler reuses declared selectors and the generic World query aggregate, reports per-projection limits and excludes tool inputs from query answers.
+Checks: source and bundle gates with the exact repos.pin caches each passed 1004, skipped 1, todo 1. The browser Drawing query counted one named red house over two live observations and distinguished an empty matching population.

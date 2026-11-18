@@ -135,6 +135,13 @@ function records(world, scope, tick) {
   };
 }
 
+function observationProperty(data,on,concept,tick) {
+  return data.properties.find(row=>{
+    tick();
+    return text(row,'on')===on&&get(row,'concept')===concept&&get(row,'binding');
+  });
+}
+
 function matchObject(world, data, types, kinds, target, selector, tick) {
   if (selector && !positiveEq(selector)) return { unsupported: true };
   const targetName = text(target, 'name');
@@ -151,10 +158,7 @@ function matchObject(world, data, types, kinds, target, selector, tick) {
       continue;
     }
     if (!bindings.has(on)) {
-      const property = data.properties.find((row) => {
-        tick();
-        return text(row, 'on') === on && text(row, 'concept') === text(selector, 'concept') && get(row, 'binding');
-      });
+      const property = observationProperty(data,on,get(selector,'concept'),tick);
       const codec = get(property, 'codec');
       const lookup = codec === 'lookup' ? lookupValue(world, data, selector, tick) : null;
       bindings.set(on, { property, lookup });
@@ -342,30 +346,13 @@ function refuseChosen(data, chosen, tick) {
   return null;
 }
 
-function compile(world, request, nodes, context) {
-  const tick = () => world._b.tick('validate');
-  const scope = ref(world, context, 'scope');
-  if (ref(world, context, 'request')?.id !== request.id || scope?.type !== family + 'scope') {
-    return output(tick, 'unavailable', { reason: 'invalid-capability-context' });
-  }
-  const projection = graph(request, nodes);
-  const act = get(request, 'act');
-  if (!projection) return output(tick, 'not-applicable', { reason: 'unsupported-graph', act });
-  const { target, selector, results } = projection;
-  const data = records(world, scope, tick);
-  const modes = data.modes.filter((mode) => get(mode, 'act') === act && get(mode, 'target') === get(target, 'mode'));
-  if (modes.length !== 1 || selector && !flag(modes[0], 'selector')) {
-    return output(tick, 'not-applicable', { reason: 'unsupported-target-mode', act });
-  }
-  const [mode] = modes;
+function targetInventory(world,data,target,tick) {
   const mappings = data.targets.filter((row) => {
     tick();
     return get(row, 'canonical') === get(target, 'kind');
   });
   const familyIds = new Set(mappings.map((row) => ref(world, row, 'operation')?.id));
   const related = data.operations.filter((row) => familyIds.has(row.id));
-  const kind = get(target, 'kind');
-  if (!related.length) return output(tick, get(mode, 'target') === 'new' ? 'unavailable' : 'not-applicable', { reason: 'native-binding-gap', act, kind });
   const types = new Set(related.map((row) => text(row, 'on')));
   const labels = [...new Set(mappings.map((row) => text(row, 'label')))];
   const kinds = new Set();
@@ -379,6 +366,110 @@ function compile(world, request, nodes, context) {
       if (parameter?.attrs.enum) for (const label of labels) if (accepts(label, parameter, world, tick)) kinds.add(label);
     }
   }
+
+  return {mappings,related,types,labels,kinds};
+}
+
+function compileQuery(world,request,nodes,data,tick){
+  const wires=[];
+  const append=(type,attrs)=>{
+    tick();
+    const row={id:'observed.query.output.'+wires.length,type:family+type,attrs};
+    wires.push(row);
+    return '$'+row.id;
+  };
+  const summary={id:'observed.query.result',type:family+'query.result',attrs:{
+    instance:listed(data.scope,'instance'),version:listed(data.scope,'version'),population:listed(data.scope,'population'),
+  }};
+  const projections=listed(request,'query').map(id=>world.get(id.slice(1)));
+  const targets=nodes.filter(row=>row.type==='std.request.target');
+  const selectors=new Set(targets.flatMap(row=>listed(row,'selector')));
+  const supported=['std.request','std.request.source','std.request.query','std.request.target','std.request.constraint'];
+  if(get(request,'mood')!=='ask'||!projections.length||nodes.some(row=>
+    !supported.includes(row.type)||row.type==='std.request.constraint'&&!selectors.has('$'+row.id))){
+    summary.attrs.status=['unavailable'];summary.attrs.reason=['unsupported-query-graph'];
+    return serialize([summary]);
+  }
+  const validPopulation=!!text(data.scope,'population')&&
+    new Set(data.objects.map(row=>text(row,'id'))).size===data.objects.length&&
+    new Set(data.objects.map(row=>text(row,'source'))).size===data.objects.length&&
+    data.objects.every(row=>text(row,'version')===text(data.scope,'version'));
+  if(!validPopulation){summary.attrs.status=['unavailable'];summary.attrs.reason=['invalid-query-population'];return serialize([summary]);}
+  let successful=0;
+  for(const query of projections){
+    tick();
+    const operation=get(query,'operation'),target=ref(world,query,'target'),selector=ref(world,target,'selector');
+    const attrs={query:[quote(query.id)],operation:[operation],status:['unavailable'],complete:['false'],
+      kind:[quote(text(target,'kind'))],concept:listed(query,'concept')};
+    let memberStart;
+    const abort=reason=>{if(memberStart!==undefined)wires.length=memberStart;attrs.reason=[reason];append('query.answer',attrs);};
+    const {types,labels,kinds}=targetInventory(world,data,target,tick);
+    // A shared source type alone cannot prove which members denote a canonical kind.
+    if(!kinds.size||labels.some(label=>!kinds.has(label))){abort('unbound-query-population');continue;}
+    const matched=matchObject(world,data,types,kinds,target,selector,tick);
+    if(matched.unsupported||matched.reason){abort(matched.reason?'unresolved-selector-value':'unsupported-selector');continue;}
+    attrs.selection=matched.selection.map(({object,status,support})=>append('selection',{
+      id:listed(object,'id'),status:[status],support:support.map(quote),
+    }));
+    const complete=flag(data.scope,'populationComplete')&&!matched.selection.some(row=>row.status==='unknown')&&
+      (!get(target,'name')||data.objects.every(row=>!types.has(text(row,'on'))||!kinds.has(text(row,'kind'))||get(row,'name')!==undefined));
+    if(!complete&&(operation!=='exists'||!matched.matches.length)){abort('incomplete-query-population');continue;}
+    const members=[];
+    memberStart=wires.length;
+    let incompleteField=false;
+    for(const object of matched.matches){
+      tick();
+      const member={query:attrs.query,id:listed(object,'id'),source:listed(object,'source'),kind:listed(object,'kind'),
+        on:listed(object,'on'),name:listed(object,'name'),support:[quote(object.id)]};
+      if(operation==='values'){
+        const property=observationProperty(data,text(object,'on'),get(query,'concept'),tick);
+        const fields=(data.fields.get(object.id)??[]).filter(row=>property&&get(row,'binding')===get(property,'binding'));
+        if(fields.length!==1||!listed(fields[0],'value').length){incompleteField=true;break;}
+        const values=listed(fields[0],'value').map(token=>typedValue(token,world,tick));
+        if(values.includes(absent)){incompleteField=true;break;}
+        member.value=values.map(value=>encodeValue(value,append,tick));
+        member.support.push(quote(property.id),quote(fields[0].id));
+      }
+      members.push(append('query.member',member));
+    }
+    if(incompleteField){abort('unobserved-query-value');continue;}
+    if(operation==='count'||operation==='exists'){
+      const materialized=world.fork();
+      const memberWires=wires.slice(memberStart);
+      if(!materialized.tell(serialize(memberWires),{factsOnly:true}).ok){abort('invalid-query-population');continue;}
+      const answer=materialized.query({type:family+'query.member',mode:operation,where:{query:attrs.query[0]}});
+      if(answer.status==='budget'){abort('budget');continue;}
+      attrs.value=[operation==='count'?answer.value:String(answer.value==='yes')];
+    }
+    attrs.status=['answered'];attrs.complete=[String(complete)];attrs.member=members;
+    attrs.support=[...matched.support,...matched.matches.map(row=>row.id)].map(quote);
+    append('query.answer',attrs);successful++;
+  }
+  summary.attrs.status=[successful===projections.length?'answered':successful?'partial':'unavailable'];
+  summary.attrs.answer=wires.filter(row=>row.type===family+'query.answer').map(row=>'$'+row.id);
+  return serialize([summary,...wires]);
+}
+
+function compile(world, request, nodes, context) {
+  const tick = () => world._b.tick('validate');
+  const scope = ref(world, context, 'scope');
+  if (ref(world, context, 'request')?.id !== request.id || scope?.type !== family + 'scope') {
+    return output(tick, 'unavailable', { reason: 'invalid-capability-context' });
+  }
+  if (request.attrs.query) return compileQuery(world,request,nodes,records(world,scope,tick),tick);
+  const projection = graph(request, nodes);
+  const act = get(request, 'act');
+  if (!projection) return output(tick, 'not-applicable', { reason: 'unsupported-graph', act });
+  const { target, selector, results } = projection;
+  const data = records(world, scope, tick);
+  const modes = data.modes.filter((mode) => get(mode, 'act') === act && get(mode, 'target') === get(target, 'mode'));
+  if (modes.length !== 1 || selector && !flag(modes[0], 'selector')) {
+    return output(tick, 'not-applicable', { reason: 'unsupported-target-mode', act });
+  }
+  const [mode] = modes;
+  const kind = get(target, 'kind');
+  const { mappings, related, types, labels, kinds } = targetInventory(world,data,target,tick);
+  if (!related.length) return output(tick, get(mode, 'target') === 'new' ? 'unavailable' : 'not-applicable', { reason: 'native-binding-gap', act, kind });
 
   const matched = get(target, 'mode') === 'existing'
     ? matchObject(world, data, types, kinds, target, selector, tick) : { matches: [], selection: [], support: [] };

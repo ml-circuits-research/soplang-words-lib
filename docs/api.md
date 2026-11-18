@@ -199,6 +199,23 @@ The result returns the selected option, ordered remaining alternatives, ties and
 an assessment for each option. The example selects `$west`. No candidate facts
 or decision facts are added to the receiving World.
 
+#### Compile a scoped editor observation
+
+A `std.request` with `mood=ask` can own one or more
+`std.request.query` projections. Pass the same trusted
+`std.capability.context`, target bindings and observation data used by
+capability compilation. Declare the scope's `population` name and
+`populationComplete` explicitly. A target kind must have a provable native
+kind population. A query may use one declared equality selector.
+
+The compiler returns a `std.capability.query.result` with linked answer rows
+for `count`, `exists`, `members` or `values`. Members carry observed source
+identities. Values use declared property bindings. The output retains
+selection evidence and has no concrete tool call. A complete empty
+population answers zero or false. An incomplete population may support a
+witnessed positive existence claim. Other incomplete answers carry their
+own reason and may accompany answered projections.
+
 ### world.compileToolInput(sop)
 
 Pass a concrete `std.capability.call` graph or a selected capability result from

@@ -99,3 +99,61 @@ test('the book frame example preserves the stated width and supports its inferre
   '\n@r.h std.request.constraint request=$r target=$r.t concept=height operator=eq value=7 polarity=positive character=requirement');
  assert.deepEqual(explicit.call.args,{width:9,height:7});
 });
+
+test('competing readings use only the measurements for their own admitted arguments', () => {
+ const world = fixture();
+ world.load(`
+@left.count std.capability.parameter operation=$left.make name="count" kind=integer min=1 max=3 default=1
+@left.x std.capability.parameter operation=$left.make name="x" kind=number min=0 max=100 default=2
+@left.y std.capability.parameter operation=$left.make name="y" kind=number min=0 max=100
+@left.marker std.capability.parameter operation=$left.make name="marker" kind=number
+@left.count.property std.capability.property scope=$left concept=count on="frame" parameter="count" order=0
+@left.x.property std.capability.property scope=$left concept=x on="frame" parameter="x" order=0
+@one std.capability.arg name="count" value=1
+@three std.capability.arg name="count" value=3
+@inferred.x std.capability.arg name="x" value=18
+@measurement.type core.type of=toy.measurement closed=true
+@measurement.arg core.slot of=toy.measurement key=argument kind=ref to=std.capability.arg
+@measurement.x core.slot of=toy.measurement key=x kind=number
+@measurement.y core.slot of=toy.measurement key=y kind=number
+@single.measurement toy.measurement argument=$one x=18 y=25
+@triple.measurement toy.measurement argument=$three x=66 y=71
+@measurement toy.measurement argument=?argument x=?x y=?y
+@x.seed std.capability.seed scope=$left kind=toy.round operation="frame.stamp" source=value phase=missing parameter="x" value=?x whenArgument=?argument order=0
+@y.seed std.capability.seed scope=$left kind=toy.round operation="frame.stamp" source=value phase=missing parameter="y" value=?y whenArgument=?argument order=0
+@derive.measurement core.rule when=$measurement then=$x.seed then=$y.seed
+@chained std.capability.seed phase=missing source=value parameter="marker" value=99 whenArgument=$inferred.x order=1
+`);
+ const graph = (id, count, x) => [
+  ...request({prefix:id}),
+  ...(count === undefined ? [] : [`@${id}.count std.request.constraint request=$${id} target=$${id}.t concept=count operator=eq value=${count} polarity=positive character=requirement`]),
+  ...(x === undefined ? [] : [`@${id}.x std.request.constraint request=$${id} target=$${id}.t concept=x operator=eq value=${x} polarity=positive character=requirement`]),
+ ];
+ const proposal = (id, rows) => [...rows,
+  `@${id}.option std.interpret.proposal request=$${id} ` + parse(rows.join('\n')).map(row => 'member=$' + row.id).join(' ')];
+ const one = proposal('single',graph('single',1));
+ const three = proposal('triple',graph('triple',3));
+ for (const [first, second, id, alternative, measurement, args, rejected] of [
+  [one, three, 'single', 'triple', 'single.measurement', { count:1, x:18, y:25 }, 'three'],
+  [three, one, 'triple', 'single', 'triple.measurement', { count:3, x:66, y:71 }, 'one'],
+ ]) {
+  const chosen = compile(world,[...first,...second,`@compare.counts std.interpret.input proposal=$${id}.option proposal=$${alternative}.option`].join('\n'));
+  assert.deepEqual(chosen.call,{operation:'frame.stamp',args:{ width:11,height:12,...args }});
+  assert.deepEqual(chosen.rows.filter(row => row.type==='std.interpret.reading').map(row => row.attrs.status[0]),['compiled','compiled']);
+  const interpretation = chosen.rows.find(row => row.type==='std.interpret.result');
+  assert.equal(str(chosen.rows.find(row => '$'+row.id===interpretation.attrs.choice[0]).attrs.request[0]),id);
+  const support = chosen.result.attrs.support.map(str);
+  assert.ok(!support.includes(rejected));
+  assert.doesNotMatch(support.join(' '),/chained/);
+  const measuredSeeds = support.filter(id => world.get(id)?.attrs.whenArgument);
+  assert.equal(measuredSeeds.length,2);
+  assert.ok(measuredSeeds.every(seed => world.why(seed).steps.some(step => step.id===measurement)));
+ }
+
+ const run = (count, x) => compile(world,graph('check',count,x).join('\n')).call.args;
+ assert.deepEqual(run(undefined),{ width:11,height:12,count:1,x:18,y:25 });
+ assert.deepEqual(run(3,4),{ width:11,height:12,count:3,x:4,y:71 });
+ assert.deepEqual(run(2),{ width:11,height:12,count:2,x:2 });
+ assert.deepEqual(run(9),{ width:11,height:12,count:1,x:2 });
+ assert.deepEqual(run(3,999),{ width:11,height:12,count:3,x:2,y:71 });
+});

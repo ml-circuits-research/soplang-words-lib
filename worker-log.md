@@ -6646,3 +6646,6 @@ Strict audit admitted 62 SOP blocks against 58 schemas. Exact-pin source and bun
 
 2026-11-18 — LIB 0.223 passes each declared slot to the catalog reader when compiling knowledge profiles. A secondary slot can use a complete lookup even when the same term is indexed elsewhere as a name. Book §8.2.2 explains the completeness requirement.
 Full source/bundle/COW gates passed 1014/1014/1012, zero failures. Strict book audit admitted 62 examples against 58 schemas.
+
+2026-11-18: Optional inferred seeds can now require exact typed arguments of the selected capability candidate. Competing count-1 and count-3 readings derive different coordinates and retain their own measurement evidence. Explicit coordinates, unresolved requests and legacy seeds retain precedence.
+Checks: npm run docs and npm run test:full against the exact KB and PSys pins passed 1015 source, 1015 bundle and 1013 COW, each with zero failures, one skip and one TODO.

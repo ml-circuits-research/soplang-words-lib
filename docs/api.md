@@ -204,6 +204,18 @@ plan's support. A user condition that maps to that parameter takes
 precedence even if its value is unresolved. Existing unqualified seeds
 retain their declared phases and precedence.
 
+Add one or more `whenArgument=$arg` references when a measurement applies
+only to a specific call. Each `std.capability.arg` gives a parameter `name`
+and exact typed `value`. For example, `name="count" value=3` qualifies
+values measured for a batch of three. Every named argument must be
+admitted by the candidate operation and equal the recorded value. The
+compiler reads arguments from the selected family, resolved conditions,
+existing seeds and applicable parameter defaults. An unresolved explicit
+condition cannot authorize the measurement. These seeds fill only unclaimed
+parameters after the existing seeds, and a conditioned seed cannot establish
+another conditioned seed's applicability. The compiler retains both the
+applied seed and its qualifying argument records in the call support.
+
 ### Compile a measured choice
 
 Load `std.choice` and declare the receiving World's policy with ordered

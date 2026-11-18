@@ -10,7 +10,7 @@ const listed = (wire, key) => wire.attrs[key] || [];
 const byOrder = (left, right) => number(left, 'order') - number(right, 'order');
 const safeKey = (key) => !['__proto__', 'constructor', 'prototype'].includes(key);
 const absent = Symbol('absent');
-const inferredSeed = (rule) => get(rule, 'scope') !== undefined || get(rule, 'kind') !== undefined;
+const inferredSeed = (rule) => get(rule, 'scope') !== undefined || get(rule, 'kind') !== undefined || get(rule, 'whenArgument') !== undefined;
 
 function typedValue(token, world, tick, depth = 0) {
   tick();
@@ -261,10 +261,37 @@ function sourceValue(world, rule, context, args, parameter, tick) {
   }
 }
 
-function seedArgs(world, rules, phase, context, params, args, requested, notes, support, tick) {
+function sameValue(left, right, tick) {
+  tick();
+  if (Object.is(left, right)) return true;
+  if (left === null || right === null || typeof left !== 'object' || typeof right !== 'object' ||
+      Array.isArray(left) !== Array.isArray(right)) return false;
+  const keys = Object.keys(left);
+  return keys.length === Object.keys(right).length &&
+    keys.every(key => Object.hasOwn(right, key) && sameValue(left[key], right[key], tick));
+}
+
+function seedConditions(world, refs, destination, params, inputs, args, tick) {
+  const confirmed = new Map();
+  for (const reference of refs) {
+    tick();
+    const condition = world.get(reference.slice(1));
+    const name = text(condition, 'name'), parameter = params.get(name);
+    if (condition?.type !== family + 'arg' || !parameter || name === destination || inputs.unresolved.has(name)) return null;
+    const value = inputs.args.has(name) ? inputs.args.get(name) : typedValue(get(parameter, 'default'), world, tick);
+    const required = typedValue(get(condition, 'value'), world, tick);
+    if (!accepts(value, parameter, world, tick) || !sameValue(value, required, tick) ||
+        args.has(name) && !sameValue(args.get(name), value, tick)) return null;
+    confirmed.set(name, value);
+  }
+  return confirmed;
+}
+
+function seedArgs(world, rules, phase, context, params, args, requested, notes, support, tick, inputs) {
   for (const rule of rules) {
     tick();
-    if (get(rule, 'phase') !== phase) continue;
+    const conditions = listed(rule, 'whenArgument');
+    if (get(rule, 'phase') !== phase || Boolean(conditions.length) !== Boolean(inputs)) continue;
     const name = text(rule, 'parameter'), parameter = params.get(name);
     const inferred = inferredSeed(rule);
     if (inferred && (phase !== 'missing' || get(rule, 'source') !== 'value' || args.has(name) || requested.has(name))) continue;
@@ -272,6 +299,8 @@ function seedArgs(world, rules, phase, context, params, args, requested, notes, 
         params.has(text(rule, 'unlessParameter')) ||
         args.has(name) && !flag(rule, 'replace') &&
           !(get(rule, 'source') === 'ordinal.list' && args.get(name)?.length === 0)) continue;
+    const confirmed = inputs && seedConditions(world, conditions, name, params, inputs, args, tick);
+    if (inputs && !confirmed) continue;
     const value = sourceValue(world, rule, context, args, parameter, tick);
     if (value === absent) {
       if (!inferred && flag(rule, 'required')) return false;
@@ -280,6 +309,16 @@ function seedArgs(world, rules, phase, context, params, args, requested, notes, 
     if (!accepts(value, parameter, world, tick)) {
       if (inferred) continue;
       return false;
+    }
+    if (confirmed) {
+      for (const [key, argument] of confirmed) {
+        tick();
+        if (!args.has(key)) args.set(key, argument);
+      }
+      for (const reference of conditions) {
+        tick();
+        support.add(reference.slice(1));
+      }
     }
     args.set(name, value);
     support.add(rule.id);
@@ -291,7 +330,7 @@ function seedArgs(world, rules, phase, context, params, args, requested, notes, 
 
 function candidate(world, data, context, operation, mapping, results, tick) {
   const name = text(operation, 'name'), on = text(operation, 'on'), act = text(operation, 'act');
-  const args = new Map(), requested = new Set(), applied = [], skipped = [], notes = [], support = new Set([operation.id]);
+  const args = new Map(), requested = new Set(), unresolved = new Set(), applied = [], skipped = [], notes = [], support = new Set([operation.id]);
   const params = new Map();
   for (const parameter of data.params.get(operation.id) || []) {
     tick();
@@ -324,6 +363,7 @@ function candidate(world, data, context, operation, mapping, results, tick) {
     const parameter = positiveEq(condition) && property && params.get(text(property, 'parameter'));
     const value = parameter ? valueOf(world, data, condition, property, parameter, args, tick) : { value: absent };
     if (!parameter || !accepts(value.value, parameter, world, tick)) {
+      if (property) unresolved.add(text(property, 'parameter'));
       skipped.push(condition);
       continue;
     }
@@ -334,6 +374,12 @@ function candidate(world, data, context, operation, mapping, results, tick) {
   }
 
   if (!seedArgs(world, rules, 'missing', context, params, args, requested, notes, support, tick)) return { name, reason: 'missing-declared-seed' };
+  if (rules.some(rule => get(rule, 'whenArgument') !== undefined)) {
+    // A measured default may observe admitted arguments and ABI defaults. Its output
+    // cannot authorize another measurement or replace an argument already used by one.
+    const inputs = { args: new Map(args), unresolved };
+    seedArgs(world, rules, 'missing', context, params, args, requested, notes, support, tick, inputs);
+  }
   for (const [key, param] of params) {
     tick();
     if (!args.has(key) && get(param, 'default') !== undefined) args.set(key, typedValue(get(param, 'default'), world, tick));

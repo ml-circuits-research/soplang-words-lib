@@ -53,6 +53,7 @@ const types = {
     phase: 'kind=atom enum=initial enum=missing present=true', value: 'kind=any', from: 'kind=string',
     required: 'kind=boolean', parameterRequired: 'kind=boolean', unlessParameter: 'kind=string', replace: 'kind=boolean',
     notice: 'kind=string', order: 'kind=integer min=0 present=true',
+    whenArgument: 'kind=ref to=std.capability.arg many=true',
   },
   preference: {
     scope: 'kind=ref to=std.capability.scope present=true',

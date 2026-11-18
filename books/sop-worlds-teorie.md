@@ -2061,6 +2061,31 @@ Change only the request to “after 10:30” and intersect the allowed start reg
 
 The interval subtraction method is appropriate to this declared scheduling fragment. A two-dimensional placement problem needs its own declared candidate generator and geometric tests; calling both tasks search does not make their numerical algorithms identical.
 
+### 6.6.1 An inferred argument in one observed scope
+
+This small frame constructor accepts width and height. A trusted observation
+supplies an optional height of 12 for round frames in one editor scope.
+
+<!-- sop-world id=frame-defaults.instance role=instance -->
+```sop
+@frame.use core.use world=std.capability
+@frame.scope std.capability.scope instance="board-1" version="3"
+@frame.mode std.capability.mode act=make target=new
+@frame.make std.capability.operation scope=$frame.scope name="frame.make" act=make on="frame" order=0 eligible=true
+@frame.width std.capability.parameter operation=$frame.make name="width" kind=number min=1
+@frame.height std.capability.parameter operation=$frame.make name="height" kind=number min=1
+@frame.round std.capability.target scope=$frame.scope canonical=toy.round label="round" operation=$frame.make
+@frame.width.property std.capability.property scope=$frame.scope concept=width on="frame" parameter="width" order=0
+@frame.height.property std.capability.property scope=$frame.scope concept=height on="frame" parameter="height" order=1
+@frame.height.default std.capability.seed scope=$frame.scope kind=toy.round parameter="height" source=value phase=missing value=12 order=0
+```
+
+A request to make a round frame with width 9 compiles to width 9 and height 12.
+The call retains the seed as support for its height. If the request also names a
+height through a declared property binding, the inferred value yields even if
+that explicit height cannot be converted. Other targets and editor scopes never
+inherit this particular seed.
+
 ## 6.7 Wholes and parts
 
 A request may name a whole while tools operate on smaller units. Knowledge declares the whole’s composition graph (§4.4), including part roles and relationships. The following are tutorial constructions, not mandatory definitions of those kinds:

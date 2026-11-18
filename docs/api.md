@@ -170,6 +170,17 @@ const circuitSop = world.compileRequest(requestSop);
 const result = parse(circuitSop)[0];
 ```
 
+#### Scoped optional capability defaults
+
+A trusted `std.capability.seed` may qualify a literal default by a
+`scope=$…` reference to the observed capability scope, a canonical
+`kind=`, or both. Use `phase=missing source=value` for a qualified seed.
+The compiler uses it only for a compatible unclaimed parameter, skips
+invalid inferred values, and retains the applied seed identifier in the
+plan's support. A user condition that maps to that parameter takes
+precedence even if its value is unresolved. Existing unqualified seeds
+retain their declared phases and precedence.
+
 ### Compile a measured choice
 
 Load `std.choice` and declare the receiving World's policy with ordered

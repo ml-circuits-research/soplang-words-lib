@@ -10,6 +10,7 @@ const listed = (wire, key) => wire.attrs[key] || [];
 const byOrder = (left, right) => number(left, 'order') - number(right, 'order');
 const safeKey = (key) => !['__proto__', 'constructor', 'prototype'].includes(key);
 const absent = Symbol('absent');
+const inferredSeed = (rule) => get(rule, 'scope') !== undefined || get(rule, 'kind') !== undefined;
 
 function typedValue(token, world, tick, depth = 0) {
   tick();
@@ -260,21 +261,26 @@ function sourceValue(world, rule, context, args, parameter, tick) {
   }
 }
 
-function seedArgs(world, rules, phase, context, params, args, notes, support, tick) {
+function seedArgs(world, rules, phase, context, params, args, requested, notes, support, tick) {
   for (const rule of rules) {
     tick();
     if (get(rule, 'phase') !== phase) continue;
     const name = text(rule, 'parameter'), parameter = params.get(name);
+    const inferred = inferredSeed(rule);
+    if (inferred && (phase !== 'missing' || get(rule, 'source') !== 'value' || args.has(name) || requested.has(name))) continue;
     if (!parameter || flag(rule, 'parameterRequired') && !flag(parameter, 'required') ||
         params.has(text(rule, 'unlessParameter')) ||
         args.has(name) && !flag(rule, 'replace') &&
           !(get(rule, 'source') === 'ordinal.list' && args.get(name)?.length === 0)) continue;
     const value = sourceValue(world, rule, context, args, parameter, tick);
     if (value === absent) {
-      if (flag(rule, 'required')) return false;
+      if (!inferred && flag(rule, 'required')) return false;
       continue;
     }
-    if (!accepts(value, parameter, world, tick)) return false;
+    if (!accepts(value, parameter, world, tick)) {
+      if (inferred) continue;
+      return false;
+    }
     args.set(name, value);
     support.add(rule.id);
     const notice = text(rule, 'notice');
@@ -285,7 +291,7 @@ function seedArgs(world, rules, phase, context, params, args, notes, support, ti
 
 function candidate(world, data, context, operation, mapping, results, tick) {
   const name = text(operation, 'name'), on = text(operation, 'on'), act = text(operation, 'act');
-  const args = new Map(), applied = [], skipped = [], notes = [], support = new Set([operation.id]);
+  const args = new Map(), requested = new Set(), applied = [], skipped = [], notes = [], support = new Set([operation.id]);
   const params = new Map();
   for (const parameter of data.params.get(operation.id) || []) {
     tick();
@@ -302,16 +308,20 @@ function candidate(world, data, context, operation, mapping, results, tick) {
   }
   const rules = data.seeds.filter((row) => {
     tick();
-    return (!get(row, 'operation') || text(row, 'operation') === name) && (!get(row, 'act') || text(row, 'act') === act);
+    return (!get(row, 'operation') || text(row, 'operation') === name) &&
+      (!get(row, 'act') || text(row, 'act') === act) &&
+      (!get(row, 'scope') || ref(world, row, 'scope')?.id === context.scope.id) &&
+      (!get(row, 'kind') || get(row, 'kind') === get(context.target, 'kind'));
   });
-  if (!seedArgs(world, rules, 'initial', context, params, args, notes, support, tick)) return { name, reason: 'missing-declared-seed' };
+  if (!seedArgs(world, rules, 'initial', context, params, args, requested, notes, support, tick)) return { name, reason: 'missing-declared-seed' };
   for (const condition of results) {
     tick();
-    const property = positiveEq(condition) && data.properties.find((row) => {
+    const property = data.properties.find((row) => {
       tick();
       return text(row, 'on') === on && text(row, 'concept') === text(condition, 'concept') && params.has(text(row, 'parameter'));
     });
-    const parameter = property && params.get(text(property, 'parameter'));
+    if (property) requested.add(text(property, 'parameter'));
+    const parameter = positiveEq(condition) && property && params.get(text(property, 'parameter'));
     const value = parameter ? valueOf(world, data, condition, property, parameter, args, tick) : { value: absent };
     if (!parameter || !accepts(value.value, parameter, world, tick)) {
       skipped.push(condition);
@@ -323,7 +333,7 @@ function candidate(world, data, context, operation, mapping, results, tick) {
     for (const id of value.support || []) support.add(id);
   }
 
-  if (!seedArgs(world, rules, 'missing', context, params, args, notes, support, tick)) return { name, reason: 'missing-declared-seed' };
+  if (!seedArgs(world, rules, 'missing', context, params, args, requested, notes, support, tick)) return { name, reason: 'missing-declared-seed' };
   for (const [key, param] of params) {
     tick();
     if (!args.has(key) && get(param, 'default') !== undefined) args.set(key, typedValue(get(param, 'default'), world, tick));
@@ -359,7 +369,7 @@ function targetInventory(world,data,target,tick) {
   for (const row of related) {
     for (const rule of data.seeds) {
       tick();
-      if (get(rule, 'source') !== 'kind' ||
+      if (inferredSeed(rule) || get(rule, 'source') !== 'kind' ||
           get(rule, 'operation') && text(rule, 'operation') !== text(row, 'name') ||
           get(rule, 'act') && text(rule, 'act') !== text(row, 'act')) continue;
       const parameter = (data.params.get(row.id) || []).find((param) => text(param, 'name') === text(rule, 'parameter'));

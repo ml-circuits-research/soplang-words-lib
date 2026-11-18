@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.220.0
+
+- Qualify optional capability defaults by scope and canonical target kind. An explicit condition keeps its claim on the parameter even when conversion fails. Compiled arguments retain the supporting default when applied.
+
 ## 0.219.0
 
 - Compile authored count, existence, member and property projections against scoped native observations. Return typed SOP answers, evidence and per-projection limitations without a tool call.

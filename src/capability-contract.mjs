@@ -47,6 +47,7 @@ const types = {
     concept: 'kind=atom present=true', label: 'kind=string present=true', value: 'kind=any present=true',
   },
   seed: {
+    scope: 'kind=ref to=std.capability.scope', kind: 'kind=atom',
     operation: 'kind=string', act: 'kind=atom', parameter: 'kind=string present=true',
     source: 'kind=atom enum=value enum=target.id enum=target.list enum=fresh.id enum=target.name enum=label enum=kind enum=name.or.label enum=clock enum=ordinal.list present=true',
     phase: 'kind=atom enum=initial enum=missing present=true', value: 'kind=any', from: 'kind=string',

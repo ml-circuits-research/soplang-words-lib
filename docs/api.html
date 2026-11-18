@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="0412aa52d5e9">
+<meta name="source-hash" content="7418f7882335">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.219.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.220.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="instance-state.html">Instance state</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -78,6 +78,8 @@ print(World.diff(a, b).added.map((x) =&gt; x.id));</code></pre></figure>
 <p>A declared rule realization uses the <code>std.compile</code> contract. Spatial placement uses a <code>std.placement.context</code> wire in the request to name a live instance, revision, frame, scope and layout container. Its trusted method binds direction and measurement vocabularies, native tool interfaces and an objective. A missing measured requirement leaves an explicit reason. A supplied graph may introduce request facts and its context only.</p>
 <figure class="code"><figcaption>js</figcaption><pre><code>const circuitSop = world.compileRequest(requestSop);
 const result = parse(circuitSop)[0];</code></pre></figure>
+<h4 id="scoped-optional-capability-defaults">Scoped optional capability defaults</h4>
+<p>A trusted <code>std.capability.seed</code> may qualify a literal default by a <code>scope=$…</code> reference to the observed capability scope, a canonical <code>kind=</code>, or both. Use <code>phase=missing source=value</code> for a qualified seed. The compiler uses it only for a compatible unclaimed parameter, skips invalid inferred values, and retains the applied seed identifier in the plan's support. A user condition that maps to that parameter takes precedence even if its value is unresolved. Existing unqualified seeds retain their declared phases and precedence.</p>
 <h3 id="compile-a-measured-choice">Compile a measured choice</h3>
 <p>Load <code>std.choice</code> and declare the receiving World's policy with ordered <code>std.decide.criterion</code> facts. Supply a <code>std.choice.request</code> with one <code>policy</code> atom and ordered references to <code>std.choice.option</code> facts. Each option owns one distinct <code>std.choice.measurement</code> per criterion measure. Measurements carry a metric atom and a finite number. A hard criterion excludes an option with a nonzero measurement. The remaining options use the declared min/max order and retain input order on ties.</p>
 <figure class="code"><figcaption>js</figcaption><pre><code>world.tell(`
@@ -1730,7 +1732,7 @@ factsOf(live).ofKind(&#x27;item&#x27;); // stable local SOP fact IDs</code></pre
 <p>The engine defaults to a cap of 128 candidates and applies the world reasoning budget per trial. An optimum is scoped to the candidate list.</p>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.219.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.220.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

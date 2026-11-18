@@ -6625,3 +6625,6 @@ Checks: strict published book audit admitted 61/61 SOP examples; npm run docs pa
 
 2026-11-18 implemented read-only request projections over trusted capability observations. The compiler reuses declared selectors and the generic World query aggregate, reports per-projection limits and excludes tool inputs from query answers.
 Checks: source and bundle gates with the exact repos.pin caches each passed 1004, skipped 1, todo 1. The browser Drawing query counted one named red house over two live observations and distinguished an empty matching population.
+
+2026-11-18 added optional capability seeds constrained by trusted scope and canonical target kind. Explicit conditions reserve their mapped parameters, including unresolved values. The compiled call retains the inferred seed and its derivation.
+`npm test` and `SOPWORLD_BUNDLE=1 node --test 'test/**/*.test.mjs'` with the exact repos.pin caches each passed 1007 with 1 skip and 1 todo. The book frame example ran through the compiler and tool-input decoder.

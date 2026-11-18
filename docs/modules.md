@@ -211,3 +211,33 @@ derivations yield `status=unavailable reason=ambiguous-derivations`.
 The trusted rules and action declarations stay in the receiving world.
 Pass the ordered parsed call records to `World.act` to run them in one
 transaction. Action guards read the actual state at execution.
+
+## Declared capability binding
+
+`std.capability` lets a world bind a single-target imperative request to a
+concrete tool call. The input to `World.compileRequest` is a `std.request`
+graph plus a `std.capability.context` that identifies its request and
+references a preloaded `std.capability.scope`. Tool, policy, and observation
+records belong to the trusted receiving world.
+
+- An operation names its act, native source type and declaration order.
+  Parameter facts state literal kinds, bounds, accepted values, required
+  presence and defaults.
+- Target mappings join a canonical kind to a native family and optional
+  seed arguments. Property mappings join graph concepts to parameters,
+  observed fields or a declared value lookup.
+- Observations in the scope carry actual identity, source, version, name
+  and order. A supplied focus is preferred among compatible objects.
+  Otherwise the latest compatible observation wins.
+- Mode facts state the supported request shapes. Seed facts fill declared
+  argument sources. Guards use coverage or active signals derived from
+  observed state. Native tool guards remain in force at dispatch.
+
+The result contains a selected `std.capability.call` and its typed
+arguments once a compatible plan is available. Scalar values are direct
+literals. Lists contain ordered, indexed items to preserve repeated
+values, and records contain named typed entries. The result retains
+ranked operation and target alternatives, graph coverage, declared
+assumptions and source evidence. Host adapters apply the compiled call
+against the same instance and version and independently observe its
+effect.

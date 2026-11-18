@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld The standard modules</title>
-<meta name="source-hash" content="6d81d0e898b4">
+<meta name="source-hash" content="c3d391a75c13">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.210.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.211.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html" aria-current="page">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="instance-state.html">Instance state</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -92,9 +92,13 @@
 <p>Load <code>std.compile</code> and declare a <code>std.compile.rule</code> profile with the request <code>act</code>, an allowed <code>terminal</code> type, a <code>call</code> type, and one or more <code>action</code> names. The profile's types must be closed subtypes of <code>std.compile.terminal</code> and <code>std.compile.call</code>. The call subtype can add typed <code>arg.*</code> slots. Each allowed action must be declared as a <code>core.action</code>.</p>
 <p>Rules derive a terminal that references its <code>request</code>, each covered graph node with <code>cover</code>, and its concrete calls with <code>call</code>. Coverage includes targets, selectors, logical nodes and constraints. Source text and the request root are tracked separately. The terminal must cover the entire graph, and its derivation must depend on each claimed node. Calls must derive from the same request and declare an <code>action</code> and consecutive <code>order</code> values starting at 1. The compiler checks required native action arguments before returning the calls.</p>
 <p><code>World.compileRequest</code> returns SOP text. A rule-derived <code>std.compile.result status=compiled</code> names ordered call records and includes producing rules and their support. Distinct complete terminal derivations yield <code>status=unavailable reason=ambiguous-derivations</code>. The trusted rules and action declarations stay in the receiving world. Pass the ordered parsed call records to <code>World.act</code> to run them in one transaction. Action guards read the actual state at execution.</p>
+<h2 id="declared-capability-binding">Declared capability binding</h2>
+<p><code>std.capability</code> lets a world bind a single-target imperative request to a concrete tool call. The input to <code>World.compileRequest</code> is a <code>std.request</code> graph plus a <code>std.capability.context</code> that identifies its request and references a preloaded <code>std.capability.scope</code>. Tool, policy, and observation records belong to the trusted receiving world.</p>
+<ul><li>An operation names its act, native source type and declaration order. Parameter facts state literal kinds, bounds, accepted values, required presence and defaults.</li><li>Target mappings join a canonical kind to a native family and optional seed arguments. Property mappings join graph concepts to parameters, observed fields or a declared value lookup.</li><li>Observations in the scope carry actual identity, source, version, name and order. A supplied focus is preferred among compatible objects. Otherwise the latest compatible observation wins.</li><li>Mode facts state the supported request shapes. Seed facts fill declared argument sources. Guards use coverage or active signals derived from observed state. Native tool guards remain in force at dispatch.</li></ul>
+<p>The result contains a selected <code>std.capability.call</code> and its typed arguments once a compatible plan is available. Scalar values are direct literals. Lists contain ordered, indexed items to preserve repeated values, and records contain named typed entries. The result retains ranked operation and target alternatives, graph coverage, declared assumptions and source evidence. Host adapters apply the compiled call against the same instance and version and independently observe its effect.</p>
 <p class="source">Generated from <code>docs/modules.md</code>.</p>
 </main>
-<footer>sopworld 0.210.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.211.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

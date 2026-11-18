@@ -38,18 +38,18 @@ function compilation(world, text) {
   const output = parse(world.compileRequest(text));
   const result = output.find((wire) => wire.type === 'std.compile.result');
   const calls = (result?.attrs.call || []).map((ref) => output.find((wire) => wire.id === ref.slice(1)));
-  return { result, calls };
+  return { result, calls, evidence: output.filter((wire) => wire.type === 'std.compile.evidence') };
 }
 
 test('a declared numeric transformation compiles input graph and executes observed action', () => {
   const world = setup(arithmetic);
   const before = world.version;
-  const { result, calls } = compilation(world, arithmeticRequest);
+  const { result, calls, evidence } = compilation(world, arithmeticRequest);
   assert.equal(result.attrs.status[0], 'compiled', result.attrs.reason?.[0]);
   assert.equal(world.version, before);
   assert.equal(world.ofType('example.numeric.result').length, 0);
   assert.equal(calls[0].attrs['arg.value'][0], '14');
-  assert.ok(result.attrs.evidence.some((evidence) => evidence.includes('lower') && evidence.includes('size')));
+  assert.ok(evidence.some((proof) => proof.attrs.rule.includes('"lower"') && proof.attrs.support.includes('"size"')));
   assert.equal(world.act(calls).ok, true);
   assert.deepEqual(world.ofType('example.numeric.result').map((wire) => wire.attrs.number[0]), ['14']);
   assert.equal(world.undo().ok, true);

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.211.0
+
+- Compile a single-target request against declared capabilities, scoped observations and parameter policies. The result identifies the selected call, typed arguments and alternatives. Rule-circuit results reference their supporting evidence as SOP wires.
+
 ## 0.210.0
 
 - Compile authored SOP requests against trusted worlds and return concrete SOP calls, alternatives and reasons. Rule-generated circuits check coverage and ordered calls. Rectangular placement reads scoped live bounds, measures costs on candidate states and ranks them with declared objective evaluators. Compilation leaves the source instance unchanged.

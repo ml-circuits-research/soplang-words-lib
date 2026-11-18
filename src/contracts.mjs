@@ -4,11 +4,13 @@ import { replyPropertyValidator } from './reply-property.mjs';
 import { traceInputValidator, traceGraphValidator } from './trace-contracts.mjs';
 import { requestValidator } from './request-contracts.mjs';
 import { ruleCircuitContracts } from './rule-circuit-contract.mjs';
+import { capabilityContracts } from './capability-contract.mjs';
 // Opt-in structural contracts. These schemas validate records; they do not establish
 // the truth, licensing suitability or semantic correctness of the recorded evidence.
 // Each module owns its namespace and can be imported independently through core.use.
 export const CONTRACT_MODULES = {
   ...ruleCircuitContracts,
+  ...capabilityContracts,
   'std.placement': placementContract,
   'std.instance': {
     text: `

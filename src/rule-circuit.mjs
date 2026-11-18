@@ -11,8 +11,12 @@ function output(status, { reason, calls = [], evidence = [] } = {}) {
   const attrs = { status: [status] };
   if (reason) attrs.reason = [reason];
   if (calls.length) attrs.call = calls.map((call) => '$' + call.id);
-  if (evidence.length) attrs.evidence = evidence.map(quote);
-  return serialize([{ id: 'compile.result', type: 'std.compile.result', attrs, pattern: false }, ...calls]);
+  const proofs = evidence.map((item, index) => ({
+    id: 'compile.evidence.' + index, type: 'std.compile.evidence', pattern: false,
+    attrs: { wire: [quote(item.wire)], rule: [quote(item.rule)], support: (item.from || []).map(quote) },
+  }));
+  if (proofs.length) attrs.evidence = proofs.map((proof) => '$' + proof.id);
+  return serialize([{ id: 'compile.result', type: 'std.compile.result', attrs, pattern: false }, ...calls, ...proofs]);
 }
 
 function ancestry(world, root, tick) {
@@ -73,7 +77,7 @@ function realization(world, profile, terminal, request, required, tick) {
 
   return {
     calls: calls.map(({ wire }) => wire),
-    evidence: [terminal, ...calls.map((call) => call.wire)].map((wire) => JSON.stringify({
+    evidence: [terminal, ...calls.map((call) => call.wire)].map((wire) => ({
       wire: wire.id, rule: wire.meta.via, from: wire.meta.from,
     })),
   };

@@ -6581,3 +6581,7 @@ Limit: runtime factsOnly enforces instance admission, not complete rule-template
 ## SOP request compilation and measured placement
 - `npm test` and `SOPWORLD_BUNDLE=1 node --test 'test/**/*.test.mjs'`: each 989 tests, 987 pass, zero failures, one skip, one TODO. Concrete calls, moved anchors, occupied positions, rule coverage and native world effects are covered.
 - `npm run docs`, `node tools/audit-book-examples.mjs --published --strict` (61 admitted SOP blocks), `git diff --check`. Independent scope and remaining application migration are in the request-to-circuit plan.
+
+## Scoped capability compilation and architecture inspection
+- `npm test` and `SOPWORLD_BUNDLE=1 node --test 'test/**/*.test.mjs'`: each 992 tests, 990 pass, zero failures, one skip and one TODO. Capability selection, ranked alternatives, nested typed arguments and output budgets run against source and bundle.
+- `npm run docs`, `node tools/audit-book-examples.mjs --published --strict` and `git diff --check`. The book distinguishes native authority from its SOP observations and the plan records the Worlds inspection criteria.

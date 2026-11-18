@@ -6610,3 +6610,6 @@ Verified `npm test` (996 tests, 994 pass, 1 skip, 1 todo, 0 fail) and `SOPWORLD_
 
 2026-11-18 G: Compile measured choices via `std.choice.request` and existing `World.compileRequest`. Trusted ordered `std.decide.criterion` facts select among proof inputs with stable ties and disclose hard exclusions; query admission leaves the receiver unchanged. This combines typed relational joins and lexicographic preference, with no domain words or runtime callbacks.
 Checks: `npm run docs`; `npm test` and `SOPWORLD_BUNDLE=1 node --test 'test/**/*.test.mjs'` with the exact application and knowledge caches from repos.pin (1001 pass, 1 skip, 1 todo each); bound probe measured 200 valid three-metric options and returned all 200 assessments.
+
+2026-11-18 G: Document the policy facts that distinguish the focused target from a corrective alternative and trace the concrete call through Undo. Update the migration plan with the remaining application decisions.
+Checks: strict published book audit 61/61, docs build, source 1,001 passed, bundled discovery 1,003 passed, both with one skip and one TODO.

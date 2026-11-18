@@ -4,7 +4,7 @@ const types = {
   },
   scope: {
     instance: 'kind=string present=true', version: 'kind=string present=true', focus: 'kind=string',
-    newId: 'kind=string', clock: 'kind=number', unapplied: 'kind=string many=true',
+    newId: 'kind=string', targetUnique: 'kind=boolean', clock: 'kind=number', unapplied: 'kind=string many=true',
   },
   operation: {
     scope: 'kind=ref to=std.capability.scope present=true', name: 'kind=string present=true',
@@ -25,7 +25,7 @@ const types = {
   },
   mode: {
     act: 'kind=atom present=true', target: 'kind=atom enum=new enum=existing present=true',
-    requireResult: 'kind=boolean', selector: 'kind=boolean',
+    requireResult: 'kind=boolean', selector: 'kind=boolean', selectorUnique: 'kind=boolean',
   },
   property: {
     scope: 'kind=ref to=std.capability.scope present=true', concept: 'kind=atom present=true',
@@ -76,11 +76,16 @@ const types = {
     operation: 'kind=string present=true', status: 'kind=atom enum=available enum=unavailable present=true',
     preference: 'kind=integer', support: 'kind=string many=true', applied: 'kind=integer min=0', reason: 'kind=atom',
   },
+  selection: {
+    id: 'kind=string present=true', status: 'kind=atom enum=match enum=mismatch enum=unknown present=true',
+    support: 'kind=string many=true',
+  },
   result: {
     status: 'kind=atom enum=compiled enum=unavailable enum=not-applicable present=true', reason: 'kind=atom',
     message: 'kind=string', act: 'kind=atom', kind: 'kind=string', id: 'kind=string', source: 'kind=string',
     instance: 'kind=string', version: 'kind=string', call: 'kind=ref to=std.capability.call',
     alternative: 'kind=ref to=std.capability.alternative many=true', target: 'kind=string many=true',
+    selection: 'kind=ref to=std.capability.selection many=true', selector: 'kind=string',
     covered: 'kind=string many=true', skipped: 'kind=string many=true', note: 'kind=string many=true',
     support: 'kind=string many=true',
   },

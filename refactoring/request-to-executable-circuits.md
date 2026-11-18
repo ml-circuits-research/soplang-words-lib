@@ -54,6 +54,8 @@ The application-facing boundary stays small: supply existing world declarations,
 
 Current exports such as `factsOf`, `deduceState`, `resolveRequestTargets`, `evaluateRequestPredicates`, `planRequest` and `runPlan` expose useful mechanisms, but chaining them in application code is not the intended semantic public contract. Preserve them for internal use or existing embeddings until their consumers migrate with parity; do not build the new application interface around that chain. Expose only the metadata needed to correlate the supplied context, compiled circuit, calls, actual outcomes, evidence and timings; inspection observes this flow without controlling its reasoning. This paragraph defines responsibilities, not new API names.
 
+The capability route implements one concrete part of this boundary. A receiver with a live instance and a declared value lookup can compile an existing-target equality selector and an independent desired equality. The `std.capability.result` retains candidate outcomes, coverage and support. The tool receives only the selected `std.capability.call` and its reachable typed arguments as SOP. It checks the live instance/version and selected identity before applying the call, then observes the effect. The equivalent application route and explicit tool SOP boundary are checked by PSys2’s `tests/tool-sop-boundary-declared-host.test.mjs`.
+
 ## Migration inventory
 
 Paths below are in the application repository `psys2`. “Remove” means remove the semantic responsibility after parity is demonstrated, not delete necessary concrete adapters.

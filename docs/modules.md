@@ -228,7 +228,12 @@ records belong to the trusted receiving world.
   observed fields or a declared value lookup.
 - Observations in the scope carry actual identity, source, version, name
   and order. A supplied focus is preferred among compatible objects.
-  Otherwise the latest compatible observation wins.
+  Otherwise the latest compatible observation wins. A mode can admit a
+  positive equality selector with `selector=true` and require one confirmed
+  match with `selectorUnique=true`. A lookup-backed selector compares the
+  resolved literal to the mapped observation field. The result records
+  each considered identity, its match, mismatch or unknown status and the
+  supporting observations and declarations in `std.capability.selection`.
 - Mode facts state the supported request shapes. Seed facts fill declared
   argument sources. Guards use coverage or active signals derived from
   observed state. Native tool guards remain in force at dispatch.

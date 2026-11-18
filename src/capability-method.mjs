@@ -63,7 +63,7 @@ function encodeValue(value, append, tick) {
   });
 }
 
-function output(tick, status, data = {}, call, alternatives = []) {
+function output(tick, status, data = {}, call, alternatives = [], selection = []) {
   tick();
   const wires = [];
   const append = (type, attrs) => {
@@ -91,6 +91,9 @@ function output(tick, status, data = {}, call, alternatives = []) {
     operation: [quote(alternative.name)], status: [alternative.reason ? 'unavailable' : 'available'],
     ...(alternative.preferences?.length ? { preference: [String(alternative.score)], support: alternative.preferences.map(id=>quote(id)) } : {}),
     ...(alternative.reason ? { reason: [alternative.reason] } : { applied: [String(alternative.applied.length)] }),
+  }));
+  fields.selection = selection.map(({ object, status, support }) => '$' + append(family + 'selection', {
+    id: [quote(text(object, 'id'))], status: [status], support: support.map(quote),
   }));
   return serialize([{ id: 'capability.result', type: family + 'result', attrs: fields, pattern: false }, ...wires]);
 }
@@ -132,21 +135,49 @@ function records(world, scope, tick) {
   };
 }
 
-function matchObject(properties, fields, facts, types, kinds, target, selector, tick) {
+function matchObject(world, data, types, kinds, target, selector, tick) {
+  if (selector && !positiveEq(selector)) return { unsupported: true };
   const targetName = text(target, 'name');
-  const concept = text(selector, 'concept');
-  const binding = selector && properties.find((row) => text(row, 'concept') === concept && get(row, 'binding'));
-  if (selector && (!binding || !positiveEq(selector))) return null;
-  return facts.filter((object) => {
+  const matches = [], selection = [], support = new Set();
+  let mapped = false, resolved = false;
+  const bindings = new Map();
+  for (const object of data.objects) {
     tick();
-    if (!types.has(text(object, 'on')) || (kinds.size && !kinds.has(text(object, 'kind'))) ||
-        (targetName !== undefined && text(object, 'name') !== targetName)) return false;
-    return !selector || (fields.get(object.id) || []).some((field) => {
+    const on = text(object, 'on');
+    if (!types.has(on) || (kinds.size && !kinds.has(text(object, 'kind'))) ||
+        (targetName !== undefined && text(object, 'name') !== targetName)) continue;
+    if (!selector) {
+      matches.push(object);
+      continue;
+    }
+    if (!bindings.has(on)) {
+      const property = data.properties.find((row) => {
+        tick();
+        return text(row, 'on') === on && text(row, 'concept') === text(selector, 'concept') && get(row, 'binding');
+      });
+      const codec = get(property, 'codec');
+      const lookup = codec === 'lookup' ? lookupValue(world, data, selector, tick) : null;
+      bindings.set(on, { property, lookup });
+    }
+    const { property, lookup } = bindings.get(on);
+    if (property) mapped = true;
+    if (lookup?.value !== absent && property) resolved = true;
+    const fields = (data.fields.get(object.id) || []).filter((field) => {
       tick();
-      return text(field, 'binding') === text(binding, 'binding') &&
-        listed(field, 'value').some((value) => str(value) === text(selector, 'value'));
+      return property && text(field, 'binding') === text(property, 'binding');
     });
-  });
+    const rowSupport = [...(property ? [property.id] : []), ...(lookup?.support || []), ...fields.map((field) => field.id)];
+    for (const id of rowSupport) support.add(id);
+    const values = fields.length === 1 ? listed(fields[0], 'value') : [];
+    const observed = values.length === 1 && lookup ? typedValue(values[0], world, tick) : absent;
+    const unknown = !property || !values.length || (lookup && (lookup.value === absent || observed === absent));
+    const equal = !unknown && (lookup ? observed === lookup.value : values.some((value) => str(value) === text(selector, 'value')));
+    const status = unknown ? 'unknown' : equal ? 'match' : 'mismatch';
+    selection.push({ object, status, support: rowSupport });
+    if (equal) matches.push(object);
+  }
+  return { matches, selection, support: [...support], ...(selector && selection.length && !mapped ? { unsupported: true } : {}),
+    ...(selector && mapped && !resolved ? { reason: 'value' } : {}) };
 }
 
 function positiveEq(condition) {
@@ -180,17 +211,19 @@ function accepts(value, param, world, tick) {
     && (get(param, 'max') === undefined || value <= number(param, 'max'));
 }
 
+function lookupValue(world, data, condition, tick) {
+  const rows = data.literals.filter((row) => {
+    tick();
+    return text(row, 'concept') === text(condition, 'concept') && text(row, 'label') === text(condition, 'value');
+  });
+  const values = new Set(rows.map((row) => typedValue(get(row, 'value'), world, tick)));
+  return { value: values.size === 1 ? values.values().next().value : absent, support: rows.map((row) => row.id) };
+}
+
 function valueOf(world, data, condition, property, param, args, tick) {
   const value = text(condition, 'value');
   const codec = get(property, 'codec'), kind = get(param, 'kind');
-  if (codec === 'lookup') {
-    const rows = data.literals.filter((row) => {
-      tick();
-      return text(row, 'concept') === text(condition, 'concept') && text(row, 'label') === value;
-    });
-    const values = new Set(rows.map((row) => typedValue(get(row, 'value'), world, tick)));
-    return values.size === 1 ? { value: values.values().next().value, support: rows.map((row) => row.id) } : { value: absent };
-  }
+  if (codec === 'lookup') return lookupValue(world, data, condition, tick);
   if (kind === 'array' && codec) {
     const found = parseList(value, codec);
     return { value: found === absent ? absent : [...(args.get(text(param, 'name')) || []), ...found] };
@@ -347,11 +380,16 @@ function compile(world, request, nodes, context) {
     }
   }
 
-  const matches = get(target, 'mode') === 'existing'
-    ? matchObject(data.properties, data.fields, data.objects, types, kinds, target, selector, tick) : [];
-  if (!matches) return output(tick, 'not-applicable', { reason: 'unsupported-selector', act, kind });
+  const matched = get(target, 'mode') === 'existing'
+    ? matchObject(world, data, types, kinds, target, selector, tick) : { matches: [], selection: [], support: [] };
+  if (matched.unsupported) return output(tick, 'not-applicable', { reason: 'unsupported-selector', act, kind });
+  const { matches, selection, support: selectorSupport } = matched;
   const selected = matches.find((row) => text(row, 'id') === text(scope, 'focus')) ?? matches.at(-1);
-  if (get(target, 'mode') === 'existing' && !selected) return output(tick, 'unavailable', { reason: 'target', act, kind });
+  const selectorDetails = selector ? { selector: selector.id, support: selectorSupport } : {};
+  if (matched.reason || (get(target, 'mode') === 'existing' && (!selected || flag(scope, 'targetUnique') && matches.length !== 1 ||
+      selector && flag(mode, 'selectorUnique') && (matches.length !== 1 || selection.some((row) => row.status === 'unknown'))))) {
+    return output(tick, 'unavailable', { reason: matched.reason || 'target', act, kind, ...selectorDetails }, null, [], selection);
+  }
 
   const operations = data.operations.filter((row) => flag(row, 'eligible') && get(row, 'act') === act &&
     (selected ? text(row, 'on') === text(selected, 'on') : types.has(text(row, 'on'))));
@@ -374,7 +412,7 @@ function compile(world, request, nodes, context) {
   const viable = alternatives.filter(item=>!item.reason).sort((a,b)=>
     b.applied.length-a.applied.length || b.score-a.score);
   const preferred = viable[0];
-  if (!preferred) return output(tick,'unavailable',{reason:'native-binding-gap',act,kind:labels[0]},null,alternatives);
+  if (!preferred) return output(tick,'unavailable',{reason:'native-binding-gap',act,kind:labels[0],...selectorDetails},null,alternatives,selection);
   for (const item of viable) {
     tick();
     const guard=refuseChosen(data,item,tick);
@@ -384,15 +422,15 @@ function compile(world, request, nodes, context) {
   const chosen=viable.find(item=>!item.reason && preferred.applied.every(id=>item.applied.includes(id)));
   const ranked=[...viable,...alternatives.filter(item=>!item.applied)];
   if (!chosen) return output(tick,'unavailable',{reason:preferred.reason,message:text(preferred.guard,'message'),
-    act,kind:labels[0],support:[preferred.guard.id]},null,ranked);
+    act,kind:labels[0],...selectorDetails,support:[preferred.guard.id,...selectorSupport]},null,ranked,selection);
   const label = text(selected, 'kind') ?? kinds.values().next().value ?? labels[0];
   const skipped = [...listed(scope, 'unapplied').map(str),
     ...chosen.skipped.map((row) => `${text(row, 'concept')} ${text(row, 'value') ?? ''}`)];
   return output(tick, 'compiled', {
     act, kind: label, id: text(selected, 'id'), source: text(selected, 'source'), instance: text(scope, 'instance'),
     version: text(scope, 'version'), target: matches.map((row) => text(row, 'id')), covered: chosen.applied,
-    skipped, note: chosen.notes, support: [...chosen.support, ...(selected ? [selected.id] : [])],
-  }, chosen, ranked);
+    skipped, note: chosen.notes, ...selectorDetails, support: [...new Set([...chosen.support, ...selectorSupport, ...(selected ? [selected.id] : [])])],
+  }, chosen, ranked, selection);
 }
 
 /** Compile a single-target request over the supplied trusted capability and observation facts. */

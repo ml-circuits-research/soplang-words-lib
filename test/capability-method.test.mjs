@@ -115,3 +115,22 @@ test('a scoped preference breaks a tie in coverage and a hard guard selects the 
  assert.equal(str(result.call.attrs.operation[0]),'cell.change');
  assert.ok(result.result.attrs.alternative.map(result.dereference).some(row=>row.attrs.reason?.[0]==='occupied'));
 });
+
+test('strict selectors join declared lookup values and retain all considered observations', () => {
+  const world = source();
+  world.fill('change.mode', 'selectorUnique', 'true');
+  world.fill('level', 'codec', 'lookup');
+  world.load('@one std.capability.value concept=reading label="low" value=10\n@set std.capability.value concept=reading label="15" value=15');
+  const selector = '@condition std.request.constraint request=$r target=$t concept=reading operator=eq character=assumption polarity=positive value="low"';
+  const run = () => compile(world, selector, 'selector=$condition');
+  const compiled = run();
+  assert.equal(compiled.args.cell, '"first"');
+  assert.deepEqual(compiled.result.attrs.selection.map(compiled.dereference).map(row => row.attrs.status[0]), ['match', 'mismatch']);
+  assert.ok(compiled.result.attrs.support.includes('"one"'));
+  world.retract('last.reading');
+  const unknown = run();
+  assert.equal(unknown.result.attrs.reason[0], 'target');
+  assert.deepEqual(unknown.result.attrs.selection.map(unknown.dereference).map(row => row.attrs.status[0]), ['match', 'unknown']);
+  world.load('@another std.capability.value concept=reading label="low" value=20');
+  assert.equal(run().result.attrs.reason[0], 'value');
+});

@@ -52,8 +52,8 @@ test('budget/depth exhaustion and evidence explosions refuse the whole evaluatio
  const n=make(`${leaf()}\n@n1 std.request.not request=$r of=$c\n@n2 std.request.not request=$r of=$n1`,'n2');assert.equal(evaluate(n,{maxDepth:1}).failures[0].reason,'depth-budget');assert.equal(evaluate(w,{evaluateConstraint:()=>({truth:'true',evidence:Array(10000).fill('evidence')})}).failures[0].reason,'budget');
 });
 test('schema and binder violations are refused before any callback',()=>{
- const w=make(leaf());w.get('c').attrs.unknown=['bad'];let called=false;const r=evaluate(w,{evaluateConstraint:()=>{called=true;return {truth:'true',evidence:[]};}});assert.equal(r.ok,false);assert.equal(r.failures[0].reason,'invalid-schema');assert.equal(called,false);
- const q=quant();q.get('c').attrs.target=['$missing'];assert.equal(evaluate(q,{resolvePopulation:()=>population([subject()])}).failures[0].reason,'invalid-request');
+ const w=make(leaf());const invalid=structuredClone(w.get('c'));invalid.attrs.unknown=['bad'];w.wires=new Map(w.wires).set('c',invalid);let called=false;const r=evaluate(w,{evaluateConstraint:()=>{called=true;return {truth:'true',evidence:[]};}});assert.equal(r.ok,false);assert.equal(r.failures[0].reason,'invalid-schema');assert.equal(called,false);
+ const q=quant();const unbound=structuredClone(q.get('c'));unbound.attrs.target=['$missing'];q.wires=new Map(q.wires).set('c',unbound);assert.equal(evaluate(q,{resolvePopulation:()=>population([subject()])}).failures[0].reason,'invalid-request');
 });
 test('callback world mutation invalidates every result including mutation followed by undo',()=>{
  for(const undo of [false,true]){const w=make(leaf()),before=w.stamp;const result=evaluate(w,{evaluateConstraint:()=>{if(undo)w.trial(()=>w.load('@changed core.type of=toy.changed'));else w.load('@changed core.type of=toy.changed');return {truth:'true',evidence:[]};}});assert.equal(result.ok,false);assert.equal(result.truth,'unknown');assert.equal(result.failures[0].reason,'source-changed');if(undo)assert.equal(w.stamp,before);}

@@ -6603,3 +6603,7 @@ Verified `npm test` (996 tests, 994 pass, 1 skip, 1 todo, 0 fail) and `SOPWORLD_
 ## 2026-11-18 — Mechanical SOP input for concrete capabilities
 - Project the selected call and its reachable typed arguments from a capability or interpretation result. The tool keeps operation, instance and revision validation. The private decoder preserves ordered lists, empty collections and nested records.
 - `npm test`: 998 passed. `SOPWORLD_BUNDLE=1 node --test`: 1,000 passed. Both had zero failures, one skip and one TODO. `npm run docs`, smell scan and `git diff --check` passed.
+
+## 2026-11-18 — Declared capability selectors
+- A selector now compares declared lookup literals to versioned native observations, retains each candidate and its support, and keeps the required post-state independent of the selector.
+- Source and bundled phases of `npm run test:full` each passed 1,001 with zero failures, one skip and one TODO. The existing malformed request fixture also passed all 16 cases under `SOPWORLD_COW_CHECK=1 node --test test/request-predicate.test.mjs`.

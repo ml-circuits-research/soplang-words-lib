@@ -6655,3 +6655,6 @@ Strict audit admitted 62 blocks against 58 schemas. Source and bundle checks pas
 
 2026-11-18 — Book §§8.2.2 and 10.5.5 explain measuring a counted batch and grounding the noun after the last exemplar disappears. The compiler plan now retains outstanding scope and removes the verified empty-kind sequence.
 Strict audit admitted 62 SOP examples against 58 published schemas. Full source/bundle/COW suites passed 1015/1015/1013, each with one skip and one TODO.
+
+2026-11-18 — §10.5.5 traces question, target and selector links back to the SOP rules that produced them; the remaining-work plan identifies lexical admission still owned by the application.
+Strict book audit: 62 admitted blocks, 58 published schemas. Full source/bundle/COW tests passed 1015/1015/1013 with one skip and one TODO each.

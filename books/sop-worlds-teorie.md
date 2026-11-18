@@ -2255,6 +2255,8 @@ Recovery consists of observed operations, not faith that an inverse call succeed
 
 History retains the work units a person can revise or undo. “Bigger” may adjust a just-created result, but cannot overwrite intervening independent work. Grouping a correction into history does not erase that it is a new requested change.
 
+An editor-scoped journal can hold two eligible heads at once. A person creates a circle in Drawing, a node in Diagram, then a square in Drawing. Undo in Drawing restores the state with the circle and moves the square's entry to Redo. The Diagram entry keeps its position. Each entry has a persistent identity, a scope and a reference to its restoration data. Reloading the journal preserves those identities. A call prepared before the reload must rebind to the current execution session before it can restore anything.
+
 Retain previous state, effects and learned contributions for each unit. The timeline below illustrates replacement of the latest unit versus creation of a new one.
 
 A reaction replaces a work unit only if that unit is latest and its affected objects have not changed independently. Otherwise it creates a new unit. *(R65)*
@@ -3348,6 +3350,8 @@ Reader evaluation separates recognition, graph construction, instance resolution
 | Search budget exhausted | Report the best usable result and its uncertainty, or the exact unresolved obligation. Do not claim impossibility from timeout. |
 
 In the PSys2 tutorial, SOP-BERT predicts candidate semantic structure, not renderer-specific keys. A span may contain several words; source offsets recover the substring from the original message. Coordination requires multiple target records, shared-act ownership and local constraints. “Draw a tree and a house” and “draw a tree near the house” therefore require different graphs even if they contain the same object words. Model predictions, generic graph decoding and world-based elaboration remain separately inspectable responsibilities within the processing chain.
+
+Consider “Make the red house purple” in a scene containing a red house and a blue house. The reader marks “red” as a selector and “purple” as the requested result. A second property head associated with another editor may also report colour. Its presence score alone cannot establish a second instruction. Compare the property declarations and their source spans. If both heads cite the same catalog declaration at the same revision and the second head contributes no distinct source text, the grounded interpretation can proceed to compilation. It still has to identify the red house and account for the requested result. A competing head covering an additional word, such as “larger”, leaves a separate obligation. The trace retains the original model output in both cases.
 
 Training data includes actual typed messages labelled with general descriptions and supporting ranges, supplemented by generated variants. Labels are reviewed independently of the existing reader; otherwise training would reproduce precisely the keys and omissions being replaced. Variants of one expression and their paraphrase family remain in one partition. Domain-separated evaluation tests transfer; construction-family separation tests readings not used during training. If acceptance messages are later used for adjustment, explicitly replace the corresponding evaluation set.
 

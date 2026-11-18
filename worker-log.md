@@ -6619,3 +6619,6 @@ Checks: npm run docs; npm test (1,001 pass) and SOPWORLD_BUNDLE=1 node --test (1
 
 2026-11-18 G: Validate an authored SOP graph directly through serializeRequestGraph, sharing the schema, ownership and concrete-token checks used for reader, model and batch inputs. An explicit batch root must still match its graph. No additional public method.
 Checks: npm run docs; npm test passed 1,002, SOPWORLD_BUNDLE=1 node --test passed 1,004, each with one skip and one TODO. SOP and structural fixtures yielded identical canonical graphs with quoted Unicode and typed values; invalid ownership and variables were refused.
+
+2026-11-18: Explain competing reader evidence and durable journal scope in the book. Align the request-to-circuit plan with tested constructor defaults, history and remaining comparison work.
+Checks: strict published book audit admitted 61/61 SOP examples; npm run docs passed. Both worked examples were exercised in Chromium by the integrated application.

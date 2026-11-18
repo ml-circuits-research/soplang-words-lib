@@ -49,6 +49,13 @@ test('a declared numeric transformation compiles input graph and executes observ
   assert.equal(world.version, before);
   assert.equal(world.ofType('example.numeric.result').length, 0);
   assert.equal(calls[0].attrs['arg.value'][0], '14');
+  const compiled = world.compileRequest(arithmeticRequest);
+  assert.equal(world.compileToolInput(compiled), serialize(calls));
+  for (const malformed of [compiled.replace('order=1', 'order=2'), compiled.replace('arg.value=14', 'arg.value="wrong"'),
+      compiled.replace('action=save-number', 'action=unknown'), compiled + '\n@another example.numeric.call order=1 action=save-number arg.value=1']) {
+    assert.match(world.compileToolInput(malformed), /status=unavailable/);
+  }
+  assert.equal(world.version, before);
   assert.ok(evidence.some((proof) => proof.attrs.rule.includes('"lower"') && proof.attrs.support.includes('"size"')));
   assert.equal(world.act(calls).ok, true);
   assert.deepEqual(world.ofType('example.numeric.result').map((wire) => wire.attrs.number[0]), ['14']);
@@ -94,6 +101,7 @@ test('an interval circuit preserves call order and action guards inspect actual 
   const { result, calls } = compilation(world, text);
   assert.equal(result.attrs.status[0], 'compiled', result.attrs.reason?.[0]);
   assert.deepEqual(calls.map((call) => call.attrs.action[0]), ['reserve-room', 'record-notice']);
+  assert.deepEqual(parse(world.compileToolInput(world.compileRequest(text))), calls);
   assert.equal(world.act(calls).ok, true);
   assert.equal(world.ofType('example.reservation')[0].attrs.end[0], '11:15');
   assert.equal(world.ofType('example.notice')[0].attrs.end[0], '11:15');

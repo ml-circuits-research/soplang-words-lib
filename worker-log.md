@@ -6613,3 +6613,6 @@ Checks: `npm run docs`; `npm test` and `SOPWORLD_BUNDLE=1 node --test 'test/**/*
 
 2026-11-18 G: Document the policy facts that distinguish the focused target from a corrective alternative and trace the concrete call through Undo. Update the migration plan with the remaining application decisions.
 Checks: strict published book audit 61/61, docs build, source 1,001 passed, bundled discovery 1,003 passed, both with one skip and one TODO.
+
+2026-11-18 G: Project ordered tool input from both capability and rule compilation. Compared local host traversal, action-name dispatch and typed reference projection; the last shares schema, order and one declared action profile across numeric, reservation and journal circuits. It needs no domain vocabulary or new public method.
+Checks: npm run docs; npm test (1,001 pass) and SOPWORLD_BUNDLE=1 node --test (1,003 pass), one skip and one TODO each. The two-action case preserves order; malformed types, actions, arguments and extra calls are refused. The receiver version remains unchanged. Smell scan: zero hints.

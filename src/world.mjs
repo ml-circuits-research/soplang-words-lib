@@ -63,8 +63,8 @@ function fingerprint(text) {
 export class World {
   /** Compile request SOP against this world without changing its state. */
   compileRequest(sop) { return compileRequest(this, sop); }
-  /** Project the selected concrete capability call into standard SOP tool input. */
-  compileToolInput(sop) { return compileToolInput(sop); }
+  /** Project selected concrete calls into SOP tool input. */
+  compileToolInput(sop) { return compileToolInput(this, sop); }
 
   constructor(options = {}) {
     const {

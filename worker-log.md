@@ -6585,3 +6585,7 @@ Limit: runtime factsOnly enforces instance admission, not complete rule-template
 ## Scoped capability compilation and architecture inspection
 - `npm test` and `SOPWORLD_BUNDLE=1 node --test 'test/**/*.test.mjs'`: each 992 tests, 990 pass, zero failures, one skip and one TODO. Capability selection, ranked alternatives, nested typed arguments and output budgets run against source and bundle.
 - `npm run docs`, `node tools/audit-book-examples.mjs --published --strict` and `git diff --check`. The book distinguishes native authority from its SOP observations and the plan records the Worlds inspection criteria.
+
+## Compiler-visible tool effects
+- Book §1.3 distinguishes call shape from effect semantics through two-node placement. The migration plan requires SOP authority, native/compiler parity and interchangeable tool probes.
+- `npm run docs`, `node tools/audit-book-examples.mjs --published --strict`, `git diff --check` passed.

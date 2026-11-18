@@ -1,3 +1,4 @@
+import {compileInterpretations} from './interpretation-method.mjs';
 import { parse, SopError } from './parser.mjs';
 import { inspectRequest } from './request-contracts.mjs';
 import { compileRuleCircuit } from './rule-circuit.mjs';
@@ -16,6 +17,11 @@ export function compileRequest(world, sop) {
     throw error;
   }
   if (!wires.length || wires.length>1024) return fail('request-budget');
+  if(wires.some(w=>w.type==='std.interpret.input'))return compileInterpretations(world,wires,compileSingle);
+  return compileSingle(world,wires);
+}
+
+function compileSingle(world,wires){
   const contexts=wires.filter(w=>['std.placement.context','std.capability.context'].includes(w.type));
   const nodes=wires.filter(w=>!contexts.includes(w));
   const roots=nodes.filter(w=>w.type==='std.request');

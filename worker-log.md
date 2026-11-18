@@ -6596,3 +6596,6 @@ Limit: runtime factsOnly enforces instance admission, not complete rule-template
 
 2026-11-18 delivered private authored-schema instance transport. Closed SOP slots define scalar values, owned records, named joins, ordered collections and stable entity identities.
 Verified `npm test` (996 tests, 994 pass, 1 skip, 1 todo, 0 fail) and `SOPWORLD_BUNDLE=1 node --test test/internal-instance-fact-codec.test.mjs` (2/2). Owned cycles and unreachable facts fail; cyclic named joins remain references.
+
+- Added SOP-only comparison of alternative request graphs before tool execution. The selected plan and competing readings share a source-text identity. A focused regression actually executes the second reading and observes its numerical result.
+- `npm test` and `SOPWORLD_BUNDLE=1 node --test 'test/**/*.test.mjs'` each ran 997 tests, 995 passed, one skipped and one TODO. `npm run docs`, `git diff --check`.

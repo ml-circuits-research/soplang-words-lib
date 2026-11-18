@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.213.0
+
+- Compile several proposed readings of one utterance against the same observed World. The SOP result retains a decision for each reading and the concrete call circuit for the selected one. Compiling a proposal never invokes its tool.
+
 ## 0.212.0
 
 - Compare equally covered capability candidates using scoped preference weights. Preserve the preference facts and suppressed alternatives. A guarded choice can yield to another compatible operation that covers the intended effects.

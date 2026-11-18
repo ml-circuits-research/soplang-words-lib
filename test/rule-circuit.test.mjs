@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parse, World } from '../tools/lib-under-test.mjs';
+import { parse, serialize, World } from '../tools/lib-under-test.mjs';
 
 const arithmetic = `
 @profile std.compile.rule act=double terminal=example.numeric.terminal call=example.numeric.call action=save-number
@@ -130,4 +130,28 @@ test('an extra obligation, terminal injection and ambiguous complete circuits fa
   assert.equal(ambiguous.result.attrs.reason[0], 'ambiguous-derivations');
   assert.deepEqual(ambiguous.calls, []);
   assert.equal(world.ofType('example.numeric.result').length, 0);
+});
+
+test('two readings compile independently and the usable reading supplies the only executable circuit',()=>{
+  const world=setup(arithmetic);
+  world.use('std.interpret');
+  const nodes=parse(arithmeticRequest);
+  const option=(prefix,act)=>{
+    const mapped=nodes.map(w=>({...w,id:prefix+w.id,attrs:Object.fromEntries(Object.entries(w.attrs).map(([key,values])=>
+      [key,values.map(v=>v.startsWith('$')?'$'+prefix+v.slice(1):key==='act'?act:v)]))}));
+    return '@'+prefix+' std.interpret.proposal request=$'+prefix+'request '+mapped.map(w=>'member=$'+w.id).join(' ')+'\n'+serialize(mapped);
+  };
+  const packet='@alternatives std.interpret.input proposal=$one proposal=$two\n'+option('one','unbound')+'\n'+option('two','double');
+  const output=parse(world.compileRequest(packet));
+  assert.equal(output[0].attrs.status[0],'compiled',JSON.stringify(output));
+  const readings=output.filter(w=>w.type==='std.interpret.reading');
+  assert.deepEqual(readings.map(w=>w.attrs.status[0]),['not-applicable','compiled']);
+  assert.equal(output[0].attrs.choice[0],'$'+readings[1].id);
+  const calls=output.filter(w=>w.type==='example.numeric.call');
+  assert.equal(calls.length,1);
+  assert.equal(world.ofType('example.numeric.result').length,0);
+  assert.equal(world.act(calls).ok,true);
+  assert.equal(world.ofType('example.numeric.result')[0].attrs.number[0],'14');
+  const mismatch=packet.replace('Double 7','Double 8');
+  assert.equal(parse(world.compileRequest(mismatch))[0].attrs.reason[0],'source-mismatch');
 });

@@ -1,3 +1,4 @@
+import { interpretationContract } from './interpretation-method.mjs';
 import { placementContract } from './placement-contract.mjs';
 import { replyExistenceValidator } from './reply-existence.mjs';
 import { replyPropertyValidator } from './reply-property.mjs';
@@ -11,6 +12,7 @@ import { capabilityContracts } from './capability-contract.mjs';
 export const CONTRACT_MODULES = {
   ...ruleCircuitContracts,
   ...capabilityContracts,
+  'std.interpret': interpretationContract,
   'std.placement': placementContract,
   'std.instance': {
     text: `

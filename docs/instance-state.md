@@ -18,3 +18,9 @@ The implementation projection exists for renderers/tools during migration. It is
 `instanceStateWorld` loads only ordinary object facts and their referenced structured values/local facts. Projection/history data, `std.instance.object` descriptors and snapshot metadata remain in the carrier. `includeArchive:true` is a diagnostic opt-in. This makes an inference context smaller without asserting that the consumer has made it the operational authority.
 
 The `std.instance` module declares the carrier types explicitly. A record is open to named field attributes; a sequence has ordered `item` values. The codec validates field escaping, value/reference categories, multiplicity, cycles and budgets before loading any inference world.
+
+## Schema ownership at admission
+
+An instance carrier owns local facts, not schema definitions or shared knowledge. Prepare the schema/knowledge context separately through declared imports, then admit the local payload with `world.tell(payload, {factsOnly:true})`. This existing change operation option rejects schema declarations, schema-mapped types, rule-owned patterns/templates and imports atomically as `schema-ownership`. It uses the engine's schema classification, not a consumer list of forbidden type prefixes. `instanceStateWorld` applies that boundary when loading archive facts. Derived instance conclusions remain possible under the previously supplied context; admission does not claim that imported knowledge is owned by the instance.
+
+The general `World` remains an evaluation context and can compose sources. Loading schema and facts into that context does not authorise persisting its assembled contents as one instance. Callers must retain source ownership and export the actual local state rather than copy imported knowledge.

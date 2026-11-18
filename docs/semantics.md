@@ -543,6 +543,7 @@ registers ([reference](reference.md#coredeny)).
 | `unique` | a value (or a set of values) that another wire of the type already has | any change |
 | `duplicate-id` | an id that another wire has | `tell` |
 | `variable` | a fact contains a variable | `tell` |
+| `schema-ownership` | an instance-only change attempts schema, mapped schema, rule patterns/templates or module imports | `tell`, `applyPatch` with `factsOnly` |
 | `schema` | the matrix is wrong: see the *Violations* of each type in the [reference](reference.md); also a module that the library does not have | `tell`, `load`, `use` |
 | `depth` | a derivation deeper than `maxDepth` | any change |
 | `budget` | the call ran out of steps or time | any call |

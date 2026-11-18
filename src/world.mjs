@@ -572,6 +572,7 @@ export class World {
    * Returns { ok, added, derived, filled, merged, removed, violations, revised? }.
    * Nothing changes when ok is false. { dry: true } evaluates and always rolls back;
    * { strict: true } also refuses a change that leaves no possible completion.
+   * { factsOnly: true } admits instance facts without schema declarations or imports.
    */
   tell(input, opts = {}) {
     return this._guard(opts, () => {
@@ -684,7 +685,7 @@ export class World {
     }, (v) => this._refusal(v));
   }
 
-  _patch(patch, { dry = false, strict = this.options.strict, via = 'core.tell', tier, ns = this.options.ns } = {}) {
+  _patch(patch, { dry = false, strict = this.options.strict, via = 'core.tell', tier, ns = this.options.ns, factsOnly = false } = {}) {
     this._knownTier(tier);
     const { wires = [], fills = [], sets = [], retract = [], replace = [] } = Array.isArray(patch) ? { fills: patch } : typeof patch === 'string' ? { wires: patch } : patch || {}; // text: wires
     const ws = this._qualifyFacts((typeof wires === 'string' ? parse(wires) : wires).map(cloneWire), ns);
@@ -705,7 +706,7 @@ export class World {
         }
         const wire = { id: r.id, type: r.type || target.type, attrs, pattern: false };
         const gone = this._unsay(res, [r.id], []); // no cascade: the new content takes the id
-        this._ingest([cloneWire(wire)], res);
+        this._ingest([cloneWire(wire)], res, { factsOnly });
         replaced.push({ id: r.id, successor: wire, gone });
       }
       if (replaced.length && !res.violations.length) {
@@ -722,7 +723,7 @@ export class World {
         }
         if (orphans.length && !res.violations.length) for (const x of this._withdraw(res, orphans, [])) res.removed.push(x);
       }
-      if (ws.length) facts = this._ingest(ws, res);
+      if (ws.length) facts = this._ingest(ws, res, { factsOnly });
       for (const f of fills) { // bounded: the fills of one patch
         const w = this.get(f.id);
         if (!w) { res.violations.push({ kind: 'unknown-wire', id: f.id }); continue; }
@@ -798,7 +799,7 @@ export class World {
     return null;
   }
 
-  _tell(input, { dry = false, strict = this.options.strict, tier, ns = this.options.ns } = {}) {
+  _tell(input, { dry = false, strict = this.options.strict, tier, ns = this.options.ns, factsOnly = false } = {}) {
     this._knownTier(tier);
     const wires = this._qualifyFacts((typeof input === 'string' ? parse(input) : input).map(cloneWire), ns);
     const told = wires.map(cloneWire); // the log keeps what was said, not what it grew into
@@ -807,7 +808,7 @@ export class World {
     const mark = this._begin(!dry);
     let facts;
     try {
-      facts = this._ingest(wires, res);
+      facts = this._ingest(wires, res, { factsOnly });
       this._settle(res, strict);
     } catch (e) {
       this._rollback(mark);
@@ -1266,7 +1267,7 @@ export class World {
   /** The namespace of a wire id: what comes before ::, or '' for the default one. */
   _nsOf(id) { const i = id.indexOf('::'); return i < 0 ? '' : id.slice(0, i); }
 
-  _ingest(wires, res) {
+  _ingest(wires, res, { factsOnly = false } = {}) {
     const facts = [];
     // A wire belongs to the matrix (as a pattern or a template) when a rule, deny, calc,
     // relation or action told with it names it. A wire of the same id told on its own is
@@ -1295,6 +1296,15 @@ export class World {
     // facts and matrix wires have separate id spaces: a pattern @m1 of the matrix does not clash with a fact @m1
     for (const w of wires) if (w.legacy) this._deprecated(w.id);
     const isSchema = (w) => w.pattern || SCHEMA_TYPES.has(w.type) || maps.has(w.type) || linked.has(w.id);
+    // Instance admission reuses the exact schema classifier, including mapped schema
+    // types and rule-owned patterns/templates. Reject before imports or mutations.
+    if (factsOnly) {
+      const declarations = wires.filter(isSchema);
+      if (declarations.length) {
+        for (const wire of declarations) res.violations.push({ kind: 'schema-ownership', id: wire.id, type: wire.type, why: 'instance facts cannot declare schema, rules, patterns or module imports; supply their owning context separately' });
+        return facts;
+      }
+    }
     const load = (name, prefixed, as) => { // a module of the library, once (once per name it is loaded as)
       const key = as || name;
       if (this.used.has(key)) return;

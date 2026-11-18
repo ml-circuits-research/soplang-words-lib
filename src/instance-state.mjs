@@ -101,5 +101,5 @@ export function instanceStateWorld(wires,{schema='',includeArchive=false,...opti
    for(const values of Object.values(node.attrs))for(const value of values)if(value[0]==='$')pending.push(value.slice(1));
   }
  }
- const world=new World();need(world.load('@instance.module core.use world=std.instance').ok,'instance-schema');if(schema)need(world.load(schema).ok,'schema');need(world.load(serialize(nodes.filter(node=>selected.has(node.id)))).ok,'facts');return world;
+ const world=new World();need(world.load('@instance.module core.use world=std.instance').ok,'instance-schema');if(schema)need(world.load(schema).ok,'schema');need(world.tell(serialize(nodes.filter(node=>selected.has(node.id))),{factsOnly:true}).ok,'facts');return world;
 }

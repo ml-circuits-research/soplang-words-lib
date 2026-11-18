@@ -172,6 +172,9 @@ reference without a namespace points into it), `budget`. Returns a change result
 wires take part in) for the chase, plus validation of the touched wires; telling matrix
 wires recompiles the matrix and validates everything, O(n·r).
 
+
+`world.tell(input, {factsOnly:true})` and `world.applyPatch(patch, {factsOnly:true})` constrain wire admission to instance facts under an already supplied context. A schema declaration, schema-mapped type, pattern/template owned by a supplied rule, or import rejects the complete change as `schema-ownership` before any import executes. This is a structural ownership boundary, not semantic target selection or proof that arbitrary ordinary facts belong to a particular domain instance. A domain carrier must additionally validate its declared object/reference ownership. Shared knowledge and schema are supplied separately and are not copied into the carrier.
+
 ```js run
 const w = shop();
 const r = w.tell('@pen item name=pen price=2  @l1 line item=$pen qty=3');

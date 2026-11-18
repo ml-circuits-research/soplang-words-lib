@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.209.0
+
+- Instance-fact admission reuses the existing schema classifier to reject schema declarations, mapped schema types, rule patterns/templates and imports atomically before loading them. Calendar/Avatar consumers can supply their shared context separately. The instance archive loader applies the same admission boundary.
+
 ## 0.208.0
 
 - Version-3 instance carriers use short stable fact identities, direct scalar projections, typed field records and ordered sequences. No new `state.value` / `std.instance.value` nodes are emitted. The explicit std.instance schema describes carrier types; older carrier formats remain readable.

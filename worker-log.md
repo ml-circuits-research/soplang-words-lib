@@ -6658,3 +6658,6 @@ Strict audit admitted 62 SOP examples against 58 published schemas. Full source/
 
 2026-11-18 — §10.5.5 traces question, target and selector links back to the SOP rules that produced them; the remaining-work plan identifies lexical admission still owned by the application.
 Strict book audit: 62 admitted blocks, 58 published schemas. Full source/bundle/COW tests passed 1015/1015/1013 with one skip and one TODO each.
+
+2026-11-18 — Isolated query admission with the real Drawing constructor and a supplied noun. “man” dropped person before SOP choice, while “cap” selected whichever equal-cost candidate came first. The compiler plan now includes both counterexamples and a plural control.
+No runtime code changed. Full source and bundle checks each passed 1015 with one skip and one TODO. Strict book audit admitted 62 examples against 58 published schemas.

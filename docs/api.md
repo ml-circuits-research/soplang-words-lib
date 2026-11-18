@@ -184,7 +184,7 @@ records within its packet. Each gives one `param` and one or more literal
 `value` entries. Provided bindings drive the declared input facts, indexed
 reads and result selectors. The catalog adapter supplies only schema metadata
 with `world(id)`, schema text with `readText(path)`, and indexed candidate
-facts with `wireSource(type, { keys })`. The compiler independently checks
+facts with `wireSource(type, { field, keys })`. The adapter must return every matching row for that slot or report an unavailable read. It may prune shards using an index that covers the declared slot. The compiler independently checks
 the requested field of every candidate and admits matching data as facts.
 It loads each module schema and its dependencies once per catalog and
 computes projections in separate Worlds.

@@ -6643,3 +6643,6 @@ Checks: npm run docs and npm run test:full against the exact KB pin passed 1014 
 
 2026-11-18 — Book §8.2.2 describes authored catalog profiles, evidence and the distinction between viewport defaults and required bounds. The remaining-work plan now focuses on shipped Diagram knowledge, cross-turn grounding and the remaining compiler boundaries.
 Strict audit admitted 62 SOP blocks against 58 schemas. Exact-pin source and bundle gates each passed 1014 with one skip and one TODO.
+
+2026-11-18 — LIB 0.223 passes each declared slot to the catalog reader when compiling knowledge profiles. A secondary slot can use a complete lookup even when the same term is indexed elsewhere as a name. Book §8.2.2 explains the completeness requirement.
+Full source/bundle/COW gates passed 1014/1014/1012, zero failures. Strict book audit admitted 62 examples against 58 schemas.

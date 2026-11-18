@@ -82,7 +82,7 @@ export async function compileKnowledgeProjection(world, wires, catalog) {
       catalogWorld(world.constructor, catalog, module),
       Promise.all(steps.read.map(async step => {
         const values = bindings.get(first(step,'param'));
-        return values?.size ? await catalog.wireSource(first(step,'type'),{keys:[...values.keys()]}) : '';
+        return values?.size ? await catalog.wireSource(first(step,'type'),{field:first(step,'key'), keys:[...values.keys()]}) : '';
       })),
     ]);
     if (sources.some(source => typeof source !== 'string') || sources.reduce((sum, source) => sum + source.length, 0) > MAX_SOURCE) {

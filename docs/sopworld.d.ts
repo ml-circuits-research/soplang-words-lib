@@ -285,7 +285,7 @@ export interface Assumption extends Cell { cost?: number; dependants: { id: stri
 export interface KnowledgeProjectionCatalog {
   world(id: string): Promise<{ schema: string; depends: readonly string[] } | null | undefined>;
   readText(path: string): Promise<string>;
-  wireSource(type: string, selection: { keys: string[] }): Promise<string>;
+  wireSource(type: string, selection: { field: string; keys: string[] }): Promise<string>;
 }
 export class World {
   /** Compile request SOP against this world and return a SOP circuit or a reason. */

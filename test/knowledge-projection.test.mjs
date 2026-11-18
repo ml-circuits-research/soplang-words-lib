@@ -32,7 +32,7 @@ const setup = (source = '@a data.row label="fox" kind="mammal" core.source="cata
   const catalog = {
     async world(id) { return {schema: id, depends: id === 'fixture' ? ['data'] : []}; },
     async readText(id) { loaded.push(id); return modules[id]; },
-    async wireSource(type, options) { loaded.push([type, options.keys]); return source; },
+    async wireSource(type, options) { loaded.push([type, options.field, options.keys]); return source; },
   };
   return {world, catalog, loaded};
 };
@@ -46,7 +46,7 @@ test('declared knowledge projection uses lazy selectors and returns only derived
     assert.deepEqual(result[1].attrs, {label:['"fox"'], evidence:['$a']});
   }
   assert.deepEqual(loaded.filter(item => typeof item === 'string').sort(), ['data','fixture']);
-  assert.deepEqual(loaded.filter(Array.isArray), [['data.row',['fox']],['data.row',['fox']]]);
+  assert.deepEqual(loaded.filter(Array.isArray), [['data.row','label',['fox']],['data.row','label',['fox']]]);
   assert.equal(world.has('a'), false);
   assert.equal(world.has('q'), false);
 });
@@ -55,6 +55,7 @@ test('a different authored selector controls the evidence and optional values sk
   const {world, catalog, loaded} = setup();
   world.load(policy('secondary', 'kind'));
   assert.equal(await world.compileRequest(request.replace('$profile','$secondary'), {catalog}), '');
+  assert.deepEqual(loaded.filter(Array.isArray), [['data.row','kind',['fox']]]);
   loaded.length = 0;
   assert.equal(await world.compileRequest('@q std.knowledge.request profile=$profile', {catalog}), '');
   assert.deepEqual(loaded, []);

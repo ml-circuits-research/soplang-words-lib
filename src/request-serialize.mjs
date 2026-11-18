@@ -3,7 +3,31 @@ import { parse, format, quote, readValue } from './parser.mjs';
 import { inspectRequest } from './request-contracts.mjs';
 import { retainedDefinition } from './retained-revisions.mjs';
 
-/** Serialize schema-named graph data, never interpret an action or construction. */
+// Internal normalization for SOP and batch ingress. Token kinds come from the parser.
+export function requestPacketFromSop(sop, tick, fail) {
+  let request;
+  const nodes = parse(sop).map(wire => {
+    tick();
+    if (wire.pattern || wire.legacy) fail('pattern-not-request-data');
+    if (wire.type === 'std.request') {
+      if (request !== undefined) fail('foreign-request');
+      request = wire.id;
+    }
+    const attrs = Object.fromEntries(Object.entries(wire.attrs).map(([key, tokens]) => {
+      tick();
+      return [key, tokens.map(token => {
+        tick();
+        const value = readValue(token);
+        return {kind:value.kind === 'atom' ? 'literal' : value.kind, value:value.v};
+      })];
+    }));
+    return {id:wire.id, type:wire.type, attrs};
+  });
+  if (!request) fail('missing-request');
+  return {request, nodes};
+}
+
+/** Validate and serialize one request with its complete graph. */
 export function serializeRequestGraph(input, { budget = 20000 } = {}) {
   let steps = 0;
   const fail = reason => { throw { requestSerialization: true, reason }; };
@@ -14,7 +38,8 @@ export function serializeRequestGraph(input, { budget = 20000 } = {}) {
   };
   try {
     if (!Number.isSafeInteger(budget) || budget < 1) fail('invalid-budget');
-    const packet = retainedDefinition(input, tick);
+    if (typeof input === 'string' && input.length > 256_000) fail('request-budget');
+    const packet = retainedDefinition(typeof input === 'string' ? requestPacketFromSop(input, tick, fail) : input, tick);
     shape(packet, ['request', 'nodes']);
     if (typeof packet.request !== 'string' || !Array.isArray(packet.nodes) || !packet.nodes.length) fail('invalid-graph');
     const world = new World({ budget: { steps: budget } });

@@ -42,3 +42,15 @@ test('graph and token work is bounded, including large text before serialization
  assert.equal(serializeRequestGraph(packet(base),{budget:1}).ok,false);
  const d=packet(base);d.nodes[0].attrs.text[0].value='a'.repeat(10000);assert.equal(serializeRequestGraph(d,{budget:500}).issues[0].reason,'budget');
 });
+
+test('SOP ingress validates the same anchored graph as structural input',()=>{
+ const input=base.replace('"invented source"',JSON.stringify('quoted "name" 😀')).replace('value=amber','value="42"');
+ const result=serializeRequestGraph(input);
+ assert.equal(result.ok,true,JSON.stringify(result.issues));
+ assert.equal(result.request,'r');
+ assert.equal(result.wires,serializeRequestGraph(packet(input)).wires);
+ assert.equal(result.world.get('c').attrs.value[0],'"42"');
+ for(const invalid of [input.replace('source=$s','source=$elsewhere'),input+'\n@unused std.request.source text="extra"',input+'\n@q std.request act=make mood=do source=$s',input.replace('value="42"','value=?x')]) {
+  assert.equal(serializeRequestGraph(invalid).ok,false);
+ }
+});

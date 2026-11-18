@@ -1,6 +1,5 @@
-import { parse, readValue } from './parser.mjs';
 import { retainedDefinition } from './retained-revisions.mjs';
-import { serializeRequestGraph } from './request-serialize.mjs';
+import { requestPacketFromSop, serializeRequestGraph } from './request-serialize.mjs';
 
 const plans=new WeakMap();
 const shape=(v,keys)=>v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length===keys.length&&keys.every(k=>Object.hasOwn(v,k));
@@ -16,12 +15,9 @@ export function prepareRequestBatch(input,{budget=200000,graphBudget=20000}={}){
    tick();if(!shape(entry,['id','request','wires','after'])||typeof entry.id!=='string'||!entry.id||typeof entry.request!=='string'||!entry.request||typeof entry.wires!=='string'||!Array.isArray(entry.after))fail('invalid-entry');
    if(ids.has(entry.id))fail('duplicate-entry',entry.id);ids.add(entry.id);
    const after=new Set();for(const dependency of entry.after){tick();if(typeof dependency!=='string'||!dependency||dependency===entry.id||after.has(dependency))fail('invalid-dependency',entry.id);after.add(dependency);}
-   const nodes=parse(entry.wires).map(w=>{
-    tick();if(w.pattern)fail('pattern-not-request-data',entry.id);
-    const attrs={};for(const [key,tokens] of Object.entries(w.attrs)){tick();Object.defineProperty(attrs,key,{enumerable:true,value:tokens.map(token=>{tick();const value=readValue(token);return {kind:value.kind==='atom'?'literal':value.kind,value:value.v};})});}
-    return {id:w.id,type:w.type,attrs};
-   });
-   const result=serializeRequestGraph({request:entry.request,nodes},{budget:graphBudget});
+   const graph=requestPacketFromSop(entry.wires,tick,reason=>fail(reason,entry.id));
+   if(graph.request!==entry.request)fail('invalid-request:foreign-request',entry.id);
+   const result=serializeRequestGraph(graph,{budget:graphBudget});
    if(!result.ok)fail('invalid-request:'+result.issues[0].reason,entry.id);
    entries.push({id:entry.id,request:entry.request,wires:result.wires,after:[...after].sort()});
   }

@@ -6616,3 +6616,6 @@ Checks: strict published book audit 61/61, docs build, source 1,001 passed, bund
 
 2026-11-18 G: Project ordered tool input from both capability and rule compilation. Compared local host traversal, action-name dispatch and typed reference projection; the last shares schema, order and one declared action profile across numeric, reservation and journal circuits. It needs no domain vocabulary or new public method.
 Checks: npm run docs; npm test (1,001 pass) and SOPWORLD_BUNDLE=1 node --test (1,003 pass), one skip and one TODO each. The two-action case preserves order; malformed types, actions, arguments and extra calls are refused. The receiver version remains unchanged. Smell scan: zero hints.
+
+2026-11-18 G: Validate an authored SOP graph directly through serializeRequestGraph, sharing the schema, ownership and concrete-token checks used for reader, model and batch inputs. An explicit batch root must still match its graph. No additional public method.
+Checks: npm run docs; npm test passed 1,002, SOPWORLD_BUNDLE=1 node --test passed 1,004, each with one skip and one TODO. SOP and structural fixtures yielded identical canonical graphs with quoted Unicode and typed values; invalid ownership and variables were refused.

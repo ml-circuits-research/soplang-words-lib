@@ -6640,3 +6640,6 @@ Strict book audit admitted all 62 blocks against 58 pinned schemas. Source and b
 
 2026-11-18: Trusted SOP projection profiles now drive lazy catalog reads, exact field selection, rule inputs and returned evidence through World.compileRequest. A published boat/landscape/lake replay retained the source facts and both region alternatives.
 Checks: npm run docs and npm run test:full against the exact KB pin passed 1014 source, 1014 bundle and 1012 COW, each with zero failures, one skip and one TODO.
+
+2026-11-18 — Book §8.2.2 describes authored catalog profiles, evidence and the distinction between viewport defaults and required bounds. The remaining-work plan now focuses on shipped Diagram knowledge, cross-turn grounding and the remaining compiler boundaries.
+Strict audit admitted 62 SOP blocks against 58 schemas. Exact-pin source and bundle gates each passed 1014 with one skip and one TODO.

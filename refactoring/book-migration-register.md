@@ -1,4 +1,6 @@
-# Registrul schimbărilor și deciziilor de migrare
+# Historical migration register
+
+The normative architecture is the book’s request-to-concrete-circuit contract. The current implementation plan is [request-to-executable-circuits.md](request-to-executable-circuits.md). The historical entries below are migration evidence, not additional public APIs or an authority over the book. Avatar is a visible fifth editor; the domain set is open. The compiler receives world/interface context and SOP requests; application code does not orchestrate exposed internal reasoning APIs.
 
 Mutat din anexele C/D ale cărții pentru a separa specificația cititorului de urmărirea implementării. Registrul este o listă de migrare, nu dovada că modulele sunt livrate. Referințele numerotate trimit la carte; contractele fazei 0 sunt urmărite separat în [phase-zero-contracts.md](phase-zero-contracts.md).
 

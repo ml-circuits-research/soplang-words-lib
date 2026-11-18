@@ -1,69 +1,85 @@
 # SOP Worlds: teoria
 
-*Versiunea 49, 16 noiembrie 2026. Text de lucru în română; termenul englez este dat în paranteză la prima apariție. Exemplele de fire sunt în engleză, fiindcă așa se scriu în sistem.*
+*SOP Worlds: the architectural and semantic contract. Examples use English identifiers and declared SOP Lang schemas.*
 
 ---
 
-# 1. Despre ce este vorba
+# 1. From a human request to concrete tool calls
 
-## 1.1 Aplicația de la care pornim
+## 1.1 Purpose and responsibility
 
-Avem o singură aplicație, folosită de un singur om. Pe ecran este o conversație și patru zone de lucru: un desen, o diagramă, un document și un calendar. Omul scrie în conversație ce vrea, în cuvinte obișnuite, iar aplicația trebuie să facă lucrul cerut în zona potrivită: să deseneze, să construiască diagrama, să scrie documentul, să pună o ședință în calendar. Dacă nu poate, trebuie să spună ce anume nu poate și de ce.
+A person can manipulate Drawing, Diagram (including charts), Documents, Calendar and Avatar with either editor controls or ordinary language. Both paths must reach the same public tool interfaces and change the same instance worlds. These five editors are examples, not a fixed vocabulary built into the reasoning engine.
 
-Fiecare dintre cele patru zone se numește în acest document un **domeniu**. Cele patru domenii sunt singurele din care sunt luate exemplele.
+**SOPWorlds LIB turns a high-level request circuit into a concrete SOP Lang circuit of tool calls. A plan is this circuit: operations, typed arguments, dependencies and result bindings. Tools execute their individual calls; they do not interpret the plan or decide what the person meant.**
 
-## 1.2 Problema și ideea
+The reader identifies what the words express. It preserves targets, counts, relations, conditions, negation, coordination, source spans and uncertainty. It does not invent coordinates, resolve a pronoun from hidden UI state or decide which calendar object exists. The library elaborates that reading using declared schema worlds, knowledge worlds and live instance worlds. This is a compiler-like process with state-dependent binding, constraint solving and planning, rather than a text-to-tool string template.
 
-Felul obișnuit de a construi o asemenea aplicație este să se scrie, pentru fiecare fel de propoziție a omului, o bucată de program care o recunoaște și face ce trebuie. Aceasta merge pentru puține propoziții. Pe măsură ce se adaugă, fiecare propoziție nouă cere încă o bucată de program, bucățile ajung să se contrazică, iar când aplicația greșește nu se mai poate spune de ce.
+There are two families of JavaScript responsibility:
 
-SOP Worlds înlocuiește programul scris pentru fiecare propoziție cu o **descriere** a lucrurilor despre care se vorbește. Descrierea spune patru feluri de lucruri: ce poate exista (pe o pagină pot exista lucruri desenate, fiecare cu o poziție, o mărime și o culoare), ce nu este permis (un om nu poate fi în două ședințe în același timp), ce decurge din ce există (un nod spre care nu vine nicio săgeată este începutul diagramei) și ce se știe în general (peștii trăiesc în apă; o scrisoare se încheie cu o semnătură).
+| Family | Responsibility | What belongs in SOP worlds instead |
+|---|---|---|
+| Generic SOPWorlds LIB mechanisms | Load and validate worlds; match rules; bind references; generate and rank hypotheses; solve declared constraints; build and schedule call circuits; observe effects and retain evidence/history. A reader adapter preserves typed model output. | Domain meanings, preferred placements, concept/property mappings, relevance, defaults, operation applicability and semantic decompositions. |
+| Concrete tools and adapters | Render or edit an object, store an event, measure geometry, run a typed numerical primitive, perform model inference, receive pointer input or access storage. | Choosing what “big”, “the other one”, “a house” or “next week” means, and deciding which object or operation a vague request denotes. |
 
-Descrierea este scrisă într-un limbaj mic, numit **SOP Lang**. O descriere, împreună cu lucrurile care există la un moment dat, se numește **lume (world)**. Un singur program general, biblioteca **sopworld**, lucrează cu orice lume: nu primește o schimbare care încalcă descrierea, răspunde la întrebări despre ce există, trage concluzii și, când refuză ceva, spune ce regulă a fost încălcată.
+Application assembly connects worlds, interfaces and UI. It must not become a third reasoning engine. Moving a sentence-specific branch into the library, or naming a JS handler from a SOP declaration, does not make that branch a general mechanism. A reusable numerical solver is legitimate native code; a handler that silently chooses a domain-specific size or target is hidden semantic policy.
 
-Principiul care conduce tot documentul este: **de la general la particular.** Fiecare lucru se declară o singură dată, la nivelul cel mai general la care este adevărat, și este moștenit de tot ce este mai particular. Semnul că principiul a fost încălcat este ușor de recunoscut: pentru o propoziție nouă a omului trebuie scris un rând nou anume pentru ea.
+## 1.2 What a world contributes
 
-## 1.3 Ce există astăzi și ce este propunere
+A **schema world** declares allowed fact types, keys, value domains, references and invariants. A **knowledge world** declares reusable meanings, rules, constructions, preferences and completion constraints. An **instance world** records concrete objects and their current relationships. A project world connects instances to the schemas, knowledge and capabilities they use. Importing knowledge shares its declarations; it does not copy every knowledge fact into every editor instance.
 
-Documentul descrie două lucruri și le ține deosebite, pentru ca o hotărâre să poată fi luată în cunoștință de cauză.
+These roles answer different questions. A schema can require a finite width; knowledge can define a normal width range for a concept; an instance can show that the currently selected object is already 80 units wide. A request for “twice as wide” uses the instance value and produces 160. A request for “width 120” uses the explicit value. Neither requires the drawing tool to understand “twice” or choose a normal width.
 
-Capitolele 2 și 3 descriu **limbajul și biblioteca așa cum sunt astăzi**. Tot ce este acolo a fost luat din documentația normativă a bibliotecii (`docs/language.md` și `docs/reference.md`) și este verificat de testele ei. Tabelele din aceste capitole sunt complete: toate tipurile predefinite ale limbajului, cu toate cheile lor.
+A rule has named premises and a conclusion; matching binds variables to actual facts. Constraints reject or score candidate completions. A method decomposes an abstract result into subgoals and concrete capabilities. The library processes these declarations with general operators. A new domain supplies declarations and concrete adapters; it does not add verb or domain-ID branches to the engine.
 
-Capitolul 4 descrie **lumea legendelor, care este o propunere** și nu există încă. Capitolele 5, 6 și 7 descriu cum arată folosirea când propunerea este pusă la lucru; ele amestecă lucruri care există cu lucruri propuse. Peste tot, ce este propus poartă cuvântul **(propus)**. Registrul diferențelor față de implementare este păstrat în [planul de migrare](../refactoring/book-migration-register.md).
+## 1.3 The executable boundary
 
-Contractele semantice sunt explicate lângă conceptele pe care le precizează: valori și identitate în capitolul 2, validare în capitolul 3, spații și acte în capitolul 4, moștenire în capitolul 5, interpretare și execuție în capitolul 6. Identificatorii R servesc trimiterilor între text și plan, fără a forma un capitol separat. Diferențele față de programul actual și alegerile tehnice încă deschise sunt urmărite în același registru de migrare; contractele și justificările lor rămân în capitolele relevante.
+A circuit is ready for dispatch when every required semantic choice has been made: operation, compatible destination instance, targets, values, units, coordinate/time frames and dependencies. Arguments are either validated concrete values/references or typed references to outputs of earlier calls. A newly created object's identifier need not exist before its creation call returns. Binding that result to the next call is mechanical scheduling, not unfinished interpretation.
 
-## 1.4 Un exemplu, de la un capăt la altul
+Each tool interface must state:
 
-Înainte de explicații, iată o dată tot drumul unei propoziții, ca să se vadă ce piese există. Fiecare pas este explicat mai târziu, în secțiunea arătată.
+- which operation wires it accepts, and each argument's type, required/optional status and absence semantics;
+- object/instance identity, units and frames, applicable state/version preconditions;
+- typed outputs, observable postconditions, failure outcomes and undo/rollback obligations;
+- dependencies and the result slots later calls may consume.
 
-Pe pagina de desen sunt un iaz, o casă și doi pești mici în iaz. Omul scrie **„draw three big red fish”**.
+A tool may reject an invalid or stale call. It may not repair one by guessing an object, colour, size or layout. Semantic completion belongs before this boundary. An editor action that already supplies a complete call goes directly through the same validation, dispatch and observation path; it need not be read again by SOP-BERT.
 
-| Pasul | Ce face aplicația |
+The application-facing boundary has two responsibilities: provide existing worlds, tool interfaces and context; submit SOP request/query circuits for compilation. Resolution, completion, ranking and planning are encapsulated within LIB. High-level explanations of these algorithms do not create additional public APIs.
+
+This book states the architectural and semantic contract. Implementation gaps and the concrete replacement sequence belong in the separate [request-to-circuit migration plan](../refactoring/request-to-executable-circuits.md). Syntax examples must use declared schemas; an explanatory table is not an undeclared SOP interface.
+
+## 1.4 A complete, checkable example
+
+Consider a deliberately small drawing exercise. The drawing schema declares objects with an ID, concept, finite `x`, `y`, `width`, `height` and colour. The instance contains a house `h1` occupying the rectangle from `(400,200)` to `(520,320)`. Coordinates use a top-left origin, x increasing rightward and y downward; object positions name their top-left corner. Knowledge for this exercise assigns a tree a 60-by-100 extent and the default colour `#228B22`. Its declared “near” policy places a new object 20 units to the right of its anchor and aligns their bottom edges. The scene is 800 by 600 units and that region is empty. These are explicit example premises, not universal meanings of “tree” or “near”.
+
+The person writes **“draw a tree near the house”**.
+
+| Stage | Exact input and result |
 |---|---|
-| 1. Citește starea | Află ce este acum pe pagină: un iaz, o casă, doi pești (secțiunea 6.2). |
-| 2. Înțelege propoziția | O desparte în părți cu rost: se cere a face ceva nou; felul este pește; sunt trei; culoarea este roșu; mărimea este „mare”. Rezultatul se numește cerere (secțiunea 6.3). |
-| 3. O așază în conversație | Hotărăște că este o cerere nouă, nu o corectare a celei dinainte. Observă că omul nu a spus unde să fie peștii (secțiunea 6.4). |
-| 4. Trece de la cuvinte la numere | „Mare” nu are un înțeles fix: aici înseamnă vizibil mai mare decât cei doi pești de pe pagină. „Roșu” devine o culoare anume (secțiunile 4.4, 4.5 și 6.5). |
-| 5. Completează ce lipsește | Pentru loc sunt două variante: în iaz sau altundeva pe pagină (secțiunea 6.6). |
-| 6. Alege | Cunoașterea generală spune că peștii trăiesc în apă, deci alege iazul și găsește în el trei poziții libere (secțiunea 6.8). |
-| 7. Execută | Pornește de trei ori operația de desenare, cu numere. Apoi citește din nou pagina și verifică: sunt cinci pești (secțiunea 6.9). |
-| 8. Răspunde | „I drew 3 big red fish in the pond.” Locul este spus fiindcă l-a ales aplicația, nu omul (secțiunea 6.10). |
+| Read | Create one tree; “the house” is an existing anchor of the near relation. No second creation request, coordinates or size are extracted. |
+| Bind | Match the house description against the live instance; retain `h1` and its observed version. Other matching houses, if present, remain ranked alternatives. |
+| Complete | Read the declared tree extent and near policy. Compute `x = 520 + 20 = 540`, `y = 320 - 100 = 220`, width 60, height 100. |
+| Validate | The resulting rectangle ends at `(600,320)`, stays in the scene and intersects no occupied region. Recheck `h1`'s observed version before mutation. |
+| Compile | Produce a creation call with concept tree, position `(540,220)`, extent `(60,100)` and colour `#228B22`. Its output reference supplies the new object's identity to later calls. No argument still says “near”. |
+| Dispatch | The generic dispatcher invokes the registered creation primitive with those concrete arguments. The primitive creates exactly that object and returns its ID. |
+| Observe | Read the new object from the authoritative instance and verify concept, geometry and colour. A success flag alone does not prove the visible effect. |
+| Reply | State that a tree was added near `h1`; disclose the chosen anchor or other uncertain completion when relevant. Retain alternatives and undo for correction. |
 
-Omul scrie apoi numai **„in the sky”**. Nu este o propoziție întreagă. Aplicația o înțelege ca pe locul care lipsise din cererea dinainte, deci ca pe o corectare, și mută peștii în partea de sus a paginii. Că peștii trăiesc în apă este o regulă de bun-simț, iar omul a spus limpede altceva.
+For **“draw a tree and a house”**, both nouns are new targets of the shared creation act. For **“draw a tree near a house”**, the house belongs to a relation and its mode must remain part of the reading; the library ranks compatible interpretations against the instance and declared policies. Splitting text at “and”, or treating every noun as a creation, loses the distinction. The reader must preserve ownership and relation roles before completion begins.
 
-În calendar, același om are o colegă, Ana, care are deja o ședință de la zece la unsprezece. Omul scrie **„a meeting with Ana at ten thirty”**. De data aceasta se încalcă o regulă care nu poate fi ocolită: un om nu poate fi în două ședințe în același timp. Aplicația nu pune ședința și nici nu o mută pe tăcute. Răspunde: „Ana is busy from 10 to 11. The nearest free time for a 1-hour meeting is 11:00. Shall I put it there?”
+For **“make it bigger”**, bind “it” from the conversation/selection evidence, read its current extent and the declared comparative step, then emit concrete resize arguments. For **“no, the other one”**, revise the selected hypothesis using the retained alternatives and undo or correct the earlier effect. The default under ordinary uncertainty is the most plausible usable reversible interpretation with a brief uncertainty note, not a clarification question. Hard constraints still apply; an unresolved hard precondition is never reported as a successful effect.
 
 ---
 
 # 2. Limbajul SOP Lang
 
-Capitolul acesta introduce sintaxa declarațiilor, categoriile de valori și regulile de interpretare. Descriem mecanismul existent și marcăm separat contractele propuse pentru valori compuse, identitate persistentă și organizarea proiectelor.
+This chapter defines declaration syntax, values, identity and visibility. Compact literal values stay on their owning facts; separate facts are used when something needs identity, references, rules or independent provenance.
 
 ## 2.1 Sintaxa unei declarații
 
 Tot ce se scrie în SOP Lang este un șir de declarații. O declarație se numește **fir (wire)**. Un fir are întotdeauna aceeași formă, în trei părți, în această ordine:
 
-```
+```text
 @identificator  tip  cheie=valoare  cheie=valoare  ...
 ```
 
@@ -73,15 +89,22 @@ Tot ce se scrie în SOP Lang este un șir de declarații. O declarație se nume�
 
 **Perechile cheie și valoare** dau conținutul. **Cheia (key)** este numele unei informații; **valoarea (value)** este informația. Între cheie, semnul egal și valoare nu se pune spațiu. Aceeași cheie poate fi scrisă de mai multe ori pe un fir; atunci cheia are mai multe valori, în ordinea în care au fost scrise.
 
-Un fir se termină acolo unde începe următorul, adică la următorul `@` de la începutul unui cuvânt. Poate fi scris pe mai multe rânduri. Limbajul nu are altceva: nu are paranteze, nu are liste, nu are fire în interiorul altor fire. Această sărăcie este voită și are o urmare care se vede peste tot în document: **orice lucru care are mai multe părți se scrie ca mai multe fire legate între ele.**
+Un fir se termină acolo unde începe următorul, adică la următorul `@` de la începutul unui cuvânt. Poate fi scris pe mai multe rânduri. Limbajul nu are altceva: nu are paranteze, nu are liste, nu are fire în interiorul altor fire. This compact syntax is deliberate. Give a part a separate fact when it needs identity, references or its own provenance. Ordinary scalar properties stay directly on their owner; a pair of coordinates does not require two value objects.
 
-Un exemplu din desen:
+A self-contained toy drawing schema and its facts:
 
+```sop
+@t.pond core.type of=example.pond closed=true
+@t.fish core.type of=example.fish closed=true
+@s.fish.size core.slot of=example.fish key=size kind=number present=true
+@s.fish.x core.slot of=example.fish key=x kind=number present=true
+@s.fish.y core.slot of=example.fish key=y kind=number present=true
+@s.fish.in core.slot of=example.fish key=in type=example.pond present=true
+@pond1 example.pond
+@f1 example.fish size=1.6 x=120 y=540 in=$pond1
 ```
-@f1 fish size=1.6 at=120,540 in=$pond1
-```
 
-Identificatorul firului este `f1`. Tipul lui este `fish`. Are trei chei. Cheia `size` are valoarea `1.6`. Cheia `at` are valoarea `120,540`. Cheia `in` are valoarea `$pond1`, care este o trimitere la firul cu identificatorul `pond1`. În cuvinte: există un pește, de 1,6 ori mai mare decât unul obișnuit, la poziția 120 pe orizontală și 540 pe verticală, aflat în lucrul descris de firul `pond1`.
+`f1` identifies the fish. Its type is `example.fish`; `size`, `x` and `y` are numeric values, while `in` is a typed reference to `pond1`. The schema makes the distinction explicit. The `example` prefix marks invented teaching types, not published drawing-tool operations.
 
 ## 2.2 Categorii lexicale și valori
 
@@ -96,59 +119,26 @@ Analiza lexicală separă textul în unități lexicale (tokens). La acest nivel
 
 De exemplu, `label="Review"` furnizează un text, `source=$m1` furnizează o referință, iar `label=?text` cere legarea unei variabile în timpul potrivirii. Textul `"$m1"` rămâne text: ghilimelele împiedică interpretarea lui ca referință. Schimbarea categoriei schimbă sensul declarației, chiar dacă literele din interior sunt aceleași.
 
-### 2.2.1 Reprezentarea valorilor compuse și semantica ordinii
+### 2.2.1 Compound values and order
 
-O poziție pe pagină este o singură valoare: coordonatele ei au sens împreună, în spațiul declarat de slot. În reprezentarea propusă, `at=120,540` are `kind=point` și `space=page`; coordonatele urmează ordinea axelor declarată prin `order`, orizontala înaintea verticalei. Egalitatea este numerică, axă cu axă: `120,540` și `120.0,540` sunt egale, dar `540,120` este alt punct. Un punct cu prea puține sau prea multe coordonate este refuzat ca încălcare `domain`. Cererea „move it up” poate viza numai verticala, însă planul citește poziția existentă și construiește un punct complet după modificare; nu salvează `at=120` ca poziție incompletă. Motorul actual nu are `kind=point`: folosește numere repetate sub o cheie `many=true` sau valori `json`. Forma propusă păstrează punctul ca valoare unitară și îi explicitează spațiul. *(R1)* *(R2)* *(R3)* *(R4)*
-
-Mai multe valori ale aceleiași chei reprezintă altceva: o colecție de elemente independente. Limbajul actual le păstrează ca listă ordonată. Pentru participanții unei ședințe, ordinea poate fi declarată nerelevantă prin `order=ignored` **(propus)**: aceeași colecție de persoane rămâne egală după reordonare, iar duplicatele se reduc la o singură apariție. Pentru paragrafele unui document, ordinea rămâne semnificativă. Schema decide această proprietate a slotului; faptul că ambele cazuri folosesc valori repetate nu le dă automat aceeași semantică. *(R5)*
-
-| Valori comparate | Interpretarea în schema declarată |
-|---|---|
-| `at=120,540` și `at=120.0,540` | Același punct numeric al paginii. |
-| `at=120,540` și `at=540,120` | Puncte diferite: coordonatele nu sunt o mulțime fără ordine. |
-| Aceiași participanți, enumerați invers | Aceeași colecție numai dacă slotul declară ordinea nerelevantă. |
-| Aceleași paragrafe, enumerate invers | Alt document când slotul păstrează ordinea textului. |
-
-### 2.2.2 Alegerea reprezentării unui punct
-
-Un punct este o valoare fără identitate proprie. Două obiecte pot ocupa aceeași poziție fără să devină același obiect. Reprezentarea trebuie să permită compararea coordonatelor și citirea unei axe într-o regulă, fără să introducă o identitate separată pentru fiecare număr.
-
-Avem trei variante: valoarea dedicată propusă `at=120,540`, un obiect JSON existent cu câmpurile `x` și `y`, sau fire separate pentru punct și coordonate. Variantele presupun sloturi diferite și nu se încarcă împreună ca declarații ale aceluiași tip. Forma dedicată cere `kind=point space=page`. Forma JSON cere `kind=json`, iar valoarea este un text SOP al cărui conținut decodat este obiectul JSON. Ghilimelele și barele inverse interioare trebuie escapate conform regulilor textelor din secțiunea 2.2.
-
-Exemplul JSON existent arată cele două niveluri de citire: ghilimelele exterioare sunt ale textului SOP, iar cele escapate aparțin cheilor obiectului JSON. După decodare, ordinea cheilor nu schimbă egalitatea valorii.
+A position can be represented by two numeric slots on its owning object. There is no reason to give each coordinate a separate identity when it is only a value. This complete toy schema uses ordinary `core.type` and `core.slot` declarations:
 
 ```sop
-@s.node.at core.slot of=node key=at kind=json
-@n1 node at="{\"x\":120,\"y\":540}"
+@t.example.dot core.type of=example.dot closed=true
+@s.example.dot.x core.slot of=example.dot key=x kind=number present=true
+@s.example.dot.y core.slot of=example.dot key=y kind=number present=true
+@dot example.dot x=120 y=540
 ```
 
-În varianta cu fire separate, aceeași poziție ar putea fi scrisă astfel, cu tipuri ilustrative care trebuie declarate în schemă:
+`x=120` and `y=540` are typed values on `dot`, not objects called `state.value.1` and `state.value.2`. A request to move the dot up changes `y` according to the declared coordinate frame and retains `x`. A missing mandatory coordinate is invalid; a number is not itself a position unless the relevant schema says which axis it represents. *(R1–R4)*
 
-```sop
-@n1 node at=$position1
-@position1 point.value space=page
-@coordx coordinate of=$position1 axis=x value=120
-@coordy coordinate of=$position1 axis=y value=540
-```
+Repeated values preserve order. A document's paragraph references therefore retain their sequence. If a domain treats participants as a set, its declared collection semantics must specify duplicate reduction and order-independent comparison; a repeated key alone does not assert set semantics. *(R5)*
 
-`position1` are acum identitate, iar fiecare coordonată este un fapt. Schema trebuie să impună exact o coordonată pentru fiecare axă și să definească egalitatea semantică dintre puncte cu identificatori diferiți. Fără această regulă, două poziții numeric egale pot părea diferite numai pentru că se numesc `position1` și `position2`.
+### 2.2.2 Choosing a representation
 
-| Criteriu | Consecințele celor trei variante |
-|---|---|
-| Citirea unei axe | Valoarea dedicată trebuie să ofere `at.x=?x`; JSON oferă deja citirea prin cale; firele separate cer potrivirea obiectului, punctului și coordonatei legate. |
-| Egalitate | Valoarea dedicată compară coordonate tipizate în același spațiu; JSON folosește forma canonică, indiferent de ordinea cheilor; firele separate cer comparație structurală peste identități diferite. |
-| Identitatea faptului | Primele două variante compară slotul ca valoare; varianta cu referință introduce o identitate suplimentară. Niciuna nu autorizează îmbinarea obiectelor numai pentru că au aceeași poziție. |
-| Lizibilitate și volum | Forma dedicată păstrează un singur fir compact; JSON păstrează un fir, cu numele axelor și escapare; exemplul cu fire separate cere un fir al obiectului, unul al punctului și câte unul pentru fiecare axă. |
-| Schimbarea motorului | Punctul dedicat cere validare, canonizare și acces prin axă; JSON are deja canonizare și căi, dar nu impune singur axele și unitățile; firele separate folosesc potrivirea existentă, cu restricții structurale suplimentare. |
-| Evoluția schemei | Punctul dedicat depinde de ordinea axelor din versiunea spațiului; JSON și firele separate păstrează numele axelor, dar tot cer migrare dacă sensul ori unitățile lor se schimbă. |
+Use scalar slots for independently typed coordinates. Use a typed referenced fact for an independently named point, reusable geometry or a measurement with its own source/history. Both choices keep the semantic structure available to rules. A point fact needs a declared type, slots and reference type; naming it `point.value` does not create a schema automatically.
 
-Alegerea pentru proiect este `kind=point`, cu acces prin numele axei, reutilizând ideea căilor din mecanismul JSON. Motivul este semantic: poziția rămâne o valoare cu spațiu declarat, fără identități artificiale. JSON rămâne disponibil, dar `kind=json` singur nu dovedește că valoarea are exact axele și unitățile unui spațiu. Firele separate sunt potrivite când coordonatele sunt măsurări cu surse și istoric propriu; atunci descriu observații despre un punct, nu reprezentarea elementară a valorii lui.
-
-În contractul propus, pattern-ul `@p node at.x=?x` citește axa numită `x` chiar dacă valoarea este serializată prin virgule. O interdicție poate folosi variabila numerică într-un `core.check`. Numele axei se rezolvă prin schema spațiului, nu prin poziția curentă pe ecran. Șablonul unei reguli produce întregul punct; modificarea unei axe reconstruiește și validează valoarea completă înainte de înlocuire, așa cum mecanismul JSON actual scrie valoarea întreagă.
-
-Serializarea dedicată folosește numere finite, separate prin virgulă, fără spații; separatorul zecimal este punctul. `at=-12.5,540` are două coordonate; `at=12,5,540` are trei și se refuză într-un spațiu cu două axe. Această formă numerică nu cere ghilimele sau escapare. Egalitatea se calculează după canonizarea numerică, nu după textul original. Dacă slotul participă la cheia de identitate a unui fapt, folosește aceeași egalitate canonică. Două valori diferite pentru poziția aceluiași obiect nu se împacă prin medie sau alegere arbitrară.
-
-Ordinea axelor este imutabilă în interiorul unei versiuni publicate. Datele persistente se încarcă împreună cu versiunea spațiului care le-a definit. Dacă noua versiune schimbă ordinea din `(x,y)` în `(y,x)`, migrarea citește vechea ordine și rescrie `120,540` ca `540,120`. Aceiași octeți nu se reinterpretează tacit după noua schemă. Adăugarea unei axe cere o regulă explicită de completare sau lasă migrarea incompletă. Fără migrare, versiunea incompatibilă se refuză. Punctele din spații ori unități diferite nu sunt declarate egale fără o transformare explicită.
+`kind=json` accepts structured native values, but an opaque implementation object must not stand in for inspectable world structure. If JSON is used at an adapter boundary, its schema and conversion into domain facts must be explicit. A generic JSON tag does not establish coordinate axes, units or equality between values in different frames. Domain reasoning uses the declared facts, not private JS object fields.
 
 ## 2.3 Marcatori sintactici și referințe
 
@@ -171,7 +161,7 @@ Mai există semnul `::`, care apare în interiorul unui identificator; este expl
 
 Identificatorii, tipurile și cheile sunt nume, scrise după aceeași regulă: litere, cifre, liniuțe, și puncte între bucăți. `f1`, `fish`, `core.type` și `s.drawn.at` sunt nume corecte.
 
-Pentru numele SOP noi, convenția proiectului este scrierea cu litere mici și separarea cuvintelor prin puncte: `gap.observation`, `source.snapshot`, `point.value`. Ea se aplică identificatorilor redactați, tipurilor și cheilor, inclusiv folosirilor lor în referințe, `of`, `kind` sau `type`. Este o convenție de redactare, nu o operație automată de schimbare a literelor la încărcare. Numele importate și identificatorii persistenți se păstrează ori primesc o mapare explicită; nu se redenumesc tacit. Valorile textuale și etichetele pot avea majuscule. API-urile JavaScript existente, precum `solveReport` și `readRequest`, își păstrează numele reale în capitolul 9: ele nu sunt nume de tipuri SOP.
+Pentru numele SOP noi, convenția proiectului este scrierea cu litere mici și separarea cuvintelor prin puncte: `gap.observation`, `source.snapshot`, `point.value`. Ea se aplică identificatorilor redactați, tipurilor și cheilor, inclusiv folosirilor lor în referințe, `of`, `kind` sau `type`. Este o convenție de redactare, nu o operație automată de schimbare a literelor la încărcare. Numele importate și identificatorii persistenți se păstrează ori primesc o mapare explicită; nu se redenumesc tacit. Valorile textuale și etichetele pot avea majuscule.
 
 **Punctul nu are niciun înțeles pentru limbaj.** `core.type` este un singur nume, la fel ca `fish`. Punctele sunt folosite după o convenție, pentru cititor: începutul numelui unui tip spune cine a definit acel tip.
 
@@ -179,7 +169,7 @@ Pentru numele SOP noi, convenția proiectului este scrierea cu litere mici și s
 |---|---|
 | `core.` | Limbajul însuși. Sunt tipurile predefinite, cu care se scrie schema unei lumi (capitolul 3). |
 | `std.` | Modulele standard ale bibliotecii, folosite pentru conversație (secțiunea 6.1). |
-| `w.legend.` | Lumea legendelor (capitolul 4; propus). |
+| `w.legend.` | Lumea legendelor (capitolul 4). |
 | `k.` | O bază de cunoaștere publicată (secțiunea 5.1). |
 | `w.` | O descriere publicată a unui fel de lume (secțiunea 5.1). |
 | nimic | Un tip propriu lumii în care apare: `fish`, `node`, `meeting`. |
@@ -192,7 +182,7 @@ Identitatea permite recunoașterea aceluiași lucru după ce i se schimbă numel
 
 Regulile de mai jos separă identitatea persistentă de rezolvarea unei referințe și de verificarea existenței țintei. Acestea sunt trei operații distincte: un identificator poate fi bine format și totuși să nu desemneze niciun fapt disponibil.
 
-Identitatea persistentă a unui fapt este perechea dintre identitatea imutabilă a instanței și identificatorul local al faptului. **(Propus)** Numele afișat al lumii, numele modulului și calea pe disc nu sunt această identitate. Încărcătorul poate deduce un nume inițial din calea relativă, dar salvează separat identitatea instanței. Un spațiu de nume lizibil precum `calendar` se rezolvă în contextul proiectului la această identitate. În formatul persistent propus, referința stochează perechea dintre identitatea imutabilă a instanței și identificatorul local; `calendar` este numai numele lizibil folosit la introducere și afișare. Salvarea rezolvă acest nume și scrie identitatea, nu textul aliasului. La redenumirea în `agenda`, afișarea se schimbă, dar perechea stocată nu se schimbă. Importul unui text vechi cu `$calendar::m1` cere un alias declarat sau o mapare explicită; nu ghicește noul nume. Redenumirea ori mutarea directorului păstrează astfel referințele persistente; copierea independentă remapează identitățile și referințele interne împreună. Secțiunea 2.6 descrie contractul și deosebirea față de prefixele textuale actuale. *(R6)*
+Identitatea persistentă a unui fapt este perechea dintre identitatea imutabilă a instanței și identificatorul local al faptului. Numele afișat al lumii, numele modulului și calea pe disc nu sunt această identitate. Încărcătorul poate deduce un nume inițial din calea relativă, dar salvează separat identitatea instanței. Un spațiu de nume lizibil precum `calendar` se rezolvă în contextul proiectului la această identitate. In persistent storage, referința stochează perechea dintre identitatea imutabilă a instanței și identificatorul local; `calendar` este numai numele lizibil folosit la introducere și afișare. Salvarea rezolvă acest nume și scrie identitatea, nu textul aliasului. La redenumirea în `agenda`, afișarea se schimbă, dar perechea stocată nu se schimbă. Importul unui text vechi cu `$calendar::m1` cere un alias declarat sau o mapare explicită; nu ghicește noul nume. Redenumirea ori mutarea directorului păstrează astfel referințele persistente; copierea independentă remapează identitățile și referințele interne împreună. Secțiunea 2.6 descrie contractul și separation from readable prefixes. *(R6)*
 
 Într-un fapt, `$x` este o referință locală, rezolvată în contextul instanței. Forma calificată `$calendar::m1` poate desemna un fapt din altă instanță, conform secțiunii 2.6. În declarația unei reguli, `when=$p.node` numește un pattern din schemă; într-o condiție legată de acel pattern, referința poate desemna faptul găsit la evaluare. Rezolvarea identității declarației și legarea la un fapt sunt etape distincte, urmărite în secțiunea 3.5. *(R7)*
 
@@ -216,7 +206,7 @@ Toate firele se scriu la fel, dar biblioteca le folosește în două feluri.
 
 Un **fapt (fact)** este un fir care spune că ceva există și cum este: peștele `f1`, ședința de la zece. Faptele se schimbă mereu, pe măsură ce omul lucrează.
 
-**Schema (schema)** este mulțimea firelor care spun ce fapte au voie să existe și ce decurge din ele. Schema se scrie o dată, de către cel care descrie domeniul, și se schimbă rar. În programul și documentația bibliotecii, schema se numește încă *matrix*; trecerea la numele „schema” se face treptat.
+**Schema (schema)** este mulțimea firelor care spun ce fapte au voie să existe și ce decurge din ele. Schema se scrie o dată, de către cel care descrie domeniul, și se schimbă rar. The schema is the declared contract, not an editor-specific collection of JS checks.
 
 Biblioteca hotărăște în care din cele două categorii intră un fir după două reguli. Un fir este al schemei dacă tipul lui este unul dintre tipurile predefinite de schemă (cele din capitolul 3, de exemplu `core.type` sau `core.rule`). Un fir este al schemei și dacă o regulă din același text îl folosește drept condiție sau concluzie: în primul caz este un pattern, în al doilea un șablon de concluzie (secțiunile 3.4–3.5). Orice alt fir este un fapt.
 
@@ -230,36 +220,19 @@ Aceste patru informații nu sunt identice. Calea unui fișier este adresa de sto
 
 În aplicația demonstrativă, desenul, diagrama, documentul și calendarul au fiecare câte o instanță distinctă. Descriptorul proiectului leagă numele lor lizibile de identități persistente, fișiere și scheme. Chiar dacă desenul și diagrama au amândouă un obiect `n1`, acestea nu sunt același lucru. La cererea unui grafic din calendar, aplicația citește instanța calendarului și creează obiecte în instanța diagramei; aici calificarea referințelor face vizibilă trecerea dintre cele două stări.
 
-Exemplele locale din capitolul 7 folosesc schema proprie a aplicației, deci păstrează tipuri precum `node` și `meeting`. Directorul `worlds/diagram/` din organizarea propusă nu califică singur tipul `node`. Dacă schema este publicată și importată printr-un modul calificat, tipul poate deveni `diagram.node`; atunci și sloturile, pattern-urile și folosirile sale trebuie calificate consecvent la import. Această operație asupra numelor de schemă este separată de prefixul `diagram::` al faptelor unei instanțe.
+Exemplele locale din capitolul 7 folosesc schema proprie a aplicației, deci păstrează tipuri precum `node` și `meeting`. Directorul `worlds/diagram/` din organisational example nu califică singur tipul `node`. Dacă schema este publicată și importată printr-un modul calificat, tipul poate deveni `diagram.node`; atunci și sloturile, pattern-urile și folosirile sale trebuie calificate consecvent la import. Această operație asupra numelor de schemă este separată de prefixul `diagram::` al faptelor unei instanțe.
 
-### 2.6.1 Calificarea referințelor
+### 2.6.1 Qualified references and historical sources
 
-În mecanismul existent al bibliotecii sopworld, programul gazdă furnizează un spațiu de nume la încărcarea faptelor. `@n1 node` încărcat în spațiul de nume `diagram` devine faptul `diagram::n1`. O referință locală `$n1` din același context îl numește pe acesta. O referință calificată `$calendar::m1` numește un fapt al calendarului. `$::x` numește un fapt din contextul fără prefix.
+A local reference resolves within its declared instance context. A qualified reference identifies a fact in another declared context; it does not import that context, grant write access or prove that the target is loaded. A pattern reference instead names a schema pattern and is bound to the matching fact during rule evaluation (sections 3.4–3.5).
 
-O legătură activă este potrivită când documentul încorporează un desen care trebuie să rămână accesibil ca stare distinctă. În exemplul propus, încărcat în instanța documentului, inserția desemnează scena din instanța desenului:
+An active document embedding needs a resolvable drawing target. A chart calculated from a calendar can instead preserve an independent historical source observation. The difference must be structural: a live typed reference requires its target; an historical record preserves the source identity, version and consumed values without claiming that the source still exists. A missing live reference must never be silently converted into historical text.
 
-```sop
-@insert1 embedded.drawing drawing=$drawing::scene1
-```
+For example, a chart of meeting counts reads a calendar snapshot, counts Monday=2 and Tuesday=3, and stores those counts with the captured source identity and version. Deleting the source calendar does not alter those historical counts. “Update the chart” must read a new calendar snapshot and recompute them; if that source is unavailable, it cannot claim an update. A live embedded drawing follows a different contract: render the referenced scene at a coherent observed version, or report that it cannot be resolved.
 
-`insert1` este obiectul documentului care deține inserția; `embedded.drawing` este tipul propus al inserției, nu un cuvânt rezervat. Cheia `drawing` trebuie declarată ca referință la tipul scenei. `$drawing::scene1` desemnează o țintă activă care trebuie încărcată și rezolvată. Referința nu importă singură desenul. Modificările lui pot fi afișate de document numai după citirea unei versiuni coerente a acelei scene.
+### 2.6.2 Project ownership and file organisation
 
-Graficul derivat din calendar este diferit: el prezintă datele citite la un moment dat. Următorul fragment propus, încărcat în diagramă, păstrează un fapt local de proveniență și valorile consumate, fără referință activă spre calendar:
-
-```sop
-@snapshot1 source.snapshot source.instance="calendar-instance-id" source.id="m1" source.version="state-17" captured.label="Review"
-@n1 node label="Review" provenance=$snapshot1
-```
-
-`source.instance` păstrează identitatea imutabilă a calendarului; `source.id` și `source.version` identifică faptul și versiunea citite. Sunt valori istorice, nu legături `$` care ar cere existența curentă a ședinței. `captured.label` este valoarea copiată pentru acest exemplu. Nodul `n1` are o singură referință activă, `$snapshot1`, către înregistrarea locală existentă. Schema finală a instantaneului trebuie să declare toate valorile utilizate la construire; pentru un grafic agregat nu ar ajunge numai eticheta unei ședințe.
-
-Dacă sursa dispare, nodul și proveniența sa rămân consultabile. „Update the chart” cere o nouă citire a calendarului; în lipsa lui, actualizarea este refuzată, iar graficul istoric se păstrează. În schimb, inserția activă a desenului nu poate fi activată fără ținta sa. Deosebirea rezultă din tipurile de date declarate, nu din tratarea arbitrară a unei referințe nerezolvate drept text.
-
-Într-o regulă, o referință la un pattern, precum `$p.node`, are un rol diferit: identifică pattern-ul declarat în schemă. La evaluare poate desemna faptul găsit de acel pattern. Secțiunile 3.4–3.5 urmăresc exact această legare. Numele fișierului nu schimbă sensul lui `$`.
-
-### 2.6.2 Organizarea pe disc — contract propus
-
-Organizarea proiectului trebuie să poată furniza spații de nume implicite. Propunerea este ca încărcătorul proiectului să citească un descriptor de proiect (manifest): o declarație a rădăcinii proiectului, modulelor, importurilor și instanțelor. Descriptorul poate deduce numele inițiale din căi relative. Forma concretă a descriptorului rămâne de stabilit; tabelul următor descrie contractul, nu o funcționalitate implementată.
+A project descriptor identifies the project roots, imported modules, schema dependencies, instance identities and the files that own their facts. A file path is storage location, not semantic identity. The following layout illustrates those distinct roles; directory names do not create types or instances by themselves.
 
 | Cale relativă | Rol declarat în proiect |
 |---|---|
@@ -275,7 +248,7 @@ Numele dedus din cale este o convenție de inițializare, nu identitatea permane
 
 Persistența cere și o regulă de atribuire a fișierului de destinație. Pentru fiecare fapt existent, descriptorul identifică fișierul care îl deține; pentru un fapt nou, declară o destinație implicită sau o regulă deterministă de repartizare. În exemplul diagramei, nodurile noi pot merge în `parts/nodes.sop`, iar restul faptelor în `main.sop`. O repartizare absentă sau ambiguă oprește salvarea, fără să suprascrie fișierele existente.
 
-| Situație la încărcare sau copiere | Comportamentul propus |
+| Situație la încărcare sau copiere | Required behaviour |
 |---|---|
 | Două căi diferite deduc același nume de instanță | Se refuză deducerea ambiguă; descriptorul trebuie să declare nume distincte. Regula acoperă și diferențele numai de majuscule pe un sistem de fișiere care nu le distinge. |
 | Calendarul este mutat în afara rădăcinilor declarate, iar diagrama conține `$calendar::m1` | Activarea contextului care conține referința se refuză, cu sursa și ținta lipsă în diagnostic. Nu se alterează fișierele salvate și nu se prezintă contextul ca valid. |
@@ -284,9 +257,8 @@ Persistența cere și o regulă de atribuire a fișierului de destinație. Pentr
 
 Coliziunea de nume și coliziunea de identități sunt erori diferite. `instances/diagram/main.sop` și `instances/diagram.sop` pot deduce amândouă numele `diagram` fără să reprezinte aceeași instanță. Încărcătorul nu rezolvă această situație alegând primul fișier găsit. De asemenea, numele diferite nu autorizează încărcarea de două ori a aceleiași identități cu stări incompatibile.
 
-Politica referinței lipsă păstrează cerința R8: o legătură factuală activă trebuie să aibă țintă. Un grafic salvat ca instantaneu poate rămâne consultabil fără calendar dacă proveniența lui este o înregistrare istorică autonomă, cu identitatea sursei, versiunea citită și valorile folosite. Acea înregistrare nu este o referință factuală activă spre un obiect absent. Formatul ei trebuie declarat distinct; exemplul `drawing=$drawing::scene1` presupune ținta disponibilă, în timp ce `source.snapshot` păstrează date istorice locale. Afișarea unui rezultat istoric nu autorizează actualizarea lui fără reîncărcarea sursei.
+An active factual reference requires an available target (R8). An historical chart keeps autonomous source evidence and consumed values; displaying it does not authorise recomputation without the source. The declared representation must preserve this distinction.
 
-**Implementation note (2026-11-17, 0.205.0).** `serializeInstanceState`, `readInstanceState` and `instanceStateWorld` now provide a local instance archive: immutable instance identity, stable local fact identities, schema/revision metadata, ordinary typed facts and explicit local references. Structured implementation data is encoded as typed SOP nodes, not as an opaque JSON string. Restored facts can be processed by normal SOP rules. The consumer must verify a reconstructed native projection against those facts before adopting it. This delivers a local persistence substrate, not the complete proposed project descriptor, external-instance resolver or migration policy. See [instance-state contract](../docs/instance-state.md).
 
 ### 2.6.3 Sublumi și limitele vizibilității
 
@@ -294,15 +266,15 @@ Un subdirector nu este automat o sublume. Putem împărți o diagramă în fiși
 
 În demo, cele patru zone nu cer automat o ierarhie de sublumi. Un document care încorporează un desen poate justifica o asemenea compunere: documentul păstrează locul și dimensiunea inserției, iar desenul își păstrează propria schemă și stare. O imagine statică inserată în document este însă doar o resursă; nu devine sublume pentru că are un fișier separat.
 
-Pentru a reuni date din două instanțe, un context de compunere declară ce scheme și ce fapte citește, la ce versiuni și cu ce drept de modificare. Referințele între lumi sunt explicite. Nu se leagă două fapte numai fiindcă numele local sau o valoare textuală coincid. Excepțiile intenționate, precum tipurile partajate, trebuie declarate; mecanismul existent folosește `shared=true` pentru participarea faptelor unui tip între spații de nume.
+Pentru a reuni date din două instanțe, un context de compunere declară ce scheme și ce fapte citește, la ce versiuni și cu ce drept de modificare. Referințele între lumi sunt explicite. Nu se leagă două fapte numai fiindcă numele local sau o valoare textuală coincid. Excepțiile intenționate, precum tipurile partajate, trebuie declarate; `shared=true` declares pentru participarea faptelor unui tip între spații de nume.
 
-Firele schemei au identități în module; spațiul de nume al faptelor nu trebuie confundat cu calificarea tipurilor. `diagram.node` poate fi un tip public, iar `diagram::n1` un fapt. Punctul și `::` au roluri distincte. Nici `core.namespace`, în implementarea de astăzi, nu declară un spațiu de nume de instanță: el permite un prefix de chei. Acest nume istoric trebuie schimbat sau explicat până la migrare.
+Firele schemei au identități în module; spațiul de nume al faptelor nu trebuie confundat cu calificarea tipurilor. `diagram.node` poate fi un tip public, iar `diagram::n1` un fapt. Punctul și `::` au roluri distincte. `core.namespace` declares an open key prefix, not an instance namespace. The two meanings must not be conflated.
 
 ---
 
 # 3. Schema unei lumi
 
-Capitolul acesta descrie tipurile predefinite existente ale limbajului și, separat, contractele propuse de validare: tipurile de fire cu care se scrie o schemă. Pentru fiecare se spune la ce folosește, se dă tabelul complet al cheilor și un exemplu. Ordinea este de la cele folosite cel mai des.
+This chapter explains the declarations used to define and validate a schema. Pentru fiecare se spune la ce folosește, se dă tabelul complet al cheilor și un exemplu. Ordinea este de la cele folosite cel mai des.
 
 ## 3.1 `core.type`: declararea unui tip
 
@@ -325,7 +297,7 @@ Aici firul are identificatorul `t.drawn`. Tipul despre care vorbește este `draw
 | `transient` | `true`: firele de acest tip sunt o stare la care se privește, nu una care se editează (o selecție, un cursor). Anularea trece peste ele. |
 | `unique` | Numele unei chei. Două fire de acest tip nu pot avea aceeași valoare la ea. Repetată: aceeași combinație de valori. |
 | `shared` | `true`: firele de acest tip aparțin tuturor spațiilor de nume (secțiunea 2.6). |
-| `is` | **(propus)** Conceptul general din lumea legendelor pe care îl realizează tipul (secțiunea 4.7). |
+| `is` | With `w.legend` loaded, a reference or unambiguous public name of a declared `w.legend.concept`; checked by the declared schema-link contract (section 4.7). |
 
 Proprietatea dată de `extends` se numește **moștenire (lineage)** și este mecanismul prin care se aplică principiul „de la general la particular”: ce este comun mai multor tipuri se declară o singură dată, pe părintele lor.
 
@@ -348,7 +320,7 @@ Deosebirea dintre cheie și slot trebuie ținută minte. Cheia este ce se scrie 
 
 Al doilea fir spune: firele de tipul `drawn` au o cheie numită `at`; valorile ei sunt numere; poate avea mai multe; este obligatorie. Al treilea: au o cheie `size`, un număr între 0,3 și 3. Al patrulea: au o cheie `in`, a cărei valoare este o referință la un alt fir de tipul `drawn`.
 
-Tabelul de mai jos este complet: toate cheile pe care le poate avea astăzi un fir `core.slot`, urmate de cele propuse.
+The following table describes schema slot declarations.
 
 | Cheia | Ce spune |
 |---|---|
@@ -359,11 +331,11 @@ Tabelul de mai jos este complet: toate cheile pe care le poate avea astăzi un f
 | `many` | `true`: cheia poate avea mai multe valori. Fără ea, una singură. |
 | `kind` | Felul valorii, când valoarea este scrisă direct. Valorile posibile sunt în tabelul următor. Poate fi repetată; valoarea trebuie să se potrivească cu unul dintre feluri. |
 | `type` | Numele unui tip: valoarea trebuie să fie o referință la un fir de acel tip. Poate fi repetată. |
-| `enum` | O valoare permisă; repetată, lista valorilor permise. *Există astăzi. În forma propusă nu se mai folosește pentru cuvinte ca nume de culori sau de forme (secțiunea 4.4).* |
+| `enum` | O valoare permisă; repetată, lista valorilor permise. Use for a genuinely closed vocabulary; reusable concept meanings belong in knowledge (section 4.4). |
 | `min`, `max` | Marginile, pentru valori care sunt numere sau cantități. |
 | `step` | Împreună cu `min` și `max`: valorile permise sunt `min`, `min+step` și așa mai departe. |
-| `default` | Valoarea presupusă când nimeni nu a dat una. *Există astăzi. În forma propusă, valorile obișnuite stau în cunoaștere, ca regiuni (secțiunea 6.6).* |
-| `ask` | Textul întrebării de pus când cheia este deschisă. *Există astăzi. În forma propusă, întrebarea vine din conceptul cheii și nu se mai scrie pe fiecare slot (secțiunea 6.4).* |
+| `default` | Valoarea presupusă când nimeni nu a dat una. A literal schema fallback is distinct from contextual semantic completion in knowledge (section 6.6). |
+| `ask` | Textul întrebării de pus când cheia este deschisă. This is explanatory metadata, not a requirement to interrupt the user; prefer declared completion and ranked reversible action (section 6.4). |
 | `soft` | `true`: o valoare în afara marginilor este primită, dar se notează o problemă (secțiunea 3.6). |
 | `why` | Textul motivului dat când o valoare este refuzată. |
 | `id` | `true`: cheia este o cheie de identitate. Două fapte de același tip care au aceleași valori la toate cheile de identitate sunt unul și același fir. |
@@ -376,8 +348,7 @@ Tabelul de mai jos este complet: toate cheile pe care le poate avea astăzi un f
 | `match` | Împreună cu `by`: chei suplimentare care trebuie să se potrivească. |
 | `strict` | Împreună cu `by`: un nume care nu desemnează niciun fir este refuzat pe loc, în loc să rămână în așteptare. |
 | `copy` | `keep`: la copierea unui lucru, această referință este păstrată. |
-| `means` | **(propus)** Conceptul general pe care îl realizează cheia (secțiunea 4.7). |
-| `space`, `relation`, `role`, `part`, `unit` | **(propus)** Precizarea conceptului: în ce spațiu este valoarea, ce relație, ce rol, ce parte a timpului, ce unitate de măsură (secțiunea 4.7). |
+| `means`, `space` | With `w.legend` loaded, a declared concept and space respectively. Names must resolve uniquely or use typed references; these are checked schema links, not arbitrary documentation strings. |
 
 Valorile posibile ale cheii `kind`:
 
@@ -394,11 +365,10 @@ Valorile posibile ale cheii `kind`:
 | `json` | Un text care conține o valoare structurată (un punct, un interval). O regulă poate citi înăuntrul ei. |
 | `blob` | O valoare mare, păstrată întocmai, pe care regulile nu o pot citi. |
 | `any` | Orice. |
-| `point` | **(propus)** Un punct într-un spațiu conceptual: câte un număr pentru fiecare axă (secțiunea 4.4). Astăzi un punct se scrie ca mai multe numere (`many=true`) sau ca `json`. |
 
 **Moștenirea sloturilor.** Un slot declarat pentru un tip este valabil pentru toate tipurile care se trag din el. Un tip mai particular poate declara din nou aceeași cheie; atunci este valabilă declarația cea mai apropiată.
 
-În biblioteca 0.168.0, `present=true` pe un `core.slot` cere ca cheia exactă să existe la validarea tranzacției, după deducție. Lipsa ei produce `missing-key` și anulează schimbarea. `required=true` păstrează sensul existent: cheia lipsă este o întrebare deschisă pentru completare, nu automat o eroare structurală. Contractele publicate folosesc prima proprietate pentru câmpurile fără de care înregistrarea nu are sens; o valoare încă necunoscută a unei instanțe poate folosi a doua. Proprietatea de prezență se moștenește cu slotul și nu se combină cu un prefix de chei, fiindcă un prefix nu numește o cheie exactă obligatorie.
+`present=true` pe un `core.slot` cere ca cheia exactă să existe la validarea tranzacției, după deducție. Lipsa ei produce `missing-key` și anulează schimbarea. `required=true` păstrează sensul existent: cheia lipsă este o întrebare deschisă pentru completare, nu automat o eroare structurală. Contractele publicate folosesc prima proprietate pentru câmpurile fără de care înregistrarea nu are sens; o valoare încă necunoscută a unei instanțe poate folosi a doua. Proprietatea de prezență se moștenește cu slotul și nu se combină cu un prefix de chei, fiindcă un prefix nu numește o cheie exactă obligatorie.
 
 ## 3.3 Cheile deschise
 
@@ -408,7 +378,7 @@ Această situație folosește `required=true`, nu `present=true`. Un loc încă 
 
 **De ce există.** Într-o conversație, aceasta este situația obișnuită, nu o greșeală: omul spune „draw a fish” și nu spune unde. Dacă faptele incomplete ar fi refuzate, aplicația nu ar avea unde să țină ce a înțeles până în acel moment. Cheia deschisă este felul în care lumea ține, într-o formă pe care programul o poate număra, răspunsul la întrebarea „ce mai trebuie hotărât?”.
 
-**Ce se face cu ele.** Biblioteca oferă patru operații asupra cheilor deschise.
+**Ce se face cu ele.** LIB handles open keys through four internal activities. These explain its algorithm; they are not additional application-facing orchestration APIs.
 
 | Operația | Ce face |
 |---|---|
@@ -417,7 +387,7 @@ Această situație folosește `required=true`, nu `present=true`. Un loc încă 
 | sfatul | Fără să schimbe nimic, spune ce se poate face pentru fiecare cheie deschisă: ce valoare s-ar putea pune sau ce întrebare ar trebui pusă omului. |
 | rezolvarea (solve) | Caută valori pentru toate cheile deschise deodată, astfel încât nicio regulă să nu fie încălcată. Este pentru cazul în care cheile depind una de alta: orele și sălile tuturor ședințelor unei săptămâni. |
 
-În conversație, aceste operații sunt folosite în ordine: întâi se încearcă completarea din ce se știe (secțiunile 6.6 și 6.8), iar omul este întrebat numai dacă nimic nu poate alege (secțiunea 6.4).
+In conversation, the library first completes from declarations and compatible live context, ranks usable alternatives and retains the chosen assumptions. A missing coordinate is a completion task, not an automatic question to the person (sections 6.4, 6.6 and 6.8).
 
 **Legătura cu variabilele.** Cheia deschisă și variabila par același lucru, fiindcă amândouă sunt „un loc fără valoare”. Sunt lucruri diferite. Variabila (secțiunea 3.4) stă într-o regulă, în schemă, și înseamnă „oricare ar fi valoarea”; nu lipsește nimic, este felul de a scrie o regulă generală. Cheia deschisă stă pe un fapt și înseamnă „aici trebuie o valoare și încă nu o știm”. Cele două se întâlnesc numai în operația de rezolvare, care tratează cheile deschise ca pe necunoscutele unei probleme și caută valori care mulțumesc toate regulile.
 
@@ -425,11 +395,14 @@ Această situație folosește `required=true`, nu `present=true`. Un loc încă 
 
 Un **pattern (model de potrivire)** este o condiție structurală de căutare a faptelor. Nu este un model de învățare automată, o imagine și nici un exemplu pe care programul trebuie să îl imite. Spune ce tip de fapt căutăm și ce relații trebuie să aibă valorile lui. În continuare folosim termenul tehnic „pattern” pentru a evita aceste confuzii.
 
-Un fapt spune „acest nod există și are această culoare”. Un pattern spune „găsește un nod cu această culoare”. Amândouă folosesc sintaxa firelor, însă au roluri semantice diferite. În mecanismul existent, un fir numit de o regulă drept condiție este înregistrat ca pattern în schema acelei reguli; nu este introdus ca obiect în starea diagramei. Simpla prezență a semnului `?` nu este o declarație suficientă a acestui rol.
+Un fapt spune „acest nod există și are această culoare”. Un pattern spune „găsește un nod cu această culoare”. Amândouă folosesc sintaxa firelor, însă au roluri semantice diferite. A declaration named de o regulă drept condiție is registered as a pattern in that rule’s schema; nu este introdus ca obiect în starea diagramei. Simpla prezență a semnului `?` nu este o declarație suficientă a acestui rol.
 
 Să avem următoarele fapte ale diagramei:
 
-```
+```sop
+@t.node core.type of=node closed=true
+@s.node.label core.slot of=node key=label kind=string
+@s.node.colour core.slot of=node key=colour kind=atom
 @n1 node label="Review" colour=red
 @n2 node label="Decision" colour=blue
 @n3 node label="Finish" colour=red
@@ -437,11 +410,21 @@ Să avem următoarele fapte ale diagramei:
 
 `node` este aici numele tipului de obiect grafic „nod de diagramă”. Nu este un cuvânt rezervat al limbajului. `n1`, `n2` și `n3` sunt identități ale celor trei obiecte. `label` și `colour` sunt cheile lor; schema trebuie să le permită. Un pattern folosit de o regulă poate fi:
 
-```
+```sop
+@t.node core.type of=node closed=true
+@s.node.label core.slot of=node key=label kind=string
+@s.node.colour core.slot of=node key=colour kind=atom
+@t.match core.type of=example.red.match closed=true
+@s.match.text core.slot of=example.red.match key=text kind=string present=true
 @p.red node colour=red label=?text
+@t.red example.red.match text=?text
+@r.red core.rule when=$p.red then=$t.red
+@n1 node label="Review" colour=red
+@n2 node label="Decision" colour=blue
+@n3 node label="Finish" colour=red
 ```
 
-`p.red` numește condiția de căutare, nu un al patrulea nod. Căutarea se limitează la tipul `node` și descendenții lui. Constanta `colour=red` trebuie să coincidă cu valoarea faptului. Variabila `?text` preia valoarea cheii `label`. O cheie pe care pattern-ul nu o menționează nu este verificată de acel pattern.
+`p.red` names the search condition, not another diagram node. The rule names that pattern and derives one `example.red.match` result per matching label; `t.red` is its conclusion template. The complete block declares its toy types and supplies its input facts. Căutarea se limitează la tipul `node` și descendenții lui. Constanta `colour=red` trebuie să coincidă cu valoarea faptului. Variabila `?text` preia valoarea cheii `label`. O cheie pe care pattern-ul nu o menționează nu este verificată de acel pattern.
 
 | Fapt încercat | Rezultat al potrivirii |
 |---|---|
@@ -467,7 +450,13 @@ O **regulă de deducție (deduction rule)** definește ce concluzie este justifi
 
 În exemplul diagramei, numim „nod de început” un nod fără legătură care intră în el. Aceasta este o definiție declarată pentru exemplu, nu o semnificație ascunsă în numele `node`. Schema regulii este:
 
-```
+```sop
+@t.node core.type of=node closed=true
+@s.node.label core.slot of=node key=label kind=string
+@s.node.start core.slot of=node key=start kind=boolean
+@t.link core.type of=link closed=true
+@s.link.from core.slot of=link key=from type=node present=true
+@s.link.to core.slot of=link key=to type=node present=true
 @p.node  node
 @p.in    link to=$p.node
 @t.start node core.on=$p.node start=true
@@ -482,7 +471,13 @@ Prin urmare, `when=$p.node` este o referință reală la o declarație din schem
 
 Pentru a urmări execuția, încărcăm regula împreună cu schema tipurilor, apoi spunem aceste fapte:
 
-```
+```sop
+@t.node core.type of=node closed=true
+@s.node.label core.slot of=node key=label kind=string
+@s.node.start core.slot of=node key=start kind=boolean
+@t.link core.type of=link closed=true
+@s.link.from core.slot of=link key=from type=node present=true
+@s.link.to core.slot of=link key=to type=node present=true
 @n1 node label="Review"
 @n2 node label="Decision"
 @e1 link from=$n1 to=$n2
@@ -512,7 +507,16 @@ Dacă se adaugă o legătură spre `n1`, justificarea concluziei despre `n1` dis
 
 **Exemplu.** În calendar, un om nu poate fi în două ședințe care se suprapun.
 
-```
+```sop
+@t.meeting core.type of=meeting closed=true
+@s.meeting.people core.slot of=meeting key=people kind=string many=true
+@s.meeting.start core.slot of=meeting key=start kind=number present=true
+@s.meeting.length core.slot of=meeting key=length kind=number present=true
+@f.over core.function name=overlaps out.kind=boolean pure=true
+@f.over.1 core.function.arg of=$f.over name=start1 kind=number
+@f.over.2 core.function.arg of=$f.over name=length1 kind=number
+@f.over.3 core.function.arg of=$f.over name=start2 kind=number
+@f.over.4 core.function.arg of=$f.over name=length2 kind=number
 @p.m1   meeting people=?p start=?s1 length=?l1
 @p.m2   meeting people=?p start=?s2 length=?l2
 @c.two  core.check fn=neq args=$p.m1 args=$p.m2
@@ -520,7 +524,7 @@ Dacă se adaugă o legătură spre `n1`, justificarea concluziei despre `n1` dis
 @d.busy core.deny when=$p.m1 when=$p.m2 if=$c.two if=$c.hit why="?p already has something at that time"
 ```
 
-Primele două fire sunt modele de ședință. Variabila `?p` apare în amândouă, deci cele două ședințe au același participant. Al treilea fir este o condiție: cele două ședințe găsite nu sunt una și aceeași. Al patrulea este a doua condiție: intervalele lor se suprapun. Al cincilea este interdicția: dacă amândouă modelele se potrivesc și amândouă condițiile sunt adevărate, schimbarea este refuzată. Textul din `why` este motivul; `?p` este înlocuit cu valoarea variabilei.
+The block first declares the toy meeting type and a typed pure `overlaps` primitive. Its registered implementation tests half-open intervals: `s1 < s2+l2` and `s2 < s1+l1`; it does not choose people or times. The next two wires are meeting patterns. Variabila `?p` apare în amândouă, deci cele două ședințe au același participant. Al treilea fir este o condiție: cele două ședințe găsite nu sunt una și aceeași. Al patrulea este a doua condiție: intervalele lor se suprapun. Al cincilea este interdicția: dacă amândouă modelele se potrivesc și amândouă condițiile sunt adevărate, schimbarea este refuzată. Textul din `why` este motivul; `?p` este înlocuit cu valoarea variabilei.
 
 | Cheia | Ce spune |
 |---|---|
@@ -648,7 +652,7 @@ Cheile care încep cu `core.` (de exemplu `core.source`, care ține de unde vine
 
 **Verificarea.** Orice schimbare (unul sau mai multe fire spuse deodată) este verificată față de schemă înainte de a fi primită. Firele unei schimbări sunt judecate împreună: dacă unul este refuzat, nu rămâne niciunul. O schimbare primită poate lăsa chei deschise (secțiunea 3.3) și probleme (secțiunea 3.6); acestea nu sunt refuzuri.
 
-**Trei rezultate, nu două (propus).** Astăzi, o schimbare este fie primită, fie refuzată. Aceasta ascunde un caz: o interdicție care nu a putut fi verificată fiindcă îi lipsește o valoare. O ședință fără durată nu poate fi verificată pentru suprapuneri; nu s-a găsit nicio încălcare, dar nici nu se știe că este în regulă. Propunerea este ca verificarea să aibă trei rezultate.
+**Three semantic outcomes.** Checking must distinguish a proved violation from a condition that cannot yet be evaluated. A meeting without a duration has no proved overlap, but its interval is not proved free either. These are semantic assessment outcomes, not interchangeable success flags.
 
 | Rezultatul | Ce înseamnă |
 |---|---|
@@ -656,13 +660,13 @@ Cheile care încep cu `core.` (de exemplu `core.source`, care ține de unde vine
 | nevalidă (invalid) | Cel puțin o interdicție tare este încălcată. |
 | nedeterminată (undetermined) | Nicio încălcare găsită, dar cel puțin o interdicție tare nu a putut fi verificată. |
 
-Regula care decurge: înainte de a executa ceva, interdicțiile tari care privesc lucrurile schimbate trebuie să fi fost verificate până la capăt. Dacă una rămâne nedeterminată, nu se execută nimic și se cere valoarea care lipsește. Fără această regulă, aplicația ar pune ședința fără durată peste alta și ar spune că a reușit.
+Before dispatch, affected hard constraints must be decided. If a duration is missing, the library obtains a plausible value from declared knowledge or context and validates the completed interval. A declared 30-minute default gives an event starting at 10:30 the interval [10:30,11:00). If that interval overlaps a hard reservation, it is not committed. Remaining undetermined hard preconditions are reported as unresolved; absence of a detected violation is never a successful reservation.
 
 **Întrebările.** Unei lumi i se pot pune întrebări scrise ca modele: „care sunt nodurile și ce etichetă are fiecare?”. Răspunsul este lista potrivirilor. La o întrebare de felul „există…?”, răspunsul este da, nu sau nu se știe.
 
 **Anularea.** O lume ține minte fiecare schimbare și o poate anula sau reface.
 
-**Copia de încercare.** O lume poate fi copiată. O **copie (fork)** este o a doua lume, la început identică, în care se poate încerca o schimbare fără a atinge originalul. Aplicația o folosește ca să încerce un plan înainte de a-l executa.
+**Copia de încercare.** O lume poate fi copiată. O **copie (fork)** este o a doua lume, la început identică, în care se poate încerca o schimbare fără a atinge originalul. LIB uses this internally to evaluate candidate changes before compiling the chosen executable circuit. The application submits the request; it does not orchestrate candidate forks.
 
 ### 3.9.1 Informație incompletă, negație și validare
 
@@ -670,9 +674,9 @@ Absența unei valori nu spune de ce lipsește aceasta. Într-un calendar, sala p
 
 Trebuie separate și două întrebări: „am găsit o încălcare?” și „am suficiente informații ca să dovedesc validitatea?”. Un rezultat fără încălcări găsite nu răspunde automat afirmativ la a doua întrebare. Starea valorii, potrivirea unui pattern și concluzia verificării trebuie deci urmărite separat.
 
-O cheie a unui fapt este în una din trei stări semantice. Are o valoare. Nu are valoare, și atunci valoarea este necunoscută. Sau se știe că nu are: aceasta se scrie cu valoarea `none` **(propus)**, permisă numai dacă slotul spune `none=allowed`. În această notație provizorie, o ședință fără sală este scrisă `room=none`; lipsa cheii `room` înseamnă că nu știm încă sala. Forma finală trebuie să distingă absența cunoscută de atomul obișnuit `none`, care ar putea fi un nume valid. Exemplele de aici explică distincția semantică; nu stabilesc încă serializarea finală. *(R9)*
+A value can be known, unknown, or explicitly inapplicable. The schema must represent these cases distinctly. For a resource-free calendar event, an explicit resource requirement of false is not the same as an unknown resource. An ordinary atom named `none` does not acquire special absence semantics by its spelling. A closed schema must declare any absence/status representation it accepts. *(R9)*
 
-Potrivirea unui pattern depinde de informația efectiv prezentă. Un pattern care cere `room=?r` se potrivește numai cu fapte a căror cheie `room` are o valoare. În contractul propus, nu se potrivește nici cu „necunoscut”, nici cu absența cunoscută. Extinderea testului `core.absent=room` la ambele stări trebuie legată de reprezentarea finală a absenței; un atom obișnuit `none` nu are astăzi această semantică specială. *(R10)*
+A pattern matches the values actually present. A condition binding a resource does not invent one when the key is absent. `core.absent` checks missing keys; it does not reinterpret an arbitrary domain atom as absence. Constraint evaluation uses the declared applicability condition before deciding whether a missing resource makes the check undetermined. *(R10)*
 
 `not=` vorbește despre ce ține lumea acum. O regulă cu `not=$p` se aplică atunci când niciun fapt de acum nu se potrivește cu `p`. Nu afirmă că așa ceva nu există în realitate. De aceea un fir dedus printr-un `not=` este retras de îndată ce apare faptul care lipsea. *(R11)*
 
@@ -686,8 +690,8 @@ Verificarea unei interdicții este nedeterminată când un fir atins se potrive�
 |---|---|
 | are început și durată; nu se suprapune | Validă. |
 | are început și durată; se suprapune cu alta a Anei | Nevalidă, cu încălcarea care numește cele două ședințe. |
-| are început, dar durata este necunoscută | Nedeterminată. Nu se execută; se cere durata. |
-| are `room=none` | Interdicția despre săli nu o privește. Cea despre oameni rămâne. |
+| are început, dar durata este necunoscută | Undetermined until duration is completed from declared policy and the interval is checked; no reservation is claimed meanwhile. |
+| explicitly requires no resource | Resource-occupancy constraints are inapplicable by declaration; participant constraints still apply. |
 | primește două ore de început diferite | Refuzată ca `conflict`, înainte de orice interdicție. |
 
 În tabelul ședinței, „nedeterminată” este un rezultat propriu al verificării. Nu este o eroare de parsare și nici o interdicție demonstrată. De exemplu, începutul 10:30 fără durată nu spune dacă ședința ajunge până la următoarea rezervare. Aplicația păstrează cererea incompletă și caută informația necesară, fără să pretindă că a rezervat intervalul.
@@ -706,13 +710,13 @@ Completitudinea privește un domeniu de căutare identificat: instanța, tipuril
 
 ---
 
-# 4. Lumea legendelor (propus)
+# 4. Lumea legendelor
 
-Tot acest capitol este o propunere. Nimic din el nu există încă în bibliotecă sub această formă; există numai bucăți nelegate între ele, răspândite în bazele de cunoaștere.
+The legend World declares meanings shared by otherwise independent schemas: identity, quantity, position, time, part, relation and change. The library reads these declarations when elaborating a request. A shared name alone supplies neither a metric nor a default, inference rule or tool implementation; each needs its own declared contract.
 
 ## 4.1 Problema
 
-Să luăm patru sloturi, câte unul din fiecare domeniu, scrise cu ce există astăzi.
+Consider four structural slots from different domains:
 
 ```
 @s1 core.slot of=drawn   key=at    kind=number many=true
@@ -721,19 +725,19 @@ Să luăm patru sloturi, câte unul din fiecare domeniu, scrise cu ce există as
 @s4 core.slot of=meeting key=room  type=room
 ```
 
-Poziția unui lucru desenat, poziția unui nod, locul unei secțiuni în text și sala unei ședințe răspund toate la aceeași întrebare: **unde?** Biblioteca nu are de unde să știe aceasta. Pentru ea sunt patru chei fără nicio legătură între ele. Urmarea este că tot ce ține de „unde” trebuie scris separat pentru fiecare: ce întrebare se pune când lipsește valoarea, cum se înțelege „move it up”, cum se înțelege „in the sky” spus singur, cum se spune în răspuns unde a ajuns lucrul. Și încă o dată pentru fiecare domeniu nou.
+These slots cannot be interchanged merely because they all answer “where?”. A page coordinate is a numeric point in a frame, document order is a discrete position in a sequence, and a meeting room is an identified resource. The shared concept identifies the semantic family. The declared space, units, ordering and target type determine the legal calculation. “Move up” may decrease a page coordinate; it cannot silently subtract one from a room identifier.
 
-Aceasta este cauza cârpelilor de până acum. Declarațiile au fost scrise la nivelul fiecărui domeniu, uneori al fiecărui lucru, astfel încât fiecare caz nou a cerut un rând nou.
+Without those declarations, a handler has to guess meaning from a slot or domain name. With them, the library follows the referenced concept and operations; a concrete tool receives the resulting typed values.
 
 ## 4.2 Soluția
 
 Se adaugă o singură lume, numită **lumea legendelor (legend world)**, care conține conceptele generale: loc, timp, însușire, cantitate și celelalte. Numele vine de la legenda unei hărți, care spune ce înseamnă fiecare semn. Lumea legendelor nu conține lucruri. Conține numai conceptele prin care se descrie orice altă lume.
 
-Fiecare tip și fiecare slot din orice altă lume spune apoi ce concept din lumea legendelor realizează. Cele patru sloturi de mai sus primesc toate aceeași pereche, `means=place`. Din acel moment, tot ce știe biblioteca despre locuri li se aplică tuturor, fără niciun alt rând. Cum se scrie aceasta este în secțiunea 4.7.
+Each domain type and slot declares its semantic concept and the structure needed by that concept (§4.7). A link to `place` does not make every location numeric. The library selects operations whose declared argument types, frame and units match the slot. A room relation uses identity and availability; a page position uses geometry.
 
 ## 4.3 Conceptele generale
 
-Conceptele sunt puține, fiindcă sunt foarte abstracte. Se găsesc întrebând ce se poate întreba despre orice lucru și despre orice întâmplare, oricare ar fi lumea. Tabelul de mai jos este lista propusă, completă. Prima coloană este numele conceptului așa cum se scrie în fire.
+Conceptele sunt puține, fiindcă sunt foarte abstracte. Se găsesc întrebând ce se poate întreba despre orice lucru și despre orice întâmplare, oricare ar fi lumea. The table fixes the vocabulary used in this book; another concept requires a defined interpretation, not merely a name. Prima coloană este numele conceptului așa cum se scrie în fire.
 
 | Conceptul | Ce este, cu un exemplu din fiecare domeniu |
 |---|---|
@@ -761,7 +765,7 @@ Conceptele sunt puține, fiindcă sunt foarte abstracte. Se găsesc întrebând 
 
 ## 4.4 Spațiile conceptuale
 
-**Problema.** Cum se declară valorile permise ale culorii unui lucru desenat? Cu ce există astăzi, răspunsul este o listă: `enum=red enum=blue enum=green`. Lista are trei neajunsuri care se văd imediat în folosire. Omul spune „turquoise”, care nu este în listă, și aplicația nu are ce face. Omul spune „darker”, iar într-o listă de cuvinte „mai închis” nu are niciun înțeles. Și fiecare domeniu ajunge să aibă lista lui, puțin diferită de a celorlalte. În cele 40 de lumi publicate sunt astăzi 336 de sloturi declarate cu asemenea liste.
+**Problem.** `enum=red enum=blue enum=green` validates three symbols but says nothing about “darker”, the distance between colours or the coordinates of turquoise. A colour space defines these operations once. A tool with a restricted palette still declares its accepted values; the library computes a compatible realization without treating that finite palette as the entire space.
 
 **Principiul.** Valoarea unei însușiri nu este un cuvânt dintr-o listă. **Este un punct într-un spațiu, iar cuvintele sunt nume date unor zone ale acelui spațiu.** Spațiul se numește **spațiu conceptual (conceptual space)**.
 
@@ -816,11 +820,14 @@ Distanța dintre două puncte este `sqrt(sum(weight_i * delta_i²))`, unde `delt
 
 O regiune poate lăsa axe nespuse. „Dark” spune numai `centre.lightness=0.25`; orice nuanță și orice saturație sunt primite. Distanța până la o asemenea regiune se calculează numai pe axele spuse. *(R21)*
 
-În reprezentarea propusă, două regiuni ale aceluiași spațiu pot restrânge axe diferite:
+In this representation, două regiuni ale aceluiași spațiu pot restrânge axe diferite:
 
-```sop
-@rg.dark w.legend.region of=colour name=dark centre.lightness=0.25 spread=0.10
-@rg.red w.legend.region of=colour name=red centre.hue=0 centre.saturation=0.9 centre.lightness=0.5 spread=0.12
+```text
+Illustrative region description; pseudocode, not SOP Lang:
+space colour: axes hue [0,360), saturation [0,1], lightness [0,1]
+dark: constrain lightness to [0.15,0.35]; hue and saturation unrestricted
+red: constrain circular hue to [350,360) or [0,10],
+     saturation to [0.8,1], lightness to [0.4,0.6]
 ```
 
 Primul fir numește regiunea `dark` din spațiul `colour` și fixează numai luminozitatea centrului. Cu axa luminozității între 0 și 1 și ponderea 1, sunt admise valorile între 0,15 și 0,35, inclusiv. Nuanța și saturația nu participă la acest test. Al doilea fir fixează toate cele trei axe, deci apartenența la `red` folosește toate cele trei diferențe normalizate. Exemplele presupun axele spațiului deja declarate; aceste fire declară regiuni, nu axe noi.
@@ -837,9 +844,9 @@ Regiunile se pot suprapune. Un punct poate fi și „red”, și „orange”. L
 
 Includerea unei regiuni în alta se calculează. Centrul dinăuntru nu este o dovadă suficientă. Pe o axă, intervalul [4, 8] are centrul 6 în [0, 7], dar punctul 8 este în afară. Pentru două bile în aceeași metrică, o condiție suficientă este `distanța dintre centre + raza interioară ≤ raza exterioară`. Pentru intervale se compară ambele capete. Pentru forme generale, verificatorul trebuie să poată demonstra includerea prin operațiile declarate ale spațiului. Dacă nu poate, rezultatul este nedeterminat; relația nu se folosește ca adevăr demonstrat. Eșantionarea câtorva puncte poate găsi un contraexemplu, dar nu dovedește includerea. La aplicarea testului trebuie comparate aceleași axe, în aceeași metrică. O axă omisă din regiunea interioară rămâne liberă în limitele spațiului: dacă regiunea exterioară o restrânge, includerea nu rezultă din testul centrelor și razelor. De exemplu, „dark” lasă nuanța liberă și nu este inclus în „blue”, chiar dacă alegem pentru ilustrare un centru albastru. *(R24)*
 
-Relația de includere este un rezultat calculat, nu o afirmație primită fără dovadă. Poate servi la explicarea relației dintre două regiuni; găsirea unui pește albastru folosește direct apartenența punctului său la regiunea albastră. Cheia `inside` se retrage din propunerea de declarație: o relație derivată poate fi memorată împreună cu dovada și versiunile regiunilor, apoi invalidată când acestea se schimbă.
+Region inclusion is calculated with a proof, not accepted from an unverified `inside` label. The justification names the region definitions and metric and becomes invalid when either changes. Finding a blue fish uses membership of its observed colour point in the blue region; it does not require inclusion between two entire regions.
 
-Când două valori posibile sunt la fel de aproape de cea cerută, se face una din două, după caracterul valorii (secțiunea 6.6). Dacă valoarea este o cerință a omului, aplicația le oferă pe amândouă și întreabă: la zece și jumătate cerut, cu zece și unsprezece libere, „10:00 or 11:00?”. Dacă este o presupunere a aplicației, se ia cea mai mică pe prima axă și se spune. *(R25)*
+When admissible values have the same distance, the library retains both and applies a declared ranking policy. For an omitted value in a reversible operation, a stable declared tie-break can choose one, retain the alternative and report the assumption. For an exact request of 10:30, neither 10:00 nor 11:00 satisfies the requirement: these remain alternatives, never silently rewritten requirements. Choosing an interpretation does not authorize overriding an explicit constraint. *(R25)*
 
 De exemplu, pe o axă liniară cu limitele 0 și 100, valorile 20 și 30 au diferența normalizată 0,1. Pe un cerc, 350 și 0 sunt apropiate deoarece trecerea prin origine este permisă; scăderea obișnuită ar produce greșit o distanță mare. Formula trebuie aleasă din tipul axei, nu din numele cuvântului căutat.
 
@@ -863,7 +870,7 @@ Un fel necunoscut nu este înlocuit. Față de un concept fără descriere nu se
 | este în arbore, dar nu are graf propriu | Folosește graful celui mai apropiat strămoș care are unul (un memo este un text) și spune o dată ce a folosit. Lucrul rămâne de felul cerut. |
 | are graf propriu | Îl folosește. |
 
-Dacă doi strămoși la aceeași depărtare au grafuri diferite, aplicația întreabă.
+If equally specific sources provide different composition graphs, the library retains both, ranks their compatibility with the request and instance, and records the selected graph and uncertainty. File order is not semantic evidence.
 
 Moștenirea unei structuri nu schimbă identitatea semantică a obiectului. Un gen cunoscut ca specializare a textului poate primi structura disponibilă pentru text și poate rămâne de genul cerut. Sistemul trebuie să spună ce structură a reutilizat și ce particularități nu sunt cunoscute; nu poate afirma că a respectat cerințe pe care nu le deține.
 
@@ -877,15 +884,16 @@ Poziția, relația geometrică, momentul și seria recurentă sunt niveluri dist
 
 Fiecare spațiu de loc își declară reperul: originea, sensul axelor și unitatea. Pagina are originea în colțul din stânga sus, axa orizontală spre dreapta, axa verticală în jos, iar unitatea este unitatea paginii. „Above” înseamnă deci un număr mai mic pe axa verticală. Poziția unui lucru este întotdeauna în reperul paginii, chiar dacă lucrul este „în” altul. *(R44)*
 
-Relațiile de loc sunt definite prin numere, în funcția `test` a fiecărei relații (R15). „Near”: distanța dintre marginile celor două lucruri este mai mică decât o fracțiune din diagonala paginii (propus 0,15). „Above”: mai sus pe axa verticală și suprapus pe cea orizontală. *(R45)*
+Relațiile de loc sunt definite prin numere, în funcția `test` a fiecărei relații (R15). „Near”: distanța dintre marginile celor două lucruri este mai mică decât o fracțiune din diagonala paginii (0.15 in this example). „Above”: mai sus pe axa verticală și suprapus pe cea orizontală. *(R45)*
 
-Pentru a declara verificarea geometrică, o relație numește funcția care o decide. Următorul fir este propus, iar `page.above` este numele unui contract de funcție ce trebuie furnizat de adaptorul geometric:
+Pentru a declara verificarea geometrică, o relație numește funcția care o decide. The following declaration names the relation contract, and `page.above` este numele unui contract de funcție ce trebuie furnizat de adaptorul geometric:
 
 ```sop
-@rel.above w.legend.relation name=above space=page test=page.above
+@space.page w.legend.space name=page form=axes version=1
+@rel.above w.legend.relation name=above space=$space.page test=page.above
 ```
 
-`name=above` numește relația; `space=page` stabilește reperul; `test=page.above` leagă relația de operația de verificare. Funcția primește limitele geometrice observate ale obiectului și țintei în același reper. În convenția acestui exemplu, întoarce adevărat când marginea de jos a obiectului este cel mult marginea de sus a țintei și proiecțiile lor orizontale se intersectează pe o lungime pozitivă. Lipsa limitelor geometrice produce un rezultat nedeterminat, nu fals. Firul nu implementează funcția prin simpla numire: dacă operația lipsește, relația nu poate fi verificată.
+`name=above` numește relația; `space=$space.page` identifies the declared space; `test=page.above` leagă relația de operația de verificare. Funcția primește limitele geometrice observate ale obiectului și țintei în același reper. În convenția acestui exemplu, întoarce adevărat când marginea de jos a obiectului este cel mult marginea de sus a țintei și proiecțiile lor orizontale se intersectează pe o lungime pozitivă. Lipsa limitelor geometrice produce un rezultat nedeterminat, nu fals. Firul nu implementează funcția prin simpla numire: dacă operația lipsește, relația nu poate fi verificată.
 
 | Limite verticale și proiecții orizontale | Rezultatul testului `above` |
 |---|---|
@@ -895,25 +903,25 @@ Pentru a declara verificarea geometrică, o relație numește funcția care o de
 
 În calendar, o ședință ține un moment absolut de început și o durată. Calendarul își declară fusul orar; orele spuse de om sunt înțelese în acel fus. Intervalul este semideschis, `[început, sfârșit)`: își cuprinde începutul și nu își cuprinde sfârșitul. Astfel, o ședință care se termină la 11:00 și una care începe la 11:00 nu se suprapun, deci sala este liberă. *(R46)*
 
-La trecerea între orele sezoniere, dacă ora cerută nu există în ziua aceea, aplicația refuză și spune de ce. Dacă există de două ori, întreabă care dintre ele. *(R47)*
+A local time is resolved with its date, timezone and timezone rules. A time that does not exist at a seasonal transition cannot become an executable timestamp; the conflict and admissible alternatives must be reported. A repeated local time gives two offset candidates. Context and a declared policy can choose a reversible interpretation, with the selected offset and uncertainty stated. A tool never receives an unresolved local-time ambiguity. *(R47)*
 
 Recurența descrie o serie de apariții ale unei ședințe. Seria păstrează regula de repetare, fusul orar și excepțiile; fiecare apariție are identitate stabilă. Modificarea uneia trebuie deosebită de modificarea întregii serii. Verificarea conflictelor privește aparițiile din intervalul verificat, nu o expansiune infinită. O serie fără sfârșit nu poate fi declarată liberă pentru tot viitorul după verificarea unui număr finit de apariții. Reprezentarea persistentă trebuie să lege fiecare apariție de serie și de excepțiile aplicabile. Formatul complet al acestor declarații rămâne deschis; comportamentul editării și al verificării este descris mai jos. *(R48)*
 
 Durata și fusul orar trebuie cunoscute înainte de compararea momentelor; textul „Monday at ten” singur nu este o reprezentare persistentă suficientă.
 
-Pentru recurență, „move the Monday meeting” nu stabilește singur dacă se modifică o apariție, întreaga serie sau aparițiile de acum înainte. Dacă întinderea editării nu rezultă explicit din cerere și context, aplicația cere această alegere. O verificare pe următoarele opt zile de luni se raportează ca atare, nu ca disponibilitate perpetuă. Anularea restaurează regula seriei, excepțiile și aparițiile afectate de editare, păstrând identitățile aparițiilor neschimbate.
+A recurring edit resolves its scope to an occurrence, a series, or occurrences from a boundary onward. The library ranks scopes using request and context. For an unqualified reversible “move the Monday meeting”, a declared occurrence-level default can avoid changing an entire series; the selected scope is reported and undoable. A check of eight occurrences establishes only that horizon. Undo restores the affected rule, exceptions and occurrence identities.
 
 ### 4.4.4 Modificări cu cantitate explicită și relații măsurate
 
 O schimbare relativă nu numește direct valoarea finală: o definește față de o valoare observată. Contractul trebuie să precizeze operația, cantitatea, unitatea, starea de referință și, pentru o întindere, ancora păstrată. Altfel, „shorten by 15 minutes” ar putea muta începutul, sfârșitul sau ambele. Regula generală se declară pe felul și însușirea relevante, iar cererea o poate particulariza explicit.
 
-Pentru durata unei întâlniri, politica propusă păstrează începutul. Pentru dimensiunea unui nod, o altă politică poate păstra centrul. Niciuna nu se deduce din numele numeric al axei. Politica pentru întâlniri se poate încărca prin `core.use world=std.change`, începând cu versiunea 0.179.0. Schema verifică prezența celor patru nume de vocabular; nu selectează politica și nu execută schimbarea:
+An edit policy declares the fixed anchor. This meeting-duration policy preserves the start; a node-size policy can preserve the centre. Neither choice follows from a numeric axis name:
 
 ```sop
 @policy.duration std.change.policy kind=meeting concept=duration anchor=start unit=minute
 ```
 
-`kind` și `concept` stabilesc domeniul regulii, `anchor` numește reperul care rămâne fix, iar `unit` stabilește unitatea duratei. În implementarea structurală actuală, aceste nume nu sunt încă rezolvate la declarațiile legendei. Două politici pentru aceeași pereche fel–concept rămân două înregistrări distincte: încărcarea lor nu dovedește că selecția este neambiguă. Mecanismul viitor de selecție trebuie să justifice alegerea și să refuze alternativele incompatibile, fără să ia arbitrar primul fir. Ancora dintr-o cerere explicită are prioritate față de această politică. O cerere incompatibilă, precum păstrarea ambelor capete și scurtarea duratei, nu este rezolvată prin ignorarea uneia dintre condiții.
+`kind` and `concept` identify the policy domain, `anchor` names the fixed reference, and `unit` fixes the duration unit. The library resolves these names, filters incompatible policies and ranks the remaining policies by declared specificity and context. An explicit request anchor wins over a default. Preserving both endpoints while changing duration is contradictory; the library cannot solve it by dropping an endpoint constraint.
 
 Pentru „shorten the review by 15 minutes”, descrierea de cerere poate folosi extensia următoare a constrângerii din secțiunea 6.3.2. Review este presupus numele unei singure întâlniri identificate în instanță.
 
@@ -966,7 +974,7 @@ Să definim aici paleta ca mulțimea culorilor de umplere distincte ale formelor
 
 Culorile se compară ca valori în spațiul conceptual, după normalizarea reprezentărilor, nu după ortografia etichetelor. Două nume pentru aceeași valoare nu produc două culori. O apropiere perceptuală poate folosi metrica și toleranța din secțiunea 4.4.1, dar atunci contractul spune „suficient de apropiat”, nu pretinde egalitate exactă. La fel, o durată de o oră și una de șaizeci de minute se compară după conversie.
 
-Pentru „make the diagram's colours match the drawing”, sursa comparației este o însușire a unui obiect identificat. Ea nu este un nume de culoare. Extensia propusă a cererii din secțiunea 6.3.2 separă descrierea valorii de referință de valoarea observată ulterior:
+Pentru „make the diagram's colours match the drawing”, sursa comparației este o însușire a unui obiect identificat. Ea nu este un nume de culoare. The request representation din secțiunea 6.3.2 separă descrierea valorii de referință de valoarea observată ulterior:
 
 ```sop
 @source.match std.request.source text="make the diagram's colours match the drawing"
@@ -977,7 +985,7 @@ Pentru „make the diagram's colours match the drawing”, sursa comparației es
 @constraint.palette std.request.constraint request=$request.match target=$target.diagram concept=palette operator=same value=$reference.palette scope=group polarity=positive character=requirement source=$source.match
 ```
 
-`std.request.value` este aici o propunere de tip pentru descrierea unei valori căutate: `target` numește ținta de rezolvat, iar `concept` însușirea de citit sau derivat. Nu este valoarea paletei și nu este o observație. Varianta `operator=same` cere o astfel de referință; un atom precum `red` în locul ei nu satisface schema. Rezolvitorul identifică desenul, calculează paleta pe o colecție cu acoperire cunoscută și păstrează separat rezultatul tipizat, identitatea instanței, versiunea stării și regulile folosite. Abia această observație fixează valoarea cerută diagramei. Două desene candidate sau un concept incompatibil lasă comparația nerezolvată, fără a inventa o valoare implicită.
+`std.request.value` describes a value to obtain: `target` names the source object and `concept` its property. It is neither the palette nor an observation. The library resolves the source identity, obtains a typed palette over a collection with known coverage, and retains the source World, state version and derivation. Only that observed result becomes the destination constraint. Multiple source drawings remain ranked hypotheses; missing evidence does not authorize inventing a palette.
 
 Presupunem că interpretarea acceptată cere egalitatea exactă a paletelor, iar desenul are paleta `{roșu, albastru}`. Pentru o diagramă cu trei noduri, culorile roșu, albastru, albastru satisfac cererea; roșu, roșu, roșu nu o satisfac, deși fiecare culoare folosită aparține paletei sursă. Egalitatea cere ambele incluziuni. Cererea „use only colours from the drawing” ar cere doar incluziunea paletei destinație în cea sursă și trebuie reprezentată ca alt predicat, nu confundată cu `same`.
 
@@ -1014,15 +1022,17 @@ Valoarea de referință a unei clase de comparație este mediana valorilor lucru
 
 Scara unei axe determină operațiile permise. O axă cu zero firesc (mărimea, lungimea, durata, numărul) se declară `scale=ratio`; pe ea cuvântul de grad înmulțește: referința ori factorul. O axă fără zero firesc (poziția, ora) se declară `scale=interval`; pe ea nu se înmulțește, iar cuvinte ca „late” sau „high” sunt regiuni ale axei, nu cuvinte de grad. *(R30)*
 
-Pasul unui comparativ este declarat pe axă, cu `step`. Pe o axă `ratio` este un factor (propus 1,25); pe o axă `interval` este o mărime în unitățile axei (propus: 30 de minute pentru oră, o zecime din pagină pentru poziție). „Much bigger” face doi pași. *(R31)*
+Pasul unui comparativ este declarat pe axă, cu `step`. Pe o axă `ratio` este un factor (1.25 in this example); pe o axă `interval` este o mărime în unitățile axei (for example, 30 minutes for time or one tenth of a page for position). „Much bigger” face doi pași. *(R31)*
 
-Axa declară explicit felul scării și sensul pasului. Exemplul următor este propus și presupune spațiul `size` deja declarat:
+Axa declară explicit felul scării și sensul pasului. The following example assumes spațiul `size` deja declarat:
 
 ```sop
-@ax.size w.legend.axis of=size name=ratio min=0 max=10 scale=ratio step=1.25
+@sp.size w.legend.space name=size form=axes version=1
+@ax.size w.legend.axis of=$sp.size name=ratio order=0 kind=linear unit=$unit.size min=0 max=10 scale=ratio step=1.25
+@unit.size w.legend.unit name=ratio of=$ax.size factor=1 offset=0
 ```
 
-`of=size` alege spațiul, iar `name=ratio` numește axa. `scale=ratio` spune că un pas crescător înmulțește valoarea cu 1,25; un pas descrescător o împarte la 1,25. De la 2 rezultă 2,5 în sus sau 1,6 în jos. Limitele 0 și 10 delimitează domeniul acestui exemplu, nu toate mărimile posibile din orice aplicație. Pe o axă `scale=interval`, aceeași cheie `step` ar desemna o deplasare aditivă în unitatea declarată. Cele două semantici nu se aleg după numele axei.
+`of=$sp.size` identifies the space, iar `name=ratio` numește axa. `scale=ratio` spune că un pas crescător înmulțește valoarea cu 1,25; un pas descrescător o împarte la 1,25. De la 2 rezultă 2,5 în sus sau 1,6 în jos. Limitele 0 și 10 delimitează domeniul acestui exemplu, nu toate mărimile posibile din orice aplicație. Pe o axă `scale=interval`, aceeași cheie `step` ar desemna o deplasare aditivă în unitatea declarată. Cele două semantici nu se aleg după numele axei.
 
 După calcul, rezultatul este adus între marginile pe care le poate realiza unealta. Dacă prin aceasta nu se schimbă nimic, nu se execută nimic, iar răspunsul este „It is already as big as it can be.” *(R32)*
 
@@ -1045,7 +1055,7 @@ Limitele uneltei contează separat de preferință. Dacă unealta plafonează m�
 
 ## 4.6 Schimbări și acte
 
-**Problema.** Astăzi, modulele standard cunosc paisprezece acte, cu nume fixe (secțiunea 6.1), iar fiecare domeniu spune pentru fiecare ce face. Nicăieri nu este scris ce înseamnă un act în general: ce trebuie să fie adevărat înainte și ce trebuie să fie adevărat după. De aceea aplicația nu poate verifica singură că a făcut ce a spus că face.
+**Problem.** An operation name is not a semantic definition. To justify an act, the library needs its roles, preconditions, required final conditions and permitted effects. These declarations let one reasoning mechanism elaborate acts across domains and let observation verify what actually happened.
 
 **Patru schimbări de bază.** Orice i se poate întâmpla unei lumi este una dintre următoarele patru schimbări, sau o înșiruire a lor.
 
@@ -1102,7 +1112,7 @@ Condițiile unui act nu sunt texte. Formularea în limbaj natural explică inten
 
 Fiecare condiție are identitate proprie. Cheile `object`, `quality` și `goal` conțin numele rolurilor, nu identitățile obiectelor dintr-o aplicație. De exemplu, `object=object` spune că argumentul condiției este rolul numit `object`; cererea concretă va lega acel rol de lucrul mutat. `holds` primește relația din cerere, astfel încât aceeași definiție poate descrie așezarea în, pe sau lângă o țintă fără să inventeze o relație implicită.
 
-Modulul `core.use world=w.legend` validează acum aceste două tipuri. Fiecare act trebuie să declare cel puțin un rol și o condiție finală; condițiile inițiale sunt opționale. O condiție poate fi reutilizată de mai multe acte, dar fiecare rol pe care îl numește trebuie declarat de fiecare act care o referă. Condițiile fără act pot fi încărcate în vederea reutilizării. Lipsa unui argument obligatoriu, un argument nepotrivit variantei și referințele fără țintă validă sunt erori structurale. Exemplul de mai sus este verificat direct din carte.
+Loading these declarations validates structure, not the effect of an act. Each act declares roles and a final condition; initial conditions are optional. Every role mentioned by a condition must belong to the referring act. The library binds those roles to actual targets, checks the before conditions, constructs concrete calls and checks the after conditions against observed state. Naming `make` does not itself create anything.
 
 Această validare nu execută actele și nu dovedește condițiile asupra unei lumi concrete. Legarea cererii, planificarea și verificarea efectului observat rămân mecanisme distincte. Nici `kind=absent`, singur, nu dovedește că observația acoperă toate obiectele relevante.
 
@@ -1136,9 +1146,9 @@ Această tratare a felului nu confundă clasificarea cu realizarea: folosirea un
 
 ## 4.7 Legarea unei lumi de lumea legendelor
 
-**Regula.** Fiecare fir `core.type` primește cheia `is`, cu numele unui concept. Fiecare fir `core.slot` primește cheia `means`, cu numele unui concept, și, după concept, o a doua cheie care îl precizează. Un slot fără `means` este refuzat la verificarea schemei.
+**Rule.** A type or slot participating in semantic elaboration must be linked to its declared concept. `is` identifies a type’s concept; `means` identifies a slot’s concept, and `space` can link an applicable space. The link does not create all required methods. A technical bookkeeping field need not acquire a false conceptual interpretation merely to satisfy an “annotate everything” rule. Missing information needed by a particular semantic operation is reported at that operation’s boundary.
 
-**Starea implementării.** Regula completă de mai sus este ținta migrării, nu o cerință aplicată retroactiv schemelor vechi. În incrementul actual, `is`, `means` și `space`, când sunt prezente, se rezolvă strict către concepte sau spații declarate. Lipsa legăturilor este încă permisă pentru compatibilitate; obligativitatea pe toate sloturile, precizările din tabel și comportamentele derivate rămân de implementat. `ask`, `enum` și `default` existente nu sunt eliminate înaintea mecanismelor care le înlocuiesc.
+**Why semantic links are checked.** A `means` or `space` link must resolve to exactly the intended declaration. Otherwise two consumers could interpret the same numeric value differently. Link validation proves that the referenced concept exists and is unambiguous; the concept’s operation contracts must additionally define how its values are measured and changed.
 
 ```sop
 @type.sample core.type of=sample is=thing
@@ -1150,30 +1160,33 @@ Această tratare a felului nu confundă clasificarea cu realizarea: folosirea un
 
 Exemplul se încarcă împreună, după `core.use world=w.legend`; țintele pot apărea după schema care le referă. Un atom precum `quality` caută exact un nume public în lumea încărcată. Niciun rezultat sau mai multe rezultate produc eroare. Referința `means=$concept.quality` selectează identitatea exactă și rămâne valabilă dacă eticheta publică este schimbată. Un text citat nu este tratat ca referință. Căutarea numelor este globală în instanța World, fără preferință tacită pentru namespace-ul curent; vocabularul ambiguu cere referințe explicite.
 
-Verificarea se repetă pe starea finală a fiecărei tranzacții. Ștergerea sau redenumirea unei ținte și introducerea unui nume concurent nu pot lăsa o schemă legată de ceva inexistent sau ambiguu. La eșec se revine la starea anterioară. API-ul `semanticLinks()` raportează separat valoarea scrisă și identitatea rezolvată; nu rescrie declarația autorului și nu păstrează un cache care ar deveni învechit. Validarea legăturii nu validează încă faptul că o valoare numerică este un punct al spațiului sau că poate executa o comparație semantică.
+Verificarea se repetă pe starea finală a fiecărei tranzacții. Ștergerea sau redenumirea unei ținte și introducerea unui nume concurent nu pot lăsa o schemă legată de ceva inexistent sau ambiguu. La eșec se revine la starea anterioară. The resolved identity is recorded separately from the author’s spelling. Validating a link does not prove that a number belongs to a space or that a comparison has been evaluated.
 
-| `means=` | Cheia de precizare și valorile ei |
+| Semantic concept | Information required by the applicable method |
 |---|---|
-| `kind` | Niciuna. Valoarea cheii este un fel din arborele felurilor. |
-| `name` | Niciuna. |
-| `quality` | `space=` numele spațiului conceptual: `size`, `colour`, `shape`, `tone` și altele declarate. |
-| `quantity` | `unit=` unitatea de măsură, dacă are: `word`, `minute`. Sau `counts=` felul de lucruri pe care le numără. |
-| `place` | Una din două. `space=` numele spațiului în care este poziția: `page`, `order`. Sau `relation=` numele relației cu alt lucru: `in`, `on`, `next_to`, `above`, `under`, `between`, `before`, `after`. |
-| `time` | `part=` care parte a timpului: `start`, `end`, `duration`, `repeat`. |
-| `part` | Niciuna. Valoarea este întregul din care face parte lucrul. |
-| `role` | `role=` numele rolului: `source`, `goal`, `participant`, `owner`. |
-| `topic`, `manner`, `cause`, `purpose` | Niciuna. |
+| kind | The declared classification and its identity; no inference from a display label. |
+| name | The naming scope and the distinction between a label and object identity. |
+| quality | The space and measurement contract, such as size, colour, shape or tone. |
+| quantity | Unit or counted population, plus its coverage and duplicate policy. |
+| place | A coordinate space/frame, discrete order, or typed relation to another object. |
+| time | Whether the value is an instant, duration, interval, recurrence or occurrence boundary. |
+| part | Whole identity, membership role, cardinality and structural constraints. |
+| role | The act/relation and the named role played by this value. |
+| topic, manner, cause, purpose | The typed content or relation required by the corresponding method. |
+
+These are semantic input obligations, not additional `core.slot` keys. A schema uses its declared fields and links; a method consumes those declarations through LIB.
 
 **Exemplu.** Cele patru sloturi din secțiunea 4.1, cu legarea adăugată.
 
-```
-@s1 core.slot of=drawn   key=at    kind=point  means=place space=page
-@s2 core.slot of=node    key=at    kind=point  means=place space=page
-@s3 core.slot of=section key=order kind=number means=place space=order
-@s4 core.slot of=meeting key=room  type=room   means=place relation=in
+```text
+Explanatory semantic mapping; pseudocode, not SOP declarations:
+Drawing position: point in page frame, concept place
+Diagram position: point in diagram frame, concept place
+Document order: integer in declared section order, concept place
+Meeting room: typed reference to room, concept place via relation in
 ```
 
-**Ce primește un slot legat.** Niciunul dintre aceste sloturi nu are `ask`, `enum` sau `default`. Tot ce țineau acele chei vine acum din concept. Pentru `means=place`, cele patru chei primesc deodată:
+**What the link enables.** A semantic link lets the library locate applicable methods, but a link alone supplies neither a language grammar nor a transformation. Each capability in the following table requires its declared language forms, relation or space operations, typed binding and validation conditions. A missing method remains a missing method; it is not filled by a domain-specific JavaScript guess.
 
 | Ce se primește | Cum arată |
 |---|---|
@@ -1183,13 +1196,13 @@ Verificarea se repetă pe starea finală a fiecărei tranzacții. Ștergerea sau
 | mutarea | „move it up”, „move it earlier in the text”. |
 | răspunsul | Locul este spus în același fel în toate domeniile. |
 
-La fel, un slot cu `means=quality` și un spațiu primește comparativele, superlativele („the biggest one”), comparația cu alt lucru („as big as the house”), cuvintele de grad și alegerea celei mai apropiate valori posibile. Un slot cu `means=time` primește „later”, „earlier”, „longer”, „on Friday”.
+For `means=quality`, the library can use applicable comparison and degree methods when the space, measurement, baseline and operation are declared. For `means=time`, temporal methods additionally require instant/duration distinctions, timezone, calendar and recurrence scope. The single annotation does not manufacture those contracts.
 
 **Locul și timpul.** Un loc poate fi spus în patru feluri, aceleași în orice domeniu: ca poziție (un punct), ca regiune cu nume (sus, jos, centru; începutul unui text), ca relație cu alt lucru (pe, în, lângă, după) sau ca pas față de locul de acum (în sus, mai la stânga). Fiecare relație are o definiție prin numere: „lângă” este o distanță mică; „deasupra” este mai sus pe axa verticală. Timpul are aceleași forme pe o singură axă: un moment, un interval, o durată, o ordine, o repetare. „In the afternoon” este o regiune pe axa orelor, la fel cum „red” este o regiune în spațiul culorilor.
 
 ## 4.8 Tipurile de fire ale lumii legendelor
 
-Aceste tipuri descriu lumea legendelor și conținutul legat de ea. Contractele structurale pentru acte, condiții, spații, axe, unități, concepte, grade, roluri și relații sunt implementate prin `core.use world=w.legend`. Regiunile, reperele și valorile de tip punct rămân propuse.
+The legend defines concepts, acts, conditions, spaces, axes, units, degrees, roles and relations. Its declarations describe the inputs to generic interpretation. A valid declaration is not evidence that a particular tool supports the requested effect; capability and concrete-call validation remain separate.
 
 **`w.legend.space`** declară un spațiu conceptual.
 
@@ -1216,15 +1229,7 @@ Aceste tipuri descriu lumea legendelor și conținutul legat de ea. Contractele 
 
 Parametrii numerici trebuie să fie finiți. Dacă ambele limite există, `min` trebuie să fie strict mai mic decât `max`. `scale` și `step` apar împreună: pasul este o mărime pozitivă pentru `interval`, iar pentru `ratio` este un factor strict mai mare decât 1; direcția cererii va selecta adunarea/scăderea sau multiplicarea/împărțirea. Schema nu execută acele operații. Unitățile alternative pot avea o deplasare semnată, astfel încât descrierea să nu excludă conversiile afine; executarea conversiei rămâne un mecanism separat.
 
-**`w.legend.region`** declară o regiune a unui spațiu, adică înțelesul unui cuvânt. Firele de acest tip stau în bazele de cunoaștere.
-
-| Cheia | Ce spune |
-|---|---|
-| `of` | Referință tipizată la declarația spațiului. |
-| `name` | Numele regiunii: `red`, `circle`, `formal`, `morning`. |
-| `centre.<axă>` | Valoarea centrului pe fiecare axă. |
-| `spread` | Întinderea în jurul centrului. |
-| includere calculată | Nu este o cheie declarată. Se deduce numai când testul R24 dovedește includerea. |
+**Region descriptions.** A region needs the identity of its space, constrained axes, bounds and membership rule. A colour word can constrain only some axes. The descriptions in this chapter use explicit prose or pseudocode; they do not define an additional `w.legend.region` wire type. A concrete schema and evaluator contract must precede any executable region declaration. Point membership and complete-region inclusion remain different tests.
 
 **`w.legend.degree`** declară un cuvânt de grad.
 
@@ -1260,15 +1265,17 @@ Exemplu executabil al declarațiilor de culoare, fără afirmație de validare a
 
 Referințele `of` și `unit` leagă declarații, nu caută texte similare. Cele două unități numite `ratio` aparțin unor axe diferite și nu sunt contopite. Ordinea axelor este dată de întregi unici în spațiul lor; nu este necesar ca numerele să fie consecutive. Unitatea canonică trebuie să aparțină exact axei care o referă și să aibă factor 1 și deplasare 0. Referințele circulare axă–unitate se încarcă atomic, în același lot. Tipurile declarațiilor de axe și unități sunt partajate între namespace-uri: mutarea unei declarații în alt namespace nu permite dublarea aceleiași axe într-un spațiu comun. Două spații cu identități diferite pot folosi aceleași nume.
 
-Modulul validează prezența câmpurilor, referințele și restricțiile numerice. `version` este metadată; nu blochează editările. Un spațiu poate fi declarat înaintea axelor sale, dar nu poate fi folosit ca punct complet numai pentru că declarația este validă. Spațiile `graph` nu acceptă axe numerice; reprezentarea grafului rămâne de implementat. Reperul cu origine, orientare și transformări din §4.4.3 nu este furnizat de acest increment. Valorile de tip punct, dimensiunile, metricile și transformările dintre repere rămân separat de implementat.
+A valid axis declaration must provide numeric restrictions and typed dependencies. A space can be named before its axes, but a complete point must satisfy all required axes and units. A graph space uses typed nodes and relations rather than numeric axes. Coordinates in different frames require a declared conversion with origin, orientation and scale; equal-looking numbers do not prove equal positions.
 
-Fragment propus de regiune, dependent de toate axele declarate mai sus:
+A region description, dependent de toate axele declarate mai sus:
 
-```sop
-@rg.red w.legend.region of=$sp.colour name=red centre.hue=0 centre.saturation=0.9 centre.lightness=0.5 spread=0.12
+```text
+Illustrative region description; pseudocode, not SOP Lang:
+space: colour defined by sp.colour
+red: hue in [350,360) or [0,10], saturation in [0.8,1], lightness in [0.4,0.6]
 ```
 
-Schema regiunii și verificarea coordonatelor ei rămân propuse. Declarațiile actelor și condițiilor sunt exemplificate executabil în §4.6.1; numirea unui cuvânt de grad nu implementează încă transformarea unui punct.
+A region description defines membership; the evaluator must apply that definition to a typed point. A degree word defines a transformation; the evaluator must obtain its baseline, compute the transformation, and validate the result. Neither action follows merely from loading the name of the region or degree.
 
 ### 4.8.1 Metamodelul conceptual și ordinea de încărcare
 
@@ -1301,7 +1308,7 @@ Un rol are o referință tipizată la un act sau la o relație. Numele lui este 
 
 O relație simetrică poate fi propria inversă. Dacă ambele capete declară o inversă, declarațiile trebuie să fie reciproce; dacă ambele numesc un spațiu, trebuie să refere același spațiu. O declarație unilaterală este permisă, fără a genera tacit cealaltă declarație. Cheia `test` este opțională și numește contractul unei funcții viitoare; prezența numelui nu validează funcția, semnătura sau rezultatul ei. Relațiile nemăsurate geometric pot omite `space`.
 
-Factorul unui grad este numeric, finit și pozitiv; direcția este explicită. Aceasta este validare structurală: un factor subunitar sau egal cu 1 nu este refuzat anticipat, deoarece regula de aplicare și calibrarea contextuală nu sunt implementate aici. Un consumator nu poate presupune că încărcarea declarației execută deja o mărire sau micșorare.
+A degree factor is finite and positive; its direction is explicit. A factor alone does not authorize an edit. The library obtains the baseline and scale, applies the declared transformation, checks hard constraints and tool limits, and retains the calculation. A value crossing an uncertain boundary stays uncertain rather than becoming a proof of membership.
 
 Felurile de afirmații, cuprinderea și negația sunt fire `w.legend.concept`. O resursă nu are tip propriu: un tip de lucruri se declară resursă cu `resource=true` pe firul lui `core.type`.
 
@@ -1321,13 +1328,13 @@ Ordinea straturilor evită o definiție circulară a cheii `means`: tipurile de 
 
 Până acum am spus „lume” pentru orice mulțime de fire verificate. În practică, lumile se împart în trei feluri, după ce conțin și cât de des se schimbă. Împărțirea contează fiindcă cele trei sunt scrise de oameni diferiți, la momente diferite, și sunt refolosite diferit.
 
-Primul fel este **tiparul de lume (world pattern)**. Un tipar este numai schemă: spune ce tipuri de fire există într-un fel de lume, ce sloturi au și ce reguli se aplică. Nu conține niciun lucru anume. Avem patru: tiparul desenului, al diagramei, al documentului și al calendarului. Un tipar se scrie o dată și se schimbă rar. Lumea legendelor (capitolul 4) este și ea un tipar, cel mai general dintre toate.
+A **schema World** defines the wire types, slots, rules and restrictions of a family of Worlds. It contains no current drawing object or calendar event. Drawing, Diagram, Documents, Calendar and Avatar have domain schemas; these are examples, not a closed list of possible domains. The legend is also schema-level vocabulary. An application’s organizing World is an instance of its own schema, not a fourth kind of World.
 
-Al doilea fel este **baza de cunoaștere (knowledge base)**. Ea ține ce se știe în general și nu depinde de nicio pagină anume: că o rață este o pasăre, unde este regiunea „red” în spațiul culorilor, din ce părți este făcută o scrisoare, cât ține de obicei o ședință. Bazele de cunoaștere sunt mari, cresc mereu și sunt folosite de toate domeniile deodată.
+Al doilea fel este **lumea de cunoaștere (knowledge World)**. Ea ține ce se știe în general și nu depinde de nicio pagină anume: că o rață este o pasăre, unde este regiunea „red” în spațiul culorilor, din ce părți este făcută o scrisoare, cât ține de obicei o ședință. Bazele de cunoaștere sunt mari, cresc mereu și sunt folosite de toate domeniile deodată.
 
 Al treilea fel este **instanța de lume (world instance)**. Ea ține starea unui lucru anume, acum: această pagină desenată, această diagramă, această scrisoare, această săptămână din calendar. Se schimbă la fiecare mesaj al omului. O instanță folosește un tipar, care îi spune ce fapte are voie să conțină, și se sprijină pe bazele de cunoaștere.
 
-> **Numele vechi.** În programul și documentele mai vechi, cele trei se numesc *schema lumii* (world schema), *lume de cunoaștere* (knowledge world) și *lume vie* (live world).
+The roles are **schema**, **knowledge** and **instance**. They describe what a World contributes. A knowledge World is itself validated under a schema. A World may import another without copying its declarations into every instance; the architecture must show that dependency rather than present a catalogue entry as an active inference.
 
 **Felurile de cunoaștere.** Nu tot ce stă într-o bază de cunoaștere are aceeași greutate, iar aplicația trebuie să știe ce are în față. „Peștii trăiesc în apă” și „o ședință ține de obicei o oră” nu se folosesc la fel: prima poate opri o greșeală, a doua doar umple un gol. De aceea fiecare rând al unei baze de cunoaștere își declară felul.
 
@@ -1346,7 +1353,7 @@ Omul poate cere să fie desenat orice: o rață, un bunic, un leagăn. Nu putem 
 
 Toate felurile de lucruri stau într-un singur arbore, în cunoaștere, de la general la particular: o rață este o pasăre, o pasăre este un animal; un bunic este un bărbat, un bărbat este un om; un romb este o formă cu patru laturi; o scrisoare este un text; un grafic cu bare este o diagramă. Arborele este unul singur pentru toate domeniile.
 
-Pe acest arbore se moștenesc patru lucruri, de sus în jos. Datorită lor, un fel nou adăugat în arbore funcționează imediat, fără alt rând.
+Four families of declarations can be inherited down this tree. A new kind reuses applicable capabilities, composition and ordinary values only when their preconditions and tool contracts remain satisfied. A taxonomy edge alone does not guarantee an executable realization.
 
 | Ce se moștenește | Ce înseamnă |
 |---|---|
@@ -1373,7 +1380,7 @@ Moștenirea structurală, specializarea semantică și împrumutarea unei realiz
 | moștenirea felurilor | În cunoaștere (arborele felurilor: o rață este o pasăre). Transmite ce se știe: părți, valori obișnuite, cuvinte. |
 | înlocuitorul | În domeniu. Este o realizare împrumutată: imaginea păsării pentru o rață. Nu schimbă felul lucrului. |
 
-În schema structurală a motorului, declarațiile suplimentare `extends` pot importa grupuri de sloturi (mixins). Ele nu adaugă părinți arborelui semantic al felurilor. Dacă se schimbă un asemenea grup, faptele deja stocate și descendenții lor trebuie să apară imediat în căutările după noua structură, iar regulile să vadă aceleași fapte ca interogările. De exemplu, dacă tipul `item` păstrează părintele `base`, dar înlocuiește grupul `left` cu `right`, un fapt `item` trebuie găsit prin `right` și nu prin vechiul `left`. Din versiunea 0.189, reconstruirea indexurilor ține cont și de lista ordonată a acestor grupuri, nu numai de primul părinte. O tranzacție refuzată restaurează atât schema, cât și indexurile. Această corecție menține coerentă moștenirea structurală; nu autorizează reinterpretarea valorilor unui spațiu de puncte când se schimbă schema lor.
+Structural `extends` declarations may import slot groups without giving a semantic kind several parents. When an imported group changes, queries and rules must see the same updated structural membership. If `item` retains parent `base` but replaces mixin `left` with `right`, an existing `item` must match `right` and cease matching `left`. A rejected transaction restores schema and indexes together. Structural inheritance does not reinterpret coordinates in a changed semantic space.
 
 Un fel are un singur părinte. Alte împărțiri ale lucrurilor nu sunt feluri. „Lucrurile roșii” sunt o regiune a unui spațiu. „Nodurile de început” sunt un rol dedus de o regulă. „Lucrurile care plutesc” sunt o afirmație de cunoaștere despre mai multe feluri. *(R40)*
 
@@ -1395,7 +1402,7 @@ O lume nu se scrie de la zero. Ea ia ce există deja și adaugă ce are propriu.
 
 **Extinderea.** O lume poate specializa ce a importat. Poate adăuga un tip nou de fire, care extinde unul importat. Sau poate **restrânge** un slot moștenit: diagrama poate spune că forma unui nod stă numai într-o parte a spațiului formelor. O restrângere este permisă, fiindcă tot ce este adevărat în general rămâne adevărat. Ce nu este permis sunt două declarații care se contrazic; acesta este un **conflict**, iar lumea îl spune la încărcare, nu mai târziu, când ar fi greu de găsit.
 
-**Legarea.** Un slot al unei lumi poate ține un lucru din altă lume. Calendarul este exemplul: importă tiparul persoanelor, iar cheia `people` a unei ședințe ține referințe la persoane. Legarea se face întotdeauna de un lucru anume, cu identitatea lui, nu de un nume. Dacă omul spune „Ana” și există două persoane cu acest nume, numele dă doi candidați, iar aplicația întreabă care.
+**Linking.** A typed slot can refer to an identified object supplied by another World. The composition context must make that object and its schema available; a bare name is insufficient. Two people named Ana produce two candidates. The library ranks them by explicit references, accepted context and declared relevance, retains the alternative and reports a reversible selected interpretation. A calendar tool receives the chosen identity, not the string “whichever Ana”.
 
 Domeniile aplicației se pot compune între ele prin aceleași operații. O diagramă poate arăta ședințele unei săptămâni; un document poate cuprinde un desen; un grafic poate arăta câte ședințe are fiecare om. În fiecare caz, un slot al unei lumi ține un lucru din cealaltă. O regulă care are nevoie de amândouă lumile stă în lumea care le încarcă pe amândouă.
 
@@ -1413,7 +1420,7 @@ Domeniile aplicației se pot compune între ele prin aceleași operații. O diag
 
 # 6. Conversația
 
-Capitolul acesta explică al doilea nivel: cum ajunge o propoziție a omului să schimbe ceva și cum se compune răspunsul. Tot ce urmează folosește numai piesele din capitolele dinainte.
+This chapter specifies elaboration of a human request into an executable SOP circuit, followed by dispatch and observation. The library makes semantic decisions using declared Worlds. Tools consume their own concrete instructions; they do not interpret a plan or fill gaps in the user’s intention.
 
 ## 6.1 Cum este legat un domeniu de programul lui
 
@@ -1421,28 +1428,32 @@ O lume, oricât de bine descrisă, nu desenează nimic. Undeva trebuie să exist
 
 Un **domeniu de capabilități (capability domain)** este o parte a aplicației care poate face lucruri reale: desenul, diagramele, documentele, calendarul. Fiecare are instanța lui de lume, uneltele lui și un fel de a-și citi starea.
 
-O **unealtă (tool)** este o operație de program, cât se poate de simplă, care face un singur lucru: pune o imagine la o poziție, mută un lucru, schimbă o valoare, șterge. Primește numai numere și referințe. Nu vede niciodată propoziția omului și nu știe ce înseamnă „big”.
+A **tool** implements a concrete operation: create an object, change its geometry, assign a value or remove it. Its input is a typed instruction defined by its public wire contract, with concrete values and validated references. Values may include numbers, strings, booleans and structured arguments. The tool does not interpret the human sentence, choose a referent, infer “big”, rank meanings or expand a high-level plan.
 
 O **capabilitate (capability)** este o promisiune declarată a domeniului: ce act general poate îndeplini, asupra cărui fel de lucru și de ce roluri ține seama. Desenul promite că poate „face” lucruri desenate și că ține seama de fel, cantitate, însușiri și loc.
 
 O **legătură (binding)** este declarația care unește cele două: spune ce unealtă îndeplinește ce act și din ce rol al cererii vine fiecare parametru al uneltei.
 
+```sop
+@use.schema core.use world=std.schema
+@use.tools core.use world=std.tool
+@world.drawing std.schema.world name=drawing
+@k.drawn std.schema.kind of=drawn world=drawing acts=make acts=place acts=change acts=remove
+@h.make std.schema.honours world=drawing act=make of=drawn on=kind on=size on=attribute on=place
+@op.add std.tool.op world=drawing name=add effect=makes
+@pa.kind std.tool.param op=add name=kind kind=atom required=true
+@pa.x std.tool.param op=add name=x kind=number required=true
+@pa.y std.tool.param op=add name=y kind=number required=true
+@pa.size std.tool.param op=add name=size kind=number min=0.3 max=3 required=true
+@pa.colour std.tool.param op=add name=colour kind=string required=true
+@b.make std.tool.bind world=drawing act=make of=drawn op=add
 ```
-@k.drawn   std.schema.kind    of=drawn world=drawing acts=make acts=place acts=change acts=remove
-@h.make    std.schema.honours world=drawing act=make of=drawn role=kind role=quantity role=quality role=place
-@op.add    std.tool.op        world=drawing name=add realises=make
-@pa.kind   std.tool.param     op=add name=kind   role=kind
-@pa.at     std.tool.param     op=add name=at     space=page
-@pa.size   std.tool.param     op=add name=size   space=size   min=0.3 max=3
-@pa.colour std.tool.param     op=add name=colour space=colour
-@b.make    std.tool.bind      world=drawing act=make of=drawn op=add
-```
 
-Citit pe rând. Primul rând: în lumea desenului, cu lucrurile desenate se pot face patru acte, a face, a așeza, a schimba și a șterge. Al doilea: când face un lucru desenat, desenul ține seama de fel, cantitate, însușiri și loc; dacă omul cere altceva, de exemplu un sunet, domeniul spune cinstit că de aceasta nu ține seama. Al treilea: există o unealtă numită `add`, care realizează actul „a face”. Următoarele patru îi declară parametrii: felul lucrului, poziția pe pagină, mărimea (unealta poate desena numai între 0,3 și 3 ori mărimea obișnuită) și culoarea. Ultimul rând este legătura: actul „a face”, pentru lucruri desenate, se îndeplinește cu unealta `add`.
+This is a small illustrative interface, not a claim about a particular deployed Drawing tool. It declares a capability, an `add` operation, five typed required inputs and a binding. The library must supply `kind`, `x`, `y`, `size` and `colour` before dispatch. A full interface must also declare argument sources, coordinate meaning, output identity, preconditions, observations and undo. The `on` list describes capability coverage; it is not a replacement for ownership and scope in a structured request graph.
 
-Două lucruri merită observate. Parametrul nu spune doar ce nume are, ci în ce spațiu este valoarea lui și cât din acel spațiu poate realiza unealta. De aici va ști aplicația, mai târziu, că un pește de zece ori mai mare nu se poate desena și că trebuie să aleagă cea mai apropiată mărime posibilă. Și: efectul uneltei nu este scris nicăieri pe unealtă. Unealta `add` realizează actul „a face”, iar ce trebuie să fie adevărat după „a face” s-a spus o dată, în secțiunea 4.6.
+The interface must distinguish accepted argument types, mandatory arguments, bounds, units and coordinate frames from semantic defaults. The library resolves meanings and defaults before dispatch. Each instruction must also identify expected observable effects, outputs, preconditions and undo behavior. An operation name or `effect=makes` label alone is not a full effect contract.
 
-**Ce există astăzi și ce este propus.** Tipurile de fire folosite mai sus sunt ale modulelor standard ale bibliotecii (`std.schema` și `std.tool`) și există astăzi. Trei chei din exemplu sunt propuse: `realises=` pe `std.tool.op`, `space=` pe `std.tool.param` și `role=` pe `std.schema.honours`. Tabelele de mai jos dau tipurile așa cum sunt astăzi și spun, la fiecare, ce se propune.
+**Reading the interface.** A capability describes which requests can be elaborated for a domain; a binding connects that capability to a concrete operation. A parameter declaration fixes the tool-side input. The tables below describe these responsibilities. The library validates actual operation and parameter declarations before generating calls; a conceptual role is not an undeclared tool argument.
 
 | Tipul din `std.schema` | La ce folosește și ce chei are |
 |---|---|
@@ -1450,28 +1461,28 @@ Două lucruri merită observate. Parametrul nu spune doar ce nume are, ci în ce
 | `std.schema.world` | Declară o lume care face lucruri. Chei: `name`, `doc`, `bundle`. |
 | `std.schema.kind` | Spune ce acte se pot face cu firele unui tip. Chei: `of` (tipul), `world`, `acts` (repetată). |
 | `std.schema.kinds` | Același lucru pentru orice fel numit de o bază de cunoaștere, fără a le enumera. Chei: `world`, `from` (tipul firelor care numesc felurile), `key`, `acts`, `stand_in`. |
-| `std.schema.honours` | Spune de ce părți ale cererii ține seama un domeniu pentru un act. Chei astăzi: `act`, `of`, `on` (repetată, cu valorile `kind`, `count`, `place` și celelalte chei fixe ale cererii). *Propus: `role=` în loc de `on=`, cu nume de concepte din lumea legendelor.* |
+| `std.schema.honours` | Spune de ce părți ale cererii ține seama un domeniu pentru un act. Keys: `act`, `of`, `on` (repetată, cu valorile `kind`, `count`, `place` și celelalte chei fixe ale cererii). Semantic concepts remain separate from this capability coverage declaration. |
 | `std.schema.limit` | Cel mult atâtea lucruri de un fel. Chei: `of`, `max`. |
 | `std.schema.capacity` | Un lucru care ține alte lucruri are loc pentru un număr dat. Chei: `of`, `key`, `holds`, `via`. |
-| `std.schema.relation` | O relație pe care o are lumea. Chei: `name`, `kind` (`spatial`, `containment`, `flow`), `inverse`. *Propus: relațiile se declară o dată, în lumea legendelor.* |
-| `std.schema.region` | O regiune cu nume a paginii. Chei: `name`, `x`, `y`, `w`, `h`. *Propus: devine un fir `w.legend.region` al spațiului paginii.* |
+| `std.schema.relation` | O relație pe care o are lumea. Chei: `name`, `kind` (`spatial`, `containment`, `flow`), `inverse`. The semantic relation must be identified, not inferred from this name alone. |
+| `std.schema.region` | O regiune cu nume a paginii. Chei: `name`, `x`, `y`, `w`, `h`. A named rectangle does not define the representation of every conceptual region. |
 | `std.schema.effect` | Spune că un act asupra unui fel este îndeplinit de program. Chei: `of`, `act`, `action`. |
 | `std.schema.needs` | Ce trebuie încărcat înainte de a acționa într-o lume. Chei: `of`, `type`, `from`. |
 
 | Tipul din `std.tool` | La ce folosește și ce chei are |
 |---|---|
-| `std.tool.op` | O operație a uneltei. Chei astăzi: `name`, `world`, `param`, `effect` (cu valorile `makes`, `removes`, `changes`), `doc`. *Propus: `realises=` cu numele actului, în loc de `effect`.* |
-| `std.tool.param` | Un parametru al unei operații. Chei astăzi: `op`, `name`, `kind`, `type`, `accepts` (lista valorilor primite), `scale`, `by`, `order`, `min`, `max`, `default`, `required`. *Propus: `space=` cu numele spațiului conceptual, în loc de `accepts` și `scale`.* |
+| `std.tool.op` | O operație a uneltei. Keys: `name`, `world`, `param`, `effect` (cu valorile `makes`, `removes`, `changes`), `doc`. The semantic act is connected through a binding, not an undeclared `realises` key. |
+| `std.tool.param` | Un parametru al unei operații. Keys: `op`, `name`, `kind`, `type`, `accepts` (lista valorilor primite), `scale`, `by`, `order`, `min`, `max`, `default`, `required`. Semantic spaces are linked through their schema; `space` is not a parameter key in this interface. |
 | `std.tool.bind` | Legătura: un act asupra unui fel pornește o operație. Chei: `act`, `of`, `op`, `arg`, `needs`, `makes`, `removes`, `changes`. |
 | `std.tool.arg` | Un argument al unei legături și sursele lui, în ordine. Chei: `bind`, `param`, `from`. |
 | `std.tool.needs` | Ce trebuie să fie adevărat în stare înainte de o operație. Chei: `op`, `exists`, `absent`, `check`, `args`. |
 | `std.tool.custom` | O constrângere sau o căutare proprie a uneltei, cu ce primește și ce dă. Chei: `name`, `world`, `kind` (`constraint`, `search`), `in`, `out`, `fails`, `doc`. |
 
-**Actele de astăzi.** Cheia `acts` a firului `std.schema.kind` primește astăzi paisprezece nume fixe: `make`, `remove`, `change`, `place`, `connect`, `group`, `pick`, `ask`, `copy`, `send`, `save`, `load`, `undo`, `redo`. Propunerea din secțiunea 4.6 este ca numai cele patru de bază să fie definite direct, iar `connect`, `group` și `copy` să decurgă din ele. `pick` și `ask` nu schimbă nimic, deci sunt întrebări, nu acte. `save`, `load`, `undo`, `redo` și `send` sunt operații ale aplicației asupra lumii întregi și rămân cum sunt.
+**Acts and operations.** Capability declarations distinguish `make`, `remove`, `change`, `place`, `connect`, `group`, `pick`, `ask`, `copy`, `send`, `save`, `load`, `undo` and `redo`. Semantic methods may expand a compound act into simpler calls. Such expansion must preserve identity and observed effects; a label like `group` is not permission to infer arbitrary membership. Queries can produce results without a state-changing tool call.
 
-**Alte module standard.** Mai există astăzi: `std.fill`, care alege valoarea unei chei lăsate nespuse dintre mai multe surse puse în ordine (omul, focusul, scena, cunoașterea, valoarea implicită); `std.focus`, care ține minte despre ce se vorbește; `std.dialogue`, care recunoaște felul unui mesaj; `std.know`, care completează din cunoaștere; `std.turn`, care declară etapele prin care trece un mesaj.
+**Shared context.** The declarations for filling, focus, dialogue, knowledge and turn organization identify sources and context used by the library. Their role is to make completion and reference decisions inspectable. They are not another family of domain-specific JavaScript controllers, and the existence of a module name does not prove that a particular request used it.
 
-**Care domeniu răspunde.** Capabilitățile spun care domenii pot îndeplini o cerere. „Schedule a meeting with Ana”, spus în timp ce omul se uită la desen, ajunge la calendar, fiindcă numai calendarul promite că poate face ședințe. Zona deschisă pe ecran nu hotărăște deci cine poate. Când pot mai multe domenii („a red circle” poate fi făcut și de desen, și de diagramă), se alege în ordinea din secțiunea 6.1.1: domeniul numit în mesaj, apoi cel al lucrului despre care se vorbește, apoi cel la care omul se uită; dacă tot rămân mai multe, aplicația întreabă.
+**Which instance is affected.** The library first finds compatible capabilities and live instances. “Schedule a meeting with Ana” can select Calendar while Drawing is visible. “A red circle” can remain compatible with Drawing and Diagram. Explicit destination, referent identity, conversational focus, schema/knowledge relevance and the visible area provide ranked evidence. The visible area cannot create a capability or discard otherwise compatible hypotheses. For a reversible choice the library acts on the best usable interpretation, reports uncertainty and retains alternatives and undo.
 
 ### 6.1.1 Selectarea domeniului și transferul între lumi
 
@@ -1479,7 +1490,7 @@ O capabilitate răspunde la întrebarea „cine poate realiza această cerere?�
 
 Cererile între lumi introduc încă o distincție: lumea din care se citesc datele poate fi diferită de lumea în care se creează rezultatul. Regulile separă selectarea destinației de politica de actualizare a rezultatului.
 
-Capabilitățile aleg cine poate; nu ajung ca să aleagă cine răspunde. Dintre domeniile care pot îndeplini cererea, se alege în această ordine: cel numit în mesaj („in the diagram”); cel al lucrului la care trimite mesajul sau al focusului; cel la care omul se uită acum. Dacă tot rămân mai multe, aplicația întreabă. În această alegere, zona deschisă pe ecran nu hotărăște cine poate, dar desparte egalitățile. „A red circle” poate fi făcut și de desen, și de diagramă, deci merge la cel la care se uită omul. *(R57)*
+Capability compatibility filters impossible destinations. Ranking then uses the explicit destination, the World containing a resolved referent, accepted context and declared relevance. The visible area is useful evidence, not a global type clamp. With a circle creation request and Drawing visible, Drawing can be selected while Diagram remains a recorded alternative. The chosen instance and reason become part of the elaboration trace. *(R57)*
 
 O cerere peste două lumi citește dintr-una și scrie în cealaltă. „A bar chart of meetings per person” citește calendarul și scrie în diagramă. Citirea se face o singură dată, la alcătuirea planului. Graficul ține minte de unde vine: sursa și momentul citirii. *(R58)*
 
@@ -1493,7 +1504,7 @@ Un grafic al ședințelor pe persoană este construit dintr-o stare identificat�
 
 O **proiecție (projection)** construiește o descriere în lumea destinație dintr-o selecție explicită a lumii sursă. Ea nu schimbă felul lucrurilor originale: ședința rămâne ședință în calendar, iar nodul care o reprezintă este un lucru nou în diagramă. Corespondența dintre ele este cunoaștere declarată, nu o asemănare dedusă din numele sloturilor. Două sloturi numite `start` pot însemna un moment și, respectiv, un nod inițial; copierea lor după nume ar fi greșită.
 
-Contractul propus folosește regulile din capitolul 3 într-un context de compoziție: sursele sunt citiri versionate, iar concluziile sunt candidați ai destinației. `collect` recuperează faptele și regulile necesare; nu inventează corespondența dintre domenii și nu dovedește singur că selecția este completă. Evaluarea regulilor nu publică efecte în unealtă. Candidații trec mai întâi prin schema și constrângerile destinației, apoi prin planificarea și execuția din secțiunile 6.7–6.9. Mecanismele de reguli există; integrarea completă a acestui contract de proiecție este propusă.
+A projection applies declared rules in a composition context: sources are versioned reads, conclusions are destination candidates. Collection retrieves named facts and rules; it neither invents a correspondence nor proves source completeness. Rule evaluation does not emit tool effects. Destination candidates are validated, elaborated into concrete calls, dispatched and observed (§6.7–6.9).
 
 | Declarație necesară | Ce fixează și de ce |
 |---|---|
@@ -1504,7 +1515,7 @@ Contractul propus folosește regulile din capitolul 3 într-un context de compoz
 | Agregarea | Gruparea, identitatea elementului numărat, tratamentul duplicatelor și dovada acoperirii colecției. |
 | Proveniența rezultatului | Selecția, valorile consumate, identitățile sursă, versiunea regulilor și parametrii transformării care permit explicarea rezultatului. |
 
-Să cerem „draw a diagram of my week”. Cererea fixează sursa și destinația, dar nu spune ce înseamnă legăturile. O proiecție de succesiune și una de participanți comuni sunt alternative reale. Alegerea urmează secțiunea 6.7.1: poate fi susținută de contextul deja acceptat sau poate cere clarificare. Nu se desenează săgeți al căror sens nu poate fi explicat. Presupunem aici că omul a ales reprezentarea ședințelor fără legături, cu poziție pe axa timpului.
+For “draw a diagram of my week”, the library identifies the source week and destination diagram, then considers declared projections such as temporal placement or shared participants. A reversible default can choose temporal placement without inventing arrows whose meaning is unknown. It records the selected projection and alternative. The following example uses meetings as nodes positioned on a time axis, with no connecting edges.
 
 Instantaneul săptămânii conține `m1`, de la 11:00 la 11:30, cu Ana și Dan, și `m2`, de la 14:00 la 15:00 în aceeași zi, numai cu Ana. Regula de obiect produce câte un nod pentru fiecare identitate de apariție a ședinței. Pentru o serie recurentă se păstrează atât identitatea apariției, cât și identitatea seriei. Proiecția pe apariții folosește prima drept cheie; o grupare cerută pe serii folosește a doua și păstrează membrii grupului în proveniență. Astfel, „the Monday stand-up” poate desemna o apariție sau un grup de apariții, după selecția și gruparea rezolvate din cerere, fără să le contopească accidental. Eticheta rezultă din intervalul citit. Dacă originea axei este 09:00 și scara aleasă este două unități de desen pe minut, pozițiile sunt `(660 − 540) × 2 = 240`, respectiv `(840 − 540) × 2 = 600`. Calculul presupune aceeași zi fără schimbare de fus; cazul general calculează diferența dintre momente rezolvate, nu dintre două ore locale izolate.
 
@@ -1521,7 +1532,7 @@ Ultimele două rânduri aparțin altei proiecții, „a bar chart of meetings pe
 
 Fiecare fapt produs păstrează justificarea sa: un nod indică apariția citită, o legătură indică ambele capete și regula relației, iar o bară indică grupul și acoperirea selecției. Proveniența locală de tip `source.snapshot`, exemplificată în secțiunea 8.6, păstrează valorile consumate; o referință activă temporară către calendar nu este exportată ca și cum ar fi o dovadă autonomă. Identitatea rezultatului ține cont de proiecție și de cheia sursă sau a grupului, astfel încât două ședințe cu aceeași etichetă să nu se contopească.
 
-Actualizarea explicită recitește sursa, reevaluează aceleași reguli versionate și compară rezultatele după aceste chei. Nodul dispărut din selecție poate fi eliminat din rezultatul proiecției, dar nu din calendar. Modificările manuale ale diagramei sunt schimbări ale omului asupra instantaneului și se păstrează separat de rezultatul generat. Înainte să suprascrie orice valoare modificată manual, actualizarea arată diferența și cere confirmare; simpla cerere „update the chart” nu autorizează acea suprascriere. Până la răspuns, valoarea manuală rămâne. Aceeași protecție se aplică ștergerii unui nod editat manual care nu mai apare în selecția nouă. Dacă schimbarea manuală și rezultatul nou coincid, nu există o valoare de suprascris, dar proveniența intervenției omului rămâne în jurnal. Publicarea noii diagrame este verificată ca un întreg, iar anularea restaurează instantaneul precedent al destinației, conform R59.
+An explicit update rereads the source and reevaluates the declared projection. It compares results by source/group key. Removing a generated diagram node never removes its calendar event. Manual overrides remain distinct from generated values. A declared merge policy can preserve overridden fields, update unaffected fields and report which fields were kept. If an update cannot reconcile a hard constraint, the conflicting part remains unchanged with a concrete explanation; no hidden overwrite or routine clarification is required. Undo restores the previous destination snapshot, not intervening source edits.
 
 ## 6.2 Drumul unui mesaj, pe etape
 
@@ -1529,16 +1540,30 @@ Am văzut drumul în secțiunea 1.4, pe un exemplu. Acum îl numim. Fiecare etap
 
 | Etapa | Ce primește și ce dă |
 |---|---|
-| 1. Starea | Citește ce există în unelte și îl scrie ca fapte în instanța de lume. |
+| 1. State | Obtain the authoritative instance facts and declared primitive observations, with version and coverage. |
 | 2. Interpretarea | Din propoziție face cererea: ce se vrea, spus în concepte generale (secțiunea 6.3). |
 | 3. Situarea | Hotărăște ce este mesajul față de dialogul de până acum: cerere nouă, corectare, răspuns la o întrebare (secțiunea 6.4). |
 | 4. Înțelesul numeric | Din cuvinte face numere și le potrivește cu ce pot face uneltele (secțiunea 6.5). |
 | 5. Completarea | Pentru ce a rămas nespus propune valori (secțiunea 6.6). |
-| 6. Descompunerea și raționamentul | Împarte întregul în părți, alege între variante și verifică; iese un plan (secțiunile 6.7 și 6.8). |
-| 7. Execuția | Pornește uneltele după plan și citește starea din nou (secțiunea 6.9). |
+| 6. Elaboration | Resolve targets, expand compositions, fill declared defaults, rank candidates and validate; output a concrete SOP circuit of typed tool calls and dependencies (§6.7–6.8). |
+| 7. Dispatch | The generic library dispatcher binds typed outputs and schedules concrete calls. Each tool handles its own instruction; observed effects are checked (§6.9). |
 | 8. Răspunsul | Din ce s-a schimbat de fapt compune propoziția de răspuns (secțiunea 6.10). |
 
-Etapele 5 și 6 se repetă până când planul nu mai are goluri. Limba omului apare numai la capete, în etapele 2 și 8; între ele, totul este fire și numere. De aceea adăugarea unei limbi nu atinge mijlocul.
+Completion and elaboration repeat until every effectful instruction matches a tool contract and contains no unresolved semantic choice. A typed reference to the output of an earlier call is concrete dataflow: it is bound mechanically at dispatch, not guessed by the tool. Intermediate representations contain typed values and wires, not only numbers. A fully concrete UI-generated command can enter validation and dispatch directly through the same interface.
+
+The application's public interaction with LIB supplies existing Worlds, declared interfaces and context, then submits requests and receives results. The steps above are internal mechanisms, not JavaScript stages that each application must orchestrate. Inspection can expose their facts and evidence without exposing a second public control API.
+
+A concrete instruction has the exact shape of its tool interface. This small invented interface uses only schema primitives; `example.move` is the tool's accepted wire type, not a new library operation:
+
+```sop
+@move.type core.type of=example.move closed=true
+@move.object core.slot of=example.move key=object kind=string present=true
+@move.x core.slot of=example.move key=x kind=number present=true
+@move.y core.slot of=example.move key=y kind=number present=true
+@move1 example.move object="o2" x=270.82 y=527.40
+```
+
+For this example, `object` must resolve to a live object in the supplied instance, and `x,y` are centre coordinates in the declared page frame. The tool handler assigns those coordinates and returns its concrete result. The library checks the observed coordinates and records the previous values for undo. Source words, candidate referents and the reasoning trace stay linked outside the instruction; they need not become separate `value` wires inside every simple call. Removing that serialization noise does not remove the evidence.
 
 ## 6.3 Interpretarea: din propoziție, o cerere
 
@@ -1552,6 +1577,17 @@ Lucrul important despre cerere este în ce termeni este scrisă. Nu are chei pro
 | „make a flowchart of how bread is baked, with no circles” | Act: a face. Fel: diagramă de flux. Subiect: coacerea pâinii. Forma părților: regiunea „circle”, nedorită. |
 | „write a short formal letter about a late delivery” | Act: a face. Fel: scrisoare. Lungime: cuvântul de grad „short”. Ton: regiunea „formal”. Subiect: livrarea întârziată. |
 | „a long meeting with Ana tomorrow afternoon” | Act: a face. Fel: ședință. Durată: cuvântul de grad „long”. Participant: Ana. Timp: regiunea „afternoon” a zilei de mâine. |
+
+Coordination preserves target roles. “Draw a tree and a house” introduces two new targets under the shared creation act:
+
+```sop
+@source.pair std.request.source text="draw a tree and a house"
+@request.pair std.request act=make mood=do source=$source.pair
+@target.tree std.request.target request=$request.pair mode=new kind=tree
+@target.house std.request.target request=$request.pair mode=new kind=house
+```
+
+“Draw a tree near the house” is different: the tree is new, the house is an existing anchor, and `near` relates them. Splitting every noun into a separate creation would create a house the user did not ask for. Both the reader and the graph bridge must preserve this distinction; later tool execution cannot repair a lost target or ownership edge.
 
 De observat că în această etapă „big” și „red” rămân cuvinte: cererea ține minte că omul a spus „big”. Numărul vine abia în etapa 4, fiindcă depinde de ce este pe pagină.
 
@@ -1569,28 +1605,28 @@ De observat că în această etapă „big” și „red” rămân cuvinte: cer
 
 Aceste legări folosesc lexicul, gramatica și regulile de compunere semantică descrise în secțiunile 10.1–10.4; ele sunt comune domeniilor.
 
-**Cum știm că citirea este bună.** Sunt două verificări diferite și niciuna nu o înlocuiește pe cealaltă. Prima se face la fiecare mesaj: cererea este spusă înapoi în cuvinte și citită din nou; dacă iese altă cerere, citirea este nesigură. A doua se face la măsurare: citirea este comparată cu interpretarea corectă, scrisă de un om, pe exemple și mai ales pe perechi ca cele din tabel.
+**Checking the reader.** Compare the entire request graph with independently annotated intent: targets, ownership, scope, negation, values and source spans. Reading a generated paraphrase again can reveal inconsistency, but two identical wrong readings do not prove correctness. Reader correctness, successful elaboration and observed tool effects are measured separately.
 
-**Ce se face când ceva nu a fost înțeles.** Dacă rămân cuvinte necitite într-un loc care contează, cererea nu se execută; aplicația spune ce nu a înțeles, cu cuvintele omului. A executa jumătate de propoziție și a tăcea despre rest este mai rău decât a refuza. Un cuvânt scris greșit este corectat numai dacă nu este cunoscut de nicio sursă și există un singur candidat limpede; altfel „villa” ar deveni „via”. Nucleul citește engleză; alegerea limbii interfeței și traducerea sunt responsabilități ale aplicației, în afara acestui contract.
+**Uninterpreted text.** The reader preserves uncertain spans and alternatives. The library applies the most plausible usable interpretation for reversible changes, reports the actual effect and the uncertainty, and retains undo. A relevant unresolved clause cannot silently disappear: it is recorded as unresolved and the response says what was not applied. An incidental remark need not become a tool argument. Unknown words can be proper names; edit distance alone never licenses replacing “man” with “moon”.
 
-### 6.3.1 Interpretări candidate și clarificarea ambiguității
+### 6.3.1 Interpretări candidate și tratarea ambiguității
 
-Implementarea compară acum structura a două grafuri validate printr-o corespondență bijectivă a identificatorilor locali. Valorile, tipurile, referințele comune, ordinea valorilor repetate și proveniența rămân exacte. Această corespondență nu dovedește că cererea exprimă intenția utilizatorului sau că un efect s-a produs; acestea cer dovezi distincte. O comparație neîncheiată în buget rămâne necunoscută.
+Graph comparison uses a bijection between local identifiers while preserving types, typed values, shared references, repeated-value order and source evidence. Equivalence of two graphs proves neither correct reading of the human intention nor an observed effect. If comparison exceeds its budget, the result remains unknown; a timeout is not inequality.
 
 
 Interpretarea unei propoziții produce ipoteze despre intenție. Fiecare ipoteză trebuie să păstreze corespondența cu mesajul: obiectele desemnate, cerințele și cuvintele care nu au fost încă interpretate. Altfel, eliminarea unei interpretări ar putea însemna eliminarea tacită a unei cerințe a omului.
 
-Filtrarea folosește starea și capabilitățile declarate, apoi preferințele limbii. Când două interpretări încă posibile ar produce schimbări diferite, o alegere arbitrară nu este o rezolvare a ambiguității. Regulile de mai jos precizează când se poate continua și când trebuie formulată o întrebare.
+Filtering uses actual state and declared capabilities. Ranking uses linguistic and contextual evidence without erasing alternatives. A non-winning interpretation remains inspectable. The response distinguishes the selected meaning from an observed effect, and identifies uncertainty rather than asking routine clarification questions.
 
 Citirea dă una sau mai multe cereri candidate. Fiecare ține cerințele ei, cuvintele rămase necitite și legarea fiecărui cuvânt de un lucru. *(R51)*
 
-Alegerea între candidate se face în această ordine. Cad cele care trimit la lucruri ce nu există în stare. Cad cele pe care niciun domeniu nu le poate îndeplini. Dintre cele rămase câștigă cea preferată de o regulă declarată a limbii. Dacă rămân două care ar schimba lumea diferit, nu se execută nimic și aplicația întreabă. *(R52)*
+Candidates incompatible with identity, hard requirements or declared capabilities are eliminated. The library ranks the compatible candidates using declared language, knowledge and contextual evidence. For a reversible request it selects the best usable candidate, retains alternatives and undo, and states the selected interpretation when uncertainty matters. An unresolved hard contradiction is reported; it is not repaired by silently deleting a requirement. *(R52)*
 
 Exemplu: „make the red and blue nodes bigger”. Prima citire: nodurile roșii și nodurile albastre. A doua: nodurile care sunt și roșii, și albastre. Dacă niciun nod nu este în amândouă regiunile, a doua citire nu găsește nimic și cade. Contraexemplu: „add red and blue nodes”. Prima citire: câte un nod din fiecare culoare. A doua: noduri în două culori. Dacă unealta diagramei declară că nu poate realiza un nod în două culori, a doua interpretare cade. Limitarea trebuie să vină din contractul uneltei, nu dintr-o presupunere despre toate diagramele.
 
 Identificarea lucrului și rezultatul dorit sunt două contexte de evaluare. În „make the red objects blue”, roșul identifică obiectele în starea observată înaintea schimbării, iar albastrul descrie rezultatul. Dacă am pune ambele culori în aceeași conjuncție de rezultate, am cere greșit ca obiectul să ajungă simultan roșu și albastru.
 
-Din versiunea 0.183.0, o țintă `mode=existing` poate avea `selector`, o referință către rădăcina grafului care filtrează candidații. În acest graf, referirea la ținta însăși înseamnă candidatul curent din starea observată; nu este o dependență circulară de o identitate deja rezolvată. `request.root` rămâne rădăcina rezultatului dorit. Fără ea, numai constrângerile care nu aparțin selectorilor formează conjuncția implicită a rezultatului. Exemplul este structural executabil; nu realizează încă filtrarea în instanță sau schimbarea culorii:
+An existing target can have a `selector`, a reference to the predicate graph that filters observed candidates. A reference to that target inside its selector denotes the candidate under evaluation. `request.root` denotes desired-result conditions. Without an explicit root, constraints outside selectors form the implicit result conjunction. Selection and recolouring are separate operations even when they use the same property:
 
 ```sop
 @source.selection std.request.source text="make the red objects blue"
@@ -1602,9 +1638,9 @@ Din versiunea 0.183.0, o țintă `mode=existing` poate avea `selector`, o referi
 
 Selectorul poate folosi aceleași noduri logice de conjuncție, disjuncție, negație și cuantificare. Unirea sau intersecția obiectelor existente roșii și albastre din exemplul anterior se exprimă în selector, nu prin cerințe care le recolorează. Fiecare nod și descendent al său aparține unui singur context: unui selector anume sau rezultatului. Refolosirea aceluiași nod între contexte este refuzată; dacă omul cere explicit aceeași proprietate înainte și după, reprezentarea folosește două constrângeri distincte. Variabilele legate de un cuantificator nu ies din acel context.
 
-Selectorii nu acceptă încă operatorii de schimbare `delta`, `factor` sau `occurred`: aceștia descriu schimbarea cerută ori rezultatul unui act, nu o proprietate simplă a candidatului observat. Selectarea după evenimente istorice necesită un contract separat. Relațiile și descrierile `same` pot lega mai multe ținte; un graf logic aciclic nu dovedește că acele identități pot fi rezolvate. Două descrieri relaționale pot fi căutate împreună, fără să refuzăm automat orice dependență reciprocă. Resolverul trebuie să verifice candidații și ambiguitatea; validatorul structural nu pretinde că această etapă este implementată.
+Selectors describe observed state; `delta`, `factor` and `occurred` express changes or evidence of acts and are not simple observed-property selectors. Historical selection must use an explicit history contract. Relations and `same` descriptions can connect targets, so resolving them may require a joint search. An acyclic predicate graph alone does not prove that its referents can be found.
 
-Un cuvânt cu conținut (substantiv, adjectiv, verb, număr) rămas necitit oprește execuția. Un cuvânt fără contribuție semantică, recunoscut astfel de gramatică, nu o oprește. *(R53)*
+A relevant uninterpreted span must remain attached to the request and response. It does not force refusal of every independent reversible effect, but it cannot silently lose a negation, a required target or a condition. The library identifies exactly which part it applied and which span remains unresolved. *(R53)*
 
 O întrebare de clarificare rămâne deschisă până când omul îi răspunde, până când aplicația pune alta sau până când se execută o cerere nouă. Un mesaj care se potrivește ca răspuns (are felul de valoare așteptat) este luat ca răspuns. Unul care nu se potrivește este o cerere nouă și închide întrebarea. *(R54)*
 
@@ -1612,13 +1648,13 @@ O întrebare de clarificare rămâne deschisă până când omul îi răspunde, 
 
 Un cuvânt neinterpretat poate părea mic și totuși să schimbe cererea: „not” inversează o condiție. De aceea categoria „cuvânt de legătură” nu este o autorizație de a ignora negația, ordinea ori întinderea unei expresii. Ignorarea este admisibilă numai când gramatica îi declară rolul nerelevant pentru cererea structurată. Întrebarea de clarificare păstrează candidații și valoarea așteptată, pentru ca răspunsul următor să poată fi legat de problema corectă.
 
-În implementarea 0.202, poarta de admitere poate păstra un raport empiric pentru o identitate exactă a pipeline-ului și un domeniu declarat. Pragul se alege numai pe exemplele de ajustare; un set separat, fără surse comune, îl verifică fără să îl modifice. Raportul păstrează și abținerile, iar o aprobare cere suficiente predicții evaluate și respectarea politicii explicite de eroare. Rezultatul este o decizie de admitere pentru acel domeniu, nu probabilitatea că o anumită cerere este corectă. Corectitudinea etichetelor și identificarea completă a componentelor rămân obligații ale autorului probelor; schema și evaluarea efectelor se verifică separat.
+Reader evaluation compares the full structured request against annotated intent on independent examples. It measures target ownership, scope, negation, source spans and calibration, not only a verb score. A confidence number is evidence for ranking interpretations, not proof of a meaning or permission to bypass schema and effect checks. Failure on “draw a tree and a house” must be located at its actual boundary: reading the two targets, preserving them in the request graph, elaborating both, or executing the resulting calls.
 
 ### 6.3.2 Reprezentarea cererii și identitatea unei cerințe
 
 Cererea este o stare distinctă de desen: faptul că omul cere trei pești nu înseamnă că aceștia există deja. Un obiect al cererii poate desemna un grup de rezultate încă de creat sau un lucru existent care trebuie găsit. Planificarea leagă aceste ținte de identități concrete; nu folosește identificatorul unui obiect al cererii drept identificatorul unui pește real.
 
-Baza structurală implementată se încarcă prin `core.use world=std.request`. Ea păstrează sursa, actul numit, modul explicit al cererii și descrierile țintelor. Următorul exemplu minimal este executabil; nu conține încă un graf de condiții:
+The `std.request` declarations preserve source, named act, explicit mood and target descriptions. Here is a minimal request; the later example adds conditions:
 
 ```sop
 @request.sample std.request act=make mood=propose source=$source.sample
@@ -1630,9 +1666,9 @@ Baza structurală implementată se încarcă prin `core.use world=std.request`. 
 
 Fiecare țintă are o referință tipizată la cererea sa; fiecare cerere are o referință tipizată la sursă. Ștergerea țintei nu șterge cererea, dar ștergerea unei cereri încă referite sau a unei surse folosite este refuzată. Mai multe cereri pot păstra aceeași sursă. Numele unei ținte descrie căutarea ori rezultatul dorit; nu este identitatea unui obiect creat sau găsit. Variantele `new` și `existing` sunt validate structural; o țintă `existing` fără referent concret nu este rezolvată prin simpla încărcare a acestor fire.
 
-Extensia grafului exportă acum constrângeri, descrieri de valori, noduri logice, `root` și ținte `bound`. Verifică apartenența la cerere, accesibilitatea, ciclurile și domeniul legărilor. Aceasta nu evaluează adevărul cerințelor și nu autorizează execuția. Modurile din exemple sunt declarate pentru intenția descrisă de context; nu reprezintă o regulă care atribuie automat `do` unui fragment fără mod.
+The request graph includes constraints, value descriptions, logical nodes, `root` and bound targets. Its structural invariants cover ownership, reachability, cycles and variable scope. Those checks do not evaluate predicate truth or authorize execution. A fragment is situated in dialogue before an explicit execution mood is assigned.
 
-Următoarea formă pentru mesajul „draw three big red fish in the pond” trece validarea structurală implementată prin `std.request`. Numele actelor, felurilor și conceptelor rămân de rezolvat înaintea evaluării și planificării. Câmpurile fixe descriu structura generală a cererii, iar conceptele precum culoare, loc sau cantitate sunt date rezolvate prin vocabularul conceptual, nu chei noi în program pentru fiecare domeniu.
+The following request represents “draw three big red fish in the pond”. Act, kind and concept names must resolve before evaluation and elaboration. The fixed structural fields describe the generic graph; colour, place and quantity are vocabulary data rather than a new JavaScript field per domain.
 
 ```sop
 @src1 std.request.source text="draw three big red fish in the pond"
@@ -1645,9 +1681,9 @@ Următoarea formă pentru mesajul „draw three big red fish in the pond” trec
 @c.place std.request.constraint request=$r1 target=$fish1 concept=place operator=relation relation=in goal=$pond1 scope=each polarity=positive character=requirement source=$src1 source.start=24 source.end=35
 ```
 
-`src1` păstrează textul englez primit de nucleu. Intervalele de proveniență numără scalari Unicode, de la zero, cu sfârșitul exclus, în acest text exact. Un emoji format dintr-un singur punct de cod ocupă o poziție, chiar dacă JavaScript îl stochează în două unități UTF-16. Capetele apar împreună, intervalul este nevid și inclus în sursă; sursa cu surogate izolate este refuzată. `r1` identifică cererea și actul general `make`. Din versiunea 0.185.0, `parseText` poate întoarce opțional `sourceSpans`: intervale în textul original, distincte de indicii tokenurilor din arbore. Un lexem format din mai multe cuvinte păstrează intervalele contribuțiilor sale, fără să prezinte spațiile sau punctuația intermediară drept text potrivit. Dacă o rescriere nu are o corespondență verificabilă, Unicode-ul este invalid sau bugetul mapării se epuizează, proveniența este declarată indisponibilă; interpretările gramaticale nu sunt schimbate pentru a ascunde această lipsă. Constructorul cererii nu trebuie să transforme automat intervale disjuncte într-un singur fragment pretins continuu.
+`src1` preserves the exact source. Source intervals count Unicode scalars from zero with an exclusive end, not UTF-16 code units. The bounds occur together and identify a nonempty in-range span. A multiword meaning may preserve separate contributing intervals rather than falsely claim intervening text. `r1` identifies the request, not a created object. Provenance remains distinct from whether the interpretation or requested effect is correct.
 
-`fish1` desemnează grupul de rezultate noi, nu un pește deja creat. `pond1` este o descriere de căutare: iazul trebuie să existe și să fie identificat univoc. Dacă sunt două iazuri și contextul nu le deosebește, cererea rămâne nerezolvată și aplicația întreabă; nu schimbă `mode=existing` în `mode=new` pentru a evita ambiguitatea.
+`fish1` denotes a group of new results, not an already created fish. `pond1` describes an existing pond to resolve. With two ponds, the library ranks them by context and declared relevance, records the selected interpretation and retains the alternative. It never changes `existing` to `new` merely to avoid resolving the reference.
 
 | Cerință | Interpretare și verificare |
 |---|---|
@@ -1658,17 +1694,23 @@ Următoarea formă pentru mesajul „draw three big red fish in the pond” trec
 
 `operator` selectează verificarea cerinței, nu o unealtă: egalitate de cantitate, calcul de grad, apartenență la regiune sau relație. `polarity=positive` cere satisfacerea ei; `negative` cere ca predicatul să fie fals. `character=requirement` exprimă obligația, `preference` o preferință care poate ceda cerințelor, iar `assumption` o alegere a aplicației pentru o informație omisă. Negarea nu slăbește obligația: „no circles” poate fi o cerință negativă tare a cererii. O presupunere nu inventează un interval în mesaj: ea indică declarația sau pasul de justificare care a propus-o.
 
-Schema trebuie să verifice variantele operatorului. Secțiunea 4.4.5 propune `same`, cu o referință tipizată la însușirea altei ținte și cu observația versionată rezolvată separat. Secțiunea 4.4.4 propune `delta` și `factor`, cu observația de referință și ancora schimbării, precum și argumentele măsurate ale relațiilor; o unitate incompatibilă sau capete de măsurare nedefinite sunt erori ale cererii, nu valori implicite ale uneltei. Extensia logică din secțiunea 10.3.1 adaugă predicatul `occurred`, care cere un act, faza verificată și o valoare booleană și citește dovezile unei schimbări; nu se tratează ca egalitate numerică. `relation` cere `relation` și `goal`; `eq`, `less.equal`, `greater.equal`, `degree` și `region` cer o valoare de tipul acceptat de concept; operatorii `less.equal` și `greater.equal` sunt admiși numai pe valori ordonabile, în unități compatibile. O cheie `goal` rămasă pe o egalitate numerică este o eroare de schemă a cererii. Rezolvitorul păstrează separat descrierea țintei, identitățile găsite și versiunea stării citite. Această legare permite verificarea fiecărui rezultat și explicarea unei ambiguități fără modificarea sensului inițial al cererii.
+Schema trebuie să verifice variantele operatorului. Section 4.4.5 defines `same`, cu o referință tipizată la însușirea altei ținte și cu observația versionată rezolvată separat. Section 4.4.4 defines `delta` and `factor`, cu observația de referință și ancora schimbării, precum și argumentele măsurate ale relațiilor; o unitate incompatibilă sau capete de măsurare nedefinite sunt erori ale cererii, nu valori implicite ale uneltei. Extensia logică din secțiunea 10.3.1 adaugă predicatul `occurred`, care cere un act, faza verificată și o valoare booleană și citește dovezile unei schimbări; nu se tratează ca egalitate numerică. `relation` cere `relation` și `goal`; `eq`, `less.equal`, `greater.equal`, `degree` și `region` cer o valoare de tipul acceptat de concept; operatorii `less.equal` și `greater.equal` sunt admiși numai pe valori ordonabile, în unități compatibile. O cheie `goal` rămasă pe o egalitate numerică este o eroare de schemă a cererii. Rezolvitorul păstrează separat descrierea țintei, identitățile găsite și versiunea stării citite. Această legare permite verificarea fiecărui rezultat și explicarea unei ambiguități fără modificarea sensului inițial al cererii.
 
-Să urmeze mesajul „in the sky”. Situarea din secțiunea 6.4 îl leagă de locul grupului de pești din ultima cerere. În versiunea nouă a acelei cereri, se adaugă sursa și ținta cerute de corectare, iar `c.place` este înlocuit, păstrându-și identitatea:
+Să urmeze mesajul „in the sky”. Situarea din secțiunea 6.4 îl leagă de locul grupului de pești din ultima cerere. The following complete revised snapshot preserves the group and unchanged requirements; `c.place` keeps its identity and receives the new source and destination:
 
 ```sop
 @src2 std.request.source text="in the sky"
+@src1 std.request.source text="draw three big red fish in the pond"
+@r1 std.request act=make mood=do source=$src1
+@fish1 std.request.target request=$r1 mode=new kind=fish
 @sky1 std.request.target request=$r1 mode=existing kind=sky determiner=definite
+@c.count std.request.constraint request=$r1 target=$fish1 concept=quantity operator=eq value=3 scope=group polarity=positive character=requirement source=$src1 source.start=5 source.end=10
+@c.size std.request.constraint request=$r1 target=$fish1 concept=size operator=degree value=big scope=each polarity=positive character=requirement source=$src1 source.start=11 source.end=14
+@c.colour std.request.constraint request=$r1 target=$fish1 concept=colour operator=region value=red scope=each polarity=positive character=requirement source=$src1 source.start=15 source.end=18
 @c.place std.request.constraint request=$r1 target=$fish1 concept=place operator=relation relation=in goal=$sky1 scope=each polarity=positive character=requirement source=$src2 source.start=0 source.end=10
 ```
 
-Acest bloc descrie schimbarea dintre două versiuni ale stării cererii. Nu se concatenează cu declarația veche `c.place` în același text de încărcare: două declarații diferite cu același identificator ar fi o eroare. Cantitatea, mărimea și culoarea rămân neschimbate, la fel ca identitatea grupului vizat. Jurnalul păstrează versiunea anterioară și legătura cu mesajul corectiv.
+This block is the complete revised request snapshot. It is loaded instead of the earlier snapshot, not concatenated with it: repeating identifiers with conflicting declarations would be an error. Cantitatea, mărimea și culoarea rămân neschimbate, la fel ca identitatea grupului vizat. Jurnalul păstrează versiunea anterioară și legătura cu mesajul corectiv.
 
 Dacă peștii au fost deja creați, legarea grupului `fish1` la acele identități se păstrează, iar planul mută acei pești. Nu execută din nou `make` pentru încă trei. Dacă prima cerere nu a ajuns la execuție, corectarea schimbă locul în planul încă neexecutat. Aplicarea asupra ultimului grup, distincția dintre corectare și repetare și controlul efectelor sunt obligații separate ale situării și planificării; schimbarea unui fir nu le rezolvă singură.
 
@@ -1704,15 +1746,15 @@ Fragmentul este locul în care se vede cel mai bine câștigul lumii legendelor.
 | printr-un pronume | „it”, „them”: lucrurile din focus. |
 | printr-un plural hotărât | „the fish”, „the arrows”: lucrurile selectate, dacă sunt; altfel toate cele de acel fel. |
 
-Dacă se potrivesc mai multe lucruri și omul a vorbit la singular, aplicația nu ghicește. Întreabă și enumeră candidații, mereu în aceeași ordine: „Which house? 1. the red one on the left, 2. the blue one by the pond.”
+When several objects match a singular description, the library ranks them using explicit identity, focus, accepted context and declared relevance. A reversible change may use the best candidate, retain the others and say which object changed. The tool receives one resolved identity. If there is no compatible candidate, the library reports the missing referent; it does not create an existing target merely to make the command run.
 
-**Întrebările.** Întrebările pe care le pune aplicația nu sunt scrise de mână pentru fiecare cheie. Fiecare concept are întrebarea lui generală („Where?”, „How big?”, „Which one?”, „When?”, „With whom?”), făcută mai precisă de tipul valorii așteptate. Aplicația pune cel mult o întrebare pe mesaj și numai când nu are nicio presupunere rezonabilă. Întrebarea pusă este ținută minte ca **întrebare deschisă** până vine răspunsul, pentru ca „room 2”, scris de om în mesajul următor, să fie înțeles ca răspuns la ea.
+**Missing information.** The concept and expected type identify the missing value; declared knowledge, accepted context and instance constraints supply candidates. The library uses a plausible reversible completion, records its source and explains material uncertainty. It does not ask one question per missing parameter. A response to an already-open question is still represented as a reference to that dialogue record; it must not be mistaken for an unrelated new creation.
 
 ### 6.4.1 Descrieri și rezolvarea referințelor
 
 O descriere este un graf de ținte și condiții: feluri, însușiri, relații și surse. Structura cererii din secțiunea 6.3.2 folosește o asemenea descriere și îi adaugă actul. O referință o folosește pentru a găsi ceva; un subiect de document o poate folosi pentru a descrie ceva despre care se va scrie. Aceste utilizări au aceeași formă de bază, dar angajamente diferite: descrierea unui personaj într-o poveste nu afirmă că există în lumea observată și nu autorizează crearea lui acolo. Rolul descrierii este declarat, nu dedus din simpla prezență a unui fir.
 
-Rezolvarea urmează un mecanism comun: stabilește mulțimea de candidați, aplică filtrele obligatorii, apoi ordonează potrivirile admisibile folosind distanțele declarate. Nu există o singură distanță universală care să poată compensa orice nepotrivire. Un nume exact, o identitate, o proveniență cerută sau o limită temporală sunt filtre tari; distanța de culoare nu poate compensa încălcarea lor. Aproximarea se aplică numai componentelor pentru care este permisă, cu toleranța lor. O potrivire exactă are prioritate față de relaxarea aceleiași descrieri. Dacă nu rămâne un candidat unic justificat, sistemul păstrează ambiguitatea și întreabă.
+Rezolvarea urmează un mecanism comun: stabilește mulțimea de candidați, aplică filtrele obligatorii, apoi ordonează potrivirile admisibile folosind distanțele declarate. Nu există o singură distanță universală care să poată compensa orice nepotrivire. Un nume exact, o identitate, o proveniență cerută sau o limită temporală sunt filtre tari; distanța de culoare nu poate compensa încălcarea lor. Aproximarea se aplică numai componentelor pentru care este permisă, cu toleranța lor. O potrivire exactă are prioritate față de relaxarea aceleiași descrieri. If several candidates remain, the library preserves and ranks them; a reversible selection is reported with its uncertainty and alternatives.
 
 | Ce se caută | Candidați, filtrare și criteriu de alegere |
 |---|---|
@@ -1726,15 +1768,15 @@ Rezolvarea urmează un mecanism comun: stabilește mulțimea de candidați, apli
 
 Distanța pe arborele felurilor poate propune o potrivire apropiată numai când politica domeniului permite asta. De exemplu, „the box” poate desemna un nod dreptunghiular într-o diagramă dacă este singurul candidat admisibil, iar aplicația spune ce a înțeles. Acest rezultat nu schimbă nodul în alt tip și nu introduce automat o echivalență generală între box și node. Un alias local necesită o înregistrare separată, cu obiect, context și sursă. La folosirea ulterioară, aliasul nu trebuie să ascundă o nouă ambiguitate între obiecte.
 
-O parte așteptată, dar absentă, nu este un referent observat. Sistemul poate găsi în graful unui întreg rolul cerut și poate propune crearea lui când actul este de editare, rolul este declarat construibil, întregul este identificat și nu există o constrângere de absență. Astfel, „add the signature” poate completa rolul semnăturii unei scrisori fără să pretindă că semnătura exista. O întrebare despre semnătură nu o creează. Pentru un rol opțional sau o intenție neclară, constatarea că rolul este posibil nu este suficientă: se cere clarificarea. Aceasta este excepția controlată de completare structurală la regula R37, nu o regulă „nu găsesc, deci fac”.
+O parte așteptată, dar absentă, nu este un referent observat. Sistemul poate găsi în graful unui întreg rolul cerut și poate propune crearea lui când actul este de editare, rolul este declarat construibil, întregul este identificat și nu există o constrângere de absență. Astfel, „add the signature” poate completa rolul semnăturii unei scrisori fără să pretindă că semnătura exista. O întrebare despre semnătură nu o creează. For an optional role, possibility alone does not authorize creation: a declared interpretation policy and context must support the chosen edit, with its uncertainty recorded. Aceasta este excepția controlată de completare structurală la regula R37, nu o regulă „nu găsesc, deci fac”.
 
-Reparația unui cuvânt poate traversa o limită de cuvinte, dar trebuie să producă o citire completă și compatibilă, cu modificarea păstrată în proveniență. Un cuvânt necunoscut poate fi un nume propriu; costul mic de editare nu autorizează rescrierea lui. Pentru o realizare lipsă, compunerea din părți rămâne o capabilitate de implementat, nu un efect al acestei metode de selecție. Pentru o valoare istorică lipsă, răspunsul este că istoricul nu o conține, nu alegerea unei valori recente de la alt obiect.
+Reparația unui cuvânt poate traversa o limită de cuvinte, dar trebuie să producă o citire completă și compatibilă, cu modificarea păstrată în proveniență. Un cuvânt necunoscut poate fi un nume propriu; costul mic de editare nu autorizează rescrierea lui. A missing realization requires an applicable declared composition and matching tool capabilities; selection alone cannot manufacture either. Pentru o valoare istorică lipsă, răspunsul este că istoricul nu o conține, nu alegerea unei valori recente de la alt obiect.
 
 ## 6.5 Înțelesul numeric și potrivirea cu ce poate unealta
 
-Cererea conține încă cuvinte: „big”, „red”, „afternoon”. Uneltele primesc numai numere. Etapa aceasta face trecerea, în doi pași.
+The request may retain qualitative constraints such as “big”, “red” and “afternoon”. The library resolves them against declared spaces, baselines and instance state. Tool inputs are concrete typed values, not necessarily numbers: a label remains a string, a selection becomes identified objects, a colour can become a supported colour encoding, and a time becomes a resolved instant.
 
-În primul pas, cuvintele de grad și numele de regiuni devin puncte în spațiile lor, așa cum s-a explicat în secțiunile 4.4 și 4.5: „red” devine centrul regiunii roșii, iar „big” devine un număr calculat față de peștii de pe pagină.
+First, resolve each qualitative constraint to its declared space and region or transformation. “Red” identifies a region, not automatically one universal colour number. “Big” uses a declared comparison population and baseline. The library then generates concrete candidate values, such as a supported colour point or a numeric size, preserving the region test and baseline calculation as evidence.
 
 În al doilea pas, punctul cerut este comparat cu ce poate realiza unealta, lucru declarat pe parametrul ei (secțiunea 6.1). Pot apărea patru situații.
 
@@ -1782,11 +1824,11 @@ Caracterul are trei valori, iar ele hotărăsc ce îi datorează aplicația omul
 
 | Caracterul | Ce înseamnă |
 |---|---|
-| cerință | A spus-o omul și trebuie îndeplinită. Dacă nu se poate, aplicația explică sau întreabă; nu o lasă deoparte. „In the sky” pentru pești este o cerință și se îndeplinește, chiar dacă este neobișnuită. |
+| cerință | A spus-o omul și trebuie îndeplinită. Dacă nu se poate, the library explains the conflict and retains alternatives; it does not silently discard it. „In the sky” pentru pești este o cerință și se îndeplinește, chiar dacă este neobișnuită. |
 | preferință | A spus-o omul, dar cu „dacă se poate”: „in the morning if possible”. Se îndeplinește după cerințe, cât se poate. |
 | presupunere | A ales-o aplicația. Poate fi schimbată oricând, iar omului i se spune când contează: locul ales pentru pești, ora aleasă pentru ședință. |
 
-Dacă două cerințe ale omului nu pot fi îndeplinite împreună, niciuna nu cedează numai fiindcă este mai veche. „With Ana, on Monday morning”, când Ana lipsește luni: aplicația spune ce anume se bate cap în cap și întreabă.
+Conflicting hard requirements cannot be resolved by making the older one disappear. If Ana is unavailable throughout the explicitly requested Monday morning, the library retains both requirements, explains the concrete conflict and identifies admissible alternatives. It can still apply independently authorized reversible changes, but cannot report that the conflicting meeting was scheduled as requested.
 
 **De unde vin valorile propuse.** Cheile rămase deschise primesc valori candidate din patru surse, luate în ordine. Întâi, ce a spus omul mai devreme despre același lucru. Apoi, ce au în comun lucrurile pe care omul le-a cerut până acum: dacă toate nodurile cerute de el sunt albastre, următorul este tot albastru. Apoi, ce este obișnuit pentru acel fel de lucru, moștenit pe arborele felurilor (secțiunea 5.2). La urmă, dacă nimic nu alege, o valoare variată din zona obișnuită, ca desenele să nu arate toate la fel.
 
@@ -1825,7 +1867,7 @@ Omul cere adesea un lucru mare: un iaz, un flux, o scrisoare. Uneltele fac lucru
 
 Cerințele omului trebuie duse la partea potrivită, după cum au fost legate în secțiunea 6.3. O cantitate rămâne la felul pe care îl numără: în „two ducks and a swan”, „two” este al rațelor.
 
-Omul cere apoi schimbări ale întregului, cu cuvinte foarte scurte: „fewer”, „connect them”, „make it nicer”. Acestea sunt operații generale asupra oricărui întreg. Ce le face sigure este că fiecare știe ce trebuie păstrat.
+Omul cere apoi schimbări ale întregului, cu cuvinte foarte scurte: „fewer”, „connect them”, „make it nicer”. These are requests over a whole, resolved by applicable declared methods; not every whole supports every operation. Ce le face sigure este că fiecare știe ce trebuie păstrat.
 
 | Operația | Ce face și ce păstrează |
 |---|---|
@@ -1835,7 +1877,7 @@ Omul cere apoi schimbări ale întregului, cu cuvinte foarte scurte: „fewer”
 | leagă tot | Adaugă numai legături care au sens în tiparul lumii. |
 | așază mai bine | Mută părțile spre locurile pe care cunoașterea le socotește potrivite: apa jos, cerul sus, rața pe apă; nodurile așezate astfel încât săgețile să se încrucișeze cât mai puțin. |
 
-Rezultatul acestei etape este un **plan (plan)**: o listă de schimbări de bază (secțiunea 4.6), fiecare cu rolurile ei completate. Planul este încă pe hârtie; nimic nu s-a executat.
+The output is a **plan** in the precise sense of a concrete SOP circuit of tool calls, typed dataflow and dependencies. Elaboration resolves object identities, values, authorized effects and preconditions; no tool is expected to decide what the user meant. No effect has occurred yet. A named high-level act with unfilled roles is still an intermediate goal, not an executable plan.
 
 ### 6.7.1 Recompletarea sub constrângeri
 
@@ -1852,13 +1894,13 @@ Multe operații asupra unui întreg pot folosi aceeași procedură: pornesc de l
 
 Într-un document cu trei secțiuni, a cere două coloane poate elibera locurile secțiunilor și fixa textul și ordinea logică. O secțiune cerută pe întreaga lățime este o excepție explicită a structurii, nu un caz pe care optimizatorul îl poate aproxima printr-o coloană îngustă. Schema trebuie să ofere pozițiile permise și regula de repartizare; cuvântul „coloane” singur nu furnizează aceste date.
 
-Nu orice reacție înseamnă aceeași recompletare. „Another one” poate cere adăugarea unui obiect, în timp ce „something else instead” cere înlocuirea rezultatului respins. Interpretarea stabilește identitatea rezultatului și dacă se adaugă sau se înlocuiește înainte de căutare. Costul nu poate hotărî această intenție. „Too much” fără dimensiune oferă un candidat de corectare numai dacă o abatere comparabilă este clar dominantă; altfel se întreabă, fără mutarea arbitrară a unei alte proprietăți.
+Nu orice reacție înseamnă aceeași recompletare. „Another one” poate cere adăugarea unui obiect, în timp ce „something else instead” cere înlocuirea rezultatului respins. Interpretarea stabilește identitatea rezultatului și dacă se adaugă sau se înlocuiește înainte de căutare. Costul nu poate hotărî această intenție. „Too much” fără dimensiune oferă un candidat de corectare numai dacă o abatere comparabilă este clar dominantă; otherwise ranked interpretations are retained and a reversible declared default may select a property, with the selected dimension stated; an undeclared property must not change silently.
 
 Pentru varietate, jurnalul păstrează generatorul și alegerile efective. Dacă nu există alternativă validă la distanța cerută, aplicația raportează limita căutării sau imposibilitatea dovedită, după caz. Nu modifică cerințele ferme pentru a garanta un rezultat diferit. Explicația numește condițiile îmbunătățite și ce s-a păstrat; faptul că un cost a scăzut nu dovedește singur că întregul este „frumos”.
 
-## 6.8 Raționamentul: când și cum alege aplicația
+## 6.8 Raționamentul: când și cum alege biblioteca
 
-Cele mai multe cereri nu cer nicio gândire: omul a spus tot, iar planul se scrie direct. Raționamentul pornește numai când există un semn limpede că este nevoie de el, iar semnele sunt trei și pot fi verificate de program: a rămas o cheie deschisă, s-a găsit o contradicție sau există mai multe variante între care trebuie ales.
+A fully specified tool instruction needs contract validation, not another interpretation. A high-level request needs elaboration whenever it has unresolved targets, missing required arguments, qualitative constraints, a composition, conflicting requirements or competing interpretations. These are properties of the request graph and declared interfaces, not a list of domain-specific sentences in JavaScript.
 
 Toate mecanismele de raționament lucrează pe același lucru: starea lumii văzută ca fapte, adică lucruri cu felurile lor, însușiri ca puncte în spații și relații între lucruri. De aceea niciunul nu trebuie rescris pentru un domeniu.
 
@@ -1871,15 +1913,15 @@ Toate mecanismele de raționament lucrează pe același lucru: starea lumii văz
 
 **Cum se poate încheia o căutare.** Pentru ca aplicația să nu spună „nu se poate” când de fapt doar nu a căutat destul, o căutare are cinci încheieri posibile, iar ele sunt ținute deosebit: s-a găsit un plan valid; s-a găsit un plan, dar ceva a rămas neverificat; cererea însăși este nevalidă; s-a dovedit că nu există nicio soluție; căutarea a fost oprită la limită, fără nicio concluzie. Numai a patra îi dă voie aplicației să spună „nu se poate”.
 
-**Căutările proprii unui domeniu.** Unele căutări țin de meseria domeniului și sunt făcute de program: găsirea unui loc liber pe pagină; așezarea nodurilor unei diagrame; compunerea textului unui paragraf. Sunt permise ca funcții declarate (secțiunea 3.7). Împărțirea este limpede: planul hotărăște ce se face și cu ce valori; funcția găsește numai cum.
+**Native calculations.** There are two JavaScript responsibility families: generic SOPWorlds LIB mechanisms and concrete primitives/adapters. A geometry or text-generation algorithm can be a registered native calculation with typed inputs, purity, limits and output contracts. The semantic choice of which relation to achieve, what may change, which facts count as evidence and which candidate to prefer belongs to library processing of declared Worlds. Moving a domain-specific handler into LIB, or naming it in a wire, does not make that decision generic.
 
 ### 6.8.1 Planificarea semantică și funcțiile specializate
 
-Planificatorul alege o intenție realizabilă: ce obiecte sunt implicate, ce relații trebuie obținute și ce constrângeri trebuie păstrate. O funcție specializată caută o realizare concretă în interiorul acelei alegeri. Separarea permite reutilizarea raționamentului fără a pretinde că geometria desenului și compunerea unui text sunt aceeași operație.
+The library selects a compatible interpretation and elaborates its goals. A registered pure function can calculate candidates inside declared bounds. It cannot select a different semantic goal or mutate the live state during search. Its result goes through the same generic constraint checking and ranking as any other candidate. Only the final concrete effectful calls are dispatched to tools.
 
 Tabelul funcțiilor trebuie citit ca un contract de intrare, rezultat și verificare. Un rezultat furnizat de o funcție nu este adevărat doar pentru că funcția l-a returnat; verificatorul îl compară cu cerința și starea relevantă.
 
-Planul alege între lucruri cu înțeles diferit; funcția caută înăuntrul alegerii. Planul hotărăște că peștii stau în iaz, nu pe cer. Funcția desenului găsește în iaz trei poziții libere. *(R67)*
+The library selects the intended relation from request, knowledge and instance evidence. If the user did not specify a location, a declared ordinary-location rule may select the pond for fish. If the user explicitly requested the sky, that rule cannot override the request. A geometry function then searches inside the selected region and returns coordinates; it cannot change the destination because another region is easier. *(R67)*
 
 | Funcția | Ce primește, ce dă și cum este verificată |
 |---|---|
@@ -1887,7 +1929,7 @@ Planul alege între lucruri cu înțeles diferit; funcția caută înăuntrul al
 | `layout` (diagrame) | Primește nodurile și săgețile. Dă câte un punct pentru fiecare nod. Verificare: niciun nod peste altul. |
 | `compose` (documente) | Primește partea de scris, lista afirmațiilor pe care cunoașterea le are despre subiect, lungimea cerută și punctul de ton. Dă textul și lista afirmațiilor folosite. |
 
-`compose` nu inventează. Are voie să folosească numai afirmațiile primite și formule legate de partea scrisă (salutul, încheierea). Lungimea se verifică prin numărare. Afirmațiile folosite se verifică față de lista dată. Dacă lista este goală, se scriu numai formulele, iar răspunsul spune că despre subiect nu se știe nimic. Tonul se verifică prin măsurarea textului în spațiul de ton și compararea rezultatului cu regiunea cerută, după mecanismul propus mai jos. O măsurare încă necalibrată sau incertă rămâne marcată ca atare în rezultatul concret, fără să transforme această lipsă într-o limită a proiectului. *(R68)*
+`compose` nu inventează. Are voie să folosească numai afirmațiile primite și formule legate de partea scrisă (salutul, încheierea). Lungimea se verifică prin numărare. Afirmațiile folosite se verifică față de lista dată. Dacă lista este goală, se scriu numai formulele, iar răspunsul spune că despre subiect nu se știe nimic. Tonul se verifică prin măsurarea textului în spațiul de ton și compararea rezultatului cu regiunea cerută, under the measurement contract below. O măsurare încă necalibrată sau incertă rămâne marcată ca atare în rezultatul concret, fără să transforme această lipsă într-o limită a proiectului. *(R68)*
 
 Măsurarea tonului este o funcție declarată care primește textul, profilul de limbă și versiunea spațiului și întoarce coordonatele estimate, dovezile textuale și incertitudinea. Axele pot descrie formalitatea, căldura și caracterul direct. Alegerea cuvintelor, formele de adresare, lungimea propozițiilor și marcatorii de atenuare sunt trăsături de intrare, nu definiții universale ale tonului: un text lung nu este automat formal. O funcție de măsurare, simbolică sau învățată, le combină conform unui model declarat și calibrat pe judecăți independente. Pentru fiecare axă cerută se compară valoarea cu regiunea țintă și toleranța ei; incertitudinea care traversează frontiera produce un rezultat nedeterminat, nu o reușită certă.
 
@@ -1908,7 +1950,7 @@ Pentru `compose`, verificarea afirmațiilor cere identificarea surselor, nu doar
 
 Un concept nou nu adaugă singur o putere nouă programului. Dacă autorul declară o culoare, sistemul o poate folosi fiindcă știe deja să compare valori și să verifice apartenența la o regiune. Dacă autorul scrie numele unei operații de recunoaștere a unei imagini, acel nume nu produce un recognoscător. Pentru a deosebi aceste situații trebuie fixat vocabularul de operații pe care declarațiile îl pot cere.
 
-Catalogul de mai jos este contractul propus al programului general. Este închis pentru această versiune a proiectului: o declarație poate compune operațiile din el, dar nu poate introduce printr-un nume nou o semantică executabilă. Nu este lista API-urilor implementării actuale și nici lista verbelor omului. `make`, de exemplu, este un act definit prin condiții; realizarea lui folosește potrivire, verificare, planificare și apelul unei unelte. Operațiile de mai jos lucrează cu valori tipizate, fire, scheme și versiuni de stare.
+The following catalogue fixes the generic operations that declared methods can compose. An operation name has a defined argument and result contract; an unfamiliar name cannot introduce executable semantics. These are encapsulated mechanism contracts, not public JavaScript orchestration APIs or natural-language verbs. Applications submit requests to LIB; they do not call this catalogue step by step. For example, `make` denotes an act whose elaboration uses matching, validation, planning and concrete tool calls.
 
 | Operația generală | Intrări și rezultat |
 |---|---|
@@ -1942,7 +1984,7 @@ Catalogul nu ascunde o căutare infinită în `enumerate`. Pe un interval numeri
 
 `plan` compune acte folosind condițiile și politica de descompunere din secțiunea 4.6.1. Nu poate satisface orice precondiție prin inventarea unei acțiuni. `call` este singura trecere din catalog către un calcul sau un efect furnizat de gazdă; numele, tipurile argumentelor, puritatea și condițiile rezultatului trebuie declarate. În execuție se compun `observe`, `call`, `compare`, `validate` și `record`, cu regulile de recuperare din secțiunea 6.9. Anularea este un plan de compensare verificat prin aceleași operații, nu o ștergere a jurnalului.
 
-Un exemplu propus arată diferența dintre compunere și operație nouă. Într-un document, vrem ca o secțiune deja identificată să aibă cel mult 120 de cuvinte. Citirea stării oferă textul și versiunea lui; numărarea cuvintelor cere o segmentare declarată, apoi `collect` cu `count`. Limita este o cerință a cererii, nu limita permanentă a tipului secțiune. O propunere mai scurtă se verifică pe o copie izolată:
+The following example shows diferența dintre compunere și operație nouă. Într-un document, vrem ca o secțiune deja identificată să aibă cel mult 120 de cuvinte. Citirea stării oferă textul și versiunea lui; numărarea cuvintelor cere o segmentare declarată, apoi `collect` cu `count`. Limita este o cerință a cererii, nu limita permanentă a tipului secțiune. O propunere mai scurtă se verifică pe o copie izolată:
 
 ```sop
 @source.limit std.request.source text="at most 120 words"
@@ -1957,9 +1999,9 @@ Cazul permite delimitarea concretă a extensiilor. O altă limită, de 90 de cuv
 
 ## 6.9 Execuția
 
-Planul este o listă de schimbări. Fiecare este dusă la unealta ei prin legătura declarată (secțiunea 6.1), iar unealta primește numere și referințe.
+A plan is the concrete SOP circuit of tool calls produced by elaboration. The generic library dispatcher follows its dependencies, binds typed results to later arguments and submits each instruction through the declared binding. Tools implement those instructions; they neither execute the semantic plan nor complete a vague request. A call can use a newly created object’s typed output reference without knowing its eventual identifier in advance.
 
-Greutatea este că lumea reală nu ascultă întotdeauna. Unealta poate eșua, sau omul poate schimba ceva cu mâna între timp. De aceea se țin două stări, cu rosturi diferite. **Starea observată** este ce se citește din unelte; ea poate fi și nevalidă, de exemplu când omul a tras cu mâna o ședință peste alta a aceluiași om. **Starea primită pentru execuție** este ce propune aplicația; ea trebuie să treacă verificarea. Regula dintre ele: unealta are întotdeauna dreptate despre ce există; instanța de lume este oglinda ei, nu invers.
+A primitive may fail and the user may edit the state between planning and dispatch. The **authoritative instance state** and the **candidate state** therefore have distinct roles. A candidate is isolated until validated and committed. A renderer reads the instance; it does not become the semantic authority merely because it draws pixels. For external or native-managed resources, a declared adapter supplies observations, version and coverage, and the library reconciles those observations with the instance. No tool may silently maintain a contradictory second semantic state.
 
 După fiecare pas, starea este citită din nou și comparată cu condiția „după” a actului (secțiunea 4.6). Rezultatul unei execuții este unul din cinci: executat; executat în parte; desfăcut, adică s-a dat înapoi tot; efect necunoscut; desfacere eșuată. Ultimele două sunt rare, dar trebuie să aibă nume, fiindcă în ele aplicația nu are voie să spună nici „am făcut”, nici „nu am făcut”.
 
@@ -1979,7 +2021,7 @@ La eșecul unui pas, pașii executați ai aceleiași părți sunt desfăcuți î
 
 Dacă desfacerea eșuează, starea este citită din nou și spusă omului așa cum este: ce a rămas făcut și ce nu. Aplicația nu pretinde nici că a făcut, nici că nu a făcut. *(R63)*
 
-Uneltele celor patru domenii trebuie să permită anularea. Contractul fiecărei operații include informația necesară refacerii stării dinainte și verificarea rezultatului anulării. Un eșec al anulării se raportează conform R63. O unealtă viitoare fără anulare are nevoie de o politică explicită; nu moștenește automat permisiunea de a executa. *(R64)*
+Tools exposed by the application trebuie să permită anularea. Contractul fiecărei operații include informația necesară refacerii stării dinainte și verificarea rezultatului anulării. Un eșec al anulării se raportează conform R63. O unealtă viitoare fără anulare are nevoie de o politică explicită; nu moștenește automat permisiunea de a executa. *(R64)*
 
 Două ședințe nou create pentru aceeași persoană pot avea identificatori complet diferiți și totuși să fie dependente: interdicția suprapunerii le privește împreună. În schimb, două modificări fără date, reguli sau resurse comune pot fi tratate separat dacă această independență este demonstrată. Lipsa unei dovezi cere tratarea conservatoare ca operații dependente.
 
@@ -2044,7 +2086,7 @@ Formele de răspuns sunt cadrele celor patru acte și șapte forme generale. *(R
 | deja așa | Condiția „după” ținea dinainte. |
 | făcut în parte | Unele părți independente s-au făcut, altele nu; fiecare este numită. |
 | refuz cu motiv | O interdicție tare, sau o cerință care nu se poate îndeplini. |
-| întrebare | Lipsește o valoare, sau sunt mai mulți candidați. |
+| interpretation with uncertainty | A reversible effect used a ranked referent or completion; state the chosen interpretation and retain alternatives and undo. |
 | efect necunoscut | Vezi R63. |
 | răspuns despre stare | „What is on Friday?” |
 | explicație | „Why is the fish there?”, din proveniența valorilor. |
@@ -2061,11 +2103,11 @@ Regula este simplă: explicația se construiește din evidența păstrată în t
 
 O **urmă de justificare (justification trace)** este înregistrarea acestei legături. Fiecare pas numește intrările, operația, rezultatul și pasul care l-a cerut. O intrare este fie un fragment al cererii, fie un fapt identificat din starea citită, fie o declarație dintr-o versiune fixată a cunoașterii. O concluzie derivată trimite la regula și intrările ei. O observație a uneltei poartă identitatea operației și versiunea stării observate.
 
-În proiectul propus, urma este alcătuită din fapte într-o instanță de jurnal a sesiunii. Nu este numai un obiect temporar al componentei de răspuns. Instanța jurnalului are o schemă publicată, astfel încât pașii să poată fi căutați prin pattern-uri, salvați și reîncărcați. Nu introducem aceste fapte ca obiecte desenate sau ca ședințe: ele descriu cererea și evaluarea ei, nu domeniul asupra căruia s-a lucrat.
+The justification trace is facts in a schema-validated session World, with explicit links to requests, premises, rules, calculations, calls and observations. It is not only a temporary response object or an animation event. These facts describe interpretation and execution, not drawn objects or calendar events.
 
-Jurnalul se salvează cu proiectul și se reîncarcă la redeschidere, cu aceleași identități de cereri și pași. Închiderea sesiunii nu îl golește. Astfel, o întrebare de a doua zi poate selecta o acțiune anterioară. Dacă istoricul a fost eliminat explicit sau lipsește din proiectul încărcat, sistemul declară că justificarea nu este disponibilă; nu o reconstruiește ca și cum ar fi fost păstrată.
+Persistence is explicit. Saving a project can include its trace World, preserving request and step identities. Loading that saved trace permits questions about earlier actions. A session without a saved trace makes no such promise: if history has been cleared or was not loaded, the library reports that the justification is unavailable rather than reconstructing an invented historical explanation.
 
-Fiecare răspuns păstrează identificatorul cererii și al pasului care îl justifică. „Why?” se leagă de ultimul răspuns relevant din contextul conversației; o întrebare explicită despre o acțiune mai veche selectează răspunsul acelei acțiuni. Dacă sunt mai multe candidate, sistemul cere precizarea. El nu înlocuiește explicația unei acțiuni vechi cu justificarea stării curente numai pentru că aceasta este mai ușor de obținut.
+Fiecare răspuns păstrează identificatorul cererii și al pasului care îl justifică. „Why?” se leagă de ultimul răspuns relevant din contextul conversației; o întrebare explicită despre o acțiune mai veche selectează răspunsul acelei acțiuni. If several historical actions match, the library ranks them using conversational context, identifies the selected action in its explanation and retains the alternatives. El nu înlocuiește explicația unei acțiuni vechi cu justificarea stării curente numai pentru că aceasta este mai ușor de obținut.
 
 | Date păstrate în jurnal | Rol în explicație |
 |---|---|
@@ -2080,7 +2122,8 @@ Intrarea istorică este o copie a valorilor folosite, nu o referință activă c
 
 Anularea schimbă starea domeniului și retrage preferințele învățate de pas, dar nu șterge dovada că pasul a avut loc. Jurnalul primește o înregistrare nouă de anulare, legată de operația inițială. Astfel, „why did you move it?” poate primi o explicație istorică urmată de precizarea că mutarea a fost anulată. O anulare eșuată înregistrează efectul rămas observat. Păstrarea istoricului nu autorizează refolosirea unei concluzii anulate drept fapt curent.
 
-Din versiunea 0.181.0, `core.use world=std.trace` publică înregistrări distincte pentru cerere, intrare, pas, observație, răspuns, anulare și corecție. Următorul fragment se încarcă sub scheme închise și verifică legăturile structurale. El nu execută mutarea și nu dovedește singur că relația geometrică a fost satisfăcută:
+The `std.trace` schema distinguishes request, input, step, observation, reply, undo and correction. The following records express structural links. They are not sufficient evidence of the geometric relation: that requires the relevant geometry and a recorded relation check.
+
 ```sop
 @req1 std.trace.request message="put the duck on the lake"
 @input1 std.trace.input source="drawing-instance/duck1" version="state-17" source.type=drawn key=at values="[\"120,540\"]"
@@ -2096,7 +2139,7 @@ Din versiunea 0.181.0, `core.use world=std.trace` publică înregistrări distin
 @undo1 std.trace.undo target=$step1 execution=$undo.step observation=$undo.after
 ```
 
-`req1` identifică mesajul, iar `input1` fixează o valoare citită din starea 17. `source` este aici o valoare istorică explicită, nu o referință `$` către un obiect care ar trebui să existe pentru totdeauna. `step1` distinge actul semantic `place` de operația uneltei `move`; împreună cu `reply1`, folosește referințe reale către înregistrările jurnalului. `undo1` distinge pasul anulat (`target`) de pasul care execută restaurarea (`execution`). Observația anulării aparține celui de-al doilea și poartă identitatea noului apel; versiunea stării restaurate este păstrată în intrarea sa. Intrarea păstrează tipul sursei în `source.type`, cheia citită și o listă JSON de tokenuri SOP în `values`. Lista păstrează ordinea și repetițiile; tokenul numeric `12`, textul `"12"` și referința istorică `$obiect` rămân categorii diferite. Referințele din listă sunt date istorice, nu legături care cer existența obiectului în starea curentă. `values=[]` înregistrează că citirea nu a găsit valori pentru acea cheie; nu dovedește închiderea întregii lumi. Variabilele și fragmentele care introduc alte chei sau fire sunt refuzate. Forma canonică normalizează escaparea textelor, nu scrierea numerică: `1` și `1.0` își păstrează tokenurile originale. Valoarea `120,540` rămâne aici un token, fără validare geometrică. Schema nu face încă jurnalul imuabil și nu îl salvează automat; aceste obligații cer mecanisme distincte. Fragmentul păstrează pozițiile observate, dar omite geometria lacului și verificarea relației. Încărcarea sa nu autorizează textul răspunsului: singur, `status=confirmed` nu este o dovadă suficientă. Verificarea efectului și a afirmației comunicate rămâne responsabilitatea evaluatorului de dovezi.
+`req1` identifică mesajul, iar `input1` fixează o valoare citită din starea 17. `source` este aici o valoare istorică explicită, nu o referință `$` către un obiect care ar trebui să existe pentru totdeauna. `step1` distinge actul semantic `place` de operația uneltei `move`; împreună cu `reply1`, folosește referințe reale către înregistrările jurnalului. `undo1` distinge pasul anulat (`target`) de pasul care execută restaurarea (`execution`). Observația anulării aparține celui de-al doilea și poartă identitatea noului apel; versiunea stării restaurate este păstrată în intrarea sa. Intrarea păstrează tipul sursei în `source.type`, cheia citită și o listă JSON de tokenuri SOP în `values`. Lista păstrează ordinea și repetițiile; tokenul numeric `12`, textul `"12"` și referința istorică `$obiect` rămân categorii diferite. Referințele din listă sunt date istorice, nu legături care cer existența obiectului în starea curentă. `values=[]` înregistrează că citirea nu a găsit valori pentru acea cheie; nu dovedește închiderea întregii lumi. Variabilele și fragmentele care introduc alte chei sau fire sunt refuzate. Forma canonică normalizează escaparea textelor, nu scrierea numerică: `1` și `1.0` își păstrează tokenurile originale. Valoarea `120,540` rămâne aici un token, fără validare geometrică. Trace immutability and project saving are separate obligations of the journal and persistence mechanisms; loading a record alone supplies neither. Fragmentul păstrează pozițiile observate, dar omite geometria lacului și verificarea relației. Încărcarea sa nu autorizează textul răspunsului: singur, `status=confirmed` nu este o dovadă suficientă. Verificarea efectului și a afirmației comunicate rămâne responsabilitatea evaluatorului de dovezi.
 
 Un pas își numește operația, versiunea implementării și identitatea apelului. Statutul descrie pasul individual: planificat, confirmat, refuzat, necunoscut sau parțial. Pentru un pas încă planificat, identitatea este rezervată înaintea apelului; existența sa nu înseamnă că unealta a fost pornită. Aceste statute nu înlocuiesc rezultatele întregului plan din secțiunea 6.9. Observația conține cel puțin o intrare istorică, iar fiecare intrare își păstrează propria versiune: nu presupunem că două surse independente au același contor de versiuni.
 
@@ -2122,7 +2165,7 @@ Urmărim exemplul calendarului. Pentru claritate, numerele sunt minute față de
 | regulă | Două intervale ale aceluiași participant nu se suprapun; 630 < 660 și 600 < 660 sunt ambele adevărate. |
 | rezultat | Cererea exactă este refuzată; nu a fost executată nicio operație. |
 
-Explicația pentru om este: „Ana already has a meeting from 10:00 to 11:00. Your 30-minute meeting at 10:30 overlaps it, so I did not schedule it.” Fiecare afirmație corespunde unui pas. Dacă numele Ana are doi candidați, explicația este în schimb „Two people named Ana match your request; I need to know which one.” Nu se calculează disponibilitatea unei persoane alese arbitrar.
+The explanation is: “Ana already has a meeting from 10:00 to 11:00. Your 30-minute meeting at 10:30 overlaps it, so I did not schedule it.” Each claim names its evidence. If two people are named Ana, the library ranks them before checking availability and records the selected identity. For example, accepted focus may select Ana Ionescu; the response then names that interpretation and retains the other Ana as an alternative. An arbitrary person must not be substituted merely because that person is free.
 
 În desen, urmărim „put the duck on the lake”. Presupunem că rața și lacul există, că referințele sunt univoce și că relația cerută nu este deja satisfăcută. Fiecare rând de mai jos trebuie să aibă un corespondent în urma aceleiași cereri; un rezultat din altă cerere nu poate completa o dovadă lipsă.
 
@@ -2161,13 +2204,13 @@ Criteriul nu interzice faptele specifice: faptul că rața este pasăre și iden
 | alegere | 180 de cuvinte este ținta presupusă a planului, marcată ca presupunere și legată de sursă. |
 | explicație | „You did not specify a length; I used the declared usual length of 180 words for this kind of letter.” |
 
-Acest traseu explică alegerea unei ținte, nu dovedește că textul final are 180 de cuvinte. După compunere, lungimea efectivă trebuie măsurată și comparată cu toleranța permisă. Dacă sursa obișnuită lipsește, sistemul nu poate produce aceeași explicație; trebuie să folosească următoarea sursă justificată sau să întrebe. Pentru ton, lipsa unei verificări nu poate fi ascunsă prin „I made it formal”: se explică numai transformarea și proprietățile efectiv verificate.
+Acest traseu explică alegerea unei ținte, nu dovedește că textul final are 180 de cuvinte. După compunere, lungimea efectivă trebuie măsurată și comparată cu toleranța permisă. Dacă sursa obișnuită lipsește, sistemul nu poate produce aceeași explicație; it must use another justified source, state its assumption and uncertainty, or report that no compatible completion is available. Pentru ton, lipsa unei verificări nu poate fi ascunsă prin „I made it formal”: se explică numai transformarea și proprietățile efectiv verificate.
 
 Pentru toate domeniile, explicația scurtă poate fi desfășurată în pașii ei, cu identitățile și versiunile reale. Numele de reguli dintr-un exemplu al cărții nu sunt dovezi dintr-o execuție. Dacă urma s-a pierdut, răspunsul corect este că justificarea nu mai este disponibilă, nu o reconstrucție prezentată ca certitudine.
 
 ### 6.11.1 Mesaje despre conversație și referințe la istoric
 
-În implementarea 0.204, `lookupContextTargetBinding` verifică o legătură declarată explicit între ținta unei versiuni păstrate a cererii, subiectul din dovada istorică de existență și apartenența lui canonică. Declarația numește separat identitatea cererii, pasul, invocarea, contextul gazdei și instantaneul populației; nu confundă versiunile acestor înregistrări. Legătura pozitivă cu un membru cunoscut poate rămâne justificată într-o populație incompletă sau după eliminare, dar rezultatul este numai istoric. Autoritatea corelării rămâne o intrare de încredere; metoda nu dovedește continuitatea unei instanțe și nu autorizează reutilizarea identificatorului în starea curentă.
+A conversational reference must link a retained request target to its historical subject and the corresponding canonical membership evidence. Request, step, invocation, host context and population snapshot identities are distinct. A justified historical reference can survive object removal, but it does not authorize modifying a newly created object that reuses a display label. Before a new edit, the library resolves the current identity and version again.
 
 Jurnalul este o lume de fapte și poate fi interogat prin aceleași modele, referințe și surse ca celelalte lumi. Un mesaj despre conversație poate desemna o cerere, un rezultat sau o afirmație anterioară. Reutilizarea privește reprezentarea și accesul la dovezi; nu dă voie ca ștergerea unui fir din jurnal să fie confundată cu anularea efectului lui în aplicație. O corectare se înregistrează ca eveniment nou și verifică separat starea observabilă.
 
@@ -2184,35 +2227,25 @@ Jurnalul este o lume de fapte și poate fi interogat prin aceleași modele, refe
 
 Un raport că rezultatul nu se vede nu autorizează automat repetarea operației. Dacă recitirea confirmă obiectul, problema poate fi de vizibilitate sau de întârziere a adaptorului; dacă citirea este incompletă, efectul rămâne necunoscut. Sistemul corectează ce poate justifica și nu creează o copie pentru a face să dispară contradicția din dialog. La fel, o obiecție care conține o corecție explicită trebuie separată în afirmația despre trecut și cerința nouă.
 
-# 7. Cele patru domenii
+# 7. Application areas and their declared interfaces
 
-Capitolul acesta arată cum arată fiecare domeniu când tot ce s-a explicat este pus la lucru. Secțiunile prezintă fragmentele de declarații disponibile, ce rămâne program și exemple de utilizare. Fragmentele actuale nu sunt încă domenii complete: dependențele, parametrii uneltelor și legăturile lipsă trebuie declarate înainte de a putea verifica întregul traseu. Secțiunea 7.4.1 precizează aceste dependențe.
+The examples use five application areas: Drawing, Diagram (including charts), Documents, Calendar and Avatar. This is an open set of consumers of one library. A new area contributes schemas, knowledge, live instance Worlds and typed tool bindings; it does not contribute another natural-language interpreter or hidden planner.
 
-De urmărit este cât de puțin declară un domeniu. Declară felurile lui de fire, sloturile lor legate de concepte, ce poate face, uneltele și legăturile. Nu are cuvinte de mărime, liste de culori sau de forme, întrebări, propoziții de răspuns ori valori obișnuite proprii.
+For every example distinguish the reader's request, the declarations consulted by LIB, the concrete circuit of tool calls, and the observed effect. Schema relationships alone do not define a tool interface: parameters, outputs, units, references, preconditions and observations must also be declared. The domain sketches below use explanatory pseudocode, not additional SOP syntax.
 
 ## 7.1 Desenul
 
-```
-@w          std.schema.world name=drawing
-@t.page     core.type of=page  extends=std.schema.thing is=whole
-@t.drawn    core.type of=drawn extends=std.schema.thing is=thing
-@s.drawn.kind  core.slot of=drawn key=kind   type=k.kinds.kind means=kind
-@s.drawn.at    core.slot of=drawn key=at     kind=point  means=place   space=page
-@s.drawn.in    core.slot of=drawn key=in     type=drawn  means=place   relation=in
-@s.drawn.on    core.slot of=drawn key=on     type=drawn  means=place   relation=on
-@s.drawn.size  core.slot of=drawn key=size   kind=number means=quality space=size
-@s.drawn.col   core.slot of=drawn key=colour kind=point  means=quality space=colour
-@k.drawn    std.schema.kind of=drawn world=drawing acts=make acts=place acts=change acts=remove
-@op.add     std.tool.op world=drawing name=add    realises=make
-@op.move    std.tool.op world=drawing name=move   realises=place
-@op.set     std.tool.op world=drawing name=set    realises=change
-@op.delete  std.tool.op world=drawing name=delete realises=remove
-@f.free     core.function name=free_spot out.kind=point pure=true doc="a free position inside a region"
+```text
+Pseudocode — model responsibilities, not SOP declarations
+Drawing World: page contains drawable objects.
+Drawable object: identity, kind, position, parent/group, size, colour, optional label.
+Knowledge: editable representations, part roles, placement and style policies.
+Tools: create concrete geometry, move, set supplied properties, remove, observe.
 ```
 
-Lumea desenului are două tipuri de fire: pagina, care este un întreg, și lucrul desenat. Un lucru desenat are un fel, luat din arborele felurilor; un loc, ca poziție și ca relație „în” sau „pe” cu alt lucru; o mărime și o culoare. Cu lucrurile desenate se pot face cele patru acte, iar pentru fiecare există o unealtă. Ultimul rând declară o funcție proprie: găsirea unei poziții libere într-o regiune.
+The drawing model separates the page, objects and groups. Position is not identical to a relationship such as “on the lake”: the library must derive coordinates from that relation using geometry and applicable knowledge. A free-position calculator returns candidates under a declared contract; it cannot decide by itself which object or region the user intended.
 
-Ce lucruri se pot desena nu este declarat aici. Se poate desena orice fel din arbore care are o imagine sau un strămoș cu imagine (secțiunea 5.2). Programul desenului este deci: patru unelte, citirea paginii, căutarea unui loc liber și imaginile.
+Representations belong in knowledge: a house can be a group of editable polygons, rectangles and text, rather than an opaque picture. A declared inheritance method may reuse an ancestor's representation while retaining the requested kind and recording the approximation. The drawing primitive receives concrete geometry. It does not choose the ancestor or decide where a house belongs.
 
 | Omul spune | Ce se întâmplă și din ce decurge |
 |---|---|
@@ -2227,26 +2260,18 @@ Ce lucruri se pot desena nu este declarat aici. Se poate desena orice fel din ar
 
 ## 7.2 Diagramele, cu graficele ca fel de diagramă
 
-```
-@w          std.schema.world name=diagram
-@t.diagram  core.type of=diagram extends=std.schema.thing is=whole
-@t.node     core.type of=node    extends=std.schema.thing is=thing
-@t.link     core.type of=link    extends=std.schema.thing is=relation
-@s.node.label core.slot of=node key=label  kind=string means=name
-@s.node.shape core.slot of=node key=shape  kind=point  means=quality  space=shape
-@s.node.col   core.slot of=node key=colour kind=point  means=quality  space=colour
-@s.node.at    core.slot of=node key=at     kind=point  means=place    space=page
-@s.node.value core.slot of=node key=value  kind=number means=quantity
-@s.link.from  core.slot of=link key=from   type=node   means=role     role=source
-@s.link.to    core.slot of=link key=to     type=node   means=role     role=goal
-@k.node     std.schema.kind of=node world=diagram acts=make acts=place acts=change acts=remove
-@k.link     std.schema.kind of=link world=diagram acts=make acts=remove
-@f.layout   core.function name=layout out.kind=points pure=true doc="positions for nodes with few crossings"
+```text
+Pseudocode — model responsibilities, not SOP declarations
+Diagram World: diagram contains nodes, links and groups.
+Node: identity, optional label, shape, colour, position, optional data value.
+Link: identity, source node, destination node, optional label and geometry.
+Group: member references, layout choice and constraints.
+Tools: create/update nodes and links, group/ungroup, apply concrete positions, observe.
 ```
 
-Lumea diagramei are trei tipuri de fire: diagrama, care este un întreg; nodul, care este un lucru; săgeata, care este o relație între două noduri. Un nod are o etichetă, o formă, o culoare, o poziție și, dacă este cazul, o cantitate. Funcția proprie este așezarea nodurilor astfel încât săgețile să se încrucișeze cât mai puțin.
+The diagram model gives nodes, links and groups independent identities. An arrow's endpoints are references to the selected nodes; its label is editable content. Grouping preserves member identities and adds group properties. A layout request changes only the resolved group's coordinates according to declared constraints; a tool receives those concrete positions, not “make it nicer”.
 
-**Graficele.** Un grafic nu este un domeniu separat. Este un fel de diagramă: nodurile lui sunt bare sau puncte, iar cantitatea fiecăruia, ținută în cheia `value`, este arătată ca înălțime sau ca poziție pe o axă a paginii. De aceea nodul are cheia `value`. Felurile de diagrame (flux, arbore, hartă mentală, grafic cu bare, grafic cu linie) sunt grafuri de părți în cunoaștere (secțiunea 4.4), deci adăugarea unui fel nou de diagramă nu cere program.
+**Charts are diagram groups.** A chart groups typed data items and declares how values map to geometry. Changing bars to a line changes the group's layout while retaining data identities. LIB instantiates declared methods for axes, labels and positions; tools create or change concrete nodes and links. A new chart family using the same primitives requires declarations, not an application branch on its name. A new rendering primitive requires a documented tool extension.
 
 | Omul spune | Ce se întâmplă și din ce decurge |
 |---|---|
@@ -2260,26 +2285,18 @@ Lumea diagramei are trei tipuri de fire: diagrama, care este un întreg; nodul, 
 
 ## 7.3 Documentele
 
-```
-@w          std.schema.world name=document
-@t.text     core.type of=text    extends=std.schema.thing is=whole
-@t.section  core.type of=section extends=std.schema.thing is=part
-@s.text.genre  core.slot of=text    key=genre  type=k.kinds.kind means=kind
-@s.text.about  core.slot of=text    key=about  kind=string means=topic
-@s.text.title  core.slot of=text    key=title  kind=string means=name
-@s.text.tone   core.slot of=text    key=tone   kind=point  means=quality  space=tone
-@s.sec.of      core.slot of=section key=of     type=text   means=part
-@s.sec.role    core.slot of=section key=role   type=k.kinds.kind means=kind
-@s.sec.order   core.slot of=section key=order  kind=number means=place    space=order
-@s.sec.length  core.slot of=section key=length kind=number means=quantity unit=word
-@k.text     std.schema.kind of=text    world=document acts=make acts=change acts=remove
-@k.section  std.schema.kind of=section world=document acts=make acts=place acts=change acts=remove
-@f.compose  core.function name=compose out.kind=string doc="text for a part, from what the knowledge has about the topic"
+```text
+Pseudocode — model responsibilities, not SOP declarations
+Document World: document contains ordered sections with optional parent sections.
+Document: identity, title, genre and source material.
+Section: identity, parent, role, order and text.
+Knowledge: genre composition, length and tone policies.
+Tools: create/update/remove/reorder concrete sections; compose under typed requirements; observe.
 ```
 
-Lumea documentului are două tipuri de fire: textul, care este un întreg, și secțiunea, care este o parte a lui. Textul are un gen, un subiect, un titlu și un ton. Secțiunea spune al cărui text este, ce fel de parte este (formulă de început, cuprins, încheiere), pe ce loc stă și cât de lungă este.
+The document model distinguishes the whole document from ordered, optionally nested sections. A chapter and a subchapter share the section mechanism with different parent references. Moving a section changes its ordering relation; editing its label does not rename its persistent identity or replace its content.
 
-Genurile (scrisoare, raport, poveste, notă) și părțile fiecăruia sunt grafuri în cunoaștere. Scrierea textului propriu-zis este o funcție declarată, `compose`. Împărțirea este cea din secțiunea 6.8: planul hotărăște ce parte se scrie, despre ce și cât de lungă; funcția scrie cuvintele.
+Genres, mandatory and optional parts, and defaults belong in knowledge Worlds. For “add a chapter called Results”, LIB resolves the document, creates a section goal with that parent and title, derives order from the declared insertion policy, and emits a section-creation call. Composition additionally requires concrete source material, topic, section role, target length and tone parameters. The composition primitive produces text under that contract; it does not choose the document or invent facts about a meeting.
 
 | Omul spune | Ce se întâmplă și din ce decurge |
 |---|---|
@@ -2292,29 +2309,22 @@ Genurile (scrisoare, raport, poveste, notă) și părțile fiecăruia sunt grafu
 
 ## 7.4 Calendarul
 
-**Starea implementării.** PSys2 publică în `214802c7` un adaptor local de calendar, documentat în [contractul gazdei](../../psys2/specs/29-calendar-host.md). El primește persoane, săli și ședințe cu identități și momente deja rezolvate, verifică integritatea structurală și referințele, păstrează inclusiv suprapunerile deja observate, aplică modificări atomic și întoarce observația stării efective. Versiunile previn scrierile pornite dintr-o stare veche; identitatea operației împiedică repetarea efectului la reluare; anularea condiționată restaurează ultima schimbare fără să șteargă editări independente. Politica de suprapunere aparține regulilor declarate ale lumii, nu codului adaptorului. Observația completă privește numai depozitul local al acestei instanțe. Adaptorul și vederea tabelară nu implementează încă citirea conversațională, recurența, persistența sau legarea la zona activă a aplicației; acestea se construiesc pe contractele comune, nu sunt presupuse realizate de existența operațiilor.
+The simplest calendar profile has one live calendar and editable events. Event creation needs a resolved title, start, duration and calendar identity. Participants and rooms are optional extensions, not mandatory complications of every calendar UI. The sketch below illustrates the room extension because it makes shared-resource constraints explicit.
 
-Compoziția activă a demo-ului PSys2 publicată în `23e5a048` exclude Map și Music din încărcare, rutare, bundle-uri și metadatele taburilor. Sursele reutilizabile rămân fixture-uri pentru teste, nu capabilități ale demo-ului. Integrarea Charts în diagramă, Avatar în desen și zona Calendar activă nu sunt încă livrate. Rândurile istorice de evaluare sunt păstrate, astfel încât retragerea capabilităților nu micșorează artificial numitorul acceptării.
-
-```
-@w          std.schema.world name=calendar
-@use        core.use world=w.person
-@t.meeting  core.type of=meeting extends=std.schema.thing is=thing complete=true
-@t.room     core.type of=room    extends=std.schema.thing is=thing resource=true
-@s.meet.title  core.slot of=meeting key=title  kind=string   means=name
-@s.meet.start  core.slot of=meeting key=start  kind=number   means=time  part=start
-@s.meet.length core.slot of=meeting key=length kind=number   means=time  part=duration
-@s.meet.room   core.slot of=meeting key=room   type=room     means=place relation=in
-@s.meet.people core.slot of=meeting key=people type=w.person means=role  role=participant many=true
-@s.room.seats  core.slot of=room    key=seats  kind=number   means=quantity counts=w.person
-@k.meeting  std.schema.kind of=meeting world=calendar acts=make acts=place acts=change acts=remove
+```text
+Pseudocode — model responsibilities, not SOP declarations
+Calendar World: calendar contains events and optional resources.
+Event: identity, title, absolute start, duration, optional participant/resource references.
+Optional room: identity and capacity.
+Knowledge: working regions, ordinary durations, overlap policy and scheduling objective.
+Tools: create/update/remove the supplied event; observe events with coverage and version.
 ```
 
-Lumea calendarului importă tiparul persoanelor (`core.use`, secțiunea 5.3). Are două tipuri de fire: ședința și sala. Sala este declarată ca resursă. O ședință are un titlu, un început și o durată, o sală și participanți. O sală are un număr de locuri, care numără persoane.
+The optional participant/resource model links events to existing identities and describes room capacity. A participant label is not a participant reference. LIB resolves the live identity before scheduling; the event primitive receives that identity together with concrete times and content.
 
-La acestea se adaugă interdicția din secțiunea 3.6, că un om nu poate fi în două ședințe care se suprapun, și aceeași interdicție pentru o sală. Mai mult nu este de scris.
+Overlap policy is separate from the data model. Observations may contain existing overlaps; representing that conflict must remain possible. A planning constraint can reject introducing an overlap, while another declared policy can permit it and report it. The tool validates structural integrity and applies the supplied mutation; it does not secretly choose an event to move or impose its own scheduling preferences.
 
-Calendarul este domeniul de probă al întregii construcții, din două motive. Este nou, deci arată cât costă cu adevărat adăugarea unui domeniu. Și seamănă, în adânc, cu desenul: timpul unui om și o sală sunt resurse care se ocupă, la fel cum spațiul paginii este resursa desenului. Dacă partea generală este bine făcută, „cea mai apropiată oră liberă” și „un loc liber în iaz” sunt același mecanism.
+Scheduling and spatial placement share a search pattern: enumerate candidates in a declared region, measure them, reject hard-constraint violations and rank the remainder by a declared objective. Measurements differ: interval intersection for time, geometric containment or distance for a page. Reuse concerns this mechanism and its contracts; minutes and page coordinates retain distinct units and semantics.
 
 | Omul spune | Ce se întâmplă și din ce decurge |
 |---|---|
@@ -2322,18 +2332,18 @@ Calendarul este domeniul de probă al întregii construcții, din două motive. 
 | „later” | O reacție: un pas pe axa timpului. Dacă noul interval se suprapune cu altceva, se alege cel mai apropiat liber (secțiunile 6.4 și 4.4). |
 | „in the big room” | Un fragment care dă locul. „Big” se judecă față de sălile care există (secțiunile 6.4 și 4.5). |
 | „with Tom too” | Un fragment care adaugă un participant. Se verifică și timpul lui Tom (secțiunile 6.4 și 3.9). |
-| „a meeting with Ana at ten thirty”, când Ana este ocupată | Refuz cu explicație, compusă din încălcare, și cu cea mai apropiată oră liberă (secțiunile 3.9 și 4.4). |
+| “a meeting with Ana at ten thirty”, when Ana is busy | Preserve explicit 10:30. If overlap is allowed, create it and report the conflict. If overlap is forbidden, explain that constraint and retain the nearest feasible time as a proposal; do not silently substitute it. |
 | „move everything on Friday to Monday” | Toate ședințele din regiunea „Friday”. Rezolvitorul le găsește ore fără suprapuneri (secțiunea 5.4). |
 | „who is in the review?” | Întrebarea generală a rolului de participant, răspunsă din stare (secțiunea 6.10). |
 | „what is on Friday?” | Se răspunde din stare (secțiunea 6.10). |
 
 ### 7.4.1 Aplicarea contractelor într-un scenariu de calendar
 
-Un scenariu complet leagă reprezentarea datelor, interpretarea, verificarea și efectul observat. Exemplele de declarații din capitolul 7 ilustrează componentele, dar nu conțin singure toate importurile și contractele necesare rulării unui domeniu. Tabelul dependențelor arată ce cunoaștere trebuie să fie disponibilă înainte ca un exemplu să poată susține concluzii.
+A complete scenario connects request representation, declared policies, candidate verification and observed effect. The model sketches identify responsibilities, while executable examples must declare their schemas and all required tool parameters. Reading the sketch alone does not create a capability.
 
-Calendarul de mai jos este un exemplu de aplicare a contractelor. Cazurile pornesc separat din starea descrisă; cazul ambiguu adaugă explicit o a doua ședință, iar anularea continuă cazul de reușită. Astfel, rezultatul unui caz nu devine accidental premisa altuia.
+The following independent cases use one explicitly fixed initial calendar. An undo case continues its named creation; other rows do not silently inherit effects from one another.
 
-Blocurile de fire din capitolul 7 sunt extrase schematice, nu declarații complete. Un domeniu complet are în plus: importul lumii legendelor și al bazelor de cunoaștere folosite; parametrii și legăturile fiecărei unelte; citirea stării; funcțiile proprii, cu argumentele lor. *(R72)*
+A complete domain supplies imports, schema types, applicable knowledge, tool signatures and bindings, observation interfaces and any registered mechanical functions. The dependency table identifies the semantic content that those declarations must provide.
 
 | Domeniul | De ce depinde |
 |---|---|
@@ -2342,33 +2352,29 @@ Blocurile de fire din capitolul 7 sunt extrase schematice, nu declarații comple
 | documente | Lumea legendelor; grafurile genurilor; regiunile de ton; afirmațiile despre subiecte. |
 | calendar | Lumea legendelor; tiparul persoanelor; regiunile zilei; unitățile de timp. |
 
-Scenariile următoare arată cum aceleași date pot conduce la execuție, clarificare, refuz sau anulare, în funcție de cerere.
+A concrete example fixes a local day and time zone. The calendar contains `m1`, Review, 10:00–11:00. Knowledge declares an ordinary duration of 30 minutes, a working region 09:00–17:00 and an earliest-free-slot preference; policy forbids introducing overlaps. These are illustrative World facts, not JavaScript defaults. Each row starts independently unless it explicitly continues another.
 
-Starea de pornire, aceeași pentru toate: Ana are ședința `m1`, „Review”, luni, de la 10:00 la 11:00, în sala `r1`. Sălile `r1` și `r2` sunt altfel libere.
+| Request | Elaboration by LIB | Concrete effect and evidence |
+|---|---|---|
+| “Add Review preparation on Monday at 14:00” | Resolve Monday and zone; retain explicit 14:00; fill duration 30 from applicable knowledge; verify [14:00,14:30). | Emit an event-creation instruction with calendar, title, start and duration. Observe the returned event identity and values. |
+| “Add Review preparation on Monday” | Search complete occupancy within the working region using ordinary duration and earliest-slot preference. | Create at 09:00 if free. Say “Added it at 09:00 for 30 minutes; I used the first free working slot.” Retain undo. Missing time does not automatically require a question. |
+| “Move Review to Tuesday”, with two matching events | Rank identities by explicit selection, conversation binding and declared relevance; preserve both alternatives. | With a usable best candidate and reversible move, move that event and name the assumption. The tool never resolves “Review”. |
+| “Add Review preparation on Monday at 10:30” | [10:30,11:00) intersects `m1`; explicit time conflicts with the hard no-overlap policy. | Do not silently rewrite 10:30 to 11:00. Explain the conflict and retain 11:00 as the nearest feasible proposal. |
+| “Undo” after the first row | Resolve that invocation and created identity; compare current state against its observed result. | Delete only that event if the compensation precondition holds; reread. Independent edits and `m1` remain. |
 
-| Cazul | Ce se întâmplă, pas cu pas |
-|---|---|
-| reușită | „a meeting with Ana on Monday at 14:00 for an hour”. Cererea: a face; ședință; participant Ana; început luni 14:00, exact; durată 1 oră. Sala nu este spusă: este o cheie deschisă; candidate sunt `r1` și `r2`, amândouă libere; se ia prima și se notează ca presupunere. Verificare: validă. Execuție: apare `m2`. Răspuns: „I put a 1-hour meeting with Ana on Monday at 14:00, in room 1.” |
-| două înțelesuri | „move Ana's meeting to Tuesday”, când Ana are două ședințe luni. Trimiterea „Ana's meeting” găsește două. Nu se execută nimic. „Which one? 1. Review, 10:00, 2. the meeting at 14:00.” |
-| valoare lipsă | „a meeting with Ana on Monday”. Începutul lipsește. Valoarea obișnuită pentru durată este o oră. Pentru început nu există o presupunere rezonabilă, fiindcă ziua are multe ore libere. Întrebarea conceptului de timp: „When on Monday?” |
-| refuz | „a meeting with Ana on Monday at 10:30”. Ora este exactă. Interdicția despre oameni se potrivește cu `m1`. Nu se execută. Pentru durata presupusă de o oră, 9:30 nu este liber: intervalul 9:30–10:30 se suprapune cu rezervarea existentă. 11:00 permite întreaga durată, în ipoteza calendarului complet citit. „Ana is busy from 10 to 11. The nearest free time for a 1-hour meeting is 11:00. Shall I put it there?” |
-| anulare | După cazul de reușită, „undo”. Pasul șters este facerea lui `m2`. Starea citită din nou are numai `m1`. „I removed the meeting on Monday at 14:00.” |
-
-În cazul de reușită, alegerea sălii este o presupunere explicită, iar ora este o cerință exactă. Aceste două valori pot apărea în aceeași rezervare, dar au justificări diferite. În cazul ambiguu, lipsa unei identități unice oprește execuția înainte de orice mutare. În cazul incomplet, durata presupusă nu rezolvă lipsa începutului.
-
-Refuzul cere verificarea întregii durate, nu doar a momentului de început. O ședință de o oră începută la 9:30 s-ar suprapune cu rezervarea 10:00–11:00; nu este o alternativă liberă. Anularea se verifică prin recitire și prin dispariția rezervării create, nu prin simpla confirmare a comenzii de ștergere.
+Tool arguments contain no unresolved “Monday”, “usual” or “earliest”. They contain absolute time with its resolved interpretation, duration and unit, references and typed content. A later call may consume the earlier creation result: a new ID need not be predicted before creation. Binding returned IDs is generic dataflow, not semantic interpretation by the tool.
 
 ## 7.5 Ce are voie să fie program și cum știm că nu ne păcălim
 
 Toată construcția are rost numai dacă programul unui domeniu rămâne mic și nu ia, pe ascuns, hotărâri care trebuiau declarate. Altfel am avea declarații frumoase și, lângă ele, program care face de fapt treaba, pentru fiecare caz în parte.
 
-Regula: programul unui domeniu face numai trei lucruri. Îndeplinește operațiile simple ale uneltelor. Își citește starea. Și calculează funcțiile declarate. O unealtă are voie să știe lucrurile meseriei ei: unealta de desen știe cum arată un pește.
+There are two JavaScript responsibility families. SOPWorlds LIB implements generic parsing, matching, inference, search, elaboration, validation and dispatch. Tools and adapters perform typed effects, observe state and calculate documented mechanical functions. Application-specific choices—referents, default colours, scheduling preferences, layout policy—are declarations interpreted by LIB. Moving such choices into a callback, or naming that callback in SOP, does not make them general.
 
 | Ce nu are voie să facă programul unui domeniu | De ce |
 |---|---|
-| să citească propoziția omului | Unealta primește numere și referințe. Citirea este treaba interpretării, una pentru toate domeniile. |
+| să citească propoziția omului | A tool receives typed concrete values and references; the reader and LIB handle language and semantic elaboration. |
 | să țină cuvinte, sinonime sau liste de valori | Acestea sunt nume de regiuni și stau în cunoaștere. |
-| să aleagă cantitatea, felul, forma, locul, ora | Alegerea este treaba planului, unde poate fi explicată. |
+| să aleagă cantitatea, felul, forma, locul, ora | LIB derives choices from the request and Worlds and records them in the resulting call circuit. |
 | să țină valori obișnuite | Sunt regiuni, în cunoaștere. |
 | să scrie propoziții de răspuns sau întrebări | Vin din cadrele actelor și din concepte. |
 
@@ -2378,17 +2384,25 @@ Regula: programul unui domeniu face numai trei lucruri. Îndeplinește operații
 
 | Măsura | Ce arată |
 |---|---|
-| sesiunile reale ale omului | Mesajele scrise de om în aplicație, rulate din nou. Fiecare este socotit corect, parțial, refuzat cu motiv sau greșit. Verificarea afirmă ce a vrut omul și ce nu avea voie să se schimbe. Numărul celor greșite trebuie să rămână zero. |
+| sesiunile reale ale omului | Mesajele scrise de om în aplicație, rulate din nou. Fiecare este socotit corect, parțial, refuzat cu motiv sau greșit. Verificarea afirmă ce a vrut omul și ce nu avea voie să se schimbe. Report correct effects, wrong effects, undo success and unresolved requests separately. Small reversible interpretation mistakes are measured and corrected; zero observed errors is not a refusal-first policy. |
 | numărul declarațiilor particulare | Liste de cuvinte, propoziții de răspuns, realizări scrise pe un fel, valori obișnuite pentru un singur lucru. Trebuie să scadă spre zero. |
 | ce trece neschimbat de la un domeniu la altul | Limba, conceptele, spațiile, actele, cadrele de răspuns, completarea, verificarea. |
 | costul calendarului | Câte rânduri de declarații, câte linii de unelte și câte ore a cerut, fără nicio schimbare în partea generală. |
 | perechi minimale și propoziții nevăzute | Cât de bine este citită o propoziție care nu a fost folosită la construire. |
 
+## 7.6 Avatar: composition of editable properties
+
+An avatar is a live instance with addressable hair, eyes, mouth, accessories and geometry. Person and robot templates are property-bearing compositions from knowledge. The UI and language path address the same part identities and tools.
+
+For “make the avatar happier”, the reader retains an expression degree change. Knowledge must relate expression measures to editable features. In an invented numerical example, observed smile is 0.2, a declared step is 0.1 and a declared feature mapping is `mouth.curvature = 2 × smile`. LIB derives smile 0.3 and curvature 0.6, validates a candidate and emits a change of the resolved mouth part. The tool receives the part reference and 0.6; it never receives “happy”. These numbers illustrate a mapping, not a universal psychological definition.
+
+Observation confirms the mouth property, not that every viewer perceives happiness. A separate expression evaluator can support that interpretation with a measurement and uncertainty. “Give it a hat” instead expands a composition with a hat part, attachment relations and defaults. Direct UI resizing already supplies the part reference and concrete values and uses the same tool interface without semantic replanning.
+
 ---
 
 # 8. De la declarații la un rezultat: exemple de integrare
 
-Exemplele acestui capitol leagă spațiile, interpretarea, căutarea și execuția explicate anterior. Fiecare distinge declarațiile existente de extensiile propuse; acceptarea unui candidat în lumea de fire rămâne separată de efectul observat într-o unealtă.
+These examples follow a concrete request through schema resolution, inference, candidate search, tool-call construction and observation. Accepting a candidate in a trial World remains distinct from observing an actual tool effect.
 
 ## 8.1 Ce trebuie să știe programul general
 
@@ -2400,11 +2414,12 @@ Să vrem o diagramă în care două noduri au cel puțin 12 unități ale pagini
 
 Spațiul `clearance` are o singură axă, cu valori nenegative, în unitatea paginii. Nu folosim aici pixelul ecranului: schimbarea măririi de afișare nu trebuie să schimbe distanța din document. „Cel puțin 12” este o limită inferioară asupra candidatului. Nu o declarăm ca regiune de forma centru–rază, deoarece o asemenea bilă cu rază finită nu reprezintă intervalul fără capăt superior `[12, infinit)`.
 
-Următoarele declarații arată contractul propus pentru spațiu și două utilizări distincte ale valorii. Cheia nouă `normalisation` este explicată imediat după exemplu. Fragmentele presupun tipurile și celelalte sloturi ale observației și candidatului declarate în schema aplicației.
+The following declarations define a one-dimensional space and keep the observed gap separate from the requested lower bound. Load `w.legend` and `std.request`; `gap.observation` and `layout.candidate` are invented local toy types. Each declared slot constrains its value without imposing the request's lower bound on all observations.
 
 ```sop
-@sp.clearance w.legend.space name=clearance form=axes
-@ax.clearance w.legend.axis of=clearance name=distance min=0 scale=ratio normalisation=10
+@sp.clearance w.legend.space name=clearance version="1" form=axes
+@ax.clearance w.legend.axis of=$sp.clearance name=distance order=0 kind=linear unit=$unit.clearance min=0 normalisation=10
+@unit.clearance w.legend.unit of=$ax.clearance name=page.unit factor=1 offset=0
 @s.observed.value core.slot of=gap.observation key=value kind=number min=0
 @s.candidate.gap core.slot of=layout.candidate key=gap kind=number min=0
 @source.gap std.request.source text="at least 12 page units apart"
@@ -2413,13 +2428,13 @@ Următoarele declarații arată contractul propus pentru spațiu și două utili
 @constraint.gap std.request.constraint request=$request.gap target=$target.gap concept=clearance operator=greater.equal value=12 unit=page.unit scope=each polarity=positive character=requirement source=$source.gap
 ```
 
-Primul fir introduce numele spațiului. Al doilea definește axa, limita zero și scara numerică folosită la comparație. Lipsa lui `max` înseamnă că acest exemplu nu fixează un plafon al distanței. Unitatea de măsură a axei este unitatea paginii, declarată prin mecanismul `w.legend.unit` din secțiunea 4.8.1; nici `normalisation=10`, nici numele `distance` nu definesc singure acea unitate.
+The space has a version. Its axis refers to the space and the unit by real references; the unit declares identity conversion (`factor=1`, `offset=0`). Axis order and linear kind are explicit. There is no maximum. The positive normalisation length is 10 page units, independently of the lower bound 12 on this request.
 
 Al treilea și al patrulea fir permit orice distanță nenegativă, inclusiv observația 8 și candidatul 14. Firele următoare păstrează limita 12 pe cerere, prin operatorul ordonat `greater.equal`. Ținta se leagă la măsurătorile perechilor de noduri vizate de cerere; legarea păstrează identitățile perechilor și versiunea stării, nu toate măsurătorile din proiect. Pe un fork al diagramei, verificatorul recalculează fiecare distanță și compară valoarea cu limita cererii: 8 nu trece, 14 trece. Schema candidatului rămâne neschimbată pentru o cerere ulterioară cu altă limită. Observația și candidatul descriu versiuni diferite ale stării; valoarea calculată pe fork nu este deja o observație a efectului real.
 
 ### 8.2.1 Normalizarea unei axe fără plafon
 
-Pe o axă cu limite finite distincte, secțiunea 4.4.1 folosește diferența împărțită la `max−min`. Aici nu există `max`, deci acea formulă nu poate fi aplicată. Propunerea este o lungime de normalizare pozitivă, declarată pe axă prin `normalisation`, în aceeași unitate cu valorile. Pentru valori `a` și `b`, diferența normalizată este `abs(a−b)/normalisation`. Dacă sunt declarate atât limite finite, cât și `normalisation`, scara explicită are prioritate; zero și valorile negative sunt refuzate la încărcarea schemei.
+Pe o axă cu limite finite distincte, secțiunea 4.4.1 folosește diferența împărțită la `max−min`. Aici nu există `max`, deci acea formulă nu poate fi aplicată. The metric uses a positive normalisation length, declarată pe axă prin `normalisation`, în aceeași unitate cu valorile. Pentru valori `a` și `b`, diferența normalizată este `abs(a−b)/normalisation`. Dacă sunt declarate atât limite finite, cât și `normalisation`, scara explicită are prioritate; zero și valorile negative sunt refuzate la încărcarea schemei.
 
 Autorul spațiului alege lungimea de normalizare dintr-un reper declarat, de exemplu lățimea mediană 10 a obiectelor unui set de referință fixat. Cu numitorul 1, o diferență brută de 4 devine 4; cu 1000 devine 0,004. Aceeași toleranță ar produce alegeri radical diferite. Secțiunea 12.2 explică alegerea și verificarea scării; valoarea 10 de aici este o ipoteză ilustrativă, nu un prag ales pentru a face cerința să treacă.
 
@@ -2438,18 +2453,33 @@ Tabelul separă distanța față de limită de mărimea încălcării. Pentru o 
 Funcția geometrică primește date deja observate; nu citește singură ecranul și nu mută noduri. În exemplul simplificat, fiecare nod are un dreptunghi de încadrare în reperul paginii, cu marginile `left`, `right`, `top`, `bottom`. Pentru contururi curbe sau rotite este necesar alt contract geometric; aproximarea prin dreptunghiuri trebuie declarată, nu ascunsă sub același rezultat.
 
 ```sop
+@type.gap.node core.type of=node closed=true
+@slot.gap.left core.slot of=node key=left kind=number present=true
+@slot.gap.right core.slot of=node key=right kind=number present=true
+@slot.gap.top core.slot of=node key=top kind=number present=true
+@slot.gap.bottom core.slot of=node key=bottom kind=number present=true
+@type.gap.observation core.type of=gap.observation closed=true
+@slot.gap.first core.slot of=gap.observation key=first kind=ref to=node present=true
+@slot.gap.second core.slot of=gap.observation key=second kind=ref to=node present=true
+@slot.gap.value core.slot of=gap.observation key=value kind=number min=0 present=true
 @f.gap core.function name=page.gap out.kind=number pure=true doc="distance between axis-aligned rectangles in page units"
-@f.gap.a core.function.arg of=$f.gap name=a kind=json
-@f.gap.b core.function.arg of=$f.gap name=b kind=json
-@p.a node bounds=?a
-@p.b node bounds=?b
+@f.gap.0 core.function.arg of=$f.gap name=a.left kind=number
+@f.gap.1 core.function.arg of=$f.gap name=a.right kind=number
+@f.gap.2 core.function.arg of=$f.gap name=a.top kind=number
+@f.gap.3 core.function.arg of=$f.gap name=a.bottom kind=number
+@f.gap.4 core.function.arg of=$f.gap name=b.left kind=number
+@f.gap.5 core.function.arg of=$f.gap name=b.right kind=number
+@f.gap.6 core.function.arg of=$f.gap name=b.top kind=number
+@f.gap.7 core.function.arg of=$f.gap name=b.bottom kind=number
+@p.a node left=?a.left right=?a.right top=?a.top bottom=?a.bottom
+@p.b node left=?b.left right=?b.right top=?b.top bottom=?b.bottom
 @c.distinct core.check fn=neq args=$p.a args=$p.b
-@c.gap core.calc fn=page.gap args=?a args=?b out=?gap
+@c.gap core.calc fn=page.gap args=?a.left args=?a.right args=?a.top args=?a.bottom args=?b.left args=?b.right args=?b.top args=?b.bottom out=?gap
 @t.gap gap.observation first=$p.a second=$p.b value=?gap
 @r.gap core.rule when=$p.a when=$p.b if=$c.distinct with=$c.gap then=$t.gap
 ```
 
-`f.gap` declară numele și puritatea funcției; următoarele două fire declară argumentele, în ordine. Autorul adaptorului geometric trebuie să furnizeze implementarea conformă. În API-ul actual, implementarea primește lista tokenurilor argumentelor și lumea; un token `json` se decodează înainte de măsurare. Calculul poate fi evaluat înaintea filtrului `neq`, deci funcția trebuie să accepte și două dreptunghiuri identice și să întoarcă distanța zero. Filtrul elimină apoi observația despre aceeași identitate. Cele două pattern-uri leagă dreptunghiurile unor noduri din aceeași versiune observată. `c.distinct` exclude compararea unui nod cu el însuși, iar `c.gap` pune rezultatul în `?gap`. Șablonul `t.gap` păstrează valoarea și nodurile măsurate. Pentru simplitate, regula produce ambele perechi ordonate; implementarea poate evita duplicarea numai păstrând simetria rezultatului. Sloturile `bounds`, `first` și `second` trebuie declarate în schema exemplului; fragmentul explică fluxul calculului, nu este un domeniu complet de încărcat singur.
+`f.gap` declares a pure geometric calculation and the argument declarations fix its eight ordered numeric arguments. The implementation accepts the four bounds of each rectangle and returns a finite nonnegative distance. Both patterns bind nodes in the same observed revision. `neq` removes the same-node case; because calculation can precede that filter, measuring identical bounds must be valid and return zero. The rule retains both subject references in the derived observation. The toy schemas declare numeric bounds and the two observation references explicitly. Missing or inconsistent bounds produce a diagnostic rather than an invented zero.
 
 Pentru dreptunghiurile A și B, calculăm `dx = max(0, A.left−B.right, B.left−A.right)` și analog `dy` pentru marginile verticale. Rezultatul este `sqrt(dx²+dy²)`. Dreptunghiurile care se ating sau se suprapun au distanța zero. Dacă lipsesc margini sau ele sunt inconsistente, măsurarea nu este disponibilă; nu se întoarce zero ca substitut pentru date lipsă.
 
@@ -2464,15 +2494,12 @@ Interpretarea separă forma scrisă de sensul stabilit prin schemă. Parsarea id
 Exemplul următor folosește sintaxa și sloturile existente. O notă aparține unei pagini; eticheta ei conține intenționat un text care seamănă cu o comandă și cu o referință. Schema este:
 
 ```sop
+@type.note.page core.type of=page closed=true
+@type.note.note core.type of=note closed=true
 @s.note.label core.slot of=note key=label kind=string
 @s.note.page core.slot of=note key=page kind=ref to=page
 @s.note.count core.slot of=note key=count kind=integer min=0
 @s.note.tag core.slot of=note key=tag kind=atom many=true
-```
-
-Prima declarație cere text pentru etichetă. A doua cere o referință către un fir de tip `page`, nu numele paginii ca text. A treia verifică un întreg nenegativ, iar ultima permite mai multe etichete atomice. Tipurile sunt folosite fără declarații suplimentare de închidere; exemplul verifică sloturile declarate, nu pretinde că alte chei sunt interzise. Datele sunt:
-
-```sop
 @page1 page
 @note1 note
   label="Move $page1 later"
@@ -2486,30 +2513,21 @@ Prima declarație cere text pentru etichetă. A doua cere o referință către u
 | Etapa | Rezultatul pentru aceeași notă |
 |---|---|
 | Tokenizare | `label="Move $page1 later"` este o singură intrare; sfârșiturile de linie dintre intrări nu încheie declarația. Pozițiile din text pot localiza fiecare token. |
-| Parsare | `id=note1`, `type=note`; `attrs` conține listele de tokenuri pentru label, page, count și tag. Nu există încă o deducție că eticheta cere o mutare. |
-| Clasificarea valorilor | `readValue` recunoaște string, ref și atom. Atomul `2` nu devine număr doar pentru că are cifre. |
+| Parsare | The declaration has identity note1 and type note, with label, page, count and repeated tag entries. None is an inferred request to move anything. |
+| Clasificarea valorilor | The interpreter distinguishes string, reference and atom tokens; the count slot supplies the integer meaning. |
 | Rezolvarea referinței | `$page1` este legat de identitatea paginii din instanța încărcată. Textul din label nu participă la această căutare. |
 | Validarea prin schemă | Slotul count verifică întregul nenegativ; slotul page verifică tipul țintei; many permite cele două tag-uri. Lipsa țintei nu este reparată prin crearea automată a unei pagini. |
 | Interpretare și folosire | Nota și relația ei pot fi interogate sau afișate. Nicio regulă ori capabilitate din exemplu nu cere mutarea paginii: eticheta rămâne conținut. |
 
-Pentru textul de date, `parse(source)[1]` întoarce efectiv următorul obiect în biblioteca actuală; exemplul și încărcarea lui după schemă au fost executate. Ghilimelele escapate sunt reprezentarea JSON a tokenului SOP de text, nu ghilimele suplimentare în eticheta afișată.
+The decoded label is the literal text “Move $page1 later”; it contains neither an executable instruction nor an active reference. `page=$page1` is an actual reference, and `count=2` is validated against an integer slot. This distinction is preserved by the language interpreter, so a renderer does not parse natural-language-looking labels as commands.
 
-```json
-{"id":"note1","type":"note","attrs":{"label":["\"Move $page1 later\""],"page":["$page1"],"count":["2"],"tag":["red","round"]},"pattern":false}
-```
-
-`pattern=false` este un indicator produs de parser în această formă; nota este un fapt, nu un pattern de regulă. `readValue` aplicat lui `$page1` dă `{"kind":"ref","v":"page1"}`: clasifică tokenul, dar nu demonstrează că ținta există. Validarea numerică a lui count nu înlocuiește în `attrs` tokenul `"2"` cu numărul JavaScript `2`. Acestea sunt responsabilități diferite, explicate și în [specificația valorilor](../docs/language.md#3-values).
-
-Reprezentarea semantică propusă păstrează acest fir canonic și îi asociază metadate, fără un al doilea parser pentru fiecare consumator. Pentru nota concretă, câmpurile suplimentare au următorul conținut și rol; numele din prima coloană sunt descriptive, nu un API deja livrat.
-
-| Câmp semantic propus | Conținut și motiv |
+| Resolved information | Why it is retained |
 |---|---|
-| Identitate rezolvată | Perechea dintre identitatea persistentă a instanței și `note1`; previne confundarea cu o notă din altă instanță. |
-| Tip și schemă aplicată | Tipul `note`, declarațiile sloturilor și versiunea lor; arată de unde vine interpretarea numerică a lui count. |
-| Valori interpretate | Label ca text decodat, count ca întreg 2 și tag ca lista ordonată red/round; fiecare valoare păstrează tokenul și slotul care a justificat interpretarea. |
-| Legături rezolvate | Pentru page, identitatea țintei, tipul verificat și versiunea stării citite; nu o adresă de memorie tratată drept identitate persistentă. |
-| Origine textuală | Identitatea și versiunea sursei plus intervalele declarației și intrărilor; localizează eroarea sau explicația. `parse` nu adaugă astăzi aceste intervale obiectului returnat, deși tokenizarea furnizează poziții. |
-| Proveniență și statut | Afirmație introdusă explicit, verificările efectuate și eventualele obligații nerezolvate; un fapt derivat ar păstra regula și premisele sale. |
+| Instance and wire identity | Distinguishes `note1` from a note with the same local ID in another instance. |
+| Applied type and slot declarations | Explain why count is an integer and page is a reference. |
+| Source text and positions | Locate the declaration or value that produced an error or interpretation. |
+| Reference target and observed version | Establish which page was read and whether a later call is stale. |
+| Provenance and status | Distinguish explicit facts, derived facts and unresolved assumptions. |
 
 Metadatele dependente de schemă sau stare se invalidează când versiunea respectivă se schimbă; textul canonic și identitatea nu sunt rescrise pentru a ascunde schimbarea interpretării. Un consumator grafic primește numai câmpurile necesare din această reprezentare, nu recitește eticheta cu reguli proprii. La fel, `before="object exists"` rămâne text până când o schemă și un mecanism explicit îl tratează altfel: condițiile executabile structurate sunt contractul R35, nu rezultatul implicit al prezenței unei fraze.
 
@@ -2522,11 +2540,11 @@ Un **catalog (catalog)** este aici o evidență a declarațiilor și a locului d
 | Legătura citită | Ce poate fi găsit prin ea |
 |---|---|
 | `extends` | Declarațiile tipului părinte și regulile aplicabile descendenților. |
-| `is`, `means` | Conceptul realizat de tip sau de slot; sunt legături propuse, nu disponibile implicit astăzi. |
+| Declared conceptual mappings | The concept represented by a type or property; follow only mappings defined and checked by the corresponding schema. |
 | `of`, `type` ale slotului | Tipul care deține slotul și tipul faptului la care valoarea lui poate trimite. |
 | `space` | Definiția axelor și operațiile spațiului valorii. |
 | `when`, `not`, `if`, `with` | Modelele, condițiile și calculele de care depinde o regulă. |
-| `realises` și legătura uneltei | Actul promis de unealtă și parametrii necesari. |
+| Tool interface and binding | The accepted operation, typed parameters, outputs, dependencies and observation mapping. |
 | referință între fapte | Lucrul concret numit, inclusiv într-o altă instanță. |
 
 Același text `of` pe alt tip de fir nu este automat aceeași legătură. Semnificația vine din schema tipului. Un **index invers (reverse index)** este tabelul care răspunde la întrebarea inversă: „ce reguli sau declarații folosesc acest tip?”. Dacă o regulă privește animale, indexul permite să o găsim și când verificăm o rață, după urmărirea părinților.
@@ -2535,15 +2553,15 @@ Căutarea pornește din operația cerută și urmează aceste dependențe. Memor
 
 În demo, calendarul este o instanță locală. Toate ședințele ei sunt în starea citită; nu presupunem un serviciu extern de rezervări. Autorul tiparului poate declara această închidere printr-un fir existent al limbajului:
 
-```
-@t.meeting core.type of=meeting extends=std.schema.thing is=thing complete=true
+```sop
+@t.meeting core.type of=meeting complete=true
 ```
 
-Este aceeași declarație completă din secțiunea 7.4, reprodusă pentru explicație; nu se adaugă o a doua declarație cu același identificator și alt conținut. Pentru un calendar încărcat numai parțial, schema acestui exemplu nu este aplicabilă ca atare. Activarea și interogarea instanței complete au loc numai după ce încărcarea integrală a faptelor a reușit.
+This toy declaration states coverage only for the observed local population. It is justified after the relevant facts are loaded. A partially read calendar cannot be made complete by attaching this flag to its type; the loader/observer must establish the coverage claim.
 
 Firul spune că tipul despre care vorbim este `meeting`, iar `complete=true` permite răspunsul „nu” când nu există o potrivire în acea instanță. Programul care încarcă instanța trebuie să asigure că toate faptele ei au fost citite înainte să folosească această proprietate. Declarația nu produce faptele lipsă. Ea nu spune nici că toate bazele de cunoaștere ale lumii au fost încărcate.
 
-Separat, o regulă de cunoaștere poate sta într-un fragment încă neîncărcat. Contractul propus completează `std.schema.needs`, care declară ce date trebuie încărcate: catalogul urmărește și dependențele regulilor, iar încărcătorul raportează ce dependențe a satisfăcut. Fără regulile necesare nu afirmăm validitatea, chiar dacă lista locală a ședințelor este completă. Un fragment care nu se poate citi produce „verificare incompletă”, nu „nicio restricție”.
+Knowledge rules have their own dependencies. The library follows declared imports and references to load those rules and their premises. A complete event population does not prove that all required policy declarations were loaded. An unavailable dependency yields an incomplete verification, not “no restriction applies”.
 
 Sunt două versiuni diferite. **Versiunea stării (state version)** este un identificator care se schimbă la fiecare modificare semantică a instanței și permite detectarea unui plan învechit. **Versiunea publicată (published version)** identifică exact un pachet de scheme și cunoaștere, de exemplu prin amprenta conținutului. Rezultatul unei verificări reține amândouă. „Verificat la V” fără să spună care dintre ele este insuficient.
 
@@ -2567,9 +2585,9 @@ Rezultatele se citesc după întrebarea la care răspund. Nu introducem încă o
 
 O soluție fezabilă satisface constrângerile; o soluție optimă are în plus o dovadă că niciun candidat admis nu are cost mai mic. Motorul nu are voie să schimbe primul cuvânt în al doilea doar fiindcă s-a terminat timpul.
 
-**Coordonatorul (coordinator)** este programul care execută etapele deja descrise în 6.2, nu un al doilea sistem care înțelege cererea. Etapa 1 citește starea; etapele 2–3 citesc și situează mesajul; etapa 4 rezolvă valorile; etapele 5–6 completează și aleg un plan; etapa 7 execută; etapa 8 răspunde. În etapele 5–6 poate cere încărcarea unor dependențe, deducții sau o căutare. `std.turn` este mecanismul existent pentru declararea etapelor; contractele descrise aici precizează ce trebuie să circule între ele.
+The coordinator belongs to SOPWorlds LIB. It reads declared execution dependencies, asks generic inference and search mechanisms to elaborate open goals, validates candidate call circuits, dispatches ready concrete calls and observes their effects. It is not an application-specific second interpreter. A diagram or calendar name must not select an undeclared semantic algorithm inside it.
 
-Pentru fiecare candidat, coordonatorul face o copie de încercare a instanței, conform 3.9, aplică schimbările propuse și cere verificarea lumii asupra copiei. Este aceeași semantică de validare ca la o schimbare scrisă de mână. Copia include aceleași versiuni de schemă și cunoaștere. Un plan care rămâne nedeterminat nu ajunge la unelte. Abia un plan valid poate trece în etapa 7, după verificarea că starea originală nu s-a schimbat între timp.
+For each candidate, LIB constructs a trial state with the same schema and knowledge versions, applies the proposed effects and evaluates constraints. It retains assumptions separately from observed facts. A reversible ambiguity can be resolved by the declared ranking policy; a missing required tool argument cannot. Before dispatch, the relevant state preconditions are rechecked. A changed version triggers revalidation, not a silent invocation against an obsolete object.
 
 O funcție geometrică sau numerică declarată poate rămâne o dependență de încredere: verificatorul îi controlează argumentele, tipul rezultatului și proprietățile verificabile, dar nu poate dovedi corectitudinea oricărui program arbitrar. Contractul numește funcția și versiunea ei; testele ei și limitele metodei sunt parte din justificare. Autorul domeniului trebuie să aleagă o implementare verificată pentru acel contract și să declare limitele ei; numirea funcției nu este o dovadă de corectitudine. O funcție lipsă nu se consideră adevărată implicit. Practic, înainte să folosească rezultatul pentru o decizie, integratorul verifică versiunea implementării, probele contractului și domeniul intrărilor; dacă acestea nu justifică acel caz, rezultatul rămâne nedeterminat, nu o dovadă de satisfacere.
 
@@ -2577,11 +2595,23 @@ O funcție geometrică sau numerică declarată poate rămâne o dependență de
 
 Fixăm pentru exemplu o zi și un fus orar deja rezolvate. Minutele se numără de la miezul nopții. Ana are o rezervare [600, 660), adică 10:00–11:00. Cererea este o ședință de 30 de minute, cu Ana, începând exact la 10:30. Interpretarea produce participantul identificat, începutul 630 și durata 30. Sfârșitul calculat este 660.
 
-Sala este și ea un rol al ședinței. În acest exemplu, `room1` este o sală deja aleasă prin completarea cererii și acceptată în plan; nu folosim valoarea textuală `none` și nu lăsăm rolul nerezolvat când verificăm candidatul. Dacă nu există o sală identificată, planul rămâne incomplet. Același interval trebuie să fie disponibil atât pentru Ana, cât și pentru sală.
+This example enables the optional resource profile. `room1` is already resolved, and the same interval must be checked for the participant and room. In the simpler single-calendar profile there is no room argument to fill. The need for a resource comes from the applicable schema and tool contract, not from a universal scheduling assumption.
 
 Fragmentul executabil de mai jos izolează verificarea conflictelor, folosind mecanismele existente. Tipul `candidate` desemnează numai propunerea de testat; nu este încă o rezervare executată. Schema completă a rolurilor și unităților aparține declarației domeniului. Datele sunt un instantaneu local ilustrativ: singura rezervare existentă este `busy`, pentru aceeași persoană și aceeași sală.
 
 ```sop
+@type.time.person core.type of=person closed=true
+@type.time.room core.type of=room closed=true
+@type.time.meeting core.type of=meeting closed=true complete=true
+@type.time.candidate core.type of=candidate closed=true
+@slot.time.meeting.people core.slot of=meeting key=people kind=ref to=person present=true
+@slot.time.meeting.room core.slot of=meeting key=room kind=ref to=room present=true
+@slot.time.meeting.start core.slot of=meeting key=start kind=number present=true
+@slot.time.meeting.length core.slot of=meeting key=length kind=number min=0 present=true
+@slot.time.candidate.people core.slot of=candidate key=people kind=ref to=person present=true
+@slot.time.candidate.room core.slot of=candidate key=room kind=ref to=room present=true
+@slot.time.candidate.start core.slot of=candidate key=start kind=number present=true
+@slot.time.candidate.length core.slot of=candidate key=length kind=number min=0 present=true
 @ana person
 @room1 room
 @busy meeting people=$ana room=$room1 start=600 length=60
@@ -2595,30 +2625,29 @@ Fragmentul executabil de mai jos izolează verificarea conflictelor, folosind me
 @c.right core.check fn=lt args=?old.start args=?new.end
 @d.person core.deny when=$p.old when=$p.new with=$c.old.end with=$c.new.end if=$c.left if=$c.right why="participant overlap"
 @d.room core.deny when=$p.room.old when=$p.room.new with=$c.old.end with=$c.new.end if=$c.left if=$c.right why="room overlap"
-@t.meeting core.type of=meeting complete=true
 ```
 
-Primele trei fire sunt datele observate. Cele două perechi de pattern-uri leagă, separat, participantul comun și sala comună. Calculele `c.old.end` și `c.new.end` adună începutul și durata intervalului potrivit; variabilele se leagă pentru fiecare pereche, fără a amesteca două rezervări. Condițiile `c.left` și `c.right` sunt cele două inegalități stricte ale suprapunerii. Fiecare interdicție folosește ambele calcule și ambele condiții; verificarea unei resurse nu înlocuiește verificarea celeilalte.
+The initial type/slot declarations define the toy schema; the person, room and busy meeting are observed data. Cele două perechi de pattern-uri leagă, separat, participantul comun și sala comună. Calculele `c.old.end` și `c.new.end` adună începutul și durata intervalului potrivit; variabilele se leagă pentru fiecare pereche, fără a amesteca două rezervări. Condițiile `c.left` și `c.right` sunt cele două inegalități stricte ale suprapunerii. Fiecare interdicție folosește ambele calcule și ambele condiții; verificarea unei resurse nu înlocuiește verificarea celeilalte.
 
-Ultimul fir marchează tipul meeting complet numai în această instanță locală, după încărcarea integrală a rezervărilor relevante pentru ambele resurse și intervalul cercetat. Nu afirmă că sursa externă nu se poate modifica și nu închide toate calendarele. O citire incompletă nu primește această declarație doar ca să permită găsirea unei ore. Verificarea la execuție folosește versiunea sursei, nu numai acest indicator.
+The meeting type is marked complete only in this local toy instance, după încărcarea integrală a rezervărilor relevante pentru ambele resurse și intervalul cercetat. Nu afirmă că sursa externă nu se poate modifica și nu închide toate calendarele. O citire incompletă nu primește această declarație doar ca să permită găsirea unei ore. Verificarea la execuție folosește versiunea sursei, nu numai acest indicator.
 
-Pe lumi de test separate încărcate cu fragmentul, `tell` pentru `@trial candidate people=$ana room=$room1 start=630 length=30` întoarce `ok=false`, cu motivele `participant overlap` și `room overlap`. Cu începutul 660 întoarce `ok=true`. Aceste rezultate au fost executate pe bibliotecă. Acceptarea candidatului este numai acceptarea acestei probe de conflicte; nu înseamnă că unealta a rezervat ceva ori că toate celelalte condiții ale domeniului au fost verificate.
+For the trial `@trial candidate people=$ana room=$room1 start=630 length=30`, both deny patterns match: participant and room overlap. For start 660 they do not match, because the half-open interval [660,690) starts exactly at the old interval's end. Passing these checks establishes only this constraint result; it does not create an event or establish every other precondition.
 
 Pentru două intervale [a,b) și [c,d), suprapunerea este adevărată când a < d și c < b. Aici 630 < 660 și 600 < 660: există conflict. Acesta este un calcul explicit, nu o concluzie obținută din cuvântul „ședință”. Regula leagă întâi rezervările care împart un participant, apoi aplică testul intervalelor.
 
 Coordonatorul poate căuta o alternativă. La 660, intervalul propus este [660,690). Condiția 660 < 660 este falsă, deci rezervarea cunoscută nu îl blochează. Dar acest calcul singur nu dovedește că Ana este liberă: trebuie consultate toate rezervările ei relevante până la 690. Dacă sursa este indisponibilă, rezultatul rămâne necunoscut.
 
-Cererea inițială a spus o oră exactă. Alternativa 11:00 este prezentată omului, nu executată automat. După acceptare se verifică din nou versiunea rezervărilor. Dacă altă ședință a apărut între timp, planul se reevaluează.
+The initial time was explicit. Under the declared no-overlap policy, 11:00 remains an alternative rather than a silent replacement for 10:30. A vague “later” request would instead allow LIB to choose the ranked feasible time and explain that choice. This difference follows the source and strength of the requirement, not a refusal-first treatment of all uncertainty.
 
-Unealta primește identitatea Anei, începutul 660 și durata 30. După operație se citește starea: trebuie să existe ședința creată, cu aceste valori și fără schimbarea rezervării vechi. Dacă unealta nu confirmă rezultatul sau observația lipsește, sistemul nu spune „am programat”.
+To continue with a feasible creation, consider the separate request “book the next free 30-minute meeting with Ana after 10:30”. This allows a later start. LIB derives 660 under the declared objective and emits a creation instruction containing the resolved calendar, title, participant and room references, absolute date/time corresponding to 660, and duration 30 minutes. The tool does not see “next free”. Observation must find the returned event identity with those values and no alteration to the existing booking before the response says it was scheduled.
 
-Aceeași cerere poate ajunge la rezultate diferite fără să-i schimbăm sensul. Identitatea participantului trebuie rezolvată înaintea verificării disponibilității. Dacă două persoane au eticheta Ana, aplicația nu alege persoana cu programul mai liber: acesta ar fi un criteriu de optimizare aplicat identității, nu rezolvarea referinței. Prezintă numele împreună cu un identificator sau un atribut distinctiv deja cunoscut și păstrează ora și durata cerute până la răspuns.
+If several people have the same label, identity resolution ranks context evidence such as explicit selection and prior bindings. A freer calendar is not itself evidence of which person the user meant. With a usable reversible interpretation, LIB can act on the best supported identity, name it and retain alternatives and undo. Genuine uncertainty remains in the trace; it is not removed by presenting one candidate.
 
 | Ramura scenariului | Starea păstrată și răspunsul justificat |
 |---|---|
-| Două persoane numite Ana | Nicio rezervare creată; se păstrează cele două identități candidate. „Which Ana do you mean?” este însoțit de distincțiile reale disponibile, fără informații inventate despre persoane. |
-| Conflict la 10:30, alternativa verificată la 11:00 | Ora exactă cerută nu este schimbată tacit. „Ana is busy at 10:30. 11:00 is free; shall I book it?” presupune citirea completă relevantă, nu doar absența conflictului cunoscut. |
-| Alternativă acceptată și creare observată | Jurnalul păstrează identitatea întâlnirii noi și operația corelată. „I scheduled the meeting with Ana from 11:00 to 11:30.” |
+| Two people named Ana | Rank contextual evidence; preserve both candidates. If a usable reversible choice is made, name the selected identity and the assumption. Never invent distinguishing personal facts. |
+| Exact 10:30 conflicts; 11:00 is verified free | Preserve the explicit time. “The requested 10:30 conflicts with Ana’s meeting; 11:00 is the nearest free alternative.” No booking is claimed. |
+| A request allowing the next free time yields an observed creation at 11:00 | Retain the new event identity and invocation. “I scheduled the meeting with Ana from 11:00 to 11:30; that was the next free interval.” |
 | Refuz confirmat al creării și absență verificată a efectului | Nu există întâlnire nouă atribuită pasului. „The booking was rejected; no meeting was created.” Motivul este adăugat numai dacă provine dintr-un rezultat verificat al uneltei. |
 | Răspuns pierdut, efect încă necunoscut | Nu se reîncearcă orbește crearea. „I could not confirm whether the meeting was created. I need to check the calendar.” |
 | Anulare cerută după crearea confirmată | Se compensează numai întâlnirea identificată în pasul respectiv; după observarea dispariției ei: „I removed the meeting I just created.” Rezervarea inițială 10:00–11:00 rămâne neschimbată. |
@@ -2630,351 +2659,132 @@ Anularea citește versiunea curentă a întâlnirii create și o compară cu sta
 
 După crearea confirmată, întâlnirea poate fi reprezentată printr-un nod al unei diagrame. Alegerea acestui exemplu este un instantaneu, conform R58–R59: citim o versiune coerentă, salvăm valorile consumate și proveniența lor, apoi desenăm din acele date. Referința activă spre calendar și proveniența istorică au roluri diferite, ca în secțiunea 2.6.
 
-În contextul temporar de citire, ambele instanțe sunt încărcate și aliasul `calendar` este legat de identitatea imutabilă a calendarului. Firul următor este o propunere de intrare pentru proiecție; `m1` este întâlnirea nou creată, nu rezervarea mai veche:
+În contextul temporar de citire, ambele instanțe sunt încărcate și aliasul `calendar` este legat de identitatea imutabilă a calendarului. The following pseudocode identifies the projection input; `m2` is the created event, distinct from the original booking:
 
-```sop
-@input.meeting std.projection.input source=$calendar::m1
+```text
+Pseudocode — projection input
+source: calendar instance / event m2 / coherent state revision
+mode: snapshot
 ```
 
-`source` este aici o referință reală: trebuie să rezolve întâlnirea și tipul ei. Ea permite citirea, dar nu este copiată drept dependență activă în diagrama salvată. Adaptorul citește într-o singură versiune începutul, durata și identitatea participantului. Pentru versiunea ilustrativă `state-18`, rezultatul local poate fi:
+The projection resolves the source event against its instance and version. That temporary read dependency is not automatically a permanent live dependency of the saved diagram. Start, duration and participant are read from one coherent snapshot. The following pseudocode shows the resulting data; a domain schema must define its concrete storage representation.
 
-```sop
-@snapshot.meeting source.snapshot source.instance="calendar-instance-id" source.id="m1" source.version="state-18" captured.start=660 captured.duration=30 captured.participant="ana-id"
-@node.meeting node label="11:00–11:30" provenance=$snapshot.meeting
+```text
+Pseudocode — projected snapshot and node
+snapshot: calendar-instance-id / m2 / state-18
+captured values: start 660, duration 30, participant ana-id
+node label: 11:00–11:30
+node provenance: that snapshot
 ```
 
-Primul fir păstrează identitatea sursei și valorile care au justificat eticheta, inclusiv participantul. `ana-id` este identitatea rezolvată, nu o nouă persoană creată în diagramă. Pentru acest fragment, ziua și fusul orar sunt cele deja fixate în scenariu; un instantaneu exportat independent trebuie să le păstreze explicit împreună cu unitatea timpului. Eticheta este calculată din începutul 660 și durata 30, nu copiată din intenția inițială de a începe la 10:30.
+The snapshot retains the source identity and the values justifying the label, including the participant. `ana-id` este identitatea rezolvată, nu o nouă persoană creată în diagramă. Pentru acest fragment, ziua și fusul orar sunt cele deja fixate în scenariu; un instantaneu exportat independent trebuie să le păstreze explicit împreună cu unitatea timpului. Eticheta este calculată din începutul 660 și durata 30, nu copiată din intenția inițială de a începe la 10:30.
 
-Nodul se referă activ numai la înregistrarea locală `$snapshot.meeting`. Calendarul poate fi închis după citire fără a invalida această proveniență istorică. Dacă întâlnirea este mutată ulterior, diagrama rămâne descrierea versiunii `state-18`; nu pretinde că arată starea curentă. Actualizarea explicită reîncarcă sursa și produce un nou instantaneu verificat. O vedere care urmărește automat calendarul ar necesita un contract separat de dependență și invalidare.
+The saved node retains local provenance to the captured values. Closing the calendar need not invalidate historical provenance. Moving the source event later does not make a snapshot chart current: explicit refresh reads another coherent revision and produces new provenance. A live view instead requires declared invalidation, propagation and lifetime semantics.
 
 Un grafic cu numărul întâlnirilor pe participant cere toate întâlnirile din domeniul agregării, nu doar acest fir. Pentru el se păstrează colecția surselor, versiunea și acoperirea citirii; fiecare întâlnire se numără o singură dată după identitate. Exemplul de nod individual nu este dovada completitudinii acelui grafic. Acest fapt localizează exact munca suplimentară a proiecțiilor agregate, fără să transforme nodurile în copii ale persoanelor.
 
-# 9. API-ul bibliotecii: construirea, interogarea și modificarea unei lumi
+# 9. Request classes and their resolution circuits
 
-Acest capitol leagă mecanismele cărții de apelurile care există în biblioteca `sopworld`, versiunea 0.167.0. Exemplele au fost rulate pe sursele acestei versiuni; rezultatele sunt redate explicit. Numele propuse în capitolele anterioare nu devin API-uri existente prin simpla lor apariție în carte. La sfârșit este delimitat contractul conversațional care mai trebuie construit.
+The public semantic boundary is SOP Lang. A request circuit states a goal or question; it is not necessarily executable. The library elaborates it using schema, knowledge and live instance Worlds. The terminal result is either a concrete circuit of typed tool calls, or a justified answer derived from observations, with any unresolved obligations retained. Internal JavaScript methods are implementation details, not a second semantic interface.
 
-Aici sunt explicate apelurile de bază pentru un traseu complet prin lume. [Referința API](../docs/api.md) inventariază și familiile specializate; acest capitol nu pretinde încă să înlocuiască explicațiile tuturor exporturilor ei. Codul se poate importa din pachet prin `import { World, readRequest, planRequest } from 'sopworld'`. Într-un checkout al depozitului, aceleași nume sunt exportate de `src/index.mjs`, iar în browser de fișierul construit `docs/sopworld.mjs`.
+## 9.1 Questions: values, count, existence and members
 
-## 9.1 Instanța `World` și exemplul comun
+A question selects existing subjects and declares its projection separately. Asking for their colour does not require changing their colour. The following independent examples use the `std.request` schema. The invented kind `sample.item` names an application vocabulary concept; it does not give that kind a renderer or imply the existence of any instance.
 
-`new World(options?)` construiește o lume goală. Schema și faptele se încarcă separat; constructorul nu deduce domeniul din numele unei variabile JavaScript. Opțiunile pot furniza biblioteca de module (`library`), funcții ale gazdei, un namespace și limite de calcul. `version` identifică o versiune de stare și este potrivit pentru invalidarea cache-urilor; `stamp` este intern și nu identifică unic stări din lumi diferite. Un fork pornește cu versiunea bazei, iar modificarea sa efectivă primește o versiune diferită.
-
-Exemplele următoare construiesc fiecare o lume nouă cu funcția de mai jos. Nu depind de efectele exemplului anterior. Micul inventar are produse cu preț și linii care indică produsul și cantitatea. Regula calculează costul unei linii prin înmulțire. Aceasta folosește schema, potrivirea și deducția din capitolul 3, fără strat conversațional.
-
-```js
-const inventory = () => {
-  const w = new World();
-  w.load(`
-    @s.name core.slot of=item key=name id=true
-    @s.price core.slot of=item key=price kind=number min=0 required=true ask="What does it cost?"
-    @s.item core.slot of=line key=item type=item required=true
-    @s.qty core.slot of=line key=qty kind=integer min=1 default=1
-    @p.item item price=?p
-    @p.line line item=$p.item qty=?q
-    @calc core.calc out=?cost fn=mul args=?q args=?p
-    @result line core.on=$p.line cost=?cost
-    @rule core.rule when=$p.line when=$p.item with=$calc then=$result
-  `);
-  return w;
-};
+```sop
+@source.query.values std.request.source text="What colours are the items?"
+@request.query.values std.request act=inspect mood=ask source=$source.query.values query=$query.values
+@target.query.values std.request.target request=$request.query.values mode=existing kind=sample.item
+@query.values std.request.query request=$request.query.values target=$target.query.values operation=values concept=colour
 ```
 
-În rezultate, `attrs` conține liste de tokenuri SOP: un preț poate apărea ca `["2"]`, deși slotul îl verifică numeric. Nu este un șir JavaScript convertit automat în număr. Exemplul afișează valorile cu `print(...values)`, definit ca `console.log(...values.map(v => JSON.stringify(v)))`; astfel se disting numerele, tokenurile și listele. Pentru un calcul al gazdei, conversia trebuie făcută conform tipului declarat, nu aplicată orbește oricărei valori.
-
-## 9.2 `load` și `tell`: încărcarea și afirmarea faptelor
-
-Ambele metode primesc text SOP sau o listă de fire deja parsate. `tell(input, options?)` afirmă fapte sau declarații, aplică regulile relevante și verifică schimbarea. Întoarce un rezultat cu `ok`, identificatorii adăugați, derivările, completările și încălcările. `ok: false` trebuie tratat ca refuz; faptul că apelul JavaScript s-a încheiat nu dovedește că afirmația a intrat în lume. Textul care nu poate fi parsat poate arunca o excepție.
-
-`load(input)` folosește aceeași modificare, dar aruncă o eroare dacă lumea o refuză. Este util la pornire, când o schemă invalidă este o problemă de configurare ce nu trebuie trecută cu vederea. Rezultatul la succes este tot rezultatul schimbării, nu o lume nouă.
-
-```js
-const w = inventory();
-const r = w.tell('@pen item name=pen price=2 @order line item=$pen qty=3');
-print(r.ok, r.added, w.get('order').attrs.cost);
-const bad = w.tell('@ink item name=ink price=-1');
-print(bad.ok, w.has('ink'));
-try { w.load('@ink item name=ink price=-1'); }
-catch (e) { print(e.message.startsWith('sopworld: refused')); }
+```sop
+@source.query.count std.request.source text="How many items are there?"
+@request.query.count std.request act=inspect mood=ask source=$source.query.count query=$query.count
+@target.query.count std.request.target request=$request.query.count mode=existing kind=sample.item
+@query.count std.request.query request=$request.query.count target=$target.query.count operation=count
 ```
 
-Rezultatul verificat:
-
-```text
-true ["pen","order"] ["6"]
-false false
-true
+```sop
+@source.query.exists std.request.source text="Are there any items?"
+@request.query.exists std.request act=inspect mood=ask source=$source.query.exists query=$query.exists
+@target.query.exists std.request.target request=$request.query.exists mode=existing kind=sample.item
+@query.exists std.request.query request=$request.query.exists target=$target.query.exists operation=exists
 ```
 
-Prima afirmație introduce produsul și linia, iar regula produce costul 6. Prețul negativ nu este acceptat și firul `ink` nu rămâne în stare. Ultimul `true` arată că `load` a aruncat eroarea de refuz. Diferența dintre metode este cum semnalează refuzul, nu dacă schema trebuie respectată.
-
-Opțiunile importante ale lui `tell` sunt `dry` pentru o probă fără păstrarea schimbării, `tier` pentru nivelul de proveniență, `ns` pentru namespace și `budget` pentru calcul. O probă reușită nu rezervă starea: înainte de execuția reală trebuie reverificată versiunea. La depășirea bugetului, schimbarea este refuzată; bugetul epuizat nu trebuie prezentat drept contradicție logică.
-
-## 9.3 `fill` și `revise`: completare sau corectare explicită
-
-`fill(id, key, value, options?)` furnizează o valoare unui slot. Pentru un slot cu o singură valoare deja afirmată, o valoare diferită produce conflict; metoda nu înseamnă „suprascrie orice”. `revise(id, key, value, options?)` exprimă tocmai corectarea explicită. Există și forma `revise(id, values, options?)` pentru un obiect de valori. Ambele întorc rezultatul schimbării și aplică validarea și deducția relevante.
-
-```js
-const w = inventory();
-w.tell('@pen item name=pen');
-print(w.fill('pen', 'price', 2).ok);
-print(w.fill('pen', 'price', 3).violations[0].kind);
-print(w.revise('pen', 'price', 3).ok, w.get('pen').attrs.price);
+```sop
+@source.query.members std.request.source text="Which items are there?"
+@request.query.members std.request act=inspect mood=ask source=$source.query.members query=$query.members
+@target.query.members std.request.target request=$request.query.members mode=existing kind=sample.item
+@query.members std.request.query request=$request.query.members target=$target.query.members operation=members
 ```
 
-Rezultatul verificat:
+LIB resolves the target kind against compatible instance Worlds and the schema's declared type relationships, selects a population from a coherent snapshot, evaluates any selectors, and applies the requested projection. Suppose a complete snapshot contains `a`, red, and `b`, blue. Values yields those property values with their subject identities; count yields 2; existence yields true; members yields `a` and `b`. Duplicated evidence for `a` does not create a third item. The answer retains the instance, snapshot version, selection evidence and declared coverage.
 
-```text
-true
-"conflict"
-true ["3"]
+For a partial snapshot containing only `a`, existence can still be true. Count is at least 1, not exactly 1; a full members list is unknown. If no member is observed in a partial population, existence is unknown rather than false. A values query must distinguish an absent property from a known empty value. These rules are generic consequences of coverage, independent of whether the subjects are drawing objects, calendar events or document chapters.
+
+## 9.2 Selection and result requirements have different roles
+
+“How many red items?” adds a selector to the target:
+
+```sop
+@source.query.red std.request.source text="How many red items?"
+@request.query.red std.request act=inspect mood=ask source=$source.query.red query=$query.red
+@target.query.red std.request.target request=$request.query.red mode=existing kind=sample.item selector=$selector.red
+@selector.red std.request.constraint request=$request.query.red target=$target.query.red concept=colour operator=eq value="red" polarity=positive character=requirement
+@query.red std.request.query request=$request.query.red target=$target.query.red operation=count
 ```
 
-Prețul lipsă poate fi completat cu 2. Încercarea de a-l completa încă o dată cu 3 nu retrage afirmația anterioară. Corectarea explicită reușește și prețul devine 3. Distincția este importantă pentru cererile omului: o nouă dovadă sau o corecție trebuie exprimată ca atare; nu trebuie ascunsă într-o completare. Sloturile fluente și presupunerile au reguli suplimentare de revizuire descrise în referința API.
+The selector tests the observed colour. In “make the selected items red”, colour is instead a requirement on the result. Filtering out blue items before recolouring would lose exactly the objects that need changing. The compiler retains these roles through every transformation: bind subjects from the selector, then instantiate property-change calls for those subjects, then observe the result predicate. A type-valid graph that swaps these roles is semantically wrong.
 
-## 9.4 `ask`: potrivirea unor modele de fire
+Schema declares what colour means for that kind and how it maps to a concrete tool field; knowledge resolves a named colour to the representation required by the tool. A string such as “red” in a request is not automatically a renderer code. A tool that accepts a hexadecimal colour receives the resolved code; the correspondence and source remain visible in the elaboration trace.
 
-`ask(patterns, options?)` primește modele SOP, nu o întrebare liberă în engleză. Întoarce câte un obiect de legături pentru fiecare potrivire. Identificatorul modelului se leagă la identificatorul firului găsit, iar variabilele se leagă la tokenurile din acesta. Modelele pot omite identificatorul dacă nu este necesar în rezultat.
+## 9.3 Rules, inference and search
 
-```js
-const w = inventory();
-w.tell('@pen item name=pen price=2 @ink item name=ink price=3');
-print(w.ask('@x item name=?name price=3'));
-print(w.ask('@x item price=99'));
+Rules derive facts from matching premises; they do not inspect arbitrary sentence fragments. The following complete toy model states that a selected item is eligible. It demonstrates a schema, instance facts and a rule in one small circuit; a production application can load those parts from separate Worlds with explicit imports.
+
+```sop
+@type.sample.item core.type of=sample.item closed=true
+@slot.sample.id core.slot of=sample.item key=id kind=string present=true
+@slot.sample.selected core.slot of=sample.item key=selected kind=boolean present=true
+@type.sample.eligible core.type of=sample.eligible closed=true
+@slot.sample.eligible.id core.slot of=sample.eligible key=id kind=string present=true
+@pattern.sample.selected sample.item id=?id selected=true
+@template.sample.eligible sample.eligible id=?id
+@rule.sample.selected core.rule when=$pattern.sample.selected then=$template.sample.eligible
+@sample.a sample.item id="a" selected=true
+@sample.b sample.item id="b" selected=false
 ```
 
-Rezultatul verificat:
+The matcher binds `?id` to `"a"`; the rule derives `sample.eligible id="a"` with the rule and matching fact as evidence. It does not derive eligibility for `b`. If the supporting selection changes, derived eligibility must be re-evaluated. A request that operates on eligible items can consume this conclusion; derivation alone does not issue a tool call.
 
-```text
-[{"x":"ink","name":"ink"}]
-[]
-```
+Search is needed when rules constrain several possible completions without forcing a single value. For “place the group without overlap”, schema supplies dimensions and coordinate units; instance facts supply members and occupied regions; knowledge supplies candidate generation and the ranking objective. LIB generates candidate positions, measures collisions, rejects forbidden intersections and ranks feasible candidates. It emits coordinates for a selected candidate, with its assumptions. A pure geometric calculation can be native; which group, which constraints and which objective to use must be declared.
 
-`x` numește firul găsit, iar `name` valoarea slotului: coincidența lor în acest exemplu nu le face același rol. Lista goală pentru prețul 99 spune că nu s-a găsit o potrivire în domeniul citit. Nu dovedește că niciun obiect din afara acelei lumi nu poate avea acel preț. `ns` limitează namespace-ul, iar `at` permite citirea la un punct din istoric.
+## 9.4 Creation, modification and composition
 
-La depășirea bugetului, rezultatul are informație de buget și nu trebuie tratat ca enumerare completă. În particular, serializarea simplă a unui array poate ascunde proprietăți atașate lui: apelantul verifică și `rows.budget`. O interfață care prezintă doar lista, fără statutul calculului, poate transforma o căutare întreruptă într-un răspuns aparent definitiv.
+“Draw a tree and a house” introduces two new targets under the shared creation act. The reader must preserve both noun groups and their local conditions. LIB selects representations, instantiates parts, derives required size and position arguments, and constructs calls with output references for newly created objects. “Draw a tree near the house” instead introduces one new target and an existing anchor. Splitting at every noun or every “and” cannot implement this distinction.
 
-## 9.5 `query`: o valoare împreună cu statutul și justificarea ei
+A concrete call contains only typed literals, resolved existing references, or typed outputs of earlier calls. Its operation, required arguments, units and coordinate frame are known. It has no unresolved “the other one”, “large”, “near” or “tomorrow”. Calls may have explicit dependencies and guards; their order follows those dependencies, not the order of declarations in the file. The generic dispatcher binds outputs and invokes primitives. The tools do not interpret the overall plan.
 
-`query(question, options?)` primește fie `{ about, seek }` pentru proprietatea unui fir cunoscut, fie o descriere `{ type, where, seek, mode }`; poate primi și un fir `core.question`. Spre deosebire de `ask`, organizează răspunsul ca valoare căutată cu statut, surse și nivel de proveniență. Modul implicit este `value`; modurile `list`, `count`, `exists`, `check` și `abduce` schimbă întrebarea adresată motorului.
+A UI command that already supplies an object reference and colour uses this same validation and dispatch boundary directly. It need not be translated into English and read again. Its training pair can still record the natural text and concrete SOP intent, without making that pair the execution mechanism.
 
-```js
-const w = inventory();
-w.tell('@pen item name=pen price=2 @order line item=$pen qty=3');
-const q = w.query({ about: 'order', seek: 'cost' }, { suppose: false });
-print(q.status, q.value, q.via, q.tier);
-print(w.query({ type: 'item', where: { name: 'ink' }, seek: 'price' }, { suppose: false }).status);
-```
+## 9.5 Follow-ups, collective requests and transfers between Worlds
 
-Rezultatul verificat:
+| Request class | Generic elaboration | Terminal obligation |
+|---|---|---|
+| “Move the other one down” | Retain compatible identities, exclude the prior referent, rank context evidence, resolve the vertical frame and declared step. | Concrete subject, coordinate change, explicit assumption if the reference remained uncertain. |
+| “Make every red box smaller” | Evaluate the red-box selector on one population snapshot; bind each member; apply the declared size step and bounds. | One typed change per selected identity, or a bulk primitive with equivalent declared semantics; preserve all other properties. |
+| “Add two items to each group” | Bind each group separately and instantiate a local creation quantity of two. | Returned identities are attached to the correct parent; two globally is not equivalent. |
+| “Show meetings per day as a chart” | Read the declared date interval with coverage; group by resolved local day; count unique event identities; instantiate the chosen chart method. | Diagram calls contain concrete values and geometry; provenance points to the consumed calendar snapshot. |
+| “Put that chart into the report” | Resolve the chart and document separately, select snapshot or live-reference semantics from declarations, instantiate the insertion method. | Concrete document insertion with explicit content/reference and observation of the inserted section. |
 
-```text
-"supported" "6" ["rule"] "derived"
-"missing"
-```
+An uncertain but usable reversible interpretation is acted on with its actual effect and assumption stated; ranked alternatives and undo remain available. Explicit constraints are preserved. Missing evidence cannot be converted into a factual assertion, and an unbound required argument cannot be passed to a primitive as if it were concrete. The trace identifies the precise remaining obligation instead of hiding it behind “the system understands”.
 
-Costul este susținut de regula `rule`, la nivelul `derived`. Tokenul `"6"` nu vine dintr-o presupunere a interfeței. Pentru produsul absent rezultatul este `missing`, nu prețul zero. Apelantul citește `status` înainte de `value` și păstrează câmpurile explicative ale statutului primit. Un rezultat ambiguu, condiționat sau necunoscut nu se transformă într-o valoare prin alegerea arbitrară a primului candidat.
+# 10. The reader: from text to candidate request circuits
 
-Exemplul folosește `suppose: false` pentru a cere răspunsul fără presupuneri ipotetice. În mod obișnuit `suppose` este activ; acest comportament trebuie ales conștient atunci când răspunsul va fi prezentat ca fapt. `record: true` poate înregistra întrebarea și răspunsul ca fire. Aceste fire nu constituie singure întregul jurnal de execuție propus în secțiunea 6.11.
+The reader proposes request graphs with source spans, roles, ownership and uncertainty. A neural encoder such as SOP-BERT can predict act labels and token spans; it does not generate executable tool calls by itself. A span head locates a substring using token offsets. A generic decoder builds graph nodes from those predictions under the request schema. If two target spans are found but the decoder retains only one target field, a second object is lost after recognition. More training cannot repair a representation that has discarded it.
 
-## 9.6 `open` și `next`: a observa lipsurile fără a le umple
-
-`open(id?)` enumeră sloturile obligatorii care nu au valoare, în întreaga lume sau pe firul indicat. Fiecare rezultat identifică obiectul, tipul, cheia și întrebarea declarată. Un slot opțional cu valoare implicită nu este o lipsă obligatorie, deci poate lipsi din `open` și totuși să apară în propunerile lui `next`.
-
-`next(options?)` întoarce `fills`, `questions` și `dead`: valori forțate sau implicite propuse, întrebări rămase și sloturi fără candidat posibil. Nu aplică propunerile. Cu `review: true` poate întoarce și presupunerile care merită revăzute.
-
-```js
-const w = inventory();
-w.tell('@pen item name=pen @order line item=$pen');
-print(w.open());
-const n = w.next();
-print(n.fills.map(f => [f.id, f.key, f.value, f.kind]));
-print(n.questions.map(q => [q.attrs.about[0], q.attrs.seek[0]]));
-print(w.get('order').attrs.qty ?? null);
-```
-
-Rezultatul verificat:
-
-```text
-[{"id":"pen","type":"item","key":"price","ask":"What does it cost?"}]
-[["order","qty","1","default"]]
-[["$pen","price"]]
-null
-```
-
-Prețul produsului este obligatoriu și lipsește. Cantitatea liniei nu este obligatorie, dar schema îi oferă valoarea implicită 1. `next` propune acea cantitate și întrebarea despre preț. Ultimul `null` arată că propunerea nu a fost încă scrisă în stare. Interfața poate astfel afișa opțiunile fără să modifice lumea doar prin inspectare.
-
-`canComplete(id?)` este o verificare ieftină că există candidați de încercat; un rezultat adevărat nu dovedește că aceștia trec toate constrângerile. `suggest(id, key, options?)` oferă candidați verificați pentru un slot, cu sursele lor. Aceste două apeluri sunt auxiliare selecției, nu aprobări automate de execuție.
-
-## 9.7 `complete`: aplicarea completărilor și proveniența lor
-
-`complete(options?)` aplică valorile forțate; cu `defaults: true` aplică și valorile implicite, iar cu `choose: true` poate alege o soluție pentru ce rămâne. Întoarce `filled`, `questions`, `dead` și `pending`, plus informația de buget dacă este cazul. Spre deosebire de `next`, modifică lumea. Nu trebuie confundat cu actul standard numit tot `complete`, care folosește mecanismul `std.fill` al stratului conversațional.
-
-```js
-const w = inventory();
-w.tell('@pen item name=pen price=2 @order line item=$pen');
-const result = w.complete({ defaults: true });
-print(result.filled.map(f => [f.id, f.key, f.value]));
-print(w.get('order').attrs.cost, w.tier('order', 'cost'));
-```
-
-Rezultatul verificat:
-
-```text
-[["order","qty","1"],["order","cost","2"]]
-["2"] "default"
-```
-
-Cantitatea implicită 1 permite regulii să calculeze costul 2. Costul rezultat are aici nivelul `default`: depinde de cantitatea presupusă, chiar dacă înmulțirea este deterministă. Aceasta explică de ce „a fost calculat printr-o regulă” nu înseamnă întotdeauna „toate premisele lui au fost afirmate de om”. Aplicația păstrează proveniența până în răspuns și poate revizui completarea când apare o cerință explicită.
-
-Completarea implementată folosește domeniile de valori, valorile implicite și constrângerile existente. Nu este încă implementarea întregii politici conceptuale propuse de carte, cu regiuni și descrieri generice. Exemplul demonstrează mecanismul existent pe o schemă concretă, nu închiderea lacunelor proiectului viitor.
-
-## 9.8 `solveReport`, `solve` și `apply`: căutare separată de modificare
-
-`solveReport(options?)` caută o atribuire comună pentru cheile deschise pe care motorul le poate reprezenta. Raportul are `status` (`sat`, `unsat` sau `unknown`), atribuirea când este disponibilă și informații despre motiv, solver și costul căutării. `sat` spune că s-a găsit o atribuire acceptată, `unsat` că problema reprezentată nu are soluție, iar `unknown` că nu există o concluzie. Domeniile și acoperirea problemei trebuie cunoscute înainte de a generaliza concluzia la lumea reală.
-
-`solve(options?)` este forma simplificată: întoarce atribuirea, `null` pentru `unsat` și poate întoarce `[]` pentru `unknown`. Prin urmare, lista goală nu este o dovadă de succes. `satisfiable()` este fals numai pentru `unsat`; adevărat nu exclude `unknown`. Pentru decizii și explicații se folosește raportul explicit. Opțiunile solverului sunt `solver`, `budget` pentru solver și `limit` pentru bugetul apelului general; acestea nu trebuie confundate.
-
-```js
-const w = new World();
-w.load(`
-  @s core.slot of=seat key=who enum=ann enum=bob required=true
-  @a seat who=?who
-  @b seat who=?who
-  @different core.check fn=neq args=$a args=$b
-  @unique core.deny when=$a when=$b if=$different why="a person sits twice"
-`);
-w.tell('@s1 seat @s2 seat who=bob');
-const report = w.solveReport();
-print(report.status, report.assignment);
-print(w.open().map(x => [x.id, x.key]));
-if (report.status === 'sat') print(w.apply(report.assignment).ok);
-print(w.get('s1').attrs.who);
-```
-
-Rezultatul verificat:
-
-```text
-"sat" [{"id":"s1","key":"who","value":"ann"}]
-[["s1","who"]]
-true
-["ann"]
-```
-
-Regula de interdicție nu permite aceleiași persoane să ocupe două locuri. Bob este deja la `s2`, deci căutarea propune Ann pentru `s1`. După raport, `open` încă arată cheia lipsă: căutarea nu a aplicat-o. `apply(assignment, options?)` aplică atribuirea ca o schimbare verificată. Ramura `if` împiedică folosirea unui rezultat necunoscut drept soluție.
-
-O soluție aparține stării pe care a fost calculată. Dacă acea stare se schimbă înainte de `apply`, atribuirea trebuie din nou validată; nu este o rezervare. Nici `apply`, nici `solveReport` nu înseamnă că o unealtă externă a mutat un obiect ori a creat o rezervare. Ele lucrează asupra lumii de fire.
-
-## 9.9 `fork`: starea candidatului și starea de bază
-
-`fork()` întoarce o lume independentă cu același conținut inițial. Implementarea partajează structurile nemodificate și copiază ce este schimbat, dar contractul observabil este izolarea modificărilor. Această operație permite verificarea unui plan fără să modifice baza.
-
-```js
-const w = inventory();
-w.tell('@pen item name=pen price=2');
-const candidate = w.fork();
-candidate.revise('pen', 'price', 4);
-print(w.get('pen').attrs.price, candidate.get('pen').attrs.price);
-print(w.version === candidate.version);
-```
-
-Rezultatul verificat:
-
-```text
-["2"] ["4"]
-false
-```
-
-Prețul bazei rămâne 2, în timp ce candidatul are 4. Versiunile diferă după schimbare. Fork-ul nu rezervă fișiere, unelte sau servicii externe. Dacă o funcție a gazdei produce efecte externe în timpul unei probe, izolarea firelor nu le anulează; tocmai de aceea calculele folosite în simulare trebuie să respecte contractul de puritate.
-
-## 9.10 `undo` și `redo`: istoricul bibliotecii
-
-`undo(n = 1, options?)` retrage ultimele afirmații din istoricul lumii și întoarce rezultatul, identificatorii afectați și încălcările. `redo(n = 1, options?)` reface afirmațiile retrase, dacă mai sunt disponibile și valide. Afirmațiile care ating numai tipuri tranzitorii sunt tratate separat, conform referinței API. O operație nouă obișnuită poate invalida posibilitatea de redo.
-
-```js
-const w = inventory();
-w.tell('@pen item name=pen price=2');
-w.tell('@ink item name=ink price=3');
-const undone = w.undo();
-print(undone.ok, undone.removed, w.has('ink'));
-print(w.redo().ok, w.has('ink'));
-```
-
-Rezultatul verificat:
-
-```text
-true ["ink"] false
-true true
-```
-
-A doua afirmație, despre `ink`, este retrasă și apoi refăcută. Această unitate de istoric este o afirmație a bibliotecii; o cerere a omului poate necesita mai multe afirmații și apeluri de unealtă. Anularea conversațională din secțiunea 6.9 trebuie să le grupeze, să compenseze efectele reale și să le observe din nou. Un apel la `world.undo()` nu garantează anularea unei acțiuni deja executate într-un editor sau calendar extern.
-
-## 9.11 `register`: legătura dintre declarație și calculul gazdei
-
-`register(kind, name, fn, options?)` înregistrează o funcție JavaScript și întoarce lumea. Pentru `kind='function'`, funcția primește `(args, world)`: primul argument este lista tokenurilor, nu câte un argument JavaScript pentru fiecare parametru SOP. Declarația `core.function` și argumentele ei spun motorului ce contract are funcția; înregistrarea furnizează implementarea. Sunt necesare ambele pentru un contract inspectabil.
-
-```js
-const w = new World();
-w.register('function', 'half', ([x]) => Number(x) / 2);
-w.load(`
-  @fn core.function name=half out.kind=number pure=true
-  @arg core.function.arg of=$fn name=x kind=number
-  @p measure value=?v
-  @c core.calc out=?h fn=half args=?v
-  @t measure core.on=$p half=?h
-  @r core.rule when=$p with=$c then=$t
-`);
-w.tell('@m measure value=8');
-print(w.get('m').attrs.half, w.functions()[0].registered);
-```
-
-Rezultatul verificat:
-
-```text
-["4"] true
-```
-
-Regula calculează jumătatea valorii 8 și o pune pe același fir. `functions()` confirmă că funcția declarată este înregistrată. `Number(x)` este potrivit aici deoarece parametrul este numeric; pentru `json`, funcția trebuie să decodeze tokenul conform reprezentării, nu să presupună că primește direct un obiect JavaScript.
-
-`pure=true` este o obligație a implementării gazdei, nu o verificare automată că JavaScript nu are efecte. O funcție folosită în deducție trebuie să tolereze toate intrările admise de contract, inclusiv combinații care vor fi ulterior eliminate de alte condiții. Înlocuirea unei funcții predefinite este refuzată fără opțiunea explicită `override`. Celelalte categorii înregistrabile (`action`, `producer`, `filter`, `context`, `lemma`) au semnături proprii; nu se apelează toate ca o funcție de calcul.
-
-Pentru o verificare care citește un ansamblu de fire, biblioteca oferă și `core.validate on=<tip> fn=<funcție>`. Funcția pură primește referința înregistrării și lumea finală a tranzacției; rezultatul trebuie să fie booleanul JavaScript `true`. Funcția rulează și când s-a schimbat numai un copil al înregistrării. Rezultatul nu este memorat între verificări; o funcție reînregistrată nu moștenește verdictul celei vechi. Funcțiile lipsă, rezultatele neclare, promisiunile și excepțiile refuză tranzacția. O traversare cooperantă consumă buget prin `tick()` din al treilea argument al callback-ului.
-
-Acest mecanism este un punct de validare generic, nu implementarea grafului cererii. Verificatorul grafului trebuie încă să definească accesibilitatea, ciclurile și domeniul variabilelor. Callback-ul inspectează direct datele și nu apelează recursiv `check()` sau alte operații care validează. Puritatea rămâne obligația gazdei: protecția pentru mutații obișnuite nu izolează cod JavaScript arbitrar sau efecte externe.
-
-## 9.12 Citirea unei cereri există deja, dar contractul conceptual este propus
-
-Biblioteca exportă deja `readRequest`, `requestWires`, `reviseRequest`, `planRequest` și `runPlan`. `readRequest(world, text, context?)` întoarce o cerere cu act, țintă, constrângeri, referințe și cuvinte necitite. Contextul furnizează lumea limbii, catalogul și starea relevantă; cititorul nu primește sensul tuturor cuvintelor prin simplul apel. `planRequest(live, request, options?)` folosește declarațiile de capabilități și sursele disponibile pentru a construi pași. Planificarea nu trebuie confundată cu executarea prin `runPlan`.
-
-```js
-const language = new World();
-language.tell('@d ex.det text=a text=the');
-const w = new World();
-w.load(`
-  @acts core.use world=std.acts
-  @world std.schema.world name=toy
-  @type core.type of=box extends=std.schema.thing closed=true
-  @kind std.schema.kind of=box world=toy acts=make
-`);
-const request = readRequest(w, 'make a box blorp', { language, lang: 'ex' });
-print(request.act, request.target, request.unread);
-const plan = planRequest(w, request);
-print(plan.ok, plan.steps, plan.unread);
-```
-
-Rezultatul verificat:
-
-```text
-"make" "box" ["blorp"]
-false [] ["blorp"]
-```
-
-Micul exemplu declară un singur fel de obiect și vocabularul minim. Cititorul recunoaște actul și ținta, dar păstrează `blorp` ca necitit. Planificatorul refuză să execute doar partea înțeleasă: lista pașilor este goală. Acesta este un comportament existent și verificat, nu o promisiune a refactoringului.
-
-Contractul actual al constrângerilor folosește chei din `REQUEST_KEYS` și forme proprii ale stratului conversațional. `requestWires` serializează forma actuală în fire `w.request`; nu produce implicit schema `std.request.*` propusă în secțiunea 6.3.2. Acea schemă cere descrieri și concepte rezolvate generic, identitatea stabilă a cerințelor și proveniența lor prin corecții. Adaptarea API-urilor existente la acest contract necesită o mapare explicită și verificarea fiecărui rezultat intermediar.
-
-Pentru API-ul conversațional viitor trebuie fixate trei frontiere: citirea întoarce descrierea cererii și ce rămâne necunoscut; planificarea întoarce pașii, precondițiile și proprietățile neverificate; execuția întoarce efectele observate și dovezile. Numele și semnăturile finale nu sunt încă stabilite. Un capitol care le-ar prezenta ca implementate ar ascunde exact diferența dintre mecanismele disponibile și proiectul pe care vrem să îl construim.
-
-# 10. Cititorul englez: de la text la descriere
+A symbolic reader can instead obtain candidate structure through declared lexical and grammar rules. These are alternative ways to propose the same request contract. LIB's subsequent world resolution and elaboration must not depend on which reader supplied it. The constructions in this chapter define the required distinctions, rather than requiring every reader to build an identical internal syntax tree.
 
 ## 10.1 Lexicul: forme de limbă legate de concepte
 
@@ -3009,13 +2819,13 @@ Mai întâi sunt căutate formele exacte, inclusiv numele locale cu mai multe cu
 
 Corectarea poate afecta mai multe tokenuri; de aceea proveniența nu se reduce la o pereche „token greșit → token bun”. Varianta `th epond` păstrează intervalele din textul original chiar dacă arborele rezultat are alte granițe. Nici numărul, nici negația și nici unitatea unei valori nu pot dispărea drept zgomot. Un nume aproximativ poate fi propus utilizatorului ca referent candidat, dar nu este redenumit ori substituit în tăcere. O reparație poate și introduce informație, nu doar să o piardă: `now`/`not`, `on`/`no`, `on`/`one` și `for`/`four` sunt apropiate ortografic, dar schimbă timpul, negația sau cantitatea. Orice reparație care adaugă, elimină ori schimbă o negație, un număr, un cuantificator, o unitate sau un nume cere alegerea între citirile explicate; nu este aplicată în tăcere pe baza scorului. Protecția privește conținutul semantic, astfel încât normalizarea unei grafii echivalente nu devine automat schimbare de cantitate. Formele exacte rămân prima analiză; exemplele de mai sus sunt contraexemple pentru corectare agresivă, nu instrucțiuni de a le confunda.
 
-Dacă două variante admisibile produc aceeași descriere, ele pot fi reunite păstrând ambele justificări. Dacă produc efecte diferite, cititorul explică diferența: pentru `upper`, „Do you mean higher than it is now, or in the upper area?”. Un singur candidat rămas numai fiindcă s-a epuizat bugetul nu este declarat unic. Cazurile de evaluare includ și forme corecte care seamănă cu greșeli: îmbunătățirea recunoașterii nu trebuie să deterioreze numele și sensurile deja corecte.
+Equivalent descriptions can merge while retaining their separate evidence. Different descriptions remain ranked alternatives. For “upper”, context can support either a comparative move or placement in an upper region. With a usable reversible interpretation, act on the best supported one, state the concrete move and retain undo. Exhausting a search budget does not prove that the retained alternative was unique.
 
 ## 10.2 Gramatica și arborele sintactic
 
 O regulă gramaticală descrie cum se construiește o expresie din componente. Un grup nominal poate conține un determinant, o cantitate, modificatori și un substantiv principal. Arborele rezultat păstrează fiecare componentă și intervalul ei în text. Acesta este diferit de modelul de fire din secțiunea 3.4: arborele descrie organizarea textului, iar un pattern SOP caută potriviri într-o lume. Arborele poate fi reprezentat ulterior prin fire, dar cele două operații nu trebuie confundate.
 
-Forma următoare este o schemă gramaticală propusă pentru cititor, în notație de gramatică, nu cod SOP încărcabil. `NP` înseamnă grup nominal, `PP` grup prepozițional, `V` verb, `N` substantiv, `Adj` modificator, iar `?`, `*` și `+` înseamnă opțional, zero sau mai multe, respectiv una sau mai multe apariții. `Name`, `Pron`, `Det`, `Num`, `Prep` și `Coord` sunt categorii ale lexicului.
+The following explanatory grammar describes the required constructions, using grammar notation rather than loadable SOP declarations. `NP` înseamnă grup nominal, `PP` grup prepozițional, `V` verb, `N` substantiv, `Adj` modificator, iar `?`, `*` și `+` înseamnă opțional, zero sau mai multe, respectiv una sau mai multe apariții. `Name`, `Pron`, `Det`, `Num`, `Prep` și `Coord` sunt categorii ale lexicului.
 
 ```text
 Message  := Command | RequestFrame | Fragment
@@ -3054,57 +2864,50 @@ Intrarea gramaticii este `Message`, nu doar imperativul. `Direction` și `Degree
 | `can I get a boat` | În contextul editării propriului desen, cadrul indirect cere crearea: `mood=do`. O întrebare explicită despre posibilitate păstrează `check`, conform regulii de mai jos. |
 | `make it so the heading is above the table` | Stare finală cerută, cu relație între referenți; planificatorul alege schimbarea care o realizează fără să inventeze un verb lipsă din mesaj. |
 
-Situarea completează numai roluri pentru care dialogul oferă o justificare: selecția curentă, întrebarea la care se răspunde ori cererea încă deschisă. Dacă `more` poate însemna mai multe obiecte sau dimensiune mai mare, se oferă cele două interpretări pentru clarificare, nu se cere o reformulare fără indicații. După un rezultat tocmai prezentat, un `more` legat fără ambiguitate de aceeași însușire este o reacție care cere următoarea ajustare; nu necesită o confirmare suplimentară numai fiindcă verbul lipsește. Cererea precedentă identifică obiectul și însușirea, iar mesajul nou autorizează ajustarea. Aceasta nu autorizează repetări autonome în absența mesajului. Deosebirea dintre completarea unei cereri, corectarea ei și o cerere nouă urmează jurnalul din secțiunea 6.11.
+Context resolution fills omitted roles from explicit selection, dialogue bindings and applicable World declarations. For “more” after a size change, bind the prior subject and size concept and apply the declared comparative step. If count and size both remain plausible, retain and rank both interpretations, apply a usable reversible one and identify its concrete effect. A new user message authorizes that adjustment; the mechanism does not autonomously repeat it forever.
 
-Conținutul actului și modul cererii sunt distincte. Contractul propus adaugă pe `std.request` câmpul `mood=do|propose|check|ask`: efectuare, prezentarea unui plan, verificarea posibilității sau obținerea unei informații. Un mod încă nerezolvat nu primește implicit valoarea `do`; exemplele scurte care omit câmpul presupun că modul este stabilit în etapa de interpretare. Numai `do`, după rezolvarea celorlalte obligații, autorizează efecte. `propose` și `check` pot evalua un plan pe fork, dar nu apelează unelte cu efecte; `ask` citește dovezi. Cadrele indirecte de solicitare, cu un rezultat dorit pentru utilizator în zona activă de lucru, au modul `do` când actul și rolurile sunt rezolvate și contextul nu indică o explorare. Acesta este sensul pragmatic al cadrului, nu o presupunere că orice propoziție executabilă trebuie executată. Formulări precum `I want…`, `I'd like…`, `can I get…` și `could you add…` pot realiza aceeași solicitare; răspunsul obișnuit este efectuarea ei, nu „Yes, you can”.
+Act and request mood are independent. `std.request` declares `mood=do|propose|check|ask`: effect, proposal, feasibility check or information. Only `do` dispatches mutations; `propose` and `check` evaluate candidates without claiming a real effect. Indirect requests such as “could you add a box” normally denote `do` in an editing context. The absence of an imperative verb does not justify returning only a statement of capability.
 
 | Indiciu al cadrului și contextului | Modul și continuarea |
 |---|---|
 | Solicitare adresată asistentului pentru un rezultat propriu, în zona de editare | `do`; se construiește planul și se execută după verificările obișnuite, fără o întrebare redundantă despre intenția de a cere. |
 | Întrebare despre posibilitate ori efecte ipotetice; marcaj explicit precum `just check` | `check`; se verifică planul fără efecte asupra stării reale. |
 | Cerere de variante sau recomandare | `propose`; se prezintă opțiunile și justificarea lor. |
-| Context insuficient care lasă două scopuri conversaționale plauzibile | Se verifică fără efecte, când citirea este disponibilă și autorizată, apoi se oferă acțiunea în același răspuns; altfel se clarifică informația lipsă. |
+| Several plausible conversational goals | Rank them using declared context policy. A usable reversible editing interpretation can execute with its assumption stated; preserve alternatives. |
 
-Modul și dreptul de a modifica o resursă sunt două verificări diferite. Într-un calendar partajat, „can I move the review to Friday?” poate întreba despre disponibilitate, iar contextul poate susține `check`; „could you move the review to Friday?” poate fi o solicitare indirectă `do`. Faptul că întâlnirea implică alte persoane nu schimbă singur sensul cererii. Planificarea verifică separat drepturile, disponibilitatea și eventualele acorduri cerute de politica calendarului. În lipsa lor, cererea rămâne o solicitare de modificare încă neexecutată, nu este rescrisă tacit ca întrebare informativă. În mod simetric, o cerere `check` nu devine `do` doar pentru că toate verificările trec. Când modul intenționat rămâne nerezolvat, continuarea operațională este `check`, fără a pretinde că ambiguitatea a dispărut. De exemplu: „Friday 10:00 is free for everyone; shall I move it?”. Oferta nu execută mutarea; confirmarea ulterioară cere revalidarea disponibilității. Această continuare presupune acces de citire autorizat și o verificare fără efecte externe; simplul nume `check` nu garantează că o unealtă este gratuită ori lipsită de efecte. Schema este propusă pentru stratul conversațional; API-ul actual de parsare nu implementează această autorizare.
+Mood does not establish access rights. The library interprets conversational evidence and the declared policy for unresolved alternatives, while each concrete call must satisfy resource permissions and preconditions. A `check` does not become `do` because it is feasible. A vague but usable editing request does not become `check` simply because several reversible interpretations exist. The selected mood and uncertainty remain visible.
 
-Biblioteca actuală oferă deja `parseText`, `grammarOf` și `nounPhrase`. Exemplul complet de mai jos folosește numai mecanismul sintactic existent, cu un lexic minimal. Rezultatul a fost rulat pe biblioteca actuală; el nu pretinde că toate construcțiile din tabel sunt deja declarate în lumea limbii.
+A grammar can be inspected independently of execution. In the following toy example, lexical categories and a coordination rule preserve the different quantities and modifiers. The notation is explanatory pseudocode, not a public JavaScript API.
 
-```js
-import { World, parseText, nounPhrase } from 'sopworld';
-const w = new World();
-w.tell(`
-  @two g.word text=two lemma=2 cat=Num
-  @red g.word text=red lemma=red cat=Adj
-  @cards g.word text=cards lemma=card cat=N
-  @note g.word text=note lemma=note cat=N
-  @a g.word text=a lemma=a cat=Det
-  @np g.rule lhs=NP rhs=Det? rhs=Num? rhs=Adj* rhs=N
-  @and g.coord word=and
-`);
-const result = parseText(w, 'two red cards and a note', { start: 'NP' });
-console.log(JSON.stringify(nounPhrase(result[0].tree).coord
-  .map(x => [x.num ?? x.det, x.mods, x.lemma])));
+```text
+Pseudocode — declared grammar and result
+Num(two) = 2; Adj(red) = red; N(cards) = card; N(note) = note; Det(a) = a
+NP := Det? Num? Adj* N
+Coordination marker := and
+Input: two red cards and a note
+Result: [{quantity: 2, modifiers: [red], kind: card},
+         {determiner: a, modifiers: [], kind: note}]
 ```
 
-Rezultatul este `[["2",["red"],"card"],["a",[],"note"]]`. Cantitatea și culoarea aparțin grupului de carduri; nota are alt grup. Un nod sintactic are categoria, intervalul de tokenuri și copiii săi; poate păstra și regula care l-a construit. Pozițiile tokenurilor din arbore nu sunt automat pozițiile caracterelor din `std.request.source`. Transformarea semantică trebuie să păstreze maparea dintre cele două pentru proveniența cerinței.
+Quantity 2 and modifier red belong only to cards; the note is a separate noun group. Source token positions must map back to character positions in `std.request.source`. Finding both nouns is insufficient if ownership or quantity is lost when the request circuit is assembled.
 
-Cu același lexic, `parseText(w, 'two red cards except a note', { start: 'NP' })` nu produce nicio analiză completă și raportează cuvântul `except` la poziția de token 3. Nu este permis să dispară „except a note” și să fie executată doar prima parte. Tot astfel, o construcție necunoscută alcătuită numai din cuvinte cunoscute poate să nu aibă analiză: absența cuvintelor necunoscute nu înseamnă succes sintactic.
+With that grammar, “two red cards except a note” leaves `except` unbound. The reader must preserve the unsupported relationship; executing only the cards would silently drop a possible exclusion. Unrelated remarks may be ignored under the declared relevance policy, but a fragment that changes targets, quantity, negation or scope cannot be discarded as chatter.
 
-`parseText` limitează numărul analizelor returnate și bugetul; `truncated` semnalează întreruperea la buget. Prima analiză din listă nu dovedește unicitatea semantică. Pentru contractul propus al cititorului, limitarea listei trebuie păstrată explicit ca informație despre exhaustivitatea căutării: nu se poate autoriza o acțiune riscant diferită doar fiindcă a doua citire nu a încăput în lista returnată. Implementarea actuală a API-ului sintactic nu oferă singură această garanție completă a stratului conversațional.
+A reader declares a computation budget and retains whether candidate enumeration was truncated. First place in a truncated list is not proof of unique meaning. It can still be the best usable reversible interpretation under the policy, with alternatives and uncertainty retained; the trace must not pretend the search was exhaustive.
 
 ## 10.3 Compunerea semantică, atașamentul și întinderea condițiilor
 
 După analiză, regulile de compunere transformă fiecare arbore într-o descriere. Substantivul introduce o țintă; numărul produce o cerință asupra grupului acelei ținte; adjectivul produce o cerință asupra conceptului și țintei indicate de atașament; prepoziția produce o relație cu roluri explicite. Verbul introduce actul, iar cadrul său leagă ținta de rolul obiectului sau rezultatului. Fiecare regulă consumă un nod identificat și produce fire cu sursa acelui nod. Nu caută liber un cuvânt oriunde în mesaj pentru a umple o cheie globală.
 
-Din versiunea 0.187, `composeParses` oferă mecanismul generic de compunere declarativă. Primește analizele lui `parseText`, o mapare pentru fiecare identificator de regulă și o mapare pentru fiecare categorie lexicală. La un nod interior, întâi compune fiecare copil, apoi construiește rezultatul din valorile copiilor; la o frunză, citește trăsăturile lexicale declarate. O expresie precum `{$get: ['children', 0, 'kind']}` copiază felul produs de primul copil. Numele `kind` provine din declarația autorului mapării; mecanismul nu deduce concepte din cuvinte și nu conține vocabular de domeniu.
+Semantic composition proceeds bottom-up over a candidate structure. A noun group introduces a target with its source; a modifier adds a constraint owned by that target; a verbal frame assigns argument roles. Map declarations copy or combine typed child results. Missing required roles remain open. A mapping cannot silently null a negation or quantity just because the resulting request would be easier to execute.
 
 De exemplu, o producție ilustrativă cu un copil pentru obiect și altul pentru însușire poate construi un obiect cu câmpurile `target` și `result`, copiind separat rezultatele celor doi copii. Dacă lexicul oferă două sensuri ale însușirii, cele două analize produc două rezultate candidate; funcția nu le contopește și nu alege prima ca intenție sigură. Dacă lipsește maparea unui copil sau trăsătura cerută, analiza este refuzată cu motivul păstrat. Materialul pur sintactic poate primi explicit o valoare nulă; autorul declarației răspunde pentru corectitudinea acestei alegeri, deoarece o asemenea mapare greșită poate elimina sens.
 
-Baza `w.reader.en`, publicată în depozitul de cunoaștere la revizia `1c4f32ea`, declară separat furnizorii de lexic, producțiile și nodurile mapărilor. Cuvintele de culoare și formă provin din familiile lor de cunoaștere, nu din copii introduse în motor pentru propozițiile testate. Construcția imperativă declară explicit ținta existentă, iar acordul dintre proprietate și valoare este o declarație distinctă. Din versiunea 0.190, `compileGrammarOverlay` transformă asemenea declarații SOP în lexic, producții, mapări și condiții de acord pentru API. Primește explicit tipurile declarațiilor, deci nu introduce vocabular englez sau de domeniu în mecanism. Verifică referințele, câmpurile, căile, nodurile orfane, ciclurile și furnizorii lipsă înainte de a întoarce rezultatul. Sensurile provenite din surse diferite rămân analize distincte, chiar dacă au aceleași trăsături; proveniența este păstrată separat de sens. Producțiile sunt copiate într-un instantaneu normalizat, iar consumatorul verifică identitatea lumii și marca ei de modificare înainte de utilizare. Din versiunea 0.192, `readGrammarRequests` construiește cereri `std.request` pentru profilul explicit de atribuire pozitivă a unei proprietăți unei ținte existente. Păstrează interpretările alternative și proveniența lexicală, verifică fiecare graf construit și refuză analizele incomplete sau căutările trunchiate. Semnele terminale ignorabile trebuie declarate explicit de consumator; caracterele neacoperite nu dispar din mesaj prin presupunere. Profilurile neacceptate primesc un motiv de refuz. Rezolvarea țintei în instanță și executarea efectului rămân responsabilități separate. Prezența unei producții în bază nu dovedește singură interpretarea completă a mesajelor reale. Din versiunea 0.193, `serializeRequestGraph` serializează grafuri declarate prin noduri, tipuri și chei din schema publicată `std.request`. Referințele, șirurile și valorile literale au reprezentări explicite, astfel încât textul unui șir nu poate introduce o referință sau un nod suplimentar. Serializatorul verifică identitățile, tipurile, cheile, legăturile locale și apartenența la cerere, apoi apelează `inspectRequest`. Nu conține ramuri pentru culoare, acțiune sau formă de propoziție. `readGrammarRequests` primește direct asemenea grafuri sau aplică un profil declarativ al consumatorului peste rezultatul compunerii. Profilul primei integrări este separat de mecanism și declară numele furnizorilor de culori și forme ca șiruri, indiferent dacă au unul sau mai multe cuvinte. Numele este o etichetă pentru rezolvarea în cunoaștere, nu valoarea nativă deja rezolvată: de exemplu, „dark blue” este căutat ca nume, iar codul RGB rezultat este păstrat separat. Alte familii, precum valorile numerice sau identitățile, trebuie să declare propriul tip de valoare; acesta nu se deduce din prezența spațiilor. Dovezile păstrează intervalele sursei pentru fiecare nod; numai un interval continuu verificat devine o pereche de poziții în graf. Din versiunea 0.194, `projectTemplates` aplică același limbaj de șabloane asupra unor contexte semantice JSON deja compuse. Fiecare intrare numește explicit șablonul și contextul; rezultatele și refuzurile păstrează indicele intrării. Un buget comun limitează întregul lot. Un rezultat parțial din cauza bugetului nu este prezentat ca enumerare completă. Condițiile de egalitate rămân structurale, fără conversii implicite; o cale lipsă este distinctă de o condiție falsă. Contextul poate fi `null`, dar o cale cerută în el lipsește; acesta nu este confundat cu validarea sintactică a șablonului.
+Lexicon providers, grammar productions and semantic mappings belong in language Worlds. A generic compiler checks mapping references, cycles, required fields and source ownership before producing a request graph. Different senses remain alternatives. Colour names such as “dark blue” stay source-backed concepts until knowledge resolves them to the tool representation; the presence of spaces in a value does not determine its type. Serialization preserves typed literals and references, preventing a string from introducing another wire or reference.
 
-Pentru un cadru verbal, contextul poate conține separat obiectul descris și rezultatul cerut. Copierea obiectului păstrează selectorul său, iar copierea rezultatului păstrează cerința viitoare; evaluatorul nu le unește. Lista rolurilor poate conține două intrări cu aceeași denumire semantică, fără suprascriere, deoarece rolul markerului și rolul argumentului rămân înregistrări distincte. Datele opționale `w.reader.en.frames`, publicate la `0591f342`, declară legături explicite între sensuri verbale și cadre existente, precum și căile rolurilor. Aceste declarații sunt o bază verificată în surse; proiecția generică nu selectează singură cadrul și nu produce automat cererea executabilă. Legarea cadrelor și extinderea producțiilor lingvistice rămân pași separați.
+A verbal frame distinguishes the described subject from the requested result. “Move the note beside the heading” can describe a note already beside the heading or a new destination; the frame and attachment determine which. Generic template projection preserves these roles and source paths; it does not pick the frame merely because a particular tool is available.
 
-Din versiunea 0.188, o producție poate avea condiții declarative de egalitate prin `guards`. Operanzii se construiesc din aceleași trăsături și rezultate ale copiilor, iar egalitatea trebuie să fie adevărată înainte de construirea rezultatului părinte. De exemplu, o regulă poate compara conceptul proprietății cu conceptul pentru care este definită valoarea: faptul că ambele fragmente au fost recunoscute lexical nu este suficient pentru a le combina. O condiție falsă elimină numai analiza respectivă și păstrează motivul refuzului; o trăsătură absentă rămâne eroare de legare, nu devine o valoare nulă inventată.
+Agreement conditions constrain which child meanings can combine: an adjective's concept must be applicable to the target kind, and a relational goal must fill the declared role. Conditions compare typed values and explicit paths. A missing path is different from a false comparison; neither can be replaced by a domain-specific guess in the mapping engine.
 
 Egalitatea acestor condiții este structurală: ordinea câmpurilor unui obiect nu contează, ordinea elementelor unui tablou contează, iar numărul `1` nu este egal cu textul `"1"`. Nu este egalitate între concepte demonstrată prin ontologie și nu face conversii de unități. Toate declarațiile condițiilor sunt verificate înainte de a returna vreun candidat, inclusiv cele ale unor reguli nefolosite în mesajul curent. O declarație greșită nu poate fi ignorată numai pentru că arborele curent nu o vizitează. Lumea de cunoaștere alege ce concepte trebuie să coincidă; mecanismul execută aceeași comparație generală pentru fiecare producție.
 
@@ -3121,7 +2924,7 @@ Pentru „make two red cards and a note”, coordonarea din exemplul sintactic p
 | Coordonare de grupuri | Ținte separate și relația dintre ele; condițiile locale rămân locale. |
 | Negare a unui cuantificator | Arbore logic al cuantificării, nu distribuirea negației peste fiecare obiect. |
 
-„Move the note beside the heading” poate selecta nota care este deja lângă titlu sau poate cere să fie mutată lângă titlu. Cadrul verbului și contextul pot elimina o citire dacă îi lipsesc roluri obligatorii ori dacă nu are referent, dar preferința pentru o analiză mai scurtă nu este o dovadă suficientă despre intenție. Dacă ambele citiri rămân aplicabile și schimbă starea diferit, întrebarea precizează diferența: „Do you mean the note already beside the heading, or should I move it there?”
+For the two readings of “Move the note beside the heading”, rank frame, context and attachment evidence. If one gives a usable reversible move, carry it out and state which note and destination were chosen. Keep the alternative reading. A shorter parse or an executable tool binding alone is not evidence that the other reading is false.
 
 Întinderea negației și a cuantificatorilor este reprezentată prin nodurile logice din secțiunea 10.3.1. Constrângerile simple rămân frunze ale acestei reprezentări, iar gruparea explicită păstrează diferența dintre negarea unei condiții și negarea cuantificării ei.
 
@@ -3129,7 +2932,7 @@ Verificarea semantică are loc în etape: tipurile și rolurile trebuie să fie 
 
 ### 10.3.1 Noduri logice și legarea cuantificatorilor
 
-Pentru a păstra întinderea negației și a cuantificării, cererea folosește un graf logic explicit. Frunzele sunt condiții asupra țintelor; nodurile interioare combină condițiile. Tipurile de mai jos sunt implementate ca declarații structurale, fără a schimba sensul unei constrângeri simple. Evaluarea adevărului descrisă în continuare rămâne de implementat; un graf valid nu este încă o cerere evaluată.
+Negation and quantification use an explicit logical graph. Leaves test target predicates; internal nodes compose truth values. Validation checks ownership, reachability and bound variables before evaluation. A well-formed graph is not automatically true, and truth in a candidate state is not an observed effect.
 
 | Tipul | Câmpuri și semnificație |
 |---|---|
@@ -3143,9 +2946,9 @@ O țintă cu `mode=bound` nu caută singură un obiect în lume. Ea primește pe
 
 Un nod poate fi partajat de mai multe ramuri, dar legările trebuie să fie valabile pe fiecare cale care ajunge la el. Dacă o condiție despre membrul local al unui cuantificator apare și direct într-o ramură exterioară, graful este refuzat. În schimb, un cuantificator interior poate utiliza ținta legată de cuantificatorul exterior drept colecție, apoi introduce propria țintă locală distinctă. O legare nu este validă doar fiindcă o traversare a găsit-o mai întâi pe o cale convenabilă.
 
-API-ul `inspectRequest(world, id)` raportează problemele structurale; pentru un modul cu alias se precizează `family`. Este un supliment la schema încărcată și `World.check()`, nu un înlocuitor al verificării câmpurilor și tipurilor. Verificatorul rulează și la editarea copiilor, prin `core.validate`, și respectă bugetul de calcul. Rezultatul nu dovedește compatibilitatea concept–valoare: de exemplu, un literal încă nerezolvat pentru `eq` sau o comparație nu este demonstrat numeric ori ordonabil. Rezolvarea vocabularului, unitățile compatibile, drepturile, proveniența presupunerilor și evaluarea în trei valori rămân etape distincte.
+Request validation checks structure, ownership, reference types and variable scope. It does not resolve a name, interpret a concept's measurement or establish a population's completeness. Those are separate internal compiler obligations with evidence retained at each boundary.
 
-Să comparăm „do not move all the notes” cu „do not move any note”. Colecția de note este rezolvată din aceeași stare de referință. Predicatul frunză spune că nota a fost mutată în pasul curent: la verificarea candidatului se citește diferența planificată, iar după execuție diferența observată și dovada operației. Nu înseamnă că nota a fost vreodată mutată în istoria ei. `concept=change operator=occurred act=place phase=result value=true` este forma propusă pentru acest predicat de eveniment.
+Să comparăm „do not move all the notes” cu „do not move any note”. Colecția de note este rezolvată din aceeași stare de referință. Predicatul frunză spune că nota a fost mutată în pasul curent: la verificarea candidatului se citește diferența planificată, iar după execuție diferența observată și dovada operației. Nu înseamnă că nota a fost vreodată mutată în istoria ei. `concept=change operator=occurred act=place phase=result value=true` represents this event predicate.
 
 ```sop
 @source.notes std.request.source text="do not move all the notes"
@@ -3169,6 +2972,9 @@ Pentru a doua cerere se păstrează țintele și predicatul, dar se schimbă sur
 ```sop
 @source.notes std.request.source text="do not move any note"
 @request.notes std.request act=place mood=do source=$source.notes root=$not.any
+@notes std.request.target request=$request.notes mode=existing kind=note determiner=definite
+@member std.request.target request=$request.notes mode=bound
+@moved std.request.constraint request=$request.notes target=$member concept=change operator=occurred act=place phase=result value=true polarity=positive character=requirement source=$source.notes
 @any std.request.quant request=$request.notes kind=any target=$notes bind=$member body=$moved
 @not.any std.request.not request=$request.notes of=$any
 ```
@@ -3186,20 +2992,20 @@ Evaluarea folosește adevărat, fals și nedeterminat. `and` este fals când un 
 
 Pe o colecție demonstrabil goală, semantica logică este `all=true`, `any=false`, `none=true`. Separat, referința hotărâtă a omului poate presupune existența unor note; acea problemă se rezolvă înainte de planificare, fără a prezenta adevărul pe mulțimea goală ca realizarea cererii. Astfel, logica și conversația folosesc reguli explicite diferite, fără excepții ascunse în cuantificator.
 
-## 10.4 Acoperire, extindere și propuneri de model
+## 10.4 Reader coverage and evaluation
 
-Cititorul are la fiecare versiune un inventar verificabil de construcții și vocabular. Inventarul descrie starea implementării, nu fixează un plafon al proiectului. O construcție nouă se tratează prin date lexicale, o regulă gramaticală și de compunere, o extensie a descrierii sau un propunător în vocabularul general, după cauza lipsurilor. Pentru mesajul concret încă nerezolvat se localizează lipsa și se cere informația potrivită; cazul intră în registrul de lucru cu fragmentul, construcția apropiată care aproape s-a potrivit, interpretarea așteptată și mecanismul de generalizat. Registrul conduce la reguli formulate prin categorii, verificate pe perechi minimale și pe alte contexte, nu la reguli pentru o singură propoziție. O schemă validă rămâne o verificare necesară, nu dovada suficientă a fidelității față de mesaj.
+Reader evaluation separates recognition, graph construction, instance resolution and concrete effects. For each failure retain the source, expected roles, produced graph and first incorrect transformation. A new mechanism must cover a family of constructions and counterexamples, not a list of whole sentences.
 
-| Rezultatul citirii | Răspunsul și continuarea permise |
+| Reader result | Continuation |
 |---|---|
-| Cuvânt necunoscut într-un rol necesar | Numește cuvântul și rolul așteptat; oferă numai alternative susținute de vocabular sau context. |
-| Cuvinte cunoscute, construcție neacoperită | Arată fragmentul nelegat și ce a înțeles în jurul lui, oferă citirile susținute de construcțiile apropiate și înregistrează cazul; nu execută subfragmente alese tacit. |
-| Mai multe descrieri cu efecte diferite | Formulează întrebarea care separă interpretările și păstrează candidații până la răspuns. |
-| Referent sau valoare lipsă | Cere identitatea sau valoarea respectivă, păstrând celelalte cerințe deja înțelese. |
-| Cerere înțeleasă, dar nerealizabilă | Explică restricția sau capabilitatea lipsă; o alternativă care schimbă o cerință fermă rămâne propunere. |
-| Căutare întreruptă | Spune că nu a obținut o citire suficient verificată; nu transformă bugetul epuizat în „nu există acest sens”. |
+| Unknown fragment outside the task | Preserve its source and record why relevance policy excludes it. |
+| Unknown fragment in a required semantic role | Keep that role open; try compatible lexical or contextual candidates with evidence. Never erase a negation or second object to claim success. |
+| Several plausible meanings | Rank compatible hypotheses; act on a usable reversible one with concrete uncertainty and undo. Retain alternatives. |
+| Missing location, size or style | Elaborate from applicable schema and knowledge defaults and constraints; report meaningful assumptions. |
+| Explicit requirement conflicts with a hard constraint | Preserve both; explain the concrete conflict and retain a feasible alternative without silently changing the requirement. |
+| Search budget exhausted | Report the best usable result and its uncertainty, or the exact unresolved obligation. Do not claim impossibility from timeout. |
 
-Propunătorul învățat este o componentă planificată a cititorului, alături de analiza simbolică, cu o poartă explicită de acceptare înainte de activare. El primește mesajul și contextul de referire necesar și produce descrieri candidate în vocabularul general din secțiunea 6.3.2, inclusiv modul, țintele, constrângerile și nodurile logice. Nu produce cheile particulare ale unei lumi, comenzi de unealtă sau o reformulare pe care vechiul cititor trebuie obligatoriu să o accepte. Legarea la lumea concretă urmează propunerii; verificatorul controlează schema, rezolvarea referințelor, acoperirea cuvintelor și coerența condițiilor. O condiție nerealizabilă poate reprezenta corect mesajul și nu trebuie înlocuită pentru a obține un plan executabil.
+SOP-BERT predicts candidate semantic structure, not domain-specific renderer keys. A span may contain several words; source offsets recover the substring from the original message. Coordination requires multiple target records, shared-act ownership and local constraints. “Draw a tree and a house” and “draw a tree near the house” therefore require different graphs even if they contain the same object words. Model predictions, generic graph decoding and world-based elaboration are separately inspectable boundaries.
 
 Datele de pregătire cuprind mesaje tastate efectiv, etichetate cu descrierea generală și intervalele justificative, completate cu variante generate. Etichetele sunt revizuite independent de cititorul existent; altfel modelul ar învăța tocmai cheile și omisiunile pe care încercăm să le înlocuim. Variantele aceleiași expresii și întreaga familie de reformulări rămân în aceeași partiție. Separarea pe domenii testează transferul, iar separarea pe familii de formulări testează citirea unor construcții nefolosite la pregătire. Mesajele păstrate pentru acceptare nu sunt utilizate ulterior la ajustare fără înlocuirea explicită a setului de evaluare.
 
@@ -3207,13 +3013,13 @@ Datele de pregătire cuprind mesaje tastate efectiv, etichetate cu descrierea ge
 |---|---|
 | Fidelitatea descrierii | Act, mod, ținte, condiții, negație și cuantificare față de eticheta revizuită, nu doar validitatea schemei. Fiecare condiție explicită citează cuvintele care o susțin; completările din context au proveniență separată. |
 | Rezolvarea în instanță | Referenți și sensuri candidate, roluri obligatorii, condiții păstrate și explicația eventualei imposibilități. Acordul vechiului cititor nu este criteriu de admitere. |
-| Comparația cu sistemul de referință | Pe aceleași mesaje și stări, mai multe cereri rezolvate corect și niciun plus de execuții greșite, inclusiv în sesiunile reale ale utilizatorului. Se raportează separat clarificările, abținerile și regresiile pe cererile anterior corecte. |
+| Comparația cu sistemul de referință | Pe aceleași mesaje și stări, more correct usable effects, with wrong effects, undo and uncertainty reported separately, inclusiv în sesiunile reale ale utilizatorului. Se raportează separat clarificările, abținerile și regresiile pe cererile anterior corecte. |
 | Transferul | Rezultate separate pentru domenii și familii de formulări ținute deoparte; un câștig agregat nu ascunde un domeniu deteriorat. |
 | Activarea | Versiunile modelului, datelor, politicii și rezultatele verificării sunt fixate împreună. Dacă poarta nu este trecută, componenta rămâne în evaluare, iar cazurile pierdute ghidează următoarea revizie. |
 
-Comparația se face și mesaj cu mesaj, cu aceleași intrări și aceeași stare inițială: rezultatul sistemului de referință lângă rezultatul candidatului. Fiecare trecere de la corect la orice alt rezultat și fiecare execuție greșită nouă sunt enumerate separat, cu cauza și decizia de remediere. Un câștig pe alte mesaje nu închide regresia. Înainte de activare, fiecare diferență trebuie corectată ori explicată printr-o revizie verificată a etichetei sau a contractului; o execuție realmente greșită nu devine acceptabilă prin simpla redactare a unei explicații. Pentru dialoguri complete se raportează separat și traiectoriile de stări rezultate, deoarece o eroare timpurie poate schimba sensul mesajelor următoare.
+Compare candidates message by message under the same initial state. Report improvements and regressions, including unnecessary abstentions, wrong effects, assumption quality and successful undo. Small reversible mistakes are acceptable under the application policy; their frequency and consequences remain measured. A higher aggregate score cannot hide that an entire request class stopped working. Complete dialogues are evaluated through their resulting state trajectories because early choices change later references.
 
-Numărul de execuții greșite se măsoară atât ca număr de cazuri, cât și raportat la efectele încercate, pe un set fixat în avans. Mai puține abțineri nu constituie progres dacă sunt înlocuite de acțiuni incorecte. O evaluare fără erori observate nu este o garanție universală: verificările la fiecare cerere rămân active și după acceptare. Acesta este contractul componentei viitoare, nu anunțul activării ori al antrenării unui model în implementarea actuală.
+Numărul de execuții greșite se măsoară atât ca număr de cazuri, cât și raportat la efectele încercate, pe un set fixat în avans. Mai puține abțineri nu constituie progres dacă sunt înlocuite de acțiuni incorecte. O evaluare fără erori observate nu este o garanție universală: verificările la fiecare cerere rămân active și după acceptare. Model selection follows the declared application policy; evaluation does not replace that policy with an implicit refusal-first objective.
 
 Un model poate produce o cerere perfect validă pentru o intenție pe care omul nu a exprimat-o. Verificatorul lumii poate constata că obiectele există și acțiunea este permisă, fără să poată demonstra că tocmai acea acțiune a fost cerută. De aceea proveniența lexicală, comparația interpretărilor și clarificarea rămân necesare. O creștere numai pe reformulări generate din aceleași cadre nu justifică înlocuirea cititorului pe mesaje reale.
 
@@ -3240,7 +3046,7 @@ De exemplu, faptul că o scrisoare are o semnătură nu precizează cine semneaz
 
 Acoperirea se păstrează separat pentru recunoaștere, raționament și realizare. Sistemul poate recunoaște un fel și răspunde din cunoaștere despre el fără să-l poată desena. Poate avea o imagine fără să cunoască părțile ei editabile. Aceste stări trebuie declarate; nici existența unui cuvânt, nici existența unui fișier grafic nu implică întreaga capabilitate.
 
-## 11.2 Conținutul necesar celor patru domenii
+## 11.2 Knowledge required by the application areas
 
 Pachetul comun este reutilizat între domenii. Un domeniu adaugă numai structurile și legăturile specifice operațiilor sale. Tabelul descrie minimul semantic pentru familiile de operații ale cărții, nu un inventar al tuturor obiectelor despre care poate vorbi un om. Un produs trebuie să declare separat ce feluri și ce operații acoperă concret.
 
@@ -3249,6 +3055,7 @@ Pachetul comun este reutilizat între domenii. Un domeniu adaugă numai structur
 | Desen | Feluri reprezentabile, realizări proprii ori moștenite, părți editabile, relații de susținere/conținere, întinderi și straturi, culori și proporții obișnuite. Fără rolul părții de sprijin, o verificare geometrică nu poate decide locul funcțional potrivit. |
 | Diagrame | Feluri de noduri și legături, structuri de graf, roluri de început/sfârșit, ordine, forme și reguli de așezare. Un desen frumos al unui graf nu dovedește corectitudinea relațiilor lui. |
 | Documente | Genuri, structura secțiunilor, roluri de conținut, regiuni de lungime și ton, proceduri de măsurare a tonului cu incertitudine, plus afirmațiile despre subiect cu sursele lor. Un șablon de scrisoare fără informații despre subiect produce structură, nu conținut factual justificat. |
+| Avatar | Editable part identities, attachment and proportion constraints, template compositions, mappings from expression/style concepts to feature parameters, and measurement uncertainty. A named emotion is not a primitive instruction. |
 | Calendar | Tipuri de evenimente și resurse, durate, disponibilitate, relații temporale, repere și grupuri numite. Persoanele, întâlnirile și disponibilitatea curentă sunt date ale instanței; nu se deduc dintr-o bază generală. |
 
 Aceste dependențe produc diferențe practice. O relație temporală poate fi verificată exact după citirea completă a rezervărilor relevante, pe când tonul unui document este măsurat pe axele declarate, cu procedură, dovezi textuale și incertitudine, conform secțiunii 6.8.1. Dacă intervalul măsurării traversează frontiera regiunii cerute, rezultatul rămâne nedeterminat; aceasta este o proprietate a măsurării concrete, nu o excludere a tonului din mecanismele de verificare. În desen, geometria unei părți poate fi disponibilă fără ca numele ei semantic să fie cunoscut. Pachetul nu ascunde aceste diferențe sub o singură etichetă „concept suportat”.
@@ -3290,13 +3097,13 @@ Importatorul începe cu o obligație concretă din inventar, alege înregistrăr
 
 Pe aceeași cale, un nume de fel apropiat nu este suficient pentru transfer. Relația parte–întreg și relația de specializare rămân distincte, iar o observație frecventă se păstrează ca valoare obișnuită, cu context și proveniență. Numai după verificare poate alimenta completarea. Cerințele obligatorii au nevoie de o justificare separată; majoritatea observațiilor dintr-un lot nu stabilește necesitatea unei proprietăți.
 
-În instantaneul depozitului folosit în secțiunea 11.5, fișele `sources/wordnet/SOURCE.md`, `sources/visual-genome/SOURCE.md` și `sources/conceptnet/SOURCE.md` descriu versiuni, transformări și selecții. WordNet este deja folosit pentru sensuri și părți. Subsetul Visual Genome descris acolo privește atribute agregate și selecția unor culori, nu importul complet al relațiilor dintre obiecte. Fișa ConceptNet conține o notă istorică despre lipsa descărcării, urmată de înregistrarea unui import parțial; firele publicate despre atribute, utilizări și materiale confirmă existența subsetului. De aceea se verifică împreună fișa, importatorul și fragmentele publicate, nu se decide starea curentă dintr-o singură propoziție veche.
+For each source, inspect the exact source description, importer and admitted facts together. A source name does not imply that all its relation families were imported. Conversely, an old note about a missing download does not establish the present contents. Import descriptions state the included families and transformations so the system can justify actual semantic reads.
 
 Condițiile surselor se verifică pentru artefactul exact: adnotări, imagini și rezultate derivate nu sunt presupuse interschimbabile. Referințele de mai sus identifică surse și formate de cercetat; nu autorizează un import nou și nu declară că toate componentele lor pot fi redistribuite în același mod. Informația admisă urmează lanțul de proveniență explicat în secțiunea următoare.
 
 ### 11.3.2 Un fapt importat și lanțul lui de proveniență
 
-Pentru a putea verifica un import, afirmația și dovada provenienței sunt obiecte distincte. Fragmentul următor folosește contractele structurale publicate în biblioteca 0.169.0. Se încarcă prin `core.use world=std.knowledge`, care importă modulele `std.provenance`, `std.source` și `std.import`. Este un exemplu didactic al unei surse redactate pentru exemplu, nu o afirmație că o anumită bază externă publicată conține această înregistrare. Felurile `bird` și `duck` sunt presupuse declarate în vocabularul conceptual. În această etapă biblioteca verifică structura și referințele lanțului de proveniență; `child` și `parent` sunt nume atomice, iar rezolvarea lor în vocabularul conceptual rămâne o obligație semantică separată.
+An imported assertion and its provenance are distinct facts. The following toy example uses `std.knowledge`, which imports `std.provenance`, `std.source` and `std.import`. It illustrates an authored table, not a claim about a real external record. `duck` and `bird` are conceptual vocabulary names whose semantic identity must be resolved separately from structural validation.
 
 ```sop
 @source.toy std.source name=toy.kind.table version=1 status=illustrative
@@ -3310,7 +3117,7 @@ Modulele resping câmpurile structurale lipsă, cheile nedeclarate, cardinalită
 
 Primul fir fixează versiunea sursei. Al doilea identifică transformarea aplicată, care trebuie să poată fi regăsită și repetată; numele singur nu înlocuiește definiția mapării. Al treilea leagă o înregistrare originală de acea transformare. Ultimul exprimă relația conceptuală obținută și păstrează legătura cu dovada. `candidate` nu înseamnă fals, ci încă neadmis în cunoașterea activă. Reviewerul verifică sensul relației, identitatea conceptelor și condițiile sursei înainte de admitere.
 
-În depozitul actual de cunoaștere, firele importate păstrează deja sursa prin `core.source`; nodul separat propus aici adaugă posibilitatea de a urmări înregistrarea și maparea versionată. Migrarea trebuie să păstreze informația existentă. Două surse pentru aceeași relație produc două dovezi, nu două păsări sau două relații cu sens diferit. Dacă o sursă este retrasă, se revalidează afirmația și concluziile dependente; o dovadă independentă rămasă poate continua să o susțină. Proveniența și verificarea semantică sunt necesare separat: un import perfect reproductibil poate reproduce o afirmație greșită.
+Two independent sources for the same relation provide two pieces of evidence, not two ducks or two semantic relationships. Retracting a source revalidates dependent conclusions; remaining independent evidence can still support them. Reproducible provenance does not prove truth: a perfectly repeatable importer can faithfully reproduce a false statement.
 
 ## 11.4 Cine verifică și ce înseamnă acceptarea
 
@@ -3322,7 +3129,7 @@ Verificarea are niveluri distincte. Încărcarea fără erori demonstrează comp
 | Verificatorul de schemă | Tipuri, unități, cardinalități, referințe și restricții valide; lipsurile sunt raportate, nu completate prin etichete arbitrare. |
 | Reviewerul semantic | Sensul relațiilor, caracterul tare sau obișnuit, excepțiile și coerența cu sursa; corectitudinea nu se reduce la faptul că un exemplu trece. |
 | Autorul adaptorului | Capabilități și limite reale pentru datele oferite: ce părți poate modifica, ce poate măsura și ce nu poate verifica. |
-| Verificarea prin utilizare | Cereri noi, perechi minimale și cazuri în care trebuie refuzat sau întrebat; nu doar reușite pe aceleași formulări. |
+| Usage evaluation | New requests and minimal pairs, uncertain reversible choices, explicit constraint conflicts and undo; repeated success on the same wording is insufficient. |
 
 Un pachet devine activ numai cu dependențele necesare rezolvate și cu acoperirea declarată. O sursă încă neîncărcată se deosebește de o afirmație absentă într-o sursă completă. Dacă un shard lipsește temporar, sistemul nu deduce că obiectul nu există în catalog. Dacă două surse se contrazic, conflictul rămâne vizibil; alegerea unei surse trebuie justificată prin domeniu, versiune sau autoritate, nu prin ordinea accidentală a încărcării.
 
@@ -3342,23 +3149,17 @@ Un inventar concret, extras din sesiunile de desen, diagrame și documente folos
 | Diagrame și documente | Node, arrow, hexagon, circle și letter; forma de așezare nu este același lucru cu felul fiecărui nod, iar numele unui document nu îi furnizează conținutul. |
 | Însușiri și relații | Verde, galben, azuriu, păr creț, expresie tristă/surprinsă; deasupra, aproape, înăuntru, pe suprafața de sprijin, primul/ultimul, mai sus/jos și păstrarea unei valori. Fiecare cere spațiu, reper sau relație declarată, nu doar un cuvânt recunoscut. |
 
-La versiunea `2c94c3d8acb4` a depozitului de cunoaștere, catalogul publicat enumeră 36 de lumi și 422835 de declarații în fragmentele lor. Acesta este perimetrul numărătorii: schemele, directoarele neincluse în catalog și indecșii generați nu sunt adăugați la total. Inventarul reproductibil, cu tipuri, identificatori și localizarea candidaților, este în [raportul de inventar](../refactoring/knowledge-inventory.md). Versiunea este fixată pentru a putea reproduce observația; cifrele nu sunt o cerință a teoriei.
+An inventory is indexed by semantic family, source World, schema and tool dependency. It reports availability separately from actual use: a catalog entry is not evidence that reasoning consulted it. A loaded World can contain facts that are irrelevant to a particular request. The trace names the facts and rules actually read or activated.
 
-| Familie semantică din secțiunea 11.1 | Declarații găsite și ce trebuie verificat în continuare |
+| Coverage obligation | Concrete check |
 |---|---|
-| Feluri și relații | 14443 `k.kinds.parent` și 1114 `k.kinds.relation`. Primele includ mai multe dimensiuni de relație; nu sunt toate muchii is-a și nu reprezintă atâtea feluri distincte. Se verifică sensul fiecărei legături folosite. |
-| Vocabular și construcții | 29520 `k.words.sense` și 499 `w.lang.en.frame`. Un sens sau un cadru prezent nu dovedește citirea unei cereri complete cu toate condițiile. |
-| Spații și regiuni | 215 `k.colours.colour`, 59 `k.shapes.shape`, 14 `k.values.scale` și 13 `k.values.position`. Migrarea verifică coordonate, unități și definițiile regiunilor; o poziție încă etichetată nu devine automat regiune calculabilă. |
-| Structuri | 307 `k.parts.whole`, 432 `k.parts.usual`, 370 `k.parts.inherited` și 45 `k.kinds.role`. Se verifică cardinalitățile, obligativitatea și rolurile funcționale, fără a confunda „obișnuit” cu „obligatoriu”. |
-| Context și valori obișnuite | 61 `k.scenes.scene` și 1088 `k.scenes.has`, alături de declarațiile despre părți obișnuite. Apartenența la o scenă nu este singură o regulă de poziționare. |
-| Realizări | 2212 `k.objects.object`, 27904 `k.objects.part` și 271165 `k.objects.point`. Punctele descriu geometrie; legarea părților la concepte și unelte editabile rămâne o verificare separată. |
-| Proveniență | Toate cele 422835 de declarații numărate poartă `core.source`. Prezența câmpului nu dovedește corectitudinea afirmației, adecvarea licenței sau completitudinea lanțului de transformare. |
+| A drawable tree | Resolve the requested kind, find its editable representation and part roles, fill tool arguments and observe creation. A word or static image alone is insufficient. |
+| A chapter | Resolve the document/section schema, parent and order policy; create and observe that section. A lexical search for the word chapter is not a semantic coverage test. |
+| A chart of calendar events | Establish the event population and interval coverage, aggregate unique identities, map values through the chart method and observe the resulting nodes. |
+| A happier avatar | Resolve editable parts and expression-to-feature rules; observe changed features and retain any expression measurement uncertainty. |
+| A reused relation family | Exercise the same relation and reasoning mechanism across different kinds and contexts; acceptance examples do not define the whole imported family. |
 
-Rândurile nu sunt pachete disjuncte care se însumează: aceeași declarație despre o parte obișnuită servește atât structurii, cât și completării. Numărătoarea este a declarațiilor, nu a identităților conceptuale unice. Chiar și un nume exact poate avea alt sens: de exemplu, un candidat pentru `circle` într-o relație despre teatru nu dovedește existența formei geometrice cerute într-o diagramă.
-
-Căutarea lexicală reproductibilă urmărește 36 de nume singulare extrase din exemple. Ea găsește, între altele, realizare pentru `swing`, declarații despre `grandfather`, un rol pentru `node` și o realizare de substituție pentru `water plant`. Pentru `level`, `chapter` și `narrator` nu găsește un candidat cu acel `name` exact în fragmentele publicate. Aceasta nu demonstrează lipsa conceptului: el poate apărea ca rol, valoare a altei chei sau sinonim. Registrul de migrare trebuie să închidă acea căutare semantică, nu să declare conceptele absente pe baza unei singure chei.
-
-Diferența dintre cerințe și pachetul utilizabil se consemnează pe dependențe. Pentru swing/seat se verifică legătura de sprijin și geometria locului; pentru grandfather, trăsăturile care îl disting vizual; pentru lake/pond/water, sensurile, întinderea și regulile de referire; pentru un document cu capitole și narator, rolurile și legarea temei. Nu se scade numărul cerințelor din numărul firelor: cele două numără obiecte diferite. Până la această verificare, inventarul arată candidați de reutilizare și obligații deschise, nu un procent pretins de acoperire executabilă.
+Counts of wires, geometry points and vocabulary entries measure different things and must not be summed as “intelligence”. Knowledge is usable for a capability only when dependencies close through schemas, inference and concrete tool bindings. A lexical miss does not prove a missing concept: it may be represented by a role, synonym or another property. Search and execution evidence must settle that distinction.
 
 Măsurarea de acoperire urmărește apoi pentru fiecare familie de probleme dacă lipsa apare la recunoaștere, descriere, referință, cunoaștere, realizare sau verificare. Se păstrează și rezultatele corecte de clarificare. Adăugarea unui catalog de nume poate îmbunătăți recunoașterea fără să câștige vreo execuție; raportul trebuie să arate acest lucru.
 
@@ -3401,7 +3202,7 @@ Pe un graf de feluri, o muchie de specializare poate avea un cost inițial unifo
 
 ### 12.2.1 Declararea reperului de normalizare
 
-Aceeași axă `clearance` din secțiunea 8.2 poate păstra explicit sursa normalizării. Următoarele fire sunt propuse; setul este ilustrativ, în unități de pagină, iar proprietatea `width` desemnează mărimea măsurată. Setul real ar păstra identitățile observațiilor și versiunile stării din care au fost citite.
+The clearance axis can derive its normalisation from an explicit reference sample. This invented sample is in page units and measures width. Independent samples retain distinct identities, including when their values are equal. Load the `std.reference` schema for the following declarations.
 
 ```sop
 @sample.width.a std.reference.sample value=8 unit=page.unit
@@ -3410,24 +3211,18 @@ Aceeași axă `clearance` din secțiunea 8.2 poate păstra explicit sursa normal
 @reference.widths std.reference.set version=1 property=width unit=page.unit member=$sample.width.a member=$sample.width.b member=$sample.width.c
 ```
 
-Contractul structural de mai sus este disponibil în biblioteca 0.171.0 prin `core.use world=std.reference`. Fiecare măsurare are o identitate, separată de valoarea ei: două măsurări egale rămân două observații dacă au identificatori distincți. Repetarea aceleiași referințe `member` nu o numără de două ori. Reprezentarea anterioară, prin `value` repetat direct pe set, nu era adecvată: magazia bibliotecii deduplică valori identice, ceea ce ar schimba eșantionul și mediana lui. Câmpurile setului și valoarea/unitatea fiecărei observații sunt obligatorii structural; setul are cel puțin un membru, iar unitățile membrilor trebuie să coincidă cu unitatea declarată a setului. Biblioteca nu convertește implicit unități cu nume diferite. Un membru poate indica prin `provenance` un fir `std.provenance` valid, cu sursa și versiunea ei; lipsa provenienței în exemplul ilustrativ nu transformă valorile inventate în măsurări verificate. Câmpul `version` al setului consemnează o versiune, dar acest modul structural nu împiedică încă modificarea valorii unui membru și nu creează automat o versiune nouă. Pentru o calibrare reproductibilă, publicarea instantaneelor imuabile și verificarea provenienței rămân obligații de implementat înainte de folosirea rezultatelor ca dovezi.
+The sample values 8, 10 and 12 have median 10. The generic median algorithm sorts the finite values and selects the middle value, averaging the two central values for an even count without overflowing intermediate arithmetic. Duplicate member references do not increase sample size; distinct observations with equal values do. Unit consistency is checked before calculation, and a nonpositive normalisation is rejected.
 
-Din versiunea 0.182.0, `calibrateReference(world, 'reference.widths')` calculează mediana și întoarce un instantaneu detașat al intrărilor: identitățile măsurărilor, tokenurile numerice originale, valorile, unitățile și dependențele provenienței disponibile. Două măsurări de 8 și una de 12 dau mediana 8; măsurările egale nu se contopesc. Obiectul întors este înghețat recursiv în memorie. Modificarea ulterioară a setului sursă nu îi schimbă valorile, iar serializarea JSON permite păstrarea lui de către aplicație. Calculul refuză o mediană nepozitivă pentru normalizare și păstrează rezultatul finit inclusiv la valori numerice extreme.
+The calibration retains the exact sample identities, values, units, sources and definition version. Published evidence is a fixed revision: later changes to source measurements create another calibration rather than rewriting the meaning of an old explanation. The consuming axis records which calibration and unit conversion it uses. A version label alone does not make mutable data immutable or prove the measurements authentic.
 
-Acest mecanism nu este încă registrul de publicare a reviziilor. După reîncărcarea JSON, aplicația trebuie să verifice și să protejeze definiția păstrată; simplul număr de versiune sau înghețarea unui obiect în memorie nu împiedică înlocuirea fișierului. Instantaneul păstrează proveniența disponibilă, fără să dovedească adevărul măsurării. Legarea la axă și verificarea reutilizării aceleiași revizii rămân obligații distincte.
-
-Biblioteca 0.184.0 adaugă separat registrul generic `world.retainRevision(identitate, revizie, definiție)`. Prima publicare fixează definiția JSON; repetarea ei identică este permisă, iar alte conținuturi sub aceeași pereche sunt refuzate. Definiția rămâne disponibilă prin `retainedRevision` după anularea sau revenirea faptelor la o stare mai veche. Salvarea lumii o păstrează separat de istoricul obișnuit, iar reîncărcarea verifică eventualele conflicte. Astfel, anularea unei operații nu șterge sensul unei revizii care a fost deja publicată.
-
-Registrul poate servi atât spațiilor de puncte, cât și calibrării, dar nu construiește singur definiția lor și nu garantează autenticitatea unui fișier modificat extern. Două copii independente pot publica definiții incompatibile; reunirea lor trebuie să refuze conflictul. În versiunea 0.186, `retainPointSpace` capturează axele în ordinea declarată, toate unitățile lor și identitatea/versiunea reperului rădăcină într-o definiție păstrată. Reperul se declară prin `w.legend.frame name=... version=...`, iar spațiul îl referă prin `frame=$...`. Adapterul trebuie să lege explicit acest reper de coordonatele sale; simplul identificator nu demonstrează o origine fizică sau o transformare. Schimbarea definiției sub aceeași versiune de spațiu este refuzată la republicare. Legarea sloturilor native `kind=point`, indexarea coordonatelor și migrarea valorilor rămân neimplementate; această captură nu le substituie. Pentru calibrare, instantaneul calculat poate fi păstrat explicit ca definiție, fără să pretindem că axa îl folosește deja.
-
-Legarea calibrării de această colecție și verificarea rezultatului pe axă rămân propuse în fragmentul următor; existența contractului setului nu pretinde că ele sunt deja implementate:
-
-```sop
-@normalisation.clearance std.calibration reference=$reference.widths method=median value=10 unit=page.unit version=1
-@ax.clearance w.legend.axis of=clearance name=distance min=0 scale=ratio normalisation=10 calibration=$normalisation.clearance unit=page.unit
+```text
+Pseudocode — calibration and its consumer
+reference: widths at a fixed revision, values [8, 10, 12] page units
+method: median
+result: 10 page units
+consumer: clearance axis normalisation
+reuse condition: matching calibration revision, unit and declared frame
 ```
-
-Valorile membrilor distincți formează eșantionul; mediana lui este 10. Nodul de calibrare consemnează metoda și rezultatul, iar axa folosește rezultatul ca lungime de referință. Valoarea de pe axă este copia materializată a rezultatului, nu o a doua alegere independentă: încărcarea verifică egalitatea și unitatea. O modificare a setului produce o versiune nouă și recalcularea rezultatului, urmate de probele din secțiunea 12.5. Dacă referința sau metoda nu poate fi reconstituită, parametrul nu este declarat verificat doar fiindcă are o valoare pozitivă.
 
 ## 12.3 Toleranțe și pași comparativi
 
@@ -3447,22 +3242,31 @@ Calibrarea poate produce o politică diferită pentru contexte diferite când ex
 
 ### 12.3.1 Politica de toleranță și factorul local învățat
 
-Politica numește distanța căreia i se aplică. Exemplul păstrează toleranța ilustrativă 0,5 din secțiunea 12.2; nu o recomandă pentru producție. `regional` desemnează cererile care permit aproximarea regională, iar `exact=forbid` exclude relaxarea cerințelor exacte. Aceste chei au semantica propusă aici, nu sunt o politică deja executată de bibliotecă.
+A tolerance policy names its metric and scope. In this invented example the metric is absolute difference divided by normalisation 10, and the permitted bound is 0.5 for requests explicitly allowing regional approximation. Exact requirements cannot be relaxed by that policy. The following pseudocode describes the data responsibilities rather than defining new SOP types.
 
-```sop
-@policy.clearance std.tolerance axis=$ax.clearance metric=normalised.absolute bound=0.5 comparison=less.equal applies=regional exact=forbid calibration=$normalisation.clearance version=1
+```text
+Pseudocode — tolerance policy
+metric: absolute difference / calibrated normalisation
+bound: less than or equal to 0.5
+application: regional approximation permitted by the request
+exclusion: exact requirements
+evidence: calibration revision and axis definition
 ```
 
 Distanța este `abs(a−b)/10`, iar acceptarea cere să fie cel mult 0,5 și să fie permisă aproximarea în cererea concretă. Legătura cu versiunea calibrării împiedică folosirea aceleiași toleranțe pe o scară schimbată în tăcere. Politica nu anulează o limită fermă precum „cel puțin 12”.
 
 Factorul învățat are altă proveniență: un episod local. Firele următoare înregistrează exact calculul din secțiunea 4.5.1, presupunând instanța `drawing` și obiectul `fish` deja identificate. Valorile de mărime folosesc aceeași scară de raport; factorii sunt adimensionali.
 
-```sop
-@episode.size std.learning.episode instance=$drawing object=$fish concept=size reference=1 initial.factor=1.6 final.value=2.5 status=closed closure=next.unrelated.message valid=true
-@factor.big std.learned.factor instance=$drawing kind=fish concept=size word=big value=2.05 method=mean.initial.accepted episode=$episode.size
+```text
+Pseudocode — local learning episode
+scope: drawing instance / fish kind / size concept
+reference: 1; initial factor: 1.6; observed accepted final value: 2.5
+accepted factor: 2.5 / 1 = 2.5
+updated local factor: mean(1.6, 2.5) = 2.05
+retained evidence: explicit episode closure, observations and validity checks
 ```
 
-`closed` consemnează că un mesaj ulterior a încheiat corecțiile, nu că tăcerea a fost interpretată ca acord. `valid=true` trebuie susținut de jurnalul episodului: schimbările au fost observate, nu a intervenit o editare externă și episodul nu a fost anulat. Calculul este factor acceptat `2,5/1`, apoi media cu 1,6, adică 2,05. Un indicator de validitate scris fără acele dovezi nu autorizează învățarea. Instanța, felul și conceptul delimitează aplicarea; firul nu schimbă preferințele altor instanțe și nu devine automat fapt general despre pești.
+An episode closes through a declared conversational event, not silence interpreted as agreement. Validity requires observed changes and no intervening external edit or undo that invalidates the example. The arithmetic is accepted factor `2.5 / 1`, then mean with 1.6, yielding 2.05. The result applies only in the recorded instance, kind and concept context; it does not become a universal fact about fish or override an explicit later size.
 
 ## 12.4 Costuri, ponderi și egalități între candidați
 
@@ -3482,7 +3286,7 @@ O pondere modificată poate schimba mai multe cereri care folosesc același obie
 
 ### 12.4.1 Un obiectiv cu ponderi și priorități
 
-Un obiectiv poate combina priorități lexicografice cu sume ponderate în interiorul fiecărui nivel. Contractul structural publicat în biblioteca 0.170.0, încărcat prin `core.use world=std.objective`, separă obiectivul de termeni, astfel încât ordinea, ponderea și normalizarea fiecărui termen să poată fi citite. `displacement` și `crowding` numesc evaluatori declarați, ale căror rezultate sunt deja normalizate; declarațiile evaluatorilor nu sunt reproduse în acest fragment.
+An objective combines lexicographic priorities with weighted sums inside each level. Load `std.objective` for this fragment. `displacement` and `crowding` name declared evaluators with normalised outputs; the objective does not define those measurement procedures merely by naming them.
 
 ```sop
 @objective.layout std.objective order=lexicographic direction=minimise term=$term.move term=$term.crowding
@@ -3490,7 +3294,7 @@ Un obiectiv poate combina priorități lexicografice cu sume ponderate în inter
 @term.crowding std.objective.term evaluator=crowding normalisation=declared.by.evaluator weight=1 priority=2
 ```
 
-Schema cere toate câmpurile exemplului și respinge cheile necunoscute, referințele la alt tip și termenii structurali incompleți. `order` este `lexicographic`, iar `direction` poate fi `minimise` sau `maximise`. `weight` este un număr finit nenegativ. Ponderea zero dezactivează contribuția unui termen; aceasta nu permite tratarea unei valori lipsă a unui termen activ drept zero. `priority` este un întreg nenegativ; versiunea curentă îl limitează la întregii reprezentabili exact în JavaScript, până la 9007199254740991, pentru a nu confunda priorități distincte prin rotunjire. Aceasta este o condiție a reprezentării curente, nu o limită conceptuală a numărului de niveluri.
+Schema cere toate câmpurile exemplului și respinge cheile necunoscute, referințele la alt tip și termenii structurali incompleți. `order` este `lexicographic`, iar `direction` poate fi `minimise` sau `maximise`. `weight` este un număr finit nenegativ. Ponderea zero dezactivează contribuția unui termen; aceasta nu permite tratarea unei valori lipsă a unui termen activ drept zero. `priority` este un întreg nenegativ; the integer representation limits it la întregii reprezentabili exact în JavaScript, până la 9007199254740991, pentru a nu confunda priorități distincte prin rotunjire. Aceasta este o condiție a reprezentării curente, nu o limită conceptuală a numărului de niveluri.
 
 Referințele `term` repetate către aceeași identitate se păstrează o singură dată; nu dublează contribuția. Două înregistrări cu identități diferite rămân termeni diferiți chiar dacă numesc același evaluator. Sunt admise priorități egale, tocmai pentru suma ponderată din interiorul unui nivel. Ștergerea unui termen încă referit este refuzată. Încărcarea verifică aceste proprietăți structurale, dar nu rezolvă evaluatorii, nu execută optimizarea și nu dovedește că normalizarea este justificată; aceste obligații trebuie îndeplinite înaintea evaluării unui candidat.
 
@@ -3537,29 +3341,19 @@ Observațiile și confirmările pot fi întârziate sau incomplete. De aceea un 
 
 Afirmația internă păstrează rolurile actului și cerințele pe care le acoperă. O mutare are obiect, locul rezultat și relația verificată; o creare are identitatea nouă și întregul din care face parte. Rolurile sunt legate de obiecte și concepte, nu de numele unui mesaj de interfață. Această reprezentare permite gruparea înaintea realizării textului.
 
-Prima integrare publicată, `b35866b5`, a demonstrat traseul complet prin comutatorul temporar `?engine=new`: o cerere engleză de schimbare a culorii este citită din declarațiile lingvistice, validată ca graf, rezolvată asupra unui obiect existent unic și executată în editor. Observațiile independente înainte și după susțin evaluarea păstrată și răspunsul din jurnal. Exemplul verificat este „Change the colour of the circle to purple.”, pentru o scenă care conține deja un singur cerc. Pregătirea scenei este o precondiție a exemplului; citirea nu inventează obiectul lipsă. Două cercuri sau o valoare necunoscută duc la refuz fără modificare. Integrarea folosește biblioteca 0.192 și cunoașterea `ef0a1b27`; serializatorul generic ulterior nu este încă adoptat de această versiune a aplicației.
+Consider “Change the colour of the circle to purple”. The reader retains change, the circle description and the required colour. LIB binds the subject using instance evidence, resolves purple through knowledge and the tool's declared colour representation, and emits a concrete property-change instruction. If there are several circles, the context policy ranks them and retains alternatives; the selected identity and assumption are named. Observation checks the concrete property and the semantic mapping before claiming the effect.
 
-Această demonstrație nu închide evaluarea predicatelor generale, gruparea afirmațiilor, verificarea existenței, legătura cu revizia cererii semantice, toleranțele, episoadele de învățare sau legătura calibrării cu axele. Decizia ulterioară a proprietarului elimină ruta veche și comutatorul temporar: infrastructura nouă devine singura cale de execuție. O cerere nesuportată trebuie explicată onest, fără reluare prin cititoare vechi. Migrarea aplicației este publicată separat de contractele bibliotecii. Nici culoarea implicită a rendererului nu este dedusă din absența unei suprascrieri: până când acea valoare este declarată și observată explicit, răspunsul descrie setarea proprietății stocate.
+Request revisions preserve unchanged nodes and the parent revision. New wording receives a distinct source identity. A correction identifies the role being changed; preserving a graph does not itself interpret “the other one”. Selector evaluation binds historical subjects from a coherent population snapshot. Logical evaluation carries true, false or unknown, with completeness required only for exhaustive conclusions.
 
-Implementation note (0.201): `retainRequestRevision` now retains an initial validated request graph or applies explicit node replacements/removals to an exact retained parent. Unmentioned identities and prior revisions survive unchanged. A correction that introduces new source text must use a new source identity. The mechanism validates the resulting graph and retains its parent reference; it does not identify a conversation turn, interpret a fragment, choose which role to correct or execute effects. These decisions remain explicit inputs from the learned reader and journal policy.
+A batch has explicit dependencies. A confirmed creation may unlock a later call that consumes its returned identity; an unknown creation effect does not. Independent requests remain eligible. Successful structural validation of a batch is not proof that all tool contracts or semantic preconditions are satisfied.
 
-Implementation note (0.200): `resolveRequestTargets` selects historical subjects from explicitly declared canonical snapshot populations. One/all cardinality policies are declared independently of text. Complete unique matches resolve; multiple known matches remain ambiguous; incomplete populations or unobserved predicates remain unknown. Named targets require declared name semantics and cannot resolve from kind alone. Result requirements never become selector conditions. This mechanism reuses three-valued graph evaluation and performs no creation or execution; conversation references, ordinals and corrective request versions remain separate work.
-
-Implementation note (0.199): `evaluateRequestPredicates` now traverses the request's existing logical graph with true/false/unknown results. Result predicates stay separate from selectors; each quantified variable receives an explicit historical subject and snapshot context. Partial populations can supply a witness or counterexample, while exhaustive absence and universal success require declared completeness. Leaf semantics and population completeness remain trusted adapter obligations. This is graph evaluation, not a text reader, executor or authenticated reply claim. Contextual references, ordinal order bases and corrective request revisions remain separate pending contracts.
-
-Implementation note (0.198): an observation question carries an explicit query projection over an existing selected population. The query identifies whether the reader asks for concept values, count, existence or member identities. Asking for a property is distinct from requiring that property to become a value. Query ownership and source ranges are validated structurally; answering still requires correlated observations, declared property bindings and completeness evidence. Incomplete absence remains unknown. A check retains its predicate graph and cannot acquire an expected value by guessing from its source text.
-
-Implementation note (0.196): a multi-request interpretation is prepared as complete request graphs with an explicit dependency DAG. Array order and wire order do not imply sequence. All graphs validate before dispatch; each keeps its local identities, selector/result separation, quantifiers and relations. A semantic-success dependency is satisfied only by a confirmed outcome: an unverified effect blocks dependent work while independent requests remain ready. This scheduling layer neither resolves follow-up references nor proves that a host supports every predicate. Preparation is structural validation, not permission to execute or evidence of success.
-
-Implementation note (0.195): `assessExistenceChange` now checks creation/removal against typed historical populations. Each observation names a stable lifecycle scope, population revision, invocation and phase, declares complete or partial coverage, and lists historical subject descriptors. An empty partial observation is not evidence of absence. A membership transition in a filtered view is not deletion: an object moving outside the view remains alive. Only declared lifecycle populations with correlated confirmed execution and changed revisions can yield made/removed claims. The retained assessment preserves the evidence after objects disappear; observer authenticity, scope semantics and concurrent-writer isolation remain host responsibilities. Relation and numeric/time assessment are still separate work.
-
-Din versiunea 0.191, primul mecanism publicat pentru acest traseu este `assessPropertyChange`, împreună cu înregistrarea închisă `std.reply.property`. Verifică o singură proprietate nativă, de exemplu valoarea exactă stocată într-un câmp al editorului. Primește cererea și pasul din jurnal, observațiile înainte și după, intrarea cu valoarea așteptată deja rezolvată și identitatea sursei, tipului și cheii. Valoarea așteptată și citirea de dinainte trebuie să fie intrări explicite ale pasului; citirea de după trebuie să fie un rezultat explicit. Observațiile trebuie să corespundă aceluiași apel și să identifice fără ambiguitate proprietatea verificată.
+Creation and removal claims compare lifecycle populations before and after a correlated invocation. An item disappearing from a filtered view is not proof of deletion. Empty partial observations do not establish absence. Property-change evidence instead compares the resolved expected property with observations of the same subject and field, plus the invocation outcome and relevant revisions. Neither assessment substitutes for the other.
 
 Dacă înainte și după corespund valorii așteptate, rezultatul este `unchanged`: proprietatea era deja potrivită, fără a afirma executarea unei schimbări. Rezultatul `changed` cere o valoare de după potrivită, una de dinainte diferită, un pas confirmat și o versiune nouă a sursei. În celelalte cazuri corelate rezultatul este `unconfirmed`, cu motivul păstrat; legăturile contradictorii sau ambigue sunt refuzate. Comparația păstrează exact tokenurile, ordinea și repetițiile lor. Nu transformă automat numere, unități sau nume semantice în valori ale editorului.
 
 Dovezile normalizate sunt copiate într-o definiție imuabilă din registrul de revizii. Afirmația `std.reply.property` conține proprietarul, revizia și statutul; validatorul recalculează statutul din copia păstrată, astfel încât modificarea ulterioară a jurnalului activ să nu rescrie evaluarea istorică. Aceasta protejează consistența datelor, nu autenticitatea unei observații fabricate. Adapterul rămâne responsabil pentru citirea reală, confirmarea operației și maparea declarată dintre concept și valoarea nativă.
 
-O diferență în câmpul nativ nu dovedește automat o diferență vizuală. De exemplu, înlocuirea unei valori implicite cu aceeași culoare stocată explicit poate schimba datele fără să schimbe aspectul. Răspunsul poate spune că proprietatea a fost setată la valoarea rezolvată, dar nu inventează o schimbare perceptivă. Mecanismul publicat nu dovedește crearea sau dispariția obiectului și nu declară întreaga cerere satisfăcută; evaluările altor predicate și gruparea afirmațiilor rămân etape distincte.
+O diferență în câmpul nativ nu dovedește automat o diferență vizuală. De exemplu, înlocuirea unei valori implicite cu aceeași culoare stocată explicit poate schimba datele fără să schimbe aspectul. Răspunsul poate spune că proprietatea a fost setată la valoarea rezolvată, dar nu inventează o schimbare perceptivă. A property assessment alone does not prove creation or removal or satisfaction of the whole request; other predicates and grouped claims require their own evidence.
 
 ### 13.1.1 Răspunsuri pentru propuneri, verificări și informație lipsă
 
@@ -3583,7 +3377,7 @@ Planul de răspuns are două categorii de conținut: ceea ce trebuie spus pentru
 |---|---|
 | Incertitudine sau efect neașteptat relevant | Apare devreme, înainte ca o formulare de succes global să creeze o impresie greșită. |
 | Răspunsul la întrebarea ori scopul principal | Numește rezultatul la nivelul cerut de om, nu fiecare etapă tehnică. |
-| Părți rămase și clarificarea necesară | Leagă lipsa de cerința ei și pune întrebarea care permite continuarea. |
+| Remaining obligations | Identify the missing evidence or unsatisfied requirement, the retained alternatives and any usable next action. |
 | Adaptări și presupuneri semnificative | Explică diferența față de ce era explicit sau decizia care influențează interpretarea rezultatului. |
 | Justificări detaliate | Rămân accesibile prin jurnal și „why?”, fără a încărca automat confirmarea obișnuită. |
 
@@ -3595,13 +3389,15 @@ Un exemplu de rezultat parțial într-un document este: „I shortened the intro
 
 Mai multe afirmații pot deveni o singură propoziție dacă au același act, același statut și roluri compatibile. Gruparea folosește identități unice și acoperirea cerințelor; nu numără câte apeluri au fost făcute. O reîncercare a aceleiași operații nu dublează numărul obiectelor, iar actualizarea unei părți nu înseamnă că întregul a fost recreat.
 
-Forma următoare este o propunere pentru planul de răspuns, nu o schemă deja implementată. `section.a`, `section.b` și `section.c` sunt obiecte observate în raportul `report`; `evidence.a`–`evidence.c` desemnează dovezile corelate ale creării lor. Declarațiile externe nu sunt reproduse aici: exemplul izolează gruparea afirmațiilor, fără să pretindă că este un jurnal complet încărcabil.
+The following pseudocode groups three confirmed creation claims about sections of the same report. Its entries identify observed objects and correlated evidence; these are explanatory records, not extra SOP types.
 
-```sop
-@claim.a std.reply.claim act=make status=confirmed object=$section.a whole=$report evidence=$evidence.a
-@claim.b std.reply.claim act=make status=confirmed object=$section.b whole=$report evidence=$evidence.b
-@claim.c std.reply.claim act=make status=confirmed object=$section.c whole=$report evidence=$evidence.c
-@unit.sections std.reply.unit act=make status=confirmed member=$claim.a member=$claim.b member=$claim.c
+```text
+Pseudocode — response grouping
+claim a: created section a in report, confirmed by evidence a
+claim b: created section b in report, confirmed by evidence b
+claim c: created section c in report, confirmed by evidence c
+group: same act, status and parent; members [claim a, claim b, claim c]
+count: distinct confirmed section identities = 3
 ```
 
 `member` păstrează legătura către fiecare afirmație acoperită. Numărul comunicat se calculează din obiectele distincte ale membrilor confirmați, nu este copiat din cantitatea cerută. Dacă toate trei sunt secțiuni nou create în același raport, formularea poate fi „I added three sections to the report.” Dacă există numai două confirmări și un efect necunoscut, nu mai poate fi folosit același număr într-o propoziție de succes.
@@ -3711,7 +3507,7 @@ Fiecare termen are o explicație de un rând și secțiunea în care este explic
 | interdicție (deny) | Modele care nu au voie să se potrivească împreună. Secțiunea 3.6. |
 | tare, slab (hard, soft) | O constrângere care refuză, față de una care doar notează o problemă. Secțiunea 3.6. |
 | funcție (function) | Un calcul declarat, chemat de schemă. Secțiunea 3.7. |
-| lumea legendelor (legend world) | Lumea care ține conceptele generale; propusă. Secțiunea 4.2. |
+| legend world | A World declaring reusable concepts, spaces, roles and their relationships. Section 4.2. |
 | spațiu conceptual (conceptual space) | Spațiul valorilor unei însușiri: axe numerice sau un graf de părți. Secțiunea 4.4. |
 | axă, regiune, centru | Părțile unui spațiu conceptual. Secțiunea 4.4. |
 | cuvânt de grad (degree word) | „Big”, „short”: un cuvânt al cărui înțeles se calculează din situație. Secțiunea 4.5. |
@@ -3733,7 +3529,7 @@ Fiecare termen are o explicație de un rând și secțiunea în care este explic
 | toleranță (tolerance) | Câtă abatere este primită între ce s-a cerut și ce se poate face. Secțiunea 6.5. |
 | sursă, caracter, context, cost | Cele patru informații purtate de fiecare valoare. Secțiunea 6.6. |
 | cerință, preferință, presupunere | Cele trei caractere ale unei valori. Secțiunea 6.6. |
-| întreg, plan | Un lucru făcut din părți; lista schimbărilor de făcut. Secțiunea 6.7. |
+| whole; executable plan | A thing composed of parts; a concrete circuit of typed tool calls with dataflow and dependencies. Section 6.7. |
 | deducție, completare cu cost minim, extinderea unei valori comune | Mecanismele de raționament. Secțiunea 6.8. |
 | stare observată, stare primită pentru execuție | Ce există de fapt și ce propune aplicația. Secțiunea 6.9. |
 | cadrul unui act | Forma generală a propoziției de răspuns pentru un act. Secțiunea 6.10. |

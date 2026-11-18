@@ -2067,7 +2067,7 @@ Change only the request to “after 10:30” and intersect the allowed start reg
 
 The interval subtraction method is appropriate to this declared scheduling fragment. A two-dimensional placement problem needs its own declared candidate generator and geometric tests; calling both tasks search does not make their numerical algorithms identical.
 
-### 6.6.1 An inferred argument in one observed scope
+### 6.6.3 An inferred argument in one observed scope
 
 This small frame constructor accepts width and height. A trusted observation
 supplies an optional height of 12 for round frames in one editor scope.
@@ -3488,6 +3488,10 @@ Warm-starting is semantic, not positional. The [transfer code](https://github.co
 The [two-stage pipeline](https://github.com/ml-circuits-research/psys2/blob/main/src/dialog/key-reader-pipeline.mjs) validates complete cutter output before reading request-local spans. It translates local source intervals back to whole-message intervals, retains model/profile identities and passes raw structure through declared canonical bindings. The [structural bridge](https://github.com/ml-circuits-research/psys2/blob/main/src/dialog/raw-structural-bridge.mjs) maps raw kinds, properties, units and supported normalisations into the request schema. A mapping must identify its source declaration; string resemblance alone is not a canonical binding.
 
 The distinction between spans and graph ownership is essential. A raw request record with one `target` field has one principal target. Multiple BIO spans do not by themselves turn it into a record with two independently owned targets. “Draw a tree and a house” requires either a graph with two new targets under a shared act or two complete request graphs with explicit composition. Cutting the text into `draw a tree` and `a house` is not sufficient if the second span loses its shared act. “Draw a tree near the house” instead has one new target and an existing relational anchor. Splitting on conjunctions, copying a global kind, or treating every noun span as a new object loses these distinctions.
+
+Consider the question “Are there any red houses?” immediately after “How many red houses are there?”. Suppose the contextual reading locates “red” and marks a target kind as present, but returns no source interval for that kind. A declared policy can request one further reading of the same question with the previous utterance omitted. Both readings share the original text, cutter output and observed instance revision. If the second reading grounds “houses”, the policy compares the two records using their question head, target family, filter, polarity and source intervals. It can then admit the recovered target and retain both readings as evidence for the answer.
+
+Now add a blue house to a drawing that already has a red house. If the model signals a colour requirement but neither reading identifies its value in the text, counting both houses would answer a different question. The incomplete result should name the missing filter. A pronoun such as “them” raises a different requirement: the compiler needs an observed referent before it can identify the population to count.
 
 The canonical request contract can express more than a particular neural raw profile. The profile's singleton target, supported operators and graph-projection rules are expressiveness constraints, not low confidence. More examples can improve extraction within that representation; they cannot add a missing ownership edge or target record. The decoder and supervised representation must preserve the required graph structure. No application-specific sentence patch is a valid substitute.
 

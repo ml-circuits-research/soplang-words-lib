@@ -6649,3 +6649,6 @@ Full source/bundle/COW gates passed 1014/1014/1012, zero failures. Strict book a
 
 2026-11-18: Optional inferred seeds can now require exact typed arguments of the selected capability candidate. Competing count-1 and count-3 readings derive different coordinates and retain their own measurement evidence. Explicit coordinates, unresolved requests and legacy seeds retain precedence.
 Checks: npm run docs and npm run test:full against the exact KB and PSys pins passed 1015 source, 1015 bundle and 1013 COW, each with zero failures, one skip and one TODO.
+
+2026-11-18 — Book §10.5.5 explains how to compare readings of one question against the current instance. The remaining-work plan records the failure after the last object of a queried kind is deleted.
+Strict audit admitted 62 blocks against 58 schemas. Source and bundle checks passed with zero failures, one skip and one TODO each.

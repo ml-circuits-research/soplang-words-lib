@@ -4,7 +4,7 @@ The [book](../books/sop-worlds-teorie.md) defines the request, tool, evidence an
 
 ## Complete implicit and relative placement
 
-- Compare an ordinary creation request and competing readings under the same Diagram observations. Move a live supporting node and change its support relation in knowledge. Check that both compilations follow the observed node and the changed relation. The second editor still needs a demonstration using its shipped knowledge.
+- Compare an ordinary creation request and competing readings under the same Diagram observations. Move a live supporting node and change its support relation in knowledge. Check that both compilations follow the observed node and the changed relation.
 - Extend relative placement beyond one subject and one anchor. Compile a plural move with a bounded comparative step and a preserved property. Test attached members, independent peers and original styling. Verify every affected identity and explicitly report measurements the available geometry cannot establish.
 
 ## Compose dependent actions and read-only results
@@ -28,5 +28,4 @@ The [book](../books/sop-worlds-teorie.md) defines the request, tool, evidence an
 
 ## Verify published application routes
 
-- Resolve why “Delete the house” can lose its target after a question about houses. Repeat the failing multi-turn sequence on Pages. Verify the exact target-bound call, the surviving peer and Undo after the preceding questions.
-- Preserve the grounded target when “Are there any red houses?” follows “How many red houses are there?”. Repeat both questions before and after a real state change in the published editor. Inspect the evidence and preserve state. Include an incomplete or unsupported query and verify that the reply does not claim a complete answer.
+- Ground existence after the last object of a requested kind disappears. In one published session with a blue tree and a red house, count the red houses, ask whether any exist, remove the only house, and repeat both questions. The second existence question can still lose its target after the correct zero count. Verify that any recovered zero has an evidenced kind and filter, and that an unrelated noun in the next request keeps its own meaning.

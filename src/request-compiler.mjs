@@ -4,13 +4,19 @@ import { inspectRequest } from './request-contracts.mjs';
 import { compileRuleCircuit } from './rule-circuit.mjs';
 import { placementCircuit } from './placement-method.mjs';
 import { compileCapabilityCircuit } from './capability-method.mjs';
+import { compileKnowledgeProjection } from './knowledge-projection.mjs';
 import { compileChoice } from './choice-method.mjs';
 
 const fail = reason => '@compile.result std.compile.result status=unavailable reason='+reason+'\n';
 
 // Only authored request records cross this boundary. Schemas, methods, observations
 // and tool interfaces belong to the receiving World's trusted composition.
-export function compileRequest(world, sop) {
+export function compileRequest(world, sop, options) {
+  const result = compilePacket(world, sop, options?.catalog);
+  return options ? Promise.resolve(result) : result;
+}
+
+function compilePacket(world, sop, catalog) {
   if (typeof sop!=='string' || sop.length>256_000) return fail('invalid-request-input');
   let wires;
   try { wires=parse(sop); } catch (error) {
@@ -18,6 +24,7 @@ export function compileRequest(world, sop) {
     throw error;
   }
   if (!wires.length || wires.length>1024) return fail('request-budget');
+  if(wires.some(w=>w.type==='std.knowledge.request'))return catalog ? compileKnowledgeProjection(world,wires,catalog) : fail('knowledge-catalog');
   if(wires.some(w=>w.type==='std.choice.request'))return compileChoice(world,wires);
   if(wires.some(w=>w.type==='std.interpret.input'))return compileInterpretations(world,wires,compileSingle);
   return compileSingle(world,wires);

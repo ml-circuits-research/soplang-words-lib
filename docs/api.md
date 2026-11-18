@@ -170,6 +170,29 @@ const circuitSop = world.compileRequest(requestSop);
 const result = parse(circuitSop)[0];
 ```
 
+#### Selective knowledge projection
+
+Call `await world.compileRequest(sop, { catalog })` for a
+`std.knowledge.request`. The receiving World uses `std.knowledge` and
+contains a trusted `std.knowledge.profile` fact. The profile names a
+catalog module and references `std.knowledge.input`, `std.knowledge.read`
+and `std.knowledge.select` steps. Each step declares a binding name
+(`param`), wire `type` and field `key`.
+
+A request names the trusted profile and references `std.knowledge.binding`
+records within its packet. Each gives one `param` and one or more literal
+`value` entries. Provided bindings drive the declared input facts, indexed
+reads and result selectors. The catalog adapter supplies only schema metadata
+with `world(id)`, schema text with `readText(path)`, and indexed candidate
+facts with `wireSource(type, { keys })`. The compiler independently checks
+the requested field of every candidate and admits matching data as facts.
+It loads each module schema and its dependencies once per catalog and
+computes projections in separate Worlds.
+
+Success returns the selected derived facts and the evidence they reference,
+or empty SOP if no rows match. An invalid request, schema, source or evidence
+returns `std.compile.result status=unavailable`.
+
 #### Scoped optional capability defaults
 
 A trusted `std.capability.seed` may qualify a literal default by a

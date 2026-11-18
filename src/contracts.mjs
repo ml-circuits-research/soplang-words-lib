@@ -10,6 +10,13 @@ import { choiceContract } from './choice-method.mjs';
 // Opt-in structural contracts. These schemas validate records; they do not establish
 // the truth, licensing suitability or semantic correctness of the recorded evidence.
 // Each module owns its namespace and can be imported independently through core.use.
+const projectionStepTypes = ['input', 'read', 'select'];
+const projectionRecords = projectionStepTypes.map(kind => `
+@std.knowledge.${kind}.type core.type of=std.knowledge.${kind} closed=true
+@std.knowledge.${kind}.param core.slot of=std.knowledge.${kind} key=param kind=atom present=true
+@std.knowledge.${kind}.wire_type core.slot of=std.knowledge.${kind} key=type kind=atom present=true
+@std.knowledge.${kind}.key core.slot of=std.knowledge.${kind} key=key kind=atom present=true
+@std.knowledge.profile.${kind} core.slot of=std.knowledge.profile key=${kind} kind=ref to=std.knowledge.${kind} many=true`).join('');
 export const CONTRACT_MODULES = {
   ...ruleCircuitContracts,
   ...capabilityContracts,
@@ -73,7 +80,16 @@ export const CONTRACT_MODULES = {
   },
   'std.knowledge': {
     text: `
-@std.knowledge.module core.module name=std.knowledge version=0.169.0 imports=std.provenance exports=std.knowledge.parent
+@std.knowledge.module core.module name=std.knowledge version=0.169.0 imports=std.provenance exports=std.knowledge.parent exports=std.knowledge.profile exports=std.knowledge.request exports=std.knowledge.binding ${projectionStepTypes.map(kind => 'exports=std.knowledge.' + kind).join(' ')}
+@std.knowledge.profile.type core.type of=std.knowledge.profile closed=true
+@std.knowledge.profile.module core.slot of=std.knowledge.profile key=module kind=atom present=true
+${projectionRecords}
+@std.knowledge.request.type core.type of=std.knowledge.request closed=true
+@std.knowledge.request.profile core.slot of=std.knowledge.request key=profile kind=ref to=std.knowledge.profile present=true
+@std.knowledge.request.binding core.slot of=std.knowledge.request key=binding kind=ref to=std.knowledge.binding many=true
+@std.knowledge.binding.type core.type of=std.knowledge.binding closed=true
+@std.knowledge.binding.param core.slot of=std.knowledge.binding key=param kind=atom present=true
+@std.knowledge.binding.value core.slot of=std.knowledge.binding key=value kind=string many=true present=true
 @std.knowledge.parent.type core.type of=std.knowledge.parent closed=true
 @std.knowledge.parent.child core.slot of=std.knowledge.parent key=child kind=atom present=true
 @std.knowledge.parent.parent core.slot of=std.knowledge.parent key=parent kind=atom present=true

@@ -62,7 +62,7 @@ function fingerprint(text) {
 
 export class World {
   /** Compile request SOP against this world without changing its state. */
-  compileRequest(sop) { return compileRequest(this, sop); }
+  compileRequest(sop, options) { return compileRequest(this, sop, options); }
   /** Project selected concrete calls into SOP tool input. */
   compileToolInput(sop) { return compileToolInput(this, sop); }
 

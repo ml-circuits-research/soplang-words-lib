@@ -6637,3 +6637,6 @@ Checks: npm run docs and npm run test:full against exact KB a0e85384 passed 1011
 
 2026-11-18 — Narrowed the placement plan after testing moved-lake and Undo behavior on published Webchat 769b440387. Book §8.2.2 explains how observed support geometry supplies tool coordinates and what hull containment would require.
 Strict book audit admitted all 62 blocks against 58 pinned schemas. Source and bundled test files each passed 1009 with one skip and one TODO.
+
+2026-11-18: Trusted SOP projection profiles now drive lazy catalog reads, exact field selection, rule inputs and returned evidence through World.compileRequest. A published boat/landscape/lake replay retained the source facts and both region alternatives.
+Checks: npm run docs and npm run test:full against the exact KB pin passed 1014 source, 1014 bundle and 1012 COW, each with zero failures, one skip and one TODO.

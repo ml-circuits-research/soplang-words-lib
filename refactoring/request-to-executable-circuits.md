@@ -4,12 +4,12 @@ The [book](../books/sop-worlds-teorie.md) defines the request, tool, evidence an
 
 ## Complete implicit and relative placement
 
-- Compare an ordinary creation request and competing readings under the same Diagram observations. Move a live supporting node and change its support relation in knowledge. Check that both compilations follow the observed node and the changed relation.
+- Move a live supporting Diagram node and change its support relation in knowledge. Recompile both an ordinary request and a competing reading. Check the resulting coordinates against the moved node and the changed relation.
 - Extend relative placement beyond one subject and one anchor. Compile a plural move with a bounded comparative step and a preserved property. Test attached members, independent peers and original styling. Verify every affected identity and explicitly report measurements the available geometry cannot establish.
 
 ## Compose dependent actions and read-only results
 
-- Handle several owned targets, counts and quantitative constraints without collapsing them to one target or one action. Exercise a construction request with different counts and kinds, then change the construction through an authored world. Verify the actual allocations, relationships, observation scope and Undo.
+- Extend counted, multi-kind creation to constructions with dependent targets and quantitative relationships. Change the construction through an authored world. Verify each allocation, relationship, observation scope and Undo.
 - Compare viable readings across different interpreters under one observed revision. Use an ambiguous request with a read-only and a mutating interpretation. Verify the retained alternatives, separate admission and coverage, selected scope, and independently observed effect or absence of mutation.
 - Ground natural property-value questions for a named object and for a set of objects. Verify the selected identities and reported values against a current observation. Test an unresolved property and an incomplete population without claiming a value or complete set.
 - Connect declared data dependencies across editor tools. Run a current-calendar query, group its events by day, construct a chart from the typed result and insert it into a document. Verify actual queried membership and totals, result references, chart values, document content and the boundaries of the undoable operation.
@@ -25,7 +25,3 @@ The [book](../books/sop-worlds-teorie.md) defines the request, tool, evidence an
 
 - Audit every JavaScript component reachable from a normal editor gesture or spoken request. Identify its input SOP, output SOP and owner. Migrate remaining editor-specific interpretation, ranking, planning and default choices into schema or knowledge worlds evaluated by the generic library. Keep the reader, renderer and concrete tool boundaries visible in Worlds. Verify a policy change on the same request without changing application JavaScript and trace the resulting call through its observed effect.
 - Audit the public library and tool entry points. Verify that external callers can load declared worlds and submit SOP requests, and that each mutating tool consumes only its documented SOP circuit. Remove public routes that let callers supply an internal plan or bypass the compiler with a JavaScript command object.
-
-## Verify published application routes
-
-- Ground existence after the last object of a requested kind disappears. In one published session with a blue tree and a red house, count the red houses, ask whether any exist, remove the only house, and repeat both questions. The second existence question can still lose its target after the correct zero count. Verify that any recovered zero has an evidenced kind and filter, and that an unrelated noun in the next request keeps its own meaning.

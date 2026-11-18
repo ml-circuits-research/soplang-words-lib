@@ -6652,3 +6652,6 @@ Checks: npm run docs and npm run test:full against the exact KB and PSys pins pa
 
 2026-11-18 — Book §10.5.5 explains how to compare readings of one question against the current instance. The remaining-work plan records the failure after the last object of a queried kind is deleted.
 Strict audit admitted 62 blocks against 58 schemas. Source and bundle checks passed with zero failures, one skip and one TODO each.
+
+2026-11-18 — Book §§8.2.2 and 10.5.5 explain measuring a counted batch and grounding the noun after the last exemplar disappears. The compiler plan now retains outstanding scope and removes the verified empty-kind sequence.
+Strict audit admitted 62 SOP examples against 58 published schemas. Full source/bundle/COW suites passed 1015/1015/1013, each with one skip and one TODO.

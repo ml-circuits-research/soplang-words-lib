@@ -170,6 +170,35 @@ const circuitSop = world.compileRequest(requestSop);
 const result = parse(circuitSop)[0];
 ```
 
+### Compile a measured choice
+
+Load `std.choice` and declare the receiving World's policy with ordered
+`std.decide.criterion` facts. Supply a `std.choice.request` with one `policy`
+atom and ordered references to `std.choice.option` facts. Each option owns
+one distinct `std.choice.measurement` per criterion measure. Measurements
+carry a metric atom and a finite number. A hard criterion excludes an option
+with a nonzero measurement. The remaining options use the declared min/max
+order and retain input order on ties.
+
+```js
+world.tell(`
+@choice core.use world=std.choice
+@decide core.use world=std.decide
+@cost std.decide.criterion of=dispatch n=1 name=distance measure=distance dir=min
+`);
+const decision = world.compileRequest(`
+@query std.choice.request policy=dispatch option=$north option=$west
+@north std.choice.option measurement=$north.distance
+@west std.choice.option measurement=$west.distance
+@north.distance std.choice.measurement metric=distance value=5
+@west.distance std.choice.measurement metric=distance value=3
+`);
+```
+
+The result returns the selected option, ordered remaining alternatives, ties and
+an assessment for each option. The example selects `$west`. No candidate facts
+or decision facts are added to the receiving World.
+
 ### world.compileToolInput(sop)
 
 Pass a concrete `std.capability.call` graph or a selected capability result from

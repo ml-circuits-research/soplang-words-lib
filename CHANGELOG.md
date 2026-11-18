@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.216.0
+
+- Compile measured SOP choices against trusted lexicographic criteria, with hard exclusions, deterministic ties and assessments for every supplied alternative.
+
 ## 0.214.0
 
 - Project selected concrete capability calls into self-contained SOP tool input, preserving typed arguments and their list order. The tool checks its declaration and live instance before applying the call.

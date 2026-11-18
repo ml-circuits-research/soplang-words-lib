@@ -4,6 +4,7 @@ import { inspectRequest } from './request-contracts.mjs';
 import { compileRuleCircuit } from './rule-circuit.mjs';
 import { placementCircuit } from './placement-method.mjs';
 import { compileCapabilityCircuit } from './capability-method.mjs';
+import { compileChoice } from './choice-method.mjs';
 
 const fail = reason => '@compile.result std.compile.result status=unavailable reason='+reason+'\n';
 
@@ -17,6 +18,7 @@ export function compileRequest(world, sop) {
     throw error;
   }
   if (!wires.length || wires.length>1024) return fail('request-budget');
+  if(wires.some(w=>w.type==='std.choice.request'))return compileChoice(world,wires);
   if(wires.some(w=>w.type==='std.interpret.input'))return compileInterpretations(world,wires,compileSingle);
   return compileSingle(world,wires);
 }

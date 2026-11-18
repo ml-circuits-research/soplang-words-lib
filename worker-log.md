@@ -6607,3 +6607,6 @@ Verified `npm test` (996 tests, 994 pass, 1 skip, 1 todo, 0 fail) and `SOPWORLD_
 ## 2026-11-18 — Declared capability selectors
 - A selector now compares declared lookup literals to versioned native observations, retains each candidate and its support, and keeps the required post-state independent of the selector.
 - Source and bundled phases of `npm run test:full` each passed 1,001 with zero failures, one skip and one TODO. The existing malformed request fixture also passed all 16 cases under `SOPWORLD_COW_CHECK=1 node --test test/request-predicate.test.mjs`.
+
+2026-11-18 G: Compile measured choices via `std.choice.request` and existing `World.compileRequest`. Trusted ordered `std.decide.criterion` facts select among proof inputs with stable ties and disclose hard exclusions; query admission leaves the receiver unchanged. This combines typed relational joins and lexicographic preference, with no domain words or runtime callbacks.
+Checks: `npm run docs`; `npm test` and `SOPWORLD_BUNDLE=1 node --test 'test/**/*.test.mjs'` with the exact application and knowledge caches from repos.pin (1001 pass, 1 skip, 1 todo each); bound probe measured 200 valid three-metric options and returned all 200 assessments.

@@ -6628,3 +6628,6 @@ Checks: source and bundle gates with the exact repos.pin caches each passed 1004
 
 2026-11-18 added optional capability seeds constrained by trusted scope and canonical target kind. Explicit conditions reserve their mapped parameters, including unresolved values. The compiled call retains the inferred seed and its derivation.
 `npm test` and `SOPWORLD_BUNDLE=1 node --test 'test/**/*.test.mjs'` with the exact repos.pin caches each passed 1007 with 1 skip and 1 todo. The book frame example ran through the compiler and tool-input decoder.
+
+2026-11-18: The refactoring plan lists outstanding work and acceptance checks only. The book distinguishes the executable tool input, compiler evidence, observed effects and contextual placement preferences.
+Strict book audit: 62 SOP blocks admitted against 57 schemas; 18 book and schema checks passed.

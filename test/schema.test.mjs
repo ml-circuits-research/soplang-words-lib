@@ -442,3 +442,55 @@ test('modules: version= on core.module is a label that modules() reports', () =>
   w.load('@m core.module name=shop version="2.1" exports=item\n@k core.slot of=shop.item key=price kind=number');
   assert.deepEqual([w.modules(), w.warnings], [[{ name: 'shop', version: '2.1', imports: [], exports: ['shop.item'] }], []]);
 });
+
+test('invalid rules roll back direct and imported declarations, even before any matching facts exist', () => {
+  const schema = `@toy core.type of=toy closed=true
+    @slot core.slot of=toy key=quantity kind=number
+    @negative core.type of=blocked`;
+  const cases = [
+    ['quantity=?q unknown=?x', '', 'quantity=?q', /unknown key unknown on closed type toy/],
+    ['quantity="invalid"', '', 'quantity=1', /quantity="invalid" must be number/],
+    ['quantity=?q', 'not=$block', 'quantity=?unknown', /unbound conclusion variable \?unknown/],
+    ['quantity=?q', '', 'quantity=$rule', /must be number/],
+    ['quantity=?q', '', 'quantity="invalid"', /quantity="invalid" must be number/],
+  ];
+  for (const [premise, extra, conclusion, reason] of cases) {
+    const bad = `@premise toy ${premise}
+      @block blocked value=?unknown
+      @conclusion toy ${conclusion}
+      @rule core.rule when=$premise ${extra} then=$conclusion
+      @addition note text="rolled back"`;
+    const direct = new World();
+    const imported = new World({ library: { bad } });
+    for (const [world, source] of [[direct, bad], [imported, '@use core.use world=bad']]) {
+      world.load(schema);
+      const before = [...world.matrix.keys()];
+      const result = world.tell(source);
+      assert.equal(result.ok, false);
+      assert.ok(result.violations.some(({ kind, why }) => kind === 'schema' && reason.test(why)), result.violations.map(({ why }) => why).join('\n'));
+      assert.deepEqual([...world.matrix.keys()], before);
+      assert.equal(world.used.has('bad'), false);
+      assert.equal(world.ofType('note').length, 0);
+      assert.equal(world.tell('@actual toy quantity=2').ok, true);
+    }
+  }
+});
+
+test('rule validation allows inherited and prefix keys, JSON bindings, calculations and dependent templates', () => {
+  const rules = `@p child base.quantity=?q meta.label=red settings.n=?n core.absent=meta.other
+    @double core.calc fn=mul args=?n args=?q out=?result
+    @report report amount=?result
+    @link other report=$report source=$p
+    @r core.rule when=$p with=$double then=$link then=$report`;
+  const world = new World({ library: { rules } });
+  world.load(`@base core.type closed=true
+    @child core.type extends=base closed=true
+    @q core.slot of=base key=quantity kind=number
+    @metadata core.slot of=base key=meta prefix=true kind=atom
+    @settings core.slot of=base key=settings kind=json
+    @use core.use world=rules prefix=false`);
+  world.load('@actual child quantity=3 meta.label=red settings="{\\"n\\":7}"');
+  const [report] = world.ofType('report');
+  assert.deepEqual(report.attrs.amount, ['21']);
+  assert.deepEqual(world.ofType('other')[0].attrs, { report: ['$' + report.id], source: ['$actual'] });
+});

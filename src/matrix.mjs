@@ -820,6 +820,27 @@ function buildAggregate(world, w, c) {
   buildRule(world, body, c, new Map([[calc.id, calc]]), true, { by, dflt: first(w, 'default'), groups: groups.length ? groups.filter((g) => g[0] !== '$').map(str) : null });
 }
 
+function validateRuleWire(c, ruleId, wire) {
+  const { id, type, attrs } = wire;
+  const where = `${ruleId}: ${id}`;
+  for (const key of new Set([...Object.keys(attrs), ...(wire.absent || [])])) {
+    const slot = c.slotOf(type, key);
+    if (!slot) {
+      if (c.closed.has(type) && !c.isOpenKey(key)) c.errors.push(`${where}: unknown key ${key} on closed type ${type}`);
+      continue;
+    }
+    if (slot.by) continue; // joins match a name, not a reference
+    const kinds = [...slot.kinds, ...(slot.ref || slot.refs.length ? ['ref'] : [])];
+    for (const value of attrs[key] || []) {
+      if (kinds.length && !hasVar(value) && !kinds.some((kind) => fitsKind(kind, value))) {
+        c.errors.push(`${where}: ${key}=${value} must be ${kinds.join(' or ')}`);
+      }
+    }
+  }
+}
+
+const variable = (term) => term[0] === '$' ? term.slice(1) : term;
+
 function buildRule(world, w, c, extra, register = true, aggregate = null) {
   const find = (id) => extra?.get(id) || world.matrix.get(id);
   const locals = new Set();
@@ -847,6 +868,7 @@ function buildRule(world, w, c, extra, register = true, aggregate = null) {
       if (short !== key) { l.attrs[short] = [...(l.attrs[short] || []), ...l.attrs[key]]; delete l.attrs[key]; }
     }
     if (k !== 'then') c.paths(l);
+    if (['when', 'not', 'over', 'groups'].includes(k)) validateRuleWire(c, w.id, l);
     // an opaque value is not looked at by rules: a pattern may only ask that it is absent
     if (k !== 'then') for (const key of Object.keys(l.attrs)) if (c.blob(l.type, key)) c.errors.push(`${w.id}: ${s.id} matches ${key}, which holds opaque values (kind=blob): patterns cannot read it (core.absent=${key} can)`);
     return l;
@@ -940,13 +962,15 @@ function buildRule(world, w, c, extra, register = true, aggregate = null) {
   }
   for (const x of rule.calc) if (!x.out || !isVar(x.out)) c.errors.push(`${w.id}: core.calc needs out=?var`);
 
-  const vars = new Set();
+  const whenVars = new Set(rule.by || []);
   for (const p of rule.when) {
-    vars.add('?' + p.id);
-    for (const v of Object.values(p.attrs).flat()) if (hasVar(v)) vars.add(v[0] === '$' ? v.slice(1) : v);
+    whenVars.add('?' + p.id);
+    for (const v of [...Object.values(p.attrs).flat(), ...(p.paths || []).map(([, , term]) => term)]) {
+      if (hasVar(v)) whenVars.add(variable(v));
+    }
   }
+  const vars = new Set(whenVars);
   for (const x of rule.calc) if (x.out) vars.add(x.out);
-  for (const v of rule.by || []) vars.add(v);
   // the tied picks of an argmax or argmin are part of what a firing concluded (see TIES in world.mjs)
   for (const x of rule.calc) if (x.out && (x.fn === 'argmax' || x.fn === 'argmin')) vars.add(x.out + '\u0003ties');
   rule.vars = [...vars].sort();
@@ -961,7 +985,6 @@ function buildRule(world, w, c, extra, register = true, aggregate = null) {
   rule.selective = rule.hasSelect || rule.aggregate;
   // An aggregate depends on a group: the bindings its patterns share with the rule's own
   // patterns. When a wire of an aggregated pattern changes, only its group is looked at again.
-  const whenVars = new Set([...rule.when.flatMap((p) => ['?' + p.id, ...Object.values(p.attrs).flat().filter(hasVar).map((v) => (v[0] === '$' ? v.slice(1) : v))]), ...(rule.by || [])]);
   rule.overs = rule.calc.flatMap((x) => (x.over || []).map((p) => ({
     pat: p,
     group: [...new Set(Object.values(p.attrs).flat().filter(hasVar).map((v) => (v[0] === '$' ? v.slice(1) : v)))].filter((v) => whenVars.has(v)),
@@ -987,6 +1010,15 @@ function buildRule(world, w, c, extra, register = true, aggregate = null) {
   };
   rule.then.forEach(visit);
   rule.then = order;
+  // A conclusion may use bindings from the match, calculations and earlier templates.
+  for (const t of order) {
+    validateRuleWire(c, w.id, t);
+    if (!register) continue; // actions also receive bindings from their invocation parameters
+    for (const v of new Set(Object.values(t.attrs).flat())) {
+      if (hasVar(v) && !vars.has(variable(v))) c.errors.push(`${w.id}: ${t.id} uses unbound conclusion variable ${v}`);
+    }
+    vars.add('?' + t.id);
+  }
   if (!register) return rule; // an action: built like a rule, run on request
   // lazy=true: derived only when a question, a check or a deny needs what it makes
   if (rule.kind === 'rule' && flag(w, 'lazy')) { rule.lazy = true; c.lazyRules.push(rule); return; }

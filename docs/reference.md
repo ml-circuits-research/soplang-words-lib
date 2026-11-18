@@ -478,7 +478,9 @@ and every `if` check holds: each template, with the variables replaced, exists. 
 template with `core.on=$p` adds its entries to the wire `@p` matched. Any other
 template names a wire: if a fact has the same identity keys, or already has every entry
 the template gives, it is that fact (and gets any entries it lacks); otherwise a new
-fact is made. An entry whose variable has no value is left out.
+fact is made. An entry whose variable has no value in a particular match is left
+out. A template variable must come from a positive match, a calculation, an
+aggregate grouping key, or a referenced template created earlier in the same firing.
 
 **When it is evaluated.** In the chase, after every change, to a fixpoint: for the
 wires that were added or changed, and again in full for rules with `not=`, a selector,
@@ -494,8 +496,8 @@ the values read. *Identity:* a derived wire has an id made from the rule and the
 bindings.
 
 **Violations.** `schema` (names something that is not in the matrix; no `when` or no
-`then`; not stratified; a variable in a template that no pattern binds and no calc
-computes; an unknown function), `depth`, `conflict` (the conclusion contradicts a value
+`then`; not stratified; an unbound template variable; a key outside a closed type
+or a literal incompatible with its slot kind in a premise or template; an unknown function), `depth`, `conflict` (the conclusion contradicts a value
 that is there).
 
 **Example**

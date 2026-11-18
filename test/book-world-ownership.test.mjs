@@ -59,11 +59,11 @@ test('a false check skips deduction, while an incompatible explicit value is a c
 });
 test('book declarations reject unknown closed keys, wrong literal kinds and unbound conclusions',()=>{
  for(const [pattern,conclusion,issue]of[
-  ['id=?id bogus=?value','selected=true','unknown-pattern-key'],
-  ['selected=123','selected=true','invalid-pattern-literal-kind'],
-  ['id=?id','selected=?missing','unbound-conclusion-value'],
+  ['id=?id bogus=?value','selected=true',/unknown key bogus/],
+  ['selected=123','selected=true',/selected=123 must be boolean/],
+  ['id=?id','selected=?missing',/unbound conclusion variable \?missing/],
  ]){
   const rules=source('test.rules','knowledge',`@rules.use core.use world=example prefix=false\n@rules.module core.module name=example.rules\n@p example.item ${pattern}\n@t example.item core.on=$p ${conclusion}\n@rule core.rule when=$p then=$t`,'module=example.rules uses=test.schema');
-  const row=audit(schema+'\n'+rules).blocks.at(-1);assert.equal(row.status,'declaration-rejected');assert.ok(row.issues.some(item=>item.issue===issue));
+  const row=audit(schema+'\n'+rules).blocks.at(-1);assert.equal(row.status,'schema-rejected');assert.ok(row.violations.some(item=>issue.test(item.why)));
  }
 });

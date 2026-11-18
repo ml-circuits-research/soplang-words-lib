@@ -3,7 +3,6 @@
 import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {World,parse} from '../src/index.mjs';
-import {fitsKind} from '../src/matrix.mjs';
 
 export function bookWorldSources(text){
  const lines=text.split('\n'),blocks=[];let heading='',pending=null,fenceCount=0;
@@ -60,23 +59,10 @@ export function bookExampleWorld(text,id,options={}){
 // contract; successfully loading a legacy evaluation context alone is not this proof.
 function ruleIssues(world,wires){
  const issues=[],find=ref=>world.matrix.get(ref.slice(1));
- const variables=wire=>Object.values(wire?.attrs??{}).flat().filter(value=>value[0]==='?');
  for(const rule of wires.filter(w=>w.type==='core.rule'||w.type==='core.deny')){
-  const positive=(rule.attrs.when??[]).map(find).filter(Boolean),calcs=(rule.attrs.with??[]).map(find).filter(Boolean),templates=(rule.attrs.then??[]).map(find).filter(Boolean);
-  const bound=new Set(positive.flatMap(variables));for(const calc of calcs)for(const value of calc.attrs.out??[])bound.add(value);
-  for(const template of templates)for(const value of variables(template))if(!bound.has(value))issues.push({id:rule.id,template:template.id,variable:value,issue:'unbound-conclusion-value'});
-  const patterns=[...positive,...(rule.attrs.not??[]).map(find).filter(Boolean),...templates];
-  for(const wire of patterns){
-   const schema=world.schema(wire.type);if(!schema){issues.push({id:wire.id,type:wire.type,issue:'missing-pattern-schema'});continue;}
-   for(const [key,values]of Object.entries(wire.attrs)){
-    if(key.startsWith('core.'))continue;
-    const slot=schema.keys[key]??Object.entries(schema.keys).find(([prefix,spec])=>spec.prefix==='true'&&key.startsWith(prefix))?.[1];
-    if(!slot){if(schema.closed)issues.push({id:wire.id,key,issue:'unknown-pattern-key'});continue;}
-    const kinds=Array.isArray(slot.kind)?slot.kind:slot.kind?[slot.kind]:[];
-    for(const value of values){if(value[0]==='?'||value[0]==='$')continue;
-     if(kinds.length&&!kinds.some(kind=>fitsKind(kind,value)))issues.push({id:wire.id,key,value,issue:'invalid-pattern-literal-kind'});
-    }
-   }
+  for(const link of ['when','not','then'])for(const ref of rule.attrs[link]??[]){
+   const wire=find(ref);
+   if(wire&&!world.schema(wire.type))issues.push({id:wire.id,type:wire.type,issue:'missing-pattern-schema'});
   }
  }
  return issues;

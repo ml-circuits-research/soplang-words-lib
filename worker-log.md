@@ -6631,3 +6631,6 @@ Checks: source and bundle gates with the exact repos.pin caches each passed 1004
 
 2026-11-18: The refactoring plan lists outstanding work and acceptance checks only. The book distinguishes the executable tool input, compiler evidence, observed effects and contextual placement preferences.
 Strict book audit: 62 SOP blocks admitted against 57 schemas; 18 book and schema checks passed.
+
+2026-11-18: Rule admission rejects unknown closed-type keys, incompatible slot literals and unbound conclusion variables for direct and imported declarations. Failure rolls back the matrix, import and facts. Inherited and prefix slots, open types, calculations, JSON paths and dependent templates still work.
+Checks: npm run docs and npm run test:full against exact KB a0e85384 passed 1011 source, 1011 bundle and 1009 COW, each with zero failures, one skip and one TODO. Strict audit admitted all 62 SOP book blocks against 58 published schemas.

@@ -27,10 +27,6 @@ The [book](../books/sop-worlds-teorie.md) defines the request, tool, evidence an
 - Audit every JavaScript component reachable from a normal editor gesture or spoken request. Identify its input SOP, output SOP and owner. Migrate remaining editor-specific interpretation, ranking, planning and default choices into schema or knowledge worlds evaluated by the generic library. Keep the reader, renderer and concrete tool boundaries visible in Worlds. Verify a policy change on the same request without changing application JavaScript and trace the resulting call through its observed effect.
 - Audit the public library and tool entry points. Verify that external callers can load declared worlds and submit SOP requests, and that each mutating tool consumes only its documented SOP circuit. Remove public routes that let callers supply an internal plan or bypass the compiler with a JavaScript command object.
 
-## Enforce rule admission at the runtime boundary
-
-- Reject a closed-type premise with an unknown key, a literal that conflicts with a declared slot kind and an unbound conclusion variable before admitting a rule. Exercise both direct loading and imported declarations. Verify that valid rules still derive the expected typed facts. Book example auditing alone does not satisfy the runtime check.
-
 ## Verify published application routes
 
 - Repeat learned and authored scoped removal with two different objects in the normal published editor. Check the selected identity, retained reader evidence, exact target-bound SOP call, surviving peer and Undo. Try an ambiguous same-kind pair and a bulk operation without scoped authorization.

@@ -6593,3 +6593,6 @@ Limit: runtime factsOnly enforces instance admission, not complete rule-template
 ## Ambiguous capabilities and effect selection
 - `npm test` and `SOPWORLD_BUNDLE=1 node --test 'test/**/*.test.mjs'` each ran 994 tests, 992 passed, one skipped, one TODO. Tests cover scoped preference, hard guard, declared provider and frame, resulting two-point geometry and undo.
 - `npm run docs`, `node tools/audit-book-examples.mjs --published --strict`, `git diff --check`. Language-hypothesis ranking and learned personal wording remain distinct from choosing among capabilities for one reading.
+
+2026-11-18 delivered private authored-schema instance transport. Closed SOP slots define scalar values, owned records, named joins, ordered collections and stable entity identities.
+Verified `npm test` (996 tests, 994 pass, 1 skip, 1 todo, 0 fail) and `SOPWORLD_BUNDLE=1 node --test test/internal-instance-fact-codec.test.mjs` (2/2). Owned cycles and unreachable facts fail; cyclic named joins remain references.

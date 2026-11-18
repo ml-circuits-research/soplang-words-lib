@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="d40858a4223f">
+<meta name="source-hash" content="067e7bd2e23c">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.209.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.210.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="instance-state.html">Instance state</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -73,6 +73,11 @@ b.tell(&#x27;@x item name=pen price=2&#x27;);
 print(World.diff(a, b).added.map((x) =&gt; x.id));</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;x&quot;]</code></pre></figure>
 <h2 id="changing-a-world">Changing a world</h2>
+<h3 id="worldcompilerequestsop">world.compileRequest(sop)</h3>
+<p>Submit one modern request graph as SOP Lang text to a World containing the trusted schemas, observations, policies and tool declarations. The returned SOP includes a result wire, ordered concrete calls when compiled, and any retained evidence. Compilation uses an isolated fork. A caller must pass the resulting calls to the identified tools to produce an external effect.</p>
+<p>A declared rule realization uses the <code>std.compile</code> contract. Spatial placement uses a <code>std.placement.context</code> wire in the request to name a live instance, revision, frame, scope and layout container. Its trusted method binds direction and measurement vocabularies, native tool interfaces and an objective. A missing measured requirement leaves an explicit reason. A supplied graph may introduce request facts and its context only.</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>const circuitSop = world.compileRequest(requestSop);
+const result = parse(circuitSop)[0];</code></pre></figure>
 <h3 id="worldtellinput-options">world.tell(input, options?)</h3>
 <p>States wires: facts, matrix wires, or both. Options: <code>dry</code> (evaluate and undo), <code>strict</code>, <code>tier</code> (default <code>told</code>; a tier name for the whole statement, or <code>{ key: tier }</code> for some keys, which are then assumptions that <code>assumptions()</code> lists and a told value replaces; a fact marked <code>derived=true</code> with <code>core.source="rule &lt;id&gt;"</code>, as a knowledge world ships what its rules derive, has its values at the tier <code>derived</code>, value by value, so a merge with told values of the same identity keeps each value's origin, and <code>why</code> names the rule), <code>ns</code> (the facts go in that <a href="language.html#12-scope">namespace</a>: <code>b1</code> becomes <code>ns::b1</code>, a reference without a namespace points into it), <code>budget</code>. Returns a change result. Cost: O(matches the new wires take part in) for the chase, plus validation of the touched wires; telling matrix wires recompiles the matrix and validates everything, O(n·r).</p>
 <p><code>world.tell(input, {factsOnly:true})</code> and <code>world.applyPatch(patch, {factsOnly:true})</code> constrain wire admission to instance facts under an already supplied context. A schema declaration, schema-mapped type, pattern/template owned by a supplied rule, or import rejects the complete change as <code>schema-ownership</code> before any import executes. This is a structural ownership boundary, not semantic target selection or proof that arbitrary ordinary facts belong to a particular domain instance. A domain carrier must additionally validate its declared object/reference ownership. Shared knowledge and schema are supplied separately and are not copied into the carrier.</p>
@@ -1695,9 +1700,15 @@ restored.instanceId; // &quot;instance-1&quot;</code></pre></figure>
 <figure class="code"><figcaption>js</figcaption><pre><code>const live = instanceStateWorld(wires);
 factsOf(live).ofKind(&#x27;item&#x27;); // stable local SOP fact IDs</code></pre></figure>
 <p>Returns an actual <code>World</code> containing the saved facts. Optional <code>{schema}</code> is ordinary SOP schema/rule text; normal matching, <code>factsOf</code> and deduction operate on the restored instance. Does not interpret language or authorize a tool effect. See <a href="instance-state.html">instance-state contract</a>.</p>
+<h2 id="objective-evaluation-in-compilation">Objective evaluation in compilation</h2>
+<p>Compilation can rank a finite set of candidate facts against a loaded <a href="modules.html#objective-records">objective declaration</a>. Each trial uses a separate fork and a fresh <code>std.objective.candidate</code> marker. The source world stays unchanged.</p>
+<p>Hard consistency checks run on each fork. Trusted world rules derive one unitless measurement per active evaluator and candidate. Candidate facts supply the inputs to those rules. The evaluator rejects candidate facts that declare rules or state objective records or measurements. Use eager rules for measurements so they are available when the trial settles.</p>
+<p>The result has <code>trials</code> in input order and <code>ranked</code> scored trials in objective order. Every score includes its vector, measured values, weighted costs and the measurement rule and support. Vector positions follow ascending priority and compare lexicographically. <code>best</code> includes every trial tied at the best vector. Input order stabilizes presentation among ties.</p>
+<ul><li><code>optimal</code> means every supplied candidate was scored or rejected and at least one was scored.</li><li><code>infeasible</code> means the finite list contains no admissible candidate.</li><li><code>incomplete</code> means at least one trial had invalid data or lacked a unique measurement. Any scores are provisional.</li><li><code>exhausted</code> means the candidate cap or a trial's reasoning budget was reached. Any scores are provisional. <code>remaining</code> counts the untried candidates.</li><li><code>invalid</code> means the objective, arguments, or source context could not be used.</li></ul>
+<p>The engine defaults to a cap of 128 candidates and applies the world reasoning budget per trial. An optimum is scoped to the candidate list.</p>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.209.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.210.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

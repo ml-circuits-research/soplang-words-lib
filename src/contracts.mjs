@@ -1,11 +1,15 @@
+import { placementContract } from './placement-contract.mjs';
 import { replyExistenceValidator } from './reply-existence.mjs';
 import { replyPropertyValidator } from './reply-property.mjs';
 import { traceInputValidator, traceGraphValidator } from './trace-contracts.mjs';
 import { requestValidator } from './request-contracts.mjs';
+import { ruleCircuitContracts } from './rule-circuit-contract.mjs';
 // Opt-in structural contracts. These schemas validate records; they do not establish
 // the truth, licensing suitability or semantic correctness of the recorded evidence.
 // Each module owns its namespace and can be imported independently through core.use.
 export const CONTRACT_MODULES = {
+  ...ruleCircuitContracts,
+  'std.placement': placementContract,
   'std.instance': {
     text: `
 @std.instance.module core.module name=std.instance version=0.208.0 exports=std.instance.snapshot exports=std.instance.object exports=std.instance.record exports=std.instance.sequence exports=std.instance.value
@@ -73,7 +77,7 @@ export const CONTRACT_MODULES = {
   },
   'std.objective': {
     text: `
-@std.objective.module core.module name=std.objective version=0.170.0 exports=std.objective exports=std.objective.term
+@std.objective.module core.module name=std.objective version=0.170.0 exports=std.objective exports=std.objective.term exports=std.objective.evaluator exports=std.objective.candidate exports=std.objective.measurement
 @std.objective.type core.type of=std.objective closed=true
 @std.objective.order core.slot of=std.objective key=order kind=atom enum=lexicographic present=true
 @std.objective.direction core.slot of=std.objective key=direction kind=atom enum=minimise enum=maximise present=true
@@ -83,6 +87,14 @@ export const CONTRACT_MODULES = {
 @std.objective.term.normalisation core.slot of=std.objective.term key=normalisation kind=atom enum=declared.by.evaluator present=true
 @std.objective.term.weight core.slot of=std.objective.term key=weight kind=number min=0 present=true
 @std.objective.term.priority core.slot of=std.objective.term key=priority kind=integer min=0 max=9007199254740991 present=true
+@std.objective.evaluator.type core.type of=std.objective.evaluator closed=true
+@std.objective.evaluator.normalisation core.slot of=std.objective.evaluator key=normalisation kind=atom present=true
+@std.objective.evaluator.version core.slot of=std.objective.evaluator key=version kind=atom present=true
+@std.objective.candidate.type core.type of=std.objective.candidate closed=true
+@std.objective.measurement.type core.type of=std.objective.measurement closed=true
+@std.objective.measurement.candidate core.slot of=std.objective.measurement key=candidate kind=ref to=std.objective.candidate present=true
+@std.objective.measurement.evaluator core.slot of=std.objective.measurement key=evaluator kind=ref to=std.objective.evaluator present=true
+@std.objective.measurement.value core.slot of=std.objective.measurement key=value kind=number present=true
 `, fns: {},
   },
   'std.trace': {

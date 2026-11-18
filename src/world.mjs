@@ -1,3 +1,4 @@
+import { compileRequest } from './request-compiler.mjs';
 import { retainedKey, retainedDefinition, mergeRetained } from './retained-revisions.mjs';
 import { validateRecords } from './validate-records.mjs';
 import { schemaLinks } from './schema-links.mjs';
@@ -59,6 +60,9 @@ function fingerprint(text) {
 }
 
 export class World {
+  /** Compile request SOP against this world without changing its state. */
+  compileRequest(sop) { return compileRequest(this, sop); }
+
   constructor(options = {}) {
     const {
       fns = {}, library = {}, maxDepth = 12, maxSteps = 50000,

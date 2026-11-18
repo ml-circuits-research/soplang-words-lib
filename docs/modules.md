@@ -56,16 +56,19 @@ A loaded candidate is not an accepted inference. The contracts do not resolve co
 
 ## Objective records
 
-Added with 0.170.0: `core.use world=std.objective` loads closed `std.objective` and `std.objective.term` records. Every listed field is structurally mandatory (`present=true`).
+`core.use world=std.objective` loads the closed objective contract. Every listed field is structurally mandatory (`present=true`).
 
 | Record | Fields |
 | --- | --- |
 | `std.objective` | `order=lexicographic`; `direction=minimise` or `maximise`; one or more typed `term` references. Repeated references to the same identity are deduplicated by the store. |
-| `std.objective.term` | `evaluator` atom; `normalisation=declared.by.evaluator`; finite nonnegative `weight`; integer `priority` from zero through Number.MAX_SAFE_INTEGER. Equal priorities are allowed. |
+| `std.objective.term` | `evaluator` atom naming the evaluator wire ID; `normalisation=declared.by.evaluator`; finite nonnegative `weight`; integer `priority` from zero through Number.MAX_SAFE_INTEGER. Equal priorities are allowed. |
+| `std.objective.evaluator` | `normalisation` and `version` atoms identify the scale and its revision. The owning world provides the rules that calculate measurements on that scale. |
+| `std.objective.candidate` | A fresh marker for one trial, with no fields. |
+| `std.objective.measurement` | `candidate` and `evaluator` typed references and one finite, unitless `value`. Owning rules derive one measurement for each active evaluator and candidate. |
 
 A zero weight explicitly disables the contribution; it does not turn missing observations for active terms into zero costs. Distinct term identities remain distinct even if they name the same evaluator. The safe-integer priority bound prevents accidental numeric collisions in the current representation.
 
-These schemas reject malformed records and protect referenced terms. They do not resolve evaluator names, check the referenced normalization definition, execute an optimizer or select a candidate. The actual book example and counterexamples are exercised in `test/objective-contracts.test.mjs`. Other numerical/change-policy families and the full phase-zero freeze remain pending.
+The schemas reject malformed records and protect referenced terms. [Finite objective evaluation](api.md#objective-evaluation-in-compilation) resolves active evaluator identities and ranks trials using their derived measurements. Spatial and temporal rules demonstrate the same contract in `test/objective.test.mjs`.
 
 ## Reference sample sets
 
@@ -183,3 +186,28 @@ Added with 0.183.0, an existing target may declare `selector` as a reference to 
 All descendants belong to exactly one context: one particular target's selector or the result graph. Shared descendants across contexts are rejected, as are cross-request roots, selectors on new/bound targets, cycles, orphans and binder escape between roots. Selectors may quantify and combine predicates; delta/factor/occurred are unavailable there until historical-event semantics exists. The same predicates explicitly required in both pre-state and result need distinct constraint identities.
 
 This closes a representation gap exposed by the independent reader corpus work: an identifying old property and its desired replacement must not become contradictory result constraints. Logical validation does not perform candidate selection, resolve mutually dependent targets, evaluate predicates or authorize execution. Joint relational target descriptions remain structurally admissible; their satisfiability and ambiguity are resolver concerns.
+
+## Rule-derived tool circuits
+
+Load `std.compile` and declare a `std.compile.rule` profile with the request
+`act`, an allowed `terminal` type, a `call` type, and one or more `action`
+names. The profile's types must be closed subtypes of
+`std.compile.terminal` and `std.compile.call`. The call subtype can add typed
+`arg.*` slots. Each allowed action must be declared as a `core.action`.
+
+Rules derive a terminal that references its `request`, each covered graph
+node with `cover`, and its concrete calls with `call`. Coverage includes
+targets, selectors, logical nodes and constraints. Source text and the
+request root are tracked separately. The terminal must cover the entire
+graph, and its derivation must depend on each claimed node. Calls must
+derive from the same request and declare an `action` and consecutive
+`order` values starting at 1. The compiler checks required native action
+arguments before returning the calls.
+
+`World.compileRequest` returns SOP text. A rule-derived
+`std.compile.result status=compiled` names ordered call records and
+includes producing rules and their support. Distinct complete terminal
+derivations yield `status=unavailable reason=ambiguous-derivations`.
+The trusted rules and action declarations stay in the receiving world.
+Pass the ordered parsed call records to `World.act` to run them in one
+transaction. Action guards read the actual state at execution.

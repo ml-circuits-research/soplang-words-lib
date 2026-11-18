@@ -159,6 +159,17 @@ print(World.diff(a, b).added.map((x) => x.id));
 
 ## Changing a world
 
+### world.compileRequest(sop)
+
+Submit one modern request graph as SOP Lang text to a World containing the trusted schemas, observations, policies and tool declarations. The returned SOP includes a result wire, ordered concrete calls when compiled, and any retained evidence. Compilation uses an isolated fork. A caller must pass the resulting calls to the identified tools to produce an external effect.
+
+A declared rule realization uses the `std.compile` contract. Spatial placement uses a `std.placement.context` wire in the request to name a live instance, revision, frame, scope and layout container. Its trusted method binds direction and measurement vocabularies, native tool interfaces and an objective. A missing measured requirement leaves an explicit reason. A supplied graph may introduce request facts and its context only.
+
+```js
+const circuitSop = world.compileRequest(requestSop);
+const result = parse(circuitSop)[0];
+```
+
 ### world.tell(input, options?)
 
 States wires: facts, matrix wires, or both. Options: `dry` (evaluate and undo), `strict`,
@@ -5027,3 +5038,34 @@ factsOf(live).ofKind('item'); // stable local SOP fact IDs
 ```
 
 Returns an actual `World` containing the saved facts. Optional `{schema}` is ordinary SOP schema/rule text; normal matching, `factsOf` and deduction operate on the restored instance. Does not interpret language or authorize a tool effect. See [instance-state contract](instance-state.md).
+
+## Objective evaluation in compilation
+
+Compilation can rank a finite set of candidate facts against a loaded
+[objective declaration](modules.md#objective-records). Each trial uses a
+separate fork and a fresh `std.objective.candidate` marker. The source world
+stays unchanged.
+
+Hard consistency checks run on each fork. Trusted world rules derive one
+unitless measurement per active evaluator and candidate. Candidate facts
+supply the inputs to those rules. The evaluator rejects candidate facts that
+declare rules or state objective records or measurements. Use eager rules
+for measurements so they are available when the trial settles.
+
+The result has `trials` in input order and `ranked` scored trials in objective
+order. Every score includes its vector, measured values, weighted costs and
+the measurement rule and support. Vector positions follow ascending priority
+and compare lexicographically. `best` includes every trial tied at the best
+vector. Input order stabilizes presentation among ties.
+
+- `optimal` means every supplied candidate was scored or rejected and at least
+  one was scored.
+- `infeasible` means the finite list contains no admissible candidate.
+- `incomplete` means at least one trial had invalid data or lacked a unique
+  measurement. Any scores are provisional.
+- `exhausted` means the candidate cap or a trial's reasoning budget was reached.
+  Any scores are provisional. `remaining` counts the untried candidates.
+- `invalid` means the objective, arguments, or source context could not be used.
+
+The engine defaults to a cap of 128 candidates and applies the world reasoning
+budget per trial. An optimum is scoped to the candidate list.

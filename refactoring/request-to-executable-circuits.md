@@ -1,6 +1,6 @@
 # From requests to executable circuits
 
-Status: implementation proposal, not delivered runtime behaviour. This document complements the book's world patterns, knowledge worlds and instance worlds (§5.1), and their explicit composition (§5.3). It does not authorize a runtime refactor by itself.
+Status: implementation proposal, not delivered runtime behaviour. This document complements the book's world patterns, knowledge worlds and instance worlds (§5.1), and their explicit composition (§5.3). The owner has authorized implementation. Each acceptance run below distinguishes operational coverage from remaining work.
 
 ## Outcome and ownership
 
@@ -125,3 +125,31 @@ Review requires new-world and new-language probes, no domain IDs/sentences in ge
 The separation work adds instance-only admission (`factsOnly`) and separately owned book/schema/knowledge sources. That guard does not certify arbitrary rule declarations. Direct probes of the existing kernel admit a closed-type pattern with an unknown key, an incompatible literal kind and an unbound conclusion variable without a schema error. General compilation must type-check patterns/templates and their bindings before accepting supplied worlds; a source that parses or imports successfully is insufficient. Preserve this as an explicit implementation gap until those probes are rejected by the runtime admission boundary, not only by documentation checks.
 
 Compactness should first remove duplicate ownership and scalar wrappers: shared type/slot/rule declarations are imported once, ordinary properties remain direct literals, and source/version context is not repeated on every scalar. The two-dot book example adds one fact per object under one schema dependency. Whitespace removal alone reduces characters, not graph size. Inline rule expressions, implicit property navigation and unnamed nested values would change language semantics and need a separate schema/grammar design; no such syntax is introduced by this delivery.
+
+## Implementation tasks for observations, shared geometry and soft placement
+
+The entry case is an authored modern request with one new target, one existing anchor and an owned spatial relation. Repeat the identical circuit after manually moving the anchor. An independent reader test can later measure whether text produces that input.
+
+| Task | Acceptance evidence |
+| --- | --- |
+| Project live instance geometry into a reusable 2D vocabulary. | Derive bounds in a named frame from current objects, including groups. Retain source identity, instance, revision and relation endpoints. Refresh on mutation. Two editors can use the same calculations without combining unrelated scenes or copying imported rules. |
+| Declare applicability by relation and scope. | Independent peers in the same container prefer a positive clearance. A member may occupy its group. An edge endpoint meets its declared node. An attached avatar part follows its anchor. Distinguish bounding boxes from actual contours and unknown geometry from empty space. |
+| Rank valid proposals by a declared objective. | Hard conditions exclude candidates. Soft violations carry a measurable cost. Prefer zero cost when available and a smaller violation under crowding. Retain alternatives, ties, exhaustion and measured evidence. A first satisfying assignment alone cannot certify an optimum. |
+| Declare profile preferences and their learning evidence. | An exact edit affects the current object. An explicit scoped preference, or qualifying repeated comparable corrections under a declared policy, can affect later choices. Inspect the scope and evidence, reverse the contribution, and preserve hard requirements. |
+| Compile and dispatch a concrete request from observed worlds. | Compare the same request before and after moving the anchor or occupying the preferred region. Verify the typed call, observed result and undo on the normal application route. Prevent stale geometry from authorizing a move. Show the actual worlds, participants, evaluated relation and winning cost in Worlds. |
+| Test the mechanism independently of Drawing. | Change the scene, selected roles and preference while keeping the library unchanged. Include an attached pair, a crowded scene and a nonspatial candidate objective. A temporal placement test has its own interval and availability declarations. |
+
+The initial probes establish the boundary. A hard rectangular collision rule and finite-domain search find a free coordinate. With soft=true the same collision yields a standing issue and the satisfiability solver may select the occupied coordinate even when a free coordinate exists. The native near-placement helper embeds a directional order in JS. Close these gaps through the normal compiler and declared worlds. Record the specific behaviour verified for each task before marking it complete.
+
+
+## Public SOP-only boundary and migration inventory
+
+A client loads its schema, knowledge, tool interfaces and live observations through SOP declarations and submits request wire text. The compiler returns a circuit of concrete SOP tool instructions plus inspectable evidence. A registered method may perform bounded generic computation behind a declared wire type. The same restrictions apply to an embedding in JS and to another implementation language. A native tool accepts a SOP instruction and returns observed changes as SOP. UI event collection, rendering and device access belong to concrete adapters. A semantic decision hidden inside an adapter, a sentence branch moved to LIB or an application callback that chooses a result still violates this boundary.
+
+Use the caller inventory above as a removal checklist. Migrate and replay ordinary controls as well as spatial composition. For every migrated route, cover a real tool call, unusable or stale input, state inspection and undo. Inspect both the normal runtime route and imports to identify remaining JS orchestration. Keep the learning task independent of reader training.
+
+### Verified library and knowledge routes
+
+The SOP-only compile entry consumes an owned request graph and produces call wires. The regression suite exercises a rule-generated numerical call, an ordered two-step interval operation, and a rectangular placement compiled using the published spatial world. In the §1.4 fixture the call has tree geometry (540,220,60,100) and the stated colour. Moving a reference and introducing a blocker change the chosen coordinates. Returned placement options reference measured SOP facts, including a violated hard condition when the kernel returns the witness. The finite trial objective compares costs over the offered placements. It makes no optimality claim for the entire continuous canvas. A general, complete compiler for every request family in the migration table remains an open task.
+
+Run `node --test test/placement-compiler.test.mjs test/rule-circuit.test.mjs test/objective.test.mjs` from LIB. The placement tests use the knowledge commit in `repos.pin`. The shared catalog's own tests exercise scoped clearance, hard containment and contact, plus the learning and retraction of comparable corrections. Application acceptance additionally requires the observed editor effect.

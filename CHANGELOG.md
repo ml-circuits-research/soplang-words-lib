@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.210.0
+
+- Compile authored SOP requests against trusted worlds and return concrete SOP calls, alternatives and reasons. Rule-generated circuits check coverage and ordered calls. Rectangular placement reads scoped live bounds, measures costs on candidate states and ranks them with declared objective evaluators. Compilation leaves the source instance unchanged.
+
 ## 0.209.0
 
 - Instance-fact admission reuses the existing schema classifier to reject schema declarations, mapped schema types, rule patterns/templates and imports atomically before loading them. Calendar/Avatar consumers can supply their shared context separately. The instance archive loader applies the same admission boundary.

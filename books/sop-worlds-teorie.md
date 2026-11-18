@@ -16,6 +16,10 @@ Writing a separate handler for every sentence, domain and combination of actions
 
 The distinction between a request and a call is fundamental. A request can leave a target, value or method unresolved. An executable call identifies a declared operation and supplies its required typed arguments, directly or through typed results of preceding calls. A plan is the concrete circuit of such calls, with its dependencies and dataflow. A tool consumes its own instruction; it does not interpret the overall plan or decide what the request meant.
 
+**The two public inputs are SOP Lang.** An application supplies the library with declarations of the available worlds, observations and tool interfaces, then submits request wires. The library returns concrete call wires. Each tool reads its own call wires and exposes its observed result as wires. For example, a request can identify a new object and its relation to an existing one while leaving the coordinates open. The corresponding placement instruction specifies an object identity or construction, coordinates and a coordinate frame supplied by its interface. A client can test this whole contract by submitting the request wires directly.
+
+Executable code belongs in the general library and in concrete tools. A library-defined wire type can invoke a registered operation with declared inputs, output and semantics. For example, a rectangular intersection check takes two rectangles in the same frame and returns a Boolean. The rule that applies the check binds those rectangles from observed facts and states which pairs it concerns. A shared container, a parent and child, and the endpoint and node of an edge describe different relationships. Adding another editor changes the observations and relationship declarations that participate. The computation stays reusable. The text of a request or an ordinary instance fact cannot introduce executable code.
+
 Natural language is one way to produce a request circuit. A reader preserves what the words express: targets, quantities, relations, conditions, negation, coordination and uncertainty. State-dependent interpretation belongs to the library and its worlds. A structured client can submit the same request representation without using a language reader. A client that already has complete instructions can submit concrete calls through the declared tool interface.
 
 This book explains the representations and general mechanisms that make this separation possible: world composition, rule matching, reference resolution, constraint completion, hypothesis ranking, compilation and verification of effects. Its central test of generality is whether new declarations can express a new problem without adding a special semantic branch to application code.
@@ -644,6 +648,8 @@ This schema World declares the toy meeting type, constraint and typed pure `over
 | `priority` | A number ordering reported violations; lower values come first. |
 
 **Hard and soft.** An ordinary deny is **hard** and rejects the change. With `soft=true`, the change is accepted but the world derives a `core.issue` identifying the condition and offending facts. The issue disappears when its cause disappears. In the tutorial scheduling profile, participant overlap is hard. A drawing profile can instead treat fish outside water as a soft issue, permitting an explicitly requested fish in the sky. These strengths belong to those declared profiles, not universally to all uses of fish or meetings.
+
+Consider a 10-unit-wide rectangle that may start at 0, 10 or 20. Another rectangle occupies the interval from 0 to 20 on the same row. A soft overlap condition accepts all three placements and records a problem at 0 and 10. A solver that needs only a feasible assignment can therefore return 0. To prefer 20, declare an objective that minimises overlap. To distinguish two crowded positions, measure the area of intersection or the shortfall from a required clearance. Counting violated conditions gives the same score to two intersections of very different sizes.
 
 **Violations.** A rejected change reports its violation kind, rule, affected facts and reason. The response uses that evidence rather than guessing why the operation failed.
 
@@ -2688,6 +2694,10 @@ Distance from a bound differs from violation. For a lower bound, violation is `m
 ### 8.2.2 Measuring geometry and validating a candidate
 
 The geometric function consumes observed data; it neither reads the screen nor moves nodes. This simplified example represents each node by page-frame bounds `left`, `right`, `top`, `bottom`. Curved or rotated outlines require a different geometry contract. A bounding-box approximation must be declared rather than silently presented as exact outline distance.
+
+The instance supplies the geometry through its declared observation interface. A measurement belongs to a frame, an instance and a revision. Two independent boxes in one container can be compared for spacing. A child inside its group is a containment pair. The endpoint of an edge and its port form a contact pair. The same pair of coordinates can satisfy one relation and violate another. A box around a rotated outline establishes its bounds. An exact contact between two specified points needs observations of both points.
+
+A placement method can generate several trial positions from the same observed anchor. Each trial carries its anchor identity and its resulting bounds. Apply hard conditions, then compare the measured costs of the surviving positions using the declared priority order. A manual move supplies a new observation and a new compilation. A tool can decline to apply an earlier circuit if the original observation has expired. Retain the rejected trials and the chosen coordinates so the decision can be inspected.
 
 **Schema World — `measured-gap/schema.sop`.**
 

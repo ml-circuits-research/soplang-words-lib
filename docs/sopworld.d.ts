@@ -283,6 +283,8 @@ export interface Cell { id: string; key: string | null; value?: string; tier: st
 export interface Assumption extends Cell { cost?: number; dependants: { id: string; key: string | null }[] }
 
 export class World {
+  /** Compile request SOP against this world and return a SOP circuit or a reason. */
+  compileRequest(sop: string): string;
   constructor(options?: WorldOptions);
   wires: Map<string, Wire>;
   /** a token for the content: kept by forks being born and by statements that add nothing; new after any change */

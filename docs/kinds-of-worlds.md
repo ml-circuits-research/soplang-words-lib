@@ -107,7 +107,7 @@ print(made.diff.added.map((a) => a.id), changed.diff.changed.map((c) => [c.key, 
 ```
 
 ```output
-["note1"] [["text","buy bread"]] ["\"buy milk\""]
+["note1"] [["text","\"buy bread\""]] ["\"buy milk\""]
 ```
 
 ## 4. Library modules

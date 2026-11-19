@@ -91,7 +91,10 @@ function shrinksBelow(w, t, key, value) {
   return null;
 }
 const allows = (w, t, act) => kindsOf(w, t.attrs.kind[0]).some((k) => k.acts.includes(act));
-const wireText = (id, type, attrs) => `@${id} ${type}` + Object.entries(attrs).flatMap(([k, vs]) => [].concat(vs).map((v) => ` ${k}=${/^[\w.$:+\-#]+$/.test(String(v)) ? v : JSON.stringify(String(v))}`)).join('');
+// A value for a wire: a bare token as it is, a string that is already a quoted literal as it is, any other text quoted.
+const quotedLiteral = (v) => typeof v === 'string' && v.length > 1 && v[0] === '"' && v.at(-1) === '"' && (() => { try { return typeof JSON.parse(v) === 'string'; } catch { return false; } })();
+const valueToken = (v) => (/^[\w.$:+\-#]+$/.test(String(v)) || quotedLiteral(v) ? v : JSON.stringify(String(v)));
+const wireText = (id, type, attrs) => `@${id} ${type}` + Object.entries(attrs).flatMap(([k, vs]) => [].concat(vs).map((v) => ` ${k}=${valueToken(v)}`)).join('');
 const fresh = (w, kind) => { const base = kind.replace(/\W/g, '_'); let n = 1; while (w.has(base + n)) n++; return base + n; }; // bounded: the wires of the world
 const pre = (act, ctx, args, body) => { // an act on a world (or view) whose needs are not loaded is refused with them, so the host loads and retries
   const w = ctx.world;
@@ -259,7 +262,7 @@ function changeMany(ctx, args) {
     if (r.why) return refuse(w, 'change', kind, r.why, { attr, code: 'bad_value', roles: { key: attr } });
     values = r.values;
   } else values = things.map(() => spec);
-  const p = w.applyPatch({ sets: things.map((t, i) => ({ id: t.id, key: attr, value: values[i] })) }); // all of them: one undo step
+  const p = w.applyPatch({ sets: things.map((t, i) => ({ id: t.id, key: attr, value: Array.isArray(values[i]) ? values[i].map(valueToken) : valueToken(values[i]) })) }); // all of them: one undo step
   return p.ok === false ? p : { act: 'change', things: things.map((t) => t.id), attr, values: Object.fromEntries(things.map((t, i) => [t.id, values[i]])) };
 }
 const changeOne = (ctx, args) => ACTIONS.acts_change_one(ctx, args);
@@ -361,7 +364,9 @@ const ACTIONS = {
     if (value === undefined) return refuse(w, 'change', k, `to what? (${attr})`, { attr, missing: 'value', code: 'missing_value', roles: { key: attr } });
     const small = shrinksBelow(w, t, attr, value) || overCapacity(w, k, { ...Object.fromEntries(Object.entries(t.attrs).map(([a, v]) => [a, v[0]])), [attr]: value }, t.id);
     if (small) return refuse(w, 'change', k, small.why, { attr, code: 'bad_value', roles: { key: attr } });
-    const r = w.applyPatch({ sets: [{ id: t.id, key: attr, value }] }); // a set: one undo step, logged with the act's name
+    // A list replaces every value of a many-valued key; text is stored the way make stores it.
+    const stored = Array.isArray(args.value) && args.value.length > 1 && args.by === undefined ? args.value.map((v) => valueToken(String(v))) : valueToken(value);
+    const r = w.applyPatch({ sets: [{ id: t.id, key: attr, value: stored }] }); // a set: one undo step, logged with the act's name
     return r.ok === false ? r : { act: 'change', thing: t.id, attr, value };
   }),
   acts_place: (ctx, args) => { // at a place (rel + ref), at x, or into a thing: the key whose slot refers to that thing's type

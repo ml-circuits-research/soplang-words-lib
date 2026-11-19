@@ -740,11 +740,12 @@ export class World {
       for (const f of sets) { // bounded: the sets of one patch
         const w = this.get(f.id);
         if (!w) { res.violations.push({ kind: 'unknown-wire', id: f.id }); continue; }
-        const key = this._compiled().shortKey(w.type, f.key), value = this._norm(String(f.value));
-        const old = (w.attrs[key] || []).filter((v) => v !== value);
+        // A list sets every value of a many-valued key at once.
+        const key = this._compiled().shortKey(w.type, f.key), values = [].concat(f.value).map((v) => this._norm(String(v)));
+        const old = (w.attrs[key] || []).filter((v) => !values.includes(v));
         for (const v of old) (res._revised ||= []).push({ id: w.id, key, value: v, tier: this.tier(w.id, key) });
         if (old.length) this._unsay(res, [], old.map((v) => ({ id: w.id, key, value: v })));
-        this._merge(w, { [key]: [value] }, { via, from: [], tier }, res);
+        this._merge(w, { [key]: values }, { via, from: [], tier }, res);
       }
       let removed = [];
       if (retract.length && !res.violations.length) {

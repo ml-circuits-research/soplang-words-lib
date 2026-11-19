@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.225.2
+
+- `std.acts` stores text the same way in `make` and `change`: a bare token as it is, a quoted literal as it is, any other text quoted. `change` with a list sets every value of a many-valued key in one undoable step (`applyPatch` sets accept a list).
+- `concat` joins the texts of its values, not their quotes.
+
 ## 0.225.1
 
 - Grounding accepts up to 4,096 candidates. Admission runs first; only admitted candidates enter the choice, and any left beyond the choice budget are counted in `dropped`.

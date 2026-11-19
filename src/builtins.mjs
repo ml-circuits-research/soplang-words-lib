@@ -275,7 +275,7 @@ export const builtins = {
   max: sameUnit((a, b) => Math.max(a, b)),
   mul: combine((a, b) => a * b, mulUnit),
   div: combine((a, b) => a / b, divUnit),
-  concat: (args) => args.join(''),
+  concat: (args) => args.map(textOf).join(''),
   abs: one((q) => show(Math.abs(q.n), q.unit)),
   // round(x), round(x, digits)
   round: one((q, [digits]) => { const k = 10 ** (Number(digits) || 0); return show(Math.round(q.n * k) / k, q.unit); }),

@@ -6666,3 +6666,5 @@ No runtime code changed. Full source and bundle checks each passed 1015 with one
 `npm test` 1019 pass/0 fail (1 skip, 1 todo); `SOPWORLD_BUNDLE=1 node --test` 1021 pass/0 fail.
 2026-11-19 — 0.225.1: grounding accepts 4,096 candidates (packets up to 8,192 wires / 1 MB); only admitted candidates reach the choice and any beyond its budget are counted in `dropped`.
 `npm test` 1020 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test` 1022 pass/0 fail.
+2026-11-19 — 0.225.2: std.acts make and change store text alike (bare token, quoted literal kept, other text quoted); change with a list sets all values of a many-valued key in one undo step (applyPatch sets take a list); concat joins value texts, not quotes. Found while moving the PSys2 Calendar onto w.meetings.
+`npm test` 1023 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test` 1025 pass/0 fail.

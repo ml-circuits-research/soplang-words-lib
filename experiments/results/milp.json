@@ -1,0 +1,142 @@
+[
+ {
+  "exp": "milp",
+  "case": "d1",
+  "family": "draw",
+  "ms": 11,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 draw.thing kind=boat x=370 y=310 w=60 h=30 colour=brown"
+ },
+ {
+  "exp": "milp",
+  "case": "d2",
+  "family": "draw",
+  "ms": 2,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 draw.thing kind=circle x=370 y=270 w=60 h=60 colour=blue\n@n2 draw.thing kind=circle x=370 y=331 w=60 h=60 colour=blue\n@n3 draw.thing kind=circle x=370 y=209 w=60 h=60 colour=blue"
+ },
+ {
+  "exp": "milp",
+  "case": "d3",
+  "family": "draw",
+  "ms": 0,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 draw.thing kind=house x=90 y=0 w=100 h=80 colour=red"
+ },
+ {
+  "exp": "milp",
+  "case": "d4",
+  "family": "draw",
+  "ms": 0,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 draw.thing kind=sun x=375 y=50 w=50 h=50 colour=yellow"
+ },
+ {
+  "exp": "milp",
+  "case": "d5",
+  "family": "draw",
+  "ms": 1,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 draw.thing kind=house x=530 y=505 w=100 h=80 colour=red\n@n2 draw.thing kind=tree x=550 y=255 w=60 h=100 colour=green"
+ },
+ {
+  "exp": "milp",
+  "case": "d6",
+  "family": "draw",
+  "ms": 0,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 x.set object=c2 key=colour value=green"
+ },
+ {
+  "exp": "milp",
+  "case": "c1",
+  "family": "cal",
+  "ms": 0,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 cal.event title=\"meeting\" start=0 end=30 person=Ana"
+ },
+ {
+  "exp": "milp",
+  "case": "c2",
+  "family": "cal",
+  "ms": 0,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 cal.event title=\"meeting\" start=120 end=165 person=Ana"
+ },
+ {
+  "exp": "milp",
+  "case": "c3",
+  "family": "cal",
+  "ms": 0,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 cal.event title=\"meeting\" start=60 end=120 person=Ana\n@n2 cal.event title=\"meeting\" start=0 end=60 person=Ana"
+ },
+ {
+  "exp": "milp",
+  "case": "c4",
+  "family": "cal",
+  "ms": 0,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 cal.event title=\"meeting\" start=90 end=180 person=Ana"
+ },
+ {
+  "exp": "milp",
+  "case": "c5",
+  "family": "cal",
+  "ms": 0,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 cal.event title=\"meeting\" start=240 end=300 person=Dan"
+ },
+ {
+  "exp": "milp",
+  "case": "s1",
+  "family": "store",
+  "ms": 0,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 store.put item=i1 shelf=a\n@n2 store.put item=i2 shelf=a\n@n3 store.put item=i3 shelf=a\n@n4 store.put item=i4 shelf=b\n@n5 store.put item=i5 shelf=b"
+ },
+ {
+  "exp": "milp",
+  "case": "s2",
+  "family": "store",
+  "ms": 0,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 store.put item=i1 shelf=b\n@n2 store.put item=i2 shelf=a\n@n3 store.put item=i3 shelf=b\n@n4 store.put item=i4 shelf=a"
+ },
+ {
+  "exp": "milp",
+  "case": "s3",
+  "family": "store",
+  "ms": 0,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 store.put item=i1 shelf=b\n@n2 store.put item=i2 shelf=b\n@n3 store.put item=i3 shelf=a\n@n4 store.put item=i4 shelf=a\n@n5 store.put item=i5 shelf=c\n@n6 store.put item=i6 shelf=c"
+ }
+]

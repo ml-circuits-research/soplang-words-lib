@@ -6664,3 +6664,5 @@ No runtime code changed. Full source and bundle checks each passed 1015 with one
 
 2026-11-19 — 0.225.0: `std.ground.request` grounds a mention under a declared policy (exact, bounded spelling, bounded knowledge traversal), ranked through std.choice in canonical order. "man" keeps person via kind_of (0.5) ahead of moon (1.5); the cat/car tie is order-independent.
 `npm test` 1019 pass/0 fail (1 skip, 1 todo); `SOPWORLD_BUNDLE=1 node --test` 1021 pass/0 fail.
+2026-11-19 — 0.225.1: grounding accepts 4,096 candidates (packets up to 8,192 wires / 1 MB); only admitted candidates reach the choice and any beyond its budget are counted in `dropped`.
+`npm test` 1020 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test` 1022 pass/0 fail.

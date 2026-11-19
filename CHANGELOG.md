@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.225.1
+
+- Grounding accepts up to 4,096 candidates. Admission runs first; only admitted candidates enter the choice, and any left beyond the choice budget are counted in `dropped`.
+
 ## 0.225.0
 
 - Ground a lexical mention through `std.ground.request` under a declared `std.ground.policy`. Exact identity, bounded spelling repair and bounded traversal of supplied knowledge edges each give a cost; the policy's `std.decide` criteria rank candidates through `std.choice`. A candidate with knowledge evidence is not dropped by the spelling limit, ties stay visible and the ranking no longer depends on enumeration order.

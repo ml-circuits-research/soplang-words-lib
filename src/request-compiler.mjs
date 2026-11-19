@@ -18,15 +18,16 @@ export function compileRequest(world, sop, options) {
 }
 
 function compilePacket(world, sop, catalog) {
-  if (typeof sop!=='string' || sop.length>256_000) return fail('invalid-request-input');
+  if (typeof sop!=='string' || sop.length>(sop.includes(' std.ground.request ')?1_000_000:256_000)) return fail('invalid-request-input');
   let wires;
   try { wires=parse(sop); } catch (error) {
     if (error instanceof SopError) return fail('invalid-sop');
     throw error;
   }
-  if (!wires.length || wires.length>1024) return fail('request-budget');
+  const grounding=wires.some(w=>w.type==='std.ground.request');
+  if (!wires.length || wires.length>(grounding?8192:1024)) return fail('request-budget');
   if(wires.some(w=>w.type==='std.knowledge.request'))return catalog ? compileKnowledgeProjection(world,wires,catalog) : fail('knowledge-catalog');
-  if(wires.some(w=>w.type==='std.ground.request'))return compileGrounding(world,wires);
+  if(grounding)return compileGrounding(world,wires);
   if(wires.some(w=>w.type==='std.choice.request'))return compileChoice(world,wires);
   if(wires.some(w=>w.type==='std.interpret.input'))return compileInterpretations(world,wires,compileSingle);
   return compileSingle(world,wires);

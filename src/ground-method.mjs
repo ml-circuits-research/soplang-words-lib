@@ -20,7 +20,7 @@ const schema = {
     cost: 'kind=number', path: 'kind=string many=true' },
   result: { request: 'type=std.ground.request present=true', status: 'kind=atom enum=selected enum=unavailable present=true',
     reason: 'kind=atom', selected: 'type=std.ground.candidate', alternative: 'type=std.ground.candidate many=true',
-    tie: 'type=std.ground.candidate many=true', evidence: 'type=std.ground.evidence many=true', choice: 'type=std.choice.result' },
+    tie: 'type=std.ground.candidate many=true', dropped: 'kind=integer min=1', evidence: 'type=std.ground.evidence many=true', choice: 'type=std.choice.result' },
 };
 export const groundContract = { text: [
   '@ground.module core.module name=std.ground imports=std.choice ' + Object.keys(schema).map(kind => 'exports=' + prefix + kind).join(' '),
@@ -31,7 +31,7 @@ export const groundContract = { text: [
   }),
 ].join('\n'), fns: {} };
 
-const LIMITS = { candidates: 240, edges: 4096, text: 64 };
+const LIMITS = { candidates: 4096, edges: 4096, text: 64, choice: 240 };
 const field = (wire, key) => wire.attrs[key]?.[0];
 const ref = token => typeof token === 'string' && token.startsWith('$') ? token.slice(1) : undefined;
 const own = (row, keys) => Object.keys(row.attrs).every(key => keys.includes(key));
@@ -129,6 +129,11 @@ export function compileGrounding(world, wires) {
     if (best.cost !== undefined) viable.push({ ...candidate, cost: best.cost });
   }
   // Canonical order makes the ranking independent of how candidates were enumerated.
+  // Beyond the choice budget only the cheapest admitted candidates are compared; the
+  // number left out is reported, never hidden.
+  viable.sort((a, b) => a.cost - b.cost || a.lemma.localeCompare(b.lemma) || a.row.id.localeCompare(b.row.id));
+  const dropped = Math.max(0, viable.length - LIMITS.choice);
+  viable.length = Math.min(viable.length, LIMITS.choice);
   viable.sort((a, b) => a.lemma.localeCompare(b.lemma) || a.row.id.localeCompare(b.row.id));
   const choiceWires = [], options = [];
   viable.forEach((candidate, index) => {

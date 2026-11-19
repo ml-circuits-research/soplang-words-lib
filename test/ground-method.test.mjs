@@ -78,3 +78,10 @@ test('grounding rejects unknown policies, unowned wires and measurements that ov
   assert.equal(reason(valid + '\n@x std.ground.edge from="a" to="b" relation=kind_of'), 'unowned-ground-wire');
   assert.equal(reason(valid.replace('metric=otherType', 'metric=distance')), 'invalid-ground-measurement');
 });
+
+test('a large candidate set is filtered by admission before the choice budget', () => {
+  const world = setup(), lemmas = Array.from({ length: 1000 }, (_, i) => 'zz' + i.toString(36) + 'q');
+  const { selected, result } = run(world, 'house', [...lemmas, 'house', 'horse']);
+  assert.equal(selected, 'house');
+  assert.equal(result.attrs.dropped, undefined);
+});

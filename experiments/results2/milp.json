@@ -1,0 +1,12 @@
+[
+ {
+  "exp": "milp",
+  "case": "w7",
+  "family": "store",
+  "scale": "",
+  "ms": 5.6,
+  "deterministic": true,
+  "status": "refused",
+  "reason": "no-solution: capacity (4,4,4)"
+ }
+]

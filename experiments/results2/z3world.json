@@ -1,0 +1,122 @@
+[
+ {
+  "exp": "z3world",
+  "case": "w1a",
+  "family": "cal",
+  "scale": "",
+  "ms": 204.1,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 cal.event title=\"meeting\" start=0 end=60 person=Ana"
+ },
+ {
+  "exp": "z3world",
+  "case": "w1b",
+  "family": "cal",
+  "scale": "",
+  "ms": 15.8,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 cal.event title=\"meeting\" start=270 end=330 person=Ana"
+ },
+ {
+  "exp": "z3world",
+  "case": "w2a",
+  "family": "draw",
+  "scale": "",
+  "ms": 28.8,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 draw.thing kind=boat x=370 y=220 w=60 h=30 colour=brown"
+ },
+ {
+  "exp": "z3world",
+  "case": "w2b",
+  "family": "draw",
+  "scale": "",
+  "ms": 12.2,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 draw.thing kind=boat x=370 y=285 w=60 h=30 colour=brown"
+ },
+ {
+  "exp": "z3world",
+  "case": "w3",
+  "family": "draw",
+  "scale": "",
+  "ms": 14,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 draw.thing kind=house x=200 y=220 w=100 h=80 colour=red"
+ },
+ {
+  "exp": "z3world",
+  "case": "w4",
+  "family": "draw",
+  "scale": "",
+  "ms": 11.2,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 draw.thing kind=mast x=344 y=251 w=5.8 h=83.4 colour=grey\n@n2 draw.thing kind=sail x=300 y=250 w=48.7 h=77.5 colour=red"
+ },
+ {
+  "exp": "z3world",
+  "case": "w5",
+  "family": "query",
+  "scale": "",
+  "ms": 0.4,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 x.answer text=\"2\""
+ },
+ {
+  "exp": "z3world",
+  "case": "w6",
+  "family": "draw",
+  "scale": "",
+  "ms": 32.4,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 x.set object=boat key=x value=520"
+ },
+ {
+  "exp": "z3world",
+  "case": "s-cal",
+  "family": "cal",
+  "scale": "14 busy meetings, 4 new 30-min meetings",
+  "ms": 17.6,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 cal.event title=\"meeting\" start=306 end=336 person=Ana\n@n2 cal.event title=\"meeting\" start=336 end=366 person=Ana\n@n3 cal.event title=\"meeting\" start=246 end=276 person=Ana\n@n4 cal.event title=\"meeting\" start=276 end=306 person=Ana"
+ },
+ {
+  "exp": "z3world",
+  "case": "s-draw",
+  "family": "draw",
+  "scale": "40 existing objects, 6 new",
+  "ms": 36974,
+  "deterministic": false,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 draw.thing kind=circle x=429 y=430 w=60 h=60 colour=blue\n@n2 draw.thing kind=circle x=489 y=430 w=60 h=60 colour=blue\n@n3 draw.thing kind=circle x=309 y=430 w=60 h=60 colour=blue\n@n4 draw.thing kind=circle x=401 y=490 w=60 h=60 colour=blue\n@n5 draw.thing kind=circle x=369 y=430 w=60 h=60 colour=blue\n@n6 draw.thing kind=circle x=341 y=490 w=60 h=60 colour=blue"
+ },
+ {
+  "exp": "z3world",
+  "case": "w7",
+  "family": "store",
+  "scale": "",
+  "ms": 17,
+  "deterministic": true,
+  "status": "refused",
+  "reason": "unsat: assign — conflicting: |dom:x1| + |dom:x3| + |dom:x2| + |cap:only|"
+ }
+]

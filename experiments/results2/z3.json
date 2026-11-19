@@ -1,0 +1,130 @@
+[
+ {
+  "exp": "z3",
+  "case": "w1a",
+  "family": "cal",
+  "scale": "",
+  "ms": 238.2,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 cal.event title=\"meeting\" start=0 end=60 person=Ana"
+ },
+ {
+  "exp": "z3",
+  "case": "w1b",
+  "family": "cal",
+  "scale": "",
+  "ms": 7.4,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 cal.event title=\"meeting\" start=0 end=60 person=Ana"
+ },
+ {
+  "exp": "z3",
+  "case": "w2a",
+  "family": "draw",
+  "scale": "",
+  "ms": 28.3,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 draw.thing kind=boat x=370 y=220 w=60 h=30 colour=brown"
+ },
+ {
+  "exp": "z3",
+  "case": "w2b",
+  "family": "draw",
+  "scale": "",
+  "ms": 14.5,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 draw.thing kind=boat x=370 y=220 w=60 h=30 colour=brown"
+ },
+ {
+  "exp": "z3",
+  "case": "w3",
+  "family": "draw",
+  "scale": "",
+  "ms": 12.8,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 draw.thing kind=house x=100 y=220 w=200 h=160 colour=red"
+ },
+ {
+  "exp": "z3",
+  "case": "w4",
+  "family": "draw",
+  "scale": "",
+  "ms": 9.5,
+  "deterministic": true,
+  "status": "invalid",
+  "tellOk": false,
+  "reason": "domain:kind",
+  "sop": "@n1 draw.thing kind=sailboat x=380 y=280 w=40 h=40 colour=green"
+ },
+ {
+  "exp": "z3",
+  "case": "w5",
+  "family": "query",
+  "scale": "",
+  "ms": 1.2,
+  "deterministic": true,
+  "status": "refused",
+  "reason": "unknown-family"
+ },
+ {
+  "exp": "z3",
+  "case": "w6",
+  "family": "draw",
+  "scale": "",
+  "ms": 0.2,
+  "deterministic": true,
+  "status": "refused",
+  "reason": "unsat: change: nothing matches — conflicting: boat"
+ },
+ {
+  "exp": "z3",
+  "case": "s-cal",
+  "family": "cal",
+  "scale": "14 busy meetings, 4 new 30-min meetings",
+  "ms": 16.2,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 cal.event title=\"meeting\" start=336 end=366 person=Ana\n@n2 cal.event title=\"meeting\" start=306 end=336 person=Ana\n@n3 cal.event title=\"meeting\" start=276 end=306 person=Ana\n@n4 cal.event title=\"meeting\" start=246 end=276 person=Ana"
+ },
+ {
+  "exp": "z3",
+  "case": "s-draw",
+  "family": "draw",
+  "scale": "40 existing objects, 6 new",
+  "ms": 8017.8,
+  "deterministic": true,
+  "status": "refused",
+  "reason": "unsat: draw — conflicting: unknown"
+ },
+ {
+  "exp": "z3",
+  "case": "s-store",
+  "family": "store",
+  "scale": "45 items, 12 shelves",
+  "ms": 8016,
+  "deterministic": true,
+  "status": "refused",
+  "reason": "unsat: assign — conflicting: unknown"
+ },
+ {
+  "exp": "z3",
+  "case": "w7",
+  "family": "store",
+  "scale": "",
+  "ms": 12.3,
+  "deterministic": true,
+  "status": "refused",
+  "reason": "unsat: assign — conflicting: |cap:only| + |dom:x3| + |dom:x2| + |dom:x1|"
+ }
+]

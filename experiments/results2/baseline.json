@@ -1,0 +1,132 @@
+[
+ {
+  "exp": "baseline",
+  "case": "w1a",
+  "family": "cal",
+  "scale": "",
+  "ms": 0.5,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 cal.event title=\"meeting\" start=0 end=60 person=Ana"
+ },
+ {
+  "exp": "baseline",
+  "case": "w1b",
+  "family": "cal",
+  "scale": "",
+  "ms": 0.1,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 cal.event title=\"meeting\" start=0 end=60 person=Ana"
+ },
+ {
+  "exp": "baseline",
+  "case": "w2a",
+  "family": "draw",
+  "scale": "",
+  "ms": 0.7,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 draw.thing kind=boat x=360 y=220 w=60 h=30 colour=brown"
+ },
+ {
+  "exp": "baseline",
+  "case": "w2b",
+  "family": "draw",
+  "scale": "",
+  "ms": 0.4,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 draw.thing kind=boat x=360 y=220 w=60 h=30 colour=brown"
+ },
+ {
+  "exp": "baseline",
+  "case": "w3",
+  "family": "draw",
+  "scale": "",
+  "ms": 0.2,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 draw.thing kind=house x=200 y=20 w=200 h=160 colour=red"
+ },
+ {
+  "exp": "baseline",
+  "case": "w4",
+  "family": "draw",
+  "scale": "",
+  "ms": 0.2,
+  "deterministic": true,
+  "status": "invalid",
+  "tellOk": false,
+  "reason": "domain:kind",
+  "sop": "@n1 draw.thing kind=sailboat x=300 y=250 w=40 h=40 colour=green"
+ },
+ {
+  "exp": "baseline",
+  "case": "w5",
+  "family": "query",
+  "scale": "",
+  "ms": 0.1,
+  "deterministic": true,
+  "status": "refused",
+  "reason": "unknown-family"
+ },
+ {
+  "exp": "baseline",
+  "case": "w6",
+  "family": "draw",
+  "scale": "",
+  "ms": 0.1,
+  "deterministic": true,
+  "status": "refused",
+  "reason": "no-solution: change: nothing matches (boat)"
+ },
+ {
+  "exp": "baseline",
+  "case": "s-cal",
+  "family": "cal",
+  "scale": "14 busy meetings, 4 new 30-min meetings",
+  "ms": 0.2,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 cal.event title=\"meeting\" start=250 end=280 person=Ana\n@n2 cal.event title=\"meeting\" start=280 end=310 person=Ana\n@n3 cal.event title=\"meeting\" start=310 end=340 person=Ana\n@n4 cal.event title=\"meeting\" start=340 end=370 person=Ana"
+ },
+ {
+  "exp": "baseline",
+  "case": "s-draw",
+  "family": "draw",
+  "scale": "40 existing objects, 6 new",
+  "ms": 3.9,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 draw.thing kind=circle x=360 y=440 w=60 h=60 colour=blue\n@n2 draw.thing kind=circle x=420 y=440 w=60 h=60 colour=blue\n@n3 draw.thing kind=circle x=300 y=440 w=60 h=60 colour=blue\n@n4 draw.thing kind=circle x=360 y=500 w=60 h=60 colour=blue\n@n5 draw.thing kind=circle x=480 y=440 w=60 h=60 colour=blue\n@n6 draw.thing kind=circle x=420 y=500 w=60 h=60 colour=blue"
+ },
+ {
+  "exp": "baseline",
+  "case": "s-store",
+  "family": "store",
+  "scale": "45 items, 12 shelves",
+  "ms": 0.4,
+  "deterministic": true,
+  "status": "compiled",
+  "tellOk": true,
+  "sop": "@n1 store.put item=q0 shelf=s0\n@n2 store.put item=q1 shelf=s0\n@n3 store.put item=q2 shelf=s0\n@n4 store.put item=q5 shelf=s0\n@n5 store.put item=q8 shelf=s1\n@n6 store.put item=q11 shelf=s1\n@n7 store.put item=q14 shelf=s1\n@n8 store.put item=q17 shelf=s2\n@n9 store.put item=q20 shelf=s2\n@n10 store.put item=q23 shelf=s2\n@n11 store.put item=q26 shelf=s3\n@n12 store.put item=q29 shelf=s3\n@n13 store.put ite"
+ },
+ {
+  "exp": "baseline",
+  "case": "w7",
+  "family": "store",
+  "scale": "",
+  "ms": 0.1,
+  "deterministic": true,
+  "status": "refused",
+  "reason": "no-solution: capacity (x2)"
+ }
+]

@@ -1,0 +1,44 @@
+{
+  "z3world": {
+    "w1a": {"plausible": true, "quality": 10, "note": "Earliest free slot 0-60, exactly the ideal; behaves like the no-facts compilers when the world declares no extra facts."},
+    "w1b": {"plausible": true, "quality": 9, "note": "The persisted lr.pref (Ana=late) is read from the world: the meeting moves from w1a's 0-60 to 270-330, inside the late band (>=240) and back-to-back into the b2/b3 gap; the rubric's most-ideal area was 390-450, so this is late but not end-of-day."},
+    "w2a": {"plausible": true, "quality": 8, "note": "No rule declared, so a mid-page brown boat at (370,220) is a plausible placement; correctly no different in kind from the no-world answer."},
+    "w2b": {"plausible": true, "quality": 10, "note": "The lr.rule (boats inside lake-kind areas) is executed: the boat now sits at (370,285), 60x30 fully inside 300-500/250-400 with 35-85 unit margins, roughly x-centred; the whole output change vs w2a is exactly the one fact the world added."},
+    "w3": {"plausible": true, "quality": 8, "note": "lr.grade small=0.5 executed: the house is halved to 100x80, red, on-page, disjoint from the tree with the requested near-gap right at the boundary (x-gap 20, y-gap 40); blemish: its east wall runs flush along the lake's west shore (no interior overlap) — legal disjointness, but it hugs the water it is told to avoid."},
+    "w4": {"plausible": true, "quality": 9, "note": "The real two-part composition: kind=mast 5.8x83.4 grey and kind=sail 48.7x77.5 red emitted as two wires, rigidly shifted together (drift 0.2 from rounding), both fully inside the lake; the group hugs the lake's top-left corner (sail flush at 300,250) instead of a roomier interior spot."},
+    "w5": {"plausible": true, "quality": 10, "note": "Exactly one x.answer text=\"2\" for the two boats on the page; nothing created or changed; answered on the read path in 0.4ms without the solver."},
+    "w6": {"plausible": true, "quality": 9, "note": "The existing boat is moved via a single x.set (object=boat key=x value=520): same row (y=300), fully right of the house, size and colour kept, on-page; gap is 0 (flush against the house's right edge) rather than small-but-visible."},
+    "s-cal": {"plausible": true, "quality": 9, "note": "Four new meetings at 246/276/306/336-366, all inside 0-480, pairwise disjoint and disjoint from all 14 busy blocks; chained back-to-back right after the last busy block; 17.6ms."},
+    "s-draw": {"plausible": true, "quality": 7, "note": "Six 60x60 circles all on-page, disjoint from all 40 rectangles and from each other, but composed as a zero-gap edge-touching cluster (8 tangencies) in the band under the grid; 37.0s."},
+    "s-store": {"status": "killed", "note": "No scored record and no status row: the earlier full run was killed at >9 minutes while the z3 Optimize bin-packing objective (minimize shelves + q0/q1 pair) never terminated; the case was excluded from the regeneration run."},
+    "w7": {"status": "refused", "note": "Correct typed refusal in 17ms: 'unsat: assign — conflicting: |dom:x1| + |dom:x3| + |dom:x2| + |cap:only|' — the impossible three-size-4-on-capacity-5 request refused with the capacity conflict named, no silent overload."}
+  },
+  "baseline": {
+    "w1a": {"plausible": true, "quality": 10, "note": "Earliest free 60-minute slot 0-60, the ideal."},
+    "w1b": {"plausible": false, "quality": 3, "note": "Byte-identical 0-60 answer to w1a: the persisted lr.pref (Ana=late) is invisible to it, so the meeting directly contradicts the world's own fact; the rubric explicitly fails this."},
+    "w2a": {"plausible": true, "quality": 8, "note": "Brown 60x30 boat at (360,220), a valid mid-page placement; no rule is declared in this world, so the lake is irrelevant."},
+    "w2b": {"plausible": false, "quality": 3, "note": "Identical boat at (360,220), flush just north of the lake: violates the world's hard lr.rule that boats go inside lake-kind areas; the added rule fact changes nothing in the output."},
+    "w3": {"plausible": false, "quality": 4, "note": "The placement itself is good — near the tree with a 20-unit gap, disjoint from the lake, on-page — but the house stays full-size 200x160: lr.grade small=0.5 is ignored and the asked-for 'small' disappears."},
+    "s-cal": {"plausible": true, "quality": 9, "note": "Four meetings 250-370, all in-day, pairwise disjoint and disjoint from the 14 busy blocks; a back-to-back chain after the marathon; 0.2ms."},
+    "s-draw": {"plausible": true, "quality": 7, "note": "Six 60x60 circles all on-page, disjoint from all 40 rectangles and each other, but a zero-gap edge-touching cluster (10 tangencies) below the grid; 3.9ms."},
+    "s-store": {"plausible": true, "quality": 10, "note": "All 45 items placed exactly once, every shelf within capacity 7 (loads 8x7 + 4 over 9 shelves — the provably minimal shelf count for 60 units), q0 and q1 share shelf s0; 0.4ms."},
+    "w4": {"status": "invalid", "note": "Single opaque kind=sailboat box (40x40, green): 'sailboat' is not in the schema's kind enum, mechanically invalid (domain:kind); the real two-part composition was never attempted."},
+    "w5": {"status": "refused", "note": "unknown-family: no read path for inspect questions; the count is never answered."},
+    "w6": {"status": "refused", "note": "no-solution: change: nothing matches (boat) — moving an existing object is not an act it performs."},
+    "w7": {"status": "refused", "note": "Correct typed refusal in 0.1ms, but the reason names an arbitrary item it failed on ('capacity (x2)'), not the actual conflict."}
+  },
+  "z3": {
+    "w1a": {"plausible": true, "quality": 10, "note": "Earliest free 60-minute slot 0-60, the ideal."},
+    "w1b": {"plausible": false, "quality": 3, "note": "Identical 0-60 output to w1a: the persisted lr.pref (Ana=late) is ignored, contradicting the world's fact; the rubric explicitly fails an answer identical to the no-preference case."},
+    "w2a": {"plausible": true, "quality": 8, "note": "Brown 60x30 boat at (370,220), valid mid-page placement; no rule is declared in this world."},
+    "w2b": {"plausible": false, "quality": 3, "note": "Identical boat at (370,220), outside the lake (flush against its north edge): violates the world's hard lr.rule for boats; output unchanged from w2a."},
+    "w3": {"plausible": false, "quality": 3, "note": "The house stays 200x160 (lr.grade halving ignored) and, worse, its right edge is glued to the lake (x=300, y 250-380) — the very area the world says houses avoid; only the near-tree intent is met (40-unit gap below the tree)."},
+    "s-cal": {"plausible": true, "quality": 9, "note": "Four meetings 246-366, all in-day, pairwise disjoint and disjoint from the 14 busy blocks; back-to-back chain right after the last busy block; 16.2ms."},
+    "w4": {"status": "invalid", "note": "Single opaque kind=sailboat box (x380 y280 40x40, green): not in the schema kind enum (domain:kind); a single sailboat box is not a composition of the real two-part object."},
+    "w5": {"status": "refused", "note": "unknown-family: no read path for inspect questions; the count is never answered."},
+    "w6": {"status": "refused", "note": "unsat: change: nothing matches — conflicting: boat: moving an existing object is not an act it performs."},
+    "s-draw": {"status": "refused", "note": "8s budget exhaustion reported as 'unsat: draw — conflicting: unknown' — the case is satisfiable, so the status is an honest refusal but the reason mislabels a search cutoff as impossibility."},
+    "s-store": {"status": "refused", "note": "8s budget exhaustion reported as 'unsat: assign — conflicting: unknown'; same cutoff-as-unsat mislabeling on a satisfiable case."},
+    "w7": {"status": "refused", "note": "Correct typed refusal in 12.3ms naming the real conflict: |cap:only| + |dom:x1| + |dom:x2| + |dom:x3| — the capacity core, not an arbitrary item."}
+  }
+}

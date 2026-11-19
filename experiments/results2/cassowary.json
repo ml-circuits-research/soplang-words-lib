@@ -1,0 +1,12 @@
+[
+ {
+  "exp": "cassowary",
+  "case": "w7",
+  "family": "store",
+  "scale": "",
+  "ms": 1,
+  "deterministic": true,
+  "status": "refused",
+  "reason": "no-solution: capacity (x1:4,x2:4,x3:4)"
+ }
+]

@@ -20,46 +20,41 @@ Exact unde nu intră z3 ne spune chiar experimentul: cazul **w5** („câte băr
 
 Un câștig structural, nu doar de viteză: `search` din catalog cere să distingem cinci rezultate (cap. 6.8) — circuit validat, candidat cu obligațiuni neverificate, cerere invalidă, **imposibilitate dovedită**, buget epuizat. z3 dă exact cele două extremități care altfel se confundă: dovada imposibilității (unsat core) și timpul măsurat de căutare. Un refuz care numește constrângerile în conflict nu e un string de eroare, e o **dovadă verificabilă**.
 
-## 2. Cum se rezolvă așezarea (placement)
+## 2. Compilatorul, mecanic: fir → z3 → fire
 
-Encodarea reală din [`experiments/z3world/compiler.mjs`](../experiments/z3world/compiler.mjs), redată simplificat, are patru piese:
+*Nu e cod aici; codul întreg, verificat, e în [`experiments/z3world/compiler.mjs`](../experiments/z3world/compiler.mjs). Aici e doar tabela de traducere pe care un implementator o urmează.*
 
-**Marginile.** Fiecare obiect nou primește două variabile întregi, ținute în chenarul declarat al uneltei (la experiment: pagina 800×600; în bibliotecă: domeniul din `dc.parameter`/`std.tool.param`):
+**Pasul 1 — Variabilele, din contractul uneltei.** Fiecare parametru `required` nerezolvat al operației alese devine o variabilă întregi. Marginile ei NU se inventează: vin din declarație (`std.tool.param min/max`, sau `dc.parameter`): `x: 0..800`, `start: 0..480`. Parametrul cu `accepts=a|b|c` devine `Int 0..2` plus o **tabelă de decodare** index→șir, ținută lângă problemă.
 
-```js
-const x = z.Int.const(`x${k}`), y = z.Int.const(`y${k}`);
-hard.push([`bounds${k}`, z.And(x.ge(minX), y.ge(minY),
-                               x.add(w).le(maxX), y.add(h).le(maxY))]);
-```
+**Pasul 2 — Constrângerile, dintr-o bibliotecă mică de predicate.** Fiecare relație pe care o cere omul sau o regulă a lumii are O construire. Biblioteca întreagă, până acum:
 
-**Conținutul în ancore.** Relațiile `on`/`in` cer ca dreptunghiul obiectului să stea în dreptunghiul ancării:
+| firul / regula | construirea z3 (formulă, sintaxă liberă) |
+|---|---|
+| `on`/`in` (în/o ancore) | `x ≥ a.x ∧ y ≥ a.y ∧ x+w ≤ a.x+a.w ∧ y+h ≤ a.y+a.h` |
+| `near` (aproape de, gap ≤ G) | disjuncția de „fără suprapunere" `∧ gapX ≤ G ∧ gapY ≤ G`, unde `gapX = dacă x+w ≤ a.x atunci a.x-(x+w), altfel dacă a.x+a.w ≤ x atunci x-(a.x+a.w), altfel 0` (idem `gapY`) |
+| fără suprapunere (două dreptunghiuri) | `x+w ≤ q.x ∨ q.x+q.w ≤ x ∨ y+h ≤ q.y ∨ q.y+q.h ≤ y` |
+| `right`/`left`/`below` | `x ≥ a.x+a.w (∧ gap ≤ G)` — simetric pe fiecare axă |
+| intervale disjuncte (calendar) | `t_i+dur ≤ t_j ∨ t_j+dur ≤ t_i` |
+| capacitate (raft/room) | `Σ dacă(item pe ra) atunci size, altfel 0 ≤ cap` — un `If` pe item |
+| `lr.rule for=K relation=in anchor-kind=L` | predicatul `on/in`, aplicat tuturor obiectelor cu felul L — constrângere, nu preferință |
+| `lr.rule … relation=avoid` | predicatul „fără suprapunere", aplicat felului L |
+| `x.option strength=hard` | constrângerea lui, ca atare |
+| `lr.pref` / `option` soft / implicit de scenă | termeni de obiectiv cu greutate (ex. `+1000 dacă t < 240`) |
 
-```js
-hard.push([`inside:${anchor}`, z.And(x.ge(a.x), y.ge(a.y),
-                                     x.add(w).le(a.x + a.w), y.add(h).le(a.y + a.h))]);
-```
+Orice cerere formează problemă DOAR compunând rândurile din tabelul ăsta — **compilatorul nu are cazuri de propoziție, are predicate**.
 
-**Fără suprapunere — o disjuncție nativă.** Orice două dreptunghiuri trebuie separate pe cel puțin o axă; asta e un „sau" pe care z3 îl înțelege nativ, iar cassowary nu:
+**Pasul 3 — Solve.** `Optimize` cu buget declarat: constrângerile tari, minimizarea sumei soft, `timeout` explicit. Unsatisfiable → nucleul unsat numește rândurile de mai jos în conflict → `Issue` cu dovadă. `unknown` (buget) → `Issue` de buget, nu de imposibilitate.
 
-```js
-hard.push([`disj${k}:${q.id}`,
-  z.Or(x.add(w).le(q.x), q.x + q.w <= x, y.add(h).le(q.y), q.y + q.h <= y)]);
-```
+**Pasul 4 — Decodarea, prin același contract.** Modelul întoarce întregi; fiecare întreg trece înapoi prin declarația care l-a născut: variabila `x` → fir cu numele parametrului TOCMAI din `std.tool.param`; enum index → șirul din `accepts`-ul DECLARAT; valorile → firele elementare de fapt. O micro-rulare cap-coadă, „draw a small house near the tree", în lumea cu `lr.grade small=0.5` și regula „casele evită lacul":
 
-**Gap-ul prin termeni `If`.** „Lângă, cu o distanță vizibilă" cere distanța pe axa separată condiționat de partea în care cade obiectul — un termen cu ramuri:
+- declarat: `w=200 h=160`, ×0.5 prin tabela `lr.grade` → **100×80**; variabile `x,y` cu marginile paginii.
+- constrângeri: `near tree gap≤40`, `avoid lake`, suprapunere interzisă cu pomul și cu lacul.
+- solve: `x=200, y=220`.
+- decodare: `@n1 draw.thing kind=house w=100 h=80 x=200 y=220` — fire elementar, respectă schema, fiecare valoare cu izvorul ei în contractul original.
 
-```js
-const dx = z.If(x.add(w).le(a.x), a.x - (x + w),
-            z.If(a.x + a.w <= x, x - (a.x + a.w), 0));
-hard.push([`near:${anchor}`, z.And(disjoint, dx.le(gap), dy.le(gap))]);
-```
+Fire în, fire out, mapa o dă schema. Asta e tot compilatorul; restul documentului e argumentație și măsurători, nu pași suplimentari.
 
-Unde intră preferințele și unde intră cerința — asta e granița care contează:
-
-- **Intenția dură** (ceea ce a cerut omul: `on`, `in`, `near` cu gap, mulțimea de obstacole) intră ca **constrângeri**. Dacă încalcă una, soluția nici nu există.
-- **Preferințele** (lipsă din cerere) intră ca **obiectiv de minimizat**: experimentul a folosit „apropiere de centrul paginii" — sumă de termeni `dist(centrul obiectului, centrul paginii)`, minimizați. Cassowary ajunge la același lucru prin ierarhia de tării (`required/strong/medium/weak` — exact scara cerință/preferință/presupunere din cap. 6.6); z3 prin `Optimize`: constrângerile tari mereu „câștigă", obiectivul doar ordonează soluțiile valide. Nicio preferință nu poate cumpăra o încălcare.
-
-La scară, adevărul e mai dureros decât un simplu „rapid" — și e măsurat pe trei căi: **s-draw (6 cercuri printre 40 de obstacole)**: un encodor a terminat în **55 ms**, o re-rulare a aceleiași forme pe `z3world` a durat **37 de secunde**, iar o variantă cu buget declarat de 8 s pe `Optimize` s-a oprit la **timp epuizat („unknown")** — refuz de buget, nu imposibilitate. Lecțiile: (1) `Optimize` pe instanțe disjunctive are variație dramatică între rulări — 55 ms nu e o promisiune, e o mostră; (2) **bugetul declarat e obligatoriu, nu opțional** (cap. 6.8: buget epuizat ≠ imposibilitate dovedită); (3) concurenții nu scapă nici ei: cassowary a căzut cu **OOM** pe același caz, glpk a rulat **peste 10 minute**. La dimensiuni reale de scenă, prima-acceptabilă (secțiunea 4) nu e o opțiune de lux — e disciplina care ține sistemul interactiv.
+Unde intră preferințele și unde intră cerința: cerința și regulile lumii sunt constrângeri (nu pot fi cumpărate), preferințele sunt obiectiv de minimizat (doar ordonează soluțiile valide). La scară, adevărul e mai dureros decât „rapid" — și e măsurat pe trei căi: s-draw: **55 ms** într-o rulare, **37 s** în alta pe aceeași formă, **buget epuizat în 8 s** cu timeout declarat — refuz de buget, nu imposibilitate; cassowary **OOM**, glpk **>10 min**. Concluziile rămân: `Optimize` pe disjuncții are variație dramatică; bugetul declarat e obligatoriu (cap. 6.8); prima-acceptabilă (secțiunea 4) la scară nu e lux, e disciplina care ține sistemul interactiv.
 
 ## 3. Cum se leagă firele
 

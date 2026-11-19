@@ -55,3 +55,29 @@ node <skill>/scripts/assemble.mjs --seeds agent-seeds/<area>.jsonl \
 
 Zero rejected and zero quarantined expected. Fix your own variant lines (never the
 seeds) until the report is clean, and leave the validated file in place.
+
+## Round-2 enrichment formats
+
+The assembler accepts three extra claim shapes, in `surfaces` (and in `surfacesPer[i]` for compounds):
+
+- `{"typo": "howse"}` — a deliberate typing slip the text actually contains. The
+  example's label keeps the CANONICAL seed value and records `typo_of`, so the
+  reader learns misspellings resolving to declared values. Typos belong in kind
+  words and optional-value words, never in numbers.
+- `{"syn": "cottage"}` — a plausible out-of-vocabulary synonym. Label stays
+  canonical; the example records `alias_of` + `alias_unverified: true`. Choose
+  meaning-preserving synonyms a person would plausibly type (house→cottage,
+  boat→dinghy, meeting→appointment); no jokes, no archaisms.
+- Compound messages (for the cutter), one JSON line, no `seedId`:
+
+```json
+{"seedIds": ["syn-0021", "syn-0047"], "tier": "human-compound",
+ "text": "add a circle at 30, 30 and then make the rectangle red",
+ "segments": ["add a circle at 30, 30", "and then make the rectangle red"],
+ "surfacesPer": [{"kind": "circle", "0": "30, 30"}, {"kind": "rectangle", "0": "red"}]}
+```
+
+The segments joined by single spaces must equal the text exactly; each segment
+claims its own seed's surfaces verbatim-once (plain/typo/syn/vague claims allowed
+as usual). These examples train the message splitter: one sentence, several
+intents, each labeled.

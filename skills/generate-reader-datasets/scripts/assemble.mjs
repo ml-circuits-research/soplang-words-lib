@@ -3,12 +3,17 @@
 //   - every claimed constraint surface must appear in the text (first occurrence
 //     becomes the span); more than one occurrence => quarantine (reported, not labeled);
 //   - dropped optionals and vague optionals become completion.requirements, never gold;
-//   - mandatory constraints, act, target kind are immutable; breaking them rejects;
-//   - duplicate texts (in-set and against --reject-from corpora) are rejected;
-//   - spans are computed here and only here.
+//   - typos ({"typo": "..."}) and out-of-vocabulary synonyms ({"syn": "..."}) keep the
+//     CANONICAL seed label and record typo_of/alias_of — the reader must learn that
+//     "howse"/"cottage" resolve to the declared value;
+//   - variant lines are single-request OR compound: {"seedIds":[a,b], "segments":[...],
+//     "surfacesPer":[{...},{...}], "tier":"human-compound"} — segments must concatenate
+//     to the text exactly; each segment is validated as its own request with span
+//     offsets (both for the cutter: one message, several intents);
+//   - duplicate texts (in-set and against --reject-from corpora) are rejected.
 //
 // Usage:
-//   node assemble.mjs --seeds seeds.jsonl --variants variants/   (a .jsonl file or a directory of them)
+//   node assemble.mjs --seeds seeds.jsonl --variants variants/   (a .jsonl file or a directory)
 //                     [--reject-from old1.jsonl old2.jsonl]
 //                     [--out examples.jsonl] [--report report.json]
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
@@ -19,7 +24,6 @@ const OUT = arg('out', 'examples.jsonl');
 const REPORT = arg('report', 'report.json');
 if (!seedsPath) { console.error('usage: assemble.mjs --seeds <jsonl> --variants <file|dir> [--reject-from ...]'); process.exit(1); }
 
-// seeds: the skeletons whose labels are copied into every example
 const seeds = new Map();
 for (const line of readFileSync(seedsPath, 'utf8').trim().split('\n')) {
   if (!line) continue;
@@ -27,7 +31,6 @@ for (const line of readFileSync(seedsPath, 'utf8').trim().split('\n')) {
   seeds.set(s.seedId, s);
 }
 
-// reject-from: prior corpora whose exact texts may not reappear
 const seenTexts = new Set();
 {
   const i = process.argv.indexOf('--reject-from');
@@ -43,7 +46,6 @@ const seenTexts = new Set();
   }
 }
 
-// variant files: one .jsonl or a directory of them
 const files = [];
 {
   const v = arg('variants');
@@ -53,71 +55,142 @@ const files = [];
   if (!files.length) { console.error('no variant files under --variants'); process.exit(1); }
 }
 
+// one request inside one segment (offset shifts every span into the whole text)
+const buildRequest = ({ seed, segment, offset, surfaces, note }) => {
+  const spanAt = (needle) => {
+    const idx = segment.indexOf(needle);
+    if (idx < 0) return { absent: true };
+    return { start: idx, end: idx + needle.length, ambiguous: segment.indexOf(needle, idx + 1) >= 0 };
+  };
+  const constraints = [], requirements = [];
+  let bad = null, ambiguous = false;
+  for (const c of seed.constraints) {
+    const claimed = surfaces[String(c.n)];
+    const isMandatory = !c.optional;
+    if (claimed === null) {
+      if (isMandatory) { bad = `dropped-mandatory:${c.key}`; break; }
+      requirements.push({ key: c.key, requirement: 'omitted', seedValue: c.value });
+      continue;
+    }
+    const vague = claimed && typeof claimed === 'object' && typeof claimed.vague === 'string' ? claimed.vague : null;
+    if (vague && isMandatory) { bad = `vague-mandatory:${c.key}`; break; }
+    const typo = claimed && typeof claimed === 'object' && typeof claimed.typo === 'string' ? claimed.typo : null;
+    const syn = claimed && typeof claimed === 'object' && typeof claimed.syn === 'string' ? claimed.syn : null;
+    const surface = vague ?? typo ?? syn ?? (claimed === undefined || typeof claimed === 'object' ? c.surface : String(claimed));
+    const sp = spanAt(surface);
+    if (sp.absent) {
+      if (vague) { bad = `vague-surface-missing:${c.key}`; break; }
+      if (isMandatory) { bad = `surface-missing:${c.key}:${String(surface).slice(0, 40)}`; break; }
+      requirements.push({ key: c.key, requirement: 'omitted', seedValue: c.value });
+      continue;
+    }
+    if (sp.ambiguous) { ambiguous = true; break; }
+    constraints.push({
+      key: c.key, value: vague ? null : c.value,
+      value_span: [offset + sp.start, offset + sp.end], surface,
+      operator: c.operator, phase: c.phase, polarity: c.polarity,
+      character: vague ? 'preference' : 'requirement',
+      ...(vague ? { qualitative: true } : {}),
+      ...(typo ? { typo_of: c.surface } : {}),
+      ...(syn ? { alias_of: c.surface, alias_unverified: true } : {}),
+    });
+    if (vague) requirements.push({ key: c.key, requirement: 'vague', value: vague, seedValue: c.value });
+  }
+  if (bad || ambiguous) return { bad, ambiguous };
+  // the kind surface (claimable as plain text, typo or out-of-vocabulary synonym)
+  const kindClaim = surfaces.kind;
+  const kindSurface = typeof kindClaim === 'string' ? kindClaim
+    : kindClaim && typeof kindClaim.typo === 'string' ? kindClaim.typo
+    : kindClaim && typeof kindClaim.syn === 'string' ? kindClaim.syn
+    : String(seed.target.kindValue);
+  const ksp = spanAt(kindSurface);
+  if (ksp.absent) return { bad: `kind-missing:${kindSurface}`, ambiguous: false };
+  if (ksp.ambiguous) return { bad: null, ambiguous: true };
+  return {
+    request: {
+      span: [offset, offset + segment.length],
+      trigger: (seed.canonicalText || '').split(' ')[0],
+      act: seed.act, mood: 'do',
+      target: {
+        type: String(seed.on || 'drawn').split('.').pop(),
+        mode: seed.target.mode,
+        determiner: seed.target.mode === 'new' ? 'indefinite' : 'definite',
+        kind: seed.target.kindValue,
+        kind_span: [offset + ksp.start, offset + ksp.end],
+        ...(kindClaim && typeof kindClaim.typo === 'string' ? { typo_of: String(seed.target.kindValue) } : {}),
+        ...(kindClaim && typeof kindClaim.syn === 'string' ? { alias_of: String(seed.target.kindValue), alias_unverified: true } : {}),
+      },
+      constraints,
+    },
+    requirements,
+  };
+};
+
 const examples = [], quarantined = [], rejected = [];
 for (const f of files) {
-  for (const line of readFileSync(f, 'utf8').trim().split('\n')) {
+  const lines = readFileSync(f, 'utf8').trim().split('\n');
+  const base = f.split('/').pop().replace('.jsonl', '');
+  for (const line of lines) {
     let v; try { v = JSON.parse(line); } catch { rejected.push({ file: f, reason: 'bad-json' }); continue; }
-    const seed = seeds.get(v.seedId);
-    if (!seed) { rejected.push({ seedId: v.seedId, reason: 'unknown-seed' }); continue; }
     const text = String(v.text || '').trim();
     if (!text) { rejected.push({ seedId: v.seedId, reason: 'empty-text' }); continue; }
     const low = text.toLowerCase();
     if (seenTexts.has(low)) { rejected.push({ seedId: v.seedId, reason: 'duplicate' }); continue; }
-    const spanAt = (needle) => {
-      const idx = text.indexOf(needle);
-      if (idx < 0) return { absent: true };
-      return { start: idx, end: idx + needle.length, ambiguous: text.indexOf(needle, idx + 1) >= 0 };
-    };
-    const surfaces = v.surfaces || {};
-    const constraintsOut = [], requirements = [];
-    let bad = null, ambiguous = false;
-    for (const c of seed.constraints) {
-      const claimed = surfaces[String(c.n)];
-      const isMandatory = !c.optional;
-      if (claimed === null) {
-        if (isMandatory) { bad = `dropped-mandatory:${c.key}`; break; }
-        requirements.push({ key: c.key, requirement: 'omitted', seedValue: c.value });
+
+    const tier = v.tier || 'human-equivalent';
+    let built = { requests: [], requirements: [], seedIds: [], cohort: null };
+
+    if (Array.isArray(v.seedIds)) { // compound: several intents in one message (the cutter)
+      const segments = v.segments || [];
+      if (!segments.length || segments.join(' ').trim() !== text.replace(/\s+/g, ' ').trim()) {
+        rejected.push({ seedId: v.seedIds.join('+'), reason: 'segments-mismatch' });
         continue;
       }
-      const vague = claimed && typeof claimed === 'object' && typeof claimed.vague === 'string' ? claimed.vague : null;
-      if (vague && isMandatory) { bad = `vague-mandatory:${c.key}`; break; }
-      const surface = vague ?? (claimed === undefined ? c.surface : String(claimed));
-      const sp = spanAt(surface);
-      if (sp.absent) {
-        if (vague) { bad = `vague-surface-missing:${c.key}`; break; }
-        if (isMandatory) { bad = `surface-missing:${c.key}:${String(surface).slice(0, 40)}`; break; }
-        requirements.push({ key: c.key, requirement: 'omitted', seedValue: c.value });
-        continue;
+      let offset = 0, ok = true, anyAmbiguous = false;
+      const sp = v.surfacesPer || [];
+      built.cohort = { operation: 'compound', recipeFamily: v.seedIds.join('+'), seed: v.seedIds[0] };
+      for (let i = 0; i < v.seedIds.length; i++) {
+        const seed = seeds.get(v.seedIds[i]);
+        if (!seed) { rejected.push({ seedId: v.seedIds[i], reason: 'unknown-seed' }); ok = false; break; }
+        const seg = segments[i];
+        const res = buildRequest({ seed, segment: seg, offset, surfaces: sp[i] || {} });
+        if (res.bad) { rejected.push({ seedId: v.seedIds[i], reason: res.bad }); ok = false; break; }
+        if (res.ambiguous) { anyAmbiguous = true; break; }
+        built.requests.push(res.request);
+        built.requirements.push(...res.requirements);
+        built.seedIds.push(seed.seedId);
+        offset += seg.length + 1; // the joining space
       }
-      if (sp.ambiguous) { ambiguous = true; break; }
-      constraintsOut.push({ key: c.key, value: vague ? null : c.value, value_span: [sp.start, sp.end], surface, operator: c.operator, phase: c.phase, polarity: c.polarity, character: vague ? 'preference' : 'requirement', ...(vague ? { qualitative: true } : {}) });
-      if (vague) requirements.push({ key: c.key, requirement: 'vague', value: vague, seedValue: c.value });
+      if (!ok) continue;
+      if (anyAmbiguous) { quarantined.push({ seedId: v.seedIds.join('+'), reason: 'ambiguous-surface', text: text.slice(0, 60) }); continue; }
+    } else { // single request
+      const seed = seeds.get(v.seedId);
+      if (!seed) { rejected.push({ seedId: v.seedId, reason: 'unknown-seed' }); continue; }
+      const res = buildRequest({ seed, segment: text, offset: 0, surfaces: v.surfaces || {} });
+      if (res.bad) { rejected.push({ seedId: v.seedId, reason: res.bad }); continue; }
+      if (res.ambiguous) { quarantined.push({ seedId: v.seedId, reason: 'ambiguous-surface', text: text.slice(0, 60) }); continue; }
+      built.requests = [res.request];
+      built.requirements = res.requirements;
+      built.seedIds = [seed.seedId];
+      built.cohort = { operation: seed.operation, recipeFamily: seed.seedId, seed: seed.seedId };
     }
-    const kindSurface = surfaces.kind ?? seed.target.kindValue;
-    const ksp = spanAt(String(kindSurface));
-    if (ksp.absent) bad = bad || `kind-missing:${kindSurface}`;
-    else if (ksp.ambiguous) ambiguous = true;
-    if (bad) { rejected.push({ seedId: v.seedId, reason: bad }); continue; }
-    if (ambiguous) { quarantined.push({ seedId: v.seedId, reason: 'ambiguous-surface', text: text.slice(0, 60) }); continue; }
+
     seenTexts.add(low);
+    const isCompound = built.requests.length > 1;
     examples.push({
       format: 'psys2.synthetic-example/1',
-      id: `syn-${seed.seedId}-${String(examples.length).padStart(2, '0')}`,
-      world: seed.area,
+      id: `syn-${base}-${String(examples.length).padStart(3, '0')}`,
+      world: seeds.get(built.seedIds[0])?.area,
       text,
       context: { existing: [], previous: null },
-      requests: [{
-        span: text, trigger: v.trigger || (seed.canonicalText || '').split(' ')[0], act: seed.act, mood: 'do',
-        target: { type: String(seed.on || 'drawn').split('.').pop(), mode: seed.target.mode, determiner: seed.target.mode === 'new' ? 'indefinite' : 'definite', kind: seed.target.kindValue, kind_span: [ksp.start, ksp.end] },
-        constraints: constraintsOut,
-      }],
-      tier: v.tier || 'human-equivalent',
-      style: `synthetic-${v.tier || 'human-equivalent'}`,
-      cohort: { operation: seed.operation, recipeFamily: seed.seedId, seed: seed.seedId },
-      completion: { requirements, boundary: 'Completion values are not text-extraction gold.' },
+      requests: built.requests,
+      tier: isCompound ? (tier === 'human-compound' ? 'human-compound' : 'compound') : tier,
+      style: `synthetic-${tier}${isCompound ? '-compound' : ''}`,
+      cohort: built.cohort,
+      completion: { requirements: built.requirements, boundary: 'Completion values are not text-extraction gold.' },
       ambiguousSurfaces: [],
       nativeTool: null,
-      provenance: `synthetic: skill generate-reader-datasets; seed ${seed.seedId} (${seed.tier || 'ui-enum'}) enumerated from the native inventory; NOT execution-verified`,
+      provenance: `synthetic: skill generate-reader-datasets; seeds ${built.seedIds.join(', ')}; NOT execution-verified${tier.includes('typo') ? '; contains deliberate typos (labels stay canonical)' : ''}${tier.includes('syn') ? '; contains out-of-vocabulary synonyms (labels stay canonical)' : ''}`,
     });
   }
 }
@@ -125,9 +198,9 @@ writeFileSync(OUT, examples.map((e) => JSON.stringify(e)).join('\n') + (examples
 const count = (rows, key) => rows.reduce((m, r) => ((m[r[key]] = (m[r[key]] || 0) + 1), m), {});
 writeFileSync(REPORT, JSON.stringify({
   accepted: examples.length, quarantined: quarantined.length, rejected: rejected.length,
+  compounds: examples.filter((e) => e.requests.length > 1).length,
   rejectedSample: rejected.slice(0, 12), quarantinedSample: quarantined.slice(0, 6),
   byTier: count(examples, 'tier'), byWorld: count(examples, 'world'),
-  bySeedTier: count(examples.map((e) => ({ tier: examples.find((x) => x.id === e.id) ? (seeds.get(e.cohort.seed)?.tier || '?') : '?' })), 'tier'),
-  byOperation: count(examples.map((e) => ({ op: e.cohort.operation })), 'op'),
+  byOperation: count(examples.map((e) => ({ op: e.cohort?.operation || '?' })), 'op'),
 }, null, 1));
-console.log(`accepted ${examples.length}, quarantined ${quarantined.length}, rejected ${rejected.length} -> ${OUT} / ${REPORT}`);
+console.log(`accepted ${examples.length} (compounds ${examples.filter((e) => e.requests.length > 1).length}), quarantined ${quarantined.length}, rejected ${rejected.length} -> ${OUT} / ${REPORT}`);

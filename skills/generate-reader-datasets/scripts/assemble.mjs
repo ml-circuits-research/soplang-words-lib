@@ -62,7 +62,7 @@ const buildRequest = ({ seed, segment, offset, surfaces, note }) => {
     if (idx < 0) return { absent: true };
     return { start: idx, end: idx + needle.length, ambiguous: segment.indexOf(needle, idx + 1) >= 0 };
   };
-  const constraints = [], requirements = [];
+  const constraints = [], requirements = [], deferred = [];
   let bad = null, ambiguous = false;
   for (const c of seed.constraints) {
     const claimed = surfaces[String(c.n)];
@@ -72,12 +72,21 @@ const buildRequest = ({ seed, segment, offset, surfaces, note }) => {
       requirements.push({ key: c.key, requirement: 'omitted', seedValue: c.value });
       continue;
     }
+    if (claimed && typeof claimed === 'object' && claimed['from-previous'] === true) {
+      deferred.push({ key: c.key, requirement: 'from-previous', seedValue: c.value });
+      continue; // runtime carry-over from the previous turn; the reader never sees the word here
+    }
     const vague = claimed && typeof claimed === 'object' && typeof claimed.vague === 'string' ? claimed.vague : null;
     if (vague && isMandatory) { bad = `vague-mandatory:${c.key}`; break; }
     const typo = claimed && typeof claimed === 'object' && typeof claimed.typo === 'string' ? claimed.typo : null;
     const syn = claimed && typeof claimed === 'object' && typeof claimed.syn === 'string' ? claimed.syn : null;
-    const surface = vague ?? typo ?? syn ?? (claimed === undefined || typeof claimed === 'object' ? c.surface : String(claimed));
-    const sp = spanAt(surface);
+    // negation rides the EXISTING polarity field: the negated value keeps its own span
+    const neg = claimed && typeof claimed === 'object' && typeof claimed.neg === 'string' ? claimed.neg : null;
+    // rules/preferences ride the EXISTING character field ('preference'), not a new wire shape
+    const pref = claimed && typeof claimed === 'object' && (claimed.rule === true || typeof claimed.pref === 'string');
+    const surface = vague ?? typo ?? syn ?? neg ?? (typeof claimed === 'object' && typeof claimed.pref === 'string' ? claimed.pref : undefined) ?? (claimed === undefined || typeof claimed === 'object' ? c.surface : String(claimed));
+    let sp = spanAt(neg ?? (typeof claimed === 'object' && typeof claimed.pref === 'string' ? claimed.pref : surface));
+    if (pref === true && typeof surface === 'string' && !neg) sp = spanAt(claimed.pref ?? surface);
     if (sp.absent) {
       if (vague) { bad = `vague-surface-missing:${c.key}`; break; }
       if (isMandatory) { bad = `surface-missing:${c.key}:${String(surface).slice(0, 40)}`; break; }
@@ -88,8 +97,9 @@ const buildRequest = ({ seed, segment, offset, surfaces, note }) => {
     constraints.push({
       key: c.key, value: vague ? null : c.value,
       value_span: [offset + sp.start, offset + sp.end], surface,
-      operator: c.operator, phase: c.phase, polarity: c.polarity,
-      character: vague ? 'preference' : 'requirement',
+      operator: c.operator, phase: c.phase,
+      polarity: neg ? 'negative' : c.polarity,
+      character: (vague || pref) ? 'preference' : 'requirement',
       ...(vague ? { qualitative: true } : {}),
       ...(typo ? { typo_of: c.surface } : {}),
       ...(syn ? { alias_of: c.surface, alias_unverified: true } : {}),
@@ -97,15 +107,18 @@ const buildRequest = ({ seed, segment, offset, surfaces, note }) => {
     if (vague) requirements.push({ key: c.key, requirement: 'vague', value: vague, seedValue: c.value });
   }
   if (bad || ambiguous) return { bad, ambiguous };
-  // the kind surface (claimable as plain text, typo or out-of-vocabulary synonym)
+  // the kind surface (claimable as plain text, typo or out-of-vocabulary synonym);
+  // fill:"context" targets (corrections, "the other one", pronoun-led follow-ups)
+  // skip the in-text kind requirement — the referent resolves at runtime.
   const kindClaim = surfaces.kind;
+  const fill = surfaces.fill;
   const kindSurface = typeof kindClaim === 'string' ? kindClaim
     : kindClaim && typeof kindClaim.typo === 'string' ? kindClaim.typo
     : kindClaim && typeof kindClaim.syn === 'string' ? kindClaim.syn
     : String(seed.target.kindValue);
   const ksp = spanAt(kindSurface);
-  if (ksp.absent) return { bad: `kind-missing:${kindSurface}`, ambiguous: false };
-  if (ksp.ambiguous) return { bad: null, ambiguous: true };
+  if (fill !== 'context' && ksp.absent) return { bad: `kind-missing:${kindSurface}`, ambiguous: false };
+  if (fill !== 'context' && ksp.ambiguous) return { bad: null, ambiguous: true };
   return {
     request: {
       span: [offset, offset + segment.length],
@@ -116,13 +129,15 @@ const buildRequest = ({ seed, segment, offset, surfaces, note }) => {
         mode: seed.target.mode,
         determiner: seed.target.mode === 'new' ? 'indefinite' : 'definite',
         kind: seed.target.kindValue,
-        kind_span: [offset + ksp.start, offset + ksp.end],
+        ...(fill ? { fill } : {}),
+        ...(fill === 'context' ? {} : { kind_span: [offset + ksp.start, offset + ksp.end] }),
         ...(kindClaim && typeof kindClaim.typo === 'string' ? { typo_of: String(seed.target.kindValue) } : {}),
         ...(kindClaim && typeof kindClaim.syn === 'string' ? { alias_of: String(seed.target.kindValue), alias_unverified: true } : {}),
       },
       constraints,
     },
     requirements,
+    deferred,
   };
 };
 
@@ -157,7 +172,7 @@ for (const f of files) {
         if (res.bad) { rejected.push({ seedId: v.seedIds[i], reason: res.bad }); ok = false; break; }
         if (res.ambiguous) { anyAmbiguous = true; break; }
         built.requests.push(res.request);
-        built.requirements.push(...res.requirements);
+        built.requirements.push(...res.requirements, ...(res.deferred || []));
         built.seedIds.push(seed.seedId);
         offset += seg.length + 1; // the joining space
       }
@@ -170,7 +185,7 @@ for (const f of files) {
       if (res.bad) { rejected.push({ seedId: v.seedId, reason: res.bad }); continue; }
       if (res.ambiguous) { quarantined.push({ seedId: v.seedId, reason: 'ambiguous-surface', text: text.slice(0, 60) }); continue; }
       built.requests = [res.request];
-      built.requirements = res.requirements;
+      built.requirements = [...(res.requirements || []), ...(res.deferred || [])];
       built.seedIds = [seed.seedId];
       built.cohort = { operation: seed.operation, recipeFamily: seed.seedId, seed: seed.seedId };
     }
@@ -182,7 +197,7 @@ for (const f of files) {
       id: `syn-${base}-${String(examples.length).padStart(3, '0')}`,
       world: seeds.get(built.seedIds[0])?.area,
       text,
-      context: { existing: [], previous: null },
+      context: { existing: [], previous: typeof v.previous === 'string' ? v.previous : null },
       requests: built.requests,
       tier: isCompound ? (tier === 'human-compound' ? 'human-compound' : 'compound') : tier,
       style: `synthetic-${tier}${isCompound ? '-compound' : ''}`,

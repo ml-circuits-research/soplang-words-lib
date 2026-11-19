@@ -84,11 +84,14 @@ succeeds, and compensation that cannot restore the full state.”
 ## 5. Starea aplicației este încă împărțită
 
 **Ce există:** `serializeInstanceState` / `readInstanceState` / `instanceStateWorld`
-(`src/instance-state.mjs`) oferă un codec pentru instanțe. Calendar și Avatar din `psys2` folosesc
-stare SOP.
+(`src/instance-state.mjs`) oferă un codec pentru instanțe. **Schimbat de la citirea I:** pe 19.11
+Avatar a migrat complet pe aria SOP generică (`psys2` `da02e8ec`: `ui.avatar` a rămas cu 52 de linii
+de JS; 1.567 de linii de JS vechi au fost șterse, până la `canonical-state.mjs` și `facedraw`);
+Calendar e în migrare către lumea `w.meetings` din catalog (lucru nesalvat în arbore la citirea a II-a).
 
-**Ce lipsește:** Drawing, Diagram și Documents își țin starea în obiecte JS (`ctx.state`), nu în
-fire. Consecințe:
+**Ce lipsește:** Drawing (`worlds/art.draw/engine.mjs`: 2.088 de linii), Diagram
+(`worlds/diagram.sketch/refs.mjs`: tabela `KIND_WORDS` tot în JS) și Documents își țin starea în
+obiecte JS (`ctx.state`), nu în fire. Consecințe:
 
 - Undo/Redo nu este uniform între taburi;
 - serializarea și restaurarea nu sunt uniforme;
@@ -135,7 +138,7 @@ producție.
 - `compileKnowledgeProjection` este async, dar restul pipeline-ului este sync; nu există un snapshot
   consistent între momentul în care se citește profilul și momentul în care se încarcă catalogul.
 - Catalogul are un index monolitic: `index.json` 1,73 MB, `vocab.json` 3,37 MB,
-  `vocab-kinds.json` 4,69 MB. Pentru o singură căutare de cuvânt, browserul poate descărca ~9,8 MB.
+  `vocab-kinds.json` 4,70 MB. Pentru o singură căutare de cuvânt, browserul poate descărca ~9,8 MB.
 - `psys2/current-status.md` raportează că, atunci când indexul a fost întârziat deliberat cu 11,5 s,
   turul obișnuit „Add a circle” a terminat în 11,67 s. Nu este un cold start măsurat în producție,
   dar arată că un index mare poate domina răspunsul.
@@ -154,16 +157,17 @@ teste care compară numele din documentație cu biblioteca.
 - tipuri per modul și per pachet; astăzi un singur `index.d.ts` pentru 277 de exporturi;
 - verificare statică a shard-urilor de cunoaștere împotriva propriei versiuni de modul;
 - un test care să ruleze **aceeași** suită de contracte pe bibliotecă, pe cunoaștere și pe aplicație;
-- un contract de compatibilitate între `std.request version=0.198.0` și biblioteca 0.225.1.
+- un contract de compatibilitate între `std.request version=0.198.0` și biblioteca 0.225.2.
 
 **De ce contează:** `version=` fără verificare este documentație, nu contract. Un shard valid azi poate
 fi invalid mâine fără ca nimeni să afle până la runtime.
 
 ## 9. Testarea cross-proiect
 
-**Ce există:** 1022 de teste în bibliotecă (1020 pass), 3267 în cunoaștere (3237 pass), o suită de
-aplicație cu sute de teste. Testele din bibliotecă verifică afirmații din documentație; cele din
-cunoaștere validează fiecare shard.
+**Ce există:** 1.025 de teste în bibliotecă (1.023 pass, 1 skip, 1 todo; bundle-ul la fel), 3.267 în
+cunoaștere (3.249 pass, 18 skip — mai multe decât la prima citire, când validarea era pe 0.144.0 și
+30 se săreau), o suită de aplicație cu sute de teste. Testele din bibliotecă verifică afirmații din
+documentație; cele din cunoaștere validează fiecare shard.
 
 **Ce lipsește:**
 
@@ -174,8 +178,11 @@ cunoaștere validează fiecare shard.
 - un test de „același rezultat cu și fără cache”;
 - un test de „refuzul este stabil între versiuni” (codurile de motiv nu sunt versionate).
 
-Rularea locală de azi: biblioteca verde, cunoașterea verde, aplicația cu 3 eșecuri în exportul
-SOP-BERT. Asta nu dovedește că integrarea este verde; dovedește că fiecare proiect are propriul gate.
+Rularea locală de la citirea a II-a: biblioteca verde (surse și bundle), cunoașterea verde, aplicația
+cu 6 eșecuri din 626 după regenerarea buildului de site — în teste care depind de buildul generat,
+de arhive și de pinul de cunoaștere („old knowledge pin is not silently adopted”). Gate-ul zeroes-se
+doar la checkout-uri aliniate cu mâna; asta nu dovedește că integrarea este verde, ci că fiecare
+proiect are propriul gate și că el e roșu de îndată ce cele trei repo-uri ies din aliniere.
 
 ## 10. Modelul de încredere
 

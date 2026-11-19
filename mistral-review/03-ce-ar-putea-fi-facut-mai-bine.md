@@ -56,8 +56,11 @@ contract și alt rezultat.
 
 ## P0. Contract de versiune între cele trei proiecte
 
-**Problema:** `core.module version=` este o etichetă (`matrix.mjs:360`); cunoașterea este validată cu
-0.144.0, biblioteca este la 0.225.1; aplicația copiază bundle-ul.
+**Problema:** `core.module version=` este o etichetă (`matrix.mjs:360`); catalogul validează cu o copie
+a buildului 0.225.1 (la citirea I era 0.144.0 — realiniată în aceeași zi, tot prin copie), biblioteca
+este la 0.225.2; aplicația copiază bundle-ul. Realinierea a rezolvat starea de fapt, nu mecanismul:
+copiile (validare 0.225.1, vendor 0.225.2, `knowledgePin 288699c9` în buildul lui psys2) sunt din nou
+la trei stări într-o singură zi.
 
 **Ce faci:**
 

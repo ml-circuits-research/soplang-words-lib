@@ -15,7 +15,7 @@ if (wires.some(w => w.type === 'std.interpret.input')) return compileInterpretat
 return compileSingle(world, wires);
 ```
 
-Sursa: `src/request-compiler.mjs:27-33`. Fiecare ramură are propriul contract, propriile limite,
+Sursa: `src/request-compiler.mjs:29-33`. Fiecare ramură are propriul contract, propriile limite,
 propriile motive de eșec și propriul modul:
 
 | Ramură | Modul | Rezultat |
@@ -65,7 +65,8 @@ Dovezi:
 - `src/plan.mjs:1-8` spune explicit că planul este „applied by the host as one sentence”, iar
   `PlanLive` (`plan.mjs:71`) este o simulare paralelă, nu un `World`.
 - `src/request.mjs:1595` are `planRequest` propriu; `src/tool.mjs:284` are `runPlan` propriu;
-  `src/index.mjs:70-74` exportă toate cele trei, fără deprecare.
+  `src/index.mjs:50` (`planner`, `PlanLive`), `:70` (`planRequest`), `:74` (`deduceState`) — toate
+  publice, fără deprecare.
 
 Ce este greșit:
 
@@ -155,16 +156,20 @@ Sursa: `src/matrix.mjs:360`. Nu se compară cu nimic, nu se negociază, nu se re
 versiune incompatibilă. `core.module version` este colectat și raportat de `world.modules()`
 (`world.mjs:1495`), atât.
 
-Starea reală:
+Starea reală (re-măsurată la `ac33216`, 19.11 seara):
 
-- `sop-knowledge-worlds/tools/sopworld/VERSION`: **0.144.0**, build `6cbb6f3e855`.
-- `soplang-words-lib`: **0.225.1**, build `8a63e3e83fef`.
-- `psys2/src/vendor/sopworld/provenance.json`: **0.225.1**, copie a `docs/sopworld.mjs`.
-- `sop-knowledge-worlds/docs/worlds/index.json` are câmpul `sopworld: 94cffa2`, dar aplicația nu îl
-  validează înainte de a folosi catalogul.
-- `repos.pin` din bibliotecă pinnează `psys2` la `45ac4bf`, iar checkout-ul local este `435b1eb6`;
-  pinnează cunoașterea la `a0e8538`, iar checkout-ul local este `288699c9`. Pinurile sunt utile pentru
-  teste, dar nu sunt un contract de compatibilitate.
+- `sop-knowledge-worlds/tools/sopworld/VERSION`: **0.225.1**, build `8a63e3e83fef`, copie a
+  `docs/sopworld.mjs` de la commitul `747b51e` al bibliotecii. **Schimbat în aceeași zi:** la prima
+  citire validarea catalogului era la 0.144.0; commitul `b62c771b` a realiniat-o la curent — dar tot
+  prin copie, iar până seara biblioteca trecuse la 0.225.2 și copia era din nou în urmă.
+- `soplang-words-lib`: **0.225.2**, build `0edcca627270`.
+- `psys2/src/vendor/sopworld/provenance.json`: **0.225.2**, commit `ac33216`, copie sincronizată azi
+  a `docs/sopworld.mjs`. Dar commitul psys2 `da02e8ec` ține în `src/dialog/new-engine-source.mjs` un
+  `libraryPin` la `747b51e` (0.225.1) și un `knowledgePin` la `288699c9`, în timp ce checkout-ul de
+  cunoaștere local este la `b62c771b`. Trei referințe, trei stări, într-un singur commit.
+- `repos.pin` din bibliotecă pinnează cunoașterea la `a0e8538` (checkout: `b62c771b`) și aplicația la
+  `45ac4bf` (checkout: `da02e8ec`). Pinurile sunt utile pentru teste, dar nu sunt un contract de
+  compatibilitate și au rămas în urmă față de toate cele trei checkout-uri.
 - Bibliotecă și cunoaștere nu au **niciun tag git**. Aplicația are un tag (`pre-tab-cut`).
 
 Ce este greșit:
@@ -182,8 +187,8 @@ generalizare serioasă începe aici.
 
 ## 6. Monolitul de distribuție blochează modularizarea
 
-`docs/sopworld.mjs` are **1,66 MB** și 24.854 linii; `src/` are 108 module de nivel superior
-(110 cu `internal/`), 109 bundle-uite. `package.json` expune
+`docs/sopworld.mjs` are **1,70 MB** și 24.860 linii; `src/` are 108 module direct în el
+(110 cu `internal/`), din care 109 bundle-uite. `package.json` expune
 `./bundle` ca un singur fișier. `README` și `AGENTS.md` tratează „one file, no dependencies” ca pe o
 virtute. Pentru un playground și GitHub Pages este o virtute. Pentru un pachet consumat de o aplicație
 este o constrângere care se opune oricărei separări.
@@ -192,7 +197,7 @@ Dovezi:
 
 - `src/index.mjs` are 77 de linii de `export` și **277 de nume**.
 - `psys2` importă **15** nume din bundle.
-- `docs/version.md` raportează 109 module bundle-uite, 1.662,4 kB, 466 kB gzip.
+- `docs/version.md` raportează 109 module bundle-uite, 1.663,2 kB, 466,3 kB gzip.
 - Nu există `exports` per subpath (`./core`, `./schema`, `./reader`); doar `.`, `./bundle` și
   `./node/solvers.mjs`. Toate straturile sunt într-un singur punct de intrare.
 
@@ -209,7 +214,8 @@ care o cer cele trei proiecte nu se poate face fără a sparge build-ul.
 
 ## 7. Metoda de lucru produce suprafață, nu nucleu
 
-215 versiuni, ~740 de linii de changelog, 50 de capabilități în README, 277 de exporturi.
+216 versiuni, 2.928 de linii de changelog, 51 de capabilități documentate (48 de rânduri în tabelul
+din README), 277 de exporturi.
 Fiecare versiune adaugă o capacitate, un tip de wire, un contract, un export și un rând în tabel.
 Nu există o versiune în care să se **elimine** ceva sau să se **stabilizeze** un contract.
 
@@ -218,7 +224,7 @@ Simptome:
 - Tabelul de capabilități este mai mare decât API-ul pe care îl folosește aplicația.
 - `docs/sopworld.d.ts` are 1.025 linii; fiecare export nou trebuie ținut sincron manual cu
   `src/index.mjs`.
-- `CHANGELOG.md` are 215 secțiuni, dar niciun tag și nicio politică de deprecare.
+- `CHANGELOG.md` are 216 secțiuni, dar niciun tag și nicio politică de deprecare.
 - Testele verifică afirmații din documentație (bine), dar nu există un „contract suite” între
   proiecte (vezi 02).
 
@@ -232,9 +238,10 @@ celelalte straturi să se sprijine. Fără el, fiecare generalizare este o rescr
 - `localeCompare` apare de **15** ori (`turn.mjs:118,122,126,128`, `ground-method.mjs:124,134,137`,
   `align.mjs:41`, `spell.mjs:136`, `summarize.mjs:56`, `compose.mjs:191`, `diagram.mjs:183`,
   `grammar.mjs:148`, `handover.mjs:40`, `ledger.mjs:50`). Rezultatul depinde de ICU și de locale.
-- `toLowerCase()` apare de **153** ori. Pentru limbile cu reguli speciale (turcă, lituaniană) nu este
-  o operație independentă de limbă.
-- `Date.now`/`new Date` apar de **13** ori. Fusul orar al hostului poate schimba un plan sau un răspuns.
+- `toLowerCase()` apare de **171** ori (numărat identic la `747b51e` și la `ac33216`; prima ediție a
+  raportat 153). Pentru limbile cu reguli speciale (turcă, lituaniană) nu este o operație independentă
+  de limbă.
+- `Date.now`/`new Date` apar de **14** ori. Fusul orar al hostului poate schimba un plan sau un răspuns.
 - `spell.mjs` face fold NFD și elimină diacritice; `ground-method.mjs` face NFC + lowercase. Două
   normalizări diferite în același flux.
 

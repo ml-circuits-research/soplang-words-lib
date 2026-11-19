@@ -86,8 +86,10 @@ satisface `pre` și produce `post`, cu `outputs` legate la `inputs`. Asta acoper
 
 ## 4. Cunoașterea ca pachet versionat, cu import/export explicit
 
-Astăzi cunoașterea este un arbore de fișiere `.sop` validat cu un build pinned. Nu are manifest de
-compatibilitate, nu are semnătură, nu are versiune de schemă comparată.
+Astăzi cunoașterea este un arbore de fișiere `.sop` validat cu o copie a buildului bibliotecii
+(azi 0.225.1, un build în urmă față de bibliotecă; la citirea I era 0.144.0). Nu are manifest de
+compatibilitate, nu are semnătură, nu are versiune de schemă comparată: copia se mișcă numai când
+cineva o mișcă.
 
 Forma generală:
 

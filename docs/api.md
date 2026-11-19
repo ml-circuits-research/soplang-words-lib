@@ -245,6 +245,38 @@ The result returns the selected option, ordered remaining alternatives, ties and
 an assessment for each option. The example selects `$west`. No candidate facts
 or decision facts are added to the receiving World.
 
+### Ground a lexical mention
+
+Load `std.ground` and declare a `std.ground.policy`. Its `measure` names the cost
+metric used by the policy's `std.decide.criterion` facts. `maxSpelling` limits
+spelling repair; `follow`, `stepCost` and `maxSteps` bound traversal of the
+knowledge edges supplied with the request. A `std.ground.request` carries the
+mention, its candidates and those edges. Each candidate gets the lowest cost of
+its exact, knowledge and spelling routes; a candidate with no admissible route
+is reported with `route=none`. The admissible candidates are ranked through
+`std.choice` in a canonical order, so ties stay visible and do not depend on how
+the caller enumerated them.
+
+```js
+world.tell(`
+@ground core.use world=std.ground
+@choice core.use world=std.choice
+@decide core.use world=std.decide
+@kinds std.ground.policy name=kinds measure=distance maxSpelling=2 stepCost=0.5 maxSteps=3 follow=kind_of
+@lexical std.decide.criterion of=kinds n=1 name=lexical measure=distance dir=min
+`);
+const grounded = world.compileRequest(`
+@mention std.ground.request policy=kinds mention="man" candidate=$person candidate=$moon edge=$edge
+@person std.ground.candidate lemma="person"
+@moon std.ground.candidate lemma="moon"
+@edge std.ground.edge from="man" to="person" relation=kind_of
+`);
+```
+
+The `std.ground.result` selects `$person` through the knowledge route (cost 0.5).
+`$moon` remains an alternative with spelling cost 1.5. A `std.ground.evidence`
+row records each candidate's route, cost and path.
+
 #### Compile a scoped editor observation
 
 A `std.request` with `mood=ask` can own one or more

@@ -6661,3 +6661,6 @@ Strict book audit: 62 admitted blocks, 58 published schemas. Full source/bundle/
 
 2026-11-18 — Isolated query admission with the real Drawing constructor and a supplied noun. “man” dropped person before SOP choice, while “cap” selected whichever equal-cost candidate came first. The compiler plan now includes both counterexamples and a plural control.
 No runtime code changed. Full source and bundle checks each passed 1015 with one skip and one TODO. Strict book audit admitted 62 examples against 58 published schemas.
+
+2026-11-19 — 0.225.0: `std.ground.request` grounds a mention under a declared policy (exact, bounded spelling, bounded knowledge traversal), ranked through std.choice in canonical order. "man" keeps person via kind_of (0.5) ahead of moon (1.5); the cat/car tie is order-independent.
+`npm test` 1019 pass/0 fail (1 skip, 1 todo); `SOPWORLD_BUNDLE=1 node --test` 1021 pass/0 fail.

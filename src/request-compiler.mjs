@@ -6,6 +6,7 @@ import { placementCircuit } from './placement-method.mjs';
 import { compileCapabilityCircuit } from './capability-method.mjs';
 import { compileKnowledgeProjection } from './knowledge-projection.mjs';
 import { compileChoice } from './choice-method.mjs';
+import { compileGrounding } from './ground-method.mjs';
 
 const fail = reason => '@compile.result std.compile.result status=unavailable reason='+reason+'\n';
 
@@ -25,6 +26,7 @@ function compilePacket(world, sop, catalog) {
   }
   if (!wires.length || wires.length>1024) return fail('request-budget');
   if(wires.some(w=>w.type==='std.knowledge.request'))return catalog ? compileKnowledgeProjection(world,wires,catalog) : fail('knowledge-catalog');
+  if(wires.some(w=>w.type==='std.ground.request'))return compileGrounding(world,wires);
   if(wires.some(w=>w.type==='std.choice.request'))return compileChoice(world,wires);
   if(wires.some(w=>w.type==='std.interpret.input'))return compileInterpretations(world,wires,compileSingle);
   return compileSingle(world,wires);

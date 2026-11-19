@@ -55,7 +55,12 @@ const gridFor = (p, i) => {
   if (p.enum?.length) return p.enum[i % p.enum.length];
   if (p.type === 'number') return Math.min(p.max ?? 500, Math.max(p.min ?? 0, [30, 120, 260, 400][i % 4]));
   if (p.type === 'integer') return Math.min(p.max ?? 4, Math.max(p.min ?? 1, [1, 2, 3][i % 3]));
-  return ['Intro', 'Main', 'Second'][i % 3];
+  // diverse label pool: real label words, deterministic order — the previous
+  // ['Intro','Main','Second'] monoculture put 'intro' in 11% of all corpus tokens
+  return ['Kickoff', 'Review', 'Draft', 'North Area', 'Idea', 'Roundup', 'Sketch',
+    'Deep Dive', 'Status', 'Summary', 'Follow-up', 'Roadmap', 'Rough', 'Take 2',
+    'Notes', 'Open Items', 'Goal', 'Proposal', 'Plan', 'Backup', 'Core', 'Hub',
+    'Main Track', 'Second Pass'][i % 24];
 };
 const article = (n) => /^[aeiou]/i.test(n) ? 'an' : 'a';
 const KINDISH_KEY = (key) => key.endsWith('.kind');
@@ -96,7 +101,7 @@ for (const area of Object.keys(native).filter((a) => AREAS.includes('all') || AR
         for (const name of use) {
           if (name === kindParam?.[0]) continue;
           const p = op.params[name];
-          const value = gridFor(p, i++);
+          const value = gridFor(p, i++ + seq); // per-seed offset: the value pool rotates across seeds, not just within one
           if (value === undefined) continue;
           const surface = name === 'x' ? `${[30, 120, 260, 400][i % 4]}, ${[30, 120, 240][i % 3]}`
             : name === 'y' ? null : String(value);

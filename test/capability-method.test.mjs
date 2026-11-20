@@ -279,3 +279,20 @@ test('a population target seeds every member into the target list',()=>{
  assert.equal(all.op,'cell.paint');
  assert.deepEqual(all.cells,['first','last']);
 });
+
+// A concept's observed property is the declared row of the lowest order (not the first row), and several fields of its
+// binding on one object are one observation of several values.
+test('values come from the lowest-order property and from every field of its binding',()=>{
+ const world=source();
+ world.load(`@shadow std.capability.property scope=$scope concept=reading on="cell" parameter="level" binding="cell.change" order=9
+@first.reading2 std.capability.field object=$first binding="cell.reading" key="reading" value=12`);
+ const plain=(()=>{const w=world.compileRequest(`@s std.request.source text="What reading has the cell?"
+@r std.request act=inspect mood=ask source=$s query=$q
+@t std.request.target request=$r mode=existing kind=small.cell name="Left"
+@q std.request.query request=$r target=$t operation=values concept=reading
+@context std.capability.context request=$r scope=$scope`);return parse(w);})();
+ const answer=plain.find(row=>row.type==='std.capability.query.answer');
+ assert.equal(answer.attrs.status[0],'answered',JSON.stringify(answer.attrs));
+ const member=plain.find(row=>'$'+row.id===answer.attrs.member[0]);
+ assert.deepEqual(member.attrs.value,['10','12']);
+});

@@ -137,11 +137,17 @@ function records(world, scope, tick) {
   };
 }
 
+// The observed property of a concept on a source type: of several, the one of the lowest declared order (a declared
+// observation of the field before a binding that only names the operation taking it).
 function observationProperty(data,on,concept,tick) {
-  return data.properties.find(row=>{
+  let best;
+  for (const row of data.properties) {
     tick();
-    return text(row,'on')===on&&get(row,'concept')===concept&&get(row,'binding');
-  });
+    if (text(row,'on')!==on||get(row,'concept')!==concept||!get(row,'binding')) continue;
+    const order=Number.isFinite(number(row,'order'))?number(row,'order'):Infinity;
+    if (!best||order<best.order) best={row,order};
+  }
+  return best?.row;
 }
 
 function matchObject(world, data, types, kinds, target, selector, tick, labels = []) {
@@ -569,11 +575,12 @@ function compileQuery(world,request,nodes,data,tick){
       if(operation==='values'){
         const property=observationProperty(data,text(object,'on'),get(query,'concept'),tick);
         const fields=(data.fields.get(object.id)??[]).filter(row=>property&&get(row,'binding')===get(property,'binding'));
-        if(fields.length!==1||!listed(fields[0],'value').length){incompleteField=true;break;}
-        const values=listed(fields[0],'value').map(token=>typedValue(token,world,tick));
+        // Several fields of the property's binding are one observation of several values (a thing drawn in colours).
+        if(!fields.length||fields.some(field=>!listed(field,'value').length)){incompleteField=true;break;}
+        const values=fields.flatMap(field=>listed(field,'value')).map(token=>typedValue(token,world,tick));
         if(values.includes(absent)){incompleteField=true;break;}
         member.value=values.map(value=>encodeValue(value,append,tick));
-        member.support.push(quote(property.id),quote(fields[0].id));
+        member.support.push(quote(property.id),...fields.map(field=>quote(field.id)));
       }
       members.push(append('query.member',member));
     }

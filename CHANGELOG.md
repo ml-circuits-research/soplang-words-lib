@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.242.0
+
+- Capability compilation: a concept's observed property on a source type is the declared row of the lowest `order` (before, the first row in the scope, which could be a binding naming only the operation that takes the value, so a declared observation was never read).
+- Queries: several fields of the property's binding on one object are one observation of several values (a thing drawn in several colours answers all of them); before, a query needed exactly one field and answered `unobserved-query-value`.
+
 ## 0.241.0
 
 - Capability compilation: an existing target with `reference=population` ("all the circles", "every node", a container's members) denotes every matching member of the selected one's source type. Target uniqueness (`targetUnique`, `selectorUnique`) does not apply to it; a `target.list` seed takes every member's id; a `target.id` seed stays unfilled for a population of several.

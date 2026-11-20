@@ -280,6 +280,10 @@ soft-only `minimise` and `maximise`; `outside` is the negation of `inside`, so a
 `outside` with a window around a point keeps a centre off that point), a budget in milliseconds and a depth (`quick`, or
 `alternatives` with `count`). The built-in provider searches each variable's grid
 and reports `exhausted` when no grid point holds, never a proof of impossibility.
+A problem too large to enumerate whole (several boxes placed together) is searched
+block by block (the variables of one box at a time, then rounds against all the
+others); its answer keeps every hard constraint and says `reason=block-search`
+(the best found, not proved optimal).
 `node/smt-z3.mjs` supplies a Z3 provider for the same packet (with the optional
 `z3-solver` package): it reports `unsatisfiable` with the conflicting constraints
 named in `conflict`. `smt-z3.mjs`, published next to `sopworld.mjs` (source

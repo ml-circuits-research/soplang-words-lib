@@ -157,7 +157,7 @@ export function solveInternal(model, { now = () => Date.now() } = {}) {
     return values;
   });
   const total = grid.reduce((p, g) => p * g.length, 1);
-  if (total > LIMITS.values) return { status: 'budget', reason: 'domain-too-large', explored: 0 };
+  if (total > LIMITS.values) return solveByBlocks(model, names, grid, { now, start });
   const found = [], a = {};
   let explored = 0, timedOut = false;
   // Constraints are checked as soon as every variable they read is assigned.
@@ -187,6 +187,81 @@ export function solveInternal(model, { now = () => Date.now() } = {}) {
   if (timedOut) return { status: 'budget', provider: 'internal', reason: 'time', explored };
   // Every grid point fails: impossibility on the grid, not a proof over the continuous domain.
   return { status: 'exhausted', provider: 'internal', reason: 'no-grid-point', explored };
+}
+
+// The variables a constraint reads (through its boxes, spans or its variable).
+function readsOf(model, c) {
+  const out = new Set();
+  for (const side of [c.a, c.b]) for (const shape of [model.boxes.get(side), model.spans.get(side)]) for (const t of Object.values(shape ?? {})) if (t?.v) out.add(t.v);
+  if (model.vars.has(c.a)) out.add(c.a);
+  return out;
+}
+
+/**
+ * The internal search of a problem too large to enumerate whole (several subjects placed together): block
+ * coordinate search. The variables of one box (or span) form a block, searched exhaustively on its grid while the
+ * other blocks keep their values: first each block in turn against the blocks already placed (a constraint counts
+ * once every variable it reads has a value), then rounds that place each block again against all the others, until
+ * no block moves or the budget ends. A hard constraint that does not hold counts before any soft cost, so a round
+ * moves toward an assignment that keeps them all. The answer is solved only when every hard constraint holds; it
+ * is the best found, not proved optimal (reason=block-search). Deterministic: grids in order, ties keep the first.
+ */
+function solveByBlocks(model, names, grid, { now, start }) {
+  const index = new Map(names.map((name, i) => [name, i])), parent = names.map((_, i) => i);
+  const find = (i) => { while (parent[i] !== i) i = parent[i] = parent[parent[i]]; return i; }; // bounded: each step halves the path to the root among at most 64 variables
+  for (const shape of [...model.boxes.values(), ...model.spans.values()]) {
+    const vars = Object.values(shape).filter((t) => t?.v).map((t) => index.get(t.v));
+    for (const i of vars.slice(1)) parent[find(i)] = find(vars[0]);
+  }
+  const groups = new Map();
+  names.forEach((_, i) => { const root = find(i); if (!groups.has(root)) groups.set(root, []); groups.get(root).push(i); });
+  const blocks = [...groups.values()];
+  if (blocks.some((block) => block.reduce((p, i) => p * grid[i].length, 1) > LIMITS.values / 8)) return { status: 'budget', reason: 'domain-too-large', explored: 0, provider: 'internal' };
+  const all = [...model.hard.map((c) => ({ c, hard: true })), ...model.soft.map((c) => ({ c, hard: false }))].map((x) => ({ ...x, reads: readsOf(model, x.c) }));
+  const touching = blocks.map((block) => all.filter((x) => block.some((i) => x.reads.has(names[i]))));
+  const a = {}, assigned = new Set();
+  let explored = 0, timedOut = false;
+  // The cost of a block's constraints whose variables all have values: [hard violation, soft cost].
+  const score = (terms) => {
+    let hard = 0, soft = 0;
+    for (const { c, hard: isHard, reads } of terms) {
+      if ([...reads].some((v) => !assigned.has(v))) continue;
+      const d = violation(model, c, a);
+      if (isHard) hard += d; else soft += c.weight * d;
+    }
+    return [hard, soft];
+  };
+  const better = (p, q) => p[0] < q[0] - 1e-9 || (Math.abs(p[0] - q[0]) <= 1e-9 && p[1] < q[1] - 1e-9);
+  const place = (k) => { // enumerate block k on its grid; keep the best (the first on a tie)
+    const block = blocks[k], vars = block.map((i) => names[i]);
+    for (const v of vars) assigned.add(v);
+    const previous = vars.map((v) => a[v]);
+    let best = null, bestScore = null;
+    const visit = (j) => { // bounded: depth is the size of one block, its grid product capped by LIMITS.values / 8 and the time budget
+      if (timedOut) return;
+      if (j === block.length) {
+        explored++;
+        if ((explored & 1023) === 0 && now() - start > model.budget) { timedOut = true; return; }
+        const s = score(touching[k]);
+        if (!bestScore || better(s, bestScore)) { bestScore = s; best = vars.map((v) => a[v]); }
+        return;
+      }
+      for (const x of grid[block[j]]) { a[vars[j]] = x; visit(j + 1); if (timedOut) return; }
+    };
+    visit(0);
+    const chosen = best ?? previous;
+    vars.forEach((v, j) => { if (chosen[j] === undefined) { delete a[v]; assigned.delete(v); } else a[v] = chosen[j]; });
+    return best !== null && previous.some((value, j) => value !== best[j]);
+  };
+  for (let k = 0; k < blocks.length && !timedOut; k++) place(k);
+  for (let round = 0; round < 8 && !timedOut; round++) {
+    let moved = false;
+    for (let k = 0; k < blocks.length && !timedOut; k++) moved = place(k) || moved;
+    if (!moved) break;
+  }
+  if (names.some((v) => a[v] === undefined)) return { status: 'budget', provider: 'internal', reason: 'time', explored };
+  if (!model.hard.every((c) => holds(model, c, a))) return { status: timedOut ? 'budget' : 'exhausted', provider: 'internal', reason: timedOut ? 'time' : 'block-search', explored };
+  return { status: 'solved', provider: 'internal', reason: 'block-search', cost: costOf(model, a), assignment: { ...a }, explored };
 }
 
 /** Serialize a provider's answer as std.problem.result wires. */

@@ -268,7 +268,7 @@ export function placementCircuit(world,request,nodes,context,provider) {
   const search=get(method,'search')==='problem';
   const directed=relations.length===1&&world.ofType(get(method,'directionType')).some(d=>get(d,'relation')===get(relations[0],'relation'));
   const general=method&&((search&&!directed)||relations.length>1||nodes.filter(w=>w.type==='std.request.target').length>2||
-    relations.some(r=>needsProblem(world,method,context,nodes,r)));
+    nodes.some(isCount)||relations.some(r=>needsProblem(world,method,context,nodes,r)));
   const result=!method?{reason:'method-binding',options:[]}:general?problemPlacement(world,request,nodes,context,method,provider):perform(world,request,nodes,context,method,provider,search);
   return result&&typeof result.then==='function'?result.then(r=>summarise(r,context)):summarise(result,context);
 }
@@ -326,7 +326,15 @@ function problemPlacement(world, request, nodes, context, method, provider) {
   const relations = nodes.filter(w => w.type === 'std.request.constraint' && get(w, 'operator') === 'relation');
   if (!relations.length || get(request, 'mood') !== 'do' || relations.some(r => get(r, 'polarity') !== 'positive') ||
       nodes.some(w => !['std.request', 'std.request.source', 'std.request.target', 'std.request.constraint'].includes(w.type)) ||
-      nodes.some(w => w.type === 'std.request.constraint' && get(w, 'operator') !== 'relation')) return unavailable('request-shape');
+      nodes.some(w => w.type === 'std.request.constraint' && get(w, 'operator') !== 'relation' && !isCount(w))) return unavailable('request-shape');
+  // A count on a new subject ("three houses near the lake") makes that many subjects, each with the subject's
+  // relations, all in the one problem (kept apart from each other like peers).
+  const counts = new Map();
+  for (const c of nodes.filter(isCount)) {
+    const n = Number(get(c, 'value')), target = targets.find(t => t.id === ref(c, 'target'));
+    if (!Number.isInteger(n) || n < 1 || n > MAX_COUNT || !target || get(target, 'mode') !== 'new' || counts.has(target.id) || get(c, 'polarity') === 'negative') return unavailable('request-count');
+    counts.set(target.id, n);
+  }
   const rows = observed(world, method, context);
   if (!rows || rows.some(r => r.peer && !r.geometry)) return unavailable('incomplete-geometry');
   const frameBox = ref(context, 'bounds') && world.get(ref(context, 'bounds')), frame = frameBox && sameScope(frameBox, context) && geometry(frameBox);
@@ -366,7 +374,7 @@ function problemPlacement(world, request, nodes, context, method, provider) {
       if (!creation && !moving?.geometry) return unavailable('unbound-target');
       const size = moving ? { width: moving.geometry.width, height: moving.geometry.height } : { width: number(kind, 'width'), height: number(kind, 'height') };
       if (![size.width, size.height].every(n => Number.isFinite(n) && n > 0)) return unavailable('unknown-extent');
-      subjects.push({ target: subject, creation, kind, tool, moving, size, i: subjects.length });
+      for (let copy = 0; copy < (counts.get(subject.id) ?? 1); copy++) subjects.push({ target: subject, creation, kind, tool, moving, size, i: subjects.length, copy });
     }
   }
   if (subjects.length > 16 || rows.length > 512) return unavailable('budget');
@@ -383,8 +391,8 @@ function problemPlacement(world, request, nodes, context, method, provider) {
   const subjects = allSubjects.map(x => ({ ...x, size: { ...x.size } }));
   // Each relation's declaration and the box it is measured against (the anchor's, or its region's).
   const uses = [];
-  for (const relation of relations) {
-    const s = subjects.find(x => x.target.id === ref(relation, 'target')), a = anchors.get(ref(relation, 'goal'));
+  for (const relation of relations) for (const s of subjects.filter(x => x.target.id === ref(relation, 'target'))) {
+    const a = anchors.get(ref(relation, 'goal'));
     const chosen = declaration(get(relation, 'relation'), a.row, literal(s.kind, 'native'));
     if (!chosen) return { failure: unavailable('undeclared-relation') };
     uses.push({ relation, s, a, ...chosen });
@@ -540,3 +548,6 @@ function problemPlacement(world, request, nodes, context, method, provider) {
 
 // The most combinations of candidate anchors one placement request is solved for.
 const ANCHOR_COMBINATIONS = 16;
+// A declared count on a target (concept=count operator=eq value=N): the number of things the request makes.
+const isCount = w => w.type === 'std.request.constraint' && get(w, 'concept') === 'count' && get(w, 'operator') === 'eq';
+const MAX_COUNT = 16;

@@ -76,7 +76,7 @@ function output(tick, status, data = {}, call, alternatives = [], selection = []
   const fields = { status: [status] };
   for (const [key, value] of Object.entries(data)) {
     if (value === undefined) continue;
-    const write = ['reason', 'act'].includes(key) ? String : quote;
+    const write = ['reason', 'act', 'repeat'].includes(key) ? String : quote;
     fields[key] = [].concat(value).map((datum) => {
       tick();
       return write(datum);
@@ -131,7 +131,7 @@ function records(world, scope, tick) {
     scope, modes: all('mode'), operations: scoped('operation').sort(byOrder),
     targets: scoped('target'), properties: scoped('property').sort(byOrder),
     objects: scoped('object').sort(byOrder), literals: all('value'),
-    preferences: scoped('preference'), seeds: all('seed').sort(byOrder), guards: all('guard'), signals: scoped('signal'),
+    preferences: scoped('preference'), repeats: scoped('repeat'), seeds: all('seed').sort(byOrder), guards: all('guard'), signals: scoped('signal'),
     degrees: all('degree'), bases: all('base').filter((row) => !get(row, 'scope') || ref(world, row, 'scope')?.id === scope.id),
     fields: byRef('field', 'object'), params: byRef('parameter', 'operation'),
   };
@@ -398,6 +398,7 @@ function seedArgs(world, rules, phase, context, params, args, requested, notes, 
 function candidate(world, data, context, operation, mapping, results, tick) {
   const name = text(operation, 'name'), on = text(operation, 'on'), act = text(operation, 'act');
   const args = new Map(), requested = new Set(), unresolved = new Set(), applied = [], skipped = [], notes = [], support = new Set([operation.id]);
+  let repeat;
   const params = new Map();
   for (const parameter of data.params.get(operation.id) || []) {
     tick();
@@ -427,6 +428,21 @@ function candidate(world, data, context, operation, mapping, results, tick) {
       return text(row, 'on') === on && text(row, 'concept') === text(condition, 'concept') && params.has(text(row, 'parameter'));
     });
     if (property) requested.add(text(property, 'parameter'));
+    // A count the operation has no parameter for: the call made that many times, when the family declares it
+    // repeatable for this act (std.capability.repeat on=<family> act concept max).
+    const repeatable = !property && positiveEq(condition) && repeat === undefined && data.repeats.find((row) => {
+      tick();
+      return text(row, 'on') === on && get(row, 'act') === act && get(row, 'concept') === get(condition, 'concept');
+    });
+    if (repeatable) {
+      const n = Number(str(get(condition, 'value')));
+      if (Number.isInteger(n) && n >= 1 && n <= number(repeatable, 'max')) {
+        repeat = n;
+        applied.push(condition.id);
+        support.add(repeatable.id);
+        continue;
+      }
+    }
     const parameter = property && params.get(text(property, 'parameter'));
     const value = !parameter ? { value: absent }
       : positiveEq(condition) ? valueOf(world, data, condition, property, parameter, args, tick)
@@ -457,7 +473,7 @@ function candidate(world, data, context, operation, mapping, results, tick) {
     } else if (!accepts(args.get(key), param, world, tick)) return { name, reason: 'invalid-argument-value' };
   }
   if (flag(context.mode, 'requireResult') && !applied.length) return { name, reason: 'no-applicable-result' };
-  return { name, args, applied, skipped, notes, support };
+  return { name, args, applied, skipped, notes, support, repeat };
 }
 
 function refuseChosen(data, chosen, tick) {
@@ -647,7 +663,7 @@ function compile(world, request, nodes, context) {
   return output(tick, 'compiled', {
     act, kind: label, id: text(selected, 'id'), source: text(selected, 'source'), instance: text(scope, 'instance'),
     version: text(scope, 'version'), target: matches.map((row) => text(row, 'id')), covered: chosen.applied,
-    skipped, note: chosen.notes, ...selectorDetails, support: [...new Set([...chosen.support, ...selectorSupport, ...(selected ? [selected.id] : [])])],
+    skipped, note: chosen.notes, repeat: chosen.repeat > 1 ? chosen.repeat : undefined, ...selectorDetails, support: [...new Set([...chosen.support, ...selectorSupport, ...(selected ? [selected.id] : [])])],
   }, chosen, ranked, selection);
 }
 

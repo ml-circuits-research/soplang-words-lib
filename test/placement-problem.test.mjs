@@ -185,3 +185,31 @@ test('a declared clearance keeps the distance and pull closes to it exactly',{sk
    const x=box(out.call).x;assert.ok(p?x===692:x>=692&&x<702,(p?'z3 ':'internal ')+JSON.stringify(box(out.call)));
   }
 });
+
+// A count on a new subject ("add three houses near the lake"): that many subjects in the one problem, each with the
+// subject's relations, kept apart from each other and from the observed peers. Three subjects are too many to
+// enumerate whole; the internal search answers by block coordinate search (reason=block-search), Z3 exactly.
+const counted=(n,relations=nearLake)=>request(relations)+`\n@count std.request.constraint request=$r target=$t.house concept=count operator=eq value=${n} polarity=positive character=requirement`;
+for (const [label,run] of [['internal search',(w,t)=>w.compileRequest(t)],['Z3',(w,t)=>w.compileRequest(t,{provider})]]) {
+  test('a counted new subject makes that many calls, each near its anchor, none overlapping ('+label+')',{skip:skip||(label==='Z3'&&!provider&&'z3-solver unavailable')},async()=>{
+    const rows=parse(await run(fixture(' relax=gap'),counted(3))),result=rows[0];
+    assert.equal(result.attrs.status[0],'compiled',JSON.stringify(result.attrs));
+    const calls=rows.filter(w=>(result.attrs.call??[]).includes('$'+w.id));
+    assert.equal(calls.length,3);
+    const houses=calls.map(box),lake={x:300,y:380,w:260,h:140},rock={x:420,y:300,w:40,h:40},tree={x:620,y:330,w:60,h:120};
+    for(const h of houses){
+      assert.ok(!overlaps(h,lake)&&!overlaps(h,rock)&&!overlaps(h,tree),'off the lake, rock and tree '+JSON.stringify(h));
+      assert.ok(h.x>=0&&h.y>=0&&h.x+h.w<=800&&h.y+h.h<=600,'on the page');
+    }
+    for(let i=0;i<3;i++)for(let j=0;j<i;j++)assert.ok(!overlaps(houses[i],houses[j]),'apart '+JSON.stringify([houses[i],houses[j]]));
+    if(!result.attrs.relaxed)for(const h of houses){
+      const gx=h.x+h.w<=lake.x?lake.x-(h.x+h.w):lake.x+lake.w<=h.x?h.x-(lake.x+lake.w):0,gy=h.y+h.h<=lake.y?lake.y-(h.y+h.h):lake.y+lake.h<=h.y?h.y-(lake.y+lake.h):0;
+      assert.ok(gx<=40&&gy<=40,'near the lake '+JSON.stringify(h));
+    }
+  });
+}
+test('a count of one is the subject itself; an invalid count is refused before any search',{skip},()=>{
+  const one=parse(fixture().compileRequest(counted(1))),result=one[0];
+  assert.equal(result.attrs.status[0],'compiled');assert.equal(result.attrs.call.length,1);
+  assert.equal(parse(fixture().compileRequest(counted(40)))[0].attrs.reason[0],'request-count');
+});

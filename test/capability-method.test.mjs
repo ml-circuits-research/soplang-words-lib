@@ -210,3 +210,27 @@ ${objects}`);
   assert.equal(change(extra(`@crate std.capability.object scope=$scope id="crate" source="cell-c" version="3" on="cell" kind="box" order=0
 @named std.capability.object scope=$scope id="named" source="cell-d" version="3" on="cell" kind="square" name="Box" order=1`)).cell, '"crate"', 'the observed kind wins over a name');
 });
+
+test('a count with no parameter makes the call that many times when the family declares it repeatable', () => {
+  const ask = (n, declared) => {
+    const world = source();
+    if (declared) world.load('@cells.repeat std.capability.repeat scope=$scope on="cell" act=make concept=count max=16');
+    const rows = parse(world.compileRequest(`
+@r std.request act=make mood=do source=$source
+@source std.request.source text="make cells"
+@t std.request.target request=$r mode=new kind=small.cell
+@n std.request.constraint request=$r target=$t concept=count operator=eq character=requirement polarity=positive value=${n}
+@context std.capability.context request=$r scope=$scope`));
+    return rows[0];
+  };
+  const counted = ask(3, true);
+  assert.equal(counted.attrs.status[0], 'compiled');
+  assert.equal(counted.attrs.repeat[0], '3');
+  assert.deepEqual(counted.attrs.covered.map(str), ['n']);
+  assert.ok(counted.attrs.support.map(str).includes('cells.repeat'));
+  assert.equal(ask(1, true).attrs.repeat, undefined, 'one is the call itself');
+  const undeclared = ask(3, false);
+  assert.equal(undeclared.attrs.repeat, undefined);
+  assert.deepEqual(undeclared.attrs.skipped.map(str), ['count 3'], 'without the declaration the count stays unapplied');
+  assert.deepEqual(ask(40, true).attrs.skipped.map(str), ['count 40'], 'beyond the declared maximum it stays unapplied');
+});

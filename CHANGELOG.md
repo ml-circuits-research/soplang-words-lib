@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.235.0
+
+- `std.problem` internal search: a problem too large to enumerate whole (several subjects placed together, which answered `budget` / `domain-too-large`) is searched by block coordinate search: the variables of each box (or span) form a block, searched on its grid against the blocks already placed, then in rounds against all the others until none moves or the budget ends. A hard constraint that does not hold counts before any soft cost. The answer is solved only when every hard constraint holds, and says `reason=block-search` (the best found, not proved optimal). Z3 still solves the whole problem exactly.
+- Placement, general path: a request may carry a count on a new subject (`std.request.constraint concept=count operator=eq value=N`, 1 to 16; "three houses near the lake"). That many subjects enter the one problem, each with the subject's relations and kept apart from each other like peers, and the result has one call per subject. Any count routes a request to the general path; an invalid count is refused as `request-count`.
+- Capability compilation: `std.capability.repeat scope on act concept max` declares that a family's operations for an act may be made several times. A positive `eq` condition of that concept, with no parameter for it and a whole value from 1 to `max`, is applied as `repeat=N` on the compiled result (absent for 1): the caller makes the call N times. Without the declaration the count stays skipped as before.
+
 ## 0.234.0
 
 - Placement, `search=problem`: a request with one relation that has declared directions keeps the method's ranked directions, clearance (the domain world's effective policy) and lexicographic objective, and solves each direction's place as its own `std.problem` (configured provider: Z3 or the internal search). On the relation's axis the subject stays at the declared clearance; across it, it may move along the anchor's side to keep each observed peer's clearance (soft), at a cost per unit of distance from the declared alignment (`alignWeight`). The grid of the free coordinate passes through the declared slot, so an unobstructed subject lands on it exactly. The result names the provider. Every other request takes the general path as before.

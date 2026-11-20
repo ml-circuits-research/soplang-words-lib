@@ -67,6 +67,10 @@ const types = {
     operation: 'kind=ref to=std.capability.operation present=true',
     weight: 'kind=integer min=-1000 max=1000 present=true',
   },
+  repeat: {
+    scope: 'kind=ref to=std.capability.scope present=true', on: 'kind=string present=true', act: 'kind=atom present=true',
+    concept: 'kind=atom present=true', max: 'kind=integer min=1 present=true',
+  },
   guard: {
     operation: 'kind=string present=true', when: 'kind=atom enum=incomplete.coverage enum=active.signal present=true',
     signal: 'kind=atom', reason: 'kind=atom present=true', message: 'kind=string',
@@ -113,7 +117,7 @@ const types = {
     alternative: 'kind=ref to=std.capability.alternative many=true', target: 'kind=string many=true',
     selection: 'kind=ref to=std.capability.selection many=true', selector: 'kind=string',
     covered: 'kind=string many=true', skipped: 'kind=string many=true', note: 'kind=string many=true',
-    support: 'kind=string many=true',
+    support: 'kind=string many=true', repeat: 'kind=integer min=1',
   },
 };
 

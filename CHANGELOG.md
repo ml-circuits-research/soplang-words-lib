@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.247.1
+
+- Placement: the side declarations a `pair=sides` relation takes are the method's unconditioned ones (no `flow=`).
+
 ## 0.247.0
 
 - Placement: a `std.placement.predicate` declared `flow=` holds only when the `std.placement.context` observes that `flow` (a container's reading direction: "after" is right of the anchor in a rightward flow, below it in a downward one); the context's `flow` is the caller's observation. Moved from application host code.

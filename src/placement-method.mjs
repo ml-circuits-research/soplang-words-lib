@@ -527,7 +527,7 @@ function problemPlacement(world, request, nodes, context, method, provider) {
     const dx = bx - ax, dy = by - ay;
     const sides = Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? ['right', 'left'] : ['left', 'right']) : (dy >= 0 ? ['below', 'above'] : ['above', 'below']);
     for (const [k, use] of paired.entries()) {
-      const decl = one(declared.filter(p => get(p, 'predicate') === sides[k] && get(p, 'region') === undefined && get(p, 'pair') === undefined));
+      const decl = one(declared.filter(p => get(p, 'predicate') === sides[k] && get(p, 'region') === undefined && get(p, 'pair') === undefined && get(p, 'flow') === undefined));
       if (!decl) return { failure: unavailable('paired-relation-sides') };
       use.decl = decl; delete use.region;
     }

@@ -1646,6 +1646,40 @@ print(result.ok, result.request);
 true r
 ```
 
+
+### FRAME_FORMAT, FRAME_ROLES, inspectFrame(frame, options?), completeFragment(frame)
+
+A semantic frame (`FRAME_FORMAT`, `sop.semantic-frame/1`) is a reader's domain-general reading of one message: an
+action, entity mentions and attribute, spatial, motion, goal, time, manner, question, fragment and discourse roles, the
+same for every area ([semantic-frame.md](semantic-frame.md)). `FRAME_ROLES` holds the closed banks. `inspectFrame`
+checks shape, banks and mention indices and returns `{ok, issues:[{path, reason}]}`; `budget` (default 20000) bounds
+the steps. `completeFragment` completes fragment clauses ("and blue instead", "more") from `frame.previous.frame`.
+
+```js
+const frame = { format: FRAME_FORMAT, text: 'make the lamp red', clauses: [{ action: { act: 'change' },
+  mentions: [{ head: 'lamp', reference: 'description' }], attributes: [{ theme: 0, concept: 'colour', value: 'red' }] }] };
+inspectFrame(frame).ok;                       // true
+FRAME_ROLES.act.includes('swap');             // true
+```
+
+### capabilityTable(world, scope), bindFrame(frame, table, options?), frameToRequests(frame, options?)
+
+`capabilityTable` reads the `std.capability` operations, parameters, kind targets, properties, repeats and observed
+objects of one scope as a plain table. `bindFrame` binds every frame role against such a table (the host may add
+`relations`, `amounts`, `actForms` and `concepts`): a role binds only through a declared row, and each role is listed
+as `bound` or `unbound` with a reason. `frameToRequests` writes one `std.request` graph per clause and theme as batch
+entries `{id, request, wires, after}` for `prepareRequestBatch`. With `binding`, unbound roles are left out and listed
+in `disclosed` (partial execution with disclosure). `extended: false` writes only the slots of the contract before
+version 0.237.0. `prefix` (default `f`) prefixes the node IDs.
+
+```js
+const table = { operations: [{ name: 'lamp.change', act: 'change', on: 'lamp', parameters: ['id', 'glow'] }],
+  kinds: [{ label: 'lamp', canonical: 'example.lamp', on: 'lamp' }],
+  properties: [{ concept: 'colour', on: 'lamp', parameter: 'glow' }], objects: [{ id: 'l1', kind: 'lamp', on: 'lamp' }] };
+const binding = bindFrame(frame, table);      // colour binds to lamp.change glow
+const { entries, disclosed } = frameToRequests(frame, { binding });
+prepareRequestBatch({ entries }).ok;          // true; disclosed is empty
+```
 ### compileGrammarOverlay(world, options?)
 
 A feature may declare `from_id=true` to carry the exact selected provider wire ID. This is mutually exclusive with `from_key` and `value`; false or any other flag value is rejected. It works uniformly for ordinary providers and `core.word`, respects source filters and `source_id`, and preserves distinct identities when providers share the same text. The value is the actual wire identity, not a display name, binding ID or synthesized semantic label. Source-family mappings can therefore use one binding for a declared family while retaining the exact lexical sense used by each candidate.

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.237.0
+
+- Semantic frames (`src/semantic-frame.mjs`, docs/semantic-frame.md): a domain-general reader output (action, mentions with determiner, quantity including vague amounts, modifiers, possessor and reference form, attributes by concept, spatial relation and region, motion, goal, time, manner, question, fragment, discourse, clause structure) and its compilation to `std.request` graphs as `prepareRequestBatch` entries. `bindFrame` binds each role only through declared `std.capability` rows (a concept binds to the parameter its `std.capability.property` names on the theme's source type); `frameToRequests` writes the bound roles and discloses the others (partial execution). `completeFragment` completes a fragment from the previous frame; `capabilityTable` reads one capability scope as a table.
+- `std.request` 0.237.0: optional slots for the frame roles (`predicate`, `polarity`, `fragment`, `discourse`, `manner`, `degree`, `question`; target `head`, `reference`, `code`, `ordinal`, `count`, `quantity`, `modifier`, `of`, `role`; constraint `landmark`, `region`, `side`, `direction`, `step`, `variety`, `valueType`). Graphs without them read as before; `of` and `landmark` must name a target of the same request.
+
 ## 0.236.0
 
 - Placement, general path: a `std.placement.kind` may declare `avoids=` (atoms, many): the kinds of observed regions (`std.placement.region kind=`) its subjects keep out of. Every such region becomes a hard `apart` (gap 0) term for each subject of that kind, except a region a relation of the request puts the subject into. So "a house near the river" keeps out of the water of the river (the regions of its bent stretches), whatever the relations prefer. A single relation with declared directions (the method's ranked directions) rejects a direction whose place meets such a region (`reason=avoided-region` on that option). The contract lists `avoids`.

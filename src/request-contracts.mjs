@@ -77,6 +77,11 @@ function inspect(world, id, family) {
     tick(); const mode = first(target, 'mode');
     if (mode !== 'bound' && !first(target, 'kind')) fail(target, 'new/existing targets require kind');
     if (mode === 'bound' && (target.attrs.name || target.attrs.determiner)) fail(target, 'bound targets cannot independently name or select a referent');
+    // Optional frame roles (docs/semantic-frame.md): a possessor/whole is another target of this request.
+    if (first(target, 'of') !== undefined) {
+      const whole = targetOf(target, 'of');
+      if (whole && whole.id === target.id) fail(target, 'a target cannot be its own possessor');
+    }
   }
   const edges = new Map(), binders = new Map(), uses = new Map();
   for (const [key, node] of nodes) {
@@ -94,6 +99,7 @@ function inspect(world, id, family) {
       childRefs.push(first(node, 'body'));
     } else {
       use('target');
+      if (first(node, 'landmark') !== undefined) use('landmark');
       const op = first(node, 'operator'), required = OPERATORS[op];
       if (!required) fail(node, 'unknown operator');
       else {

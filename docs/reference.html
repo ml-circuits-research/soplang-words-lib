@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld Reference</title>
-<meta name="source-hash" content="57d144d02d9a">
+<meta name="source-hash" content="f6dd15f79011">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,8 +12,8 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.236.0</small></a>
-  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html" aria-current="page">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="instance-state.html">Instance state</a><a href="playground.html">Playground</a></nav>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.237.0</small></a>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html" aria-current="page">Reference</a><a href="semantics.html">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="instance-state.html">Instance state</a><a href="semantic-frame.html">Semantic frames</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
 <h1>Reference: the wire types of the matrix, and the functions</h1>
@@ -785,6 +785,8 @@ print(builtins.time_add([&#x27;10:40&#x27;, &#x27;35min&#x27;]), builtins.div([&
 <h2 id="assessexistencechange">assessExistenceChange</h2>
 <p><code>assessExistenceChange(world, {request, step, expectation, before, after, owner, revision, family?, replyFamily?, dry?, budget?})</code> evaluates correlated historical lifecycle populations and retains its evidence. The <code>std.trace</code> module provides closed <code>subject</code> (source/version/source.type), <code>presence</code> (source/source.type/scope/desired) and <code>population</code> (step/invocation/phase/source/version/scope/coverage/semantics/member*) records. A step cites expectations through <code>presence*</code> and observations through <code>population*</code>. These slots are opt-in additions, independent of property inputs/results.</p>
 <p>The closed <code>std.reply.existence</code> claim has owner, revision and status: made, removed, unchanged or unconfirmed. Its validator recomputes the retained evidence; neither a claimed verdict nor a mutable live object is proof. Missing membership proves absence only with complete coverage. Lifecycle transitions require the same population source/scope, a confirmed step and a changed revision; view membership alone remains unconfirmed. Duplicate subject source identities, conflicting captured record identities and wrong correlation reject publication. Host completeness and lifecycle semantics are explicit trusted assertions, not inferred from labels. See the runnable API example and limitations in <a href="api.html#assessexistencechangeworld-options">api.md</a>.</p>
+<h2 id="semantic-frames">Semantic frames</h2>
+<p>A semantic frame is a reader's domain-general reading of a message, compiled through declared capabilities into <code>std.request</code> graphs (<a href="semantic-frame.html">semantic-frame.md</a>). The <code>std.request</code> contract carries its roles in optional slots: <code>predicate</code>, <code>polarity</code>, <code>fragment</code>, <code>discourse</code>, <code>manner</code>, <code>degree</code> and <code>question</code> on <code>std.request</code>; <code>head</code>, <code>reference</code>, <code>code</code>, <code>ordinal</code>, <code>count</code>, <code>quantity</code>, <code>modifier</code>, <code>of</code> and <code>role</code> on <code>std.request.target</code>; <code>landmark</code>, <code>region</code>, <code>side</code>, <code>direction</code>, <code>step</code>, <code>variety</code> and <code>valueType</code> on <code>std.request.constraint</code>. A target's <code>of</code> and a constraint's <code>landmark</code> must name a target of the same request, and a target cannot be its own <code>of</code>. The functions <code>FRAME_FORMAT</code>, <code>FRAME_ROLES</code>, <code>inspectFrame</code>, <code>completeFragment</code>, <code>capabilityTable</code>, <code>bindFrame</code> and <code>frameToRequests</code> are described in <a href="api.html">api.md</a>.</p>
 <h2 id="preparerequestbatch">prepareRequestBatch</h2>
 <p><code>prepareRequestBatch({entries:[{id,request,wires,after}]}, {budget?,graphBudget?})</code> preflights all complete request graphs and their explicit dependency DAG. Returns a detached frozen plan with canonical per-entry wires and topological layers. It preserves the complete published request schema, including quantification, relations, selector/result distinctions and questions. No implicit sequence, cross-entry target binding, host capability promise or execution is introduced. One invalid graph rejects the entire preparation. Batch and per-graph budgets are independent.</p>
 <h2 id="requestbatchfrontier">requestBatchFrontier</h2>
@@ -815,7 +817,7 @@ print(builtins.time_add([&#x27;10:40&#x27;, &#x27;35min&#x27;]), builtins.div([&
 <p><code>INSTANCE_STATE_FORMAT</code>, <code>serializeInstanceState</code>, <code>readInstanceState</code> and <code>instanceStateWorld</code> retain typed, queryable instance facts with stable local identities and a transparent, versioned implementation projection. This is a codec and a normal World loader, not request completion or execution authority. Explicit relation targets must exist locally. Consumers verify projection/fact agreement before adopting native caches; project loading and migrations remain explicit. See <a href="api.html#serializeinstancestateinput-options">API</a> and <a href="instance-state.html">contract</a>.</p>
 <p class="source">Generated from <code>docs/reference.md</code>.</p>
 </main>
-<footer>sopworld 0.236.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.237.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

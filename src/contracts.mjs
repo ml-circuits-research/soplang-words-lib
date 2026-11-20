@@ -448,7 +448,7 @@ ${projectionRecords}
   },
   'std.request': {
     text: `
-@std.request.module core.module name=std.request version=0.198.0 exports=std.request.query exports=std.request exports=std.request.source exports=std.request.target exports=std.request.constraint exports=std.request.not exports=std.request.group exports=std.request.quant exports=std.request.value
+@std.request.module core.module name=std.request version=0.237.0 exports=std.request.query exports=std.request exports=std.request.source exports=std.request.target exports=std.request.constraint exports=std.request.not exports=std.request.group exports=std.request.quant exports=std.request.value
 @std.request.type core.type of=std.request closed=true
 @std.request.act core.slot of=std.request key=act kind=atom present=true
 @std.request.mood core.slot of=std.request key=mood kind=atom enum=do enum=propose enum=check enum=ask present=true
@@ -456,6 +456,14 @@ ${projectionRecords}
 @std.request.source.type core.type of=std.request.source closed=true
 @std.request.source.text core.slot of=std.request.source key=text kind=string present=true
 @std.request.query core.slot of=std.request key=query kind=ref to=std.request.query many=true
+# Optional semantic-frame roles (0.237.0, docs/semantic-frame.md). All are optional; a graph without them is read as before.
+@std.request.predicate core.slot of=std.request key=predicate kind=string
+@std.request.polarity core.slot of=std.request key=polarity kind=atom enum=positive enum=negative
+@std.request.fragment core.slot of=std.request key=fragment kind=atom enum=adds enum=replaces enum=repeats enum=more enum=less enum=confirms enum=rejects
+@std.request.discourse core.slot of=std.request key=discourse kind=atom enum=thanks enum=greeting enum=complaint enum=correction enum=repetition enum=confirmation enum=rejection
+@std.request.manner core.slot of=std.request key=manner kind=atom many=true
+@std.request.degree core.slot of=std.request key=degree kind=atom enum=bit enum=much
+@std.request.question core.slot of=std.request key=question kind=atom enum=count enum=exists enum=list enum=what enum=which enum=where enum=describe enum=why enum=how
 @std.request.query.type core.type of=std.request.query closed=true
 @std.request.query.request core.slot of=std.request.query key=request kind=ref to=std.request present=true
 @std.request.query.target core.slot of=std.request.query key=target kind=ref to=std.request.target present=true
@@ -470,6 +478,15 @@ ${projectionRecords}
 @std.request.target.kind core.slot of=std.request.target key=kind kind=atom
 @std.request.target.name core.slot of=std.request.target key=name kind=string
 @std.request.target.determiner core.slot of=std.request.target key=determiner kind=atom enum=definite enum=indefinite
+@std.request.target.head core.slot of=std.request.target key=head kind=string
+@std.request.target.reference core.slot of=std.request.target key=reference kind=atom enum=new enum=name enum=description enum=anaphora enum=population enum=ordinal enum=code enum=context
+@std.request.target.code core.slot of=std.request.target key=code kind=string
+@std.request.target.ordinal core.slot of=std.request.target key=ordinal kind=string many=true
+@std.request.target.count core.slot of=std.request.target key=count kind=integer min=0 max=9007199254740991
+@std.request.target.quantity core.slot of=std.request.target key=quantity kind=atom
+@std.request.target.modifier core.slot of=std.request.target key=modifier kind=string many=true
+@std.request.target.of core.slot of=std.request.target key=of kind=ref to=std.request.target
+@std.request.target.role core.slot of=std.request.target key=role kind=atom enum=theme enum=landmark enum=goal enum=possessor enum=member
 @std.request.target.selector core.slot of=std.request.target key=selector kind=ref type=std.request.constraint type=std.request.not type=std.request.group type=std.request.quant
 @std.request.root core.slot of=std.request key=root kind=ref type=std.request.constraint type=std.request.not type=std.request.group type=std.request.quant
 @std.request.constraint.type core.type of=std.request.constraint closed=true
@@ -494,6 +511,13 @@ ${projectionRecords}
 @std.request.constraint.measure core.slot of=std.request.constraint key=measure kind=number
 @std.request.constraint.from core.slot of=std.request.constraint key=from kind=atom
 @std.request.constraint.to core.slot of=std.request.constraint key=to kind=atom
+@std.request.constraint.landmark core.slot of=std.request.constraint key=landmark kind=ref to=std.request.target
+@std.request.constraint.region core.slot of=std.request.constraint key=region kind=atom
+@std.request.constraint.side core.slot of=std.request.constraint key=side kind=atom
+@std.request.constraint.direction core.slot of=std.request.constraint key=direction kind=atom
+@std.request.constraint.step core.slot of=std.request.constraint key=step kind=atom enum=more enum=much_more enum=less enum=much_less
+@std.request.constraint.variety core.slot of=std.request.constraint key=variety kind=atom enum=same enum=different enum=random enum=matching enum=alternating
+@std.request.constraint.valueType core.slot of=std.request.constraint key=valueType kind=atom
 @std.request.not.type core.type of=std.request.not closed=true
 @std.request.not.request core.slot of=std.request.not key=request kind=ref to=std.request present=true
 @std.request.not.of core.slot of=std.request.not key=of kind=ref type=std.request.constraint type=std.request.not type=std.request.group type=std.request.quant present=true

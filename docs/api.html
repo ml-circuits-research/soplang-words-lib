@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="1541dd7701da">
+<meta name="source-hash" content="0877e47e05f3">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,8 +12,8 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.236.0</small></a>
-  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="instance-state.html">Instance state</a><a href="playground.html">Playground</a></nav>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.237.0</small></a>
+  <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="instance-state.html">Instance state</a><a href="semantic-frame.html">Semantic frames</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
 <h1>API: every public name, with what it takes and returns</h1>
@@ -554,6 +554,20 @@ print(result.candidates.length, result.failures[0].reason, result.coverage.compl
 ] });
 print(result.ok, result.request);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>true r</code></pre></figure>
+<h3 id="frame_format-frame_roles-inspectframeframe-options-completefragmentframe">FRAME_FORMAT, FRAME_ROLES, inspectFrame(frame, options?), completeFragment(frame)</h3>
+<p>A semantic frame (<code>FRAME_FORMAT</code>, <code>sop.semantic-frame/1</code>) is a reader's domain-general reading of one message: an action, entity mentions and attribute, spatial, motion, goal, time, manner, question, fragment and discourse roles, the same for every area (<a href="semantic-frame.html">semantic-frame.md</a>). <code>FRAME_ROLES</code> holds the closed banks. <code>inspectFrame</code> checks shape, banks and mention indices and returns <code>{ok, issues:[{path, reason}]}</code>; <code>budget</code> (default 20000) bounds the steps. <code>completeFragment</code> completes fragment clauses ("and blue instead", "more") from <code>frame.previous.frame</code>.</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>const frame = { format: FRAME_FORMAT, text: &#x27;make the lamp red&#x27;, clauses: [{ action: { act: &#x27;change&#x27; },
+  mentions: [{ head: &#x27;lamp&#x27;, reference: &#x27;description&#x27; }], attributes: [{ theme: 0, concept: &#x27;colour&#x27;, value: &#x27;red&#x27; }] }] };
+inspectFrame(frame).ok;                       // true
+FRAME_ROLES.act.includes(&#x27;swap&#x27;);             // true</code></pre></figure>
+<h3 id="capabilitytableworld-scope-bindframeframe-table-options-frametorequestsframe-options">capabilityTable(world, scope), bindFrame(frame, table, options?), frameToRequests(frame, options?)</h3>
+<p><code>capabilityTable</code> reads the <code>std.capability</code> operations, parameters, kind targets, properties, repeats and observed objects of one scope as a plain table. <code>bindFrame</code> binds every frame role against such a table (the host may add <code>relations</code>, <code>amounts</code>, <code>actForms</code> and <code>concepts</code>): a role binds only through a declared row, and each role is listed as <code>bound</code> or <code>unbound</code> with a reason. <code>frameToRequests</code> writes one <code>std.request</code> graph per clause and theme as batch entries <code>{id, request, wires, after}</code> for <code>prepareRequestBatch</code>. With <code>binding</code>, unbound roles are left out and listed in <code>disclosed</code> (partial execution with disclosure). <code>extended: false</code> writes only the slots of the contract before version 0.237.0. <code>prefix</code> (default <code>f</code>) prefixes the node IDs.</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>const table = { operations: [{ name: &#x27;lamp.change&#x27;, act: &#x27;change&#x27;, on: &#x27;lamp&#x27;, parameters: [&#x27;id&#x27;, &#x27;glow&#x27;] }],
+  kinds: [{ label: &#x27;lamp&#x27;, canonical: &#x27;example.lamp&#x27;, on: &#x27;lamp&#x27; }],
+  properties: [{ concept: &#x27;colour&#x27;, on: &#x27;lamp&#x27;, parameter: &#x27;glow&#x27; }], objects: [{ id: &#x27;l1&#x27;, kind: &#x27;lamp&#x27;, on: &#x27;lamp&#x27; }] };
+const binding = bindFrame(frame, table);      // colour binds to lamp.change glow
+const { entries, disclosed } = frameToRequests(frame, { binding });
+prepareRequestBatch({ entries }).ok;          // true; disclosed is empty</code></pre></figure>
 <h3 id="compilegrammaroverlayworld-options">compileGrammarOverlay(world, options?)</h3>
 <p>A feature may declare <code>from_id=true</code> to carry the exact selected provider wire ID. This is mutually exclusive with <code>from_key</code> and <code>value</code>; false or any other flag value is rejected. It works uniformly for ordinary providers and <code>core.word</code>, respects source filters and <code>source_id</code>, and preserves distinct identities when providers share the same text. The value is the actual wire identity, not a display name, binding ID or synthesized semantic label. Source-family mappings can therefore use one binding for a declared family while retaining the exact lexical sense used by each candidate.</p>
 <p>Compiles a loaded SOP declaration module into explicit grammar options and semantic composition templates. The caller supplies all eight type identities in <code>types</code>: <code>binding</code>, <code>feature</code>, <code>filter</code>, <code>rule</code>, <code>map</code>, <code>node</code>, <code>step</code>, <code>agreement</code>. These roles have fixed field names; the compiler contains no language or domain vocabulary.</p>
@@ -1775,7 +1789,7 @@ factsOf(live).ofKind(&#x27;item&#x27;); // stable local SOP fact IDs</code></pre
 <p>The engine defaults to a cap of 128 candidates and applies the world reasoning budget per trial. An optimum is scoped to the candidate list.</p>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.236.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.237.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

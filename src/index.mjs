@@ -18,6 +18,7 @@ export { schemaCard, schemaExamples, actReply, schemaGrid, gridTests } from './s
 export { createCatalog, createCatalogs, bundleReader, bundleThenRead, listOf, loadBundles } from './knowledge.mjs';
 export { turn, TURN_STAGES, turnFlow, arbitrate } from './turn.mjs';
 export { serializeRequestGraph } from './request-serialize.mjs';
+export { FRAME_FORMAT, FRAME_ROLES, inspectFrame, completeFragment, capabilityTable, bindFrame, frameToRequests } from './semantic-frame.mjs';
 export { readGrammarRequests } from './grammar-request.mjs';
 export { compileGrammarOverlay } from './grammar-overlay.mjs';
 export { projectTemplates } from './template-project.mjs';
@@ -51,7 +52,7 @@ export { planner, factStore, PlanLive, readMethods, PLAN_LIMITS, solveChoices } 
 export { inflectBy, articleFor, morphOf, generate, analyse, fold, splitClitics, dictionary, realise, templateFor } from './morph.mjs';
 export { ledgerAppend, ledgerGroups, ledgerKey, stageOf, STAGES } from './ledger.mjs';
 export { solveProblem } from './problem.mjs';
-export const version = '0.236.0';
+export const version = '0.237.0';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)
  * tools/build.mjs fills in `hash`, a fingerprint of the bundled sources, and `date`,

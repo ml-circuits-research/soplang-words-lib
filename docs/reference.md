@@ -2113,6 +2113,17 @@ language. See [direct projection and failure semantics](api.md#projecttemplatesj
 
 The closed `std.reply.existence` claim has owner, revision and status: made, removed, unchanged or unconfirmed. Its validator recomputes the retained evidence; neither a claimed verdict nor a mutable live object is proof. Missing membership proves absence only with complete coverage. Lifecycle transitions require the same population source/scope, a confirmed step and a changed revision; view membership alone remains unconfirmed. Duplicate subject source identities, conflicting captured record identities and wrong correlation reject publication. Host completeness and lifecycle semantics are explicit trusted assertions, not inferred from labels. See the runnable API example and limitations in [api.md](api.md#assessexistencechangeworld-options).
 
+## Semantic frames
+
+A semantic frame is a reader's domain-general reading of a message, compiled through declared capabilities into
+`std.request` graphs ([semantic-frame.md](semantic-frame.md)). The `std.request` contract carries its roles in optional
+slots: `predicate`, `polarity`, `fragment`, `discourse`, `manner`, `degree` and `question` on `std.request`; `head`,
+`reference`, `code`, `ordinal`, `count`, `quantity`, `modifier`, `of` and `role` on `std.request.target`; `landmark`,
+`region`, `side`, `direction`, `step`, `variety` and `valueType` on `std.request.constraint`. A target's `of` and a
+constraint's `landmark` must name a target of the same request, and a target cannot be its own `of`. The functions
+`FRAME_FORMAT`, `FRAME_ROLES`, `inspectFrame`, `completeFragment`, `capabilityTable`, `bindFrame` and `frameToRequests`
+are described in [api.md](api.md).
+
 ## prepareRequestBatch
 
 `prepareRequestBatch({entries:[{id,request,wires,after}]}, {budget?,graphBudget?})` preflights all complete request graphs and their explicit dependency DAG. Returns a detached frozen plan with canonical per-entry wires and topological layers. It preserves the complete published request schema, including quantification, relations, selector/result distinctions and questions. No implicit sequence, cross-entry target binding, host capability promise or execution is introduced. One invalid graph rejects the entire preparation. Batch and per-graph budgets are independent.

@@ -1950,6 +1950,9 @@ A **number** is an integer or decimal, optionally followed by a unit (`5`, `2.5`
 | `round` | number, [decimals] | rounded; the unit is kept | |
 | `mod` | a, b | the remainder of a / b, with the sign of b and the unit of a | b is 0 |
 | `idiv` | a, b | the whole part of a / b | b is 0 |
+| `rand` | seed, salt... | a float in [0, 1) drawn from the arguments by the library generator: the same arguments, the same value | no arguments |
+| `rand_between` | seed, salt, lo, hi, step? | a number from lo to hi on the grid lo + k step (step 1), uniformly; lo's unit | units differ, step not > 0 |
+| `sample_key` | seed, salt, weight? | u^(1/weight), u = rand(seed, salt): the options with the largest keys (argmax over them) are a weighted sample without replacement | weight not > 0 |
 | `linsolve` | k, c, c1, x1, c2, x2, ... | the x with c·x + c1·x1 + ... = k, exactly | c is 0; units differ |
 | `concat` | values | the texts joined | |
 

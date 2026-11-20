@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.248.0
+
+- Seeded sampling in rules (`core.calc`): `rand(seed, salt...)` a float in [0, 1), `rand_between(seed, salt, lo, hi, step?)` a value on a grid, `sample_key(seed, salt, weight)` the Efraimidis-Spirakis key whose largest values (with `argmax`) are a weighted sample without replacement. All draw from `random.mjs` through a hash of their arguments, so a rule that samples is reproducible from its seed (a host records the seed for undo, redo and "another one").
+
 ## 0.247.1
 
 - Placement: the side declarations a `pair=sides` relation takes are the method's unconditioned ones (no `flow=`).

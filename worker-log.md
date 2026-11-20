@@ -6720,3 +6720,7 @@ No runtime code changed. Full source and bundle checks each passed 1015 with one
 ## 2026-11-20 G: 0.245.0 span reading, 0.246.0 paired placement relations, 0.247.0 flow predicates
 - 0.245.0 `stripPhrase`/`splitPhrase`/`readLexicalPhrase`/`readNumberSpan`/`unitConversion`/`decodeCode`/`nearestName` (from PSys2 kind readings, numbers, units, colour names); 0.246.0 `std.placement.predicate pair=sides` ("between A and B", from PSys2 spatial-placement-execution).
 - Checks: `npm test` 1078/0; `SOPWORLD_BUNDLE=1` 1078/0; doc examples 248, 0 problems.
+
+## 2026-11-21 G: 0.248.0 seeded sampling in rules
+- `rand`, `rand_between`, `sample_key` core.calc builtins on `random.mjs` (hash of the arguments as seed): reproducible weighted sampling from declared rules (PSys2 random/surprise composition).
+- Checks: `node --test test/seeded-sampling.test.mjs test/aggregate.test.mjs test/docs.test.mjs` pass; `node tools/doc-examples.mjs` (see run); full `npm test` at the end of the batch.

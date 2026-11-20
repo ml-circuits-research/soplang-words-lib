@@ -9,6 +9,8 @@
 //                     and dates in their own order; otherwise as text
 //   eq neq            by value for numbers, clock times and dates (5 = 5.0), else as text
 
+import { seeded } from './random.mjs';
+
 const QUANTITY = /^(-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?)([A-Za-zµ°%][A-Za-z0-9µ°%/*^.]*)?$/;
 
 /** { n, unit } for a number with an optional unit, or null. */
@@ -267,6 +269,16 @@ export function jsonAt(token, path) {
   return JSON.stringify(canonicalJson(v));
 }
 
+
+// The seeded draw of rand, rand_between and sample_key: the arguments as text, hashed (FNV-1a, 32 bits) into the seed
+// of the library generator, whose first value is the draw.
+function draw(args) {
+  let h = 0x811c9dc5;
+  for (const ch of args.map((a) => canonicalText(a)).join('\u0001')) { h ^= ch.codePointAt(0); h = Math.imul(h, 0x01000193) >>> 0; }
+  return seeded(h)();
+}
+const canonicalText = (v) => { const t = textOf(v); const q = quantity(t); return q && !q.unit ? String(q.n) : t; };
+
 export const builtins = {
   ...text,
   add: sameUnit((a, b) => a + b),
@@ -323,6 +335,25 @@ export const builtins = {
   lte: cmp((a, b) => a <= b),
   gt: cmp((a, b) => a > b),
   gte: cmp((a, b) => a >= b),
+  // Seeded sampling (random.mjs, the library's one generator): the same arguments give the same value, in every
+  // host and every run, so a rule that samples is reproducible from its seed (undo, redo, "another one" = seed + 1).
+  // rand(seed, salt...): a float in [0, 1) for the seed and the salts (any values: a name, an index).
+  rand: (args) => (args.length ? draw(args) : undefined),
+  // rand_between(seed, salt, lo, hi[, step]): a number from lo to hi (both included) on the grid lo + k * step
+  // (step 1 when not given), uniformly; the unit of lo is kept.
+  rand_between: ([seed, salt, lo, hi, step]) => {
+    const l = quantity(lo), h = quantity(hi), s = step === undefined ? { n: 1, unit: '' } : quantity(step);
+    if (!l || !h || !s || !(s.n > 0) || seed === undefined || salt === undefined || (h.unit && h.unit !== l.unit)) return undefined;
+    const [a, b] = l.n <= h.n ? [l.n, h.n] : [h.n, l.n], k = Math.floor((b - a) / s.n + 1e-9);
+    return show(a + Math.min(k, Math.floor(draw([seed, salt]) * (k + 1))) * s.n, l.unit);
+  },
+  // sample_key(seed, salt, weight): the key u^(1/weight) of a weighted sample without replacement (Efraimidis and
+  // Spirakis 2006): the options with the largest keys are the sample, each drawn in proportion to its weight.
+  sample_key: ([seed, salt, weight]) => {
+    const w = weight === undefined ? 1 : quantity(weight)?.n;
+    if (seed === undefined || salt === undefined || !(w > 0)) return undefined;
+    return show(draw([seed, salt]) ** (1 / w), '');
+  },
   // before($a, $b), after($a, $b): the place of two wires in the sequence
   before: ([a, b], world) => world.has(a.slice(1)) && world.has(b.slice(1)) && world.compare(a.slice(1), b.slice(1)) < 0,
   after: ([a, b], world) => world.has(a.slice(1)) && world.has(b.slice(1)) && world.compare(a.slice(1), b.slice(1)) > 0,

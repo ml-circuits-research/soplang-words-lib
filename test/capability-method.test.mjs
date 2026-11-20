@@ -253,3 +253,29 @@ test('a count with no parameter makes the call that many times when the family d
   assert.deepEqual(undeclared.attrs.skipped.map(str), ['count 3'], 'without the declaration the count stays unapplied');
   assert.deepEqual(ask(40, true).attrs.skipped.map(str), ['count 40'], 'beyond the declared maximum it stays unapplied');
 });
+
+// A population target (std.request.target reference=population) seeds the target list with every matching member and
+// is not held to target uniqueness; a single-identity parameter stays unfilled for a population of several.
+test('a population target seeds every member into the target list',()=>{
+ const world=source();
+ world.load(`@paint std.capability.operation scope=$scope name="cell.paint" act=change on="cell" order=5 eligible=true
+@paint.cells std.capability.parameter operation=$paint name="cells" kind=array required=true
+@paint.level std.capability.parameter operation=$paint name="level" kind=integer min=0 max=100
+@cells.seed std.capability.seed parameter="cells" operation="cell.paint" source=target.list phase=initial order=3
+@paint.pref std.capability.preference scope=$scope operation=$paint weight=5`);
+ const run=(reference)=>{
+  const wires=parse(world.compileRequest(`@r std.request act=change mood=do source=$s
+@s std.request.source text="set every cell to 7"
+@t std.request.target request=$r mode=existing kind=small.cell${reference?' reference='+reference:''}
+@c std.request.constraint request=$r target=$t concept=reading operator=eq character=requirement polarity=positive value=7
+@context std.capability.context request=$r scope=$scope`));
+  const result=wires[0],call=result.attrs.call&&wires.find(w=>'$'+w.id===result.attrs.call[0]);
+  const arg=name=>(call?.attrs.argument||[]).map(a=>wires.find(w=>'$'+w.id===a)).find(a=>str(a.attrs.name[0])===name);
+  const list=arg('cells');const items=list&&wires.find(w=>'$'+w.id===list.attrs.value[0]);
+  return {result,op:call&&str(call.attrs.operation[0]),cells:items?(items.attrs.member||[]).map(m=>str(wires.find(w=>'$'+w.id===m).attrs.value[0])):null};
+ };
+ const all=run('population');
+ assert.equal(all.result.attrs.status[0],'compiled',JSON.stringify(all.result.attrs));
+ assert.equal(all.op,'cell.paint');
+ assert.deepEqual(all.cells,['first','last']);
+});

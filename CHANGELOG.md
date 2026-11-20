@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.241.0
+
+- Capability compilation: an existing target with `reference=population` ("all the circles", "every node", a container's members) denotes every matching member of the selected one's source type. Target uniqueness (`targetUnique`, `selectorUnique`) does not apply to it; a `target.list` seed takes every member's id; a `target.id` seed stays unfilled for a population of several.
+
 ## 0.240.1
 
 - Matrix compilation: the stratification check finds the rules a produced type can wake through an index of the rules by the types their patterns read (with the type's ancestors), instead of scanning every rule for every type each negating rule reaches. Same rules, same order, same errors; a world with many negating rules (an editor area's projection) compiled in 7.9 s and now in 0.9 s.

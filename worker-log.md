@@ -6706,3 +6706,5 @@ No runtime code changed. Full source and bundle checks each passed 1015 with one
 `npm test` 1072 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs"` 1072 pass/0 fail.
 2026-11-20 — 0.240.1: the stratification check finds the rules a produced type wakes through an index by pattern type (with ancestors) instead of scanning every rule (same rules, order, errors). PSys2 Diagram area base: 7.9 s -> 0.9 s (`node prep2.mjs <psys2> diagram`, Node, local catalog).
 `npm test` 1022 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs"` 1062 pass/0 fail/11 skipped.
+2026-11-20 — 0.241.0: population targets (std.request.target reference=population) seed every matching member into target.list and skip target uniqueness (PSys2: "make all the circles red", "make it pastel" over a diagram's nodes).
+`npm test` 1073 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs"` 1073 pass/0 fail.

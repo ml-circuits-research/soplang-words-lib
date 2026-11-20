@@ -308,12 +308,12 @@ function valueOf(world, data, condition, property, param, args, tick) {
 }
 
 function sourceValue(world, rule, context, args, parameter, tick) {
-  const { target, selected, labels, kinds, scope } = context;
+  const { target, selected, labels, kinds, scope, population } = context;
   const name = text(target, 'name'), id = text(selected, 'id'), label = labels[0];
   switch (get(rule, 'source')) {
     case 'value': return typedValue(get(rule, 'value'), world, tick);
-    case 'target.id': return id ?? absent;
-    case 'target.list': return id === undefined ? absent : [id];
+    case 'target.id': return population && population.length > 1 ? absent : id ?? absent;
+    case 'target.list': return population ? population.map((row) => text(row, 'id')) : id === undefined ? absent : [id];
     case 'fresh.id': return text(scope, 'newId') ?? absent;
     case 'target.name': return name ?? absent;
     case 'label': return labels.length === 1 ? label : absent;
@@ -622,14 +622,18 @@ function compile(world, request, nodes, context) {
   const { matches, selection, support: selectorSupport } = matched;
   const selected = matches.find((row) => text(row, 'id') === text(scope, 'focus')) ?? matches.at(-1);
   const selectorDetails = selector ? { selector: selector.id, support: selectorSupport } : {};
-  if (matched.reason || (get(target, 'mode') === 'existing' && (!selected || flag(scope, 'targetUnique') && matches.length !== 1 ||
-      selector && flag(mode, 'selectorUnique') && (matches.length !== 1 || selection.some((row) => row.status === 'unknown'))))) {
+  // A population target (reference=population: "every node", "the diagram's nodes") denotes every matching member of the
+  // selected one's source type; its uniqueness requirements do not apply, the target list seeds all of them.
+  const population = get(target, 'mode') === 'existing' && get(target, 'reference') === 'population' && selected
+    ? matches.filter((row) => text(row, 'on') === text(selected, 'on')) : null;
+  if (matched.reason || (get(target, 'mode') === 'existing' && (!selected || !population && (flag(scope, 'targetUnique') && matches.length !== 1 ||
+      selector && flag(mode, 'selectorUnique') && (matches.length !== 1 || selection.some((row) => row.status === 'unknown')))))) {
     return output(tick, 'unavailable', { reason: matched.reason || 'target', act, kind, ...selectorDetails }, null, [], selection);
   }
 
   const operations = data.operations.filter((row) => flag(row, 'eligible') && get(row, 'act') === act &&
     (selected ? text(row, 'on') === text(selected, 'on') : types.has(text(row, 'on'))));
-  const input = { scope, mode, target, labels, kinds, selected };
+  const input = { scope, mode, target, labels, kinds, selected, population };
   const alternatives = operations.map((row) => {
     const item = candidate(world, data, input, row,
       mappings.find((mapping) => ref(world, mapping, 'operation')?.id === row.id), results, tick);

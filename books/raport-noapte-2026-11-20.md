@@ -123,9 +123,27 @@ Separ ce a rulat efectiv (comis, testat, văzut în browser) de ce este doar pre
 - **Bundle-ul offline:** nu conține toate desenele (de exemplu rața). Online merge.
 - **Safari:** nu are COEP `credentialless`, deci rămâne pe căutarea internă.
 
-## 8. În lucru când a fost scris raportul
+## 8. Actualizare la prânz (20 noiembrie)
 
-- **Activarea cititorului v6** plus legarea proprietăților lipsă (relații, ancoră, oră, lățime, comparative, alinierea bindings-urilor la catalogul nou).
-- **Tabul Documente** pe arie SOP.
+- **Toate cele 5 taburi sunt interpretoare SOP.** Documentele au trecut și ele: 24 de operații rulează, compunerea și rescrierea liberă sunt refuzate (ar cere un LLM), iar observarea nu face nimic, intenționat. PSys2 `d4918747`.
+- **Cititorul v6 e activ în demo**, cu bindings aliniate la catalogul `a04fb0d8`.
+  - **Relațiile:** relația și ancora se pereche-ază într-o singură constrângere de plasare.
+  - **Valorile relațiilor** se normalizează prin alinieri declarate.
+  - **Comparativele** se aplică obiectului observat.
+- **Golurile din probe închise** (PSys2 `61da1fac`, librăria 0.231–0.232):
+  - **Ora:** „3pm” devine un moment din ziua întâlnirii (`clock-projection.sop`, din `k.time`).
+  - **„Wider”:** lățimea și înălțimea au pași comparativi.
+  - **Rața în lac:** desenele din catalog au aceeași capacitate de plasare.
+  - **Relația dublă:** direcțiile se păstrează și doar distanța se relaxează, cu anunț în răspuns.
+  - **Soarele lipsă:** e creat când cererea îl plasează, cu anunț.
+  - **Prima tură din Documente** e înțeleasă.
+- **Probe pe ruta aplicației: 19 din 22** (erau 6 cu modelul vechi, apoi 15). În browser au mers toate turele din Desen, Documente și Calendar. Avatarul nu: „make her hair shorter” n-are încă o etichetă de lungime la cititor și nici o declarație în arie.
+- **Tabul Worlds** se deschide în 0,7 s. Arată instanța SOP a fiecărui tab, cu obiectele legate de faptele din care derivă, plus activitatea turei. Ariile nefolosite apar ca „not prepared”.
+- **Poarta PSys2:** 672 de teste trec, 0 pică, 1 `todo` (expirarea afișării temporare a ID-urilor).
 
-Fiecare intră în PSys2 doar după poarta completă.
+### Rămas deschis
+
+- **Părul avatarului:** cititorul nu dă o etichetă de lungime, iar aria nu declară alegerile de trăsături.
+- **„Move the meeting to 3pm” în Node:** pică din cauza unei mici diferențe numerice față de browser, unde merge.
+- **Modulele JS vechi** ale Desenului, Diagramei și Documentelor sunt încă pe disc. Nu le mai folosește niciun tab, dar le importă câteva scripturi vechi; ștergerea e un pas separat.
+- **Fișierele modelului** au 64 MB, peste limita recomandată de GitHub (50 MB). Merită trecut pe Git LFS.

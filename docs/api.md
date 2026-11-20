@@ -332,9 +332,14 @@ const provider = z3Provider({ onLoad: (info) => console.log(info.status, info.ms
 const placed = await world.compileRequest(problemSop, { provider });   // Z3 on an isolated page, else the internal search
 ```
 
-`z3Provider({ base, strict, onLoad })`: `base` is the directory of the Z3 files
+`z3Provider({ base, strict, onLoad, onSolve })`: `base` is the directory of the Z3 files
 (another origin works when it sends CORS headers, as GitHub Pages does), `strict`
-rejects instead of declining, and `provider.preload()` starts the load early.
+rejects instead of declining, and `provider.preload()` starts the load early (an idle
+warm-up). A model Z3 cannot translate or solve is declined like a failed load, so the
+internal search answers; `onSolve(info)` reports each problem (`{ status, ms }`, or
+`status: 'declined'` with `reason` and `error`). Integer and real terms mix freely: a
+subject drawn smaller to fit, a region with fractional bounds or a real weight make the
+operations real, and real values are read back exactly.
 `tools/browser-z3-check.mjs` (`npm run test:browser-z3`) runs it in headless Chromium;
 `tools/vendor-z3.mjs` rebuilds the vendored files.
 

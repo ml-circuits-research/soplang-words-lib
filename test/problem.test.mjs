@@ -135,3 +135,27 @@ test('Z3 keeps the same ground line and rests the house on the lake', { skip: pr
   assert.equal(a.status, 'solved'); assert.equal(a.provider, 'z3'); checkBeside(a.values);
   assert.equal(b.status, 'solved'); assert.equal(b.provider, 'z3'); checkResting(b.values);
 });
+
+// Fractional geometry: a subject drawn smaller to fit (112.5 x 57.75), a region with fractional bounds, real
+// weights, gaps and grid steps. Z3 mixes the integer and real terms and reads the real values back exactly.
+const fractional = `@p std.problem.request budget=5000 var=$vx var=$vy box=$frame box=$boat box=$water box=$lake box=$tree constraint=$c1 constraint=$c2 constraint=$c3 constraint=$c4 constraint=$c5 constraint=$c6
+@vx std.problem.var name=x min=0 max=887.5 step=15.625
+@vy std.problem.var name=y min=0 max=567.25 step=15.625
+@frame std.problem.box name=frame x=0 y=0 w=1000 h=625
+@boat std.problem.box name=boat x=x y=y w=112.5 h=57.75
+@water std.problem.box name=water x=692.5 y=461.25 w=295 h=127.5
+@lake std.problem.box name=lake x=680 y=445 w=320 h=160
+@tree std.problem.box name=tree x=0 y=445 w=160 h=160
+@c1 std.problem.constraint name=in_water predicate=inside a=boat b=water
+@c2 std.problem.constraint name=centred predicate=align a=boat b=water axis=x edge=0.5 strength=soft weight=0.2
+@c3 std.problem.constraint name=on_page predicate=inside a=boat b=frame
+@c4 std.problem.constraint name=peer predicate=apart a=boat b=tree gap=12 strength=soft weight=100
+@c5 std.problem.constraint name=close predicate=near a=boat b=tree gap=40.5 strength=soft weight=0.5
+@c6 std.problem.constraint name=resting predicate=on a=boat b=lake gap=4 share=0.25 strength=soft weight=1.5`;
+test('Z3 solves a problem with fractional sizes, regions and weights, and the read-back confirms it', { skip: provider ? false : 'z3-solver unavailable' }, async () => {
+  const w = new World(), r = result(await w.compileRequest(fractional, { provider })), internal = result(w.compileRequest(fractional));
+  assert.equal(r.status, 'solved'); assert.equal(r.provider, 'z3'); assert.equal(internal.provider, 'internal');
+  const { x, y } = r.values;
+  assert.ok(x >= 692.5 && x + 112.5 <= 987.5 && y >= 461.25 && y + 57.75 <= 588.75, JSON.stringify(r.values));
+  assert.equal(x + 56.25, 692.5 + 147.5, 'centred on the water, exactly');
+});

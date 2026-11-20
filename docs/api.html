@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="c28ee89f3de5">
+<meta name="source-hash" content="b030fde6eba5">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.232.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.232.1</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="instance-state.html">Instance state</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -112,7 +112,7 @@ const decision = world.compileRequest(`
 <figure class="code"><figcaption>js</figcaption><pre><code>import { z3Provider } from &#x27;./smt-z3.mjs&#x27;;     // fetches nothing yet
 const provider = z3Provider({ onLoad: (info) =&gt; console.log(info.status, info.ms) });
 const placed = await world.compileRequest(problemSop, { provider });   // Z3 on an isolated page, else the internal search</code></pre></figure>
-<p><code>z3Provider({ base, strict, onLoad })</code>: <code>base</code> is the directory of the Z3 files (another origin works when it sends CORS headers, as GitHub Pages does), <code>strict</code> rejects instead of declining, and <code>provider.preload()</code> starts the load early. <code>tools/browser-z3-check.mjs</code> (<code>npm run test:browser-z3</code>) runs it in headless Chromium; <code>tools/vendor-z3.mjs</code> rebuilds the vendored files.</p>
+<p><code>z3Provider({ base, strict, onLoad, onSolve })</code>: <code>base</code> is the directory of the Z3 files (another origin works when it sends CORS headers, as GitHub Pages does), <code>strict</code> rejects instead of declining, and <code>provider.preload()</code> starts the load early (an idle warm-up). A model Z3 cannot translate or solve is declined like a failed load, so the internal search answers; <code>onSolve(info)</code> reports each problem (<code>{ status, ms }</code>, or <code>status: 'declined'</code> with <code>reason</code> and <code>error</code>). Integer and real terms mix freely: a subject drawn smaller to fit, a region with fractional bounds or a real weight make the operations real, and real values are read back exactly. <code>tools/browser-z3-check.mjs</code> (<code>npm run test:browser-z3</code>) runs it in headless Chromium; <code>tools/vendor-z3.mjs</code> rebuilds the vendored files.</p>
 <figure class="code"><figcaption>js</figcaption><pre><code>const placed = world.compileRequest(`
 @p std.problem.request var=$x var=$y box=$house box=$tree constraint=$c
 @x std.problem.var name=x min=0 max=700 step=10
@@ -1775,7 +1775,7 @@ factsOf(live).ofKind(&#x27;item&#x27;); // stable local SOP fact IDs</code></pre
 <p>The engine defaults to a cap of 128 candidates and applies the world reasoning budget per trial. An optimum is scoped to the candidate list.</p>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.232.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.232.1 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

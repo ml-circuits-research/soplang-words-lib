@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.232.1
+
+- Browser and Node Z3 provider (`browser/z3-translate.mjs`): models with fractional terms (a subject drawn smaller to fit, a region with fractional bounds, real gaps, weights and grid steps) failed with "Can't cast Real to IntSort without loss", and real values were read back as NaN (`toString()` prints an s-expression). Every arithmetic operation now lifts both operands to reals unless both are integers, and numerals are read with `asString()` ("p/q"). The browser provider declines a model it cannot translate or solve (the internal search answers) instead of failing the request, and reports each problem through the new `onSolve(info)` option.
+
 ## 0.232.0
 
 - Placement through `std.problem`: a goal that denotes several observed things ("the tree" with two trees) no longer refuses as `ambiguous-anchor`. Each combination of candidate anchors (at most 16) is solved, with the `relax=gap` fallback per combination; the placement that keeps every declared distance wins over a relaxed one, then the least cost, then the most recent anchors. The others stay as `std.placement.option` alternatives (status `feasible` or `relaxed`), and each subject's option names the ambiguous anchor it used.

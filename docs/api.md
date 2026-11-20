@@ -216,6 +216,31 @@ parameters after the existing seeds, and a conditioned seed cannot establish
 another conditioned seed's applicability. The compiler retains both the
 applied seed and its qualifying argument records in the call support.
 
+#### Degree values
+
+A positive condition with `operator=degree` ("a big sun") or with
+`operator=factor baseline=before` ("twice as big") compiles into a value
+for a `number` or `integer` parameter its property binds. A degree word
+takes its factor from a trusted `std.capability.degree` with the
+condition's `concept` and the word as `label`, for example
+`concept=size label="big" factor=1.4`; exactly one distinct positive
+factor must be declared. A factor condition carries its number as `value`.
+
+The factor multiplies a base. For an existing target the base is the
+target's observed value: its single `std.capability.field` with the
+property's `binding`. For a new object the base is the value the
+operation would otherwise choose: a `std.capability.base` with the
+operation's `name`, the parameter and, optionally, the target's canonical
+`kind` and the capability `scope` (a host writes it from a measured
+preview of the call, or a policy declares it); else an argument the
+family or an initial seed already bound; else the parameter's declared
+`default`. An integer parameter receives the rounded product. When the
+property has `codec=lookup`, a degree word instead names an absolute
+literal through `std.capability.value`. An undeclared word, an ambiguous
+factor or base, a missing base or a value outside the parameter's bounds
+leaves the condition unapplied and reported as skipped. The result's
+support retains the degree, base and field records used.
+
 ### Compile a measured choice
 
 Load `std.choice` and declare the receiving World's policy with ordered

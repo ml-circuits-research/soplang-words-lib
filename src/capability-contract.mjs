@@ -125,7 +125,7 @@ const declarations = Object.entries(types).flatMap(([type, fields]) => {
     ...Object.entries(fields).map(([key, slots]) => `@${id}.slot.${key} core.slot of=${id} key=${key} ${slots}`),
   ];
 });
-const module = '@std.capability.module core.module name=std.capability version=0.212.0 imports=std.request ' +
+const module = '@std.capability.module core.module name=std.capability version=0.230.0 imports=std.request ' +
   Object.keys(types).map((type) => 'exports=' + prefix + type).join(' ');
 
 export const capabilityContracts = {

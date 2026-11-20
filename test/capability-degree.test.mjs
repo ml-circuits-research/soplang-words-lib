@@ -70,7 +70,7 @@ test('a degree or a factor on an existing object scales its observed value', () 
   assert.equal(higher.args.cell, 'first');
   assert.equal(higher.args.level, 25);
   assert.ok(higher.support.includes('first.level'));
-  assert.equal(compile(source(), 'change', 'operator=factor value=2 baseline=before polarity=positive').args.level, 40);
+  assert.equal(compile(source(), 'change', 'operator=factor value=2 baseline=before anchor=level polarity=positive').args.level, 40);
 });
 
 test('an undeclared, ambiguous, negative or out-of-range degree stays unapplied', () => {
@@ -88,7 +88,7 @@ test('an undeclared, ambiguous, negative or out-of-range degree stays unapplied'
   // Without an observed value an existing object has no base for a factor.
   const world = source();
   world.retract('first.level');
-  assert.equal(compile(world, 'change', 'operator=factor value=2 baseline=before polarity=positive').result.attrs.status[0], 'unavailable');
+  assert.equal(compile(world, 'change', 'operator=factor value=2 baseline=before anchor=level polarity=positive').result.attrs.status[0], 'unavailable');
 });
 
 test('a degree names an absolute literal when the property resolves values through the lookup table', () => {

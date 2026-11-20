@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.230.0
+
+- Capability compilation: degree values. A positive `operator=degree` condition ("a big sun") compiles into a numeric parameter as the declared factor of its word (`std.capability.degree concept label factor`) times a base: the target's observed value, else a `std.capability.base` (operation, parameter, optional kind and scope: the value the operation would otherwise choose, measured by a host or declared), else an argument already bound, else the parameter's default. A positive `operator=factor baseline=before` condition multiplies the target's observed value. With `codec=lookup` a degree word names an absolute literal of `std.capability.value`. Unknown words, ambiguous factors or bases and out-of-range values stay skipped. The method shipped inside the 0.229.0 commit; this release adds the contract version, tests (`test/capability-degree.test.mjs`) and documentation (api, capabilities, reference).
+
 ## 0.229.0
 
 - `std.problem`: two predicates. `align` keeps one point of two boxes on the same line (`axis` x or y, `edge` 0, 0.5 or 1); as a soft term it costs the distance times its weight, with the internal search and Z3. `on` rests a box on the top band of another (`share` of its height plus `gap`), its centre over it. Z3 sums real and integer costs.

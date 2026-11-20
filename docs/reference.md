@@ -1630,6 +1630,23 @@ print(need.attrs.value, need.attrs.tier, need.attrs.source);
 ["table"] ["knowledge"] ["usual"]
 ```
 
+## std.capability: degree values
+
+Two trusted record types of the capability contract (`core.use world=std.capability`) turn a degree into a number
+when `compileRequest` compiles a request against declared tools.
+
+| Type | Keys | Who writes it |
+| --- | --- | --- |
+| `std.capability.degree` | `concept`, `label` (the word), `factor` (positive) | a policy, from the knowledge that owns the scale |
+| `std.capability.base` | `operation`, `parameter`, `value`; optional `kind` (canonical), `scope` | a host from a measured preview of the call, or a policy |
+
+**Meaning.** A positive `operator=degree` condition whose property binds a numeric parameter takes the product of
+the one declared factor for its word and a base: the target's observed field when it exists, else the matching
+`std.capability.base`, else an argument already bound, else the parameter's `default`. A positive `operator=factor
+baseline=before` condition multiplies an existing target's observed value by its number. Integers are rounded; a
+value outside the parameter's bounds, an unknown word or an ambiguous factor or base leaves the condition skipped.
+With `codec=lookup` on the property a degree word is an absolute literal of `std.capability.value` instead.
+
 ## std.focus: what a dialogue is about
 
 A module of the standard pack written in rules only (`core.use world=std.focus`; it

@@ -927,6 +927,39 @@ print(parse(text).find((r) => r.type === 'std.problem.assignment').attrs.value);
 ["240"]
 ```
 
+## Turn "big", "smaller" or "twice as big" into the number a tool takes
+
+*In `compileRequest` (`std.capability.degree`, `std.capability.base`); since 0.230.*
+*Works on: any request condition with `operator=degree` or `operator=factor baseline=before` whose property binds a numeric parameter.*
+
+A degree word has no number of its own: a big sun is bigger than the sun the tool would draw, and a bigger house
+is bigger than the house as it is. The world declares the scale once per concept (`std.capability.degree concept=size
+label="big" factor=1.4`), and the compiler multiplies the value the tool would otherwise choose (a
+`std.capability.base` the host measured, an argument already bound, the declared default) or the target's observed
+value. Nothing names a word or a tool in code; an undeclared word stays unapplied and is reported.
+
+```js run
+const w = new World();
+w.use('std.capability');
+w.load(`@scope std.capability.scope instance="toy" version="1"
+@mode std.capability.mode act=make target=new
+@op std.capability.operation scope=$scope name="lamp.make" act=make on="lamp" order=0 eligible=true
+@p std.capability.parameter operation=$op name="glow" kind=number default=40
+@t std.capability.target scope=$scope canonical=toy.lamp label="lamp" operation=$op
+@prop std.capability.property scope=$scope concept=glow on="lamp" parameter="glow" order=0
+@bright std.capability.degree concept=glow label="bright" factor=1.5`);
+const out = w.compileRequest(`@s std.request.source text="a bright lamp"
+@r std.request act=make mood=do source=$s
+@l std.request.target request=$r mode=new kind=toy.lamp
+@c std.request.constraint request=$r target=$l concept=glow operator=degree value=bright polarity=positive character=requirement
+@x std.capability.context request=$r scope=$scope`);
+print(parse(out).find((r) => r.type === 'std.capability.arg' && str(r.attrs.name[0]) === 'glow').attrs.value);
+```
+
+```output
+["60"]
+```
+
 ## Bind a live world to its tool by wires, and run its plans with a timeline
 
 *In `runPlan`, `runWorldPlan`, `toolBindings`, `toolTimeline`, `toolSession`, `toolCapabilities`, `askWorld`, `nearestAccepted`, `readView`, `stateDiff`, `mirrorState`, `stateIds`, `TOOL_ARG_SOURCES`, `WORLD_QUESTIONS`, `STATE_FEW`, `kindLineage`, `expectedValue`, `cutToCount`, `fillToCount`, `notAllOneKind`, `EXPECT_TYPES`; since 0.152.*

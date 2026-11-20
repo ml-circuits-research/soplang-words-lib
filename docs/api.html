@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="aec16012b10d">
+<meta name="source-hash" content="dd8c07b542f3">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.229.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.230.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="instance-state.html">Instance state</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -85,6 +85,9 @@ const result = parse(circuitSop)[0];</code></pre></figure>
 <h4 id="scoped-optional-capability-defaults">Scoped optional capability defaults</h4>
 <p>A trusted <code>std.capability.seed</code> may qualify a literal default by a <code>scope=$…</code> reference to the observed capability scope, a canonical <code>kind=</code>, or both. Use <code>phase=missing source=value</code> for a qualified seed. The compiler uses it only for a compatible unclaimed parameter, skips invalid inferred values, and retains the applied seed identifier in the plan's support. A user condition that maps to that parameter takes precedence even if its value is unresolved. Existing unqualified seeds retain their declared phases and precedence.</p>
 <p>Add one or more <code>whenArgument=$arg</code> references when a measurement applies only to a specific call. Each <code>std.capability.arg</code> gives a parameter <code>name</code> and exact typed <code>value</code>. For example, <code>name="count" value=3</code> qualifies values measured for a batch of three. Every named argument must be admitted by the candidate operation and equal the recorded value. The compiler reads arguments from the selected family, resolved conditions, existing seeds and applicable parameter defaults. An unresolved explicit condition cannot authorize the measurement. These seeds fill only unclaimed parameters after the existing seeds, and a conditioned seed cannot establish another conditioned seed's applicability. The compiler retains both the applied seed and its qualifying argument records in the call support.</p>
+<h4 id="degree-values">Degree values</h4>
+<p>A positive condition with <code>operator=degree</code> ("a big sun") or with <code>operator=factor baseline=before</code> ("twice as big") compiles into a value for a <code>number</code> or <code>integer</code> parameter its property binds. A degree word takes its factor from a trusted <code>std.capability.degree</code> with the condition's <code>concept</code> and the word as <code>label</code>, for example <code>concept=size label="big" factor=1.4</code>; exactly one distinct positive factor must be declared. A factor condition carries its number as <code>value</code>.</p>
+<p>The factor multiplies a base. For an existing target the base is the target's observed value: its single <code>std.capability.field</code> with the property's <code>binding</code>. For a new object the base is the value the operation would otherwise choose: a <code>std.capability.base</code> with the operation's <code>name</code>, the parameter and, optionally, the target's canonical <code>kind</code> and the capability <code>scope</code> (a host writes it from a measured preview of the call, or a policy declares it); else an argument the family or an initial seed already bound; else the parameter's declared <code>default</code>. An integer parameter receives the rounded product. When the property has <code>codec=lookup</code>, a degree word instead names an absolute literal through <code>std.capability.value</code>. An undeclared word, an ambiguous factor or base, a missing base or a value outside the parameter's bounds leaves the condition unapplied and reported as skipped. The result's support retains the degree, base and field records used.</p>
 <h3 id="compile-a-measured-choice">Compile a measured choice</h3>
 <p>Load <code>std.choice</code> and declare the receiving World's policy with ordered <code>std.decide.criterion</code> facts. Supply a <code>std.choice.request</code> with one <code>policy</code> atom and ordered references to <code>std.choice.option</code> facts. Each option owns one distinct <code>std.choice.measurement</code> per criterion measure. Measurements carry a metric atom and a finite number. A hard criterion excludes an option with a nonzero measurement. The remaining options use the declared min/max order and retain input order on ties.</p>
 <figure class="code"><figcaption>js</figcaption><pre><code>world.tell(`
@@ -1770,7 +1773,7 @@ factsOf(live).ofKind(&#x27;item&#x27;); // stable local SOP fact IDs</code></pre
 <p>The engine defaults to a cap of 128 candidates and applies the world reasoning budget per trial. An optimum is scoped to the candidate list.</p>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.229.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.230.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

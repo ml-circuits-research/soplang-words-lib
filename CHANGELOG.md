@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.239.0
+
+- Placement, one relation: the subject lies in its own container when it moves; a new one in the anchor's container when its tool can make into it (`containerKey`) or that is the context's, else in the context's container. An anchor inside a container the subject is not in (a node inside a diagram group) is measured by its observed box and the subject keeps apart from the peers of its own container. Before, such an anchor was skipped and the request answered `no-feasible-placement`.
+
 ## 0.238.0
 
 - Capability queries: a query on a family target (a `std.capability.target` mapping with `family=true`) takes the whole source type of its operation as the population, as the action path does; a named target ("what colour is Sun?") keeps the members of that name. Before, such a query answered `unbound-query-population` because no kind enum accepts a family label.

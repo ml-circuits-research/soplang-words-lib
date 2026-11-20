@@ -154,7 +154,10 @@ function perform(world, request, nodes, context, method, provider, solve=false) 
   for (const anchor of anchors) for (const moving of subjects) {
     if (anchor===moving) continue;
     if (!anchor.geometry || moving && !moving.geometry) return unavailable('incomplete-geometry');
-    if (moving ? moving.container!==anchor.container : anchor.container!==literal(context,'container') && !get(tool,'containerKey')) continue;
+    // The container the subject lies in: its own when it moves; for a new one the anchor's when the tool can make into
+    // it (containerKey) or it is the context's, else the context's. An anchor inside a container the subject is not in
+    // (a node inside a diagram group) is measured by its observed box; the subject keeps apart from its own peers.
+    const home=moving?moving.container:(anchor.container===literal(context,'container')||get(tool,'containerKey'))?anchor.container:literal(context,'container');
     const size=moving?{width:moving.geometry.width,height:moving.geometry.height}:{width:number(kind,'width'),height:number(kind,'height')};
     if (![size.width,size.height].every(n=>Number.isFinite(n)&&n>0)) return unavailable('unknown-extent');
     const model=world.fork(), subjectEntity=moving?entity(moving.box):quote('compiled.proposal');
@@ -169,7 +172,7 @@ function perform(world, request, nodes, context, method, provider, solve=false) 
       pairs.push(pair);
     }
     addPair(anchor.box,relName);
-    for (const other of rows) if (other!==moving && other.peer && other.container===anchor.container) addPair(other.box,get(method,'peerRelation'));
+    for (const other of rows) if (other!==moving && other.peer && other.container===home) addPair(other.box,get(method,'peerRelation'));
     if (frameBounds) {
       if (!get(method,'containRelation') || !get(method,'containEvidence')) return unavailable('missing-containment-policy');
       addPair(frameBounds,get(method,'containRelation'),get(method,'containEvidence'));
@@ -183,7 +186,7 @@ function perform(world, request, nodes, context, method, provider, solve=false) 
     const gap=one(policies.filter(w=>fieldsMatch(w,{...pairs[0],metric:get(method,'gapMetric')})));
     if (!gap || !Number.isFinite(number(gap,'clearance'))) return unavailable('missing-gap-policy');
     // The peers to keep apart from, each at the largest clearance the domain world gives that pair (its spacing profile).
-    const peers=rows.filter(o=>o!==moving&&o!==anchor&&o.peer&&o.geometry&&o.container===anchor.container).map(o=>{
+    const peers=rows.filter(o=>o!==moving&&o!==anchor&&o.peer&&o.geometry&&o.container===home).map(o=>{
       const kept=policies.filter(w=>fieldsMatch(w,{subject:subjectEntity,object:entity(o.box),kind:get(method,'peerRelation')})).map(w=>number(w,'clearance')).filter(Number.isFinite);
       return {...o.geometry,gap:kept.length?Math.max(...kept):undefined};
     });

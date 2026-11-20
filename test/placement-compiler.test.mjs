@@ -123,3 +123,14 @@ test('a native kind of several words places like a one-word kind',{skip},()=>{
   assert.equal(result.attrs.status[0],'compiled',JSON.stringify(result.attrs));
   assert.equal(call.attrs.form[0],'"shooting star"');
 });
+
+// An anchor inside a container the new subject's tool cannot make into (no containerKey: a node inside a diagram group)
+// is measured by its observed box; the subject is made in the context's container, apart from that container's peers.
+test('an anchor inside another container places a new subject in the context container',{skip},()=>{
+  const w=fixture();w.revise('place',{search:'problem'});
+  w.load(`@box.inner k.spatial2d.box entity="inner" ${context} evidence=rectangle min_x=300 min_y=40 max_x=340 max_y=50
+  @id.inner std.placement.identity box=$box.inner source="source:inner" container="frame" concept=marker name="Inner"`);
+  const {result,call}=outcome(w,request.replace('kind=marker mode=existing','kind=marker mode=existing name="Inner"'));
+  assert.equal(result.attrs.status[0],'compiled',JSON.stringify(result.attrs));
+  assert.ok(Number(call.attrs.x[0])>=340||Number(call.attrs.x[0])+10<=300,'beside the inner marker '+call.attrs.x[0]);
+});

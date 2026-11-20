@@ -6700,3 +6700,5 @@ No runtime code changed. Full source and bundle checks each passed 1015 with one
 `npm test` 1068 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs"` 1068 pass/0 fail.
 2026-11-20 — 0.238.0: queries on family targets (family=true) take the whole source type (named members by name); one-relation placement with avoids= steers each direction's slot out of avoided regions (hard apart, slot may move away along the direction, soft pull back); std.placement.kind native= takes a string (multi-word kinds). Measured in PSys2 mass-eval (its worker-log).
 `npm test` 1071 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs"` 1071 pass/0 fail.
+2026-11-20 — 0.239.0: one-relation placement keeps the subject in its own container (a new one in the context's unless its tool can make into the anchor's), measuring an anchor in another container by its observed box (PSys2: diagram nodes placed beside grouped nodes).
+`npm test` 1072 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs"` 1072 pass/0 fail.

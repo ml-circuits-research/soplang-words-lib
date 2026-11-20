@@ -1,6 +1,7 @@
 // The library under test: the sources, or the single-file build when SOPWORLD_BUNDLE is set.
 const lib = await import(process.env.SOPWORLD_BUNDLE ? '../docs/sopworld.mjs' : '../src/index.mjs');
 export const {
+  stripPhrase, splitPhrase, readLexicalPhrase, readNumberSpan, unitConversion, decodeCode, nearestName,
   serializeInstanceState, readInstanceState, instanceStateWorld, INSTANCE_STATE_FORMAT,
   completeStructuralBindings, populationPairs, readingOrder, POPULATION_PATTERNS, nearestRelative,
   lookupContextTargetBinding, compareRequestGraphs, retainSelectiveCalibration, assessSelectiveCalibration, retainRequestRevision, resolveRequestTargets, evaluateRequestPredicates, prepareRequestBatch, requestBatchFrontier, assessExistenceChange, assessPropertyChange, readGrammarRequests, serializeRequestGraph, FRAME_FORMAT, FRAME_ROLES, inspectFrame, completeFragment, capabilityTable, bindFrame, frameToRequests,

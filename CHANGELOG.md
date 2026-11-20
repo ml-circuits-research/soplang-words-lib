@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.245.0
+
+- Span reading (`src/span-reading.mjs`): a span of said text read against a declared space, with every word list, form, unit, code layout and tolerance supplied by the caller's declarations. `stripPhrase` (a declared leading and trailing word removed: a determiner, a place deictic), `splitPhrase` (one phrase listing several things split at declared separators), `readLexicalPhrase` (the declared entry a phrase names: after leading words, by each word's declared normal form, the first entry word not meaning the avoided class, then within a declared tolerance: a doubled letter, a swap, a bounded edit distance when the entries within it mean one thing), `readNumberSpan` (the one number a span spells from declared number words, digits, joiners and unit conversions), `unitConversion`, `decodeCode` and `nearestName` (the declared name nearest a fixed-width channel code).
+
 ## 0.244.0
 
 - `completeStructuralBindings(table, declared)`: an exported structural binding table (`sop.structural-bindings/1`) completed from the live `std.capability` declarations and an application's declared rows: keys by parameter name (never an unbound parameter; an operation of a preferred act first), closed value lists, numbers and units, declared key alignments with said values, relation pairs, family readings and operations, the binding a family's kind rows share, positions with ordinal words, compound-lemma modifiers and closed native values as kinds. Moved from an application, where the same rules ran as host code.

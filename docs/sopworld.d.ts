@@ -1056,3 +1056,13 @@ export const POPULATION_PATTERNS: readonly ['chain', 'cycle', 'all', 'star'];
 export function readingOrder<T extends { id: unknown }>(objects: T[], place?: (object: T) => { x?: number; y?: number; height?: number } | undefined): T[];
 export function populationPairs(members: { id: string }[], pattern: string, options?: { hub?: string; hubFirst?: boolean; max?: number; tick?: () => void }): [string, string][] | null;
 export function nearestRelative(input: { own: { key: string; parent: string; dimension?: string }[]; members: Map<string, Set<string>>; seen: number; near?: string[]; weights?: Record<string, number>; accept: (name: string) => boolean | Promise<boolean>; limit?: number }): Promise<{ name: string; via: 'parent' | 'shared'; score?: number } | null>;
+
+export interface SpanTolerance { minLength?: number; doubled?: boolean; swapped?: boolean; steps?: { above?: number; edits: number }[] }
+export interface CodeLayout { prefix?: string; channels?: number; width?: number; radix?: number }
+export function stripPhrase(phrase: string, options?: { leading?: string[]; trailing?: string[] }): { core: string; leading: string | null; trailing: string | null };
+export function splitPhrase(phrase: string, options?: { separators?: string[]; marks?: string[] }): string[];
+export function readLexicalPhrase(phrase: string, options?: { entries?: [string, unknown][]; leading?: string[]; forms?: (word: string) => string[]; avoid?: unknown; tolerance?: SpanTolerance | null; tick?: (site: string) => void }): { text: string; meaning: unknown; via: 'phrase' | 'word' | 'doubled' | 'swapped' | 'edit' } | null;
+export function readNumberSpan(text: string, options?: { number?: (word: string) => number | null; joiners?: string[]; unit?: (word: string) => null | true | { factor: number }; forms?: (word: string) => string[]; tick?: (site: string) => void }): { value: number; factor?: number } | null;
+export function unitConversion(word: string, units?: { words?: string[]; factor: number }[], options?: { forms?: (word: string) => string[]; known?: (word: string) => boolean }): null | true | { factor: number };
+export function decodeCode(code: string, layout?: { prefix?: string; channels?: number; width?: number; radix?: number }): number[] | null;
+export function nearestName(code: string, names?: { name: string; code: string }[], layout?: CodeLayout): string | null;

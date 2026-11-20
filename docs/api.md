@@ -5360,6 +5360,60 @@ const found = await nearestRelative({ own: [{ key: 'pet', parent: 'pet', dimensi
 print(found.name, found.via); // cat shared
 ```
 
+## Span reading
+
+A span of said text read against a declared space (`src/span-reading.mjs`). Language-free: every word list, form, unit, code layout and tolerance is the caller's declaration (a language world's determiners and inflections, a knowledge world's number words and codes, a policy's tolerance). Each loop is bounded by the span or the declared lists; `tick(site)` lets a caller's budget count the steps.
+
+### stripPhrase(phrase, options?)
+
+`{ core, leading, trailing }`: the phrase without one declared `leading` word (tried in order, followed by one space, case-insensitive) and one declared `trailing` word (the last word); never emptied.
+
+```js
+print(stripPhrase('da glorp yonder', { leading: ['da'], trailing: ['yonder'] }).core); // glorp
+```
+
+### splitPhrase(phrase, options?)
+
+The parts of a phrase that lists several things, split at declared `separators` (words followed by whitespace) and `marks`; trimmed, empty parts dropped.
+
+```js
+print(splitPhrase('glorp plus zint, wug', { separators: ['plus'], marks: [','] }).length); // 3
+```
+
+### readLexicalPhrase(phrase, options?)
+
+The declared entry (`entries`: `[text, meaning]`) a phrase names, or null: after its `leading` words, as the phrase of each word's last declared form (`forms(word)` returns `[word, ...forms]`), as the first word that is an entry not meaning `avoid`, then any entry word; for one word, within `tolerance` (`{ minLength, doubled, swapped, steps: [{ above, edits }] }`): a doubled letter, a swap of neighbours, else the entries within the edit distance of the largest step below the word's length, when they all mean one thing. Returns `{ text, meaning, via }`.
+
+```js
+const hit = readLexicalPhrase('da glorps', { entries: [['glorp', 'k.glorp']], leading: ['da'], forms: (w) => [w, w.replace(/s$/, '')] });
+print(hit.meaning, hit.via); // k.glorp phrase
+```
+
+### readNumberSpan(text, options?)
+
+`{ value, factor? }`: the one number a span spells, from digits or a run of declared number words (`number(word)`, place-value composition, `joiners` allowed after a hundred or scale word), scaled by at most one declared unit (`unit(word)`: null, `true` for a unit without conversion, or `{ factor }`; tried with `forms(word)`); null for no number, several numbers or an unconverted unit.
+
+```js
+print(readNumberSpan('size 45').value); // 45
+```
+
+### unitConversion(word, units?, options?)
+
+`{ factor }` of a word declared in `units` (`[{ words, factor }]`), `true` when `known(word)` names it without a conversion, else null; `forms` gives the word's other forms.
+
+```js
+print(unitConversion('span', [{ words: ['span'], factor: 7.5 }]).factor); // 7.5
+```
+
+### decodeCode(code, layout?) and nearestName(code, names, layout?)
+
+`decodeCode` reads a fixed-width channel code (`{ prefix, channels, width, radix }`) as its channel values, or null. `nearestName` is the name of `names` (`[{ name, code }]`) whose code is nearest by squared channel distance (the first of equal ones), or null.
+
+```js
+const layout = { prefix: '#', channels: 3, width: 2, radix: 16 };
+print(decodeCode('#0a0b0c', layout).join(' '), nearestName('#202020', [{ name: 'dim', code: '#101010' }, { name: 'bright', code: '#f0f0f0' }], layout)); // 10 11 12 dim
+```
+
 ## Instance state archives
 
 ### INSTANCE_STATE_FORMAT

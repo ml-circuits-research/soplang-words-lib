@@ -1290,6 +1290,7 @@ them directly. Each is in [api](api.md) or [reference](reference.md) with its ex
 | `grammarOf`, `grammarView`, `viewDiff`, `grammarCheck` | the grammar a world holds; the views of a closed class and where two differ; checks of a grammar | 0.29, 0.30, 0.58 |
 | `ledgerAppend`, `ledgerGroups`, `ledgerKey`, `stageOf`, `STAGES` | the failure ledger: rows, groups, keys, pipeline stages | 0.25 |
 | `needsOf` | the typed needs of a world or view | 0.39 |
+| `stripPhrase`, `splitPhrase`, `readLexicalPhrase`, `readNumberSpan`, `unitConversion`, `decodeCode`, `nearestName` | a span of said text read against a declared space: declared edge words removed, a listing phrase split, the declared entry a phrase names (forms, avoided class, declared spelling tolerance), the number a span spells from declared number words and unit conversions, the declared name nearest a channel code | 0.245 |
 
 ```js run
 const [w1] = parse('@cup thing size=2kg');

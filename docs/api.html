@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="27f513fd23f4">
+<meta name="source-hash" content="1e88d14dbb26">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.244.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.245.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="instance-state.html">Instance state</a><a href="semantic-frame.html">Semantic frames</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -1782,6 +1782,28 @@ print(table.properties[0].numeric, table.properties[0].unit); // true px</code><
 <p>The closest acceptable relative of a name in a taxonomy of weighted traits: first an acceptable parent along a <code>near</code> dimension, the most specific first (specificity ln(seen / members with the trait)); else the acceptable name sharing the most traits, each shared trait counting its dimension's <code>weights</code> times its specificity, ties by name, at most <code>limit</code> (64) names tried. <code>accept(name)</code> (sync or async) says whether the application can realise a name. Resolves to <code>{name, via, score?}</code> or null. The caller reads the taxonomy rows; the ranking is the library's.</p>
 <figure class="code"><figcaption>js</figcaption><pre><code>const found = await nearestRelative({ own: [{ key: &#x27;pet&#x27;, parent: &#x27;pet&#x27;, dimension: &#x27;kind&#x27; }], members: new Map([[&#x27;pet&#x27;, new Set([&#x27;cat&#x27;])]]), seen: 4, weights: { kind: 1 }, accept: (name) =&gt; name === &#x27;cat&#x27; });
 print(found.name, found.via); // cat shared</code></pre></figure>
+<h2 id="span-reading">Span reading</h2>
+<p>A span of said text read against a declared space (<code>src/span-reading.mjs</code>). Language-free: every word list, form, unit, code layout and tolerance is the caller's declaration (a language world's determiners and inflections, a knowledge world's number words and codes, a policy's tolerance). Each loop is bounded by the span or the declared lists; <code>tick(site)</code> lets a caller's budget count the steps.</p>
+<h3 id="stripphrasephrase-options">stripPhrase(phrase, options?)</h3>
+<p><code>{ core, leading, trailing }</code>: the phrase without one declared <code>leading</code> word (tried in order, followed by one space, case-insensitive) and one declared <code>trailing</code> word (the last word); never emptied.</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>print(stripPhrase(&#x27;da glorp yonder&#x27;, { leading: [&#x27;da&#x27;], trailing: [&#x27;yonder&#x27;] }).core); // glorp</code></pre></figure>
+<h3 id="splitphrasephrase-options">splitPhrase(phrase, options?)</h3>
+<p>The parts of a phrase that lists several things, split at declared <code>separators</code> (words followed by whitespace) and <code>marks</code>; trimmed, empty parts dropped.</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>print(splitPhrase(&#x27;glorp plus zint, wug&#x27;, { separators: [&#x27;plus&#x27;], marks: [&#x27;,&#x27;] }).length); // 3</code></pre></figure>
+<h3 id="readlexicalphrasephrase-options">readLexicalPhrase(phrase, options?)</h3>
+<p>The declared entry (<code>entries</code>: <code>[text, meaning]</code>) a phrase names, or null: after its <code>leading</code> words, as the phrase of each word's last declared form (<code>forms(word)</code> returns <code>[word, ...forms]</code>), as the first word that is an entry not meaning <code>avoid</code>, then any entry word; for one word, within <code>tolerance</code> (<code>{ minLength, doubled, swapped, steps: [{ above, edits }] }</code>): a doubled letter, a swap of neighbours, else the entries within the edit distance of the largest step below the word's length, when they all mean one thing. Returns <code>{ text, meaning, via }</code>.</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>const hit = readLexicalPhrase(&#x27;da glorps&#x27;, { entries: [[&#x27;glorp&#x27;, &#x27;k.glorp&#x27;]], leading: [&#x27;da&#x27;], forms: (w) =&gt; [w, w.replace(/s$/, &#x27;&#x27;)] });
+print(hit.meaning, hit.via); // k.glorp phrase</code></pre></figure>
+<h3 id="readnumberspantext-options">readNumberSpan(text, options?)</h3>
+<p><code>{ value, factor? }</code>: the one number a span spells, from digits or a run of declared number words (<code>number(word)</code>, place-value composition, <code>joiners</code> allowed after a hundred or scale word), scaled by at most one declared unit (<code>unit(word)</code>: null, <code>true</code> for a unit without conversion, or <code>{ factor }</code>; tried with <code>forms(word)</code>); null for no number, several numbers or an unconverted unit.</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>print(readNumberSpan(&#x27;size 45&#x27;).value); // 45</code></pre></figure>
+<h3 id="unitconversionword-units-options">unitConversion(word, units?, options?)</h3>
+<p><code>{ factor }</code> of a word declared in <code>units</code> (<code>[{ words, factor }]</code>), <code>true</code> when <code>known(word)</code> names it without a conversion, else null; <code>forms</code> gives the word's other forms.</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>print(unitConversion(&#x27;span&#x27;, [{ words: [&#x27;span&#x27;], factor: 7.5 }]).factor); // 7.5</code></pre></figure>
+<h3 id="decodecodecode-layout-and-nearestnamecode-names-layout">decodeCode(code, layout?) and nearestName(code, names, layout?)</h3>
+<p><code>decodeCode</code> reads a fixed-width channel code (<code>{ prefix, channels, width, radix }</code>) as its channel values, or null. <code>nearestName</code> is the name of <code>names</code> (<code>[{ name, code }]</code>) whose code is nearest by squared channel distance (the first of equal ones), or null.</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>const layout = { prefix: &#x27;#&#x27;, channels: 3, width: 2, radix: 16 };
+print(decodeCode(&#x27;#0a0b0c&#x27;, layout).join(&#x27; &#x27;), nearestName(&#x27;#202020&#x27;, [{ name: &#x27;dim&#x27;, code: &#x27;#101010&#x27; }, { name: &#x27;bright&#x27;, code: &#x27;#f0f0f0&#x27; }], layout)); // 10 11 12 dim</code></pre></figure>
 <h2 id="instance-state-archives">Instance state archives</h2>
 <h3 id="instance_state_format">INSTANCE_STATE_FORMAT</h3>
 <figure class="code"><figcaption>js</figcaption><pre><code>INSTANCE_STATE_FORMAT; // &quot;sop.instance-state/2&quot;</code></pre></figure>
@@ -1809,7 +1831,7 @@ factsOf(live).ofKind(&#x27;item&#x27;); // stable local SOP fact IDs</code></pre
 <p>The engine defaults to a cap of 128 candidates and applies the world reasoning budget per trial. An optimum is scoped to the candidate list.</p>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.244.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.245.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

@@ -334,6 +334,22 @@ bound; `apart` for `near`) and its distance bound becomes a soft term (weight
 `relaxWeight` of the predicate, 1 by default). The result lists in `relaxed` the
 relations whose distance it could not keep. A feasible request is never relaxed.
 
+When no declared place on the stated side of a single relation with ranked
+directions is feasible (an anchor at the page edge: every slot leaves the frame,
+or meets a region the subject avoids), a method may declare `fallback=` stages,
+tried in the declared order, each solved as a `std.problem`: `shrink` (a new
+subject whose tool declares `sizeKey` is drawn smaller at the declared slots, in
+steps of `shrinkStep` (0.1 by default, at least 0.05) down to `minShare` of its size), `shift`
+(the closest place whose centre stays on the stated side of the anchor's centre,
+coming in toward the anchor and moving across it, clear of the anchor by the
+clearance; soft terms pull it back to the slot) and `side` (the declared
+directions of the relation named by `fallbackDirections`, such as `near`'s other
+sides, in their rank). The result names the stage used in `fallback`; without
+one, or when none finds a place, it stays `no-feasible-placement`. Any metric
+the domain measures for a candidate may be an objective term through
+`std.placement.cost`: `near_distance` as a term keeps a near subject close
+instead of the uncrowded slot far away.
+
 A goal that denotes several observed things ("the tree" with two trees) is
 solved once for each combination of candidate anchors (at most 16; more are
 refused as `ambiguous-anchor`). The placement that keeps every declared distance

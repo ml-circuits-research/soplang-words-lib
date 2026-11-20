@@ -101,6 +101,45 @@ function slotProblem({slot,direction,anchor,frame,peers,peerDecl,alignWeight,gri
   });
   return `@problem std.problem.request budget=2000 ${[...refs.var.map(r=>'var='+r),...refs.box.map(r=>'box='+r),...refs.constraint.map(r=>'constraint='+r)].join(' ')}\n${lines.join('\n')}`;
 }
+// The fallback shift: the closest place on the stated side when the declared slot leaves the frame (an anchor at the
+// page edge) or meets a region the subject avoids. On the direction's axis the subject may come in from the slot
+// (clamped to the frame) toward the anchor while its centre stays at least one unit on the stated side of the
+// anchor's centre; across it the subject may move over the whole frame; it keeps the clearance from the anchor and
+// out of the avoided regions (hard), apart from the peers (soft), and soft terms pull it back to the declared slot on
+// both axes. Null when no such place exists (the subject is wider than the room on that side of the anchor's centre).
+function shiftProblem({slot,direction,anchor,frame,peers,peerDecl,alignWeight,grid,avoided=[],clearance=0}) {
+  const gx=number(direction,'gap_x'), gy=number(direction,'gap_y');
+  if (!frame || (gx===0)===(gy===0)) return null;
+  const [axis,extent,cross,crossExtent,sign]=gx!==0?['x','width','y','height',Math.sign(gx)]:['y','height','x','width',Math.sign(gy)];
+  const n=v=>String(+(+v).toFixed(6)), lines=[], refs={var:[],box:[],constraint:[]};
+  const add=(kind,id,text)=>{lines.push('@'+id+' std.problem.'+kind+' '+text);refs[kind].push('$'+id);};
+  const lo=frame[axis], hi=frame[axis]+frame[extent]-slot[extent], clo=frame[cross], chi=frame[cross]+frame[crossExtent]-slot[crossExtent];
+  if (hi<lo || chi<clo) return null;
+  const centre=anchor[axis]+anchor[extent]/2, at=Math.min(hi,Math.max(lo,slot[axis]));
+  let along;
+  if (sign<0) { const top=Math.min(hi,centre-slot[extent]/2-1); if (top<at) return null; along=`min=${n(at)} max=${n(at+Math.floor((top-at)/grid)*grid)}`; }
+  else { const bottom=Math.max(lo,centre-slot[extent]/2+1); if (bottom>at) return null; along=`min=${n(at-Math.floor((at-bottom)/grid)*grid)} max=${n(at)}`; }
+  const c=Math.min(chi,Math.max(clo,slot[cross])), across=`min=${n(c-Math.floor((c-clo)/grid)*grid)} max=${n(c+Math.floor((chi-c)/grid)*grid)}`;
+  add('var','v'+axis,`name=${axis} ${along} step=${n(grid)}`);
+  add('var','v'+cross,`name=${cross} ${across} step=${n(grid)}`);
+  add('box','subject',`name=subject x=x y=y w=${n(slot.width)} h=${n(slot.height)}`);
+  add('box','slot',`name=slot x=${n(slot.x)} y=${n(slot.y)} w=${n(slot.width)} h=${n(slot.height)}`);
+  add('box','anchor',`name=anchor x=${n(anchor.x)} y=${n(anchor.y)} w=${n(anchor.width)} h=${n(anchor.height)}`);
+  add('box','frame',`name=frame x=${n(frame.x)} y=${n(frame.y)} w=${n(frame.width)} h=${n(frame.height)}`);
+  add('constraint','contain','name=contain predicate=inside a=subject b=frame strength=hard');
+  add('constraint','clear',`name=clear predicate=apart a=subject b=anchor gap=${n(clearance)} strength=hard`);
+  add('constraint','along',`name=along predicate=align a=subject b=slot axis=${axis} edge=0.5 strength=soft weight=${n(alignWeight)}`);
+  add('constraint','across',`name=across predicate=align a=subject b=slot axis=${cross} edge=0.5 strength=soft weight=${n(alignWeight)}`);
+  avoided.forEach((r,i)=>{
+    add('box','avoid'+i,`name=avoid${i} x=${n(r.x)} y=${n(r.y)} w=${n(r.width)} h=${n(r.height)}`);
+    add('constraint','keepout'+i,`name=keepout${i} predicate=apart a=subject b=avoid${i} gap=0 strength=hard`);
+  });
+  peers.forEach((peer,i)=>{
+    add('box','peer'+i,`name=peer${i} x=${n(peer.x)} y=${n(peer.y)} w=${n(peer.width)} h=${n(peer.height)}`);
+    add('constraint','apart'+i,`name=apart${i} predicate=${get(peerDecl,'predicate')??'apart'} a=subject b=peer${i} gap=${n(peer.gap??(number(peerDecl,'gap')||0))} strength=soft weight=${n(Number.isFinite(number(peerDecl,'weight'))?number(peerDecl,'weight'):100)}`);
+  });
+  return `@problem std.problem.request budget=2000 ${[...refs.var.map(r=>'var='+r),...refs.box.map(r=>'box='+r),...refs.constraint.map(r=>'constraint='+r)].join(' ')}\n${lines.join('\n')}`;
+}
 const then=(value,next)=>value&&typeof value.then==='function'?value.then(next):next(value);
 const settleAll=(values,next)=>values.some(v=>v&&typeof v.then==='function')?Promise.all(values).then(next):next(values);
 
@@ -155,6 +194,16 @@ function perform(world, request, nodes, context, method, provider, solve=false) 
   // The observed regions the subject's kind keeps out of (std.placement.kind avoids=: the water of a river for a house).
   const avoids=new Set((kind.attrs.avoids??[]).map(raw=>raw.startsWith('"')?str(raw):raw));
   const avoided=avoids.size?regionsOf(world,context).filter(r=>avoids.has(r.kind)&&r.geometry):[];
+  const frame=frameBounds&&geometry(frameBounds), contexts=[];
+  const alignWeight=Number.isFinite(number(relationDecl,'alignWeight'))?number(relationDecl,'alignWeight'):1;
+  // One place to try: a direction's slot for a subject of a size (the declared slot problem, or the shift problem of
+  // a fallback); a fallback's place is always searched.
+  const job=(ctx,direction,size,fallback)=>{
+    const slot=position(direction,ctx.anchor.geometry,size,ctx.clearance);
+    const spec={slot,direction,anchor:ctx.anchor.geometry,frame,peers:ctx.peers,peerDecl,alignWeight,grid,avoided:avoided.map(r=>r.geometry),clearance:ctx.clearance};
+    const text=fallback?.shift?shiftProblem(spec):(solve||fallback)?slotProblem(spec):null;
+    return {...ctx,direction,slot,drawn:fallback?.drawn,fallback:fallback?.stage,answer:text?solveProblem(text,{provider}):null};
+  };
   for (const anchor of anchors) for (const moving of subjects) {
     if (anchor===moving) continue;
     if (!anchor.geometry || moving && !moving.geometry) return unavailable('incomplete-geometry');
@@ -194,96 +243,130 @@ function perform(world, request, nodes, context, method, provider, solve=false) 
       const kept=policies.filter(w=>fieldsMatch(w,{subject:subjectEntity,object:entity(o.box),kind:get(method,'peerRelation')})).map(w=>number(w,'clearance')).filter(Number.isFinite);
       return {...o.geometry,gap:kept.length?Math.max(...kept):undefined};
     });
-    for (const direction of directions) {
-      const slot=position(direction,anchor.geometry,size,number(gap,'clearance'));
-      const answer=solve?solveProblem(slotProblem({slot,direction,anchor:anchor.geometry,frame:frameBounds&&geometry(frameBounds),peers,peerDecl,
-        alignWeight:Number.isFinite(number(relationDecl,'alignWeight'))?number(relationDecl,'alignWeight'):1,grid,avoided:avoided.map(r=>r.geometry)}),{provider}):null;
-      jobs.push({anchor,moving,direction,slot,answer,model,pairs,subjectEntity});
-    }
+    const ctx={anchor,moving,model,pairs,subjectEntity,peers,size,clearance:number(gap,'clearance')};
+    contexts.push(ctx);
+    for (const direction of directions) jobs.push(job(ctx,direction,size));
   }
   // Phase two: each direction's place (the solved one, or the declared slot when the problem has no solution, so
   // the trial below shows why) is admitted and measured by the domain world.
-  return settleAll(jobs.map(j=>j.answer),(answers)=>{
   let provided;
-  for (const [k,{anchor,moving,direction,slot,model,pairs,subjectEntity}] of jobs.entries()) {
-    {
-      const id='placement.option.'+(++serial);
-      let p=slot;
-      if (answers[k]) {
-        const rows=parse(answers[k]), result=rows.find(w=>w.type==='std.problem.result');
-        if (get(result,'status')==='solved') {
-          const value=Object.fromEntries(rows.filter(w=>w.type==='std.problem.assignment'&&(result.attrs.assignment??[]).includes('$'+w.id)).map(w=>[get(w,'var'),number(w,'value')]));
-          p={...slot,x:value.x,y:value.y};
-        }
-        provided=get(result,'provider')??provided;
-      }
-      const originX=number(kind,'originX'), originY=number(kind,'originY');
-      const x=p.x+p.width*(Number.isFinite(originX)?originX:number(tool,'originX'));
-      const y=p.y+p.height*(Number.isFinite(originY)?originY:number(tool,'originY'));
-      if (![x,y,p.x,p.y].every(Number.isFinite)) return unavailable('invalid-coordinates');
-      const option={id,anchor,moving,direction,x,y,bounds:p,evidence:[],status:'feasible'};
-      options.push(option);
-      // A place inside a region the subject's kind avoids is rejected, whatever it costs otherwise.
-      if (avoided.some(r=>p.x<r.geometry.x+r.geometry.width&&r.geometry.x<p.x+p.width&&p.y<r.geometry.y+r.geometry.height&&r.geometry.y<p.y+p.height)) {
-        option.status='rejected'; option.reason='avoided-region'; continue;
-      }
-      const trial=model.fork();
-      const boxAttrs={min_x:p.x,min_y:p.y,max_x:p.x+p.width,max_y:p.y+p.height};
-      const admission=moving?trial.revise(moving.box.id,boxAttrs):trial.tell([
-        wire('placement.proposed.box',get(method,'boxType'),{...metadata,entity:subjectEntity,evidence:'bounds',...boxAttrs})],{factsOnly:true});
-      if (!admission.ok) {
-        option.reason=trialFailure(admission);
-        if (option.reason!=='hard-condition') return unavailable(option.reason);
-        const seen=new Set();
-        for (const violation of admission.violations) for (const fact of violation.involved??[]) {
-          if (fact.type===get(method,'measurementType') && sameScope(fact,context) && !seen.has(fact.id)) {
-            option.evidence.push(fact);
-            seen.add(fact.id);
-          }
-        }
-        option.status='rejected'; continue;
-      }
-      const measurements=trial.ofType(get(method,'measurementType')).filter(w=>sameScope(w,context));
-      const totals=new Map();
-      for (const pair of pairs) {
-        const expected=basePolicies.filter(rule=>get(rule,'relation')===pair.kind);
-        if (!expected.length) return unavailable('missing-relation-policy');
-        for (const rule of expected) {
-          const metric=get(rule,'metric'), m=one(measurements.filter(w=>fieldsMatch(w,{subject:pair.subject,object:pair.object,kind:pair.kind,metric})));
-          if (!m || !Number.isFinite(number(m,'value')) || !Number.isFinite(number(m,'weight'))) return unavailable('missing-measurement');
-          option.evidence.push(m);
-          if (get(m,'hard')==='true' && number(m,'value')>0) { option.status='rejected'; option.reason='hard-condition'; }
-          totals.set(metric,(totals.get(metric)??0)+number(m,'value')*number(m,'weight'));
-        }
-      }
-      if (option.status==='rejected') continue;
-      totals.set('rank',number(direction,'rank'));
-      const contributions=[];
-      for (const {metric,evaluator} of costs) {
-        if (!totals.has(metric) && !basePolicies.some(policy=>get(policy,'metric')===metric)) return unavailable('unknown-metric');
-        contributions.push(wire('placement.cost.'+contributions.length,'std.placement.contribution',
-          {candidate:'$'+id,evaluator:'$'+evaluator,value:totals.get(metric)??0}));
-      }
-      trials.push({id,wires:serialize(contributions)});
+  function admit({anchor,moving,direction,slot,model,pairs,subjectEntity,drawn,fallback},answer) {
+    const id='placement.option.'+(++serial);
+    let p=slot;
+    if (answer) {
+      const rows=parse(answer), result=rows.find(w=>w.type==='std.problem.result');
+      provided=get(result,'provider')??provided;
+      if (get(result,'status')==='solved') {
+        const value=Object.fromEntries(rows.filter(w=>w.type==='std.problem.assignment'&&(result.attrs.assignment??[]).includes('$'+w.id)).map(w=>[get(w,'var'),number(w,'value')]));
+        p={...slot,x:value.x,y:value.y};
+      } else if (fallback) return; // a fallback place the search cannot find offers nothing to show
     }
+    const originX=number(kind,'originX'), originY=number(kind,'originY');
+    const x=p.x+p.width*(Number.isFinite(originX)?originX:number(tool,'originX'));
+    const y=p.y+p.height*(Number.isFinite(originY)?originY:number(tool,'originY'));
+    if (![x,y,p.x,p.y].every(Number.isFinite)) return unavailable('invalid-coordinates');
+    const option={id,anchor,moving,direction,x,y,bounds:p,evidence:[],status:'feasible',...(drawn!==undefined?{drawn}:{})};
+    options.push(option);
+    // A place inside a region the subject's kind avoids is rejected, whatever it costs otherwise.
+    if (avoided.some(r=>p.x<r.geometry.x+r.geometry.width&&r.geometry.x<p.x+p.width&&p.y<r.geometry.y+r.geometry.height&&r.geometry.y<p.y+p.height)) {
+      option.status='rejected'; option.reason='avoided-region'; return;
+    }
+    const trial=model.fork();
+    const boxAttrs={min_x:p.x,min_y:p.y,max_x:p.x+p.width,max_y:p.y+p.height};
+    const admission=moving?trial.revise(moving.box.id,boxAttrs):trial.tell([
+      wire('placement.proposed.box',get(method,'boxType'),{...metadata,entity:subjectEntity,evidence:'bounds',...boxAttrs})],{factsOnly:true});
+    if (!admission.ok) {
+      option.reason=trialFailure(admission);
+      if (option.reason!=='hard-condition') return unavailable(option.reason);
+      const seen=new Set();
+      for (const violation of admission.violations) for (const fact of violation.involved??[]) {
+        if (fact.type===get(method,'measurementType') && sameScope(fact,context) && !seen.has(fact.id)) {
+          option.evidence.push(fact);
+          seen.add(fact.id);
+        }
+      }
+      option.status='rejected'; return;
+    }
+    const measurements=trial.ofType(get(method,'measurementType')).filter(w=>sameScope(w,context));
+    const totals=new Map();
+    for (const pair of pairs) {
+      const expected=basePolicies.filter(rule=>get(rule,'relation')===pair.kind);
+      if (!expected.length) return unavailable('missing-relation-policy');
+      for (const rule of expected) {
+        const metric=get(rule,'metric'), m=one(measurements.filter(w=>fieldsMatch(w,{subject:pair.subject,object:pair.object,kind:pair.kind,metric})));
+        if (!m || !Number.isFinite(number(m,'value')) || !Number.isFinite(number(m,'weight'))) return unavailable('missing-measurement');
+        option.evidence.push(m);
+        if (get(m,'hard')==='true' && number(m,'value')>0) { option.status='rejected'; option.reason='hard-condition'; }
+        totals.set(metric,(totals.get(metric)??0)+number(m,'value')*number(m,'weight'));
+      }
+    }
+    if (option.status==='rejected') return;
+    totals.set('rank',number(direction,'rank'));
+    const contributions=[];
+    for (const {metric,evaluator} of costs) {
+      if (!totals.has(metric) && !basePolicies.some(policy=>get(policy,'metric')===metric)) return unavailable('unknown-metric');
+      contributions.push(wire('placement.cost.'+contributions.length,'std.placement.contribution',
+        {candidate:'$'+id,evaluator:'$'+evaluator,value:totals.get(metric)??0}));
+    }
+    trials.push({id,wires:serialize(contributions)});
   }
-  if (!trials.length) return unavailable('no-feasible-placement');
-  const ranking=evaluateObjective(world,objectiveId,trials);
-  if (ranking.status!=='optimal') return unavailable(ranking.status);
-  for (const item of ranking.ranked) options.find(o=>o.id===item.id).vector=item.vector;
-  const chosen=options.find(o=>o.id===ranking.best[0].id);
-  const args=Object.create(null);
-  const put=(key,value)=>{if (!validName(key)||Object.hasOwn(args,key)) return false;args[key]=value;return true;};
-  for (const arg of world.ofType('std.placement.argument').filter(w=>ref(w,'binding')===kind.id)) {
-    if (!put(get(arg,'key'),get(arg,'value'))) return unavailable('argument-collision');
+  function finish(fallback) {
+    const ranking=evaluateObjective(world,objectiveId,trials);
+    if (ranking.status!=='optimal') return unavailable(ranking.status);
+    for (const item of ranking.ranked) options.find(o=>o.id===item.id).vector=item.vector;
+    const chosen=options.find(o=>o.id===ranking.best[0].id);
+    const args=Object.create(null);
+    const put=(key,value)=>{if (!validName(key)||Object.hasOwn(args,key)) return false;args[key]=value;return true;};
+    for (const arg of world.ofType('std.placement.argument').filter(w=>ref(w,'binding')===kind.id)) {
+      if (!put(get(arg,'key'),get(arg,'value'))) return unavailable('argument-collision');
+    }
+    if (!put(get(tool,'xKey'),String(chosen.x)) || !put(get(tool,'yKey'),String(chosen.y)) ||
+        !(creation?put(get(tool,'kindKey'),quote(literal(kind,'native'))):put(get(tool,'idsKey'),quote(literal(chosen.moving.box,'entity'))))) return unavailable('argument-collision');
+    if (chosen.drawn!==undefined && !put(get(tool,'sizeKey'),String(chosen.drawn))) return unavailable('argument-collision');
+    if (creation && get(tool,'containerKey') && !put(get(tool,'containerKey'),quote(chosen.anchor.container))) return unavailable('argument-collision');
+    const operation=get(tool,'operation');
+    if (!validName(operation)) return unavailable('invalid-operation');
+    return {chosen,options,call:wire('placement.call',operation,args),...(provided?{provider:provided}:{}),...(fallback?{fallback}:{})};
   }
-  if (!put(get(tool,'xKey'),String(chosen.x)) || !put(get(tool,'yKey'),String(chosen.y)) ||
-      !(creation?put(get(tool,'kindKey'),quote(literal(kind,'native'))):put(get(tool,'idsKey'),quote(literal(chosen.moving.box,'entity'))))) return unavailable('argument-collision');
-  if (creation && get(tool,'containerKey') && !put(get(tool,'containerKey'),quote(chosen.anchor.container))) return unavailable('argument-collision');
-  const operation=get(tool,'operation');
-  if (!validName(operation)) return unavailable('invalid-operation');
-  return {chosen,options,call:wire('placement.call',operation,args),...(provided?{provider:provided}:{})};
+  // Admit a stage's places; the best feasible one wins, else the next stage.
+  const run=(list,stage,next)=>settleAll(list.map(j=>j.answer),(answers)=>{
+    for (const [k,j] of list.entries()) { const fatal=admit(j,answers[k]); if (fatal) return fatal; }
+    return trials.length?finish(stage):next();
   });
+  // When no declared place on the stated side is feasible (it leaves the frame, or meets a region the subject
+  // avoids), the method's declared fallbacks are tried in their declared order, each solved as std.problem, and the
+  // result names the one used (fallback=):
+  // - shrink: the subject drawn smaller, at its declared slots, in steps (shrinkStep, 0.1 by default) down to the
+  //   declared minimum share (minShare) of its size, when its tool can say a size (sizeKey) and it is new;
+  // - shift: the closest place whose centre stays on the stated side of the anchor's centre (shiftProblem);
+  // - side: the declared directions of another relation (fallbackDirections, near: the other sides of the anchor),
+  //   in their declared rank, at the same clearance.
+  const stages=(method.attrs.fallback??[]).map(v=>v.startsWith('"')?str(v):v);
+  function fallback(i) { // bounded: one call per declared fallback stage
+    if (i>=stages.length) return unavailable('no-feasible-placement');
+    const stage=stages[i], next=()=>fallback(i+1);
+    if (stage==='shift') return run(contexts.flatMap(c=>directions.map(d=>job(c,d,c.size,{stage,shift:true}))).filter(j=>j.answer),stage,next);
+    if (stage==='side') {
+      const others=world.ofType(get(method,'directionType')).filter(d=>get(d,'relation')===get(method,'fallbackDirections')&&
+        !directions.some(s=>get(s,'name')===get(d,'name'))).sort((a,b)=>number(a,'rank')-number(b,'rank'));
+      return run(contexts.flatMap(c=>others.map(d=>job(c,d,c.size,{stage}))),stage,next);
+    }
+    if (stage==='shrink') {
+      const least=number(method,'minShare'), by=number(method,'shrinkStep')>0?Math.max(0.05,number(method,'shrinkStep')):0.1;
+      if (!creation || !get(tool,'sizeKey') || !(least>0&&least<1)) return next();
+      const shares=[];
+      for (let k=1; 1-k*by>=least-1e-9; k++) shares.push(1-k*by);
+      const attempt=k=>k>=shares.length // bounded: one call per share (shrinkStep is at least 0.05: at most 20)
+        ?next():run(contexts.flatMap(c=>{
+        const side=Math.max(c.size.width,c.size.height), drawn=Math.max(1,Math.floor(side*shares[k]));
+        const size={width:c.size.width*drawn/side,height:c.size.height*drawn/side};
+        return directions.map(d=>job(c,d,size,{stage,drawn}));
+      }),stage,()=>attempt(k+1));
+      return attempt(0);
+    }
+    return unavailable('unknown-fallback');
+  }
+  return run(jobs,undefined,()=>fallback(0));
 }
 
 export function placementCircuit(world,request,nodes,context,provider) {
@@ -338,7 +421,7 @@ function summarise(result,context) {
     anchor:entity(o.anchor.box),source:quote(o.anchor.source),subject:o.moving&&entity(o.moving.box)||undefined,
     direction:get(o.direction,'name'),x:o.x,y:o.y,minX:o.bounds.x,minY:o.bounds.y,maxX:o.bounds.x+o.bounds.width,maxY:o.bounds.y+o.bounds.height,status:o.status,reason:o.reason,cost:o.vector?.map(String),evidence:evidenceRefs(o)}));
   const summary=wire('placement.result','std.placement.result',{...scopeOf(context),status:calls.length?'compiled':'unavailable',
-    reason:result.reason,call:calls.map(c=>'$'+c.id),conflict:result.conflict,relaxed:result.relaxed,provider:result.provider,choice:result.chosen?'$'+result.chosen.id:undefined,alternative:alternatives.map(w=>'$'+w.id)});
+    reason:result.reason,call:calls.map(c=>'$'+c.id),conflict:result.conflict,relaxed:result.relaxed,fallback:result.fallback,provider:result.provider,choice:result.chosen?'$'+result.chosen.id:undefined,alternative:alternatives.map(w=>'$'+w.id)});
   return serialize([summary,...calls,...alternatives,...measurements]);
 }
 

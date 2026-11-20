@@ -6710,3 +6710,5 @@ No runtime code changed. Full source and bundle checks each passed 1015 with one
 `npm test` 1073 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs"` 1073 pass/0 fail.
 2026-11-20 — 0.242.0: observed property = declared row of the lowest order; several fields of one binding answer as several values (PSys2: "what colour is the fish?" answers its part colours).
 `npm test` 1074 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs"` 1074 pass/0 fail.
+2026-11-20 — 0.243.0: placement fallbacks (std.placement.method fallback=shrink|shift|side, minShare, shrinkStep, fallbackDirections; result fallback=) when no slot on the stated side fits (anchor at the page edge); near_distance as an objective term tested (PSys2: "a chapel right of the tree" at x=920, "impala by the house" 385 away).
+`npm test` 1078 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs"` 1078 pass/0 fail/1 skipped.

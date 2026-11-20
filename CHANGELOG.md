@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.243.0
+
+- Placement (ranked directions): when no declared place on the stated side is feasible (an anchor at the page edge), a method's declared `fallback=` stages are tried in order: `shrink` (a new subject drawn smaller at the slots, down to `minShare`, steps of `shrinkStep`, when its tool has `sizeKey`), `shift` (closest place with the centre on the stated side of the anchor's centre, clear of the anchor), `side` (the directions of `fallbackDirections`, in rank). `std.placement.result fallback=` names the stage used; before, the request was refused as `no-feasible-placement`.
+- Tests: a `near_distance` objective term (any measured metric through `std.placement.cost`) keeps a near subject close instead of the uncrowded slot pushed far away.
+
 ## 0.242.0
 
 - Capability compilation: a concept's observed property on a source type is the declared row of the lowest `order` (before, the first row in the scope, which could be a binding naming only the operation that takes the value, so a declared observation was never read).

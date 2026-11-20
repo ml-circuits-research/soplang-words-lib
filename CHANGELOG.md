@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.246.0
+
+- Placement (std.problem path): a `std.placement.predicate` declared `pair=sides` is a relation said once for each of two anchors of one subject ("between A and B"): across the larger of the anchors' horizontal and vertical separations the subject takes the side of each anchor facing the other, each measured by the method's plain declaration of that directional predicate; said for another number of anchors it is refused as `paired-relation-anchors`. Moved from application host code.
+
 ## 0.245.0
 
 - Span reading (`src/span-reading.mjs`): a span of said text read against a declared space, with every word list, form, unit, code layout and tolerance supplied by the caller's declarations. `stripPhrase` (a declared leading and trailing word removed: a determiner, a place deictic), `splitPhrase` (one phrase listing several things split at declared separators), `readLexicalPhrase` (the declared entry a phrase names: after leading words, by each word's declared normal form, the first entry word not meaning the avoided class, then within a declared tolerance: a doubled letter, a swap, a bounded edit distance when the entries within it mean one thing), `readNumberSpan` (the one number a span spells from declared number words, digits, joiners and unit conversions), `unitConversion`, `decodeCode` and `nearestName` (the declared name nearest a fixed-width channel code).

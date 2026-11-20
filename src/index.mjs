@@ -53,7 +53,7 @@ export { inflectBy, articleFor, morphOf, generate, analyse, fold, splitClitics, 
 export { ledgerAppend, ledgerGroups, ledgerKey, stageOf, STAGES } from './ledger.mjs';
 export { solveProblem } from './problem.mjs';
 export { stripPhrase, splitPhrase, readLexicalPhrase, readNumberSpan, unitConversion, decodeCode, nearestName } from './span-reading.mjs';
-export const version = '0.245.0';
+export const version = '0.246.0';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)
  * tools/build.mjs fills in `hash`, a fingerprint of the bundled sources, and `date`,

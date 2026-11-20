@@ -510,6 +510,23 @@ function problemPlacement(world, request, nodes, context, method, provider) {
     if (!chosen) return { failure: unavailable('undeclared-relation') };
     uses.push({ relation, s, a, ...chosen });
   }
+  // A relation declared pair=sides ("between A and B") is said once for each of two anchors of one subject: from where
+  // the anchors are, across the larger of their horizontal and vertical separations, the subject is on the side of each
+  // anchor that faces the other (right of the first and left of the second, or below and above), each side measured
+  // by the method's plain declaration of that directional predicate.
+  for (const s of subjects) {
+    const paired = uses.filter(u => u.s === s && get(u.decl, 'pair') === 'sides');
+    if (!paired.length) continue;
+    if (paired.length !== 2 || paired[0].a.row === paired[1].a.row) return { failure: unavailable('paired-relation-anchors') };
+    const centre = (g) => [g.x + g.width / 2, g.y + g.height / 2], [ax, ay] = centre(paired[0].a.row.geometry), [bx, by] = centre(paired[1].a.row.geometry);
+    const dx = bx - ax, dy = by - ay;
+    const sides = Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? ['right', 'left'] : ['left', 'right']) : (dy >= 0 ? ['below', 'above'] : ['above', 'below']);
+    for (const [k, use] of paired.entries()) {
+      const decl = one(declared.filter(p => get(p, 'predicate') === sides[k] && get(p, 'region') === undefined && get(p, 'pair') === undefined));
+      if (!decl) return { failure: unavailable('paired-relation-sides') };
+      use.decl = decl; delete use.region;
+    }
+  }
   // A subject larger than the declared share (fit) of the place it goes to is drawn smaller, when its tool can say
   // a size (sizeKey: the larger side of its box); its largest side stays a whole number.
   for (const s of subjects) {

@@ -235,3 +235,19 @@ for (const [label,run] of [['internal search',(w,t)=>w.compileRequest(t)],['Z3',
     check(call);
   });
 }
+test('a relation declared pair=sides said for two anchors places the subject between them, on the facing side of each',{skip},()=>{
+  const world=fixture();
+  world.load(observed('well','well',60,380,40,40)+`
+  @between std.placement.predicate method=$place relation=between predicate=apart pair=sides
+  @right std.placement.predicate method=$place relation=right predicate=right gap=200`);
+  const between=(goal,id)=>`@${id} std.request.constraint request=$r target=$t.house concept=place operator=relation relation=between goal=${goal} polarity=positive character=requirement`;
+  const well='@t.well std.request.target request=$r kind=well mode=existing';
+  const {result,call}=read(world.compileRequest(request(well+'\n'+between('$t.lake','c1')+'\n'+between('$t.well','c2'))));
+  assert.equal(result.attrs.status[0],'compiled',JSON.stringify(result.attrs));
+  // The well is far left of the lake: the house is left of the lake and right of the well.
+  const h=box(call);
+  assert.ok(h.x>=100&&h.x+h.w<=300,'between on x '+JSON.stringify(h));
+  // Said for one anchor only, the pair is refused before any search.
+  const one=read(world.compileRequest(request(between('$t.lake','c1')))).result;
+  assert.notEqual(one.attrs.status[0],'compiled');assert.equal(one.attrs.reason[0],'paired-relation-anchors');
+});

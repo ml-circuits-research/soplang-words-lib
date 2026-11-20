@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.240.1
+
+- Matrix compilation: the stratification check finds the rules a produced type can wake through an index of the rules by the types their patterns read (with the type's ancestors), instead of scanning every rule for every type each negating rule reaches. Same rules, same order, same errors; a world with many negating rules (an editor area's projection) compiled in 7.9 s and now in 0.9 s.
+
 ## 0.240.0
 
 - Placement, one relation with `avoids=`: a direction's slot moves away from the anchor only when it meets an avoided region, and only as far as clearing those regions needs (0.238.0 let it move up to eight extents whenever the kind declared `avoids`, so the soft pull back lost to peer clearance and a "near" subject could land far from its anchor).

@@ -706,12 +706,27 @@ export function compileMatrix(world) {
   const made = (r) => r.then.map((t) => ({ type: t.type, keys: t.on ? Object.keys(t.attrs) : null }));
   const wakes = (item, p) => c.isA(item.type, p.type) && (!item.keys || item.keys.some((k) => p.attrs[k] || p.absent?.includes(k)));
   const reads = (r) => [...r.when, ...r.not, ...r.calc.flatMap((x) => x.over || [])];
+  // The rules a produced type can wake: those with a pattern on the type or one of its ancestors, in rule order
+  // (the same rules in the same order as a scan of every rule; a matrix with many negating rules took seconds to
+  // compile when each of them scanned every rule for every type it reaches).
+  const readerIndex = new Map(), readerCache = new Map();
+  c.rules.forEach((r, n) => { for (const p of reads(r)) { const list = readerIndex.get(p.type) ?? readerIndex.set(p.type, []).get(p.type); if (list.at(-1)?.[1] !== n) list.push([r, n]); } });
+  const readersOf = (type) => {
+    let list = readerCache.get(type);
+    if (!list) {
+      const found = new Map();
+      for (const t of c.lineage(type)) for (const [r, n] of readerIndex.get(t) || []) found.set(n, r);
+      list = [...found.keys()].sort((a, b) => a - b).map((n) => found.get(n));
+      readerCache.set(type, list);
+    }
+    return list;
+  };
   for (const r of [...c.negRules, ...c.rules.filter((x) => x.absentOnly)]) { // and the rules driven by single wires that require an absence
     if (r.kind !== 'rule') continue;
     const reach = made(r);
     const seen = new Set([r]);
     for (let i = 0; i < reach.length; i++) { // bounded: each rule adds its templates once
-      for (const r2 of c.rules) {
+      for (const r2 of readersOf(reach[i].type)) {
         if (seen.has(r2) || !reads(r2).some((p) => wakes(reach[i], p))) continue;
         seen.add(r2);
         reach.push(...made(r2));

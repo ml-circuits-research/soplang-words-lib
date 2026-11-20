@@ -492,7 +492,9 @@ function targetInventory(world,data,target,tick) {
     }
   }
 
-  return {mappings,related,types,labels,kinds};
+  // A family mapping (family=true) names the whole source type of its operation: every member denotes it.
+  const wholeType = mappings.some((row) => flag(row, 'family'));
+  return {mappings,related,types,labels,kinds,wholeType};
 }
 
 function compileQuery(world,request,nodes,data,tick){
@@ -593,11 +595,11 @@ function compile(world, request, nodes, context) {
   }
   const [mode] = modes;
   const kind = get(target, 'kind');
-  const { mappings, related, types, labels, kinds } = targetInventory(world,data,target,tick);
+  const { mappings, related, types, labels, kinds, wholeType } = targetInventory(world,data,target,tick);
   if (!related.length) return output(tick, get(mode, 'target') === 'new' ? 'unavailable' : 'not-applicable', { reason: 'native-binding-gap', act, kind });
 
   const matched = get(target, 'mode') === 'existing'
-    ? matchObject(world, data, types, kinds, target, selector, tick, labels) : { matches: [], selection: [], support: [] };
+    ? matchObject(world, data, types, kinds, target, selector, tick, wholeType ? [] : labels) : { matches: [], selection: [], support: [] };
   if (matched.unsupported) return output(tick, 'not-applicable', { reason: 'unsupported-selector', act, kind });
   const { matches, selection, support: selectorSupport } = matched;
   const selected = matches.find((row) => text(row, 'id') === text(scope, 'focus')) ?? matches.at(-1);

@@ -21,7 +21,7 @@ const types = {
     scope: 'kind=ref to=std.capability.scope present=true',
     canonical: 'kind=atom present=true', label: 'kind=string present=true',
     operation: 'kind=ref to=std.capability.operation present=true',
-    argument: 'kind=ref to=std.capability.arg many=true',
+    argument: 'kind=ref to=std.capability.arg many=true', family: 'kind=boolean',
   },
   mode: {
     act: 'kind=atom present=true', target: 'kind=atom enum=new enum=existing present=true',

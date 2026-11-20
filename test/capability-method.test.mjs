@@ -204,6 +204,9 @@ ${objects}`);
   assert.notEqual(change(extra('')).status, 'compiled', 'the source type alone does not make a small cell the box');
   assert.equal(change(extra('@crate std.capability.object scope=$scope id="crate" source="cell-c" version="3" on="cell" kind="box" order=0')).cell, '"crate"');
   assert.equal(change(extra('@named std.capability.object scope=$scope id="named" source="cell-d" version="3" on="cell" kind="square" name="Box" order=0')).cell, '"named"');
+  const whole = extra('');
+  whole.load('@cells.mapping std.capability.target scope=$scope canonical=box.cell label="cells" operation=$catalog family=true');
+  assert.equal(change(whole).cell, '"last"', 'a family mapping names the whole source type');
   assert.equal(change(extra(`@crate std.capability.object scope=$scope id="crate" source="cell-c" version="3" on="cell" kind="box" order=0
 @named std.capability.object scope=$scope id="named" source="cell-d" version="3" on="cell" kind="square" name="Box" order=1`)).cell, '"crate"', 'the observed kind wins over a name');
 });

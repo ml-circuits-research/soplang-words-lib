@@ -1647,6 +1647,13 @@ baseline=before` condition multiplies an existing target's observed value by its
 value outside the parameter's bounds, an unknown word or an ambiguous factor or base leaves the condition skipped.
 With `codec=lookup` on the property a degree word is an absolute literal of `std.capability.value` instead.
 
+**Which observed objects an existing target denotes.** A `std.capability.target` maps a canonical kind to a
+`label` and an operation. An observed object of the operation's source type denotes the kind when its `kind` is a
+label a kind parameter of the type accepts; when no enum accepts any of the labels (a kind another operation of the
+type creates, such as a catalog import), when its `kind` equals one of the labels. When no object has such a kind and
+the target names nothing, an object whose `name` equals a label (case-insensitive: "the box" for a rectangle named
+Box) is taken instead. A mapping declared `family=true` names the whole source type: every member denotes it.
+
 ## std.focus: what a dialogue is about
 
 A module of the standard pack written in rules only (`core.use world=std.focus`; it

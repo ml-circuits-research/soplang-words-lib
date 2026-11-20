@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.231.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.231.1</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html" aria-current="page">Semantics</a><a href="api.html">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="instance-state.html">Instance state</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -118,7 +118,7 @@
 <p>Changing only an additional <code>extends</code> group (mixin) rebuilds the type/value indexes of stored instances and their descendants, even when the primary parent remains unchanged. The hierarchy fingerprint includes the ordered mixin lists as well as primary parents. Queries and newly applicable rules therefore observe the same effective lineage. Refused changes restore the old indexes, forks remain isolated, and undo/redo and snapshot replay remain consistent. Added with 0.189; this is not a point-space migration mechanism. <em>Test:</em> <code>changing only a mixin rebuilds descendant type and value indexes</code> <em>Test:</em> <code>mixin index changes roll back with a refused transaction and isolate forks</code> <em>Test:</em> <code>a newly inherited rule can see already stored facts through rebuilt indexes</code></p>
 <p class="source">Generated from <code>docs/semantics.md</code>.</p>
 </main>
-<footer>sopworld 0.231.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.231.1 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

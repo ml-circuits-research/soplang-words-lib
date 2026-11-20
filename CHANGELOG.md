@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.231.1
+
+- Capability compilation: a `std.capability.target` may declare `family=true`: its canonical names the whole source type of its operation (a native family), so every member of that type denotes it, as before 0.231.0's kind-denoted matching. Documented in the reference (std.capability).
+
 ## 0.231.0
 
 - Placement: a `std.placement.method` declared `relax=gap` answers a request whose declared distances no placement keeps (the declared `std.problem` is exhausted or unsatisfiable) with a second problem in which each hard relation with a `gap` keeps its gap-free core hard (`left` without its bound; `apart` for `near`: the `core` of the predicate in `PREDICATES`) and its distance bound becomes a soft term (weight `relaxWeight` of the predicate, 1 by default). The result names in `relaxed` the relations whose distance it could not keep, so the caller can say so; a feasible request is never relaxed, and a request whose directions contradict stays refused with the first problem's reason. "Add a house next to the lake and left of the tree" with the tree far from the lake now places the house beside the lake and left of the tree.

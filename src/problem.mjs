@@ -40,6 +40,7 @@ export const problemContract = { text: [
  */
 export const PREDICATES = {
   inside: { args: 'box box', about: 'a lies within b' },
+  outside: { args: 'box box', about: 'a does not lie within b (as a soft term: keep the centre of a out of a window around a point, when b is that window grown by the size of a)' },
   near: { args: 'box box', core: 'apart', about: 'a and b do not overlap and the gap between them on each axis is at most gap' },
   apart: { args: 'box box', about: 'a and b do not overlap (a gap of at least gap, default 0)' },
   left: { args: 'box box', core: 'left', about: 'a ends left of b starts, by at most gap when gap is given' },
@@ -130,6 +131,7 @@ export function violation(model, c, a) {
   const beyond = (d) => (gap === undefined ? 0 : pos(d - gap));
   switch (c.predicate) {
     case 'inside': return pos(q.x - p.x) + pos(q.y - p.y) + pos(p.x + p.w - (q.x + q.w)) + pos(p.y + p.h - (q.y + q.h));
+    case 'outside': { const margin = Math.min(p.x - q.x, p.y - q.y, q.x + q.w - (p.x + p.w), q.y + q.h - (p.y + p.h)); return margin >= 0 ? 1 + margin : 0; }
     case 'apart': { const g = gap ?? 0, gx = axisGap(p.x, p.x + p.w, q.x, q.x + q.w), gy = axisGap(p.y, p.y + p.h, q.y, q.y + q.h); return overlapArea + (Math.max(gx, gy) >= g ? 0 : g - Math.max(gx, gy)); }
     case 'near': return overlapArea + pos(axisGap(p.x, p.x + p.w, q.x, q.x + q.w) - (gap ?? 0)) + pos(axisGap(p.y, p.y + p.h, q.y, q.y + q.h) - (gap ?? 0));
     case 'left': return pos(p.x + p.w - q.x) + beyond(q.x - (p.x + p.w));

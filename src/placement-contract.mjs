@@ -4,7 +4,7 @@ const types = {
   context: {request:'ref!',instance:'string!',revision:'string!',scope:'string!',frame:'string!',container:'string!',bounds:'ref'},
   method: {directionType:'atom!',boxType:'atom!',relationType:'atom!',policyType:'atom!',effectiveType:'atom!',measurementType:'atom!',peerRelation:'atom!',gapMetric:'atom!',containRelation:'atom',containEvidence:'atom',objective:'ref!',search:'atom',grid:'number',relax:'atom'},
   predicate: {method:'ref!',relation:'atom!',predicate:'atom!',gap:'number',strength:'atom',weight:'number',share:'number',
-    align:'atom',edge:'number',alignWeight:'number',region:'atom',held:'boolean',fit:'number',relaxWeight:'number'},
+    align:'atom',edge:'number',alignWeight:'number',region:'atom',held:'boolean',fit:'number',relaxWeight:'number',pull:'number'},
   tool: {act:'atom!',operation:'atom!',xKey:'atom!',yKey:'atom!',originX:'number!',originY:'number!',kindKey:'atom',idsKey:'atom',containerKey:'atom',sizeKey:'atom'},
   region: {entity:'string!',kind:'atom!',name:'string',min_x:'number!',min_y:'number!',max_x:'number!',max_y:'number!',holds:'string*',instance:'string',revision:'string',frame:'string',scope:'string'},
   kind: {binding:'ref!',concept:'atom!',native:'atom!',width:'number!',height:'number!',originX:'number',originY:'number'},

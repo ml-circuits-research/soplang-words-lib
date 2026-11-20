@@ -159,3 +159,16 @@ for (const [label,run] of [['internal search',(w,t)=>w.compileRequest(t)],['Z3',
     assert.ok(Math.abs((cup.bounds.x0+cup.bounds.x1)/2-175)<=5,'centred on the surface, within half a grid step');
   });
 }
+
+// pull: a soft term per unit of distance along the relation's direction. Left of the tree with pull, the house ends
+// at the tree (the gap declared by the peer policy aside), not anywhere within the declared 60.
+test('a declared pull keeps the subject close to its anchor along the relation',{skip},async()=>{
+  const pulled=()=>{const world=fixture();world.load('@left.pull std.placement.predicate method=$place relation=right predicate=right gap=60 pull=1');return world;};
+  const rightOfTree='@c3 std.request.constraint request=$r target=$t.house concept=place operator=relation relation=right goal=$t.tree polarity=positive character=requirement';
+  for(const p of [undefined,...(provider?[provider]:[])]){
+   const out=read(await pulled().compileRequest(request(rightOfTree+'\n'+nearLake.replace('relation=near','relation=independent_peer').replace('c1','c0')),p?{provider:p}:{}));
+   assert.equal(out.result.attrs.status[0],'compiled',JSON.stringify(out.result.attrs));
+   const h=box(out.call);
+   assert.ok(h.x>=680&&h.x-680<=12,(p?'z3 ':'internal ')+JSON.stringify(h));
+  }
+});

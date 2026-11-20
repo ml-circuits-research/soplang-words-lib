@@ -253,6 +253,7 @@ function summarise(result,context) {
 // alignWeight: a soft term), the region of the anchor it goes to (region, held) and the share of that place a
 // subject may take (fit: a larger one is drawn smaller when the tool has a sizeKey) are std.placement.predicate
 // facts of the method; nothing here names a relation.
+const PULL = { left: ['x', 'maximise'], right: ['x', 'minimise'], above: ['y', 'maximise'], below: ['y', 'minimise'] };
 function problemPlacement(world, request, nodes, context, method, provider) {
   const unavailable = (reason, extra = {}) => ({ reason, options: [], ...extra });
   const targets = nodes.filter(w => w.type === 'std.request.target');
@@ -364,6 +365,10 @@ function problemPlacement(world, request, nodes, context, method, provider) {
       add('constraint', 'bound' + n, `name=bound${n} predicate=${get(use.decl, 'predicate')} a=subject${use.s.i} b=${target} gap=${get(use.decl, 'gap')} strength=soft weight=${get(use.decl, 'relaxWeight') ?? 1}`);
       softened.push({ name: 'bound' + n, relation: get(use.relation, 'relation') });
     } else constraint('relation' + n, use.decl, 'subject' + use.s.i, target);
+    // pull: a soft term that keeps the subject close to its anchor along the relation's direction (left of the
+    // anchor: as far right as the relation allows), at the declared weight per unit of distance.
+    const pull = number(use.decl, 'pull'), toward = PULL[get(use.decl, 'predicate')];
+    if (pull > 0 && toward) add('constraint', 'pull' + n, `name=pull${n} predicate=${toward[1]} a=${toward[0]}${use.s.i} strength=soft weight=${pull}`);
     const axis = get(use.decl, 'align');
     if (axis) add('constraint', 'align' + n, `name=align${n} predicate=align a=subject${use.s.i} b=${target} axis=${axis} edge=${get(use.decl, 'edge') ?? 0.5} strength=soft weight=${get(use.decl, 'alignWeight') ?? 1}`);
   });

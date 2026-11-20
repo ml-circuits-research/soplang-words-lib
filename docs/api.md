@@ -274,9 +274,10 @@ or decision facts are added to the receiving World.
 
 `std.problem` is the search step of compilation: variables with declared domains,
 boxes and spans built from variables or numbers, hard constraints and soft terms
-over a fixed set of predicates (`inside`, `near`, `apart`, `left`, `right`,
+over a fixed set of predicates (`inside`, `outside`, `near`, `apart`, `left`, `right`,
 `above`, `below`, `align`, `on`, `disjoint`, `within`, `le`, `ge`, `eq`, and the
-soft-only `minimise` and `maximise`), a budget in milliseconds and a depth (`quick`, or
+soft-only `minimise` and `maximise`; `outside` is the negation of `inside`, so a soft
+`outside` with a window around a point keeps a centre off that point), a budget in milliseconds and a depth (`quick`, or
 `alternatives` with `count`). The built-in provider searches each variable's grid
 and reports `exhausted` when no grid point holds, never a proof of impossibility.
 `node/smt-z3.mjs` supplies a Z3 provider for the same packet (with the optional
@@ -302,8 +303,11 @@ plus `gap`) and the centre of a is over b.
 
 Placement takes this path for a request with several relations or subjects, a
 relation with declared predicates and no declared directions or with a declared
-`fit`, or one whose declared region the anchor has. Each `std.placement.predicate` of the method may
-add `align`/`edge`/`alignWeight` (a soft alignment with the anchor), `region`
+`fit`, or one whose declared region the anchor has, and for every request when the
+method is declared `search=problem`. Each `std.placement.predicate` of the method may
+add `pull` (for `left`, `right`, `above` and `below`: a soft term of that weight per
+unit of distance that keeps the subject close to its anchor, as `maximise`/`minimise`
+of its coordinate), `align`/`edge`/`alignWeight` (a soft alignment with the anchor), `region`
 (the anchor's `std.placement.region` of that kind is the box, such as the water
 of a lake or the surface of a table; with `held=true` only when the region holds
 the subject's kind) and `fit` (a new subject larger than that share of its place

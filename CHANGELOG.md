@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.233.0
+
+- `std.problem`: predicate `outside`, the negation of `inside` (internal search: violation 1 + the margin by which a is inside b; Z3: `Not(inside)`). As a soft term over a window around a point grown by the subject's size it keeps the subject's centre off that point (not centred on another object).
+- Placement: a `std.placement.predicate` for `left`, `right`, `above` or `below` may declare `pull=<weight>`: a soft `maximise`/`minimise` of the subject's coordinate that keeps it close to its anchor along the relation, so a solver that meets every constraint does not leave it anywhere within the declared gap. The contract (`placement-contract.mjs`) lists `pull`.
+
 ## 0.232.1
 
 - Browser and Node Z3 provider (`browser/z3-translate.mjs`): models with fractional terms (a subject drawn smaller to fit, a region with fractional bounds, real gaps, weights and grid steps) failed with "Can't cast Real to IntSort without loss", and real values were read back as NaN (`toString()` prints an s-expression). Every arithmetic operation now lifts both operands to reals unless both are integers, and numerals are read with `asString()` ("p/q"). The browser provider declines a model it cannot translate or solve (the internal search answers) instead of failing the request, and reports each problem through the new `onSolve(info)` option.

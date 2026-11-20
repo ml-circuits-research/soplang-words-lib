@@ -159,3 +159,17 @@ test('Z3 solves a problem with fractional sizes, regions and weights, and the re
   assert.ok(x >= 692.5 && x + 112.5 <= 987.5 && y >= 461.25 && y + 57.75 <= 588.75, JSON.stringify(r.values));
   assert.equal(x + 56.25, 692.5 + 147.5, 'centred on the water, exactly');
 });
+
+// outside: the negation of inside. A soft outside of a window around the tree's centre, grown by the house's size,
+// keeps the house's centre off the tree's centre while the house still goes near it.
+test('outside keeps a centre off a point, with the internal search and with Z3', async () => {
+  const offCentre = `@c1 std.problem.constraint name=on_page predicate=inside a=house b=page
+@c2 std.problem.constraint name=centred predicate=align a=house b=tree axis=x edge=0.5 strength=soft weight=1
+@c3 std.problem.constraint name=off predicate=outside a=house b=window strength=soft weight=50
+@c4 std.problem.constraint name=low predicate=align a=house b=tree axis=y edge=0.5 strength=soft weight=1`;
+  const packet = scene(offCentre).replace('box=$lake', 'box=$lake box=$window') + '\n@window std.problem.box name=window x=380 y=200 w=140 h=120';
+  const check = ({ x, y }) => { const cx = x + 50, cy = y + 40; assert.ok(Math.abs(cx - 450) > 20 || Math.abs(cy - 260) > 20, JSON.stringify({ cx, cy })); };
+  const r = result(new World().compileRequest(packet));
+  assert.equal(r.status, 'solved'); check(r.values);
+  if (provider) { const z = result(await new World().compileRequest(packet, { provider })); assert.equal(z.provider, 'z3'); check(z.values); }
+});

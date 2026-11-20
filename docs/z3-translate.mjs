@@ -45,6 +45,7 @@ export async function solveWithZ3(z, model) {
     const within = (d) => (g === undefined ? z.Bool.val(true) : le(d, g));
     switch (c.predicate) {
       case 'inside': return z.And(ge(p.x, q.x), ge(p.y, q.y), le(end(p, 'x', 'w'), end(q, 'x', 'w')), le(end(p, 'y', 'h'), end(q, 'y', 'h')));
+      case 'outside': return z.Not(z.And(ge(p.x, q.x), ge(p.y, q.y), le(end(p, 'x', 'w'), end(q, 'x', 'w')), le(end(p, 'y', 'h'), end(q, 'y', 'h'))));
       case 'apart': return apart(p, q, g ?? 0);
       case 'near': return z.And(apart(p, q), le(gapOn(p.x, end(p, 'x', 'w'), q.x, end(q, 'x', 'w')), g ?? 0), le(gapOn(p.y, end(p, 'y', 'h'), q.y, end(q, 'y', 'h')), g ?? 0));
       case 'left': return z.And(le(end(p, 'x', 'w'), q.x), within(sub(q.x, end(p, 'x', 'w'))));

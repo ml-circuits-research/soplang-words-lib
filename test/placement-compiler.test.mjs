@@ -77,3 +77,26 @@ test('tutorial worlds supply a tree extent, colour and bottom-aligned 20-unit cl
   assert.deepEqual([choice.attrs.maxX[0],choice.attrs.maxY[0]],['600','320']);
   assert.ok(choice.attrs.evidence.every(ref=>circuit.some(row=>'$'+row.id===ref&&row.type==='k.spatial2d.measurement')));
 });
+// search=problem: one relation with declared directions keeps its ranked directions and clearance; each direction's
+// place is solved as a std.problem (here by the internal search), the subject moving along the anchor's side to keep
+// apart from a peer, and the result names the provider.
+test('search=problem solves each declared direction as its own problem and slides along the side past a peer',{skip},async()=>{
+  const searched=()=>{const w=fixture();w.revise('place',{search:'problem'});return w;};
+  const w=searched(), first=outcome(w);
+  assert.equal(first.result.attrs.status[0],'compiled',JSON.stringify(first.result));
+  assert.equal(first.result.attrs.provider[0],'internal');
+  assert.deepEqual(first.call.attrs,{ink:['"green"'],x:['152'],y:['50'],form:['"dot"']},'unobstructed: exactly the declared slot');
+  assert.equal(first.options.length,4);
+  assert.ok(w.revise('box.marker',{min_x:160,max_x:200}).ok);
+  w.load(observed('other','block',212,50,10,10));
+  const blocked=outcome(w);
+  assert.equal(blocked.call.attrs.x[0],'138','a short side leaves no room past the peer: the other side');
+  // A tall marker: the token stays on the preferred side and moves down it, clear of the peer.
+  const tall=searched();
+  assert.ok(tall.revise('box.marker',{max_y:150}).ok);
+  tall.load(observed('other','block',152,95,10,10));
+  const slid=outcome(tall), y=Number(slid.call.attrs.y[0]);
+  assert.equal(slid.call.attrs.x[0],'152');
+  assert.ok(y+10<=95||y>=105,'apart from the peer '+y);
+  assert.ok(y>=50-5&&y<=150-5,'beside the marker '+y);
+});

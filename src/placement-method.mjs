@@ -54,7 +54,37 @@ function trialFailure(result) {
   if (violations.length && violations.every(v=>v.kind==='deny')) return 'hard-condition';
   return 'invalid-trial';
 }
-function perform(world, request, nodes, context, method) {
+// A direction's slot (the declared position at the clearance) as a std.problem: on the relation's axis the subject
+// stays at the slot (the declared clearance), across it the subject may move along the anchor's side (its centre
+// within the anchor's extent) to keep apart from the observed peers (soft, the peer predicate), at a soft cost per
+// unit of distance from the declared alignment (the relation's alignWeight, 1 by default), on the frame (hard).
+// The grid of the free coordinate passes through the slot, so an unobstructed subject lands on it exactly.
+function slotProblem({slot,direction,anchor,frame,peers,peerDecl,alignWeight,grid}) {
+  const gx=number(direction,'gap_x'), gy=number(direction,'gap_y'), lines=[], refs={var:[],box:[],constraint:[]};
+  const add=(kind,id,text)=>{lines.push('@'+id+' std.problem.'+kind+' '+text);refs[kind].push('$'+id);};
+  const n=v=>String(+(+v).toFixed(6));
+  const free=(axis,start,extent,lo,hi)=>{ // the slot's coordinate on a free axis, on a grid through it
+    const at=slot[axis], low=Math.max(lo,anchor[start]-slot[extent]/2), high=Math.min(hi,anchor[start]+anchor[extent]-slot[extent]/2);
+    if (!(low<=at&&at<=high)) return `min=${n(at)} max=${n(at)}`;
+    return `min=${n(at-Math.floor((at-low)/grid)*grid)} max=${n(at+Math.floor((high-at)/grid)*grid)} step=${n(grid)}`;
+  };
+  const fx=frame?[frame.x,frame.x+frame.width-slot.width]:[-Infinity,Infinity], fy=frame?[frame.y,frame.y+frame.height-slot.height]:[-Infinity,Infinity];
+  add('var','vx',gx!==0||gy===0?`name=x min=${n(slot.x)} max=${n(slot.x)}`:'name=x '+free('x','x','width',...fx));
+  add('var','vy',gy!==0||gx===0?`name=y min=${n(slot.y)} max=${n(slot.y)}`:'name=y '+free('y','y','height',...fy));
+  add('box','subject',`name=subject x=x y=y w=${n(slot.width)} h=${n(slot.height)}`);
+  add('box','slot',`name=slot x=${n(slot.x)} y=${n(slot.y)} w=${n(slot.width)} h=${n(slot.height)}`);
+  add('constraint','align',`name=align predicate=align a=subject b=slot axis=${gx!==0?'y':'x'} edge=0.5 strength=soft weight=${n(alignWeight)}`);
+  if (frame) { add('box','frame',`name=frame x=${n(frame.x)} y=${n(frame.y)} w=${n(frame.width)} h=${n(frame.height)}`); add('constraint','contain','name=contain predicate=inside a=subject b=frame strength=hard'); }
+  peers.forEach((peer,i)=>{
+    add('box','peer'+i,`name=peer${i} x=${n(peer.x)} y=${n(peer.y)} w=${n(peer.width)} h=${n(peer.height)}`);
+    add('constraint','apart'+i,`name=apart${i} predicate=${get(peerDecl,'predicate')??'apart'} a=subject b=peer${i} gap=${n(peer.gap??(number(peerDecl,'gap')||0))} strength=soft weight=${n(Number.isFinite(number(peerDecl,'weight'))?number(peerDecl,'weight'):100)}`);
+  });
+  return `@problem std.problem.request budget=2000 ${[...refs.var.map(r=>'var='+r),...refs.box.map(r=>'box='+r),...refs.constraint.map(r=>'constraint='+r)].join(' ')}\n${lines.join('\n')}`;
+}
+const then=(value,next)=>value&&typeof value.then==='function'?value.then(next):next(value);
+const settleAll=(values,next)=>values.some(v=>v&&typeof v.then==='function')?Promise.all(values).then(next):next(values);
+
+function perform(world, request, nodes, context, method, provider, solve=false) {
   const options=[], unavailable=reason=>({reason,options});
   const targets=nodes.filter(w=>w.type==='std.request.target');
   const relation=one(nodes.filter(w=>w.type==='std.request.constraint'));
@@ -96,8 +126,12 @@ function perform(world, request, nodes, context, method) {
   if (!costs.length) return unavailable('empty-objective');
   const metadata=scopeOf(context);
   const basePolicies=world.ofType(get(method,'policyType'));
-  const trials=[];
+  const trials=[], jobs=[];
   let serial=0;
+  const declared=world.ofType('std.placement.predicate').filter(p=>ref(p,'method')===method.id);
+  const relationDecl=one(declared.filter(p=>get(p,'relation')===relName&&get(p,'region')===undefined));
+  const peerDecl=one(declared.filter(p=>get(p,'relation')===get(method,'peerRelation')&&get(p,'region')===undefined));
+  const grid=Number.isFinite(number(method,'grid'))?number(method,'grid'):Math.max(1,Math.min(...(frameBounds?[geometry(frameBounds).width,geometry(frameBounds).height]:[400]))/40);
   for (const anchor of anchors) for (const moving of subjects) {
     if (anchor===moving) continue;
     if (!anchor.geometry || moving && !moving.geometry) return unavailable('incomplete-geometry');
@@ -129,8 +163,34 @@ function perform(world, request, nodes, context, method) {
     const policies=model.ofType(get(method,'effectiveType')).filter(w=>sameScope(w,context));
     const gap=one(policies.filter(w=>fieldsMatch(w,{...pairs[0],metric:get(method,'gapMetric')})));
     if (!gap || !Number.isFinite(number(gap,'clearance'))) return unavailable('missing-gap-policy');
+    // The peers to keep apart from, each at the largest clearance the domain world gives that pair (its spacing profile).
+    const peers=rows.filter(o=>o!==moving&&o!==anchor&&o.peer&&o.geometry&&o.container===anchor.container).map(o=>{
+      const kept=policies.filter(w=>fieldsMatch(w,{subject:subjectEntity,object:entity(o.box),kind:get(method,'peerRelation')})).map(w=>number(w,'clearance')).filter(Number.isFinite);
+      return {...o.geometry,gap:kept.length?Math.max(...kept):undefined};
+    });
     for (const direction of directions) {
-      const id='placement.option.'+(++serial), p=position(direction,anchor.geometry,size,number(gap,'clearance'));
+      const slot=position(direction,anchor.geometry,size,number(gap,'clearance'));
+      const answer=solve?solveProblem(slotProblem({slot,direction,anchor:anchor.geometry,frame:frameBounds&&geometry(frameBounds),peers,peerDecl,
+        alignWeight:Number.isFinite(number(relationDecl,'alignWeight'))?number(relationDecl,'alignWeight'):1,grid}),{provider}):null;
+      jobs.push({anchor,moving,direction,slot,answer,model,pairs,subjectEntity});
+    }
+  }
+  // Phase two: each direction's place (the solved one, or the declared slot when the problem has no solution, so
+  // the trial below shows why) is admitted and measured by the domain world.
+  return settleAll(jobs.map(j=>j.answer),(answers)=>{
+  let provided;
+  for (const [k,{anchor,moving,direction,slot,model,pairs,subjectEntity}] of jobs.entries()) {
+    {
+      const id='placement.option.'+(++serial);
+      let p=slot;
+      if (answers[k]) {
+        const rows=parse(answers[k]), result=rows.find(w=>w.type==='std.problem.result');
+        if (get(result,'status')==='solved') {
+          const value=Object.fromEntries(rows.filter(w=>w.type==='std.problem.assignment'&&(result.attrs.assignment??[]).includes('$'+w.id)).map(w=>[get(w,'var'),number(w,'value')]));
+          p={...slot,x:value.x,y:value.y};
+        }
+        provided=get(result,'provider')??provided;
+      }
       const originX=number(kind,'originX'), originY=number(kind,'originY');
       const x=p.x+p.width*(Number.isFinite(originX)?originX:number(tool,'originX'));
       const y=p.y+p.height*(Number.isFinite(originY)?originY:number(tool,'originY'));
@@ -192,19 +252,24 @@ function perform(world, request, nodes, context, method) {
   if (creation && get(tool,'containerKey') && !put(get(tool,'containerKey'),quote(chosen.anchor.container))) return unavailable('argument-collision');
   const operation=get(tool,'operation');
   if (!validName(operation)) return unavailable('invalid-operation');
-  return {chosen,options,call:wire('placement.call',operation,args)};
+  return {chosen,options,call:wire('placement.call',operation,args),...(provided?{provider:provided}:{})};
+  });
 }
 
 export function placementCircuit(world,request,nodes,context,provider) {
   const methods=world.ofType('std.placement.method');
   const method=methods.length===1?methods[0]:null;
-  // A method declared with search=problem, a request with several relations or subjects, a relation with declared
-  // predicates but no declared directions, with a declared fit, or whose declared region the anchor has, takes the
-  // general path.
+  // A request with several relations or subjects, a relation with declared predicates but no declared directions,
+  // with a declared fit, or whose declared region the anchor has, takes the general path. A method declared
+  // search=problem solves every placement as std.problem: one relation with declared directions keeps its ranked
+  // directions and clearance, each direction's place solved as its own problem (slotProblem); any other request takes
+  // the general path.
   const relations=nodes.filter(w=>w.type==='std.request.constraint'&&get(w,'operator')==='relation');
-  const general=method&&(get(method,'search')==='problem'||relations.length>1||nodes.filter(w=>w.type==='std.request.target').length>2||
+  const search=get(method,'search')==='problem';
+  const directed=relations.length===1&&world.ofType(get(method,'directionType')).some(d=>get(d,'relation')===get(relations[0],'relation'));
+  const general=method&&((search&&!directed)||relations.length>1||nodes.filter(w=>w.type==='std.request.target').length>2||
     relations.some(r=>needsProblem(world,method,context,nodes,r)));
-  const result=!method?{reason:'method-binding',options:[]}:general?problemPlacement(world,request,nodes,context,method,provider):perform(world,request,nodes,context,method);
+  const result=!method?{reason:'method-binding',options:[]}:general?problemPlacement(world,request,nodes,context,method,provider):perform(world,request,nodes,context,method,provider,search);
   return result&&typeof result.then==='function'?result.then(r=>summarise(r,context)):summarise(result,context);
 }
 
@@ -253,7 +318,8 @@ function summarise(result,context) {
 // alignWeight: a soft term), the region of the anchor it goes to (region, held) and the share of that place a
 // subject may take (fit: a larger one is drawn smaller when the tool has a sizeKey) are std.placement.predicate
 // facts of the method; nothing here names a relation.
-const PULL = { left: ['x', 'maximise'], right: ['x', 'minimise'], above: ['y', 'maximise'], below: ['y', 'minimise'] };
+// The directional predicates: the axis each measures its distance on, and the side of the anchor the subject is on.
+const SIDE = { left: ['x', -1], right: ['x', 1], above: ['y', -1], below: ['y', 1] };
 function problemPlacement(world, request, nodes, context, method, provider) {
   const unavailable = (reason, extra = {}) => ({ reason, options: [], ...extra });
   const targets = nodes.filter(w => w.type === 'std.request.target');
@@ -358,17 +424,35 @@ function problemPlacement(world, request, nodes, context, method, provider) {
   };
   uses.forEach((use, n) => {
     let target = use.a.box;
+    const place = use.region?.geometry ?? use.a.row.geometry;
     if (use.region) { target = 'region' + n; fixed(target, use.region.geometry); }
-    const core = PREDICATES[get(use.decl, 'predicate')]?.core;
-    if (relaxed && core && get(use.decl, 'gap') !== undefined && (get(use.decl, 'strength') ?? 'hard') === 'hard') {
-      add('constraint', 'relation' + n, `name=relation${n} predicate=${core} a=subject${use.s.i} b=${target} strength=hard`);
-      add('constraint', 'bound' + n, `name=bound${n} predicate=${get(use.decl, 'predicate')} a=subject${use.s.i} b=${target} gap=${get(use.decl, 'gap')} strength=soft weight=${get(use.decl, 'relaxWeight') ?? 1}`);
+    // clearance: a directional relation keeps at least that distance from its anchor: it is measured against the
+    // anchor grown by the clearance, and its declared gap (the most) counts from the anchor itself.
+    const side = SIDE[get(use.decl, 'predicate')], clearance = side && number(use.decl, 'clearance') > 0 ? number(use.decl, 'clearance') : 0;
+    let decl = use.decl, measured = target;
+    if (clearance) {
+      measured = 'clear' + n;
+      fixed(measured, { x: place.x - clearance, y: place.y - clearance, width: place.width + 2 * clearance, height: place.height + 2 * clearance });
+      const gap = get(use.decl, 'gap');
+      decl = { ...use.decl, attrs: { ...use.decl.attrs, ...(gap !== undefined ? { gap: [String(Math.max(0, Number(gap) - clearance))] } : {}) } };
+    }
+    const core = PREDICATES[get(decl, 'predicate')]?.core;
+    if (relaxed && core && get(decl, 'gap') !== undefined && (get(decl, 'strength') ?? 'hard') === 'hard') {
+      add('constraint', 'relation' + n, `name=relation${n} predicate=${core} a=subject${use.s.i} b=${measured} strength=hard`);
+      add('constraint', 'bound' + n, `name=bound${n} predicate=${get(decl, 'predicate')} a=subject${use.s.i} b=${measured} gap=${get(decl, 'gap')} strength=soft weight=${get(decl, 'relaxWeight') ?? 1}`);
       softened.push({ name: 'bound' + n, relation: get(use.relation, 'relation') });
-    } else constraint('relation' + n, use.decl, 'subject' + use.s.i, target);
-    // pull: a soft term that keeps the subject close to its anchor along the relation's direction (left of the
-    // anchor: as far right as the relation allows), at the declared weight per unit of distance.
-    const pull = number(use.decl, 'pull'), toward = PULL[get(use.decl, 'predicate')];
-    if (pull > 0 && toward) add('constraint', 'pull' + n, `name=pull${n} predicate=${toward[1]} a=${toward[0]}${use.s.i} strength=soft weight=${pull}`);
+    } else constraint('relation' + n, decl, 'subject' + use.s.i, measured);
+    // pull: a soft term that keeps the subject close to its anchor along the relation's direction: its distance
+    // from the slot at the clearance (left of the anchor: ending the clearance before it), at the declared weight per
+    // unit of distance. The cost is never negative and does not depend on where the anchor is, so placements
+    // against different candidate anchors compare by closeness.
+    const pull = number(use.decl, 'pull');
+    if (pull > 0 && side) {
+      const [axis, sign] = side, size = axis === 'x' ? use.s.size.width : use.s.size.height, start = axis === 'x' ? place.x : place.y, extent = axis === 'x' ? place.width : place.height;
+      const at = sign < 0 ? start - clearance - size : start + extent + clearance;
+      fixed('slot' + n, axis === 'x' ? { x: at, y: place.y, width: use.s.size.width, height: use.s.size.height } : { x: place.x, y: at, width: use.s.size.width, height: use.s.size.height });
+      add('constraint', 'pull' + n, `name=pull${n} predicate=align a=subject${use.s.i} b=slot${n} axis=${axis} edge=0 strength=soft weight=${pull}`);
+    }
     const axis = get(use.decl, 'align');
     if (axis) add('constraint', 'align' + n, `name=align${n} predicate=align a=subject${use.s.i} b=${target} axis=${axis} edge=${get(use.decl, 'edge') ?? 0.5} strength=soft weight=${get(use.decl, 'alignWeight') ?? 1}`);
   });

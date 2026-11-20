@@ -304,10 +304,14 @@ plus `gap`) and the centre of a is over b.
 Placement takes this path for a request with several relations or subjects, a
 relation with declared predicates and no declared directions or with a declared
 `fit`, or one whose declared region the anchor has, and for every request when the
-method is declared `search=problem`. Each `std.placement.predicate` of the method may
-add `pull` (for `left`, `right`, `above` and `below`: a soft term of that weight per
-unit of distance that keeps the subject close to its anchor, as `maximise`/`minimise`
-of its coordinate), `align`/`edge`/`alignWeight` (a soft alignment with the anchor), `region`
+method is declared `search=problem`, except one relation with declared directions:
+that keeps the ranked directions, the clearance and the objective, and solves each
+direction's place as its own std.problem (on the relation's axis at the clearance,
+across it free along the anchor's side to keep the peers' clearance, softly aligned).
+Each `std.placement.predicate` of the method may add `clearance` (for `left`,
+`right`, `above` and `below`: the least distance kept from the anchor), `pull` (for
+the same predicates: a soft term of that weight per unit of distance from the slot at
+the clearance, never negative), `align`/`edge`/`alignWeight` (a soft alignment with the anchor), `region`
 (the anchor's `std.placement.region` of that kind is the box, such as the water
 of a lake or the surface of a table; with `held=true` only when the region holds
 the subject's kind) and `fit` (a new subject larger than that share of its place

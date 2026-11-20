@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.234.0
+
+- Placement, `search=problem`: a request with one relation that has declared directions keeps the method's ranked directions, clearance (the domain world's effective policy) and lexicographic objective, and solves each direction's place as its own `std.problem` (configured provider: Z3 or the internal search). On the relation's axis the subject stays at the declared clearance; across it, it may move along the anchor's side to keep each observed peer's clearance (soft), at a cost per unit of distance from the declared alignment (`alignWeight`). The grid of the free coordinate passes through the declared slot, so an unobstructed subject lands on it exactly. The result names the provider. Every other request takes the general path as before.
+- Placement general path: `std.placement.predicate` may declare `clearance` (left/right/above/below: the least distance kept from the anchor; the relation is measured against the anchor grown by it, and `gap` still counts from the anchor). `pull` is now a soft alignment with the slot at that clearance (cost = distance from it times the weight): never negative and independent of where the anchor is, so placements against different candidate anchors compare by closeness (before, `maximise`/`minimise` of the coordinate favoured anchors further along the axis).
+
 ## 0.233.0
 
 - `std.problem`: predicate `outside`, the negation of `inside` (internal search: violation 1 + the margin by which a is inside b; Z3: `Not(inside)`). As a soft term over a window around a point grown by the subject's size it keeps the subject's centre off that point (not centred on another object).

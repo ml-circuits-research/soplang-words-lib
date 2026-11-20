@@ -172,3 +172,16 @@ test('a declared pull keeps the subject close to its anchor along the relation',
    assert.ok(h.x>=680&&h.x-680<=12,(p?'z3 ':'internal ')+JSON.stringify(h));
   }
 });
+// clearance: a directional relation keeps at least that distance from its anchor; with pull the subject sits at
+// exactly that distance. The pull cost is the distance from that slot, never negative.
+test('a declared clearance keeps the distance and pull closes to it exactly',{skip},async()=>{
+  const cleared=()=>{const world=fixture();world.load('@right.clear std.placement.predicate method=$place relation=right predicate=right gap=60 clearance=12 pull=1');return world;};
+  const rightOfTree='@c3 std.request.constraint request=$r target=$t.house concept=place operator=relation relation=right goal=$t.tree polarity=positive character=requirement';
+  for(const p of [undefined,...(provider?[provider]:[])]){
+   const out=read(await cleared().compileRequest(request(rightOfTree+'\n'+nearLake.replace('relation=near','relation=independent_peer').replace('c1','c0')),p?{provider:p}:{}));
+   assert.equal(out.result.attrs.status[0],'compiled',JSON.stringify(out.result.attrs));
+   assert.ok(Number(out.result.attrs.cost?.[0]??0)>=0,'the closeness cost is not negative');
+   // Z3 is exact; the internal search is on the declared grid (10), so within one step beyond the clearance.
+   const x=box(out.call).x;assert.ok(p?x===692:x>=692&&x<702,(p?'z3 ':'internal ')+JSON.stringify(box(out.call)));
+  }
+});

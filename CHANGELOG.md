@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.236.0
+
+- Placement, general path: a `std.placement.kind` may declare `avoids=` (atoms, many): the kinds of observed regions (`std.placement.region kind=`) its subjects keep out of. Every such region becomes a hard `apart` (gap 0) term for each subject of that kind, except a region a relation of the request puts the subject into. So "a house near the river" keeps out of the water of the river (the regions of its bent stretches), whatever the relations prefer. A single relation with declared directions (the method's ranked directions) rejects a direction whose place meets such a region (`reason=avoided-region` on that option). The contract lists `avoids`.
+
 ## 0.235.0
 
 - `std.problem` internal search: a problem too large to enumerate whole (several subjects placed together, which answered `budget` / `domain-too-large`) is searched by block coordinate search: the variables of each box (or span) form a block, searched on its grid against the blocks already placed, then in rounds against all the others until none moves or the budget ends. A hard constraint that does not hold counts before any soft cost. The answer is solved only when every hard constraint holds, and says `reason=block-search` (the best found, not proved optimal). Z3 still solves the whole problem exactly.

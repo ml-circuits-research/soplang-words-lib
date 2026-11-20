@@ -132,6 +132,9 @@ function perform(world, request, nodes, context, method, provider, solve=false) 
   const relationDecl=one(declared.filter(p=>get(p,'relation')===relName&&get(p,'region')===undefined));
   const peerDecl=one(declared.filter(p=>get(p,'relation')===get(method,'peerRelation')&&get(p,'region')===undefined));
   const grid=Number.isFinite(number(method,'grid'))?number(method,'grid'):Math.max(1,Math.min(...(frameBounds?[geometry(frameBounds).width,geometry(frameBounds).height]:[400]))/40);
+  // The observed regions the subject's kind keeps out of (std.placement.kind avoids=: the water of a river for a house).
+  const avoids=new Set((kind.attrs.avoids??[]).map(raw=>raw.startsWith('"')?str(raw):raw));
+  const avoided=avoids.size?regionsOf(world,context).filter(r=>avoids.has(r.kind)&&r.geometry):[];
   for (const anchor of anchors) for (const moving of subjects) {
     if (anchor===moving) continue;
     if (!anchor.geometry || moving && !moving.geometry) return unavailable('incomplete-geometry');
@@ -197,6 +200,10 @@ function perform(world, request, nodes, context, method, provider, solve=false) 
       if (![x,y,p.x,p.y].every(Number.isFinite)) return unavailable('invalid-coordinates');
       const option={id,anchor,moving,direction,x,y,bounds:p,evidence:[],status:'feasible'};
       options.push(option);
+      // A place inside a region the subject's kind avoids is rejected, whatever it costs otherwise.
+      if (avoided.some(r=>p.x<r.geometry.x+r.geometry.width&&r.geometry.x<p.x+p.width&&p.y<r.geometry.y+r.geometry.height&&r.geometry.y<p.y+p.height)) {
+        option.status='rejected'; option.reason='avoided-region'; continue;
+      }
       const trial=model.fork();
       const boxAttrs={min_x:p.x,min_y:p.y,max_x:p.x+p.width,max_y:p.y+p.height};
       const admission=moving?trial.revise(moving.box.id,boxAttrs):trial.tell([
@@ -476,6 +483,14 @@ function problemPlacement(world, request, nodes, context, method, provider) {
       const id = 'peer' + (peers++); fixed(id, other.geometry); constraint('apart.' + s.i + '.' + id, peer, 'subject' + s.i, id);
     }
     for (const t of subjects) if (t.i > s.i) constraint('apart.' + s.i + '.subject' + t.i, peer, 'subject' + s.i, 'subject' + t.i);
+    // What holds the subject up: it keeps out of every observed region whose kind its kind avoids (std.placement.kind
+    // avoids=: the water of a river or a lake for a house), a hard constraint, except a region a relation puts it into.
+    const avoided = new Set((s.kind.attrs.avoids ?? []).map(raw => raw.startsWith('"') ? str(raw) : raw));
+    if (avoided.size) regions.forEach((r, k) => {
+      if (!avoided.has(r.kind) || !r.geometry || uses.some(u => u.s === s && u.region === r)) return;
+      const id = 'keepout' + s.i + 'r' + k; fixed(id, r.geometry);
+      add('constraint', 'avoid.' + s.i + '.' + k, `name=avoid.${s.i}.${k} predicate=apart a=subject${s.i} b=${id} gap=0 strength=hard`);
+    });
   }
   const packet = `@problem std.problem.request budget=3000 ${refs.var.map(r => 'var=' + r).join(' ')} ${refs.box.map(r => 'box=' + r).join(' ')} ${refs.constraint.map(r => 'constraint=' + r).join(' ')}\n${lines.join('\n')}`;
   return { packet, softened };

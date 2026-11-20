@@ -213,3 +213,25 @@ test('a count of one is the subject itself; an invalid count is refused before a
   assert.equal(result.attrs.status[0],'compiled');assert.equal(result.attrs.call.length,1);
   assert.equal(parse(fixture().compileRequest(counted(40)))[0].attrs.reason[0],'request-count');
 });
+
+// What holds a subject up (std.placement.kind avoids=): a cottage "near the lake, left of the tree" keeps out of every
+// region of the water of a river beside the tree, hard, whatever the relations would prefer.
+function riverFixture() {
+  const world=fixture();
+  world.load(`@river.a std.placement.region entity="river" kind=water ${context} min_x=430 min_y=180 max_x=620 max_y=300
+  @river.b std.placement.region entity="river" kind=water ${context} min_x=440 min_y=300 max_x=620 max_y=379
+  @cottage std.placement.kind concept=cottage native=cottage binding=$maker width=100 height=80 avoids=water avoids=road`);
+  return world;
+}
+for (const [label,run] of [['internal search',(w,t)=>w.compileRequest(t)],['Z3',(w,t)=>w.compileRequest(t,{provider})]]) {
+  const skipZ3=label==='Z3'&&!provider&&'z3-solver unavailable';
+  test('a subject keeps out of the regions its kind avoids ('+label+')',{skip:skip||skipZ3},async()=>{
+    const water=[{x:430,y:180,w:190,h:120},{x:440,y:300,w:180,h:79}];
+    const ask2=request(nearLake+'\n'+leftOfTree).replaceAll('kind=house','kind=cottage').replaceAll('$t.house','$t.cottage').replaceAll('@t.house','@t.cottage');
+    const {result,call}=read(await run(riverFixture(),ask2));
+    assert.equal(result.attrs.status[0],'compiled',JSON.stringify(result.attrs));
+    const h=box(call);
+    assert.ok(!water.some(w=>overlaps(h,w)),'out of the water '+JSON.stringify(h));
+    check(call);
+  });
+}

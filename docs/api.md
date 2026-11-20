@@ -320,7 +320,10 @@ the clearance, never negative), `align`/`edge`/`alignWeight` (a soft alignment w
 of a lake or the surface of a table; with `held=true` only when the region holds
 the subject's kind) and `fit` (a new subject larger than that share of its place
 is drawn smaller, when its `std.placement.tool` declares `sizeKey`, the larger
-side of its box). The result names each subject's geometry as a
+side of its box). A `std.placement.kind` may declare `avoids=` (the kinds of
+observed regions its subjects keep out of, such as `water` for a house): each such
+region is a hard `apart` term for the subject (a ranked direction whose place meets
+one is rejected), except a region a relation puts the subject into. The result names each subject's geometry as a
 `std.placement.option` and the first one as its `choice`, so the caller can check
 what it observes after the call.
 

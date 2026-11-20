@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.247.0
+
+- Placement: a `std.placement.predicate` declared `flow=` holds only when the `std.placement.context` observes that `flow` (a container's reading direction: "after" is right of the anchor in a rightward flow, below it in a downward one); the context's `flow` is the caller's observation. Moved from application host code.
+
 ## 0.246.0
 
 - Placement (std.problem path): a `std.placement.predicate` declared `pair=sides` is a relation said once for each of two anchors of one subject ("between A and B"): across the larger of the anchors' horizontal and vertical separations the subject takes the side of each anchor facing the other, each measured by the method's plain declaration of that directional predicate; said for another number of anchors it is refused as `paired-relation-anchors`. Moved from application host code.

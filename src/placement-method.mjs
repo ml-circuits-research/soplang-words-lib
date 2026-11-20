@@ -13,6 +13,11 @@ const wire = (id,type,values) => ({id,type,attrs:attrs(values)});
 const scopeOf = w => Object.fromEntries(fields.map(k=>[k,get(w,k)]));
 const sameScope = (a,b) => fields.every(k=>literal(a,k)===literal(b,k));
 const one = rows => rows.length===1 ? rows[0] : undefined;
+// The method's predicates that hold in this context: one declared flow= holds only when the context observes that flow
+// (the container's declared reading direction: "after" is right of the anchor in a left-to-right flow, below it in a
+// downward one).
+const predicatesOf = (world, method, context) => world.ofType('std.placement.predicate')
+  .filter(p => ref(p, 'method') === method.id && (get(p, 'flow') === undefined || literal(p, 'flow') === literal(context, 'flow')));
 const number = (w,k) => Number(get(w,k));
 const entity = w => get(w,'entity');
 const fieldsMatch = (fact, criteria) => Object.entries(criteria).every(([k,v])=>get(fact,k)===v);
@@ -187,7 +192,7 @@ function perform(world, request, nodes, context, method, provider, solve=false) 
   const basePolicies=world.ofType(get(method,'policyType'));
   const trials=[], jobs=[];
   let serial=0;
-  const declared=world.ofType('std.placement.predicate').filter(p=>ref(p,'method')===method.id);
+  const declared=predicatesOf(world,method,context);
   const relationDecl=one(declared.filter(p=>get(p,'relation')===relName&&get(p,'region')===undefined));
   const peerDecl=one(declared.filter(p=>get(p,'relation')===get(method,'peerRelation')&&get(p,'region')===undefined));
   const grid=Number.isFinite(number(method,'grid'))?number(method,'grid'):Math.max(1,Math.min(...(frameBounds?[geometry(frameBounds).width,geometry(frameBounds).height]:[400]))/40);
@@ -387,7 +392,7 @@ export function placementCircuit(world,request,nodes,context,provider) {
 }
 
 function needsProblem(world,method,context,nodes,relation) {
-  const name=get(relation,'relation'), declared=world.ofType('std.placement.predicate').filter(p=>ref(p,'method')===method.id&&get(p,'relation')===name);
+  const name=get(relation,'relation'), declared=predicatesOf(world,method,context).filter(p=>get(p,'relation')===name);
   if (!declared.length) return false;
   // Fitting a subject to its place is done only by the general path.
   if (declared.some(p=>get(p,'fit')!==undefined) || !world.ofType(get(method,'directionType')).some(d=>get(d,'relation')===name)) return true;
@@ -452,7 +457,7 @@ function problemPlacement(world, request, nodes, context, method, provider) {
   if (!rows || rows.some(r => r.peer && !r.geometry)) return unavailable('incomplete-geometry');
   const frameBox = ref(context, 'bounds') && world.get(ref(context, 'bounds')), frame = frameBox && sameScope(frameBox, context) && geometry(frameBox);
   if (!frame) return unavailable('missing-frame');
-  const declared = world.ofType('std.placement.predicate').filter(p => ref(p, 'method') === method.id);
+  const declared = predicatesOf(world, method, context);
   const plain = (relation) => one(declared.filter(p => get(p, 'relation') === relation && get(p, 'region') === undefined));
   const regions = regionsOf(world, context);
   // The declaration a relation takes for its anchor and subject: one whose region the anchor has (holding the

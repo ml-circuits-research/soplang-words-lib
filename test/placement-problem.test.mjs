@@ -251,3 +251,16 @@ test('a relation declared pair=sides said for two anchors places the subject bet
   const one=read(world.compileRequest(request(between('$t.lake','c1')))).result;
   assert.notEqual(one.attrs.status[0],'compiled');assert.equal(one.attrs.reason[0],'paired-relation-anchors');
 });
+test('a predicate declared flow= holds only in a context that observes that flow',{skip},()=>{
+  const world=fixture();
+  world.load(`@next.down std.placement.predicate method=$place relation=next predicate=below gap=60 flow="down"
+  @next.right std.placement.predicate method=$place relation=next predicate=right gap=60 flow="right"`);
+  const next='@c1 std.request.constraint request=$r target=$t.house concept=place operator=relation relation=next goal=$t.tree polarity=positive character=requirement';
+  const flowing=(flow)=>request(next).replace('bounds=$page.box','bounds=$page.box'+(flow?' flow="'+flow+'"':''));
+  const tree={x:620,y:330,w:60,h:120};
+  const right=read(world.compileRequest(flowing('right')));
+  assert.equal(right.result.attrs.status[0],'compiled',JSON.stringify(right.result.attrs));
+  assert.ok(box(right.call).x>=tree.x+tree.w,'right of the tree in a rightward flow '+JSON.stringify(box(right.call)));
+  const none=read(world.compileRequest(flowing(null))).result;
+  assert.notEqual(none.attrs.status[0],'compiled');assert.equal(none.attrs.reason[0],'undeclared-relation');
+});

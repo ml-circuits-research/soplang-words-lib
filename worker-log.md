@@ -6717,6 +6717,6 @@ No runtime code changed. Full source and bundle checks each passed 1015 with one
 - `completeStructuralBindings`, `populationPairs`/`readingOrder`/`POPULATION_PATTERNS`, `nearestRelative`: mechanisms moved out of PSys2 host JS (declared-bindings, link-population, sop-area relatives); PSys2 passes declared rows.
 - Checks: `npm test` 1082 pass / 0 fail; `SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs"` 1082 / 0; `node tools/doc-examples.mjs` 248 examples, 0 problems.
 
-## 2026-11-20 G: 0.245.0 span reading, 0.246.0 paired placement relations
+## 2026-11-20 G: 0.245.0 span reading, 0.246.0 paired placement relations, 0.247.0 flow predicates
 - 0.245.0 `stripPhrase`/`splitPhrase`/`readLexicalPhrase`/`readNumberSpan`/`unitConversion`/`decodeCode`/`nearestName` (from PSys2 kind readings, numbers, units, colour names); 0.246.0 `std.placement.predicate pair=sides` ("between A and B", from PSys2 spatial-placement-execution).
 - Checks: `npm test` 1078/0; `SOPWORLD_BUNDLE=1` 1078/0; doc examples 248, 0 problems.

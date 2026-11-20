@@ -1,7 +1,8 @@
 # 04. Ce ar putea fi făcut mai general
 
 Generalizarea nu înseamnă „încă un strat de abstractizare”. Înseamnă să identifici noțiunile care se
-repetă în cele șapte ramuri de compilare și în cele trei motoare, și să le exprimi o singură dată.
+repetă în cele șase ramuri de compilare și în cele patru motoare (kernel, reason, plan — și `std.problem`,
+abia sosit), și să le exprimi o singură dată.
 Mai jos este forma generală, apoi maparea de la codul actual la ea.
 
 ## 1. Cererea ca graf de scopuri, nu ca tip de wire
@@ -36,7 +37,8 @@ Astăzi:
 - `core.deny` pentru hard;
 - `std.decide.criterion` pentru ranking;
 - `REASON_RULES` pentru `placed`/`open`/`join`;
-- `placement-method` pentru geometrie;
+- `placement-method` pentru geometrie — deja mutat pe `std.problem` la cererile cu mai multe
+  relații/ținte (0.227–0.229); calea simplă `perform` rămâne pt. direcții declarate;
 - `choice-method` pentru selecție;
 - `ground-method` pentru cost lexical.
 
@@ -60,8 +62,9 @@ separati. `core.deny`, `std.decide`, `REASON_RULES` devin **surse de nogoods și
 
 ## 3. Capabilități ca contracte tipizate, nu ca ramuri de cod
 
-Astăzi `capability-method.mjs` are 587 de linii și cere exact un target; `placement-method.mjs` are
-214 linii și cere exact două; `tool.mjs` are 705 linii și leagă acte de primitive prin `std.tool.*`.
+Astăzi `capability-method.mjs` are 646 de linii și cere exact un target; `placement-method.mjs` are
+390 de linii (două căi: cea generală și moștenirea pt. o relație cu direcții); `tool.mjs` are 705
+linii și leagă acte de primitive prin `std.tool.*`.
 
 Forma generală:
 
@@ -200,7 +203,7 @@ Forma generală:
 ```
 
 Fiecare pachet are `exports`, tipuri, teste și versiune. `psys2` depinde de `@sopworld/core` și
-`@sopworld/host`, nu de un fișier de 1,66 MB. Build-ul single-file rămâne un **artefact de release**,
+`@sopworld/host`, nu de un fișier de 1,70 MB plus wasm-ul Z3. Build-ul single-file rămâne un **artefact de release**,
 generat din pachete, nu sursa.
 
 **Ce câștigi:** poți livra un subset, poți versiona independent, poți testa contractul dintre pachete.
@@ -209,22 +212,24 @@ generat din pachete, nu sursa.
 
 | Cod actual | Formă generală | Observație |
 | --- | --- | --- |
-| `compilePacket` cu 7 ramuri | pipeline + registry de providere | fazele sunt aceleași pentru toate |
-| `placementCircuit` | `Problem` cu domenii geometrice | 2 ținte/1 relație devine un caz al domeniului |
+| `compilePacket` cu 6 ramuri (+`std.problem.request`, 0.228) | pipeline + registry de providere | fazele sunt aceleași pentru toate |
+| `placementCircuit` → `problemPlacement` | `Problem` cu domenii geometrice | **realizat 0.227–0.229**; calea veche `perform` rămâne pt. direcții declarate |
 | `compileChoice` | `Problem` cu criterii `std.decide` | deja are assessments; mută căutarea în solver |
 | `compileGrounding` | abducție ponderată peste candidați | costurile sunt deja date |
 | `reason.mjs` | `std.reason` ca reguli `core.rule` | view-ul rămâne, forward-chaining pleacă |
 | `plan.mjs` / `PlanLive` | planner peste `World` | `factStore` rămâne adaptor |
 | `kit.mjs` / `tool.mjs` | `@sopworld/host` | nu mai stă în core |
-| `w.legend`, `w.document`, `w.diagram` | pack-uri în `sop-knowledge-worlds` | biblioteca le încarcă, nu le știe |
-| `index.json` + 9,8 MB vocab | manifest + index pe shard | lazy, hash, versiune |
-| `fns`/`actions` JS | porturi + provideri declarati | sandbox și cost uniform |
+| `w.legend`, `w.document`, `w.diagram` | pack-uri în `sop-knowledge-worlds` | biblioteca le încarcă, nu le știe — neschimbat; aplicația a migrat deja pe catalog |
+| `index.json` + 9,81 MiB vocab | manifest + index pe shard | lazy, hash, versiune |
+| `fns`/`actions` JS | porturi + provideri declarați | sandbox și cost uniform; + furnizorul Z3, primul binar extern |
 
 ## Invarianții noului nucleu
 
 1. **Un singur model de stare:** orice fapt este într-un `World`; orice simulare este un `fork`.
-2. **Un singur motor de decizie:** orice alegere este un `Problem` cu cost și dovadă.
-3. **Un singur contract de rezultat:** `Plan | Issue[]`, niciodată string.
+2. **Un singur motor de decizie:** orice alegere este un `Problem` cu cost și dovadă — *plasarea e
+   deja pe `std.problem` (0.227); choice, grounding și plan încă nu.*
+3. **Un singur contract de rezultat:** `Plan | Issue[]`, niciodată string — *excepția bună există
+   (`std.problem.result`: `conflict`, `cost`, `alternative`); extinde-o, nu o inventa.*
 4. **O singură graniță:** `core` nu cunoaște niciun nume de lume publicată.
 5. **O singură versiune:** fiecare artefact declară `requires` și este verificat la încărcare.
 6. **Un singur limbaj de constrângeri:** hard/soft/scope/prioritate, indiferent de domeniu.
@@ -234,7 +239,9 @@ generat din pachete, nu sursa.
 
 - **Sintaxa SOP Lang.** Este mică și bună; nu are nevoie de operatori, liste sau expresii.
 - **Kernelul tranzacțional.** `tell`, `retract`, `fork`, `undo` sunt deja general.
-- **Solverul CDCL.** Este general; trebuie folosit, nu înlocuit.
+- **Solverul CDCL și `std.problem`.** `std.problem` e general și folosit deja de compilator
+   (0.227); extinde pe el, nu-l dubla. Limitele Z3 sunt măsurate și publicate în propriul
+   proposal (`books/propunere-compilator-smt.md`) — buget declarat, refuz onest.
 - **Testele care verifică documentația.** Sunt un activ; trebuie mutate pe contracte, nu eliminate.
 
 ## Testul final de generalitate

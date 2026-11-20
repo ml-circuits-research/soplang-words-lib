@@ -1,154 +1,127 @@
 # Review independent: ecosistemul SOP Worlds
 
 **Proiecte:** `soplang-words-lib` (motorul), `sop-knowledge-worlds` (cunoaștere), `psys2` (aplicația).
-**Commituri citite:** `soplang-words-lib` `ac33216` (0.225.2), `sop-knowledge-worlds` `b62c771b` (validează cu sopworld 0.225.1), `psys2` `da02e8ec`.
-**Data:** 19 noiembrie 2026.
+**Commituri citite:** `soplang-words-lib` `85a79dc` (0.230.0), `sop-knowledge-worlds` `a04fb0d8` (validează cu sopworld 0.225.1), `psys2` `d4918747`.
+**Data:** 20 noiembrie 2026.
 **Autor:** review independent (Mistral), pe cod, teste și manifeste, nu pe prezentări.
 
-## Două citiri în aceeași zi
+## Trei citiri în două zile
 
-Prima ediție a fost scrisă la `soplang-words-lib` `747b51e` (0.225.1). Spre seară, codul citit se
-schimbase: biblioteca a trecut la 0.225.2, catalogul de cunoaștere a fost revalidat cu buildul
-curent (`b62c771b`), iar psys2 a mutat tabul Avatar pe o arie SOP generică (`da02e8ec`). Această
-ediție re-verifică fiecare afirmație contra `ac33216` și corectează numerele greșite din prima ediție;
-concluziile care rezistă re-verificării rămân; ce s-a schimbat este marcut cu „schimbat de la citirea I”.
+- **Citirea I** — la 0.225.1 (`747b51e`): verdict dur, corect în mare, cu câteva numărători greșite.
+- **Citirea a II-a** — seara aceleiași zile, la 0.225.2: numerele corectate; primul răspuns la review apăruse deja (validarea catalogului realiniată, Avatar pe arie SOP).
+- **Citirea a III-a** — aceasta, la 0.230.0, după o noapte în care cererile mari din review au devenit mecanisme: `std.problem` cu Z3, plasarea pe calea generală, toate cele cinci taburi pe arii SOP.
 
-Acest folder nu repetă `agy-review/`. Acolo accentul este pe funcțiile lipsă din aplicație
-(plasare relativă, cereri compuse, stare în JS). Aici accentul este pe **contractul dintre cele trei
-proiecte** și pe **forma mecanismelor**: unde abordarea nu poate crește, unde se contrazice singură
-și ce ar trebui generalizat înainte de a adăuga încă o capacitate.
+De data aceasta nu doar actualizez: **șterg constatările rezolvate** și păstrez, cu dovezi proaspete,
+doar ce mai stă în picioare. Ce a fost rezolvat rămâne consemnat scurt, ca dovezi de direcție, în „Ce s-a întâmplat".
 
 ## Verdict
 
-Kernelul este bun: tranzacții, copy-on-write, explicații, solver CDCL, teste multe și serioase.
-Problema nu este miezul. Problema este că **deasupra kernelului s-au construit trei motoare paralele
-și un compilator cu ramuri speciale**, iar cele trei proiecte sunt legate prin copiere de fișiere și
-prin convenții, nu printr-un contract mașin-verificat — legătura e ținută de oameni și de obiceiuri.
+Kernelul rămâne bun, iar direcția de noapte e cea cerută de prima citire: o căutare neutră (`std.problem`),
+verificată la citire înapoi, cu buget declarat, doi furnizori (unul intern, Z3 în browser) și distincție
+onestă între „nemodelează", „buget epuizat" și „imposibil demonstrat". Plasarea și-a luat locul pe
+această cale. Aplicația ține toate cele cinci taburi în lumi SOP. Astea sunt exact „un singur motor de
+decizie" și „starea în SOP" din [03](./03-ce-ar-putea-fi-facut-mai-bine.md) și [04](./04-ce-ar-putea-fi-facut-mai-general.md).
 
-Pe scurt:
+Ce nu s-a schimbat — și acum costă mai mult, pentru că mecanismul care le-ar absorbi există deja:
 
-1. `compileRequest` este un **router de cazuri speciale**, nu un compilator: alege ramura după tipul
-   de wire prezent și refuză orice cerere cu mai mult de un root. Neschimbat.
-2. Există **cel puțin trei modele de execuție** pentru aceleași noțiuni: `World` + reguli,
-   `reason.mjs` (view plat + `REASON_RULES`), `plan.mjs` (`PlanLive` + fact store). Neschimbat.
-3. Granița „bibliotecă = mecanisme, cunoaștere = date” este **încă încălcată în `src/`**: `w.legend`,
-   `w.document`, `w.diagram`, `k.commonsense`, `k.scenes`, `k.kinds`, `k.genres`, `k.interest`.
-   Neschimbat.
-4. Rezultatele compilării sunt **text SOP**, nu obiecte: `status=unavailable reason=...`, uneori
-   string gol; apelantul re-parsează și pierde candidatul, etapa și span-ul. Neschimbat.
-5. Nu există **contract de versiune** între proiecte: `core.module version=` este doar o etichetă.
-   **Schimbat de la citirea I:** decalajul „catalogul s-a validat cu 0.144.0” a fost închis chiar în
-   ziua în care a fost semnalat (catalogul validează acum cu 0.225.1), dar prin aceeași copie de mână —
-   până seara biblioteca este la 0.225.2 și copia este din nou în urmă. O zi întreagă a durat
-   realinierea; mecanismul care a produs decalajul nu s-a schimbat.
-6. Un singur fișier de 1,70 MB și **277 de exporturi** pentru un consumator care folosește 15.
-   Neschimbat.
-7. Metoda de lucru — o capacitate nouă la fiecare versiune, 216 versiuni, 48 de rânduri în tabelul
-   de capabilități — a produs **suprafață**, nu **stabilitate**. Neschimbat.
+1. `compileRequest` rămâne un **router pe tipul de wire**: o nouă cerere (`std.problem.request`) a
+   însemnat încă un `if` în `compilePacket`, nu o fază nouă într-un pipeline. Root-ul unic este în continuare
+   impus prin `fail('request-root')`.
+2. Motoarele paralele rămân: `reason.mjs` (`KIND_FACTS`, `REASON_RULES`), `plan.mjs` (`PlanLive`),
+   `request.mjs` (`planRequest`) sunt exportate public, nedeprecate. `std.problem` le-ar putea înlocui;
+   astăzi coexistă.
+3. Biblioteca scrie în continuare **tipuri de domeniu în `src/`**: `w.legend` (contract întreg),
+   `w.document`, `w.diagram`, `k.scenes`, `k.kinds`. Aplicația a migrat taburile pe lumi din
+   catalog (`w.drawing`, `w.diagram`, `w.document` extinse) — biblioteca nu.
+4. Rezultatele de compilare rămân **text SOP**: `status=unavailable reason=...`, string gol la
+   proiecția de cunoaștere, `string | Promise<string>` după forma celui de-al doilea argument.
+   Excepție notabilă: `std.problem.result` poartă `conflict`, `cost` — forma bună există deja într-un singur loc.
+5. Contractul între proiecte rămâne **copiat de mână**: validarea catalogului stă la 0.225.1 (realiniată
+   ieri-dimineață, azi are șase builduri în urmă), vendorul din psys2 e la 0.230.0 (copiat azi-noapte),
+   pinurile `repos.pin` au rămas în urmă, taguri zero. Dintr-o zi în alta, aceleași trei probleme.
+6. Monolitul a crescut: 1.699,9 kB și 25.372 linii, 278 exporturi, plus WASM-ul Z3 (8,6–8,9 MB gzip,
+   livrat separat, încărcat leneș) — distribuția e tot „un fișier (și un wasm)".
 
-## Cum arată dependențele azi
+## Ce s-a întâmplat între citiri (verificat, nu citit din rapoarte)
 
-```mermaid
-flowchart LR
-  subgraph Lib["soplang-words-lib 0.225.2"]
-    Core["World, matrix, solve"]
-    Comp["compileRequest + 7 ramuri"]
-    Domain["w.legend, w.document, w.diagram, reason.mjs"]
-  end
-  subgraph Know["sop-knowledge-worlds b62c771b"]
-    Cat["docs/worlds: 60 MB SOP, 1323 fișiere"]
-    Idx["index.json + vocab.json + vocab-kinds.json: 9,8 MB"]
-  end
-  App["psys2 da02e8ec"]
-  Lib -->|"copie vendor: 1,70 MB (0.225.2, sincronizată azi)"| App
-  Know -->|"catalog publicat: indexul pinuit în buildul psys2 e 288699c9, checkout-ul e b62c771b"| App
-  Lib -.->|"copie de validare: 0.225.1 (lib e la 0.225.2)"| Know
-  Domain -.->|"nume de tipuri k.* / w.*"| Know
-```
+| Cerere din review | Ce e acum în cod | Verificat |
+| --- | --- | --- |
+| Plasarea: mai multe relații, ținte, constrângeri cantitative, regiuni | Cale generală `problemPlacement` când metoda declară `search=problem`, cererea are >1 relație, >2 ținte, predicat fără direcții, `fit` sau `region`; totul devine un singur `std.problem` | `src/placement-method.mjs:196-215`, 0.227–0.229 |
+| Un motor de decizie neutru | `src/problem.mjs`: variabile tipizate, domenii, hard/soft, buget, adâncime; furnizori intern și Z3; soluțiile sunt recitite contra constrângerilor hard | `src/problem.mjs`, 0.226.0 |
+| Z3 „nu se poate în browser" | `browser/smt-z3.mjs`, încărcare leneșă la prima problemă, izolare necesară, altfel `provider=internal` | 0.228.0; `node tools/browser-z3-check.mjs` 10/10: încărcare 160–210 ms, rezolvare 7–26 ms |
+| Starea taburilor în JS | Toate cele cinci taburi (Avatar, Calendar, Desen, Diagramă, Documente) pe arii SOP; gate 647 pass, 0 fail | psys2 `d4918747`, worker-log 2026-11-20 |
+| Gradele („un soare mare") ca formă, nu excepție | `operator=degree` cu factori din catalog peste o bază; „small/plain/big sun" → 112/160/224 | `src/capability-method.mjs`, 0.230.0 |
+| Cititorul: corpus real | `official-dataset` (train 41.870 / dev 5.128 / test 4.880, 23.299 familii), v6 la intenție exactă 61,8% vs 18,4% pentru modelul implementat, activat; probe pe ruta reală 6/22 → 15/22 | psys2 worker-log 2026-11-20 |
+| Ture lente (2–5,5 s) | 0,8–1,5 s în Chromium, prin cedare la tura care așteaptă și refolosire pe turn | psys2 worker-log 2026-11-20 |
 
-Săgețile punctate sunt problema reală: biblioteca **cunoaște** numele unor lumi pe care ar trebui doar
-să le încarce, iar cele trei proiecte țin builduri diferite la versiuni diferite — azi, în interiorul
-unuia singur commit al psys2, există trei referințe la versiuni diferite ale ecosistemului:
-vendor `sopworld.mjs` la 0.225.2, `new-engine-source.mjs` cu `libraryPin 747b51e` + `knowledgePin
-288699c9`, iar checkout-ul de cunoaștere local la `b62c771b`. Nici o mașină nu compară aceste
-valori între ele.
+Acest tabel nu mărturisește că totul e gata: planul propriu al proiectului (`refactoring/request-to-executable-circuits.md`)
+ține încă verificările deschise pentru plasări multiple, dependențe date între unelte și compensare. Dar
+direcția cerută de review e recunoscută și implementată, nu ignorată.
 
-## Dovezi măsurate (citirea a II-a, `ac33216`)
+## Dovezi măsurate (citirea a III-a, `85a79dc`)
 
 | Măsură | Valoare | Sursă |
 | --- | --- | --- |
-| Module în `src/` | 108 direct în `src/` + 2 în `internal/` = 110 | `find src -name '*.mjs'` |
-| Build single-file | 1.663,2 kB, 466,3 kB gzip, 109 module, 24.860 linii | `docs/version.md`, `wc -l docs/sopworld.mjs` |
-| Exporturi publice | 277 | `import * as m from './src/index.mjs'` |
-| Exporturi folosite de `psys2` | 15 | nume distincte din importurile `../vendor/sopworld/sopworld.mjs` |
-| Versiuni în changelog | 216 secțiuni, 2.928 de linii | `grep -c '^## ' CHANGELOG.md` |
-| Capabilități | 51 secțiuni în `docs/capabilities.md`, 48 de rânduri în tabelul din README | `grep -c '^## '`, `awk` |
-| Teste bibliotecă (surse) | 1025: 1023 pass, 0 fail, 1 skip, 1 todo | `npm test` (include `tools/build.mjs`) |
-| Teste bibliotecă (bundle) | 1025: 1023 pass, 0 fail, 1 skip, 1 todo | `SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs"` |
-| Teste cunoaștere | 3267: 3249 pass, 0 fail, 18 skip | `npm test` în catalog (două rulări identice; o rulare concomitentă cu buildul bibliotecii a arătat 2 eșecuri tranzitorii, nereproductibile) |
-| Teste aplicație (rulare locală) | 626: 617 pass, 6 fail, 3 skip, după `build:webchat` | `npm test` în psys2, pe checkout cu paralel-lucru nesalvat |
-| Cunoaștere publicată | 60,1 MB SOP (57,3 MiB), 1323 fișiere | `du -cb docs/worlds/**/*.sop` |
-| Index + vocabular | 1,73 + 3,37 + 4,70 MiB JSON | `ls -la docs/worlds/*.json` |
-| Versiune validare cunoaștere vs bibliotecă | 0.225.1 (build `8a63e3e83fef`, commit `747b51e`) vs 0.225.2 | `tools/sopworld/VERSION`, `package.json` |
-| Pinuri vs checkout-uri | `repos.pin`: cunoaștere `a0e8538` / aplicație `45ac4bf`; checkout-uri: `b62c771b` / `da02e8ec` | `repos.pin`, `git rev-parse` |
-| Taguri git | 0 în bibliotecă, 0 în cunoaștere, 1 în aplicație (`pre-tab-cut`) | `git tag` |
+| Build single-file | 1.699,9 kB, 476,3 kB gzip, 110 module, 25.372 linii | `docs/version.md`, `wc -l` |
+| Module în `src/` | 111 | `find src -name '*.mjs'` |
+| Exporturi publice | 278 | `import * as m from './src/index.mjs'` |
+| Versiuni în changelog | 221 secțiuni | `grep -c '^## '` |
+| Teste bibliotecă (rularea mea) | 1047: 1045 pass, 0 fail, 1 skip, 1 todo | `npm test` (43 s) |
+| Teste cunoaștere (rularea mea) | 3268: 3250 pass, 0 fail, 18 skip | `npm test` în catalog (29 s) |
+| Teste aplicație | 647 pass, 0 fail, 1 todo | worker-log 2026-11-20 (rulat de worker; eu n-am rulat poarta psys2) |
+| Z3 în browser (izolat) | încărcare 160–210 ms, prima rezolvare 200–320 ms, apoi 7–26 ms | worker-log la 0.228.0, `tools/browser-z3-check.mjs` |
+| Limitele Z3, măsurate | aceeași formă: 55 ms sau 37 s după obiectiv; `Optimize` pe disjuncții explodează; bugetul declarat refuză onest | `books/propunere-compilator-smt.md` |
+| Cunoaștere publicată | 60,2 MB SOP / 57,3 MiB, 1325 fișiere; index+vocab 9,81 MiB | `find`, `du` |
+| Validarea cunoașterii | sopworld **0.225.1** (copie din `747b51e`), biblioteca e la **0.230.0** | `tools/sopworld/VERSION` |
+| Vendor psys2 | 0.230.0 (`e2435a4`), copiat de mână azi-noapte | `psys2/src/vendor/sopworld/provenance.json` |
+| Pinuri vs checkout-uri | `repos.pin`: `a0e8538` / `45ac4bf`; checkout-uri: `a04fb0d8` / `d4918747` | `repos.pin`, `git rev-parse` |
+| Taguri git | 0 / 0 / 1 (`pre-tab-cut`) | `git tag` |
 
-Eșecurile din `psys2` la citirea a II-a sunt în testele buildului generat și ale arhivelor (worker
-de browser, arhive byte-exacte, undo pe sesiune, garda Document/Calendar, pin vechi de cunoaștere,
-RPC Worlds). Prima ediție raporta „3 eșecuri în exportul SOP-BERT”; acel set nu se mai reproduce
-astăzi. Le menționez pentru că arată ce înseamnă „gate verde” când gate-ul este local și depinde de
-ce checkout-uri și ce build-uri ai; nu le folosesc ca dovadă pentru critica de arhitectură.
-
-## Top 10 constatări
+## Ce rămâne de criticat (top-ul actualizat)
 
 | # | Constatare | Severitate | Unde se vede |
 | --- | --- | --- | --- |
-| 1 | Compilatorul este un lanț de ramuri după tipul de wire, cu un singur root | P0 | `src/request-compiler.mjs:20-33,40` |
-| 2 | Trei motoare pentru aceleași noțiuni: `World`, `reason.mjs`, `plan.mjs` | P0 | `src/reason.mjs:30-49`, `src/plan.mjs:71`, `src/request.mjs:1595`, `src/tool.mjs:284`, `src/index.mjs:50,70,74` |
-| 3 | Domeniul a intrat în bibliotecă: `w.legend`, `w.document`, `w.diagram`, `k.*` | P0 | `src/contracts.mjs:240`, `src/document.mjs`, `src/diagram.mjs`, `src/reason.mjs:30`, `src/compose.mjs` |
-| 4 | Contracte „stringly typed”: rezultat SOP, string gol, sync/async amestecat | P0 | `src/request-compiler.mjs:11,14-16`, `src/knowledge-projection.mjs:78` |
-| 5 | Fără contract de versiune între cele trei proiecte; copii de mână deja nealiniate | P0 | `src/matrix.mjs:360`, `repos.pin`, `tools/sopworld/VERSION`, `psys2/src/dialog/new-engine-source.mjs` |
-| 6 | Monolit de 1,70 MB / 24.860 linii și 277 exporturi; aplicația folosește 15 | P1 | `docs/version.md`, `src/index.mjs` |
-| 7 | Metoda „o capacitate pe versiune” produce API, nu un nucleu stabil | P1 | `CHANGELOG.md` (216 secțiuni), `README.md` |
-| 8 | Cereri compuse și flux de date între unelte lipsesc la nivel de IR | P1 | `src/request-batch.mjs:8-31`, `docs/reference.md` (`prepareRequestBatch`) |
-| 9 | Plasarea și alegerea au constrângeri hardcodate (2 ținte, 1 relație, 1 target) | P1 | `src/placement-method.mjs:52-64`, `src/capability-method.mjs:104-105` |
-| 10 | Determinismul promis este subminat de `localeCompare`, `toLowerCase`, fus orar | P2 | 15 + 171 + 14 apeluri în `src/` |
+| 1 | Compilatorul e un router pe tipul de wire, cu root unic impus în cod | P0 | `src/request-compiler.mjs:21-34,40` |
+| 2 | Trei motoare paralele (`World`, `reason.mjs`, `plan.mjs`) lângă noul `std.problem` | P0 | `src/reason.mjs:30,44`, `src/plan.mjs:71`, `src/request.mjs:1595`, `src/index.mjs:50,71,75` |
+| 3 | Domeniul rămâne în bibliotecă (`w.legend`, `w.document`, `w.diagram`, `k.*`) | P0 | `src/contracts.mjs:242`, `src/document.mjs`, `src/diagram.mjs`, `src/reason.mjs:30` |
+| 4 | Rezultate „stringly typed": text SOP, string gol, sync/async amestecat | P0 | `src/request-compiler.mjs:11,18`, `src/knowledge-projection.mjs:78` |
+| 5 | Fără contract de versiune; copii realiniate azi, în urmă mâine | P0 | `tools/sopworld/VERSION` vs `package.json`; `repos.pin` |
+| 6 | Monolit: 1,70 MB / 278 exporturi; Z3-ul vine ca wasm separat, nu ca pachet | P1 | `docs/version.md`, `browser/smt-z3.mjs` |
+| 7 | Metoda: 221 versiuni aditive; `std.problem` e prima absorbție reală, rămân 278 de nume fără deprecare | P1 | `CHANGELOG.md`, `src/index.mjs` |
+| 8 | Flux de date între unelte tot lipsă din IR (Calendar → chart → document) | P1 | `docs/reference.md:2111`, `request-batch.mjs` |
+| 9 | Selectorii și cuantificatorii sunt declarați și validați, dar executarea rămâne parțială; capability cere exact un target | P1 | `src/capability-method.mjs:105,525,591` |
+| 10 | Determinismul: `localeCompare` 15, `toLowerCase` 171, `Date` 15 în `src/` | P2 | grep în `src/` |
 
-Corecturi față de citirea I (metodă de numărare, nu fenomen): `toLowerCase` este **171** (nu 153) și
-`Date.now`/`new Date` **14** (nu 13) — numărate identic la `747b51e` și la `ac33216`; changelogul
-are **2.928** de linii (nu „~740”); testele de cunoaștere trec azi **3249/18 skip** (nu 3237/30),
-pentru că revalidarea cu buildul curent a deblocat skip-uri; SOP publicat **1323** fișiere (nu 1321).
+Corecturile de numărare din citirea a II-a (171 vs 153 etc.) rămân valabile; fenomenul nu s-a schimbat,
+doar codul de plasare a fost rescris prin `std.problem` — și totuși contorul de `localeCompare` a rămas 15.
 
 ## Ce este bun și trebuie păstrat
 
-- Kernelul `World` are semantică clară: tell all-or-nothing, jurnal, rollback, fork copy-on-write,
-  `explain`, `why`, `stamp` pentru cache. Nu se rescrie.
-- `solve.mjs` are un `Problem` neutru, solver CDCL și verificare prin oracle. Este exact abstractizarea
-  care lipsește compilatorului de cereri.
-- Testele sunt numeroase și verifică afirmații din documentație; `docs/` este generat și are exemple
-  rulate. Disciplina aceasta este un activ real.
-- Cunoașterea este separată fizic în alt repo, cu surse, licențe și shard-uri. Ideea este corectă;
-  îi lipsește contractul.
-- `psys2` are teste de browser și observații de execuție reale. Puține proiecte ajung acolo.
-- Reacția la review este rapidă și țintită: validarea catalogului s-a realiniat în aceeași zi,
-  Avatar a migrat pe mecanismul general, lexical admission din bibliotecă (`std.ground`) a înlocuit
-  plafoanele hardcodate din adaptor. Când criticile greșesc, se corectază; asta e semn bun.
+- Kernelul `World`: tell all-or-nothing, jurnal, fork copy-on-write, `explain`, `why`, `stamp`.
+- `std.problem` nou: contract curat pe wire-uri, recitirea soluțiilor contra constrângerilor hard,
+  `unsatisfiable` cu `conflict` numit, `exhausted` distinct de imposibil, buget declarat. Este forma
+  exactă pe care 04 o cerea pentru „orice alegere", plus onestitatea măsurată despre propriile limite.
+- Testele: 1045 pass pe surse, la fel pe bundle; cunoașterea 3250 pass; aplicația 647 pass cu tot cu
+  Chromium. Discipline reale, repetate zilnic.
+- Fișierele JS vechi ale taburilor sunt încă pe disc dar nefolosite — dovadă că migrarea s-a făcut
+  prin mecanism, nu prin excepție; ștergerea lor rămâne de făcut.
+- Reacția la review: realinierea validării, `std.ground`, `std.problem`, taburile pe arii — toate
+  în echivalent de o zi. Când critica greșește, se corectează; când are dreptate, se implementează.
 
 ## Cum se citește restul
 
 | Fișier | Întrebarea |
 | --- | --- |
-| [01-ce-este-gresit-in-abordare.md](./01-ce-este-gresit-in-abordare.md) | Ce este greșit în abordare, cu dovezi în cod |
-| [02-ce-este-incomplet.md](./02-ce-este-incomplet.md) | Ce lipsește și ce este declarat „open” fără să fie rezolvat |
-| [03-ce-ar-putea-fi-facut-mai-bine.md](./03-ce-ar-putea-fi-facut-mai-bine.md) | Ce aș schimba concret, în ordine, cu criterii de acceptare |
-| [04-ce-ar-putea-fi-facut-mai-general.md](./04-ce-ar-putea-fi-facut-mai-general.md) | Ce mecanisme generale ar înlocui cazurile speciale |
+| [01-ce-este-gresit-in-abordare.md](./01-ce-este-gresit-in-abordare.md) | Ce este greșit în abordare și încă stă în picioare |
+| [02-ce-este-incomplet.md](./02-ce-este-incomplet.md) | Ce lipsește; secțiunile închise apar scurt |
+| [03-ce-ar-putea-fi-facut-mai-bine.md](./03-ce-ar-putea-fi-facut-mai-bine.md) | Ordinea venită din review, actualizată după noapte |
+| [04-ce-ar-putea-fi-facut-mai-general.md](./04-ce-ar-putea-fi-facut-mai-general.md) | Forma generală; ce s-a realizat deja din ea |
 
 ## Limitele review-ului
 
-- Nu am profilat memorie/CPU în browser; cifrele de timp citate sunt din teste și din
-  `current-status.md`, nu din măsurători proprii.
-- Nu am făcut audit de securitate; am notat doar granițele de încredere care lipsesc.
-- Numerele pentru psys2 provin din checkout-ul comun de lucru; în el exista și lucrare nesalvată
-  paralelă (migrarea Calendar pe `w.meetings`), deci ele descriu starea de facto a spațiului de
-  lucru, nu un artefact publicat curat.
-- Nu am rescris cod. Toate propunerile sunt proiectate să păstreze kernelul și testele existente.
+- Nu am rulat poarta psys2 (la citirea trecută, rularea ei a regenerat buildul aplicației; de data
+  aceasta am citit gate-ul înregistrat al workerului și nu am atins psys2 deloc).
+- Cifrele Z3 sunt cele înregistrate de proiect (`tools/browser-z3-check.mjs`, worker-log); nu le-am
+  re-măsurat eu.
+- Nu am profilat memorie în browser; nu am făcut audit de securitate.
+- Nu am rescris cod. Review-ul păstrează kernelul și direcția noastră — care peste noapte a devenit și a lor.

@@ -56,11 +56,11 @@ contract și alt rezultat.
 
 ## P0. Contract de versiune între cele trei proiecte
 
-**Problema:** `core.module version=` este o etichetă (`matrix.mjs:360`); catalogul validează cu o copie
-a buildului 0.225.1 (la citirea I era 0.144.0 — realiniată în aceeași zi, tot prin copie), biblioteca
-este la 0.225.2; aplicația copiază bundle-ul. Realinierea a rezolvat starea de fapt, nu mecanismul:
-copiile (validare 0.225.1, vendor 0.225.2, `knowledgePin 288699c9` în buildul lui psys2) sunt din nou
-la trei stări într-o singură zi.
+**Problema:** `core.module version=` rămâne o etichetă; la citirea a III-a catalogul validează cu o
+copie a buildului **0.225.1** (realiniată ieri-dimineață, tot prin copie) în timp ce biblioteca e la
+**0.230.0** — șase builduri în urmă într-o singură noapte; vendorul psys2 e la **0.230.0**, copiat
+de mână; `repos.pin` e în urmă cu zile. „Realiniere → divergență" în două zile consecutive: nu e
+accident, e mecanismul.
 
 **Ce faci:**
 
@@ -93,23 +93,27 @@ simulare.
 2. `plan.mjs` devine un **planner peste `World`**: `PlanLive` se șterge; pașii se aplică pe un fork,
    iar rezultatul este un `Plan` cu efecte și dovezi. `factStore` rămâne doar un adaptor de citire
    pentru cunoaștere.
-3. `placement`, `choice`, `grounding` se exprimă ca `Problem` din `solve.mjs`:
+3. `placement` a fost rezolvat la 0.227–0.229 prin `std.problem` (cereri cu mai multe relații sau
+   mai mult de două ținte merg pe calea generală). Rămân `choice` și `grounding`, exprimate ca
+   `Problem`:
    - variabile = câmpurile libere ale țintelor;
    - domenii = valorile admise de contract;
-   - nogoods = constrângerile hard;
    - cost = criteriile `std.decide`.
 4. Elimină exporturile duplicate: `planner` și `planRequest` nu pot fi amândouă publice fără o
    declarație clară de deprecare.
 
 **Criteriu de acceptare:** același scenariu de plasare/alegere produce același rezultat prin ambele
-căi dispărute; `solve.mjs` este folosit de compilatorul de cereri, nu doar de `complete`.
+căi dispărute; `std.problem` — care a absorbit deja plasarea — e folosit și de choice și grounding.
 
-**De ce:** `Problem` există deja, este testat și are oracle. Este cea mai ieftină generalizare din tot
-proiectul.
+**De ce:** motorul general există acum — `std.problem`, cu furnizori intern și Z3 și cu recitirea
+soluțiilor contra constrângerilor hard. Restul e migrare și deprecare, nu invenție.
 
 ## P1. Diagnostic structurat și trasabilitate
 
 **Problema:** `fail('request-root')` nu spune nimic utilizatorului sau dezvoltatorului.
+
+**Există deja o piesă:** `std.problem.result` poartă `conflict`, `cost` și `alternative`. Extinde
+forma asta pe toate etapele, nu inventa alta.
 
 **Ce faci:**
 

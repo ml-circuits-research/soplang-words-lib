@@ -108,3 +108,20 @@ test('frame inspection reports bank and index errors', () => {
   assert.ok(reasons.includes('own-possessor'));
   assert.ok(reasons.includes('mention-index'));
 });
+
+test('declared spellings: per-source-type concept names, relation names and comparative factors', () => {
+  const table = { operations: [{ name: 'tile.change', act: 'change', on: 'tile', parameters: ['id', 'side'] }, { name: 'tile.make', act: 'make', on: 'tile', parameters: [] }],
+    kinds: [{ label: 'square', canonical: 'board.square', on: 'tile' }], objects: [{ id: 't1', kind: 'square', on: 'tile' }],
+    properties: [{ concept: 'size', on: 'tile', parameter: 'side', canonical: 'board.tile.side' }],
+    comparatives: [{ concept: 'board.tile.side', step: 'more', factor: 1.4 }], relations: ['tile'], relationValues: { left_of: 'left' } };
+  const f = frame('make the square bigger and add a square left of it, and one under it', [
+    { action: { act: 'change' }, mentions: [{ head: 'square', reference: 'description' }], attributes: [{ theme: 0, concept: 'size', operator: 'delta', step: 'more' }] },
+    { action: { act: 'make' }, mentions: [{ head: 'square', reference: 'new' }, { head: 'square', role: 'landmark', reference: 'description' }], spatial: [{ theme: 0, relation: 'left_of', landmark: 1 }, { theme: 0, region: 'top' }] },
+    { action: { act: 'make' }, mentions: [{ head: 'square', reference: 'new' }, { head: 'square', role: 'landmark', reference: 'description' }], spatial: [{ theme: 0, relation: 'under', landmark: 1 }] }]);
+  const binding = bindFrame(f, table);
+  const { entries, disclosed } = frameToRequests(f, { binding });
+  assert.match(entries[0].wires, /concept=board\.tile\.side operator=factor .*value=1\.4 baseline=before/);
+  assert.match(entries[1].wires, /relation=left /);
+  assert.deepEqual(disclosed.map((d) => `${d.role}:${d.reason}`), ['region:no-declared-region', 'spatial:undeclared-relation']);
+  assert.ok(prepareRequestBatch({ entries }).ok);
+});

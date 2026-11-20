@@ -10,19 +10,19 @@ export const FRAME_FORMAT = 'sop.semantic-frame/1';
 
 /** The role heads and their closed value banks (open roles take spans or concept names). */
 export const FRAME_ROLES = Object.freeze({
-  act: ['make', 'change', 'place', 'remove', 'connect', 'arrange', 'swap', 'copy', 'group', 'ungroup', 'select', 'answer', 'undo', 'redo', 'compose', 'converse', 'show'],
+  act: ['make', 'change', 'place', 'remove', 'connect', 'arrange', 'swap', 'copy', 'group', 'ungroup', 'merge', 'split', 'reverse', 'select', 'answer', 'undo', 'redo', 'compose', 'converse', 'show'],
   mood: ['do', 'ask', 'check', 'propose'],
   polarity: ['positive', 'negative'],
   determiner: ['definite', 'indefinite', 'demonstrative', 'possessive', 'another', 'other', 'every', 'none'],
   reference: ['new', 'name', 'description', 'anaphora', 'population', 'ordinal', 'code', 'context'],
   mentionRole: ['theme', 'landmark', 'goal', 'possessor', 'member'],
-  operator: ['eq', 'degree', 'delta', 'factor', 'relation', 'region'],
+  operator: ['eq', 'degree', 'delta', 'factor', 'relation', 'region', 'less.equal', 'greater.equal'],
   step: ['more', 'much_more', 'less', 'much_less'],
   phase: ['result', 'selector'],
   direction: ['up', 'down', 'left', 'right', 'closer', 'apart', 'forward', 'backward', 'in', 'out'],
   fragment: ['adds', 'replaces', 'repeats', 'more', 'less', 'confirms', 'rejects'],
   discourse: ['thanks', 'greeting', 'complaint', 'correction', 'repetition', 'confirmation', 'rejection'],
-  question: ['count', 'exists', 'list', 'what', 'which', 'where', 'describe', 'why', 'how'],
+  question: ['count', 'exists', 'list', 'what', 'which', 'where', 'when', 'who', 'describe', 'why', 'how', 'how_much', 'compare', 'total', 'average', 'max', 'min', 'difference', 'percent'],
   relation: ['sequence', 'condition', 'instead'],
   degree: ['bit', 'much'],
   timeRole: ['start', 'end', 'day', 'duration', 'recurrence'],
@@ -64,7 +64,7 @@ export function inspectFrame(frame, { budget = 20000 } = {}) {
         tick();
         const mp = [...at, 'mentions', i];
         if (!isObj(m)) return bad(mp, 'invalid-mention');
-        if (typeof m.head !== 'string' && typeof m.kind !== 'string' && typeof m.name !== 'string' && typeof m.code !== 'string' && m.reference !== 'anaphora' && m.reference !== 'population') bad(mp, 'mention-needs-head-kind-name-or-code');
+        if (typeof m.head !== 'string' && typeof m.kind !== 'string' && typeof m.name !== 'string' && typeof m.code !== 'string' && !['anaphora', 'population', 'context'].includes(m.reference)) bad(mp, 'mention-needs-head-kind-name-or-code');
         bank(m.determiner, 'determiner', [...mp, 'determiner']);
         bank(m.reference, 'reference', [...mp, 'reference']);
         bank(m.role, 'mentionRole', [...mp, 'role']);
@@ -234,27 +234,42 @@ export function bindFrame(frame, table, { budget = 50000 } = {}) {
       const b = theme(index.theme);
       if (!b || !b.operations.length) return roles.push({ role, index: index.i, unbound: 'theme-unbound', ...extra });
       const p = property(name, b);
-      roles.push({ role, index: index.i, concept: concept(name), ...(p ? { bound: { on: p.on, parameter: p.parameter } } : { unbound: 'no-declared-property' }), ...extra });
+      // a property row may spell the concept the way its source type's declarations do (`canonical`)
+      roles.push({ role, index: index.i, concept: p?.canonical ?? concept(name), ...(p ? { bound: { on: p.on, parameter: p.parameter } } : { unbound: 'no-declared-property' }), ...extra });
     };
     for (const [i, a] of (clause.attributes || []).entries()) {
       tick();
       if (a.phase === 'selector') { roles.push({ role: 'attribute', index: i, concept: concept(a.concept), bound: { selector: true } }); continue; }
       bindProperty('attribute', { i, theme: a.theme }, a.concept, a.value_span ? { span: a.value_span } : {});
+      // a comparative without a number takes the declared factor of its step (or moves an ordinal scale one step)
+      const last = roles.at(-1);
+      if (last.bound && (a.operator === 'delta' || a.step) && !numberLike(a.value)) {
+        const row = (table.comparatives || []).find((r) => r.concept === last.concept && r.step === (a.step ?? 'more'));
+        if (row) last.bound = { ...last.bound, ...(row.ordinal ? { ordinal: true } : { factor: row.factor }) };
+      }
     }
     for (const [i, s] of (clause.spatial || []).entries()) {
       const b = theme(s.theme);
       const placed = b && b.on.some((on) => (table.relations || []).includes(on));
       if (s.relation) {
         const landmark = resolved[s.landmark];
-        roles.push({ role: 'spatial', index: i, relation: s.relation, concept: concept('relation'), ...(!placed ? { unbound: 'no-placement-method' } : !landmark?.on.length ? { unbound: landmark?.reason || 'landmark-not-declared' } : { bound: { placement: true, landmark: landmark.kind } }) });
+        // the relation names the placement method declares (table.relationValues: frame relation -> declared name)
+        const relation = table.relationValues ? table.relationValues[s.relation] : s.relation;
+        roles.push({ role: 'spatial', index: i, relation: relation ?? s.relation, concept: concept('relation'), ...(!placed ? { unbound: 'no-placement-method' } : relation === undefined ? { unbound: 'undeclared-relation' } : !landmark?.on.length ? { unbound: landmark?.reason || 'landmark-not-declared' } : { bound: { placement: true, landmark: landmark.kind } }) });
       }
-      if (s.region) roles.push({ role: 'region', index: i, region: s.region, concept: concept('region'), ...(placed ? { bound: { placement: true } } : (() => { const p = b && b.operations.length && property('region', b); return p ? { bound: { on: p.on, parameter: p.parameter } } : { unbound: 'no-placement-method' }; })()) });
-      if (s.distance) roles.push({ role: 'distance', index: i, ...(placed ? { bound: { placement: true } } : { unbound: 'no-placement-method' }) });
+      // a region or a distance binds through a declared property of the source type, or a placement method that
+      // declares it takes regions (table.regionPlacement) or measured distances (table.distancePlacement)
+      const takes = (list) => b && b.on.some((on) => (list || []).includes(on));
+      if (s.region) {
+        const p = b && b.operations.length && property('region', b);
+        roles.push({ role: 'region', index: i, region: s.region, concept: p?.canonical ?? concept('region'), ...(p ? { bound: { on: p.on, parameter: p.parameter } } : takes(table.regionPlacement) ? { bound: { placement: true } } : { unbound: 'no-declared-region' }) });
+      }
+      if (s.distance) roles.push({ role: 'distance', index: i, ...(takes(table.distancePlacement) ? { bound: { placement: true } } : { unbound: 'no-declared-distance' }) });
     }
     for (const [i, m] of (clause.motion || []).entries()) {
       const b = theme(m.theme);
       const p = b && b.operations.length && property('position', b);
-      roles.push({ role: 'motion', index: i, direction: m.direction, ...(p ? { bound: { on: p.on, parameter: p.parameter } } : { unbound: 'no-declared-property' }) });
+      roles.push({ role: 'motion', index: i, direction: m.direction, concept: concept('position'), ...(p ? { bound: { on: p.on, parameter: p.parameter } } : { unbound: 'no-declared-property' }) });
     }
     for (const [i, g] of (clause.goal || []).entries()) {
       if (g.concept) bindProperty('goal', { i, theme: g.theme }, g.concept);
@@ -346,7 +361,8 @@ export function frameToRequests(frame, { binding, extended = true, prefix = 'f' 
       if (binding && themeRole?.unbound) { disclosed.push({ clause: c, role: 'theme', mention: ti, reason: themeRole.unbound, span: m.span ?? m.head }); continue; }
       const id = `${prefix}${c}_${ti}_`;
       const w = [];
-      const kindOf = (mm, i) => resolved?.[i]?.kind ?? mm.kind ?? (mm.head ? atomOf(mm.head) : undefined);
+      // a mention with no kind word ("it", "them") is a thing until its referent is resolved
+      const kindOf = (mm, i) => resolved?.[i]?.kind ?? mm.kind ?? (mm.head ? atomOf(mm.head) : 'thing');
       const mode = isNew(m) ? 'new' : 'existing';
       const r = { act: action.act ?? 'make', mood: action.mood ?? 'do' };
       const source = clause.span ?? frame.text;
@@ -405,10 +421,17 @@ export function frameToRequests(frame, { binding, extended = true, prefix = 'f' 
         if (binding && rb?.unbound) { disclosed.push({ clause: c, role: 'attribute', index: i, concept: a.concept, reason: rb.unbound, span: a.value_span ?? String(a.value ?? '') }); continue; }
         const op = a.operator ?? 'eq';
         const attrs = [`concept=${token(rb?.concept ?? a.concept)}`, `operator=${op === 'region' ? 'region' : op}`, `polarity=${a.polarity ?? 'positive'}`];
-        if (op === 'delta') attrs.push(`value=${numberLike(a.value) ? a.value : stepValue(a.step)}`);
-        else if (op === 'degree' || op === 'region') attrs.push(`value=${atomOf(a.value ?? a.value_span)}`);
+        const name = rb?.concept ?? a.concept;
+        // a change: a number with its unit (delta), a declared factor of a comparative step (factor), else the step as
+        // a relative value of the concept (eq more/less), which an ordinal scale or the host resolves
+        if (op === 'delta' || op === 'factor' || a.step) {
+          attrs[1] = numberLike(a.value) && a.unit && op !== 'factor' ? 'operator=delta' : rb?.bound?.factor || op === 'factor' && numberLike(a.value) ? 'operator=factor' : 'operator=eq';
+          if (attrs[1] === 'operator=delta') attrs.push(`value=${a.value}`, `unit=${atomOf(a.unit)}`, 'baseline=before', `anchor=${atomOf(name)}`);
+          else if (attrs[1] === 'operator=factor') attrs.push(`value=${rb?.bound?.factor ?? a.value}`, 'baseline=before', `anchor=${atomOf(name)}`);
+          else attrs.push(`value=${atomOf(a.step ?? (numberLike(a.value) ? 'more' : a.value ?? 'more'))}`);
+        } else if (op === 'degree' || op === 'region') attrs.push(`value=${atomOf(a.value ?? a.value_span)}`);
         else if (a.value !== undefined || a.value_span !== undefined) attrs.push(`value=${token(a.value ?? a.value_span)}`);
-        if (a.unit && (op === 'eq' || op === 'delta')) attrs.push(`unit=${atomOf(a.unit)}`);
+        if (a.unit && op === 'eq' && !a.step) attrs.push(`unit=${atomOf(a.unit)}`);
         if (extended && a.step) attrs.push(`step=${a.step}`);
         if (extended && a.value_type) attrs.push(`valueType=${atomOf(a.value_type)}`);
         if (a.phase === 'selector' && mode === 'existing' && op !== 'delta') selectors.push(con(k++, attrs));
@@ -423,7 +446,7 @@ export function frameToRequests(frame, { binding, extended = true, prefix = 'f' 
             const lm = mentions[s.landmark];
             const lid = `${id}l${i}`;
             extras.push(`@${lid} std.request.target ${targetAttrs(lm, s.landmark, 'landmark').join(' ')}`);
-            const attrs = [`concept=${token(rb?.concept ?? s.concept ?? 'relation')}`, 'operator=relation', `relation=${atomOf(s.relation)}`, `goal=$${lid}`, 'polarity=positive'];
+            const attrs = [`concept=${token(rb?.concept ?? s.concept ?? 'relation')}`, 'operator=relation', `relation=${atomOf(rb?.relation ?? s.relation)}`, `goal=$${lid}`, 'polarity=positive'];
             if (extended) attrs.push(`landmark=$${lid}`);
             if (s.distance && Number.isFinite(Number(s.distance.value)) && s.distance.unit && s.distance.from && s.distance.to) attrs.push(`measure=${Number(s.distance.value)}`, `unit=${atomOf(s.distance.unit)}`, `from=${atomOf(s.distance.from)}`, `to=${atomOf(s.distance.to)}`);
             else if (s.distance) disclosed.push({ clause: c, role: 'distance', index: i, reason: 'distance-needs-frames', span: s.distance.span ?? String(s.distance.value) });
@@ -441,8 +464,8 @@ export function frameToRequests(frame, { binding, extended = true, prefix = 'f' 
         if (!mine(mo)) continue;
         const rb = roleOf(c, (rr) => rr.role === 'motion' && rr.index === i);
         if (binding && rb?.unbound || !extended) { disclosed.push({ clause: c, role: 'motion', index: i, reason: rb?.unbound ?? 'needs-extended-contract', span: mo.span ?? mo.direction }); continue; }
-        const amount = mo.amount?.number ?? stepValue(mo.amount?.degree);
-        con(k++, ['concept=position', 'operator=delta', `value=${amount}`, ...(mo.amount?.unit ? [`unit=${atomOf(mo.amount.unit)}`] : []), `direction=${atomOf(mo.direction ?? 'forward')}`, 'polarity=positive']);
+        const amount = numberLike(mo.amount?.number) ? mo.amount.number : stepValue(mo.amount?.degree);
+        con(k++, [`concept=${token(rb?.concept ?? 'position')}`, 'operator=delta', `value=${amount}`, `unit=${atomOf(mo.amount?.unit ?? 'step')}`, 'baseline=before', `anchor=${atomOf(rb?.concept ?? 'position')}`, `direction=${atomOf(mo.direction ?? 'forward')}`, 'polarity=positive']);
       }
       for (const [i, g] of (clause.goal || []).entries()) {
         if (!mine(g)) continue;

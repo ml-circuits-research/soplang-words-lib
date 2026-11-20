@@ -18,7 +18,7 @@ A frame has `text`, optional `area`, optional `previous` (`{text, frame}` of the
 
 | Role | Contents | Example |
 | --- | --- | --- |
-| `action` | `act` from a small generic bank (make, change, place, remove, connect, arrange, swap, copy, group, ungroup, select, answer, undo, redo, compose, converse, show), `predicate` (the verb as said, open), `trigger` span, `mood` (do, ask, check, propose), `polarity` | "thicken the line": act change, predicate "thicken" |
+| `action` | `act` from a small generic bank (make, change, place, remove, connect, arrange, swap, copy, group, ungroup, merge, split, reverse, select, answer, undo, redo, compose, converse, show), `predicate` (the verb as said, open), `trigger` span, `mood` (do, ask, check, propose), `polarity` | "thicken the line": act change, predicate "thicken" |
 | `mentions` | entity mentions, referred to by index from the other roles. Each has `head` (the noun as said), optional canonical `kind`, `span`, `determiner`, `quantity` (`{number}`, `{vague:"some"}` or `{all:true}`), `modifiers` (spans: "old", "hot air"), `possessor` (index of the whole or owner: "the roof of the house"), `reference` (new, name, description, anaphora, population, ordinal, code, context), `name`, `code` ("e1"), `ordinal` (first, last, 2), `antecedent` (`{clause, mention}` for an anaphor), `role` (theme, landmark, goal, possessor, member) | "the first and last node": head node, ordinal first and last |
 | `attributes` | `theme` (mention index), `concept` (colour, size, label, shape, layout, …), `property_span`, `value_span`, `value`, `value_type`, `operator` (eq, degree, delta, factor, region), `step` (more, much_more, less, much_less), `unit`, `phase` (result or selector), `polarity` | "make the bars blue": colour = blue on "bars" |
 | `spatial` | `theme`, `relation` (left_of, near, on, …), `landmark` (mention index), `region` (top, background, corner, …), `side`, `distance` (`{value, unit, span}`) | "1 inch to the right of his knee" |
@@ -26,7 +26,7 @@ A frame has `text`, optional `area`, optional `previous` (`{text, frame}` of the
 | `goal` | `theme`, the target state: `concept` and `value`, or a `mention` ("into a bar chart", "as a hexagon") | "arrange them as a circle": layout = circle |
 | `time` | `role` (start, end, day, duration, recurrence), `span`, `value` | "next tuesday at noon" |
 | `manner` | `objective` ("better", "readable", "natural"), `degree` (bit, much) | "improve the layout a bit" |
-| `question` | `type` (count, exists, list, what, which, where, describe, why, how), optional `concept` and `theme` | "how many dogs are there" |
+| `question` | `type` (count, exists, list, what, which, where, when, who, describe, why, how, how_much, compare, total, average, max, min, difference, percent), optional `concept` and `theme` | "how many dogs are there" |
 | `fragment` | how a fragment completes the previous request: adds, replaces, repeats, more, less, confirms, rejects | "and higher still": more |
 | `discourse` | thanks, greeting, complaint, correction, repetition, confirmation, rejection | "good work thanks" |
 
@@ -70,8 +70,11 @@ That is about 25 role heads, and the inventory does not grow when an area gains 
 - `capabilityTable(world, scope)` reads the `std.capability` declarations of one scope as a plain table.
 - `bindFrame(frame, table, {budget?})` binds every role against a table: `operations`, `kinds` (declared kind labels
   with their canonical kind and source type), `properties`, `repeats`, `objects`, and, from the host, `relations`
-  (source types with a placement method), `amounts` (named amounts with their typical count), `actForms` and
-  `concepts` (concept aliases). A role binds only through a declared row. The result lists each role as `bound`
+  (source types with a placement method for relations, with `relationValues` mapping frame relations to the names it
+  declares; `regionPlacement` and `distancePlacement` for placement methods
+  that also take regions or measured distances), `amounts` (named amounts with their typical count), `comparatives`
+  (`{concept, step, factor}` or `{concept, step, ordinal}`), `actForms` and `concepts` (concept aliases). A property
+  row may carry `canonical`, the spelling of the concept in its source type's declarations; the request uses it. A role binds only through a declared row. The result lists each role as `bound`
   (operation and parameter, placement, repeat or selector) or `unbound` with a reason.
 - `frameToRequests(frame, {binding?, extended?, prefix?})` writes the graphs as batch entries. With a binding only bound
   roles are written and every other role is in `disclosed` with its span and reason; vague amounts are in `notes`.

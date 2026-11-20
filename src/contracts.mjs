@@ -463,7 +463,7 @@ ${projectionRecords}
 @std.request.discourse core.slot of=std.request key=discourse kind=atom enum=thanks enum=greeting enum=complaint enum=correction enum=repetition enum=confirmation enum=rejection
 @std.request.manner core.slot of=std.request key=manner kind=atom many=true
 @std.request.degree core.slot of=std.request key=degree kind=atom enum=bit enum=much
-@std.request.question core.slot of=std.request key=question kind=atom enum=count enum=exists enum=list enum=what enum=which enum=where enum=describe enum=why enum=how
+@std.request.question core.slot of=std.request key=question kind=atom enum=count enum=exists enum=list enum=what enum=which enum=where enum=when enum=who enum=describe enum=why enum=how enum=how_much enum=compare enum=total enum=average enum=max enum=min enum=difference enum=percent
 @std.request.query.type core.type of=std.request.query closed=true
 @std.request.query.request core.slot of=std.request.query key=request kind=ref to=std.request present=true
 @std.request.query.target core.slot of=std.request.query key=target kind=ref to=std.request.target present=true

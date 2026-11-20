@@ -6696,3 +6696,5 @@ No runtime code changed. Full source and bundle checks each passed 1015 with one
 `npm test` 1062 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test test/placement-problem.test.mjs test/docs.test.mjs` 27 pass/0 fail (new avoids case, internal and Z3).
 2026-11-20 — 0.237.0: semantic frames (src/semantic-frame.mjs, docs/semantic-frame.md): domain-general reader roles compiled to std.request batch entries; bindFrame binds roles only through declared std.capability rows, frameToRequests writes the bound roles and discloses the rest; completeFragment; std.request gains optional frame slots (backwards compatible).
 `npm test` 1067 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs"` 1067 pass/0 fail (new test/semantic-frame.test.mjs).
+2026-11-20 — 0.237.0 follow-up: frame binding reads declared spellings (property `canonical`, `relationValues`, `comparatives`, region/distance placement only when declared); wider act/question banks. Measured against PSys2 official-frame conversion and the human-benchmark oracle study (PSys2 specs/semantic-frame.md).
+`npm test` 1068 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs"` 1068 pass/0 fail.

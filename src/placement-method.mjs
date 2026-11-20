@@ -437,7 +437,8 @@ function problemPlacement(world, request, nodes, context, method, provider) {
       decl = { ...use.decl, attrs: { ...use.decl.attrs, ...(gap !== undefined ? { gap: [String(Math.max(0, Number(gap) - clearance))] } : {}) } };
     }
     const core = PREDICATES[get(decl, 'predicate')]?.core;
-    if (relaxed && core && get(decl, 'gap') !== undefined && (get(decl, 'strength') ?? 'hard') === 'hard') {
+    const soften = relaxed && core && get(decl, 'gap') !== undefined && (get(decl, 'strength') ?? 'hard') === 'hard';
+    if (soften) {
       add('constraint', 'relation' + n, `name=relation${n} predicate=${core} a=subject${use.s.i} b=${measured} strength=hard`);
       add('constraint', 'bound' + n, `name=bound${n} predicate=${get(decl, 'predicate')} a=subject${use.s.i} b=${measured} gap=${get(decl, 'gap')} strength=soft weight=${get(decl, 'relaxWeight') ?? 1}`);
       softened.push({ name: 'bound' + n, relation: get(use.relation, 'relation') });
@@ -446,8 +447,9 @@ function problemPlacement(world, request, nodes, context, method, provider) {
     // from the slot at the clearance (left of the anchor: ending the clearance before it), at the declared weight per
     // unit of distance. The cost is never negative and does not depend on where the anchor is, so placements
     // against different candidate anchors compare by closeness.
+    // A relation whose distance bound is softened (relax=gap) is already drawn toward its anchor by that bound.
     const pull = number(use.decl, 'pull');
-    if (pull > 0 && side) {
+    if (pull > 0 && side && !soften) {
       const [axis, sign] = side, size = axis === 'x' ? use.s.size.width : use.s.size.height, start = axis === 'x' ? place.x : place.y, extent = axis === 'x' ? place.width : place.height;
       const at = sign < 0 ? start - clearance - size : start + extent + clearance;
       fixed('slot' + n, axis === 'x' ? { x: at, y: place.y, width: use.s.size.width, height: use.s.size.height } : { x: place.x, y: at, width: use.s.size.width, height: use.s.size.height });

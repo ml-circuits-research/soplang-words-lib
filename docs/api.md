@@ -1669,8 +1669,7 @@ objects of one scope as a plain table. `bindFrame` binds every frame role agains
 `relations`, `amounts`, `actForms` and `concepts`): a role binds only through a declared row, and each role is listed
 as `bound` or `unbound` with a reason. `frameToRequests` writes one `std.request` graph per clause and theme as batch
 entries `{id, request, wires, after}` for `prepareRequestBatch`. With `binding`, unbound roles are left out and listed
-in `disclosed` (partial execution with disclosure). `extended: false` writes only the slots of the contract before
-version 0.237.0. `prefix` (default `f`) prefixes the node IDs.
+in `disclosed` (partial execution with disclosure). `extended: false` writes only the base slots of the contract (without the frame slots). `prefix` (default `f`) prefixes the node IDs.
 
 ```js
 const table = { operations: [{ name: 'lamp.change', act: 'change', on: 'lamp', parameters: ['id', 'glow'] }],

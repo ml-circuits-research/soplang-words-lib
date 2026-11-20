@@ -163,6 +163,25 @@ test('read-only scoped queries reuse the selector and answer all four projection
  assert.deepEqual(empty.answers.map(row=>row.attrs.value?.[0]),['0','false',undefined]);
  assert.equal(empty.answers[2].attrs.member,undefined);
 });
+test('a query on a family target (family=true) takes the whole source type, named members by their name',()=>{
+ const ask=(family,name)=>{
+  const world=source();
+  if(family)world.load('@cells.mapping std.capability.target scope=$scope canonical=any.cell label="cell" operation=$create family=true');
+  const wires=parse(world.compileRequest(`@s std.request.source text="What reading has the cell?"
+@r std.request act=inspect mood=ask source=$s query=$q
+@t std.request.target request=$r mode=existing kind=any.cell${name?' name="'+name+'"':''}
+@q std.request.query request=$r target=$t operation=values concept=reading
+@context std.capability.context request=$r scope=$scope`));
+  const answer=wires.find(row=>row.type==='std.capability.query.answer');
+  return {answer,members:(answer.attrs.member??[]).map(id=>wires.find(row=>'$'+row.id===id))};
+ };
+ assert.equal(ask(false).answer.attrs.reason[0],'unbound-query-population','without a family mapping a kind label alone proves nothing');
+ const all=ask(true);
+ assert.equal(all.answer.attrs.status[0],'answered');
+ assert.deepEqual(all.members.map(row=>str(row.attrs.name[0])),['Left','Right']);
+ const named=ask(true,'Right');
+ assert.deepEqual(named.members.map(row=>str(row.attrs.name[0])),['Right']);
+});
 test('unknown fields and incomplete populations retain limitations while witnessed existence remains valid',()=>{
  const world=source({complete:false});
  const {result,answers}=observe(world,['count','exists','members']);

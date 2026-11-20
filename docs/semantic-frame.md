@@ -78,8 +78,8 @@ That is about 25 role heads, and the inventory does not grow when an area gains 
   (operation and parameter, placement, repeat or selector) or `unbound` with a reason.
 - `frameToRequests(frame, {binding?, extended?, prefix?})` writes the graphs as batch entries. With a binding only bound
   roles are written and every other role is in `disclosed` with its span and reason; vague amounts are in `notes`.
-  `extended: false` writes only the slots of the contract before version 0.237.0 and discloses the roles that need the
-  new slots.
+  `extended: false` writes only the base slots of the contract (without the frame slots) and discloses the roles that need the
+  frame slots.
 
 ```js
 import { World, FRAME_FORMAT, capabilityTable, bindFrame, frameToRequests } from 'sopworld';

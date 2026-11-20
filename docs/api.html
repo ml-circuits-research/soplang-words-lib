@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="0877e47e05f3">
+<meta name="source-hash" content="78f8b51b66fb">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.237.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.238.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="instance-state.html">Instance state</a><a href="semantic-frame.html">Semantic frames</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -561,7 +561,7 @@ print(result.ok, result.request);</code></pre></figure>
 inspectFrame(frame).ok;                       // true
 FRAME_ROLES.act.includes(&#x27;swap&#x27;);             // true</code></pre></figure>
 <h3 id="capabilitytableworld-scope-bindframeframe-table-options-frametorequestsframe-options">capabilityTable(world, scope), bindFrame(frame, table, options?), frameToRequests(frame, options?)</h3>
-<p><code>capabilityTable</code> reads the <code>std.capability</code> operations, parameters, kind targets, properties, repeats and observed objects of one scope as a plain table. <code>bindFrame</code> binds every frame role against such a table (the host may add <code>relations</code>, <code>amounts</code>, <code>actForms</code> and <code>concepts</code>): a role binds only through a declared row, and each role is listed as <code>bound</code> or <code>unbound</code> with a reason. <code>frameToRequests</code> writes one <code>std.request</code> graph per clause and theme as batch entries <code>{id, request, wires, after}</code> for <code>prepareRequestBatch</code>. With <code>binding</code>, unbound roles are left out and listed in <code>disclosed</code> (partial execution with disclosure). <code>extended: false</code> writes only the slots of the contract before version 0.237.0. <code>prefix</code> (default <code>f</code>) prefixes the node IDs.</p>
+<p><code>capabilityTable</code> reads the <code>std.capability</code> operations, parameters, kind targets, properties, repeats and observed objects of one scope as a plain table. <code>bindFrame</code> binds every frame role against such a table (the host may add <code>relations</code>, <code>amounts</code>, <code>actForms</code> and <code>concepts</code>): a role binds only through a declared row, and each role is listed as <code>bound</code> or <code>unbound</code> with a reason. <code>frameToRequests</code> writes one <code>std.request</code> graph per clause and theme as batch entries <code>{id, request, wires, after}</code> for <code>prepareRequestBatch</code>. With <code>binding</code>, unbound roles are left out and listed in <code>disclosed</code> (partial execution with disclosure). <code>extended: false</code> writes only the base slots of the contract (without the frame slots). <code>prefix</code> (default <code>f</code>) prefixes the node IDs.</p>
 <figure class="code"><figcaption>js</figcaption><pre><code>const table = { operations: [{ name: &#x27;lamp.change&#x27;, act: &#x27;change&#x27;, on: &#x27;lamp&#x27;, parameters: [&#x27;id&#x27;, &#x27;glow&#x27;] }],
   kinds: [{ label: &#x27;lamp&#x27;, canonical: &#x27;example.lamp&#x27;, on: &#x27;lamp&#x27; }],
   properties: [{ concept: &#x27;colour&#x27;, on: &#x27;lamp&#x27;, parameter: &#x27;glow&#x27; }], objects: [{ id: &#x27;l1&#x27;, kind: &#x27;lamp&#x27;, on: &#x27;lamp&#x27; }] };
@@ -1789,7 +1789,7 @@ factsOf(live).ofKind(&#x27;item&#x27;); // stable local SOP fact IDs</code></pre
 <p>The engine defaults to a cap of 128 candidates and applies the world reasoning budget per trial. An optimum is scoped to the candidate list.</p>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.237.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.238.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

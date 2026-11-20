@@ -546,16 +546,18 @@ function compileQuery(world,request,nodes,data,tick){
       kind:[quote(text(target,'kind'))],concept:listed(query,'concept')};
     let memberStart;
     const abort=reason=>{if(memberStart!==undefined)wires.length=memberStart;attrs.reason=[reason];append('query.answer',attrs);};
-    const {types,labels,kinds}=targetInventory(world,data,target,tick);
-    // A shared source type alone cannot prove which members denote a canonical kind.
-    if(!kinds.size||labels.some(label=>!kinds.has(label))){abort('unbound-query-population');continue;}
-    const matched=matchObject(world,data,types,kinds,target,selector,tick);
+    const {types,labels,kinds,wholeType}=targetInventory(world,data,target,tick);
+    // A shared source type alone cannot prove which members denote a canonical kind; a family mapping (family=true)
+    // does: every member of its source type denotes it, as in the action path.
+    if(!wholeType&&(!kinds.size||labels.some(label=>!kinds.has(label)))){abort('unbound-query-population');continue;}
+    const matched=matchObject(world,data,types,kinds,target,selector,tick,wholeType?[]:labels);
+    const denotes=row=>types.has(text(row,'on'))&&(!kinds.size||kinds.has(text(row,'kind')));
     if(matched.unsupported||matched.reason){abort(matched.reason?'unresolved-selector-value':'unsupported-selector');continue;}
     attrs.selection=matched.selection.map(({object,status,support})=>append('selection',{
       id:listed(object,'id'),status:[status],support:support.map(quote),
     }));
     const complete=flag(data.scope,'populationComplete')&&!matched.selection.some(row=>row.status==='unknown')&&
-      (!get(target,'name')||data.objects.every(row=>!types.has(text(row,'on'))||!kinds.has(text(row,'kind'))||get(row,'name')!==undefined));
+      (!get(target,'name')||data.objects.every(row=>!denotes(row)||get(row,'name')!==undefined));
     if(!complete&&(operation!=='exists'||!matched.matches.length)){abort('incomplete-query-population');continue;}
     const members=[];
     memberStart=wires.length;

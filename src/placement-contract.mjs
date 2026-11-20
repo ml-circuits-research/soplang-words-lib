@@ -7,7 +7,7 @@ const types = {
     align:'atom',edge:'number',alignWeight:'number',region:'atom',held:'boolean',fit:'number',relaxWeight:'number',pull:'number'},
   tool: {act:'atom!',operation:'atom!',xKey:'atom!',yKey:'atom!',originX:'number!',originY:'number!',kindKey:'atom',idsKey:'atom',containerKey:'atom',sizeKey:'atom'},
   region: {entity:'string!',kind:'atom!',name:'string',min_x:'number!',min_y:'number!',max_x:'number!',max_y:'number!',holds:'string*',instance:'string',revision:'string',frame:'string',scope:'string'},
-  kind: {binding:'ref!',concept:'atom!',native:'atom!',width:'number!',height:'number!',originX:'number',originY:'number',avoids:'atom*'},
+  kind: {binding:'ref!',concept:'atom!',native:'atom|string!',width:'number!',height:'number!',originX:'number',originY:'number',avoids:'atom*'},
   argument: {binding:'ref!',key:'atom!',value:'any!'},
   identity: {box:'ref!',concept:'atom*',source:'string!',container:'string!',name:'string',peer:'boolean'},
   cost: {evaluator:'ref!',metric:'atom!'},
@@ -21,7 +21,8 @@ for (const [name, fields] of Object.entries(types)) {
   const type = 'std.placement.' + name;
   rows.push('@'+type+'.type core.type of='+type+' closed=true');
   for (const [key, spec] of Object.entries(fields)) {
-    rows.push('@'+type+'.slot.'+key+' core.slot of='+type+' key='+key+' kind='+spec.replace(/[!*]/,'')+
+    // A slot of several kinds (atom|string: a native kind named by one word or several) lists each.
+    rows.push('@'+type+'.slot.'+key+' core.slot of='+type+' key='+key+' '+spec.replace(/[!*]/,'').split('|').map(k=>'kind='+k).join(' ')+
       (spec.endsWith('!')?' present=true':'')+(spec.endsWith('*')?' many=true':''));
   }
 }

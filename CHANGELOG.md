@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.238.0
+
+- Capability queries: a query on a family target (a `std.capability.target` mapping with `family=true`) takes the whole source type of its operation as the population, as the action path does; a named target ("what colour is Sun?") keeps the members of that name. Before, such a query answered `unbound-query-population` because no kind enum accepts a family label.
+- Placement, one relation with declared directions (`search=problem`): when the subject's kind declares `avoids=`, each direction's problem keeps the subject out of every avoided region (hard `apart`) and lets it move further away from the anchor along the direction (on the grid, up to eight of its own extents, a soft pull back to the declared slot), so the search steers around a region instead of rejecting the direction as `avoided-region`. Without `avoids` the problem is unchanged.
+- `std.placement.kind native=` takes an atom or a string, so a native kind of several words ("shooting star") is placed; a contract slot spec `a|b` lists each kind.
+
 ## 0.237.0
 
 - Semantic frames (`src/semantic-frame.mjs`, docs/semantic-frame.md): a domain-general reader output (action, mentions with determiner, quantity including vague amounts, modifiers, possessor and reference form, attributes by concept, spatial relation and region, motion, goal, time, manner, question, fragment, discourse, clause structure) and its compilation to `std.request` graphs as `prepareRequestBatch` entries. `bindFrame` binds each role only through declared `std.capability` rows (a concept binds to the parameter its `std.capability.property` names on the theme's source type); `frameToRequests` writes the bound roles and discloses the others (partial execution). `completeFragment` completes a fragment from the previous frame; `capabilityTable` reads one capability scope as a table.

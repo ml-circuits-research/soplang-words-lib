@@ -100,3 +100,26 @@ test('search=problem solves each declared direction as its own problem and slide
   assert.ok(y+10<=95||y>=105,'apart from the peer '+y);
   assert.ok(y>=50-5&&y<=150-5,'beside the marker '+y);
 });
+
+// std.placement.kind avoids= with one relation (search=problem): every declared slot by the marker lies in a moat the
+// token keeps out of; each direction's problem may move the token further out along its direction (a soft pull back
+// to the slot), so it lands off the water instead of every direction being rejected (avoided-region).
+test('a single relation steers each slot out of the regions the subject avoids',{skip},()=>{
+  const w=fixture();w.revise('place',{search:'problem'});
+  w.revise('tk',{avoids:'water'});
+  const moat=[[85,35,15,40],[140,35,15,40],[85,35,70,15],[85,60,70,15]];
+  w.load(moat.map(([x,y,wd,h],i)=>`@moat.${i} std.placement.region entity="moat" kind=water ${context} min_x=${x} min_y=${y} max_x=${x+wd} max_y=${y+h}`).join('\n'));
+  const {result,call,options}=outcome(w);
+  assert.equal(result.attrs.status[0],'compiled',JSON.stringify(result.attrs)+JSON.stringify(options.map(o=>o.attrs)));
+  const x=Number(call.attrs.x[0]),y=Number(call.attrs.y[0]);
+  assert.ok(!moat.some(([mx,my,mw,mh])=>x<mx+mw&&mx<x+10&&y<my+mh&&my<y+10),'off the water '+x+','+y);
+});
+
+// A native kind named by several words ("shooting star") is a string, passed to the tool as written.
+test('a native kind of several words places like a one-word kind',{skip},()=>{
+  const w=fixture();
+  w.load('@star std.placement.kind concept=shooting.star native="shooting star" binding=$maker width=10 height=10');
+  const {result,call}=outcome(w,request.replace('kind=token','kind=shooting.star'));
+  assert.equal(result.attrs.status[0],'compiled',JSON.stringify(result.attrs));
+  assert.equal(call.attrs.form[0],'"shooting star"');
+});

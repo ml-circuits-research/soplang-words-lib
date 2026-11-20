@@ -6698,3 +6698,5 @@ No runtime code changed. Full source and bundle checks each passed 1015 with one
 `npm test` 1067 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs"` 1067 pass/0 fail (new test/semantic-frame.test.mjs).
 2026-11-20 — 0.237.0 follow-up: frame binding reads declared spellings (property `canonical`, `relationValues`, `comparatives`, region/distance placement only when declared); wider act/question banks. Measured against PSys2 official-frame conversion and the human-benchmark oracle study (PSys2 specs/semantic-frame.md).
 `npm test` 1068 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs"` 1068 pass/0 fail.
+2026-11-20 — 0.238.0: queries on family targets (family=true) take the whole source type (named members by name); one-relation placement with avoids= steers each direction's slot out of avoided regions (hard apart, slot may move away along the direction, soft pull back); std.placement.kind native= takes a string (multi-word kinds). Measured in PSys2 mass-eval (its worker-log).
+`npm test` 1071 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs"` 1071 pass/0 fail.

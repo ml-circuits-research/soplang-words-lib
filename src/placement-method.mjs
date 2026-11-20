@@ -59,7 +59,7 @@ function trialFailure(result) {
 // within the anchor's extent) to keep apart from the observed peers (soft, the peer predicate), at a soft cost per
 // unit of distance from the declared alignment (the relation's alignWeight, 1 by default), on the frame (hard).
 // The grid of the free coordinate passes through the slot, so an unobstructed subject lands on it exactly.
-function slotProblem({slot,direction,anchor,frame,peers,peerDecl,alignWeight,grid}) {
+function slotProblem({slot,direction,anchor,frame,peers,peerDecl,alignWeight,grid,avoided=[]}) {
   const gx=number(direction,'gap_x'), gy=number(direction,'gap_y'), lines=[], refs={var:[],box:[],constraint:[]};
   const add=(kind,id,text)=>{lines.push('@'+id+' std.problem.'+kind+' '+text);refs[kind].push('$'+id);};
   const n=v=>String(+(+v).toFixed(6));
@@ -69,12 +69,28 @@ function slotProblem({slot,direction,anchor,frame,peers,peerDecl,alignWeight,gri
     return `min=${n(at-Math.floor((at-low)/grid)*grid)} max=${n(at+Math.floor((high-at)/grid)*grid)} step=${n(grid)}`;
   };
   const fx=frame?[frame.x,frame.x+frame.width-slot.width]:[-Infinity,Infinity], fy=frame?[frame.y,frame.y+frame.height-slot.height]:[-Infinity,Infinity];
-  add('var','vx',gx!==0||gy===0?`name=x min=${n(slot.x)} max=${n(slot.x)}`:'name=x '+free('x','x','width',...fx));
-  add('var','vy',gy!==0||gx===0?`name=y min=${n(slot.y)} max=${n(slot.y)}`:'name=y '+free('y','y','height',...fy));
+  // The axis the direction moves along stays at the declared slot; when the subject's kind keeps out of observed
+  // regions (avoided), it may also move further away from the anchor, on the grid up to the frame, a soft cost that
+  // pulls it back to the slot, so the search steers around a region instead of rejecting the direction.
+  const away=(axis,g,extent,lo,hi)=>{
+    const at=slot[axis];
+    if (!avoided.length || g===0) return `min=${n(at)} max=${n(at)}`;
+    const far=g>0?Math.min(Number.isFinite(hi)?hi:at+8*slot[extent],at+8*slot[extent]):Math.max(Number.isFinite(lo)?lo:at-8*slot[extent],at-8*slot[extent]);
+    const steps=Math.floor(Math.abs(far-at)/grid);
+    if (steps<1) return `min=${n(at)} max=${n(at)}`;
+    return g>0?`min=${n(at)} max=${n(at+steps*grid)} step=${n(grid)}`:`min=${n(at-steps*grid)} max=${n(at)} step=${n(grid)}`;
+  };
+  add('var','vx',gx!==0||gy===0?'name=x '+away('x',gx,'width',...fx):'name=x '+free('x','x','width',...fx));
+  add('var','vy',gy!==0||gx===0?'name=y '+away('y',gy,'height',...fy):'name=y '+free('y','y','height',...fy));
   add('box','subject',`name=subject x=x y=y w=${n(slot.width)} h=${n(slot.height)}`);
   add('box','slot',`name=slot x=${n(slot.x)} y=${n(slot.y)} w=${n(slot.width)} h=${n(slot.height)}`);
   add('constraint','align',`name=align predicate=align a=subject b=slot axis=${gx!==0?'y':'x'} edge=0.5 strength=soft weight=${n(alignWeight)}`);
   if (frame) { add('box','frame',`name=frame x=${n(frame.x)} y=${n(frame.y)} w=${n(frame.width)} h=${n(frame.height)}`); add('constraint','contain','name=contain predicate=inside a=subject b=frame strength=hard'); }
+  if (avoided.length && (gx!==0||gy!==0)) add('constraint','close',`name=close predicate=align a=subject b=slot axis=${gx!==0?'x':'y'} edge=0.5 strength=soft weight=${n(alignWeight)}`);
+  avoided.forEach((r,i)=>{
+    add('box','avoid'+i,`name=avoid${i} x=${n(r.x)} y=${n(r.y)} w=${n(r.width)} h=${n(r.height)}`);
+    add('constraint','keepout'+i,`name=keepout${i} predicate=apart a=subject b=avoid${i} gap=0 strength=hard`);
+  });
   peers.forEach((peer,i)=>{
     add('box','peer'+i,`name=peer${i} x=${n(peer.x)} y=${n(peer.y)} w=${n(peer.width)} h=${n(peer.height)}`);
     add('constraint','apart'+i,`name=apart${i} predicate=${get(peerDecl,'predicate')??'apart'} a=subject b=peer${i} gap=${n(peer.gap??(number(peerDecl,'gap')||0))} strength=soft weight=${n(Number.isFinite(number(peerDecl,'weight'))?number(peerDecl,'weight'):100)}`);
@@ -174,7 +190,7 @@ function perform(world, request, nodes, context, method, provider, solve=false) 
     for (const direction of directions) {
       const slot=position(direction,anchor.geometry,size,number(gap,'clearance'));
       const answer=solve?solveProblem(slotProblem({slot,direction,anchor:anchor.geometry,frame:frameBounds&&geometry(frameBounds),peers,peerDecl,
-        alignWeight:Number.isFinite(number(relationDecl,'alignWeight'))?number(relationDecl,'alignWeight'):1,grid}),{provider}):null;
+        alignWeight:Number.isFinite(number(relationDecl,'alignWeight'))?number(relationDecl,'alignWeight'):1,grid,avoided:avoided.map(r=>r.geometry)}),{provider}):null;
       jobs.push({anchor,moving,direction,slot,answer,model,pairs,subjectEntity});
     }
   }

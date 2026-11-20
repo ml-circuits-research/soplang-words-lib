@@ -319,6 +319,13 @@ bound; `apart` for `near`) and its distance bound becomes a soft term (weight
 `relaxWeight` of the predicate, 1 by default). The result lists in `relaxed` the
 relations whose distance it could not keep. A feasible request is never relaxed.
 
+A goal that denotes several observed things ("the tree" with two trees) is
+solved once for each combination of candidate anchors (at most 16; more are
+refused as `ambiguous-anchor`). The placement that keeps every declared distance
+wins over a relaxed one, then the least cost, then the most recent anchors; the
+others stay in the result as `std.placement.option` alternatives (status
+`feasible` or `relaxed`), each naming its anchor.
+
 ```js
 import { z3Provider } from './smt-z3.mjs';     // fetches nothing yet
 const provider = z3Provider({ onLoad: (info) => console.log(info.status, info.ms) });

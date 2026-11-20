@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.232.0
+
+- Placement through `std.problem`: a goal that denotes several observed things ("the tree" with two trees) no longer refuses as `ambiguous-anchor`. Each combination of candidate anchors (at most 16) is solved, with the `relax=gap` fallback per combination; the placement that keeps every declared distance wins over a relaxed one, then the least cost, then the most recent anchors. The others stay as `std.placement.option` alternatives (status `feasible` or `relaxed`), and each subject's option names the ambiguous anchor it used.
+
 ## 0.231.1
 
 - Capability compilation: a `std.capability.target` may declare `family=true`: its canonical names the whole source type of its operation (a native family), so every member of that type denotes it, as before 0.231.0's kind-denoted matching. Documented in the reference (std.capability).

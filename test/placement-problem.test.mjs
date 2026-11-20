@@ -91,6 +91,21 @@ for (const [label,run] of [['internal search',(w,t)=>w.compileRequest(t)],['Z3',
     assert.equal(kept.result.attrs.relaxed,undefined,'a feasible request is not relaxed');check(kept.call);
   });
 }
+// "The tree" with two trees: each candidate anchor is its own problem. The tree the house can be next to the lake
+// and left of wins; the farther one stays a ranked alternative (relaxed); more combinations than the cap are refused.
+test('a goal that denotes several things is solved for each, the best kept and the others ranked',{skip},()=>{
+  const world=fixture(' relax=gap');world.load(observed('pine','tree',770,330,30,120));
+  const rows=parse(world.compileRequest(request(nearLake+'\n'+leftOfTree))),result=rows[0];
+  assert.equal(result.attrs.status[0],'compiled',JSON.stringify(result.attrs));
+  const option=id=>rows.find(w=>'$'+w.id===id),choice=option(result.attrs.choice[0]);
+  assert.equal(choice.attrs.anchor[0],'"tree"','the tree that keeps both distances');
+  assert.equal(result.attrs.relaxed,undefined);
+  check(rows.find(w=>(result.attrs.call??[]).includes('$'+w.id)));
+  const others=(result.attrs.alternative??[]).map(option).filter(o=>o!==choice);
+  assert.deepEqual(others.map(o=>[o.attrs.anchor[0],o.attrs.status[0]]),[['"pine"','relaxed']]);
+  const crowded=fixture(' relax=gap');for(let n=0;n<17;n++)crowded.load(observed('t'+n,'tree',20*n,20,10,10));
+  assert.equal(read(crowded.compileRequest(request(nearLake+'\n'+leftOfTree))).result.attrs.reason[0],'ambiguous-anchor');
+});
 test('an undeclared relation is refused before any search',{skip},()=>{
   const {result}=read(fixture().compileRequest(request(nearLake.replace('relation=near','relation=orbiting'))));
   assert.equal(result.attrs.reason[0],'undeclared-relation');

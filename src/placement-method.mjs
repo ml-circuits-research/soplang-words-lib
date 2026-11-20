@@ -278,16 +278,17 @@ function problemPlacement(world, request, nodes, context, method, provider) {
     const decl = plain(relation);
     return decl ? { decl } : null;
   };
-  const byId = new Map(targets.map(t => [t.id, t])), subjects = [], anchors = new Map();
+  const byId = new Map(targets.map(t => [t.id, t])), subjects = [], candidates = new Map();
   const name = (prefix, i) => prefix + i;
   for (const relation of relations) {
     const subject = byId.get(ref(relation, 'target')), goal = byId.get(ref(relation, 'goal'));
     if (!subject || !goal || subject === goal || get(goal, 'mode') !== 'existing') return unavailable('request-targets');
     if (!declared.some(p => get(p, 'relation') === get(relation, 'relation'))) return unavailable('undeclared-relation');
-    if (!anchors.has(goal.id)) {
-      const matched = rows.filter(o => matches(o, goal));
-      if (matched.length !== 1 || !matched[0].geometry) return unavailable(matched.length ? 'ambiguous-anchor' : 'unbound-target');
-      anchors.set(goal.id, { row: matched[0], box: name('anchor', anchors.size) });
+    // Every observed thing the goal may denote is a candidate anchor, most recent first.
+    if (!candidates.has(goal.id)) {
+      const matched = rows.filter(o => matches(o, goal) && o.geometry).reverse();
+      if (!matched.length) return unavailable('unbound-target');
+      candidates.set(goal.id, { rows: matched, box: name('anchor', candidates.size) });
     }
     if (!subjects.some(s => s.target === subject)) {
       const creation = get(subject, 'mode') === 'new';
@@ -302,12 +303,23 @@ function problemPlacement(world, request, nodes, context, method, provider) {
     }
   }
   if (subjects.length > 16 || rows.length > 512) return unavailable('budget');
+  if (!get(method, 'containRelation') || !get(method, 'peerRelation') || !plain(get(method, 'containRelation')) || !plain(get(method, 'peerRelation'))) return unavailable('missing-relation-policy');
+  // A goal that denotes several observed things ("the tree" with two trees) is tried with each of them: every
+  // combination of candidate anchors, at most ANCHOR_COMBINATIONS, is its own problem.
+  const goals = [...candidates.entries()];
+  if (goals.reduce((n, [, c]) => n * c.rows.length, 1) > ANCHOR_COMBINATIONS) return unavailable('ambiguous-anchor');
+  let combinations = [new Map()];
+  for (const [id, c] of goals) combinations = combinations.flatMap(m => c.rows.map(row => new Map([...m, [id, { row, box: c.box }]])));
+  const ambiguous = new Set(goals.filter(([, c]) => c.rows.length > 1).map(([id]) => id));
+  const allSubjects = subjects;
+  const prepare = (anchors) => {
+  const subjects = allSubjects.map(x => ({ ...x, size: { ...x.size } }));
   // Each relation's declaration and the box it is measured against (the anchor's, or its region's).
   const uses = [];
   for (const relation of relations) {
     const s = subjects.find(x => x.target.id === ref(relation, 'target')), a = anchors.get(ref(relation, 'goal'));
     const chosen = declaration(get(relation, 'relation'), a.row, literal(s.kind, 'native'));
-    if (!chosen) return unavailable('undeclared-relation');
+    if (!chosen) return { failure: unavailable('undeclared-relation') };
     uses.push({ relation, s, a, ...chosen });
   }
   // A subject larger than the declared share (fit) of the place it goes to is drawn smaller, when its tool can say
@@ -369,8 +381,6 @@ function problemPlacement(world, request, nodes, context, method, provider) {
   const packet = `@problem std.problem.request budget=3000 ${refs.var.map(r => 'var=' + r).join(' ')} ${refs.box.map(r => 'box=' + r).join(' ')} ${refs.constraint.map(r => 'constraint=' + r).join(' ')}\n${lines.join('\n')}`;
   return { packet, softened };
   };
-  if (!get(method, 'containRelation') || !get(method, 'peerRelation') || !plain(get(method, 'containRelation')) || !plain(get(method, 'peerRelation'))) return unavailable('missing-relation-policy');
-  const declaredProblem = build(false);
   const decide = (answerText, problem) => {
     const answer = parse(answerText), result = answer.find(w => w.type === 'std.problem.result');
     const status = get(result, 'status');
@@ -396,24 +406,46 @@ function problemPlacement(world, request, nodes, context, method, provider) {
       if (!validName(get(s.tool, 'operation'))) return unavailable('invalid-operation');
       calls.push(wire('placement.call.' + s.i, get(s.tool, 'operation'), args));
       // The geometry each subject is given, as an option the caller can check against what it observes after.
-      const use = uses.find(u => u.s === s);
+      const use = uses.find(u => u.s === s && ambiguous.has(ref(u.relation, 'goal'))) ?? uses.find(u => u.s === s);
       options.push({ id: 'placement.option.' + (s.i + 1), anchor: use.a.row, moving: s.moving, direction: wire('placement.relation.' + s.i, 'std.request.relation', { name: get(use.relation, 'relation') }),
         x, y, bounds: { x: value['x' + s.i], y: value['y' + s.i], width: s.size.width, height: s.size.height }, evidence: [], status: 'feasible' });
     }
-    return { calls, options, chosen: options[0], provider: get(result, 'provider'), relaxed };
+    return { calls, options, chosen: options[0], provider: get(result, 'provider'), relaxed, cost: number(result, 'cost') ?? 0 };
+  };
+  return { build, decide };
   };
   // A method declared relax=gap answers a request whose declared distances no placement keeps with the nearest
   // placement that keeps every relation's direction (or separation) instead, and names the relations it relaxed.
   const relax = get(method, 'relax') === 'gap';
   const then = (value, next) => value && typeof value.then === 'function' ? value.then(next) : next(value);
-  return then(solveProblem(declaredProblem.packet, { provider }), (answerText) => {
-    const first = decide(answerText, declaredProblem);
-    if (first.calls || !relax || !['search-exhausted', 'search-unsatisfiable'].includes(first.reason)) return first;
-    const relaxedProblem = build(true);
-    if (!relaxedProblem.softened.length) return first;
-    return then(solveProblem(relaxedProblem.packet, { provider }), (text) => {
-      const second = decide(text, relaxedProblem);
-      return second.calls ? second : first;
+  const attempt = (anchors) => {
+    const prepared = prepare(anchors);
+    if (prepared.failure) return prepared.failure;
+    const declaredProblem = prepared.build(false);
+    return then(solveProblem(declaredProblem.packet, { provider }), (answerText) => {
+      const first = prepared.decide(answerText, declaredProblem);
+      if (first.calls || !relax || !['search-exhausted', 'search-unsatisfiable'].includes(first.reason)) return first;
+      const relaxedProblem = prepared.build(true);
+      if (!relaxedProblem.softened.length) return first;
+      return then(solveProblem(relaxedProblem.packet, { provider }), (text) => {
+        const second = prepared.decide(text, relaxedProblem);
+        return second.calls ? { ...second, loose: true } : first;
+      });
     });
+  };
+  // Each combination in turn (at most ANCHOR_COMBINATIONS); the best placement keeps every declared distance,
+  // then has the least cost; a tie goes to the most recent anchors. The others stay as ranked alternatives.
+  const results = [];
+  const step = (k) => k === combinations.length ? results : then(attempt(combinations[k]), (r) => { results.push(r); return step(k + 1); });
+  return then(step(0), (all) => {
+    const solved = all.filter(r => r.calls);
+    if (!solved.length) return all[0];
+    const ranked = solved.map((r, order) => ({ r, order })).sort((p, q) => (p.r.loose === true) - (q.r.loose === true) || p.r.cost - q.r.cost || p.order - q.order).map(x => x.r);
+    const [best, ...others] = ranked;
+    const alternatives = others.flatMap((r, k) => r.options.map(o => ({ ...o, id: o.id + '.alternative.' + (k + 1), status: r.loose ? 'relaxed' : 'feasible' })));
+    return { ...best, options: [...best.options, ...alternatives] };
   });
 }
+
+// The most combinations of candidate anchors one placement request is solved for.
+const ANCHOR_COMBINATIONS = 16;

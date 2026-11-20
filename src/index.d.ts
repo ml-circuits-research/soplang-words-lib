@@ -1039,3 +1039,20 @@ export const INSTANCE_STATE_FORMAT: 'sop.instance-state/2';
 export function serializeInstanceState(input: InstanceState, options?: InstanceStateLimits): string;
 export function readInstanceState(wires: string, options?: InstanceStateLimits): InstanceState;
 export function instanceStateWorld(wires: string, options?: InstanceStateLimits & { schema?: string; includeArchive?: boolean }): World;
+export interface StructuralBindingTable { properties?: any[]; families?: any[]; kinds?: any[]; coverage?: any[]; valueNormalizations?: any[]; [key: string]: any; }
+export interface StructuralBindingDeclarations {
+  parameters?: { world: string; sourceSha256: string; wire: string; operation: string; act?: string; sourceType: string; parameter: string; kind?: string; unit?: string; enum?: string[] | null }[];
+  unboundParameters?: string[]; preferActs?: string[];
+  families?: { area: string; type: string; kind: string; authority?: string }[];
+  familyOperations?: { area: string; type: string; operation: string; sourcePath?: string }[];
+  kindOperations?: { id: string; area: string; kind: string; operation: string; parameter?: string; value?: string; sourceWorld?: string; sourcePath?: string; sourceSnapshotSHA?: string; authority?: string }[];
+  keyAlignments?: { area: string; key: string; operation: string; parameter: string; codec?: string; values?: { said: string; value: string }[]; authority?: string }[];
+  relations?: { id: string; area: string; key: string; anchor: string; like: string; values?: Record<string, string>; sourceWorld?: string; authority?: string }[];
+  positions?: { area: string; key: string; sourceType: string; binding: string; sourceWire?: string; sourceWorld?: string; sourceSnapshotSHA?: string; authority?: string }[];
+  ordinals?: { word: string; value: number }[]; discriminator?: string; valueWords?: Map<string, Set<string>>; extra?: Record<string, unknown>;
+}
+export function completeStructuralBindings(table: StructuralBindingTable, declared?: StructuralBindingDeclarations): StructuralBindingTable;
+export const POPULATION_PATTERNS: readonly ['chain', 'cycle', 'all', 'star'];
+export function readingOrder<T extends { id: unknown }>(objects: T[], place?: (object: T) => { x?: number; y?: number; height?: number } | undefined): T[];
+export function populationPairs(members: { id: string }[], pattern: string, options?: { hub?: string; hubFirst?: boolean; max?: number; tick?: () => void }): [string, string][] | null;
+export function nearestRelative(input: { own: { key: string; parent: string; dimension?: string }[]; members: Map<string, Set<string>>; seen: number; near?: string[]; weights?: Record<string, number>; accept: (name: string) => boolean | Promise<boolean>; limit?: number }): Promise<{ name: string; via: 'parent' | 'shared'; score?: number } | null>;

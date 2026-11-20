@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.244.0
+
+- `completeStructuralBindings(table, declared)`: an exported structural binding table (`sop.structural-bindings/1`) completed from the live `std.capability` declarations and an application's declared rows: keys by parameter name (never an unbound parameter; an operation of a preferred act first), closed value lists, numbers and units, declared key alignments with said values, relation pairs, family readings and operations, the binding a family's kind rows share, positions with ordinal words, compound-lemma modifiers and closed native values as kinds. Moved from an application, where the same rules ran as host code.
+- `populationPairs(members, pattern, options)` (`POPULATION_PATTERNS`: chain, cycle, all, star) and `readingOrder(objects, place)`: one request whose reference names several observed objects becomes one call per pair of a declared pattern.
+- `nearestRelative(input)`: the closest acceptable relative of a name by weighted shared traits (a near parent first, else the most weighted shared traits by specificity), for a kind an application cannot realise itself.
+
 ## 0.243.0
 
 - Placement (ranked directions): when no declared place on the stated side is feasible (an anchor at the page edge), a method's declared `fallback=` stages are tried in order: `shrink` (a new subject drawn smaller at the slots, down to `minShare`, steps of `shrinkStep`, when its tool has `sizeKey`), `shift` (closest place with the centre on the stated side of the anchor's centre, clear of the anchor), `side` (the directions of `fallbackDirections`, in rank). `std.placement.result fallback=` names the stage used; before, the request was refused as `no-feasible-placement`.

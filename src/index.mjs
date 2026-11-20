@@ -52,7 +52,7 @@ export { planner, factStore, PlanLive, readMethods, PLAN_LIMITS, solveChoices } 
 export { inflectBy, articleFor, morphOf, generate, analyse, fold, splitClitics, dictionary, realise, templateFor } from './morph.mjs';
 export { ledgerAppend, ledgerGroups, ledgerKey, stageOf, STAGES } from './ledger.mjs';
 export { solveProblem } from './problem.mjs';
-export const version = '0.243.0';
+export const version = '0.244.0';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)
  * tools/build.mjs fills in `hash`, a fingerprint of the bundled sources, and `date`,
@@ -90,3 +90,6 @@ export { retainSelectiveCalibration, assessSelectiveCalibration } from './select
 
 export { compareRequestGraphs } from './request-compare.mjs';
 export { lookupContextTargetBinding } from './context-target-binding.mjs';
+export { completeStructuralBindings } from './structural-bindings.mjs';
+export { populationPairs, readingOrder, POPULATION_PATTERNS } from './population-pattern.mjs';
+export { nearestRelative } from './nearest-relative.mjs';

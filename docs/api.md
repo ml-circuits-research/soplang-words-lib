@@ -5315,6 +5315,51 @@ print(result.liveBinding); // null
 
 `budget` bounds copying/lookup and evidence checks (default 100000); `graphBudget` separately bounds the existing graph serializer (default 20000). The host's authority, context, canonical membership and correlation are trusted inputs. This method does not select a conversational antecedent, interpret text, prove incarnation identity or rebind a historical subject to today's state. A current resolution must separately revalidate context/identity and new selectors. Numeric ID reuse never establishes continuity.
 
+## Binding tables, populations and relatives
+
+### completeStructuralBindings(table, declared?)
+
+Complete a structural binding table (`sop.structural-bindings/1`: family, kind and property rows a reader was exported with, each aligned to a native capability) from the live capability declarations and the application's declared rows. `declared.parameters` lists every `std.capability.parameter` with its operation, act, source type, kind, coordinate unit and closed value list. The rules: a key the table left unbound binds to the parameter of its own name on its family's source type (never one of `unboundParameters`, an operation of a `preferActs` act first); a property bound to a closed value list takes it as its class values, a numeric one is marked numeric with its unit; declared key alignments replace a key's row (said values given to the tool through `valueMap`); declared relation pairs take the projection roles of their `like` key; declared family readings and family operations add families; a family without a native binding takes the one binding its kind rows share; declared positions take the ordinal words; the modifier of compound lemmas names their kind when every compound names the same one; and each closed value of a family's make discriminator that no kind row names becomes a kind, named by the value and by its catalog words. Returns a new frozen table (`extra` fields added as they are); the input is not changed. Nothing is inferred from words: every row comes from a declaration or an export rule.
+
+```js
+const table = completeStructuralBindings({ families: [], kinds: [], properties: [{ area: 'toy', key: 'blob.size', hostBinding: { sourceType: 'toy.blob', parameter: 'size' } }] },
+  { parameters: [{ world: 'toy', sourceSha256: 'x', wire: 'p', operation: 'blob.change', act: 'change', sourceType: 'toy.blob', parameter: 'size', kind: 'number', unit: 'px' }] });
+print(table.properties[0].numeric, table.properties[0].unit); // true px
+```
+
+### POPULATION_PATTERNS
+
+The graph patterns `populationPairs` makes: `chain`, `cycle`, `all` (every pair) and `star`.
+
+```js
+print(POPULATION_PATTERNS.join(' ')); // chain cycle all star
+```
+
+### populationPairs(members, pattern, options?)
+
+The pairs of ids a pattern makes over ordered members (`{id}`): consecutive members (`chain`), and the last back to the first (`cycle`), every unordered pair (`all`), or every member with `options.hub` (`star`, the hub first when `hubFirst`). Returns null for an unknown pattern, a star without a hub, or more than `options.max` pairs. A request whose reference names several observed objects becomes one call per pair.
+
+```js
+print(JSON.stringify(populationPairs([{ id: 'a' }, { id: 'b' }, { id: 'c' }], 'cycle'))); // [["a","b"],["b","c"],["c","a"]]
+```
+
+### readingOrder(objects, place?)
+
+Objects in reading order: rows top to bottom (two objects are in one row when their centres are within half the taller height), then left to right, then by id. `place(object)` gives `{x, y, height}` (default: the object itself).
+
+```js
+print(readingOrder([{ id: 'r', x: 50, y: 0, height: 10 }, { id: 'l', x: 0, y: 2, height: 10 }]).map((o) => o.id).join(' ')); // l r
+```
+
+### nearestRelative(input)
+
+The closest acceptable relative of a name in a taxonomy of weighted traits: first an acceptable parent along a `near` dimension, the most specific first (specificity ln(seen / members with the trait)); else the acceptable name sharing the most traits, each shared trait counting its dimension's `weights` times its specificity, ties by name, at most `limit` (64) names tried. `accept(name)` (sync or async) says whether the application can realise a name. Resolves to `{name, via, score?}` or null. The caller reads the taxonomy rows; the ranking is the library's.
+
+```js
+const found = await nearestRelative({ own: [{ key: 'pet', parent: 'pet', dimension: 'kind' }], members: new Map([['pet', new Set(['cat'])]]), seen: 4, weights: { kind: 1 }, accept: (name) => name === 'cat' });
+print(found.name, found.via); // cat shared
+```
+
 ## Instance state archives
 
 ### INSTANCE_STATE_FORMAT

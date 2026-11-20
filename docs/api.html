@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="1c63fed820ca">
+<meta name="source-hash" content="af153328a719">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.225.2</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.226.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="architecture-review.html">Architecture review</a><a href="instance-state.html">Instance state</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -100,6 +100,17 @@ const decision = world.compileRequest(`
 @west.distance std.choice.measurement metric=distance value=3
 `);</code></pre></figure>
 <p>The result returns the selected option, ordered remaining alternatives, ties and an assessment for each option. The example selects <code>$west</code>. No candidate facts or decision facts are added to the receiving World.</p>
+<h3 id="solveproblemsop-options">solveProblem(sop, options?)</h3>
+<p><code>std.problem</code> is the search step of compilation: variables with declared domains, boxes and spans built from variables or numbers, hard constraints and soft terms over a fixed set of predicates (<code>inside</code>, <code>near</code>, <code>apart</code>, <code>left</code>, <code>right</code>, <code>above</code>, <code>below</code>, <code>disjoint</code>, <code>within</code>, <code>le</code>, <code>ge</code>, <code>eq</code>, and the soft-only <code>minimise</code> and <code>maximise</code>), a budget in milliseconds and a depth (<code>quick</code>, or <code>alternatives</code> with <code>count</code>). The built-in provider searches each variable's grid and reports <code>exhausted</code> when no grid point holds, never a proof of impossibility. <code>node/smt-z3.mjs</code> supplies a Z3 provider for the same packet (with the optional <code>z3-solver</code> package): it reports <code>unsatisfiable</code> with the conflicting constraints named in <code>conflict</code>. Every solved assignment is checked again against the hard constraints before it is returned.</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>const placed = world.compileRequest(`
+@p std.problem.request var=$x var=$y box=$house box=$tree constraint=$c
+@x std.problem.var name=x min=0 max=700 step=10
+@y std.problem.var name=y min=0 max=520 step=10
+@house std.problem.box name=house x=x y=y w=100 h=80
+@tree std.problem.box name=tree x=420 y=200 w=60 h=120
+@c std.problem.constraint name=near_tree predicate=near a=house b=tree gap=40
+`);</code></pre></figure>
+<p>The <code>std.problem.result</code> has <code>status=solved</code> and one <code>std.problem.assignment</code> per variable. With <code>{ provider }</code> passed to <code>compileRequest</code> the result is a promise.</p>
 <h3 id="ground-a-lexical-mention">Ground a lexical mention</h3>
 <p>Load <code>std.ground</code> and declare a <code>std.ground.policy</code>. Its <code>measure</code> names the cost metric used by the policy's <code>std.decide.criterion</code> facts. <code>maxSpelling</code> limits spelling repair; <code>follow</code>, <code>stepCost</code> and <code>maxSteps</code> bound traversal of the knowledge edges supplied with the request. A <code>std.ground.request</code> carries the mention, its candidates and those edges. Each candidate gets the lowest cost of its exact, knowledge and spelling routes; a candidate with no admissible route is reported with <code>route=none</code>. The admissible candidates are ranked through <code>std.choice</code> in a canonical order, so ties stay visible and do not depend on how the caller enumerated them.</p>
 <figure class="code"><figcaption>js</figcaption><pre><code>world.tell(`
@@ -1753,7 +1764,7 @@ factsOf(live).ofKind(&#x27;item&#x27;); // stable local SOP fact IDs</code></pre
 <p>The engine defaults to a cap of 128 candidates and applies the world reasoning budget per trial. An optimum is scoped to the candidate list.</p>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.225.2 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.226.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

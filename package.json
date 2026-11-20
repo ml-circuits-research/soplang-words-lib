@@ -1,6 +1,6 @@
 {
   "name": "sopworld",
-  "version": "0.225.2",
+  "version": "0.226.0",
   "description": "Consistency matrices for SOP Lang circuits: self-consistent micro-worlds with deduction, abduction, induction and logical completion. Zero dependencies.",
   "type": "module",
   "main": "./src/index.mjs",
@@ -13,7 +13,8 @@
       "types": "./docs/sopworld.d.ts",
       "default": "./docs/sopworld.mjs"
     },
-    "./node/solvers.mjs": "./node/solvers.mjs"
+    "./node/solvers.mjs": "./node/solvers.mjs",
+    "./node/smt-z3.mjs": "./node/smt-z3.mjs"
   },
   "files": [
     "src",

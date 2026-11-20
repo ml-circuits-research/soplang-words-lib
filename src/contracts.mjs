@@ -8,6 +8,7 @@ import { ruleCircuitContracts } from './rule-circuit-contract.mjs';
 import { capabilityContracts } from './capability-contract.mjs';
 import { choiceContract } from './choice-method.mjs';
 import { groundContract } from './ground-method.mjs';
+import { problemContract } from './problem.mjs';
 // Opt-in structural contracts. These schemas validate records; they do not establish
 // the truth, licensing suitability or semantic correctness of the recorded evidence.
 // Each module owns its namespace and can be imported independently through core.use.
@@ -24,6 +25,7 @@ export const CONTRACT_MODULES = {
   'std.interpret': interpretationContract,
   'std.choice': choiceContract,
   'std.ground': groundContract,
+  'std.problem': problemContract,
   'std.placement': placementContract,
   'std.instance': {
     text: `

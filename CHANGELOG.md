@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.226.0
+
+- `std.problem`: the search step as one problem (variables with domains, boxes and spans, hard constraints and weighted soft terms over a fixed predicate set, budget, depth with alternatives), solved by a bounded internal provider that reports `exhausted` rather than impossibility, or by an optional Z3 provider (`node/smt-z3.mjs`) that proves `unsatisfiable` with the conflicting constraints named. Solved assignments are read back against the hard constraints.
+
 ## 0.225.2
 
 - `std.acts` stores text the same way in `make` and `change`: a bare token as it is, a quoted literal as it is, any other text quoted. `change` with a list sets every value of a many-valued key in one undoable step (`applyPatch` sets accept a list).

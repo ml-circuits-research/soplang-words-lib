@@ -6668,3 +6668,5 @@ No runtime code changed. Full source and bundle checks each passed 1015 with one
 `npm test` 1020 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test` 1022 pass/0 fail.
 2026-11-19 — 0.225.2: std.acts make and change store text alike (bare token, quoted literal kept, other text quoted); change with a list sets all values of a many-valued key in one undo step (applyPatch sets take a list); concat joins value texts, not quotes. Found while moving the PSys2 Calendar onto w.meetings.
 `npm test` 1023 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test` 1025 pass/0 fail.
+2026-11-20 — 0.226.0: std.problem (SMT proposal §7): one problem IR in SOP wires, a bounded internal provider (exhausted ≠ impossible) and an optional Z3 provider in node/smt-z3.mjs (unsat core in `conflict`, alternatives by blocking), with a mandatory read-back of every solution.
+`npm test` 1031 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test` 1033 pass/0 fail; `node --test test/problem.test.mjs` 8/8 including the three Z3 tests.

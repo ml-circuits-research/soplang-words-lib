@@ -928,6 +928,8 @@ export interface SpellAsk { from: string; at: number; candidates: { word: string
 /** Contextual, deterministic spell repair by the words of the live worlds, the dialogue and the language. */
 export function repairWords(tokens: string[] | string, options?: SpellOptions): { tokens: string[]; repairs: SpellRepair[]; asks: SpellAsk[] };
 export function editCost(a: string, b: string, max?: number): number;
+/** Solve a std.problem packet: the built-in bounded search, or `provider` (for example node/smt-z3.mjs). A provider makes the result a promise. */
+export function solveProblem(sop: string | object[], options?: { provider?: (model: object) => object | Promise<object> }): string | Promise<string>;
 export function worldWords(world: World): Set<string>;
 export function languageWords(language: World | null | undefined, lang?: string): Set<string>;
 export const SPELL: Readonly<{ minLength: number; maxCostShort: number; maxCostLong: number; margin: number; top: number; maxWords: number; recent: number }>;

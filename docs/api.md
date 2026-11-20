@@ -245,6 +245,34 @@ The result returns the selected option, ordered remaining alternatives, ties and
 an assessment for each option. The example selects `$west`. No candidate facts
 or decision facts are added to the receiving World.
 
+### solveProblem(sop, options?)
+
+`std.problem` is the search step of compilation: variables with declared domains,
+boxes and spans built from variables or numbers, hard constraints and soft terms
+over a fixed set of predicates (`inside`, `near`, `apart`, `left`, `right`,
+`above`, `below`, `disjoint`, `within`, `le`, `ge`, `eq`, and the soft-only
+`minimise` and `maximise`), a budget in milliseconds and a depth (`quick`, or
+`alternatives` with `count`). The built-in provider searches each variable's grid
+and reports `exhausted` when no grid point holds, never a proof of impossibility.
+`node/smt-z3.mjs` supplies a Z3 provider for the same packet (with the optional
+`z3-solver` package): it reports `unsatisfiable` with the conflicting constraints
+named in `conflict`. Every solved assignment is checked again against the hard
+constraints before it is returned.
+
+```js
+const placed = world.compileRequest(`
+@p std.problem.request var=$x var=$y box=$house box=$tree constraint=$c
+@x std.problem.var name=x min=0 max=700 step=10
+@y std.problem.var name=y min=0 max=520 step=10
+@house std.problem.box name=house x=x y=y w=100 h=80
+@tree std.problem.box name=tree x=420 y=200 w=60 h=120
+@c std.problem.constraint name=near_tree predicate=near a=house b=tree gap=40
+`);
+```
+
+The `std.problem.result` has `status=solved` and one `std.problem.assignment` per
+variable. With `{ provider }` passed to `compileRequest` the result is a promise.
+
 ### Ground a lexical mention
 
 Load `std.ground` and declare a `std.ground.policy`. Its `measure` names the cost

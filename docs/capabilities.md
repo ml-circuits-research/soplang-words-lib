@@ -901,6 +901,30 @@ print(p.steps.length, p.notHonoured.map((x) => `${x.words}: ${x.why}`));
 2 ["red: this world does not take attribute for make"]
 ```
 
+## Place, schedule or choose under constraints, with a proof when it cannot be done
+
+*In `solveProblem` and `compileRequest` (`std.problem`), `node/smt-z3.mjs`; since 0.226.*
+*Works on: any packet of variables with declared domains, boxes and spans, and constraints over the fixed predicates.*
+
+One problem is solved at once: a new house near the tree, off the lake and on the page is one decision, not
+four. The built-in search runs anywhere and says `exhausted` when no grid point holds; the optional Z3 provider
+proves `unsatisfiable` and names the conflicting constraints.
+
+```js run
+const w = new World();
+const text = w.compileRequest(`@p std.problem.request var=$s span=$m span=$busy constraint=$free constraint=$late
+@s std.problem.var name=start min=0 max=480 step=30
+@m std.problem.span name=meeting start=start length=60
+@busy std.problem.span name=busy start=0 length=240
+@free std.problem.constraint name=free predicate=disjoint a=meeting b=busy
+@late std.problem.constraint name=late predicate=minimise a=start strength=soft weight=1`);
+print(parse(text).find((r) => r.type === 'std.problem.assignment').attrs.value);
+```
+
+```output
+["240"]
+```
+
 ## Bind a live world to its tool by wires, and run its plans with a timeline
 
 *In `runPlan`, `runWorldPlan`, `toolBindings`, `toolTimeline`, `toolSession`, `toolCapabilities`, `askWorld`, `nearestAccepted`, `readView`, `stateDiff`, `mirrorState`, `stateIds`, `TOOL_ARG_SOURCES`, `WORLD_QUESTIONS`, `STATE_FEW`, `kindLineage`, `expectedValue`, `cutToCount`, `fillToCount`, `notAllOneKind`, `EXPECT_TYPES`; since 0.152.*

@@ -174,3 +174,15 @@ Rutele de azi (placement-method, capability-method, rule-circuit) nu se desfiin�
 ---
 
 *Cifrele citate sunt din rulările din 19 noiembrie 2026 (`experiments/results*`); ce depășește datele (forma lexicografică exactă, enumerarea cu clauze de blocare, stratul de judecător ca gate) e marcat «propun».*
+
+---
+
+## 8. Stare la 20 noiembrie 2026: ce e integrat
+
+- **În bibliotecă (0.226.0): `std.problem`**, IR-ul din secțiunea 7, ca fire SOP: variabile cu domenii, cutii și intervale din variabile sau numere, constrângeri dure și termeni soft peste predicatele din secțiunea 2 (`inside`, `near`, `apart`, `left`, `right`, `above`, `below`, `disjoint`, `within`, `le`, `ge`, `eq`, plus `minimise`/`maximise` doar soft), buget și adâncime (`quick` sau `alternatives` cu `count`). Intră prin `compileRequest`.
+- **Furnizorul intern** (fără dependențe, merge în browser): caută pe grila fiecărei variabile și spune `exhausted` când niciun punct de pe grilă nu merge, niciodată „imposibil”.
+- **Furnizorul Z3** (`node/smt-z3.mjs`, cu pachetul opțional `z3-solver`): aceeași problemă, exact; spune `unsatisfiable` cu nucleul unsat în `conflict`. Capcanele binding-ului din secțiunea 6 sunt tratate: tag-urile urmărite merg doar pe un `Solver` simplu, sumele se construiesc pereche cu pereche.
+- **Poarta de recitire** din secțiunea 6 e obligatorie: orice soluție a oricărui furnizor e verificată din nou contra constrângerilor dure înainte de a fi întoarsă.
+- Teste: `test/problem.test.mjs` (casa lângă pom, departe de lac, pe pagină; imposibilitatea dovedită de Z3 cu `in_lake` și `off_lake`; alternative; o ședință de 60 de minute între intervale ocupate).
+
+Ce urmează: metoda de plasare (`placement-method`) și calendarul construiesc un `std.problem` din cerere, din politicile `k.spatial2d` și din contractul uneltei, în loc de căutarea lor proprie; apoi relațiile multiple și subiectele multiple.

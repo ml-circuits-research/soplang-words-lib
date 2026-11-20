@@ -1,5 +1,7 @@
 # External reviews, checked against the code (2026-11-19)
 
+**Superseded** by [review-tasks-2026-11-20.md](./review-tasks-2026-11-20.md): every open item below is merged there, and the review folders are removed.
+
 The owner added two external reviews (`agy-review/`, `mistral-review/`, in Romanian). Each claim was checked against the three repositories: the library (L), the catalog (K) and PSys2 (P). Only the verified points go into plans.
 
 ## Confirmed and planned

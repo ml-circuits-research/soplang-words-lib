@@ -116,9 +116,28 @@ Firul comun al coloanei din dreapta: z3 nu preia bugetele, acoperirea, limba sau
 1. **Verificare prin recitire (read-back)**: un predicat ortogonal („abia emis, acum verifică independent: chenar, disjuncții, conținut") aplicat pe circuitul înapoi, nu pe modelul solverului.
 2. **Un judecător care citește** lângă validarea de schemă: în experiment, judecătorul mecanic a acceptat toate ieșirile silențios-greșite; doar un agent care a comparat starea dinainte cu starea de după le-a prins. În bibliotecă: un strat de plausibilitate ca gate, lângă `tellOk`.
 
-**Dimensiunea WASM (~40 MB).** z3-solver vine ca ~40 MB de WASM — nepotrivit pentru bundle-ul de browser al unui asistent care rulează offline (obiectivul din sumar: „rulează în browser, fără LLM"). De aceea **nu propunem z3 în browser**:
-- în browser, plasarea rămâne pe **kiwi.js** (cassowary) — cele mai bune plasări din experiment (9.6), ierarhia lui de tării hărțește exact scara cerință/preferință/presupunere, instant și minuscul (0 ms);
-- z3 rămâne **oracle-ul de CI** (rulare de corpus în pipeline, exact ca experimentul) și motorul de explicație pe node, plus backend opțional node pentru aplicații care îl pot servi.
+**Dimensiunea WASM — revizuită cu măsurători reale, la decizia ownerului.** Prima ediție a
+acestei propuneri spunea „~40 MB → nu în browser". Ambele jumătăți erau greșite ca fapt
+(owner, 2026-11-20):
+- **~40 MB e dimensiunea de pe disk a pachetului npm**, nu ce plătește un browser:
+  z3-built.wasm are **8,6 MB gzipped** la transfer — mai puțin decât multe PNG-uri de hartă.
+- **Latența de încărcare e irelevantă pentru experiență**: 27 ms modul + 79 ms init
+  (măsurat), iar într-un demo pe browser încărcarea poate fi **lazy**: fetch+compile la
+  primul request ce cere elaborare, nu la deschidere — timpul de până ajunge utilizatorul
+  la prima cerere acoperă init-ul de <100 ms.
+- **kiwi.js NU e inlocuitor**, și asta e măsurat, nu opinie: la scară reală, resolva
+  s-cal și s-draw au **căzut cu OOM la 4 GB de RAM** — enumerarea disjuncțiilor
+  explodează combinatorial, nu degradează gradual. z3 le rezolvă în ~15 ms (s-cal) și
+  55 ms–37 s (s-draw, cu/fără obiectiv). Pentru un „demo de ce poate tehnologia",
+  **singurul motor care refuză cu dovadă se numește** e z3; kiwi nu poate ține un demo
+  care trebuie să supraviețuiască oricărei cereri.
+- **Decizia ownerului**: **z3 intra în browser ca furnizorul principal de căutare,
+  lazy-loaded**, fiindcă e curat și simplu de folosit prin contract; kiwi rămâne
+  furnizorul instant de plasare pentru cazurile mici (subpackage mic, încărcat eager
+  pentru oferingă imediată în vreme ce z3 se fetch-uiește); nu este înlocuitor.
+- z3 rămâne în plus **oracle-ul de CI** (rulare de corpus în pipeline, exact ca
+  experimentul) și motorul de explicație pe node, plus backend opțional node pentru
+  aplicații care pot servi alte adâncimi.
 
 **Determinismul.** Măsurat: toți cei patru compilatori au fost determiniști pe toate rulările, z3 inclusiv. Un compilator care dă răspunsuri diferite pe aceeași solicitare n-ar putea fi antrenat sau testat; ăsta poate.
 
@@ -141,11 +160,12 @@ Problem {
 
 `x.option`-urile cu `strength=hard`, regulile `lr.rule` și valorile cerute de om devin `hard`; `lr.pref`, tabelul `lr.grade` și impliciturile de unealtă devin `soft`/valori; domeniile vin din declarațiile de parametri. Construcția e aceeași indiferent de furnizor.
 
-**Furnizorii, în spatele contractului:**
+**Furnizorii, în spatele contractului (revizuit, decizia ownerului 2026-11-20):**
 
-- **intern** — căutare mărginită cu proprietățile de azi, pentru cazurile mărunte („instant, 0 ms" ca baseline; și ca fallback de browser);
-- **kiwi** — furnizorul de plasare din browser (cele mai bune plasări, fără disjuncții native: cazurile cu „sau" trec pe furnizorul intern sau pe node);
-- **z3** — oracle-ul de CI și motorul de explicație pe node; singurul care întoarce **nucleul unsat** ca dovadă a refuzului, purtat în `Issue`.
+- **intern** — căutare mărginită cu proprietățile de azi, pentru cazurile mărunte („instant, 0 ms" ca baseline; și ca fallback când nimic altceva nu e încărcat);
+- **kiwi** — furnizorul **instant de plasare**, încărcat eager (subpackage minuscul), pentru spaieri mici fără „sau"-uri grele; NU e inlocuitor de căutare generală — măsurat: OOM la scară (s-cal, s-draw);
+- **z3 în browser, lazy-loaded (8,6 MB gzipped, init <100 ms)** — furnizorul principal de căutare al demo-ului: singurul care ține disjuncții native la scară și singurul care întoarce **nucleul unsat** ca dovadă a refuzului, purtat în `Issue`. Un demo care trebuie să spună „nu se poate, și iată de ce" are nevoie de el;
+- **z3 pe node** — rămâne și oracle-ul de CI (corpus integrationat în pipeline, exact ca experimentul) și motorul de explicație pentru adâncimi mari, prin backend opțional.
 
 Rutele de azi (placement-method, capability-method, rule-circuit) nu se desființează peste noapte: ele devin furnizori de **domenii și costuri** pentru același contract — exact drumul „o singură buclă, nu șapte ramuri" din sumarul compilatorului, iar `solve.mjs` (cu verificarea lui prin oracle) rămâne nucleul pe care z3 îl însoțește, nu înlocuiește.
 

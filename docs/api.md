@@ -312,6 +312,13 @@ side of its box). The result names each subject's geometry as a
 `std.placement.option` and the first one as its `choice`, so the caller can check
 what it observes after the call.
 
+A method declared `relax=gap` does not refuse a request whose declared distances
+no placement keeps: it solves a second problem in which each hard relation with
+a `gap` keeps its gap-free core (`left`, `right`, `above`, `below` without their
+bound; `apart` for `near`) and its distance bound becomes a soft term (weight
+`relaxWeight` of the predicate, 1 by default). The result lists in `relaxed` the
+relations whose distance it could not keep. A feasible request is never relaxed.
+
 ```js
 import { z3Provider } from './smt-z3.mjs';     // fetches nothing yet
 const provider = z3Provider({ onLoad: (info) => console.log(info.status, info.ms) });

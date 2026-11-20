@@ -17,12 +17,12 @@ function observed(id,kind,x,y,w,h) {
   @id.${id} std.placement.identity box=$box.${id} source="source:${id}" container="page" peer=true concept=${kind}`;
 }
 // An invented scene: a lake, a tree and a rock on an 800 x 600 page; a new 100 x 80 house to place.
-function fixture() {
+function fixture(relax='') {
   const path=dir+'docs/worlds/k.spatial2d/';
   const world=new World({library:{'k.spatial2d':readFileSync(path+'schema.sop','utf8')}});
   world.load('@std core.use world=std.placement\n@space core.use world=k.spatial2d prefix=false');
   world.load(readFileSync(path+'shards/policies.sop','utf8'));
-  world.load(`@place std.placement.method directionType=k.spatial2d.direction boxType=k.spatial2d.box relationType=k.spatial2d.relation policyType=k.spatial2d.policy effectiveType=k.spatial2d.effective_policy measurementType=k.spatial2d.measurement peerRelation=independent_peer gapMetric=near_distance containRelation=member_of objective=$choose search=problem grid=10
+  world.load(`@place std.placement.method directionType=k.spatial2d.direction boxType=k.spatial2d.box relationType=k.spatial2d.relation policyType=k.spatial2d.policy effectiveType=k.spatial2d.effective_policy measurementType=k.spatial2d.measurement peerRelation=independent_peer gapMetric=near_distance containRelation=member_of objective=$choose search=problem grid=10${relax}
   @near std.placement.predicate method=$place relation=near predicate=near gap=40
   @left std.placement.predicate method=$place relation=left predicate=left gap=60
   @peer std.placement.predicate method=$place relation=independent_peer predicate=apart gap=12
@@ -71,6 +71,26 @@ test('Z3 compiles the same request and proves an impossible one with the conflic
   assert.equal(impossible.result.attrs.reason[0],'search-unsatisfiable');
   assert.ok((impossible.result.attrs.conflict??[]).length>=2,JSON.stringify(impossible.result.attrs));
 });
+// A wide house cannot be within 40 of the lake and within 60 of a far tree at once: the declared problem has no
+// grid point. A method declared relax=gap keeps both relations' direction and separation hard, makes their
+// distances soft, places the house as close as the scene allows and names the relation it could not keep close.
+const farTree=(w)=>{w.load(observed('pine','pine',770,330,30,120));return w;};
+const leftOfPine='@c2 std.request.constraint request=$r target=$t.house concept=place operator=relation relation=left goal=$t.pine polarity=positive character=requirement';
+const pineRequest=(relations)=>request(relations).replace('@t.tree std.request.target request=$r kind=tree mode=existing','@t.pine std.request.target request=$r kind=pine mode=existing');
+for (const [label,run] of [['internal search',(w,t)=>w.compileRequest(t)],['Z3',(w,t)=>w.compileRequest(t,{provider})]]) {
+  test('relax=gap places a request whose declared distances no placement keeps, and names what it relaxed ('+label+')',{skip:skip||(label==='Z3'&&!provider&&'z3-solver unavailable')},async()=>{
+    const strict=read(await run(farTree(fixture()),pineRequest(nearLake+'\n'+leftOfPine)));
+    assert.equal(strict.result.attrs.status[0],'unavailable','without relax the declared distances are hard');
+    const {result,call}=read(await run(farTree(fixture(' relax=gap')),pineRequest(nearLake+'\n'+leftOfPine)));
+    assert.equal(result.attrs.status[0],'compiled',JSON.stringify(result.attrs));
+    const h=box(call),lake={x:300,y:380,w:260,h:140},pine={x:770,y:330,w:30,h:120};
+    assert.ok(!overlaps(h,lake),'off the lake '+JSON.stringify(h));
+    assert.ok(h.x+h.w<=pine.x,'still left of the pine '+JSON.stringify(h));
+    assert.ok(result.attrs.relaxed?.length>=1,'names the relaxed relation '+JSON.stringify(result.attrs));
+    const kept=read(await run(fixture(' relax=gap'),request(nearLake+'\n'+leftOfTree)));
+    assert.equal(kept.result.attrs.relaxed,undefined,'a feasible request is not relaxed');check(kept.call);
+  });
+}
 test('an undeclared relation is refused before any search',{skip},()=>{
   const {result}=read(fixture().compileRequest(request(nearLake.replace('relation=near','relation=orbiting'))));
   assert.equal(result.attrs.reason[0],'undeclared-relation');

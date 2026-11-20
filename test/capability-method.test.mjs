@@ -176,3 +176,34 @@ test('unknown fields and incomplete populations retain limitations while witness
  const missing=observe(incomplete,['values']);
  assert.equal(missing.answers[0].attrs.reason[0],'incomplete-query-population');
 });
+
+// A kind that no kind parameter accepts (one another operation of the same source type creates, such as a catalog
+// import) is denoted by an observed kind equal to one of its labels, never by the shared source type alone; a member
+// the user named with a label ("the box" for a rectangle named Box) is a fallback only when no member has the kind.
+test('an existing target whose kind no enum accepts matches members of that observed kind, then user-named ones', () => {
+  const extra = (objects) => {
+    const world = source();
+    world.load(`@catalog std.capability.operation scope=$scope name="cell.import" act=make on="cell" order=3 eligible=true
+@catalog.name std.capability.parameter operation=$catalog name="thing" kind=string required=true
+@box.mapping std.capability.target scope=$scope canonical=box.cell label="box" operation=$catalog
+${objects}`);
+    return world;
+  };
+  const change = (world) => {
+    const circuit = world.compileRequest(`
+@r std.request act=change mood=do source=$source
+@source std.request.source text="Change the box"
+@t std.request.target request=$r mode=existing kind=box.cell
+@reading std.request.constraint request=$r target=$t concept=reading operator=eq character=requirement polarity=positive value=15
+@context std.capability.context request=$r scope=$scope`);
+    const wires = parse(circuit), byId = new Map(wires.map((w) => [w.id, w])), result = wires[0];
+    const call = result.attrs.call && byId.get(result.attrs.call[0].slice(1));
+    const cell = (call?.attrs.argument || []).map((t) => byId.get(t.slice(1))).find((a) => str(a.attrs.name[0]) === 'cell');
+    return { status: result.attrs.status[0], cell: cell && cell.attrs.value[0] };
+  };
+  assert.notEqual(change(extra('')).status, 'compiled', 'the source type alone does not make a small cell the box');
+  assert.equal(change(extra('@crate std.capability.object scope=$scope id="crate" source="cell-c" version="3" on="cell" kind="box" order=0')).cell, '"crate"');
+  assert.equal(change(extra('@named std.capability.object scope=$scope id="named" source="cell-d" version="3" on="cell" kind="square" name="Box" order=0')).cell, '"named"');
+  assert.equal(change(extra(`@crate std.capability.object scope=$scope id="crate" source="cell-c" version="3" on="cell" kind="box" order=0
+@named std.capability.object scope=$scope id="named" source="cell-d" version="3" on="cell" kind="square" name="Box" order=1`)).cell, '"crate"', 'the observed kind wins over a name');
+});

@@ -34,16 +34,18 @@ export const problemContract = { text: [
 /**
  * The predicates every provider implements, over boxes {x,y,w,h} and spans {start,length}; a and b name a box
  * or a span, `gap` is a distance bound, `value` a number. Each is described by the hard formula a provider
- * must hold; `violation` measures how far an assignment is from it (0 when it holds), for soft terms.
+ * must hold; `violation` measures how far an assignment is from it (0 when it holds), for soft terms. `core` names
+ * the predicate that keeps a bounded one's direction or separation without its distance bound (gap), for a caller
+ * that relaxes a distance into a soft term.
  */
 export const PREDICATES = {
   inside: { args: 'box box', about: 'a lies within b' },
-  near: { args: 'box box', about: 'a and b do not overlap and the gap between them on each axis is at most gap' },
+  near: { args: 'box box', core: 'apart', about: 'a and b do not overlap and the gap between them on each axis is at most gap' },
   apart: { args: 'box box', about: 'a and b do not overlap (a gap of at least gap, default 0)' },
-  left: { args: 'box box', about: 'a ends left of b starts, by at most gap when gap is given' },
-  right: { args: 'box box', about: 'a starts right of b ends, by at most gap when gap is given' },
-  above: { args: 'box box', about: 'a ends above b starts, by at most gap when gap is given' },
-  below: { args: 'box box', about: 'a starts below b ends, by at most gap when gap is given' },
+  left: { args: 'box box', core: 'left', about: 'a ends left of b starts, by at most gap when gap is given' },
+  right: { args: 'box box', core: 'right', about: 'a starts right of b ends, by at most gap when gap is given' },
+  above: { args: 'box box', core: 'above', about: 'a ends above b starts, by at most gap when gap is given' },
+  below: { args: 'box box', core: 'below', about: 'a starts below b ends, by at most gap when gap is given' },
   align: { args: 'box box', about: 'on axis (x or y), the point of a at edge (0 its start, 0.5 its centre, 1 its end; 0.5 by default) is the same point of b; as a soft term it costs the distance' },
   on: { args: 'box box', about: 'a rests on b: the bottom of a lies in the top band of b (share of its height, 0.25 by default, plus gap) and the centre of a is over b' },
   disjoint: { args: 'span span', about: 'the half-open spans a and b do not overlap' },

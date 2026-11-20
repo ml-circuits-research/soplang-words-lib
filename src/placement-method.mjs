@@ -1,7 +1,7 @@
 // Bounded rectangular placement. Domain worlds supply directional relationships,
 // geometry and applicability rules, observation ownership, native fields and goals.
 import { parse, quote, str, serialize } from './parser.mjs';
-import { solveProblem } from './problem.mjs';
+import { solveProblem, readProblem, violation, PREDICATES } from './problem.mjs';
 import { evaluateObjective } from './objective.mjs';
 
 const fields = ['instance','revision','frame','scope'];
@@ -243,7 +243,7 @@ function summarise(result,context) {
     anchor:entity(o.anchor.box),source:quote(o.anchor.source),subject:o.moving&&entity(o.moving.box)||undefined,
     direction:get(o.direction,'name'),x:o.x,y:o.y,minX:o.bounds.x,minY:o.bounds.y,maxX:o.bounds.x+o.bounds.width,maxY:o.bounds.y+o.bounds.height,status:o.status,reason:o.reason,cost:o.vector?.map(String),evidence:evidenceRefs(o)}));
   const summary=wire('placement.result','std.placement.result',{...scopeOf(context),status:calls.length?'compiled':'unavailable',
-    reason:result.reason,call:calls.map(c=>'$'+c.id),conflict:result.conflict,provider:result.provider,choice:result.chosen?'$'+result.chosen.id:undefined,alternative:alternatives.map(w=>'$'+w.id)});
+    reason:result.reason,call:calls.map(c=>'$'+c.id),conflict:result.conflict,relaxed:result.relaxed,provider:result.provider,choice:result.chosen?'$'+result.chosen.id:undefined,alternative:alternatives.map(w=>'$'+w.id)});
   return serialize([summary,...calls,...alternatives,...measurements]);
 }
 
@@ -326,7 +326,10 @@ function problemPlacement(world, request, nodes, context, method, provider) {
     s.drawn = drawn;
   }
   const grid = Number.isFinite(number(method, 'grid')) ? number(method, 'grid') : Math.max(1, Math.min(frame.width, frame.height) / 40);
-  const lines = [], refs = { var: [], box: [], constraint: [] };
+  // The packet of the declared problem; relaxed, the distance bound (gap) of each relation whose predicate has a
+  // gap-free core (PREDICATES[p].core: left without its bound, apart for near) becomes a soft term over that core.
+  const build = (relaxed) => {
+  const lines = [], refs = { var: [], box: [], constraint: [] }, softened = [];
   const add = (kind, id, text) => { lines.push('@' + id + ' std.problem.' + kind + ' ' + text); refs[kind].push('$' + id); };
   const fixed = (id, g) => add('box', id, `name=${id} x=${g.x} y=${g.y} w=${g.width} h=${g.height}`);
   fixed('frame', frame);
@@ -343,12 +346,16 @@ function problemPlacement(world, request, nodes, context, method, provider) {
   uses.forEach((use, n) => {
     let target = use.a.box;
     if (use.region) { target = 'region' + n; fixed(target, use.region.geometry); }
-    constraint('relation' + n, use.decl, 'subject' + use.s.i, target);
+    const core = PREDICATES[get(use.decl, 'predicate')]?.core;
+    if (relaxed && core && get(use.decl, 'gap') !== undefined && (get(use.decl, 'strength') ?? 'hard') === 'hard') {
+      add('constraint', 'relation' + n, `name=relation${n} predicate=${core} a=subject${use.s.i} b=${target} strength=hard`);
+      add('constraint', 'bound' + n, `name=bound${n} predicate=${get(use.decl, 'predicate')} a=subject${use.s.i} b=${target} gap=${get(use.decl, 'gap')} strength=soft weight=${get(use.decl, 'relaxWeight') ?? 1}`);
+      softened.push({ name: 'bound' + n, relation: get(use.relation, 'relation') });
+    } else constraint('relation' + n, use.decl, 'subject' + use.s.i, target);
     const axis = get(use.decl, 'align');
     if (axis) add('constraint', 'align' + n, `name=align${n} predicate=align a=subject${use.s.i} b=${target} axis=${axis} edge=${get(use.decl, 'edge') ?? 0.5} strength=soft weight=${get(use.decl, 'alignWeight') ?? 1}`);
   });
   const contain = plain(get(method, 'containRelation')), peer = plain(get(method, 'peerRelation'));
-  if (!contain || !peer) return unavailable('missing-relation-policy');
   const anchorRows = new Set([...anchors.values()].map(a => a.row));
   let peers = 0;
   for (const s of subjects) {
@@ -360,11 +367,21 @@ function problemPlacement(world, request, nodes, context, method, provider) {
     for (const t of subjects) if (t.i > s.i) constraint('apart.' + s.i + '.subject' + t.i, peer, 'subject' + s.i, 'subject' + t.i);
   }
   const packet = `@problem std.problem.request budget=3000 ${refs.var.map(r => 'var=' + r).join(' ')} ${refs.box.map(r => 'box=' + r).join(' ')} ${refs.constraint.map(r => 'constraint=' + r).join(' ')}\n${lines.join('\n')}`;
-  const decide = (answerText) => {
+  return { packet, softened };
+  };
+  if (!get(method, 'containRelation') || !get(method, 'peerRelation') || !plain(get(method, 'containRelation')) || !plain(get(method, 'peerRelation'))) return unavailable('missing-relation-policy');
+  const declaredProblem = build(false);
+  const decide = (answerText, problem) => {
     const answer = parse(answerText), result = answer.find(w => w.type === 'std.problem.result');
     const status = get(result, 'status');
     if (status !== 'solved') return unavailable('search-' + status, { conflict: result.attrs.conflict, provider: get(result, 'provider') });
     const value = Object.fromEntries(answer.filter(w => w.type === 'std.problem.assignment').filter(w => (result.attrs.assignment ?? []).includes('$' + w.id)).map(w => [get(w, 'var'), number(w, 'value')]));
+    // The relations whose declared distance the placement could not keep (relaxed problems only).
+    let relaxed;
+    if (problem.softened.length) {
+      const { model } = readProblem(parse(problem.packet));
+      relaxed = [...new Set(problem.softened.filter(b => violation(model, model.soft.find(c => c.name === b.name), value) > 0).map(b => b.relation))];
+    }
     const calls = [], options = [];
     for (const s of subjects) {
       const args = Object.create(null), put = (key, v) => { if (!validName(key) || Object.hasOwn(args, key)) return false; args[key] = v; return true; };
@@ -383,8 +400,20 @@ function problemPlacement(world, request, nodes, context, method, provider) {
       options.push({ id: 'placement.option.' + (s.i + 1), anchor: use.a.row, moving: s.moving, direction: wire('placement.relation.' + s.i, 'std.request.relation', { name: get(use.relation, 'relation') }),
         x, y, bounds: { x: value['x' + s.i], y: value['y' + s.i], width: s.size.width, height: s.size.height }, evidence: [], status: 'feasible' });
     }
-    return { calls, options, chosen: options[0], provider: get(result, 'provider') };
+    return { calls, options, chosen: options[0], provider: get(result, 'provider'), relaxed };
   };
-  const solved = solveProblem(packet, { provider });
-  return solved && typeof solved.then === 'function' ? solved.then(decide) : decide(solved);
+  // A method declared relax=gap answers a request whose declared distances no placement keeps with the nearest
+  // placement that keeps every relation's direction (or separation) instead, and names the relations it relaxed.
+  const relax = get(method, 'relax') === 'gap';
+  const then = (value, next) => value && typeof value.then === 'function' ? value.then(next) : next(value);
+  return then(solveProblem(declaredProblem.packet, { provider }), (answerText) => {
+    const first = decide(answerText, declaredProblem);
+    if (first.calls || !relax || !['search-exhausted', 'search-unsatisfiable'].includes(first.reason)) return first;
+    const relaxedProblem = build(true);
+    if (!relaxedProblem.softened.length) return first;
+    return then(solveProblem(relaxedProblem.packet, { provider }), (text) => {
+      const second = decide(text, relaxedProblem);
+      return second.calls ? second : first;
+    });
+  });
 }

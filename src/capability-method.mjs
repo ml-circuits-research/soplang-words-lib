@@ -144,17 +144,27 @@ function observationProperty(data,on,concept,tick) {
   });
 }
 
-function matchObject(world, data, types, kinds, target, selector, tick) {
+function matchObject(world, data, types, kinds, target, selector, tick, labels = []) {
   if (selector && !positiveEq(selector)) return { unsupported: true };
   const targetName = text(target, 'name');
   const matches = [], selection = [], support = new Set();
   let mapped = false, resolved = false;
   const bindings = new Map();
-  for (const object of data.objects) {
+  // Which members denote the target's kind: an observed kind a kind parameter accepts; else, when no enum accepts
+  // any of the kind's labels (a kind another operation of the same source type creates), an observed kind equal to
+  // one of its labels. A shared source type alone never proves it. Only when no member has such a kind and the
+  // target names nothing, a member the user named with one of the labels ("the box" for a rectangle named Box).
+  const denoted = kinds.size ? kinds : new Set(labels);
+  const typed = data.objects.filter((object) => { tick(); return types.has(text(object, 'on')); });
+  const named = (object) => targetName === undefined || text(object, 'name') === targetName;
+  let members = typed.filter((object) => (!denoted.size || denoted.has(text(object, 'kind'))) && named(object));
+  if (!members.length && denoted.size && targetName === undefined) {
+    const lower = new Set([...labels, ...kinds].map((label) => String(label).toLowerCase()));
+    members = typed.filter((object) => text(object, 'name') !== undefined && lower.has(String(text(object, 'name')).toLowerCase()));
+  }
+  for (const object of members) {
     tick();
     const on = text(object, 'on');
-    if (!types.has(on) || (kinds.size && !kinds.has(text(object, 'kind'))) ||
-        (targetName !== undefined && text(object, 'name') !== targetName)) continue;
     if (!selector) {
       matches.push(object);
       continue;
@@ -587,7 +597,7 @@ function compile(world, request, nodes, context) {
   if (!related.length) return output(tick, get(mode, 'target') === 'new' ? 'unavailable' : 'not-applicable', { reason: 'native-binding-gap', act, kind });
 
   const matched = get(target, 'mode') === 'existing'
-    ? matchObject(world, data, types, kinds, target, selector, tick) : { matches: [], selection: [], support: [] };
+    ? matchObject(world, data, types, kinds, target, selector, tick, labels) : { matches: [], selection: [], support: [] };
   if (matched.unsupported) return output(tick, 'not-applicable', { reason: 'unsupported-selector', act, kind });
   const { matches, selection, support: selectorSupport } = matched;
   const selected = matches.find((row) => text(row, 'id') === text(scope, 'focus')) ?? matches.at(-1);

@@ -70,15 +70,19 @@ function slotProblem({slot,direction,anchor,frame,peers,peerDecl,alignWeight,gri
   };
   const fx=frame?[frame.x,frame.x+frame.width-slot.width]:[-Infinity,Infinity], fy=frame?[frame.y,frame.y+frame.height-slot.height]:[-Infinity,Infinity];
   // The axis the direction moves along stays at the declared slot; when the subject's kind keeps out of observed
-  // regions (avoided), it may also move further away from the anchor, on the grid up to the frame, a soft cost that
-  // pulls it back to the slot, so the search steers around a region instead of rejecting the direction.
+  // regions (avoided) and the slot meets one, it may also move further away from the anchor, on the grid, as far as
+  // clearing those regions needs, a soft cost pulling it back to the slot: the search steers around a region instead
+  // of rejecting the direction.
+  // Only as far as clearing the avoided regions the declared slot meets needs (the slot itself when it meets none).
   const away=(axis,g,extent,lo,hi)=>{
-    const at=slot[axis];
-    if (!avoided.length || g===0) return `min=${n(at)} max=${n(at)}`;
-    const far=g>0?Math.min(Number.isFinite(hi)?hi:at+8*slot[extent],at+8*slot[extent]):Math.max(Number.isFinite(lo)?lo:at-8*slot[extent],at-8*slot[extent]);
-    const steps=Math.floor(Math.abs(far-at)/grid);
-    if (steps<1) return `min=${n(at)} max=${n(at)}`;
-    return g>0?`min=${n(at)} max=${n(at+steps*grid)} step=${n(grid)}`:`min=${n(at-steps*grid)} max=${n(at)} step=${n(grid)}`;
+    const at=slot[axis], cross=axis==='x'?['y','height']:['x','width'];
+    const meets=avoided.filter(r=>r[axis]<at+slot[extent]&&at<r[axis]+r[extent]&&r[cross[0]]<slot[cross[0]]+slot[cross[1]]&&slot[cross[0]]<r[cross[0]]+r[cross[1]]);
+    if (!meets.length || g===0) return `min=${n(at)} max=${n(at)}`;
+    const need=g>0?Math.max(...meets.map(r=>r[axis]+r[extent]-at)):Math.max(...meets.map(r=>at+slot[extent]-r[axis]));
+    const far=g>0?Math.min(Number.isFinite(hi)?hi:Infinity,at+need):Math.max(Number.isFinite(lo)?lo:-Infinity,at-need);
+    const steps=Math.ceil(Math.abs(far-at)/grid);
+    if (!(steps>=1)) return `min=${n(at)} max=${n(at)}`;
+    return g>0?`min=${n(at)} max=${n(Math.min(at+steps*grid,Number.isFinite(hi)?hi:Infinity))} step=${n(grid)}`:`min=${n(Math.max(at-steps*grid,Number.isFinite(lo)?lo:-Infinity))} max=${n(at)} step=${n(grid)}`;
   };
   add('var','vx',gx!==0||gy===0?'name=x '+away('x',gx,'width',...fx):'name=x '+free('x','x','width',...fx));
   add('var','vy',gy!==0||gx===0?'name=y '+away('y',gy,'height',...fy):'name=y '+free('y','y','height',...fy));

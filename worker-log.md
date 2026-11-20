@@ -6702,3 +6702,5 @@ No runtime code changed. Full source and bundle checks each passed 1015 with one
 `npm test` 1071 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs"` 1071 pass/0 fail.
 2026-11-20 — 0.239.0: one-relation placement keeps the subject in its own container (a new one in the context's unless its tool can make into the anchor's), measuring an anchor in another container by its observed box (PSys2: diagram nodes placed beside grouped nodes).
 `npm test` 1072 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs"` 1072 pass/0 fail.
+2026-11-20 — 0.240.0: a one-relation slot moves away only when it meets an avoided region and only as far as clearing it needs (fixes "near" subjects sliding far from the anchor, seen in PSys2 mass-eval).
+`npm test` 1072 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test "test/**/*.test.mjs"` 1072 pass/0 fail.

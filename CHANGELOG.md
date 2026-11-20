@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.240.0
+
+- Placement, one relation with `avoids=`: a direction's slot moves away from the anchor only when it meets an avoided region, and only as far as clearing those regions needs (0.238.0 let it move up to eight extents whenever the kind declared `avoids`, so the soft pull back lost to peer clearance and a "near" subject could land far from its anchor).
+
 ## 0.239.0
 
 - Placement, one relation: the subject lies in its own container when it moves; a new one in the anchor's container when its tool can make into it (`containerKey`) or that is the context's, else in the context's container. An anchor inside a container the subject is not in (a node inside a diagram group) is measured by its observed box and the subject keeps apart from the peers of its own container. Before, such an anchor was skipped and the request answered `no-feasible-placement`.

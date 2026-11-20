@@ -132,6 +132,7 @@ function records(world, scope, tick) {
     targets: scoped('target'), properties: scoped('property').sort(byOrder),
     objects: scoped('object').sort(byOrder), literals: all('value'),
     preferences: scoped('preference'), seeds: all('seed').sort(byOrder), guards: all('guard'), signals: scoped('signal'),
+    degrees: all('degree'), bases: all('base').filter((row) => !get(row, 'scope') || ref(world, row, 'scope')?.id === scope.id),
     fields: byRef('field', 'object'), params: byRef('parameter', 'operation'),
   };
 }
@@ -223,6 +224,62 @@ function lookupValue(world, data, condition, tick) {
   });
   const values = new Set(rows.map((row) => typedValue(get(row, 'value'), world, tick)));
   return { value: values.size === 1 ? values.values().next().value : absent, support: rows.map((row) => row.id) };
+}
+
+// The value a degree is taken from: the target's observed value when it exists, else the value the
+// operation would give a new object (a declared or host-measured std.capability.base), else an argument
+// already bound by the family or an initial seed, else the parameter's declared default.
+function baseValue(world, data, context, operation, property, param, args, tick) {
+  const name = text(param, 'name'), numeric = (value) => typeof value === 'number' && Number.isFinite(value);
+  if (context.selected) {
+    const fields = (data.fields.get(context.selected.id) || []).filter((field) => {
+      tick();
+      return get(property, 'binding') !== undefined && text(field, 'binding') === text(property, 'binding');
+    });
+    const values = fields.length === 1 ? listed(fields[0], 'value') : [];
+    const value = values.length === 1 ? typedValue(values[0], world, tick) : absent;
+    return numeric(value) ? { value, support: [fields[0].id] } : { value: absent };
+  }
+  const rows = data.bases.filter((row) => {
+    tick();
+    return text(row, 'operation') === text(operation, 'name') && text(row, 'parameter') === name &&
+      (!get(row, 'kind') || get(row, 'kind') === get(context.target, 'kind'));
+  });
+  if (rows.length) {
+    const values = new Set(rows.map((row) => typedValue(get(row, 'value'), world, tick)));
+    const [value] = values;
+    return values.size === 1 && numeric(value) ? { value, support: rows.map((row) => row.id) } : { value: absent };
+  }
+  const value = args.has(name) ? args.get(name) : typedValue(get(param, 'default'), world, tick);
+  return numeric(value) ? { value, support: [] } : { value: absent };
+}
+
+// A positive degree word ("big", "smaller") scales the base by its declared std.capability.degree factor,
+// or names an absolute literal when the property resolves values through the lookup table. A positive
+// factor condition with baseline=before multiplies the target's observed value by its number.
+function degreeValue(world, data, context, operation, condition, property, param, args, tick) {
+  const operator = get(condition, 'operator');
+  if (get(condition, 'polarity') !== 'positive') return { value: absent };
+  if (operator === 'degree' && get(property, 'codec') === 'lookup') return lookupValue(world, data, condition, tick);
+  if (!['number', 'integer'].includes(get(param, 'kind'))) return { value: absent };
+  let factor, support = [];
+  if (operator === 'degree') {
+    const rows = data.degrees.filter((row) => {
+      tick();
+      return text(row, 'concept') === text(condition, 'concept') && text(row, 'label') === text(condition, 'value');
+    });
+    const factors = new Set(rows.map((row) => number(row, 'factor')));
+    [factor] = factors;
+    support = rows.map((row) => row.id);
+    if (factors.size !== 1) return { value: absent, support };
+  } else if (operator === 'factor' && get(condition, 'baseline') === 'before' && context.selected) {
+    factor = Number(text(condition, 'value'));
+  } else return { value: absent };
+  if (!Number.isFinite(factor) || factor <= 0) return { value: absent, support };
+  const base = baseValue(world, data, context, operation, property, param, args, tick);
+  if (base.value === absent) return { value: absent, support };
+  const scaled = base.value * factor;
+  return { value: get(param, 'kind') === 'integer' ? Math.round(scaled) : scaled, support: [...support, ...base.support] };
 }
 
 function valueOf(world, data, condition, property, param, args, tick) {
@@ -360,8 +417,10 @@ function candidate(world, data, context, operation, mapping, results, tick) {
       return text(row, 'on') === on && text(row, 'concept') === text(condition, 'concept') && params.has(text(row, 'parameter'));
     });
     if (property) requested.add(text(property, 'parameter'));
-    const parameter = positiveEq(condition) && property && params.get(text(property, 'parameter'));
-    const value = parameter ? valueOf(world, data, condition, property, parameter, args, tick) : { value: absent };
+    const parameter = property && params.get(text(property, 'parameter'));
+    const value = !parameter ? { value: absent }
+      : positiveEq(condition) ? valueOf(world, data, condition, property, parameter, args, tick)
+      : degreeValue(world, data, context, operation, condition, property, parameter, args, tick);
     if (!parameter || !accepts(value.value, parameter, world, tick)) {
       if (property) unresolved.add(text(property, 'parameter'));
       skipped.push(condition);

@@ -112,3 +112,26 @@ test('the browser Z3 provider loads nothing where Z3 cannot run, declines, and i
   assert.equal(await provider.preload(), false);
   await assert.rejects(z3Provider({ strict: true }).preload(), /z3-unsupported/);
 });
+
+// align and on: a house beside the tree keeps the tree's ground line; a house on the lake rests on its top band.
+const beside = `@c1 std.problem.constraint name=on_page predicate=inside a=house b=page
+@c2 std.problem.constraint name=right_of_tree predicate=right a=house b=tree gap=60
+@c3 std.problem.constraint name=ground_line predicate=align a=house b=tree axis=y edge=1 strength=soft weight=1`;
+const resting = `@c1 std.problem.constraint name=on_page predicate=inside a=house b=page
+@c2 std.problem.constraint name=on_lake predicate=on a=house b=lake share=0.2`;
+const checkBeside = ({ x, y }) => { assert.ok(x >= 480 && x <= 540, 'right of the tree ' + x); assert.equal(y + 80, 320, 'bottom on the tree bottom'); };
+const checkResting = ({ x, y }) => {
+  assert.ok(y + 80 >= 380 && y + 80 <= 380 + 0.2 * 140, 'bottom in the top band of the lake ' + y);
+  assert.ok(x + 50 >= 100 && x + 50 <= 360, 'centre over the lake ' + x);
+};
+test('align as a soft term costs the distance: the internal search keeps the ground line; on rests on the top band', () => {
+  const w = new World(), a = result(w.compileRequest(scene(beside))), b = result(w.compileRequest(scene(resting)));
+  assert.equal(a.status, 'solved'); checkBeside(a.values);
+  assert.equal(b.status, 'solved'); checkResting(b.values);
+  assert.equal(result(w.compileRequest(scene(beside.replace('axis=y', 'axis=z')))).reason, 'invalid-constraint');
+});
+test('Z3 keeps the same ground line and rests the house on the lake', { skip: provider ? false : 'z3-solver unavailable' }, async () => {
+  const w = new World(), a = result(await w.compileRequest(scene(beside), { provider })), b = result(await w.compileRequest(scene(resting), { provider }));
+  assert.equal(a.status, 'solved'); assert.equal(a.provider, 'z3'); checkBeside(a.values);
+  assert.equal(b.status, 'solved'); assert.equal(b.provider, 'z3'); checkResting(b.values);
+});

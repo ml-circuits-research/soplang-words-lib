@@ -46,6 +46,13 @@ const types = {
   value: {
     concept: 'kind=atom present=true', label: 'kind=string present=true', value: 'kind=any present=true',
   },
+  degree: {
+    concept: 'kind=atom present=true', label: 'kind=string present=true', factor: 'kind=number present=true',
+  },
+  base: {
+    scope: 'kind=ref to=std.capability.scope', operation: 'kind=string present=true', kind: 'kind=atom',
+    parameter: 'kind=string present=true', value: 'kind=any present=true',
+  },
   seed: {
     scope: 'kind=ref to=std.capability.scope', kind: 'kind=atom',
     operation: 'kind=string', act: 'kind=atom', parameter: 'kind=string present=true',

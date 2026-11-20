@@ -198,11 +198,35 @@ function perform(world, request, nodes, context, method) {
 export function placementCircuit(world,request,nodes,context,provider) {
   const methods=world.ofType('std.placement.method');
   const method=methods.length===1?methods[0]:null;
-  // A method declared with search=problem, or a request with several relations or subjects, takes the general path.
-  const relations=nodes.filter(w=>w.type==='std.request.constraint'&&get(w,'operator')==='relation').length;
-  const general=method&&(get(method,'search')==='problem'||relations>1||nodes.filter(w=>w.type==='std.request.target').length>2);
+  // A method declared with search=problem, a request with several relations or subjects, a relation with declared
+  // predicates but no declared directions, with a declared fit, or whose declared region the anchor has, takes the
+  // general path.
+  const relations=nodes.filter(w=>w.type==='std.request.constraint'&&get(w,'operator')==='relation');
+  const general=method&&(get(method,'search')==='problem'||relations.length>1||nodes.filter(w=>w.type==='std.request.target').length>2||
+    relations.some(r=>needsProblem(world,method,context,nodes,r)));
   const result=!method?{reason:'method-binding',options:[]}:general?problemPlacement(world,request,nodes,context,method,provider):perform(world,request,nodes,context,method);
   return result&&typeof result.then==='function'?result.then(r=>summarise(r,context)):summarise(result,context);
+}
+
+function needsProblem(world,method,context,nodes,relation) {
+  const name=get(relation,'relation'), declared=world.ofType('std.placement.predicate').filter(p=>ref(p,'method')===method.id&&get(p,'relation')===name);
+  if (!declared.length) return false;
+  // Fitting a subject to its place is done only by the general path.
+  if (declared.some(p=>get(p,'fit')!==undefined) || !world.ofType(get(method,'directionType')).some(d=>get(d,'relation')===name)) return true;
+  const goal=nodes.find(w=>w.id===ref(relation,'goal')), rows=goal&&observed(world,method,context);
+  if (!rows) return false;
+  const entities=new Set(rows.filter(o=>matches(o,goal)).map(o=>literal(o.box,'entity')));
+  return regionsOf(world,context).some(r=>entities.has(r.entity)&&declared.some(p=>get(p,'region')===r.kind));
+}
+
+// The regions of observed things (std.placement.region: a part of a thing's box where others go, such as the
+// water of a lake or the surface of a table, with the kinds it usually holds), in the scope of the context.
+function regionsOf(world,context) {
+  return world.ofType('std.placement.region').filter(r=>fields.every(k=>r.attrs[k]===undefined||literal(r,k)===literal(context,k))).map(r=>{
+    const x=number(r,'min_x'), y=number(r,'min_y'), width=number(r,'max_x')-x, height=number(r,'max_y')-y;
+    return {entity:literal(r,'entity'),kind:get(r,'kind'),holds:(r.attrs.holds??[]).map(str),
+      geometry:[x,y,width,height].every(Number.isFinite)&&width>=0&&height>=0?{x,y,width,height}:null};
+  });
 }
 
 function summarise(result,context) {
@@ -225,8 +249,10 @@ function summarise(result,context) {
 
 // The general path: every relation of the request, every new or moved subject, the observed peers and the
 // frame become one std.problem, solved together by the configured provider (the internal search, or Z3).
-// Which predicate a relation means, its gap, strength and weight are std.placement.predicate facts of the
-// method; nothing here names a relation.
+// Which predicate a relation means, its gap, strength and weight, the alignment it keeps (align, edge,
+// alignWeight: a soft term), the region of the anchor it goes to (region, held) and the share of that place a
+// subject may take (fit: a larger one is drawn smaller when the tool has a sizeKey) are std.placement.predicate
+// facts of the method; nothing here names a relation.
 function problemPlacement(world, request, nodes, context, method, provider) {
   const unavailable = (reason, extra = {}) => ({ reason, options: [], ...extra });
   const targets = nodes.filter(w => w.type === 'std.request.target');
@@ -239,13 +265,25 @@ function problemPlacement(world, request, nodes, context, method, provider) {
   const frameBox = ref(context, 'bounds') && world.get(ref(context, 'bounds')), frame = frameBox && sameScope(frameBox, context) && geometry(frameBox);
   if (!frame) return unavailable('missing-frame');
   const declared = world.ofType('std.placement.predicate').filter(p => ref(p, 'method') === method.id);
-  const declaration = (relation) => one(declared.filter(p => get(p, 'relation') === relation));
+  const plain = (relation) => one(declared.filter(p => get(p, 'relation') === relation && get(p, 'region') === undefined));
+  const regions = regionsOf(world, context);
+  // The declaration a relation takes for its anchor and subject: one whose region the anchor has (holding the
+  // subject's kind when it says held=true), in the order declared; else the one without a region.
+  const declaration = (relation, anchorRow, native) => {
+    for (const decl of declared.filter(p => get(p, 'relation') === relation && get(p, 'region') !== undefined)) {
+      const region = regions.find(r => r.entity === literal(anchorRow.box, 'entity') && r.kind === get(decl, 'region') && r.geometry &&
+        (get(decl, 'held') !== 'true' || r.holds.includes(native)));
+      if (region) return { decl, region };
+    }
+    const decl = plain(relation);
+    return decl ? { decl } : null;
+  };
   const byId = new Map(targets.map(t => [t.id, t])), subjects = [], anchors = new Map();
   const name = (prefix, i) => prefix + i;
   for (const relation of relations) {
     const subject = byId.get(ref(relation, 'target')), goal = byId.get(ref(relation, 'goal'));
     if (!subject || !goal || subject === goal || get(goal, 'mode') !== 'existing') return unavailable('request-targets');
-    if (!declaration(get(relation, 'relation'))) return unavailable('undeclared-relation');
+    if (!declared.some(p => get(p, 'relation') === get(relation, 'relation'))) return unavailable('undeclared-relation');
     if (!anchors.has(goal.id)) {
       const matched = rows.filter(o => matches(o, goal));
       if (matched.length !== 1 || !matched[0].geometry) return unavailable(matched.length ? 'ambiguous-anchor' : 'unbound-target');
@@ -264,6 +302,29 @@ function problemPlacement(world, request, nodes, context, method, provider) {
     }
   }
   if (subjects.length > 16 || rows.length > 512) return unavailable('budget');
+  // Each relation's declaration and the box it is measured against (the anchor's, or its region's).
+  const uses = [];
+  for (const relation of relations) {
+    const s = subjects.find(x => x.target.id === ref(relation, 'target')), a = anchors.get(ref(relation, 'goal'));
+    const chosen = declaration(get(relation, 'relation'), a.row, literal(s.kind, 'native'));
+    if (!chosen) return unavailable('undeclared-relation');
+    uses.push({ relation, s, a, ...chosen });
+  }
+  // A subject larger than the declared share (fit) of the place it goes to is drawn smaller, when its tool can say
+  // a size (sizeKey: the larger side of its box); its largest side stays a whole number.
+  for (const s of subjects) {
+    if (!get(s.tool, 'sizeKey') || s.moving) continue;
+    let scale = 1;
+    for (const use of uses.filter(u => u.s === s && Number.isFinite(number(u.decl, 'fit')))) {
+      const fit = number(use.decl, 'fit'), place = use.region?.geometry ?? use.a.row.geometry;
+      if (place.width > 0) scale = Math.min(scale, fit * place.width / s.size.width);
+      if (place.height > 0) scale = Math.min(scale, fit * place.height / s.size.height);
+    }
+    if (scale >= 1) continue;
+    const side = Math.max(s.size.width, s.size.height), drawn = Math.max(1, Math.floor(side * scale));
+    s.size = { width: s.size.width * drawn / side, height: s.size.height * drawn / side };
+    s.drawn = drawn;
+  }
   const grid = Number.isFinite(number(method, 'grid')) ? number(method, 'grid') : Math.max(1, Math.min(frame.width, frame.height) / 40);
   const lines = [], refs = { var: [], box: [], constraint: [] };
   const add = (kind, id, text) => { lines.push('@' + id + ' std.problem.' + kind + ' ' + text); refs[kind].push('$' + id); };
@@ -276,14 +337,17 @@ function problemPlacement(world, request, nodes, context, method, provider) {
   }
   for (const a of anchors.values()) fixed(a.box, a.row.geometry);
   const constraint = (id, decl, a, b) => {
-    const gap = get(decl, 'gap'), strength = get(decl, 'strength') ?? 'hard', weight = get(decl, 'weight');
-    add('constraint', id, `name=${id} predicate=${get(decl, 'predicate')} a=${a} b=${b}${gap !== undefined ? ' gap=' + gap : ''} strength=${strength}${weight !== undefined ? ' weight=' + weight : ''}`);
+    const gap = get(decl, 'gap'), strength = get(decl, 'strength') ?? 'hard', weight = get(decl, 'weight'), share = get(decl, 'share');
+    add('constraint', id, `name=${id} predicate=${get(decl, 'predicate')} a=${a} b=${b}${gap !== undefined ? ' gap=' + gap : ''}${share !== undefined ? ' share=' + share : ''} strength=${strength}${weight !== undefined ? ' weight=' + weight : ''}`);
   };
-  relations.forEach((relation, n) => {
-    const s = subjects.find(x => x.target.id === ref(relation, 'target')), a = anchors.get(ref(relation, 'goal'));
-    constraint('relation' + n, declaration(get(relation, 'relation')), 'subject' + s.i, a.box);
+  uses.forEach((use, n) => {
+    let target = use.a.box;
+    if (use.region) { target = 'region' + n; fixed(target, use.region.geometry); }
+    constraint('relation' + n, use.decl, 'subject' + use.s.i, target);
+    const axis = get(use.decl, 'align');
+    if (axis) add('constraint', 'align' + n, `name=align${n} predicate=align a=subject${use.s.i} b=${target} axis=${axis} edge=${get(use.decl, 'edge') ?? 0.5} strength=soft weight=${get(use.decl, 'alignWeight') ?? 1}`);
   });
-  const contain = declaration(get(method, 'containRelation')), peer = declaration(get(method, 'peerRelation'));
+  const contain = plain(get(method, 'containRelation')), peer = plain(get(method, 'peerRelation'));
   if (!contain || !peer) return unavailable('missing-relation-policy');
   const anchorRows = new Set([...anchors.values()].map(a => a.row));
   let peers = 0;
@@ -301,7 +365,7 @@ function problemPlacement(world, request, nodes, context, method, provider) {
     const status = get(result, 'status');
     if (status !== 'solved') return unavailable('search-' + status, { conflict: result.attrs.conflict, provider: get(result, 'provider') });
     const value = Object.fromEntries(answer.filter(w => w.type === 'std.problem.assignment').filter(w => (result.attrs.assignment ?? []).includes('$' + w.id)).map(w => [get(w, 'var'), number(w, 'value')]));
-    const calls = [];
+    const calls = [], options = [];
     for (const s of subjects) {
       const args = Object.create(null), put = (key, v) => { if (!validName(key) || Object.hasOwn(args, key)) return false; args[key] = v; return true; };
       for (const arg of world.ofType('std.placement.argument').filter(w => ref(w, 'binding') === s.kind.id)) if (!put(get(arg, 'key'), get(arg, 'value'))) return unavailable('argument-collision');
@@ -310,11 +374,16 @@ function problemPlacement(world, request, nodes, context, method, provider) {
       const y = value['y' + s.i] + s.size.height * (Number.isFinite(originY) ? originY : number(s.tool, 'originY'));
       if (!put(get(s.tool, 'xKey'), String(x)) || !put(get(s.tool, 'yKey'), String(y)) ||
           !(s.creation ? put(get(s.tool, 'kindKey'), quote(literal(s.kind, 'native'))) : put(get(s.tool, 'idsKey'), quote(literal(s.moving.box, 'entity'))))) return unavailable('argument-collision');
+      if (s.drawn !== undefined && !put(get(s.tool, 'sizeKey'), String(s.drawn))) return unavailable('argument-collision');
       if (s.creation && get(s.tool, 'containerKey') && !put(get(s.tool, 'containerKey'), quote(literal(context, 'container')))) return unavailable('argument-collision');
       if (!validName(get(s.tool, 'operation'))) return unavailable('invalid-operation');
       calls.push(wire('placement.call.' + s.i, get(s.tool, 'operation'), args));
+      // The geometry each subject is given, as an option the caller can check against what it observes after.
+      const use = uses.find(u => u.s === s);
+      options.push({ id: 'placement.option.' + (s.i + 1), anchor: use.a.row, moving: s.moving, direction: wire('placement.relation.' + s.i, 'std.request.relation', { name: get(use.relation, 'relation') }),
+        x, y, bounds: { x: value['x' + s.i], y: value['y' + s.i], width: s.size.width, height: s.size.height }, evidence: [], status: 'feasible' });
     }
-    return { calls, options: [], provider: get(result, 'provider') };
+    return { calls, options, chosen: options[0], provider: get(result, 'provider') };
   };
   const solved = solveProblem(packet, { provider });
   return solved && typeof solved.then === 'function' ? solved.then(decide) : decide(solved);

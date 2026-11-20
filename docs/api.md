@@ -250,8 +250,8 @@ or decision facts are added to the receiving World.
 `std.problem` is the search step of compilation: variables with declared domains,
 boxes and spans built from variables or numbers, hard constraints and soft terms
 over a fixed set of predicates (`inside`, `near`, `apart`, `left`, `right`,
-`above`, `below`, `disjoint`, `within`, `le`, `ge`, `eq`, and the soft-only
-`minimise` and `maximise`), a budget in milliseconds and a depth (`quick`, or
+`above`, `below`, `align`, `on`, `disjoint`, `within`, `le`, `ge`, `eq`, and the
+soft-only `minimise` and `maximise`), a budget in milliseconds and a depth (`quick`, or
 `alternatives` with `count`). The built-in provider searches each variable's grid
 and reports `exhausted` when no grid point holds, never a proof of impossibility.
 `node/smt-z3.mjs` supplies a Z3 provider for the same packet (with the optional
@@ -267,6 +267,25 @@ whether it can run. Where it cannot, the provider declines and the internal sear
 answers. A provider declines a model by answering `null`, and the result then says
 `provider=internal`. Every solved assignment is checked again against the hard
 constraints before it is returned.
+
+`align` keeps one point of two boxes on the same line: on `axis` (`x` or `y`),
+the point at `edge` (0 the start, 0.5 the centre, 1 the end) of a is the same
+point of b; as a soft term it costs the distance times its weight (in Z3 too), so
+a tree beside a house can keep the house's ground line. `on` rests a on b: the
+bottom of a lies in the top band of b (`share` of its height, 0.25 by default,
+plus `gap`) and the centre of a is over b.
+
+Placement takes this path for a request with several relations or subjects, a
+relation with declared predicates and no declared directions or with a declared
+`fit`, or one whose declared region the anchor has. Each `std.placement.predicate` of the method may
+add `align`/`edge`/`alignWeight` (a soft alignment with the anchor), `region`
+(the anchor's `std.placement.region` of that kind is the box, such as the water
+of a lake or the surface of a table; with `held=true` only when the region holds
+the subject's kind) and `fit` (a new subject larger than that share of its place
+is drawn smaller, when its `std.placement.tool` declares `sizeKey`, the larger
+side of its box). The result names each subject's geometry as a
+`std.placement.option` and the first one as its `choice`, so the caller can check
+what it observes after the call.
 
 ```js
 import { z3Provider } from './smt-z3.mjs';     // fetches nothing yet

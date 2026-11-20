@@ -14,7 +14,8 @@ const schema = {
   box: { name: 'kind=atom present=true', x: 'kind=any present=true', y: 'kind=any present=true', w: 'kind=any present=true', h: 'kind=any present=true' },
   span: { name: 'kind=atom present=true', start: 'kind=any present=true', length: 'kind=any present=true' },
   constraint: { name: 'kind=atom present=true', predicate: 'kind=atom present=true', a: 'kind=atom', b: 'kind=atom', gap: 'kind=number',
-    value: 'kind=any', strength: 'kind=atom enum=hard enum=soft', weight: 'kind=number' },
+    value: 'kind=any', strength: 'kind=atom enum=hard enum=soft', weight: 'kind=number', axis: 'kind=atom enum=x enum=y', edge: 'kind=number',
+    share: 'kind=number' },
   result: { status: 'kind=atom enum=solved enum=unsatisfiable enum=exhausted enum=budget enum=invalid present=true', provider: 'kind=atom',
     reason: 'kind=atom', cost: 'kind=number', assignment: 'type=std.problem.assignment many=true', conflict: 'kind=atom many=true',
     alternative: 'type=std.problem.alternative many=true', explored: 'kind=integer' },
@@ -43,6 +44,8 @@ export const PREDICATES = {
   right: { args: 'box box', about: 'a starts right of b ends, by at most gap when gap is given' },
   above: { args: 'box box', about: 'a ends above b starts, by at most gap when gap is given' },
   below: { args: 'box box', about: 'a starts below b ends, by at most gap when gap is given' },
+  align: { args: 'box box', about: 'on axis (x or y), the point of a at edge (0 its start, 0.5 its centre, 1 its end; 0.5 by default) is the same point of b; as a soft term it costs the distance' },
+  on: { args: 'box box', about: 'a rests on b: the bottom of a lies in the top band of b (share of its height, 0.25 by default, plus gap) and the centre of a is over b' },
   disjoint: { args: 'span span', about: 'the half-open spans a and b do not overlap' },
   within: { args: 'span span', about: 'span a lies within span b' },
   le: { args: 'var number', about: 'variable a is at most value' },
@@ -86,9 +89,10 @@ export function readProblem(wires) {
   for (const token of request.attrs.constraint ?? []) {
     const row = take(token, 'constraint'); if (!row) return { invalid: 'invalid-constraint' };
     const c = { name: field(row, 'name'), predicate: field(row, 'predicate'), a: field(row, 'a'), b: field(row, 'b'),
-      gap: num(field(row, 'gap')), value: num(field(row, 'value')), weight: num(field(row, 'weight')) ?? 1, strength: field(row, 'strength') ?? 'hard' };
+      gap: num(field(row, 'gap')), value: num(field(row, 'value')), weight: num(field(row, 'weight')) ?? 1, strength: field(row, 'strength') ?? 'hard',
+      axis: field(row, 'axis') ?? 'x', edge: num(field(row, 'edge')) ?? 0.5, share: num(field(row, 'share')) ?? 0.25 };
     const spec = PREDICATES[c.predicate];
-    if (!atom(c.name) || !spec) return { invalid: 'invalid-constraint' };
+    if (!atom(c.name) || !spec || !['x', 'y'].includes(c.axis) || !(c.edge >= 0 && c.edge <= 1) || !(c.share >= 0 && c.share <= 1)) return { invalid: 'invalid-constraint' };
     const kinds = spec.args.split(' ');
     if (kinds[0] === 'box' && (!model.boxes.has(c.a) || !model.boxes.has(c.b))) return { invalid: 'invalid-constraint-box' };
     if (kinds[0] === 'span' && (!model.spans.has(c.a) || !model.spans.has(c.b))) return { invalid: 'invalid-constraint-span' };
@@ -130,6 +134,9 @@ export function violation(model, c, a) {
     case 'right': return pos(q.x + q.w - p.x) + beyond(p.x - (q.x + q.w));
     case 'above': return pos(p.y + p.h - q.y) + beyond(q.y - (p.y + p.h));
     case 'below': return pos(q.y + q.h - p.y) + beyond(p.y - (q.y + q.h));
+    case 'align': return c.axis === 'y' ? Math.abs(p.y + p.h * c.edge - (q.y + q.h * c.edge)) : Math.abs(p.x + p.w * c.edge - (q.x + q.w * c.edge));
+    case 'on': { const bottom = p.y + p.h, centre = p.x + p.w / 2;
+      return pos(q.y - bottom) + pos(bottom - (q.y + q.h * c.share + (gap ?? 0))) + pos(q.x - centre) + pos(centre - (q.x + q.w)); }
     default: return Infinity;
   }
 }

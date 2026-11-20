@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.229.0
+
+- `std.problem`: two predicates. `align` keeps one point of two boxes on the same line (`axis` x or y, `edge` 0, 0.5 or 1); as a soft term it costs the distance times its weight, with the internal search and Z3. `on` rests a box on the top band of another (`share` of its height plus `gap`), its centre over it. Z3 sums real and integer costs.
+- Placement: a `std.placement.predicate` may declare a soft alignment with the anchor (`align`, `edge`, `alignWeight`), the anchor's region to use (`region`, `held`: a `std.placement.region` such as the water of a lake or the surface of a table) and the share of that place a new subject may take (`fit`: a larger one is drawn smaller through the tool's `sizeKey`). A relation with predicates but no directions, with a declared `fit`, or whose region the anchor has takes the `std.problem` path. That path now names each subject's geometry as a `std.placement.option` and the first as the result's `choice`.
+
 ## 0.228.0
 
 - `smt-z3.mjs` (source `browser/smt-z3.mjs`): the Z3 provider for browsers, with the same contract as `node/smt-z3.mjs`. It loads Z3 only when the first problem arrives, from `vendor/z3-solver-5.4.1/` next to it (the WebAssembly module stored gzipped, 8.9 MB, inflated with DecompressionStream; versioned names, so caches keep it), in the page or a module worker, and from another origin with CORS. Z3 needs a cross-origin isolated page; elsewhere the provider declines. Measured in headless Chromium by `tools/browser-z3-check.mjs`.

@@ -75,3 +75,52 @@ test('an undeclared relation is refused before any search',{skip},()=>{
   const {result}=read(fixture().compileRequest(request(nearLake.replace('relation=near','relation=orbiting'))));
   assert.equal(result.attrs.reason[0],'undeclared-relation');
 });
+
+// Alignment, regions and fitting, declared per relation: a house right of the tree keeps the tree's ground line;
+// a boat in the lake goes into the lake's water region and is drawn smaller to fit; a cup on the table rests on its
+// surface region. The result names the geometry each subject is given, so the caller can check it after the call.
+function declaredFixture() {
+  const world=fixture();
+  world.load(`@right std.placement.predicate method=$place relation=right predicate=right gap=60 align=y edge=1 alignWeight=0.2
+  @in.water std.placement.predicate method=$place relation=in predicate=inside region=water held=true fit=0.6
+  @in std.placement.predicate method=$place relation=in predicate=inside fit=0.6
+  @on.surface std.placement.predicate method=$place relation=on predicate=on region=surface gap=4 share=0 align=x alignWeight=0.2
+  @on std.placement.predicate method=$place relation=on predicate=on
+  @sizer std.placement.tool act=make operation=example.paint kindKey=kind xKey=x yKey=y sizeKey=size originX=0 originY=0
+  @boat std.placement.kind concept=boat native=boat binding=$sizer width=160 height=160
+  @cup std.placement.kind concept=cup native=cup binding=$sizer width=40 height=40
+  @water std.placement.region entity="lake" kind=water ${context} min_x=310 min_y=410 max_x=550 max_y=490 holds="boat" holds="fish"
+  @table.top std.placement.region entity="table" kind=surface ${context} min_x=105 min_y=420 max_x=245 max_y=420`);
+  world.load(observed('table','table',100,380,150,120));
+  return world;
+}
+const ask=(subject,relation,anchor)=>`@s std.request.source text="add"
+@r std.request act=make mood=do source=$s
+@t.new std.request.target request=$r kind=${subject} mode=new
+@t.anchor std.request.target request=$r kind=${anchor} mode=existing
+@c std.request.constraint request=$r target=$t.new concept=place operator=relation relation=${relation} goal=$t.anchor polarity=positive character=requirement
+@here std.placement.context request=$r ${context} container="page" bounds=$page.box`;
+function placed(text) {
+  const rows=parse(text),result=rows[0],call=rows.find(w=>(result.attrs.call??[]).includes('$'+w.id));
+  const option=rows.find(w=>'$'+w.id===result.attrs.choice?.[0]),n=(w,k)=>Number(w.attrs[k][0]);
+  assert.equal(result.attrs.status[0],'compiled',JSON.stringify(result.attrs));
+  assert.ok(option,'the result names the chosen geometry');
+  const size=call.attrs.size?n(call,'size'):undefined,bounds={x0:n(option,'minX'),y0:n(option,'minY'),x1:n(option,'maxX'),y1:n(option,'maxY')};
+  assert.equal(bounds.x0,n(call,'x'));assert.equal(bounds.y0,n(call,'y'));
+  return {call,size,bounds};
+}
+for (const [label,run] of [['internal search',(w,t)=>w.compileRequest(t)],['Z3',(w,t)=>w.compileRequest(t,{provider})]]) {
+  const skipZ3=label==='Z3'&&!provider&&'z3-solver unavailable';
+  test('declared alignment, regions and fitting ('+label+')',{skip:skip||skipZ3},async()=>{
+    const beside=placed(await run(declaredFixture(),request('@c2 std.request.constraint request=$r target=$t.house concept=place operator=relation relation=right goal=$t.tree polarity=positive character=requirement')));
+    assert.ok(beside.bounds.x0>=680&&beside.bounds.x0<=740,'right of the tree '+JSON.stringify(beside.bounds));
+    assert.equal(beside.bounds.y1,450,'on the ground line of the tree');
+    const boat=placed(await run(declaredFixture(),ask('boat','in','lake')));
+    assert.equal(boat.size,48,'drawn at 0.6 of the water height');
+    assert.ok(boat.bounds.x0>=310&&boat.bounds.x1<=550&&boat.bounds.y0>=410&&boat.bounds.y1<=490,'in the water '+JSON.stringify(boat.bounds));
+    const cup=placed(await run(declaredFixture(),ask('cup','on','table')));
+    assert.equal(cup.size,undefined,'a cup that fits keeps its own size');
+    assert.ok(cup.bounds.y1>=420&&cup.bounds.y1<=424,'resting on the table surface '+JSON.stringify(cup.bounds));
+    assert.ok(Math.abs((cup.bounds.x0+cup.bounds.x1)/2-175)<=5,'centred on the surface, within half a grid step');
+  });
+}

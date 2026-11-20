@@ -903,12 +903,14 @@ print(p.steps.length, p.notHonoured.map((x) => `${x.words}: ${x.why}`));
 
 ## Place, schedule or choose under constraints, with a proof when it cannot be done
 
-*In `solveProblem` and `compileRequest` (`std.problem`), `node/smt-z3.mjs`; since 0.226.*
+*In `solveProblem` and `compileRequest` (`std.problem`), `node/smt-z3.mjs`, `smt-z3.mjs` (browsers, since 0.228); since 0.226.*
 *Works on: any packet of variables with declared domains, boxes and spans, and constraints over the fixed predicates.*
 
 One problem is solved at once: a new house near the tree, off the lake and on the page is one decision, not
 four. The built-in search runs anywhere and says `exhausted` when no grid point holds; the optional Z3 provider
-proves `unsatisfiable` and names the conflicting constraints.
+proves `unsatisfiable` and names the conflicting constraints. In Node it comes from the z3-solver package; in a
+browser `smt-z3.mjs` loads Z3 on the first problem from the library's site, on a cross-origin isolated page, and
+otherwise declines so the built-in search answers (`provider=internal`).
 
 ```js run
 const w = new World();

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.228.0
+
+- `smt-z3.mjs` (source `browser/smt-z3.mjs`): the Z3 provider for browsers, with the same contract as `node/smt-z3.mjs`. It loads Z3 only when the first problem arrives, from `vendor/z3-solver-5.4.1/` next to it (the WebAssembly module stored gzipped, 8.9 MB, inflated with DecompressionStream; versioned names, so caches keep it), in the page or a module worker, and from another origin with CORS. Z3 needs a cross-origin isolated page; elsewhere the provider declines. Measured in headless Chromium by `tools/browser-z3-check.mjs`.
+- A `std.problem` provider may decline a model by answering `null`; the internal search then answers and the result says `provider=internal`.
+- The Z3 translation is shared by both providers (`browser/z3-translate.mjs`); `tools/vendor-z3.mjs` rebuilds the vendored Z3 files (z3-solver package and an esbuild binary given by `Z3_SOLVER` and `ESBUILD`).
+
 ## 0.227.0
 
 - Placement takes a general path through `std.problem` when its method declares `search=problem` or a request carries several relations or subjects: every relation, every new or moved subject, the observed peers and the frame are solved together by the configured provider (`compileRequest(sop, { provider })`). Which predicate a relation means, with its gap, strength and weight, is declared by `std.placement.predicate` facts of the method. An unsatisfiable request is refused as `search-unsatisfiable` with the conflicting constraints in `conflict`. `std.placement.result` now lists every call.

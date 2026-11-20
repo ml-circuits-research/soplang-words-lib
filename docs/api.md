@@ -256,8 +256,29 @@ over a fixed set of predicates (`inside`, `near`, `apart`, `left`, `right`,
 and reports `exhausted` when no grid point holds, never a proof of impossibility.
 `node/smt-z3.mjs` supplies a Z3 provider for the same packet (with the optional
 `z3-solver` package): it reports `unsatisfiable` with the conflicting constraints
-named in `conflict`. Every solved assignment is checked again against the hard
+named in `conflict`. `smt-z3.mjs`, published next to `sopworld.mjs` (source
+`browser/smt-z3.mjs`), is the same provider for browsers: it loads Z3 from
+`vendor/z3-solver-<version>/` beside it only when the first problem arrives
+(about 9 MB gzipped, cached by the browser under the versioned name) and keeps the
+context for later problems. Z3 runs its solver in WebAssembly threads, so it works
+only on a cross-origin isolated page (COOP `same-origin` with COEP `require-corp` or
+`credentialless`, served by the host or by a service worker); `z3Supported()` says
+whether it can run. Where it cannot, the provider declines and the internal search
+answers. A provider declines a model by answering `null`, and the result then says
+`provider=internal`. Every solved assignment is checked again against the hard
 constraints before it is returned.
+
+```js
+import { z3Provider } from './smt-z3.mjs';     // fetches nothing yet
+const provider = z3Provider({ onLoad: (info) => console.log(info.status, info.ms) });
+const placed = await world.compileRequest(problemSop, { provider });   // Z3 on an isolated page, else the internal search
+```
+
+`z3Provider({ base, strict, onLoad })`: `base` is the directory of the Z3 files
+(another origin works when it sends CORS headers, as GitHub Pages does), `strict`
+rejects instead of declining, and `provider.preload()` starts the load early.
+`tools/browser-z3-check.mjs` (`npm run test:browser-z3`) runs it in headless Chromium;
+`tools/vendor-z3.mjs` rebuilds the vendored files.
 
 ```js
 const placed = world.compileRequest(`

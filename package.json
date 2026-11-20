@@ -1,6 +1,6 @@
 {
   "name": "sopworld",
-  "version": "0.227.0",
+  "version": "0.228.0",
   "description": "Consistency matrices for SOP Lang circuits: self-consistent micro-worlds with deduction, abduction, induction and logical completion. Zero dependencies.",
   "type": "module",
   "main": "./src/index.mjs",
@@ -14,12 +14,14 @@
       "default": "./docs/sopworld.mjs"
     },
     "./node/solvers.mjs": "./node/solvers.mjs",
-    "./node/smt-z3.mjs": "./node/smt-z3.mjs"
+    "./node/smt-z3.mjs": "./node/smt-z3.mjs",
+    "./browser/smt-z3.mjs": "./browser/smt-z3.mjs"
   },
   "files": [
     "src",
     "bin",
     "node",
+    "browser",
     "docs",
     "tools",
     "SPEC.md",
@@ -36,6 +38,7 @@
     "test:slow": "node tools/slowest-tests.mjs",
     "test:src": "node --test \"test/**/*.test.mjs\"",
     "test:browser": "node tools/browser-check.mjs",
+    "test:browser-z3": "node tools/browser-z3-check.mjs",
     "bench": "node tools/bench.mjs",
     "examples": "node examples/deduction.mjs && node examples/abduction.mjs && node examples/induction.mjs && node examples/chat.mjs && node examples/twin.mjs && node examples/workflow.mjs && node examples/compose.mjs && node examples/solvers.mjs && node examples/time.mjs && node examples/aggregates.mjs && node examples/reader.mjs && node examples/space.mjs && node examples/delegation.mjs",
     "docs": "python3 tools/build_docs.py"

@@ -6,6 +6,8 @@
 //                       the global `sopworld`;   const sopworld = require('./sopworld.js')
 //   docs/sopworld.d.ts  type declarations
 //   docs/worlds.mjs, docs/scheduling.mjs   the demonstration worlds used by the playground
+//   docs/smt-z3.mjs, docs/z3-translate.mjs  the optional browser Z3 provider (browser/), copied as they are;
+//                       it loads docs/vendor/z3-solver-<version>/ (tools/vendor-z3.mjs) only when used
 //
 // Each source module becomes one function scope, so names never collide. The bundler
 // understands exactly the import and export forms used in src/ and stops on any other.
@@ -95,6 +97,11 @@ writeFileSync(resolve(out, 'sopworld.js'), umd);
 copyFileSync(resolve(root, 'src/index.d.ts'), resolve(out, 'sopworld.d.ts'));
 copyFileSync(resolve(root, 'examples/worlds.mjs'), resolve(out, 'worlds.mjs'));
 copyFileSync(resolve(root, 'examples/scheduling.mjs'), resolve(out, 'scheduling.mjs'));
+for (const file of ['smt-z3.mjs', 'z3-translate.mjs']) copyFileSync(resolve(root, 'browser', file), resolve(out, file));
+{
+  const z3 = /export const z3Version = '([^']+)'/.exec(readFileSync(resolve(root, 'browser/smt-z3.mjs'), 'utf8'))[1];
+  if (!existsSync(resolve(out, `vendor/z3-solver-${z3}/z3-built.wasm.gz`))) console.warn(`build: docs/vendor/z3-solver-${z3}/ is missing; run tools/vendor-z3.mjs`);
+}
 writeFileSync(resolve(out, '.nojekyll'), '');
 // docs/*.js are classic scripts; this keeps Node from reading them as ES modules
 writeFileSync(resolve(out, 'package.json'), JSON.stringify({ type: 'commonjs', private: true }, null, 2) + '\n');

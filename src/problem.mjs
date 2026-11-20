@@ -196,7 +196,8 @@ export function problemResult(answer) {
 
 /**
  * Solve a std.problem packet. `provider(model)` may be supplied (for example the Z3 provider); it returns the
- * same answer shape as solveInternal, synchronously or as a promise. Every solved assignment is read back
+ * same answer shape as solveInternal, synchronously or as a promise, or null to decline the model (the internal
+ * search then answers). Every solved assignment is read back
  * against the hard constraints before it is reported, so a provider defect cannot pass as a solution.
  */
 export function solveProblem(sop, { provider } = {}) {
@@ -211,6 +212,9 @@ export function solveProblem(sop, { provider } = {}) {
     }
     return problemResult(answer);
   };
+  // A provider may decline a model (answer null or undefined), for example when its engine cannot run here;
+  // the internal search then answers, and its result says provider=internal.
+  const settle = (answer) => finish(answer ?? solveInternal(model));
   const answer = provider ? provider(model) : solveInternal(model);
-  return answer && typeof answer.then === 'function' ? answer.then(finish) : finish(answer);
+  return answer && typeof answer.then === 'function' ? answer.then(settle) : settle(answer);
 }

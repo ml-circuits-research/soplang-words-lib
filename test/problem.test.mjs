@@ -93,3 +93,22 @@ test('Z3 returns distinct alternatives', { skip: provider ? false : 'z3-solver u
   const w = new World(), r = result(await w.compileRequest(scene(near, 'depth=alternatives count=3'), { provider }));
   assert.equal(r.status, 'solved'); assert.equal(r.alternatives, 2);
 });
+
+test('a provider may decline a model, and the internal search answers under its own name', async () => {
+  const w = new World();
+  const declined = result(await w.compileRequest(scene(near), { provider: async () => null }));
+  assert.equal(declined.status, 'solved'); assert.equal(declined.provider, 'internal');
+  assert.equal(result(await w.compileRequest(scene(near), { provider: () => undefined })).provider, 'internal');
+});
+
+test('the browser Z3 provider loads nothing where Z3 cannot run, declines, and is strict on request', async () => {
+  const dir = bundle ? '../docs/' : '../browser/';
+  const { z3Provider, z3Supported, z3Base, z3Version } = await import(dir + 'smt-z3.mjs');
+  assert.ok(z3Base.endsWith(`/vendor/z3-solver-${z3Version}/`));
+  if (z3Supported()) return;   // a runtime with workers and SharedArrayBuffer is checked by tools/browser-z3-check.mjs
+  const loads = [], provider = z3Provider({ onLoad: (info) => loads.push(info.status) });
+  assert.equal(result(await new World().compileRequest(scene(near), { provider })).provider, 'internal');
+  assert.deepEqual(loads, ['failed']);
+  assert.equal(await provider.preload(), false);
+  await assert.rejects(z3Provider({ strict: true }).preload(), /z3-unsupported/);
+});

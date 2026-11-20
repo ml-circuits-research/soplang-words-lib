@@ -32,10 +32,10 @@ function compilePacket(world, sop, catalog, provider) {
   if(wires.some(w=>w.type==='std.problem.request'))return solveProblem(wires,{provider});
   if(wires.some(w=>w.type==='std.choice.request'))return compileChoice(world,wires);
   if(wires.some(w=>w.type==='std.interpret.input'))return compileInterpretations(world,wires,compileSingle);
-  return compileSingle(world,wires);
+  return compileSingle(world,wires,provider);
 }
 
-function compileSingle(world,wires){
+function compileSingle(world,wires,provider){
   const contexts=wires.filter(w=>['std.placement.context','std.capability.context'].includes(w.type));
   const nodes=wires.filter(w=>!contexts.includes(w));
   const roots=nodes.filter(w=>w.type==='std.request');
@@ -65,7 +65,7 @@ function compileSingle(world,wires){
   if (!inspectRequest(fork,root.id).ok) return fail('invalid-request');
   if (context?.type==='std.capability.context') return compileCapabilityCircuit(fork,root,nodes,context);
   if (context?.type==='std.placement.context' && nodes.some(w=>w.type==='std.request.constraint' && w.attrs.operator?.[0]==='relation')) {
-    return placementCircuit(fork,root,nodes,context);
+    return placementCircuit(fork,root,nodes,context,provider);
   }
   return compileRuleCircuit(fork,root.id,nodes) ?? '@compile.result std.compile.result status=not-applicable reason=no-method\n';
 }

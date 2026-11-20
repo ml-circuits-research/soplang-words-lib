@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.227.0
+
+- Placement takes a general path through `std.problem` when its method declares `search=problem` or a request carries several relations or subjects: every relation, every new or moved subject, the observed peers and the frame are solved together by the configured provider (`compileRequest(sop, { provider })`). Which predicate a relation means, with its gap, strength and weight, is declared by `std.placement.predicate` facts of the method. An unsatisfiable request is refused as `search-unsatisfiable` with the conflicting constraints in `conflict`. `std.placement.result` now lists every call.
+
 ## 0.226.0
 
 - `std.problem`: the search step as one problem (variables with domains, boxes and spans, hard constraints and weighted soft terms over a fixed predicate set, budget, depth with alternatives), solved by a bounded internal provider that reports `exhausted` rather than impossibility, or by an optional Z3 provider (`node/smt-z3.mjs`) that proves `unsatisfiable` with the conflicting constraints named. Solved assignments are read back against the hard constraints.

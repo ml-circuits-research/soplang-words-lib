@@ -6670,3 +6670,5 @@ No runtime code changed. Full source and bundle checks each passed 1015 with one
 `npm test` 1023 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test` 1025 pass/0 fail.
 2026-11-20 — 0.226.0: std.problem (SMT proposal §7): one problem IR in SOP wires, a bounded internal provider (exhausted ≠ impossible) and an optional Z3 provider in node/smt-z3.mjs (unsat core in `conflict`, alternatives by blocking), with a mandatory read-back of every solution.
 `npm test` 1031 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test` 1033 pass/0 fail; `node --test test/problem.test.mjs` 8/8 including the three Z3 tests.
+2026-11-20 — 0.227.0: placement's general path through std.problem (several relations and subjects, peers and frame in one problem; relation → predicate declared by std.placement.predicate). "a house next to the lake, left of the tree" compiles off the rock and on the page with the internal search and with Z3; an impossible combination is refused with the conflicting relations named.
+`npm test` 1034 pass/0 fail; `SOPWORLD_BUNDLE=1 node --test` 1036 pass/0 fail; test/placement-problem.test.mjs 3/3.

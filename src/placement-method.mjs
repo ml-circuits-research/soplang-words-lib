@@ -1,6 +1,7 @@
 // Bounded rectangular placement. Domain worlds supply directional relationships,
 // geometry and applicability rules, observation ownership, native fields and goals.
-import { quote, str, serialize } from './parser.mjs';
+import { parse, quote, str, serialize } from './parser.mjs';
+import { solveProblem } from './problem.mjs';
 import { evaluateObjective } from './objective.mjs';
 
 const fields = ['instance','revision','frame','scope'];
@@ -194,9 +195,17 @@ function perform(world, request, nodes, context, method) {
   return {chosen,options,call:wire('placement.call',operation,args)};
 }
 
-export function placementCircuit(world,request,nodes,context) {
+export function placementCircuit(world,request,nodes,context,provider) {
   const methods=world.ofType('std.placement.method');
-  const result=methods.length===1?perform(world,request,nodes,context,methods[0]):{reason:'method-binding',options:[]};
+  const method=methods.length===1?methods[0]:null;
+  // A method declared with search=problem, or a request with several relations or subjects, takes the general path.
+  const relations=nodes.filter(w=>w.type==='std.request.constraint'&&get(w,'operator')==='relation').length;
+  const general=method&&(get(method,'search')==='problem'||relations>1||nodes.filter(w=>w.type==='std.request.target').length>2);
+  const result=!method?{reason:'method-binding',options:[]}:general?problemPlacement(world,request,nodes,context,method,provider):perform(world,request,nodes,context,method);
+  return result&&typeof result.then==='function'?result.then(r=>summarise(r,context)):summarise(result,context);
+}
+
+function summarise(result,context) {
   const measurements=[];
   function evidenceRefs(option) {
     return option.evidence.map((measurement,index)=>{
@@ -205,10 +214,108 @@ export function placementCircuit(world,request,nodes,context) {
       return '$'+id;
     });
   }
+  const calls=result.calls??(result.call?[result.call]:[]);
   const alternatives=result.options.map(o=>wire(o.id,'std.placement.option',{
     anchor:entity(o.anchor.box),source:quote(o.anchor.source),subject:o.moving&&entity(o.moving.box)||undefined,
     direction:get(o.direction,'name'),x:o.x,y:o.y,minX:o.bounds.x,minY:o.bounds.y,maxX:o.bounds.x+o.bounds.width,maxY:o.bounds.y+o.bounds.height,status:o.status,reason:o.reason,cost:o.vector?.map(String),evidence:evidenceRefs(o)}));
-  const summary=wire('placement.result','std.placement.result',{...scopeOf(context),status:result.call?'compiled':'unavailable',
-    reason:result.reason,call:result.call?'$'+result.call.id:undefined,choice:result.chosen?'$'+result.chosen.id:undefined,alternative:alternatives.map(w=>'$'+w.id)});
-  return serialize([summary,...(result.call?[result.call]:[]),...alternatives,...measurements]);
+  const summary=wire('placement.result','std.placement.result',{...scopeOf(context),status:calls.length?'compiled':'unavailable',
+    reason:result.reason,call:calls.map(c=>'$'+c.id),conflict:result.conflict,provider:result.provider,choice:result.chosen?'$'+result.chosen.id:undefined,alternative:alternatives.map(w=>'$'+w.id)});
+  return serialize([summary,...calls,...alternatives,...measurements]);
+}
+
+// The general path: every relation of the request, every new or moved subject, the observed peers and the
+// frame become one std.problem, solved together by the configured provider (the internal search, or Z3).
+// Which predicate a relation means, its gap, strength and weight are std.placement.predicate facts of the
+// method; nothing here names a relation.
+function problemPlacement(world, request, nodes, context, method, provider) {
+  const unavailable = (reason, extra = {}) => ({ reason, options: [], ...extra });
+  const targets = nodes.filter(w => w.type === 'std.request.target');
+  const relations = nodes.filter(w => w.type === 'std.request.constraint' && get(w, 'operator') === 'relation');
+  if (!relations.length || get(request, 'mood') !== 'do' || relations.some(r => get(r, 'polarity') !== 'positive') ||
+      nodes.some(w => !['std.request', 'std.request.source', 'std.request.target', 'std.request.constraint'].includes(w.type)) ||
+      nodes.some(w => w.type === 'std.request.constraint' && get(w, 'operator') !== 'relation')) return unavailable('request-shape');
+  const rows = observed(world, method, context);
+  if (!rows || rows.some(r => r.peer && !r.geometry)) return unavailable('incomplete-geometry');
+  const frameBox = ref(context, 'bounds') && world.get(ref(context, 'bounds')), frame = frameBox && sameScope(frameBox, context) && geometry(frameBox);
+  if (!frame) return unavailable('missing-frame');
+  const declared = world.ofType('std.placement.predicate').filter(p => ref(p, 'method') === method.id);
+  const declaration = (relation) => one(declared.filter(p => get(p, 'relation') === relation));
+  const byId = new Map(targets.map(t => [t.id, t])), subjects = [], anchors = new Map();
+  const name = (prefix, i) => prefix + i;
+  for (const relation of relations) {
+    const subject = byId.get(ref(relation, 'target')), goal = byId.get(ref(relation, 'goal'));
+    if (!subject || !goal || subject === goal || get(goal, 'mode') !== 'existing') return unavailable('request-targets');
+    if (!declaration(get(relation, 'relation'))) return unavailable('undeclared-relation');
+    if (!anchors.has(goal.id)) {
+      const matched = rows.filter(o => matches(o, goal));
+      if (matched.length !== 1 || !matched[0].geometry) return unavailable(matched.length ? 'ambiguous-anchor' : 'unbound-target');
+      anchors.set(goal.id, { row: matched[0], box: name('anchor', anchors.size) });
+    }
+    if (!subjects.some(s => s.target === subject)) {
+      const creation = get(subject, 'mode') === 'new';
+      const kind = one(world.ofType('std.placement.kind').filter(k => get(k, 'concept') === get(subject, 'kind') && get(world.get(ref(k, 'binding')), 'act') === get(request, 'act')));
+      const tool = kind && world.get(ref(kind, 'binding'));
+      if (!tool || (creation ? !get(tool, 'kindKey') : !get(tool, 'idsKey'))) return unavailable('tool-binding');
+      const moving = creation ? null : one(rows.filter(o => matches(o, subject)));
+      if (!creation && !moving?.geometry) return unavailable('unbound-target');
+      const size = moving ? { width: moving.geometry.width, height: moving.geometry.height } : { width: number(kind, 'width'), height: number(kind, 'height') };
+      if (![size.width, size.height].every(n => Number.isFinite(n) && n > 0)) return unavailable('unknown-extent');
+      subjects.push({ target: subject, creation, kind, tool, moving, size, i: subjects.length });
+    }
+  }
+  if (subjects.length > 16 || rows.length > 512) return unavailable('budget');
+  const grid = Number.isFinite(number(method, 'grid')) ? number(method, 'grid') : Math.max(1, Math.min(frame.width, frame.height) / 40);
+  const lines = [], refs = { var: [], box: [], constraint: [] };
+  const add = (kind, id, text) => { lines.push('@' + id + ' std.problem.' + kind + ' ' + text); refs[kind].push('$' + id); };
+  const fixed = (id, g) => add('box', id, `name=${id} x=${g.x} y=${g.y} w=${g.width} h=${g.height}`);
+  fixed('frame', frame);
+  for (const s of subjects) {
+    add('var', 'vx' + s.i, `name=x${s.i} min=${frame.x} max=${frame.x + frame.width - s.size.width} step=${grid}`);
+    add('var', 'vy' + s.i, `name=y${s.i} min=${frame.y} max=${frame.y + frame.height - s.size.height} step=${grid}`);
+    add('box', 'subject' + s.i, `name=subject${s.i} x=x${s.i} y=y${s.i} w=${s.size.width} h=${s.size.height}`);
+  }
+  for (const a of anchors.values()) fixed(a.box, a.row.geometry);
+  const constraint = (id, decl, a, b) => {
+    const gap = get(decl, 'gap'), strength = get(decl, 'strength') ?? 'hard', weight = get(decl, 'weight');
+    add('constraint', id, `name=${id} predicate=${get(decl, 'predicate')} a=${a} b=${b}${gap !== undefined ? ' gap=' + gap : ''} strength=${strength}${weight !== undefined ? ' weight=' + weight : ''}`);
+  };
+  relations.forEach((relation, n) => {
+    const s = subjects.find(x => x.target.id === ref(relation, 'target')), a = anchors.get(ref(relation, 'goal'));
+    constraint('relation' + n, declaration(get(relation, 'relation')), 'subject' + s.i, a.box);
+  });
+  const contain = declaration(get(method, 'containRelation')), peer = declaration(get(method, 'peerRelation'));
+  if (!contain || !peer) return unavailable('missing-relation-policy');
+  const anchorRows = new Set([...anchors.values()].map(a => a.row));
+  let peers = 0;
+  for (const s of subjects) {
+    constraint('contain' + s.i, contain, 'subject' + s.i, 'frame');
+    for (const other of rows) {
+      if (other === s.moving || !other.peer || !other.geometry || anchorRows.has(other) || subjects.some(x => x.moving === other)) continue;
+      const id = 'peer' + (peers++); fixed(id, other.geometry); constraint('apart.' + s.i + '.' + id, peer, 'subject' + s.i, id);
+    }
+    for (const t of subjects) if (t.i > s.i) constraint('apart.' + s.i + '.subject' + t.i, peer, 'subject' + s.i, 'subject' + t.i);
+  }
+  const packet = `@problem std.problem.request budget=3000 ${refs.var.map(r => 'var=' + r).join(' ')} ${refs.box.map(r => 'box=' + r).join(' ')} ${refs.constraint.map(r => 'constraint=' + r).join(' ')}\n${lines.join('\n')}`;
+  const decide = (answerText) => {
+    const answer = parse(answerText), result = answer.find(w => w.type === 'std.problem.result');
+    const status = get(result, 'status');
+    if (status !== 'solved') return unavailable('search-' + status, { conflict: result.attrs.conflict, provider: get(result, 'provider') });
+    const value = Object.fromEntries(answer.filter(w => w.type === 'std.problem.assignment').filter(w => (result.attrs.assignment ?? []).includes('$' + w.id)).map(w => [get(w, 'var'), number(w, 'value')]));
+    const calls = [];
+    for (const s of subjects) {
+      const args = Object.create(null), put = (key, v) => { if (!validName(key) || Object.hasOwn(args, key)) return false; args[key] = v; return true; };
+      for (const arg of world.ofType('std.placement.argument').filter(w => ref(w, 'binding') === s.kind.id)) if (!put(get(arg, 'key'), get(arg, 'value'))) return unavailable('argument-collision');
+      const originX = number(s.kind, 'originX'), originY = number(s.kind, 'originY');
+      const x = value['x' + s.i] + s.size.width * (Number.isFinite(originX) ? originX : number(s.tool, 'originX'));
+      const y = value['y' + s.i] + s.size.height * (Number.isFinite(originY) ? originY : number(s.tool, 'originY'));
+      if (!put(get(s.tool, 'xKey'), String(x)) || !put(get(s.tool, 'yKey'), String(y)) ||
+          !(s.creation ? put(get(s.tool, 'kindKey'), quote(literal(s.kind, 'native'))) : put(get(s.tool, 'idsKey'), quote(literal(s.moving.box, 'entity'))))) return unavailable('argument-collision');
+      if (s.creation && get(s.tool, 'containerKey') && !put(get(s.tool, 'containerKey'), quote(literal(context, 'container')))) return unavailable('argument-collision');
+      if (!validName(get(s.tool, 'operation'))) return unavailable('invalid-operation');
+      calls.push(wire('placement.call.' + s.i, get(s.tool, 'operation'), args));
+    }
+    return { calls, options: [], provider: get(result, 'provider') };
+  };
+  const solved = solveProblem(packet, { provider });
+  return solved && typeof solved.then === 'function' ? solved.then(decide) : decide(solved);
 }

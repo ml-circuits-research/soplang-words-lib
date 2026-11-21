@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.249.0
+
+- `world.syncState(input)`: incremental derivation of a sequence of states. The facts told through it are made equal to `input` by one patch (new ids told, changed wires replaced in place, missing ones retracted) and what was derived follows incrementally; when a retraction would take a listed wire with it, or the patch is refused, the state is derived from the base the first syncState recorded. `ofType()` of a synced world lists its wires in an order that depends on the state alone (base place, list place, later tell, then for a derived wire the keys of the premises of its best firing, a least fixpoint), so the incremental result equals the full derivation in values and order. `SOPWORLD_SYNC_CHECK=1` checks every incremental sync against the full derivation and every incremental retraction or patch against a replay of the log (`=sync`: the syncs only); `tools/sync-check-report.mjs` reports the counts.
+
 ## 0.248.0
 
 - Seeded sampling in rules (`core.calc`): `rand(seed, salt...)` a float in [0, 1), `rand_between(seed, salt, lo, hi, step?)` a value on a grid, `sample_key(seed, salt, weight)` the Efraimidis-Spirakis key whose largest values (with `argmax`) are a weighted sample without replacement. All draw from `random.mjs` through a hash of their arguments, so a rule that samples is reproducible from its seed (a host records the seed for undo, redo and "another one").

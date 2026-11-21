@@ -16,6 +16,7 @@ import { cdcl } from './solve.mjs';
 import { compileMatrix, localize, prefixModule, fitsKind, knownKind, readMap, SCHEMA_TYPES, LINKS } from './matrix.mjs';
 import { completion } from './complete.mjs';
 import { revision } from './revise.mjs';
+import { synchronizing, SYNC_CHECK, checkReplay } from './sync.mjs';
 import { querying } from './query.mjs';
 import { interpreting } from './interpret.mjs';
 import { STD } from './std.mjs';
@@ -139,7 +140,11 @@ export class World {
   /** A wire to read, not to change: no copy is made of a wire shared with a fork. */
   _peek(id) { const m = this.wires, rid = this.resolve(id); return (m.peek ? m.peek(rid) : m.get(rid)) || this._external.get(rid); }
 
-  ofType(type) { return [...(this.byType.get(type) || [])].map((id) => this.wires.get(id)); }
+  ofType(type) {
+    // a synced world (sync.mjs) lists its wires in an order that depends on its state alone, not on its history
+    if (this._syncBase && this._tx === 0) return this._stableOfType(type);
+    return [...(this.byType.get(type) || [])].map((id) => this.wires.get(id));
+  }
 
   /**
    * What the matrix says about a type: what it extends, whether it is closed, and its keys
@@ -778,6 +783,7 @@ export class World {
       ...(retracted.length ? [{ op: 'retract', ids: retracted, ...(group ? { group } : {}), ...at }] : []),
     ];
     const done = this._finish(mark, res, dry, entries);
+    if (SYNC_CHECK && done.ok && !dry && this._tx === 0 && (retracted.length || replaced.length)) checkReplay(this);
     if (done.ok && res._revised) done.revised = res._revised;
     if (done.ok && replaced.length) done.replaced = replaced.map((r) => r.id);
     return done;
@@ -2490,6 +2496,6 @@ export class World {
   }
 }
 
-Object.assign(World.prototype, completion, revision, querying, timing, tiering, describing, interpreting);
+Object.assign(World.prototype, completion, revision, synchronizing, querying, timing, tiering, describing, interpreting);
 /** The difference between two worlds (see world.diff). */
 World.diff = (a, b) => a.diff(b);

@@ -333,6 +333,8 @@ export class World {
   /** take back the last n statements (a patch counts as one); the world is rebuilt from the rest */
   undo(n?: number, options?: Budgeted): { ok: boolean; undone: object[]; removed: string[]; added: string[]; changed: Difference['changed']; violations: Violation[] };
   /** make the told facts of a type (or with { prefix }, of an id prefix) equal to a list, in one transaction */
+  /** Incremental derivation: make the facts told through syncState equal to input; ofType of a synced world is in a state-determined order. */
+  syncState(input: string | Wire[], options?: Budgeted & { factsOnly?: boolean; tier?: string }): Result;
   sync(collection: string | { type?: string; prefix?: string }, input: string | Wire[], options?: Budgeted & { strict?: boolean; tier?: string; ns?: string }): Result & { told?: string[]; replaced?: string[]; retracted?: string[]; same?: string[] };
   /** tell again what the last undo (or the last n) took back */
   redo(n?: number, options?: Budgeted): { ok: boolean; redone: object[]; removed: string[]; added: string[]; changed: Difference['changed']; violations: Violation[] };

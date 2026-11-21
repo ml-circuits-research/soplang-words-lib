@@ -628,6 +628,38 @@ print(r.told, r.replaced, r.retracted, r.same);
 ["cap"] ["ink"] [] ["pen"]
 ```
 
+### world.syncState(input, options?)
+
+Incremental derivation of a sequence of states. Makes the facts this world was told through
+`syncState` equal to `input` (SOP text or parsed wires, ids unique), as one patch: a wire with
+a new id is told, one whose content changed is replaced in place, one no longer listed is
+retracted, and what was derived follows incrementally. A host that keeps a state per step (an
+editor after each command) forks the world of the previous state and syncs it to the next one
+instead of deriving every state from the bare base. The first `syncState` of a lineage records
+what the world held then as its base; when a retraction would take a listed wire with it, or
+the patch is refused, the state is derived from that base instead. Options: `factsOnly`
+(default true), `tier`, `budget`.
+
+The result is the full derivation of the same state: the same wires and values, and
+`ofType()` of a synced world lists its wires in an order that depends on the state alone, not
+on the history: base wires by their place in the base, synced wires by their place in the
+list, later told wires by when they were told, a derived wire by the keys of the premises of
+its best firing (src/sync.mjs). `SOPWORLD_SYNC_CHECK=1` compares every incremental sync with the
+full derivation and every incremental retraction with a replay of the log (`sync` checks the
+syncs only); a difference throws.
+
+```js run
+const base = shop();
+const w = base.fork();
+w.syncState('@pen item name=pen price=2  @ink item name=ink price=3');
+w.syncState('@ink item name=ink price=4  @cap item name=cap price=1');
+print(w.ofType('item').map((x) => x.id + '=' + x.attrs.price[0]), w.has('pen'));
+```
+
+```output
+["ink=4","cap=1"] false
+```
+
 ### world.apply(assignment, options?)
 
 Fills the values of an assignment (`[{ id, key, value }]`, as `solve` returns) in one

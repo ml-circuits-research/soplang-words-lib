@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="a2363843f5a8">
+<meta name="source-hash" content="75a851253fc9">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.248.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.249.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="instance-state.html">Instance state</a><a href="semantic-frame.html">Semantic frames</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -212,6 +212,15 @@ w.tell(&#x27;@pen item name=pen price=2  @ink item name=ink price=3&#x27;);
 const r = w.sync(&#x27;item&#x27;, &#x27;@pen item name=pen price=2  @ink item name=ink price=4  @cap item name=cap price=1&#x27;);
 print(r.told, r.replaced, r.retracted, r.same);</code></pre></figure>
 <figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;cap&quot;] [&quot;ink&quot;] [] [&quot;pen&quot;]</code></pre></figure>
+<h3 id="worldsyncstateinput-options">world.syncState(input, options?)</h3>
+<p>Incremental derivation of a sequence of states. Makes the facts this world was told through <code>syncState</code> equal to <code>input</code> (SOP text or parsed wires, ids unique), as one patch: a wire with a new id is told, one whose content changed is replaced in place, one no longer listed is retracted, and what was derived follows incrementally. A host that keeps a state per step (an editor after each command) forks the world of the previous state and syncs it to the next one instead of deriving every state from the bare base. The first <code>syncState</code> of a lineage records what the world held then as its base; when a retraction would take a listed wire with it, or the patch is refused, the state is derived from that base instead. Options: <code>factsOnly</code> (default true), <code>tier</code>, <code>budget</code>.</p>
+<p>The result is the full derivation of the same state: the same wires and values, and <code>ofType()</code> of a synced world lists its wires in an order that depends on the state alone, not on the history: base wires by their place in the base, synced wires by their place in the list, later told wires by when they were told, a derived wire by the keys of the premises of its best firing (src/sync.mjs). <code>SOPWORLD_SYNC_CHECK=1</code> compares every incremental sync with the full derivation and every incremental retraction with a replay of the log (<code>sync</code> checks the syncs only); a difference throws.</p>
+<figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const base = shop();
+const w = base.fork();
+w.syncState(&#x27;@pen item name=pen price=2  @ink item name=ink price=3&#x27;);
+w.syncState(&#x27;@ink item name=ink price=4  @cap item name=cap price=1&#x27;);
+print(w.ofType(&#x27;item&#x27;).map((x) =&gt; x.id + &#x27;=&#x27; + x.attrs.price[0]), w.has(&#x27;pen&#x27;));</code></pre></figure>
+<figure class="code"><figcaption>prints</figcaption><pre><code>[&quot;ink=4&quot;,&quot;cap=1&quot;] false</code></pre></figure>
 <h3 id="worldapplyassignment-options">world.apply(assignment, options?)</h3>
 <p>Fills the values of an assignment (<code>[{ id, key, value }]</code>, as <code>solve</code> returns) in one transaction. Option <code>via</code> names where they came from. Returns a change result.</p>
 <figure class="code"><figcaption>js (run by the tests)</figcaption><pre><code>const w = shop();
@@ -1831,7 +1840,7 @@ factsOf(live).ofKind(&#x27;item&#x27;); // stable local SOP fact IDs</code></pre
 <p>The engine defaults to a cap of 128 candidates and applies the world reasoning budget per trial. An optimum is scoped to the candidate list.</p>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.248.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.249.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

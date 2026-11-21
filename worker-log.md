@@ -6724,3 +6724,7 @@ No runtime code changed. Full source and bundle checks each passed 1015 with one
 ## 2026-11-21 G: 0.248.0 seeded sampling in rules
 - `rand`, `rand_between`, `sample_key` core.calc builtins on `random.mjs` (hash of the arguments as seed): reproducible weighted sampling from declared rules (PSys2 random/surprise composition).
 - Checks: `node --test test/seeded-sampling.test.mjs test/aggregate.test.mjs test/docs.test.mjs` pass; `node tools/doc-examples.mjs` (see run); full `npm test` at the end of the batch.
+
+## 2026-11-21 G: 0.249.0 incremental derivation with a state-determined order (World.syncState)
+- `world.syncState(wires)`: a state derived from the previous derived state by told difference (tell/replace/retract), falling back to the recorded base; `ofType()` of a synced world in an order fixed by the state (base place, list place, later tell, premise keys of the best firing as a least fixpoint). For PSys2 per-command area states (its sop-world-host).
+- Proof: `SOPWORLD_SYNC_CHECK=1 node --import ./tools/sync-check-report.mjs --test "test/**/*.test.mjs"`: 365 incremental syncs equal to the full derivation (values and order) and 359 incremental retractions/patches equal to a replay of the log, 0 differences, 0 skipped; PSys2 slowest real-use row: 98 syncs, 0 differences (`SOPWORLD_SYNC_CHECK=sync`).

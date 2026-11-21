@@ -5,10 +5,11 @@
 // Everything happens in one transaction, so a refused retraction changes nothing.
 
 // what two worlds share after fork(), until one of them changes
-const STATE = ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'events', 'seq', 'stamp', '_clock', '_lastOrder', '_c', '_logOf', '_fills', '_nsUsed', '_version'];
+const STATE = ['wires', 'byType', 'index', 'refs', 'matrix', 'alias', 'used', 'firings', 'byWire', 'byRule', 'log', 'events', 'seq', 'stamp', '_clock', '_lastOrder', '_c', '_logOf', '_fills', '_nsUsed', '_version', '_syncBase', '_syncTold', '_syncOrder', '_syncOrderIds', '_syncSeq'];
 
 import { parse, cloneWire } from './parser.mjs';
 import { CowMap, layer, layerList, sealState, CHECK } from './cow.mjs';
+import { SYNC_CHECK, checkReplay } from './sync.mjs';
 
 // the maps and sets that get a copy-on-write layer when a world that shared them changes
 const LAYERED = ['byType', 'index', 'refs', 'byWire', 'byRule', 'matrix', 'alias', 'used', 'firings', '_logOf'];
@@ -51,6 +52,7 @@ export const revision = {
     // the retraction is a statement in the log (not an erasure of the tell): undo and replay give it back
     const out = this._finish(mark, res, false, [{ op: 'retract', ids: [id] }]);
     out.removed = removed;
+    if (SYNC_CHECK && out.ok && this._tx === 0) checkReplay(this);
     return out;
   },
 

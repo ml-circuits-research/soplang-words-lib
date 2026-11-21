@@ -7,6 +7,10 @@
 // that keeps a sequence of states (an editor after each command) derives each one from the previous one instead of
 // from the bare base. The first sync of a lineage records what the world held then as its base.
 //
+// A conclusion two firings reach (two boxes with one bottom) is named by the firing that made it first, which depends
+// on the order of derivation: when an incremental patch withdraws such a maker or reaches such a conclusion again, the
+// state is derived from the base instead, so ids stay those of the full derivation.
+//
 // The result is the full derivation of the same state: the same wires with the same values, and, because the order
 // in which incremental maintenance inserts wires is history, ofType() of a synced world returns its wires in a stable
 // order that is a function of the state alone (synced worlds only; other worlds keep insertion order):
@@ -85,10 +89,14 @@ export const synchronizing = {
         seen.add(ref); queue.push(ref);
       }
     }
+    this._syncRemade = false;
     let r = cascade ? { ok: false } : wires.length || replace.length || retract.length
       ? this._patch({ wires, replace, retract }, { factsOnly, tier })
       : { ok: true, added: [], derived: [], filled: [], merged: [], removed: [], violations: [] };
-    const lost = r.ok && target.some((w) => !this.wires.get(w.id)?.meta?.told);
+    // A withdrawn firing whose conclusion another firing also concluded (World._unsay sets _syncRemade): the conclusion
+    // is made again under the other firing's id, which need not be the full derivation's, so the state is derived anew.
+    const lost = r.ok && (incremental && this._syncRemade || target.some((w) => !this.wires.get(w.id)?.meta?.told));
+    this._syncRemade = false;
     if (!r.ok && incremental || lost) {
       const fresh = base.world.fork();
       const full = fresh._syncState(target, { factsOnly, tier });

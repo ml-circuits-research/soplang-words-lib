@@ -2061,6 +2061,9 @@ export class World {
       let target = t.on ? this.wires.get(this.resolve(walk(t.on, s))) : this._findByIdentity(t.type, attrs, home) || this._findSubsuming(t.type, attrs, c, home);
       if (t.on && !target) continue;
       if (target) {
+        // a conclusion another firing already made: which of them names it depends on the order they fire in, so a
+        // synced world (sync.mjs) derives that state from its base, where the order is the full derivation's
+        if (this._syncBase && !t.on && !target.meta?.told) this._syncRemade = true;
         rec.hits.push(target.id);
         this._merge(target, attrs, prov, res);
       } else {
@@ -2235,6 +2238,9 @@ export class World {
     const invalidate = (sig) => {
       const rec = this._forgetFiring(sig);
       if (!rec) return;
+      // a made wire another firing also concluded is made again by that one, under that firing's id: a synced world
+      // (sync.mjs) then derives the state from its base, so its ids stay those of the full derivation
+      if (this._syncBase && !this._syncRemade) for (const id of rec.made) for (const other of this.byWire.get(id) || []) { if (this.firings.get(other)?.hits.includes(id)) { this._syncRemade = true; break; } }
       rec.made.forEach(kill);
       rec.fills.forEach(unfill);
       again(rec);

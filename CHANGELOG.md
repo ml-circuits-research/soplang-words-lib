@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.249.1
+
+- `syncState`: a conclusion two firings reach is named by the firing that made it first, which depends on the order of derivation; an incremental patch that withdraws such a maker or reaches such a conclusion again now derives the state from the base, so ids stay those of the full derivation (found in an application's diagram link geometry: two boxes with one bottom).
+
 ## 0.249.0
 
 - `world.syncState(input)`: incremental derivation of a sequence of states. The facts told through it are made equal to `input` by one patch (new ids told, changed wires replaced in place, missing ones retracted) and what was derived follows incrementally; when a retraction would take a listed wire with it, or the patch is refused, the state is derived from the base the first syncState recorded. `ofType()` of a synced world lists its wires in an order that depends on the state alone (base place, list place, later tell, then for a derived wire the keys of the premises of its best firing, a least fixpoint), so the incremental result equals the full derivation in values and order. `SOPWORLD_SYNC_CHECK=1` checks every incremental sync against the full derivation and every incremental retraction or patch against a replay of the log (`=sync`: the syncs only); `tools/sync-check-report.mjs` reports the counts.

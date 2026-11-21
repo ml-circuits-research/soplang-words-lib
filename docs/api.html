@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="75a851253fc9">
+<meta name="source-hash" content="bb9779f7fc8c">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.249.1</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.250.0</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="instance-state.html">Instance state</a><a href="semantic-frame.html">Semantic frames</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -1791,6 +1791,11 @@ print(table.properties[0].numeric, table.properties[0].unit); // true px</code><
 <p>The closest acceptable relative of a name in a taxonomy of weighted traits: first an acceptable parent along a <code>near</code> dimension, the most specific first (specificity ln(seen / members with the trait)); else the acceptable name sharing the most traits, each shared trait counting its dimension's <code>weights</code> times its specificity, ties by name, at most <code>limit</code> (64) names tried. <code>accept(name)</code> (sync or async) says whether the application can realise a name. Resolves to <code>{name, via, score?}</code> or null. The caller reads the taxonomy rows; the ranking is the library's.</p>
 <figure class="code"><figcaption>js</figcaption><pre><code>const found = await nearestRelative({ own: [{ key: &#x27;pet&#x27;, parent: &#x27;pet&#x27;, dimension: &#x27;kind&#x27; }], members: new Map([[&#x27;pet&#x27;, new Set([&#x27;cat&#x27;])]]), seen: 4, weights: { kind: 1 }, accept: (name) =&gt; name === &#x27;cat&#x27; });
 print(found.name, found.via); // cat shared</code></pre></figure>
+<h2 id="coordinated-noun-phrases">Coordinated noun phrases</h2>
+<h3 id="coordinationpartstext-options">coordinationParts(text, options)</h3>
+<p>The conjunct texts of one request that coordinates noun phrases ("draw a cat and 2 dogs", "a sun, three clouds and a bird"), or <code>null</code> (<code>src/coordination.mjs</code>). <code>options</code>: <code>cut</code> and <code>trigger</code> (<code>[start, end]</code> code-point ranges of the request and of its act word), <code>mentions</code> (the noun ranges a reading could not hold for one target) or <code>kind</code> (the one noun it held, with a list left after it), and <code>words</code> (<code>separators</code>, <code>pronouns</code>, <code>determiners</code>, <code>prepositions</code>: Sets of the language's words). Each phrase is split at the last coordinator of its gap and returned as <code>{ said, text, range }</code>: <code>text</code> carries the shared head (the words up to the trigger) and the shared tail (after the last noun, when no earlier phrase has words after its noun). A later conjunct holding a pronoun not governed by a preposition ("and call it Tom") is a clause about what was made: <code>null</code>. Language-free.</p>
+<figure class="code"><figcaption>js</figcaption><pre><code>const t = &#x27;draw a cat and two dogs&#x27;;
+print(coordinationParts(t, { cut: [0, t.length], trigger: [0, 4], mentions: [[7, 10], [19, 23]], words: { separators: new Set([&#x27;and&#x27;]) } }).map((p) =&gt; p.text).join(&#x27; | &#x27;)); // draw a cat | draw two dogs</code></pre></figure>
 <h2 id="span-reading">Span reading</h2>
 <p>A span of said text read against a declared space (<code>src/span-reading.mjs</code>). Language-free: every word list, form, unit, code layout and tolerance is the caller's declaration (a language world's determiners and inflections, a knowledge world's number words and codes, a policy's tolerance). Each loop is bounded by the span or the declared lists; <code>tick(site)</code> lets a caller's budget count the steps.</p>
 <h3 id="stripphrasephrase-options">stripPhrase(phrase, options?)</h3>
@@ -1840,7 +1845,7 @@ factsOf(live).ofKind(&#x27;item&#x27;); // stable local SOP fact IDs</code></pre
 <p>The engine defaults to a cap of 128 candidates and applies the world reasoning budget per trial. An optimum is scoped to the candidate list.</p>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.249.1 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.250.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

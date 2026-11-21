@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.250.0
+
+- `coordinationParts(text, { cut, trigger, mentions, kind, words })` (`src/coordination.mjs`): coordinated noun phrases of one request ("draw a cat and 2 dogs", "a sun, three clouds and a bird") split at the caller's coordinators between the reader's noun mentions (or a list left after the one noun held); each phrase becomes a request text with the shared head (up to the trigger) and the shared tail (after the last noun, when no earlier phrase has words after its noun). A later conjunct with an ungoverned pronoun ("and call it Tom") is a clause, not a phrase: null. Language-free: every word set is the caller's.
+
 ## 0.249.1
 
 - `syncState`: a conclusion two firings reach is named by the firing that made it first, which depends on the order of derivation; an incremental patch that withdraws such a maker or reaches such a conclusion again now derives the state from the base, so ids stay those of the full derivation (found in an application's diagram link geometry: two boxes with one bottom).

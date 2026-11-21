@@ -5392,6 +5392,17 @@ const found = await nearestRelative({ own: [{ key: 'pet', parent: 'pet', dimensi
 print(found.name, found.via); // cat shared
 ```
 
+## Coordinated noun phrases
+
+### coordinationParts(text, options)
+
+The conjunct texts of one request that coordinates noun phrases ("draw a cat and 2 dogs", "a sun, three clouds and a bird"), or `null` (`src/coordination.mjs`). `options`: `cut` and `trigger` (`[start, end]` code-point ranges of the request and of its act word), `mentions` (the noun ranges a reading could not hold for one target) or `kind` (the one noun it held, with a list left after it), and `words` (`separators`, `pronouns`, `determiners`, `prepositions`: Sets of the language's words). Each phrase is split at the last coordinator of its gap and returned as `{ said, text, range }`: `text` carries the shared head (the words up to the trigger) and the shared tail (after the last noun, when no earlier phrase has words after its noun). A later conjunct holding a pronoun not governed by a preposition ("and call it Tom") is a clause about what was made: `null`. Language-free.
+
+```js
+const t = 'draw a cat and two dogs';
+print(coordinationParts(t, { cut: [0, t.length], trigger: [0, 4], mentions: [[7, 10], [19, 23]], words: { separators: new Set(['and']) } }).map((p) => p.text).join(' | ')); // draw a cat | draw two dogs
+```
+
 ## Span reading
 
 A span of said text read against a declared space (`src/span-reading.mjs`). Language-free: every word list, form, unit, code layout and tolerance is the caller's declaration (a language world's determiners and inflections, a knowledge world's number words and codes, a policy's tolerance). Each loop is bounded by the span or the declared lists; `tick(site)` lets a caller's budget count the steps.

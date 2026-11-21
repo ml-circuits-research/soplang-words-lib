@@ -575,6 +575,8 @@ export function needsOf(world: World, scope?: { world?: string; view?: string })
 
 /** The arbitration contract: own / decline / refuse per declared world for one request. */
 export function arbitrate(world: World, request: { action: string; args?: Record<string, unknown> }, options?: { pass?: 'exact' | 'spelling' | 'view'; resolves?: (world: string, words: string[]) => boolean; words?: string[] | string; coverage?: (world: string, words: unknown) => number; active?: string; criteria?: { name: string; measure: string; dir: string }[] }): { verdicts: { world: string; verdict: 'own' | 'decline' | 'refuse'; why: string }[]; owner: string | null; ambiguous?: string[]; pass: string };
+/** Coordinated noun phrases of one request: each phrase as a request text of its own with the shared head and tail (language words from the caller). */
+export function coordinationParts(text: string, options: { cut: [number, number]; trigger: [number, number]; mentions?: [number, number][] | null; kind?: [number, number] | null; words?: { separators?: Set<string>; pronouns?: Set<string>; determiners?: Set<string>; prepositions?: Set<string> } }): { said: string; text: string; range: [number, number] }[] | null;
 /** One segmenter that knows the act forms: clauses, one act each. */
 export function segment(world: World, text: string, options?: { types?: { joiner?: string; frameLead?: string }; acts?: string[] }): { text: string; from: number; to: number; joiner?: string }[];
 /** The words that start an act: action names, core.word texts that mean one, and extra. */

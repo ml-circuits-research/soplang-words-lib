@@ -9,7 +9,8 @@
 //                    std.capability.parameter of every native interface, with its operation's act, source type and
 //                    declared coordinate unit; enum only when the value list is closed.
 //  unboundParameters parameter names a key never binds to by its name (identity seeds, placement coordinates).
-//  preferActs        acts whose operation a key bound by name takes first (in order), else the first declaring it.
+//  preferOperations  operations a key bound by name takes first (any of them), then
+//  preferActs        acts whose operation it takes next (in order), else the first operation declaring the parameter.
 //  families          declared family readings [{area, type, kind, authority}].
 //  familyOperations  declared family operations [{area, type, operation, sourcePath}].
 //  kindOperations    declared kind bindings [{id, area, kind, operation, parameter, value, sourceWorld, sourcePath, sourceSnapshotSHA, authority}].
@@ -80,7 +81,7 @@ function nativeValueKinds(kinds, params, declared) {
 export function completeStructuralBindings(bindings, declared = {}) {
   if (!bindings || typeof bindings !== 'object') return bindings;
   const params = declared.parameters ?? [];
-  const unbound = new Set(declared.unboundParameters ?? []), preferActs = declared.preferActs ?? [];
+  const unbound = new Set(declared.unboundParameters ?? []), preferActs = declared.preferActs ?? [], preferOperations = new Set(declared.preferOperations ?? []);
   const kindOperations = declared.kindOperations ?? [];
   const enumOf = (sourceType, parameter) => params.find((p) => p.sourceType === sourceType && p.parameter === parameter && p.enum)?.enum ?? null;
   // A property whose native parameter is a number on its source type is numeric: a reader takes the one number its
@@ -240,7 +241,7 @@ export function completeStructuralBindings(bindings, declared = {}) {
   const enumKinds = nativeValueKinds(kinds, params, declared);
   if (enumKinds.length) kinds = [...kinds, ...enumKinds];
   // 9. A key the table predates binds by the export's own rule: <family type>.<parameter> to the parameter of that name
-  // on the family's source type (an operation of a preferred act first, else the first declaring it).
+  // on the family's source type (a preferred operation first, then one of a preferred act, else the first declaring it).
   for (const f of families) {
     const sourceType = f.nativeFamilyBinding?.sourceType;
     if (!sourceType) continue;
@@ -249,7 +250,7 @@ export function completeStructuralBindings(bindings, declared = {}) {
       const key = f.type + '.' + parameter;
       if (properties.some((row) => row.area === f.area && row.key === key)) continue;
       const choices = ofType.filter((q) => q.parameter === parameter);
-      const p = preferActs.map((act) => choices.find((q) => q.act === act)).find(Boolean) ?? choices[0];
+      const p = choices.find((q) => preferOperations.has(q.operation)) ?? preferActs.map((act) => choices.find((q) => q.act === act)).find(Boolean) ?? choices[0];
       properties.push(byName(f.area, key, sourceType, parameter, p, 'sopworld completeStructuralBindings: the export rule for keys the table predates'));
     }
   }

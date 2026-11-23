@@ -28,6 +28,8 @@ test('structural bindings: numbers, units, keys by name, the shared family bindi
   const lemmas = out.kinds.filter((k) => k.alignment?.kind === 'native-enum-value').map((k) => k.lemma);
   assert.deepEqual(lemmas.sort(), ['cube', 'square box', 'square_box']);
   assert.ok(Object.isFrozen(out));
+  const named = completeStructuralBindings(table(), { parameters, unboundParameters: ['ids', 'x'], preferOperations: ['blob.make'], preferActs: ['change'] });
+  assert.equal(named.properties.find((p) => p.key === 'blob.tint').hostBinding.operation, 'blob.make', 'a preferred operation before a preferred act');
 });
 
 test('structural bindings: declared key alignments with said values, families and relation pairs', () => {

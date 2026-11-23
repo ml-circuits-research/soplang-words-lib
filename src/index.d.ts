@@ -1042,7 +1042,7 @@ export function instanceStateWorld(wires: string, options?: InstanceStateLimits 
 export interface StructuralBindingTable { properties?: any[]; families?: any[]; kinds?: any[]; coverage?: any[]; valueNormalizations?: any[]; [key: string]: any; }
 export interface StructuralBindingDeclarations {
   parameters?: { world: string; sourceSha256: string; wire: string; operation: string; act?: string; sourceType: string; parameter: string; kind?: string; unit?: string; enum?: string[] | null }[];
-  unboundParameters?: string[]; preferActs?: string[];
+  unboundParameters?: string[]; preferOperations?: string[]; preferActs?: string[];
   families?: { area: string; type: string; kind: string; authority?: string }[];
   familyOperations?: { area: string; type: string; operation: string; sourcePath?: string }[];
   kindOperations?: { id: string; area: string; kind: string; operation: string; parameter?: string; value?: string; sourceWorld?: string; sourcePath?: string; sourceSnapshotSHA?: string; authority?: string }[];

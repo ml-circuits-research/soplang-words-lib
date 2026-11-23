@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>sopworld API</title>
-<meta name="source-hash" content="27f513fd23f4">
+<meta name="source-hash" content="8655d8851396">
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.244.0</small></a>
+  <a class="brand" href="index.html"><span class="mark" aria-hidden="true"></span>sopworld <small>0.244.1</small></a>
   <nav aria-label="Documentation"><a href="index.html">Overview</a><a href="language.html">Language</a><a href="reference.html">Reference</a><a href="semantics.html">Semantics</a><a href="api.html" aria-current="page">API</a><a href="glossary.html">Glossary</a><a href="kinds-of-worlds.html">Kinds of worlds</a><a href="integration.html">Integration</a><a href="capabilities.html">Capabilities</a><a href="quickstart.html">Quickstart</a><a href="modules.html">Modules</a><a href="patterns.html">Patterns</a><a href="host-contract.html">Host contract</a><a href="lessons.html">Lessons</a><a href="decisions.html">Decisions</a><a href="generalisation.html">Generalisation</a><a href="literature.html">Literature</a><a href="instance-state.html">Instance state</a><a href="semantic-frame.html">Semantic frames</a><a href="playground.html">Playground</a></nav>
 </header>
 <main>
@@ -1765,7 +1765,7 @@ print(result.liveBinding); // null</code></pre></figure>
 <p><code>budget</code> bounds copying/lookup and evidence checks (default 100000); <code>graphBudget</code> separately bounds the existing graph serializer (default 20000). The host's authority, context, canonical membership and correlation are trusted inputs. This method does not select a conversational antecedent, interpret text, prove incarnation identity or rebind a historical subject to today's state. A current resolution must separately revalidate context/identity and new selectors. Numeric ID reuse never establishes continuity.</p>
 <h2 id="binding-tables-populations-and-relatives">Binding tables, populations and relatives</h2>
 <h3 id="completestructuralbindingstable-declared">completeStructuralBindings(table, declared?)</h3>
-<p>Complete a structural binding table (<code>sop.structural-bindings/1</code>: family, kind and property rows a reader was exported with, each aligned to a native capability) from the live capability declarations and the application's declared rows. <code>declared.parameters</code> lists every <code>std.capability.parameter</code> with its operation, act, source type, kind, coordinate unit and closed value list. The rules: a key the table left unbound binds to the parameter of its own name on its family's source type (never one of <code>unboundParameters</code>, an operation of a <code>preferActs</code> act first); a property bound to a closed value list takes it as its class values, a numeric one is marked numeric with its unit; declared key alignments replace a key's row (said values given to the tool through <code>valueMap</code>); declared relation pairs take the projection roles of their <code>like</code> key; declared family readings and family operations add families; a family without a native binding takes the one binding its kind rows share; declared positions take the ordinal words; the modifier of compound lemmas names their kind when every compound names the same one; and each closed value of a family's make discriminator that no kind row names becomes a kind, named by the value and by its catalog words. Returns a new frozen table (<code>extra</code> fields added as they are); the input is not changed. Nothing is inferred from words: every row comes from a declaration or an export rule.</p>
+<p>Complete a structural binding table (<code>sop.structural-bindings/1</code>: family, kind and property rows a reader was exported with, each aligned to a native capability) from the live capability declarations and the application's declared rows. <code>declared.parameters</code> lists every <code>std.capability.parameter</code> with its operation, act, source type, kind, coordinate unit and closed value list. The rules: a key the table left unbound binds to the parameter of its own name on its family's source type (never one of <code>unboundParameters</code>; one of <code>preferOperations</code> first, then an operation of a <code>preferActs</code> act); a property bound to a closed value list takes it as its class values, a numeric one is marked numeric with its unit; declared key alignments replace a key's row (said values given to the tool through <code>valueMap</code>); declared relation pairs take the projection roles of their <code>like</code> key; declared family readings and family operations add families; a family without a native binding takes the one binding its kind rows share; declared positions take the ordinal words; the modifier of compound lemmas names their kind when every compound names the same one; and each closed value of a family's make discriminator that no kind row names becomes a kind, named by the value and by its catalog words. Returns a new frozen table (<code>extra</code> fields added as they are); the input is not changed. Nothing is inferred from words: every row comes from a declaration or an export rule.</p>
 <figure class="code"><figcaption>js</figcaption><pre><code>const table = completeStructuralBindings({ families: [], kinds: [], properties: [{ area: &#x27;toy&#x27;, key: &#x27;blob.size&#x27;, hostBinding: { sourceType: &#x27;toy.blob&#x27;, parameter: &#x27;size&#x27; } }] },
   { parameters: [{ world: &#x27;toy&#x27;, sourceSha256: &#x27;x&#x27;, wire: &#x27;p&#x27;, operation: &#x27;blob.change&#x27;, act: &#x27;change&#x27;, sourceType: &#x27;toy.blob&#x27;, parameter: &#x27;size&#x27;, kind: &#x27;number&#x27;, unit: &#x27;px&#x27; }] });
 print(table.properties[0].numeric, table.properties[0].unit); // true px</code></pre></figure>
@@ -1809,7 +1809,7 @@ factsOf(live).ofKind(&#x27;item&#x27;); // stable local SOP fact IDs</code></pre
 <p>The engine defaults to a cap of 128 candidates and applies the world reasoning budget per trial. An optimum is scoped to the candidate list.</p>
 <p class="source">Generated from <code>docs/api.md</code>.</p>
 </main>
-<footer>sopworld 0.244.0 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
+<footer>sopworld 0.244.1 · consistency matrices for SOP Lang circuits · one file, no dependencies, Node and browsers · <a href="selftest.html">self-test</a></footer>
 
 </body>
 </html>

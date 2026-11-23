@@ -52,7 +52,7 @@ export { planner, factStore, PlanLive, readMethods, PLAN_LIMITS, solveChoices } 
 export { inflectBy, articleFor, morphOf, generate, analyse, fold, splitClitics, dictionary, realise, templateFor } from './morph.mjs';
 export { ledgerAppend, ledgerGroups, ledgerKey, stageOf, STAGES } from './ledger.mjs';
 export { solveProblem } from './problem.mjs';
-export const version = '0.244.0';
+export const version = '0.244.1';
 /**
  * Which build this is. In the single-file build (docs/sopworld.mjs, docs/sopworld.js)
  * tools/build.mjs fills in `hash`, a fingerprint of the bundled sources, and `date`,

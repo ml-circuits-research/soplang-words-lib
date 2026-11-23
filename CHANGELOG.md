@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.244.1
+
+- `completeStructuralBindings`: `preferOperations` names operations a key bound by its parameter name takes first, before `preferActs`.
+
 ## 0.244.0
 
 - `completeStructuralBindings(table, declared)`: an exported structural binding table (`sop.structural-bindings/1`) completed from the live `std.capability` declarations and an application's declared rows: keys by parameter name (never an unbound parameter; an operation of a preferred act first), closed value lists, numbers and units, declared key alignments with said values, relation pairs, family readings and operations, the binding a family's kind rows share, positions with ordinal words, compound-lemma modifiers and closed native values as kinds. Moved from an application, where the same rules ran as host code.
